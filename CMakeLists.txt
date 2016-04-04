@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(nmr2fit)
+# set the module path
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
+
+
+# Tell CMake to run moc when necessary:
+set(CMAKE_AUTOMOC ON)
+# As moc files are generated in the binary dir, tell CMake
+# to always look for includes there:
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+option (DEBUG_LEVEL
+    "Debug output enabled" OFF)
+option (BENCHMARK_LEVEL
+    "Benchmark output enabled" OFF)
+
+
+find_package(Qt5Widgets REQUIRED)
+
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
+
+set(nmr2fit_SRCS
+                ui/dialogs/importdata.cpp
+                core/data/modelclass.cpp
+                core/data/dataclass.cpp
+                ui/widgets/modeldataholder.cpp
+                ui/widgets/chartwidget.cpp
+                ui/widgets/datawidget.cpp
+                ui/widgets/modelwidget.cpp
+                ui/nmr2fit.cpp 
+                main.cpp)
+add_executable(nmr2fit ${nmr2fit_SRCS})
+
+set_property(TARGET nmr2fit PROPERTY CXX_STANDARD 11)
+
+qt5_use_modules(nmr2fit Widgets Network)
+
+#target_link_libraries(nmr2fit ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
+
+install(TARGETS nmr2fit RUNTIME DESTINATION bin)
