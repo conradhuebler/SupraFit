@@ -19,23 +19,35 @@
 
 #ifndef MODELDATAHOLDER_H
 #define MODELDATAHOLDER_H
-
+#include "core/data/dataclass.h"
+#include <QtCharts/QChart>
 #include <QtWidgets/QWidget>
 #include <QtCore/QPointer>
 
 class ModelWidget;
 class DataWidget;
+class QTabWidget;
+class QPushButton;
 
 class ModelDataHolder : public QWidget
 {
     Q_OBJECT
 
 public:
-ModelDataHolder();
-~ModelDataHolder();
-
+    ModelDataHolder();
+    ~ModelDataHolder();
+    void setData(DataClass data);
+    DataClass *DataPtr() const { return m_data; }
 private:
     QPointer<DataWidget > m_datawidget;
+    QPointer<QTabWidget > m_models;
+    QPointer<QPushButton > m_add;
+    DataClass *m_data;
+    
+private slots:
+    void AddModel();
+signals:
+    void PlotChart(const QVector< QPointer< QtCharts::QLineSeries > > chart);
 };
 
 #endif // MODELDATAHOLDER_H

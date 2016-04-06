@@ -16,15 +16,142 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "core/data/dataclass.h"
+#include "core/data/modelclass.h"
+
+#include <QGridLayout>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QLabel>
+#include <QPushButton>
+#include <QtWidgets/QLineEdit>
 
 #include "modelwidget.h"
 
-ModelWidget::ModelWidget()
+ModelLine::ModelLine(const QString &str, QWidget *parent): QWidget(parent)
 {
+    QGridLayout *layout = new QGridLayout;
+    QLabel *name = new QLabel(str);
+    QLabel *signal = new QLabel(tr("Verschieb:;"));
+    QLabel *constant = new QLabel(tr("Konstante"));
+    m_constant = new QDoubleSpinBox;
+        m_constant->setSingleStep(1e-2);
+        m_constant->setDecimals(4);
+        m_constant->setPrefix("10^");
+    m_sign = new QDoubleSpinBox;
+        m_sign->setSingleStep(1e-2);
+        m_sign->setSuffix(" ppm");
+        m_sign->setDecimals(4);
+    
+    layout->addWidget(name, 0, 0, 3, 0);
+    layout->addWidget(constant, 1, 0);
+    layout->addWidget(m_constant, 1, 1);
+    layout->addWidget(signal, 1, 2);
+    layout->addWidget(m_sign, 1, 3);
+    
+    setLayout(layout);
+    
+    connect(m_constant, SIGNAL(valueChanged(double)), this, SIGNAL(dirty()));
+    connect(m_sign, SIGNAL(valueChanged(double)), this, SIGNAL(dirty()));
+    
+}
+
+ModelLine::~ModelLine()
+{
+
+}
+
+
+
+ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent)
+{
+    QGridLayout *layout = new QGridLayout;
+    QVBoxLayout *sign_layout = new QVBoxLayout;
+    QLabel *pure_shift = new QLabel(tr("Pure Shift"));
+    sign_layout->addWidget(pure_shift);
+    for(int i = 0; i < m_model->MaxVars(); ++i)
+    {
+        QDoubleSpinBox *signal = new QDoubleSpinBox;
+        signal->setSingleStep(1e-2);
+        signal->setDecimals(4);
+        signal->setSuffix(" ppm");
+        signal->setValue(m_model->PureSignal(i));
+        connect(signal, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
+        m_pure_signals << signal;
+        sign_layout->addWidget(signal);
+    }
+    QHBoxLayout *complex_layout = new QHBoxLayout;
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    {
+        QPointer<QDoubleSpinBox >constant = new QDoubleSpinBox;
+            m_constants << constant;
+            constant->setSingleStep(1e-2);
+            constant->setDecimals(4);
+            constant->setPrefix("10^");
+            constant->setValue(m_model->Pair(i,0).first);
+            connect(constant, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
+        QVBoxLayout *sign_layout = new QVBoxLayout;
+            sign_layout->addWidget(constant);
+            
+        QLabel *pure_shift = new QLabel(tr("K11 Shift"));
+        sign_layout->addWidget(pure_shift);
+        QVector<QPointer < QDoubleSpinBox > > row;
+        for(int j = 0; j < m_model->MaxVars(); ++j)
+        {
+            QDoubleSpinBox *signal = new QDoubleSpinBox;
+            signal->setSingleStep(1e-2);
+            signal->setDecimals(4);
+            signal->setSuffix(" ppm");
+            signal->setValue(m_model->Pair(i + 1, j).second);
+            connect(signal, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
+            sign_layout->addWidget(signal);
+            row << signal;
+        } 
+        complex_layout->addLayout(sign_layout);
+        m_complex_signals << row;
+    }
+    
+    m_switch = new QPushButton("switch h/g");
+        m_switch->setCheckable(true);
+        m_switch->setChecked(false);
+    layout->addWidget(m_switch, 0, 1);
+    layout->addLayout(sign_layout, 1, 0);
+    layout->addLayout(complex_layout, 1, 1);
+    connect(m_switch, SIGNAL(clicked(bool)), m_model, SLOT(SwitchConentrations()));
+    connect(m_switch, SIGNAL(clicked(bool)), this, SLOT(recalulate()));
+
+    setLayout(layout);
+    
 }
 
 ModelWidget::~ModelWidget()
 {
+    
 }
+
+void ModelWidget::recalulate()
+{
+    QVector<qreal > pure_signals, constants;
+    QVector<QVector <qreal > > complex_signals;
+    complex_signals.resize(m_model->ConstantSize());
+    for(int i = 0; i < m_pure_signals.size(); ++i)
+    {
+        pure_signals << m_pure_signals[i]->value();
+        
+        for(int j = 0; j < m_model->ConstantSize(); ++j)
+        {
+            complex_signals[j] << m_complex_signals[j][i]->value();
+        }
+    }
+    for(int j = 0; j < m_model->ConstantSize(); ++j)
+        m_model->setComplexSignals(complex_signals[j], j + 1);
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+        constants << m_constants[i]->value();
+    m_model->setConstants(constants);
+    m_model->setPureSignals(pure_signals);
+    
+    m_model->CalculateSignal();
+    emit Fit(m_model->Signals());
+}
+
 
 #include "modelwidget.moc"

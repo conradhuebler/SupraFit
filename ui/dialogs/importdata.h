@@ -20,6 +20,7 @@
 #ifndef IMPORTDATA_H
 #define IMPORTDATA_H
 
+#include "core/data/dataclass.h"
 
 
 #include <QtWidgets/QTableWidget>
@@ -33,7 +34,6 @@
 class QDialogButtonBox;
 class QLineEdit;
 class QPushButton;
-
 
 class SelectHeader : public QHeaderView
 {
@@ -126,20 +126,22 @@ class ImportData : public QDialog
     Q_OBJECT
 
 public:
-ImportData(QWidget *parent = 0);
-~ImportData();
+    ImportData(QWidget *parent = 0);
+    ~ImportData();
 
+     inline DataClass getStoredData(){ return *m_storeddata;}
 private:
     
     void setUi();
     
-    QPointer<Table > m_table;
+    QPointer<QTableView > m_table;
     QPointer<QLineEdit > m_line;
     QPointer<QPushButton > m_file;
     QPointer<QDialogButtonBox > m_buttonbox;
-    
+     DataClass *m_storeddata;
 private slots:
     void LoadFile();
+    void accept();
 };
 
 #endif // IMPORTDATA_H

@@ -17,26 +17,11 @@
  * 
  */
 
-#ifndef DATAWIDGET_H
-#define DATAWIDGET_H
-#include "core/data/dataclass.h"
+#ifndef LIBMATH_H
+#define LIBMATH_H
+#include <QtGlobal>
+qreal MinRoot(double a, double b, double c);
 
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QTableView>
-#include <QtWidgets/QTableWidget>
-#include <QtCore/QPointer>
 
-class DataWidget : public QWidget
-{
-    Q_OBJECT
+#endif // DATACLASS_H
 
-public:
-    DataWidget();
-    ~DataWidget();
-    void setData(DataClass *data);
-private:
-    QPointer<QTableView > m_concentrations, m_signals;
-    DataClass *m_data;
-};
-
-#endif // DATAWIDGET_H

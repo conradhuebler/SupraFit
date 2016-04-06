@@ -21,9 +21,10 @@ find_package(Qt5Widgets REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 set(nmr2fit_SRCS
+                core/libmath.cpp
+                core/data/dataclass.cpp
                 ui/dialogs/importdata.cpp
                 core/data/modelclass.cpp
-                core/data/dataclass.cpp
                 ui/widgets/modeldataholder.cpp
                 ui/widgets/chartwidget.cpp
                 ui/widgets/datawidget.cpp
@@ -34,7 +35,7 @@ add_executable(nmr2fit ${nmr2fit_SRCS})
 
 set_property(TARGET nmr2fit PROPERTY CXX_STANDARD 11)
 
-qt5_use_modules(nmr2fit Widgets Network)
+qt5_use_modules(nmr2fit Widgets Network Charts)
 
 #target_link_libraries(nmr2fit ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
 

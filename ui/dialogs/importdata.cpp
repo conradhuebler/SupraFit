@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "core/data/dataclass.h"
+
+
 #include <QtCore/QFile>
 #include <QStandardItemModel>
 #include <QtWidgets/QDialogButtonBox>
@@ -28,7 +31,7 @@
 #include <QDebug>
 #include "importdata.h"
 
-ImportData::ImportData(QWidget *parent) :QDialog(parent)
+ImportData::ImportData(QWidget *parent) : QDialog(parent)
 {
     setUi();
     
@@ -36,6 +39,7 @@ ImportData::ImportData(QWidget *parent) :QDialog(parent)
 
 ImportData::~ImportData()
 {
+    delete m_storeddata;
 }
 
 
@@ -53,7 +57,7 @@ void ImportData::setUi()
    m_line = new QLineEdit;
    m_file = new QPushButton("Load");
    connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
-   m_table = new Table;
+   m_table = new QTableView;
    
    layout->addWidget(m_line, 0, 0);
    layout->addWidget(m_file, 0, 1);
@@ -91,6 +95,32 @@ void ImportData::LoadFile()
     
     m_table->setModel(model);
         
+}
+
+void ImportData::accept()
+{
+    m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
+    
+    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
+    
+    int rows = model->rowCount() - 1; 
+    int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
+    for(int i = 0; i < rows; ++i)
+    {
+            DataPoint point;
+            for(int j = 0; j < columns; ++j)
+            {
+                if(j == 0)
+                    point.setConc1(model->item(i, j)->data(Qt::DisplayRole).toDouble());
+                else if(j == 1)
+                    point.setConc2(model->item(i, j)->data(Qt::DisplayRole).toDouble());
+                else 
+                    point.AppendData(model->item(i, j)->data(Qt::DisplayRole).toDouble());
+                
+            }
+        m_storeddata->addPoint(point);
+    }
+    QDialog::accept();
 }
 
 

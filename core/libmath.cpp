@@ -16,27 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-
-#ifndef DATAWIDGET_H
-#define DATAWIDGET_H
-#include "core/data/dataclass.h"
-
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QTableView>
-#include <QtWidgets/QTableWidget>
-#include <QtCore/QPointer>
-
-class DataWidget : public QWidget
+// #include <qmath.h>
+#include <QtGlobal>
+#include <QtMath>
+#include <QDebug>
+#include <cmath>
+qreal MinRoot(double a, double b, double c)
 {
-    Q_OBJECT
-
-public:
-    DataWidget();
-    ~DataWidget();
-    void setData(DataClass *data);
-private:
-    QPointer<QTableView > m_concentrations, m_signals;
-    DataClass *m_data;
-};
-
-#endif // DATAWIDGET_H
+    return (-b- qSqrt(qPow(b,2)-4*a*c))/(2*a);
+}

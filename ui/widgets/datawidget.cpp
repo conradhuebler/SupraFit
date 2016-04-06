@@ -22,8 +22,9 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTableWidget>
+#include <QStandardItemModel>
 
-
+#include <QDebug>
 DataWidget::DataWidget()
 {
     QGridLayout *layout = new QGridLayout;
@@ -32,6 +33,7 @@ DataWidget::DataWidget()
     
     
     m_concentrations = new QTableView;
+        m_concentrations->setFixedWidth(250);
     m_signals = new QTableView;
     layout->addWidget(m_concentrations, 0, 0);
     layout->addWidget(m_signals, 0, 1);
@@ -39,6 +41,29 @@ DataWidget::DataWidget()
 
 DataWidget::~DataWidget()
 {
+    
+}
+
+void DataWidget::setData(DataClass* data)
+{
+    m_data = data;
+    QStandardItemModel *concentration = new QStandardItemModel;
+    QStandardItemModel *signal = new QStandardItemModel;
+    
+    for(int i = 0; i < m_data->Size(); i++)
+    {
+        QList<QStandardItem *> row;
+        row.append(new QStandardItem(QString::number(m_data->operator[](i)->Conc1())));
+        row.append(new QStandardItem(QString::number(m_data->operator[](i)->Conc2())));
+        concentration->appendRow(row);
+        QList<QStandardItem *> row2;
+        QVector<qreal > datas = m_data->operator[](i)->Data();
+        for(int i = 0; i < datas.size(); ++i)
+            row2.append(new QStandardItem(QString::number(datas[i])));
+        signal->appendRow(row2);
+    }
+    m_concentrations->setModel(concentration);
+    m_signals->setModel(signal);
 }
 
 #include "datawidget.moc"

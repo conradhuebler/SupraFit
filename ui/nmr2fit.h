@@ -4,7 +4,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
 #include <QtCore/QPointer>
-
+#include <QtCharts/QLineSeries>
 class ModelDataHolder;
 class ChartWidget;
 
@@ -29,6 +29,7 @@ private:
     
 private slots:
     void LoadData();
+    void PlotData(QVector< QPointer< QtCharts::QLineSeries > > data);
 };
 
 #endif // nmr2fit_H

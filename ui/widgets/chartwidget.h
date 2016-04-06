@@ -19,18 +19,31 @@
 
 #ifndef CHARTWIDGET_H
 #define CHARTWIDGET_H
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QScatterSeries>
+#include <QtCharts/QLineSeries>
 
 #include <QtGui/qwidget.h>
+#include <QtCore/QPointer>
+
 
 class ChartWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-ChartWidget();
-~ChartWidget();
-
+    ChartWidget();
+    ~ChartWidget();
+    void clearPlot();
+public slots:
+    void setChart(const QPointer<QtCharts::QChart > chart);
+    void addSeries(QPointer< QtCharts::QScatterSeries >  series, const QString& str = "Signal");
+    void addLineSeries(QPointer< QtCharts::QLineSeries >  series, const QString& str = "Signal");
+    
 private:
+    QPointer<QtCharts::QChartView > m_chartwidget;
+    QPointer<QtCharts::QChart > m_chart;
 };
 
 #endif // CHARTWIDGET_H

@@ -21,16 +21,53 @@
 #define MODELWIDGET_H
 
 #include <QtGui/qwidget.h>
+#include <QDoubleSpinBox>
+
+#include "core/data/dataclass.h"
+#include "core/data/modelclass.h"
+
+class QDoubleSpinBox;
+class QPushButton;
+class QLineEdit;
+
+class ModelLine : public QWidget
+{
+    Q_OBJECT
+public:
+    
+    ModelLine(const QString &str, QWidget *parent = 0);
+    ~ModelLine();
+    void setConstant(double constant) { m_constant->setValue(constant);}
+    void setSignal(double sig) { m_sign->setValue(sig);}
+    inline double Constant() const { return m_constant->value(); }
+    inline double Signal() const { return m_sign->value(); }
+private:
+    QPointer<QDoubleSpinBox > m_constant, m_sign;
+signals:
+    void dirty();
+    
+};
+
 
 class ModelWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-ModelWidget();
+ModelWidget(QPointer< AbstractTitrationModel > model, QWidget *parent = 0);
 ~ModelWidget();
 
 private:
+    QPointer< AbstractTitrationModel > m_model;
+    QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
+    QVector< QVector<QPointer<QDoubleSpinBox > > > m_complex_signals;
+    QVector<QPointer<QDoubleSpinBox> > m_constants;
+//     QVector<QPointer< ModelLine > > m_model_lines;
+    QPushButton *m_switch;
+private slots:
+    void recalulate();;
+signals:
+    void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
 };
 
 #endif // MODELWIDGET_H

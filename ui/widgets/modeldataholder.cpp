@@ -22,10 +22,11 @@
 
 //#include "ui/widgets/modelwidget.h"
 #include "ui/widgets/datawidget.h"
-
+#include "ui/widgets/modelwidget.h"
 
 #include <QtWidgets/QGridLayout>
-
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QTabWidget>
 
 #include "modeldataholder.h"
 
@@ -37,13 +38,36 @@ ModelDataHolder::ModelDataHolder()
     
     
     m_datawidget = new DataWidget;
+    m_models = new QTabWidget;
+    m_add = new QPushButton(tr("Add"));
     
-    layout->addWidget(m_datawidget);
+    connect(m_add, SIGNAL(clicked()), this, SLOT(AddModel()));
     
+    
+    layout->addWidget(m_add, 0, 0);
+    layout->addWidget(m_datawidget,1, 0);
+    layout->addWidget(m_models, 2, 0);
+        
 }
 
 ModelDataHolder::~ModelDataHolder()
 {
+    
 }
+
+void ModelDataHolder::setData(DataClass data)
+{
+    m_data = new DataClass(data); 
+    m_datawidget->setData(m_data);
+}
+
+void ModelDataHolder::AddModel()
+{
+    ItoIModel *t = new ItoIModel(m_data);
+    ModelWidget *model = new ModelWidget(t);
+    m_models->addTab(model, "1:1");
+    connect(model, SIGNAL(Fit(QVector<QPointer<QtCharts::QLineSeries> >)), this, SIGNAL(PlotChart(QVector<QPointer<QtCharts::QLineSeries> >)));
+}
+
 
 #include "modeldataholder.moc"

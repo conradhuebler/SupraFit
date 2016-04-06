@@ -17,14 +17,60 @@
  * 
  */
 
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QGridLayout>
+
 #include "chartwidget.h"
 
 ChartWidget::ChartWidget()
 {
+    m_chart = new QtCharts::QChart;
+    m_chartwidget = new QtCharts::QChartView(m_chart);
+    QGridLayout *layout = new QGridLayout;
+    layout->addWidget(m_chartwidget);
+    setLayout(layout);
 }
 
 ChartWidget::~ChartWidget()
 {
 }
+
+void ChartWidget::setChart(const QPointer< QtCharts::QChart > chart)
+{
+//      m_chart = chart; 
+//      m_chartwidget->addChart(m_chart);
+}
+
+void ChartWidget::addSeries(QPointer< QtCharts::QScatterSeries > series, const QString& str)
+{
+    m_chart->addSeries(series);
+    m_chart->setTitle(str);
+    m_chart->createDefaultAxes();
+    
+//     foreach (QtCharts::QChartView *chart, m_chartwidget)
+//         chart->setRenderHint(QPainter::Antialiasing, true);
+    m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
+    m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
+}
+
+void ChartWidget::addLineSeries(QPointer< QtCharts::QLineSeries > series, const QString& str)
+{
+    
+    m_chart->addSeries(series);
+     m_chart->setTitle(str);
+     m_chart->createDefaultAxes();
+//     
+// //     foreach (QtCharts::QChartView *chart, m_chartwidget)
+// //         chart->setRenderHint(QPainter::Antialiasing, true);
+     m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
+     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
+}
+void ChartWidget::clearPlot()
+{
+    m_chart->removeAllSeries();
+}
+
 
 #include "chartwidget.moc"

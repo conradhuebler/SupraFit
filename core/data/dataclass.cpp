@@ -16,15 +16,100 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-
+#include <QPointer>
+#include <QDebug>
 #include "dataclass.h"
 
-DataClass::DataClass(int type)
+
+DataPoint::DataPoint(qreal conc1, qreal conc2, QVector< qreal > data) : m_conc1(conc1), m_conc2(conc2), m_data(data)
 {
+    
+}
+
+
+
+
+
+DataPoint::DataPoint(const DataPoint* other)
+{
+    m_conc1 = other->Conc1();
+    m_conc2 = other->Conc2();
+    m_data = other->Data();
+}
+
+DataPoint::DataPoint(const DataPoint& other)
+{
+    m_conc1 = other.Conc1();
+    m_conc2 = other.Conc2();
+    m_data = other.Data();
+}
+
+DataPoint::DataPoint()
+{
+
+}
+
+DataClass::DataClass() : m_maxsize(0)
+{
+
+}
+
+DataClass::DataClass(int type) : m_type(type) , m_maxsize(0)
+{
+
+    
+}
+
+DataClass::DataClass(const DataClass& other): m_maxsize(0)
+{
+    m_type = other.Type();
+    for(int i = 0; i < other.Size(); ++i)
+        addPoint(other[i]);
+}
+
+DataClass::DataClass(const DataClass* other): m_maxsize(0)
+{
+     m_type = other->Type();
+     for(int i = 0; i < other->Size(); ++i)
+         addPoint(other->operator[](i));
 }
 
 DataClass::~DataClass()
 {
+    
 }
 
-#include "dataclass.moc"
+QVector< QPointer< QtCharts::QScatterSeries > > DataClass::Signals(int c) const
+{
+    
+
+    QVector< QPointer< QtCharts::QScatterSeries > > series;
+    if(m_maxsize == 0)
+        series;
+    
+    for(int i = 0; i < m_data.size() - 1; ++i)
+    {
+         if(i == 0)
+         {
+            for(int j = 0; j < m_maxsize; ++j)
+            {
+             series.append(new QtCharts::QScatterSeries());
+             series.last()->setName("Signal " + QString::number(j + 1));
+            }
+         }
+        for(int j = 0; j < m_maxsize; ++j)
+        {
+         if(c == 1)   
+            series[j]->append(m_data[i].Conc1(), m_data[i].Data()[j]);
+         else if(c == 2)
+            series[j]->append(m_data[i].Conc2(), m_data[i].Data()[j]);
+         else if(c == 3)
+             series[j]->append(m_data[i].Conc2()/m_data[i].Conc1(), m_data[i].Data()[j]);
+         else if(c == 4)
+             series[j]->append(m_data[i].Conc1()/m_data[i].Conc2(), m_data[i].Data()[j]);
+         else
+             series[j]->append(m_data[i].Conc1(), m_data[i].Data()[j]);
+        }
+    }
+    return series;
+}

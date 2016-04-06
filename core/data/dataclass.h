@@ -20,24 +20,94 @@
 #ifndef DATACLASS_H
 #define DATACLASS_H
 
-#include <QtCore/QObject>
 #include <QtCore/QVector>
-class DataClass : public QObject
-{
-    Q_OBJECT
+#include <QtCore/QMap>
+#include <QtCharts/QScatterSeries>
+#include <QPointer>
 
+
+class DataPoint
+{
+    
 public:
-DataClass(int type = 1);
-~DataClass();
-enum { 
-    DiscretData = 1,
-    ContiuousData = 2
+    
+    DataPoint();
+    DataPoint(const DataPoint &other);
+    DataPoint(const DataPoint *other);
+    DataPoint(qreal conc1, qreal conc2, QVector<qreal > data);
+    ~DataPoint() {}
+    qreal Conc1() const { return m_conc1; }
+    void setConc1(qreal conc1)  { m_conc1 = conc1; }
+    qreal Conc2() const { return m_conc2; }
+    void setConc2(qreal conc2) { m_conc2 = conc2; }
+    QVector<qreal> Data() const {  return m_data; }
+    void AppendData(qreal p) { m_data << p; }
+    void SetData(QVector<qreal > data) { m_data = data; }
+private:
+    qreal m_conc1, m_conc2;
+    QVector<qreal > m_data;
+};
+
+
+
+class DataClass 
+{
+    public: 
+        
+    DataClass();
+    DataClass(int type = 1);
+    DataClass(const DataClass *other);
+    DataClass(const DataClass &other);
+    ~DataClass();
+    
+    enum { 
+        DiscretData = 1,
+        ContiuousData = 2
     };
     
-private:
-    QVector< qreal > m_gast, m_host;
-    QVector< QVector< qreal >  > m_signals;
-    int m_type;
+    inline void addPoint(qreal conc1, qreal conc2, QVector<qreal > data)
+    {
+        if(m_maxsize == 0)
+            m_maxsize = data.size();
+        else if(m_maxsize > data.size())
+            m_maxsize = data.size();
+        m_data << DataPoint(conc1, conc2, data);
+    }
+    
+    inline void addPoint(DataPoint point)
+    {
+                
+        if(m_maxsize == 0)
+            m_maxsize = point.Data().size();
+        else if(m_maxsize > point.Data().size())
+            m_maxsize = point.Data().size();
+        m_data << point;
+    }
+    
+    inline void addPoint(DataPoint *point)
+    {
+        m_data << DataPoint(point);
+    }   
+    DataPoint* operator[](int i)
+    {
+        if(i < m_data.size())
+            return &m_data[i];
+    }
+    const DataPoint* operator[](int i) const
+    {
+        if(i < m_data.size())
+            return &m_data[i];
+    }
+    
+    inline int Size() const { return m_maxsize; } //{return m_data.size(); } //FIXME can be wrong }
+    inline int Type() const { return m_type;     }
+    inline void setType(int type) { m_type = type; }
+    
+    QVector< QPointer< QtCharts::QScatterSeries > > Signals(int c = 1) const;
+    
+protected:
+    QVector< DataPoint> m_data;
+    int m_type, m_maxsize;
 };
 
 #endif // DATACLASS_H
