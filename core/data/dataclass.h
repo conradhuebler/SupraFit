@@ -24,7 +24,7 @@
 #include <QtCore/QMap>
 #include <QtCharts/QScatterSeries>
 #include <QPointer>
-
+#include <QColor>
 
 class DataPoint
 {
@@ -98,16 +98,22 @@ class DataClass
         if(i < m_data.size())
             return &m_data[i];
     }
-    
-    inline int Size() const { return m_maxsize; } //{return m_data.size(); } //FIXME can be wrong }
+    QColor color(int i) const;
+    inline int Size() const { return m_maxsize; } 
+    inline int DataPoints() const { return m_data.size(); }
     inline int Type() const { return m_type;     }
     inline void setType(int type) { m_type = type; }
     
     QVector< QPointer< QtCharts::QScatterSeries > > Signals(int c = 1) const;
+
+    void SwitchConentrations();
+    inline bool* Concentration() const { return m_concentrations; }
+private:
     
 protected:
     QVector< DataPoint> m_data;
     int m_type, m_maxsize;
+    bool *m_concentrations;
 };
 
 #endif // DATACLASS_H

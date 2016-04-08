@@ -27,9 +27,13 @@
 ChartWidget::ChartWidget()
 {
     m_chart = new QtCharts::QChart;
+    m_errorview = new QtCharts::QChart;
     m_chartwidget = new QtCharts::QChartView(m_chart);
+    m_errorchart = new QtCharts::QChartView(m_errorview);
+//     m_chartwidget->addChart(m_errorview);
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(m_chartwidget);
+    layout->addWidget(m_chartwidget,0, 0);
+    layout->addWidget(m_errorchart, 1, 0);
     setLayout(layout);
 }
 
@@ -67,9 +71,25 @@ void ChartWidget::addLineSeries(QPointer< QtCharts::QLineSeries > series, const 
      m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
      m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
 }
+void ChartWidget::addErrorSeries(QPointer< QtCharts::QLineSeries > series, const QString& str)
+{
+     
+
+   m_errorview->addSeries(series);
+     m_errorview->setTitle(str);
+     m_errorview->createDefaultAxes(); 
+}
+
+void ChartWidget::clearErrrorPlot()
+{
+m_errorview->removeAllSeries();
+}
+
+
 void ChartWidget::clearPlot()
 {
     m_chart->removeAllSeries();
+    
 }
 
 

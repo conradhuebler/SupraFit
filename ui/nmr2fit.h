@@ -7,7 +7,7 @@
 #include <QtCharts/QLineSeries>
 class ModelDataHolder;
 class ChartWidget;
-
+class QResizeEvent;
 
 class MainWindow : public QMainWindow
 {
@@ -26,10 +26,13 @@ private:
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
     
-    
 private slots:
     void LoadData();
     void PlotData(QVector< QPointer< QtCharts::QLineSeries > > data);
+    void PlotErorrData(QVector< QPointer< QtCharts::QLineSeries > > data);
+    
+protected:
+    void resizeEvent(QResizeEvent *event);
 };
 
 #endif // nmr2fit_H

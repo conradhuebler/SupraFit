@@ -36,14 +36,16 @@ public:
     ChartWidget();
     ~ChartWidget();
     void clearPlot();
+    void clearErrrorPlot();
 public slots:
     void setChart(const QPointer<QtCharts::QChart > chart);
     void addSeries(QPointer< QtCharts::QScatterSeries >  series, const QString& str = "Signal");
     void addLineSeries(QPointer< QtCharts::QLineSeries >  series, const QString& str = "Signal");
+    void addErrorSeries(QPointer< QtCharts::QLineSeries >  series, const QString& str = "Signal");
     
 private:
-    QPointer<QtCharts::QChartView > m_chartwidget;
-    QPointer<QtCharts::QChart > m_chart;
+    QPointer<QtCharts::QChartView > m_chartwidget, m_errorchart;
+    QPointer<QtCharts::QChart > m_chart, m_errorview;
 };
 
 #endif // CHARTWIDGET_H

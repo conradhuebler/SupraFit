@@ -25,6 +25,7 @@
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTableWidget>
 #include <QtCore/QPointer>
+class QPushButton;
 
 class DataWidget : public QWidget
 {
@@ -36,7 +37,14 @@ public:
     void setData(DataClass *data);
 private:
     QPointer<QTableView > m_concentrations, m_signals;
+    QPointer<QPushButton > m_switch;
     DataClass *m_data;
+    
+private slots:
+    void switchHG();
+    
+signals:
+    void recalculate();
 };
 
 #endif // DATAWIDGET_H

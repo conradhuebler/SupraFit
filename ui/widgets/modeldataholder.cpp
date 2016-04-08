@@ -20,7 +20,6 @@
 
 
 
-//#include "ui/widgets/modelwidget.h"
 #include "ui/widgets/datawidget.h"
 #include "ui/widgets/modelwidget.h"
 
@@ -42,6 +41,7 @@ ModelDataHolder::ModelDataHolder()
     m_add = new QPushButton(tr("Add"));
     
     connect(m_add, SIGNAL(clicked()), this, SLOT(AddModel()));
+    
     
     
     layout->addWidget(m_add, 0, 0);
@@ -66,7 +66,9 @@ void ModelDataHolder::AddModel()
     ItoIModel *t = new ItoIModel(m_data);
     ModelWidget *model = new ModelWidget(t);
     m_models->addTab(model, "1:1");
+    connect(m_datawidget, SIGNAL(recalculate()), model, SLOT(recalulate()));
     connect(model, SIGNAL(Fit(QVector<QPointer<QtCharts::QLineSeries> >)), this, SIGNAL(PlotChart(QVector<QPointer<QtCharts::QLineSeries> >)));
+    connect(model, SIGNAL(Error(QVector<QPointer<QtCharts::QLineSeries> >)), this, SIGNAL(PlotErrorChart(QVector<QPointer<QtCharts::QLineSeries> >)));
 }
 
 

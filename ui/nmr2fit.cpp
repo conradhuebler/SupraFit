@@ -46,6 +46,7 @@ MainWindow::MainWindow()
     filemenu->addAction( quitaction );
     
     connect(m_model_dataholder, SIGNAL(PlotChart(QVector<QPointer<QtCharts::QLineSeries> >)), this, SLOT(PlotData(QVector<QPointer<QtCharts::QLineSeries> >)));
+    connect(m_model_dataholder, SIGNAL(PlotErrorChart(QVector<QPointer<QtCharts::QLineSeries> >)), this, SLOT(PlotErorrData(QVector<QPointer<QtCharts::QLineSeries> >)));
 }
 
 MainWindow::~MainWindow()
@@ -78,6 +79,22 @@ void MainWindow::PlotData(QVector< QPointer< QtCharts::QLineSeries > > data)
     }
     foreach(const QPointer<QtCharts::QLineSeries> &sig, data)
         m_charts->addLineSeries(sig);
+}
+
+void MainWindow::PlotErorrData(QVector< QPointer< QtCharts::QLineSeries > > data)
+{
+    m_charts->clearErrrorPlot();
+        foreach(const QPointer<QtCharts::QLineSeries> &sig, data)
+            m_charts->addErrorSeries(sig);
+}
+
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    m_charts->resize(3*event->size().width()/4, m_charts->height());
+    m_model_dataholder->resize(event->size().width()/4, m_model_dataholder->height());
+
+    QWidget::resizeEvent(event);
 }
 
 #include "nmr2fit.moc"

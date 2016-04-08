@@ -64,10 +64,11 @@ private:
     QVector<QPointer<QDoubleSpinBox> > m_constants;
 //     QVector<QPointer< ModelLine > > m_model_lines;
     QPushButton *m_switch;
-private slots:
-    void recalulate();;
+public slots:
+    void recalulate();
 signals:
     void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
+    void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);
 };
 
 #endif // MODELWIDGET_H

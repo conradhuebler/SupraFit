@@ -18,6 +18,7 @@
  */
 #include <QPointer>
 #include <QDebug>
+#include <QColor>
 #include "dataclass.h"
 
 
@@ -54,23 +55,25 @@ DataClass::DataClass() : m_maxsize(0)
 
 }
 
-DataClass::DataClass(int type) : m_type(type) , m_maxsize(0)
+DataClass::DataClass(int type) : m_type(type) , m_maxsize(0), m_concentrations(new bool(true))
 {
 
     
 }
 
-DataClass::DataClass(const DataClass& other): m_maxsize(0)
+DataClass::DataClass(const DataClass& other): m_maxsize(0), m_concentrations(new bool(true))
 {
     m_type = other.Type();
-    for(int i = 0; i < other.Size(); ++i)
+//     m_concentrations = other.m_concentrations;
+    for(int i = 0; i < other.DataPoints(); ++i)
         addPoint(other[i]);
 }
 
-DataClass::DataClass(const DataClass* other): m_maxsize(0)
+DataClass::DataClass(const DataClass* other): m_maxsize(0), m_concentrations(new bool(true))
 {
      m_type = other->Type();
-     for(int i = 0; i < other->Size(); ++i)
+//      m_concentrations = other->m_concentrations;
+     for(int i = 0; i < other->DataPoints(); ++i)
          addPoint(other->operator[](i));
 }
 
@@ -79,25 +82,63 @@ DataClass::~DataClass()
     
 }
 
+QColor DataClass::color(int i) const
+{
+    switch(i){
+        case 0:
+            return Qt::red;
+        case 1:
+            return Qt::blue;
+        case 2:
+            return Qt::green;
+        case 3:
+            return Qt::yellow;
+        case 4:
+            return Qt::darkRed;
+        case 5:
+            return Qt::darkBlue;
+        case 6:
+            return Qt::darkGreen;
+        case 7:
+            return Qt::magenta;
+        case 8:
+            return Qt::cyan;
+        case 9:
+            return Qt::darkYellow;
+        case 10:
+            return Qt::darkMagenta;
+        case 11:
+            return Qt::darkCyan;
+        case 12:
+            return Qt::gray;
+        default:
+            return Qt::darkGray;
+    }
+}
+
+
 QVector< QPointer< QtCharts::QScatterSeries > > DataClass::Signals(int c) const
 {
     
 
     QVector< QPointer< QtCharts::QScatterSeries > > series;
-    if(m_maxsize == 0)
+    if(Size() == 0)
         series;
     
-    for(int i = 0; i < m_data.size() - 1; ++i)
+    for(int i = 0; i < m_data.size(); ++i)
     {
          if(i == 0)
          {
-            for(int j = 0; j < m_maxsize; ++j)
+            for(int j = 0; j < Size(); ++j)
             {
              series.append(new QtCharts::QScatterSeries());
-             series.last()->setName("Signal " + QString::number(j + 1));
+             series.last()->setColor(color(j));
+//              series.last()->setName("Signal " + QString::number(j + 1));
+             series.last()->setMarkerShape(QtCharts::QScatterSeries::MarkerShapeRectangle);
+             series.last()->setMarkerSize(10);
             }
          }
-        for(int j = 0; j < m_maxsize; ++j)
+        for(int j = 0; j < Size(); ++j)
         {
          if(c == 1)   
             series[j]->append(m_data[i].Conc1(), m_data[i].Data()[j]);
@@ -112,4 +153,10 @@ QVector< QPointer< QtCharts::QScatterSeries > > DataClass::Signals(int c) const
         }
     }
     return series;
+}
+void DataClass::SwitchConentrations()
+{
+    qDebug() << m_concentrations << *m_concentrations;
+     *m_concentrations = !(*m_concentrations); 
+     
 }

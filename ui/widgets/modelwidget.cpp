@@ -110,14 +110,8 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
         m_complex_signals << row;
     }
     
-    m_switch = new QPushButton("switch h/g");
-        m_switch->setCheckable(true);
-        m_switch->setChecked(false);
-    layout->addWidget(m_switch, 0, 1);
     layout->addLayout(sign_layout, 1, 0);
     layout->addLayout(complex_layout, 1, 1);
-    connect(m_switch, SIGNAL(clicked(bool)), m_model, SLOT(SwitchConentrations()));
-    connect(m_switch, SIGNAL(clicked(bool)), this, SLOT(recalulate()));
 
     setLayout(layout);
     
@@ -151,7 +145,9 @@ void ModelWidget::recalulate()
     
     m_model->CalculateSignal();
     emit Fit(m_model->Signals());
+    emit Error(m_model->ErrorBars());
 }
+
 
 
 #include "modelwidget.moc"

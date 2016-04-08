@@ -44,13 +44,12 @@ public:
         }
     virtual int ConstantSize() const = 0;
     QVector< QPointer< QtCharts::QLineSeries > > Signals(int c = 1) const;
+    QVector< QPointer< QtCharts::QLineSeries > > ErrorBars(int c = 1) const;
     virtual void setPureSignals(QVector< qreal > list) = 0;
     virtual void setComplexSignals(QVector< qreal > list, int i) = 0;
     virtual void setConstants(QVector< qreal > list) = 0;
     virtual void CalculateSignal() = 0;
-    
-public slots:
-    inline void SwitchConentrations() { m_concentrations = !m_concentrations; }
+   
 private:
     virtual qreal Minimize(QVector<int > vars) = 0;
     
@@ -60,7 +59,8 @@ protected:
     //QVector< QVector<qreal > >m_pure_signals;
     QVector<qreal > m_pure_signals;
     QHash<const DataPoint *, QVector< qreal> > m_signals;
-    bool m_concentrations;
+    QVector< QVector < qreal > > m_difference; 
+    bool *ptr_concentrations;
 };
 
 

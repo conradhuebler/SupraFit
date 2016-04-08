@@ -48,6 +48,7 @@ private slots:
     void AddModel();
 signals:
     void PlotChart(const QVector< QPointer< QtCharts::QLineSeries > > chart);
+    void PlotErrorChart(const QVector< QPointer< QtCharts::QLineSeries > > chart);
 };
 
 #endif // MODELDATAHOLDER_H

@@ -19,6 +19,7 @@
 
 #include "datawidget.h"
 
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTableWidget>
@@ -28,15 +29,18 @@
 DataWidget::DataWidget()
 {
     QGridLayout *layout = new QGridLayout;
-    
+    m_switch = new QPushButton(tr("switch h/g"));
+    connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
     setLayout(layout);
     
     
     m_concentrations = new QTableView;
         m_concentrations->setFixedWidth(250);
     m_signals = new QTableView;
-    layout->addWidget(m_concentrations, 0, 0);
-    layout->addWidget(m_signals, 0, 1);
+        m_signals->setMaximumWidth(750);
+        layout->addWidget(m_switch, 0, 0);
+    layout->addWidget(m_concentrations, 1, 0);
+    layout->addWidget(m_signals, 1, 1);
 }
 
 DataWidget::~DataWidget()
@@ -50,7 +54,7 @@ void DataWidget::setData(DataClass* data)
     QStandardItemModel *concentration = new QStandardItemModel;
     QStandardItemModel *signal = new QStandardItemModel;
     
-    for(int i = 0; i < m_data->Size(); i++)
+    for(int i = 0; i < m_data->DataPoints(); i++)
     {
         QList<QStandardItem *> row;
         row.append(new QStandardItem(QString::number(m_data->operator[](i)->Conc1())));
@@ -58,12 +62,27 @@ void DataWidget::setData(DataClass* data)
         concentration->appendRow(row);
         QList<QStandardItem *> row2;
         QVector<qreal > datas = m_data->operator[](i)->Data();
-        for(int i = 0; i < datas.size(); ++i)
-            row2.append(new QStandardItem(QString::number(datas[i])));
+        for(int j = 0; j < datas.size(); ++j)
+            {
+                QStandardItem *item = new QStandardItem(QString::number(datas[j]));
+                QFont font = item->font();
+//                 font.setPixelSize(item->font().pixelSize()*0.9);
+                item->setFont(font);
+                item->setBackground(QBrush(m_data->color(j)));
+                row2.append(item);
+            }
         signal->appendRow(row2);
     }
     m_concentrations->setModel(concentration);
     m_signals->setModel(signal);
+    m_concentrations->resizeColumnsToContents();
+    m_signals->resizeColumnsToContents();
+}
+
+void DataWidget::switchHG()
+{
+    m_data->SwitchConentrations();
+    emit recalculate();
 }
 
 #include "datawidget.moc"
