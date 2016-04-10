@@ -65,9 +65,6 @@ void DataWidget::setData(DataClass* data)
         for(int j = 0; j < datas.size(); ++j)
             {
                 QStandardItem *item = new QStandardItem(QString::number(datas[j]));
-                QFont font = item->font();
-//                 font.setPixelSize(item->font().pixelSize()*0.9);
-                item->setFont(font);
                 item->setBackground(QBrush(m_data->color(j)));
                 row2.append(item);
             }

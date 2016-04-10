@@ -14,7 +14,10 @@ option (DEBUG_LEVEL
     "Debug output enabled" OFF)
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
-
+    
+IF(CMAKE_COMPILER_IS_GNUCXX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets REQUIRED)
 

@@ -26,8 +26,10 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
+#include <QtGui/qmenu.h>
 
 #include "modeldataholder.h"
+#include "chartwidget.h"
 
 ModelDataHolder::ModelDataHolder()
 {
@@ -37,16 +39,23 @@ ModelDataHolder::ModelDataHolder()
     
     
     m_datawidget = new DataWidget;
-    m_models = new QTabWidget;
-    m_add = new QPushButton(tr("Add"));
-    
-    connect(m_add, SIGNAL(clicked()), this, SLOT(AddModel()));
-    
-    
-    
+    m_modelsWidget = new QTabWidget;
+    m_add = new QPushButton(tr("Add Titration\n Model"));
+        m_add->setFlat(true);
+        m_add->setDisabled(true);
+    QMenu *menu = new QMenu;
+    QAction *ItoI = new QAction(this);
+    ItoI->setText(tr("1:1-Model"));
+        connect(ItoI, SIGNAL(triggered()), this, SLOT(AddModel11()));
+        menu->addAction(ItoI);
+    QAction *IItoI_ItoT = new QAction(this);
+    IItoI_ItoT->setText(tr("2:1/1:1-Model"));
+        connect(IItoI_ItoT, SIGNAL(triggered()), this, SLOT(AddModel21()));
+        menu->addAction(IItoI_ItoT);
+    m_add->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_datawidget,1, 0);
-    layout->addWidget(m_models, 2, 0);
+    layout->addWidget(m_modelsWidget, 2, 0);
         
 }
 
@@ -59,16 +68,37 @@ void ModelDataHolder::setData(DataClass data)
 {
     m_data = new DataClass(data); 
     m_datawidget->setData(m_data);
+    m_add->setEnabled(true);
 }
 
-void ModelDataHolder::AddModel()
+void ModelDataHolder::AddModel(int model)
 {
-    ItoIModel *t = new ItoIModel(m_data);
-    ModelWidget *model = new ModelWidget(t);
-    m_models->addTab(model, "1:1");
-    connect(m_datawidget, SIGNAL(recalculate()), model, SLOT(recalulate()));
-    connect(model, SIGNAL(Fit(QVector<QPointer<QtCharts::QLineSeries> >)), this, SIGNAL(PlotChart(QVector<QPointer<QtCharts::QLineSeries> >)));
-    connect(model, SIGNAL(Error(QVector<QPointer<QtCharts::QLineSeries> >)), this, SIGNAL(PlotErrorChart(QVector<QPointer<QtCharts::QLineSeries> >)));
+    QPointer<AbstractTitrationModel > t;
+    switch(model){
+        case 1:
+            t = new ItoI_Model(m_data);
+            break;
+        case 2:
+            t = new IItoI_ItoI_Model(m_data);
+            break;
+        default:
+           return; 
+        
+    };
+    ModelWidget *modelwidget = new ModelWidget(t);
+    m_modelsWidget->addTab(modelwidget, t->Name());
+    m_charts->addModel(t);
+}
+
+
+void ModelDataHolder::AddModel11()
+{
+    AddModel(ModelDataHolder::ItoI);
+}
+
+void ModelDataHolder::AddModel21()
+{
+    AddModel(ModelDataHolder::IItoI_ItoI);
 }
 
 

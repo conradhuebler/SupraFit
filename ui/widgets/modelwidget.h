@@ -30,24 +30,6 @@ class QDoubleSpinBox;
 class QPushButton;
 class QLineEdit;
 
-class ModelLine : public QWidget
-{
-    Q_OBJECT
-public:
-    
-    ModelLine(const QString &str, QWidget *parent = 0);
-    ~ModelLine();
-    void setConstant(double constant) { m_constant->setValue(constant);}
-    void setSignal(double sig) { m_sign->setValue(sig);}
-    inline double Constant() const { return m_constant->value(); }
-    inline double Signal() const { return m_sign->value(); }
-private:
-    QPointer<QDoubleSpinBox > m_constant, m_sign;
-signals:
-    void dirty();
-    
-};
-
 
 class ModelWidget : public QWidget
 {
@@ -62,8 +44,17 @@ private:
     QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
     QVector< QVector<QPointer<QDoubleSpinBox > > > m_complex_signals;
     QVector<QPointer<QDoubleSpinBox> > m_constants;
+    QVector<QPointer<QLineEdit > > m_errors;
 //     QVector<QPointer< ModelLine > > m_model_lines;
-    QPushButton *m_switch;
+    QPushButton *m_switch, *m_minimize; 
+    bool m_pending;
+//     void Connect();
+//     void Disconnect();
+private slots:
+    void Minimize();
+    void Repaint();
+    
+   
 public slots:
     void recalulate();
 signals:

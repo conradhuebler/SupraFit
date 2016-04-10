@@ -117,43 +117,7 @@ QColor DataClass::color(int i) const
 }
 
 
-QVector< QPointer< QtCharts::QScatterSeries > > DataClass::Signals(int c) const
-{
-    
 
-    QVector< QPointer< QtCharts::QScatterSeries > > series;
-    if(Size() == 0)
-        series;
-    
-    for(int i = 0; i < m_data.size(); ++i)
-    {
-         if(i == 0)
-         {
-            for(int j = 0; j < Size(); ++j)
-            {
-             series.append(new QtCharts::QScatterSeries());
-             series.last()->setColor(color(j));
-//              series.last()->setName("Signal " + QString::number(j + 1));
-             series.last()->setMarkerShape(QtCharts::QScatterSeries::MarkerShapeRectangle);
-             series.last()->setMarkerSize(10);
-            }
-         }
-        for(int j = 0; j < Size(); ++j)
-        {
-         if(c == 1)   
-            series[j]->append(m_data[i].Conc1(), m_data[i].Data()[j]);
-         else if(c == 2)
-            series[j]->append(m_data[i].Conc2(), m_data[i].Data()[j]);
-         else if(c == 3)
-             series[j]->append(m_data[i].Conc2()/m_data[i].Conc1(), m_data[i].Data()[j]);
-         else if(c == 4)
-             series[j]->append(m_data[i].Conc1()/m_data[i].Conc2(), m_data[i].Data()[j]);
-         else
-             series[j]->append(m_data[i].Conc1(), m_data[i].Data()[j]);
-        }
-    }
-    return series;
-}
 void DataClass::SwitchConentrations()
 {
     qDebug() << m_concentrations << *m_concentrations;

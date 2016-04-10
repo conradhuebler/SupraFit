@@ -116,7 +116,6 @@ void ImportData::accept()
                     point.setConc2(model->item(i, j)->data(Qt::DisplayRole).toDouble());
                 else 
                     point.AppendData(model->item(i, j)->data(Qt::DisplayRole).toDouble());
-//                 qDebug() <<  model->item(i, j)->data(Qt::DisplayRole).toDouble();
             }
         m_storeddata->addPoint(point);
     }

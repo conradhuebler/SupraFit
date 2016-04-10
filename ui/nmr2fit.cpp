@@ -1,6 +1,24 @@
-
+/*
+ * <one line to give the program's name and a brief idea of what it does.>
+ * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
 
 #include "core/data/dataclass.h"
+#include "core/data/modelclass.h"
 
 #include "ui/dialogs/importdata.h"
 #include "ui/widgets/modelwidget.h"
@@ -29,7 +47,7 @@ MainWindow::MainWindow()
     
     m_model_dataholder = new ModelDataHolder;
     m_charts = new ChartWidget;
-    
+    m_model_dataholder->setChartWidget(m_charts);
     m_mainsplitter->addWidget(m_model_dataholder);
     m_mainsplitter->addWidget(m_charts);
     
@@ -44,9 +62,6 @@ MainWindow::MainWindow()
     QMenu *filemenu =  menuBar()->addMenu( "File" );
     filemenu->addAction( loadaction );
     filemenu->addAction( quitaction );
-    
-    connect(m_model_dataholder, SIGNAL(PlotChart(QVector<QPointer<QtCharts::QLineSeries> >)), this, SLOT(PlotData(QVector<QPointer<QtCharts::QLineSeries> >)));
-    connect(m_model_dataholder, SIGNAL(PlotErrorChart(QVector<QPointer<QtCharts::QLineSeries> >)), this, SLOT(PlotErorrData(QVector<QPointer<QtCharts::QLineSeries> >)));
 }
 
 MainWindow::~MainWindow()
@@ -64,29 +79,9 @@ void MainWindow::LoadData()
     
     DataClass storeddata = dialog.getStoredData();
     m_model_dataholder->setData(storeddata);
-    foreach(const QPointer<QtCharts::QScatterSeries> &sig, m_model_dataholder->DataPtr()->Signals(3))
-    {
-        m_charts->addSeries(sig, "Titrationskurven");
-    }
 
 }
-void MainWindow::PlotData(QVector< QPointer< QtCharts::QLineSeries > > data)
-{
-    m_charts->clearPlot();
-    foreach(const QPointer<QtCharts::QScatterSeries> &sig, m_model_dataholder->DataPtr()->Signals(3))
-    {
-        m_charts->addSeries(sig, "Titrationskurven");
-    }
-    foreach(const QPointer<QtCharts::QLineSeries> &sig, data)
-        m_charts->addLineSeries(sig);
-}
 
-void MainWindow::PlotErorrData(QVector< QPointer< QtCharts::QLineSeries > > data)
-{
-    m_charts->clearErrrorPlot();
-        foreach(const QPointer<QtCharts::QLineSeries> &sig, data)
-            m_charts->addErrorSeries(sig);
-}
 
 
 void MainWindow::resizeEvent(QResizeEvent* event)

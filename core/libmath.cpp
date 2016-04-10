@@ -21,7 +21,123 @@
 #include <QtMath>
 #include <QDebug>
 #include <cmath>
-qreal MinRoot(double a, double b, double c)
+#include <QPair>
+
+namespace Cubic{
+ qreal f(qreal x, qreal a, qreal b, qreal c, qreal d)
+ {
+     return (x*x*x*a +x*x*b + x*c + d);
+ }
+ 
+ qreal df(qreal x, qreal a, qreal b, qreal c)
+ {
+     return (3*x*x*a +2*x*b + c);
+ }
+};
+
+
+
+
+qreal MinQuadraticRoot(qreal a, qreal b, qreal c)
 {
     return (-b- qSqrt(qPow(b,2)-4*a*c))/(2*a);
 }
+
+QPair<qreal, qreal> QuadraticRoot(qreal a, qreal b, qreal c)
+{
+    QPair<qreal, qreal> pair(0,0);
+    if((qPow(b,2)-4*a*c) < 0)
+        return pair;
+    pair.first = (-b- qSqrt(qPow(b,2)-4*a*c))/(2*a);
+    pair.second = (-b+ qSqrt(qPow(b,2)-4*a*c))/(2*a);
+    return pair;
+}
+
+qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
+{
+    qreal root1 = 0;
+    qreal root2 = 0;
+    qreal root3 = 0;
+    
+    qreal m_epsilon = 1e-8;
+    int m_maxiter = 100;
+    
+       
+    double guess_0;// = -p/2+qSqrt(p*p-q);
+    double guess_1;// = -p/2-qSqrt(p*p-q);
+    
+    QPair<qreal, qreal> pair = QuadraticRoot(3*a, 2*b, c);
+    guess_0 = pair.first;
+    guess_1 = pair.second;
+    
+//      qDebug() << guess_0 << " " << guess_1;
+    
+    double x = guess_0+1;
+    double y = Cubic::f(x, a, b,c ,d);
+    int i = 0;
+    while(qAbs(y) > m_epsilon)
+    {
+        double dy = Cubic::df(x, a, b, c);
+        x = x - y/dy;
+        y = Cubic::f(x, a, b,c ,d);
+//  qDebug() << "x " << x << " y " << y;
+        ++i;
+        if(i > m_maxiter)
+            break;
+    }
+    root1 = x;
+    
+    x = (guess_0+guess_1)/2;
+    y = Cubic::f(x, a, b,c ,d);
+    i = 0;
+    while(qAbs(y) > m_epsilon)
+    {
+        double dy = Cubic::df(x, a, b, c);
+        x = x - y/dy;
+        y = Cubic::f(x, a, b,c ,d);
+//     qDebug() <<"x " << x << " y " << y;
+             ++i;   
+        if(i > m_maxiter)
+            break;
+    }
+    root2 = x;
+    
+    
+    x = guess_1-1;
+    y = Cubic::df(x, a, b, c);
+    
+    i = 0;
+    while(qAbs(y) > m_epsilon)
+    {
+        double dy = Cubic::df(x, a, b, c);
+        x = x - y/dy;
+        y = Cubic::df(x, a, b, c);
+//     qDebug() <<"x " << x << " y " << y;
+              ++i;  
+        if(i > m_maxiter)
+            break;
+    }
+    root3 = x;
+    
+    if(root1 < 0)
+    {
+     if(root2 < 0)
+         return root3;
+     else
+         return root2;
+    }else if(root2 < 0)
+    {
+       if(root1 < 0)
+         return root3;
+     else
+         return root1;      
+    }else
+    {
+        if(root1 < 0)
+         return root2;
+     else
+         return root1;    
+    }
+    
+}
+

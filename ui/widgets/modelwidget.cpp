@@ -18,51 +18,18 @@
  */
 #include "core/data/dataclass.h"
 #include "core/data/modelclass.h"
+#include <QtMath>
+#include "cmath"
 
+#include <QtCore/QTimer>
 #include <QGridLayout>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QLabel>
 #include <QPushButton>
 #include <QtWidgets/QLineEdit>
-
+#include <QDebug>
 #include "modelwidget.h"
-
-ModelLine::ModelLine(const QString &str, QWidget *parent): QWidget(parent)
-{
-    QGridLayout *layout = new QGridLayout;
-    QLabel *name = new QLabel(str);
-    QLabel *signal = new QLabel(tr("Verschieb:;"));
-    QLabel *constant = new QLabel(tr("Konstante"));
-    m_constant = new QDoubleSpinBox;
-        m_constant->setSingleStep(1e-2);
-        m_constant->setDecimals(4);
-        m_constant->setPrefix("10^");
-    m_sign = new QDoubleSpinBox;
-        m_sign->setSingleStep(1e-2);
-        m_sign->setSuffix(" ppm");
-        m_sign->setDecimals(4);
-    
-    layout->addWidget(name, 0, 0, 3, 0);
-    layout->addWidget(constant, 1, 0);
-    layout->addWidget(m_constant, 1, 1);
-    layout->addWidget(signal, 1, 2);
-    layout->addWidget(m_sign, 1, 3);
-    
-    setLayout(layout);
-    
-    connect(m_constant, SIGNAL(valueChanged(double)), this, SIGNAL(dirty()));
-    connect(m_sign, SIGNAL(valueChanged(double)), this, SIGNAL(dirty()));
-    
-}
-
-ModelLine::~ModelLine()
-{
-
-}
-
-
-
-ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent)
+ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
 {
     QGridLayout *layout = new QGridLayout;
     QVBoxLayout *sign_layout = new QVBoxLayout;
@@ -87,43 +54,76 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
             constant->setSingleStep(1e-2);
             constant->setDecimals(4);
             constant->setPrefix("10^");
-            constant->setValue(m_model->Pair(i,0).first);
+            constant->setValue(m_model->Constants()[i]);
             connect(constant, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
         QVBoxLayout *sign_layout = new QVBoxLayout;
             sign_layout->addWidget(constant);
-            
+        
         QLabel *pure_shift = new QLabel(tr("K11 Shift"));
         sign_layout->addWidget(pure_shift);
+        
+        
         QVector<QPointer < QDoubleSpinBox > > row;
+        qDebug() << "Maxvars" << m_model->MaxVars();
         for(int j = 0; j < m_model->MaxVars(); ++j)
         {
             QDoubleSpinBox *signal = new QDoubleSpinBox;
             signal->setSingleStep(1e-2);
             signal->setDecimals(4);
             signal->setSuffix(" ppm");
-            signal->setValue(m_model->Pair(i + 1, j).second);
+            signal->setValue(m_model->Pair(i, j).second);
             connect(signal, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
             sign_layout->addWidget(signal);
             row << signal;
+            
+            
+            
         } 
-        complex_layout->addLayout(sign_layout);
+         complex_layout->addLayout(sign_layout);
         m_complex_signals << row;
+        
     }
+    QVBoxLayout *error_layout = new QVBoxLayout;    
+    QLabel *error_label = new QLabel(tr("Summ of Error:"));
+            error_layout->addWidget(error_label);
+         for(int j = 0; j < m_model->MaxVars(); ++j)
+        {
+          QPointer<QLineEdit > error = new QLineEdit;
+                error->setReadOnly(true);
+            error_layout->addWidget(error); 
+                error->setText(QString::number(m_model->SumOfErrors(j)));
+                m_errors << error;  
+            
+        }
     
+    layout->addLayout(error_layout, 1, 2);
+    m_minimize = new QPushButton("mini");
     layout->addLayout(sign_layout, 1, 0);
     layout->addLayout(complex_layout, 1, 1);
-
+    layout->addWidget(m_minimize, 2, 0);
+    connect(m_minimize, SIGNAL(clicked()), this, SLOT(Minimize()));
     setLayout(layout);
-    
+    QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
 
 ModelWidget::~ModelWidget()
 {
     
 }
+void ModelWidget::Repaint()
+{
+    for(int j = 0; j < m_errors.size(); ++j)
+    {
+        m_errors[j]->setText(QString::number(m_model->SumOfErrors(j)));
+    }
+}
+
 
 void ModelWidget::recalulate()
 {
+    if(m_pending)
+        return;
+    m_pending = true;
     QVector<qreal > pure_signals, constants;
     QVector<QVector <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
@@ -140,12 +140,31 @@ void ModelWidget::recalulate()
         m_model->setComplexSignals(complex_signals[j], j + 1);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
+//     qDebug() << constants;
     m_model->setConstants(constants);
     m_model->setPureSignals(pure_signals);
     
     m_model->CalculateSignal();
-    emit Fit(m_model->Signals());
-    emit Error(m_model->ErrorBars());
+    QTimer::singleShot(1, this, SLOT(Repaint()));;
+    m_pending = false;
+}
+
+void ModelWidget::Minimize()
+{
+    
+    QVector<int > v(10,0);
+    m_model->Minimize(v);
+    m_model->CalculateSignal();
+
+    
+    QVector<qreal > constants =  m_model->Constants();
+
+        for(int j = 0; j < constants.size(); ++j)
+            m_constants[j]->setValue(log10(constants[j]));
+            
+        
+ QTimer::singleShot(100, this, SLOT(Repaint()));
+    
 }
 
 

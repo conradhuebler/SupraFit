@@ -20,7 +20,14 @@
 #ifndef LIBMATH_H
 #define LIBMATH_H
 #include <QtGlobal>
-qreal MinRoot(double a, double b, double c);
+#include <QPair>
+qreal MinQuadraticRoot(qreal a, qreal b, qreal c);
+QPair<qreal, qreal> QuadraticRoots(qreal a, qreal b, qreal c);
+qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
+namespace Cubic{
+qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
+qreal df(qreal x, qreal a, qreal b, qreal c);
+}
 
 
 #endif // DATACLASS_H

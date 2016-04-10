@@ -23,11 +23,13 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QScatterSeries>
 #include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
 
 #include <QtGui/qwidget.h>
 #include <QtCore/QPointer>
-
-
+#include <QtCore/QVector>
+class AbstractTitrationModel;
+class QComboBox;
 class ChartWidget : public QWidget
 {
     Q_OBJECT
@@ -35,17 +37,30 @@ class ChartWidget : public QWidget
 public:
     ChartWidget();
     ~ChartWidget();
+    
+    
+    
+
+public slots:
+    void addSeries(const QPointer< QtCharts::QScatterSeries >  &series, const QString& str = "Signal");
+    void addLineSeries(const QPointer< QtCharts::QLineSeries >  &series, const QString& str = "Signal");
+    void addErrorSeries(const QPointer< QtCharts::QLineSeries >  &series, const QString& str = "Signal");
+    void addModel(const QPointer< AbstractTitrationModel > model);
+private:
     void clearPlot();
     void clearErrrorPlot();
-public slots:
-    void setChart(const QPointer<QtCharts::QChart > chart);
-    void addSeries(QPointer< QtCharts::QScatterSeries >  series, const QString& str = "Signal");
-    void addLineSeries(QPointer< QtCharts::QLineSeries >  series, const QString& str = "Signal");
-    void addErrorSeries(QPointer< QtCharts::QLineSeries >  series, const QString& str = "Signal");
-    
-private:
+    void formatAxis();
+    void formatErrorAxis();
+    QPointer<QComboBox > m_x_scale;
     QPointer<QtCharts::QChartView > m_chartwidget, m_errorchart;
     QPointer<QtCharts::QChart > m_chart, m_errorview;
+    QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
+    QVector< QPointer<AbstractTitrationModel > > m_models;
+    QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
+    qreal m_y_max_chart, m_y_max_error, m_x_max_chart, m_x_max_error, m_y_min_chart;
+    
+private slots:
+    void Repaint();
 };
 
 #endif // CHARTWIDGET_H

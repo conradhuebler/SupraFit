@@ -28,7 +28,7 @@ class ModelWidget;
 class DataWidget;
 class QTabWidget;
 class QPushButton;
-
+class ChartWidget;
 class ModelDataHolder : public QWidget
 {
     Q_OBJECT
@@ -37,18 +37,25 @@ public:
     ModelDataHolder();
     ~ModelDataHolder();
     void setData(DataClass data);
-    DataClass *DataPtr() const { return m_data; }
+    void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
+    enum {
+        ItoI = 1,
+        IItoI_ItoI = 2,
+        ItoI_ItoII = 3
+    };
 private:
     QPointer<DataWidget > m_datawidget;
-    QPointer<QTabWidget > m_models;
+    QPointer<QTabWidget > m_modelsWidget;
     QPointer<QPushButton > m_add;
+    QPointer<ChartWidget> m_charts;
     DataClass *m_data;
-    
+    QVector<QPointer< AbstractTitrationModel > > m_models;
+    void AddModel(int model);
 private slots:
-    void AddModel();
+    void AddModel11();
+    void AddModel21();
 signals:
-    void PlotChart(const QVector< QPointer< QtCharts::QLineSeries > > chart);
-    void PlotErrorChart(const QVector< QPointer< QtCharts::QLineSeries > > chart);
+    void ModelAdded(AbstractTitrationModel *model);
 };
 
 #endif // MODELDATAHOLDER_H
