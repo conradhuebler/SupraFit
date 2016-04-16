@@ -48,10 +48,18 @@ ModelDataHolder::ModelDataHolder()
     ItoI->setText(tr("1:1-Model"));
         connect(ItoI, SIGNAL(triggered()), this, SLOT(AddModel11()));
         menu->addAction(ItoI);
-    QAction *IItoI_ItoT = new QAction(this);
-    IItoI_ItoT->setText(tr("2:1/1:1-Model"));
-        connect(IItoI_ItoT, SIGNAL(triggered()), this, SLOT(AddModel21()));
-        menu->addAction(IItoI_ItoT);
+    QAction *IItoI_ItoI = new QAction(this);
+    IItoI_ItoI->setText(tr("2:1/1:1-Model"));
+        connect(IItoI_ItoI, SIGNAL(triggered()), this, SLOT(AddModel21()));
+        menu->addAction(IItoI_ItoI);
+        
+        
+    QAction *ItoI_ItoII = new QAction(this);
+    ItoI_ItoII->setText(tr("1:1/1:2-Model"));
+        connect(ItoI_ItoII, SIGNAL(triggered()), this, SLOT(AddModel12()));
+        menu->addAction(ItoI_ItoII);
+    
+        
     m_add->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_datawidget,1, 0);
@@ -81,6 +89,9 @@ void ModelDataHolder::AddModel(int model)
         case 2:
             t = new IItoI_ItoI_Model(m_data);
             break;
+        case 3:
+            t = new ItoI_ItoII_Model(m_data);
+            break;
         default:
            return; 
         
@@ -101,5 +112,8 @@ void ModelDataHolder::AddModel21()
     AddModel(ModelDataHolder::IItoI_ItoI);
 }
 
-
+void ModelDataHolder::AddModel12()
+{
+    AddModel(ModelDataHolder::ItoI_ItoII);
+}
 #include "modeldataholder.moc"

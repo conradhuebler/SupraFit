@@ -118,7 +118,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
             break;
     }
     root3 = x;
-    
+//     qDebug() << root1 << root2 << root3;
     if(root1 < 0)
     {
      if(root2 < 0)

@@ -20,6 +20,7 @@
 #ifndef MODELCLASS_H
 #define MODELCLASS_H
 
+#include <QDebug>
 #include <QtCore/qobject.h>
 #include <QVector>
 #include <QtCharts/QLineSeries>
@@ -31,6 +32,10 @@ class AbstractTitrationModel : public QObject , protected DataClass
 public:
     AbstractTitrationModel(const DataClass *data, QObject *parent = 0);
     ~AbstractTitrationModel();
+    
+    enum PlotMode { H, G, HG, GH};
+    
+    
     int MaxVars() const { return (m_pure_signals.size()); }
     bool MinimizeConstants();
     bool MinimizeSignals();
@@ -43,21 +48,37 @@ public:
             return m_pure_signals[i]; 
         }
     virtual int ConstantSize() const = 0;
-    QVector< QPointer< QtCharts::QScatterSeries > > Signals(int c = 3) const;
-    QVector< QPointer< QtCharts::QLineSeries > > Model(int c = 1) const;
-    QVector< QPointer< QtCharts::QLineSeries > > ErrorBars(int c = 1) const;
     virtual void setPureSignals(QVector< qreal > list) = 0;
     virtual void setComplexSignals(QVector< qreal > list, int i) = 0;
     virtual void setConstants(QVector< qreal > list) = 0;
-    virtual void CalculateSignal() = 0;
-    virtual qreal Minimize(QVector<int > vars) = 0;
+    virtual void CalculateSignal(QVector<qreal > constants) = 0;
+    inline  void CalculateSignal() { CalculateSignal(Constants());}
+    virtual qreal Minimize(QVector<int > vars);
+    virtual qreal Minimize();
     virtual QVector<qreal > Constants() const = 0;
-    inline QString Name() const { return m_name; } 
+    inline QString Name() const { return m_name; }
+    
+    inline QSharedPointer<QtCharts::QLineSeries  > ModelSeries(int i)  { return m_model_series[i];   }
+    inline QSharedPointer<QtCharts::QLineSeries  > ErrorSeries(int i)  {  return m_error_series[i];  }    
+    inline QSharedPointer<QtCharts::QScatterSeries  > SignalSeries(int i) { return m_signals_series[i]; }
+    
+    inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
+        
+    inline int Size() const { return DataClass::Size(); }
+    
 private:
-    virtual qreal GuestConcentration(qreal host_0, qreal guest_0) = 0;
+    virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
+    QVector< QSharedPointer<QtCharts::QScatterSeries > > m_signals_series;
+    QVector< QSharedPointer< QtCharts::QLineSeries > > m_model_series, m_error_series;
+    PlotMode m_plotmode;
+    qreal XValue(int i) const;
+    
+    void MiniSingleConst(qreal *constant);
     
 protected:
+    void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
+    void ClearDataSeries() ;
     QString m_name;
     //QVector< QVector<qreal > >m_pure_signals;
     QVector<qreal > m_pure_signals;
@@ -65,6 +86,9 @@ protected:
     QVector< QVector < qreal > > m_difference; 
     bool *ptr_concentrations;
     bool m_repaint;
+    QVector<double * > m_opt_para;
+    QVector<QVector<qreal * > >m_opt_vec;
+    QVector<QVector<qreal * > >m_lim_para;
 signals:
     void Recalculated();
 };
@@ -82,12 +106,12 @@ public:
     void setPureSignals(QVector< qreal > list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
-    void CalculateSignal();
+    void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11; }
 private:
-    qreal GuestConcentration(qreal host_0, qreal guest_0);
-    qreal ComplexConcentration(qreal host_0, qreal guest_0);
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {HostConcentration(host_0, guest_0, Constants());}
+    qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     qreal m_K11;
     
 //     QVector< QVector<qreal > >m_ItoI_signals;
@@ -107,17 +131,40 @@ public:
     void setPureSignals(QVector< qreal > list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
-    void CalculateSignal();
+    void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K21 << m_K11; }
 private:
-    qreal GuestConcentration(qreal host_0, qreal guest_0);
-    qreal HostConcentration(qreal host_0, qreal guest_0);
-    
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {HostConcentration(host_0, guest_0, Constants());}
+    qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     
     qreal m_K21, m_K11;
     QVector<qreal > m_ItoI_signals, m_IItoI_signals;
+};
+
+class ItoI_ItoII_Model : public AbstractTitrationModel
+{
+     Q_OBJECT
     
+public:
+    ItoI_ItoII_Model(const DataClass* data, QObject* parent = 0);
+    ~ItoI_ItoII_Model();
+    
+    QPair<qreal, qreal> Pair(int i, int j = 0);
+    inline int ConstantSize() const { return 2;}
+    void setPureSignals(QVector< qreal > list);
+    void setComplexSignals(QVector< qreal > list, int i);
+    void setConstants(QVector< qreal > list);
+    void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
+    qreal Minimize(QVector<int > vars);
+    QVector<qreal > Constants() const { return QVector<qreal>() << m_K11 << m_K12; }
+private:
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {HostConcentration(host_0, guest_0, Constants());}
+    qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
+    qreal GuestConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
+    
+    qreal m_K11, m_K12;
+    QVector<qreal > m_ItoI_signals, m_ItoII_signals;
 };
 
 #endif // MODELCLASS_H

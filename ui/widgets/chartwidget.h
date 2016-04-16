@@ -47,8 +47,6 @@ public slots:
     void addErrorSeries(const QPointer< QtCharts::QLineSeries >  &series, const QString& str = "Signal");
     void addModel(const QPointer< AbstractTitrationModel > model);
 private:
-    void clearPlot();
-    void clearErrrorPlot();
     void formatAxis();
     void formatErrorAxis();
     QPointer<QComboBox > m_x_scale;
@@ -57,8 +55,9 @@ private:
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
     QVector< QPointer<AbstractTitrationModel > > m_models;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
-    qreal m_y_max_chart, m_y_max_error, m_x_max_chart, m_x_max_error, m_y_min_chart;
-    
+    qreal m_y_max_chart, m_y_min_error, m_y_max_error, m_x_max_chart, m_x_max_error, m_y_min_chart;
+    QSharedPointer<QtCharts::QLineSeries > m_error_axis;
+    void Paint();
 private slots:
     void Repaint();
 };

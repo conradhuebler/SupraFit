@@ -36,6 +36,10 @@ ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0
     m_x_scale = new QComboBox;
     m_x_scale->addItems(QStringList() << tr("Host") << tr("Guest") << tr("Ratio"));
     m_x_scale->setCurrentIndex(2);
+    m_error_axis = QSharedPointer<QtCharts::QLineSeries> (new QtCharts::QLineSeries, &QObject::deleteLater);
+        m_error_axis->setColor(Qt::black);
+        m_errorview->addSeries(m_error_axis.data());
+    
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(m_chartwidget,0, 0);
     layout->addWidget(m_errorchart, 1, 0);
@@ -57,34 +61,29 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 
 void ChartWidget::Repaint()
 {
-    int j = m_x_scale->currentIndex() + 1 ;
-    clearErrrorPlot();
-    clearPlot();
-    foreach(const QPointer<AbstractTitrationModel > model, m_models)
+        
+    m_y_max_chart = 0;
+    m_y_min_chart = 10;
+        
+    m_y_max_error = 0;
+    m_y_min_error = 10;
+
+    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
+    foreach(QPointer<AbstractTitrationModel > model, m_models)
     {
+        model->setPlotMode(j);
         
-        QVector<QPointer< QtCharts::QLineSeries > > lineseries  = model->Model(j);
-        QVector<QPointer< QtCharts::QScatterSeries > > scatterseries  = model->Signals(j);
-        QVector<QPointer< QtCharts::QLineSeries > > errorseries  = model->ErrorBars(j);
-        
-        for(int i = 0; i < lineseries.size(); ++i)
+        for(int i = 0; i < model->Size(); ++i)
         {
-            addSeries(scatterseries[i]);
-            addLineSeries(lineseries[i]);
-            addErrorSeries(errorseries[i]);
-            
-            
+            addSeries(model->SignalSeries(i).data());
+            addLineSeries(model->ModelSeries(i).data());
+            addErrorSeries(model->ErrorSeries(i).data());
         }
     }
-    if(j != 1) 
-    {
+    
         formatAxis();
         formatErrorAxis();
-    }else
-    {
-        m_chart->createDefaultAxes();
-        m_errorview->createDefaultAxes();
-    }
+
 }
 
 
@@ -98,8 +97,13 @@ void ChartWidget::addSeries(const QPointer< QtCharts::QScatterSeries > &series, 
             m_y_min_chart = series->pointsVector()[i].y();
     }
     m_x_max_chart = series->pointsVector().last().x();
+            
+    m_error_axis.data()->clear();
+    m_error_axis->append(0,0);
+    m_error_axis->append(m_x_max_chart, 0);
     
-    m_chart->addSeries(series);
+    if(!m_chart->series().contains(series))
+        m_chart->addSeries(series);
     m_chart->setTitle(str);
     
     
@@ -110,11 +114,16 @@ void ChartWidget::addSeries(const QPointer< QtCharts::QScatterSeries > &series, 
 void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
 {
     for(int i = 0; i < series->pointsVector().size(); ++i)
+    {
         if(series->pointsVector()[i].y() > m_y_max_chart)
             m_y_max_chart = series->pointsVector()[i].y();
-        m_x_max_chart = series->pointsVector().last().x();
-    
-    m_chart->addSeries(series);
+                
+        if(series->pointsVector()[i].y() < m_y_min_chart)
+            m_y_min_chart = series->pointsVector()[i].y();
+    }
+    m_x_max_chart = series->pointsVector().last().x();
+    if(!m_chart->series().contains(series))
+        m_chart->addSeries(series);
     m_chart->setTitle(str);
     
     m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
@@ -122,9 +131,15 @@ void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series,
 }
 void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
 {
-    
-    
-    m_errorview->addSeries(series);
+    for(int i = 0; i < series->pointsVector().size(); ++i)
+    {
+        if(series->pointsVector()[i].y() > m_y_max_error)
+            m_y_max_error = series->pointsVector()[i].y();
+        if(series->pointsVector()[i].y() < m_y_min_error)
+            m_y_min_error = series->pointsVector()[i].y();
+    }
+    if(!m_errorview->series().contains(series))
+        m_errorview->addSeries(series);
     m_errorview->setTitle(str);
     m_errorchart->setRenderHint(QPainter::Antialiasing, true);     
 }
@@ -138,7 +153,7 @@ void ChartWidget::formatAxis()
         x_axis->setMax(int(m_x_max_chart)+1);
         x_axis->setTickCount(int(m_x_max_chart)+2);
     }else
-        x_axis->setMax(m_x_max_chart+m_x_max_chart*0.1);
+        x_axis->setMax(m_x_max_chart+m_x_max_chart*0.01);
 
     x_axis->setMin(0);
     
@@ -158,26 +173,13 @@ void ChartWidget::formatErrorAxis()
         x_axis->setTickCount(2*(int(m_x_max_chart))+3);
         x_axis->setMax(int(m_x_max_chart)+1);
     }else
-        x_axis->setMax(m_x_max_chart+m_x_max_chart*0.1);
+        x_axis->setMax(m_x_max_chart+m_x_max_chart*0.01);
 
     x_axis->setMin(0);
-}
-
-
-void ChartWidget::clearErrrorPlot()
-{
-    m_errorview->removeAllSeries();
-    m_y_max_error = 0;
-}
-
-
-void ChartWidget::clearPlot()
-{
-    m_chart->removeAllSeries();
-    m_y_max_chart = 0;
-    m_y_min_chart = 10;
     
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisY());
+    y_axis->setMin(1.1*m_y_min_error);
+    y_axis->setMax(1.1*m_y_max_error);
 }
-
 
 #include "chartwidget.moc"
