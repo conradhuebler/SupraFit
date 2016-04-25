@@ -24,7 +24,12 @@
 #include <QtCore/qobject.h>
 #include <QVector>
 #include <QtCharts/QLineSeries>
+#include <QtCharts/QVXYModelMapper>
+
 #include "dataclass.h"
+
+class QStandardItemModel;
+
 class AbstractTitrationModel : public QObject , protected DataClass
 {
     Q_OBJECT
@@ -53,28 +58,27 @@ public:
     virtual void setConstants(QVector< qreal > list) = 0;
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
     inline  void CalculateSignal() { CalculateSignal(Constants());}
+    QVector<qreal > df();
     virtual qreal Minimize(QVector<int > vars);
     virtual qreal Minimize();
     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
-    
-    inline QSharedPointer<QtCharts::QLineSeries  > ModelSeries(int i)  { return m_model_series[i];   }
-    inline QSharedPointer<QtCharts::QLineSeries  > ErrorSeries(int i)  {  return m_error_series[i];  }    
-    inline QSharedPointer<QtCharts::QScatterSeries  > SignalSeries(int i) { return m_signals_series[i]; }
-    
+
+    inline QPointer<QtCharts::QVXYModelMapper> ModelMapper(const int i) { return m_model_mapper[i]; }
+    inline QPointer<QtCharts::QVXYModelMapper> ErrorMapper(const int i) { return m_error_mapper[i]; }
+    inline QPointer<QtCharts::QVXYModelMapper> SignalMapper(const int i) { return m_signal_mapper[i]; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
         
     inline int Size() const { return DataClass::Size(); }
     
 private:
     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
-    QVector< QSharedPointer<QtCharts::QScatterSeries > > m_signals_series;
-    QVector< QSharedPointer< QtCharts::QLineSeries > > m_model_series, m_error_series;
+
     PlotMode m_plotmode;
     qreal XValue(int i) const;
-    
-    void MiniSingleConst(qreal *constant);
-    
+    QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper, m_signal_mapper;
+    qreal MiniSingleConst(int step);
+    bool m_debug;
 protected:
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
@@ -89,6 +93,7 @@ protected:
     QVector<double * > m_opt_para;
     QVector<QVector<qreal * > >m_opt_vec;
     QVector<QVector<qreal * > >m_lim_para;
+    QStandardItemModel *m_model_model, *m_error_model, *m_signal_model;
 signals:
     void Recalculated();
 };

@@ -31,6 +31,7 @@
 #include "modelwidget.h"
 ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
 {
+    qDebug() << m_model->Constants();
     QGridLayout *layout = new QGridLayout;
     QVBoxLayout *sign_layout = new QVBoxLayout;
     QLabel *pure_shift = new QLabel(tr("Pure Shift"));
@@ -102,6 +103,10 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
     layout->addLayout(complex_layout, 1, 1);
     layout->addWidget(m_minimize, 2, 0);
     connect(m_minimize, SIGNAL(clicked()), this, SLOT(Minimize()));
+    
+    m_sum_error = new QLineEdit;
+    layout->addWidget(m_sum_error, 2, 1);
+    m_sum_error->setReadOnly(true);
     setLayout(layout);
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
@@ -112,11 +117,15 @@ ModelWidget::~ModelWidget()
 }
 void ModelWidget::Repaint()
 {
+    qreal error = 0;
     for(int j = 0; j < m_errors.size(); ++j)
     {
         m_errors[j]->setText(QString::number(m_model->SumOfErrors(j)));
+        error += m_model->SumOfErrors(j);
     }
+    m_sum_error->setText(QString::number(error));
 }
+
 
 
 void ModelWidget::recalulate()
@@ -160,7 +169,7 @@ void ModelWidget::Minimize()
     QVector<qreal > constants =  m_model->Constants();
 
         for(int j = 0; j < constants.size(); ++j)
-            m_constants[j]->setValue(log10(constants[j]));
+            m_constants[j]->setValue(constants[j]);
             
         
  QTimer::singleShot(100, this, SLOT(Repaint()));

@@ -21,29 +21,72 @@
 #include <QtMath>
 
 #include <QDebug>
+#include <QStandardItemModel>
+#include <QtCharts/QVXYModelMapper>
+#include <QApplication>
 #include "cmath"
 #include "modelclass.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *parent) : DataClass(data), QObject(parent), m_repaint(false), m_plotmode(AbstractTitrationModel::GH)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *parent) : DataClass(data), QObject(parent), m_repaint(false), m_plotmode(AbstractTitrationModel::GH), m_debug(false)
 {
-    for(int i = 0; i < m_data.size(); ++i)
+    
+    qDebug() << DataPoints() << Size();
+    
+    ptr_concentrations = data->Concentration();
+    for(int i = 0; i < DataPoints(); ++i)
     {
         m_signals[&m_data[i]] = QVector<qreal>(Size(), 0);
         m_difference << QVector<qreal>(Size(), 0);
 //         m_signals[&m_data[i]] = 0;//FIXME no contign... signals
     }
-    for(int i = 0; i < Size(); ++i)
+    
+    m_model_model = new QStandardItemModel(DataPoints(), Size() + 1);
+    m_error_model = new QStandardItemModel(DataPoints(), Size() + 1); 
+    m_signal_model = new QStandardItemModel(DataPoints(), Size() + 1); 
+    for(int i = 0; i < DataPoints(); ++i)    
+        for(int j = 0; j <= Size(); ++j)
+        {
+            QString x = QString::number(XValue(i));
+            QStandardItem *item;
+            if(j == 0)
+                item = new QStandardItem(x);
+            else
+                item = new QStandardItem(QString::number(0));
+           
+            m_model_model->setItem(i, j, item);
+            if(j == 0)
+                item = new QStandardItem(x);
+            else
+                item = new QStandardItem(QString::number(0));
+            m_error_model->setItem(i, j, item);
+            
+            if(j == 0)
+                item = new QStandardItem(x);
+            else
+                item = new QStandardItem(QString::number(m_data[i].Data()[j - 1]));
+             m_signal_model->setItem(i, j, item);  
+            
+        }
+    for(int j = 0; j < Size(); ++j)
     {
-        m_model_series.append( QSharedPointer<QtCharts::QLineSeries> (new QtCharts::QLineSeries, &QObject::deleteLater) );
-        m_model_series.last()->setColor(color(i));
-        m_signals_series.append(QSharedPointer<QtCharts::QScatterSeries> (new QtCharts::QScatterSeries, &QObject::deleteLater));
-        m_signals_series.last()->setColor(color(i));
-                     
-        m_signals_series.last()->setMarkerShape(QtCharts::QScatterSeries::MarkerShapeRectangle);
-             
-        m_signals_series.last()->setMarkerSize(10);
-        m_error_series.append(QSharedPointer<QtCharts::QLineSeries> (new QtCharts::QLineSeries, &QObject::deleteLater));
-        m_error_series.last()->setColor(color(i));
+        QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
+        model->setModel(m_model_model);
+        model->setXColumn(0);
+        model->setYColumn(j + 1);
+        m_model_mapper << model;
+        
+        QPointer<QtCharts::QVXYModelMapper> error = new QtCharts::QVXYModelMapper;
+        error->setModel(m_error_model);
+        error->setXColumn(0);
+        error->setYColumn(j + 1);
+        m_error_mapper << error;     
+        
+        QPointer<QtCharts::QVXYModelMapper> signal = new QtCharts::QVXYModelMapper;
+        signal->setModel(m_signal_model);
+        signal->setXColumn(0);
+        signal->setYColumn(j + 1);
+        m_signal_mapper << signal;     
+        
     }
     m_pure_signals.resize(Size());   
     for(int i = 0; i < m_pure_signals.size(); ++i)
@@ -51,7 +94,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *p
         m_pure_signals[i] = m_data.first().Data()[i];
     }
 
-    ptr_concentrations = data->Concentration();
+    
 //     qDebug() << ptr_concentrations << m_concentrations;
 }
 
@@ -127,27 +170,22 @@ qreal AbstractTitrationModel::XValue(int i) const
 
 void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 {
-    m_signals[&m_data[i]][j] = value;
-    m_difference[i][j] =  m_signals[&m_data[i]][j] - m_data[i].Data()[j];
-    if(m_repaint)
-    {
-        qreal x = XValue(i);
-        m_signals_series[j].data()->append(x, m_data[i].Data()[j]);
-        m_model_series[j].data()->append(x, value);
-        m_error_series[j].data()->append(x, m_difference[i][j]);
-    }
+     if(m_debug)
+        qDebug() << i << j << value;
         
-}
+    m_signals[&m_data[i]][j] = value;
+    m_difference[i][j] =  m_signals[&m_data[i]][j] - m_data[i].Data()[j];   
+    
+    QStandardItem *item = m_model_model->item(i, j + 1);
+        item->setData(value, Qt::DisplayRole);
+        item = m_model_model->item(i, 0);
+        item->setData(XValue(i), Qt::DisplayRole);
 
-void AbstractTitrationModel::ClearDataSeries()
-{
-    for(int i = 0; i < m_model_series.size(); ++i)
-    {
- 
-        m_model_series[i].data()->clear();
-        m_signals_series[i].data()->clear();
-        m_error_series[i].data()->clear();
-    }        
+    QStandardItem *item2 = m_error_model->item(i, j + 1);
+        item2->setData(m_difference[i][j], Qt::DisplayRole);
+        item2 = m_error_model->item(i, 0);
+        item2->setData(XValue(i), Qt::DisplayRole);
+        
 }
 
 qreal AbstractTitrationModel::Minimize(QVector< int > vars)
@@ -155,41 +193,53 @@ qreal AbstractTitrationModel::Minimize(QVector< int > vars)
     return 0;
 }
 
-void AbstractTitrationModel::MiniSingleConst(qreal *constant)
+QVector< qreal > AbstractTitrationModel::df()
 {
-     for(int iter = 0; iter < 2; ++iter)
-            
-    { 
-            qreal y1 = 0;
-            qreal y2 = 0;
-            qreal oldval = *constant;
-            
-
+    QVector<qreal > derivate;
     
-            *constant +=  + 0.0001;
-
-            CalculateSignal();
-            for(int k = 0; k < Size(); ++k)
-                y1 += SumOfErrors(k);
+    for(int i = 0; i < m_opt_para.size(); ++i)
+    {    
+        qreal y1 = 0;
+        qreal y2 = 0; 
+    
+        *m_opt_para[i] +=  + 0.00001;
+     
+        CalculateSignal();
             
+        for(int k = 0; k < Size(); ++k)
+            y1 += SumOfErrors(k);
+  
+        *m_opt_para[i] -=  -  0.00001;
 
-            *constant -=  -  0.0001;
+        CalculateSignal();
+        for(int k = 0; k < Size(); ++k)    
+            y2+= SumOfErrors(k);  
+        derivate <<  (y2-y1)/(0.0002);
+        
+        *m_opt_para[i] +=  + 0.00001;
+    }
+    
+    return derivate;
+}
 
-            CalculateSignal();
-            for(int k = 0; k < Size(); ++k)    
-                y2+= SumOfErrors(k);
-            
-            qreal error = qAbs(y2-y1);
-            qreal dydx = (y2-y1)/(0.0002);
-            qreal a = 150*(*constant);
-            if(qAbs(dydx) < 1e-12)
+
+qreal AbstractTitrationModel::MiniSingleConst(int step)
+{
+    qreal norm = 0;
+            QVector<qreal > derviate = df();
+//             qDebug() << derviate;
+            for(int i = 0; i < derviate.size(); ++i)
             {
+                norm += derviate[i]*derviate[i];
+                qreal error =  qAbs(derviate[i]*0.0002);
+                qreal a = 1000/step;
+                if(qAbs(derviate[i]) < 1e-12)
+                {
 //                 qDebug() << x1 << x2 << y1 << y2 << error << opt_para <<error <<dydx;
-                qDebug() << "we are breaking for nobody...";
+                    qDebug() << "ignoring";
 //                 iter = 1001;
-                *constant = oldval;
-                return;
-            }
+//                 *constant = oldval;
+                }else
             /*if( qAbs(dydx) < 1e-8) 
             {
                 qDebug() << opt_para << error << y1 << y2 << dydx;
@@ -197,19 +247,20 @@ void AbstractTitrationModel::MiniSingleConst(qreal *constant)
                 qDebug() << step;
             }*/
             
-            {
-//                 qDebug() << error << dydx << a*error/dydx;
-//                 qDebug() << "old value " << *m_opt_para[i] << "new value " << *m_opt_para[i] - a*error/dydx;
-                *constant -= a*error/dydx ;
+                {
+//                  qDebug() << error << derviate[i] << a*error/derviate[i];
+                  qDebug() << "old value " << *m_opt_para[i] << "new value " << *m_opt_para[i] - a*error/derviate[i] << "1st deriv" << qSqrt(norm) ;
+                    *m_opt_para[i] -= a*error/derviate[i] ;
+                }    
             }
             CalculateSignal();
-            error = 0;
+            qreal error = 0;
             for(int k = 0; k < Size(); ++k)    
                 error+= SumOfErrors(k);
-            qDebug() << Constants() << error;;
-        
-//             qDebug() << Constants();
-        }
+             qDebug() << Constants() << error;;
+//             qDebug() << qSqrt(norm);
+            return qSqrt(norm);
+
 }
 
 
@@ -219,23 +270,36 @@ qreal AbstractTitrationModel::Minimize()
     QVector<qreal > opt_para;
     QVector<qreal > step;
     QVector<qreal > errors;
+    bool iter = true;
+    int i = 0, maxiter = 3000;
+    while(iter)
+    {
+            qreal norm = MiniSingleConst(iter); 
+            iter = (i < maxiter && norm > 1e-8); 
+//             qDebug() <<  (i < maxiter) << (norm > 1e-8);
+            ++i;    
+            QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-        for(int j = 0; j < 1000; ++j)
-        for(int i = 0; i < m_opt_para.size(); ++i)
-        {    
-            MiniSingleConst(m_opt_para[i]);
-        }
-        
-        CalculateSignal();
-    
+    }
+                
+    for(int j = 0; j < m_lim_para[0].size(); ++j)
+    {
+        if(m_difference[0][j] < 1)
+            *m_lim_para[0][j] -= m_difference[0][j];
+    } 
     m_repaint = true;
+    m_debug = true;
+//     CalculateSignal();
+    m_debug = false;
+   
     qDebug() << Constants();
-    CalculateSignal();
+    qDebug() << "baem";
+//     CalculateSignal();
     return 0;
 }
 
 
-ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrationModel(data, parent), m_K11(qPow(10,3))
+ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrationModel(data, parent), m_K11(4)
 {
     setName(tr("1:1-Model"));
     m_ItoI_signals.resize(m_pure_signals.size());
@@ -281,7 +345,7 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector< qreal 
 {
     if(constants.size() == 0)
         return host_0;
-    qreal K11 = constants.first();
+    qreal K11 = qPow(constants.first(), 10);
     qreal a, b, c;
     qreal complex;
     a = K11;
@@ -293,10 +357,7 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector< qreal 
 
 void ItoI_Model::CalculateSignal(QVector<qreal > constants)
 {  
-
-    if(m_repaint)
-        ClearDataSeries();
-    for(int i = 0; i < m_data.size(); ++i)
+    for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0, guest_0;
         if(*ptr_concentrations)
@@ -309,14 +370,12 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
             guest_0 = m_data[i].Conc1();   
         }
         qreal host = HostConcentration(host_0, guest_0, constants);
-        qreal complex = host_0 -host;;// = ComplexConcentration(host_0, guest_0);
-//         qreal host = host_0 - complex;
+        qreal complex = host_0 -host;
         for(int j = 0; j < Size(); ++j)
-            {
-                qreal value = host/host_0*m_pure_signals[j] + complex/host_0*m_ItoI_signals[j];
-                SetSignal(i, j, value);    
-            }
-  
+        {
+            qreal value = host/host_0*m_pure_signals[j] + complex/host_0*m_ItoI_signals[j];
+            SetSignal(i, j, value);    
+        }
     }
     if(m_repaint)
         emit Recalculated();
@@ -326,7 +385,7 @@ void ItoI_Model::setConstants(QVector< qreal > list)
 {
     if(list.isEmpty())
         return;
-    m_K11 = pow10(list.first());
+    m_K11 = list.first();
 }
 
 void ItoI_Model::setPureSignals(QVector< qreal > list)
@@ -346,7 +405,7 @@ QPair< qreal, qreal > ItoI_Model::Pair(int i, int j)
     Q_UNUSED(i);
     if(j < m_ItoI_signals.size()) 
     {
-        return QPair<qreal, qreal>(log10(m_K11), m_ItoI_signals[j]);
+        return QPair<qreal, qreal>(m_K11, m_ItoI_signals[j]);
     }
     return QPair<qreal, qreal>(0, 0);
 }
@@ -403,8 +462,8 @@ void IItoI_ItoI_Model::setConstants(QVector< qreal > list)
 {
      if(list.size() < 2)
         return;
-    m_K21 = pow10(list[0]);
-    m_K11 = pow10(list[1]);   
+    m_K21 = list[0];
+    m_K11 = list[1];   
 }
 
 qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants)
@@ -412,8 +471,8 @@ qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<q
     
     if(constants.size() < 2)
         return host_0;
-    qreal K21= constants.first();
-    qreal K11 = constants.last();
+    qreal K21= qPow(constants.first(), 10);
+    qreal K11 = qPow(constants.last(), 10);
     qreal host;
     qreal a, b, c;
     a = K11*K21;
@@ -425,10 +484,9 @@ qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<q
 
 void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
 {
-        
-    if(m_repaint)
-        ClearDataSeries();
-   
+
+    if(constants.size() == 0)
+        constants = Constants();
     for(int i = 0; i < m_data.size(); ++i)
     {
         qreal host_0, guest_0;
@@ -441,10 +499,13 @@ void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
             host_0 = m_data[i].Conc2();
             guest_0 = m_data[i].Conc1();   
         }
+            
+        qreal K21= qPow(constants.first(), 10);
+        qreal K11 = qPow(constants.last(), 10);
         qreal host = HostConcentration(host_0, guest_0, constants);
-        qreal guest = guest_0/(m_K11*host+m_K11*m_K21*host*host+1);
-        qreal complex_11 = m_K11*host*guest;
-        qreal complex_21 = m_K11*m_K21*host*host*guest;
+        qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
+        qreal complex_11 = K11*host*guest;
+        qreal complex_21 = K11*K21*host*host*guest;
         
 
         for(int j = 0; j < Size(); ++j)
@@ -544,8 +605,8 @@ void ItoI_ItoII_Model::setConstants(QVector< qreal > list)
 {
      if(list.size() < 2)
         return;
-    m_K12 = pow10(list[1]);
-    m_K11 = pow10(list[0]);   
+    m_K12 = list[1];
+    m_K11 = list[0];   
 }
 
 qreal ItoI_ItoII_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants)
@@ -554,8 +615,8 @@ qreal ItoI_ItoII_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<q
     if(constants.size() < 2)
         return host_0;
     
-    qreal K12= constants.last();
-    qreal K11 = constants.first();    
+    qreal K12= qPow(constants.last(), 10);
+    qreal K11 = qPow(constants.first(), 10);    
     qreal guest = GuestConcentration(host_0, guest_0, constants);
     qreal host;
     host = host_0/(K11*guest+K11*K12*guest*guest+1);
@@ -568,8 +629,8 @@ qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, QVector<
     if(constants.size() < 2)
         return guest_0;
     
-    qreal K12= constants.last();
-    qreal K11 = constants.first();
+    qreal K12= qPow(constants.last(), 10);
+    qreal K11 = qPow(constants.first(), 10);
     qreal host;
     qreal a, b, c;
     a = K11*K12;
@@ -584,8 +645,6 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
 {
     if(constants.size() == 0)
         constants = Constants();
-    if(m_repaint)
-        ClearDataSeries();
    
     for(int i = 0; i < m_data.size(); ++i)
     {
@@ -599,10 +658,14 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
             host_0 = m_data[i].Conc2();
             guest_0 = m_data[i].Conc1();   
         }
+            
+        qreal K12= qPow(constants.last(), 10);
+        qreal K11 = qPow(constants.first(), 10);
+        
         qreal host = HostConcentration(host_0, guest_0, constants);
         qreal guest = GuestConcentration(host_0, guest_0, constants);
-        qreal complex_11 = m_K11*host*guest;
-        qreal complex_12 = m_K11*m_K12*host*guest*guest;
+        qreal complex_11 = K11*host*guest;
+        qreal complex_12 = K11*K12*host*guest*guest;
 //         qDebug() << host_0 << guest_0 << host << guest << complex_11 << complex_12;
 
         for(int j = 0; j < Size(); ++j)

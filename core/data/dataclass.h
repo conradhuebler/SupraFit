@@ -104,8 +104,6 @@ class DataClass
     inline int Type() const { return m_type;     }
     inline void setType(int type) { m_type = type; }
     
-//     QVector< QPointer< QtCharts::QScatterSeries > > Signals(int c = 1) const;
-
     void SwitchConentrations();
     inline bool* Concentration() const { return m_concentrations; }
 private:

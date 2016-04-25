@@ -26,9 +26,12 @@
 #include <QtCharts/QLineSeries>
 #include <QGridLayout>
 #include <QtCharts/QValueAxis>
+#include <QPushButton>
+#include <QTableView>
 #include "chartwidget.h"
 ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0), m_x_max_error(0), m_y_min_chart(10)
 {
+
     m_chart = new QtCharts::QChart;
     m_errorview = new QtCharts::QChart;
     m_chartwidget = new QtCharts::QChartView(m_chart);
@@ -44,7 +47,11 @@ ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0
     layout->addWidget(m_chartwidget,0, 0);
     layout->addWidget(m_errorchart, 1, 0);
     layout->addWidget(m_x_scale, 2, 0);
-    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
+//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
+    m_data = new QTableView;
+    m_click = new QPushButton("Click me");
+    layout->addWidget(m_click, 3, 0);
+    connect(m_click, SIGNAL(clicked()), this, SLOT(Datas()));
     setLayout(layout);
 }
 
@@ -55,40 +62,46 @@ ChartWidget::~ChartWidget()
 void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 {
     m_models << model;
-    connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    Repaint();
+    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
+    model->setPlotMode(j);
+    for(int i = 0; i < model->Size(); ++i)
+        {
+            if(m_models.size() == 1)
+            {
+                QtCharts::QVXYModelMapper * signal= model->SignalMapper(i);
+                QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
+                    signal->setSeries(signal_series);
+                addSeries(signal_series);
+            }
+            
+            QtCharts::QVXYModelMapper * mapper = model->ModelMapper(i);
+            QtCharts::QLineSeries *series = new QtCharts::QLineSeries;
+                mapper->setSeries(series);
+            addLineSeries(series);
+
+            QtCharts::QVXYModelMapper * error= model->ErrorMapper(i);
+            QtCharts::QLineSeries *error_series = new QtCharts::QLineSeries;
+                error->setSeries(error_series);
+            addErrorSeries(error_series);
+    
+        }
+        connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
+    Repaint(); 
+
 }
 
 void ChartWidget::Repaint()
-{
-        
-    m_y_max_chart = 0;
-    m_y_min_chart = 10;
-        
-    m_y_max_error = 0;
-    m_y_min_error = 10;
-
-    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
-    foreach(QPointer<AbstractTitrationModel > model, m_models)
-    {
-        model->setPlotMode(j);
-        
-        for(int i = 0; i < model->Size(); ++i)
-        {
-            addSeries(model->SignalSeries(i).data());
-            addLineSeries(model->ModelSeries(i).data());
-            addErrorSeries(model->ErrorSeries(i).data());
-        }
-    }
-    
-        formatAxis();
-        formatErrorAxis();
+{              
+    formatAxis();
+    formatErrorAxis();
 
 }
 
 
-void ChartWidget::addSeries(const QPointer< QtCharts::QScatterSeries > &series, const QString &str)
+void ChartWidget::addSeries( QtCharts::QScatterSeries *series, const QString &str)
 {
+    if(series->pointsVector().isEmpty())
+        return;
     for(int i = 0; i < series->pointsVector().size(); ++i)
     {
         if(series->pointsVector()[i].y() > m_y_max_chart)
@@ -113,6 +126,9 @@ void ChartWidget::addSeries(const QPointer< QtCharts::QScatterSeries > &series, 
 
 void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
 {
+    if(series->pointsVector().isEmpty())
+        return;
+        
     for(int i = 0; i < series->pointsVector().size(); ++i)
     {
         if(series->pointsVector()[i].y() > m_y_max_chart)
@@ -131,6 +147,10 @@ void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series,
 }
 void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
 {
+        
+    if(series->pointsVector().isEmpty())
+        return;
+    
     for(int i = 0; i < series->pointsVector().size(); ++i)
     {
         if(series->pointsVector()[i].y() > m_y_max_error)
@@ -181,5 +201,12 @@ void ChartWidget::formatErrorAxis()
     y_axis->setMin(1.1*m_y_min_error);
     y_axis->setMax(1.1*m_y_max_error);
 }
+
+void ChartWidget::Datas()
+{
+    m_data->setModel(m_models[0]->ModelMapper(0)->model());
+    m_data->show();
+}
+
 
 #include "chartwidget.moc"

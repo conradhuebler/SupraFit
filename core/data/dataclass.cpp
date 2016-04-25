@@ -64,7 +64,6 @@ DataClass::DataClass(int type) : m_type(type) , m_maxsize(0), m_concentrations(n
 DataClass::DataClass(const DataClass& other): m_maxsize(0), m_concentrations(new bool(true))
 {
     m_type = other.Type();
-//     m_concentrations = other.m_concentrations;
     for(int i = 0; i < other.DataPoints(); ++i)
         addPoint(other[i]);
 }
@@ -72,7 +71,6 @@ DataClass::DataClass(const DataClass& other): m_maxsize(0), m_concentrations(new
 DataClass::DataClass(const DataClass* other): m_maxsize(0), m_concentrations(new bool(true))
 {
      m_type = other->Type();
-//      m_concentrations = other->m_concentrations;
      for(int i = 0; i < other->DataPoints(); ++i)
          addPoint(other->operator[](i));
 }

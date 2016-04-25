@@ -45,6 +45,7 @@ private:
     QVector< QVector<QPointer<QDoubleSpinBox > > > m_complex_signals;
     QVector<QPointer<QDoubleSpinBox> > m_constants;
     QVector<QPointer<QLineEdit > > m_errors;
+    QLineEdit *m_sum_error;
 //     QVector<QPointer< ModelLine > > m_model_lines;
     QPushButton *m_switch, *m_minimize; 
     bool m_pending;
