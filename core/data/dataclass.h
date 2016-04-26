@@ -88,14 +88,13 @@ class DataClass
     {
         m_data << DataPoint(point);
     }   
-    DataPoint* operator[](int i)
+    inline DataPoint* operator[](int i)
     {
-        if(i < m_data.size())
+
             return &m_data[i];
     }
-    const DataPoint* operator[](int i) const
+    inline const DataPoint* operator[](int i) const
     {
-        if(i < m_data.size())
             return &m_data[i];
     }
     QColor color(int i) const;

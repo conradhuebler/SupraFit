@@ -77,7 +77,7 @@ private:
     PlotMode m_plotmode;
     qreal XValue(int i) const;
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper, m_signal_mapper;
-    qreal MiniSingleConst(int step);
+    qreal MiniSingleConst(QVector<qreal > &steps);
     bool m_debug;
 protected:
     void SetSignal(int i, int j, qreal value);
@@ -115,7 +115,7 @@ public:
     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11; }
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {HostConcentration(host_0, guest_0, Constants());}
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     qreal m_K11;
     
@@ -140,7 +140,7 @@ public:
     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K21 << m_K11; }
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {HostConcentration(host_0, guest_0, Constants());}
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     
     qreal m_K21, m_K11;
@@ -164,7 +164,7 @@ public:
     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11 << m_K12; }
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {HostConcentration(host_0, guest_0, Constants());}
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     qreal GuestConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     

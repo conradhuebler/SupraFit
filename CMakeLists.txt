@@ -16,7 +16,7 @@ option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
     
 IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-reorder")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets REQUIRED)

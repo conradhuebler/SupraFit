@@ -29,7 +29,7 @@
 #include <QPushButton>
 #include <QTableView>
 #include "chartwidget.h"
-ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0), m_x_max_error(0), m_y_min_chart(10)
+ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0), m_x_max_error(0), m_y_min_chart(10), m_y_min_error(0)
 {
 
     m_chart = new QtCharts::QChart;
@@ -62,6 +62,7 @@ ChartWidget::~ChartWidget()
 void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 {
     m_models << model;
+
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
     for(int i = 0; i < model->Size(); ++i)
