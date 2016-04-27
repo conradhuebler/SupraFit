@@ -234,36 +234,35 @@ qreal AbstractTitrationModel::MiniSingleConst(QVector<qreal > &steps)
                 norm += derviate[i]*derviate[i];
                 CalculateSignal();
                     qreal old_error = 0;
-                    for(int k = 0; k < Size(); ++k)    
+                    for(int k = 0; k <= Size(); ++k)    
                         old_error+= SumOfErrors(k);
-//                 qreal error =  qAbs(derviate[i]*0.0002);
+                qreal error =  qAbs(derviate[i]*0.0002);
                 qreal oldval = *m_opt_para[i];
-//                 qreal a = 1000*steps[i];
+                qreal a = 50*steps[i];
                 if(qAbs(derviate[i]) < 1e-12)
                     qDebug() << "ignoring";
                 else
                 {
-//                   qDebug() << "old value " << *m_opt_para[i] << "new value " << *m_opt_para[i] - a*error/derviate[i];// << "1st deriv" << qSqrt(norm) ;
-//                   *m_opt_para[i] -= a*error/derviate[i] ;
-                    qreal b = 1000;
-                    qreal tk = 1/b/steps[i];
-                    *m_opt_para[i] -= tk/derviate[i] ;
+                   *m_opt_para[i] -= a*error/derviate[i] ;
                     CalculateSignal();
                     qreal new_error = 0;
-                    for(int k = 0; k < Size(); ++k)    
-                        new_error+= SumOfErrors(k);                  
+                    for(int k = 0; k <= Size(); ++k)    
+                        new_error+= SumOfErrors(k);   
+                    qDebug() << " " << new_error << old_error;
                     if(qAbs(new_error) > qAbs(old_error))
                     {
+                        qDebug() << "error bigger ";
                         *m_opt_para[i] = oldval;
-                         steps[i] /= 2;
+                         steps[i] /= 14;
+                         CalculateSignal();
                     }
                 }    
             }
             CalculateSignal();
             qreal error = 0;
-            for(int k = 0; k < Size(); ++k)    
+            for(int k = 0; k <= Size(); ++k)    
                 error+= SumOfErrors(k);
-//              qDebug() << Constants() << error;;
+            qDebug() << Constants() << error;;
 //             qDebug() << qSqrt(norm);
             return qSqrt(norm);
 
@@ -280,29 +279,31 @@ qreal AbstractTitrationModel::Minimize()
     int i = 0, maxiter = 300;
     while(iter)
     {
-//             qreal norm = MiniSingleConst(step); 
-            qreal norm = MiniSingleConst(QVector<qreal>() << iter << iter); 
+            qreal norm = MiniSingleConst(step); 
+ //            qreal norm = MiniSingleConst(QVector<qreal>() << iter << iter); 
             iter = (i < maxiter && norm > 1e-8); 
 //             qDebug() <<  (i < maxiter) << (norm > 1e-8) << step;
             ++i;    
             QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
     }
-                
+    MiniShifts();  
+    qDebug() << m_pure_signals;
+    m_repaint = true;
+    CalculateSignal();
+    return 0;
+}
+
+void AbstractTitrationModel::MiniShifts()
+{
+    for(int i = 0; i < m_difference.size(); ++i)            
     for(int j = 0; j < m_lim_para[0].size(); ++j)
     {
-        if(m_difference[0][j] < 1)
-            *m_lim_para[0][j] -= m_difference[0][j];
+        if(!i)
+          if(m_difference[i][j] < 1)
+              *m_lim_para[i][j] -= m_difference[i][j];
     } 
-    m_repaint = true;
-    m_debug = true;
-//     CalculateSignal();
-    m_debug = false;
-   
-//     qDebug() << Constants();
-//     qDebug() << "baem";
-//     CalculateSignal();
-    return 0;
+
 }
 
 
@@ -323,9 +324,13 @@ ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrati
     {
         line1 << &m_pure_signals[i];
         line2 << &m_ItoI_signals[i];
+        qDebug() << &m_pure_signals[i] << &m_ItoI_signals[i];
     }
     m_lim_para << line1 << line2;
-    
+    qDebug() << m_lim_para << m_lim_para.size();
+    for(int i = 0; i < m_lim_para.size(); ++i)
+        for(int j = 0; j < m_lim_para[i].size(); ++j)
+        qDebug() << *m_lim_para[i][j] << m_lim_para[i][j];
     AbstractTitrationModel::Minimize();
     qDebug() << Constants();
     m_repaint = true;
@@ -395,9 +400,11 @@ void ItoI_Model::setConstants(QVector< qreal > list)
     m_K11 = list.first();
 }
 
-void ItoI_Model::setPureSignals(QVector< qreal > list)
+void ItoI_Model::setPureSignals(const QVector< qreal > &list)
 {
-    m_pure_signals = list;
+    for(int i = 0; i < list.size(); ++i)
+        if(i < m_pure_signals.size())
+            m_pure_signals[i] = list[i];
 }
 
 void ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
@@ -416,7 +423,6 @@ QPair< qreal, qreal > ItoI_Model::Pair(int i, int j)
     }
     return QPair<qreal, qreal>(0, 0);
 }
-
 
 IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data, QObject* parent) : AbstractTitrationModel(data, parent)
 {
@@ -526,9 +532,11 @@ void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
         emit Recalculated();
 }
 
-void IItoI_ItoI_Model::setPureSignals(QVector< qreal > list)
+void IItoI_ItoI_Model::setPureSignals(const QVector< qreal > &list)
 {
-    m_pure_signals = list;
+    for(int i = 0; i < list.size(); ++i)
+        if(i < m_pure_signals.size())
+            m_pure_signals[i] = list[i];
 }
 
 
@@ -558,7 +566,6 @@ qreal IItoI_ItoI_Model::Minimize(QVector< int > vars)
 {
     return  AbstractTitrationModel::Minimize();
 }
-
 
 ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data, QObject* parent) : AbstractTitrationModel(data, parent)
 {
@@ -685,9 +692,11 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
         emit Recalculated();
 }
 
-void ItoI_ItoII_Model::setPureSignals(QVector< qreal > list)
+void ItoI_ItoII_Model::setPureSignals(const QVector< qreal > &list)
 {
-    m_pure_signals = list;
+    for(int i = 0; i < list.size(); ++i)
+        if(i < m_pure_signals.size())
+            m_pure_signals[i] = list[i];
 }
 
 
@@ -717,6 +726,4 @@ qreal ItoI_ItoII_Model::Minimize(QVector< int > vars)
 {
     return  AbstractTitrationModel::Minimize();
 }
-
-
 #include "modelclass.moc"

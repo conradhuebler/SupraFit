@@ -53,7 +53,7 @@ public:
             return m_pure_signals[i]; 
         }
     virtual int ConstantSize() const = 0;
-    virtual void setPureSignals(QVector< qreal > list) = 0;
+    virtual void setPureSignals(const QVector< qreal > &list) = 0;
     virtual void setComplexSignals(QVector< qreal > list, int i) = 0;
     virtual void setConstants(QVector< qreal > list) = 0;
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
@@ -73,11 +73,11 @@ public:
     
 private:
     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
-
     PlotMode m_plotmode;
     qreal XValue(int i) const;
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper, m_signal_mapper;
     qreal MiniSingleConst(QVector<qreal > &steps);
+    void MiniShifts();
     bool m_debug;
 protected:
     void SetSignal(int i, int j, qreal value);
@@ -108,7 +108,7 @@ public:
     ~ItoI_Model();
     QPair<qreal, qreal> Pair(int i, int j = 0);
     inline int ConstantSize() const { return 1;}
-    void setPureSignals(QVector< qreal > list);
+    void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
@@ -133,7 +133,7 @@ public:
     
     QPair<qreal, qreal> Pair(int i, int j = 0);
     inline int ConstantSize() const { return 2;}
-    void setPureSignals(QVector< qreal > list);
+    void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
@@ -157,7 +157,7 @@ public:
     
     QPair<qreal, qreal> Pair(int i, int j = 0);
     inline int ConstantSize() const { return 2;}
-    void setPureSignals(QVector< qreal > list);
+    void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants= QVector<qreal>());

@@ -51,6 +51,7 @@ private:
     bool m_pending;
 //     void Connect();
 //     void Disconnect();
+    void CollectParameters();
 private slots:
     void Minimize();
     void Repaint();

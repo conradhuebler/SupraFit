@@ -133,6 +133,15 @@ void ModelWidget::recalulate()
     if(m_pending)
         return;
     m_pending = true;
+    
+    CollectParameters();
+    m_model->CalculateSignal();
+    QTimer::singleShot(1, this, SLOT(Repaint()));;
+    m_pending = false;
+}
+
+void ModelWidget::CollectParameters()
+{
     QVector<qreal > pure_signals, constants;
     QVector<QVector <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
@@ -149,31 +158,36 @@ void ModelWidget::recalulate()
         m_model->setComplexSignals(complex_signals[j], j + 1);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
-//     qDebug() << constants;
+
+    qDebug() << constants;
     m_model->setConstants(constants);
+    qDebug() << pure_signals;
     m_model->setPureSignals(pure_signals);
-    
-    m_model->CalculateSignal();
-    QTimer::singleShot(1, this, SLOT(Repaint()));;
-    m_pending = false;
 }
+
 
 void ModelWidget::Minimize()
 {
-    
+    for(int i = 0; i < 1; ++i)
+    {
+    if(m_pending)
+        return;
+//     m_pending = true;
+    CollectParameters();
     QVector<int > v(10,0);
-    m_model->Minimize(v);
-    m_model->CalculateSignal();
-
+    qDebug() <<"Start Minimize";
+    m_model->Minimize();
+    qDebug() <<"Minimize done";
     
     QVector<qreal > constants =  m_model->Constants();
 
         for(int j = 0; j < constants.size(); ++j)
             m_constants[j]->setValue(constants[j]);
-            
-        
- QTimer::singleShot(100, this, SLOT(Repaint()));
-    
+    qDebug() << "Constants set.";
+//     m_pending = false;
+//     QTimer::singleShot(100, this, SLOT(Repaint()));
+    }
+    qDebug() << "leaving";
 }
 
 

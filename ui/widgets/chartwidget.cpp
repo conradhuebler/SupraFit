@@ -63,6 +63,7 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 {
     m_models << model;
 
+
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
     for(int i = 0; i < model->Size(); ++i)
@@ -92,7 +93,7 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 }
 
 void ChartWidget::Repaint()
-{              
+{         
     formatAxis();
     formatErrorAxis();
 
