@@ -29,11 +29,13 @@
 #include <QPushButton>
 #include <QTableView>
 #include "chartwidget.h"
-ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0), m_x_max_error(0), m_y_min_chart(10), m_y_min_error(0)
+ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0), m_x_max_error(0), m_y_min_chart(10), m_y_min_error(0), m_themebox(createThemeBox())
 {
 
     m_chart = new QtCharts::QChart;
+        m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     m_errorview = new QtCharts::QChart;
+        m_errorview->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     m_chartwidget = new QtCharts::QChartView(m_chart);
     m_errorchart = new QtCharts::QChartView(m_errorview);
     m_x_scale = new QComboBox;
@@ -44,13 +46,15 @@ ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0
         m_errorview->addSeries(m_error_axis.data());
     
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(m_chartwidget,0, 0);
-    layout->addWidget(m_errorchart, 1, 0);
-    layout->addWidget(m_x_scale, 2, 0);
+    layout->addWidget(m_themebox, 0, 0);
+    layout->addWidget(m_chartwidget,1, 0);
+    layout->addWidget(m_errorchart, 2, 0);
+    layout->addWidget(m_x_scale, 3, 0);
 //     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
+    connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
     m_data = new QTableView;
     m_click = new QPushButton("Click me");
-    layout->addWidget(m_click, 3, 0);
+    layout->addWidget(m_click, 4, 0);
     connect(m_click, SIGNAL(clicked()), this, SLOT(Datas()));
     setLayout(layout);
 }
@@ -168,6 +172,18 @@ void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series
 
 void ChartWidget::formatAxis()
 {
+    foreach(const QtCharts::QAbstractSeries *series_abstract, m_chart->series())
+    {
+        const QtCharts::QXYSeries * series = qobject_cast<const QtCharts::QXYSeries *>(series_abstract);
+        if(!series->pointsVector().isEmpty())
+            for(int i = 0; i < series->pointsVector().size(); ++i)
+            {
+                if(series->pointsVector()[i].y() > m_y_max_chart)
+                    m_y_max_chart = series->pointsVector()[i].y();
+                if(series->pointsVector()[i].y() < m_y_min_chart)
+                    m_y_min_chart = series->pointsVector()[i].y();
+            }
+    }
     m_chart->createDefaultAxes();
     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
     if(m_x_max_chart > 1)
@@ -188,6 +204,18 @@ void ChartWidget::formatAxis()
 }
 void ChartWidget::formatErrorAxis()
 {
+    foreach(const QtCharts::QAbstractSeries *series_abstract, m_errorview->series())
+    {
+        const QtCharts::QXYSeries * series = qobject_cast<const QtCharts::QXYSeries *>(series_abstract);
+        if(!series->pointsVector().isEmpty())
+            for(int i = 0; i < series->pointsVector().size(); ++i)
+            {
+                if(series->pointsVector()[i].y() > m_y_max_error)
+                    m_y_max_error = series->pointsVector()[i].y();
+                if(series->pointsVector()[i].y() < m_y_min_error)
+                    m_y_min_error = series->pointsVector()[i].y();
+            }
+    }
     m_errorview->createDefaultAxes();
     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisX());
     if(m_x_max_chart > 1)
@@ -208,6 +236,59 @@ void ChartWidget::Datas()
 {
     m_data->setModel(m_models[0]->ModelMapper(0)->model());
     m_data->show();
+}
+
+QPointer<QComboBox > ChartWidget::createThemeBox() const
+{
+    // settings layout
+    QPointer<QComboBox >themeComboBox = new QComboBox();
+    themeComboBox->addItem("Light", QtCharts::QChart::ChartThemeLight);
+    themeComboBox->addItem("Blue Cerulean", QtCharts::QChart::ChartThemeBlueCerulean);
+    themeComboBox->addItem("Dark", QtCharts::QChart::ChartThemeDark);
+    themeComboBox->addItem("Brown Sand", QtCharts::QChart::ChartThemeBrownSand);
+    themeComboBox->addItem("Blue NCS", QtCharts::QChart::ChartThemeBlueNcs);
+    themeComboBox->addItem("High Contrast", QtCharts::QChart::ChartThemeHighContrast);
+    themeComboBox->addItem("Blue Icy", QtCharts::QChart::ChartThemeBlueIcy);
+    themeComboBox->addItem("Qt", QtCharts::QChart::ChartThemeQt);
+    return themeComboBox;
+}
+
+void ChartWidget::updateUI()
+{
+QtCharts::QChart::ChartTheme theme = (QtCharts::QChart::ChartTheme) m_themebox->itemData(m_themebox->currentIndex()).toInt();
+
+//     if (m_chart->theme() != theme) {
+        
+            m_chart->setTheme(theme);
+            m_errorview->setTheme(theme);
+        QPalette pal = window()->palette();
+        if (theme == QtCharts::QChart::ChartThemeLight) {
+            pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
+            pal.setColor(QPalette::WindowText, QRgb(0x404044));
+        } else if (theme == QtCharts::QChart::ChartThemeDark) {
+            pal.setColor(QPalette::Window, QRgb(0x121218));
+            pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
+        } else if (theme == QtCharts::QChart::ChartThemeBlueCerulean) {
+            pal.setColor(QPalette::Window, QRgb(0x40434a));
+            pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
+        } else if (theme == QtCharts::QChart::ChartThemeBrownSand) {
+            pal.setColor(QPalette::Window, QRgb(0x9e8965));
+            pal.setColor(QPalette::WindowText, QRgb(0x404044));
+        } else if (theme == QtCharts::QChart::ChartThemeBlueNcs) {
+            pal.setColor(QPalette::Window, QRgb(0x018bba));
+            pal.setColor(QPalette::WindowText, QRgb(0x404044));
+        } else if (theme == QtCharts::QChart::ChartThemeHighContrast) {
+            pal.setColor(QPalette::Window, QRgb(0xffab03));
+            pal.setColor(QPalette::WindowText, QRgb(0x181818));
+        } else if (theme == QtCharts::QChart::ChartThemeBlueIcy) {
+            pal.setColor(QPalette::Window, QRgb(0xcee7f0));
+            pal.setColor(QPalette::WindowText, QRgb(0x404044));
+        } else {
+            pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
+            pal.setColor(QPalette::WindowText, QRgb(0x404044));
+        }
+        window()->setPalette(pal);
+//     }
 }
 
 

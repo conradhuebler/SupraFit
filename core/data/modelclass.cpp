@@ -41,8 +41,11 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *p
     }
     
     m_model_model = new QStandardItemModel(DataPoints(), Size() + 1);
+    m_model_model->setParent(this);
     m_error_model = new QStandardItemModel(DataPoints(), Size() + 1); 
+    m_error_model->setParent(this);
     m_signal_model = new QStandardItemModel(DataPoints(), Size() + 1); 
+    m_signal_model->setParent(this);
     for(int i = 0; i < DataPoints(); ++i)    
         for(int j = 0; j <= Size(); ++j)
         {
@@ -100,7 +103,17 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *p
 
 AbstractTitrationModel::~AbstractTitrationModel()
 {
-
+    for(int i = 0; i < m_model_mapper.size(); ++i)
+    {
+     delete m_model_mapper[i]->series();
+     delete m_error_mapper[i]->series();
+//      delete m_signal_mapper[i]->series();
+    }
+    qDeleteAll( m_model_mapper );
+    qDeleteAll( m_error_mapper );
+    qDeleteAll( m_signal_mapper );
+//     qDeleteAll( m_opt_vec );
+//     qDeleteAll( m_lim_para );
 }
 
 bool AbstractTitrationModel::MinimizeConstants()

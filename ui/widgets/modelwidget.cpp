@@ -113,7 +113,7 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
 
 ModelWidget::~ModelWidget()
 {
-    
+    delete m_model;
 }
 void ModelWidget::Repaint()
 {

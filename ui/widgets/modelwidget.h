@@ -46,11 +46,9 @@ private:
     QVector<QPointer<QDoubleSpinBox> > m_constants;
     QVector<QPointer<QLineEdit > > m_errors;
     QLineEdit *m_sum_error;
-//     QVector<QPointer< ModelLine > > m_model_lines;
     QPushButton *m_switch, *m_minimize; 
     bool m_pending;
-//     void Connect();
-//     void Disconnect();
+
     void CollectParameters();
 private slots:
     void Minimize();

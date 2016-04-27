@@ -55,6 +55,7 @@ private slots:
     void AddModel11();
     void AddModel21();
     void AddModel12();
+    void RemoveTab(int i);
 signals:
     void ModelAdded(AbstractTitrationModel *model);
 };

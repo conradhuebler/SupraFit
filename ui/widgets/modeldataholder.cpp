@@ -40,6 +40,9 @@ ModelDataHolder::ModelDataHolder()
     
     m_datawidget = new DataWidget;
     m_modelsWidget = new QTabWidget;
+        m_modelsWidget->setMovable(true);
+        m_modelsWidget->setTabsClosable(true);
+        connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     m_add = new QPushButton(tr("Add Titration\n Model"));
         m_add->setFlat(true);
         m_add->setDisabled(true);
@@ -116,4 +119,13 @@ void ModelDataHolder::AddModel12()
 {
     AddModel(ModelDataHolder::ItoI_ItoII);
 }
+
+void ModelDataHolder::RemoveTab(int i)
+{
+    ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+    m_modelsWidget->removeTab(i);
+    delete w;
+}
+
+
 #include "modeldataholder.moc"

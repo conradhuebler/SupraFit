@@ -51,7 +51,9 @@ public slots:
 private:
     void formatAxis();
     void formatErrorAxis();
-    QPointer<QComboBox > m_x_scale;
+    QPointer<QComboBox > createThemeBox() const;
+   
+    QPointer<QComboBox > m_x_scale, m_themebox;
     QPushButton *m_click;
     QTableView *m_data;
     QPointer<QtCharts::QChartView > m_chartwidget, m_errorchart;
@@ -65,7 +67,8 @@ private:
     void Paint();
 private slots:
     void Repaint();
-    void Datas();
+    void Datas(); 
+    void updateUI();
 };
 
 #endif // CHARTWIDGET_H
