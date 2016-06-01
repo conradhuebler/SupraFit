@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include <QStandardItemModel>
 #include <QPointer>
 #include <QDebug>
 #include <QColor>
@@ -50,20 +51,21 @@ DataPoint::DataPoint()
 
 }
 
-DataClass::DataClass() : m_maxsize(0)
+DataClass::DataClass(QObject *parent) : QObject(parent), m_maxsize(0), m_plotmode(DataClass::HG)
 {
 
 }
 
-DataClass::DataClass(int type) : m_type(type) , m_maxsize(0), m_concentrations(new bool(true))
+DataClass::DataClass(int type, QObject *parent) :  QObject(parent), m_type(type) , m_maxsize(0), m_concentrations(new bool(true)), m_plotmode(DataClass::GH)
 {
-
-    
+    m_concentration_model = new QStandardItemModel(this);
+    m_concentration_model = new QStandardItemModel(this);
 }
 
 DataClass::DataClass(const DataClass& other): m_maxsize(0), m_concentrations(new bool(true))
 {
     m_type = other.Type();
+    m_plotmode = (other.m_plotmode);
     for(int i = 0; i < other.DataPoints(); ++i)
         addPoint(other[i]);
 }
@@ -71,13 +73,14 @@ DataClass::DataClass(const DataClass& other): m_maxsize(0), m_concentrations(new
 DataClass::DataClass(const DataClass* other): m_maxsize(0), m_concentrations(new bool(true))
 {
      m_type = other->Type();
+     m_plotmode = (other->m_plotmode);
      for(int i = 0; i < other->DataPoints(); ++i)
          addPoint(other->operator[](i));
 }
 
 DataClass::~DataClass()
 {
-    
+        qDeleteAll( m_signal_mapper );
 }
 
 QColor DataClass::color(int i) const
@@ -122,3 +125,40 @@ void DataClass::SwitchConentrations()
      *m_concentrations = !(*m_concentrations); 
      
 }
+
+void DataClass::CreateItemModel()
+{
+
+}
+
+qreal DataClass::XValue(int i) const
+{
+
+    switch(m_plotmode){
+            case DataClass::G:
+                if(*m_concentrations)
+                    return m_data[i].Conc1();
+                else
+                    return m_data[i].Conc2();
+            break;
+            case DataClass::H:   
+                if(!(*m_concentrations))
+                    return m_data[i].Conc1();
+                else
+                    return m_data[i].Conc2();
+            case DataClass::HG:
+                if(*m_concentrations)
+                    return m_data[i].Conc1()/m_data[i].Conc2();
+                else
+                    return m_data[i].Conc2()/ m_data[i].Conc1();                
+            break;    
+            case DataClass::GH:
+                if(!(*m_concentrations))
+                    return m_data[i].Conc1()/m_data[i].Conc2();
+                else
+                    return m_data[i].Conc2()/ m_data[i].Conc1();                   
+            break;    
+        };
+        return 0;
+}
+

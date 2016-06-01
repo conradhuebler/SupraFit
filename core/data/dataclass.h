@@ -23,8 +23,11 @@
 #include <QtCore/QVector>
 #include <QtCore/QMap>
 #include <QtCharts/QScatterSeries>
+#include <QtCharts/QVXYModelMapper>
 #include <QPointer>
 #include <QColor>
+
+class QStandardItemModel;
 
 class DataPoint
 {
@@ -50,21 +53,22 @@ private:
 
 
 
-class DataClass 
+class DataClass : public QObject
 {
+    Q_OBJECT
     public: 
         
-    DataClass();
-    DataClass(int type = 1);
+    DataClass(QObject *parent = 0);
+    DataClass(int type = 1, QObject *parent = 0);
     DataClass(const DataClass *other);
     DataClass(const DataClass &other);
-    ~DataClass();
+    virtual ~DataClass();
     
     enum { 
         DiscretData = 1,
         ContiuousData = 2
     };
-    
+    enum PlotMode { H, G, HG, GH};
     inline void addPoint(qreal conc1, qreal conc2, QVector<qreal > data)
     {
         if(m_maxsize == 0)
@@ -102,16 +106,26 @@ class DataClass
     inline int DataPoints() const { return m_data.size(); }
     inline int Type() const { return m_type;     }
     inline void setType(int type) { m_type = type; }
-    
+    inline QStandardItemModel * ConcentrationModel() { return m_concentration_model; }
+    inline QStandardItemModel * SignalModel() { return m_signal_model; }
+    inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_signal_mapper[i]; }
     void SwitchConentrations();
     inline bool* Concentration() const { return m_concentrations; }
+    inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
 private:
     QStringList m_names;
     QVector<QColor > m_colors;
+    QStandardItemModel *m_signal_model, *m_concentration_model;
+    QVector<QPointer<QtCharts::QVXYModelMapper> >m_signal_mapper;
+    void CreateItemModel();
+    
+    
 protected:
     QVector< DataPoint> m_data;
     int m_type, m_maxsize;
     bool *m_concentrations;
+    PlotMode m_plotmode;
+    qreal XValue(int i) const;
 };
 
 #endif // DATACLASS_H

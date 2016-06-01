@@ -30,16 +30,13 @@
 
 class QStandardItemModel;
 
-class AbstractTitrationModel : public QObject , protected DataClass
+class AbstractTitrationModel : public DataClass
 {
     Q_OBJECT
 
 public:
     AbstractTitrationModel(const DataClass *data, QObject *parent = 0);
-    ~AbstractTitrationModel();
-    
-    enum PlotMode { H, G, HG, GH};
-    
+    virtual ~AbstractTitrationModel();
     
     int MaxVars() const { return (m_pure_signals.size()); }
     bool MinimizeConstants();
@@ -67,14 +64,11 @@ public:
     inline QPointer<QtCharts::QVXYModelMapper> ModelMapper(const int i) { return m_model_mapper[i]; }
     inline QPointer<QtCharts::QVXYModelMapper> ErrorMapper(const int i) { return m_error_mapper[i]; }
     inline QPointer<QtCharts::QVXYModelMapper> SignalMapper(const int i) { return m_signal_mapper[i]; }
-    inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
         
     inline int Size() const { return DataClass::Size(); }
     
 private:
     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
-    PlotMode m_plotmode;
-    qreal XValue(int i) const;
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper, m_signal_mapper;
     qreal MiniSingleConst(QVector<qreal > &steps);
     void MiniShifts();

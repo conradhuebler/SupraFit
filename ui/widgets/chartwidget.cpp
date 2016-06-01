@@ -91,6 +91,7 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
             addErrorSeries(error_series);
     
         }
+
         connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
     Repaint(); 
 
@@ -98,6 +99,12 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 
 void ChartWidget::Repaint()
 {         
+//     m_y_max_chart = 0;
+//     m_y_max_error = 0;
+//     m_x_max_chart = 0;
+//     m_x_max_error = 0;
+//     m_y_min_chart = 10;
+//     m_y_min_error = 0;
     formatAxis();
     formatErrorAxis();
 
@@ -234,7 +241,7 @@ void ChartWidget::formatErrorAxis()
 
 void ChartWidget::Datas()
 {
-    m_data->setModel(m_models[0]->ModelMapper(0)->model());
+    m_data->setModel(m_models[0]->SignalMapper(0)->model());
     m_data->show();
 }
 
