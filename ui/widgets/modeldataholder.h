@@ -36,7 +36,7 @@ class ModelDataHolder : public QWidget
 public:
     ModelDataHolder();
     ~ModelDataHolder();
-    void setData(DataClass data);
+    void setData(DataClass *data);
     void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
     enum {
         ItoI = 1,
@@ -46,15 +46,20 @@ public:
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<QTabWidget > m_modelsWidget;
-    QPointer<QPushButton > m_add;
+    QPointer<QPushButton > m_add, m_simulate;
     QPointer<ChartWidget> m_charts;
     DataClass *m_data;
     QVector<QPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
+    void SimulateModel(int model);
+    
 private slots:
     void AddModel11();
     void AddModel21();
     void AddModel12();
+    void SimulateModel11();
+    void SimulateModel21();
+    void SimulateModel12();
     void RemoveTab(int i);
 signals:
     void ModelAdded(AbstractTitrationModel *model);

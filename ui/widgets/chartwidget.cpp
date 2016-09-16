@@ -29,7 +29,7 @@
 #include <QPushButton>
 #include <QTableView>
 #include "chartwidget.h"
-ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0), m_x_max_error(0), m_y_min_chart(10), m_y_min_error(0), m_themebox(createThemeBox())
+ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0), m_x_max_error(0), m_y_min_error(0), m_y_min_chart(10), m_themebox(createThemeBox())
 {
 
     m_chart = new QtCharts::QChart;
@@ -52,10 +52,6 @@ ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0
     layout->addWidget(m_x_scale, 3, 0);
 //     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
     connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
-    m_data = new QTableView;
-    m_click = new QPushButton("Click me");
-    layout->addWidget(m_click, 4, 0);
-    connect(m_click, SIGNAL(clicked()), this, SLOT(Datas()));
     setLayout(layout);
 }
 
@@ -63,50 +59,78 @@ ChartWidget::~ChartWidget()
 {
 }
 
+
+void ChartWidget::setRawData(const QPointer<DataClass> rawdata) 
+{
+    m_rawdata = rawdata;
+    m_rawdata->PlotModel();
+        AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
+    m_rawdata->setPlotMode(j);
+    for(int i = 0; i < m_rawdata->SignalCount(); ++i)
+        {
+            QtCharts::QVXYModelMapper * signal= m_rawdata->DataMapper(i);
+            QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
+            signal->setSeries(signal_series);
+            signal_series->setColor(m_rawdata->color(i));
+             addSeries(signal_series);
+            if(!signal_series->pointsVector().isEmpty())
+                for(int i = 0; i < signal_series->pointsVector().size(); ++i)
+                {
+                    if(signal_series->pointsVector()[i].y() > m_y_max_chart)
+                        m_y_max_chart = signal_series->pointsVector()[i].y();
+                    if(signal_series->pointsVector()[i].y() < m_y_min_chart)
+                        m_y_min_chart = signal_series->pointsVector()[i].y();
+                }
+
+        }
+        formatAxis();
+        
+}
 void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 {
     m_models << model;
-
+    model->UpdatePlotModels();
+   connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
 
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
-    for(int i = 0; i < model->Size(); ++i)
+    for(int i = 0; i < model->SignalCount(); ++i)
         {
-            if(m_models.size() == 1)
+
+            if(model->Type() != 3)
             {
-                QtCharts::QVXYModelMapper * signal= model->SignalMapper(i);
-                QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
-                    signal->setSeries(signal_series);
-                addSeries(signal_series);
-            }
-            
             QtCharts::QVXYModelMapper * mapper = model->ModelMapper(i);
             QtCharts::QLineSeries *series = new QtCharts::QLineSeries;
+            series->setColor(model->color(i));
                 mapper->setSeries(series);
-            addLineSeries(series);
-
+             addLineSeries(series);
+            }
+            if(model->Type() != 3)
+            {
             QtCharts::QVXYModelMapper * error= model->ErrorMapper(i);
             QtCharts::QLineSeries *error_series = new QtCharts::QLineSeries;
                 error->setSeries(error_series);
-            addErrorSeries(error_series);
+                error_series->setColor(model->color(i));
+                addErrorSeries(error_series);
+            }
     
         }
 
         connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    Repaint(); 
+        Repaint(); 
 
 }
 
 void ChartWidget::Repaint()
 {         
-//     m_y_max_chart = 0;
-//     m_y_max_error = 0;
-//     m_x_max_chart = 0;
-//     m_x_max_error = 0;
-//     m_y_min_chart = 10;
-//     m_y_min_error = 0;
-    formatAxis();
-    formatErrorAxis();
+     m_y_max_chart = 0;
+     m_y_max_error = 0;
+     m_x_max_chart = 0;
+     m_x_max_error = 0;
+     m_y_min_chart = 10;
+     m_y_min_error = 0;
+     formatAxis();
+     formatErrorAxis();
 
 }
 
@@ -151,6 +175,7 @@ void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series,
             m_y_min_chart = series->pointsVector()[i].y();
     }
     m_x_max_chart = series->pointsVector().last().x();
+
     if(!m_chart->series().contains(series))
         m_chart->addSeries(series);
     m_chart->setTitle(str);
@@ -197,9 +222,10 @@ void ChartWidget::formatAxis()
     {
         x_axis->setMax(int(m_x_max_chart)+1);
         x_axis->setTickCount(int(m_x_max_chart)+2);
-    }else
+    }else if(m_x_max_chart)
         x_axis->setMax(m_x_max_chart+m_x_max_chart*0.01);
-
+    if(!m_x_max_chart)
+        return;
     x_axis->setMin(0);
     
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
@@ -224,25 +250,13 @@ void ChartWidget::formatErrorAxis()
             }
     }
     m_errorview->createDefaultAxes();
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisX());
-    if(m_x_max_chart > 1)
-    {
-        x_axis->setTickCount(2*(int(m_x_max_chart))+3);
-        x_axis->setMax(int(m_x_max_chart)+1);
-    }else
-        x_axis->setMax(m_x_max_chart+m_x_max_chart*0.01);
-
-    x_axis->setMin(0);
+    QtCharts::QValueAxis *x_axis = new QtCharts::QValueAxis(qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX()));
+    m_errorview->setAxisX(x_axis);
     
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisY());
     y_axis->setMin(1.1*m_y_min_error);
     y_axis->setMax(1.1*m_y_max_error);
-}
-
-void ChartWidget::Datas()
-{
-    m_data->setModel(m_models[0]->SignalMapper(0)->model());
-    m_data->show();
+    qDebug() << 1.1*m_y_min_error <<"min_error" << 1.1*m_y_max_error << "max_error";
 }
 
 QPointer<QComboBox > ChartWidget::createThemeBox() const

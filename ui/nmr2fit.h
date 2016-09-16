@@ -28,6 +28,8 @@
 class ModelDataHolder;
 class ChartWidget;
 class QResizeEvent;
+class QListWidget;
+class DataClass;
 
 class MainWindow : public QMainWindow
 {
@@ -45,10 +47,10 @@ private:
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
-    
+    QVector <DataClass *> m_loaded_datas;
 private slots:
     void LoadData();
-    
+    void ImportAction();
 protected:
     void resizeEvent(QResizeEvent *event);
 };

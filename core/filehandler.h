@@ -1,55 +1,45 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
+ * <one line to give the library's name and an idea of what it does.>
  * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
-#ifndef DATAWIDGET_H
-#define DATAWIDGET_H
-#include "core/data/dataclass.h"
+#ifndef FILEHANDLER_H
+#define FILEHANDLER_H
 
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QTableView>
-#include <QtWidgets/QTableWidget>
-#include <QtCore/QPointer>
-class QPushButton;
-
-class DataWidget : public QWidget
+class QStandardItemModel;
+class FileHandler : public QObject
 {
     Q_OBJECT
-
 public:
-    DataWidget();
-    ~DataWidget();
-    void setData(DataClass *data);
+    FileHandler(const QString &filename, QObject *parent = 0);
+    ~FileHandler();
+    bool AllInt() const { return m_allint;}
+    bool Table() const { return m_table; }
+    QPointer<QStandardItemModel >getData() const;
+    bool FileSupported()const {return m_file_supported;}
     
-public slots:
-       
-    void RowAdded();
-
 private:
-    QPointer<QTableView > m_concentrations, m_signals;
-    QPointer<QPushButton > m_switch;
-    DataClass *m_data;
+    void ReadFile();
+    void CheckForTable();
     
-private slots:
-    void switchHG();
-    
-signals:
-    void recalculate();
+    bool m_table, m_allint, m_file_supported;
+    QString m_filename;
+    QStringList m_filecontent;
+    int m_lines;
 };
 
-#endif // DATAWIDGET_H
+#endif // FILEHANDLER_H

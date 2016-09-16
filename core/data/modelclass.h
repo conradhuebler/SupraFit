@@ -37,10 +37,12 @@ class AbstractTitrationModel : public DataClass
 public:
     AbstractTitrationModel(const DataClass *data, QObject *parent = 0);
     virtual ~AbstractTitrationModel();
-    
+    void setOptParamater(qreal & parameter);
+    void addOptParameter(qreal &vector);
+    void setOptParamater(QVector< qreal >& parameter);
+    void addOptParameter(QVector <qreal > &vector);
+    void clearOptParameter();
     int MaxVars() const { return (m_pure_signals.size()); }
-    bool MinimizeConstants();
-    bool MinimizeSignals();
     qreal SumOfErrors(int i) const;
     virtual QPair<qreal, qreal> Pair(int i, int j = 0) = 0;
     inline qreal PureSignal(int i) const 
@@ -55,39 +57,43 @@ public:
     virtual void setConstants(QVector< qreal > list) = 0;
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
     inline  void CalculateSignal() { CalculateSignal(Constants());}
-    QVector<qreal > df();
-    virtual qreal Minimize(QVector<int > vars);
-    virtual qreal Minimize();
+    virtual QVector<QVector< qreal > > AllShifts() = 0;
+    virtual QVector<qreal> Minimize(QVector<int > vars);
+    virtual QVector<qreal> Minimize();
     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
-
+    QVector<double > Parameter() const;
+    void setParamter(const QVector<qreal> &parameter);
     inline QPointer<QtCharts::QVXYModelMapper> ModelMapper(const int i) { return m_model_mapper[i]; }
     inline QPointer<QtCharts::QVXYModelMapper> ErrorMapper(const int i) { return m_error_mapper[i]; }
-    inline QPointer<QtCharts::QVXYModelMapper> SignalMapper(const int i) { return m_signal_mapper[i]; }
         
     inline int Size() const { return DataClass::Size(); }
     
+    inline DataTable * ModelSignal() { return m_model_signal; }
+    inline DataTable * ModelError() { return m_model_error; }
+    void UpdatePlotModels();
 private:
     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
-    QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper, m_signal_mapper;
-    qreal MiniSingleConst(QVector<qreal > &steps);
-    void MiniShifts();
+    QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
+    
     bool m_debug;
 protected:
+    virtual void MiniShifts() = 0;
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
     void ClearDataSeries() ;
     QString m_name;
     //QVector< QVector<qreal > >m_pure_signals;
     QVector<qreal > m_pure_signals;
-    QHash<const DataPoint *, QVector< qreal> > m_signals;
+//     QHash<const DataPoint *, QVector< qreal> > m_signals;
     QVector< QVector < qreal > > m_difference; 
     bool *ptr_concentrations;
     bool m_repaint;
     QVector<double * > m_opt_para;
     QVector<QVector<qreal * > >m_opt_vec;
     QVector<QVector<qreal * > >m_lim_para;
-    QStandardItemModel *m_model_model, *m_error_model, *m_signal_model;
+    QStandardItemModel *m_plot_model, *m_plot_error;
+    DataTable *m_model_signal, *m_model_error;
 signals:
     void Recalculated();
 };
@@ -106,9 +112,11 @@ public:
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
-    qreal Minimize(QVector<int > vars);
+//     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11; }
+    virtual QVector< QVector< qreal > > AllShifts();
 private:
+    void MiniShifts();
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     qreal m_K11;
@@ -131,8 +139,10 @@ public:
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
-    qreal Minimize(QVector<int > vars);
+    QVector<qreal> Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K21 << m_K11; }
+    virtual QVector< QVector< qreal > > AllShifts();
+    void MiniShifts();
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
@@ -155,8 +165,10 @@ public:
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
-    qreal Minimize(QVector<int > vars);
+    QVector<qreal> Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11 << m_K12; }
+    virtual QVector< QVector< qreal > > AllShifts();
+    void MiniShifts();
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);

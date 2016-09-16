@@ -31,7 +31,8 @@
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QAction>
 #include <QtWidgets/QSplitter>
-
+#include <QtWidgets/QListWidget>
+#include <QtWidgets/QFileDialog>
 #include <QDebug>
 
 #include "nmr2fit.h"
@@ -52,8 +53,13 @@ MainWindow::MainWindow()
     m_mainsplitter->addWidget(m_charts);
     
     QAction *loadaction = new QAction(this);
-    loadaction->setText("Import Data");
+    loadaction->setText("Load Project");
     connect(loadaction, SIGNAL(triggered(bool)), this, SLOT(LoadData()));
+    
+    QAction *importaction = new QAction(this);
+    importaction->setText("Import Data");
+    connect(importaction, SIGNAL(triggered(bool)), this, SLOT(ImportAction()));
+    
     
     QAction* quitaction= new QAction(this);
     quitaction->setText( "Quit" );
@@ -61,6 +67,7 @@ MainWindow::MainWindow()
     
     QMenu *filemenu =  menuBar()->addMenu( "File" );
     filemenu->addAction( loadaction );
+    filemenu->addAction( importaction );
     filemenu->addAction( quitaction );
 }
 
@@ -69,17 +76,29 @@ MainWindow::~MainWindow()
     
     
 }
-
-
 void MainWindow::LoadData()
 {
-    ImportData dialog(this);
+    
+    
+    
+    
+}
+
+void MainWindow::ImportAction()
+{
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", ".");
+
+    
+    
+    ImportData dialog(filename, this);
     
     dialog.exec();
     
     DataClass storeddata = dialog.getStoredData();
-    m_model_dataholder->setData(storeddata);
-
+    storeddata.SignalModel()->Debug();
+    storeddata.ConcentrationModel()->Debug();
+    m_model_dataholder->setData(&storeddata);
+    m_charts->setRawData(&storeddata);
 }
 
 

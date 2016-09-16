@@ -51,17 +51,33 @@ DataWidget::~DataWidget()
 void DataWidget::setData(DataClass* data)
 {
     m_data = data;
+    m_concentrations->setModel(m_data->ConcentrationModel());
+    m_signals->setModel(m_data->SignalModel());
+//     RowAdded();
+//     connect(m_data, SIGNAL(RowAdded()), this, SLOT(RowAdded()));
+}
+
+void DataWidget::switchHG()
+{
+    m_data->SwitchConentrations();
+    emit recalculate();
+}
+
+void DataWidget::RowAdded()
+{
+    
     QStandardItemModel *concentration = new QStandardItemModel;
     QStandardItemModel *signal = new QStandardItemModel;
     
-    for(int i = 0; i < m_data->DataPoints(); i++)
+    /*for(int i = 0; i < m_data->DataPoints(); i++)
     {
         QList<QStandardItem *> row;
         row.append(new QStandardItem(QString::number(m_data->operator[](i)->Conc1())));
         row.append(new QStandardItem(QString::number(m_data->operator[](i)->Conc2())));
         concentration->appendRow(row);
         QList<QStandardItem *> row2;
-        QVector<qreal > datas = m_data->operator[](i)->Data();
+        QMap<int, qreal > datas = m_data->operator[](i)->Data();
+        qDebug() << datas;
         for(int j = 0; j < datas.size(); ++j)
             {
                 QStandardItem *item = new QStandardItem(QString::number(datas[j]));
@@ -69,17 +85,12 @@ void DataWidget::setData(DataClass* data)
                 row2.append(item);
             }
         signal->appendRow(row2);
-    }
+    }*/
     m_concentrations->setModel(concentration);
     m_signals->setModel(signal);
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
-}
-
-void DataWidget::switchHG()
-{
-    m_data->SwitchConentrations();
-    emit recalculate();
+    
 }
 
 #include "datawidget.moc"

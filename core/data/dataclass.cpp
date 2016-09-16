@@ -17,73 +17,222 @@
  * 
  */
 #include <QStandardItemModel>
+#include <QAbstractTableModel>
 #include <QPointer>
 #include <QDebug>
 #include <QColor>
 #include "dataclass.h"
+#include <QtGlobal>
 
 
-DataPoint::DataPoint(qreal conc1, qreal conc2, QVector< qreal > data) : m_conc1(conc1), m_conc2(conc2), m_data(data)
+DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent)
 {
+}
+
+DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent)
+{
+    QVector<qreal > vector(columns,0);
+    for(int i = 0; i < rows; ++i)
+        insertRow(vector);
+}
+
+DataTable::DataTable(DataTable& other)
+{
+    m_table = other.m_table;
+}
+
+DataTable::DataTable(DataTable* other)
+{
+    m_table = other->m_table;
+}
+
+
+DataTable::~DataTable()
+{
+    
+    
     
 }
 
-
-
-
-
-DataPoint::DataPoint(const DataPoint* other)
+void DataTable::Debug() const
 {
-    m_conc1 = other->Conc1();
-    m_conc2 = other->Conc2();
-    m_data = other->Data();
+    qDebug() << m_table;
 }
 
-DataPoint::DataPoint(const DataPoint& other)
+
+int DataTable::columnCount(const QModelIndex& parent) const
 {
-    m_conc1 = other.Conc1();
-    m_conc2 = other.Conc2();
-    m_data = other.Data();
+    if(m_table.size() != 0)
+        return m_table.first().size();
+    return 0;
+    
 }
 
-DataPoint::DataPoint()
+int DataTable::rowCount(const QModelIndex& parent) const
+{
+    return m_table.size();
+}
+
+QVariant DataTable::data(const QModelIndex& index, int role) const
+{
+    return data(index.column(), index.row());
+}
+
+qreal DataTable::data(int column, int row) const
+{
+    if(row < m_table.size())
+        if(column < m_table[row].size())
+            {
+                return m_table[row][column];
+            }
+        else
+            {
+            qDebug() << "Column exceeds size of table!";
+            return 0;
+            }
+    else
+        {
+            qDebug() << "Row exceeds size of table!";
+            return 0;
+        }
+}
+
+qreal & DataTable::data(int column, int row)
+{
+    m_empty = 0;
+    if(row < m_table.size())
+        if(column < m_table[row].size())
+        {
+                return m_table[row][column];
+        }
+        else
+        {
+            qDebug() << "Column exceeds size of table!";
+            return m_empty;
+        }
+        else
+        {
+            qDebug() << "Row exceeds size of table!";
+            return m_empty;
+        }
+}
+
+QVector<qreal> DataTable::Row(int row)
+{
+    QVector<qreal> result;
+    if(row < m_table.size())
+        result = m_table[row];
+    else
+        qDebug() << "Row exceeds size of table!";
+    return result;
+    
+}
+
+QVector<qreal> DataTable::Column(int column)
+{
+    QVector<qreal> result;
+    for(int i = 0; i < m_table.size(); ++i)
+    {
+        if(column < m_table[i].size())
+            result << m_table[i][column];
+        else
+            qDebug() << "Column exceeds size of table!";
+    }
+    return result;
+}
+
+void DataTable::insertColumn(QVector<qreal> column)
+{
+    if(m_table.size() != 0)
+    {
+        if((m_table.first().size() == column.size()))
+            m_table << column;
+    }else
+        m_table << column;
+}
+
+void DataTable::insertRow(QVector<qreal> row)
 {
 
+    if(m_table.isEmpty())
+        m_table << row;
+    else
+        if(row.size() == m_table.first().size())
+                m_table << row;
+        else
+            qDebug() << "Wrong number of rows!";
+}
+
+void DataTable::setColumn(QVector<qreal> vector, int column)
+{
+    Q_UNUSED(vector);
+    Q_UNUSED(column);
+    return;
+}
+
+void DataTable::setRow(QVector<qreal> vector, int row)
+{
+    Q_UNUSED(vector);
+    Q_UNUSED(row);
+    return;
 }
 
 DataClass::DataClass(QObject *parent) : QObject(parent), m_maxsize(0), m_plotmode(DataClass::HG)
 {
-
+    m_concentration_model = new DataTable(this);
+    m_signal_model = new DataTable(this);
+    m_raw_data = new DataTable(this);
+  
+    m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
 }
 
 DataClass::DataClass(int type, QObject *parent) :  QObject(parent), m_type(type) , m_maxsize(0), m_concentrations(new bool(true)), m_plotmode(DataClass::GH)
 {
-    m_concentration_model = new QStandardItemModel(this);
-    m_concentration_model = new QStandardItemModel(this);
+    m_concentration_model = new DataTable(this);
+    m_signal_model = new DataTable(this);
+    m_raw_data = new DataTable(this);
+    
+     if(m_type == 3)
+     {
+        for(int i = 0; i <= 100; ++i)
+        {
+            QVector<qreal > vec = QVector<qreal>() << (i)*6/100 << 3;
+              m_concentration_model->insertRow(vec);
+        }
+     }
+
+     m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
+
 }
 
 DataClass::DataClass(const DataClass& other): m_maxsize(0), m_concentrations(new bool(true))
 {
+    m_concentration_model = new DataTable(other.m_concentration_model);
+    m_signal_model = new DataTable(other.m_signal_model);
+    m_raw_data = new DataTable(other.m_raw_data);
+    m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
+    
     m_type = other.Type();
     m_plotmode = (other.m_plotmode);
-    for(int i = 0; i < other.DataPoints(); ++i)
-        addPoint(other[i]);
 }
 
 DataClass::DataClass(const DataClass* other): m_maxsize(0), m_concentrations(new bool(true))
 {
-     m_type = other->Type();
-     m_plotmode = (other->m_plotmode);
-     for(int i = 0; i < other->DataPoints(); ++i)
-         addPoint(other->operator[](i));
+    m_concentration_model = new DataTable(other->m_concentration_model);
+    m_signal_model = new DataTable(other->m_signal_model);
+    m_raw_data = new DataTable(other->m_raw_data);
+    m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
+    
+    m_type = other->Type();
+    m_plotmode = (other->m_plotmode);
 }
 
 DataClass::~DataClass()
 {
-        qDeleteAll( m_signal_mapper );
+        qDeleteAll( m_plot_signal_mapper );
 }
 
-QColor DataClass::color(int i) const
+QColor DataClass::ColorCode(int i) const
 {
     switch(i){
         case 0:
@@ -126,10 +275,39 @@ void DataClass::SwitchConentrations()
      
 }
 
-void DataClass::CreateItemModel()
+void DataClass::PlotModel()
 {
+    if(m_plot_signal_mapper.isEmpty())
+    {
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
+            model->setModel(m_plot_signal);
+            model->setXColumn(0);
+            model->setYColumn(j + 1);
+            m_plot_signal_mapper << model;   
+            qDebug() << j << m_colors.size();
+            if(j <= m_colors.size())
+                m_colors << ColorCode(j);
+        }
 
+    }
+     
+     for(int i = 0; i < DataPoints(); ++i)
+     {
+         QString x = QString::number(XValue(i));
+                       
+         QStandardItem *item;
+            item = new QStandardItem(x);
+            m_plot_signal->setItem(i,0, item);
+            for(int j = 0; j < SignalCount(); ++j)
+            {
+                item = new QStandardItem(QString::number(m_signal_model->data(j,i)));
+                m_plot_signal->setItem(i,j+1, item);
+            }
+     }
 }
+
 
 qreal DataClass::XValue(int i) const
 {
@@ -137,26 +315,26 @@ qreal DataClass::XValue(int i) const
     switch(m_plotmode){
             case DataClass::G:
                 if(*m_concentrations)
-                    return m_data[i].Conc1();
+                    return m_concentration_model->data(0,i);
                 else
-                    return m_data[i].Conc2();
+                    return m_concentration_model->data(1,i);
             break;
             case DataClass::H:   
                 if(!(*m_concentrations))
-                    return m_data[i].Conc1();
+                    return m_concentration_model->data(0,i);
                 else
-                    return m_data[i].Conc2();
+                    return m_concentration_model->data(1,i);
             case DataClass::HG:
                 if(*m_concentrations)
-                    return m_data[i].Conc1()/m_data[i].Conc2();
+                    return m_concentration_model->data(0,i)/m_concentration_model->data(1,i);
                 else
-                    return m_data[i].Conc2()/ m_data[i].Conc1();                
+                    return m_concentration_model->data(1,i)/m_concentration_model->data(0,i);                
             break;    
             case DataClass::GH:
                 if(!(*m_concentrations))
-                    return m_data[i].Conc1()/m_data[i].Conc2();
+                    return m_concentration_model->data(0,i)/m_concentration_model->data(1,i);
                 else
-                    return m_data[i].Conc2()/ m_data[i].Conc1();                   
+                    return m_concentration_model->data(1,i)/m_concentration_model->data(0,i);                   
             break;    
         };
         return 0;

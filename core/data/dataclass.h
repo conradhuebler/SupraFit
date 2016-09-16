@@ -26,32 +26,48 @@
 #include <QtCharts/QVXYModelMapper>
 #include <QPointer>
 #include <QColor>
+#include <QDebug>
+#include <QAbstractTableModel>
 
 class QStandardItemModel;
 
-class DataPoint
+class DataTable : public QAbstractTableModel
 {
-    
 public:
+    DataTable(QObject *parent = 0);
+    DataTable(int columns, int rows, QObject *parent = 0);
+    DataTable(DataTable *other);
+    DataTable(DataTable &other);
+    ~DataTable();
+    int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+//     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    qreal data(int column, int row) const;
+    qreal & data(int column, int row);
     
-    DataPoint();
-    DataPoint(const DataPoint &other);
-    DataPoint(const DataPoint *other);
-    DataPoint(qreal conc1, qreal conc2, QVector<qreal > data);
-    ~DataPoint() {}
-    qreal Conc1() const { return m_conc1; }
-    void setConc1(qreal conc1)  { m_conc1 = conc1; }
-    qreal Conc2() const { return m_conc2; }
-    void setConc2(qreal conc2) { m_conc2 = conc2; }
-    QVector<qreal> Data() const {  return m_data; }
-    void AppendData(qreal p) { m_data << p; }
-    void SetData(QVector<qreal > data) { m_data = data; }
+    void insertRow(QVector<qreal> row);
+    void insertColumn(QVector<qreal> column);
+    void setRow(QVector<qreal> vector, int row);
+    void setColumn(QVector<qreal> vector, int column);
+    
+    QVector<qreal> Row(int row);
+    QVector<qreal> Column(int column);
+    inline QVector<qreal> firstRow() { return m_table.first(); }
+    inline QVector<qreal> firstColumn() { return Column( 0 ); }
+    inline QVector<qreal> lastRow() { return m_table.last(); };
+    inline QVector<qreal> lastColumn() { return Column(columnCount() -1 ); }
+    
+    void Debug() const ;
 private:
-    qreal m_conc1, m_conc2;
-    QVector<qreal > m_data;
+    /*
+     * May the first variable the column and the second the row
+     */
+    QVector<QVector < qreal > > m_table;
+    qreal m_empty;
+    
 };
-
-
 
 class DataClass : public QObject
 {
@@ -66,66 +82,74 @@ class DataClass : public QObject
     
     enum { 
         DiscretData = 1,
-        ContiuousData = 2
+        ContiuousData = 2,
+        EmptyData = 3
     };
     enum PlotMode { H, G, HG, GH};
-    inline void addPoint(qreal conc1, qreal conc2, QVector<qreal > data)
+    inline void addPoint(QVector<qreal > conc, QVector<qreal > data)
     {
-        if(m_maxsize == 0)
-            m_maxsize = data.size();
-        else if(m_maxsize > data.size())
-            m_maxsize = data.size();
-        m_data << DataPoint(conc1, conc2, data);
+        m_concentration_model->insertRow(conc);
+        m_signal_model->insertRow(data);
     }
     
-    inline void addPoint(DataPoint point)
-    {
-                
-        if(m_maxsize == 0)
-            m_maxsize = point.Data().size();
-        else if(m_maxsize > point.Data().size())
-            m_maxsize = point.Data().size();
-        m_data << point;
-    }
-    
-    inline void addPoint(DataPoint *point)
-    {
-        m_data << DataPoint(point);
-    }   
-    inline DataPoint* operator[](int i)
-    {
-
-            return &m_data[i];
-    }
-    inline const DataPoint* operator[](int i) const
-    {
-            return &m_data[i];
-    }
-    QColor color(int i) const;
-    inline int Size() const { return m_maxsize; } 
-    inline int DataPoints() const { return m_data.size(); }
+    QColor color(int i) const 
+        {
+            if(i < m_colors.size())
+                return m_colors[i];
+            else
+                return ColorCode(i);
+        }
+    QColor ColorCode(int i) const;
+    void setColor(int i, QColor color);
+    inline int Size() const { return DataPoints(); } 
+    inline int Concentrations() const { return m_concentration_model->columnCount(); }
+    inline int DataPoints() const { return m_signal_model->rowCount(); }
+    inline int SignalCount() const {return m_signal_model->columnCount(); }
     inline int Type() const { return m_type;     }
     inline void setType(int type) { m_type = type; }
-    inline QStandardItemModel * ConcentrationModel() { return m_concentration_model; }
-    inline QStandardItemModel * SignalModel() { return m_signal_model; }
-    inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_signal_mapper[i]; }
+    inline DataTable * ConcentrationModel() { return m_concentration_model; }
+    inline DataTable * SignalModel() { return m_signal_model; }
+    inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_plot_signal_mapper[i]; }
     void SwitchConentrations();
     inline bool* Concentration() const { return m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
+    inline QStandardItemModel* m() { return m_plot_signal; }
+    /*
+    void setData(qreal point, int line, int row)
+    {
+        if(m_data.size() > line)
+            m_data[line].setData(point, row);
+    }
+    
+    inline void addRow(int row) 
+    {
+        for(int i = 0; i < m_data.size(); ++i)
+        {
+            m_data[i].setData(0, row);
+            qDebug() << m_data[i][row];      
+        }
+        m_maxsize++;
+  
+        emit RowAdded();
+    }*/  
+public slots:
+     void PlotModel();
 private:
     QStringList m_names;
     QVector<QColor > m_colors;
-    QStandardItemModel *m_signal_model, *m_concentration_model;
-    QVector<QPointer<QtCharts::QVXYModelMapper> >m_signal_mapper;
-    void CreateItemModel();
-    
+    QVector<QPointer<QtCharts::QVXYModelMapper> >m_plot_signal_mapper;
+    QStandardItemModel *m_plot_signal;
+
     
 protected:
-    QVector< DataPoint> m_data;
     int m_type, m_maxsize;
     bool *m_concentrations;
     PlotMode m_plotmode;
     qreal XValue(int i) const;
+    DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
+
+signals:
+    void RowAdded();
 };
 
 #endif // DATACLASS_H

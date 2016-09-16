@@ -21,6 +21,7 @@
 #define LIBMATH_H
 #include <QtGlobal>
 #include <QPair>
+class AbstractTitrationModel;
 qreal MinQuadraticRoot(qreal a, qreal b, qreal c);
 QPair<qreal, qreal> QuadraticRoots(qreal a, qreal b, qreal c);
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
@@ -29,6 +30,7 @@ qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
 qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
-
+void TitrationModel(double *p, double *x, int m, int n, void *data);
+int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param);
 #endif // DATACLASS_H
 

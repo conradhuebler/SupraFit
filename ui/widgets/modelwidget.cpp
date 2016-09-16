@@ -22,6 +22,7 @@
 #include "cmath"
 
 #include <QtCore/QTimer>
+#include <QtWidgets/QGroupBox>
 #include <QGridLayout>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QLabel>
@@ -29,85 +30,116 @@
 #include <QtWidgets/QLineEdit>
 #include <QDebug>
 #include "modelwidget.h"
-ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
+
+ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
 {
-    qDebug() << m_model->Constants();
-    QGridLayout *layout = new QGridLayout;
-    QVBoxLayout *sign_layout = new QVBoxLayout;
-    QLabel *pure_shift = new QLabel(tr("Pure Shift"));
-    sign_layout->addWidget(pure_shift);
-    for(int i = 0; i < m_model->MaxVars(); ++i)
-    {
-        QDoubleSpinBox *signal = new QDoubleSpinBox;
-        signal->setSingleStep(1e-2);
-        signal->setDecimals(4);
-        signal->setSuffix(" ppm");
-        signal->setValue(m_model->PureSignal(i));
-        connect(signal, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
-        m_pure_signals << signal;
-        sign_layout->addWidget(signal);
-    }
-    QHBoxLayout *complex_layout = new QHBoxLayout;
+    QHBoxLayout *layout = new QHBoxLayout;
+    m_d_0 = new QDoubleSpinBox;
+    layout->addWidget(m_d_0);
+    m_d_0->setSingleStep(1e-2);
+    m_d_0->setDecimals(4);
+    m_d_0->setSuffix(" ppm");
+    m_d_0->setValue(m_model->PureSignal(m_no));
+    connect(m_d_0, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
         QPointer<QDoubleSpinBox >constant = new QDoubleSpinBox;
-            m_constants << constant;
-            constant->setSingleStep(1e-2);
-            constant->setDecimals(4);
-            constant->setPrefix("10^");
-            constant->setValue(m_model->Constants()[i]);
-            connect(constant, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
-        QVBoxLayout *sign_layout = new QVBoxLayout;
-            sign_layout->addWidget(constant);
-        
-        QLabel *pure_shift = new QLabel(tr("K11 Shift"));
-        sign_layout->addWidget(pure_shift);
-        
-        
-        QVector<QPointer < QDoubleSpinBox > > row;
-        qDebug() << "Maxvars" << m_model->MaxVars();
-        for(int j = 0; j < m_model->MaxVars(); ++j)
-        {
-            QDoubleSpinBox *signal = new QDoubleSpinBox;
-            signal->setSingleStep(1e-2);
-            signal->setDecimals(4);
-            signal->setSuffix(" ppm");
-            signal->setValue(m_model->Pair(i, j).second);
-            connect(signal, SIGNAL(valueChanged(QString)), this, SLOT(recalulate()));
-            sign_layout->addWidget(signal);
-            row << signal;
-            
-            
-            
-        } 
-         complex_layout->addLayout(sign_layout);
-        m_complex_signals << row;
-        
+        m_constants << constant;
+        constant->setSingleStep(1e-2);
+        constant->setDecimals(4);
+        constant->setSuffix("ppm");
+        constant->setValue(m_model->Pair(i, m_no).second);
+        connect(constant, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
+        layout->addWidget(constant);
     }
-    QVBoxLayout *error_layout = new QVBoxLayout;    
-    QLabel *error_label = new QLabel(tr("Summ of Error:"));
-            error_layout->addWidget(error_label);
-         for(int j = 0; j < m_model->MaxVars(); ++j)
-        {
-          QPointer<QLineEdit > error = new QLineEdit;
-                error->setReadOnly(true);
-            error_layout->addWidget(error); 
-                error->setText(QString::number(m_model->SumOfErrors(j)));
-                m_errors << error;  
-            
-        }
     
-    layout->addLayout(error_layout, 1, 2);
-    m_minimize = new QPushButton("mini");
-    layout->addLayout(sign_layout, 1, 0);
-    layout->addLayout(complex_layout, 1, 1);
-    layout->addWidget(m_minimize, 2, 0);
-    connect(m_minimize, SIGNAL(clicked()), this, SLOT(Minimize()));
-    
-    m_sum_error = new QLineEdit;
-    layout->addWidget(m_sum_error, 2, 1);
-    m_sum_error->setReadOnly(true);
+    if(m_model->Type() != 3)
+    {
+    error = new QLineEdit;
+    error->setReadOnly(true);
+    layout->addWidget(error); 
+    error->setText(QString::number(m_model->SumOfErrors(m_no)));
+    }
     setLayout(layout);
+    
+    setMaximumHeight(50);
+    setMinimumHeight(50);
+    
+    connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
+    
+}
+
+ModelElement::~ModelElement()
+{
+}
+
+double ModelElement::D0() const
+{
+    
+    return m_d_0->value();
+}
+
+
+QVector<double > ModelElement::D() const
+{
+    QVector<double > numbers;
+    for(int i = 0; i < m_constants.size(); ++i)
+        numbers << m_constants[i]->value();
+    return numbers;
+}
+
+void ModelElement::Update()
+{
+    m_d_0->setValue(m_model->PureSignal(m_no));
+    
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    {
+        m_constants[i]->setValue(m_model->Pair(i, m_no).second);
+    }
+    if(m_model->Type() != 3)
+        error->setText(QString::number(m_model->SumOfErrors(m_no)));
+    
+}
+
+
+
+ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
+{
+    qDebug() << m_model->Constants();
+    m_layout = new QGridLayout;
+    QLabel *pure_shift = new QLabel(tr("Pure Shift"));
+    m_layout->addWidget(pure_shift, 0, 0);
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    {
+        QPointer<QDoubleSpinBox >constant = new QDoubleSpinBox;
+        m_constants << constant;
+        constant->setSingleStep(1e-2);
+        constant->setDecimals(4);
+        constant->setPrefix("10^");
+        constant->setValue(m_model->Constants()[i]);
+        connect(constant, SIGNAL(valueChanged(double)), this, SLOT(recalulate()));
+        m_layout->addWidget(constant, 0, i+1);
+    }
+    m_layout->addWidget( new QLabel(tr("Error")), 0, m_model->ConstantSize()+2);
+    m_sign_layout = new QVBoxLayout;
+    m_sign_layout->setAlignment(Qt::AlignTop);
+    
+    
+    for(int i = 0; i < m_model->MaxVars(); ++i)
+    {
+        ModelElement *el = new ModelElement(m_model, i);
+        connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
+        m_sign_layout->addWidget(el);
+        m_model_elements << el;
+    }
+    m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
+    if(m_model->Type() == 1)
+        DiscreteUI();
+    else if(m_model->Type() == 3)
+        EmptyUI();
+    
+    
+    setLayout(m_layout);
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
 
@@ -115,14 +147,44 @@ ModelWidget::~ModelWidget()
 {
     delete m_model;
 }
+
+
+
+void ModelWidget::DiscreteUI()
+{
+    m_minimize = new QPushButton("mini");
+    
+    QHBoxLayout *mini = new QHBoxLayout;
+    
+    
+    connect(m_minimize, SIGNAL(clicked()), this, SLOT(Minimize()));
+    
+    m_sum_error = new QLineEdit;
+    m_sum_error->setReadOnly(true);
+    
+    mini->addWidget(m_minimize);
+    mini->addWidget(new QLabel(tr("Sum of Error:")));
+    mini->addWidget(m_sum_error);
+    m_layout->addLayout(mini, 3, 0,1,2);
+}
+
+void ModelWidget::EmptyUI()
+{
+    m_add_sim_signal = new QPushButton(tr("Add Signal"));
+    connect(m_add_sim_signal, SIGNAL(clicked()), this, SLOT(AddSimSignal()));
+    m_layout->addWidget(m_add_sim_signal);
+}
+
+
+
 void ModelWidget::Repaint()
 {
+    if(m_model->Type() == 3)
+        return;
     qreal error = 0;
-    for(int j = 0; j < m_errors.size(); ++j)
-    {
-        m_errors[j]->setText(QString::number(m_model->SumOfErrors(j)));
+    for(int j = 0; j < m_model_elements.size(); ++j)
         error += m_model->SumOfErrors(j);
-    }
+
     m_sum_error->setText(QString::number(error));
 }
 
@@ -145,13 +207,13 @@ void ModelWidget::CollectParameters()
     QVector<qreal > pure_signals, constants;
     QVector<QVector <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
-    for(int i = 0; i < m_pure_signals.size(); ++i)
+    for(int i = 0; i < m_model_elements.size(); ++i)
     {
-        pure_signals << m_pure_signals[i]->value();
+        pure_signals << m_model_elements[i]->D0();
         
-        for(int j = 0; j < m_model->ConstantSize(); ++j)
+        for(int j = 0; j < m_model_elements[i]->D().size(); ++j)
         {
-            complex_signals[j] << m_complex_signals[j][i]->value();
+            complex_signals[j] << m_model_elements[i]->D()[j];
         }
     }
     for(int j = 0; j < m_model->ConstantSize(); ++j)
@@ -159,35 +221,42 @@ void ModelWidget::CollectParameters()
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
 
-    qDebug() << constants;
     m_model->setConstants(constants);
-    qDebug() << pure_signals;
+    qDebug() << pure_signals << constants << complex_signals;
     m_model->setPureSignals(pure_signals);
 }
 
 
 void ModelWidget::Minimize()
 {
-    for(int i = 0; i < 1; ++i)
-    {
-    if(m_pending)
-        return;
-//     m_pending = true;
-    CollectParameters();
-    QVector<int > v(10,0);
-    qDebug() <<"Start Minimize";
-    m_model->Minimize();
-    qDebug() <<"Minimize done";
-    
-    QVector<qreal > constants =  m_model->Constants();
 
+        if(m_pending)
+            return;
+        //     m_pending = true;
+        CollectParameters();
+        QVector<int > v(10,0);
+        qDebug() <<"Start Minimize";
+        QVector<qreal > constants = m_model->Minimize();
+        qDebug() <<"Minimize done";
+        
+//         QVector<qreal > constants =  m_model->Constants();
+        qDebug() << constants;
         for(int j = 0; j < constants.size(); ++j)
             m_constants[j]->setValue(constants[j]);
-    qDebug() << "Constants set.";
-//     m_pending = false;
-//     QTimer::singleShot(100, this, SLOT(Repaint()));
-    }
+        qDebug() << "Constants set.";
     qDebug() << "leaving";
+}
+
+void ModelWidget::AddSimSignal()
+{
+    
+    ModelElement *el = new ModelElement(m_model, m_model_elements.size());
+//     m_model->addRow(m_model_elements.size()); 
+    emit m_model->RowAdded();
+    m_sign_layout->addWidget(el);
+    m_model_elements << el;
+    connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
+    
 }
 
 

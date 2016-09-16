@@ -20,8 +20,10 @@
 #ifndef MODELWIDGET_H
 #define MODELWIDGET_H
 
-#include <QtGui/qwidget.h>
+#include <QtWidgets/qwidget.h>
+#include <QtWidgets/QGroupBox>
 #include <QDoubleSpinBox>
+#include <QtWidgets/QVBoxLayout>
 
 #include "core/data/dataclass.h"
 #include "core/data/modelclass.h"
@@ -29,6 +31,34 @@
 class QDoubleSpinBox;
 class QPushButton;
 class QLineEdit;
+class QVBoxLayout;
+class QGridLayout;
+
+class ModelElement : public QGroupBox
+{
+  Q_OBJECT
+public:
+    ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget *parent = 0);
+    ~ModelElement();
+    double D0() const;
+    QVector<double > D() const;
+private:
+    QDoubleSpinBox *m_d_0;
+    QVector<QDoubleSpinBox * > m_constants;
+    QPointer<QLineEdit > error;
+    QPushButton *m_remove;
+    QPointer<AbstractTitrationModel > m_model;
+    int m_no;
+    
+private slots:
+    void Update();
+signals:
+    void ValueChanged();
+    void Minimize();
+    void SetColor();
+};
+
+
 
 
 class ModelWidget : public QWidget
@@ -38,22 +68,29 @@ class ModelWidget : public QWidget
 public:
 ModelWidget(QPointer< AbstractTitrationModel > model, QWidget *parent = 0);
 ~ModelWidget();
-
+virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
 private:
     QPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
     QVector< QVector<QPointer<QDoubleSpinBox > > > m_complex_signals;
     QVector<QPointer<QDoubleSpinBox> > m_constants;
+    QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
+    QVector<QPointer< QPushButton > > m_sim_signal_remove;
+    QVBoxLayout *m_sign_layout;
+    QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPushButton *m_switch, *m_minimize; 
+    QPushButton *m_switch, *m_minimize, *m_add_sim_signal; 
     bool m_pending;
 
+    void DiscreteUI();
+    void EmptyUI();
+    
     void CollectParameters();
 private slots:
     void Minimize();
     void Repaint();
-    
+    void AddSimSignal();
    
 public slots:
     void recalulate();

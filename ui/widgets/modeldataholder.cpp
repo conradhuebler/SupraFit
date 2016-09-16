@@ -46,6 +46,8 @@ ModelDataHolder::ModelDataHolder()
     m_add = new QPushButton(tr("Add Titration\n Model"));
         m_add->setFlat(true);
         m_add->setDisabled(true);
+    m_simulate = new QPushButton(tr("Simulate"));
+        m_add->setFlat(true);
     QMenu *menu = new QMenu;
     QAction *ItoI = new QAction(this);
     ItoI->setText(tr("1:1-Model"));
@@ -56,17 +58,34 @@ ModelDataHolder::ModelDataHolder()
         connect(IItoI_ItoI, SIGNAL(triggered()), this, SLOT(AddModel21()));
         menu->addAction(IItoI_ItoI);
         
+   
         
     QAction *ItoI_ItoII = new QAction(this);
     ItoI_ItoII->setText(tr("1:1/1:2-Model"));
         connect(ItoI_ItoII, SIGNAL(triggered()), this, SLOT(AddModel12()));
         menu->addAction(ItoI_ItoII);
-    
+     m_add->setMenu(menu);
+        menu = new QMenu;
+    ItoI = new QAction(this);
+    ItoI->setText(tr("1:1-Model"));
+        connect(ItoI, SIGNAL(triggered()), this, SLOT(SimulateModel11()));
+        menu->addAction(ItoI);
+    IItoI_ItoI = new QAction(this);
+    IItoI_ItoI->setText(tr("2:1/1:1-Model"));
+        connect(IItoI_ItoI, SIGNAL(triggered()), this, SLOT(SimulateModel21()));
+        menu->addAction(IItoI_ItoI);
         
-    m_add->setMenu(menu);
+        
+    ItoI_ItoII = new QAction(this);
+    ItoI_ItoII->setText(tr("1:1/1:2-Model"));
+        connect(ItoI_ItoII, SIGNAL(triggered()), this, SLOT(SimulateModel12()));
+        menu->addAction(ItoI_ItoII);
+        
+    m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
-    layout->addWidget(m_datawidget,1, 0);
-    layout->addWidget(m_modelsWidget, 2, 0);
+    layout->addWidget(m_simulate, 0,1);
+    layout->addWidget(m_datawidget,1, 0, 1, 2);
+    layout->addWidget(m_modelsWidget, 2, 0, 1, 2);
         
 }
 
@@ -75,7 +94,7 @@ ModelDataHolder::~ModelDataHolder()
     
 }
 
-void ModelDataHolder::setData(DataClass data)
+void ModelDataHolder::setData(DataClass *data)
 {
     m_data = new DataClass(data); 
     m_datawidget->setData(m_data);
@@ -102,6 +121,7 @@ void ModelDataHolder::AddModel(int model)
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
     m_charts->addModel(t);
+
 }
 
 
@@ -119,6 +139,47 @@ void ModelDataHolder::AddModel12()
 {
     AddModel(ModelDataHolder::ItoI_ItoII);
 }
+
+
+void ModelDataHolder::SimulateModel(int model)
+{
+    QPointer<AbstractTitrationModel > t;
+    m_data = new DataClass(DataClass::EmptyData);
+    switch(model){
+        case 1:
+            t = new ItoI_Model(m_data);
+            break;
+        case 2:
+            t = new IItoI_ItoI_Model(m_data);
+            break;
+        case 3:
+            t = new ItoI_ItoII_Model(m_data);
+            break;
+        default:
+           return; 
+        
+    };
+    ModelWidget *modelwidget = new ModelWidget(t);
+    m_modelsWidget->addTab(modelwidget, t->Name());
+    m_datawidget->setData(m_data);
+    m_charts->addModel(t);
+}
+
+void ModelDataHolder::SimulateModel11()
+{
+    SimulateModel(ModelDataHolder::ItoI);
+}
+
+void ModelDataHolder::SimulateModel21()
+{
+    SimulateModel(ModelDataHolder::IItoI_ItoI);
+}
+
+void ModelDataHolder::SimulateModel12()
+{
+    SimulateModel(ModelDataHolder::ItoI_ItoII);
+}
+
 
 void ModelDataHolder::RemoveTab(int i)
 {

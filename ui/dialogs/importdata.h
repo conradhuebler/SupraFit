@@ -34,6 +34,7 @@
 class QDialogButtonBox;
 class QLineEdit;
 class QPushButton;
+class QSpinBox;
 
 class SelectHeader : public QHeaderView
 {
@@ -126,7 +127,7 @@ class ImportData : public QDialog
     Q_OBJECT
 
 public:
-    ImportData(QWidget *parent = 0);
+    ImportData(const QString &file, QWidget *parent = 0);
     ~ImportData();
 
      inline DataClass getStoredData(){ return *m_storeddata;}
@@ -137,11 +138,15 @@ private:
     QPointer<QTableView > m_table;
     QPointer<QLineEdit > m_line;
     QPointer<QPushButton > m_file;
+    QPointer<QSpinBox > m_conc, m_sign;
     QPointer<QDialogButtonBox > m_buttonbox;
-     DataClass *m_storeddata;
+    DataClass *m_storeddata;
+    QString m_filename;
 private slots:
     void LoadFile();
+    void SelectFile();
     void accept();
+    void NoChanged();
 };
 
 #endif // IMPORTDATA_H

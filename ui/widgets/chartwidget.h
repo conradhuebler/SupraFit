@@ -31,7 +31,6 @@
 class AbstractTitrationModel;
 class QComboBox;
 class QPushButton;
-class QTableView;
 class ChartWidget : public QWidget
 {
     Q_OBJECT
@@ -39,7 +38,7 @@ class ChartWidget : public QWidget
 public:
     ChartWidget();
     ~ChartWidget();
-    
+    void setRawData(const QPointer<DataClass> rawdata); 
     
     
 
@@ -54,20 +53,17 @@ private:
     QPointer<QComboBox > createThemeBox() const;
    
     QPointer<QComboBox > m_x_scale, m_themebox;
-    QPushButton *m_click;
-    QTableView *m_data;
     QPointer<QtCharts::QChartView > m_chartwidget, m_errorchart;
     QPointer<QtCharts::QChart > m_chart, m_errorview;
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
     QVector< QPointer<AbstractTitrationModel > > m_models;
-
+    QPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     qreal m_y_max_chart, m_y_min_error, m_y_max_error, m_x_max_chart, m_x_max_error, m_y_min_chart;
     QSharedPointer<QtCharts::QLineSeries > m_error_axis;
     void Paint();
 private slots:
     void Repaint();
-    void Datas(); 
     void updateUI();
 };
 

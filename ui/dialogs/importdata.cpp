@@ -17,23 +17,29 @@
  * 
  */
 #include "core/data/dataclass.h"
+#include "core/filehandler.h"
 
 
 #include <QtCore/QFile>
 #include <QStandardItemModel>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QLabel>
+
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableView>
+#include <QtWidgets/QMessageBox>
 
 #include <QDebug>
 #include "importdata.h"
 
-ImportData::ImportData(QWidget *parent) : QDialog(parent)
+ImportData::ImportData(const QString &file, QWidget *parent) : QDialog(parent), m_filename(file)
 {
     setUi();
+    LoadFile();
     
 }
 
@@ -53,7 +59,14 @@ void ImportData::setUi()
    
        connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+   
     
+    m_conc = new QSpinBox;
+    connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
+    m_conc->setMinimum(2);
+    m_sign = new QSpinBox;
+    m_sign->setMinimum(1);
+    connect(m_sign, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
    m_line = new QLineEdit;
    m_file = new QPushButton("Load");
    connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
@@ -61,41 +74,50 @@ void ImportData::setUi()
    
    layout->addWidget(m_line, 0, 0);
    layout->addWidget(m_file, 0, 1);
-   layout->addWidget(m_table, 1, 0, 1, 1);
-   layout->addWidget(m_buttonbox, 3, 1);
+   layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
+   layout->addWidget(m_conc, 1, 1);
+   layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
+   layout->addWidget(m_sign, 1, 3);
+   layout->addWidget(m_table, 3, 0, 1, 2);
+   layout->addWidget(m_buttonbox, 4, 1);
    
    setLayout(layout);
 }
 
+void ImportData::NoChanged()
+{
+    m_conc->setMaximum(2); //FIXME for now
+    m_sign->setMaximum(m_table->model()->columnCount()  - 2);
+}
+
+
 void ImportData::LoadFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", ".");
+
     
     
-    
-    
-    QFile file(filename);
-    if(!file.open(QIODevice::ReadOnly));
+    m_line->setText(m_filename);
+    FileHandler *filehandler = new FileHandler(m_filename, this); 
+    if(filehandler->FileSupported())
     {
-        qDebug() << file.errorString();
-//         return; //FIXME Hää
-    }
+        QStandardItemModel *model = filehandler->getData(); 
+        m_table->setModel(model);
+    }else
+        QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
+
     
-    m_line->setText(filename);
-    QStandardItemModel *model = new QStandardItemModel;
-    QString f_content = file.readAll();
-    QStringList lines = f_content.split("\n");
-    foreach(const QString &line, lines)
-    {
-        QList<QStandardItem *> row;
-        foreach(const QString &item, line.split("\t"))
-            row.append(new QStandardItem(item));
-        model->appendRow(row);
-    }
+    delete filehandler;
     
-    m_table->setModel(model);
+    NoChanged();
         
 }
+
+void ImportData::SelectFile()
+{
+        m_filename = QFileDialog::getOpenFileName(this, "Select file", ".");
+        LoadFile();
+}
+
 
 void ImportData::accept()
 {
@@ -107,17 +129,15 @@ void ImportData::accept()
     int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
     for(int i = 0; i < rows; ++i)
     {
-            DataPoint point;
+            QVector<qreal > conc, sign;
             for(int j = 0; j < columns; ++j)
             {
-                if(j == 0)
-                    point.setConc1(model->item(i, j)->data(Qt::DisplayRole).toDouble());
-                else if(j == 1)
-                    point.setConc2(model->item(i, j)->data(Qt::DisplayRole).toDouble());
+                if(j < m_conc->value())
+                    conc << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
                 else 
-                    point.AppendData(model->item(i, j)->data(Qt::DisplayRole).toDouble());
+                    sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
             }
-        m_storeddata->addPoint(point);
+        m_storeddata->addPoint(conc, sign);
     }
     QDialog::accept();
 }
