@@ -114,6 +114,10 @@ class DataClass : public QObject
     inline bool* Concentration() const { return m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
     inline QStandardItemModel* m() { return m_plot_signal; }
+    
+    QVector<qreal >  getSignals(QVector<int > dealing_signals = QVector<int >(1,0));
+        void setActiveSignals(QVector<int > active_signals) { m_active_signals = active_signals; }
+
     /*
     void setData(qreal point, int line, int row)
     {
@@ -139,7 +143,7 @@ private:
     QVector<QColor > m_colors;
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_plot_signal_mapper;
     QStandardItemModel *m_plot_signal;
-
+    
     
 protected:
     int m_type, m_maxsize;
@@ -147,7 +151,7 @@ protected:
     PlotMode m_plotmode;
     qreal XValue(int i) const;
     DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
-
+    QVector<int > m_active_signals;
 signals:
     void RowAdded();
 };

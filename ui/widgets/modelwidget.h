@@ -33,7 +33,7 @@ class QPushButton;
 class QLineEdit;
 class QVBoxLayout;
 class QGridLayout;
-
+class QCheckBox;
 class ModelElement : public QGroupBox
 {
   Q_OBJECT
@@ -42,11 +42,13 @@ public:
     ~ModelElement();
     double D0() const;
     QVector<double > D() const;
+    bool Handle() const;
 private:
     QDoubleSpinBox *m_d_0;
     QVector<QDoubleSpinBox * > m_constants;
     QPointer<QLineEdit > error;
     QPushButton *m_remove;
+    QCheckBox *m_handle;
     QPointer<AbstractTitrationModel > m_model;
     int m_no;
     

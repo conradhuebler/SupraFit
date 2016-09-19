@@ -163,15 +163,20 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
     dptr->model->setParamter(parameter);
  
     dptr->model->CalculateSignal();
-    int index = 0;
-    for(int j = 0; j < dptr->model->SignalCount(); ++j)
-      {
-        for(int i = 0; i < dptr->model->DataPoints(); ++i)
-        {
-            x[index] = dptr->model->ModelSignal()->data(j,i);
-            index++;
-        }
-    }
+    QVector<qreal > x_var = dptr->model->getCalculatedSignals();
+    qDebug() << x_var;
+    for(int i = 0; i < x_var.size(); ++i)
+        x[i] = x_var[i];
+    
+//     int index = 0;
+//     for(int j = 0; j < dptr->model->SignalCount(); ++j)
+//       {
+//         for(int i = 0; i < dptr->model->DataPoints(); ++i)
+//         {
+//             x[index] = dptr->model->ModelSignal()->data(j,i);
+//             index++;
+//         }
+//     }
 }
 
 int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param)
@@ -181,16 +186,20 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     opts[4]=LM_DIFF_DELTA;
     struct mydata data;
     data.model = model;
-    int index = 0;
+//     int index = 0;
     double x[data.model->DataPoints()*data.model->SignalCount()];
-    for(int j = 0; j < data.model->SignalCount(); ++j)
-    {
-        for(int i = 0; i < data.model->DataPoints(); ++i)
-        {
-            x[index] = data.model->SignalModel()->data(j,i); 
-            index++;
-        }
-    }
+    
+    QVector<qreal > x_var = data.model->getSignals();
+    for(int i = 0; i < x_var.size(); ++i)
+        x[i] = x_var[i];
+//     for(int j = 0; j < data.model->SignalCount(); ++j)
+//     {
+//         for(int i = 0; i < data.model->DataPoints(); ++i)
+//         {
+//             x[index] = data.model->SignalModel()->data(j,i); 
+//             index++;
+//         }
+//     }
     
 
     QVector<double > parameter = param;

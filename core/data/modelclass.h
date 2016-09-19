@@ -57,6 +57,7 @@ public:
     virtual void setConstants(QVector< qreal > list) = 0;
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
     inline  void CalculateSignal() { CalculateSignal(Constants());}
+    QVector<qreal >  getCalculatedSignals(QVector<int > active_signal = QVector<int >(1,0));
     virtual QVector<QVector< qreal > > AllShifts() = 0;
     virtual QVector<qreal> Minimize(QVector<int > vars);
     virtual QVector<qreal> Minimize();
@@ -75,7 +76,7 @@ public:
 private:
     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
-    
+
     bool m_debug;
 protected:
     virtual void MiniShifts() = 0;
@@ -140,7 +141,7 @@ public:
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
     QVector<qreal> Minimize(QVector<int > vars);
-    QVector<qreal > Constants() const { return QVector<qreal>() << m_K21 << m_K11; }
+    QVector<qreal > Constants() const { return m_complex_constants; }
     virtual QVector< QVector< qreal > > AllShifts();
     void MiniShifts();
 private:
@@ -148,7 +149,7 @@ private:
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     
     qreal m_K21, m_K11;
-    QVector<qreal > m_ItoI_signals, m_IItoI_signals;
+    QVector<qreal > m_ItoI_signals, m_IItoI_signals, m_complex_constants;
 };
 
 class ItoI_ItoII_Model : public AbstractTitrationModel

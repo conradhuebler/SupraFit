@@ -29,6 +29,7 @@
 #include <QPushButton>
 #include <QtWidgets/QLineEdit>
 #include <QDebug>
+#include <QCheckBox>
 #include "modelwidget.h"
 
 ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
@@ -53,6 +54,10 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
         layout->addWidget(constant);
     }
     
+    m_handle = new QCheckBox(this);
+    m_handle->setText("Use");
+    m_handle->setChecked(true);
+    layout->addWidget(m_handle);
     if(m_model->Type() != 3)
     {
     error = new QLineEdit;
@@ -72,6 +77,12 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
 ModelElement::~ModelElement()
 {
 }
+
+bool ModelElement::Handle() const
+{
+    return m_handle->isChecked();
+}
+
 
 double ModelElement::D0() const
 {
@@ -207,10 +218,11 @@ void ModelWidget::CollectParameters()
     QVector<qreal > pure_signals, constants;
     QVector<QVector <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
+    QVector<int > active_signals(m_model_elements.size(), 0);
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
         pure_signals << m_model_elements[i]->D0();
-        
+        active_signals[i] = m_model_elements[i]->Handle();
         for(int j = 0; j < m_model_elements[i]->D().size(); ++j)
         {
             complex_signals[j] << m_model_elements[i]->D()[j];
@@ -220,7 +232,7 @@ void ModelWidget::CollectParameters()
         m_model->setComplexSignals(complex_signals[j], j + 1);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
-
+    m_model->setActiveSignals(active_signals);
     m_model->setConstants(constants);
     qDebug() << pure_signals << constants << complex_signals;
     m_model->setPureSignals(pure_signals);
@@ -262,3 +274,4 @@ void ModelWidget::AddSimSignal()
 
 
 #include "modelwidget.moc"
+#include <QCheckBox>

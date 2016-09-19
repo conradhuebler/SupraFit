@@ -266,7 +266,25 @@ QColor DataClass::ColorCode(int i) const
     }
 }
 
-
+QVector<double>   DataClass::getSignals(QVector<int > active_signal)
+{
+    if(active_signal.size() < SignalCount() && m_active_signals.size() < SignalCount())
+        active_signal = QVector<int>(SignalCount(), 1);
+    else
+        active_signal = m_active_signals;
+    QVector<double> x(DataPoints()*SignalCount(), 0);
+    int index = 0;
+        for(int j = 0; j < SignalCount(); ++j)
+    {
+        for(int i = 0; i < DataPoints(); ++i)
+        {
+            if(active_signal[j] == 1)
+                x[index] = SignalModel()->data(j,i); 
+            index++;
+        }
+    }
+    return x;
+}
 
 void DataClass::SwitchConentrations()
 {
