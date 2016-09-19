@@ -63,8 +63,9 @@ ChartWidget::~ChartWidget()
 void ChartWidget::setRawData(const QPointer<DataClass> rawdata) 
 {
     m_rawdata = rawdata;
+    
     m_rawdata->PlotModel();
-        AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
+    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     m_rawdata->setPlotMode(j);
     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
         {
@@ -84,14 +85,17 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 
         }
         formatAxis();
-        
+    
 }
+
+
+
 void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 {
     m_models << model;
     model->UpdatePlotModels();
    connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
-
+   connect(model, SIGNAL(ActiveSignalsChanged(QVector<int>)), this, SLOT(setActiveSignals(QVector<int>)));
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
     for(int i = 0; i < model->SignalCount(); ++i)
@@ -210,13 +214,24 @@ void ChartWidget::formatAxis()
         if(!series->pointsVector().isEmpty())
             for(int i = 0; i < series->pointsVector().size(); ++i)
             {
-                if(series->pointsVector()[i].y() > m_y_max_chart)
-                    m_y_max_chart = series->pointsVector()[i].y();
-                if(series->pointsVector()[i].y() < m_y_min_chart)
-                    m_y_min_chart = series->pointsVector()[i].y();
+                if(series->isVisible())
+                {
+                    if(series->pointsVector()[i].y() > m_y_max_chart)
+                        m_y_max_chart = series->pointsVector()[i].y();
+                    if(series->pointsVector()[i].y() < m_y_min_chart)
+                        m_y_min_chart = series->pointsVector()[i].y();
+                }
+                qDebug() << m_y_max_chart << "max chart value";
             }
     }
     m_chart->createDefaultAxes();
+    
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    y_axis->setMax(m_y_max_chart*1.1);
+    qDebug() << int(m_y_max_chart) + 1;
+    y_axis->setTickCount(int(m_y_max_chart - m_y_min_chart) + 2);
+    y_axis->setMin(int(m_y_min_chart));
+    
     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
     if(m_x_max_chart > 1)
     {
@@ -224,14 +239,11 @@ void ChartWidget::formatAxis()
         x_axis->setTickCount(int(m_x_max_chart)+2);
     }else if(m_x_max_chart)
         x_axis->setMax(m_x_max_chart+m_x_max_chart*0.01);
-    if(!m_x_max_chart)
-        return;
+     if(!m_x_max_chart)
+         return;
     x_axis->setMin(0);
     
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
-    y_axis->setMax(int(m_y_max_chart) + 1);
-    y_axis->setTickCount(int(m_y_max_chart - m_y_min_chart) + 2);
-    y_axis->setMin(int(m_y_min_chart));
+ 
     
     
 }
@@ -243,10 +255,13 @@ void ChartWidget::formatErrorAxis()
         if(!series->pointsVector().isEmpty())
             for(int i = 0; i < series->pointsVector().size(); ++i)
             {
-                if(series->pointsVector()[i].y() > m_y_max_error)
+                if(series->isVisible())
+                {
+                 if(series->pointsVector()[i].y() > m_y_max_error)
                     m_y_max_error = series->pointsVector()[i].y();
-                if(series->pointsVector()[i].y() < m_y_min_error)
+                 if(series->pointsVector()[i].y() < m_y_min_error)
                     m_y_min_error = series->pointsVector()[i].y();
+                }
             }
     }
     m_errorview->createDefaultAxes();
@@ -311,6 +326,21 @@ QtCharts::QChart::ChartTheme theme = (QtCharts::QChart::ChartTheme) m_themebox->
         window()->setPalette(pal);
 //     }
 }
+
+void ChartWidget::setActiveSignals( QVector<int> active_signals)
+{
+    if(active_signals.size() < m_chart->series().size()  && active_signals.size() < m_errorview->series().size())
+    {
+        for(int i = 0; i < active_signals.size(); ++i)
+        {
+            m_chart->series()[i]->setVisible(active_signals[i]);
+            m_chart->series()[i + active_signals.size()]->setVisible(active_signals[i]);
+            m_errorview->series()[i + 1]->setVisible(active_signals[i]);
+        }
+        Repaint();
+    }
+}
+
 
 
 #include "chartwidget.moc"

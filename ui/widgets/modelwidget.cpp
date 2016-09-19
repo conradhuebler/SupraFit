@@ -20,7 +20,7 @@
 #include "core/data/modelclass.h"
 #include <QtMath>
 #include "cmath"
-
+#include <QApplication>
 #include <QtCore/QTimer>
 #include <QtWidgets/QGroupBox>
 #include <QGridLayout>
@@ -30,6 +30,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QDebug>
 #include <QCheckBox>
+#include <QMessageBox>
 #include "modelwidget.h"
 
 ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
@@ -57,6 +58,7 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     m_handle = new QCheckBox(this);
     m_handle->setText("Use");
     m_handle->setChecked(true);
+    connect(m_handle, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
     layout->addWidget(m_handle);
     if(m_model->Type() != 3)
     {
@@ -112,7 +114,12 @@ void ModelElement::Update()
     
 }
 
-
+void ModelElement::SetOptimizer()
+{
+    
+    
+    
+}
 
 ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
 {
@@ -129,6 +136,7 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
         constant->setPrefix("10^");
         constant->setValue(m_model->Constants()[i]);
         connect(constant, SIGNAL(valueChanged(double)), this, SLOT(recalulate()));
+        
         m_layout->addWidget(constant, 0, i+1);
     }
     m_layout->addWidget( new QLabel(tr("Error")), 0, m_model->ConstantSize()+2);
@@ -140,6 +148,7 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
     {
         ModelElement *el = new ModelElement(m_model, i);
         connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
+        connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
         m_sign_layout->addWidget(el);
         m_model_elements << el;
     }
@@ -163,17 +172,25 @@ ModelWidget::~ModelWidget()
 
 void ModelWidget::DiscreteUI()
 {
-    m_minimize = new QPushButton("mini");
-    
+    m_minimize_all = new QPushButton(tr("Global Fit"));
+    m_minimize_single = new QPushButton(tr("Local Fits"));
+    m_maxiter = new QSpinBox;
+    m_maxiter->setValue(20);
+    m_maxiter->setMaximum(999999);
     QHBoxLayout *mini = new QHBoxLayout;
     
     
-    connect(m_minimize, SIGNAL(clicked()), this, SLOT(Minimize()));
-    
+    connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
+    connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
+
+        
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
-    mini->addWidget(m_minimize);
+    mini->addWidget(m_minimize_all);
+    mini->addWidget(m_minimize_single);
+    mini->addWidget(new QLabel(tr("No. of max. Iter.")));
+    mini->addWidget(m_maxiter);
     mini->addWidget(new QLabel(tr("Sum of Error:")));
     mini->addWidget(m_sum_error);
     m_layout->addLayout(mini, 3, 0,1,2);
@@ -234,30 +251,74 @@ void ModelWidget::CollectParameters()
         constants << m_constants[i]->value();
     m_model->setActiveSignals(active_signals);
     m_model->setConstants(constants);
-    qDebug() << pure_signals << constants << complex_signals;
     m_model->setPureSignals(pure_signals);
 }
 
 
-void ModelWidget::Minimize()
+void ModelWidget::GlobalMinimize()
 {
 
-        if(m_pending)
+    if(m_maxiter->value() > 10000)
+    {
+        int r = QMessageBox::warning(this, tr("So viel."),
+                                     tr("Wirklich so lange rechnen? "),
+                                     QMessageBox::Yes | QMessageBox::Default,
+                                     QMessageBox::No | QMessageBox::Escape);
+        if (r == QMessageBox::No)
+            return;
+    }
+    if(m_pending)
             return;
         //     m_pending = true;
         CollectParameters();
-        QVector<int > v(10,0);
+                QVector<int > v(10,0);
         qDebug() <<"Start Minimize";
-        QVector<qreal > constants = m_model->Minimize();
+        QVector<qreal > constants = m_model->Minimize(m_maxiter->value());
         qDebug() <<"Minimize done";
-        
-//         QVector<qreal > constants =  m_model->Constants();
+//          QVector<qreal > constants =  m_model->Constants();
         qDebug() << constants;
         for(int j = 0; j < constants.size(); ++j)
             m_constants[j]->setValue(constants[j]);
         qDebug() << "Constants set.";
     qDebug() << "leaving";
 }
+
+
+void ModelWidget::LocalMinimize()
+{
+    if(m_maxiter->value() > 10000)
+    {
+        int r = QMessageBox::warning(this, tr("So viel."),
+                                     tr("Wirklich so lange rechnen? "),
+                                     QMessageBox::Yes | QMessageBox::Default,
+                                     QMessageBox::No | QMessageBox::Escape);
+        if (r == QMessageBox::No)
+            return;
+    }
+    if(m_pending)
+            return;
+        //     m_pending = true;
+        CollectParameters();
+
+        for(int i = 0; i < m_model->SignalCount(); ++i)
+        {
+            QApplication::processEvents();
+            QVector<int > active_signals(m_model_elements.size(), 0);
+            active_signals[i] = 1;
+        m_model->setActiveSignals(active_signals);
+        QVector<int > v(10,0);
+        qDebug() <<"Start Minimize";
+        QVector<qreal > constants = m_model->Minimize(m_maxiter->value());
+        qDebug() <<"Minimize done";
+        }
+//         QVector<qreal > constants =  m_model->Constants();
+//         qDebug() << constants;
+//         for(int j = 0; j < constants.size(); ++j)
+//             m_constants[j]->setValue(constants[j]);
+        qDebug() << "Constants set.";
+    qDebug() << "leaving"; 
+}
+
 
 void ModelWidget::AddSimSignal()
 {
@@ -271,7 +332,20 @@ void ModelWidget::AddSimSignal()
     
 }
 
+QVector<int> ModelWidget::ActiveSignals()
+{
+    QVector<int > active_signals(m_model_elements.size(), 0);
+    for(int i = 0; i < m_model_elements.size(); ++i)
+        active_signals[i] = m_model_elements[i]->Handle();
+    return active_signals;
+}
 
-
+void ModelWidget::CollectActiveSignals()
+{
+    QVector<int > active_signals = ActiveSignals();
+//     emit ActiveSignalChanged(active_signals);
+    m_model->setActiveSignals(active_signals);
+    
+}
 #include "modelwidget.moc"
 #include <QCheckBox>

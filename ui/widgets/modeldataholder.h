@@ -29,6 +29,7 @@ class DataWidget;
 class QTabWidget;
 class QPushButton;
 class ChartWidget;
+class QPlainTextEdit;
 class ModelDataHolder : public QWidget
 {
     Q_OBJECT
@@ -49,6 +50,7 @@ private:
     QPointer<QPushButton > m_add, m_simulate;
     QPointer<ChartWidget> m_charts;
     DataClass *m_data;
+    QPlainTextEdit *m_logWidget;
     QVector<QPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
     void SimulateModel(int model);
@@ -61,6 +63,7 @@ private slots:
     void SimulateModel21();
     void SimulateModel12();
     void RemoveTab(int i);
+    void addLogEntry(const QString &str);
 signals:
     void ModelAdded(AbstractTitrationModel *model);
 };

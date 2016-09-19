@@ -47,17 +47,19 @@ private:
     QDoubleSpinBox *m_d_0;
     QVector<QDoubleSpinBox * > m_constants;
     QPointer<QLineEdit > error;
-    QPushButton *m_remove;
+    QPushButton *m_remove, *m_optimize;
     QCheckBox *m_handle;
     QPointer<AbstractTitrationModel > m_model;
     int m_no;
     
 private slots:
     void Update();
+    void SetOptimizer();
 signals:
     void ValueChanged();
-    void Minimize();
+    void Minimize(int i);
     void SetColor();
+    void ActiveSignalChanged();
 };
 
 
@@ -79,26 +81,29 @@ private:
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
+    QSpinBox *m_maxiter;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPushButton *m_switch, *m_minimize, *m_add_sim_signal; 
+    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal; 
     bool m_pending;
-
+    QVector<int > ActiveSignals();
     void DiscreteUI();
     void EmptyUI();
     
     void CollectParameters();
 private slots:
-    void Minimize();
+    void GlobalMinimize();
+    void LocalMinimize();
     void Repaint();
     void AddSimSignal();
-   
+    void CollectActiveSignals();
 public slots:
     void recalulate();
 signals:
     void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);
+    void ActiveSignalChanged(QVector<int > active_signals);
 };
 
 #endif // MODELWIDGET_H

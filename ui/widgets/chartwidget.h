@@ -25,7 +25,7 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 
-#include <QtGui/qwidget.h>
+#include <QtWidgets/QWidget>
 #include <QtCore/QPointer>
 #include <QtCore/QVector>
 class AbstractTitrationModel;
@@ -47,6 +47,7 @@ public slots:
     void addLineSeries(const QPointer< QtCharts::QLineSeries >  &series, const QString& str = "Signal");
     void addErrorSeries(const QPointer< QtCharts::QLineSeries >  &series, const QString& str = "Signal");
     void addModel(const QPointer< AbstractTitrationModel > model);
+    
 private:
     void formatAxis();
     void formatErrorAxis();
@@ -65,6 +66,7 @@ private:
 private slots:
     void Repaint();
     void updateUI();
+    void setActiveSignals(QVector<int > active_signals);
 };
 
 #endif // CHARTWIDGET_H

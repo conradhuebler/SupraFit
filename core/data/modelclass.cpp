@@ -34,7 +34,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *p
 {
     
     qDebug() << DataPoints() << Size();
-    
+    m_active_signals = QVector<int>(SignalCount(), 1);
     ptr_concentrations = data->Concentration();
 //     for(int i = 0; i < DataPoints(); ++i)
 //     {
@@ -130,9 +130,11 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 {
     qreal sum = 0;
 
-    if(i >= Size())
+    if(i >= Size() || i >= m_active_signals.size())
         return sum;
     
+    if(m_active_signals[i] == 0)
+        return sum;
     for(int j = 0; j < DataPoints(); ++j)
     {
         sum += qPow(m_model_error->data(i,j),2);
@@ -199,17 +201,41 @@ QVector<qreal> AbstractTitrationModel::Minimize(QVector< int > vars)
 }
 
 
-QVector<qreal> AbstractTitrationModel::Minimize()
+QVector<qreal> AbstractTitrationModel::Minimize(int max)
 { 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     m_repaint = false;
     QVector<qreal> constants = Constants();
-    for(int i = 0; i < 5; ++i)
+    qDebug() << constants;
+    for(int i = 0; i < max; ++i)
     {
+        QApplication::processEvents();
+        QVector<qreal > old_cons = constants;
         MinimizingComplexConstants(this, 100, constants);
         MiniShifts(); 
-    }
+        if(old_cons == constants)
+        {
+            emit Message("***Finished after " + QString::number(i) + " cycles.***");
+            break;
+        }
+    } 
+    emit Message("***Finished after " + QString::number(max) + " cycles.***");
     setConstants(constants);
+
+    QString message = "Using Signals";
+    qreal error = 0;
+    for(int i = 0; i < m_active_signals.size(); ++i)
+        if(m_active_signals[i])
+        {
+            message += " " +QString::number(i + 1) +" ";
+            error += SumOfErrors(i);
+        }
+    message += "got results: ";
+        for(int i = 0; i < Constants().size(); ++i)
+            message += "Constant "+ QString(i)+ " " +QString::number(Constants()[i]) +" ";
+    message += "Sum of Error is " + QString::number(error);
+    message += "\n";
+    Message(message);
     m_repaint = true;
     CalculateSignal();
 
@@ -238,7 +264,7 @@ ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrati
     for(int i = 0; i < m_lim_para.size(); ++i)
         for(int j = 0; j < m_lim_para[i].size(); ++j)
         qDebug() << *m_lim_para[i][j] << m_lim_para[i][j];
-    AbstractTitrationModel::Minimize();
+    AbstractTitrationModel::Minimize(20);
     qDebug() << Constants();
     m_repaint = true;
 //     m_ItoI_signals.first() = m_data.last().Data().first();
@@ -405,7 +431,7 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data, QObject* parent) : Abs
     m_opt_vec << line3;
 //     m_opt_para << line3;
     CalculateSignal();
-    AbstractTitrationModel::Minimize();
+    AbstractTitrationModel::Minimize(20);
         
     m_repaint = true;
     qDebug() << Constants();
@@ -477,7 +503,7 @@ void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
 
 void IItoI_ItoI_Model::setConstants(QVector< qreal > list)
 {
-     if(list.size() == m_complex_constants.size())
+     if(list.size() != m_complex_constants.size())
         return;
      for(int i = 0; i < list.size(); ++i)
          m_complex_constants[i] = list[i];
@@ -573,7 +599,7 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j)
 
 QVector<qreal> IItoI_ItoI_Model::Minimize(QVector< int > vars)
 {
-    QVector<qreal> zahl = AbstractTitrationModel::Minimize();
+    QVector<qreal> zahl = AbstractTitrationModel::Minimize(20);
 //     qDebug() << m_K11 << m_K21;
     return  zahl;
 }
@@ -609,7 +635,7 @@ ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data, QObject* parent) : Abs
     m_opt_para <<line3;
     CalculateSignal();
 
-    AbstractTitrationModel::Minimize();
+    AbstractTitrationModel::Minimize(20);
         
     m_repaint = true;
 //     qDebug() << Constants();
@@ -782,6 +808,6 @@ QPair< qreal, qreal > ItoI_ItoII_Model::Pair(int i, int j)
 
 QVector<qreal> ItoI_ItoII_Model::Minimize(QVector< int > vars)
 {
-    return  AbstractTitrationModel::Minimize();
+    return  AbstractTitrationModel::Minimize(20);
 }
 #include "modelclass.moc"

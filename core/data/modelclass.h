@@ -60,7 +60,7 @@ public:
     QVector<qreal >  getCalculatedSignals(QVector<int > active_signal = QVector<int >(1,0));
     virtual QVector<QVector< qreal > > AllShifts() = 0;
     virtual QVector<qreal> Minimize(QVector<int > vars);
-    virtual QVector<qreal> Minimize();
+    virtual QVector<qreal> Minimize(int max);
     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
     QVector<double > Parameter() const;
@@ -97,6 +97,8 @@ protected:
     DataTable *m_model_signal, *m_model_error;
 signals:
     void Recalculated();
+    void Message(const QString &str);
+    
 };
 
 

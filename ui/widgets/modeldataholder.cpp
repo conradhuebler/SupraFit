@@ -23,10 +23,11 @@
 #include "ui/widgets/datawidget.h"
 #include "ui/widgets/modelwidget.h"
 
+#include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
-#include <QtGui/qmenu.h>
+#include <QtWidgets/QMenu>
 
 #include "modeldataholder.h"
 #include "chartwidget.h"
@@ -39,9 +40,11 @@ ModelDataHolder::ModelDataHolder()
     
     
     m_datawidget = new DataWidget;
+    m_logWidget = new QPlainTextEdit;
     m_modelsWidget = new QTabWidget;
+    m_modelsWidget->addTab(m_datawidget, tr("Data"));
         m_modelsWidget->setMovable(true);
-        m_modelsWidget->setTabsClosable(true);
+//         m_modelsWidget->setTabsClosable(true);
         connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     m_add = new QPushButton(tr("Add Titration\n Model"));
         m_add->setFlat(true);
@@ -84,8 +87,8 @@ ModelDataHolder::ModelDataHolder()
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_simulate, 0,1);
-    layout->addWidget(m_datawidget,1, 0, 1, 2);
-    layout->addWidget(m_modelsWidget, 2, 0, 1, 2);
+    layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
+    layout->addWidget(m_logWidget, 2, 0, 1, 2);
         
 }
 
@@ -104,6 +107,7 @@ void ModelDataHolder::setData(DataClass *data)
 void ModelDataHolder::AddModel(int model)
 {
     QPointer<AbstractTitrationModel > t;
+    
     switch(model){
         case 1:
             t = new ItoI_Model(m_data);
@@ -121,6 +125,7 @@ void ModelDataHolder::AddModel(int model)
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
     m_charts->addModel(t);
+    connect(t, SIGNAL(Message(QString)), this, SLOT(addLogEntry(QString)));
 
 }
 
@@ -186,6 +191,11 @@ void ModelDataHolder::RemoveTab(int i)
     ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
     m_modelsWidget->removeTab(i);
     delete w;
+}
+
+void ModelDataHolder::addLogEntry(const QString& str)
+{
+    m_logWidget->appendPlainText(str);
 }
 
 

@@ -203,6 +203,7 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     
 
     QVector<double > parameter = param;
+    qDebug() << parameter;
     double p[parameter.size()];
     for(int i = 0; i < parameter.size(); ++i)
     {

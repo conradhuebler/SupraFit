@@ -116,7 +116,11 @@ class DataClass : public QObject
     inline QStandardItemModel* m() { return m_plot_signal; }
     
     QVector<qreal >  getSignals(QVector<int > dealing_signals = QVector<int >(1,0));
-        void setActiveSignals(QVector<int > active_signals) { m_active_signals = active_signals; }
+    inline    void setActiveSignals(QVector<int > active_signals) 
+    { 
+        m_active_signals = active_signals; 
+        emit ActiveSignalsChanged(m_active_signals);
+    }
 
     /*
     void setData(qreal point, int line, int row)
@@ -154,6 +158,7 @@ protected:
     QVector<int > m_active_signals;
 signals:
     void RowAdded();
+    void ActiveSignalsChanged(QVector<int > active_signals);
 };
 
 #endif // DATACLASS_H
