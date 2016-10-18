@@ -49,7 +49,7 @@ ChartWidget::ChartWidget() : m_y_max_chart(0), m_y_max_error(0), m_x_max_chart(0
     layout->addWidget(m_themebox, 0, 0);
     layout->addWidget(m_chartwidget,1, 0);
     layout->addWidget(m_errorchart, 2, 0);
-    layout->addWidget(m_x_scale, 3, 0);
+//     layout->addWidget(m_x_scale, 3, 0);
 //     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
     connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
     setLayout(layout);
@@ -271,7 +271,6 @@ void ChartWidget::formatErrorAxis()
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisY());
     y_axis->setMin(1.1*m_y_min_error);
     y_axis->setMax(1.1*m_y_max_error);
-    qDebug() << 1.1*m_y_min_error <<"min_error" << 1.1*m_y_max_error << "max_error";
 }
 
 QPointer<QComboBox > ChartWidget::createThemeBox() const

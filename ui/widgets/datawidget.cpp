@@ -26,7 +26,7 @@
 #include <QStandardItemModel>
 
 #include <QDebug>
-DataWidget::DataWidget()
+DataWidget::DataWidget() 
 {
     QGridLayout *layout = new QGridLayout;
     m_switch = new QPushButton(tr("switch h/g"));
@@ -38,7 +38,7 @@ DataWidget::DataWidget()
         m_concentrations->setFixedWidth(250);
     m_signals = new QTableView;
         m_signals->setMaximumWidth(750);
-        layout->addWidget(m_switch, 0, 0);
+//         layout->addWidget(m_switch, 0, 0);
     layout->addWidget(m_concentrations, 1, 0);
     layout->addWidget(m_signals, 1, 1);
 }

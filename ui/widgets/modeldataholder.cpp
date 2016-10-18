@@ -28,7 +28,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QMenu>
-
+#include <QtWidgets/QMessageBox>
 #include "modeldataholder.h"
 #include "chartwidget.h"
 
@@ -43,8 +43,8 @@ ModelDataHolder::ModelDataHolder()
     m_logWidget = new QPlainTextEdit;
     m_modelsWidget = new QTabWidget;
     m_modelsWidget->addTab(m_datawidget, tr("Data"));
-        m_modelsWidget->setMovable(true);
-//         m_modelsWidget->setTabsClosable(true);
+//         m_modelsWidget->setMovable(true);
+        m_modelsWidget->setTabsClosable(true);
         connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     m_add = new QPushButton(tr("Add Titration\n Model"));
         m_add->setFlat(true);
@@ -86,7 +86,7 @@ ModelDataHolder::ModelDataHolder()
         
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
-    layout->addWidget(m_simulate, 0,1);
+//     layout->addWidget(m_simulate, 0,1);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
     layout->addWidget(m_logWidget, 2, 0, 1, 2);
         
@@ -188,9 +188,17 @@ void ModelDataHolder::SimulateModel12()
 
 void ModelDataHolder::RemoveTab(int i)
 {
-    ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-    m_modelsWidget->removeTab(i);
-    delete w;
+    if(i)
+    {
+        ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+        m_modelsWidget->removeTab(i);
+        delete w;
+    }else
+    {
+    QMessageBox msgBox;
+    msgBox.setText("Lieber nicht ...");
+    msgBox.exec();
+    }
 }
 
 void ModelDataHolder::addLogEntry(const QString& str)

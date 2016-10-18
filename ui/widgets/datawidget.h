@@ -35,7 +35,6 @@ public:
     DataWidget();
     ~DataWidget();
     void setData(DataClass *data);
-    
 public slots:
        
     void RowAdded();
@@ -44,7 +43,6 @@ private:
     QPointer<QTableView > m_concentrations, m_signals;
     QPointer<QPushButton > m_switch;
     DataClass *m_data;
-    
 private slots:
     void switchHG();
     
