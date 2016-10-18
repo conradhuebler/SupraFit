@@ -38,7 +38,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
     virtual ~MainWindow();
-    
+    void ImportAction(const QString &file);
     
     
     
@@ -48,6 +48,7 @@ private:
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
     QVector <DataClass *> m_loaded_datas;
+    bool m_hasData;
 private slots:
     void LoadData();
     void ImportAction();

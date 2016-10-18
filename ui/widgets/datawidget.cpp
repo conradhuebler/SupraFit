@@ -35,7 +35,7 @@ DataWidget::DataWidget()
     
     
     m_concentrations = new QTableView;
-        m_concentrations->setFixedWidth(250);
+        m_concentrations->setFixedWidth(300);
     m_signals = new QTableView;
         m_signals->setMaximumWidth(750);
 //         layout->addWidget(m_switch, 0, 0);

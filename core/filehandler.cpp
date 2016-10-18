@@ -23,7 +23,7 @@
 #include "filehandler.h"
 
 
-FileHandler::FileHandler(const QString &filename, QObject *parent) :m_filename(filename), m_lines(0), m_table(false), m_allint(true), m_file_supported(true)
+FileHandler::FileHandler(const QString &filename, QObject *parent) :m_filename(filename), m_lines(0), m_table(true), m_allint(true), m_file_supported(true)
 {
     
     ReadFile();
@@ -56,23 +56,23 @@ void FileHandler::CheckForTable()
     {
         
         if(size)
-            m_table = (size == m_filecontent[i].size());
-        size = m_filecontent[i].size();
+            m_table = (size == m_filecontent[i].simplified().split(" ").size());
+        size = m_filecontent[i].simplified().split(" ").size();
         
         if(!m_table)
             return;
         
         if(m_table)
         {
-            QStringList elements = m_filecontent[i].split(" ");
+            QStringList elements = m_filecontent[i].simplified().split(" ");
             for(int j = 0; j < elements.size(); ++j)
             {
-                if(elements[i].contains(QRegExp("[Aa-Zz]")))
+                if(elements[j].contains(QRegExp("[Aa-Zz]")))
                     m_allint = false;
             }
         }
     }
-    m_file_supported = true; //m_allint && m_table; //FIXME 
+    m_file_supported = m_allint && m_table; 
 }
 
 QPointer<QStandardItemModel> FileHandler::getData() const
@@ -81,8 +81,8 @@ QPointer<QStandardItemModel> FileHandler::getData() const
     foreach(const QString &line, m_filecontent)
     {
         QList<QStandardItem *> row;
-        foreach(const QString &item, line.split("\t"))
-            row.append(new QStandardItem(item));
+        foreach(const QString &item, line.simplified().split(" "))
+            row.append(new QStandardItem(QString(item).replace(",", ".")));
         model->appendRow(row);
     }
     return model;

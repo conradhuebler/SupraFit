@@ -35,7 +35,7 @@ class QDialogButtonBox;
 class QLineEdit;
 class QPushButton;
 class QSpinBox;
-
+class QCheckBox;
 class SelectHeader : public QHeaderView
 {
     
@@ -140,7 +140,8 @@ private:
     QPointer<QPushButton > m_file;
     QPointer<QSpinBox > m_conc, m_sign;
     QPointer<QDialogButtonBox > m_buttonbox;
-    DataClass *m_storeddata;
+    QPointer<DataClass > m_storeddata;
+    QPointer<QCheckBox > m_switch_concentration;
     QString m_filename;
 private slots:
     void LoadFile();

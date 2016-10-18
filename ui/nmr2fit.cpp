@@ -37,7 +37,7 @@
 
 #include "nmr2fit.h"
 
-MainWindow::MainWindow()
+MainWindow::MainWindow() :m_hasData(false)
 {
     m_mainsplitter = new QSplitter(Qt::Horizontal);
     
@@ -66,7 +66,7 @@ MainWindow::MainWindow()
     connect(quitaction, SIGNAL(triggered()), SLOT(close()) );
     
     QMenu *filemenu =  menuBar()->addMenu( "File" );
-    filemenu->addAction( loadaction );
+//     filemenu->addAction( loadaction );
     filemenu->addAction( importaction );
     filemenu->addAction( quitaction );
 }
@@ -84,21 +84,45 @@ void MainWindow::LoadData()
     
 }
 
+void MainWindow::ImportAction(const QString& file)
+{
+    ImportData dialog(file, this);
+    
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        DataClass storeddata = dialog.getStoredData();
+        storeddata.SignalModel()->Debug();
+        storeddata.ConcentrationModel()->Debug();
+        m_model_dataholder->setData(&storeddata);
+        m_charts->setRawData(&storeddata);
+        m_hasData = true;
+    }else
+        destroy();
+}
+
+
 void MainWindow::ImportAction()
 {
     QString filename = QFileDialog::getOpenFileName(this, "Select file", ".");
-
-    
-    
+    if(!m_hasData)
+    {
     ImportData dialog(filename, this);
     
-    dialog.exec();
-    
-    DataClass storeddata = dialog.getStoredData();
-    storeddata.SignalModel()->Debug();
-    storeddata.ConcentrationModel()->Debug();
-    m_model_dataholder->setData(&storeddata);
-    m_charts->setRawData(&storeddata);
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        DataClass storeddata = dialog.getStoredData();
+        storeddata.SignalModel()->Debug();
+        storeddata.ConcentrationModel()->Debug();
+        m_model_dataholder->setData(&storeddata);
+        m_charts->setRawData(&storeddata);
+        m_hasData = true;
+    }
+    }else
+    {
+        MainWindow *nw = new MainWindow;
+        nw->show();
+        nw->ImportAction(filename);
+    }
 }
 
 

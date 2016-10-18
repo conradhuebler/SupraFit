@@ -19,6 +19,7 @@
 #include "core/data/dataclass.h"
 #include "core/filehandler.h"
 
+#include <QtWidgets/QCheckBox>
 
 #include <QtCore/QFile>
 #include <QStandardItemModel>
@@ -45,7 +46,8 @@ ImportData::ImportData(const QString &file, QWidget *parent) : QDialog(parent), 
 
 ImportData::~ImportData()
 {
-    delete m_storeddata;
+    if(m_storeddata)
+        delete m_storeddata;
 }
 
 
@@ -56,8 +58,9 @@ void ImportData::setUi()
    
    
    m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-   
-       connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+   m_switch_concentration = new QCheckBox;
+   m_switch_concentration->setText("Switch Host/Guest");
+    connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
    
     
@@ -74,11 +77,12 @@ void ImportData::setUi()
    
    layout->addWidget(m_line, 0, 0);
    layout->addWidget(m_file, 0, 1);
+   layout->addWidget(m_switch_concentration, 0, 2);
    layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
    layout->addWidget(m_conc, 1, 1);
    layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
    layout->addWidget(m_sign, 1, 3);
-   layout->addWidget(m_table, 3, 0, 1, 2);
+   layout->addWidget(m_table, 3, 0, 1, 3);
    layout->addWidget(m_buttonbox, 4, 1);
    
    setLayout(layout);
@@ -136,6 +140,12 @@ void ImportData::accept()
                     conc << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
                 else 
                     sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
+            }
+            if(m_switch_concentration->isChecked())
+            {
+                qreal a = conc[1];
+                conc[1] = conc[0];
+                conc[0] = a;
             }
         m_storeddata->addPoint(conc, sign);
     }
