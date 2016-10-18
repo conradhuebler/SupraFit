@@ -56,7 +56,7 @@ public:
     virtual void setComplexSignals(QVector< qreal > list, int i) = 0;
     virtual void setConstants(QVector< qreal > list) = 0;
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
-    inline  void CalculateSignal() { CalculateSignal(Constants());}
+    virtual void InitialGuess() = 0;
     QVector<qreal >  getCalculatedSignals(QVector<int > active_signal = QVector<int >(1,0));
     virtual QVector<QVector< qreal > > AllShifts() = 0;
     virtual QVector<qreal> Minimize(QVector<int > vars);
@@ -73,11 +73,16 @@ public:
     inline DataTable * ModelSignal() { return m_model_signal; }
     inline DataTable * ModelError() { return m_model_error; }
     void UpdatePlotModels();
+
+public slots:
+     inline  void CalculateSignal() { CalculateSignal(Constants());}
+     
 private:
     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
-
+    
     bool m_debug;
+    
 protected:
     virtual void MiniShifts() = 0;
     void SetSignal(int i, int j, qreal value);
@@ -95,6 +100,7 @@ protected:
     QVector<QVector<qreal * > >m_lim_para;
     QStandardItemModel *m_plot_model, *m_plot_error;
     DataTable *m_model_signal, *m_model_error;
+    const DataClass *m_data;
 signals:
     void Recalculated();
     void Message(const QString &str);
@@ -118,6 +124,7 @@ public:
 //     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11; }
     virtual QVector< QVector< qreal > > AllShifts();
+    virtual void InitialGuess();
 private:
     void MiniShifts();
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
@@ -146,6 +153,7 @@ public:
     QVector<qreal > Constants() const { return m_complex_constants; }
     virtual QVector< QVector< qreal > > AllShifts();
     void MiniShifts();
+    virtual void InitialGuess();
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
@@ -172,6 +180,8 @@ public:
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11 << m_K12; }
     virtual QVector< QVector< qreal > > AllShifts();
     void MiniShifts();
+    virtual void InitialGuess();
+    
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);

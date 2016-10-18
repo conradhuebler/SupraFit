@@ -288,9 +288,9 @@ QVector<double>   DataClass::getSignals(QVector<int > active_signal)
 
 void DataClass::SwitchConentrations()
 {
-    qDebug() << m_concentrations << *m_concentrations;
      *m_concentrations = !(*m_concentrations); 
-     
+     PlotModel();
+     emit recalculate();
 }
 
 void DataClass::PlotModel()

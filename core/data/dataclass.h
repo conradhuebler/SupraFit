@@ -159,6 +159,7 @@ protected:
 signals:
     void RowAdded();
     void ActiveSignalsChanged(QVector<int > active_signals);
+    void recalculate();
 };
 
 #endif // DATACLASS_H

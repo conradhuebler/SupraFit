@@ -66,7 +66,7 @@ MainWindow::MainWindow() :m_hasData(false)
     connect(quitaction, SIGNAL(triggered()), SLOT(close()) );
     
     QMenu *filemenu =  menuBar()->addMenu( "File" );
-//     filemenu->addAction( loadaction );
+    filemenu->addAction( loadaction );
     filemenu->addAction( importaction );
     filemenu->addAction( quitaction );
 }

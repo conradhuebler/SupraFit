@@ -153,6 +153,9 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
         m_model_elements << el;
     }
     m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
+    
+    m_new_guess = new QPushButton(tr("New Guess"));
+    connect(m_new_guess, SIGNAL(clicked()), this, SLOT(NewGuess()));
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)
@@ -187,6 +190,7 @@ void ModelWidget::DiscreteUI()
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
+    mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
     mini->addWidget(new QLabel(tr("No. of max. Iter.")));
@@ -347,5 +351,22 @@ void ModelWidget::CollectActiveSignals()
     m_model->setActiveSignals(active_signals);
     
 }
+
+void ModelWidget::NewGuess()
+{
+     int r = QMessageBox::warning(this, tr("New Guess."),
+                                     tr("Really create a new guess?"),
+                                     QMessageBox::Yes | QMessageBox::Default,
+                                     QMessageBox::No | QMessageBox::Escape);
+        
+     if (r == QMessageBox::No)
+            return;
+     m_model->InitialGuess();
+     QVector<qreal > constants = m_model->Constants();
+      for(int j = 0; j < constants.size(); ++j)
+            m_constants[j]->setValue(constants[j]);
+}
+
+
 #include "modelwidget.moc"
 #include <QCheckBox>

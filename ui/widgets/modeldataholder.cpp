@@ -86,7 +86,7 @@ ModelDataHolder::ModelDataHolder()
         
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
-//     layout->addWidget(m_simulate, 0,1);
+    layout->addWidget(m_simulate, 0,1);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
     layout->addWidget(m_logWidget, 2, 0, 1, 2);
         

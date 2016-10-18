@@ -61,6 +61,9 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *p
     }
 
         m_pure_signals = m_signal_model->firstRow();
+        m_data = data;   
+        connect(m_data, SIGNAL(recalculate()), this, SLOT(CalculateSignal()));
+
 }
 
 AbstractTitrationModel::~AbstractTitrationModel()
@@ -243,29 +246,15 @@ QVector<qreal> AbstractTitrationModel::Minimize(int max)
     return constants;
 }
 
-ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrationModel(data, parent), m_K11(4)
+ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrationModel(data, parent)
 {
     setName(tr("1:1-Model"));
     
-    m_ItoI_signals = m_signal_model->lastRow();
+    InitialGuess();
     CalculateSignal();
 
-    setOptParamater(m_K11);
-//     m_opt_para << &m_K11;
-    QVector<qreal * > line1, line2;
-    for(int i = 0; i < m_pure_signals.size(); ++i)
-    {
-//         m_opt_para << &m_pure_signals[i]<< &m_ItoI_signals[i];
-        line1 << &m_pure_signals[i];
-        line2 << &m_ItoI_signals[i];
-    }
-    m_lim_para << line1 << line2;
-    qDebug() << m_lim_para << m_lim_para.size();
-    for(int i = 0; i < m_lim_para.size(); ++i)
-        for(int j = 0; j < m_lim_para[i].size(); ++j)
-        qDebug() << *m_lim_para[i][j] << m_lim_para[i][j];
     AbstractTitrationModel::Minimize(20);
-    qDebug() << Constants();
+
     m_repaint = true;
 //     m_ItoI_signals.first() = m_data.last().Data().first();
 //     qDebug() <<  m_data.last().Data();
@@ -280,6 +269,26 @@ ItoI_Model::~ItoI_Model()
 {
 
 }
+
+void ItoI_Model::InitialGuess()
+{
+     m_K11 = 4;
+     m_ItoI_signals = m_signal_model->lastRow();
+     m_pure_signals = m_signal_model->firstRow();
+     
+     setOptParamater(m_K11);
+    QVector<qreal * > line1, line2;
+    for(int i = 0; i < m_pure_signals.size(); ++i)
+    {
+//         m_opt_para << &m_pure_signals[i]<< &m_ItoI_signals[i];
+        line1 << &m_pure_signals[i];
+        line2 << &m_ItoI_signals[i];
+    }
+    m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
+        CalculateSignal();
+
+}
+
 
 void ItoI_Model::MiniShifts()
 {
@@ -405,30 +414,14 @@ QPair< qreal, qreal > ItoI_Model::Pair(int i, int j)
 IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data, QObject* parent) : AbstractTitrationModel(data, parent)
 {
     
-    ItoI_Model *model = new ItoI_Model(data, this);
-    m_K11 = model->Constants()[model->ConstantSize() -1];
-    m_K21 = m_K11/2;
-    delete model;
-    m_complex_constants << m_K21 << m_K11;
-    qDebug() << Constants();
+   
     setName(tr("2:1/1:1-Model"));
 
-    for(int i = 0; i < SignalCount(); ++i)
-    {
-         m_ItoI_signals <<m_signal_model->lastRow()[i];
-         m_IItoI_signals << m_signal_model->firstRow()[i];
-    }
-       
+
+    InitialGuess();   
+    
     setOptParamater(m_complex_constants);
-    QVector<qreal * > line1, line2, line3;
-    for(int i = 0; i < m_pure_signals.size(); ++i)
-    {
-        line1 << &m_pure_signals[i];
-        line2 << &m_ItoI_signals[i];
-        line3 << &m_IItoI_signals[i];
-    }
-    m_lim_para << line1 << line2;
-    m_opt_vec << line3;
+    
 //     m_opt_para << line3;
     CalculateSignal();
     AbstractTitrationModel::Minimize(20);
@@ -440,6 +433,35 @@ IItoI_ItoI_Model::~IItoI_ItoI_Model()
 {
 
 }
+
+void IItoI_ItoI_Model::InitialGuess()
+{
+    ItoI_Model *model = new ItoI_Model(m_data, this);
+    m_K11 = model->Constants()[model->ConstantSize() -1];
+    m_K21 = m_K11/2;
+    delete model;
+    m_complex_constants = QVector<qreal>() << m_K21 << m_K11;
+    
+    for(int i = 0; i < SignalCount(); ++i)
+    {
+         m_ItoI_signals <<m_signal_model->lastRow()[i];
+         m_IItoI_signals << m_signal_model->firstRow()[i];
+    }
+    
+    QVector<qreal * > line1, line2, line3;
+    for(int i = 0; i < m_pure_signals.size(); ++i)
+    {
+        line1 << &m_pure_signals[i];
+        line2 << &m_ItoI_signals[i];
+        line3 << &m_IItoI_signals[i];
+    }
+    m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
+    m_opt_vec = QVector<QVector<qreal * > >()  << line3;
+    
+    CalculateSignal();
+
+}
+
 
 void IItoI_ItoI_Model::MiniShifts()
 {
@@ -607,33 +629,11 @@ QVector<qreal> IItoI_ItoI_Model::Minimize(QVector< int > vars)
 ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data, QObject* parent) : AbstractTitrationModel(data, parent)
 {
     
-    ItoI_Model *model = new ItoI_Model(data, this);
-    m_K12 = model->Constants()[model->ConstantSize() -1];
-    m_K11 = m_K12/2;
-    delete model;
-    qDebug() << Constants();
-    setName(tr("1:1/1:2-Model"));
-    m_ItoI_signals.resize(m_pure_signals.size());
-    m_ItoII_signals.resize(m_pure_signals.size());
-    for(int i = 0; i < SignalCount(); ++i)
-    {
-         m_ItoI_signals[i] = ( m_signal_model->data(i,0) +  m_signal_model->data(i,SignalCount() - 1))/2;
-         m_ItoII_signals[i] = m_signal_model->data(i,SignalCount() - 1);
-    }
     
-       
-    m_opt_para << &m_K11 << &m_K12;
-    QVector<qreal * > line1, line2, line3;
-    for(int i = 0; i < m_pure_signals.size(); ++i)
-    {
-        line1 << &m_pure_signals[i];
-        line2 << &m_ItoI_signals[i];
-        line3 << &m_ItoII_signals[i];
-    }
-    m_lim_para << line1 << line2;
-    m_opt_vec << line3;
-    m_opt_para <<line3;
-    CalculateSignal();
+    setName(tr("1:1/1:2-Model"));
+    InitialGuess();
+
+    
 
     AbstractTitrationModel::Minimize(20);
         
@@ -643,6 +643,38 @@ ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data, QObject* parent) : Abs
 ItoI_ItoII_Model::~ItoI_ItoII_Model()
 {
 
+}
+
+
+void ItoI_ItoII_Model::InitialGuess()
+{
+    ItoI_Model *model = new ItoI_Model(m_data, this);
+    m_K12 = model->Constants()[model->ConstantSize() -1];
+    m_K11 = m_K12/2;
+    delete model;
+        
+    m_ItoI_signals.resize(m_pure_signals.size());
+    m_ItoII_signals.resize(m_pure_signals.size());
+    for(int i = 0; i < SignalCount(); ++i)
+    {
+         m_ItoI_signals[i] = ( m_signal_model->data(i,0) +  m_signal_model->data(i,SignalCount() - 1))/2;
+         m_ItoII_signals[i] = m_signal_model->data(i,SignalCount() - 1);
+    }
+        
+    m_opt_para = QVector<double * >() << &m_K11 << &m_K12;
+    QVector<qreal * > line1, line2, line3;
+    for(int i = 0; i < m_pure_signals.size(); ++i)
+    {
+        line1 << &m_pure_signals[i];
+        line2 << &m_ItoI_signals[i];
+        line3 << &m_ItoII_signals[i];
+    }
+    m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
+    m_opt_vec = QVector<QVector<qreal * > >() << line3;
+    m_opt_para << line3;
+    
+    CalculateSignal();
+       
 }
 
 QVector<QVector<qreal> > ItoI_ItoII_Model::AllShifts()

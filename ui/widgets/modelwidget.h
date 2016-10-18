@@ -85,7 +85,7 @@ private:
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal; 
+    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess; 
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
@@ -98,6 +98,7 @@ private slots:
     void Repaint();
     void AddSimSignal();
     void CollectActiveSignals();
+    void NewGuess();
 public slots:
     void recalulate();
 signals:

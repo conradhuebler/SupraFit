@@ -32,13 +32,13 @@ DataWidget::DataWidget()
     m_switch = new QPushButton(tr("switch h/g"));
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
     setLayout(layout);
-    
+    m_switch->setDisabled(true);
     
     m_concentrations = new QTableView;
         m_concentrations->setFixedWidth(300);
     m_signals = new QTableView;
         m_signals->setMaximumWidth(750);
-//         layout->addWidget(m_switch, 0, 0);
+        layout->addWidget(m_switch, 0, 0);
     layout->addWidget(m_concentrations, 1, 0);
     layout->addWidget(m_signals, 1, 1);
 }
@@ -53,6 +53,7 @@ void DataWidget::setData(DataClass* data)
     m_data = data;
     m_concentrations->setModel(m_data->ConcentrationModel());
     m_signals->setModel(m_data->SignalModel());
+    m_switch->setDisabled(false);
 //     RowAdded();
 //     connect(m_data, SIGNAL(RowAdded()), this, SLOT(RowAdded()));
 }

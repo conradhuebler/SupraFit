@@ -221,7 +221,7 @@ void ChartWidget::formatAxis()
                     if(series->pointsVector()[i].y() < m_y_min_chart)
                         m_y_min_chart = series->pointsVector()[i].y();
                 }
-                qDebug() << m_y_max_chart << "max chart value";
+//                 qDebug() << m_y_max_chart << "max chart value";
             }
     }
     m_chart->createDefaultAxes();
