@@ -24,6 +24,8 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
+#include <QtCharts/QLegendMarker>
+
 #include <QGridLayout>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QCategoryAxis>
@@ -32,26 +34,27 @@
 #include "chartwidget.h"
 ChartWidget::ChartWidget() : m_themebox(createThemeBox())
 {
-
+    
     m_chart = new QtCharts::QChart;
-        m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//     m_chart->legend()->setVisible(false);
+    m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     m_errorview = new QtCharts::QChart;
-        m_errorview->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//     m_errorview->legend()->setVisible(false);
+    m_errorview->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     m_chartwidget = new QtCharts::QChartView(m_chart);
     m_errorchart = new QtCharts::QChartView(m_errorview);
+    
     m_x_scale = new QComboBox;
-    m_x_scale->addItems(QStringList() << tr("Host") << tr("Guest") << tr("Ratio"));
-    m_x_scale->setCurrentIndex(2);
+    m_x_scale->addItems(QStringList()  << tr("c(Guest)")<< tr("c(Host)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
+    m_x_scale->setCurrentIndex(3);
 
-    
-   
-    
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(m_themebox, 0, 0);
     layout->addWidget(m_chartwidget,1, 0);
     layout->addWidget(m_errorchart, 2, 0);
-//     layout->addWidget(m_x_scale, 3, 0);
-//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
+    layout->addWidget(m_x_scale, 3, 0);
+    
+    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
     connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
     setLayout(layout);
 }
@@ -69,15 +72,16 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     m_rawdata->setPlotMode(j);
     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
-        {
-            QtCharts::QVXYModelMapper * signal= m_rawdata->DataMapper(i);
-            QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
-            signal->setSeries(signal_series);
-            signal_series->setColor(m_rawdata->color(i));
-             addSeries(signal_series);
-        }
-
-        formatAxis();
+    {
+        QtCharts::QVXYModelMapper * signal= m_rawdata->DataMapper(i);
+        QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
+        signal->setSeries(signal_series);
+        signal_series->setName("Signal " + QString::number(i + 1));
+        signal_series->setColor(m_rawdata->color(i));
+        addSeries(signal_series);
+    }
+    
+    formatAxis();
     
 }
 
@@ -87,43 +91,55 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
 {
     m_models << model;
     model->UpdatePlotModels();
-   connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
-   connect(model, SIGNAL(ActiveSignalsChanged(QVector<int>)), this, SLOT(setActiveSignals(QVector<int>)));
+    connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
+    connect(model, SIGNAL(ActiveSignalsChanged(QVector<int>)), this, SLOT(setActiveSignals(QVector<int>)));
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
     for(int i = 0; i < model->SignalCount(); ++i)
+    {
+        
+        if(model->Type() != 3)
         {
-
-            if(model->Type() != 3)
-            {
             QtCharts::QVXYModelMapper * mapper = model->ModelMapper(i);
             QtCharts::QLineSeries *series = new QtCharts::QLineSeries;
+            series->setName("Signal " + QString::number(i + 1));
             series->setColor(model->color(i));
-                mapper->setSeries(series);
-             addLineSeries(series);
-            }
-            if(model->Type() != 3)
-            {
+            mapper->setSeries(series);
+            addLineSeries(series);
+        }
+        if(model->Type() != 3)
+        {
             QtCharts::QVXYModelMapper * error= model->ErrorMapper(i);
             QtCharts::QLineSeries *error_series = new QtCharts::QLineSeries;
-                error->setSeries(error_series);
-                error_series->setColor(model->color(i));
-                addErrorSeries(error_series);
-            }
-    
+            error->setSeries(error_series);
+            error_series->setName("Signal " + QString::number(i + 1));
+            error_series->setColor(model->color(i));
+            addErrorSeries(error_series);
         }
-                
-
-        connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
-        Repaint(); 
-
+        
+    }
+    connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
+    Repaint(); 
+    
 }
 
 void ChartWidget::Repaint()
 {         
-     formatAxis();
-     formatErrorAxis();
+    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
+    if(m_rawdata)
+        m_rawdata->setPlotMode(j);
+      m_rawdata->PlotModel();  
+    
+    for(int i= 0; i < m_models.size(); ++i)
+    {
+        m_models[i]->setPlotMode(j);
+        m_models[i]->UpdatePlotModels();
+    }
+    
 
+    formatAxis();
+    formatErrorAxis();
+    
 }
 
 
@@ -138,28 +154,31 @@ void ChartWidget::addSeries( QtCharts::QScatterSeries *series, const QString &st
     
     
     m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
-    m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
+//     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
 }
 
 void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
 {
     if(series->pointsVector().isEmpty())
         return;
-
-
+    
+    
     if(!m_chart->series().contains(series))
+    {
         m_chart->addSeries(series);
+        m_chart->legend()->markers(series).first()->setVisible(false);
+    }
     m_chart->setTitle(str);
     
     m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
-    m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
+//     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
 }
 void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
 {
-        
+    
     if(series->pointsVector().isEmpty())
         return;
-
+    
     if(!m_errorview->series().contains(series))
         m_errorview->addSeries(series);
     m_errorview->setTitle(str);
@@ -168,20 +187,38 @@ void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series
 
 void ChartWidget::formatAxis()
 {
-
+    if(m_chart->series().isEmpty())
+        return;
     m_chart->createDefaultAxes();
-    qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY())->applyNiceNumbers();
-    qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX())->applyNiceNumbers();
+    
+    
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    y_axis->applyNiceNumbers();
+    y_axis->applyNiceNumbers();
+    y_axis->setTitleText("Shift [ppm]");
 
+    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
+    
+    x_axis->setTitleText(m_x_scale->currentText());
 
 }
 void ChartWidget::formatErrorAxis()
 {
+    
+    if(m_errorview->series().isEmpty())
+        return;
     m_errorview->createDefaultAxes();
 
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisY());
     
-    qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisX())->applyNiceNumbers();
-    qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisY())->applyNiceNumbers();
+    y_axis->applyNiceNumbers();
+    y_axis->setTitleText("Error [ppm]");
+    
+    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisX());
+    x_axis->applyNiceNumbers();
+
+    x_axis->setTitleText(m_x_scale->currentText());
+
 }
 
 QPointer<QComboBox > ChartWidget::createThemeBox() const
@@ -201,40 +238,40 @@ QPointer<QComboBox > ChartWidget::createThemeBox() const
 
 void ChartWidget::updateUI()
 {
-QtCharts::QChart::ChartTheme theme = (QtCharts::QChart::ChartTheme) m_themebox->itemData(m_themebox->currentIndex()).toInt();
-
-//     if (m_chart->theme() != theme) {
-        
-            m_chart->setTheme(theme);
-            m_errorview->setTheme(theme);
-        QPalette pal = window()->palette();
-        if (theme == QtCharts::QChart::ChartThemeLight) {
-            pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
-            pal.setColor(QPalette::WindowText, QRgb(0x404044));
-        } else if (theme == QtCharts::QChart::ChartThemeDark) {
-            pal.setColor(QPalette::Window, QRgb(0x121218));
-            pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
-        } else if (theme == QtCharts::QChart::ChartThemeBlueCerulean) {
-            pal.setColor(QPalette::Window, QRgb(0x40434a));
-            pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
-        } else if (theme == QtCharts::QChart::ChartThemeBrownSand) {
-            pal.setColor(QPalette::Window, QRgb(0x9e8965));
-            pal.setColor(QPalette::WindowText, QRgb(0x404044));
-        } else if (theme == QtCharts::QChart::ChartThemeBlueNcs) {
-            pal.setColor(QPalette::Window, QRgb(0x018bba));
-            pal.setColor(QPalette::WindowText, QRgb(0x404044));
-        } else if (theme == QtCharts::QChart::ChartThemeHighContrast) {
-            pal.setColor(QPalette::Window, QRgb(0xffab03));
-            pal.setColor(QPalette::WindowText, QRgb(0x181818));
-        } else if (theme == QtCharts::QChart::ChartThemeBlueIcy) {
-            pal.setColor(QPalette::Window, QRgb(0xcee7f0));
-            pal.setColor(QPalette::WindowText, QRgb(0x404044));
-        } else {
-            pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
-            pal.setColor(QPalette::WindowText, QRgb(0x404044));
-        }
-        window()->setPalette(pal);
-//     }
+    QtCharts::QChart::ChartTheme theme = (QtCharts::QChart::ChartTheme) m_themebox->itemData(m_themebox->currentIndex()).toInt();
+    
+    //     if (m_chart->theme() != theme) {
+    
+    m_chart->setTheme(theme);
+    m_errorview->setTheme(theme);
+    QPalette pal = window()->palette();
+    if (theme == QtCharts::QChart::ChartThemeLight) {
+        pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
+        pal.setColor(QPalette::WindowText, QRgb(0x404044));
+    } else if (theme == QtCharts::QChart::ChartThemeDark) {
+        pal.setColor(QPalette::Window, QRgb(0x121218));
+        pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
+    } else if (theme == QtCharts::QChart::ChartThemeBlueCerulean) {
+        pal.setColor(QPalette::Window, QRgb(0x40434a));
+        pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
+    } else if (theme == QtCharts::QChart::ChartThemeBrownSand) {
+        pal.setColor(QPalette::Window, QRgb(0x9e8965));
+        pal.setColor(QPalette::WindowText, QRgb(0x404044));
+    } else if (theme == QtCharts::QChart::ChartThemeBlueNcs) {
+        pal.setColor(QPalette::Window, QRgb(0x018bba));
+        pal.setColor(QPalette::WindowText, QRgb(0x404044));
+    } else if (theme == QtCharts::QChart::ChartThemeHighContrast) {
+        pal.setColor(QPalette::Window, QRgb(0xffab03));
+        pal.setColor(QPalette::WindowText, QRgb(0x181818));
+    } else if (theme == QtCharts::QChart::ChartThemeBlueIcy) {
+        pal.setColor(QPalette::Window, QRgb(0xcee7f0));
+        pal.setColor(QPalette::WindowText, QRgb(0x404044));
+    } else {
+        pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
+        pal.setColor(QPalette::WindowText, QRgb(0x404044));
+    }
+    window()->setPalette(pal);
+    //     }
 }
 
 void ChartWidget::setActiveSignals( QVector<int> active_signals)

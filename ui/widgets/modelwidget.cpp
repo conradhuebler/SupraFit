@@ -56,6 +56,11 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     }
     
     m_handle = new QCheckBox(this);
+    
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window,m_model->ColorCode(no));
+    m_handle->setAutoFillBackground(true);
+    setPalette(pal);
     m_handle->setText("Use");
     m_handle->setChecked(true);
     connect(m_handle, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));

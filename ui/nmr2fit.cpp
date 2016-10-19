@@ -26,6 +26,8 @@
 #include "ui/widgets/chartwidget.h"
 #include "ui/widgets/modeldataholder.h"
 
+#include <QtCore/QSharedPointer>
+
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
@@ -90,11 +92,9 @@ void MainWindow::ImportAction(const QString& file)
     
     if(dialog.exec() == QDialog::Accepted)
     {
-        DataClass storeddata = dialog.getStoredData();
-        storeddata.SignalModel()->Debug();
-        storeddata.ConcentrationModel()->Debug();
-        m_model_dataholder->setData(&storeddata);
-        m_charts->setRawData(&storeddata);
+        m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+        m_model_dataholder->setData(m_data.data());
+        m_charts->setRawData(m_data.data());
         m_hasData = true;
     }else
         destroy();
@@ -110,11 +110,9 @@ void MainWindow::ImportAction()
     
     if(dialog.exec() == QDialog::Accepted)
     {
-        DataClass storeddata = dialog.getStoredData();
-        storeddata.SignalModel()->Debug();
-        storeddata.ConcentrationModel()->Debug();
-        m_model_dataholder->setData(&storeddata);
-        m_charts->setRawData(&storeddata);
+        m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+        m_model_dataholder->setData(m_data.data());
+        m_charts->setRawData(m_data.data());
         m_hasData = true;
     }
     }else

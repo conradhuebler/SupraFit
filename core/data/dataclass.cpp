@@ -337,18 +337,23 @@ qreal DataClass::XValue(int i) const
                 else
                     return m_concentration_model->data(1,i);
             break;
+            
             case DataClass::H:   
                 if(!(*m_concentrations))
-                    return m_concentration_model->data(0,i);
-                else
                     return m_concentration_model->data(1,i);
+                else
+                    return m_concentration_model->data(0,i);
+            break;
+                
             case DataClass::HG:
                 if(*m_concentrations)
-                    return m_concentration_model->data(0,i)/m_concentration_model->data(1,i);
+                    return m_concentration_model->data(1,i)/m_concentration_model->data(0,i);
                 else
-                    return m_concentration_model->data(1,i)/m_concentration_model->data(0,i);                
+                    return m_concentration_model->data(0,i)/m_concentration_model->data(1,i);                
             break;    
+            
             case DataClass::GH:
+            default:
                 if(!(*m_concentrations))
                     return m_concentration_model->data(0,i)/m_concentration_model->data(1,i);
                 else

@@ -47,7 +47,7 @@ private:
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
-    QVector <DataClass *> m_loaded_datas;
+    QSharedPointer <DataClass > m_data;
     bool m_hasData;
 private slots:
     void LoadData();

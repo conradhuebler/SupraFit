@@ -85,7 +85,14 @@ class DataClass : public QObject
         ContiuousData = 2,
         EmptyData = 3
     };
-    enum PlotMode { H, G, HG, GH};
+    
+    enum PlotMode { 
+        H = 1, 
+        G = 2, 
+        HG = 3, 
+        GH = 4
+    };
+    
     inline void addPoint(QVector<qreal > conc, QVector<qreal > data)
     {
         m_concentration_model->insertRow(conc);
