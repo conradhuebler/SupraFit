@@ -99,6 +99,7 @@ QVector<double>   AbstractTitrationModel::getCalculatedSignals(QVector<int > act
     }
     return x;
 }
+
 void AbstractTitrationModel::setOptParamater(QVector<qreal> &parameter)
 {
     clearOptParameter();
@@ -272,21 +273,22 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess()
 {
+     m_repaint = false;
      m_K11 = 4;
      m_ItoI_signals = m_signal_model->lastRow();
      m_pure_signals = m_signal_model->firstRow();
      
-     setOptParamater(m_K11);
+    setOptParamater(m_K11);
     QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals.size(); ++i)
     {
-//         m_opt_para << &m_pure_signals[i]<< &m_ItoI_signals[i];
         line1 << &m_pure_signals[i];
         line2 << &m_ItoI_signals[i];
     }
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
-        CalculateSignal();
-
+        
+    CalculateSignal(QVector<qreal >() << m_K11);
+    m_repaint = true;
 }
 
 
@@ -436,12 +438,13 @@ IItoI_ItoI_Model::~IItoI_ItoI_Model()
 
 void IItoI_ItoI_Model::InitialGuess()
 {
+    m_repaint = false;
     ItoI_Model *model = new ItoI_Model(m_data, this);
     m_K11 = model->Constants()[model->ConstantSize() -1];
     m_K21 = m_K11/2;
     delete model;
     m_complex_constants = QVector<qreal>() << m_K21 << m_K11;
-    
+    setOptParamater(m_complex_constants);
     for(int i = 0; i < SignalCount(); ++i)
     {
          m_ItoI_signals <<m_signal_model->lastRow()[i];
@@ -459,7 +462,7 @@ void IItoI_ItoI_Model::InitialGuess()
     m_opt_vec = QVector<QVector<qreal * > >()  << line3;
     
     CalculateSignal();
-
+    m_repaint = true;
 }
 
 
@@ -648,6 +651,8 @@ ItoI_ItoII_Model::~ItoI_ItoII_Model()
 
 void ItoI_ItoII_Model::InitialGuess()
 {
+    m_repaint = true;
+    
     ItoI_Model *model = new ItoI_Model(m_data, this);
     m_K12 = model->Constants()[model->ConstantSize() -1];
     m_K11 = m_K12/2;
@@ -675,6 +680,7 @@ void ItoI_ItoII_Model::InitialGuess()
     
     CalculateSignal();
        
+    m_repaint = false;
 }
 
 QVector<QVector<qreal> > ItoI_ItoII_Model::AllShifts()

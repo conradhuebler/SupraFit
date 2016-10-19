@@ -60,7 +60,6 @@ private:
     QVector< QPointer<AbstractTitrationModel > > m_models;
     QPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
-    qreal m_y_max_chart, m_y_min_error, m_y_max_error, m_x_max_chart, m_x_max_error, m_y_min_chart;
     QSharedPointer<QtCharts::QLineSeries > m_error_axis;
     void Paint();
 private slots:

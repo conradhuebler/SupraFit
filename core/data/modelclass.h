@@ -90,7 +90,7 @@ protected:
     void ClearDataSeries() ;
     QString m_name;
     //QVector< QVector<qreal > >m_pure_signals;
-    QVector<qreal > m_pure_signals;
+    QVector<qreal > m_pure_signals, m_complex_constants;
 //     QHash<const DataPoint *, QVector< qreal> > m_signals;
     QVector< QVector < qreal > > m_difference; 
     bool *ptr_concentrations;
@@ -159,7 +159,7 @@ private:
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     
     qreal m_K21, m_K11;
-    QVector<qreal > m_ItoI_signals, m_IItoI_signals, m_complex_constants;
+    QVector<qreal > m_ItoI_signals, m_IItoI_signals;
 };
 
 class ItoI_ItoII_Model : public AbstractTitrationModel
