@@ -31,6 +31,27 @@
 class AbstractTitrationModel;
 class QComboBox;
 class QPushButton;
+
+
+class ChartView : public QtCharts::QChartView
+{
+  Q_OBJECT
+public:
+    ChartView(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {}
+    ChartView(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); }
+    ~ChartView(){ };
+        
+    void mousePressEvent(QMouseEvent *event);
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dragMoveEvent(QDragMoveEvent *event);
+private:
+    
+};
+
+
+
+
+
 class ChartWidget : public QWidget
 {
     Q_OBJECT
@@ -39,7 +60,6 @@ public:
     ChartWidget();
     ~ChartWidget();
     void setRawData(const QPointer<DataClass> rawdata); 
-    
     
 
 public slots:
@@ -54,8 +74,8 @@ private:
     QPointer<QComboBox > createThemeBox() const;
    
     QPointer<QComboBox > m_x_scale, m_themebox;
-    QPointer<QtCharts::QChartView > m_chartwidget, m_errorchart;
-    QPointer<QtCharts::QChart > m_chart, m_errorview;
+    QPointer<ChartView > m_signalview, m_errorview;
+    QPointer<QtCharts::QChart > m_signalchart, m_errorchart;
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
     QVector< QPointer<AbstractTitrationModel > > m_models;
     QPointer<DataClass > m_rawdata;

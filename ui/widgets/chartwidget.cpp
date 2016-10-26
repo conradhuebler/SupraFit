@@ -19,30 +19,96 @@
 
 #include "core/data/dataclass.h"
 #include "core/data/modelclass.h"
+#include <QMimeData>
+#include <QDrag>
+#include <QBuffer>
 #include <QVector>
 #include <QtWidgets/QComboBox>
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QLegendMarker>
-
+#include <QPrinter>
+#include <QPrintPreviewDialog>
 #include <QGridLayout>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QCategoryAxis>
 #include <QPushButton>
 #include <QTableView>
 #include "chartwidget.h"
+
+
+void ChartView::mousePressEvent(QMouseEvent *event)
+{
+    /*
+    QPixmap pixmap = grab();
+    */
+    
+    
+    QImage image(scene()->sceneRect().size().toSize(), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    scene()->render(&painter);
+    QPixmap pixmap = QPixmap::fromImage(image);
+    QByteArray itemData;
+    QBuffer outputBuffer(&itemData);
+        
+    outputBuffer.open(QIODevice::WriteOnly);
+    pixmap.toImage().save(&outputBuffer, "PNG");
+
+    QMimeData *mimeData = new QMimeData;
+    mimeData->setData("image/png", itemData);
+
+    QDrag *drag = new QDrag(this);
+    drag->setMimeData(mimeData);
+    drag->setPixmap(pixmap);
+    drag->setHotSpot(event->pos());
+    
+    drag->exec(Qt::CopyAction);
+}
+
+void ChartView::dragEnterEvent(QDragEnterEvent *event)
+{
+    
+     if (event->mimeData()->hasFormat("image/png")) {
+        if (event->source() == this) {
+            event->setDropAction(Qt::CopyAction);
+            event->accept();
+        } else {
+            event->acceptProposedAction();
+        }
+    } else {
+        event->ignore();
+    }   
+}
+
+void ChartView::dragMoveEvent(QDragMoveEvent *event)
+{
+    
+      if (event->mimeData()->hasFormat("image/png")) {
+        if (event->source() == this) {
+            event->setDropAction(Qt::CopyAction);
+            event->accept();
+        } else {
+            event->acceptProposedAction();
+        }
+    } else {
+        event->ignore();
+    }    
+}
+
 ChartWidget::ChartWidget() : m_themebox(createThemeBox())
 {
     
-    m_chart = new QtCharts::QChart;
-//     m_chart->legend()->setVisible(false);
-    m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    m_errorview = new QtCharts::QChart;
-//     m_errorview->legend()->setVisible(false);
-    m_errorview->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    m_chartwidget = new QtCharts::QChartView(m_chart);
-    m_errorchart = new QtCharts::QChartView(m_errorview);
+    m_signalchart = new QtCharts::QChart;
+    m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    
+    m_errorchart = new QtCharts::QChart;
+    m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    
+    m_signalview = new ChartView(m_signalchart);
+    m_errorview = new ChartView(m_errorchart);
     
     m_x_scale = new QComboBox;
     m_x_scale->addItems(QStringList()  << tr("c(Guest)")<< tr("c(Host)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
@@ -50,8 +116,8 @@ ChartWidget::ChartWidget() : m_themebox(createThemeBox())
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(m_themebox, 0, 0);
-    layout->addWidget(m_chartwidget,1, 0);
-    layout->addWidget(m_errorchart, 2, 0);
+    layout->addWidget(m_signalview,1, 0);
+    layout->addWidget(m_errorview, 2, 0);
     layout->addWidget(m_x_scale, 3, 0);
     
     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
@@ -129,13 +195,18 @@ void ChartWidget::Repaint()
     if(m_rawdata)
         m_rawdata->setPlotMode(j);
       m_rawdata->PlotModel();  
-    
+    QVector<int > trash;
     for(int i= 0; i < m_models.size(); ++i)
     {
-        m_models[i]->setPlotMode(j);
-        m_models[i]->UpdatePlotModels();
+        if(m_models[i])
+        {
+            m_models[i]->setPlotMode(j);
+            m_models[i]->UpdatePlotModels();
+        }else
+            trash << i;
     }
-    
+    for(int i = 0; i < trash.size(); ++i)
+        m_models.remove(trash[i]);
 
     formatAxis();
     formatErrorAxis();
@@ -148,12 +219,12 @@ void ChartWidget::addSeries( QtCharts::QScatterSeries *series, const QString &st
     if(series->pointsVector().isEmpty())
         return;
     
-    if(!m_chart->series().contains(series))
-        m_chart->addSeries(series);
-    m_chart->setTitle(str);
+    if(!m_signalchart->series().contains(series))
+        m_signalchart->addSeries(series);
+    m_signalchart->setTitle(str);
     
     
-    m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
+    m_signalview->setRenderHint(QPainter::Antialiasing, true);
 //     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
 }
 
@@ -163,14 +234,14 @@ void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series,
         return;
     
     
-    if(!m_chart->series().contains(series))
+    if(!m_signalchart->series().contains(series))
     {
-        m_chart->addSeries(series);
-        m_chart->legend()->markers(series).first()->setVisible(false);
+        m_signalchart->addSeries(series);
+        m_signalchart->legend()->markers(series).first()->setVisible(false);
     }
-    m_chart->setTitle(str);
+    m_signalchart->setTitle(str);
     
-    m_chartwidget->setRenderHint(QPainter::Antialiasing, true);
+    m_signalview->setRenderHint(QPainter::Antialiasing, true);
 //     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
 }
 void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
@@ -179,42 +250,41 @@ void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series
     if(series->pointsVector().isEmpty())
         return;
     
-    if(!m_errorview->series().contains(series))
-        m_errorview->addSeries(series);
-    m_errorview->setTitle(str);
-    m_errorchart->setRenderHint(QPainter::Antialiasing, true);     
+    if(!m_errorchart->series().contains(series))
+        m_errorchart->addSeries(series);
+    m_errorchart->setTitle(str);
+    m_signalview->setRenderHint(QPainter::Antialiasing, true);     
 }
 
 void ChartWidget::formatAxis()
 {
-    if(m_chart->series().isEmpty())
+    if(m_signalchart->series().isEmpty())
         return;
-    m_chart->createDefaultAxes();
+    m_signalchart->createDefaultAxes();
     
     
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
-    y_axis->applyNiceNumbers();
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_signalchart->axisY());
     y_axis->applyNiceNumbers();
     y_axis->setTitleText("Shift [ppm]");
 
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-    
+    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_signalchart->axisX());
+    x_axis->applyNiceNumbers();
     x_axis->setTitleText(m_x_scale->currentText());
 
 }
 void ChartWidget::formatErrorAxis()
 {
     
-    if(m_errorview->series().isEmpty())
+    if(m_errorchart->series().isEmpty())
         return;
-    m_errorview->createDefaultAxes();
+    m_errorchart->createDefaultAxes();
 
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisY());
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorchart->axisY());
     
     y_axis->applyNiceNumbers();
     y_axis->setTitleText("Error [ppm]");
     
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorview->axisX());
+    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorchart->axisX());
     x_axis->applyNiceNumbers();
 
     x_axis->setTitleText(m_x_scale->currentText());
@@ -242,8 +312,8 @@ void ChartWidget::updateUI()
     
     //     if (m_chart->theme() != theme) {
     
-    m_chart->setTheme(theme);
-    m_errorview->setTheme(theme);
+    m_signalchart->setTheme(theme);
+    m_errorchart->setTheme(theme);
     QPalette pal = window()->palette();
     if (theme == QtCharts::QChart::ChartThemeLight) {
         pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
@@ -276,13 +346,14 @@ void ChartWidget::updateUI()
 
 void ChartWidget::setActiveSignals( QVector<int> active_signals)
 {
-    if(active_signals.size() < m_chart->series().size()  && active_signals.size() < m_errorview->series().size())
+    qDebug() << active_signals;
+    if(active_signals.size() < m_signalchart->series().size()  && active_signals.size() <= m_errorchart->series().size())
     {
         for(int i = 0; i < active_signals.size(); ++i)
         {
-            m_chart->series()[i]->setVisible(active_signals[i]);
-            m_chart->series()[i + active_signals.size()]->setVisible(active_signals[i]);
-            m_errorview->series()[i + 1]->setVisible(active_signals[i]);
+            m_signalchart->series()[i]->setVisible(active_signals[i]);
+            m_signalchart->series()[i + active_signals.size()]->setVisible(active_signals[i]);
+            m_errorchart->series()[i]->setVisible(active_signals[i]);
         }
         Repaint();
     }
