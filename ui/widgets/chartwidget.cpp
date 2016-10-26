@@ -40,11 +40,6 @@
 
 void ChartView::mousePressEvent(QMouseEvent *event)
 {
-    /*
-    QPixmap pixmap = grab();
-    */
-    
-    
     QImage image(scene()->sceneRect().size().toSize(), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
@@ -253,7 +248,7 @@ void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series
     if(!m_errorchart->series().contains(series))
         m_errorchart->addSeries(series);
     m_errorchart->setTitle(str);
-    m_signalview->setRenderHint(QPainter::Antialiasing, true);     
+    m_errorview->setRenderHint(QPainter::Antialiasing, true);     
 }
 
 void ChartWidget::formatAxis()

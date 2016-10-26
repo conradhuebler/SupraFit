@@ -179,27 +179,18 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
 //     }
 }
 
-int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param)
+int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     double opts[LM_OPTS_SZ], info[LM_INFO_SZ];
-    opts[0]=LM_INIT_MU; opts[1]=1E-15; opts[2]=1E-15; opts[3]=1E-20;
-    opts[4]=LM_DIFF_DELTA;
+    opts[0]=config.LevMar_mu; opts[1]=config.LevMar_Eps1; opts[2]=config.LevMar_Eps2; opts[3]=config.LevMar_Eps3;
+    opts[4]=config.LevMar_Delta;
     struct mydata data;
     data.model = model;
-//     int index = 0;
     double x[data.model->DataPoints()*data.model->SignalCount()];
     
     QVector<qreal > x_var = data.model->getSignals();
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i];
-//     for(int j = 0; j < data.model->SignalCount(); ++j)
-//     {
-//         for(int i = 0; i < data.model->DataPoints(); ++i)
-//         {
-//             x[index] = data.model->SignalModel()->data(j,i); 
-//             index++;
-//         }
-//     }
     
 
     QVector<double > parameter = param;
@@ -214,17 +205,17 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     int n = model->DataPoints()*model->SignalCount();
     
     int nums = dlevmar_dif(TitrationModel, p, x, m, n, max_iter, opts, info, NULL, NULL, (void *)&data);
-
-  printf("Levenberg-Marquardt returned in %g iter, reason %g, sumsq %g [%g]\n", info[5], info[6], info[1], info[0]);
-  printf("Best fit parameters:" );    
-  param.clear();
-//   QVector<qreal> parameter_fertig;
+    
+    printf("Levenberg-Marquardt returned in %g iter, reason %g, sumsq %g [%g]\n", info[5], info[6], info[1], info[0]);
+    printf("Best fit parameters:" );    
+    param.clear();
     for(int i = 0; i < m; ++i)
         {
             param << p[i];
             std::cout << p[i] << " ";
         }
         std::cout << "\n";
+    
     return nums;
 }
 

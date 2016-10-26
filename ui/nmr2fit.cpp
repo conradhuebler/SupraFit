@@ -19,15 +19,17 @@
 
 #include "core/data/dataclass.h"
 #include "core/data/modelclass.h"
+#include "ui/dialogs/configdialog.h"
 
 #include "ui/dialogs/importdata.h"
 #include "ui/widgets/modelwidget.h"
 #include "ui/widgets/datawidget.h"
 #include "ui/widgets/chartwidget.h"
 #include "ui/widgets/modeldataholder.h"
-
+#include <QtGui/QApplication>
 #include <QtCore/QSharedPointer>
-
+#include <QtGui/QToolBar>
+#include <QtGui/QToolButton>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
@@ -48,29 +50,49 @@ MainWindow::MainWindow() :m_hasData(false)
     setCentralWidget(m_mainsplitter);
     
     
+    
     m_model_dataholder = new ModelDataHolder;
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
     m_mainsplitter->addWidget(m_model_dataholder);
     m_mainsplitter->addWidget(m_charts);
     
-    QAction *loadaction = new QAction(this);
-    loadaction->setText("Load Project");
-    connect(loadaction, SIGNAL(triggered(bool)), this, SLOT(LoadData()));
     
-    QAction *importaction = new QAction(this);
-    importaction->setText("Import Data");
-    connect(importaction, SIGNAL(triggered(bool)), this, SLOT(ImportAction()));
+       
+//     QAction *loadaction = new QAction();
+//     loadaction->setText("Load Project");
+//     connect(loadaction, SIGNAL(triggered(bool)), this, SLOT(LoadData()));
+    
+    m_import = new QAction(QIcon::fromTheme("document-open"), tr("Import Table"));
+    connect(m_import, SIGNAL(triggered(bool)), this, SLOT(ImportAction()));
+    
+    m_edit = new QAction(QIcon::fromTheme("document-edit"), tr("Edit Data"));
+    connect(m_edit, SIGNAL(triggered(bool)), this, SLOT(EditAction()));   
+    
+    m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
+    connect(m_config, SIGNAL(triggered()), SLOT(SettingsDialog()) );
+    
+//     m_about = new QAction(QIcon::fromTheme("help-about"), tr("About"));
+    
+    m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
+    connect(m_close, SIGNAL(triggered()), SLOT(close()) );
     
     
-    QAction* quitaction= new QAction(this);
-    quitaction->setText( "Quit" );
-    connect(quitaction, SIGNAL(triggered()), SLOT(close()) );
+    m_main_toolbar = new QToolBar;
+    m_main_toolbar->addAction(m_import);
+    m_main_toolbar->addAction(m_edit);
+    m_main_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
+    addToolBar(m_main_toolbar);
     
-    QMenu *filemenu =  menuBar()->addMenu( "File" );
-    filemenu->addAction( loadaction );
-    filemenu->addAction( importaction );
-    filemenu->addAction( quitaction );
+    m_model_toolbar = new QToolBar;
+    m_model_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
+    addToolBar(m_model_toolbar);
+    m_system_toolbar = new QToolBar;
+    m_system_toolbar->addAction(m_config);
+//     m_system_toolbar->addAction(QIcon::fromTheme("application-exit"), tr("Quit"), qApp, &QApplication::aboutQt);
+    m_system_toolbar->addAction(m_close);
+    m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
+    addToolBar(m_system_toolbar);
 }
 
 MainWindow::~MainWindow()
@@ -123,7 +145,17 @@ void MainWindow::ImportAction()
     }
 }
 
-
+void MainWindow::SettingsDialog()
+{
+    
+    ConfigDialog dialog(m_opt_config, this);
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        m_opt_config = dialog.Config();
+        m_model_dataholder->setSettings(m_opt_config);
+    }
+    
+}
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {

@@ -122,10 +122,12 @@ void ModelDataHolder::AddModel(int model)
            return; 
         
     };
+    connect(t, SIGNAL(Message(QString)), this, SLOT(addLogEntry(QString)));
+    t->Minimize(1);
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
     m_charts->addModel(t);
-    connect(t, SIGNAL(Message(QString)), this, SLOT(addLogEntry(QString)));
+    
 
 }
 
@@ -149,6 +151,7 @@ void ModelDataHolder::AddModel12()
 void ModelDataHolder::SimulateModel(int model)
 {
     QPointer<AbstractTitrationModel > t;
+    
     m_data = new DataClass(DataClass::EmptyData);
     switch(model){
         case 1:
@@ -164,6 +167,7 @@ void ModelDataHolder::SimulateModel(int model)
            return; 
         
     };
+    t->setOptimizerConfig(m_config);
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
     m_datawidget->setData(m_data);
@@ -206,5 +210,18 @@ void ModelDataHolder::addLogEntry(const QString& str)
     m_logWidget->appendPlainText(str);
 }
 
+void ModelDataHolder::setSettings(const OptimizerConfig &config)
+{
+    for(int i = 0; i < m_modelsWidget->count(); ++i)
+    {
+        ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+        if(w != 0)
+        {
+            w->setMaxIter(config.MaxIter);
+            w->Model()->setOptimizerConfig(config);
+            m_config = config;
+        }
+    }
+}
 
 #include "modeldataholder.moc"

@@ -35,8 +35,10 @@ set(nmr2fit_SRCS
                 core/libmath.cpp
                 core/data/dataclass.cpp
                 ui/dialogs/importdata.cpp
+                ui/dialogs/configdialog.cpp
                 core/data/modelclass.cpp
                 ui/widgets/modeldataholder.cpp
+                ui/widgets/optimizerwidget.cpp
                 ui/widgets/chartwidget.cpp
                 ui/widgets/datawidget.cpp
                 ui/widgets/modelwidget.cpp

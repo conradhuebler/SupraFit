@@ -30,7 +30,7 @@
 #include "cmath"
 #include "modelclass.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *parent) : DataClass(data), m_repaint(false), m_debug(false)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *parent) : DataClass(data), m_repaint(false), m_debug(false), m_inform_config_changed(true)
 {
     
     qDebug() << DataPoints() << Size();
@@ -182,6 +182,26 @@ void AbstractTitrationModel::UpdatePlotModels()
     }
 }
 
+QString AbstractTitrationModel::OptPara2String() const
+{
+    QString result;
+    result += "|***********************************************************************************|\n";
+    result += "|********************General Config for Optimization********************************|\n";
+    result += "|Maximal number of Iteration: " + QString::number(m_opt_config.MaxIter) + "|\n";
+    result += "|Shifts will be optimized for zero and saturation concentration: " + bool2YesNo(m_opt_config.OptimizeBorderShifts) + "|\n";
+    result += "|Shifts will be optimized for any other concentration: " + bool2YesNo(m_opt_config.OptimizeIntermediateShifts) + "|\n";
+    result += "|No. of LevenbergMarquadt Steps to optimize constants each Optimization Step: " + QString::number(m_opt_config.LevMar_Constants_PerIter) + "|\n";
+    result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
+    result += "|********************LevenbergMarquadt Configuration********************************|\n";
+    result += "|scale factor for initial \\mu {opts[0]}}" + QString::number(m_opt_config.LevMar_mu) + "|\n";
+    result += "|stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}" + QString::number(m_opt_config.LevMar_Eps1) + "|\n";
+    result += "|stopping thresholds for ||Dp||_2 = {opts[2]}" +  QString::number(m_opt_config.LevMar_Eps2) + "|\n";
+    result += "|stopping thresholds for ||e||_2 = {opts[3]}" + QString::number(m_opt_config.LevMar_Eps3) + "|\n";
+    result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
+    result += "|********************LevenbergMarquadt Configuration********************************|\n";
+    return result;
+}
+
 QVector<double> AbstractTitrationModel::Parameter() const
 {
     QVector<double > parameter;
@@ -211,11 +231,22 @@ QVector<qreal> AbstractTitrationModel::Minimize(int max)
     m_repaint = false;
     QVector<qreal> constants = Constants();
     qDebug() << constants;
-    for(int i = 0; i < max; ++i)
+    
+    
+    QString OptPara;
+    OptPara += "Starting Optimization Run for " + m_name +"\n";
+    if(m_inform_config_changed)
+    {
+        OptPara += OptPara2String();
+        m_inform_config_changed = false;
+    }
+    emit Message(OptPara);
+    
+    for(int i = 0; i < m_opt_config.MaxIter; ++i)
     {
         QApplication::processEvents();
         QVector<qreal > old_cons = constants;
-        MinimizingComplexConstants(this, 100, constants);
+        MinimizingComplexConstants(this, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         MiniShifts(); 
         if(old_cons == constants)
         {
@@ -223,7 +254,7 @@ QVector<qreal> AbstractTitrationModel::Minimize(int max)
             break;
         }
     } 
-    emit Message("***Finished after " + QString::number(max) + " cycles.***");
+    emit Message("***Finished after " + QString::number(m_opt_config.MaxIter) + " cycles.***");
     setConstants(constants);
 
     QString message = "Using Signals";
@@ -254,16 +285,7 @@ ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrati
     InitialGuess();
     CalculateSignal();
 
-    AbstractTitrationModel::Minimize(20);
-
     m_repaint = true;
-//     m_ItoI_signals.first() = m_data.last().Data().first();
-//     qDebug() <<  m_data.last().Data();
-//     for(int i = 0; i < m_pure_signals.size(); ++i)
-//     {
-//         m_ItoI_signals[i] = m_data[i].Data().last(); //FIXME no contign... signals
-//         qDebug() <<  m_data[i].Data();
-//     }
 }
 
 ItoI_Model::~ItoI_Model() 
@@ -299,6 +321,7 @@ void ItoI_Model::MiniShifts()
         active_signal = QVector<int>(SignalCount(), 1);
     else
         active_signal = m_active_signals;
+    
         QVector<qreal >signal_0, signal_1;
         signal_0 = m_model_error->firstRow();
         signal_1 = m_model_error->lastRow();
@@ -426,8 +449,7 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data, QObject* parent) : Abs
     
 //     m_opt_para << line3;
     CalculateSignal();
-    AbstractTitrationModel::Minimize(20);
-        
+
     m_repaint = true;
     qDebug() << Constants();
 }
@@ -473,10 +495,15 @@ void IItoI_ItoI_Model::MiniShifts()
         active_signal = QVector<int>(SignalCount(), 1);
     else
         active_signal = m_active_signals;
-    
+    QVector<qreal > parameter = m_IItoI_signals;
+        clearOptParameter();
+        setOptParamater(m_IItoI_signals);
+    for(int iter = 0; iter < 100; ++iter)
+    {
         QVector<qreal >signal_0, signal_1;
         signal_0 = m_model_error->firstRow();
         signal_1 = m_model_error->lastRow();
+
         for(int j = 0; j < m_lim_para.size(); ++j)
         {
             for(int i = 0; i < SignalCount(); ++i)    
@@ -492,14 +519,10 @@ void IItoI_ItoI_Model::MiniShifts()
             
         }
         
-        QVector<qreal > parameter = m_IItoI_signals;
-        clearOptParameter();
-        setOptParamater(m_IItoI_signals);
-        qDebug() << parameter;
-        MinimizingComplexConstants(this, 100, parameter);
-        setComplexSignals(parameter, 1);
-        
-//         m_opt_para << &m_K21 << &m_K11;
+            
+        MinimizingComplexConstants(this, m_opt_config.LevMar_Shifts_PerIter, parameter, m_opt_config);
+    }
+//         setComplexSignals(parameter, 1);
         setOptParamater(m_complex_constants);
 }
 
@@ -636,10 +659,7 @@ ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data, QObject* parent) : Abs
     setName(tr("1:1/1:2-Model"));
     InitialGuess();
 
-    
 
-    AbstractTitrationModel::Minimize(20);
-        
     m_repaint = true;
 //     qDebug() << Constants();
 }
@@ -702,7 +722,13 @@ void ItoI_ItoII_Model::MiniShifts()
     else
         active_signal = m_active_signals;
     
-        QVector<qreal >signal_0, signal_1;
+    QVector<qreal > parameter = m_ItoI_signals;
+        clearOptParameter();
+        setOptParamater(m_ItoI_signals);
+        
+     for(int iter = 0; iter < 100; ++iter)
+    {
+        QVector<qreal > signal_0, signal_1;
         signal_0 = m_model_error->firstRow();
         signal_1 = m_model_error->lastRow();
         for(int j = 0; j < m_lim_para.size(); ++j)
@@ -718,6 +744,13 @@ void ItoI_ItoII_Model::MiniShifts()
                 }
             }
         }
+        
+        
+    MinimizingComplexConstants(this, m_opt_config.LevMar_Shifts_PerIter, parameter, m_opt_config);
+    }
+        
+        setComplexSignals(parameter, 1);
+        setOptParamater(m_complex_constants);
 }
 
 

@@ -30,6 +30,29 @@
 
 class QStandardItemModel;
 
+
+struct OptimizerConfig
+{
+    int MaxIter = 1000;
+    int Sum_Convergence = 2;
+    qreal Shift_Convergence = 1E-2;
+    qreal Constant_Convergence = 1E-2;
+    qreal Error_Convergence = 1E-6;
+    
+    bool OptimizeBorderShifts = true;
+    bool OptimizeIntermediateShifts = true;
+    
+    int LevMar_Constants_PerIter = 1;
+    int LevMar_Shifts_PerIter = 1;
+    
+    qreal LevMar_mu = 1E-03;
+    qreal LevMar_Eps1 = 1E-15;
+    qreal LevMar_Eps2 = 1E-15;
+    qreal LevMar_Eps3 = 1E-20;
+    qreal LevMar_Delta = 1E-06;
+};
+
+
 class AbstractTitrationModel : public DataClass
 {
     Q_OBJECT
@@ -73,7 +96,12 @@ public:
     inline DataTable * ModelSignal() { return m_model_signal; }
     inline DataTable * ModelError() { return m_model_error; }
     void UpdatePlotModels();
-
+    inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
+    void setOptimizerConfig(const OptimizerConfig &config) 
+    { 
+        m_opt_config = config;
+        m_inform_config_changed = true;
+    }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -82,7 +110,14 @@ private:
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
     
     bool m_debug;
-    
+    QString OptPara2String() const;
+    inline QString bool2YesNo(bool var) const
+    {
+        if(var)
+            return QString("yes");
+        else
+            return QString("No");
+    }
 protected:
     virtual void MiniShifts() = 0;
     void SetSignal(int i, int j, qreal value);
@@ -101,6 +136,8 @@ protected:
     QStandardItemModel *m_plot_model, *m_plot_error;
     DataTable *m_model_signal, *m_model_error;
     const DataClass *m_data;
+    OptimizerConfig m_opt_config;
+    bool m_inform_config_changed;
 signals:
     void Recalculated();
     void Message(const QString &str);

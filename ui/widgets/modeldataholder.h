@@ -24,6 +24,8 @@
 #include <QtWidgets/QWidget>
 #include <QtCore/QPointer>
 
+struct OptimizerConfig;
+
 class ModelWidget;
 class DataWidget;
 class QTabWidget;
@@ -44,6 +46,7 @@ public:
         IItoI_ItoI = 2,
         ItoI_ItoII = 3
     };
+    void setSettings(const OptimizerConfig &config);
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<QTabWidget > m_modelsWidget;
@@ -54,7 +57,7 @@ private:
     QVector<QPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
     void SimulateModel(int model);
-    
+    OptimizerConfig m_config;
 private slots:
     void AddModel11();
     void AddModel21();

@@ -18,6 +18,8 @@
  */
 #include "core/data/dataclass.h"
 #include "core/data/modelclass.h"
+#include "ui/dialogs/configdialog.h"
+
 #include <QtMath>
 #include "cmath"
 #include <QApplication>
@@ -182,6 +184,7 @@ void ModelWidget::DiscreteUI()
 {
     m_minimize_all = new QPushButton(tr("Global Fit"));
     m_minimize_single = new QPushButton(tr("Local Fits"));
+    m_optim_config = new QPushButton(tr("Fit Settings"));
     m_maxiter = new QSpinBox;
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
@@ -190,7 +193,7 @@ void ModelWidget::DiscreteUI()
     
     connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
     connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
-
+    connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
         
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
@@ -198,11 +201,12 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
+    mini->addWidget(m_optim_config);
     mini->addWidget(new QLabel(tr("No. of max. Iter.")));
     mini->addWidget(m_maxiter);
     mini->addWidget(new QLabel(tr("Sum of Error:")));
     mini->addWidget(m_sum_error);
-    m_layout->addLayout(mini, 3, 0,1,2);
+    m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
 }
 
 void ModelWidget::EmptyUI()
@@ -282,6 +286,9 @@ void ModelWidget::GlobalMinimize()
         CollectParameters();
                 QVector<int > v(10,0);
         qDebug() <<"Start Minimize";
+        OptimizerConfig config = m_model->getOptimizerConfig();
+        config.MaxIter = m_maxiter->value();
+        m_model->setOptimizerConfig(config);
         QVector<qreal > constants = m_model->Minimize(m_maxiter->value());
         qDebug() <<"Minimize done";
 //          QVector<qreal > constants =  m_model->Constants();
@@ -317,6 +324,9 @@ void ModelWidget::LocalMinimize()
         m_model->setActiveSignals(active_signals);
         QVector<int > v(10,0);
         qDebug() <<"Start Minimize";
+        OptimizerConfig config = m_model->getOptimizerConfig();
+        config.MaxIter = m_maxiter->value();
+        m_model->setOptimizerConfig(config);
         QVector<qreal > constants = m_model->Minimize(m_maxiter->value());
         qDebug() <<"Minimize done";
         }
@@ -372,6 +382,21 @@ void ModelWidget::NewGuess()
             m_constants[j]->setValue(constants[j]);
 }
 
+void ModelWidget::setMaxIter(int maxiter)
+{
+    m_maxiter->setValue(maxiter);
+}
+
+void ModelWidget::OptimizerSettings()
+{
+    OptimizerDialog dialog(m_model->getOptimizerConfig(), this);
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        m_model->setOptimizerConfig(dialog.Config());
+        m_maxiter->setValue(dialog.Config().MaxIter);
+    }
+    
+}
 
 #include "modelwidget.moc"
 #include <QCheckBox>

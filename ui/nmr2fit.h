@@ -20,17 +20,21 @@
 
 #ifndef nmr2fit_H
 #define nmr2fit_H
+#include "ui/widgets/optimizerwidget.h"
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
 #include <QtCore/QPointer>
 #include <QtCharts/QLineSeries>
+
+struct OptimizerConfig;
+
 class ModelDataHolder;
 class ChartWidget;
 class QResizeEvent;
 class QListWidget;
 class DataClass;
-
+class QToolBar;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -47,11 +51,17 @@ private:
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
+    QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer <DataClass > m_data;
     bool m_hasData;
+    QAction *m_import, *m_edit, *m_config, *m_about, *m_close;
+    OptimizerConfig m_opt_config;
+    void ReadSettings();
+    void WriteSettings();
 private slots:
     void LoadData();
     void ImportAction();
+    void SettingsDialog();
 protected:
     void resizeEvent(QResizeEvent *event);
 };

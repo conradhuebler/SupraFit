@@ -36,7 +36,7 @@ class QGridLayout;
 class QCheckBox;
 class ModelElement : public QGroupBox
 {
-  Q_OBJECT
+    Q_OBJECT
 public:
     ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget *parent = 0);
     ~ModelElement();
@@ -68,11 +68,13 @@ signals:
 class ModelWidget : public QWidget
 {
     Q_OBJECT
-
+    
 public:
-ModelWidget(QPointer< AbstractTitrationModel > model, QWidget *parent = 0);
-~ModelWidget();
-virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
+    ModelWidget(QPointer< AbstractTitrationModel > model, QWidget *parent = 0);
+    ~ModelWidget();
+    virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
+    QPointer< AbstractTitrationModel > Model() { return m_model; }
+    void setMaxIter(int maxiter);
 private:
     QPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
@@ -85,7 +87,7 @@ private:
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess; 
+    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config; 
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
@@ -101,6 +103,7 @@ private slots:
     void NewGuess();
 public slots:
     void recalulate();
+    void OptimizerSettings();
 signals:
     void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);
