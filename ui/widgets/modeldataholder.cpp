@@ -40,7 +40,7 @@ ModelDataHolder::ModelDataHolder()
     
     
     m_datawidget = new DataWidget;
-    m_logWidget = new QPlainTextEdit;
+//     m_logWidget = new QPlainTextEdit;
     m_modelsWidget = new QTabWidget;
     m_modelsWidget->addTab(m_datawidget, tr("Data"));
 //         m_modelsWidget->setMovable(true);
@@ -88,7 +88,7 @@ ModelDataHolder::ModelDataHolder()
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_simulate, 0,1);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
-    layout->addWidget(m_logWidget, 2, 0, 1, 2);
+//     layout->addWidget(m_logWidget, 2, 0, 1, 2);
         
 }
 
@@ -122,7 +122,7 @@ void ModelDataHolder::AddModel(int model)
            return; 
         
     };
-    connect(t, SIGNAL(Message(QString)), this, SLOT(addLogEntry(QString)));
+    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
     t->Minimize(1);
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
@@ -205,10 +205,10 @@ void ModelDataHolder::RemoveTab(int i)
     }
 }
 
-void ModelDataHolder::addLogEntry(const QString& str)
-{
-    m_logWidget->appendPlainText(str);
-}
+// void ModelDataHolder::addLogEntry(const QString& str)
+// {
+//     m_logWidget->appendPlainText(str);
+// }
 
 void ModelDataHolder::setSettings(const OptimizerConfig &config)
 {

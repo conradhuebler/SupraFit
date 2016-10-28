@@ -26,7 +26,7 @@
 #include <QtWidgets/QSplitter>
 #include <QtCore/QPointer>
 #include <QtCharts/QLineSeries>
-
+#include <QtCore/QFile>
 struct OptimizerConfig;
 
 class ModelDataHolder;
@@ -35,6 +35,9 @@ class QResizeEvent;
 class QListWidget;
 class DataClass;
 class QToolBar;
+class QDockWidget;
+class QPlainTextEdit;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -58,10 +61,17 @@ private:
     OptimizerConfig m_opt_config;
     void ReadSettings();
     void WriteSettings();
+    QDockWidget *m_logdock, *m_modeldock, *m_chartdock;
+    QPlainTextEdit *m_logWidget;
+    QString m_logfile;
+    int m_printlevel;
+    void LogFile();
+    QFile m_file, m_stdout;
 private slots:
     void LoadData();
     void ImportAction();
     void SettingsDialog();
+    void WriteMessages(const QString &message, int priority);
 protected:
     void resizeEvent(QResizeEvent *event);
 };

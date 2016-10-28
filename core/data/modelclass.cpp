@@ -240,7 +240,7 @@ QVector<qreal> AbstractTitrationModel::Minimize(int max)
         OptPara += OptPara2String();
         m_inform_config_changed = false;
     }
-    emit Message(OptPara);
+    emit Message(OptPara, 2);
     
     for(int i = 0; i < m_opt_config.MaxIter; ++i)
     {
@@ -250,11 +250,11 @@ QVector<qreal> AbstractTitrationModel::Minimize(int max)
         MiniShifts(); 
         if(old_cons == constants)
         {
-            emit Message("***Finished after " + QString::number(i) + " cycles.***");
+            emit Message("***Finished after " + QString::number(i) + " cycles.***", 2);
             break;
         }
     } 
-    emit Message("***Finished after " + QString::number(m_opt_config.MaxIter) + " cycles.***");
+    emit Message("***Finished after " + QString::number(m_opt_config.MaxIter) + " cycles.***", 2);
     setConstants(constants);
 
     QString message = "Using Signals";
@@ -270,7 +270,7 @@ QVector<qreal> AbstractTitrationModel::Minimize(int max)
             message += "Constant "+ QString(i)+ " " +QString::number(Constants()[i]) +" ";
     message += "Sum of Error is " + QString::number(error);
     message += "\n";
-    Message(message);
+    Message(message, 2);
     m_repaint = true;
     CalculateSignal();
 

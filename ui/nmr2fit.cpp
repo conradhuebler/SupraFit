@@ -37,31 +37,54 @@
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QDockWidget>
+#include <QtCore/QSettings>
 #include <QDebug>
+
+#include <stdio.h>
 
 #include "nmr2fit.h"
 
 MainWindow::MainWindow() :m_hasData(false)
 {
-    m_mainsplitter = new QSplitter(Qt::Horizontal);
+    
+    m_logdock = new QDockWidget(tr("Logging output"), this);
+    m_logWidget = new QPlainTextEdit(this);
+    m_logdock->setWidget(m_logWidget);
+    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
+    
+    m_stdout.open(stdout, QIODevice::WriteOnly);
+    
+    
+//     m_mainsplitter = new QSplitter(Qt::Horizontal);
     
     
     
-    setCentralWidget(m_mainsplitter);
+//     setCentralWidget(m_mainsplitter);
     
     
     
     m_model_dataholder = new ModelDataHolder;
+    m_modeldock = new QDockWidget(tr("Data and Models"), this);
+    m_modeldock->setWidget(m_model_dataholder);
+    addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
+    
+    connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)));
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
-    m_mainsplitter->addWidget(m_model_dataholder);
-    m_mainsplitter->addWidget(m_charts);
+    m_chartdock = new QDockWidget(tr("Charts"), this);
+    m_chartdock->setWidget(m_charts);
+    addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
+    
+//     m_mainsplitter->addWidget(m_model_dataholder);
+//     m_mainsplitter->addWidget(m_charts);
     
     
-       
-//     QAction *loadaction = new QAction();
-//     loadaction->setText("Load Project");
-//     connect(loadaction, SIGNAL(triggered(bool)), this, SLOT(LoadData()));
+    
+    //     QAction *loadaction = new QAction();
+    //     loadaction->setText("Load Project");
+    //     connect(loadaction, SIGNAL(triggered(bool)), this, SLOT(LoadData()));
     
     m_import = new QAction(QIcon::fromTheme("document-open"), tr("Import Table"));
     connect(m_import, SIGNAL(triggered(bool)), this, SLOT(ImportAction()));
@@ -72,7 +95,7 @@ MainWindow::MainWindow() :m_hasData(false)
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), SLOT(SettingsDialog()) );
     
-//     m_about = new QAction(QIcon::fromTheme("help-about"), tr("About"));
+    //     m_about = new QAction(QIcon::fromTheme("help-about"), tr("About"));
     
     m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
     connect(m_close, SIGNAL(triggered()), SLOT(close()) );
@@ -89,15 +112,24 @@ MainWindow::MainWindow() :m_hasData(false)
     addToolBar(m_model_toolbar);
     m_system_toolbar = new QToolBar;
     m_system_toolbar->addAction(m_config);
-//     m_system_toolbar->addAction(QIcon::fromTheme("application-exit"), tr("Quit"), qApp, &QApplication::aboutQt);
+    //     m_system_toolbar->addAction(QIcon::fromTheme("application-exit"), tr("Quit"), qApp, &QApplication::aboutQt);
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     addToolBar(m_system_toolbar);
+    
+    ReadSettings();
+    LogFile();
 }
 
 MainWindow::~MainWindow()
 {
     
+    m_stdout.close();
+    QSettings _settings;
+    
+    _settings.beginGroup("window");
+    _settings.setValue("geometry", size());
+    _settings.endGroup();
     
 }
 void MainWindow::LoadData()
@@ -126,17 +158,19 @@ void MainWindow::ImportAction(const QString& file)
 void MainWindow::ImportAction()
 {
     QString filename = QFileDialog::getOpenFileName(this, "Select file", ".");
+    if(filename.isEmpty())
+        return;
     if(!m_hasData)
     {
-    ImportData dialog(filename, this);
-    
-    if(dialog.exec() == QDialog::Accepted)
-    {
-        m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
-        m_model_dataholder->setData(m_data.data());
-        m_charts->setRawData(m_data.data());
-        m_hasData = true;
-    }
+        ImportData dialog(filename, this);
+        
+        if(dialog.exec() == QDialog::Accepted)
+        {
+            m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+            m_model_dataholder->setData(m_data.data());
+            m_charts->setRawData(m_data.data());
+            m_hasData = true;
+        }
     }else
     {
         MainWindow *nw = new MainWindow;
@@ -148,21 +182,82 @@ void MainWindow::ImportAction()
 void MainWindow::SettingsDialog()
 {
     
-    ConfigDialog dialog(m_opt_config, this);
+    ConfigDialog dialog(m_opt_config, m_printlevel, m_logfile, this);
     if(dialog.exec() == QDialog::Accepted)
     {
         m_opt_config = dialog.Config();
         m_model_dataholder->setSettings(m_opt_config);
+        m_printlevel = dialog.PrintLevel();
+        m_logfile = dialog.LogFile();
+        WriteSettings();
+    }
+    
+}
+
+void MainWindow::LogFile()
+{
+    if(m_logfile.isEmpty() && m_file.isOpen())
+        m_file.close();
+    else if(m_file.fileName() != m_logfile && m_file.isOpen())
+    {
+        m_file.close();
+        m_file.setFileName(m_logfile);
+        if (!m_file.open(QIODevice::WriteOnly| QIODevice::Text))
+            return;
+    }else if(!m_file.isOpen())
+    {
+        m_file.setFileName(m_logfile);
+        if (!m_file.open(QIODevice::WriteOnly| QIODevice::Text))
+            return;
     }
     
 }
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
-    m_charts->resize(3*event->size().width()/4, m_charts->height());
-    m_model_dataholder->resize(event->size().width()/4, m_model_dataholder->height());
-
+//     m_charts->resize(3*event->size().width()/4, m_charts->height());
+//     m_model_dataholder->resize(event->size().width()/4, m_model_dataholder->height());
+//     
     QWidget::resizeEvent(event);
 }
 
+void MainWindow::WriteMessages(const QString &message, int priority)
+{
+
+    QTextStream stdout_stream(&m_stdout);
+    stdout_stream << message << "\n";
+    
+    if(priority <= m_printlevel)
+    {
+        QTextStream fileout_stream(&m_file);
+        fileout_stream << message << "\n";
+        
+        m_logWidget->appendPlainText(message);
+    }
+}
+
+void MainWindow::ReadSettings()
+{
+    QSettings _settings;
+    _settings.beginGroup("main");
+    m_logfile = _settings.value("logfile").toString();
+    m_printlevel = _settings.value("printlevel", 3).toInt();
+    _settings.endGroup();
+    
+    _settings.beginGroup("window");
+    resize(_settings.value("geometry", sizeHint()).toSize());
+    _settings.endGroup();
+    
+}
+
+void MainWindow::WriteSettings()
+{
+   QSettings _settings;
+    _settings.beginGroup("main"); 
+    _settings.setValue("logfile", m_logfile);
+    _settings.setValue("printlevel", m_printlevel);
+    _settings.endGroup();
+    
+    
+}
 #include "nmr2fit.moc"

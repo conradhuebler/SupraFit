@@ -140,7 +140,7 @@ protected:
     bool m_inform_config_changed;
 signals:
     void Recalculated();
-    void Message(const QString &str);
+    void Message(const QString &str, int priority = 3);
     
 };
 
