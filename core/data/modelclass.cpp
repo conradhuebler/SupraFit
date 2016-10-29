@@ -185,6 +185,7 @@ void AbstractTitrationModel::UpdatePlotModels()
 QString AbstractTitrationModel::OptPara2String() const
 {
     QString result;
+    result += "\n";
     result += "|***********************************************************************************|\n";
     result += "|********************General Config for Optimization********************************|\n";
     result += "|Maximal number of Iteration: " + QString::number(m_opt_config.MaxIter) + "|\n";
@@ -192,6 +193,7 @@ QString AbstractTitrationModel::OptPara2String() const
     result += "|Shifts will be optimized for any other concentration: " + bool2YesNo(m_opt_config.OptimizeIntermediateShifts) + "|\n";
     result += "|No. of LevenbergMarquadt Steps to optimize constants each Optimization Step: " + QString::number(m_opt_config.LevMar_Constants_PerIter) + "|\n";
     result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
+    result += "\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
     result += "|scale factor for initial \\mu {opts[0]}}" + QString::number(m_opt_config.LevMar_mu) + "|\n";
     result += "|stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}" + QString::number(m_opt_config.LevMar_Eps1) + "|\n";
@@ -199,6 +201,7 @@ QString AbstractTitrationModel::OptPara2String() const
     result += "|stopping thresholds for ||e||_2 = {opts[3]}" + QString::number(m_opt_config.LevMar_Eps3) + "|\n";
     result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
+    result += "\n";
     return result;
 }
 
@@ -241,20 +244,71 @@ QVector<qreal> AbstractTitrationModel::Minimize(int max)
         m_inform_config_changed = false;
     }
     emit Message(OptPara, 2);
-    
-    for(int i = 0; i < m_opt_config.MaxIter; ++i)
+    bool convergence = false;
+    bool constants_convergence = false;
+//     bool shift_convergence = false;
+    bool error_convergence = false;
+    int iter = 0;
+    bool allow_loop = true;
+    while((allow_loop && !convergence))
     {
+        iter++;   
+        if(iter > m_opt_config.MaxIter - 1)
+            allow_loop = false;
         QApplication::processEvents();
-        QVector<qreal > old_cons = constants;
+        emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
+        QVector<qreal > old_constants = constants;
+        qreal old_error = 0;
+        for(int z = 0; z < MaxVars(); ++z)
+            old_error += SumOfErrors(z);
+        
+        
         MinimizingComplexConstants(this, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         MiniShifts(); 
-        if(old_cons == constants)
+        
+        qreal error = 0;
+        for(int z = 0; z < MaxVars(); ++z)
+            error += SumOfErrors(z);
+        
+        qreal constant_diff = 0;
+        QString constant_string;
+        for(int z = 0; z < constants.size(); ++z)
         {
-            emit Message("***Finished after " + QString::number(i) + " cycles.***", 2);
-            break;
+            constant_diff += qAbs(old_constants[z] - constants[z]);
+            constant_string += QString::number(constants[z]) + " ** ";
         }
+        
+        if(constant_diff < m_opt_config.Constant_Convergence)
+        {
+            if(!constants_convergence)
+                emit Message("*** Change in complexation constants signaling convergence! ***", 3);
+            constants_convergence = true;
+        }
+        else
+            constants_convergence = false;
+        
+        if(qAbs(error - old_error) < m_opt_config.Error_Convergence)
+        {
+            if(!error_convergence)
+                emit Message("*** Change in sum of error signaling convergence! ***", 3);
+            error_convergence = true;
+        }
+        else
+            error_convergence = false;
+        emit Message("*** Change in complexatio constant " + QString::number(constant_diff) + " | Convergence at "+ QString::number(m_opt_config.Constant_Convergence)+ " ***\n", 4);
+        emit Message("*** New resulting contants " + constant_string + "\n", 5);
+        
+        emit Message("*** Change in error for model " + QString::number(qAbs(error - old_error)) + " | Convergence at "+ QString::number(m_opt_config.Error_Convergence)+"***\n", 4);
+        
+        emit Message("*** New resulting error " + QString::number(error) + "\n", 5);
+        convergence = error_convergence & constants_convergence;
+
+        emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
     } 
-    emit Message("***Finished after " + QString::number(m_opt_config.MaxIter) + " cycles.***", 2);
+    
+    
+    emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
+    emit Message("*** Convergence reached  " + bool2YesNo(convergence) + "  ****\n", 3);
     setConstants(constants);
 
     QString message = "Using Signals";

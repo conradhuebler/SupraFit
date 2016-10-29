@@ -205,17 +205,17 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     int n = model->DataPoints()*model->SignalCount();
     
     int nums = dlevmar_dif(TitrationModel, p, x, m, n, max_iter, opts, info, NULL, NULL, (void *)&data);
-    
-    printf("Levenberg-Marquardt returned in %g iter, reason %g, sumsq %g [%g]\n", info[5], info[6], info[1], info[0]);
-    printf("Best fit parameters:" );    
+    QString result;
+    result += "Levenberg-Marquardt returned in  " + QString::number(info[5]) + " iter, reason "+ QString::number(info[5]) + ", sumsq " + QString::number(info[5]) + "\n";
+    result += "Best fit parameters:";    
     param.clear();
     for(int i = 0; i < m; ++i)
         {
             param << p[i];
-            std::cout << p[i] << " ";
+            result +=  QString::number(p[i]) + " ";
         }
-        std::cout << "\n";
-    
+        result += "\n";
+    model->Message(result, 4);
     return nums;
 }
 

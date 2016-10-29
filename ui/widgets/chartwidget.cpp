@@ -17,15 +17,15 @@
  * 
  */
 
+#include "ui/widgets/chartview.h"
 #include "core/data/dataclass.h"
 #include "core/data/modelclass.h"
-#include <QMimeData>
 #include <QDrag>
 #include <QBuffer>
 #include <QVector>
 #include <QtWidgets/QComboBox>
 #include <QtCharts/QChart>
-#include <QtCharts/QChartView>
+// #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QLegendMarker>
 #include <QPrinter>
@@ -37,61 +37,6 @@
 #include <QTableView>
 #include "chartwidget.h"
 
-
-void ChartView::mousePressEvent(QMouseEvent *event)
-{
-    QImage image(scene()->sceneRect().size().toSize(), QImage::Format_ARGB32);
-    image.fill(Qt::transparent);
-    QPainter painter(&image);
-    painter.setRenderHint(QPainter::Antialiasing);
-    scene()->render(&painter);
-    QPixmap pixmap = QPixmap::fromImage(image);
-    QByteArray itemData;
-    QBuffer outputBuffer(&itemData);
-        
-    outputBuffer.open(QIODevice::WriteOnly);
-    pixmap.toImage().save(&outputBuffer, "PNG");
-
-    QMimeData *mimeData = new QMimeData;
-    mimeData->setData("image/png", itemData);
-
-    QDrag *drag = new QDrag(this);
-    drag->setMimeData(mimeData);
-    drag->setPixmap(pixmap);
-    drag->setHotSpot(event->pos());
-    
-    drag->exec(Qt::CopyAction);
-}
-
-void ChartView::dragEnterEvent(QDragEnterEvent *event)
-{
-    
-     if (event->mimeData()->hasFormat("image/png")) {
-        if (event->source() == this) {
-            event->setDropAction(Qt::CopyAction);
-            event->accept();
-        } else {
-            event->acceptProposedAction();
-        }
-    } else {
-        event->ignore();
-    }   
-}
-
-void ChartView::dragMoveEvent(QDragMoveEvent *event)
-{
-    
-      if (event->mimeData()->hasFormat("image/png")) {
-        if (event->source() == this) {
-            event->setDropAction(Qt::CopyAction);
-            event->accept();
-        } else {
-            event->acceptProposedAction();
-        }
-    } else {
-        event->ignore();
-    }    
-}
 
 ChartWidget::ChartWidget() : m_themebox(createThemeBox())
 {
@@ -219,7 +164,7 @@ void ChartWidget::addSeries( QtCharts::QScatterSeries *series, const QString &st
     m_signalchart->setTitle(str);
     
     
-    m_signalview->setRenderHint(QPainter::Antialiasing, true);
+//     m_signalview->setRenderHint(QPainter::Antialiasing, true);
 //     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
 }
 
@@ -236,7 +181,7 @@ void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series,
     }
     m_signalchart->setTitle(str);
     
-    m_signalview->setRenderHint(QPainter::Antialiasing, true);
+//     m_signalview->setRenderHint(QPainter::Antialiasing, true);
 //     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
 }
 void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
@@ -248,7 +193,7 @@ void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series
     if(!m_errorchart->series().contains(series))
         m_errorchart->addSeries(series);
     m_errorchart->setTitle(str);
-    m_errorview->setRenderHint(QPainter::Antialiasing, true);     
+//     m_errorview->setRenderHint(QPainter::Antialiasing, true);     
 }
 
 void ChartWidget::formatAxis()

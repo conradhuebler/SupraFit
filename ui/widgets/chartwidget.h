@@ -28,27 +28,12 @@
 #include <QtWidgets/QWidget>
 #include <QtCore/QPointer>
 #include <QtCore/QVector>
+#include "ui/widgets/chartview.h"
+
 class AbstractTitrationModel;
 class QComboBox;
 class QPushButton;
-
-
-class ChartView : public QtCharts::QChartView
-{
-  Q_OBJECT
-public:
-    ChartView(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {}
-    ChartView(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); }
-    ~ChartView(){ };
-        
-    void mousePressEvent(QMouseEvent *event);
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dragMoveEvent(QDragMoveEvent *event);
-private:
-    
-};
-
-
+class QChartView;
 
 
 

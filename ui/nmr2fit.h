@@ -57,7 +57,7 @@ private:
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer <DataClass > m_data;
     bool m_hasData;
-    QAction *m_import, *m_edit, *m_config, *m_about, *m_close;
+    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close;
     OptimizerConfig m_opt_config;
     void ReadSettings();
     void WriteSettings();
@@ -68,6 +68,7 @@ private:
     void LogFile();
     QFile m_file, m_stdout;
 private slots:
+    void NewTable();
     void LoadData();
     void ImportAction();
     void SettingsDialog();

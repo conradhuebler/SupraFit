@@ -40,6 +40,7 @@ set(nmr2fit_SRCS
                 ui/widgets/modeldataholder.cpp
                 ui/widgets/optimizerwidget.cpp
                 ui/widgets/chartwidget.cpp
+                ui/widgets/chartview.cpp
                 ui/widgets/datawidget.cpp
                 ui/widgets/modelwidget.cpp
                 ui/nmr2fit.cpp 

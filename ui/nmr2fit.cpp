@@ -77,14 +77,8 @@ MainWindow::MainWindow() :m_hasData(false)
     m_chartdock->setWidget(m_charts);
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
     
-//     m_mainsplitter->addWidget(m_model_dataholder);
-//     m_mainsplitter->addWidget(m_charts);
-    
-    
-    
-    //     QAction *loadaction = new QAction();
-    //     loadaction->setText("Load Project");
-    //     connect(loadaction, SIGNAL(triggered(bool)), this, SLOT(LoadData()));
+    m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
+    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
     
     m_import = new QAction(QIcon::fromTheme("document-open"), tr("Import Table"));
     connect(m_import, SIGNAL(triggered(bool)), this, SLOT(ImportAction()));
@@ -102,6 +96,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     
     m_main_toolbar = new QToolBar;
+    m_main_toolbar->addAction(m_new);
     m_main_toolbar->addAction(m_import);
     m_main_toolbar->addAction(m_edit);
     m_main_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
@@ -132,6 +127,12 @@ MainWindow::~MainWindow()
     _settings.endGroup();
     
 }
+
+void MainWindow::NewTable()
+{
+}
+
+
 void MainWindow::LoadData()
 {
     
