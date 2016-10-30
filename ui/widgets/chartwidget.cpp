@@ -25,9 +25,7 @@
 #include <QVector>
 #include <QtWidgets/QComboBox>
 #include <QtCharts/QChart>
-// #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
-#include <QtCharts/QLegendMarker>
 #include <QPrinter>
 #include <QPrintPreviewDialog>
 #include <QGridLayout>
@@ -48,9 +46,12 @@ ChartWidget::ChartWidget() : m_themebox(createThemeBox())
     m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     
     m_signalview = new ChartView(m_signalchart);
+    m_signalview->setYAxis("Shift [ppm]");
     m_errorview = new ChartView(m_errorchart);
-    
+    m_errorview->setYAxis("Error [ppm]");
     m_x_scale = new QComboBox;
+    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_signalview, SLOT(setXAxis(QString)));
+    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_errorview, SLOT(setXAxis(QString)));    
     m_x_scale->addItems(QStringList()  << tr("c(Guest)")<< tr("c(Host)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
     m_x_scale->setCurrentIndex(3);
 
@@ -60,7 +61,7 @@ ChartWidget::ChartWidget() : m_themebox(createThemeBox())
     layout->addWidget(m_errorview, 2, 0);
     layout->addWidget(m_x_scale, 3, 0);
     
-    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
+
     connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
     setLayout(layout);
 }
@@ -84,10 +85,10 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
         signal->setSeries(signal_series);
         signal_series->setName("Signal " + QString::number(i + 1));
         signal_series->setColor(m_rawdata->color(i));
-        addSeries(signal_series);
+        m_signalview->addSeries(signal_series, true);
     }
     
-    formatAxis();
+    m_signalview->formatAxis();
     
 }
 
@@ -107,11 +108,11 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
         if(model->Type() != 3)
         {
             QtCharts::QVXYModelMapper * mapper = model->ModelMapper(i);
-            QtCharts::QLineSeries *series = new QtCharts::QLineSeries;
-            series->setName("Signal " + QString::number(i + 1));
-            series->setColor(model->color(i));
-            mapper->setSeries(series);
-            addLineSeries(series);
+            QtCharts::QLineSeries *model_series = new QtCharts::QLineSeries;
+            mapper->setSeries(model_series);
+            model_series->setName("Signal " + QString::number(i + 1));
+            model_series->setColor(model->color(i));
+            m_signalview->addSeries(model_series, true);
         }
         if(model->Type() != 3)
         {
@@ -120,11 +121,12 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
             error->setSeries(error_series);
             error_series->setName("Signal " + QString::number(i + 1));
             error_series->setColor(model->color(i));
-            addErrorSeries(error_series);
+            m_errorview->addSeries(error_series, true);
         }
         
     }
-    connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
+    connect(model, SIGNAL(Recalculated()), m_signalview, SLOT(formatAxis()));
+    connect(model, SIGNAL(Recalculated()), m_errorview, SLOT(formatAxis()));
     Repaint(); 
     
 }
@@ -148,87 +150,8 @@ void ChartWidget::Repaint()
     for(int i = 0; i < trash.size(); ++i)
         m_models.remove(trash[i]);
 
-    formatAxis();
-    formatErrorAxis();
-    
-}
-
-
-void ChartWidget::addSeries( QtCharts::QScatterSeries *series, const QString &str)
-{
-    if(series->pointsVector().isEmpty())
-        return;
-    
-    if(!m_signalchart->series().contains(series))
-        m_signalchart->addSeries(series);
-    m_signalchart->setTitle(str);
-    
-    
-//     m_signalview->setRenderHint(QPainter::Antialiasing, true);
-//     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
-}
-
-void ChartWidget::addLineSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
-{
-    if(series->pointsVector().isEmpty())
-        return;
-    
-    
-    if(!m_signalchart->series().contains(series))
-    {
-        m_signalchart->addSeries(series);
-        m_signalchart->legend()->markers(series).first()->setVisible(false);
-    }
-    m_signalchart->setTitle(str);
-    
-//     m_signalview->setRenderHint(QPainter::Antialiasing, true);
-//     m_chartwidget->chart()->legend()->setAlignment(Qt::AlignRight);
-}
-void ChartWidget::addErrorSeries(const QPointer< QtCharts::QLineSeries > &series, const QString& str)
-{
-    
-    if(series->pointsVector().isEmpty())
-        return;
-    
-    if(!m_errorchart->series().contains(series))
-        m_errorchart->addSeries(series);
-    m_errorchart->setTitle(str);
-//     m_errorview->setRenderHint(QPainter::Antialiasing, true);     
-}
-
-void ChartWidget::formatAxis()
-{
-    if(m_signalchart->series().isEmpty())
-        return;
-    m_signalchart->createDefaultAxes();
-    
-    
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_signalchart->axisY());
-    y_axis->applyNiceNumbers();
-    y_axis->setTitleText("Shift [ppm]");
-
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_signalchart->axisX());
-    x_axis->applyNiceNumbers();
-    x_axis->setTitleText(m_x_scale->currentText());
-
-}
-void ChartWidget::formatErrorAxis()
-{
-    
-    if(m_errorchart->series().isEmpty())
-        return;
-    m_errorchart->createDefaultAxes();
-
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorchart->axisY());
-    
-    y_axis->applyNiceNumbers();
-    y_axis->setTitleText("Error [ppm]");
-    
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_errorchart->axisX());
-    x_axis->applyNiceNumbers();
-
-    x_axis->setTitleText(m_x_scale->currentText());
-
+   m_signalview->formatAxis();
+   m_errorview->formatAxis();    
 }
 
 QPointer<QComboBox > ChartWidget::createThemeBox() const

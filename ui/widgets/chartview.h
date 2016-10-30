@@ -19,10 +19,16 @@
 
 #ifndef CHARTVIEW_H
 #define CHARTVIEW_H
-#include <QtCharts/QChartView>
 
+#include "ui/dialogs/chartconfig.h"
+
+
+#include <QtCharts/QChartView>
+#include <QtCore/QPointer>
 class QPushButton;
 class QChart;
+
+struct ChartConfig;
 
 class ChartViewPrivate : public QtCharts::QChartView
 {
@@ -47,16 +53,30 @@ class ChartView : public QWidget
     Q_OBJECT
 public:
     ChartView(QtCharts::QChart *chart);
+    void addSeries( QtCharts::QAbstractSeries* series, bool legend = false );
+    
+public slots:
+    void formatAxis();
+    void setXAxis(const QString &str) { m_x_axis = str; emit AxisChanged(); }
+    void setYAxis(const QString &str) { m_y_axis = str; emit AxisChanged(); };
 private:
     ChartViewPrivate *m_chart_private;
+    QPointer< QtCharts::QChart > m_chart;
     QPushButton *m_config;
     void setUi();
+    bool has_legend, connected;
+    QString m_x_axis, m_y_axis;
+    ChartConfig getChartConfig() const;
     
+    ChartConfigDialog m_chartconfigdialog;
 private slots:
     void PlotSettings();
     void PrintPlot();
     void ExportLatex();
     void ExportGnuplot();
+    void setChartConfig(const ChartConfig &chartconfig);
+signals:
+    void AxisChanged();
 //     QVector<Q
 };
 

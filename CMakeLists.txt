@@ -36,6 +36,7 @@ set(nmr2fit_SRCS
                 core/data/dataclass.cpp
                 ui/dialogs/importdata.cpp
                 ui/dialogs/configdialog.cpp
+                ui/dialogs/chartconfig.cpp
                 core/data/modelclass.cpp
                 ui/widgets/modeldataholder.cpp
                 ui/widgets/optimizerwidget.cpp

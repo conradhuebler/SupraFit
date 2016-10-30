@@ -48,14 +48,9 @@ public:
     
 
 public slots:
-    void addSeries(QtCharts::QScatterSeries *series, const QString& str = "Signal");
-    void addLineSeries(const QPointer< QtCharts::QLineSeries >  &series, const QString& str = "Signal");
-    void addErrorSeries(const QPointer< QtCharts::QLineSeries >  &series, const QString& str = "Signal");
     void addModel(const QPointer< AbstractTitrationModel > model);
     
 private:
-    void formatAxis();
-    void formatErrorAxis();
     QPointer<QComboBox > createThemeBox() const;
    
     QPointer<QComboBox > m_x_scale, m_themebox;
