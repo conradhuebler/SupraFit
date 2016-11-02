@@ -218,6 +218,7 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
     y_axis->setTickCount(chartconfig.y_step);
     y_axis->setMin(chartconfig.y_min);
     y_axis->setMax(chartconfig.y_max);
+    m_chartconfigdialog.setPixmap(new QPixmap(m_chart_private->grab()));
 }
 
 ChartConfig ChartView::getChartConfig() const

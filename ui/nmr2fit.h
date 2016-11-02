@@ -73,6 +73,8 @@ private slots:
     void ImportAction();
     void SettingsDialog();
     void WriteMessages(const QString &message, int priority);
+    void MessageBox(const QString &str, int priority);
+
 protected:
     void resizeEvent(QResizeEvent *event);
 };

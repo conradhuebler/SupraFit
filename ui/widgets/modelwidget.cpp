@@ -53,6 +53,7 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
         constant->setDecimals(4);
         constant->setSuffix("ppm");
         constant->setValue(m_model->Pair(i, m_no).second);
+        qDebug() << m_model->Pair(i, m_no).second;
         connect(constant, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
         layout->addWidget(constant);
     }
@@ -79,13 +80,16 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     setMaximumHeight(50);
     setMinimumHeight(50);
     
-    connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
+//     connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
     
 }
 
 ModelElement::~ModelElement()
 {
+    
 }
+
+
 
 bool ModelElement::Handle() const
 {
@@ -110,6 +114,7 @@ QVector<double > ModelElement::D() const
 
 void ModelElement::Update()
 {
+    
     m_d_0->setValue(m_model->PureSignal(m_no));
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
@@ -222,11 +227,16 @@ void ModelWidget::Repaint()
 {
     if(m_model->Type() == 3)
         return;
+    m_pending = true;
     qreal error = 0;
     for(int j = 0; j < m_model_elements.size(); ++j)
+    {
         error += m_model->SumOfErrors(j);
+        m_model_elements[j]->Update();
+    }
 
     m_sum_error->setText(QString::number(error));
+    m_pending = false;
 }
 
 
@@ -289,7 +299,7 @@ void ModelWidget::GlobalMinimize()
         OptimizerConfig config = m_model->getOptimizerConfig();
         config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
-        QVector<qreal > constants = m_model->Minimize(m_maxiter->value());
+        QVector<qreal > constants = m_model->Minimize();
         qDebug() <<"Minimize done";
 //          QVector<qreal > constants =  m_model->Constants();
         qDebug() << constants;
@@ -327,7 +337,7 @@ void ModelWidget::LocalMinimize()
         OptimizerConfig config = m_model->getOptimizerConfig();
         config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
-        QVector<qreal > constants = m_model->Minimize(m_maxiter->value());
+        QVector<qreal > constants = m_model->Minimize();
         qDebug() <<"Minimize done";
         }
 //         QVector<qreal > constants =  m_model->Constants();
@@ -397,6 +407,7 @@ void ModelWidget::OptimizerSettings()
     }
     
 }
+
 
 #include "modelwidget.moc"
 #include <QCheckBox>

@@ -39,6 +39,7 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QDockWidget>
+#include <QtWidgets/QMessageBox>
 #include <QtCore/QSettings>
 #include <QDebug>
 
@@ -71,6 +72,8 @@ MainWindow::MainWindow() :m_hasData(false)
     addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
     
     connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)));
+    connect(m_model_dataholder, SIGNAL(MessageBox(QString, int)), this, SLOT(MessageBox(QString, int)));
+    
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
     m_chartdock = new QDockWidget(tr("Charts"), this);
@@ -234,6 +237,21 @@ void MainWindow::WriteMessages(const QString &message, int priority)
         fileout_stream << message << "\n";
         
         m_logWidget->appendPlainText(message);
+    }
+}
+
+
+void MainWindow::MessageBox(const QString& str, int priority)
+{
+    if(priority == 0)
+    {
+            QMessageBox::critical(this, tr("Optimizer Error."),
+                                     str,
+                                     QMessageBox::Ok | QMessageBox::Default);
+    }else if(priority == 1)
+    {
+        QMessageBox::warning(this, tr("Optimizer warning."),
+                                     str,                            QMessageBox::Ok | QMessageBox::Default);
     }
 }
 

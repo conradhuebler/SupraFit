@@ -159,15 +159,22 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
     QVector<qreal> parameter;
     for(int i = 0; i < m; ++i)
         parameter << p[i];
-    qDebug() << parameter;
+    if(parameter.size() == 2)
+         qDebug() << parameter;
     dptr->model->setParamter(parameter);
  
     dptr->model->CalculateSignal();
     QVector<qreal > x_var = dptr->model->getCalculatedSignals();
-    qDebug() << x_var;
+//     qDebug() << x_var;
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i];
-    
+    if(parameter.size() == 2)
+    {
+    qreal error = 0;
+        for(int z = 0; z < dptr->model->MaxVars(); ++z)
+            error += dptr->model->SumOfErrors(z);
+    qDebug() << error;
+    }
 //     int index = 0;
 //     for(int j = 0; j < dptr->model->SignalCount(); ++j)
 //       {
@@ -194,6 +201,17 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     
 
     QVector<double > parameter = param;
+    
+    QString message = QString();
+    message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
+    message += "Old vector : ";
+    foreach(double d, parameter)
+    {
+        message += QString::number(d) + " ";
+    }
+    message += "\n";
+    model->Message(message, 5);
+    
     qDebug() << parameter;
     double p[parameter.size()];
     for(int i = 0; i < parameter.size(); ++i)
@@ -207,7 +225,7 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     int nums = dlevmar_dif(TitrationModel, p, x, m, n, max_iter, opts, info, NULL, NULL, (void *)&data);
     QString result;
     result += "Levenberg-Marquardt returned in  " + QString::number(info[5]) + " iter, reason "+ QString::number(info[5]) + ", sumsq " + QString::number(info[5]) + "\n";
-    result += "Best fit parameters:";    
+    result += "New vector:";    
     param.clear();
     for(int i = 0; i < m; ++i)
         {

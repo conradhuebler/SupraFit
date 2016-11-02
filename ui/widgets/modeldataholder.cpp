@@ -119,11 +119,14 @@ void ModelDataHolder::AddModel(int model)
             t = new ItoI_ItoII_Model(m_data);
             break;
         default:
+            delete t;
            return; 
         
     };
+    t->setOptimizerConfig(m_config);
     connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-    t->Minimize(1);
+    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
+    t->Minimize();
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
     m_charts->addModel(t);
@@ -164,10 +167,11 @@ void ModelDataHolder::SimulateModel(int model)
             t = new ItoI_ItoII_Model(m_data);
             break;
         default:
+            delete t;
            return; 
         
     };
-    t->setOptimizerConfig(m_config);
+    
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
     m_datawidget->setData(m_data);

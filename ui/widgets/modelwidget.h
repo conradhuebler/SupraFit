@@ -43,6 +43,9 @@ public:
     double D0() const;
     QVector<double > D() const;
     bool Handle() const;
+    
+public slots:
+    void Update();
 private:
     QDoubleSpinBox *m_d_0;
     QVector<QDoubleSpinBox * > m_constants;
@@ -53,8 +56,8 @@ private:
     int m_no;
     
 private slots:
-    void Update();
     void SetOptimizer();
+    
 signals:
     void ValueChanged();
     void Minimize(int i);

@@ -35,9 +35,9 @@ struct OptimizerConfig
 {
     int MaxIter = 1000;
     int Sum_Convergence = 2;
-    qreal Shift_Convergence = 1E-2;
-    qreal Constant_Convergence = 1E-2;
-    qreal Error_Convergence = 1E-6;
+    qreal Shift_Convergence = 1E-3;
+    qreal Constant_Convergence = 1E-3;
+    qreal Error_Convergence = 1E-8;
     
     bool OptimizeBorderShifts = true;
     bool OptimizeIntermediateShifts = true;
@@ -82,8 +82,7 @@ public:
     virtual void InitialGuess() = 0;
     QVector<qreal >  getCalculatedSignals(QVector<int > active_signal = QVector<int >(1,0));
     virtual QVector<QVector< qreal > > AllShifts() = 0;
-    virtual QVector<qreal> Minimize(QVector<int > vars);
-    virtual QVector<qreal> Minimize(int max);
+    virtual QVector<qreal> Minimize();
     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
     QVector<double > Parameter() const;
@@ -141,6 +140,7 @@ protected:
 signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);
+    void Warning(const QString &str, int priority = 1);
     
 };
 
@@ -158,7 +158,6 @@ public:
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
-//     qreal Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return QVector<qreal>() << m_K11; }
     virtual QVector< QVector< qreal > > AllShifts();
     virtual void InitialGuess();
@@ -168,7 +167,6 @@ private:
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     qreal m_K11;
     
-//     QVector< QVector<qreal > >m_ItoI_signals;
     QVector<qreal > m_ItoI_signals;
 };
 
@@ -186,7 +184,6 @@ public:
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
-    QVector<qreal> Minimize(QVector<int > vars);
     QVector<qreal > Constants() const { return m_complex_constants; }
     virtual QVector< QVector< qreal > > AllShifts();
     void MiniShifts();
@@ -212,15 +209,17 @@ public:
     void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
-    void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
-    QVector<qreal> Minimize(QVector<int > vars);
-    QVector<qreal > Constants() const { return QVector<qreal>() << m_K11 << m_K12; }
+    void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
+    QVector<qreal > Constants() const { return m_complex_constants; }
     virtual QVector< QVector< qreal > > AllShifts();
     void MiniShifts();
     virtual void InitialGuess();
     
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) 
+    {
+        return HostConcentration(host_0, guest_0, Constants());
+    }
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     qreal GuestConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
     
