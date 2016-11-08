@@ -36,12 +36,12 @@ DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableMod
         insertRow(vector);
 }
 
-DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other)
+DataTable::DataTable(DataTable& other) //: QAbstractTableModel(&other) FIXME whatever
 {
     m_table = other.m_table;
 }
 
-DataTable::DataTable(DataTable* other): QAbstractTableModel(other)
+DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whatever
 {
     m_table = other->m_table;
 }

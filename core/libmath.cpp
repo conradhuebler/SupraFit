@@ -17,7 +17,19 @@
  * 
  */
 // #include <qmath.h>
+
+#include "global_config.h"
+
+#ifdef USE_levmar
 #include <levmar/levmar.h>
+#endif
+
+#ifdef  USE_eigen
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/NonLinearOptimization>
+#endif
+
 #include <QtGlobal>
 #include <QtMath>
 #include <QDebug>
@@ -26,15 +38,15 @@
 #include "core/data/modelclass.h"
 #include <iostream>
 namespace Cubic{
- qreal f(qreal x, qreal a, qreal b, qreal c, qreal d)
- {
-     return (x*x*x*a +x*x*b + x*c + d);
- }
- 
- qreal df(qreal x, qreal a, qreal b, qreal c)
- {
-     return (3*x*x*a +2*x*b + c);
- }
+    qreal f(qreal x, qreal a, qreal b, qreal c, qreal d)
+    {
+        return (x*x*x*a +x*x*b + x*c + d);
+    }
+    
+    qreal df(qreal x, qreal a, qreal b, qreal c)
+    {
+        return (3*x*x*a +2*x*b + c);
+    }
 }
 
 
@@ -64,7 +76,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
     qreal m_epsilon = 1e-8;
     int m_maxiter = 100;
     
-       
+    
     double guess_0;// = -p/2+qSqrt(p*p-q);
     double guess_1;// = -p/2-qSqrt(p*p-q);
     
@@ -72,7 +84,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
     guess_0 = pair.first;
     guess_1 = pair.second;
     
-//      qDebug() << guess_0 << " " << guess_1;
+    //      qDebug() << guess_0 << " " << guess_1;
     
     double x = guess_0+1;
     double y = Cubic::f(x, a, b,c ,d);
@@ -82,7 +94,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
         double dy = Cubic::df(x, a, b, c);
         x = x - y/dy;
         y = Cubic::f(x, a, b,c ,d);
-//  qDebug() << "x " << x << " y " << y;
+        //  qDebug() << "x " << x << " y " << y;
         ++i;
         if(i > m_maxiter)
             break;
@@ -97,8 +109,8 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
         double dy = Cubic::df(x, a, b, c);
         x = x - y/dy;
         y = Cubic::f(x, a, b,c ,d);
-//     qDebug() <<"x " << x << " y " << y;
-             ++i;   
+        //     qDebug() <<"x " << x << " y " << y;
+        ++i;   
         if(i > m_maxiter)
             break;
     }
@@ -114,76 +126,77 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
         double dy = Cubic::df(x, a, b, c);
         x = x - y/dy;
         y = Cubic::df(x, a, b, c);
-//     qDebug() <<"x " << x << " y " << y;
-              ++i;  
+        //     qDebug() <<"x " << x << " y " << y;
+        ++i;  
         if(i > m_maxiter)
             break;
     }
     root3 = x;
-//     qDebug() << root1 << root2 << root3;
+    //     qDebug() << root1 << root2 << root3;
     if(root1 < 0)
     {
-     if(root2 < 0)
-         return root3;
-     else
-         return root2;
+        if(root2 < 0)
+            return root3;
+        else
+            return root2;
     }else if(root2 < 0)
     {
-       if(root1 < 0)
-         return root3;
-     else
-         return root1;      
+        if(root1 < 0)
+            return root3;
+        else
+            return root1;      
     }else
     {
         if(root1 < 0)
-         return root2;
-     else
-         return root1;    
+            return root2;
+        else
+            return root1;    
     }
     
 }
 
+
+
+#ifdef USE_levmar
 struct mydata{
-   AbstractTitrationModel *model;
+    AbstractTitrationModel *model;
 };
-
-
 
 void TitrationModel(double *p, double *x, int m, int n, void *data)
 {
-
+    
     Q_UNUSED(n);
     struct mydata *dptr;
-
+    
     dptr=(struct mydata *)data; 
     QVector<qreal> parameter;
     for(int i = 0; i < m; ++i)
         parameter << p[i];
     if(parameter.size() == 2)
-         qDebug() << parameter;
+        qDebug() << parameter;
     dptr->model->setParamter(parameter);
- 
+    
     dptr->model->CalculateSignal();
     QVector<qreal > x_var = dptr->model->getCalculatedSignals();
-//     qDebug() << x_var;
+    //     qDebug() << x_var;
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i];
     if(parameter.size() == 2)
     {
-    qreal error = 0;
+        qreal error = 0;
         for(int z = 0; z < dptr->model->MaxVars(); ++z)
             error += dptr->model->SumOfErrors(z);
-    qDebug() << error;
+        qDebug() << error;
     }
-//     int index = 0;
-//     for(int j = 0; j < dptr->model->SignalCount(); ++j)
-//       {
-//         for(int i = 0; i < dptr->model->DataPoints(); ++i)
-//         {
-//             x[index] = dptr->model->ModelSignal()->data(j,i);
-//             index++;
-//         }
-//     }
+    //     int index = 0;
+    //     for(int j = 0; j < dptr->model->SignalCount(); ++j)
+    //       {
+    //         for(int i = 0; i < dptr->model->DataPoints(); ++i)
+    //         {
+    //             x[index] = dptr->model->ModelSignal()->data(j,i);
+    //             index++;
+    //         }
+    //     }
 }
 
 int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
@@ -199,7 +212,7 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i];
     
-
+    
     QVector<double > parameter = param;
     
     QString message = QString();
@@ -228,11 +241,11 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     result += "New vector:";    
     param.clear();
     for(int i = 0; i < m; ++i)
-        {
-            param << p[i];
-            result +=  QString::number(p[i]) + " ";
-        }
-        result += "\n";
+    {
+        param << p[i];
+        result +=  QString::number(p[i]) + " ";
+    }
+    result += "\n";
     model->Message(result, 4);
     
     delete[] x;
@@ -240,3 +253,99 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     return nums;
 }
 
+#endif
+
+#ifdef  USE_eigen
+typedef QVector<qreal > Variables;
+
+template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+
+struct Functor
+{
+    typedef _Scalar Scalar;
+    enum {
+        InputsAtCompileTime = NX,
+        ValuesAtCompileTime = NY
+    };
+    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
+    
+    int m_inputs, m_values;
+    
+//     Functor() : m_inputs(InputsAtCompileTime), m_values(ValuesAtCompileTime) {}
+    Functor(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+    
+    int inputs() const { return m_inputs; }
+    int values() const { return m_values; }
+    
+};
+
+struct MyFunctor : Functor<double>
+{
+    MyFunctor(int inputs, int values) : Functor(inputs, values), no_parameter(inputs),  no_points(values) 
+    {
+        
+    }
+    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+    {
+        QVector<qreal > param(inputs());
+        for(int i = 0; i < inputs(); ++i)
+            param[i] = parameter(i);
+        
+        model->setParamter(param);
+        model->CalculateSignal();
+        QVector<qreal > CaluculatedSignals = model->getCalculatedSignals();
+        for( int i = 0; i < values(); ++i)
+        {
+            fvec(i) = CaluculatedSignals[i] - ModelSignals[i];
+        }
+        return 0;
+    }
+    int no_parameter;
+    int no_points;
+    Variables ModelSignals;
+    AbstractTitrationModel *model;
+    int inputs() const { return no_parameter; } // There are two parameters of the model
+    int values() const { return no_points; } // The number of observations
+};
+
+struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
+
+
+
+int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+{
+    Q_UNUSED(max_iter)
+    Q_UNUSED(config)
+       
+    Variables ModelSignals = model->getSignals();
+    Eigen::VectorXd parameter(param.size());
+    for(int i = 0; i < param.size(); ++i)
+        parameter(i) = param[i];
+    
+
+    
+    
+    MyFunctor functor(param.size(), model->DataPoints()*model->SignalCount());
+    functor.model = model;
+    functor.ModelSignals = ModelSignals;
+    Eigen::NumericalDiff<MyFunctor> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
+//     int mode = 1;
+    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+//      do {
+         status = lm.minimizeOneStep(parameter);
+//      } while (status== Eigen::LevenbergMarquardtSpace::Running);
+//     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeOneStep(parameter);
+  
+    std::cout << "status: " << status << std::endl;
+    
+    //std::cout << "info: " << lm.info() << std::endl;
+    
+    
+    for(int i = 0; i < functor.inputs(); ++i)
+            param[i] = parameter(i);
+    return 1;
+}
+#endif

@@ -1,1 +1,3 @@
 #cmakedefine BENCHMARK_LEVEL
+#cmakedefine USE_levmar
+#cmakedefine USE_eigen
