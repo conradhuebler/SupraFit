@@ -27,11 +27,11 @@
 #include <QStandardItemModel>
 #include <QtCharts/QVXYModelMapper>
 #include <QApplication>
-#include "cmath"
-
+#include <cmath>
+#include <cfloat>
 #include "modelclass.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data, QObject *parent) : DataClass(data), m_repaint(false), m_debug(false), m_inform_config_changed(true)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false)
 {
     
     qDebug() << DataPoints() << Size();
@@ -152,7 +152,11 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 
     if(m_debug)
         qDebug() << i << j << value;
-        
+    if(isnan(value) || isinf(value))
+    {
+        value = 0;
+        m_corrupt = true;
+    }
     if(Type() != 3)
     {
         m_model_signal->data(j,i) = value;
@@ -272,12 +276,14 @@ QVector<qreal> AbstractTitrationModel::Minimize()
         {
             if(constants[z] < 0)
             {
-                emit Message("*** Something quite seriosly happend to the complexation constant. ***\n", 4);
-                emit Message("*** At least one fall below zero, will stop optimization now and restore old values. ***\n", 4);
-                emit Warning("Something quite seriosly happend to the complexation constant.\nAt least one fall below zero, will stop optimization now and restore old values.", 0);
-                allow_loop = false;
-                process_stopped = true;
-                break;
+                 emit Message("*** Something quite seriosly happend to the complexation constant. ***\n", 4);
+                 emit Message("*** At least one fall below zero, will stop optimization now and restore old values. ***\n", 4);
+                 if(isCorrupt())
+                     emit Message("*** Calculated signals seems corrupt (infinity or not even a number (nan)). ***\n", 4);
+                 emit Warning("Something quite seriosly happend to the complexation constant.\nAt least one fall below zero, will stop optimization now and restore old values.", 0);
+                 allow_loop = false;
+                 process_stopped = true;
+                 break;
             }
             constant_diff += qAbs(old_constants[z] - constants[z]);
             constant_string += QString::number(constants[z]) + " ** ";
@@ -314,8 +320,8 @@ QVector<qreal> AbstractTitrationModel::Minimize()
         emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
     if(process_stopped)
     {
-        setConstants(old_para_constant);
-        constants = old_para_constant;
+         setConstants(old_para_constant);
+         constants = old_para_constant;
     }else{
     emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
     emit Message("*** Convergence reached  " + bool2YesNo(convergence) + "  ****\n", 3);
@@ -344,7 +350,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
     return constants;
 }
 
-ItoI_Model::ItoI_Model(const DataClass *data, QObject *parent) : AbstractTitrationModel(data, parent)
+ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
 {
     setName(tr("1:1-Model"));
     
@@ -438,6 +444,7 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector< qreal 
 void ItoI_Model::CalculateSignal(QVector<qreal > constants)
 {  
     qDebug() << "constants" << constants;
+    m_corrupt = false;
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0, guest_0;
@@ -484,10 +491,11 @@ void ItoI_Model::setPureSignals(const QVector< qreal > &list)
 
 void ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
 {
+    Q_UNUSED(i)
     if(list.size() << m_ItoI_signals.size())
     {
-        for(int i = 0; i < list.size(); ++i)
-            m_ItoI_signals[i] = list[i];
+        for(int j = 0; j < list.size(); ++j)
+            m_ItoI_signals[j] = list[j];
     }
 }
 
@@ -502,7 +510,7 @@ QPair< qreal, qreal > ItoI_Model::Pair(int i, int j)
     return QPair<qreal, qreal>(0, 0);
 }
 
-IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data, QObject* parent) : AbstractTitrationModel(data, parent)
+IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
     
    
@@ -528,7 +536,7 @@ void IItoI_ItoI_Model::InitialGuess()
 {
     m_repaint = false;
     
-    ItoI_Model *model = new ItoI_Model(m_data, this);
+    ItoI_Model *model = new ItoI_Model(m_data);
     m_K11 = model->Constants()[model->ConstantSize() -1];
     m_K21 = m_K11/2;
     delete model;
@@ -644,7 +652,7 @@ qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<q
 
 void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
 {
-
+    m_corrupt = false;
     if(constants.size() == 0)
         constants = Constants();
     for(int i = 0; i < DataPoints(); ++i)
@@ -711,7 +719,7 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j)
     return QPair<qreal, qreal>(0, 0);
 }
 
-ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data, QObject* parent) : AbstractTitrationModel(data, parent)
+ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
     
     
@@ -732,7 +740,7 @@ void ItoI_ItoII_Model::InitialGuess()
 {
     m_repaint = false;
     
-    ItoI_Model *model = new ItoI_Model(m_data, this);
+    ItoI_Model *model = new ItoI_Model(m_data);
     m_K12 = model->Constants()[model->ConstantSize() -1];
     m_K11 = m_K12/2;
     delete model;
@@ -863,6 +871,7 @@ qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, QVector<
 
 void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
 {
+    m_corrupt = false;
     if(constants.size() == 0)
         constants = Constants();
    qDebug() << constants << Constants();

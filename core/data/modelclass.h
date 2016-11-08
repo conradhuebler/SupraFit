@@ -58,7 +58,7 @@ class AbstractTitrationModel : public DataClass
     Q_OBJECT
 
 public:
-    AbstractTitrationModel(const DataClass *data, QObject *parent = 0);
+    AbstractTitrationModel(const DataClass *data);
     virtual ~AbstractTitrationModel();
     void setOptParamater(qreal & parameter);
     void addOptParameter(qreal &vector);
@@ -101,6 +101,7 @@ public:
         m_opt_config = config;
         m_inform_config_changed = true;
     }
+    bool isCorrupt() const { return m_corrupt; }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -136,7 +137,7 @@ protected:
     DataTable *m_model_signal, *m_model_error;
     const DataClass *m_data;
     OptimizerConfig m_opt_config;
-    bool m_inform_config_changed;
+    bool m_inform_config_changed, m_corrupt;
 signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);
@@ -150,7 +151,7 @@ class ItoI_Model : public AbstractTitrationModel
     Q_OBJECT
     
 public:
-    ItoI_Model(const DataClass *data, QObject *parent = 0);
+    ItoI_Model(const DataClass *data);
     ~ItoI_Model();
     QPair<qreal, qreal> Pair(int i, int j = 0);
     inline int ConstantSize() const { return 1;}
@@ -175,7 +176,7 @@ class IItoI_ItoI_Model : public AbstractTitrationModel
      Q_OBJECT
     
 public:
-    IItoI_ItoI_Model(const DataClass* data, QObject* parent = 0);
+    IItoI_ItoI_Model(const DataClass* data);
     ~IItoI_ItoI_Model();
     
     QPair<qreal, qreal> Pair(int i, int j = 0);
@@ -201,7 +202,7 @@ class ItoI_ItoII_Model : public AbstractTitrationModel
      Q_OBJECT
     
 public:
-    ItoI_ItoII_Model(const DataClass* data, QObject* parent = 0);
+    ItoI_ItoII_Model(const DataClass* data);
     ~ItoI_ItoII_Model();
     
     QPair<qreal, qreal> Pair(int i, int j = 0);

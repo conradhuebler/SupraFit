@@ -52,37 +52,37 @@ ModelDataHolder::ModelDataHolder()
     m_simulate = new QPushButton(tr("Simulate"));
         m_add->setFlat(true);
     QMenu *menu = new QMenu;
-    QAction *ItoI = new QAction(this);
-    ItoI->setText(tr("1:1-Model"));
-        connect(ItoI, SIGNAL(triggered()), this, SLOT(AddModel11()));
-        menu->addAction(ItoI);
-    QAction *IItoI_ItoI = new QAction(this);
-    IItoI_ItoI->setText(tr("2:1/1:1-Model"));
-        connect(IItoI_ItoI, SIGNAL(triggered()), this, SLOT(AddModel21()));
-        menu->addAction(IItoI_ItoI);
+    QAction *ItoI_action = new QAction(this);
+    ItoI_action->setText(tr("1:1-Model"));
+        connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel11()));
+        menu->addAction(ItoI_action);
+    QAction *IItoI_ItoI_action = new QAction(this);
+    IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
+        connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel21()));
+        menu->addAction(IItoI_ItoI_action);
         
    
         
-    QAction *ItoI_ItoII = new QAction(this);
-    ItoI_ItoII->setText(tr("1:1/1:2-Model"));
-        connect(ItoI_ItoII, SIGNAL(triggered()), this, SLOT(AddModel12()));
-        menu->addAction(ItoI_ItoII);
+    QAction *ItoI_ItoII_action = new QAction(this);
+    ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
+        connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
+        menu->addAction(ItoI_ItoII_action);
      m_add->setMenu(menu);
         menu = new QMenu;
-    ItoI = new QAction(this);
-    ItoI->setText(tr("1:1-Model"));
-        connect(ItoI, SIGNAL(triggered()), this, SLOT(SimulateModel11()));
-        menu->addAction(ItoI);
-    IItoI_ItoI = new QAction(this);
-    IItoI_ItoI->setText(tr("2:1/1:1-Model"));
-        connect(IItoI_ItoI, SIGNAL(triggered()), this, SLOT(SimulateModel21()));
-        menu->addAction(IItoI_ItoI);
+    ItoI_action = new QAction(this);
+    ItoI_action->setText(tr("1:1-Model"));
+        connect(ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel11()));
+        menu->addAction(ItoI_action);
+    IItoI_ItoI_action = new QAction(this);
+    IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
+        connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel21()));
+        menu->addAction(IItoI_ItoI_action);
         
         
-    ItoI_ItoII = new QAction(this);
-    ItoI_ItoII->setText(tr("1:1/1:2-Model"));
-        connect(ItoI_ItoII, SIGNAL(triggered()), this, SLOT(SimulateModel12()));
-        menu->addAction(ItoI_ItoII);
+    ItoI_ItoII_action = new QAction(this);
+    ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
+        connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(SimulateModel12()));
+        menu->addAction(ItoI_ItoII_action);
         
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
@@ -97,9 +97,9 @@ ModelDataHolder::~ModelDataHolder()
     
 }
 
-void ModelDataHolder::setData(DataClass *data)
+void ModelDataHolder::setData(DataClass *dataclass)
 {
-    m_data = new DataClass(data); 
+    m_data = new DataClass(dataclass); 
     m_datawidget->setData(m_data);
     m_add->setEnabled(true);
 }

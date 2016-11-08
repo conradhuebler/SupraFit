@@ -26,10 +26,3 @@
 #include "global.h"
 
 
-
-void PrintMessage(const QString& str, int Level)
-{
-    
-    
-    
-}

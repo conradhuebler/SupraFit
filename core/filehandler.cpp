@@ -23,7 +23,7 @@
 #include "filehandler.h"
 
 
-FileHandler::FileHandler(const QString &filename, QObject *parent) :m_filename(filename), m_lines(0), m_table(true), m_allint(true), m_file_supported(true)
+FileHandler::FileHandler(const QString &filename, QObject *parent) :m_filename(filename), QObject(parent), m_lines(0), m_table(true), m_allint(true), m_file_supported(true)
 {
     
     ReadFile();

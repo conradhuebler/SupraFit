@@ -19,7 +19,21 @@ configure_file (
 )
   
 IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-reorder")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-reorder -pedantic-errors \
+                                            -Wextra -Wcast-align -Wcast-qual  -Wchar-subscripts  \
+                                            -Wcomment -Wconversion -Wdisabled-optimization -Wfloat-equal \
+                                            -Wformat  -Wformat=2 -Wformat-nonliteral -Wformat-security\
+                                            -Wformat-y2k  -Wimport  -Winit-self  -Winline -Winvalid-pch\
+                                            -Wunsafe-loop-optimizations  -Wlong-long -Wmissing-braces\
+                                            -Wmissing-field-initializers -Wmissing-format-attribute  \
+                                            -Wmissing-include-dirs -Wmissing-noreturn -Wpacked  -Wparentheses\
+                                            -Wpointer-arith -Wredundant-decls -Wreturn-type -Wsequence-point\
+                                            -Wshadow -Wsign-compare  -Wstack-protector -Wstrict-aliasing\
+                                            -Wstrict-aliasing=2 -Wswitch  -Wswitch-default -Wswitch-enum\
+                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
+                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
+                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
+                                            -Wvolatile-register-var  -Wwrite-strings")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 

@@ -26,10 +26,10 @@
 #include "ui/widgets/datawidget.h"
 #include "ui/widgets/chartwidget.h"
 #include "ui/widgets/modeldataholder.h"
-#include <QtGui/QApplication>
+#include <QtWidgets/QApplication>
 #include <QtCore/QSharedPointer>
-#include <QtGui/QToolBar>
-#include <QtGui/QToolButton>
+#include <QtWidgets/QToolBar>
+#include <QtWidgets/QToolButton>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>

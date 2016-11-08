@@ -34,7 +34,7 @@ class DataWidget : public QWidget
 public:
     DataWidget();
     ~DataWidget();
-    void setData(DataClass *data);
+    void setData(DataClass *dataclass);
 public slots:
        
     void RowAdded();

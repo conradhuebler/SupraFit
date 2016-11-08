@@ -35,7 +35,7 @@ namespace Cubic{
  {
      return (3*x*x*a +2*x*b + c);
  }
-};
+}
 
 
 
@@ -193,7 +193,7 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     opts[4]=config.LevMar_Delta;
     struct mydata data;
     data.model = model;
-    double x[data.model->DataPoints()*data.model->SignalCount()];
+    double *x = new double[data.model->DataPoints()*data.model->SignalCount()];
     
     QVector<qreal > x_var = data.model->getSignals();
     for(int i = 0; i < x_var.size(); ++i)
@@ -213,7 +213,7 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     model->Message(message, 5);
     
     qDebug() << parameter;
-    double p[parameter.size()];
+    double *p = new double[parameter.size()];
     for(int i = 0; i < parameter.size(); ++i)
     {
         p[i] =  parameter[i];
@@ -234,6 +234,9 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
         }
         result += "\n";
     model->Message(result, 4);
+    
+    delete[] x;
+    delete[] p;
     return nums;
 }
 

@@ -48,9 +48,9 @@ DataWidget::~DataWidget()
     
 }
 
-void DataWidget::setData(DataClass* data)
+void DataWidget::setData(DataClass* dataclass)
 {
-    m_data = data;
+    m_data = dataclass;
     m_concentrations->setModel(m_data->ConcentrationModel());
     m_signals->setModel(m_data->SignalModel());
     m_switch->setDisabled(false);

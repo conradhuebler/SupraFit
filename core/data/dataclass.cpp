@@ -36,12 +36,12 @@ DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableMod
         insertRow(vector);
 }
 
-DataTable::DataTable(DataTable& other)
+DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other)
 {
     m_table = other.m_table;
 }
 
-DataTable::DataTable(DataTable* other)
+DataTable::DataTable(DataTable* other): QAbstractTableModel(other)
 {
     m_table = other->m_table;
 }
@@ -62,6 +62,7 @@ void DataTable::Debug() const
 
 int DataTable::columnCount(const QModelIndex& parent) const
 {
+    Q_UNUSED(parent)
     if(m_table.size() != 0)
         return m_table.first().size();
     return 0;
@@ -70,11 +71,13 @@ int DataTable::columnCount(const QModelIndex& parent) const
 
 int DataTable::rowCount(const QModelIndex& parent) const
 {
+    Q_UNUSED(parent)
     return m_table.size();
 }
 
 QVariant DataTable::data(const QModelIndex& index, int role) const
 {
+    Q_UNUSED(role)
     return data(index.column(), index.row());
 }
 
