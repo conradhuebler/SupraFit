@@ -20,6 +20,8 @@
 #ifndef DATACLASS_H
 #define DATACLASS_H
 
+
+#include <QtCore/QSharedData>
 #include <QtCore/QVector>
 #include <QtCore/QMap>
 #include <QtCharts/QScatterSeries>
@@ -69,6 +71,34 @@ private:
     
 };
 
+
+class DataClassPrivate : public QSharedData
+{
+    
+public:
+    DataClassPrivate();
+    DataClassPrivate(int i);
+    DataClassPrivate(const DataClassPrivate *other);
+    DataClassPrivate(const DataClassPrivate &other);
+    ~DataClassPrivate();
+    
+    /*
+     * Here are the datas
+     */
+    
+    QStringList m_names;
+    QVector<QPointer<QtCharts::QVXYModelMapper> >m_plot_signal_mapper;
+    QStandardItemModel *m_plot_signal;
+    
+    int m_type, m_maxsize;
+    bool *m_concentrations;
+    
+    
+    DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
+    QVector<int > m_active_signals;
+};
+
+
 class DataClass : public QObject
 {
     Q_OBJECT
@@ -95,38 +125,32 @@ class DataClass : public QObject
     
     inline void addPoint(QVector<qreal > conc, QVector<qreal > data)
     {
-        m_concentration_model->insertRow(conc);
-        m_signal_model->insertRow(data);
+        d->m_concentration_model->insertRow(conc);
+        d->m_signal_model->insertRow(data);
     }
     
-    QColor color(int i) const 
-        {
-            if(i < m_colors.size())
-                return m_colors[i];
-            else
-                return ColorCode(i);
-        }
-    QColor ColorCode(int i) const;
-    void setColor(int i, QColor color);
+    virtual QColor color(int i) const; 
+    virtual QColor ColorCode(int i) const;
     inline int Size() const { return DataPoints(); } 
-    inline int Concentrations() const { return m_concentration_model->columnCount(); }
-    inline int DataPoints() const { return m_signal_model->rowCount(); }
-    inline int SignalCount() const {return m_signal_model->columnCount(); }
-    inline int Type() const { return m_type;     }
-    inline void setType(int type) { m_type = type; }
-    inline DataTable * ConcentrationModel() { return m_concentration_model; }
-    inline DataTable * SignalModel() { return m_signal_model; }
-    inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_plot_signal_mapper[i]; }
+    inline int Concentrations() const { return d->m_concentration_model->columnCount(); }
+    inline int DataPoints() const { return d->m_signal_model->rowCount(); }
+    inline int SignalCount() const {return d->m_signal_model->columnCount(); }
+    inline int Type() const { return d->m_type;     }
+    inline void setType(int type) { d->m_type = type; }
+    inline DataTable * ConcentrationModel() { return d->m_concentration_model; }
+    inline DataTable * SignalModel() { return d->m_signal_model; }
+    virtual inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return d->m_plot_signal_mapper[i]; }
     void SwitchConentrations();
-    inline bool* Concentration() const { return m_concentrations; }
+    inline bool* Concentration() const { return d->m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
-    inline QStandardItemModel* m() { return m_plot_signal; }
-    
+    inline QStandardItemModel* m() { return d->m_plot_signal; }
+    inline QVector<int > ActiveSignals() { return d->m_active_signals; }
+    inline QVector<int > ActiveSignals() const { return d->m_active_signals; }
     QVector<qreal >  getSignals(QVector<int > dealing_signals = QVector<int >(1,0));
     inline    void setActiveSignals(QVector<int > active_signals) 
     { 
-        m_active_signals = active_signals; 
-        emit ActiveSignalsChanged(m_active_signals);
+        d->m_active_signals = active_signals; 
+        emit ActiveSignalsChanged(d->m_active_signals);
     }
 
     /*
@@ -147,22 +171,15 @@ class DataClass : public QObject
   
         emit RowAdded();
     }*/  
+    qreal XValue(int i) const;
 public slots:
      void PlotModel();
 private:
-    QStringList m_names;
-    QVector<QColor > m_colors;
-    QVector<QPointer<QtCharts::QVXYModelMapper> >m_plot_signal_mapper;
-    QStandardItemModel *m_plot_signal;
     
+    QExplicitlySharedDataPointer<DataClassPrivate > d;
     
 protected:
-    int m_type, m_maxsize;
-    bool *m_concentrations;
     PlotMode m_plotmode;
-    qreal XValue(int i) const;
-    DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
-    QVector<int > m_active_signals;
 signals:
     void RowAdded();
     void ActiveSignalsChanged(QVector<int > active_signals);

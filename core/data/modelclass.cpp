@@ -24,18 +24,21 @@
 #include <QtMath>
 
 #include <QDebug>
+#include <QtCore/QDateTime>
 #include <QStandardItemModel>
 #include <QtCharts/QVXYModelMapper>
 #include <QApplication>
 #include <cmath>
 #include <cfloat>
+#include <iostream>
 #include "modelclass.h"
 
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false)
 {
     
     qDebug() << DataPoints() << Size();
-    m_active_signals = QVector<int>(SignalCount(), 1);
+//     m_active_signals = 
+    setActiveSignals(QVector<int>(SignalCount(), 1));
     ptr_concentrations = data->Concentration();
 //     for(int i = 0; i < DataPoints(); ++i)
 //     {
@@ -61,7 +64,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
             m_error_mapper << error;     
     }
 
-        m_pure_signals = m_signal_model->firstRow();
+        m_pure_signals = SignalModel()->firstRow();
         m_data = data;   
         connect(m_data, SIGNAL(recalculate()), this, SLOT(CalculateSignal()));
 
@@ -81,12 +84,21 @@ AbstractTitrationModel::~AbstractTitrationModel()
 //     qDeleteAll( m_lim_para );
 }
 
+void AbstractTitrationModel::adress() const
+{
+    std::cout << "We are at " << this;
+    std::cout << "\t" << m_data;
+    std::cout << "\t " << m_data->Concentration();
+    std::cout << "\t" << Concentration() << std::endl;
+}
+
+
 QVector<double>   AbstractTitrationModel::getCalculatedSignals(QVector<int > active_signal)
 {
-    if(active_signal.size() < SignalCount() && m_active_signals.size() < SignalCount())
+    if(active_signal.size() < SignalCount() && ActiveSignals().size() < SignalCount())
         active_signal = QVector<int>(SignalCount(), 1);
     else
-        active_signal = m_active_signals;
+        active_signal = ActiveSignals();
     QVector<double> x(DataPoints()*SignalCount(), 0);
     int index = 0;
         for(int j = 0; j < SignalCount(); ++j)
@@ -135,10 +147,10 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 {
     qreal sum = 0;
 
-    if(i >= Size() || i >= m_active_signals.size())
+    if(i >= Size() || i >= ActiveSignals().size())
         return sum;
     
-    if(m_active_signals[i] == 0)
+    if(ActiveSignals()[i] == 0)
         return sum;
     for(int j = 0; j < DataPoints(); ++j)
     {
@@ -152,7 +164,7 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 
     if(m_debug)
         qDebug() << i << j << value;
-    if(isnan(value) || isinf(value))
+    if(std::isnan(value) || std::isinf(value))
     {
         value = 0;
         m_corrupt = true;
@@ -160,7 +172,7 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
     if(Type() != 3)
     {
         m_model_signal->data(j,i) = value;
-        m_model_error->data(j,i) = m_model_signal->data(j,i) - m_signal_model->data(j,i);
+        m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
     }
 
 }
@@ -234,7 +246,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
     QVector<qreal> constants = Constants();
     QVector<qreal> old_para_constant = Constants();
     
-    
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;
     OptPara += "Starting Optimization Run for " + m_name +"\n";
     if(m_inform_config_changed)
@@ -316,6 +328,9 @@ QVector<qreal> AbstractTitrationModel::Minimize()
 
         emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
     } 
+     
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
     if(!convergence && !process_stopped)
         emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
     if(process_stopped)
@@ -329,10 +344,10 @@ QVector<qreal> AbstractTitrationModel::Minimize()
     
     QString message = "Using Signals";
     qreal error = 0;
-    for(int i = 0; i < m_active_signals.size(); ++i)
-        if(m_active_signals[i])
+    for(int i = 0; i < ActiveSignals().size(); ++i)
+        if(ActiveSignals()[i])
         {
-            message += " " +QString::number(i + 1) +" ";
+            message += " " + QString::number(i + 1) + " ";
             error += SumOfErrors(i);
         }
     message += "got results: ";
@@ -369,8 +384,8 @@ void ItoI_Model::InitialGuess()
 {
      m_repaint = false;
      m_K11 = 4;
-     m_ItoI_signals = m_signal_model->lastRow();
-     m_pure_signals = m_signal_model->firstRow();
+     m_ItoI_signals = SignalModel()->lastRow();
+     m_pure_signals = SignalModel()->firstRow();
      
     setOptParamater(m_K11);
     QVector<qreal * > line1, line2;
@@ -389,10 +404,10 @@ void ItoI_Model::InitialGuess()
 void ItoI_Model::MiniShifts()
 {
     QVector<int > active_signal;
-    if(m_active_signals.size() < SignalCount())
+    if(ActiveSignals().size() < SignalCount())
         active_signal = QVector<int>(SignalCount(), 1);
     else
-        active_signal = m_active_signals;
+        active_signal = ActiveSignals();
     
         QVector<qreal >signal_0, signal_1;
         signal_0 = m_model_error->firstRow();
@@ -450,12 +465,12 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
         qreal host_0, guest_0;
         if(*ptr_concentrations)
         {
-            host_0 = m_concentration_model->data(0,i);
-            guest_0 = m_concentration_model->data(1,i);
+            host_0 = ConcentrationModel()->data(0,i);
+            guest_0 = ConcentrationModel()->data(1,i);
         }else
         {
-            host_0 = m_concentration_model->data(1,i);
-            guest_0 = m_concentration_model->data(0,i);
+            host_0 = ConcentrationModel()->data(1,i);
+            guest_0 = ConcentrationModel()->data(0,i);
         }
         qreal host = HostConcentration(host_0, guest_0, constants);
         qreal complex = host_0 -host;
@@ -545,8 +560,8 @@ void IItoI_ItoI_Model::InitialGuess()
     setOptParamater(m_complex_constants);
     for(int i = 0; i < SignalCount(); ++i)
     {
-         m_ItoI_signals <<m_signal_model->lastRow()[i];
-         m_IItoI_signals << m_signal_model->firstRow()[i];
+         m_ItoI_signals <<SignalModel()->lastRow()[i];
+         m_IItoI_signals << SignalModel()->firstRow()[i];
     }
     
     QVector<qreal * > line1, line2, line3;
@@ -567,10 +582,10 @@ void IItoI_ItoI_Model::InitialGuess()
 void IItoI_ItoI_Model::MiniShifts()
 {
     QVector<int > active_signal;
-    if(m_active_signals.size() < SignalCount())
+    if(ActiveSignals().size() < SignalCount())
         active_signal = QVector<int>(SignalCount(), 1);
     else
-        active_signal = m_active_signals;
+        active_signal = ActiveSignals();
     QVector<qreal > parameter = m_IItoI_signals;
     clearOptParameter();
     setOptParamater(m_IItoI_signals);
@@ -660,12 +675,12 @@ void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
          qreal host_0, guest_0;
         if(*ptr_concentrations)
         {
-            host_0 = m_concentration_model->data(0,i);
-            guest_0 = m_concentration_model->data(1,i);
+            host_0 = ConcentrationModel()->data(0,i);
+            guest_0 = ConcentrationModel()->data(1,i);
         }else
         {
-            host_0 = m_concentration_model->data(1,i);
-            guest_0 = m_concentration_model->data(0,i);
+            host_0 = ConcentrationModel()->data(1,i);
+            guest_0 = ConcentrationModel()->data(0,i);
         }
             
         qreal K21= qPow(10, constants.first());
@@ -719,6 +734,54 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j)
     return QPair<qreal, qreal>(0, 0);
 }
 
+
+
+void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
+{
+      m_corrupt = false;
+    if(constants.size() == 0)
+        constants = Constants();
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+         qreal host_0, guest_0;
+        if(*ptr_concentrations)
+        {
+            host_0 = ConcentrationModel()->data(0,i);
+            guest_0 = ConcentrationModel()->data(1,i);
+        }else
+        {
+            host_0 = ConcentrationModel()->data(1,i);
+            guest_0 = ConcentrationModel()->data(0,i);
+        }
+            
+        qreal K21= qPow(10, constants.first());
+        qreal K11 = qPow(10, constants.last());
+        QVector<double > concentration;
+        SolveEqualSystem(host_0, guest_0, K11, K11*K21, concentration);
+        
+//         qreal host = HostConcentration(host_0, guest_0, constants);
+//         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
+        qreal host = concentration.first();
+        qreal guest = concentration.last();
+        qreal complex_11 = K11*host*guest;
+        qreal complex_21 = K11*K21*host*host*guest;
+        
+
+        for(int j = 0; j < SignalCount(); ++j)
+            {
+                qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ 2*complex_21/host_0*m_IItoI_signals[j];
+                SetSignal(i, j, value);
+            }
+  
+    }
+    if(m_repaint)
+    {
+        UpdatePlotModels();
+        emit Recalculated();
+    }  
+}
+
+
 ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
     
@@ -751,8 +814,8 @@ void ItoI_ItoII_Model::InitialGuess()
     m_ItoII_signals.resize(m_pure_signals.size());
     for(int i = 0; i < SignalCount(); ++i)
     {
-         m_ItoI_signals[i] = ( m_signal_model->data(i,0) +  m_signal_model->data(i,SignalCount() - 1))/2;
-         m_ItoII_signals[i] = m_signal_model->data(i,SignalCount() - 1);
+         m_ItoI_signals[i] = ( SignalModel()->data(i,0) +  SignalModel()->data(i,SignalCount() - 1))/2;
+         m_ItoII_signals[i] = SignalModel()->data(i,SignalCount() - 1);
     }
         
 //     m_opt_para = QVector<double * >() << &m_K11 << &m_K12;
@@ -786,10 +849,10 @@ QVector<QVector<qreal> > ItoI_ItoII_Model::AllShifts()
 void ItoI_ItoII_Model::MiniShifts()
 {
     QVector<int > active_signal;
-    if(m_active_signals.size() < SignalCount())
+    if(ActiveSignals().size() < SignalCount())
         active_signal = QVector<int>(SignalCount(), 1);
     else
-        active_signal = m_active_signals;
+        active_signal = ActiveSignals();
     
     QVector<qreal > parameter = m_ItoI_signals;
     clearOptParameter();
@@ -880,12 +943,12 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
          qreal host_0, guest_0;
         if(*ptr_concentrations)
         {
-            host_0 = m_concentration_model->data(0,i);
-            guest_0 = m_concentration_model->data(1,i);
+            host_0 = ConcentrationModel()->data(0,i);
+            guest_0 = ConcentrationModel()->data(1,i);
         }else
         {
-            host_0 = m_concentration_model->data(1,i);
-            guest_0 = m_concentration_model->data(0,i);
+            host_0 = ConcentrationModel()->data(1,i);
+            guest_0 = ConcentrationModel()->data(0,i);
         }
             
         qreal K12= qPow(10, constants.last());

@@ -36,6 +36,19 @@ class QPushButton;
 class QChartView;
 
 
+class LineSeries : public QtCharts::QLineSeries
+{
+  Q_OBJECT
+  
+public:
+    LineSeries() {}
+    virtual void setColor(const QColor &color) { Q_UNUSED(color); return;}
+public slots:
+    virtual void forceColor(const QColor &color) {QtCharts::QLineSeries::setColor(color); }
+
+};
+
+
 
 class ChartWidget : public QWidget
 {
@@ -48,7 +61,7 @@ public:
     
 
 public slots:
-    void addModel(const QPointer< AbstractTitrationModel > model);
+    void addModel(QPointer< AbstractTitrationModel > model);
     
 private:
     QPointer<QComboBox > createThemeBox() const;

@@ -37,7 +37,7 @@ struct OptimizerConfig
     int Sum_Convergence = 2;
     qreal Shift_Convergence = 1E-3;
     qreal Constant_Convergence = 1E-3;
-    qreal Error_Convergence = 1E-8;
+    qreal Error_Convergence = 5E-8;
     
     bool OptimizeBorderShifts = true;
     bool OptimizeIntermediateShifts = true;
@@ -102,6 +102,7 @@ public:
         m_inform_config_changed = true;
     }
     bool isCorrupt() const { return m_corrupt; }
+    void adress() const;
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -184,7 +185,7 @@ public:
     void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
-    void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
+    virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
     QVector<qreal > Constants() const { return m_complex_constants; }
     virtual QVector< QVector< qreal > > AllShifts();
     void MiniShifts();
@@ -192,9 +193,19 @@ public:
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
-    
+protected:
     qreal m_K21, m_K11;
     QVector<qreal > m_ItoI_signals, m_IItoI_signals;
+};
+
+class test_II_ItoI_Model : public IItoI_ItoI_Model
+{
+    Q_OBJECT
+    
+public:
+    test_II_ItoI_Model(const DataClass* data) : IItoI_ItoI_Model(data) { }
+    
+    virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
 };
 
 class ItoI_ItoII_Model : public AbstractTitrationModel

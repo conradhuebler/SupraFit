@@ -84,7 +84,7 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
         QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
         signal->setSeries(signal_series);
         signal_series->setName("Signal " + QString::number(i + 1));
-        signal_series->setColor(m_rawdata->color(i));
+//         signal_series->setColor(m_rawdata->color(i));
         m_signalview->addSeries(signal_series, true);
     }
     
@@ -94,8 +94,9 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 
 
 
-void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
+void ChartWidget::addModel(QPointer<AbstractTitrationModel > model)
 {
+    model->adress();
     m_models << model;
     model->UpdatePlotModels();
     connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
@@ -108,19 +109,21 @@ void ChartWidget::addModel(const QPointer<AbstractTitrationModel > model)
         if(model->Type() != 3)
         {
             QtCharts::QVXYModelMapper * mapper = model->ModelMapper(i);
-            QtCharts::QLineSeries *model_series = new QtCharts::QLineSeries;
+            LineSeries *model_series = new LineSeries;
             mapper->setSeries(model_series);
             model_series->setName("Signal " + QString::number(i + 1));
-            model_series->setColor(model->color(i));
+            model_series->setColor(m_rawdata->color(i));
+            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), model_series, SLOT(forceColor(QColor)));
             m_signalview->addSeries(model_series, true);
         }
         if(model->Type() != 3)
         {
             QtCharts::QVXYModelMapper * error= model->ErrorMapper(i);
-            QtCharts::QLineSeries *error_series = new QtCharts::QLineSeries;
+            LineSeries *error_series = new LineSeries;
             error->setSeries(error_series);
             error_series->setName("Signal " + QString::number(i + 1));
-            error_series->setColor(model->color(i));
+            error_series->setColor(m_rawdata->color(i));
+            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(forceColor(QColor)));
             m_errorview->addSeries(error_series, true);
         }
         
@@ -172,39 +175,13 @@ QPointer<QComboBox > ChartWidget::createThemeBox() const
 void ChartWidget::updateUI()
 {
     QtCharts::QChart::ChartTheme theme = (QtCharts::QChart::ChartTheme) m_themebox->itemData(m_themebox->currentIndex()).toInt();
-    
-    //     if (m_chart->theme() != theme) {
-    
+        
     m_signalchart->setTheme(theme);
     m_errorchart->setTheme(theme);
-    QPalette pal = window()->palette();
-    if (theme == QtCharts::QChart::ChartThemeLight) {
-        pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
-        pal.setColor(QPalette::WindowText, QRgb(0x404044));
-    } else if (theme == QtCharts::QChart::ChartThemeDark) {
-        pal.setColor(QPalette::Window, QRgb(0x121218));
-        pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
-    } else if (theme == QtCharts::QChart::ChartThemeBlueCerulean) {
-        pal.setColor(QPalette::Window, QRgb(0x40434a));
-        pal.setColor(QPalette::WindowText, QRgb(0xd6d6d6));
-    } else if (theme == QtCharts::QChart::ChartThemeBrownSand) {
-        pal.setColor(QPalette::Window, QRgb(0x9e8965));
-        pal.setColor(QPalette::WindowText, QRgb(0x404044));
-    } else if (theme == QtCharts::QChart::ChartThemeBlueNcs) {
-        pal.setColor(QPalette::Window, QRgb(0x018bba));
-        pal.setColor(QPalette::WindowText, QRgb(0x404044));
-    } else if (theme == QtCharts::QChart::ChartThemeHighContrast) {
-        pal.setColor(QPalette::Window, QRgb(0xffab03));
-        pal.setColor(QPalette::WindowText, QRgb(0x181818));
-    } else if (theme == QtCharts::QChart::ChartThemeBlueIcy) {
-        pal.setColor(QPalette::Window, QRgb(0xcee7f0));
-        pal.setColor(QPalette::WindowText, QRgb(0x404044));
-    } else {
-        pal.setColor(QPalette::Window, QRgb(0xf0f0f0));
-        pal.setColor(QPalette::WindowText, QRgb(0x404044));
-    }
-    window()->setPalette(pal);
-    //     }
+    
+//     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
+//         m_rawdata->DataMapper(i)->series()->setColor(m_rawdata->color(i));
+
 }
 
 void ChartWidget::setActiveSignals( QVector<int> active_signals)

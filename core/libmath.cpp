@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-// #include <qmath.h>
+ #include <qmath.h>
 
 #include "global_config.h"
 
@@ -100,7 +100,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
             break;
     }
     root1 = x;
-    
+//     qDebug() << i << "iterations for root 11111";
     x = (guess_0+guess_1)/2;
     y = Cubic::f(x, a, b,c ,d);
     i = 0;
@@ -119,7 +119,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
     
     x = guess_1-1;
     y = Cubic::df(x, a, b, c);
-    
+//     qDebug() << i << "iterations for root 22222";
     i = 0;
     while(qAbs(y) > m_epsilon)
     {
@@ -132,6 +132,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
             break;
     }
     root3 = x;
+//     qDebug() << i << "iterations for root 33333";
     //     qDebug() << root1 << root2 << root3;
     if(root1 < 0)
     {
@@ -295,10 +296,10 @@ struct MyFunctor : Functor<double>
         
         model->setParamter(param);
         model->CalculateSignal();
-        QVector<qreal > CaluculatedSignals = model->getCalculatedSignals();
+        QVector<qreal > CalculatedSignals = model->getCalculatedSignals();
         for( int i = 0; i < values(); ++i)
         {
-            fvec(i) = CaluculatedSignals[i] - ModelSignals[i];
+            fvec(i) = CalculatedSignals[i] - ModelSignals[i];
         }
         return 0;
     }
@@ -316,9 +317,8 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
 
 int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
-    Q_UNUSED(max_iter)
     Q_UNUSED(config)
-       
+    Q_UNUSED(max_iter)
     Variables ModelSignals = model->getSignals();
     Eigen::VectorXd parameter(param.size());
     for(int i = 0; i < param.size(); ++i)
@@ -332,20 +332,94 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
-//     int mode = 1;
+    int iter = 0;
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-//      do {
+      do {
          status = lm.minimizeOneStep(parameter);
-//      } while (status== Eigen::LevenbergMarquardtSpace::Running);
-//     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeOneStep(parameter);
-  
-    std::cout << "status: " << status << std::endl;
-    
-    //std::cout << "info: " << lm.info() << std::endl;
-    
+         iter++;
+      } while (status == -1);
     
     for(int i = 0; i < functor.inputs(); ++i)
             param[i] = parameter(i);
     return 1;
 }
+
+
+
+template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+struct EqualSystem
+{
+    typedef _Scalar Scalar;
+    enum {
+        InputsAtCompileTime = NX,
+        ValuesAtCompileTime = NY
+    };
+    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
+    
+    int m_inputs, m_values;
+    
+    EqualSystem(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+    
+    int inputs() const { return m_inputs; }
+    int values() const { return m_values; }
+    
+};
+
+struct MyEqualSystem : EqualSystem<double>
+{
+    MyEqualSystem(int inputs, int values) : EqualSystem(inputs, values), no_parameter(inputs),  no_points(values) 
+    {
+        
+    }
+    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+    {
+        fvec(0) = parameter(0) + parameter(0)*parameter(1)*beta_11 + 2*qPow(parameter(0),2)*parameter(1)*beta_21 - Concen_0(0);
+        fvec(1) = parameter(1) + parameter(0)*parameter(1)*beta_11 +   qPow(parameter(0),2)*parameter(1)*beta_21 - Concen_0(1);
+        return 0;
+    }
+    Eigen::VectorXd Concen_0;
+    double A_0, B_0, beta_11, beta_21;
+    int no_parameter;
+    int no_points;
+    int inputs() const { return no_parameter; } // There are two parameters of the model
+    int values() const { return no_points; } // The number of observations
+};
+
+struct MyEqualSystemNumericalDiff : Eigen::NumericalDiff<MyEqualSystem> {};
+
+
+
+int SolveEqualSystem(double A_0, double B_0, double beta_11, double beta_21, QVector<double > &concentration)
+{
+       
+    Eigen::VectorXd parameter(2);
+    parameter(0) = A_0;
+    parameter(1) = B_0;
+    
+    Eigen::VectorXd Concen_0(2);
+        Concen_0(0) = A_0;
+        Concen_0(1) = B_0;
+    MyEqualSystem functor(2, 2);
+    functor.Concen_0 = Concen_0;
+     functor.beta_11 = beta_11;
+     functor.beta_21 = beta_21;
+    Eigen::NumericalDiff<MyEqualSystem> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyEqualSystem> > lm(numDiff);
+    int iter = 0;
+    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+      do {
+         status = lm.minimizeOneStep(parameter);
+         iter++;
+      } while (status == -1);
+  
+    concentration << double(parameter(0)) << double(parameter(1));
+    return iter;
+}
+
+
+
+
+
 #endif

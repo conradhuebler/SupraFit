@@ -37,6 +37,7 @@
 
 ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
 {
+    m_model->adress();
     QHBoxLayout *layout = new QHBoxLayout;
     m_d_0 = new QDoubleSpinBox;
     layout->addWidget(m_d_0);
@@ -59,28 +60,26 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     }
     
     m_handle = new QCheckBox(this);
-    
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window,m_model->ColorCode(no));
-    m_handle->setAutoFillBackground(true);
-    setPalette(pal);
+
+    ColorChanged(m_model->color(m_no));
+    connect(m_model->DataMapper(m_no)->series(), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
     m_handle->setText("Use");
     m_handle->setChecked(true);
     connect(m_handle, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
     layout->addWidget(m_handle);
     if(m_model->Type() != 3)
     {
-    error = new QLineEdit;
-    error->setReadOnly(true);
-    layout->addWidget(error); 
-    error->setText(QString::number(m_model->SumOfErrors(m_no)));
+        error = new QLineEdit;
+        error->setReadOnly(true);
+        layout->addWidget(error); 
+        error->setText(QString::number(m_model->SumOfErrors(m_no)));
     }
     setLayout(layout);
     
     setMaximumHeight(50);
     setMinimumHeight(50);
     
-//     connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
+    //     connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
     
 }
 
@@ -133,6 +132,14 @@ void ModelElement::SetOptimizer()
     
 }
 
+void ModelElement::ColorChanged(const QColor &color)
+{
+   QPalette pal = palette();
+   pal.setColor(QPalette::Window,color);
+   m_handle->setAutoFillBackground(true);
+   setPalette(pal); 
+}
+
 ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
 {
     qDebug() << m_model->Constants();
@@ -156,7 +163,7 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
     m_sign_layout->setAlignment(Qt::AlignTop);
     
     
-    for(int i = 0; i < m_model->MaxVars(); ++i)
+    for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         ModelElement *el = new ModelElement(m_model, i);
         connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
@@ -199,7 +206,7 @@ void ModelWidget::DiscreteUI()
     connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
     connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
-        
+    
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -234,7 +241,7 @@ void ModelWidget::Repaint()
         error += m_model->SumOfErrors(j);
         m_model_elements[j]->Update();
     }
-
+    
     m_sum_error->setText(QString::number(error));
     m_pending = false;
 }
@@ -280,7 +287,7 @@ void ModelWidget::CollectParameters()
 
 void ModelWidget::GlobalMinimize()
 {
-
+    
     if(m_maxiter->value() > 10000)
     {
         int r = QMessageBox::warning(this, tr("So viel."),
@@ -291,22 +298,20 @@ void ModelWidget::GlobalMinimize()
             return;
     }
     if(m_pending)
-            return;
-        //     m_pending = true;
-        CollectParameters();
-                QVector<int > v(10,0);
-        qDebug() <<"Start Minimize";
-        OptimizerConfig config = m_model->getOptimizerConfig();
-        config.MaxIter = m_maxiter->value();
-        m_model->setOptimizerConfig(config);
-        QVector<qreal > constants = m_model->Minimize();
-        qDebug() <<"Minimize done";
-//          QVector<qreal > constants =  m_model->Constants();
-        qDebug() << constants;
-        for(int j = 0; j < constants.size(); ++j)
-            m_constants[j]->setValue(constants[j]);
-        qDebug() << "Constants set.";
-    qDebug() << "leaving";
+        return;
+    m_pending = true;
+    CollectParameters();
+    QVector<int > v(10,0);
+    OptimizerConfig config = m_model->getOptimizerConfig();
+    config.MaxIter = m_maxiter->value();
+    m_model->setOptimizerConfig(config);
+    QVector<qreal > constants = m_model->Minimize();
+    
+    for(int j = 0; j < constants.size(); ++j)
+        m_constants[j]->setValue(constants[j]);
+    Repaint();
+    m_pending = false; 
+    
 }
 
 
@@ -322,15 +327,15 @@ void ModelWidget::LocalMinimize()
             return;
     }
     if(m_pending)
-            return;
-        //     m_pending = true;
-        CollectParameters();
-
-        for(int i = 0; i < m_model->SignalCount(); ++i)
-        {
-            QApplication::processEvents();
-            QVector<int > active_signals(m_model_elements.size(), 0);
-            active_signals[i] = 1;
+        return;
+    //     m_pending = true;
+    CollectParameters();
+    
+    for(int i = 0; i < m_model->SignalCount(); ++i)
+    {
+        QApplication::processEvents();
+        QVector<int > active_signals(m_model_elements.size(), 0);
+        active_signals[i] = 1;
         m_model->setActiveSignals(active_signals);
         QVector<int > v(10,0);
         qDebug() <<"Start Minimize";
@@ -339,12 +344,12 @@ void ModelWidget::LocalMinimize()
         m_model->setOptimizerConfig(config);
         QVector<qreal > constants = m_model->Minimize();
         qDebug() <<"Minimize done";
-        }
-//         QVector<qreal > constants =  m_model->Constants();
-//         qDebug() << constants;
-//         for(int j = 0; j < constants.size(); ++j)
-//             m_constants[j]->setValue(constants[j]);
-        qDebug() << "Constants set.";
+    }
+    //         QVector<qreal > constants =  m_model->Constants();
+    //         qDebug() << constants;
+    //         for(int j = 0; j < constants.size(); ++j)
+    //             m_constants[j]->setValue(constants[j]);
+    qDebug() << "Constants set.";
     qDebug() << "leaving"; 
 }
 
@@ -353,7 +358,7 @@ void ModelWidget::AddSimSignal()
 {
     
     ModelElement *el = new ModelElement(m_model, m_model_elements.size());
-//     m_model->addRow(m_model_elements.size()); 
+    //     m_model->addRow(m_model_elements.size()); 
     emit m_model->RowAdded();
     m_sign_layout->addWidget(el);
     m_model_elements << el;
@@ -372,24 +377,24 @@ QVector<int> ModelWidget::ActiveSignals()
 void ModelWidget::CollectActiveSignals()
 {
     QVector<int > active_signals = ActiveSignals();
-//     emit ActiveSignalChanged(active_signals);
+    //     emit ActiveSignalChanged(active_signals);
     m_model->setActiveSignals(active_signals);
     
 }
 
 void ModelWidget::NewGuess()
 {
-     int r = QMessageBox::warning(this, tr("New Guess."),
-                                     tr("Really create a new guess?"),
-                                     QMessageBox::Yes | QMessageBox::Default,
-                                     QMessageBox::No | QMessageBox::Escape);
-        
-     if (r == QMessageBox::No)
-            return;
-     m_model->InitialGuess();
-     QVector<qreal > constants = m_model->Constants();
-      for(int j = 0; j < constants.size(); ++j)
-            m_constants[j]->setValue(constants[j]);
+    int r = QMessageBox::warning(this, tr("New Guess."),
+                                 tr("Really create a new guess?"),
+                                 QMessageBox::Yes | QMessageBox::Default,
+                                 QMessageBox::No | QMessageBox::Escape);
+    
+    if (r == QMessageBox::No)
+        return;
+    m_model->InitialGuess();
+    QVector<qreal > constants = m_model->Constants();
+    for(int j = 0; j < constants.size(); ++j)
+        m_constants[j]->setValue(constants[j]);
 }
 
 void ModelWidget::setMaxIter(int maxiter)

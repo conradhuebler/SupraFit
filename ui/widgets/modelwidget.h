@@ -57,6 +57,7 @@ private:
     
 private slots:
     void SetOptimizer();
+    void ColorChanged(const QColor &color);
     
 signals:
     void ValueChanged();

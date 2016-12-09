@@ -36,7 +36,7 @@ DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableMod
         insertRow(vector);
 }
 
-DataTable::DataTable(DataTable& other) //: QAbstractTableModel(&other) FIXME whatever
+DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME whatever
 {
     m_table = other.m_table;
 }
@@ -180,21 +180,22 @@ void DataTable::setRow(QVector<qreal> vector, int row)
     return;
 }
 
-DataClass::DataClass(QObject *parent) : QObject(parent), m_maxsize(0), m_plotmode(DataClass::HG)
+DataClassPrivate::DataClassPrivate() : m_maxsize(0)
 {
-    m_concentration_model = new DataTable(this);
-    m_signal_model = new DataTable(this);
-    m_raw_data = new DataTable(this);
+    m_concentration_model = new DataTable;
+    m_signal_model = new DataTable;
+    m_raw_data = new DataTable;
   
-    m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
+    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
+    
 }
 
-DataClass::DataClass(int type, QObject *parent) :  QObject(parent), m_type(type) , m_maxsize(0), m_concentrations(new bool(true)), m_plotmode(DataClass::GH)
+DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_concentrations(new bool(true))
 {
-    m_concentration_model = new DataTable(this);
-    m_signal_model = new DataTable(this);
-    m_raw_data = new DataTable(this);
-    
+    m_concentration_model = new DataTable;
+    m_signal_model = new DataTable;
+    m_raw_data = new DataTable;
+    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
      if(m_type == 3)
      {
         for(int i = 0; i <= 100; ++i)
@@ -203,36 +204,72 @@ DataClass::DataClass(int type, QObject *parent) :  QObject(parent), m_type(type)
               m_concentration_model->insertRow(vec);
         }
      }
-
-     m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
-
+    
 }
 
-DataClass::DataClass(const DataClass& other): m_maxsize(0), m_concentrations(new bool(true))
+DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) 
 {
     m_concentration_model = new DataTable(other.m_concentration_model);
     m_signal_model = new DataTable(other.m_signal_model);
     m_raw_data = new DataTable(other.m_raw_data);
-    m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
+    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
     
-    m_type = other.Type();
-    m_plotmode = (other.m_plotmode);
+    for(int i = 0; i < other.m_plot_signal_mapper.size(); ++i)
+        m_plot_signal_mapper << other.m_plot_signal_mapper[i];
+
+    m_type = other.m_type;
+    
 }
 
-DataClass::DataClass(const DataClass* other): m_maxsize(0), m_concentrations(new bool(true))
+DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
 {
     m_concentration_model = new DataTable(other->m_concentration_model);
     m_signal_model = new DataTable(other->m_signal_model);
     m_raw_data = new DataTable(other->m_raw_data);
-    m_plot_signal = new QStandardItemModel(DataPoints(), SignalCount()+1);
+    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
     
-    m_type = other->Type();
-    m_plotmode = (other->m_plotmode);
+    for(int i = 0; i < other->m_plot_signal_mapper.size(); ++i)
+        m_plot_signal_mapper << other->m_plot_signal_mapper[i];
+        
+    m_type = other->m_type;
+}
+
+
+DataClassPrivate::~DataClassPrivate()
+{
+    delete m_concentration_model;
+    delete m_signal_model;
+    delete m_raw_data;
+    qDeleteAll( m_plot_signal_mapper );
+}
+
+DataClass::DataClass(QObject *parent) : QObject(parent), m_plotmode(DataClass::HG)
+{
+    d = new DataClassPrivate;
+}
+
+DataClass::DataClass(int type, QObject *parent) :  QObject(parent), m_plotmode(DataClass::HG)
+{
+     d = new DataClassPrivate(type);
+}
+
+DataClass::DataClass(const DataClass& other): QObject()
+{
+    m_plotmode = other.m_plotmode;
+    d = other.d;
+    PlotModel();
+}
+
+DataClass::DataClass(const DataClass* other)
+{
+    m_plotmode = other->m_plotmode;
+    d = other->d;
+    PlotModel();
 }
 
 DataClass::~DataClass()
 {
-        qDeleteAll( m_plot_signal_mapper );
+        
 }
 
 QColor DataClass::ColorCode(int i) const
@@ -271,10 +308,10 @@ QColor DataClass::ColorCode(int i) const
 
 QVector<double>   DataClass::getSignals(QVector<int > active_signal)
 {
-    if(active_signal.size() < SignalCount() && m_active_signals.size() < SignalCount())
+    if(active_signal.size() < SignalCount() && d->m_active_signals.size() < SignalCount())
         active_signal = QVector<int>(SignalCount(), 1);
     else
-        active_signal = m_active_signals;
+        active_signal = ActiveSignals();
     QVector<double> x(DataPoints()*SignalCount(), 0);
     int index = 0;
         for(int j = 0; j < SignalCount(); ++j)
@@ -291,25 +328,22 @@ QVector<double>   DataClass::getSignals(QVector<int > active_signal)
 
 void DataClass::SwitchConentrations()
 {
-     *m_concentrations = !(*m_concentrations); 
+     *d->m_concentrations = !(*d->m_concentrations); 
      PlotModel();
      emit recalculate();
 }
 
 void DataClass::PlotModel()
 {
-    if(m_plot_signal_mapper.isEmpty())
+    if(d->m_plot_signal_mapper.isEmpty())
     {
         for(int j = 0; j < SignalCount(); ++j)
         {
             QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
-            model->setModel(m_plot_signal);
+            model->setModel(d->m_plot_signal);
             model->setXColumn(0);
             model->setYColumn(j + 1);
-            m_plot_signal_mapper << model;   
-            qDebug() << j << m_colors.size();
-            if(j <= m_colors.size())
-                m_colors << ColorCode(j);
+            d->m_plot_signal_mapper << model;   
         }
 
     }
@@ -320,11 +354,11 @@ void DataClass::PlotModel()
                        
          QStandardItem *item;
             item = new QStandardItem(x);
-            m_plot_signal->setItem(i,0, item);
+            d->m_plot_signal->setItem(i,0, item);
             for(int j = 0; j < SignalCount(); ++j)
             {
-                item = new QStandardItem(QString::number(m_signal_model->data(j,i)));
-                m_plot_signal->setItem(i,j+1, item);
+                item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
+                d->m_plot_signal->setItem(i,j+1, item);
             }
      }
 }
@@ -335,34 +369,46 @@ qreal DataClass::XValue(int i) const
 
     switch(m_plotmode){
             case DataClass::G:
-                if(*m_concentrations)
-                    return m_concentration_model->data(0,i);
+                if(*d->m_concentrations)
+                    return d->m_concentration_model->data(0,i);
                 else
-                    return m_concentration_model->data(1,i);
+                    return d->m_concentration_model->data(1,i);
             break;
             
             case DataClass::H:   
-                if(!(*m_concentrations))
-                    return m_concentration_model->data(1,i);
+                if(!(*d->m_concentrations))
+                    return d->m_concentration_model->data(1,i);
                 else
-                    return m_concentration_model->data(0,i);
+                    return d->m_concentration_model->data(0,i);
             break;
                 
             case DataClass::HG:
-                if(*m_concentrations)
-                    return m_concentration_model->data(1,i)/m_concentration_model->data(0,i);
+                if(*d->m_concentrations)
+                    return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);
                 else
-                    return m_concentration_model->data(0,i)/m_concentration_model->data(1,i);                
+                    return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);                
             break;    
             
             case DataClass::GH:
             default:
-                if(!(*m_concentrations))
-                    return m_concentration_model->data(0,i)/m_concentration_model->data(1,i);
+                if(!(*d->m_concentrations))
+                    return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);
                 else
-                    return m_concentration_model->data(1,i)/m_concentration_model->data(0,i);                   
+                    return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);                   
             break;    
         };
         return 0;
 }
 
+QColor DataClass::color(int i) const
+{
+    if(d->m_plot_signal_mapper.size() <= i)
+        return ColorCode(i);
+    else
+    {
+        QPointer<QtCharts::QVXYModelMapper> mapper = d->m_plot_signal_mapper[i];
+        if(!mapper)
+            return ColorCode(i);
+        return d->m_plot_signal_mapper[i]->series()->color();
+    }
+}

@@ -44,7 +44,8 @@ public:
     enum {
         ItoI = 1,
         IItoI_ItoI = 2,
-        ItoI_ItoII = 3
+        ItoI_ItoII = 3,
+        IItoI_ItoI_t = 4
     };
     void setSettings(const OptimizerConfig &config);
 private:
@@ -61,6 +62,7 @@ private:
 private slots:
     void AddModel11();
     void AddModel21();
+    void AddModel21_t();
     void AddModel12();
     void SimulateModel11();
     void SimulateModel21();

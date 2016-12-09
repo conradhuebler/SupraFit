@@ -32,6 +32,8 @@
 #include "modeldataholder.h"
 #include "chartwidget.h"
 
+#include <iostream>
+
 ModelDataHolder::ModelDataHolder()
 {
     QGridLayout *layout = new QGridLayout;
@@ -40,17 +42,19 @@ ModelDataHolder::ModelDataHolder()
     
     
     m_datawidget = new DataWidget;
-//     m_logWidget = new QPlainTextEdit;
+    
     m_modelsWidget = new QTabWidget;
     m_modelsWidget->addTab(m_datawidget, tr("Data"));
-//         m_modelsWidget->setMovable(true);
-        m_modelsWidget->setTabsClosable(true);
-        connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
+    m_modelsWidget->setTabsClosable(true);
+    connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
+        
     m_add = new QPushButton(tr("Add Titration\n Model"));
-        m_add->setFlat(true);
-        m_add->setDisabled(true);
+    m_add->setFlat(true);
+    m_add->setDisabled(true);
+    
     m_simulate = new QPushButton(tr("Simulate"));
-        m_add->setFlat(true);
+    m_simulate->setFlat(true);
+    
     QMenu *menu = new QMenu;
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
@@ -67,6 +71,12 @@ ModelDataHolder::ModelDataHolder()
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
         connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
         menu->addAction(ItoI_ItoII_action);
+        
+         QAction *t2 = new QAction(this);
+    t2->setText(tr("2:1/1:1-test-Model"));
+        connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
+        menu->addAction(t2);
+        
      m_add->setMenu(menu);
         menu = new QMenu;
     ItoI_action = new QAction(this);
@@ -88,7 +98,6 @@ ModelDataHolder::ModelDataHolder()
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_simulate, 0,1);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
-//     layout->addWidget(m_logWidget, 2, 0, 1, 2);
         
 }
 
@@ -118,18 +127,24 @@ void ModelDataHolder::AddModel(int model)
         case 3:
             t = new ItoI_ItoII_Model(m_data);
             break;
+        case 4:
+            t = new test_II_ItoI_Model(m_data);
+            break;
         default:
             delete t;
            return; 
         
     };
     t->setOptimizerConfig(m_config);
-    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
+//     connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
+//     connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
     t->Minimize();
+    std::cout << "The ultimate one ist at " << m_data << std::endl;
+    t->adress();
+    m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());
-    m_charts->addModel(t);
+    
     
 
 }
@@ -150,6 +165,10 @@ void ModelDataHolder::AddModel12()
     AddModel(ModelDataHolder::ItoI_ItoII);
 }
 
+void ModelDataHolder::AddModel21_t()
+{
+    AddModel(ModelDataHolder::IItoI_ItoI_t);
+}
 
 void ModelDataHolder::SimulateModel(int model)
 {
