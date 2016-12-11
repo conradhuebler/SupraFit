@@ -24,6 +24,7 @@
 #include <QtWidgets/QGroupBox>
 #include <QDoubleSpinBox>
 #include <QtWidgets/QVBoxLayout>
+#include <QtCharts/QLineSeries>
 
 #include "core/data/dataclass.h"
 #include "core/data/modelclass.h"
@@ -34,6 +35,8 @@ class QLineEdit;
 class QVBoxLayout;
 class QGridLayout;
 class QCheckBox;
+class LineSeries;
+
 class ModelElement : public QGroupBox
 {
     Q_OBJECT
@@ -42,7 +45,7 @@ public:
     ~ModelElement();
     double D0() const;
     QVector<double > D() const;
-    bool Handle() const;
+    bool Include() const;
     
 public slots:
     void Update();
@@ -50,15 +53,17 @@ private:
     QDoubleSpinBox *m_d_0;
     QVector<QDoubleSpinBox * > m_constants;
     QPointer<QLineEdit > error;
-    QPushButton *m_remove, *m_optimize;
-    QCheckBox *m_handle;
+    QPushButton *m_remove, *m_optimize, *m_plot;
+    QCheckBox *m_include, *m_show;
     QPointer<AbstractTitrationModel > m_model;
-    int m_no;
+    QPointer<LineSeries > m_error_series, m_signal_series;
     
+    int m_no;
+    QColor m_color;
 private slots:
     void SetOptimizer();
     void ColorChanged(const QColor &color);
-    
+    void ChooseColor();
 signals:
     void ValueChanged();
     void Minimize(int i);

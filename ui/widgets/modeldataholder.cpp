@@ -72,10 +72,10 @@ ModelDataHolder::ModelDataHolder()
         connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
         menu->addAction(ItoI_ItoII_action);
         
-         QAction *t2 = new QAction(this);
-    t2->setText(tr("2:1/1:1-test-Model"));
-        connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
-        menu->addAction(t2);
+//          QAction *t2 = new QAction(this);
+//     t2->setText(tr("2:1/1:1-test-Model"));
+//         connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
+//         menu->addAction(t2);
         
      m_add->setMenu(menu);
         menu = new QMenu;
@@ -127,9 +127,9 @@ void ModelDataHolder::AddModel(int model)
         case 3:
             t = new ItoI_ItoII_Model(m_data);
             break;
-        case 4:
-            t = new test_II_ItoI_Model(m_data);
-            break;
+//         case 4:
+//             t = new test_II_ItoI_Model(m_data);
+//             break;
         default:
             delete t;
            return; 

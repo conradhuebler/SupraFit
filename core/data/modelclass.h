@@ -198,15 +198,15 @@ protected:
     QVector<qreal > m_ItoI_signals, m_IItoI_signals;
 };
 
-class test_II_ItoI_Model : public IItoI_ItoI_Model
-{
-    Q_OBJECT
-    
-public:
-    test_II_ItoI_Model(const DataClass* data) : IItoI_ItoI_Model(data) { }
-    
-    virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
-};
+// class test_II_ItoI_Model : public IItoI_ItoI_Model
+// {
+//     Q_OBJECT
+//     
+// public:
+//     test_II_ItoI_Model(const DataClass* data) : IItoI_ItoI_Model(data) { }
+//     
+//     virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
+// };
 
 class ItoI_ItoII_Model : public AbstractTitrationModel
 {

@@ -44,7 +44,7 @@ public:
     LineSeries() {}
 public slots:
     virtual void setColor(const QColor &color); 
-
+    void ShowLine(int state);
 };
 
 
@@ -72,7 +72,7 @@ private:
     QVector< QPointer<AbstractTitrationModel > > m_models;
     QPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
-    QSharedPointer<QtCharts::QLineSeries > m_error_axis;
+//     QSharedPointer<QtCharts::QLineSeries > m_error_axis;
     void Paint();
 private slots:
     void Repaint();

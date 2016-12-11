@@ -45,6 +45,14 @@
      setPen(pen);     
 }
 
+void LineSeries::ShowLine(int state)
+{
+    if(state == Qt::Unchecked)
+        setVisible(false);
+    else if(state == Qt::Checked)
+        setVisible(true);   
+}
+
 ChartWidget::ChartWidget() : m_themebox(createThemeBox())
 {
     

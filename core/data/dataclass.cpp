@@ -58,8 +58,12 @@ void DataTable::Debug() const
 {
     qDebug() << m_table;
 }
-
-
+Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
+{
+    Q_UNUSED(index);
+    return Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
+//         return ((QAbstractTableModel::flags(index) & (~Qt::ItemIsUserCheckable))& (~Qt::ItemIsSelectable));
+}
 int DataTable::columnCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent)

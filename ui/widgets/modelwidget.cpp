@@ -20,6 +20,8 @@
 #include "core/data/modelclass.h"
 #include "ui/dialogs/configdialog.h"
 
+#include "chartwidget.h"
+
 #include <QtMath>
 #include "cmath"
 #include <QApplication>
@@ -33,18 +35,21 @@
 #include <QDebug>
 #include <QCheckBox>
 #include <QMessageBox>
+#include <QColorDialog>
 #include "modelwidget.h"
 
 ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
 {
-    QHBoxLayout *layout = new QHBoxLayout;
+    QGridLayout *layout = new QGridLayout;
     m_d_0 = new QDoubleSpinBox;
-    layout->addWidget(m_d_0);
+    layout->addWidget(m_d_0, 0, 0);
     m_d_0->setSingleStep(1e-2);
     m_d_0->setDecimals(4);
     m_d_0->setSuffix(" ppm");
     m_d_0->setValue(m_model->PureSignal(m_no));
+    
     connect(m_d_0, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
+    
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
         QPointer<QDoubleSpinBox >constant = new QDoubleSpinBox;
@@ -55,29 +60,48 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
         constant->setValue(m_model->Pair(i, m_no).second);
         qDebug() << m_model->Pair(i, m_no).second;
         connect(constant, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
-        layout->addWidget(constant);
+        layout->addWidget(constant, 0, i + 1);
     }
     
-    m_handle = new QCheckBox(this);
-
-    ColorChanged(m_model->color(m_no));
-    connect(m_model->DataMapper(m_no)->series(), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
-    m_handle->setText("Use");
-    m_handle->setChecked(true);
-    connect(m_handle, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
-    layout->addWidget(m_handle);
+       
     if(m_model->Type() != 3)
     {
         error = new QLineEdit;
         error->setReadOnly(true);
-        layout->addWidget(error); 
+        layout->addWidget(error, 0, m_model->ConstantSize() + 1); 
         error->setText(QString::number(m_model->SumOfErrors(m_no)));
-    }
+    } 
+
+   
+    
+    
+    m_include = new QCheckBox(this);
+    m_include->setText("Include");
+    m_include->setToolTip(tr("Include in Model Generation"));
+    m_include->setChecked(true);
+    connect(m_include, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
+    layout->addWidget(m_include, 1, 0);
+    m_error_series = qobject_cast<LineSeries *>(m_model->ModelMapper(m_no)->series());
+    m_signal_series = qobject_cast<LineSeries *>(m_model->ErrorMapper(m_no)->series());
+    m_show = new QCheckBox;
+    m_show->setText(tr("Show in Plot"));
+    m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
+    m_show->setChecked(true);
+    layout->addWidget(m_show,1,1);
+    
+    m_plot = new QPushButton;
+    m_plot->setText(tr("Color"));
+    m_plot->setFlat(true);
+    layout->addWidget(m_plot, 1, 2);
     setLayout(layout);
     
-    setMaximumHeight(50);
-    setMinimumHeight(50);
-    
+    setMaximumHeight(75);
+    setMinimumHeight(75); 
+    ColorChanged(m_model->color(m_no));
+    connect(m_model->DataMapper(m_no)->series(), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
+    connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
+    connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
+    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
     //     connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
     
 }
@@ -89,9 +113,9 @@ ModelElement::~ModelElement()
 
 
 
-bool ModelElement::Handle() const
+bool ModelElement::Include() const
 {
-    return m_handle->isChecked();
+    return m_include->isChecked();
 }
 
 
@@ -135,8 +159,22 @@ void ModelElement::ColorChanged(const QColor &color)
 {
    QPalette pal = palette();
    pal.setColor(QPalette::Window,color);
-   m_handle->setAutoFillBackground(true);
+//    m_include->setAutoFillBackground(true);
    setPalette(pal); 
+   m_color = color;
+}
+
+
+void ModelElement::ChooseColor()
+{
+    
+    QColor color = QColorDialog::getColor(m_color, this, tr("Choose Color for Series"));
+    if(!color.isValid())
+        return;
+    
+    m_signal_series->setColor(color);
+    m_error_series->setColor(color);
+    ColorChanged(color);
 }
 
 ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
@@ -268,7 +306,7 @@ void ModelWidget::CollectParameters()
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
         pure_signals << m_model_elements[i]->D0();
-        active_signals[i] = m_model_elements[i]->Handle();
+        active_signals[i] = m_model_elements[i]->Include();
         for(int j = 0; j < m_model_elements[i]->D().size(); ++j)
         {
             complex_signals[j] << m_model_elements[i]->D()[j];
@@ -369,7 +407,7 @@ QVector<int> ModelWidget::ActiveSignals()
 {
     QVector<int > active_signals(m_model_elements.size(), 0);
     for(int i = 0; i < m_model_elements.size(); ++i)
-        active_signals[i] = m_model_elements[i]->Handle();
+        active_signals[i] = m_model_elements[i]->Include();
     return active_signals;
 }
 

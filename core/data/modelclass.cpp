@@ -735,7 +735,7 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j)
 }
 
 
-
+/*
 void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
 {
       m_corrupt = false;
@@ -757,7 +757,7 @@ void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
         qreal K21= qPow(10, constants.first());
         qreal K11 = qPow(10, constants.last());
         QVector<double > concentration;
-        SolveEqualSystem(host_0, guest_0, K11, K11*K21, concentration);
+//         SolveEqualSystem(host_0, guest_0, K11, K11*K21, concentration);
         
 //         qreal host = HostConcentration(host_0, guest_0, constants);
 //         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
@@ -779,7 +779,7 @@ void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
         UpdatePlotModels();
         emit Recalculated();
     }  
-}
+}*/
 
 
 ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)
