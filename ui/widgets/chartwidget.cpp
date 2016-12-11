@@ -36,6 +36,15 @@
 #include "chartwidget.h"
 
 
+ void LineSeries::setColor(const QColor &color) 
+ { 
+     QPen pen = QtCharts::QLineSeries::pen();
+//      pen.setStyle(Qt::DashDotLine);
+     pen.setWidth(2);
+     pen.setColor(color);
+     setPen(pen);     
+}
+
 ChartWidget::ChartWidget() : m_themebox(createThemeBox())
 {
     
@@ -56,12 +65,14 @@ ChartWidget::ChartWidget() : m_themebox(createThemeBox())
     m_x_scale->setCurrentIndex(3);
 
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(m_themebox, 0, 0);
+//     layout->addWidget(m_themebox, 0, 0);
     layout->addWidget(m_signalview,1, 0);
     layout->addWidget(m_errorview, 2, 0);
     layout->addWidget(m_x_scale, 3, 0);
     
-
+    m_signalchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
+    m_errorchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
+    
     connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
     setLayout(layout);
 }
@@ -84,7 +95,6 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
         QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
         signal->setSeries(signal_series);
         signal_series->setName("Signal " + QString::number(i + 1));
-//         signal_series->setColor(m_rawdata->color(i));
         m_signalview->addSeries(signal_series, true);
     }
     
@@ -96,7 +106,6 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 
 void ChartWidget::addModel(QPointer<AbstractTitrationModel > model)
 {
-    model->adress();
     m_models << model;
     model->UpdatePlotModels();
     connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
@@ -113,7 +122,7 @@ void ChartWidget::addModel(QPointer<AbstractTitrationModel > model)
             mapper->setSeries(model_series);
             model_series->setName("Signal " + QString::number(i + 1));
             model_series->setColor(m_rawdata->color(i));
-            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), model_series, SLOT(forceColor(QColor)));
+            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
             m_signalview->addSeries(model_series, true);
         }
         if(model->Type() != 3)
@@ -123,7 +132,7 @@ void ChartWidget::addModel(QPointer<AbstractTitrationModel > model)
             error->setSeries(error_series);
             error_series->setName("Signal " + QString::number(i + 1));
             error_series->setColor(m_rawdata->color(i));
-            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(forceColor(QColor)));
+            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
             m_errorview->addSeries(error_series, true);
         }
         
@@ -179,8 +188,8 @@ void ChartWidget::updateUI()
     m_signalchart->setTheme(theme);
     m_errorchart->setTheme(theme);
     
-//     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
-//         m_rawdata->DataMapper(i)->series()->setColor(m_rawdata->color(i));
+     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
+         m_rawdata->DataMapper(i)->series()->setColor(m_rawdata->color(i));
 
 }
 

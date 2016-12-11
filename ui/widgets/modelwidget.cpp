@@ -37,7 +37,6 @@
 
 ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
 {
-    m_model->adress();
     QHBoxLayout *layout = new QHBoxLayout;
     m_d_0 = new QDoubleSpinBox;
     layout->addWidget(m_d_0);

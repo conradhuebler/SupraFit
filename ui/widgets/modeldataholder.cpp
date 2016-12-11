@@ -136,11 +136,9 @@ void ModelDataHolder::AddModel(int model)
         
     };
     t->setOptimizerConfig(m_config);
-//     connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-//     connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
+    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
+    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
     t->Minimize();
-    std::cout << "The ultimate one ist at " << m_data << std::endl;
-    t->adress();
     m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t);
     m_modelsWidget->addTab(modelwidget, t->Name());

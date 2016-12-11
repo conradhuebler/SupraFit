@@ -42,9 +42,8 @@ class LineSeries : public QtCharts::QLineSeries
   
 public:
     LineSeries() {}
-    virtual void setColor(const QColor &color) { Q_UNUSED(color); return;}
 public slots:
-    virtual void forceColor(const QColor &color) {QtCharts::QLineSeries::setColor(color); }
+    virtual void setColor(const QColor &color); 
 
 };
 
