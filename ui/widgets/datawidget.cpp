@@ -35,7 +35,7 @@ DataWidget::DataWidget()
     m_switch->setDisabled(true);
     
     m_concentrations = new QTableView;
-        m_concentrations->setFixedWidth(300);
+        m_concentrations->setMaximumWidth(200);
     m_signals = new QTableView;
         m_signals->setMaximumWidth(750);
         layout->addWidget(m_switch, 0, 0);
@@ -54,6 +54,8 @@ void DataWidget::setData(DataClass* dataclass)
     m_concentrations->setModel(m_data->ConcentrationModel());
     m_signals->setModel(m_data->SignalModel());
     m_switch->setDisabled(false);
+    m_concentrations->resizeColumnsToContents();
+    m_signals->resizeColumnsToContents();
 }
 
 void DataWidget::switchHG()

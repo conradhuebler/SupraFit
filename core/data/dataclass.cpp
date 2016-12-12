@@ -61,8 +61,7 @@ void DataTable::Debug() const
 Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
 {
     Q_UNUSED(index);
-    return Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
-//         return ((QAbstractTableModel::flags(index) & (~Qt::ItemIsUserCheckable))& (~Qt::ItemIsSelectable));
+    return Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemNeverHasChildren;
 }
 int DataTable::columnCount(const QModelIndex& parent) const
 {
@@ -81,8 +80,10 @@ int DataTable::rowCount(const QModelIndex& parent) const
 
 QVariant DataTable::data(const QModelIndex& index, int role) const
 {
-    Q_UNUSED(role)
-    return data(index.column(), index.row());
+    if(role == Qt::DisplayRole || role == Qt::EditRole )
+        return data(index.column(), index.row());
+    else
+        return QVariant();
 }
 
 qreal DataTable::data(int column, int row) const

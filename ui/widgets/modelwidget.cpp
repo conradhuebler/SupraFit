@@ -251,11 +251,14 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
     mini->addWidget(m_optim_config);
-    mini->addWidget(new QLabel(tr("No. of max. Iter.")));
-    mini->addWidget(m_maxiter);
-    mini->addWidget(new QLabel(tr("Sum of Error:")));
-    mini->addWidget(m_sum_error);
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
+    QHBoxLayout *mini2 = new QHBoxLayout;
+    mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
+    mini2->addWidget(m_maxiter);
+    mini2->addWidget(new QLabel(tr("Sum of Error:")));
+    mini2->addWidget(m_sum_error);
+    m_layout->addLayout(mini2, 4, 0,1,m_model->ConstantSize()+3);
+    
 }
 
 void ModelWidget::EmptyUI()
