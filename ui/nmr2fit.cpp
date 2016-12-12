@@ -57,14 +57,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     m_stdout.open(stdout, QIODevice::WriteOnly);
     
-    
-//     m_mainsplitter = new QSplitter(Qt::Horizontal);
-    
-    
-    
-//     setCentralWidget(m_mainsplitter);
-    
-    
+
     
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Data and Models"), this);
@@ -133,6 +126,17 @@ MainWindow::~MainWindow()
 
 void MainWindow::NewTable()
 {
+    
+      ImportData dialog(this);
+    
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+        m_model_dataholder->setData(m_data.data());
+        m_charts->setRawData(m_data.data());
+        m_hasData = true;
+    }
+    
 }
 
 
@@ -245,13 +249,10 @@ void MainWindow::MessageBox(const QString& str, int priority)
 {
     if(priority == 0)
     {
-            QMessageBox::critical(this, tr("Optimizer Error."),
-                                     str,
-                                     QMessageBox::Ok | QMessageBox::Default);
+            QMessageBox::critical(this, tr("Optimizer Error."), str, QMessageBox::Ok | QMessageBox::Default);
     }else if(priority == 1)
     {
-        QMessageBox::warning(this, tr("Optimizer warning."),
-                                     str,                            QMessageBox::Ok | QMessageBox::Default);
+        QMessageBox::warning(this, tr("Optimizer warning."),  str,  QMessageBox::Ok | QMessageBox::Default);
     }
 }
 

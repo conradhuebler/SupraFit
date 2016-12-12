@@ -418,8 +418,92 @@ int SolveEqualSystem(double A_0, double B_0, double beta_11, double beta_21, QVe
     return iter;
 }
 
+template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+struct MultiEqualSystem
+{
+    typedef _Scalar Scalar;
+    enum {
+        InputsAtCompileTime = NX,
+        ValuesAtCompileTime = NY
+    };
+    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
+    
+    int m_inputs, m_values;
+    
+    MultiEqualSystem(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+    
+    int inputs() const { return m_inputs; }
+    int values() const { return m_values; }
+    
+};
+
+struct MyMultiEqualSystem : MultiEqualSystem<double>
+{
+    MyMultiEqualSystem(int inputs, int values) : MultiEqualSystem(inputs, values), no_parameter(inputs),  no_points(values) 
+    {
+        
+    }
+    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+    {
+        for(int i = 0; i < no_equations; ++i)
+        {
+            fvec(2*i) = parameter(2*i) + parameter(2*i)*parameter(2*i+1)*beta_11 + 2*qPow(parameter(2*i),2)*parameter(2*i+1)*beta_21 - Concen_0(2*i);
+            fvec(2*i+1) = parameter(2*i+1) + parameter(2*i)*parameter(2*i+1)*beta_11 +   qPow(parameter(2*i),2)*parameter(2*i+1)*beta_21 - Concen_0(2*i+1);
+        }
+        return 0;
+    }
+    Eigen::VectorXd Concen_0;
+    QVector<double >A_0, B_0;
+    double beta_11, beta_21;
+    int no_equations;
+    int no_parameter;
+    int no_points;
+    int inputs() const { return no_parameter; } // There are two parameters of the model
+    int values() const { return no_points; } // The number of observations
+};
+
+struct MyMultiEqualSystemNumericalDiff : Eigen::NumericalDiff<MyMultiEqualSystem> {};
 
 
+int SolveEqualSystem(QVector<double >A_0, QVector<double> B_0, double beta_11, double beta_21, QVector<double > &A_equ, QVector<double > &B_equ)
+{
+       
+    Eigen::VectorXd parameter(A_0.size()+B_0.size());
+    Eigen::VectorXd Concen_0(A_0.size()+B_0.size());
+    for(int i = 0; i < A_0.size(); ++i)
+    {
+        Concen_0(2*i) = A_0[i];
+        parameter(2*i) = A_0[i];
+        Concen_0(2*i+1) = B_0[i];
+        parameter(2*i+1) = B_0[i];
+    }
+    
+    MyMultiEqualSystem functor(A_0.size()+B_0.size(), A_0.size()+B_0.size());
+    functor.Concen_0 = Concen_0;
+     functor.beta_11 = beta_11;
+     functor.beta_21 = beta_21;
+     functor.no_equations = A_0.size();
+    Eigen::NumericalDiff<MyMultiEqualSystem> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyMultiEqualSystem> > lm(numDiff);
+    int iter = 0;
+    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+      do {
+         status = lm.minimizeOneStep(parameter);
+         iter++;
+      } while (status == -1);
+  
+          
+      for(int i = 0; i < A_0.size(); ++i)
+    {
+        A_equ << parameter(2*i); 
+        B_equ << parameter(2*i+1);
+    }
+    
+    
+    return iter;
+}
 
 
 #endif

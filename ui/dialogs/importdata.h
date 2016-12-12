@@ -38,12 +38,29 @@ class QSpinBox;
 class QCheckBox;
 
 
+class TableView : public QTableView
+{
+    Q_OBJECT
+
+public:
+    TableView() : QTableView() {}
+    
+protected:
+  
+  virtual void keyPressEvent(QKeyEvent *event);
+    
+    
+};
+
+
+
 class ImportData : public QDialog
 {
     Q_OBJECT
 
 public:
     ImportData(const QString &file, QWidget *parent = 0);
+    ImportData(QWidget *parent = 0);
     ~ImportData();
 
      inline DataClass getStoredData(){ return *m_storeddata;}
@@ -51,9 +68,9 @@ private:
     
     void setUi();
     
-    QPointer<QTableView > m_table;
+    QPointer<TableView > m_table;
     QPointer<QLineEdit > m_line;
-    QPointer<QPushButton > m_file;
+    QPointer<QPushButton > m_select, m_export, m_file;
     QPointer<QSpinBox > m_conc, m_sign;
     QPointer<QDialogButtonBox > m_buttonbox;
     QPointer<DataClass > m_storeddata;
@@ -62,6 +79,7 @@ private:
 private slots:
     void LoadFile();
     void SelectFile();
+    void ExportFile();
     void accept();
     void NoChanged();
 };

@@ -19,8 +19,10 @@
 #include "core/data/dataclass.h"
 #include "core/filehandler.h"
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
-
+#include <QKeyEvent>
+#include <QtGui/QClipboard>
 #include <QtCore/QFile>
 #include <QStandardItemModel>
 #include <QtWidgets/QDialogButtonBox>
@@ -37,12 +39,64 @@
 #include <QDebug>
 #include "importdata.h"
 
+
+
+void TableView::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) 
+    {
+        QApplication::clipboard()->setText( this->currentIndex().data().toString() );
+    }
+    else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_V) 
+    {
+        QString paste =  QApplication::clipboard()->text();
+        QStringList lines = paste.split("\n");
+        QModelIndex index = currentIndex();
+        int row = index.row();
+        int column = index.column();
+        QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
+        foreach(const QString line, lines)
+        {
+            int col = column;
+            QStringList cells = line.simplified().split(" ");
+            foreach(const QString &cell, cells)
+            {
+                model->item(row, col)->setData(QString(cell).replace(",", "."), Qt::DisplayRole);
+                col++;
+            }
+            row++;
+        }
+    }
+    else {
+        
+        QTableView::keyPressEvent(event);
+    }
+    
+}
+
+
 ImportData::ImportData(const QString &file, QWidget *parent) : QDialog(parent), m_filename(file)
 {
     setUi();
     LoadFile();
     
 }
+
+ImportData::ImportData(QWidget *parent) : QDialog(parent)
+{
+    
+    setUi(); 
+    
+    QStandardItemModel *model = new QStandardItemModel(40,40);
+    for (int row = 0; row < 40; ++row) {
+        for (int column = 0; column < 40; ++column) {
+            QStandardItem *item = new QStandardItem();
+            model->setItem(row, column, item);
+        }
+    }
+    m_table->setModel(model);
+}
+
 
 ImportData::~ImportData()
 {
@@ -54,15 +108,15 @@ ImportData::~ImportData()
 
 void ImportData::setUi()
 {
-   QGridLayout *layout = new QGridLayout;
-   
-   
-   m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-   m_switch_concentration = new QCheckBox;
-   m_switch_concentration->setText("Switch Host/Guest");
+    QGridLayout *layout = new QGridLayout;
+    
+    
+    m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    m_switch_concentration = new QCheckBox;
+    m_switch_concentration->setText("Switch Host/Guest");
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-   
+    
     
     m_conc = new QSpinBox;
     connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
@@ -70,22 +124,28 @@ void ImportData::setUi()
     m_sign = new QSpinBox;
     m_sign->setMinimum(1);
     connect(m_sign, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
-   m_line = new QLineEdit;
-   m_file = new QPushButton("Load");
-   connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
-   m_table = new QTableView;
-   
-   layout->addWidget(m_line, 0, 0);
-   layout->addWidget(m_file, 0, 1);
-   layout->addWidget(m_switch_concentration, 0, 2);
-   layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
-   layout->addWidget(m_conc, 1, 1);
-   layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
-   layout->addWidget(m_sign, 1, 3);
-   layout->addWidget(m_table, 3, 0, 1, 3);
-   layout->addWidget(m_buttonbox, 4, 1);
-   
-   setLayout(layout);
+    m_line = new QLineEdit;
+    m_select = new QPushButton("Select file");
+    connect(m_select, SIGNAL(clicked()), this, SLOT(SelectFile()));
+    m_file = new QPushButton("Load");
+    m_export = new QPushButton("Export table");
+    connect(m_export, SIGNAL(clicked()), this, SLOT(ExportFile()));
+    connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
+    m_table = new TableView;
+    
+    layout->addWidget(m_select, 0, 0);
+    layout->addWidget(m_line, 0, 1);
+    layout->addWidget(m_file, 0, 2);
+    layout->addWidget(m_export, 0, 3);
+    layout->addWidget(m_switch_concentration, 0, 4);
+    layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
+    layout->addWidget(m_conc, 1, 1);
+    layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
+    layout->addWidget(m_sign, 1, 3);
+    layout->addWidget(m_table, 3, 0, 1, 4);
+    layout->addWidget(m_buttonbox, 4, 1, 1, 4);
+    
+    setLayout(layout);
 }
 
 void ImportData::NoChanged()
@@ -97,7 +157,7 @@ void ImportData::NoChanged()
 
 void ImportData::LoadFile()
 {
-
+    
     
     
     m_line->setText(m_filename);
@@ -108,20 +168,62 @@ void ImportData::LoadFile()
         m_table->setModel(model);
     }else
         QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
-
+    
     
     delete filehandler;
     
     NoChanged();
-        
+    
 }
 
 void ImportData::SelectFile()
 {
-        m_filename = QFileDialog::getOpenFileName(this, "Select file", ".");
-        LoadFile();
+    m_filename = QFileDialog::getOpenFileName(this, "Select file", ".");
+    LoadFile();
 }
 
+void ImportData::ExportFile()
+{
+    QString filename = QFileDialog::getSaveFileName(this, "Select file", ".");
+    if(filename.isEmpty())
+        return;
+    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
+    
+    int rows = model->rowCount() - 1; 
+    int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
+    
+    QFile file(filename);
+    if(!file.open(QIODevice::ReadWrite))
+        return;
+    QTextStream stream(&file);
+    for(int i = 0; i < rows; ++i)
+    {
+        QVector<qreal > conc, sign;
+        for(int j = 0; j < columns; ++j)
+        {
+            
+            if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
+            {
+                if(j < m_conc->value())
+                    conc << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
+                else 
+                    sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
+            }
+        }
+        if(m_switch_concentration->isChecked())
+        {
+            qreal a = conc[1];
+            conc[1] = conc[0];
+            conc[0] = a;
+        }
+        foreach(double d, conc)
+            stream << d << " ";
+        foreach(double d, sign)
+            stream << d << " ";
+        stream <<  endl;
+    }
+    
+}
 
 void ImportData::accept()
 {
@@ -133,20 +235,23 @@ void ImportData::accept()
     int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
     for(int i = 0; i < rows; ++i)
     {
-            QVector<qreal > conc, sign;
-            for(int j = 0; j < columns; ++j)
+        QVector<qreal > conc, sign;
+        for(int j = 0; j < columns; ++j)
+        {
+            if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
             {
                 if(j < m_conc->value())
                     conc << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
                 else 
                     sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
             }
-            if(m_switch_concentration->isChecked())
-            {
-                qreal a = conc[1];
-                conc[1] = conc[0];
-                conc[0] = a;
-            }
+        }
+        if(m_switch_concentration->isChecked())
+        {
+            qreal a = conc[1];
+            conc[1] = conc[0];
+            conc[0] = a;
+        }
         m_storeddata->addPoint(conc, sign);
     }
     QDialog::accept();

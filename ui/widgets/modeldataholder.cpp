@@ -72,11 +72,11 @@ ModelDataHolder::ModelDataHolder()
         connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
         menu->addAction(ItoI_ItoII_action);
         
-//          QAction *t2 = new QAction(this);
-//     t2->setText(tr("2:1/1:1-test-Model"));
-//         connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
-//         menu->addAction(t2);
-        
+//           QAction *t2 = new QAction(this);
+//      t2->setText(tr("2:1/1:1-test-Model"));
+//          connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
+//          menu->addAction(t2);
+//         
      m_add->setMenu(menu);
         menu = new QMenu;
     ItoI_action = new QAction(this);
@@ -96,7 +96,7 @@ ModelDataHolder::ModelDataHolder()
         
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
-    layout->addWidget(m_simulate, 0,1);
+//     layout->addWidget(m_simulate, 0,1);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
         
 }
@@ -128,8 +128,8 @@ void ModelDataHolder::AddModel(int model)
             t = new ItoI_ItoII_Model(m_data);
             break;
 //         case 4:
-//             t = new test_II_ItoI_Model(m_data);
-//             break;
+//              t = new test_II_ItoI_Model(m_data);
+//              break;
         default:
             delete t;
            return; 
@@ -141,7 +141,12 @@ void ModelDataHolder::AddModel(int model)
     t->Minimize();
     m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t);
-    m_modelsWidget->addTab(modelwidget, t->Name());
+    QScrollArea *scroll = new QScrollArea;
+    scroll->setBackgroundRole(QPalette::Midlight);
+      scroll->setWidget(modelwidget);
+      scroll->setWidgetResizable(true);
+      scroll->setAlignment(Qt::AlignHCenter);
+    m_modelsWidget->addTab(scroll, t->Name());
     
     
 
@@ -215,9 +220,11 @@ void ModelDataHolder::RemoveTab(int i)
 {
     if(i)
     {
-        ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+        QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
+        ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
         m_modelsWidget->removeTab(i);
-        delete w;
+        delete model;
+        delete scroll;
     }else
     {
     QMessageBox msgBox;

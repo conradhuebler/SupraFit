@@ -735,51 +735,60 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j)
 }
 
 
-/*
+
 void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
 {
+    // Highly experimental stuff
+    
       m_corrupt = false;
     if(constants.size() == 0)
         constants = Constants();
+     QVector<qreal> host_0, guest_0;
     for(int i = 0; i < DataPoints(); ++i)
     {
-         qreal host_0, guest_0;
+        
         if(*ptr_concentrations)
         {
-            host_0 = ConcentrationModel()->data(0,i);
-            guest_0 = ConcentrationModel()->data(1,i);
+            host_0 << ConcentrationModel()->data(0,i);
+            guest_0 << ConcentrationModel()->data(1,i);
         }else
         {
-            host_0 = ConcentrationModel()->data(1,i);
-            guest_0 = ConcentrationModel()->data(0,i);
+            host_0 << ConcentrationModel()->data(1,i);
+            guest_0 << ConcentrationModel()->data(0,i);
         }
-            
+    }
+    
         qreal K21= qPow(10, constants.first());
         qreal K11 = qPow(10, constants.last());
-        QVector<double > concentration;
-//         SolveEqualSystem(host_0, guest_0, K11, K11*K21, concentration);
+        QVector<double > A_equ, B_equ;
+
+        SolveEqualSystem(host_0, guest_0, K11, K11*K21, A_equ, B_equ);
         
 //         qreal host = HostConcentration(host_0, guest_0, constants);
 //         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
-        qreal host = concentration.first();
-        qreal guest = concentration.last();
-        qreal complex_11 = K11*host*guest;
-        qreal complex_21 = K11*K21*host*host*guest;
         
-
+        
+        for(int i = 0; i  < DataPoints(); ++i)
+        {
+        
+            qreal host = A_equ[i];
+            qreal guest = B_equ[i]; //concentration.last();
+            qreal complex_11 = K11*host*guest;
+            qreal complex_21 = K11*K21*host*host*guest;
+        
         for(int j = 0; j < SignalCount(); ++j)
             {
-                qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ 2*complex_21/host_0*m_IItoI_signals[j];
+                qreal value = host/host_0[i]*m_pure_signals[j] + complex_11/host_0[i]*m_ItoI_signals[j]+ 2*complex_21/host_0[i]*m_IItoI_signals[j];
                 SetSignal(i, j, value);
             }
-  
-    }
+        }
+    
     if(m_repaint)
     {
         UpdatePlotModels();
         emit Recalculated();
     }  
-}*/
+}
 
 
 ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)

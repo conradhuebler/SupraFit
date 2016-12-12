@@ -212,7 +212,7 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_co
     
 }
 
-DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) 
+DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(other)
 {
     m_concentration_model = new DataTable(other.m_concentration_model);
     m_signal_model = new DataTable(other.m_signal_model);

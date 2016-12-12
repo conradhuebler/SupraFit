@@ -63,7 +63,7 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
         layout->addWidget(constant, 0, i + 1);
     }
     
-       
+    
     if(m_model->Type() != 3)
     {
         error = new QLineEdit;
@@ -71,8 +71,8 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
         layout->addWidget(error, 0, m_model->ConstantSize() + 1); 
         error->setText(QString::number(m_model->SumOfErrors(m_no)));
     } 
-
-   
+    
+    
     
     
     m_include = new QCheckBox(this);
@@ -108,7 +108,7 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
 
 ModelElement::~ModelElement()
 {
-    
+    delete m_model;
 }
 
 
@@ -157,11 +157,16 @@ void ModelElement::SetOptimizer()
 
 void ModelElement::ColorChanged(const QColor &color)
 {
-   QPalette pal = palette();
-   pal.setColor(QPalette::Window,color);
-//    m_include->setAutoFillBackground(true);
-   setPalette(pal); 
-   m_color = color;
+
+    #ifdef _WIN32
+        setStyleSheet("background-color:" + color.name()+ ";");
+    #else
+        QPalette pal = palette();
+        pal.setColor(QPalette::Background,color);
+        setPalette(pal); 
+    #endif
+        
+    m_color = color;
 }
 
 
