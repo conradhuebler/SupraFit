@@ -1,3 +1,4 @@
+
 /*
  * <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
@@ -17,10 +18,15 @@
  * 
  */
 
-
+#include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 #include "src/ui/widgets/datawidget.h"
 #include "src/ui/widgets/modelwidget.h"
+
+#include <QApplication>
+
+#include <QtCore/QFile>
+#include <QtCore/QJsonObject>
 
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QGridLayout>
@@ -28,6 +34,7 @@
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMessageBox>
+
 #include "modeldataholder.h"
 #include "chartwidget.h"
 
@@ -140,13 +147,15 @@ void ModelDataHolder::AddModel(int model)
     t->Minimize();
     m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t);
+    connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
+    connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
     QScrollArea *scroll = new QScrollArea;
     scroll->setBackgroundRole(QPalette::Midlight);
       scroll->setWidget(modelwidget);
       scroll->setWidgetResizable(true);
       scroll->setAlignment(Qt::AlignHCenter);
     m_modelsWidget->addTab(scroll, t->Name());
-    
+    m_models << t;
     
 
 }
@@ -197,6 +206,7 @@ void ModelDataHolder::SimulateModel(int model)
     m_modelsWidget->addTab(modelwidget, t->Name());
     m_datawidget->setData(m_data);
     m_charts->addModel(t);
+    
 }
 
 void ModelDataHolder::SimulateModel11()
@@ -250,5 +260,34 @@ void ModelDataHolder::setSettings(const OptimizerConfig &config)
         }
     }
 }
+
+bool ModelDataHolder::CheckCrashFile()
+{
+    QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
+    return QFile::exists(filename);
+}
+
+void ModelDataHolder::CreateCrashFile()
+{
+    RemoveCrashFile();
+    QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
+    for(int i = 0; i < m_models.size(); ++i)
+    {
+            QJsonObject obj = m_models[i]->ExportJSON();
+            JsonHandler::AppendJsonFile(obj, filename);        
+    }   
+     qDebug() << filename << "filename";
+    
+}
+
+void ModelDataHolder::RemoveCrashFile()
+{
+    if(CheckCrashFile())
+    {
+        QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
+        QFile::remove(filename);
+    }
+}
+
 
 #include "modeldataholder.moc"

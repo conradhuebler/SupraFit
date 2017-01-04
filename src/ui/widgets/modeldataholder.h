@@ -59,6 +59,8 @@ private:
     void AddModel(int model);
     void SimulateModel(int model);
     OptimizerConfig m_config;
+
+    bool CheckCrashFile();
 private slots:
     void AddModel11();
     void AddModel21();
@@ -69,6 +71,8 @@ private slots:
     void SimulateModel12();
     void RemoveTab(int i);
     
+    void CreateCrashFile();
+    void RemoveCrashFile();
 signals:
     void ModelAdded(AbstractTitrationModel *model);
     void Message(const QString &str, int priority);

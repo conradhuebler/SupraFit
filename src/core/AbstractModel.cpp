@@ -373,7 +373,8 @@ QVector<qreal> AbstractTitrationModel::Minimize()
 
 QJsonObject AbstractTitrationModel::ExportJSON() const
 {
-    QJsonObject json;
+    
+    QJsonObject json, toplevel;
     QJsonArray constantArray;
     QJsonObject constantObject;
     for(int i = 0; i < Constants().size(); ++i)
@@ -404,7 +405,8 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
         json["shift_" + QString::number(i)] = array;
     }
     
-    return json;
+    toplevel[m_name] = json;
+    return toplevel;
 }
     
 void AbstractTitrationModel::ImportJSON(const QJsonObject &json)

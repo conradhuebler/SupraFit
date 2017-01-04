@@ -17,6 +17,7 @@
  * 
  */
 #include "src/core/dataclass.h"
+#include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
 #include "src/ui/dialogs/configdialog.h"
 
@@ -27,7 +28,7 @@
 #include <QApplication>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonDocument>
-
+#include <QtWidgets/QFileDialog>
 #include <QtCore/QTimer>
 #include <QtWidgets/QGroupBox>
 #include <QGridLayout>
@@ -341,7 +342,7 @@ void ModelWidget::CollectParameters()
 
 void ModelWidget::GlobalMinimize()
 {
-    
+    emit RequestCrashFile();
     if(m_maxiter->value() > 10000)
     {
         int r = QMessageBox::warning(this, tr("So viel."),
@@ -359,18 +360,20 @@ void ModelWidget::GlobalMinimize()
     OptimizerConfig config = m_model->getOptimizerConfig();
     config.MaxIter = m_maxiter->value();
     m_model->setOptimizerConfig(config);
+    
     QVector<qreal > constants = m_model->Minimize();
     
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     Repaint();
     m_pending = false; 
-    
+    emit RequestRemoveCrashFile();
 }
 
 
 void ModelWidget::LocalMinimize()
 {
+    emit RequestCrashFile();
     if(m_maxiter->value() > 10000)
     {
         int r = QMessageBox::warning(this, tr("So viel."),
@@ -396,6 +399,8 @@ void ModelWidget::LocalMinimize()
         OptimizerConfig config = m_model->getOptimizerConfig();
         config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
+        
+
         QVector<qreal > constants = m_model->Minimize();
         qDebug() <<"Minimize done";
     }
@@ -404,7 +409,10 @@ void ModelWidget::LocalMinimize()
     //         for(int j = 0; j < constants.size(); ++j)
     //             m_constants[j]->setValue(constants[j]);
     qDebug() << "Constants set.";
-    qDebug() << "leaving"; 
+    qDebug() << "leaving";
+        
+    emit RequestRemoveCrashFile();
+
 }
 
 
@@ -466,39 +474,36 @@ void ModelWidget::OptimizerSettings()
     }
     
 }
+void ModelWidget::ExportConstants()
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", "*.json");
+    if(!str.isEmpty())
+    {
+        QJsonObject gameObject = m_model->ExportJSON();
+        JsonHandler::WriteJsonFile(gameObject, str);
+    }
+    
+}
 
 void ModelWidget::ImportConstants()
 {
-    QFile loadFile(QStringLiteral("test.json"));
-     if (!loadFile.open(QIODevice::ReadOnly)) {
-        qWarning("Couldn't open save file.");
-        return;
+    QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", "*.json");
+    if(!str.isEmpty())
+    {
+        QJsonObject gameObject;
+        if(JsonHandler::ReadJsonFile(gameObject, str))
+        {
+            m_model->ImportJSON(gameObject);
+             m_model->CalculateSignal();
+        }
+        else
+            qDebug() << "loading failed";
     }
-
-    QByteArray saveData = loadFile.readAll();
-
-    QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
-
-    m_model->ImportJSON(loadDoc.object());
-    
-    m_model->CalculateSignal();
 }
 
-void ModelWidget::ExportConstants()
-{
-    QFile saveFile(QStringLiteral("test.json"));
 
-    if (!saveFile.open(QIODevice::WriteOnly)) {
-        qWarning("Couldn't open save file.");
-        return;
-    }
 
-    QJsonObject gameObject = m_model->ExportJSON();
-    QJsonDocument saveDoc(gameObject);
-    saveFile.write( saveDoc.toJson()        );
 
-    return;
-    
-}
+
 #include "modelwidget.moc"
 #include <QCheckBox>

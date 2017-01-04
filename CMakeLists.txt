@@ -110,6 +110,7 @@ set(nmr2fit_SRCS
                 src/core/models/1_1_Model.cpp
                 src/core/models/2_1_1_1_Model.cpp
                 src/core/models/1_1_1_2_Model.cpp
+                src/core/jsonhandler.cpp
                 src/core/filehandler.cpp
                 src/core/libmath.cpp
                 src/core/toolset.cpp

@@ -54,6 +54,7 @@ private:
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
+    
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer <DataClass > m_data;
     bool m_hasData;

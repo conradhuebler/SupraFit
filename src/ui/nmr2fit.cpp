@@ -160,6 +160,7 @@ void MainWindow::ImportAction(const QString& file)
         m_model_dataholder->setData(m_data.data());
         m_charts->setRawData(m_data.data());
         m_hasData = true;
+        qApp->instance()->setProperty("projectname", file);
     }else
         destroy();
 }
@@ -180,6 +181,7 @@ void MainWindow::ImportAction()
             m_model_dataholder->setData(m_data.data());
             m_charts->setRawData(m_data.data());
             m_hasData = true;
+            qApp->instance()->setProperty("projectname", filename);
         }
     }else
     {

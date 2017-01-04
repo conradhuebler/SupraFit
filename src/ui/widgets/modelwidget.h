@@ -105,6 +105,7 @@ private:
     void EmptyUI();
     
     void CollectParameters();
+
 private slots:
     void GlobalMinimize();
     void LocalMinimize();
@@ -121,6 +122,8 @@ signals:
     void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void ActiveSignalChanged(QVector<int > active_signals);
+    void RequestCrashFile();
+    void RequestRemoveCrashFile();
 };
 
 #endif // MODELWIDGET_H
