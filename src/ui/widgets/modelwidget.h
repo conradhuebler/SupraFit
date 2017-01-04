@@ -84,6 +84,8 @@ public:
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
     QPointer< AbstractTitrationModel > Model() { return m_model; }
     void setMaxIter(int maxiter);
+
+    
 private:
     QPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
@@ -96,7 +98,7 @@ private:
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config; 
+    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config, *m_export, *m_import; 
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
@@ -110,6 +112,8 @@ private slots:
     void AddSimSignal();
     void CollectActiveSignals();
     void NewGuess();
+    void ImportConstants();
+    void ExportConstants();
 public slots:
     void recalulate();
     void OptimizerSettings();

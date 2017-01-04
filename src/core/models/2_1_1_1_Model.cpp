@@ -236,7 +236,7 @@ void ItoI_ItoII_Model::setPureSignals(const QVector< qreal > &list)
 }
 
 
-QPair< qreal, qreal > ItoI_ItoII_Model::Pair(int i, int j)
+QPair< qreal, qreal > ItoI_ItoII_Model::Pair(int i, int j) const
 {
     if(i == 0)
     {

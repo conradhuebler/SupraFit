@@ -25,6 +25,9 @@
 #include <QtMath>
 #include "cmath"
 #include <QApplication>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonDocument>
+
 #include <QtCore/QTimer>
 #include <QtWidgets/QGroupBox>
 #include <QGridLayout>
@@ -58,7 +61,6 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
         constant->setDecimals(4);
         constant->setSuffix("ppm");
         constant->setValue(m_model->Pair(i, m_no).second);
-        qDebug() << m_model->Pair(i, m_no).second;
         connect(constant, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
         layout->addWidget(constant, 0, i + 1);
     }
@@ -102,7 +104,7 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
-    //     connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
+    connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
     
 }
 
@@ -239,6 +241,8 @@ void ModelWidget::DiscreteUI()
     m_minimize_all = new QPushButton(tr("Global Fit"));
     m_minimize_single = new QPushButton(tr("Local Fits"));
     m_optim_config = new QPushButton(tr("Fit Settings"));
+    m_import = new QPushButton(tr("Load Constants"));
+    m_export = new QPushButton(tr("Save Constants"));
     m_maxiter = new QSpinBox;
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
@@ -248,7 +252,8 @@ void ModelWidget::DiscreteUI()
     connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
     connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
-    
+    connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
+    connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -257,12 +262,16 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_minimize_single);
     mini->addWidget(m_optim_config);
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
+    QHBoxLayout *mini_data = new QHBoxLayout;
+    mini_data->addWidget(m_import);
+    mini_data->addWidget(m_export);
+    m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
     mini2->addWidget(m_maxiter);
     mini2->addWidget(new QLabel(tr("Sum of Error:")));
     mini2->addWidget(m_sum_error);
-    m_layout->addLayout(mini2, 4, 0,1,m_model->ConstantSize()+3);
+    m_layout->addLayout(mini2, 5, 0,1,m_model->ConstantSize()+3);
     
 }
 
@@ -458,6 +467,38 @@ void ModelWidget::OptimizerSettings()
     
 }
 
+void ModelWidget::ImportConstants()
+{
+    QFile loadFile(QStringLiteral("test.json"));
+     if (!loadFile.open(QIODevice::ReadOnly)) {
+        qWarning("Couldn't open save file.");
+        return;
+    }
 
+    QByteArray saveData = loadFile.readAll();
+
+    QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
+
+    m_model->ImportJSON(loadDoc.object());
+    
+    m_model->CalculateSignal();
+}
+
+void ModelWidget::ExportConstants()
+{
+    QFile saveFile(QStringLiteral("test.json"));
+
+    if (!saveFile.open(QIODevice::WriteOnly)) {
+        qWarning("Couldn't open save file.");
+        return;
+    }
+
+    QJsonObject gameObject = m_model->ExportJSON();
+    QJsonDocument saveDoc(gameObject);
+    saveFile.write( saveDoc.toJson()        );
+
+    return;
+    
+}
 #include "modelwidget.moc"
 #include <QCheckBox>

@@ -185,7 +185,7 @@ void ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
 }
 
 
-QPair< qreal, qreal > ItoI_Model::Pair(int i, int j)
+QPair< qreal, qreal > ItoI_Model::Pair(int i, int j) const
 {
     Q_UNUSED(i);
     if(j < m_ItoI_signals.size()) 

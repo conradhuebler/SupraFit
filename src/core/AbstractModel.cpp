@@ -22,9 +22,13 @@
 
 #include "src/core/libmath.h"
 #include "src/core/dataclass.h"
+#include "src/core/toolset.h"
+
 #include <QtMath>
 
 #include <QDebug>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonArray>
 #include <QtCore/QDateTime>
 #include <QStandardItemModel>
 #include <QtCharts/QVXYModelMapper>
@@ -364,6 +368,79 @@ QVector<qreal> AbstractTitrationModel::Minimize()
     
     QApplication::restoreOverrideCursor();
     return constants;
+}
+
+
+QJsonObject AbstractTitrationModel::ExportJSON() const
+{
+    QJsonObject json;
+    QJsonArray constantArray;
+    QJsonObject constantObject;
+    for(int i = 0; i < Constants().size(); ++i)
+        constantObject[QString::number(i)] = (QString::number(Constants()[i]));
+    
+    constantArray.append(constantObject);
+    json["constants"] = constantArray;
+    
+    QJsonArray pureShiftArray;
+    QJsonObject pureShiftObject;
+    for(int i = 0; i < m_pure_signals.size(); ++i)
+        pureShiftObject[QString::number(i)] = (QString::number(m_pure_signals[i]));
+
+    pureShiftArray.append(pureShiftObject);
+    json["pureShift"] = pureShiftArray;   
+    
+    
+    for(int i = 0; i < Constants().size(); ++i)
+    {
+        QJsonArray array;
+        QJsonObject object;
+        for(int j = 0; j < m_pure_signals.size(); ++j)
+        {
+            qreal value = Pair(i, j).second;
+            object[QString::number(j)] =  QString::number(value);
+        }
+        array.append(object);
+        json["shift_" + QString::number(i)] = array;
+    }
+    
+    return json;
+}
+    
+void AbstractTitrationModel::ImportJSON(const QJsonObject &json)
+{
+    QJsonArray constantsArray = json["constants"].toArray();
+    QVector<qreal> constants; 
+    QJsonObject constantsObject = constantsArray[0].toObject();
+    for (int i = 0; i < Constants().size(); ++i) {
+       
+        constants << constantsObject[QString::number(i)].toString().toDouble();
+    }
+    setConstants(constants);
+    
+    QJsonArray pureShiftArray = json["pureShift"].toArray();
+    QVector<qreal> pureShift;
+    QJsonObject pureShiftObject = pureShiftArray[0].toObject();
+    for (int i = 0; i < m_pure_signals.size(); ++i) {
+        
+        pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+    }
+    setPureSignals(pureShift);
+    
+    
+    for(int i = 0; i < Constants().size(); ++i)
+    {
+        QJsonArray array = json["shift_" + QString::number(i)].toArray();
+        QVector<qreal> shifts;
+        QJsonObject object = array[0].toObject();
+        for(int j = 0; j < m_pure_signals.size(); ++j)
+        {
+            shifts << object[QString::number(j)].toString().toDouble();
+        }
+        setComplexSignals(shifts, i);
+    }
+    
+    
 }
 
 #include "AbstractModel.moc"

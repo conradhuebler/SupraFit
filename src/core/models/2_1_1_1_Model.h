@@ -40,7 +40,7 @@ public:
     ItoI_ItoII_Model(const DataClass* data);
     ~ItoI_ItoII_Model();
     
-    QPair<qreal, qreal> Pair(int i, int j = 0);
+    QPair<qreal, qreal> Pair(int i, int j = 0) const ;
     inline int ConstantSize() const { return 2;}
     void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);

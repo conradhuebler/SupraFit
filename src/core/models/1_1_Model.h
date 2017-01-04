@@ -40,7 +40,7 @@ class ItoI_Model : public AbstractTitrationModel
 public:
     ItoI_Model(const DataClass *data);
     ~ItoI_Model();
-    QPair<qreal, qreal> Pair(int i, int j = 0);
+    QPair<qreal, qreal> Pair(int i, int j = 0) const;
     inline int ConstantSize() const { return 1;}
     void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);

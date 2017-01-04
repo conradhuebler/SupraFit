@@ -222,7 +222,7 @@ void IItoI_ItoI_Model::setPureSignals(const QVector< qreal > &list)
 }
 
 
-QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j)
+QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j) const
 {
         if(i == 0)
         {

@@ -68,7 +68,7 @@ public:
     void clearOptParameter();
     int MaxVars() const { return (m_pure_signals.size()); }
     qreal SumOfErrors(int i) const;
-    virtual QPair<qreal, qreal> Pair(int i, int j = 0) = 0;
+    virtual QPair<qreal, qreal> Pair(int i, int j = 0) const = 0;
     inline qreal PureSignal(int i) const 
         { 
             if(i >= MaxVars())
@@ -104,6 +104,8 @@ public:
     }
     bool isCorrupt() const { return m_corrupt; }
     void adress() const;
+    QJsonObject ExportJSON() const;
+    void ImportJSON(const QJsonObject &json);
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
