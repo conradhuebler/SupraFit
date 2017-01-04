@@ -409,8 +409,9 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     return toplevel;
 }
     
-void AbstractTitrationModel::ImportJSON(const QJsonObject &json)
+void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
 {
+    QJsonObject json = topjson[m_name].toObject();
     QJsonArray constantsArray = json["constants"].toArray();
     QVector<qreal> constants; 
     QJsonObject constantsObject = constantsArray[0].toObject();

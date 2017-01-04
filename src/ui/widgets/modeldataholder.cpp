@@ -276,8 +276,6 @@ void ModelDataHolder::CreateCrashFile()
             QJsonObject obj = m_models[i]->ExportJSON();
             JsonHandler::AppendJsonFile(obj, filename);        
     }   
-     qDebug() << filename << "filename";
-    
 }
 
 void ModelDataHolder::RemoveCrashFile()
@@ -287,6 +285,15 @@ void ModelDataHolder::RemoveCrashFile()
         QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
         QFile::remove(filename);
     }
+}
+
+void ModelDataHolder::ExportModels(const QString& str)
+{
+    for(int i = 0; i < m_models.size(); ++i)
+    {
+            QJsonObject obj = m_models[i]->ExportJSON();
+            JsonHandler::AppendJsonFile(obj, str);        
+    }   
 }
 
 

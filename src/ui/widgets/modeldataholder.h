@@ -48,6 +48,7 @@ public:
         IItoI_ItoI_t = 4
     };
     void setSettings(const OptimizerConfig &config);
+    void ExportModels(const QString &str);
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<QTabWidget > m_modelsWidget;

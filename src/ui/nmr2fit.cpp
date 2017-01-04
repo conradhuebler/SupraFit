@@ -84,6 +84,9 @@ MainWindow::MainWindow() :m_hasData(false)
     m_edit = new QAction(QIcon::fromTheme("document-edit"), tr("Edit Data"));
     connect(m_edit, SIGNAL(triggered(bool)), this, SLOT(EditAction()));   
     
+    m_export = new QAction(QIcon::fromTheme("document-edit"), tr("Export Model"));
+    connect(m_export, SIGNAL(triggered(bool)), this, SLOT(ExportAction()));   
+    
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), SLOT(SettingsDialog()) );
     
@@ -102,6 +105,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     m_model_toolbar = new QToolBar;
     m_model_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
+    m_model_toolbar->addAction(m_export);
     addToolBar(m_model_toolbar);
     m_system_toolbar = new QToolBar;
     m_system_toolbar->addAction(m_config);
@@ -284,4 +288,15 @@ void MainWindow::WriteSettings()
     
     
 }
+
+void MainWindow::ExportAction()
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", "*.json");
+    if(!str.isEmpty())
+    {
+        m_model_dataholder->ExportModels(str);
+    }
+}
+
+
 #include "nmr2fit.moc"
