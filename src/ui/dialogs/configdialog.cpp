@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "ui/widgets/optimizerwidget.h"
+#include "src/ui/widgets/optimizerwidget.h"
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QPushButton>

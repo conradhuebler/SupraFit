@@ -35,8 +35,8 @@ if(NOT USE_eigen)
 endif(NOT USE_eigen)
 
 configure_file (
-  "${PROJECT_SOURCE_DIR}/global_config.h.in"
-  "${PROJECT_BINARY_DIR}/global_config.h"
+  "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
+  "${PROJECT_BINARY_DIR}/src/global_config.h"
 )
 
 
@@ -92,23 +92,28 @@ find_package(Qt5PrintSupport REQUIRED)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
+
+
 set(nmr2fit_SRCS
-                core/filehandler.cpp
-                core/libmath.cpp
-                core/data/dataclass.cpp
-                ui/dialogs/importdata.cpp
-                ui/dialogs/configdialog.cpp
-                ui/dialogs/chartconfig.cpp
-                core/data/modelclass.cpp
-                ui/widgets/modeldataholder.cpp
-                ui/widgets/optimizerwidget.cpp
-                ui/widgets/chartwidget.cpp
-                ui/widgets/chartview.cpp
-                ui/widgets/datawidget.cpp
-                ui/widgets/modelwidget.cpp
-                ui/nmr2fit.cpp 
-                global.cpp
-                main.cpp)
+                src/ui/dialogs/importdata.cpp
+                src/ui/dialogs/configdialog.cpp
+                src/ui/dialogs/chartconfig.cpp
+                src/ui/widgets/modeldataholder.cpp
+                src/ui/widgets/optimizerwidget.cpp
+                src/ui/widgets/chartwidget.cpp
+                src/ui/widgets/chartview.cpp
+                src/ui/widgets/datawidget.cpp
+                src/ui/widgets/modelwidget.cpp
+                src/ui/nmr2fit.cpp 
+                src/core/dataclass.cpp
+                src/core/AbstractModel.cpp
+                src/core/models/1_1_Model.cpp
+                src/core/models/2_1_1_1_Model.cpp
+                src/core/models/1_1_1_2_Model.cpp
+                src/core/filehandler.cpp
+                src/core/libmath.cpp
+                src/global.cpp
+                src/main.cpp)
 add_executable(nmr2fit ${nmr2fit_SRCS})
 
 set_property(TARGET nmr2fit PROPERTY CXX_STANDARD 11)

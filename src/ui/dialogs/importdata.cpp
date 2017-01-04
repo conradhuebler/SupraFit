@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-#include "core/data/dataclass.h"
-#include "core/filehandler.h"
+#include "src/core/dataclass.h"
+#include "src/core/filehandler.h"
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -66,6 +66,44 @@ void TableView::keyPressEvent(QKeyEvent *event)
             }
             row++;
         }
+    }
+    else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_C) 
+    {
+        
+        /*QItemSelectionModel *select = this->selectionModel();
+
+        if(!select->hasSelection())
+            return; 
+        QModelIndexList rows = select->selectedRows();
+        QModelIndexList columns = select->selectedColumns();
+        QString cliptext;
+        
+        foreach(const QModelIndex &column, columns)
+        {    
+            foreach(const QModelIndex &row, rows)
+            {
+                
+            }
+        }
+        */
+        /*
+        QString paste =  QApplication::clipboard()->text();
+        QStringList lines = paste.split("\n");
+        QModelIndex index = currentIndex();
+        int row = index.row();
+        int column = index.column();
+        QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
+        foreach(const QString line, lines)
+        {
+            int col = column;
+            QStringList cells = line.simplified().split(" ");
+            foreach(const QString &cell, cells)
+            {
+                model->item(row, col)->setData(QString(cell).replace(",", "."), Qt::DisplayRole);
+                col++;
+            }
+            row++;
+        }*/
     }
     else {
         

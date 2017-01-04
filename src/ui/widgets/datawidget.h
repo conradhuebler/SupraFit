@@ -19,7 +19,7 @@
 
 #ifndef DATAWIDGET_H
 #define DATAWIDGET_H
-#include "core/data/dataclass.h"
+#include "src/core/dataclass.h"
 
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QTableView>

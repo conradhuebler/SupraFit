@@ -17,9 +17,9 @@
  * 
  */
 
-#include "ui/widgets/chartview.h"
-#include "core/data/dataclass.h"
-#include "core/data/modelclass.h"
+#include "src/ui/widgets/chartview.h"
+#include "src/core/dataclass.h"
+#include "src/core/AbstractModel.h"
 #include <QDrag>
 #include <QBuffer>
 #include <QVector>
@@ -167,8 +167,8 @@ void ChartWidget::Repaint()
         }else
             trash << i;
     }
-    for(int i = 0; i < trash.size(); ++i)
-        m_models.remove(trash[i]);
+//     for(int i = 0; i < trash.size(); ++i)
+//         m_models.remove(trash[i]);
 
    m_signalview->formatAxis();
    m_errorview->formatAxis();    

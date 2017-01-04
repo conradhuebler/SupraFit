@@ -17,11 +17,12 @@
  * 
  */
 
-#ifndef MODELCLASS_H
-#define MODELCLASS_H
+
+#ifndef ABSTRACTMODEL_H
+#define ABSTRACTMODEL_H
 
 #include <QDebug>
-#include <QtCore/qobject.h>
+#include <QtCore/QObject>
 #include <QVector>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QVXYModelMapper>
@@ -146,97 +147,4 @@ signals:
     
 };
 
-
-class ItoI_Model : public AbstractTitrationModel 
-{
-    Q_OBJECT
-    
-public:
-    ItoI_Model(const DataClass *data);
-    ~ItoI_Model();
-    QPair<qreal, qreal> Pair(int i, int j = 0);
-    inline int ConstantSize() const { return 1;}
-    void setPureSignals(const QVector< qreal > &list);
-    void setComplexSignals(QVector< qreal > list, int i);
-    void setConstants(QVector< qreal > list);
-    void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
-    QVector<qreal > Constants() const { return QVector<qreal>() << m_K11; }
-    virtual QVector< QVector< qreal > > AllShifts();
-    virtual void InitialGuess();
-private:
-    void MiniShifts();
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
-    qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
-    qreal m_K11;
-    
-    QVector<qreal > m_ItoI_signals;
-};
-
-class IItoI_ItoI_Model : public AbstractTitrationModel
-{
-     Q_OBJECT
-    
-public:
-    IItoI_ItoI_Model(const DataClass* data);
-    ~IItoI_ItoI_Model();
-    
-    QPair<qreal, qreal> Pair(int i, int j = 0);
-    inline int ConstantSize() const { return 2;}
-    void setPureSignals(const QVector< qreal > &list);
-    void setComplexSignals(QVector< qreal > list, int i);
-    void setConstants(QVector< qreal > list);
-    virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
-    QVector<qreal > Constants() const { return m_complex_constants; }
-    virtual QVector< QVector< qreal > > AllShifts();
-    void MiniShifts();
-    virtual void InitialGuess();
-private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
-    qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
-protected:
-    qreal m_K21, m_K11;
-    QVector<qreal > m_ItoI_signals, m_IItoI_signals;
-};
-
-class test_II_ItoI_Model : public IItoI_ItoI_Model
-{
-     Q_OBJECT
-     
- public:
-     test_II_ItoI_Model(const DataClass* data) : IItoI_ItoI_Model(data) { }
-     
-     virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
-};
-
-class ItoI_ItoII_Model : public AbstractTitrationModel
-{
-     Q_OBJECT
-    
-public:
-    ItoI_ItoII_Model(const DataClass* data);
-    ~ItoI_ItoII_Model();
-    
-    QPair<qreal, qreal> Pair(int i, int j = 0);
-    inline int ConstantSize() const { return 2;}
-    void setPureSignals(const QVector< qreal > &list);
-    void setComplexSignals(QVector< qreal > list, int i);
-    void setConstants(QVector< qreal > list);
-    void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
-    QVector<qreal > Constants() const { return m_complex_constants; }
-    virtual QVector< QVector< qreal > > AllShifts();
-    void MiniShifts();
-    virtual void InitialGuess();
-    
-private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) 
-    {
-        return HostConcentration(host_0, guest_0, Constants());
-    }
-    qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
-    qreal GuestConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
-    
-    qreal m_K11, m_K12;
-    QVector<qreal > m_ItoI_signals, m_ItoII_signals;
-};
-
-#endif // MODELCLASS_H
+#endif // ABSTRACTMODEL_H

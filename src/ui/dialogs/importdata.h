@@ -20,7 +20,7 @@
 #ifndef IMPORTDATA_H
 #define IMPORTDATA_H
 
-#include "core/data/dataclass.h"
+#include "src/core/dataclass.h"
 
 
 #include <QtWidgets/QTableWidget>

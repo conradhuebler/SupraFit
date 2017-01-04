@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-#include "core/data/dataclass.h"
-#include "core/data/modelclass.h"
-#include "ui/dialogs/configdialog.h"
+#include "src/core/dataclass.h"
+#include "src/core/AbstractModel.h"
+#include "src/ui/dialogs/configdialog.h"
 
 #include "chartwidget.h"
 

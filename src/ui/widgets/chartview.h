@@ -20,7 +20,7 @@
 #ifndef CHARTVIEW_H
 #define CHARTVIEW_H
 
-#include "ui/dialogs/chartconfig.h"
+#include "src/ui/dialogs/chartconfig.h"
 
 
 #include <QtCharts/QChartView>

@@ -19,7 +19,7 @@
 
 #ifndef LIBMATH_H
 #define LIBMATH_H
-#include "global_config.h"
+#include "src/global_config.h"
 
 #include <QtGlobal>
 #include <QPair>

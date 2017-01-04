@@ -28,7 +28,7 @@
 #include <QtWidgets/QWidget>
 #include <QtCore/QPointer>
 #include <QtCore/QVector>
-#include "ui/widgets/chartview.h"
+#include "src/ui/widgets/chartview.h"
 
 class AbstractTitrationModel;
 class QComboBox;

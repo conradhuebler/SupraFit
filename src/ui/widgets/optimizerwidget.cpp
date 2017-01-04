@@ -17,7 +17,7 @@
  *
  */
 
-#include "core/data/modelclass.h"
+#include "src/core/AbstractModel.h"
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QCheckBox>

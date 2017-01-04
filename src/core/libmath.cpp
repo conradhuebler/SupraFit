@@ -18,7 +18,7 @@
  */
  #include <qmath.h>
 
-#include "global_config.h"
+#include "src/global_config.h"
 
 #ifdef USE_levmar
 #include <levmar/levmar.h>
@@ -35,7 +35,7 @@
 #include <QDebug>
 #include <cmath>
 #include <QPair>
-#include "core/data/modelclass.h"
+#include "src/core/AbstractModel.h"
 #include <iostream>
 namespace Cubic{
     qreal f(qreal x, qreal a, qreal b, qreal c, qreal d)

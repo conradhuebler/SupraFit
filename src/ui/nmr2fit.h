@@ -20,7 +20,7 @@
 
 #ifndef nmr2fit_H
 #define nmr2fit_H
-#include "ui/widgets/optimizerwidget.h"
+#include "src/ui/widgets/optimizerwidget.h"
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>

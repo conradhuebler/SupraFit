@@ -17,15 +17,17 @@
  * 
  */
 
-#include "core/data/dataclass.h"
-#include "core/data/modelclass.h"
-#include "ui/dialogs/configdialog.h"
+#include "src/core/dataclass.h"
+#include "src/core/AbstractModel.h"
 
-#include "ui/dialogs/importdata.h"
-#include "ui/widgets/modelwidget.h"
-#include "ui/widgets/datawidget.h"
-#include "ui/widgets/chartwidget.h"
-#include "ui/widgets/modeldataholder.h"
+#include "src/ui/dialogs/configdialog.h"
+#include "src/ui/dialogs/importdata.h"
+
+#include "src/ui/widgets/modelwidget.h"
+#include "src/ui/widgets/datawidget.h"
+#include "src/ui/widgets/chartwidget.h"
+#include "src/ui/widgets/modeldataholder.h"
+
 #include <QtWidgets/QApplication>
 #include <QtCore/QSharedPointer>
 #include <QtWidgets/QToolBar>
@@ -232,8 +234,8 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 void MainWindow::WriteMessages(const QString &message, int priority)
 {
 
-    QTextStream stdout_stream(&m_stdout);
-    stdout_stream << message << "\n";
+//     QTextStream stdout_stream(&m_stdout);
+//      stdout_stream << message << "\n";
     
     if(priority <= m_printlevel)
     {

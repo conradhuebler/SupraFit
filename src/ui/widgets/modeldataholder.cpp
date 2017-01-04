@@ -18,10 +18,9 @@
  */
 
 
-
-
-#include "ui/widgets/datawidget.h"
-#include "ui/widgets/modelwidget.h"
+#include "src/core/models.h"
+#include "src/ui/widgets/datawidget.h"
+#include "src/ui/widgets/modelwidget.h"
 
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QGridLayout>

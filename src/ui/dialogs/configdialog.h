@@ -19,7 +19,7 @@
 
 #ifndef CONFIGDIALOG_H
 #define CONFIGDIALOG_H
-#include "ui/widgets/optimizerwidget.h"
+#include "src/ui/widgets/optimizerwidget.h"
 #include <QDialog>
 #include <QtWidgets/QLineEdit>
 

@@ -22,7 +22,7 @@
 
 #include <iostream>
 
-#include "global_config.h"
-#include "global.h"
+#include "src/global_config.h"
+#include "src/global.h"
 
 

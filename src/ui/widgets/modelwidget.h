@@ -26,8 +26,8 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtCharts/QLineSeries>
 
-#include "core/data/dataclass.h"
-#include "core/data/modelclass.h"
+#include "src/core/dataclass.h"
+#include "src/core/AbstractModel.h"
 
 class QDoubleSpinBox;
 class QPushButton;

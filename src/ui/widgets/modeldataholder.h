@@ -19,7 +19,7 @@
 
 #ifndef MODELDATAHOLDER_H
 #define MODELDATAHOLDER_H
-#include "core/data/dataclass.h"
+#include "src/core/dataclass.h"
 #include <QtCharts/QChart>
 #include <QtWidgets/QWidget>
 #include <QtCore/QPointer>

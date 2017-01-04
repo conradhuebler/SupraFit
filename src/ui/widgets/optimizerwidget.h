@@ -24,7 +24,7 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QLocale>
-#include "core/data/modelclass.h"
+#include "src/core/AbstractModel.h"
 
 struct OptimizerConfig;
 class QValidator;
