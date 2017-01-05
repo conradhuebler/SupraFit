@@ -476,10 +476,10 @@ void ModelWidget::OptimizerSettings()
 }
 void ModelWidget::ExportConstants()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", "*.json");
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-        QJsonObject gameObject = m_model->ExportJSON();
+        QJsonObject gameObject = m_model->ExportJSON(true);
         JsonHandler::WriteJsonFile(gameObject, str);
     }
     
@@ -487,14 +487,14 @@ void ModelWidget::ExportConstants()
 
 void ModelWidget::ImportConstants()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", "*.json");
+    QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         QJsonObject gameObject;
         if(JsonHandler::ReadJsonFile(gameObject, str))
         {
             m_model->ImportJSON(gameObject);
-             m_model->CalculateSignal();
+            m_model->CalculateSignal();
         }
         else
             qDebug() << "loading failed";

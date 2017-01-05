@@ -273,8 +273,11 @@ void ModelDataHolder::CreateCrashFile()
     QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
     for(int i = 0; i < m_models.size(); ++i)
     {
+        if(m_models[i])
+        {
             QJsonObject obj = m_models[i]->ExportJSON();
             JsonHandler::AppendJsonFile(obj, filename);        
+        }
     }   
 }
 
@@ -289,12 +292,20 @@ void ModelDataHolder::RemoveCrashFile()
 
 void ModelDataHolder::ExportModels(const QString& str)
 {
+    QJsonObject toplevel;
     for(int i = 0; i < m_models.size(); ++i)
     {
+        
+        if(m_models[i])
+        {
             QJsonObject obj = m_models[i]->ExportJSON();
-            JsonHandler::AppendJsonFile(obj, str);        
+            toplevel[m_models[i]->Name()] = obj;
+            
+        }
     }   
+    JsonHandler::WriteJsonFile(toplevel, str);        
 }
+    
 
 
 #include "modeldataholder.moc"

@@ -291,7 +291,7 @@ void MainWindow::WriteSettings()
 
 void MainWindow::ExportAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", "*.json");
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         m_model_dataholder->ExportModels(str);

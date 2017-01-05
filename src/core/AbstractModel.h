@@ -104,7 +104,7 @@ public:
     }
     bool isCorrupt() const { return m_corrupt; }
     void adress() const;
-    QJsonObject ExportJSON() const;
+    QJsonObject ExportJSON(bool IncludeLevelName = false) const;
     void ImportJSON(const QJsonObject &topjson);
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}

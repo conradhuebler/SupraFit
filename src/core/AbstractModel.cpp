@@ -27,6 +27,7 @@
 #include <QtMath>
 
 #include <QDebug>
+#include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
 #include <QtCore/QDateTime>
@@ -371,7 +372,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
 }
 
 
-QJsonObject AbstractTitrationModel::ExportJSON() const
+QJsonObject AbstractTitrationModel::ExportJSON(bool IncludeLevelName) const
 {
     
     QJsonObject json, toplevel;
@@ -406,12 +407,26 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     }
     
     toplevel[m_name] = json;
-    return toplevel;
+    if(IncludeLevelName)
+        return toplevel;
+    else
+        return json;
 }
     
 void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
 {
-    QJsonObject json = topjson[m_name].toObject();
+    QJsonObject json;
+    qDebug() << topjson.keys();
+    qDebug() << QJsonDocument(topjson).toJson();
+    if(topjson.contains(m_name))
+        json = topjson[m_name].toObject();
+    else
+    {
+        qWarning() << "file doesn't contain any " + m_name;
+//         return;
+    }
+    json = topjson[m_name].toObject();
+    qDebug() << QJsonDocument(json).toJson();
     QJsonArray constantsArray = json["constants"].toArray();
     QVector<qreal> constants; 
     QJsonObject constantsObject = constantsArray[0].toObject();

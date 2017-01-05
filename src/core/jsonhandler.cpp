@@ -22,20 +22,20 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
-
+#include <QDebug>
 
 bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 {
     QFile loadFile(file);
      if (!loadFile.open(QIODevice::ReadOnly)) {
-        qWarning("Couldn't open save file.");
+        qWarning("Couldn't open file.");
         return false;
     }
 
     QByteArray saveData = loadFile.readAll();
 
     QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
-
+    qDebug() << loadDoc.toJson()<< saveData;
     json = loadDoc.object();
     return true;
 }
