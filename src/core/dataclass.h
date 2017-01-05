@@ -173,6 +173,8 @@ class DataClass : public QObject
         emit RowAdded();
     }*/  
     qreal XValue(int i) const;
+    const QJsonObject ExportJSON() const;
+    void ImportJSON(const QJsonObject &topjson);
 public slots:
      void PlotModel();
 private:

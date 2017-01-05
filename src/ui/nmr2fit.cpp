@@ -19,6 +19,7 @@
 
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
+#include "src/core/jsonhandler.h"
 
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
@@ -43,6 +44,7 @@
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QSettings>
+#include <QtCore/QJsonObject>
 #include <QDebug>
 
 #include <stdio.h>
@@ -81,6 +83,9 @@ MainWindow::MainWindow() :m_hasData(false)
     m_import = new QAction(QIcon::fromTheme("document-open"), tr("Import Table"));
     connect(m_import, SIGNAL(triggered(bool)), this, SLOT(ImportAction()));
     
+    m_save = new QAction(QIcon::fromTheme("document-save"), tr("Save"));
+    connect(m_save, SIGNAL(triggered(bool)), m_model_dataholder, SLOT(SaveAction()));
+    
     m_edit = new QAction(QIcon::fromTheme("document-edit"), tr("Edit Data"));
     connect(m_edit, SIGNAL(triggered(bool)), this, SLOT(EditAction()));   
     
@@ -99,6 +104,7 @@ MainWindow::MainWindow() :m_hasData(false)
     m_main_toolbar = new QToolBar;
     m_main_toolbar->addAction(m_new);
     m_main_toolbar->addAction(m_import);
+    m_main_toolbar->addAction(m_save);
     m_main_toolbar->addAction(m_edit);
     m_main_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     addToolBar(m_main_toolbar);

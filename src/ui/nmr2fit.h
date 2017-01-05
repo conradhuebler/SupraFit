@@ -58,7 +58,7 @@ private:
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer <DataClass > m_data;
     bool m_hasData;
-    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export;
+    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save;
     OptimizerConfig m_opt_config;
     void ReadSettings();
     void WriteSettings();

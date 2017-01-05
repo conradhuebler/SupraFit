@@ -28,7 +28,7 @@ QString DoubleVec2String(const QVector<qreal > &vector)
 {
     QString string;
     for(int i = 0; i < vector.size(); ++i)    
-        string += string + QString::number(vector[i]) + "\t";
+        string += QString::number(vector[i]) + " ";
     
     return string.left(string.length() - 1);
 }
@@ -37,7 +37,7 @@ QString DoubleVec2String(const QVector<qreal > &vector)
 QVector<qreal > String2DoubleVec(const QString &str)
 {
     QVector<qreal > vector;
-    QStringList nums = str.split("\t");
+    QStringList nums = str.split(" ");
     foreach(const QString &string, nums)
         vector << string.toDouble();
     return vector;

@@ -34,6 +34,7 @@
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMessageBox>
+#include <QtWidgets/QFileDialog>
 
 #include "modeldataholder.h"
 #include "chartwidget.h"
@@ -305,7 +306,26 @@ void ModelDataHolder::ExportModels(const QString& str)
     }   
     JsonHandler::WriteJsonFile(toplevel, str);        
 }
-    
+
+
+void ModelDataHolder::SaveAction()
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    if(!str.isEmpty())
+    {
+        QJsonObject toplevel;
+        toplevel["data"] = m_data->ExportJSON();
+        for(int i = 0; i < m_models.size(); ++i)
+        {    
+            if(m_models[i])
+            {
+                QJsonObject obj = m_models[i]->ExportJSON();
+                toplevel[m_models[i]->Name()] = obj;       
+            }
+        }   
+        JsonHandler::WriteJsonFile(toplevel  , str);
+    }
+}
 
 
 #include "modeldataholder.moc"

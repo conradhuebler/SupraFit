@@ -16,6 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
+#include "src/core/toolset.h"
+
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonObject>
+
+
 #include <QStandardItemModel>
 #include <QAbstractTableModel>
 #include <QPointer>
@@ -416,4 +423,34 @@ QColor DataClass::color(int i) const
             return ColorCode(i);
         return d->m_plot_signal_mapper[i]->series()->color();
     }
+}
+
+const QJsonObject DataClass::ExportJSON() const
+{
+    QJsonObject json;
+    
+    QJsonArray concentrationArray, signalArray;
+    QJsonObject concentrationObject, signalObject;
+    
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        concentrationObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_concentration_model->Row(i));
+        signalObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_signal_model->Row(i));
+    }
+    concentrationArray.append(concentrationObject);
+    signalArray.append(signalObject);
+    json["concentrations"] = concentrationArray;
+    json["signals"] = signalArray;
+    return json;
+}
+
+
+void DataClass::ImportJSON(const QJsonObject &topjson)
+{
+    QJsonArray concentrationArray, signalArray;
+    QJsonObject concentrationObject, signalObject;
+    concentrationArray = topjson["concentrations"].toArray();
+    signalArray = topjson["signals"].toArray();
+    concentrationObject = concentrationArray[0].toObject();
+    signalObject = signalArray[0].toObject();
 }
