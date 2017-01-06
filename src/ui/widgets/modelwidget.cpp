@@ -227,6 +227,7 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
     
     
     setLayout(m_layout);
+    m_model->CalculateSignal();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
 
@@ -494,7 +495,10 @@ void ModelWidget::ImportConstants()
         if(JsonHandler::ReadJsonFile(gameObject, str))
         {
             m_model->ImportJSON(gameObject);
-            m_model->CalculateSignal();
+            QVector<qreal > constants = m_model->Constants();
+            for(int j = 0; j < constants.size(); ++j)
+                m_constants[j]->setValue(constants[j]);
+//             m_model->CalculateSignal();
         }
         else
             qDebug() << "loading failed";

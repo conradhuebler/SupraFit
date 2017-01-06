@@ -106,6 +106,7 @@ public:
     void adress() const;
     QJsonObject ExportJSON(bool IncludeLevelName = false) const;
     void ImportJSON(const QJsonObject &topjson);
+    void LoadJSON(const QJsonObject &object);
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      

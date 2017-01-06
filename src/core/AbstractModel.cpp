@@ -376,34 +376,28 @@ QJsonObject AbstractTitrationModel::ExportJSON(bool IncludeLevelName) const
 {
     
     QJsonObject json, toplevel;
-    QJsonArray constantArray;
     QJsonObject constantObject;
     for(int i = 0; i < Constants().size(); ++i)
         constantObject[QString::number(i)] = (QString::number(Constants()[i]));
     
-    constantArray.append(constantObject);
-    json["constants"] = constantArray;
+    json["constants"] = constantObject;
     
-    QJsonArray pureShiftArray;
     QJsonObject pureShiftObject;
     for(int i = 0; i < m_pure_signals.size(); ++i)
         pureShiftObject[QString::number(i)] = (QString::number(m_pure_signals[i]));
 
-    pureShiftArray.append(pureShiftObject);
-    json["pureShift"] = pureShiftArray;   
+    json["pureShift"] = pureShiftObject;   
     
     
     for(int i = 0; i < Constants().size(); ++i)
     {
-        QJsonArray array;
         QJsonObject object;
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
             qreal value = Pair(i, j).second;
             object[QString::number(j)] =  QString::number(value);
         }
-        array.append(object);
-        json["shift_" + QString::number(i)] = array;
+        json["shift_" + QString::number(i)] = object;
     }
     
     toplevel[m_name] = json;
@@ -427,18 +421,16 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     }
     json = topjson[m_name].toObject();
     qDebug() << QJsonDocument(json).toJson();
-    QJsonArray constantsArray = json["constants"].toArray();
     QVector<qreal> constants; 
-    QJsonObject constantsObject = constantsArray[0].toObject();
+    QJsonObject constantsObject = json["constants"].toObject();
     for (int i = 0; i < Constants().size(); ++i) {
        
         constants << constantsObject[QString::number(i)].toString().toDouble();
     }
     setConstants(constants);
     
-    QJsonArray pureShiftArray = json["pureShift"].toArray();
     QVector<qreal> pureShift;
-    QJsonObject pureShiftObject = pureShiftArray[0].toObject();
+    QJsonObject pureShiftObject = json["pureShift"].toObject();
     for (int i = 0; i < m_pure_signals.size(); ++i) {
         
         pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
@@ -448,16 +440,48 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     
     for(int i = 0; i < Constants().size(); ++i)
     {
-        QJsonArray array = json["shift_" + QString::number(i)].toArray();
         QVector<qreal> shifts;
-        QJsonObject object = array[0].toObject();
+        QJsonObject object = json["shift_" + QString::number(i)].toObject();
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
             shifts << object[QString::number(j)].toString().toDouble();
         }
         setComplexSignals(shifts, i);
     }
+    qDebug() << Constants();
     
+}
+
+void AbstractTitrationModel::LoadJSON(const QJsonObject &json)
+{
+    QVector<qreal> constants; 
+    QJsonObject constantsObject = json["constants"].toObject();
+    for (int i = 0; i < Constants().size(); ++i) {
+       
+        constants << constantsObject[QString::number(i)].toString().toDouble();
+    }
+    setConstants(constants);
+    
+    QVector<qreal> pureShift;
+    QJsonObject pureShiftObject = json["pureShift"].toObject();
+    for (int i = 0; i < m_pure_signals.size(); ++i) {
+        
+        pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+    }
+    setPureSignals(pureShift);
+    
+    
+    for(int i = 0; i < Constants().size(); ++i)
+    {
+        QVector<qreal> shifts;
+        QJsonObject object = json["shift_" + QString::number(i)].toObject();
+        for(int j = 0; j < m_pure_signals.size(); ++j)
+        {
+            shifts << object[QString::number(j)].toString().toDouble();
+        }
+        setComplexSignals(shifts, i);
+    }
+    qDebug() << Constants();
     
 }
 

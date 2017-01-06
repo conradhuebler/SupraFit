@@ -19,6 +19,7 @@
 
 #include "src/core/toolset.h"
 
+#include <QtCore/QCollator>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
 
@@ -187,12 +188,13 @@ void DataTable::setColumn(QVector<qreal> vector, int column)
 
 void DataTable::setRow(QVector<qreal> vector, int row)
 {
-    Q_UNUSED(vector);
-    Q_UNUSED(row);
+    m_table[row] = vector;
+//     Q_UNUSED(vector);
+//     Q_UNUSED(row);
     return;
 }
 
-DataClassPrivate::DataClassPrivate() : m_maxsize(0)
+DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_concentrations(new bool(true))
 {
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
@@ -258,6 +260,12 @@ DataClassPrivate::~DataClassPrivate()
 DataClass::DataClass(QObject *parent) : QObject(parent), m_plotmode(DataClass::HG)
 {
     d = new DataClassPrivate;
+}
+
+DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObject(parent), m_plotmode(DataClass::HG)
+{
+    d = new DataClassPrivate(type);
+    ImportJSON(json);
 }
 
 DataClass::DataClass(int type, QObject *parent) :  QObject(parent), m_plotmode(DataClass::HG)
@@ -429,7 +437,6 @@ const QJsonObject DataClass::ExportJSON() const
 {
     QJsonObject json;
     
-    QJsonArray concentrationArray, signalArray;
     QJsonObject concentrationObject, signalObject;
     
     for(int i = 0; i < DataPoints(); ++i)
@@ -437,20 +444,61 @@ const QJsonObject DataClass::ExportJSON() const
         concentrationObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_concentration_model->Row(i));
         signalObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_signal_model->Row(i));
     }
-    concentrationArray.append(concentrationObject);
-    signalArray.append(signalObject);
-    json["concentrations"] = concentrationArray;
-    json["signals"] = signalArray;
+
+    json["concentrations"] = concentrationObject;
+    json["signals"] = signalObject;
+        
     return json;
 }
 
 
-void DataClass::ImportJSON(const QJsonObject &topjson)
+bool DataClass::ImportJSON(const QJsonObject &topjson)
 {
-    QJsonArray concentrationArray, signalArray;
     QJsonObject concentrationObject, signalObject;
-    concentrationArray = topjson["concentrations"].toArray();
-    signalArray = topjson["signals"].toArray();
-    concentrationObject = concentrationArray[0].toObject();
-    signalObject = signalArray[0].toObject();
+    concentrationObject = topjson["data"].toObject()["concentrations"].toObject();
+    signalObject = topjson["data"].toObject()["signals"].toObject();
+    
+    if(concentrationObject.isEmpty() || signalObject.isEmpty())
+        return false;
+    
+    QStringList keys = signalObject.keys();
+    
+    QCollator collator;
+    collator.setNumericMode(true);
+    std::sort(
+        keys.begin(),
+              keys.end(),
+              [&collator](const QString &key1, const QString &key2)
+              {
+                  return collator.compare(key1, key2) < 0;
+              });
+    if(DataPoints() == 0)
+    {
+        foreach(const QString &str, keys)
+        {
+        QVector<qreal > concentrationsVector, signalVector;
+        concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
+        signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
+        d->m_concentration_model->insertRow(concentrationsVector);
+        d->m_signal_model->insertRow(signalVector);
+        }
+        return true;
+    }
+    else if(keys.size() != DataPoints())
+    {
+        qWarning() << "table size doesn't fit to imported data";
+        return false;
+    }
+    foreach(const QString &str, keys)
+    {
+        QVector<qreal > concentrationsVector, signalVector;
+        concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
+        signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
+//         qDebug() << str << concentrationsVector << signalVector;
+        int row = str.toInt();
+        d->m_concentration_model->setRow(concentrationsVector, row);
+        d->m_signal_model->setRow(signalVector, row);
+    }
+    
+    return true;
 }

@@ -120,7 +120,7 @@ add_executable(nmr2fit ${nmr2fit_SRCS})
 
 set_property(TARGET nmr2fit PROPERTY CXX_STANDARD 11)
 
-qt5_use_modules(nmr2fit Widgets Network Charts PrintSupport)
+qt5_use_modules(nmr2fit Widgets Charts PrintSupport)
 if(USE_levmar)
     target_link_libraries(nmr2fit ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport levmar)
 endif(USE_levmar)

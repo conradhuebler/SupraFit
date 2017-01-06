@@ -51,14 +51,16 @@ public:
     
     
 private:
+    void LoadData(const QString &file);
+    void setActionEnabled(bool enabled);
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
     
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
-    QSharedPointer <DataClass > m_data;
+    QSharedPointer <DataClass > m_titration_data;
     bool m_hasData;
-    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save;
+    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     OptimizerConfig m_opt_config;
     void ReadSettings();
     void WriteSettings();
@@ -69,13 +71,16 @@ private:
     void LogFile();
     QFile m_file, m_stdout;
 private slots:
-    void NewTable();
-    void LoadData();
-    void ImportAction();
+    void NewTableAction();
+    void ImportTableAction();
+    void EditTableAction();
+    void LoadProjectAction();
+    void SaveProjectAction();
+    void ImportModelAction();
+    void ExportModelAction();
     void SettingsDialog();
     void WriteMessages(const QString &message, int priority);
     void MessageBox(const QString &str, int priority);
-    void ExportAction();
 protected:
     void resizeEvent(QResizeEvent *event);
 };

@@ -48,10 +48,9 @@ public:
         IItoI_ItoI_t = 4
     };
     void setSettings(const OptimizerConfig &config);
-    
-public slots:
-    void SaveAction();
-    void ExportModels(const QString &str);
+    void Export(const QString &str);
+    void SaveProject(const QString &str);
+    void LoadProject(const QJsonObject &object);
     
 private:
     QPointer<DataWidget > m_datawidget;
@@ -66,6 +65,7 @@ private:
     OptimizerConfig m_config;
 
     bool CheckCrashFile();
+    void Json2Model(const QJsonObject &object, const QString &str);
 private slots:
     void AddModel11();
     void AddModel21();
@@ -82,7 +82,6 @@ signals:
     void ModelAdded(AbstractTitrationModel *model);
     void Message(const QString &str, int priority);
     void MessageBox(const QString &str, int priority);
-
 };
 
 #endif // MODELDATAHOLDER_H

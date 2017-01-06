@@ -106,6 +106,7 @@ class DataClass : public QObject
     public: 
         
     DataClass(QObject *parent = 0);
+    DataClass(const QJsonObject &json,int type = 1,  QObject *parent = 0);
     DataClass(int type = 1, QObject *parent = 0);
     DataClass(const DataClass *other);
     DataClass(const DataClass &other);
@@ -174,7 +175,7 @@ class DataClass : public QObject
     }*/  
     qreal XValue(int i) const;
     const QJsonObject ExportJSON() const;
-    void ImportJSON(const QJsonObject &topjson);
+    bool ImportJSON(const QJsonObject &topjson);
 public slots:
      void PlotModel();
 private:

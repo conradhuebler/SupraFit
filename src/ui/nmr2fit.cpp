@@ -70,6 +70,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)));
     connect(m_model_dataholder, SIGNAL(MessageBox(QString, int)), this, SLOT(MessageBox(QString, int)));
+
     
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
@@ -78,22 +79,28 @@ MainWindow::MainWindow() :m_hasData(false)
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
     
     m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
-    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
+    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTableAction()));
     
     m_import = new QAction(QIcon::fromTheme("document-open"), tr("Import Table"));
-    connect(m_import, SIGNAL(triggered(bool)), this, SLOT(ImportAction()));
+    connect(m_import, SIGNAL(triggered(bool)), this, SLOT(ImportTableAction()));
     
-    m_save = new QAction(QIcon::fromTheme("document-save"), tr("Save"));
-    connect(m_save, SIGNAL(triggered(bool)), m_model_dataholder, SLOT(SaveAction()));
+    m_load = new QAction(QIcon::fromTheme("document-open"), tr("Load Project"));
+    connect(m_load, SIGNAL(triggered(bool)), this, SLOT(LoadProjectAction()));
+    
+    m_save = new QAction(QIcon::fromTheme("document-save"), tr("Save Project"));
+    connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
     
     m_edit = new QAction(QIcon::fromTheme("document-edit"), tr("Edit Data"));
-    connect(m_edit, SIGNAL(triggered(bool)), this, SLOT(EditAction()));   
+    connect(m_edit, SIGNAL(triggered(bool)), this, SLOT(EditTableAction()));   
     
-    m_export = new QAction(QIcon::fromTheme("document-edit"), tr("Export Model"));
-    connect(m_export, SIGNAL(triggered(bool)), this, SLOT(ExportAction()));   
+    m_importmodel = new QAction(QIcon::fromTheme("document-open"), tr("Import Models"));
+    connect(m_importmodel, SIGNAL(triggered(bool)), this, SLOT(ImportModelAction()));
+    
+    m_export = new QAction(QIcon::fromTheme("document-edit"), tr("Export Models"));
+    connect(m_export, SIGNAL(triggered(bool)), this, SLOT(ExportModelAction()));   
     
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
-    connect(m_config, SIGNAL(triggered()), SLOT(SettingsDialog()) );
+    connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()) );
     
     //     m_about = new QAction(QIcon::fromTheme("help-about"), tr("About"));
     
@@ -104,24 +111,27 @@ MainWindow::MainWindow() :m_hasData(false)
     m_main_toolbar = new QToolBar;
     m_main_toolbar->addAction(m_new);
     m_main_toolbar->addAction(m_import);
+    m_main_toolbar->addAction(m_load);
     m_main_toolbar->addAction(m_save);
-    m_main_toolbar->addAction(m_edit);
     m_main_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     addToolBar(m_main_toolbar);
     
     m_model_toolbar = new QToolBar;
     m_model_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
+    m_model_toolbar->addAction(m_edit);
+    m_model_toolbar->addAction(m_importmodel);
     m_model_toolbar->addAction(m_export);
     addToolBar(m_model_toolbar);
+    
     m_system_toolbar = new QToolBar;
     m_system_toolbar->addAction(m_config);
-    //     m_system_toolbar->addAction(QIcon::fromTheme("application-exit"), tr("Quit"), qApp, &QApplication::aboutQt);
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     addToolBar(m_system_toolbar);
     
     ReadSettings();
     LogFile();
+    setActionEnabled(false);
 }
 
 MainWindow::~MainWindow()
@@ -136,47 +146,30 @@ MainWindow::~MainWindow()
     
 }
 
-void MainWindow::NewTable()
+void MainWindow::setActionEnabled(bool enabled)
+{
+    m_save->setEnabled(enabled);
+    m_export->setEnabled(enabled);
+    m_edit->setEnabled(enabled);
+    m_importmodel->setEnabled(enabled);
+}
+
+void MainWindow::NewTableAction()
 {
     
       ImportData dialog(this);
     
     if(dialog.exec() == QDialog::Accepted)
     {
-        m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
-        m_model_dataholder->setData(m_data.data());
-        m_charts->setRawData(m_data.data());
+        m_titration_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+        m_model_dataholder->setData(m_titration_data.data());
+        m_charts->setRawData(m_titration_data.data());
         m_hasData = true;
     }
     
 }
 
-
-void MainWindow::LoadData()
-{
-    
-    
-    
-    
-}
-
-void MainWindow::ImportAction(const QString& file)
-{
-    ImportData dialog(file, this);
-    
-    if(dialog.exec() == QDialog::Accepted)
-    {
-        m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
-        m_model_dataholder->setData(m_data.data());
-        m_charts->setRawData(m_data.data());
-        m_hasData = true;
-        qApp->instance()->setProperty("projectname", file);
-    }else
-        destroy();
-}
-
-
-void MainWindow::ImportAction()
+void MainWindow::ImportTableAction()
 {
     QString filename = QFileDialog::getOpenFileName(this, "Select file", ".");
     if(filename.isEmpty())
@@ -187,11 +180,8 @@ void MainWindow::ImportAction()
         
         if(dialog.exec() == QDialog::Accepted)
         {
-            m_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
-            m_model_dataholder->setData(m_data.data());
-            m_charts->setRawData(m_data.data());
-            m_hasData = true;
-            qApp->instance()->setProperty("projectname", filename);
+            m_titration_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+            LoadData(filename);
         }
     }else
     {
@@ -199,6 +189,88 @@ void MainWindow::ImportAction()
         nw->show();
         nw->ImportAction(filename);
     }
+}
+
+void MainWindow::ImportAction(const QString& file)
+{
+    ImportData dialog(file, this);
+    
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        m_titration_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+        LoadData(file);
+    }else
+        destroy();
+}
+
+void MainWindow::LoadProjectAction()
+{
+    QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    if(!str.isEmpty())
+    {
+        QJsonObject toplevel;
+        if(JsonHandler::ReadJsonFile(toplevel, str))
+        {
+            m_titration_data = QSharedPointer<DataClass>(new DataClass(toplevel));  
+            if(m_titration_data->DataPoints() != 0)
+            {
+                LoadData(str);
+                m_model_dataholder->LoadProject(toplevel);
+            }
+            else
+            {
+                m_titration_data.clear();
+                QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
+            }
+        }
+    }
+}
+
+void MainWindow::LoadData(const QString &file)
+{
+    m_model_dataholder->setData(m_titration_data.data());
+    m_charts->setRawData(m_titration_data.data());
+    m_hasData = true;
+    qApp->instance()->setProperty("projectname", file);
+    setActionEnabled(true);
+
+}
+
+void MainWindow::SaveProjectAction()
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    if(!str.isEmpty())
+    {
+        m_model_dataholder->SaveProject(str);
+    }
+}
+    
+void MainWindow::ImportModelAction()
+{
+  QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    if(!str.isEmpty())
+    {
+        QJsonObject toplevel;
+        if(JsonHandler::ReadJsonFile(toplevel, str))
+        {
+            m_model_dataholder->LoadProject(toplevel);
+        }
+    }  
+}
+    
+    
+void MainWindow::ExportModelAction()
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    if(!str.isEmpty())
+    {
+       m_model_dataholder->Export(str);   
+    }   
+}
+
+void MainWindow::EditTableAction()
+{
+    
 }
 
 void MainWindow::SettingsDialog()
@@ -291,18 +363,6 @@ void MainWindow::WriteSettings()
     _settings.setValue("logfile", m_logfile);
     _settings.setValue("printlevel", m_printlevel);
     _settings.endGroup();
-    
-    
 }
-
-void MainWindow::ExportAction()
-{
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
-    if(!str.isEmpty())
-    {
-        m_model_dataholder->ExportModels(str);
-    }
-}
-
 
 #include "nmr2fit.moc"

@@ -291,7 +291,23 @@ void ModelDataHolder::RemoveCrashFile()
     }
 }
 
-void ModelDataHolder::ExportModels(const QString& str)
+void ModelDataHolder::SaveProject(const QString &str)
+{
+        QJsonObject toplevel;
+        toplevel["data"] = m_data->ExportJSON();
+        for(int i = 0; i < m_models.size(); ++i)
+        {    
+            if(m_models[i])
+            {
+                QJsonObject obj = m_models[i]->ExportJSON();
+                toplevel[m_models[i]->Name()] = obj;       
+            }
+        }   
+        JsonHandler::WriteJsonFile(toplevel  , str);
+}
+
+
+void ModelDataHolder::Export(const QString &str)
 {
     QJsonObject toplevel;
     for(int i = 0; i < m_models.size(); ++i)
@@ -304,28 +320,55 @@ void ModelDataHolder::ExportModels(const QString& str)
             
         }
     }   
-    JsonHandler::WriteJsonFile(toplevel, str);        
+    JsonHandler::WriteJsonFile(toplevel, str);   
 }
 
-
-void ModelDataHolder::SaveAction()
+void ModelDataHolder::LoadProject(const QJsonObject &object)
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
-    if(!str.isEmpty())
-    {
-        QJsonObject toplevel;
-        toplevel["data"] = m_data->ExportJSON();
-        for(int i = 0; i < m_models.size(); ++i)
-        {    
-            if(m_models[i])
-            {
-                QJsonObject obj = m_models[i]->ExportJSON();
-                toplevel[m_models[i]->Name()] = obj;       
-            }
-        }   
-        JsonHandler::WriteJsonFile(toplevel  , str);
-    }
+    QStringList keys = object.keys();
+    foreach(const QString &str, keys)
+        Json2Model(object[str].toObject(), str);
 }
 
+void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
+{
+    
+    
+    
+    QPointer<AbstractTitrationModel > t;
+    /*
+     * WARNING and FIXME I dont like this!
+     */
+    if(str == "1:1-Model")
+    {
+        t = new ItoI_Model(m_data);
+    }
+    else if(str == "2:1/1:1-Model")
+    {
+         t = new IItoI_ItoI_Model(m_data);
+    }
+    else if(str == "1:1/1:2-Model"){
+        t = new ItoI_ItoII_Model(m_data);
+    }else
+    {
+        delete t;
+        return; 
+    }
+    t->LoadJSON(object);
+    t->setOptimizerConfig(m_config);
+    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
+    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
+    m_charts->addModel(t);
+    ModelWidget *modelwidget = new ModelWidget(t);
+    connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
+    connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
+    QScrollArea *scroll = new QScrollArea;
+    scroll->setBackgroundRole(QPalette::Midlight);
+      scroll->setWidget(modelwidget);
+      scroll->setWidgetResizable(true);
+      scroll->setAlignment(Qt::AlignHCenter);
+    m_modelsWidget->addTab(scroll, t->Name());
+    m_models << t;
+}
 
 #include "modeldataholder.moc"
