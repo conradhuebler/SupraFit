@@ -20,15 +20,12 @@
 
 #include "src/global_config.h"
 
-#ifdef USE_levmar
-#include <levmar/levmar.h>
-#endif
 
-#ifdef  USE_eigen
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
-#endif
+
+
 
 #include <QtGlobal>
 #include <QtMath>
@@ -158,191 +155,6 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
 
 
 
-#ifdef USE_levmar
-struct mydata{
-    AbstractTitrationModel *model;
-};
-
-void TitrationModel(double *p, double *x, int m, int n, void *data)
-{
-    
-    Q_UNUSED(n);
-    struct mydata *dptr;
-    
-    dptr=(struct mydata *)data; 
-    QVector<qreal> parameter;
-    for(int i = 0; i < m; ++i)
-        parameter << p[i];
-    if(parameter.size() == 2)
-        qDebug() << parameter;
-    dptr->model->setParamter(parameter);
-    
-    dptr->model->CalculateSignal();
-    QVector<qreal > x_var = dptr->model->getCalculatedSignals();
-    //     qDebug() << x_var;
-    for(int i = 0; i < x_var.size(); ++i)
-        x[i] = x_var[i];
-    if(parameter.size() == 2)
-    {
-        qreal error = 0;
-        for(int z = 0; z < dptr->model->MaxVars(); ++z)
-            error += dptr->model->SumOfErrors(z);
-        qDebug() << error;
-    }
-    //     int index = 0;
-    //     for(int j = 0; j < dptr->model->SignalCount(); ++j)
-    //       {
-    //         for(int i = 0; i < dptr->model->DataPoints(); ++i)
-    //         {
-    //             x[index] = dptr->model->ModelSignal()->data(j,i);
-    //             index++;
-    //         }
-    //     }
-}
-
-int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
-{
-    double opts[LM_OPTS_SZ], info[LM_INFO_SZ];
-    opts[0]=config.LevMar_mu; opts[1]=config.LevMar_Eps1; opts[2]=config.LevMar_Eps2; opts[3]=config.LevMar_Eps3;
-    opts[4]=config.LevMar_Delta;
-    struct mydata data;
-    data.model = model;
-    double *x = new double[data.model->DataPoints()*data.model->SignalCount()];
-    
-    QVector<qreal > x_var = data.model->getSignals();
-    for(int i = 0; i < x_var.size(); ++i)
-        x[i] = x_var[i];
-    
-    
-    QVector<double > parameter = param;
-    
-    QString message = QString();
-    message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
-    message += "Old vector : ";
-    foreach(double d, parameter)
-    {
-        message += QString::number(d) + " ";
-    }
-    message += "\n";
-    model->Message(message, 5);
-    
-    qDebug() << parameter;
-    double *p = new double[parameter.size()];
-    for(int i = 0; i < parameter.size(); ++i)
-    {
-        p[i] =  parameter[i];
-    }
-    
-    int m =  parameter.size();
-    int n = model->DataPoints()*model->SignalCount();
-    
-    int nums = dlevmar_dif(TitrationModel, p, x, m, n, max_iter, opts, info, NULL, NULL, (void *)&data);
-    QString result;
-    result += "Levenberg-Marquardt returned in  " + QString::number(info[5]) + " iter, reason "+ QString::number(info[5]) + ", sumsq " + QString::number(info[5]) + "\n";
-    result += "New vector:";    
-    param.clear();
-    for(int i = 0; i < m; ++i)
-    {
-        param << p[i];
-        result +=  QString::number(p[i]) + " ";
-    }
-    result += "\n";
-    model->Message(result, 4);
-    
-    delete[] x;
-    delete[] p;
-    return nums;
-}
-
-#endif
-
-#ifdef  USE_eigen
-typedef QVector<qreal > Variables;
-
-template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
-
-struct Functor
-{
-    typedef _Scalar Scalar;
-    enum {
-        InputsAtCompileTime = NX,
-        ValuesAtCompileTime = NY
-    };
-    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
-    
-    int m_inputs, m_values;
-    
-//     Functor() : m_inputs(InputsAtCompileTime), m_values(ValuesAtCompileTime) {}
-    Functor(int inputs, int values) : m_inputs(inputs), m_values(values) {}
-    
-    int inputs() const { return m_inputs; }
-    int values() const { return m_values; }
-    
-};
-
-struct MyFunctor : Functor<double>
-{
-    MyFunctor(int inputs, int values) : Functor(inputs, values), no_parameter(inputs),  no_points(values) 
-    {
-        
-    }
-    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
-    {
-        QVector<qreal > param(inputs());
-        for(int i = 0; i < inputs(); ++i)
-            param[i] = parameter(i);
-        
-        model->setParamter(param);
-        model->CalculateSignal();
-        QVector<qreal > CalculatedSignals = model->getCalculatedSignals();
-        for( int i = 0; i < values(); ++i)
-        {
-            fvec(i) = CalculatedSignals[i] - ModelSignals[i];
-        }
-        return 0;
-    }
-    int no_parameter;
-    int no_points;
-    Variables ModelSignals;
-    AbstractTitrationModel *model;
-    int inputs() const { return no_parameter; } // There are two parameters of the model
-    int values() const { return no_points; } // The number of observations
-};
-
-struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
-
-
-
-int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
-{
-    Q_UNUSED(config)
-    Q_UNUSED(max_iter)
-    Variables ModelSignals = model->getSignals();
-    Eigen::VectorXd parameter(param.size());
-    for(int i = 0; i < param.size(); ++i)
-        parameter(i) = param[i];
-    
-
-    
-    
-    MyFunctor functor(param.size(), model->DataPoints()*model->SignalCount());
-    functor.model = model;
-    functor.ModelSignals = ModelSignals;
-    Eigen::NumericalDiff<MyFunctor> numDiff(functor);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
-    int iter = 0;
-    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-      do {
-         status = lm.minimizeOneStep(parameter);
-         iter++;
-      } while (status == -1);
-    
-    for(int i = 0; i < functor.inputs(); ++i)
-            param[i] = parameter(i);
-    return 1;
-}
 
 
 
@@ -505,5 +317,3 @@ int SolveEqualSystem(QVector<double >A_0, QVector<double> B_0, double beta_11, d
     return iter;
 }
 
-
-#endif

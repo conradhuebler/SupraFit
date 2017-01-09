@@ -13,63 +13,18 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
 
-option(USE_levmar "Use levmar optimizing package" ON)  
-option(USE_eigen  "Use Eigen optimizing package" OFF)  
 
-if(USE_levmar)
-    if(USE_eigen)
-            message( FATAL_ERROR "Can't use levmar and eigen together.")
-    endif(USE_eigen)
-endif(USE_levmar)
 
-if(USE_eigen)
-    if(USE_levmar)
-            message( FATAL_ERROR "Can't use levmar and eigen together.")
-    endif(USE_levmar)
-endif(USE_eigen)
 
-if(NOT USE_eigen)    
-    if(NOT USE_levmar)
-        message( FATAL_ERROR "We need either levmar or eigen as optimizer.")
-    endif(NOT USE_levmar)
-endif(NOT USE_eigen)
+find_package( Eigen3 REQUIRED )
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
 )
 
-
-
-if(USE_levmar)
-    set(CMAKE_C_FLAGS "-I/usr/include/levmar")
-    IF(CMAKE_COMPILER_IS_GNUCXX)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-reorder -pedantic-errors \
-                                            -Wextra -Wcast-align -Wcast-qual  -Wchar-subscripts  \
-                                            -Wcomment -Wconversion -Wdisabled-optimization -Wfloat-equal \
-                                            -Wformat  -Wformat=2 -Wformat-nonliteral -Wformat-security\
-                                            -Wformat-y2k  -Wimport  -Winit-self  -Winline -Winvalid-pch\
-                                            -Wunsafe-loop-optimizations  -Wlong-long -Wmissing-braces\
-                                            -Wmissing-field-initializers -Wmissing-format-attribute  \
-                                            -Wmissing-include-dirs -Wmissing-noreturn -Wpacked  -Wparentheses\
-                                            -Wpointer-arith -Wredundant-decls -Wreturn-type -Wsequence-point\
-                                            -Wshadow -Wsign-compare  -Wstack-protector -Wstrict-aliasing\
-                                            -Wstrict-aliasing=2 -Wswitch  -Wswitch-default -Wswitch-enum\
-                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
-                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
-                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
-                                            -Wvolatile-register-var  -Wwrite-strings")
-    ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-endif(USE_levmar)
-
-if(USE_eigen)
-    find_package( Eigen3 REQUIRED )
-    include_directories(${EIGEN3_INCLUDE_DIR})
-    # using eigen results in compiler errors so we use fewer flags
-    # remove -Wshadow and -Wfloat-equal from list
-    # and adding  -Wno-deprecated-declarations
-    IF(CMAKE_COMPILER_IS_GNUCXX)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-reorder -pedantic-errors \
+IF(CMAKE_COMPILER_IS_GNUCXX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-reorder -pedantic-errors \
                                             -Wextra -Wcast-align -Wcast-qual  -Wchar-subscripts  \
                                             -Wcomment -Wconversion -Wdisabled-optimization \
                                             -Wformat  -Wformat=2 -Wformat-nonliteral -Wformat-security\
@@ -84,15 +39,38 @@ if(USE_eigen)
                                             -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                             -Wunused-value  -Wunused-variable  -Wvariadic-macros\
                                             -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations")
-    ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-endif(USE_eigen)
+
+ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+option(USE_levmarOptimizer "Use levmar optimizing package" ON)  
+option(USE_eigenOptimizer  "Use Eigen optimizing package" OFF)  
+
+if(USE_levmarOptimizer)
+    if(USE_eigenOptimizer)
+            message( FATAL_ERROR "Can't use levmar and eigen together.")
+    endif(USE_eigenOptimizer)
+endif(USE_levmarOptimizer)
+
+if(USE_eigenOptimizer)
+    if(USE_levmarOptimizer)
+            message( FATAL_ERROR "Can't use levmar and eigen together.")
+    endif(USE_levmarOptimizer)
+endif(USE_eigenOptimizer)
+
+if(NOT USE_eigenOptimizer)    
+    if(NOT USE_levmarOptimizer)
+                message( FATAL_ERROR "We need either levmar or eigen as optimizer.")
+    endif(NOT USE_levmarOptimizer)
+endif(NOT USE_eigenOptimizer)
+
+if(USE_levmarOptimizer)
+    set(CMAKE_C_FLAGS "-I/usr/include/levmar")
+endif(USE_levmarOptimizer)
+
 
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5PrintSupport REQUIRED)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-
-
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${EIGEN3_INCLUDE_DIR})
 
 set(nmr2fit_SRCS
                 src/ui/dialogs/importdata.cpp
@@ -112,6 +90,8 @@ set(nmr2fit_SRCS
                 src/core/models/1_1_1_2_Model.cpp
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp
+                src/core/optimizer/levmar.cpp
+                src/core/optimizer/eigen_levenberg.cpp
                 src/core/libmath.cpp
                 src/core/toolset.cpp
                 src/global.cpp
@@ -121,11 +101,11 @@ add_executable(nmr2fit ${nmr2fit_SRCS})
 set_property(TARGET nmr2fit PROPERTY CXX_STANDARD 11)
 
 qt5_use_modules(nmr2fit Widgets Charts PrintSupport)
-if(USE_levmar)
-    target_link_libraries(nmr2fit ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport levmar)
-endif(USE_levmar)
 
-if(USE_eigen)
-    target_link_libraries(nmr2fit ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
-endif(USE_eigen)
+target_link_libraries(nmr2fit ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
+
+if(USE_levmarOptimizer)
+    target_link_libraries(nmr2fit levmar)
+endif(USE_levmarOptimizer)
+
 install(TARGETS nmr2fit RUNTIME DESTINATION bin)

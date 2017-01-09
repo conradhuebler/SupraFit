@@ -20,9 +20,8 @@
 #ifndef LIBMATH_H
 #define LIBMATH_H
 #include "src/global_config.h"
-
-#include <QtGlobal>
-#include <QPair>
+#include "src/core/AbstractModel.h"
+#include <QtCore/QPair>
 class AbstractTitrationModel;
 struct OptimizerConfig;
 
@@ -33,9 +32,9 @@ namespace Cubic{
 qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
 qreal df(qreal x, qreal a, qreal b, qreal c);
 }
-#ifdef USE_levmar
-    void TitrationModel(double *p, double *x, int m, int n, void *data);
-#endif
+// #ifdef USE_levmarOptimizer
+//     void TitrationModel(double *p, double *x, int m, int n, void *data);
+// #endif
 
 int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config);
 int SolveEqualSystem(double A_0, double B_0, double beta_11, double beta_21, QVector<double > &concentration);

@@ -20,7 +20,7 @@
 
 
 
-#include "src/core/libmath.h"
+#include "libmath.h"
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
 
@@ -94,7 +94,7 @@ void AbstractTitrationModel::adress() const
 {
     std::cout << "We are at " << this;
     std::cout << "\t" << m_data;
-    std::cout << "\t " << m_data->Concentration();
+    std::cout << "\t "<< m_data->Concentration();
     std::cout << "\t" << Concentration() << std::endl;
 }
 
