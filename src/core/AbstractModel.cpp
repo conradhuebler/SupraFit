@@ -268,12 +268,13 @@ QVector<qreal> AbstractTitrationModel::Minimize()
     int iter = 0;
     bool allow_loop = true;
     bool process_stopped = false;
+    int max_convergence = 0;
     while((allow_loop && !convergence))
     {
         iter++;   
         if(iter > m_opt_config.MaxIter - 1)
             allow_loop = false;
-//         QApplication::processEvents();
+        QApplication::processEvents();
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
         QVector<qreal > old_constants = constants;
         qreal old_error = 0;
@@ -281,9 +282,10 @@ QVector<qreal> AbstractTitrationModel::Minimize()
             old_error += SumOfErrors(z);
         
         
-        MinimizingComplexConstants(this, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
+        max_convergence += MinimizingComplexConstants(this, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         MiniShifts(); 
-        
+        if(max_convergence == 30)
+            allow_loop = false;
         qreal error = 0;
         for(int z = 0; z < MaxVars(); ++z)
             error += SumOfErrors(z);

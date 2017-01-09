@@ -38,11 +38,12 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                             -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
                                             -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                             -Wunused-value  -Wunused-variable  -Wvariadic-macros\
-                                            -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations")
+                                            -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations -Wno-conversion")
 
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
-option(USE_levmarOptimizer "Use levmar optimizing package" ON)  
+option(USE_levmarOptimizer "Use levmar optimizing package" OFF)  
 option(USE_eigenOptimizer  "Use Eigen optimizing package" OFF)  
+option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" OFF) 
 
 if(USE_levmarOptimizer)
     if(USE_eigenOptimizer)
@@ -58,7 +59,7 @@ endif(USE_eigenOptimizer)
 
 if(NOT USE_eigenOptimizer)    
     if(NOT USE_levmarOptimizer)
-                message( FATAL_ERROR "We need either levmar or eigen as optimizer.")
+                set(USE_bfgsOptimizer ON)
     endif(NOT USE_levmarOptimizer)
 endif(NOT USE_eigenOptimizer)
 
@@ -92,6 +93,7 @@ set(nmr2fit_SRCS
                 src/core/filehandler.cpp
                 src/core/optimizer/levmar.cpp
                 src/core/optimizer/eigen_levenberg.cpp
+                src/core/optimizer/bfgs.cpp
                 src/core/libmath.cpp
                 src/core/toolset.cpp
                 src/global.cpp
