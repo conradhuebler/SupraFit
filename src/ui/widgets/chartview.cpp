@@ -27,6 +27,7 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QLegendMarker>
 #include <QtCharts/QValueAxis>
+#include <QtCharts/QXYSeries>
 #include <QDebug>
 #include <QtCore/QBuffer>
 #include <QtCore/QMimeData>
@@ -125,11 +126,17 @@ void ChartView::setUi()
 {
     QGridLayout *layout = new QGridLayout;
     QMenu *menu = new QMenu;
+    
     QAction *plotsettings = new QAction(this);
     plotsettings->setText(tr("Plot Settings"));
         connect(plotsettings, SIGNAL(triggered()), this, SLOT(PlotSettings()));
         menu->addAction(plotsettings);
     
+    QAction *scaleAction = new QAction(this);
+    scaleAction->setText(tr("Rescale Axis"));
+        connect(scaleAction, SIGNAL(triggered()), this, SLOT(formatAxis()));
+        menu->addAction(scaleAction);    
+        
     QAction *printplot = new QAction(this);
     printplot->setText(tr("Print Diagram"));
         connect(printplot, SIGNAL(triggered()), this, SLOT(PlotSettings()));
@@ -168,8 +175,10 @@ void ChartView::setUi()
 void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
 {    
     if(!m_chart->series().contains(series))
+    {
         m_chart->addSeries(series);
-
+        m_chart->createDefaultAxes();
+    }
     m_chart->legend()->markers(series).first()->setVisible(legend);
     if(!connected)
         if(connect(this, SIGNAL(AxisChanged()), this, SLOT(formatAxis())))
@@ -179,16 +188,47 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
 
 void ChartView::formatAxis()
 {
-    m_chart->createDefaultAxes();
+    
+    qreal x_min = 0;
+    qreal x_max = 0;
+    qreal y_max = 0;
+    qreal y_min = 0;
+    foreach(QtCharts::QAbstractSeries *series, m_chart->series())
+    {
+        QtCharts::QXYSeries *serie = qobject_cast<QtCharts::QXYSeries *>(series);
+        if(serie->isVisible())
+        {
+            QVector<QPointF> points = serie->pointsVector();
+            for(int i = 0; i < points.size(); ++i)
+            {
+                y_min = qMin(y_min, points[i].y());
+                y_max = qMax(y_max, points[i].y());
+                
+                x_min = qMin(x_min, points[i].x());
+                x_max = qMax(x_max, points[i].x());
+            }
+        }
+    }
     
     
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    y_axis->setMax(y_max);
+    y_axis->setMin(y_min);
     y_axis->applyNiceNumbers();
     y_axis->setTitleText(m_y_axis);
 
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-    x_axis->applyNiceNumbers();
-    x_axis->setTitleText(m_x_axis);
+    
+     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
+     x_axis->setMax(x_max);
+     x_axis->setMin(x_min);
+     x_axis->applyNiceNumbers();
+     x_axis->setTitleText(m_x_axis);
+}
+
+
+void ChartView::MaxValueChanged(qreal value)
+{
+    qDebug() << value;
 }
 
 void ChartView::PlotSettings()
@@ -212,12 +252,15 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
     x_axis->setTickCount(chartconfig.x_step);
     x_axis->setMin(chartconfig.x_min);
     x_axis->setMax(chartconfig.x_max);
-    
+    if(chartconfig.x_nice)
+        x_axis->applyNiceNumbers();
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY()); 
     y_axis->setTitleText(chartconfig.y_axis);
     y_axis->setTickCount(chartconfig.y_step);
     y_axis->setMin(chartconfig.y_min);
     y_axis->setMax(chartconfig.y_max);
+    if(chartconfig.y_nice)
+        y_axis->applyNiceNumbers();
     m_chartconfigdialog.setPixmap(new QPixmap(m_chart_private->grab()));
 }
 

@@ -22,13 +22,14 @@
 
 #include "src/ui/dialogs/chartconfig.h"
 
-
+#include <QtCharts/QValueAxis>
 #include <QtCharts/QChartView>
 #include <QtCore/QPointer>
 class QPushButton;
 class QChart;
 
 struct ChartConfig;
+
 
 class ChartViewPrivate : public QtCharts::QChartView
 {
@@ -69,15 +70,16 @@ private:
     ChartConfig getChartConfig() const;
     
     ChartConfigDialog m_chartconfigdialog;
+    
 private slots:
     void PlotSettings();
     void PrintPlot();
     void ExportLatex();
     void ExportGnuplot();
     void setChartConfig(const ChartConfig &chartconfig);
+    void MaxValueChanged(qreal value);
 signals:
     void AxisChanged();
-//     QVector<Q
 };
 
 #endif // CHARTVIEW_H

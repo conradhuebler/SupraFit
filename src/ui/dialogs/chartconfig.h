@@ -37,6 +37,8 @@ struct ChartConfig
     qreal y_min = 0;
     qreal y_max = 7;
     int y_step = 5;
+    bool x_nice = true;
+    bool y_nice = true;
 };
 
 class ChartConfigDialog : public QDialog
