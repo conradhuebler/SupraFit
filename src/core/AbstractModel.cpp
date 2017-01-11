@@ -417,7 +417,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     else
     {
         qWarning() << "file doesn't contain any " + m_name;
-//         return;
+        return;
     }
     json = topjson[m_name].toObject();
     qDebug() << QJsonDocument(json).toJson();

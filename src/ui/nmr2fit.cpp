@@ -54,18 +54,12 @@
 MainWindow::MainWindow() :m_hasData(false)
 {
     
-    m_logdock = new QDockWidget(tr("Logging output"), this);
-    m_logWidget = new QPlainTextEdit(this);
-    m_logdock->setWidget(m_logWidget);
-    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
     
-    m_stdout.open(stdout, QIODevice::WriteOnly);
-    
-
     
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Data and Models"), this);
     m_modeldock->setWidget(m_model_dataholder);
+    m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
     
     connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)));
@@ -75,8 +69,19 @@ MainWindow::MainWindow() :m_hasData(false)
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
     m_chartdock = new QDockWidget(tr("Charts"), this);
+    m_chartdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     m_chartdock->setWidget(m_charts);
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
+    
+    m_logdock = new QDockWidget(tr("Logging output"), this);
+    m_logWidget = new QPlainTextEdit(this);
+    m_logdock->setWidget(m_logWidget);
+    m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
+    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
+    setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
+    
+    m_stdout.open(stdout, QIODevice::WriteOnly);
+    
     
     m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
     connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTableAction()));
@@ -101,8 +106,24 @@ MainWindow::MainWindow() :m_hasData(false)
     
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()) );
+        
+    m_show_models = new QAction(QIcon::fromTheme("applications-system"), tr("Show Models"));
+    m_show_models->setCheckable(true);
+    m_show_models->setChecked(true);
+    connect(m_show_models, SIGNAL(triggered(bool)), m_modeldock, SLOT(setVisible(bool)));
+//     connect(m_modeldock, SIGNAL(visibilityChanged(bool)), this, SLOT(ToggleModelAction(bool)));
     
-    //     m_about = new QAction(QIcon::fromTheme("help-about"), tr("About"));
+    m_show_logging = new QAction(QIcon::fromTheme("applications-system"), tr("Show Console"));
+    m_show_logging->setCheckable(true);
+    m_show_logging->setChecked(true);
+    connect(m_show_logging, SIGNAL(triggered(bool)), m_logdock, SLOT(setVisible(bool)));
+//     connect(m_logdock, SIGNAL(visibilityChanged(bool)), this, SLOT(ToggleLogAction(bool)));
+    
+    m_show_plot = new QAction(QIcon::fromTheme("applications-system"), tr("Show Charts"));
+    m_show_plot->setCheckable(true);
+    m_show_plot->setChecked(true);
+    connect(m_show_plot, SIGNAL(triggered(bool)), m_chartdock, SLOT(setVisible(bool)));
+//     connect(m_chartdock, SIGNAL(visibilityChanged(bool)), this, SLOT(ToggleChartAction(bool)));
     
     m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
     connect(m_close, SIGNAL(triggered()), SLOT(close()) );
@@ -124,6 +145,9 @@ MainWindow::MainWindow() :m_hasData(false)
     addToolBar(m_model_toolbar);
     
     m_system_toolbar = new QToolBar;
+    m_system_toolbar->addAction(m_show_models);
+    m_system_toolbar->addAction(m_show_plot);
+    m_system_toolbar->addAction(m_show_logging);
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
@@ -309,10 +333,18 @@ void MainWindow::LogFile()
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
+    
+
+    
 //     m_charts->resize(3*event->size().width()/4, m_charts->height());
 //     m_model_dataholder->resize(event->size().width()/4, m_model_dataholder->height());
 //     
     QWidget::resizeEvent(event);
+    /*
+    m_modeldock->setMaximumHeight(4/5*event->size().height());
+    m_chartdock->setMaximumHeight(4/5*event->size().height());
+    m_logdock->setMaximumHeight(1/5*event->size().height());
+    */
 }
 
 void MainWindow::WriteMessages(const QString &message, int priority)
@@ -334,8 +366,8 @@ void MainWindow::WriteMessages(const QString &message, int priority)
 void MainWindow::MessageBox(const QString& str, int priority)
 {
     if(priority == 0)
-    {
-            QMessageBox::critical(this, tr("Optimizer Error."), str, QMessageBox::Ok | QMessageBox::Default);
+    {    
+        QMessageBox::critical(this, tr("Optimizer Error."), str, QMessageBox::Ok | QMessageBox::Default);
     }else if(priority == 1)
     {
         QMessageBox::warning(this, tr("Optimizer warning."),  str,  QMessageBox::Ok | QMessageBox::Default);
@@ -364,5 +396,21 @@ void MainWindow::WriteSettings()
     _settings.setValue("printlevel", m_printlevel);
     _settings.endGroup();
 }
+
+void MainWindow::ToggleChartAction(bool checked)
+{
+    m_show_plot->setCheckable(checked);
+}
+
+void MainWindow::ToggleLogAction(bool checked)
+{
+    m_show_logging->setCheckable(checked);
+}
+
+void MainWindow::ToggleModelAction(bool checked)
+{
+    m_show_models->setCheckable(checked);
+}
+
 
 #include "nmr2fit.moc"

@@ -405,10 +405,6 @@ void ModelWidget::LocalMinimize()
         QVector<qreal > constants = m_model->Minimize();
         qDebug() <<"Minimize done";
     }
-    //         QVector<qreal > constants =  m_model->Constants();
-    //         qDebug() << constants;
-    //         for(int j = 0; j < constants.size(); ++j)
-    //             m_constants[j]->setValue(constants[j]);
     qDebug() << "Constants set.";
     qDebug() << "leaving";
         

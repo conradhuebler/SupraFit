@@ -19,6 +19,7 @@
 
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QGridLayout>
@@ -51,14 +52,15 @@ ChartConfigDialog::ChartConfigDialog()
         connect(m_y_max, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
     m_y_step = new QSpinBox;
         connect(m_y_step, SIGNAL(valueChanged(int)), this, SLOT(Changed()));
-    picture = new QLabel;
     
-    m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok
-                                     | QDialogButtonBox::Cancel);
+    m_scaleaxis = new QPushButton(tr("Autoscale X"));
+    connect(m_scaleaxis, SIGNAL(clicked()), this, SIGNAL(ScaleAxis()));
+    
+    m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok);
     connect(m_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+//     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     
-    layout->addWidget(m_y_max, 0, 1);
+/*    layout->addWidget(m_y_max, 0, 1);
     layout->addWidget(m_y_step, 1, 1);
     layout->addWidget(m_y_min, 2, 1);
     layout->addWidget(m_x_min, 3, 2);
@@ -68,7 +70,23 @@ ChartConfigDialog::ChartConfigDialog()
     layout->addWidget(m_y_axis, 2, 0);
     layout->addWidget(m_x_axis, 4, 2);
     layout->addWidget(m_buttons, 5, 0, 1, 3);
+    */
+    layout->addWidget(new QLabel(tr("x Label:")), 0, 0);
+    layout->addWidget(m_x_axis, 0, 1);
     
+    layout->addWidget(new QLabel(tr("Axis")), 1, 0);
+    layout->addWidget(m_x_min, 1, 1);
+    layout->addWidget(m_x_step, 1, 2);
+    layout->addWidget(m_x_max, 1, 3);
+    
+    layout->addWidget(new QLabel(tr("y Label:")), 3, 0);
+    layout->addWidget(m_y_axis, 3, 1);
+    layout->addWidget(new QLabel(tr("Axis")), 4, 0);
+    layout->addWidget(m_y_min, 4, 1);
+    layout->addWidget(m_y_step, 4, 2);
+    layout->addWidget(m_y_max, 4, 3);
+    layout->addWidget(m_scaleaxis, 5, 0, 1, 3);
+    layout->addWidget(m_buttons, 6, 0, 1, 3);
     setLayout(layout);
     
 }
@@ -89,11 +107,6 @@ void ChartConfigDialog::setConfig(const ChartConfig& chartconfig)
     
     m_x_axis->setText(chartconfig.x_axis);
     m_y_axis->setText(chartconfig.y_axis);
-}
-
-void ChartConfigDialog::setPixmap(const QPixmap* pixmap)
-{   
-    picture->setPixmap(*pixmap);
 }
 
 void ChartConfigDialog::Changed()

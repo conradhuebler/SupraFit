@@ -60,7 +60,7 @@ private:
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer <DataClass > m_titration_data;
     bool m_hasData;
-    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
+    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save, *m_load, *m_importmodel, *m_show_models, *m_show_logging, *m_show_plot;
     OptimizerConfig m_opt_config;
     void ReadSettings();
     void WriteSettings();
@@ -81,6 +81,9 @@ private slots:
     void SettingsDialog();
     void WriteMessages(const QString &message, int priority);
     void MessageBox(const QString &str, int priority);
+    void ToggleModelAction(bool checked);
+    void ToggleChartAction(bool checked);
+    void ToggleLogAction(bool checked);
 protected:
     void resizeEvent(QResizeEvent *event);
 };

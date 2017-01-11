@@ -169,6 +169,7 @@ void ChartView::setUi()
     setLayout(layout);
     
     connect(&m_chartconfigdialog, SIGNAL(ConfigChanged(ChartConfig)), this, SLOT(setChartConfig(ChartConfig)));
+    connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(formatAxis()));
 }
 
 
@@ -235,12 +236,8 @@ void ChartView::PlotSettings()
 {
     if(!connected)
         return;
-    m_chartconfigdialog.setPixmap(new QPixmap(m_chart_private->grab()));
     m_chartconfigdialog.setConfig(getChartConfig());
-    if(m_chartconfigdialog.exec() == QDialog::Accepted)
-    {
-        setChartConfig(m_chartconfigdialog.Config());
-    }
+    m_chartconfigdialog.show();
 }
 
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
@@ -252,16 +249,11 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
     x_axis->setTickCount(chartconfig.x_step);
     x_axis->setMin(chartconfig.x_min);
     x_axis->setMax(chartconfig.x_max);
-    if(chartconfig.x_nice)
-        x_axis->applyNiceNumbers();
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY()); 
     y_axis->setTitleText(chartconfig.y_axis);
     y_axis->setTickCount(chartconfig.y_step);
     y_axis->setMin(chartconfig.y_min);
     y_axis->setMax(chartconfig.y_max);
-    if(chartconfig.y_nice)
-        y_axis->applyNiceNumbers();
-    m_chartconfigdialog.setPixmap(new QPixmap(m_chart_private->grab()));
 }
 
 ChartConfig ChartView::getChartConfig() const
