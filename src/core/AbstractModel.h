@@ -107,6 +107,14 @@ public:
     QJsonObject ExportJSON(bool IncludeLevelName = false) const;
     void ImportJSON(const QJsonObject &topjson);
     void LoadJSON(const QJsonObject &object);
+    
+    inline QVector<int > ActiveSignals() { return m_active_signals; }
+    inline QVector<int > ActiveSignals() const { return m_active_signals; }
+    inline void setActiveSignals(QVector<int > active_signals) 
+    { 
+        m_active_signals = active_signals; 
+        emit ActiveSignalsChanged(m_active_signals);
+    }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -123,6 +131,9 @@ private:
         else
             return QString("No");
     }
+
+    QVector<int > m_active_signals;
+
 protected:
     virtual void MiniShifts() = 0;
     void SetSignal(int i, int j, qreal value);

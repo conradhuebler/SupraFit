@@ -43,51 +43,51 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
 {
     
     qDebug() << DataPoints() << Size();
-//     m_active_signals = 
+    //     m_active_signals = 
     setActiveSignals(QVector<int>(SignalCount(), 1));
     ptr_concentrations = data->Concentration();
-//     for(int i = 0; i < DataPoints(); ++i)
-//     {
-        m_model_signal = new DataTable(SignalCount(),DataPoints());
-        m_model_error = new DataTable(SignalCount(),DataPoints());
-//         m_signals[&m_data[i]] = 0;//FIXME no contign... signals
-//     }
+    //     for(int i = 0; i < DataPoints(); ++i)
+    //     {
+    m_model_signal = new DataTable(SignalCount(),DataPoints());
+    m_model_error = new DataTable(SignalCount(),DataPoints());
+    //         m_signals[&m_data[i]] = 0;//FIXME no contign... signals
+    //     }
     
     m_plot_model = new QStandardItemModel(DataPoints(), SignalCount()+1);
     m_plot_error = new QStandardItemModel(DataPoints(), SignalCount()+1);
     for(int j = 0; j < SignalCount(); ++j)
     {
-            QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
-            model->setModel(m_plot_model);
-            model->setXColumn(0);
-            model->setYColumn(j + 1);
-            m_model_mapper << model;
-            
-            QPointer<QtCharts::QVXYModelMapper> error = new QtCharts::QVXYModelMapper;
-            error->setModel(m_plot_error);
-            error->setXColumn(0);
-            error->setYColumn(j + 1);
-            m_error_mapper << error;     
+        QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
+        model->setModel(m_plot_model);
+        model->setXColumn(0);
+        model->setYColumn(j + 1);
+        m_model_mapper << model;
+        
+        QPointer<QtCharts::QVXYModelMapper> error = new QtCharts::QVXYModelMapper;
+        error->setModel(m_plot_error);
+        error->setXColumn(0);
+        error->setYColumn(j + 1);
+        m_error_mapper << error;     
     }
-
-        m_pure_signals = SignalModel()->firstRow();
-        m_data = data;   
-        connect(m_data, SIGNAL(recalculate()), this, SLOT(CalculateSignal()));
-
+    
+    m_pure_signals = SignalModel()->firstRow();
+    m_data = data;   
+    connect(m_data, SIGNAL(recalculate()), this, SLOT(CalculateSignal()));
+    
 }
 
 AbstractTitrationModel::~AbstractTitrationModel()
 {
     for(int i = 0; i < m_model_mapper.size(); ++i)
     {
-     delete m_model_mapper[i]->series();
-     delete m_error_mapper[i]->series();
+        delete m_model_mapper[i]->series();
+        delete m_error_mapper[i]->series();
     }
     qDeleteAll( m_model_mapper );
     qDeleteAll( m_error_mapper );
-//     qDeleteAll( m_signal_mapper );
-//     qDeleteAll( m_opt_vec );
-//     qDeleteAll( m_lim_para );
+    //     qDeleteAll( m_signal_mapper );
+    //     qDeleteAll( m_opt_vec );
+    //     qDeleteAll( m_lim_para );
 }
 
 void AbstractTitrationModel::adress() const
@@ -107,7 +107,7 @@ QVector<double>   AbstractTitrationModel::getCalculatedSignals(QVector<int > act
         active_signal = ActiveSignals();
     QVector<double> x(DataPoints()*SignalCount(), 0);
     int index = 0;
-        for(int j = 0; j < SignalCount(); ++j)
+    for(int j = 0; j < SignalCount(); ++j)
     {
         for(int i = 0; i < DataPoints(); ++i)
         {
@@ -152,7 +152,7 @@ void AbstractTitrationModel::clearOptParameter()
 qreal AbstractTitrationModel::SumOfErrors(int i) const
 {
     qreal sum = 0;
-
+    
     if(i >= Size() || i >= ActiveSignals().size())
         return sum;
     
@@ -167,7 +167,7 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 
 void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 {
-
+    
     if(m_debug)
         qDebug() << i << j << value;
     if(std::isnan(value) || std::isinf(value))
@@ -180,7 +180,7 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
         m_model_signal->data(j,i) = value;
         m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
     }
-
+    
 }
 
 void AbstractTitrationModel::UpdatePlotModels()
@@ -189,19 +189,19 @@ void AbstractTitrationModel::UpdatePlotModels()
     QStandardItem *item;
     
     for(int i = 0; i < DataPoints(); ++i)
-     {
-         QString x = QString::number(XValue(i));
-         item = new QStandardItem(x);
-         m_plot_model->setItem(i, 0, item);
-         item = new QStandardItem(x);
-         m_plot_error->setItem(i, 0, item);
-            for(int j = 0; j < SignalCount(); ++j)
-            {
-                item = new QStandardItem(QString::number(m_model_signal->data(j,i)));
-                m_plot_model->setItem(i, j+1, item);
-                item = new QStandardItem(QString::number(m_model_error->data(j,i)));
-                m_plot_error->setItem(i, j+1, item);
-            }
+    {
+        QString x = QString::number(XValue(i));
+        item = new QStandardItem(x);
+        m_plot_model->setItem(i, 0, item);
+        item = new QStandardItem(x);
+        m_plot_error->setItem(i, 0, item);
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            item = new QStandardItem(QString::number(m_model_signal->data(j,i)));
+            m_plot_model->setItem(i, j+1, item);
+            item = new QStandardItem(QString::number(m_model_error->data(j,i)));
+            m_plot_error->setItem(i, j+1, item);
+        }
     }
 }
 
@@ -263,7 +263,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
     emit Message(OptPara, 2);
     bool convergence = false;
     bool constants_convergence = false;
-//     bool shift_convergence = false;
+    //     bool shift_convergence = false;
     bool error_convergence = false;
     int iter = 0;
     bool allow_loop = true;
@@ -273,7 +273,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
         iter++;   
         if(iter > m_opt_config.MaxIter - 1)
             allow_loop = false;
-//         QApplication::processEvents();
+        //         QApplication::processEvents();
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
         QVector<qreal > old_constants = constants;
         qreal old_error = 0;
@@ -294,14 +294,14 @@ QVector<qreal> AbstractTitrationModel::Minimize()
         {
             if(constants[z] < 0)
             {
-                 emit Message("*** Something quite seriosly happend to the complexation constant. ***\n", 4);
-                 emit Message("*** At least one fall below zero, will stop optimization now and restore old values. ***\n", 4);
-                 if(isCorrupt())
-                     emit Message("*** Calculated signals seems corrupt (infinity or not even a number (nan)). ***\n", 4);
-                 emit Warning("Something quite seriosly happend to the complexation constant.\nAt least one fall below zero, will stop optimization now and restore old values.", 0);
-                 allow_loop = false;
-                 process_stopped = true;
-                 break;
+                emit Message("*** Something quite seriosly happend to the complexation constant. ***\n", 4);
+                emit Message("*** At least one fall below zero, will stop optimization now and restore old values. ***\n", 4);
+                if(isCorrupt())
+                    emit Message("*** Calculated signals seems corrupt (infinity or not even a number (nan)). ***\n", 4);
+                emit Warning("Something quite seriosly happend to the complexation constant.\nAt least one fall below zero, will stop optimization now and restore old values.", 0);
+                allow_loop = false;
+                process_stopped = true;
+                break;
             }
             constant_diff += qAbs(old_constants[z] - constants[z]);
             constant_string += QString::number(constants[z]) + " ** ";
@@ -331,40 +331,40 @@ QVector<qreal> AbstractTitrationModel::Minimize()
         
         emit Message("*** New resulting error " + QString::number(error) + "\n", 5);
         convergence = error_convergence & constants_convergence;
-
+        
         emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
     } 
-     
+    
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
     if(!convergence && !process_stopped)
         emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
     if(process_stopped)
     {
-         setConstants(old_para_constant);
-         constants = old_para_constant;
+        setConstants(old_para_constant);
+        constants = old_para_constant;
     }else{
-    emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
-    emit Message("*** Convergence reached  " + bool2YesNo(convergence) + "  ****\n", 3);
-    setConstants(constants);
-    
-    QString message = "Using Signals";
-    qreal error = 0;
-    for(int i = 0; i < ActiveSignals().size(); ++i)
-        if(ActiveSignals()[i])
-        {
-            message += " " + QString::number(i + 1) + " ";
-            error += SumOfErrors(i);
-        }
-    message += "got results: ";
+        emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
+        emit Message("*** Convergence reached  " + bool2YesNo(convergence) + "  ****\n", 3);
+        setConstants(constants);
+        
+        QString message = "Using Signals";
+        qreal error = 0;
+        for(int i = 0; i < ActiveSignals().size(); ++i)
+            if(ActiveSignals()[i])
+            {
+                message += " " + QString::number(i + 1) + " ";
+                error += SumOfErrors(i);
+            }
+            message += "got results: ";
         for(int i = 0; i < Constants().size(); ++i)
             message += "Constant "+ QString(i)+ " " +QString::number(Constants()[i]) +" ";
-    message += "Sum of Error is " + QString::number(error);
-    message += "\n";
-    Message(message, 2);
-    
-    m_repaint = true;
-    CalculateSignal();
+        message += "Sum of Error is " + QString::number(error);
+        message += "\n";
+        Message(message, 2);
+        
+        m_repaint = true;
+        CalculateSignal();
     }
     
     QApplication::restoreOverrideCursor();
@@ -384,20 +384,25 @@ QJsonObject AbstractTitrationModel::ExportJSON(bool IncludeLevelName) const
     
     QJsonObject pureShiftObject;
     for(int i = 0; i < m_pure_signals.size(); ++i)
-        pureShiftObject[QString::number(i)] = (QString::number(m_pure_signals[i]));
-
-    json["pureShift"] = pureShiftObject;   
+        if(ActiveSignals()[i])
+            pureShiftObject[QString::number(i)] = (QString::number(m_pure_signals[i]));
+        
+        json["pureShift"] = pureShiftObject;   
     
     
     for(int i = 0; i < Constants().size(); ++i)
     {
+        
         QJsonObject object;
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
-            qreal value = Pair(i, j).second;
-            object[QString::number(j)] =  QString::number(value);
+            if(ActiveSignals()[j])
+            {
+                qreal value = Pair(i, j).second;
+                object[QString::number(j)] =  QString::number(value);
+            }
+            json["shift_" + QString::number(i)] = object;
         }
-        json["shift_" + QString::number(i)] = object;
     }
     
     toplevel[m_name] = json;
@@ -406,7 +411,7 @@ QJsonObject AbstractTitrationModel::ExportJSON(bool IncludeLevelName) const
     else
         return json;
 }
-    
+
 void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
 {
     QJsonObject json;
@@ -419,21 +424,26 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
         qWarning() << "file doesn't contain any " + m_name;
         return;
     }
+    QVector<int > active_signals = QVector<int>(SignalCount(), 0);
     json = topjson[m_name].toObject();
     qDebug() << QJsonDocument(json).toJson();
     QVector<qreal> constants; 
     QJsonObject constantsObject = json["constants"].toObject();
     for (int i = 0; i < Constants().size(); ++i) {
-       
+        
         constants << constantsObject[QString::number(i)].toString().toDouble();
     }
     setConstants(constants);
     
     QVector<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
-    for (int i = 0; i < m_pure_signals.size(); ++i) {
-        
-        pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+    for (int i = 0; i < m_pure_signals.size(); ++i) 
+    {
+        if(!pureShiftObject[QString::number(i)].isUndefined())
+        {
+            pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+            active_signals[i] = 1;
+        }
     }
     setPureSignals(pureShift);
     
@@ -444,45 +454,57 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
         QJsonObject object = json["shift_" + QString::number(i)].toObject();
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
-            shifts << object[QString::number(j)].toString().toDouble();
+            if(!object[QString::number(i)].isNull())
+            {
+                shifts << object[QString::number(j)].toString().toDouble();
+            }
         }
         setComplexSignals(shifts, i);
     }
-    qDebug() << Constants();
-    
+    setActiveSignals(active_signals);
 }
 
 void AbstractTitrationModel::LoadJSON(const QJsonObject &json)
 {
+    QVector<int > active_signals = QVector<int>(SignalCount(), 0);
     QVector<qreal> constants; 
     QJsonObject constantsObject = json["constants"].toObject();
     for (int i = 0; i < Constants().size(); ++i) {
-       
+        
         constants << constantsObject[QString::number(i)].toString().toDouble();
     }
     setConstants(constants);
     
     QVector<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
-    for (int i = 0; i < m_pure_signals.size(); ++i) {
-        
-        pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+    
+    for (int i = 0; i < m_pure_signals.size(); ++i) 
+    {
+        if(!pureShiftObject[QString::number(i)].isNull())
+        {
+            pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+            active_signals[i] = 1;
+        }
     }
     setPureSignals(pureShift);
     
     
     for(int i = 0; i < Constants().size(); ++i)
     {
+        
         QVector<qreal> shifts;
         QJsonObject object = json["shift_" + QString::number(i)].toObject();
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
-            shifts << object[QString::number(j)].toString().toDouble();
+            if(!object[QString::number(i)].isUndefined())
+            {
+                shifts << object[QString::number(j)].toString().toDouble();
+            }
         }
         setComplexSignals(shifts, i);
+        
     }
-    qDebug() << Constants();
-    
+    setActiveSignals(active_signals);
 }
 
 #include "AbstractModel.moc"

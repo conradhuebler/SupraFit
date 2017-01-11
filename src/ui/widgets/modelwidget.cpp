@@ -77,19 +77,20 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     
     
     
-    
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("Include in Model Generation"));
-    m_include->setChecked(true);
+    m_include->setChecked(m_model->ActiveSignals()[m_no]);
     connect(m_include, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
     layout->addWidget(m_include, 1, 0);
     m_error_series = qobject_cast<LineSeries *>(m_model->ModelMapper(m_no)->series());
     m_signal_series = qobject_cast<LineSeries *>(m_model->ErrorMapper(m_no)->series());
+    m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
+    m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_show = new QCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
-    m_show->setChecked(true);
+    m_show->setChecked(m_model->ActiveSignals()[m_no]);
     layout->addWidget(m_show,1,1);
     
     m_plot = new QPushButton;

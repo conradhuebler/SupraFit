@@ -96,7 +96,6 @@ public:
     
     
     DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
-    QVector<int > m_active_signals;
 };
 
 
@@ -146,14 +145,8 @@ class DataClass : public QObject
     inline bool* Concentration() const { return d->m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
     inline QStandardItemModel* m() { return d->m_plot_signal; }
-    inline QVector<int > ActiveSignals() { return d->m_active_signals; }
-    inline QVector<int > ActiveSignals() const { return d->m_active_signals; }
     QVector<qreal >  getSignals(QVector<int > dealing_signals = QVector<int >(1,0));
-    inline    void setActiveSignals(QVector<int > active_signals) 
-    { 
-        d->m_active_signals = active_signals; 
-        emit ActiveSignalsChanged(d->m_active_signals);
-    }
+
 
     /*
     void setData(qreal point, int line, int row)

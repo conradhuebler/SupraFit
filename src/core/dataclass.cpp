@@ -19,6 +19,8 @@
 
 #include "src/core/toolset.h"
 
+#include <QApplication>
+
 #include <QtCore/QCollator>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
@@ -328,10 +330,10 @@ QColor DataClass::ColorCode(int i) const
 
 QVector<double>   DataClass::getSignals(QVector<int > active_signal)
 {
-    if(active_signal.size() < SignalCount() && d->m_active_signals.size() < SignalCount())
+    /*if(active_signal.size() < SignalCount() && d->m_active_signals.size() < SignalCount())
         active_signal = QVector<int>(SignalCount(), 1);
     else
-        active_signal = ActiveSignals();
+        active_signal = ActiveSignals();*/
     QVector<double> x(DataPoints()*SignalCount(), 0);
     int index = 0;
         for(int j = 0; j < SignalCount(); ++j)
@@ -447,7 +449,7 @@ const QJsonObject DataClass::ExportJSON() const
 
     json["concentrations"] = concentrationObject;
     json["signals"] = signalObject;
-        
+    json["datatype"] = QString("discrete");
     return json;
 }
 

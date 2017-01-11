@@ -295,6 +295,7 @@ void ModelDataHolder::SaveProject(const QString &str)
 {
         QJsonObject toplevel;
         toplevel["data"] = m_data->ExportJSON();
+        
         for(int i = 0; i < m_models.size(); ++i)
         {    
             if(m_models[i])
@@ -356,6 +357,7 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
     }
     t->LoadJSON(object);
     t->setOptimizerConfig(m_config);
+    qDebug() << t->ActiveSignals();
     connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
     connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
     m_charts->addModel(t);

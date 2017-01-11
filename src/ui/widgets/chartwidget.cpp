@@ -215,7 +215,7 @@ void ChartWidget::updateUI()
 void ChartWidget::setActiveSignals( QVector<int> active_signals)
 {
     qDebug() << active_signals;
-    if(active_signals.size() < m_signalchart->series().size()  && active_signals.size() <= m_errorchart->series().size())
+/*    if(active_signals.size() < m_signalchart->series().size()  && active_signals.size() <= m_errorchart->series().size())
     {
         for(int i = 0; i < active_signals.size(); ++i)
         {
@@ -224,7 +224,7 @@ void ChartWidget::setActiveSignals( QVector<int> active_signals)
             m_errorchart->series()[i]->setVisible(active_signals[i]);
         }
         Repaint();
-    }
+    }*/
 }
 
 QPair<qreal, qreal > ChartWidget::Series2MinMax(const QtCharts::QXYSeries *series)

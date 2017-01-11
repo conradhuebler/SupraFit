@@ -229,7 +229,7 @@ void MainWindow::ImportAction(const QString& file)
 
 void MainWindow::LoadProjectAction()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Load File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         QJsonObject toplevel;
