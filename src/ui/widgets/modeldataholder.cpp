@@ -150,6 +150,8 @@ void ModelDataHolder::AddModel(int model)
     ModelWidget *modelwidget = new ModelWidget(t);
     connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
     connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
+    connect(modelwidget, SIGNAL(AddModel(QJsonObject)), this, SLOT(LoadProject(QJsonObject)));
+    
     QScrollArea *scroll = new QScrollArea;
     scroll->setBackgroundRole(QPalette::Midlight);
       scroll->setWidget(modelwidget);

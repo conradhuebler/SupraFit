@@ -73,6 +73,7 @@ find_package(Qt5PrintSupport REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${EIGEN3_INCLUDE_DIR})
 
 set(nmr2fit_SRCS
+                src/ui/dialogs/modelhistorydialog.cpp
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp
                 src/ui/dialogs/chartconfig.cpp

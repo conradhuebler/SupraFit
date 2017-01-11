@@ -50,6 +50,8 @@ public:
     void setSettings(const OptimizerConfig &config);
     void Export(const QString &str);
     void SaveProject(const QString &str);
+    
+public slots:
     void LoadProject(const QJsonObject &object);
     
 private:
