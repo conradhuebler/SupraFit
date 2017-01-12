@@ -106,7 +106,6 @@ public:
     void adress() const;
     QJsonObject ExportJSON() const;
     void ImportJSON(const QJsonObject &topjson);
-//     void LoadJSON(const QJsonObject &object);
     
     inline QVector<int > ActiveSignals() { return m_active_signals; }
     inline QVector<int > ActiveSignals() const { return m_active_signals; }

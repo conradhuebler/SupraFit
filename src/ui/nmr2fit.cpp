@@ -58,6 +58,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Data and Models"), this);
+    m_modeldock->setObjectName(tr("data_and_models"));
     m_modeldock->setWidget(m_model_dataholder);
     m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
@@ -69,11 +70,13 @@ MainWindow::MainWindow() :m_hasData(false)
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
     m_chartdock = new QDockWidget(tr("Charts"), this);
+    m_chartdock->setObjectName(tr("charts"));
     m_chartdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     m_chartdock->setWidget(m_charts);
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
     
     m_logdock = new QDockWidget(tr("Logging output"), this);
+    m_logdock->setObjectName(tr("logging"));
     m_logWidget = new QPlainTextEdit(this);
     m_logdock->setWidget(m_logWidget);
     m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
@@ -83,6 +86,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     m_historywidget = new ModelHistory(&m_history);
     m_history_dock = new QDockWidget("Stored Models");
+    m_history_dock->setObjectName(tr("history"));
     m_history_dock->setWidget(m_historywidget);
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
@@ -119,6 +123,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     
     m_main_toolbar = new QToolBar;
+    m_main_toolbar->setObjectName(tr("main_toolbar"));
     m_main_toolbar->addAction(m_new);
     m_main_toolbar->addAction(m_import);
     m_main_toolbar->addAction(m_load);
@@ -127,6 +132,7 @@ MainWindow::MainWindow() :m_hasData(false)
     addToolBar(m_main_toolbar);
     
     m_model_toolbar = new QToolBar;
+    m_model_toolbar->setObjectName(tr("model_toolbar"));
     m_model_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     m_model_toolbar->addAction(m_edit);
     m_model_toolbar->addAction(m_importmodel);
@@ -134,6 +140,7 @@ MainWindow::MainWindow() :m_hasData(false)
     addToolBar(m_model_toolbar);
     
     m_system_toolbar = new QToolBar;
+    m_system_toolbar->setObjectName(tr("system_toolbar"));
     m_system_toolbar->addAction(m_modeldock->toggleViewAction());
     m_system_toolbar->addAction(m_chartdock->toggleViewAction());
     m_system_toolbar->addAction(m_logdock->toggleViewAction());
@@ -155,7 +162,13 @@ MainWindow::~MainWindow()
     QSettings _settings;
     
     _settings.beginGroup("window");
-    _settings.setValue("geometry", size());
+//     _settings.setValue("geometry", size());
+        _settings.setValue("geometry", saveGeometry());
+    _settings.setValue("state", saveState());
+//     _settings.setValue("model_dock", m_modeldock->geometry());
+//     _settings.setValue("log_dock", m_logdock->geometry());
+//     _settings.setValue("chart_dock", m_chartdock->geometry());
+//     _settings.setValue("history_dock", m_history_dock->geometry());
     _settings.endGroup();
     
 }
@@ -373,7 +386,13 @@ void MainWindow::ReadSettings()
     _settings.endGroup();
     
     _settings.beginGroup("window");
-    resize(_settings.value("geometry", sizeHint()).toSize());
+        restoreGeometry(_settings.value("geometry").toByteArray());
+    restoreState(_settings.value("state").toByteArray());
+//     resize(_settings.value("geometry", sizeHint()).toSize());
+//     m_logdock->setGeometry(_settings.value("log_dock").toRect());
+//     m_history_dock->setGeometry(_settings.value("history_dock").toRect());
+//     m_chartdock->setGeometry(_settings.value("chart_dock").toRect());
+//     m_modeldock->setGeometry(_settings.value("model_dock").toRect());
     _settings.endGroup();
     
 }

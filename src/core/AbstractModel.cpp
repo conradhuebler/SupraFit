@@ -457,47 +457,4 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     setActiveSignals(active_signals);
 }
 
-// void AbstractTitrationModel::LoadJSON(const QJsonObject &json)
-// {
-//     QVector<int > active_signals = QVector<int>(SignalCount(), 0);
-//     QVector<qreal> constants; 
-//     QJsonObject constantsObject = json["constants"].toObject();
-//     for (int i = 0; i < Constants().size(); ++i) {
-//         
-//         constants << constantsObject[QString::number(i)].toString().toDouble();
-//     }
-//     setConstants(constants);
-//     
-//     QVector<qreal> pureShift;
-//     QJsonObject pureShiftObject = json["pureShift"].toObject();
-//     
-//     for (int i = 0; i < m_pure_signals.size(); ++i) 
-//     {
-//         if(!pureShiftObject[QString::number(i)].isNull())
-//         {
-//             pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
-//             active_signals[i] = 1;
-//         }
-//     }
-//     setPureSignals(pureShift);
-//     
-//     
-//     for(int i = 0; i < Constants().size(); ++i)
-//     {
-//         
-//         QVector<qreal> shifts;
-//         QJsonObject object = json["shift_" + QString::number(i)].toObject();
-//         for(int j = 0; j < m_pure_signals.size(); ++j)
-//         {
-//             if(!object[QString::number(i)].isUndefined())
-//             {
-//                 shifts << object[QString::number(j)].toString().toDouble();
-//             }
-//         }
-//         setComplexSignals(shifts, i);
-//         
-//     }
-//     setActiveSignals(active_signals);
-// }
-
 #include "AbstractModel.moc"
