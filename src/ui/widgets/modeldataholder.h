@@ -68,6 +68,7 @@ private:
 
     bool CheckCrashFile();
     void Json2Model(const QJsonObject &object, const QString &str);
+    void ActiveModel(QPointer<AbstractTitrationModel > t);
 private slots:
     void AddModel11();
     void AddModel21();

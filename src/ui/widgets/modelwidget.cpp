@@ -108,7 +108,7 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
     connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
-    
+   
 }
 
 ModelElement::~ModelElement()
@@ -485,7 +485,7 @@ void ModelWidget::ExportConstants()
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-        QJsonObject gameObject = m_model->ExportJSON(true);
+        QJsonObject gameObject = m_model->ExportJSON();
         JsonHandler::WriteJsonFile(gameObject, str);
     }
     
@@ -519,7 +519,7 @@ void ModelWidget::LoadJson(const QJsonObject& object)
 
 void ModelWidget::addToHistory()
 {
-    QJsonObject model = m_model->ExportJSON(true);
+    QJsonObject model = m_model->ExportJSON();
     ModelHistoryElement element;
     element.model = model;
     element.active_signals = m_model->ActiveSignals();

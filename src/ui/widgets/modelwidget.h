@@ -89,7 +89,7 @@ public:
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
     QPointer< AbstractTitrationModel > Model() { return m_model; }
     void setMaxIter(int maxiter);
-
+    void addToHistory();
     
 private:
     QPointer< AbstractTitrationModel > m_model;
@@ -112,7 +112,7 @@ private:
     void EmptyUI();
     
     void CollectParameters();
-    void addToHistory();
+    
 private slots:
     void GlobalMinimize();
     void LocalMinimize();
