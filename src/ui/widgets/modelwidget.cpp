@@ -511,6 +511,7 @@ void ModelWidget::ImportConstants()
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportJSON(object);
+    m_model->CalculateSignal();
             QVector<qreal > constants = m_model->Constants();
             for(int j = 0; j < constants.size(); ++j)
                 m_constants[j]->setValue(constants[j]);

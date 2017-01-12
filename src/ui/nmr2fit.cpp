@@ -91,7 +91,8 @@ MainWindow::MainWindow() :m_hasData(false)
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
     connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)));
-
+    connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
+     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
 
     m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
@@ -242,7 +243,7 @@ void MainWindow::LoadProjectAction()
             if(m_titration_data->DataPoints() != 0)
             {
                 LoadData(str);
-                m_model_dataholder->LoadProject(toplevel);
+                m_model_dataholder->AddToWorkspace(toplevel);
             }
             else
             {
@@ -268,19 +269,19 @@ void MainWindow::SaveProjectAction()
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-        m_model_dataholder->SaveProject(str);
+        m_model_dataholder->SaveWorkspace(str);
     }
 }
     
 void MainWindow::ImportModelAction()
 {
-  QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+  QString str = QFileDialog::getOpenFileName(this, tr("Open File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         QJsonObject toplevel;
         if(JsonHandler::ReadJsonFile(toplevel, str))
         {
-            m_model_dataholder->LoadProject(toplevel);
+            m_model_dataholder->AddToWorkspace(toplevel);
         }
     }  
 }
@@ -291,7 +292,7 @@ void MainWindow::ExportModelAction()
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-       m_model_dataholder->Export(str);   
+       m_model_dataholder->SaveCurrentModels(str);   
     }   
 }
 

@@ -24,26 +24,37 @@
 #include <QtWidgets/QScrollArea>
 #include <QtCore/QMap>
 #include <QDebug>
+
+#include <iostream>
+
 #include "modelhistorywidget.h"
 
-ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidget *parent) : m_json(&element->model), QGroupBox(parent)
+ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidget *parent) : QGroupBox(parent), m_json(&element->model)
 {
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(new QLabel("Error"), 0, 0);
-    QLineEdit *error = new QLineEdit;
-    error->setReadOnly(true);
-    error->setText(QString::number(element->error));
-    layout->addWidget(error, 0, 1);
-    qDebug() << "reached";
+    layout->addWidget(new QLabel("<h3>" + m_json->value("model").toString() + "</h3>"), 0, 0, 1, 2);
+    int active = 0;
+    for(int i = 0; i < element->active_signals.size(); ++i)
+        active += element->active_signals[i];
+    layout->addWidget(new QLabel(QString::number(active) + " used signals"), 2, 0, 1, 2);
+    layout->addWidget(new QLabel("Error"), 3, 0);
+    layout->addWidget(new QLabel(QString::number(element->error)), 3, 1);
+
     m_add = new QPushButton(tr("Add Model"));
+        m_add->setFlat(true);
     m_load = new QPushButton(tr("Load Model"));
+        m_load->setFlat(true);
+    m_remove = new QPushButton(tr("Remove"));
+        m_remove->setFlat(true);
+        
     connect(m_add, SIGNAL(clicked()), this, SLOT(AddModel()));
     connect(m_load, SIGNAL(clicked()), this, SLOT(LoadModel()));
-    layout->addWidget(m_add, 1, 0);
-    layout->addWidget(m_load, 1, 1);
-    
+    connect(m_remove, SIGNAL(clicked()), this, SLOT(remove()));
+    layout->addWidget(m_add, 4, 0);
+    layout->addWidget(m_load, 4, 1);
+    layout->addWidget(m_remove, 5, 0, 1, 2);
     setLayout(layout);
-//     setFixedSize(300,100);
+    setFixedSize(200,150);
 }
 
 ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent) : m_history(history), QScrollArea(parent)
@@ -52,7 +63,7 @@ ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *par
     m_vlayout = new QVBoxLayout;
     m_mainwidget->setLayout(m_vlayout);
     QHBoxLayout *layout = new QHBoxLayout;
-
+    layout->setAlignment(Qt::AlignTop);
     setWidget(m_mainwidget);
     setWidgetResizable(true);
     setAlignment(Qt::AlignTop);
@@ -69,9 +80,20 @@ ModelHistory::~ModelHistory()
 void ModelHistory::InsertElement(const ModelHistoryElement *elm)
 {
     ModelHistoryWidget *element = new ModelHistoryWidget(elm);
+    std::cout << element << std::endl;
         m_vlayout->addWidget(element);
+        connect(element, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddJson(QJsonObject)));
+        connect(element, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadJson(QJsonObject)));
+        connect(element, SIGNAL(Remove(const QJsonObject *, ModelHistoryWidget *)), this, SLOT(Remove(const QJsonObject *, ModelHistoryWidget *)));
 }
 
-
+void ModelHistory::Remove(const QJsonObject *json, ModelHistoryWidget *element)
+{
+    std::cout << element << std::endl;
+    QLayoutItem * item= m_vlayout->itemAt(m_vlayout->indexOf(element));
+    m_vlayout->removeItem(item);
+    delete element;
+//     m_history->
+}
 
 #include "modelhistorywidget.moc"

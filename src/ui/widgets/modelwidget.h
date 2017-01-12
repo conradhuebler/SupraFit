@@ -91,6 +91,8 @@ public:
     void setMaxIter(int maxiter);
     void addToHistory();
     
+public slots:
+    void LoadJson(const QJsonObject &object);
 private:
     QPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
@@ -123,7 +125,7 @@ private slots:
     void ImportConstants();
     void ExportConstants();
 //     void ShowHistory();
-    void LoadJson(const QJsonObject &object);
+    
 public slots:
     void recalulate();
     void OptimizerSettings();

@@ -41,7 +41,7 @@
 
 #include <iostream>
 
-ModelDataHolder::ModelDataHolder()
+ModelDataHolder::ModelDataHolder() : m_history(true)
 {
     QGridLayout *layout = new QGridLayout;
     
@@ -230,7 +230,6 @@ void ModelDataHolder::ActiveModel(QPointer<AbstractTitrationModel> t)
     
     connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
     connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
-    connect(modelwidget, SIGNAL(AddModel(QJsonObject)), this, SLOT(LoadProject(QJsonObject)));
     connect(modelwidget, SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)));
     
     QScrollArea *scroll = new QScrollArea;
@@ -240,7 +239,15 @@ void ModelDataHolder::ActiveModel(QPointer<AbstractTitrationModel> t)
       scroll->setAlignment(Qt::AlignHCenter);
     m_modelsWidget->addTab(scroll, t->Name());
     m_models << t;
-    modelwidget->addToHistory();
+    
+    /*
+     * Some models are loaded from history, this should no be added again
+     * after not added them, we allow the next models to be added to history again
+     */
+    if(m_history)
+        modelwidget->addToHistory();
+    else
+        m_history = true;
 }
 
 void ModelDataHolder::SimulateModel11()
@@ -275,11 +282,6 @@ void ModelDataHolder::RemoveTab(int i)
     msgBox.exec();
     }
 }
-
-// void ModelDataHolder::addLogEntry(const QString& str)
-// {
-//     m_logWidget->appendPlainText(str);
-// }
 
 void ModelDataHolder::setSettings(const OptimizerConfig &config)
 {
@@ -324,24 +326,7 @@ void ModelDataHolder::RemoveCrashFile()
     }
 }
 
-void ModelDataHolder::SaveProject(const QString &str)
-{
-        QJsonObject toplevel;
-        toplevel["data"] = m_data->ExportJSON();
-        
-        for(int i = 0; i < m_models.size(); ++i)
-        {    
-            if(m_models[i])
-            {
-                QJsonObject obj = m_models[i]->ExportJSON();
-                toplevel["model_" + QString::number(i)] = obj;       
-            }
-        }   
-        JsonHandler::WriteJsonFile(toplevel  , str);
-}
-
-
-void ModelDataHolder::Export(const QString &str)
+void ModelDataHolder::SaveCurrentModels(const QString &file)
 {
     QJsonObject toplevel;
     for(int i = 0; i < m_models.size(); ++i)
@@ -354,16 +339,67 @@ void ModelDataHolder::Export(const QString &str)
             
         }
     }   
-    JsonHandler::WriteJsonFile(toplevel, str);   
+    JsonHandler::WriteJsonFile(toplevel, file);   
 }
 
-void ModelDataHolder::LoadProject(const QJsonObject &object)
+void ModelDataHolder::SaveWorkspace(const QString &file)
+{
+        QJsonObject toplevel;
+        toplevel["data"] = m_data->ExportJSON();
+        
+        for(int i = 0; i < m_models.size(); ++i)
+        {    
+            if(m_models[i])
+            {
+                QJsonObject obj = m_models[i]->ExportJSON();
+                toplevel["model_" + QString::number(i)] = obj;       
+            }
+        }   
+        JsonHandler::WriteJsonFile(toplevel, file);
+}
+
+void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
 {
     QStringList keys = object.keys();
+    
+    /*
+     * If the json contains only one model, then we have probely only "data" and "model" as keys
+     * and we can load them directly
+     * else we iter through all keys which may be model_x keys containing "data" and "models"
+     */
+    if(keys.contains("data") && keys.contains("model"))
+    {
+        // we don't allow this model to be added to addToHistory
+        m_history = false;
+        Json2Model(object, object["model"].toString());
+    }
+    else
+    {
     foreach(const QString &str, keys)
     {
         QJsonObject model = object[str].toObject();
         Json2Model(model, model["model"].toString());
+    }
+    }
+}
+
+void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
+{
+    QStringList keys = object.keys();
+    if(keys.contains("data") && keys.contains("model"))
+    {
+        // we don't allow this model to be added to addToHistory
+        if(m_modelsWidget->currentIndex() == 0)
+        {
+            if(m_modelsWidget->count() < 2)
+                return;
+            m_modelsWidget->setCurrentIndex(1);
+        }
+        
+            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->currentWidget());
+            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            model->LoadJson(object);
+        
     }
 }
 
