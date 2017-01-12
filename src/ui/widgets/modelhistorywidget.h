@@ -17,16 +17,18 @@
  * 
  */
 
-#ifndef MODELHISTORYDIALOG_H
-#define MODELHISTORYDIALOG_H
+#ifndef MODELHISTORYWIDGET_H
+#define MODELHISTORYWIDGET_H
 
-#include <QtWidgets/QDialog>
+#include <QtWidgets/QWidget>
 #include <QtWidgets/QGroupBox>
 
+#include <QtWidgets/QScrollArea>
 #include <QtCore/QMap>
 #include <QtCore/QJsonObject>
 
 class QVBoxLayout;
+class QPushButton;
 
 struct ModelHistoryElement
 {
@@ -41,7 +43,7 @@ class ModelHistoryWidget : public QGroupBox
   Q_OBJECT
 public:
     ModelHistoryWidget(const ModelHistoryElement *element, QWidget *parent = 0);
-    ~ModelHistoryWidget();
+    ~ModelHistoryWidget(){ };
     
 private:
     const QJsonObject *m_json;
@@ -55,14 +57,14 @@ signals:
     void AddJson(const QJsonObject &json);
 };
 
-class ModelHistoryDialog : public QDialog
+
+class ModelHistory : public QScrollArea
 {
     Q_OBJECT
 public:
-    ModelHistoryDialog(QMap<int, ModelHistoryElement> *history, QWidget *parent = 0);
-    ~ModelHistoryDialog();
-    
-    virtual void show();
+    ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent = 0);
+    ~ModelHistory();
+    void InsertElement(const ModelHistoryElement *elm);
 private:
     QMap<int, ModelHistoryElement> *m_history;
     void MakeList();
@@ -71,6 +73,7 @@ private:
 signals:
     void AddModel(const QJsonObject &json);
     void LoadModel(const QJsonObject &json);
+private:
 };
 
-#endif // MODELHISTORYDIALOG_H
+#endif // MODELHISTORYWIDGET_H

@@ -78,11 +78,18 @@ MainWindow::MainWindow() :m_hasData(false)
     m_logdock->setWidget(m_logWidget);
     m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
-    setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
     
     m_stdout.open(stdout, QIODevice::WriteOnly);
     
-    
+    m_historywidget = new ModelHistory(&m_history);
+    m_history_dock = new QDockWidget("Stored Models");
+    m_history_dock->setWidget(m_historywidget);
+    m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
+    addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
+    connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)));
+
+    setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
+
     m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
     connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTableAction()));
     
@@ -107,24 +114,6 @@ MainWindow::MainWindow() :m_hasData(false)
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()) );
         
-    m_show_models = new QAction(QIcon::fromTheme("applications-system"), tr("Show Models"));
-    m_show_models->setCheckable(true);
-    m_show_models->setChecked(true);
-    connect(m_show_models, SIGNAL(triggered(bool)), m_modeldock, SLOT(setVisible(bool)));
-//     connect(m_modeldock, SIGNAL(visibilityChanged(bool)), this, SLOT(ToggleModelAction(bool)));
-    
-    m_show_logging = new QAction(QIcon::fromTheme("applications-system"), tr("Show Console"));
-    m_show_logging->setCheckable(true);
-    m_show_logging->setChecked(true);
-    connect(m_show_logging, SIGNAL(triggered(bool)), m_logdock, SLOT(setVisible(bool)));
-//     connect(m_logdock, SIGNAL(visibilityChanged(bool)), this, SLOT(ToggleLogAction(bool)));
-    
-    m_show_plot = new QAction(QIcon::fromTheme("applications-system"), tr("Show Charts"));
-    m_show_plot->setCheckable(true);
-    m_show_plot->setChecked(true);
-    connect(m_show_plot, SIGNAL(triggered(bool)), m_chartdock, SLOT(setVisible(bool)));
-//     connect(m_chartdock, SIGNAL(visibilityChanged(bool)), this, SLOT(ToggleChartAction(bool)));
-    
     m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
     connect(m_close, SIGNAL(triggered()), SLOT(close()) );
     
@@ -145,9 +134,10 @@ MainWindow::MainWindow() :m_hasData(false)
     addToolBar(m_model_toolbar);
     
     m_system_toolbar = new QToolBar;
-    m_system_toolbar->addAction(m_show_models);
-    m_system_toolbar->addAction(m_show_plot);
-    m_system_toolbar->addAction(m_show_logging);
+    m_system_toolbar->addAction(m_modeldock->toggleViewAction());
+    m_system_toolbar->addAction(m_chartdock->toggleViewAction());
+    m_system_toolbar->addAction(m_logdock->toggleViewAction());
+    m_system_toolbar->addAction(m_history_dock->toggleViewAction());
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
@@ -397,20 +387,12 @@ void MainWindow::WriteSettings()
     _settings.endGroup();
 }
 
-void MainWindow::ToggleChartAction(bool checked)
-{
-    m_show_plot->setCheckable(checked);
-}
 
-void MainWindow::ToggleLogAction(bool checked)
+void MainWindow::InsertHistoryElement(const ModelHistoryElement &element)
 {
-    m_show_logging->setCheckable(checked);
+    int nr = m_history.size();
+    m_history[nr] = element;
+    m_historywidget->InsertElement(&m_history[nr]);
 }
-
-void MainWindow::ToggleModelAction(bool checked)
-{
-    m_show_models->setCheckable(checked);
-}
-
 
 #include "nmr2fit.moc"

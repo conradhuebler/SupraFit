@@ -17,18 +17,14 @@
  *
  */
 
-#include <QtWidgets/QGroupBox>
-#include <QtWidgets/QPushButton>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QScrollArea>
-#include <QtCore/QJsonObject>
 #include <QtCore/QMap>
-
 #include <QDebug>
-
-#include "modelhistorydialog.h"
+#include "modelhistorywidget.h"
 
 ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidget *parent) : m_json(&element->model), QGroupBox(parent)
 {
@@ -38,7 +34,7 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     error->setReadOnly(true);
     error->setText(QString::number(element->error));
     layout->addWidget(error, 0, 1);
-    
+    qDebug() << "reached";
     m_add = new QPushButton(tr("Add Model"));
     m_load = new QPushButton(tr("Load Model"));
     connect(m_add, SIGNAL(clicked()), this, SLOT(AddModel()));
@@ -47,51 +43,35 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     layout->addWidget(m_load, 1, 1);
     
     setLayout(layout);
-    setFixedSize(300,100);
+//     setFixedSize(300,100);
 }
 
-ModelHistoryWidget::~ModelHistoryWidget()
+ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent) : m_history(history), QScrollArea(parent)
 {
-}
-
-
-ModelHistoryDialog::ModelHistoryDialog(QMap<int, ModelHistoryElement> *history, QWidget *parent) : m_history(history), QDialog(parent)
-{
-    setModal(false);
     m_mainwidget = new QWidget;
     m_vlayout = new QVBoxLayout;
     m_mainwidget->setLayout(m_vlayout);
-    QScrollArea *scroll = new QScrollArea;
     QHBoxLayout *layout = new QHBoxLayout;
 
-    scroll->setWidget(m_mainwidget);
-    scroll->setWidgetResizable(true);
-    scroll->setAlignment(Qt::AlignTop);
+    setWidget(m_mainwidget);
+    setWidgetResizable(true);
+    setAlignment(Qt::AlignTop);
+    setBackgroundRole(QPalette::Midlight);
     layout->addWidget(m_mainwidget);
     setLayout(layout);
     
 }
 
-ModelHistoryDialog::~ModelHistoryDialog()
+ModelHistory::~ModelHistory()
 {
 }
 
-void ModelHistoryDialog::show()
+void ModelHistory::InsertElement(const ModelHistoryElement *elm)
 {
-
-    QMapIterator<int, ModelHistoryElement> i(*m_history);
-    while (i.hasNext()) 
-    {
-        i.next();
-        ModelHistoryWidget *wid = new ModelHistoryWidget(&i.value());
-        m_vlayout->addWidget(wid);
-        connect(wid, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadModel(QJsonObject)));
-        connect(wid, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddModel(QJsonObject)));
-    }
-//     m_mainwidget->show();
-    QDialog::show();
+    ModelHistoryWidget *element = new ModelHistoryWidget(elm);
+        m_vlayout->addWidget(element);
 }
 
 
 
-#include "modelhistorydialog.moc"
+#include "modelhistorywidget.moc"

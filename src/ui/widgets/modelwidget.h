@@ -29,7 +29,7 @@
 
 #include <QtCharts/QLineSeries>
 
-#include "src/ui/dialogs/modelhistorydialog.h"
+//#include "src/ui/dialogs/modelhistorydialog.h"
 
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
@@ -99,13 +99,13 @@ private:
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
-    QMap<int, ModelHistoryElement> m_history;
+   
     QSpinBox *m_maxiter;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
     QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_showhistory; 
-    ModelHistoryDialog *m_modelhistorydialog;
+//     ModelHistoryDialog *m_modelhistorydialog;
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
@@ -122,7 +122,7 @@ private slots:
     void NewGuess();
     void ImportConstants();
     void ExportConstants();
-    void ShowHistory();
+//     void ShowHistory();
     void LoadJson(const QJsonObject &object);
 public slots:
     void recalulate();
@@ -133,7 +133,8 @@ signals:
     void ActiveSignalChanged(QVector<int > active_signals);
     void RequestCrashFile();
     void RequestRemoveCrashFile();
-    void AddModel(const QJsonObject &json);
+    void InsertModel(const ModelHistoryElement &element);
+//     void AddModel(const QJsonObject &json);
 };
 
 #endif // MODELWIDGET_H

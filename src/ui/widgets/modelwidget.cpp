@@ -20,7 +20,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
 #include "src/ui/dialogs/configdialog.h"
-#include "src/ui/dialogs/modelhistorydialog.h"
+#include "src/ui/widgets/modelhistorywidget.h"
 
 #include "chartwidget.h"
 
@@ -228,9 +228,9 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
         EmptyUI();
     
     
-    m_modelhistorydialog = new ModelHistoryDialog(&m_history, this);
-    connect(m_modelhistorydialog, SIGNAL(AddModel(QJsonObject)), this, SIGNAL(AddModel(QJsonObject)));
-    connect(m_modelhistorydialog, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
+//     m_modelhistorydialog = new ModelHistoryDialog(&m_history, this);
+//     connect(m_modelhistorydialog, SIGNAL(AddModel(QJsonObject)), this, SIGNAL(AddModel(QJsonObject)));
+//     connect(m_modelhistorydialog, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
     setLayout(m_layout);
     m_model->CalculateSignal();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
@@ -250,7 +250,7 @@ void ModelWidget::DiscreteUI()
     m_optim_config = new QPushButton(tr("Fit Settings"));
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
-    m_showhistory = new QPushButton(tr("Show History"));
+//     m_showhistory = new QPushButton(tr("Show History"));
     m_maxiter = new QSpinBox;
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
@@ -262,7 +262,7 @@ void ModelWidget::DiscreteUI()
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
     connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
-    connect(m_showhistory, SIGNAL(clicked()), this, SLOT(ShowHistory()));
+//     connect(m_showhistory, SIGNAL(clicked()), this, SLOT(ShowHistory()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -274,7 +274,7 @@ void ModelWidget::DiscreteUI()
     QHBoxLayout *mini_data = new QHBoxLayout;
     mini_data->addWidget(m_import);
     mini_data->addWidget(m_export);
-    mini_data->addWidget(m_showhistory);
+//     mini_data->addWidget(m_showhistory);
     m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
@@ -530,13 +530,14 @@ void ModelWidget::addToHistory()
         m_model_elements[j]->Update();
     }
     element.error = error;
-    m_history[m_history.size()] = element;
+    emit InsertModel(element);
+//     m_history[m_history.size()] = element;
 }
 
-void ModelWidget::ShowHistory()
-{
-    m_modelhistorydialog->show();
-}
+// void ModelWidget::ShowHistory()
+// {
+//     m_modelhistorydialog->show();
+// }
 
 
 #include "modelwidget.moc"

@@ -84,6 +84,7 @@ signals:
     void ModelAdded(AbstractTitrationModel *model);
     void Message(const QString &str, int priority);
     void MessageBox(const QString &str, int priority);
+    void InsertModel(const ModelHistoryElement &element);
 };
 
 #endif // MODELDATAHOLDER_H
