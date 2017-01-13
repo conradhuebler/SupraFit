@@ -48,10 +48,25 @@ public:
         IItoI_ItoI_t = 4
     };
     void setSettings(const OptimizerConfig &config);
-    void Export(const QString &str);
-    void SaveProject(const QString &str);
-    void LoadProject(const QJsonObject &object);
+    /*
+     * Export currently open models to file
+     * 
+     */
+    void SaveCurrentModels(const QString &file);
+    /*
+     * Export currently open models and the data table to file
+     */
+    void SaveWorkspace(const QString &file);
     
+public slots:
+    /*
+     * Add a new model to the workspace
+     */
+    void AddToWorkspace(const QJsonObject &object);
+    /*
+     * Overrides the very current model (opened tabe) with this model, if compatible
+     */
+    void LoadCurrentProject(const QJsonObject &object);
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<QTabWidget > m_modelsWidget;
@@ -66,6 +81,8 @@ private:
 
     bool CheckCrashFile();
     void Json2Model(const QJsonObject &object, const QString &str);
+    void ActiveModel(QPointer<AbstractTitrationModel > t);
+    bool m_history;
 private slots:
     void AddModel11();
     void AddModel21();
@@ -82,6 +99,7 @@ signals:
     void ModelAdded(AbstractTitrationModel *model);
     void Message(const QString &str, int priority);
     void MessageBox(const QString &str, int priority);
+    void InsertModel(const ModelHistoryElement &element);
 };
 
 #endif // MODELDATAHOLDER_H

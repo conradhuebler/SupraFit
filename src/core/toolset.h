@@ -20,8 +20,8 @@
 #ifndef TOOLSET_H
 #define TOOLSET_H
 
-#include <QString>
-#include <QVector>
+#include <QtCore/QString>
+#include <QtCore/QVector>
 
 namespace ToolSet{
     

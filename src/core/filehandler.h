@@ -19,7 +19,7 @@
 
 #ifndef FILEHANDLER_H
 #define FILEHANDLER_H
-
+#include <QtCore/QObject>
 class QStandardItemModel;
 class FileHandler : public QObject
 {

@@ -45,20 +45,20 @@ class ChartConfigDialog : public QDialog
 public:
     ChartConfigDialog();
     ~ChartConfigDialog();
-    void setPixmap(const QPixmap *pixmap);
     void setConfig(const ChartConfig &chartconfig);
     ChartConfig Config() const { return m_chartconfig; }
     QDialogButtonBox *m_buttons;
 private:
+    QPushButton *m_scaleaxis;
     QLineEdit *m_x_axis, *m_y_axis;
     QDoubleSpinBox *m_x_min, *m_x_max,  *m_y_min, *m_y_max;
     QSpinBox *m_x_step,*m_y_step;
     ChartConfig m_chartconfig;
-    QLabel *picture;
 private slots:
     void Changed();
 signals:
     void ConfigChanged(ChartConfig chartconfig);
+    void ScaleAxis();
 };
 
 #endif // CHARTCONFIG_H

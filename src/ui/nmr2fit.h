@@ -21,7 +21,7 @@
 #ifndef nmr2fit_H
 #define nmr2fit_H
 #include "src/ui/widgets/optimizerwidget.h"
-
+#include "src/ui/widgets/modelhistorywidget.h"
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
 #include <QtCore/QPointer>
@@ -56,7 +56,7 @@ private:
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
-    
+    QPointer<ModelHistory> m_historywidget;
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer <DataClass > m_titration_data;
     bool m_hasData;
@@ -64,12 +64,13 @@ private:
     OptimizerConfig m_opt_config;
     void ReadSettings();
     void WriteSettings();
-    QDockWidget *m_logdock, *m_modeldock, *m_chartdock;
+    QDockWidget *m_logdock, *m_modeldock, *m_chartdock, *m_history_dock;
     QPlainTextEdit *m_logWidget;
     QString m_logfile;
     int m_printlevel;
     void LogFile();
     QFile m_file, m_stdout;
+    QMap<int, ModelHistoryElement> m_history;
 private slots:
     void NewTableAction();
     void ImportTableAction();
@@ -81,6 +82,7 @@ private slots:
     void SettingsDialog();
     void WriteMessages(const QString &message, int priority);
     void MessageBox(const QString &str, int priority);
+    void InsertHistoryElement(const ModelHistoryElement &element);
 protected:
     void resizeEvent(QResizeEvent *event);
 };

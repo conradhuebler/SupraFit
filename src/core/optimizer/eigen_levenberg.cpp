@@ -75,7 +75,7 @@ struct MyFunctor : Functor<double>
         QVector<qreal > CalculatedSignals = model->getCalculatedSignals();
         for( int i = 0; i < values(); ++i)
         {
-            fvec(i) = CalculatedSignals[i] - ModelSignals[i];
+            fvec(i) = sqrt((CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]));
         }
         return 0;
     }
@@ -95,7 +95,7 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
 {
     Q_UNUSED(config)
     Q_UNUSED(max_iter)
-    Variables ModelSignals = model->getSignals();
+    Variables ModelSignals = model->getSignals(model->ActiveSignals());
     Eigen::VectorXd parameter(param.size());
     for(int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
@@ -109,12 +109,12 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
     int iter = 0;
+
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
       do {
          status = lm.minimizeOneStep(parameter);
          iter++;
       } while (status == -1);
-    
     for(int i = 0; i < functor.inputs(); ++i)
             param[i] = parameter(i);
     return 1;

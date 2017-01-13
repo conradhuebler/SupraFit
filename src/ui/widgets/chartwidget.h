@@ -63,6 +63,8 @@ public slots:
     void addModel(QPointer< AbstractTitrationModel > model);
     
 private:
+    qreal max_shift, min_shift;
+    
     QPointer<QComboBox > createThemeBox() const;
    
     QPointer<QComboBox > m_x_scale, m_themebox;
@@ -72,9 +74,11 @@ private:
     QVector< QPointer<AbstractTitrationModel > > m_models;
     QPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
+    QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
 //     QSharedPointer<QtCharts::QLineSeries > m_error_axis;
     void Paint();
 private slots:
+    void formatAxis();
     void Repaint();
     void updateUI();
     void setActiveSignals(QVector<int > active_signals);

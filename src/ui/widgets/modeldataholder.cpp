@@ -41,7 +41,7 @@
 
 #include <iostream>
 
-ModelDataHolder::ModelDataHolder()
+ModelDataHolder::ModelDataHolder() : m_history(true)
 {
     QGridLayout *layout = new QGridLayout;
     
@@ -142,23 +142,8 @@ void ModelDataHolder::AddModel(int model)
            return; 
         
     };
-    t->setOptimizerConfig(m_config);
-    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
     t->Minimize();
-    m_charts->addModel(t);
-    ModelWidget *modelwidget = new ModelWidget(t);
-    connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
-    connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
-    QScrollArea *scroll = new QScrollArea;
-    scroll->setBackgroundRole(QPalette::Midlight);
-      scroll->setWidget(modelwidget);
-      scroll->setWidgetResizable(true);
-      scroll->setAlignment(Qt::AlignHCenter);
-    m_modelsWidget->addTab(scroll, t->Name());
-    m_models << t;
-    
-
+    ActiveModel(t);
 }
 
 
@@ -202,12 +187,67 @@ void ModelDataHolder::SimulateModel(int model)
            return; 
         
     };
-    
-    ModelWidget *modelwidget = new ModelWidget(t);
-    m_modelsWidget->addTab(modelwidget, t->Name());
+    ActiveModel(t);
+}
+
+void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
+{
+
+    QPointer<AbstractTitrationModel > t;
+    /*
+     * WARNING and FIXME I dont like this!
+     */
+    if(str == "1:1-Model")
+    {
+        t = new ItoI_Model(m_data);
+    }
+    else if(str == "2:1/1:1-Model")
+    {
+         t = new IItoI_ItoI_Model(m_data);
+    }
+    else if(str == "1:1/1:2-Model"){
+        t = new ItoI_ItoII_Model(m_data);
+    }else
+    {
+        delete t;
+        return; 
+    }
+    t->ImportJSON(object);
+    ActiveModel(t);
+}
+
+void ModelDataHolder::ActiveModel(QPointer<AbstractTitrationModel> t)
+{
+   
     m_datawidget->setData(m_data);
     m_charts->addModel(t);
+    ModelWidget *modelwidget = new ModelWidget(t);
+    m_modelsWidget->addTab(modelwidget, t->Name());
     
+    t->setOptimizerConfig(m_config);
+    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
+    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
+    
+    connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
+    connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
+    connect(modelwidget, SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)));
+    
+    QScrollArea *scroll = new QScrollArea;
+    scroll->setBackgroundRole(QPalette::Midlight);
+      scroll->setWidget(modelwidget);
+      scroll->setWidgetResizable(true);
+      scroll->setAlignment(Qt::AlignHCenter);
+    m_modelsWidget->addTab(scroll, t->Name());
+    m_models << t;
+    
+    /*
+     * Some models are loaded from history, this should no be added again
+     * after not added them, we allow the next models to be added to history again
+     */
+    if(m_history)
+        modelwidget->addToHistory();
+    else
+        m_history = true;
 }
 
 void ModelDataHolder::SimulateModel11()
@@ -242,11 +282,6 @@ void ModelDataHolder::RemoveTab(int i)
     msgBox.exec();
     }
 }
-
-// void ModelDataHolder::addLogEntry(const QString& str)
-// {
-//     m_logWidget->appendPlainText(str);
-// }
 
 void ModelDataHolder::setSettings(const OptimizerConfig &config)
 {
@@ -291,23 +326,7 @@ void ModelDataHolder::RemoveCrashFile()
     }
 }
 
-void ModelDataHolder::SaveProject(const QString &str)
-{
-        QJsonObject toplevel;
-        toplevel["data"] = m_data->ExportJSON();
-        for(int i = 0; i < m_models.size(); ++i)
-        {    
-            if(m_models[i])
-            {
-                QJsonObject obj = m_models[i]->ExportJSON();
-                toplevel[m_models[i]->Name()] = obj;       
-            }
-        }   
-        JsonHandler::WriteJsonFile(toplevel  , str);
-}
-
-
-void ModelDataHolder::Export(const QString &str)
+void ModelDataHolder::SaveCurrentModels(const QString &file)
 {
     QJsonObject toplevel;
     for(int i = 0; i < m_models.size(); ++i)
@@ -316,59 +335,73 @@ void ModelDataHolder::Export(const QString &str)
         if(m_models[i])
         {
             QJsonObject obj = m_models[i]->ExportJSON();
-            toplevel[m_models[i]->Name()] = obj;
+            toplevel["model_" + QString::number(i)] = obj;
             
         }
     }   
-    JsonHandler::WriteJsonFile(toplevel, str);   
+    JsonHandler::WriteJsonFile(toplevel, file);   
 }
 
-void ModelDataHolder::LoadProject(const QJsonObject &object)
+void ModelDataHolder::SaveWorkspace(const QString &file)
+{
+        QJsonObject toplevel;
+        toplevel["data"] = m_data->ExportJSON();
+        
+        for(int i = 0; i < m_models.size(); ++i)
+        {    
+            if(m_models[i])
+            {
+                QJsonObject obj = m_models[i]->ExportJSON();
+                toplevel["model_" + QString::number(i)] = obj;       
+            }
+        }   
+        JsonHandler::WriteJsonFile(toplevel, file);
+}
+
+void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
 {
     QStringList keys = object.keys();
+    
+    /*
+     * If the json contains only one model, then we have probely only "data" and "model" as keys
+     * and we can load them directly
+     * else we iter through all keys which may be model_x keys containing "data" and "models"
+     */
+    if(keys.contains("data") && keys.contains("model"))
+    {
+        // we don't allow this model to be added to addToHistory
+        m_history = false;
+        Json2Model(object, object["model"].toString());
+    }
+    else
+    {
     foreach(const QString &str, keys)
-        Json2Model(object[str].toObject(), str);
+    {
+        QJsonObject model = object[str].toObject();
+        Json2Model(model, model["model"].toString());
+    }
+    }
 }
 
-void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
+void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
 {
-    
-    
-    
-    QPointer<AbstractTitrationModel > t;
-    /*
-     * WARNING and FIXME I dont like this!
-     */
-    if(str == "1:1-Model")
+    QStringList keys = object.keys();
+    if(keys.contains("data") && keys.contains("model"))
     {
-        t = new ItoI_Model(m_data);
+        // we don't allow this model to be added to addToHistory
+        if(m_modelsWidget->currentIndex() == 0)
+        {
+            if(m_modelsWidget->count() < 2)
+                return;
+            m_modelsWidget->setCurrentIndex(1);
+        }
+        
+            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->currentWidget());
+            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            model->LoadJson(object);
+        
     }
-    else if(str == "2:1/1:1-Model")
-    {
-         t = new IItoI_ItoI_Model(m_data);
-    }
-    else if(str == "1:1/1:2-Model"){
-        t = new ItoI_ItoII_Model(m_data);
-    }else
-    {
-        delete t;
-        return; 
-    }
-    t->LoadJSON(object);
-    t->setOptimizerConfig(m_config);
-    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
-    m_charts->addModel(t);
-    ModelWidget *modelwidget = new ModelWidget(t);
-    connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
-    connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
-    QScrollArea *scroll = new QScrollArea;
-    scroll->setBackgroundRole(QPalette::Midlight);
-      scroll->setWidget(modelwidget);
-      scroll->setWidgetResizable(true);
-      scroll->setAlignment(Qt::AlignHCenter);
-    m_modelsWidget->addTab(scroll, t->Name());
-    m_models << t;
 }
+
 
 #include "modeldataholder.moc"

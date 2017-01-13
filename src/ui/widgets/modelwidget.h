@@ -20,11 +20,16 @@
 #ifndef MODELWIDGET_H
 #define MODELWIDGET_H
 
+#include <QtCore/QJsonObject>
+
 #include <QtWidgets/qwidget.h>
 #include <QtWidgets/QGroupBox>
-#include <QDoubleSpinBox>
+#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QVBoxLayout>
+
 #include <QtCharts/QLineSeries>
+
+//#include "src/ui/dialogs/modelhistorydialog.h"
 
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
@@ -36,6 +41,8 @@ class QVBoxLayout;
 class QGridLayout;
 class QCheckBox;
 class LineSeries;
+
+struct  ModelHistoryElement;
 
 class ModelElement : public QGroupBox
 {
@@ -72,8 +79,6 @@ signals:
 };
 
 
-
-
 class ModelWidget : public QWidget
 {
     Q_OBJECT
@@ -84,8 +89,10 @@ public:
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
     QPointer< AbstractTitrationModel > Model() { return m_model; }
     void setMaxIter(int maxiter);
-
+    void addToHistory();
     
+public slots:
+    void LoadJson(const QJsonObject &object);
 private:
     QPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
@@ -94,18 +101,20 @@ private:
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
+   
     QSpinBox *m_maxiter;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config, *m_export, *m_import; 
+    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_showhistory; 
+//     ModelHistoryDialog *m_modelhistorydialog;
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
     void EmptyUI();
     
     void CollectParameters();
-
+    
 private slots:
     void GlobalMinimize();
     void LocalMinimize();
@@ -115,6 +124,8 @@ private slots:
     void NewGuess();
     void ImportConstants();
     void ExportConstants();
+//     void ShowHistory();
+    
 public slots:
     void recalulate();
     void OptimizerSettings();
@@ -124,6 +135,8 @@ signals:
     void ActiveSignalChanged(QVector<int > active_signals);
     void RequestCrashFile();
     void RequestRemoveCrashFile();
+    void InsertModel(const ModelHistoryElement &element);
+//     void AddModel(const QJsonObject &json);
 };
 
 #endif // MODELWIDGET_H

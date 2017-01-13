@@ -19,7 +19,7 @@
 #include "src/global_config.h"
 
 #ifdef USE_bfgsOptimizer
-
+#include "LBFGSpp/include/LBFGS.h"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/LU>
@@ -30,12 +30,14 @@
 using namespace Eigen;
 
 typedef QVector<qreal > Variables;
+using namespace LBFGSpp;
 
+/*
 class Function
 {
     
 public:
-    Function(AbstractTitrationModel *model):m_model(model) { ModelSignals = m_model->getSignals(); }
+    Function(AbstractTitrationModel *model):m_model(model) { ModelSignals = m_model->getSignals(m_model->ActiveSignals()); }
     Variables value(const VectorXd &value)
     {
         QVector<qreal> parameter(value.size());
@@ -66,6 +68,9 @@ public:
     BFGSSolver(Function *func) : m_function(func) { }
     bool Minimize(VectorXd &parameter)
     {
+        qreal old_error = m_function->value(parameter).first();
+        qreal new_error = old_error;
+        qreal tk = 1;
         MatrixXd hessian(parameter.size(),parameter.size());
         int maxiter = 100;
         for(int i = 0; i < parameter.size(); ++i)
@@ -99,11 +104,15 @@ public:
          */
         
         
-        VectorXd dk = (-1*hessian).lu().solve(grad);
+        /*VectorXd dk = (-1*hessian).lu().solve(grad);
 //         std::cout << "solved eqn" << std::endl;
 //         std::cout << dk << std::endl;
-        qreal tk = 0.5;
+        
         VectorXd dktk = tk*dk;
+        if(new_error > old_error)
+        {
+            tk *= 0.9;
+        }
 //         std::cout << parameter << std::endl << dktk << std::endl;
         VectorXd param_2 = (parameter + dktk).transpose();
 //         std::cout << "New parameter " << std::endl;
@@ -127,7 +136,9 @@ public:
         std::cout << zahl << std::endl;
         MatrixXd third_part = zahl/squard*prod;
         MatrixXd hessian_2 = hessian + first_part + second_part;// - third_part;*/
-        parameter = param_2;
+       /* new_error = m_function->value(param_2).first();
+       if(new_error < old_error)
+            parameter = param_2;
 //         hessian = hessian_2;  
         }
         return true;
@@ -160,25 +171,100 @@ private:
     Function *m_function;
 };
 
+*/
+   
+class Function
+{
+public:
+    Function(AbstractTitrationModel *model) : m_model(model) {ModelSignals = m_model->getSignals(m_model->ActiveSignals());}
+    double operator()(const VectorXd& value, VectorXd& grad)
+    {
+        grad = gradient(value);
+        return var(value);
+    }
+    
+    VectorXd gradient(const VectorXd& value)
+    {
+        qreal diff = 1e-5;
+        VectorXd grad(value.size());        
+        for(int i = 0; i < value.size(); ++i)
+        {
+            VectorXd input = value;
+            qreal y1 = 0, y2 = 0;
+            
+            input[i] += diff;
+//             std::cout << "parameter to go 1 ";
+//             std::cout << input << std::endl;
+            y1 = var(input);
+            input[i] -= 2*diff;
+//              std::cout << "parameter to go 2 ";
+//             std::cout << input << std::endl;
+            y2 = var(input);
+            grad(i) = (y1-y2)/2/diff;
+           
+        }
+        return grad;
+    }
+    
+    double var(const VectorXd& value)
+    {
+        QVector<qreal> parameter(value.size());
+        for(int i = 0; i < value.size(); ++i)
+            parameter[i] = value(i);
+        
+        m_model->setParamter(parameter);
+        m_model->CalculateSignal();
+        Variables CalculatedSignals = m_model->getCalculatedSignals();
+        qreal error = 0;
+        for( int i = 0; i < CalculatedSignals.size(); ++i)
+        {
+             error += sqrt((CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]));
+ //           error += (CalculatedSignals[i] - ModelSignals[i]);
+        }
 
+        
+        return error;
+    }
+    Variables ModelSignals;
+    AbstractTitrationModel *m_model;
+};    
+       
+       
 int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     Q_UNUSED(max_iter)
     Q_UNUSED(config)
-    
     VectorXd parameter(param.size());
     for(int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
+    
+    LBFGSParam<double> pam;
+    pam.epsilon = 1e-6;
+    pam.max_iterations = 1;
+
+    // Create solver and function object
+    LBFGSSolver<double> solver(pam);
+    Function fun(model);
+//     fun.m_model = model;
+
+    // Initial guess
+//     VectorXd x = VectorXd::Zero(n);
+    // x will be overwritten to be the best point found
+    double fx;
+    int niter = solver.minimize(fun, parameter, fx);
+    
+    
+   /* 
     
     Function *function = new Function(model);
     
     BFGSSolver solver(function);
     bool value = solver.Minimize(parameter);
+    */
     for(int i = 0; i < parameter.size(); ++i)
-        param[i] = parameter[i];
-    delete function;
+        param[i] = parameter(i);
     
-    return value;
+    return niter;
 }
 
 #endif

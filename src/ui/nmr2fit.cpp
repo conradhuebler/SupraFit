@@ -54,18 +54,13 @@
 MainWindow::MainWindow() :m_hasData(false)
 {
     
-    m_logdock = new QDockWidget(tr("Logging output"), this);
-    m_logWidget = new QPlainTextEdit(this);
-    m_logdock->setWidget(m_logWidget);
-    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
     
-    m_stdout.open(stdout, QIODevice::WriteOnly);
-    
-
     
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Data and Models"), this);
+    m_modeldock->setObjectName(tr("data_and_models"));
     m_modeldock->setWidget(m_model_dataholder);
+    m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
     
     connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)));
@@ -75,9 +70,31 @@ MainWindow::MainWindow() :m_hasData(false)
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
     m_chartdock = new QDockWidget(tr("Charts"), this);
+    m_chartdock->setObjectName(tr("charts"));
+    m_chartdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     m_chartdock->setWidget(m_charts);
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
     
+    m_logdock = new QDockWidget(tr("Logging output"), this);
+    m_logdock->setObjectName(tr("logging"));
+    m_logWidget = new QPlainTextEdit(this);
+    m_logdock->setWidget(m_logWidget);
+    m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
+    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
+    
+    m_stdout.open(stdout, QIODevice::WriteOnly);
+    
+    m_historywidget = new ModelHistory(&m_history);
+    m_history_dock = new QDockWidget("Stored Models");
+    m_history_dock->setObjectName(tr("history"));
+    m_history_dock->setWidget(m_historywidget);
+    m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
+    addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
+    connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)));
+    connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
+     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
+    setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
+
     m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
     connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTableAction()));
     
@@ -101,14 +118,13 @@ MainWindow::MainWindow() :m_hasData(false)
     
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()) );
-    
-    //     m_about = new QAction(QIcon::fromTheme("help-about"), tr("About"));
-    
+        
     m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
     connect(m_close, SIGNAL(triggered()), SLOT(close()) );
     
     
     m_main_toolbar = new QToolBar;
+    m_main_toolbar->setObjectName(tr("main_toolbar"));
     m_main_toolbar->addAction(m_new);
     m_main_toolbar->addAction(m_import);
     m_main_toolbar->addAction(m_load);
@@ -117,6 +133,7 @@ MainWindow::MainWindow() :m_hasData(false)
     addToolBar(m_main_toolbar);
     
     m_model_toolbar = new QToolBar;
+    m_model_toolbar->setObjectName(tr("model_toolbar"));
     m_model_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     m_model_toolbar->addAction(m_edit);
     m_model_toolbar->addAction(m_importmodel);
@@ -124,6 +141,11 @@ MainWindow::MainWindow() :m_hasData(false)
     addToolBar(m_model_toolbar);
     
     m_system_toolbar = new QToolBar;
+    m_system_toolbar->setObjectName(tr("system_toolbar"));
+    m_system_toolbar->addAction(m_modeldock->toggleViewAction());
+    m_system_toolbar->addAction(m_chartdock->toggleViewAction());
+    m_system_toolbar->addAction(m_logdock->toggleViewAction());
+    m_system_toolbar->addAction(m_history_dock->toggleViewAction());
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
@@ -141,7 +163,13 @@ MainWindow::~MainWindow()
     QSettings _settings;
     
     _settings.beginGroup("window");
-    _settings.setValue("geometry", size());
+//     _settings.setValue("geometry", size());
+        _settings.setValue("geometry", saveGeometry());
+    _settings.setValue("state", saveState());
+//     _settings.setValue("model_dock", m_modeldock->geometry());
+//     _settings.setValue("log_dock", m_logdock->geometry());
+//     _settings.setValue("chart_dock", m_chartdock->geometry());
+//     _settings.setValue("history_dock", m_history_dock->geometry());
     _settings.endGroup();
     
 }
@@ -157,14 +185,15 @@ void MainWindow::setActionEnabled(bool enabled)
 void MainWindow::NewTableAction()
 {
     
-      ImportData dialog(this);
-    
+      
+    ImportData dialog(this);
     if(dialog.exec() == QDialog::Accepted)
     {
         m_titration_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
         m_model_dataholder->setData(m_titration_data.data());
         m_charts->setRawData(m_titration_data.data());
         m_hasData = true;
+        setActionEnabled(true);
     }
     
 }
@@ -205,7 +234,7 @@ void MainWindow::ImportAction(const QString& file)
 
 void MainWindow::LoadProjectAction()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Load File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         QJsonObject toplevel;
@@ -215,7 +244,7 @@ void MainWindow::LoadProjectAction()
             if(m_titration_data->DataPoints() != 0)
             {
                 LoadData(str);
-                m_model_dataholder->LoadProject(toplevel);
+                m_model_dataholder->AddToWorkspace(toplevel);
             }
             else
             {
@@ -241,19 +270,19 @@ void MainWindow::SaveProjectAction()
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-        m_model_dataholder->SaveProject(str);
+        m_model_dataholder->SaveWorkspace(str);
     }
 }
     
 void MainWindow::ImportModelAction()
 {
-  QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+  QString str = QFileDialog::getOpenFileName(this, tr("Open File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         QJsonObject toplevel;
         if(JsonHandler::ReadJsonFile(toplevel, str))
         {
-            m_model_dataholder->LoadProject(toplevel);
+            m_model_dataholder->AddToWorkspace(toplevel);
         }
     }  
 }
@@ -264,7 +293,7 @@ void MainWindow::ExportModelAction()
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-       m_model_dataholder->Export(str);   
+       m_model_dataholder->SaveCurrentModels(str);   
     }   
 }
 
@@ -309,10 +338,18 @@ void MainWindow::LogFile()
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
+    
+
+    
 //     m_charts->resize(3*event->size().width()/4, m_charts->height());
 //     m_model_dataholder->resize(event->size().width()/4, m_model_dataholder->height());
 //     
     QWidget::resizeEvent(event);
+    /*
+    m_modeldock->setMaximumHeight(4/5*event->size().height());
+    m_chartdock->setMaximumHeight(4/5*event->size().height());
+    m_logdock->setMaximumHeight(1/5*event->size().height());
+    */
 }
 
 void MainWindow::WriteMessages(const QString &message, int priority)
@@ -334,8 +371,8 @@ void MainWindow::WriteMessages(const QString &message, int priority)
 void MainWindow::MessageBox(const QString& str, int priority)
 {
     if(priority == 0)
-    {
-            QMessageBox::critical(this, tr("Optimizer Error."), str, QMessageBox::Ok | QMessageBox::Default);
+    {    
+        QMessageBox::critical(this, tr("Optimizer Error."), str, QMessageBox::Ok | QMessageBox::Default);
     }else if(priority == 1)
     {
         QMessageBox::warning(this, tr("Optimizer warning."),  str,  QMessageBox::Ok | QMessageBox::Default);
@@ -351,7 +388,13 @@ void MainWindow::ReadSettings()
     _settings.endGroup();
     
     _settings.beginGroup("window");
-    resize(_settings.value("geometry", sizeHint()).toSize());
+        restoreGeometry(_settings.value("geometry").toByteArray());
+    restoreState(_settings.value("state").toByteArray());
+//     resize(_settings.value("geometry", sizeHint()).toSize());
+//     m_logdock->setGeometry(_settings.value("log_dock").toRect());
+//     m_history_dock->setGeometry(_settings.value("history_dock").toRect());
+//     m_chartdock->setGeometry(_settings.value("chart_dock").toRect());
+//     m_modeldock->setGeometry(_settings.value("model_dock").toRect());
     _settings.endGroup();
     
 }
@@ -363,6 +406,14 @@ void MainWindow::WriteSettings()
     _settings.setValue("logfile", m_logfile);
     _settings.setValue("printlevel", m_printlevel);
     _settings.endGroup();
+}
+
+
+void MainWindow::InsertHistoryElement(const ModelHistoryElement &element)
+{
+    int nr = m_history.size();
+    m_history[nr] = element;
+    m_historywidget->InsertElement(&m_history[nr]);
 }
 
 #include "nmr2fit.moc"

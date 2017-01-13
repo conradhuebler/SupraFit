@@ -21,9 +21,9 @@
 #ifndef ABSTRACTMODEL_H
 #define ABSTRACTMODEL_H
 
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QtCore/QObject>
-#include <QVector>
+#include <QtCore/QVector>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QVXYModelMapper>
 
@@ -104,9 +104,16 @@ public:
     }
     bool isCorrupt() const { return m_corrupt; }
     void adress() const;
-    QJsonObject ExportJSON(bool IncludeLevelName = false) const;
+    QJsonObject ExportJSON() const;
     void ImportJSON(const QJsonObject &topjson);
-    void LoadJSON(const QJsonObject &object);
+    
+    inline QVector<int > ActiveSignals() { return m_active_signals; }
+    inline QVector<int > ActiveSignals() const { return m_active_signals; }
+    inline void setActiveSignals(QVector<int > active_signals) 
+    { 
+        m_active_signals = active_signals; 
+        emit ActiveSignalsChanged(m_active_signals);
+    }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -123,6 +130,9 @@ private:
         else
             return QString("No");
     }
+
+    QVector<int > m_active_signals;
+
 protected:
     virtual void MiniShifts() = 0;
     void SetSignal(int i, int j, qreal value);

@@ -83,6 +83,8 @@ ChartWidget::ChartWidget() : m_themebox(createThemeBox())
     
     connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
     setLayout(layout);
+    max_shift = 0;
+    min_shift = 0;
 }
 
 ChartWidget::~ChartWidget()
@@ -104,6 +106,9 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
         signal->setSeries(signal_series);
         signal_series->setName("Signal " + QString::number(i + 1));
         m_signalview->addSeries(signal_series, true);
+        QPair<qreal, qreal > minmax = Series2MinMax(signal_series);
+        min_shift = minmax.first;
+        max_shift = minmax.second;
     }
     
     m_signalview->formatAxis();
@@ -145,8 +150,8 @@ void ChartWidget::addModel(QPointer<AbstractTitrationModel > model)
         }
         
     }
-    connect(model, SIGNAL(Recalculated()), m_signalview, SLOT(formatAxis()));
-    connect(model, SIGNAL(Recalculated()), m_errorview, SLOT(formatAxis()));
+    connect(model, SIGNAL(Recalculated()), this, SLOT(formatAxis()));
+//     connect(model, SIGNAL(Recalculated()), m_errorview, SLOT(formatAxis()));
     Repaint(); 
     
 }
@@ -170,9 +175,15 @@ void ChartWidget::Repaint()
 //     for(int i = 0; i < trash.size(); ++i)
 //         m_models.remove(trash[i]);
 
-   m_signalview->formatAxis();
-   m_errorview->formatAxis();    
+    formatAxis();
 }
+
+void ChartWidget::formatAxis()
+{
+    m_signalview->formatAxis();
+    m_errorview->formatAxis();      
+}
+
 
 QPointer<QComboBox > ChartWidget::createThemeBox() const
 {
@@ -204,7 +215,7 @@ void ChartWidget::updateUI()
 void ChartWidget::setActiveSignals( QVector<int> active_signals)
 {
     qDebug() << active_signals;
-    if(active_signals.size() < m_signalchart->series().size()  && active_signals.size() <= m_errorchart->series().size())
+/*    if(active_signals.size() < m_signalchart->series().size()  && active_signals.size() <= m_errorchart->series().size())
     {
         for(int i = 0; i < active_signals.size(); ++i)
         {
@@ -213,9 +224,22 @@ void ChartWidget::setActiveSignals( QVector<int> active_signals)
             m_errorchart->series()[i]->setVisible(active_signals[i]);
         }
         Repaint();
-    }
+    }*/
 }
 
-
+QPair<qreal, qreal > ChartWidget::Series2MinMax(const QtCharts::QXYSeries *series)
+{
+    QPair<qreal, qreal > values(0,0);
+    QVector<QPointF> points = series->pointsVector();
+    if(points.isEmpty())
+        return values;
+    for(int i = 0; i < points.size(); ++i)
+    {
+        values.first = qMin(values.first, points[i].ry());
+        values.second = qMax(values.second, points[i].ry());
+    }
+    
+    return values;
+}
 
 #include "chartwidget.moc"

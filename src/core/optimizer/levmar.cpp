@@ -66,7 +66,7 @@ int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVec
     data.model = model;
     double *x = new double[data.model->DataPoints()*data.model->SignalCount()];
     
-    QVector<qreal > x_var = data.model->getSignals();
+    QVector<qreal > x_var = data.model->getSignals(data.model->ActiveSignals());
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i];
     

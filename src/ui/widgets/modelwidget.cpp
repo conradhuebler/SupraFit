@@ -20,6 +20,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
 #include "src/ui/dialogs/configdialog.h"
+#include "src/ui/widgets/modelhistorywidget.h"
 
 #include "chartwidget.h"
 
@@ -77,19 +78,20 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     
     
     
-    
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("Include in Model Generation"));
-    m_include->setChecked(true);
+    m_include->setChecked(m_model->ActiveSignals()[m_no]);
     connect(m_include, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
     layout->addWidget(m_include, 1, 0);
     m_error_series = qobject_cast<LineSeries *>(m_model->ModelMapper(m_no)->series());
     m_signal_series = qobject_cast<LineSeries *>(m_model->ErrorMapper(m_no)->series());
+    m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
+    m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_show = new QCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
-    m_show->setChecked(true);
+    m_show->setChecked(m_model->ActiveSignals()[m_no]);
     layout->addWidget(m_show,1,1);
     
     m_plot = new QPushButton;
@@ -106,7 +108,7 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
     connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
-    
+   
 }
 
 ModelElement::~ModelElement()
@@ -160,15 +162,15 @@ void ModelElement::SetOptimizer()
 
 void ModelElement::ColorChanged(const QColor &color)
 {
-
+    
     #ifdef _WIN32
-        setStyleSheet("background-color:" + color.name()+ ";");
+    setStyleSheet("background-color:" + color.name()+ ";");
     #else
-        QPalette pal = palette();
-        pal.setColor(QPalette::Background,color);
-        setPalette(pal); 
+    QPalette pal = palette();
+    pal.setColor(QPalette::Background,color);
+    setPalette(pal); 
     #endif
-        
+    
     m_color = color;
 }
 
@@ -226,6 +228,9 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
         EmptyUI();
     
     
+//     m_modelhistorydialog = new ModelHistoryDialog(&m_history, this);
+//     connect(m_modelhistorydialog, SIGNAL(AddModel(QJsonObject)), this, SIGNAL(AddModel(QJsonObject)));
+//     connect(m_modelhistorydialog, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
     setLayout(m_layout);
     m_model->CalculateSignal();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
@@ -245,6 +250,7 @@ void ModelWidget::DiscreteUI()
     m_optim_config = new QPushButton(tr("Fit Settings"));
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
+//     m_showhistory = new QPushButton(tr("Show History"));
     m_maxiter = new QSpinBox;
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
@@ -256,6 +262,7 @@ void ModelWidget::DiscreteUI()
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
     connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
+//     connect(m_showhistory, SIGNAL(clicked()), this, SLOT(ShowHistory()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -267,6 +274,7 @@ void ModelWidget::DiscreteUI()
     QHBoxLayout *mini_data = new QHBoxLayout;
     mini_data->addWidget(m_import);
     mini_data->addWidget(m_export);
+//     mini_data->addWidget(m_showhistory);
     m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
@@ -363,7 +371,7 @@ void ModelWidget::GlobalMinimize()
     m_model->setOptimizerConfig(config);
     
     QVector<qreal > constants = m_model->Minimize();
-    
+    addToHistory();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     Repaint();
@@ -401,19 +409,16 @@ void ModelWidget::LocalMinimize()
         config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
         
-
+        
         QVector<qreal > constants = m_model->Minimize();
+        addToHistory();
         qDebug() <<"Minimize done";
     }
-    //         QVector<qreal > constants =  m_model->Constants();
-    //         qDebug() << constants;
-    //         for(int j = 0; j < constants.size(); ++j)
-    //             m_constants[j]->setValue(constants[j]);
     qDebug() << "Constants set.";
     qDebug() << "leaving";
-        
+    
     emit RequestRemoveCrashFile();
-
+    
 }
 
 
@@ -480,7 +485,7 @@ void ModelWidget::ExportConstants()
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-        QJsonObject gameObject = m_model->ExportJSON(true);
+        QJsonObject gameObject = m_model->ExportJSON();
         JsonHandler::WriteJsonFile(gameObject, str);
     }
     
@@ -491,14 +496,11 @@ void ModelWidget::ImportConstants()
     QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-        QJsonObject gameObject;
-        if(JsonHandler::ReadJsonFile(gameObject, str))
+        QJsonObject object;
+        if(JsonHandler::ReadJsonFile(object, str))
         {
-            m_model->ImportJSON(gameObject);
-            QVector<qreal > constants = m_model->Constants();
-            for(int j = 0; j < constants.size(); ++j)
-                m_constants[j]->setValue(constants[j]);
-//             m_model->CalculateSignal();
+            LoadJson(object);
+            //             m_model->CalculateSignal();
         }
         else
             qDebug() << "loading failed";
@@ -506,8 +508,37 @@ void ModelWidget::ImportConstants()
 }
 
 
+void ModelWidget::LoadJson(const QJsonObject& object)
+{
+    m_model->ImportJSON(object);
+    m_model->CalculateSignal();
+            QVector<qreal > constants = m_model->Constants();
+            for(int j = 0; j < constants.size(); ++j)
+                m_constants[j]->setValue(constants[j]);
+}
 
+
+void ModelWidget::addToHistory()
+{
+    QJsonObject model = m_model->ExportJSON();
+    ModelHistoryElement element;
+    element.model = model;
+    element.active_signals = m_model->ActiveSignals();
+    qreal error = 0;
+    for(int j = 0; j < m_model_elements.size(); ++j)
+    {
+        error += m_model->SumOfErrors(j);
+        m_model_elements[j]->Update();
+    }
+    element.error = error;
+    emit InsertModel(element);
+//     m_history[m_history.size()] = element;
+}
+
+// void ModelWidget::ShowHistory()
+// {
+//     m_modelhistorydialog->show();
+// }
 
 
 #include "modelwidget.moc"
-#include <QCheckBox>

@@ -16,8 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
- #include <qmath.h>
-
+ 
 #include "src/global_config.h"
 
 
