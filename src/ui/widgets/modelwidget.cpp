@@ -340,7 +340,7 @@ void ModelWidget::CollectParameters()
         }
     }
     for(int j = 0; j < m_model->ConstantSize(); ++j)
-        m_model->setComplexSignals(complex_signals[j], j + 1);
+        m_model->setComplexSignals(complex_signals[j], j);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
     m_model->setActiveSignals(active_signals);
