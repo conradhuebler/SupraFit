@@ -123,7 +123,7 @@ void IItoI_ItoI_Model::MiniShifts()
         MinimizingComplexConstants(this, m_opt_config.LevMar_Shifts_PerIter, parameter, m_opt_config);
     }
     //
-    setComplexSignals(parameter, 1);
+    setComplexSignals(parameter, 0);
     setOptParamater(m_complex_constants);
 }
 
@@ -143,9 +143,9 @@ void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
     for(int j = 0; j < list.size(); ++j)
     {
         
-    if(i == 1 && j < m_IItoI_signals.size())
+    if(i == 0 && j < m_IItoI_signals.size())
         m_IItoI_signals[j] = list[j];
-    if(i == 2&& j < m_ItoI_signals.size())
+    if(i == 1 && j < m_ItoI_signals.size())
         m_ItoI_signals[j] = list[j];
     }
 }
