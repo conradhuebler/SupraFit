@@ -97,7 +97,7 @@ public:
     inline int Size() const { return DataClass::Size(); }
     
     inline DataTable * ModelSignal() { return m_model_signal; }
-    inline DataTable * ModelError() { return m_model_error; }
+//     inline DataTable * ModelError() { return m_model_error; }
     void UpdatePlotModels();
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     void setOptimizerConfig(const OptimizerConfig &config) 
@@ -119,6 +119,7 @@ public:
     }
     virtual void MiniShifts() = 0;
     QVector<qreal *> getOptConstants() const { return m_opt_para; }
+    qreal ModelError() const;
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      

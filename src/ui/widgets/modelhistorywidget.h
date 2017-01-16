@@ -51,11 +51,11 @@ private:
 private slots:
     inline void AddModel() { emit AddJson(*m_json); }
     inline void LoadModel() { emit LoadJson(*m_json); }
-    inline void remove() { emit Remove(m_json, this); }
+    void remove(); 
 signals:
     void LoadJson(const QJsonObject &json);
     void AddJson(const QJsonObject &json);
-    void Remove(const QJsonObject *json, ModelHistoryWidget *element);
+    void Remove(const QJsonObject *json, QPointer<ModelHistoryWidget>);
 };
 
 
@@ -73,7 +73,7 @@ private:
     QVBoxLayout *m_vlayout;
     
 private slots:
-    void Remove(const QJsonObject *json, ModelHistoryWidget *element);
+    void Remove(const QJsonObject *json, QPointer<ModelHistoryWidget> element);
     
 signals:
     void AddJson(const QJsonObject &json);

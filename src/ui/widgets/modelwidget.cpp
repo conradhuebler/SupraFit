@@ -330,7 +330,7 @@ void ModelWidget::setParameter()
 
 void ModelWidget::Repaint()
 {
-    m_minimize_all->setEnabled(true);
+    
     if(m_model->Type() == 3)
         return;
     m_pending = true;
@@ -344,6 +344,8 @@ void ModelWidget::Repaint()
     
     m_sum_error->setText(QString::number(error));
     m_pending = false;
+    m_minimize_all->setEnabled(true);
+    m_minimize_single->setEnabled(true);
 }
 
 
@@ -356,8 +358,8 @@ void ModelWidget::recalulate()
     
     CollectParameters();
     m_model->CalculateSignal();
-    Repaint();
-//     QTimer::singleShot(1, this, SLOT(Repaint()));;
+//     Repaint();
+    QTimer::singleShot(1, this, SLOT(Repaint()));;
     m_pending = false;
 }
 
@@ -401,6 +403,7 @@ void ModelWidget::GlobalMinimize()
     if(m_pending)
         return;
     m_minimize_all->setEnabled(false);
+    m_minimize_single->setEnabled(false);
     m_pending = true;
     CollectParameters();
     QVector<int > v(10,0);
@@ -434,6 +437,8 @@ void ModelWidget::LocalMinimize()
     }
     if(m_pending)
         return;
+    m_minimize_all->setEnabled(false);
+    m_minimize_single->setEnabled(false);
     //     m_pending = true;
     CollectParameters();
     
@@ -447,8 +452,6 @@ void ModelWidget::LocalMinimize()
         OptimizerConfig config = m_model->getOptimizerConfig();
         config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
-        
-        
         int result = m_minimizer->Minimize();
         if(result == 1)
         {
@@ -457,6 +460,8 @@ void ModelWidget::LocalMinimize()
             m_model->CalculateSignal();
         }
     }  
+    Repaint();
+    m_pending = false; 
 }
 
 

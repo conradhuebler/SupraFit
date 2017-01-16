@@ -73,10 +73,12 @@ struct MyFunctor : Functor<double>
         model->setParamter(param);
         model->CalculateSignal();
         QVector<qreal > CalculatedSignals = model->getCalculatedSignals();
-        for( int i = 0; i < values(); ++i)
-        {
-            fvec(i) = sqrt((CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]));
-        }
+         for( int i = 0; i < values(); ++i)
+         {
+  //           fvec(i) = ((CalculatedSignals[i] - ModelSignals[i]));//*(CalculatedSignals[i] - ModelSignals[i]));
+              fvec(i) = sqrt((CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]));
+              std::cout << "Error found " << fvec(1) << std::endl;
+         }
         return 0;
     }
     int no_parameter;
@@ -103,7 +105,7 @@ int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int
 
     
     
-    MyFunctor functor(param.size(), model->DataPoints()*model->SignalCount());
+     MyFunctor functor(param.size(), model->DataPoints()*model->SignalCount());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);

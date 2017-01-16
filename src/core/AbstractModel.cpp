@@ -474,5 +474,11 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     }
     setActiveSignals(active_signals);
 }
-
+qreal AbstractTitrationModel::ModelError() const
+{
+    qreal error = 0;
+    for(int z = 0; z < SignalCount(); ++z)
+        error += SumOfErrors(z);
+    return error;
+}
 #include "AbstractModel.moc"

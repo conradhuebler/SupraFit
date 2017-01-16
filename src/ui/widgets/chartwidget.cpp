@@ -170,7 +170,6 @@ void ChartWidget::Repaint()
             m_rawdata->setPlotMode(m_plot_mode);
         m_rawdata->PlotModel();  
     }    
-    std::cout << "fuenf-eins" << std::endl;
     QVector<int > trash;
     for(int i= 0; i < m_models.size(); ++i)
     {
@@ -181,12 +180,10 @@ void ChartWidget::Repaint()
         }else
             trash << i;
     }
-    std::cout << "fuenf-zwei" << std::endl;
 //     for(int i = 0; i < trash.size(); ++i)
 //         m_models.remove(trash[i]);
 
     formatAxis();
-    std::cout << "fuenf-drei" << std::endl;
 }
 
 void ChartWidget::formatAxis()

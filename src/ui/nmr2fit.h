@@ -83,8 +83,6 @@ private slots:
     void WriteMessages(const QString &message, int priority);
     void MessageBox(const QString &str, int priority);
     void InsertHistoryElement(const ModelHistoryElement &element);
-protected:
-    void resizeEvent(QResizeEvent *event);
 };
 
 #endif // nmr2fit_H

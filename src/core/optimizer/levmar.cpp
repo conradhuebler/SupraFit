@@ -46,14 +46,18 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
     QVector<qreal> parameter;
     for(int i = 0; i < m; ++i)
         parameter << p[i];
-    if(parameter.size() == 2)
-        qDebug() << parameter;
     dptr->model->setParamter(parameter);
     
     dptr->model->CalculateSignal();
+    qreal error = 0;
     QVector<qreal > x_var = dptr->model->getCalculatedSignals();
+    QVector<qreal > x_obs = dptr->model->getSignals(dptr->model->ActiveSignals());
     for(int i = 0; i < x_var.size(); ++i)
-        x[i] = x_var[i];
+    {
+        x[i] = x_var[i] ;
+        error += x_var[i];
+    }
+    std::cout << dptr->model->ModelError() << " " << error << std::endl;
 
 }
 
@@ -81,7 +85,7 @@ int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int
         message += QString::number(d) + " ";
     }
     message += "\n";
-    model->Message(message, 5);
+//     model->Message(message, 5);
     
     qDebug() << parameter;
     double *p = new double[parameter.size()];
@@ -104,7 +108,7 @@ int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int
         result +=  QString::number(p[i]) + " ";
     }
     result += "\n";
-    model->Message(result, 4);
+//     model->Message(result, 4);
     
     delete[] x;
     delete[] p;

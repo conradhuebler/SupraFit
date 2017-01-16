@@ -192,10 +192,8 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
 
 void ChartView::formatAxis()
 {
-    std::cout << "entering axis" << m_pending << std::endl;
     if(m_pending)
         return;
-    std::cout << "working here" << std::endl;
     m_pending = true;
     qreal x_min = 0;
     qreal x_max = 0;
@@ -217,7 +215,6 @@ void ChartView::formatAxis()
             }
         }
     }
-    std::cout << "analyzing axis" << std::endl;
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     y_axis->setMax(y_max);
     y_axis->setMin(y_min);
@@ -234,7 +231,6 @@ void ChartView::formatAxis()
      if(fmod(x_max,5) > 1)
         x_axis->applyNiceNumbers();
      x_axis->setTitleText(m_x_axis);
-     std::cout << "leaving here" << std::endl;
      m_pending = false;
 }
 
@@ -254,7 +250,6 @@ void ChartView::PlotSettings()
 
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
 {
-    qDebug() << "got it";
     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
     
     x_axis->setTitleText(chartconfig.x_axis);

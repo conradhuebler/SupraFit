@@ -23,6 +23,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QScrollArea>
 #include <QtCore/QMap>
+#include <QtCore/QPointer>
 #include <QDebug>
 
 #include <iostream>
@@ -57,6 +58,12 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     setFixedSize(200,150);
 }
 
+void ModelHistoryWidget::remove()
+{
+    QPointer<ModelHistoryWidget > element = qobject_cast<ModelHistoryWidget *>( this);
+    emit Remove(m_json, element); 
+}
+
 ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent) : m_history(history), QScrollArea(parent)
 {
     m_mainwidget = new QWidget;
@@ -79,22 +86,25 @@ ModelHistory::~ModelHistory()
 
 void ModelHistory::InsertElement(const ModelHistoryElement *elm)
 {
-    ModelHistoryWidget *element = new ModelHistoryWidget(elm);
+    QPointer<ModelHistoryWidget > element = new ModelHistoryWidget(elm);
         m_vlayout->addWidget(element);
         connect(element, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddJson(QJsonObject)));
         connect(element, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadJson(QJsonObject)));
-        connect(element, SIGNAL(Remove(const QJsonObject *, ModelHistoryWidget *)), this, SLOT(Remove(const QJsonObject *, ModelHistoryWidget *)));
+        connect(element, SIGNAL(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)), this, SLOT(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)));
 }
 
-void ModelHistory::Remove(const QJsonObject *json, ModelHistoryWidget *element)
+void ModelHistory::Remove(const QJsonObject *json, QPointer<ModelHistoryWidget> element)
 {
     Q_UNUSED(json)
-    QLayoutItem * item= m_vlayout->itemAt(m_vlayout->indexOf(element));
-    m_vlayout->removeItem(item);
-    /*
-     * I know, that we are only deleting the widget but not the element in the map, will be a FIXME
-     */
-    delete element;
+    if(element)
+    {
+        QLayoutItem * item= m_vlayout->itemAt(m_vlayout->indexOf(element));
+        m_vlayout->removeItem(item);
+        /*
+        * I know, that we are only deleting the widget but not the element in the map, will be a FIXME
+        */
+        delete element;
+    }
 }
 
 #include "modelhistorywidget.moc"

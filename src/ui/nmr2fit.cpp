@@ -336,22 +336,6 @@ void MainWindow::LogFile()
     
 }
 
-void MainWindow::resizeEvent(QResizeEvent* event)
-{
-    
-
-    
-//     m_charts->resize(3*event->size().width()/4, m_charts->height());
-//     m_model_dataholder->resize(event->size().width()/4, m_model_dataholder->height());
-//     
-    QWidget::resizeEvent(event);
-    /*
-    m_modeldock->setMaximumHeight(4/5*event->size().height());
-    m_chartdock->setMaximumHeight(4/5*event->size().height());
-    m_logdock->setMaximumHeight(1/5*event->size().height());
-    */
-}
-
 void MainWindow::WriteMessages(const QString &message, int priority)
 {
 

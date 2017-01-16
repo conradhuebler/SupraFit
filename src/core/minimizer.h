@@ -49,7 +49,6 @@ private:
     OptimizerConfig m_opt_config;
     bool m_inform_config_changed;
     
-    qreal ModelError() const;
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);

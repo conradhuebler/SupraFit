@@ -110,9 +110,9 @@ int Minimizer::Minimize()
 
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
         QVector<qreal > old_constants = constants;
-        qreal old_error = ModelError();
+        qreal old_error = m_model->ModelError();
         
-        
+        m_opt_config.LevMar_Constants_PerIter = 1;
         max_convergence += MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
 //         setOptParamater(m_complex_constants);
         m_model->MiniShifts(); 
@@ -121,11 +121,11 @@ int Minimizer::Minimize()
         for(int i = 0; i < optconst.size(); ++i)
             blub << *optconst[i];
         if(blub.size() > 0)
-            MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
+             MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
         m_model->setOptParamater(constants);
-        if(max_convergence == 30)
-            allow_loop = false;
-        qreal error = ModelError();
+//         if(max_convergence == 30)
+//             allow_loop = false;
+        qreal error = m_model->ModelError();
         
         qreal constant_diff = 0;
         QString constant_string;
@@ -216,13 +216,7 @@ int Minimizer::Minimize()
 //     return true;
 }
 
-qreal Minimizer::ModelError() const
-{
-    qreal error = 0;
-    for(int z = 0; z < m_model->SignalCount(); ++z)
-        error += m_model->SumOfErrors(z);
-    return error;
-}
+
 
 
 void Minimizer::addToHistory()
@@ -231,7 +225,7 @@ void Minimizer::addToHistory()
     ModelHistoryElement element;
     element.model = model;
     element.active_signals = m_model->ActiveSignals();
-    qreal error = ModelError();
+    qreal error = m_model->ModelError();
     
     element.error = error;
     emit InsertModel(element);
