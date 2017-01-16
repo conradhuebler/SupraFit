@@ -120,13 +120,12 @@ int Minimizer::Minimize()
         QVector<qreal > blub;
         for(int i = 0; i < optconst.size(); ++i)
             blub << *optconst[i];
-        MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
+        if(blub.size() > 0)
+            MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
         m_model->setOptParamater(constants);
         if(max_convergence == 30)
             allow_loop = false;
         qreal error = ModelError();
-//         for(int z = 0; z < m_model->SignalCount(); ++z)
-//             error += m_model->SumOfErrors(z);
         
         qreal constant_diff = 0;
         QString constant_string;

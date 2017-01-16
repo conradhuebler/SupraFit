@@ -17,8 +17,8 @@
  * 
  */
 
-#ifndef I_IItoI_ItoI_Model_H
-#define I_IItoI_ItoI_Model_H
+#ifndef II_ItoI_ItoI_Model_H
+#define II_ItoI_ItoI_Model_H
 
 #include "src/core/AbstractModel.h"
 

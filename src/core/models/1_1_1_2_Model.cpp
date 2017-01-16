@@ -31,7 +31,7 @@
 #include <cmath>
 #include <cfloat>
 #include <iostream>
-#include "2_1_1_1_Model.h"
+#include "1_1_1_2_Model.h"
 
 ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
@@ -265,4 +265,4 @@ QSharedPointer<AbstractTitrationModel > ItoI_ItoII_Model::Clone() const
     
 }
 
-#include "2_1_1_1_Model.moc"
+#include "1_1_1_2_Model.moc"
