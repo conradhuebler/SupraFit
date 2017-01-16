@@ -42,6 +42,13 @@ QVector<qreal > String2DoubleVec(const QString &str)
         vector << string.toDouble();
     return vector;
 }
-    
+
+QString bool2YesNo(bool var) 
+    {
+        if(var)
+            return QString("yes");
+        else
+            return QString("No");
+    }
     
 }

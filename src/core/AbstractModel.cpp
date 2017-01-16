@@ -39,7 +39,7 @@
 #include <iostream>
 #include "AbstractModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false), m_pending(false)
 {
     
     qDebug() << DataPoints() << Size();
@@ -54,7 +54,24 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     //     }
     
     m_plot_model = new QStandardItemModel(DataPoints(), SignalCount()+1);
+    
     m_plot_error = new QStandardItemModel(DataPoints(), SignalCount()+1);
+    QStandardItem *item;
+        for(int i = 0; i < DataPoints(); ++i)
+    {
+        QString x = QString::number(XValue(i));
+        item = new QStandardItem(x);
+         m_plot_model->setItem(i, 0, item);
+        item = new QStandardItem(x);
+         m_plot_error->setItem(i, 0, item);
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            item = new QStandardItem(QString::number(m_model_signal->data(j,i)));
+               m_plot_model->setItem(i, j+1, item);
+            item = new QStandardItem(QString::number(m_model_error->data(j,i)));
+               m_plot_error->setItem(i, j+1, item);
+        }
+    }
     for(int j = 0; j < SignalCount(); ++j)
     {
         QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
@@ -185,30 +202,27 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 
 void AbstractTitrationModel::UpdatePlotModels()
 {
-    qDebug() << m_model_mapper.size() << m_error_mapper.size() << m_plot_model->rowCount() << m_plot_model->columnCount();
-    QStandardItem *item;
-    
+    if(m_pending)
+        return;
+    m_pending = true;
     for(int i = 0; i < DataPoints(); ++i)
     {
         QString x = QString::number(XValue(i));
-        item = new QStandardItem(x);
-        m_plot_model->setItem(i, 0, item);
-        item = new QStandardItem(x);
-        m_plot_error->setItem(i, 0, item);
+        m_plot_model->item(i, 0)->setData(x, Qt::DisplayRole);
+        m_plot_error->item(i, 0)->setData(x, Qt::DisplayRole);
         for(int j = 0; j < SignalCount(); ++j)
         {
-            item = new QStandardItem(QString::number(m_model_signal->data(j,i)));
-            m_plot_model->setItem(i, j+1, item);
-            item = new QStandardItem(QString::number(m_model_error->data(j,i)));
-            m_plot_error->setItem(i, j+1, item);
+            m_plot_model->item(i, j+1)->setData(QString::number(m_model_signal->data(j,i)), Qt::DisplayRole);
+            m_plot_error->item(i, j+1)->setData(QString::number(m_model_error->data(j,i)), Qt::DisplayRole);
         }
     }
+    m_pending = false;
 }
 
 QString AbstractTitrationModel::OptPara2String() const
 {
     QString result;
-    result += "\n";
+    /*result += "\n";
     result += "|***********************************************************************************|\n";
     result += "|********************General Config for Optimization********************************|\n";
     result += "|Maximal number of Iteration: " + QString::number(m_opt_config.MaxIter) + "|\n";
@@ -223,7 +237,7 @@ QString AbstractTitrationModel::OptPara2String() const
     result += "|stopping thresholds for ||Dp||_2 = {opts[2]}" +  QString::number(m_opt_config.LevMar_Eps2) + "|\n";
     result += "|stopping thresholds for ||e||_2 = {opts[3]}" + QString::number(m_opt_config.LevMar_Eps3) + "|\n";
     result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
-    result += "|********************LevenbergMarquadt Configuration********************************|\n";
+    result += "|********************LevenbergMarquadt Configuration********************************|\n";*/
     result += "\n";
     return result;
 }
@@ -252,7 +266,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
     QVector<qreal> constants = Constants();
     QVector<qreal> old_para_constant = Constants();
     
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+ /*   quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;
     OptPara += "Starting Optimization Run for " + m_name +"\n";
     if(m_inform_config_changed)
@@ -284,7 +298,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
             old_error += SumOfErrors(z);
         
         
-        max_convergence += MinimizingComplexConstants(this, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
+//         max_convergence += MinimizingComplexConstants(this, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         MiniShifts(); 
         if(max_convergence == 30)
             allow_loop = false;
@@ -370,7 +384,7 @@ QVector<qreal> AbstractTitrationModel::Minimize()
         m_repaint = true;
         CalculateSignal();
     }
-    
+    */
     QApplication::restoreOverrideCursor();
     return constants;
 }

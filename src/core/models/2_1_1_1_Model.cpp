@@ -20,6 +20,7 @@
 
 
 #include "src/core/models.h"
+
 #include "src/core/libmath.h"
 #include <QtMath>
 
@@ -31,122 +32,124 @@
 #include <cmath>
 #include <cfloat>
 #include <iostream>
-#include "2_1_1_1_Model.h"
+#include "1_1_1_2_Model.h"
 
-ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)
+IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
     
+   
+    setName(tr("2:1/1:1-Model"));
+
+
+    InitialGuess();   
     
-    setName(tr("1:1/1:2-Model"));
-    InitialGuess();
     setOptParamater(m_complex_constants);
+    
+//     m_opt_para << line3;
     CalculateSignal();
+
     m_repaint = true;
-//     qDebug() << Constants();
+    qDebug() << Constants();
 }
-ItoI_ItoII_Model::~ItoI_ItoII_Model()
+IItoI_ItoI_Model::~IItoI_ItoI_Model()
 {
 
 }
 
-
-void ItoI_ItoII_Model::InitialGuess()
+void IItoI_ItoI_Model::InitialGuess()
 {
     m_repaint = false;
     
     ItoI_Model *model = new ItoI_Model(m_data);
-    m_K12 = model->Constants()[model->ConstantSize() -1];
-    m_K11 = m_K12/2;
+    m_K11 = model->Constants()[model->ConstantSize() -1];
+    m_K21 = m_K11/2;
     delete model;
-        
-    m_complex_constants = QVector<qreal>() << m_K11 << m_K12;
+    
+    m_complex_constants = QVector<qreal>() << m_K21 << m_K11;
     setOptParamater(m_complex_constants);
-    m_ItoI_signals.resize(m_pure_signals.size());
-    m_ItoII_signals.resize(m_pure_signals.size());
     for(int i = 0; i < SignalCount(); ++i)
     {
-         m_ItoI_signals[i] = ( SignalModel()->data(i,0) +  SignalModel()->data(i,SignalCount() - 1))/2;
-         m_ItoII_signals[i] = SignalModel()->data(i,SignalCount() - 1);
+         m_ItoI_signals <<SignalModel()->lastRow()[i];
+         m_IItoI_signals << SignalModel()->firstRow()[i];
     }
-        
-//     m_opt_para = QVector<double * >() << &m_K11 << &m_K12;
+    
     QVector<qreal * > line1, line2, line3;
     for(int i = 0; i < m_pure_signals.size(); ++i)
     {
         line1 << &m_pure_signals[i];
         line2 << &m_ItoI_signals[i];
-        line3 << &m_ItoII_signals[i];
+        line3 << &m_IItoI_signals[i];
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    m_opt_vec = QVector<QVector<qreal * > >() << line3;
-//     m_opt_para << line3;
+    m_opt_vec = QVector<QVector<qreal * > >()  << line3;
     
     CalculateSignal();
-       
     m_repaint = true;
 }
 
-QVector<QVector<qreal> > ItoI_ItoII_Model::AllShifts()
-{
-    
-        QVector<QVector<qreal> > Shifts;
-    Shifts << m_pure_signals;
-    Shifts << m_ItoI_signals;
-    Shifts << m_ItoII_signals;
-    return Shifts;
-    
-}
 
-void ItoI_ItoII_Model::MiniShifts()
+void IItoI_ItoI_Model::MiniShifts()
 {
     QVector<int > active_signal;
     if(ActiveSignals().size() < SignalCount())
         active_signal = QVector<int>(SignalCount(), 1);
     else
         active_signal = ActiveSignals();
-    
-    QVector<qreal > parameter = m_ItoI_signals;
+    QVector<qreal > parameter = m_IItoI_signals;
     clearOptParameter();
-    setOptParamater(m_ItoI_signals);
+    setOptParamater(m_IItoI_signals);
+    //     for(int iter = 0; iter < m_opt_config.LevMar_Shifts_PerIter; ++iter)
+    //     {
+    QVector<qreal >signal_0, signal_1;
+    signal_0 = m_model_error->firstRow();
+    signal_1 = m_model_error->lastRow();
     
-//     for(int iter = 0; iter < 100; ++iter)
-//     {
-        QVector<qreal > signal_0, signal_1;
-        signal_0 = m_model_error->firstRow();
-        signal_1 = m_model_error->lastRow();
-        for(int j = 0; j < m_lim_para.size(); ++j)
+    for(int j = 0; j < m_lim_para.size(); ++j)
+    {
+        for(int i = 0; i < SignalCount(); ++i)    
         {
-            for(int i = 0; i < SignalCount(); ++i)    
+            if(active_signal[i] == 1)
             {
-                if(active_signal[i] == 1)
-                {
-                    if(m_model_error->firstRow()[i] < 1 && j == 0)
-                        *m_lim_para[j][i] -= m_model_error->firstRow()[i];
-                    if(m_model_error->lastRow()[i] < 1 && j == 1)
-                        *m_lim_para[j][i] -= m_model_error->lastRow()[i];
-                }
+                if(m_model_error->firstRow()[i] < 1 && j == 0)
+                    *m_lim_para[j][i] -= m_model_error->firstRow()[i];
+                if(m_model_error->lastRow()[i] < 1 && j == 1)
+                    *m_lim_para[j][i] -= m_model_error->lastRow()[i];
             }
         }
         
-//         MinimizingComplexConstants(this, m_opt_config.LevMar_Shifts_PerIter, parameter, m_opt_config);
-//     }
+        //         }
+        
+        
+    }
+    //
     setComplexSignals(parameter, 0);
-    setOptParamater(m_complex_constants);
+//     setOptParamater(m_complex_constants);
 }
 
+QVector<QVector<qreal> > IItoI_ItoI_Model::AllShifts()
+{
+    
+        QVector<QVector<qreal> > Shifts;
+    Shifts << m_pure_signals;
+    Shifts << m_ItoI_signals;
+    Shifts << m_IItoI_signals;
+    return Shifts;
+    
+}
 
-void ItoI_ItoII_Model::setComplexSignals(QVector< qreal > list, int i)
+void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
 {
     for(int j = 0; j < list.size(); ++j)
     {
-    if(i == 0 && j < m_ItoI_signals.size())
-        m_ItoI_signals[j] = list[j];        
-    if(i == 1 && j < m_ItoII_signals.size())
-        m_ItoII_signals[j] = list[j];
+        
+    if(i == 0 && j < m_IItoI_signals.size())
+        m_IItoI_signals[j] = list[j];
+    if(i == 1 && j < m_ItoI_signals.size())
+        m_ItoI_signals[j] = list[j];
     }
 }
 
-void ItoI_ItoII_Model::setConstants(QVector< qreal > list)
+void IItoI_ItoI_Model::setConstants(QVector< qreal > list)
 {
      if(list.size() != m_complex_constants.size())
         return;
@@ -154,41 +157,27 @@ void ItoI_ItoII_Model::setConstants(QVector< qreal > list)
          m_complex_constants[i] = list[i];
 }
 
-qreal ItoI_ItoII_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants)
+qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants)
 {
     
     if(constants.size() < 2)
         return host_0;
-    
-    qreal K12 = qPow(10, constants.last());
-    qreal K11 = qPow(10, constants.first());    
-    qreal guest = GuestConcentration(host_0, guest_0, constants);
+    qreal K21= qPow(10, constants.first());
+    qreal K11 = qPow(10, constants.last());
     qreal host;
-    host = host_0/(K11*guest+K11*K12*guest*guest+1);
+    qreal a, b, c;
+    a = K11*K21;
+    b = K11*(2*K21*guest_0-K21*host_0+1);
+    c = K11*(guest_0-host_0)+1;
+    host = MinCubicRoot(a,b,c, -host_0);
     return host;
 }
 
-qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, QVector< qreal > constants)
-{
-        
-    if(constants.size() < 2)
-        return guest_0;
-    
-    qreal K12 = qPow(10, constants.last());
-    qreal K11 = qPow(10, constants.first());
-    qreal a = K11*K12;
-    qreal b = K11*(2*K12*host_0-K12*guest_0+1);
-    qreal c = K11*(host_0-guest_0)+1;
-    qreal guest = MinCubicRoot(a,b,c, -guest_0);
-    return guest;
-}
-
-void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
+void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
 {
     m_corrupt = false;
     if(constants.size() == 0)
         constants = Constants();
-   qDebug() << constants << Constants();
     for(int i = 0; i < DataPoints(); ++i)
     {
          qreal host_0, guest_0;
@@ -202,59 +191,119 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
             guest_0 = ConcentrationModel()->data(0,i);
         }
             
-        qreal K12= qPow(10, constants.last());
-        qreal K11 = qPow(10, constants.first());
-        
+        qreal K21= qPow(10, constants.first());
+        qreal K11 = qPow(10, constants.last());
         qreal host = HostConcentration(host_0, guest_0, constants);
-        qreal guest = GuestConcentration(host_0, guest_0, constants);
+        qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
         qreal complex_11 = K11*host*guest;
-        qreal complex_12 = K11*K12*host*guest*guest;
-//         qDebug() << host_0 << guest_0 << host << guest << complex_11 << complex_12;
+        qreal complex_21 = K11*K21*host*host*guest;
+        
 
         for(int j = 0; j < SignalCount(); ++j)
             {
-                qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ complex_12/host_0*m_ItoII_signals[j];
+                qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ 2*complex_21/host_0*m_IItoI_signals[j];
                 SetSignal(i, j, value);
             }
   
     }
-    if(m_repaint)
+//     if(m_repaint)
     {
-          UpdatePlotModels();
-          emit Recalculated();
+//         UpdatePlotModels();
+        std::cout << "vier-eins" << std::endl;
+         emit Recalculated();
     }
 }
 
-void ItoI_ItoII_Model::setPureSignals(const QVector< qreal > &list)
+void IItoI_ItoI_Model::setPureSignals(const QVector< qreal > &list)
 {
     for(int i = 0; i < list.size(); ++i)
         if(i < m_pure_signals.size())
-            {
-                qDebug() << m_pure_signals[i] << list[i];
-                m_pure_signals[i] = list[i];
-            }
+            m_pure_signals[i] = list[i];
 }
 
 
-QPair< qreal, qreal > ItoI_ItoII_Model::Pair(int i, int j) const
+QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j) const
 {
-    if(i == 0)
-    {
-        if(j < m_ItoI_signals.size()) 
+        if(i == 0)
+        {
+            
+
+        if(j < m_IItoI_signals.size()) 
+        {
+            return QPair<qreal, qreal>(Constants()[i], m_IItoI_signals[j]);
+        } 
+            
+        }else if(i == 1)
+        {
+           if(j < m_ItoI_signals.size()) 
         {
             return QPair<qreal, qreal>(Constants()[i], m_ItoI_signals[j]);
         }          
-    }
-    else if(i == 1)
-    {
-        
-        
-        if(j < m_ItoII_signals.size()) 
-        {
-            return QPair<qreal, qreal>(Constants()[i], m_ItoII_signals[j]);
-        } 
-        
-    }
+        }
     return QPair<qreal, qreal>(0, 0);
 }
-#include "2_1_1_1_Model.moc"
+
+
+
+void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
+{
+    // Highly experimental stuff
+    
+      m_corrupt = false;
+    if(constants.size() == 0)
+        constants = Constants();
+     QVector<qreal> host_0, guest_0;
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        
+        if(*ptr_concentrations)
+        {
+            host_0 << ConcentrationModel()->data(0,i);
+            guest_0 << ConcentrationModel()->data(1,i);
+        }else
+        {
+            host_0 << ConcentrationModel()->data(1,i);
+            guest_0 << ConcentrationModel()->data(0,i);
+        }
+    }
+    
+        qreal K21= qPow(10, constants.first());
+        qreal K11 = qPow(10, constants.last());
+        QVector<double > A_equ, B_equ;
+
+//         SolveEqualSystem(host_0, guest_0, K11, K11*K21, A_equ, B_equ);
+        
+//         qreal host = HostConcentration(host_0, guest_0, constants);
+//         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
+        
+        
+        for(int i = 0; i  < DataPoints(); ++i)
+        {
+        
+            qreal host = A_equ[i];
+            qreal guest = B_equ[i]; //concentration.last();
+            qreal complex_11 = K11*host*guest;
+            qreal complex_21 = K11*K21*host*host*guest;
+        
+        for(int j = 0; j < SignalCount(); ++j)
+            {
+                qreal value = host/host_0[i]*m_pure_signals[j] + complex_11/host_0[i]*m_ItoI_signals[j]+ 2*complex_21/host_0[i]*m_IItoI_signals[j];
+                SetSignal(i, j, value);
+            }
+        }
+    
+    if(m_repaint)
+    {
+        UpdatePlotModels();
+        emit Recalculated();
+    }  
+}
+
+QSharedPointer<AbstractTitrationModel > IItoI_ItoI_Model::Clone() const
+{
+    QSharedPointer<IItoI_ItoI_Model > model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(this), &QObject::deleteLater);
+    return model;
+    
+}
+
+#include "1_1_1_2_Model.moc"

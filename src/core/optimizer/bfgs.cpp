@@ -176,7 +176,7 @@ private:
 class Function
 {
 public:
-    Function(AbstractTitrationModel *model) : m_model(model) {ModelSignals = m_model->getSignals(m_model->ActiveSignals());}
+    Function(QSharedPointer<AbstractTitrationModel> model) : m_model(model) {ModelSignals = m_model->getSignals(m_model->ActiveSignals());}
     double operator()(const VectorXd& value, VectorXd& grad)
     {
         grad = gradient(value);
@@ -226,11 +226,11 @@ public:
         return error;
     }
     Variables ModelSignals;
-    AbstractTitrationModel *m_model;
+    QSharedPointer<AbstractTitrationModel> m_model;
 };    
        
        
-int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     Q_UNUSED(max_iter)
     Q_UNUSED(config)

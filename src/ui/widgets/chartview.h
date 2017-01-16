@@ -70,7 +70,7 @@ private:
     ChartConfig getChartConfig() const;
     
     ChartConfigDialog m_chartconfigdialog;
-    
+    bool m_pending;
 private slots:
     void PlotSettings();
     void PrintPlot();

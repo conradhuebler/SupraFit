@@ -19,20 +19,19 @@
 
 #ifndef MODELWIDGET_H
 #define MODELWIDGET_H
+#include "src/core/minimizer.h"
+
+#include "src/core/dataclass.h"
+#include "src/core/AbstractModel.h"
 
 #include <QtCore/QJsonObject>
-
-#include <QtWidgets/qwidget.h>
+#include <QtCore/QPointer>
+#include <QtWidgets/QWidget>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QVBoxLayout>
 
 #include <QtCharts/QLineSeries>
-
-//#include "src/ui/dialogs/modelhistorydialog.h"
-
-#include "src/core/dataclass.h"
-#include "src/core/AbstractModel.h"
 
 class QDoubleSpinBox;
 class QPushButton;
@@ -44,11 +43,27 @@ class LineSeries;
 
 struct  ModelHistoryElement;
 
+class SpinBox : public QDoubleSpinBox
+{
+    Q_OBJECT
+public:
+    SpinBox(QWidget * parent = 0 );
+protected:
+    bool valueBeingSet;
+public slots:
+    void setValue (double val);
+private slots:
+    void On_valueChanged(double val);
+signals:
+    void valueChangedNotBySet(double val);
+};
+
+
 class ModelElement : public QGroupBox
 {
     Q_OBJECT
 public:
-    ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget *parent = 0);
+    ModelElement(QSharedPointer<AbstractTitrationModel> model, int no, QWidget *parent = 0);
     ~ModelElement();
     double D0() const;
     QVector<double > D() const;
@@ -57,12 +72,12 @@ public:
 public slots:
     void Update();
 private:
-    QDoubleSpinBox *m_d_0;
-    QVector<QDoubleSpinBox * > m_constants;
+    SpinBox *m_d_0;
+    QVector<SpinBox * > m_constants;
     QPointer<QLineEdit > error;
     QPushButton *m_remove, *m_optimize, *m_plot;
     QCheckBox *m_include, *m_show;
-    QPointer<AbstractTitrationModel > m_model;
+    QSharedPointer<AbstractTitrationModel > m_model;
     QPointer<LineSeries > m_error_series, m_signal_series;
     
     int m_no;
@@ -84,20 +99,21 @@ class ModelWidget : public QWidget
     Q_OBJECT
     
 public:
-    ModelWidget(QPointer< AbstractTitrationModel > model, QWidget *parent = 0);
+    ModelWidget(QSharedPointer< AbstractTitrationModel > model, QWidget *parent = 0);
     ~ModelWidget();
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
-    QPointer< AbstractTitrationModel > Model() { return m_model; }
+    QSharedPointer< AbstractTitrationModel > Model() { return m_model; }
     void setMaxIter(int maxiter);
     void addToHistory();
-    
+    Minimizer* getMinimizer() { return m_minimizer; }
+    Minimizer *m_minimizer;
 public slots:
     void LoadJson(const QJsonObject &object);
 private:
-    QPointer< AbstractTitrationModel > m_model;
-    QVector<QPointer<QDoubleSpinBox >  >m_pure_signals;
-    QVector< QVector<QPointer<QDoubleSpinBox > > > m_complex_signals;
-    QVector<QPointer<QDoubleSpinBox> > m_constants;
+    QSharedPointer< AbstractTitrationModel > m_model;
+    QVector<QPointer<SpinBox >  >m_pure_signals;
+    QVector< QVector<QPointer<SpinBox > > > m_complex_signals;
+    QVector<QPointer<SpinBox> > m_constants;
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
@@ -107,7 +123,6 @@ private:
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
     QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_showhistory; 
-//     ModelHistoryDialog *m_modelhistorydialog;
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
@@ -125,7 +140,7 @@ private slots:
     void ImportConstants();
     void ExportConstants();
 //     void ShowHistory();
-    
+    void setParameter();
 public slots:
     void recalulate();
     void OptimizerSettings();
@@ -133,9 +148,7 @@ signals:
     void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void ActiveSignalChanged(QVector<int > active_signals);
-    void RequestCrashFile();
-    void RequestRemoveCrashFile();
-    void InsertModel(const ModelHistoryElement &element);
+
 //     void AddModel(const QJsonObject &json);
 };
 

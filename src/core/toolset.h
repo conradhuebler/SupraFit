@@ -29,8 +29,7 @@ namespace ToolSet{
     
     QVector<qreal > String2DoubleVec(const QString &str);
     
-    
-    
+    QString bool2YesNo(bool var) ;
 }
 
 #endif // TOOLSET_H

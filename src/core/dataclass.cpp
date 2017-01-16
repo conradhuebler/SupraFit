@@ -34,6 +34,7 @@
 #include "dataclass.h"
 #include <QtGlobal>
 
+#include <iostream>
 
 DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent)
 {
@@ -100,15 +101,15 @@ qreal DataTable::data(int column, int row) const
 {
     if(row < m_table.size())
         if(column < m_table[row].size())
-            {
-                return m_table[row][column];
-            }
+        {
+            return m_table[row][column];
+        }
         else
-            {
+        {
             qDebug() << "Column exceeds size of table!";
             return 0;
-            }
-    else
+        }
+        else
         {
             qDebug() << "Row exceeds size of table!";
             return 0;
@@ -121,7 +122,7 @@ qreal & DataTable::data(int column, int row)
     if(row < m_table.size())
         if(column < m_table[row].size())
         {
-                return m_table[row][column];
+            return m_table[row][column];
         }
         else
         {
@@ -171,12 +172,12 @@ void DataTable::insertColumn(QVector<qreal> column)
 
 void DataTable::insertRow(QVector<qreal> row)
 {
-
+    
     if(m_table.isEmpty())
         m_table << row;
     else
         if(row.size() == m_table.first().size())
-                m_table << row;
+            m_table << row;
         else
             qDebug() << "Wrong number of rows!";
 }
@@ -191,8 +192,8 @@ void DataTable::setColumn(QVector<qreal> vector, int column)
 void DataTable::setRow(QVector<qreal> vector, int row)
 {
     m_table[row] = vector;
-//     Q_UNUSED(vector);
-//     Q_UNUSED(row);
+    //     Q_UNUSED(vector);
+    //     Q_UNUSED(row);
     return;
 }
 
@@ -201,7 +202,7 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_concentrations(new bool(t
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;
-  
+    
     m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
     
 }
@@ -212,14 +213,14 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_co
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;
     m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
-     if(m_type == 3)
-     {
+    if(m_type == 3)
+    {
         for(int i = 0; i <= 100; ++i)
         {
             QVector<qreal > vec = QVector<qreal>() << (i)*6/100 << 3;
-              m_concentration_model->insertRow(vec);
+            m_concentration_model->insertRow(vec);
         }
-     }
+    }
     
 }
 
@@ -232,7 +233,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
     
     for(int i = 0; i < other.m_plot_signal_mapper.size(); ++i)
         m_plot_signal_mapper << other.m_plot_signal_mapper[i];
-
+    
     m_type = other.m_type;
     
 }
@@ -246,7 +247,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     
     for(int i = 0; i < other->m_plot_signal_mapper.size(); ++i)
         m_plot_signal_mapper << other->m_plot_signal_mapper[i];
-        
+    
     m_type = other->m_type;
 }
 
@@ -262,23 +263,64 @@ DataClassPrivate::~DataClassPrivate()
 DataClass::DataClass(QObject *parent) : QObject(parent), m_plotmode(DataClass::HG)
 {
     d = new DataClassPrivate;
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        QString x = QString::number(XValue(i));
+        
+        QStandardItem *item;
+        item = new QStandardItem(x);
+        d->m_plot_signal->setItem(i,0, item);
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
+            d->m_plot_signal->setItem(i,j+1, item);
+        }
+    }
 }
 
 DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObject(parent), m_plotmode(DataClass::HG)
 {
     d = new DataClassPrivate(type);
     ImportJSON(json);
+    
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        QString x = QString::number(XValue(i));
+        
+        QStandardItem *item;
+        item = new QStandardItem(x);
+        d->m_plot_signal->setItem(i,0, item);
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
+            d->m_plot_signal->setItem(i,j+1, item);
+        }
+    }
+    
 }
 
 DataClass::DataClass(int type, QObject *parent) :  QObject(parent), m_plotmode(DataClass::HG)
 {
-     d = new DataClassPrivate(type);
+    d = new DataClassPrivate(type);
 }
 
 DataClass::DataClass(const DataClass& other): QObject()
 {
     m_plotmode = other.m_plotmode;
     d = other.d;
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        QString x = QString::number(XValue(i));
+        
+        QStandardItem *item;
+        item = new QStandardItem(x);
+        d->m_plot_signal->setItem(i,0, item);
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
+            d->m_plot_signal->setItem(i,j+1, item);
+        }
+    }
     PlotModel();
 }
 
@@ -286,12 +328,25 @@ DataClass::DataClass(const DataClass* other)
 {
     m_plotmode = other->m_plotmode;
     d = other->d;
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        QString x = QString::number(XValue(i));
+        
+        QStandardItem *item;
+        item = new QStandardItem(x);
+        d->m_plot_signal->setItem(i,0, item);
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
+            d->m_plot_signal->setItem(i,j+1, item);
+        }
+    }
     PlotModel();
 }
 
 DataClass::~DataClass()
 {
-        
+    
 }
 
 QColor DataClass::ColorCode(int i) const
@@ -332,7 +387,7 @@ QVector<double>   DataClass::getSignals(QVector<int > active_signal)
 {
     if(active_signal.size() < SignalCount() )
         active_signal = QVector<int>(SignalCount(), 1);
-
+    
     QVector<double> x(DataPoints()*SignalCount(), 0);
     int index = 0;
     for(int j = 0; j < SignalCount(); ++j)
@@ -349,9 +404,9 @@ QVector<double>   DataClass::getSignals(QVector<int > active_signal)
 
 void DataClass::SwitchConentrations()
 {
-     *d->m_concentrations = !(*d->m_concentrations); 
-     PlotModel();
-     emit recalculate();
+    *d->m_concentrations = !(*d->m_concentrations); 
+    PlotModel();
+    emit recalculate();
 }
 
 void DataClass::PlotModel()
@@ -366,59 +421,57 @@ void DataClass::PlotModel()
             model->setYColumn(j + 1);
             d->m_plot_signal_mapper << model;   
         }
-
+        
     }
-     
-     for(int i = 0; i < DataPoints(); ++i)
-     {
-         QString x = QString::number(XValue(i));
-                       
-         QStandardItem *item;
-            item = new QStandardItem(x);
-            d->m_plot_signal->setItem(i,0, item);
-            for(int j = 0; j < SignalCount(); ++j)
-            {
-                item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
-                d->m_plot_signal->setItem(i,j+1, item);
-            }
-     }
+    
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        QString x = QString::number(XValue(i));
+       
+        d->m_plot_signal->item(i,0)->setData(x, Qt::DisplayRole);
+        
+        for(int j = 0; j < SignalCount(); ++j)
+        { 
+            d->m_plot_signal->item(i,j+1)->setData(QString::number(d->m_signal_model->data(j,i)), Qt::DisplayRole);
+        }
+    }
 }
 
 
 qreal DataClass::XValue(int i) const
 {
-
+    
     switch(m_plotmode){
-            case DataClass::G:
-                if(*d->m_concentrations)
-                    return d->m_concentration_model->data(0,i);
-                else
-                    return d->m_concentration_model->data(1,i);
+        case DataClass::G:
+            if(*d->m_concentrations)
+                return d->m_concentration_model->data(0,i);
+            else
+                return d->m_concentration_model->data(1,i);
             break;
             
-            case DataClass::H:   
-                if(!(*d->m_concentrations))
-                    return d->m_concentration_model->data(1,i);
-                else
-                    return d->m_concentration_model->data(0,i);
+        case DataClass::H:   
+            if(!(*d->m_concentrations))
+                return d->m_concentration_model->data(1,i);
+            else
+                return d->m_concentration_model->data(0,i);
             break;
-                
-            case DataClass::HG:
-                if(*d->m_concentrations)
-                    return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);
-                else
-                    return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);                
+            
+        case DataClass::HG:
+            if(*d->m_concentrations)
+                return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);
+            else
+                return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);                
             break;    
             
-            case DataClass::GH:
-            default:
-                if(!(*d->m_concentrations))
-                    return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);
-                else
-                    return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);                   
+        case DataClass::GH:
+        default:
+            if(!(*d->m_concentrations))
+                return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);
+            else
+                return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);                   
             break;    
-        };
-        return 0;
+    };
+    return 0;
 }
 
 QColor DataClass::color(int i) const
@@ -445,7 +498,7 @@ const QJsonObject DataClass::ExportJSON() const
         concentrationObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_concentration_model->Row(i));
         signalObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_signal_model->Row(i));
     }
-
+    
     json["concentrations"] = concentrationObject;
     json["signals"] = signalObject;
     json["datatype"] = QString("discrete");
@@ -477,11 +530,11 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
     {
         foreach(const QString &str, keys)
         {
-        QVector<qreal > concentrationsVector, signalVector;
-        concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
-        signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
-        d->m_concentration_model->insertRow(concentrationsVector);
-        d->m_signal_model->insertRow(signalVector);
+            QVector<qreal > concentrationsVector, signalVector;
+            concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
+            signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
+            d->m_concentration_model->insertRow(concentrationsVector);
+            d->m_signal_model->insertRow(signalVector);
         }
         return true;
     }
@@ -495,7 +548,7 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
         QVector<qreal > concentrationsVector, signalVector;
         concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
         signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
-//         qDebug() << str << concentrationsVector << signalVector;
+        //         qDebug() << str << concentrationsVector << signalVector;
         int row = str.toInt();
         d->m_concentration_model->setRow(concentrationsVector, row);
         d->m_signal_model->setRow(signalVector, row);

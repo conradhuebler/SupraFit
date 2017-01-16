@@ -82,7 +82,7 @@ struct MyFunctor : Functor<double>
     int no_parameter;
     int no_points;
     Variables ModelSignals;
-    AbstractTitrationModel *model;
+    QSharedPointer<AbstractTitrationModel> model;
     int inputs() const { return no_parameter; } // There are two parameters of the model
     int values() const { return no_points; } // The number of observations
 };
@@ -91,7 +91,7 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
 
 
 
-int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     Q_UNUSED(config)
     Q_UNUSED(max_iter)

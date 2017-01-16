@@ -17,8 +17,8 @@
  * 
  */
 
-#ifndef ItoI_ItoII_Model_H
-#define ItoI_ItoII_Model_H
+#ifndef I_IItoI_ItoI_Model_H
+#define I_IItoI_ItoI_Model_H
 
 #include "src/core/AbstractModel.h"
 
@@ -32,35 +32,42 @@
 
 class QStandardItemModel;
 
-class ItoI_ItoII_Model : public AbstractTitrationModel
+
+class IItoI_ItoI_Model : public AbstractTitrationModel
 {
      Q_OBJECT
     
 public:
-    ItoI_ItoII_Model(const DataClass* data);
-    ~ItoI_ItoII_Model();
+    IItoI_ItoI_Model(const DataClass* data);
+    ~IItoI_ItoI_Model();
     
     QPair<qreal, qreal> Pair(int i, int j = 0) const ;
     inline int ConstantSize() const { return 2;}
     void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);
     void setConstants(QVector< qreal > list);
-    void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
+    virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
     QVector<qreal > Constants() const { return m_complex_constants; }
     virtual QVector< QVector< qreal > > AllShifts();
     void MiniShifts();
     virtual void InitialGuess();
-    
+    virtual QSharedPointer<AbstractTitrationModel > Clone() const;
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) 
-    {
-        return HostConcentration(host_0, guest_0, Constants());
-    }
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
-    qreal GuestConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
-    
-    qreal m_K11, m_K12;
-    QVector<qreal > m_ItoI_signals, m_ItoII_signals;
+protected:
+    qreal m_K21, m_K11;
+    QVector<qreal > m_ItoI_signals, m_IItoI_signals;
 };
 
-#endif // 2_1_1_1_MODEL_H
+class test_II_ItoI_Model : public IItoI_ItoI_Model
+{
+     Q_OBJECT
+     
+ public:
+     test_II_ItoI_Model(const DataClass* data) : IItoI_ItoI_Model(data) { }
+     
+     virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
+};
+
+#endif // 1-1_1-2-MODEL_H

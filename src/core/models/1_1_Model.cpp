@@ -151,9 +151,9 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
         }
     }
     
-    if(m_repaint)
+//     if(m_repaint)
     {
-        UpdatePlotModels();
+//         UpdatePlotModels();
         emit Recalculated();
     }
 }
@@ -193,6 +193,13 @@ QPair< qreal, qreal > ItoI_Model::Pair(int i, int j) const
         return QPair<qreal, qreal>(m_K11, m_ItoI_signals[j]);
     }
     return QPair<qreal, qreal>(0, 0);
+}
+
+QSharedPointer<AbstractTitrationModel > ItoI_Model::Clone() const
+{
+    QSharedPointer<ItoI_Model > model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
+    return model;
+    
 }
 
 #include "1_1_Model.moc"

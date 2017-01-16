@@ -60,7 +60,7 @@ public:
     
 
 public slots:
-    void addModel(QPointer< AbstractTitrationModel > model);
+    void addModel(QSharedPointer< AbstractTitrationModel > model);
     
 private:
     qreal max_shift, min_shift;
@@ -71,12 +71,13 @@ private:
     QPointer<ChartView > m_signalview, m_errorview;
     QPointer<QtCharts::QChart > m_signalchart, m_errorchart;
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
-    QVector< QPointer<AbstractTitrationModel > > m_models;
+    QVector< QWeakPointer<AbstractTitrationModel > > m_models;
     QPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
 //     QSharedPointer<QtCharts::QLineSeries > m_error_axis;
     void Paint();
+     AbstractTitrationModel::PlotMode m_plot_mode;
 private slots:
     void formatAxis();
     void Repaint();

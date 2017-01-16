@@ -33,7 +33,7 @@
 
 
 struct mydata{
-    AbstractTitrationModel *model;
+    QSharedPointer<AbstractTitrationModel> model;
 };
 
 void TitrationModel(double *p, double *x, int m, int n, void *data)
@@ -57,7 +57,7 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
 
 }
 
-int MinimizingComplexConstants(AbstractTitrationModel *model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     double opts[LM_OPTS_SZ], info[LM_INFO_SZ];
     opts[0]=config.LevMar_mu; opts[1]=config.LevMar_Eps1; opts[2]=config.LevMar_Eps2; opts[3]=config.LevMar_Eps3;

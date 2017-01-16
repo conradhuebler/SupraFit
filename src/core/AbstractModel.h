@@ -75,6 +75,9 @@ public:
                 return 0;
             return m_pure_signals[i]; 
         }
+        
+    virtual QSharedPointer<AbstractTitrationModel > Clone() const = 0;
+        
     virtual int ConstantSize() const = 0;
     virtual void setPureSignals(const QVector< qreal > &list) = 0;
     virtual void setComplexSignals(QVector< qreal > list, int i) = 0;
@@ -114,6 +117,8 @@ public:
         m_active_signals = active_signals; 
         emit ActiveSignalsChanged(m_active_signals);
     }
+    virtual void MiniShifts() = 0;
+    QVector<qreal *> getOptConstants() const { return m_opt_para; }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -123,18 +128,11 @@ private:
     
     bool m_debug;
     QString OptPara2String() const;
-    inline QString bool2YesNo(bool var) const
-    {
-        if(var)
-            return QString("yes");
-        else
-            return QString("No");
-    }
 
     QVector<int > m_active_signals;
-
+    bool m_pending;
 protected:
-    virtual void MiniShifts() = 0;
+    
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
     void ClearDataSeries() ;

@@ -75,6 +75,7 @@ set(libmath_SRC
                 src/core/optimizer/eigen_levenberg.cpp
                 src/core/optimizer/bfgs.cpp
                 src/core/libmath.cpp
+                src/core/minimizer.cpp
 )
 add_library(math STATIC ${libmath_SRC})
 qt5_use_modules(math Widgets)

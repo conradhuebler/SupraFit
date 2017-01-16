@@ -122,23 +122,24 @@ void ModelDataHolder::setData(DataClass *dataclass)
 
 void ModelDataHolder::AddModel(int model)
 {
-    QPointer<AbstractTitrationModel > t;
+    QSharedPointer<AbstractTitrationModel > t;
     
     switch(model){
         case 1:
-            t = new ItoI_Model(m_data);
+            t =  QSharedPointer<ItoI_Model>(new ItoI_Model(m_data), &QObject::deleteLater);
             break;
         case 2:
-            t = new IItoI_ItoI_Model(m_data);
+            t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data), &QObject::deleteLater);
             break;
         case 3:
-            t = new ItoI_ItoII_Model(m_data);
+            t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
             break;
 //         case 4:
 //              t = new test_II_ItoI_Model(m_data);
 //              break;
         default:
-            delete t;
+//             delete t;
+            t.clear();
            return; 
         
     };
@@ -169,21 +170,22 @@ void ModelDataHolder::AddModel21_t()
 
 void ModelDataHolder::SimulateModel(int model)
 {
-    QPointer<AbstractTitrationModel > t;
+    QSharedPointer<AbstractTitrationModel > t;
     
     m_data = new DataClass(DataClass::EmptyData);
     switch(model){
         case 1:
-            t = new ItoI_Model(m_data);
+            t = QSharedPointer<ItoI_Model>(new ItoI_Model(m_data), &QObject::deleteLater);
             break;
         case 2:
-            t = new IItoI_ItoI_Model(m_data);
+            t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data), &QObject::deleteLater);
             break;
         case 3:
-            t = new ItoI_ItoII_Model(m_data);
+            t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
             break;
         default:
-            delete t;
+//             delete t;
+            t.clear();
            return; 
         
     };
@@ -193,30 +195,30 @@ void ModelDataHolder::SimulateModel(int model)
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 {
 
-    QPointer<AbstractTitrationModel > t;
+    QSharedPointer<AbstractTitrationModel > t;
     /*
      * WARNING and FIXME I dont like this!
      */
     if(str == "1:1-Model")
     {
-        t = new ItoI_Model(m_data);
+        t = QSharedPointer<ItoI_Model>(new ItoI_Model(m_data), &QObject::deleteLater);
     }
     else if(str == "2:1/1:1-Model")
     {
-         t = new IItoI_ItoI_Model(m_data);
+         t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data), &QObject::deleteLater);
     }
     else if(str == "1:1/1:2-Model"){
-        t = new ItoI_ItoII_Model(m_data);
+        t =  QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
     }else
     {
-        delete t;
+        t.clear();
         return; 
     }
     t->ImportJSON(object);
     ActiveModel(t);
 }
 
-void ModelDataHolder::ActiveModel(QPointer<AbstractTitrationModel> t)
+void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
 {
    
     m_datawidget->setData(m_data);
@@ -225,12 +227,12 @@ void ModelDataHolder::ActiveModel(QPointer<AbstractTitrationModel> t)
     m_modelsWidget->addTab(modelwidget, t->Name());
     
     t->setOptimizerConfig(m_config);
-    connect(t, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-    connect(t, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
+    connect(modelwidget->getMinimizer(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
+    connect(modelwidget->getMinimizer(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
     
-    connect(modelwidget, SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
-    connect(modelwidget, SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
-    connect(modelwidget, SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)));
+    connect(modelwidget->getMinimizer(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
+    connect(modelwidget->getMinimizer(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
+    connect(modelwidget->getMinimizer(), SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)));
     
     QScrollArea *scroll = new QScrollArea;
     scroll->setBackgroundRole(QPalette::Midlight);
@@ -245,7 +247,7 @@ void ModelDataHolder::ActiveModel(QPointer<AbstractTitrationModel> t)
      * after not added them, we allow the next models to be added to history again
      */
     if(m_history)
-        modelwidget->addToHistory();
+        modelwidget->getMinimizer()->addToHistory();
     else
         m_history = true;
 }
@@ -309,9 +311,9 @@ void ModelDataHolder::CreateCrashFile()
     QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
     for(int i = 0; i < m_models.size(); ++i)
     {
-        if(m_models[i])
+        if(!m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i]->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportJSON();
             JsonHandler::AppendJsonFile(obj, filename);        
         }
     }   
@@ -332,9 +334,9 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
     for(int i = 0; i < m_models.size(); ++i)
     {
         
-        if(m_models[i])
+        if(m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i]->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportJSON();
             toplevel["model_" + QString::number(i)] = obj;
             
         }
@@ -349,9 +351,9 @@ void ModelDataHolder::SaveWorkspace(const QString &file)
         
         for(int i = 0; i < m_models.size(); ++i)
         {    
-            if(m_models[i])
+            if(!m_models[i].isNull())
             {
-                QJsonObject obj = m_models[i]->ExportJSON();
+                QJsonObject obj = m_models[i].data()->ExportJSON();
                 toplevel["model_" + QString::number(i)] = obj;       
             }
         }   

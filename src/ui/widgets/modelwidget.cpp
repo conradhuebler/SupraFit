@@ -19,6 +19,7 @@
 #include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
+#include "src/core/minimizer.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/widgets/modelhistorywidget.h"
 
@@ -41,29 +42,54 @@
 #include <QCheckBox>
 #include <QMessageBox>
 #include <QColorDialog>
+
+
+#include <iostream>
+
 #include "modelwidget.h"
 
-ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
+SpinBox::SpinBox(QWidget * parent)
+        : QDoubleSpinBox(parent)
+        , valueBeingSet(false)
+{
+    connect(this,SIGNAL(valueChanged(double)),this,SLOT(On_valueChanged(double)));
+}
+
+void    SpinBox::setValue ( double val )
+{
+    valueBeingSet = true;
+    QDoubleSpinBox::setValue(val);
+    valueBeingSet = false;
+}
+
+void SpinBox::On_valueChanged(double val)
+{
+    if(!valueBeingSet)
+        emit valueChangedNotBySet(val);
+}
+
+
+ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
 {
     QGridLayout *layout = new QGridLayout;
-    m_d_0 = new QDoubleSpinBox;
+    m_d_0 = new SpinBox;
     layout->addWidget(m_d_0, 0, 0);
     m_d_0->setSingleStep(1e-2);
     m_d_0->setDecimals(4);
     m_d_0->setSuffix(" ppm");
     m_d_0->setValue(m_model->PureSignal(m_no));
     
-    connect(m_d_0, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
+    connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
-        QPointer<QDoubleSpinBox >constant = new QDoubleSpinBox;
+        QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
         constant->setSuffix("ppm");
         constant->setValue(m_model->Pair(i, m_no).second);
-        connect(constant, SIGNAL(valueChanged(double)), this, SIGNAL(ValueChanged()));
+        connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         layout->addWidget(constant, 0, i + 1);
     }
     
@@ -107,13 +133,13 @@ ModelElement::ModelElement(QPointer<AbstractTitrationModel> model, int no, QWidg
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
-    connect(m_model, SIGNAL(Recalculated()), this, SLOT(Update()));
-   
+//     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
+    
 }
 
 ModelElement::~ModelElement()
 {
-    delete m_model;
+    //      m_model.clear();
 }
 
 
@@ -187,21 +213,22 @@ void ModelElement::ChooseColor()
     ColorChanged(color);
 }
 
-ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false)
+ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false), m_minimizer(new Minimizer(this))
 {
     qDebug() << m_model->Constants();
+    m_minimizer->setModel(m_model);
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Pure Shift"));
     m_layout->addWidget(pure_shift, 0, 0);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
-        QPointer<QDoubleSpinBox >constant = new QDoubleSpinBox;
+        QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
         constant->setPrefix("10^");
         constant->setValue(m_model->Constants()[i]);
-        connect(constant, SIGNAL(valueChanged(double)), this, SLOT(recalulate()));
+        connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
         
         m_layout->addWidget(constant, 0, i+1);
     }
@@ -228,9 +255,9 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
         EmptyUI();
     
     
-//     m_modelhistorydialog = new ModelHistoryDialog(&m_history, this);
-//     connect(m_modelhistorydialog, SIGNAL(AddModel(QJsonObject)), this, SIGNAL(AddModel(QJsonObject)));
-//     connect(m_modelhistorydialog, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
+    //     m_modelhistorydialog = new ModelHistoryDialog(&m_history, this);
+    //     connect(m_modelhistorydialog, SIGNAL(AddModel(QJsonObject)), this, SIGNAL(AddModel(QJsonObject)));
+    //     connect(m_modelhistorydialog, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
     setLayout(m_layout);
     m_model->CalculateSignal();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
@@ -238,7 +265,7 @@ ModelWidget::ModelWidget(QPointer<AbstractTitrationModel > model, QWidget *paren
 
 ModelWidget::~ModelWidget()
 {
-    delete m_model;
+    m_model.clear();
 }
 
 
@@ -250,7 +277,6 @@ void ModelWidget::DiscreteUI()
     m_optim_config = new QPushButton(tr("Fit Settings"));
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
-//     m_showhistory = new QPushButton(tr("Show History"));
     m_maxiter = new QSpinBox;
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
@@ -262,7 +288,6 @@ void ModelWidget::DiscreteUI()
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
     connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
-//     connect(m_showhistory, SIGNAL(clicked()), this, SLOT(ShowHistory()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -274,7 +299,6 @@ void ModelWidget::DiscreteUI()
     QHBoxLayout *mini_data = new QHBoxLayout;
     mini_data->addWidget(m_import);
     mini_data->addWidget(m_export);
-//     mini_data->addWidget(m_showhistory);
     m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
@@ -292,13 +316,25 @@ void ModelWidget::EmptyUI()
     m_layout->addWidget(m_add_sim_signal);
 }
 
-
+void ModelWidget::setParameter()
+{
+    QVector<qreal > constants = m_model->Constants();
+    
+    for(int j = 0; j < constants.size(); ++j)
+        m_constants[j]->setValue(constants[j]);
+    
+    for(int i = 0; i < m_model_elements.size(); ++i)
+        if(m_model_elements[i])
+            m_model_elements[i]->Update();
+}
 
 void ModelWidget::Repaint()
 {
+    m_minimize_all->setEnabled(true);
     if(m_model->Type() == 3)
         return;
     m_pending = true;
+    setParameter();
     qreal error = 0;
     for(int j = 0; j < m_model_elements.size(); ++j)
     {
@@ -320,7 +356,8 @@ void ModelWidget::recalulate()
     
     CollectParameters();
     m_model->CalculateSignal();
-    QTimer::singleShot(1, this, SLOT(Repaint()));;
+    Repaint();
+//     QTimer::singleShot(1, this, SLOT(Repaint()));;
     m_pending = false;
 }
 
@@ -351,7 +388,7 @@ void ModelWidget::CollectParameters()
 
 void ModelWidget::GlobalMinimize()
 {
-    emit RequestCrashFile();
+    
     if(m_maxiter->value() > 10000)
     {
         int r = QMessageBox::warning(this, tr("So viel."),
@@ -363,26 +400,29 @@ void ModelWidget::GlobalMinimize()
     }
     if(m_pending)
         return;
+    m_minimize_all->setEnabled(false);
     m_pending = true;
     CollectParameters();
     QVector<int > v(10,0);
     OptimizerConfig config = m_model->getOptimizerConfig();
     config.MaxIter = m_maxiter->value();
     m_model->setOptimizerConfig(config);
-    
-    QVector<qreal > constants = m_model->Minimize();
-    addToHistory();
-    for(int j = 0; j < constants.size(); ++j)
-        m_constants[j]->setValue(constants[j]);
+    int result = m_minimizer->Minimize();
+    if(result == 1)
+    {
+        QJsonObject json = m_minimizer->Parameter();
+        m_model->ImportJSON(json);
+        m_model->CalculateSignal();
+    }
     Repaint();
     m_pending = false; 
-    emit RequestRemoveCrashFile();
+    
 }
 
 
 void ModelWidget::LocalMinimize()
 {
-    emit RequestCrashFile();
+    
     if(m_maxiter->value() > 10000)
     {
         int r = QMessageBox::warning(this, tr("So viel."),
@@ -399,26 +439,24 @@ void ModelWidget::LocalMinimize()
     
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
-        QApplication::processEvents();
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         QVector<int > active_signals(m_model_elements.size(), 0);
         active_signals[i] = 1;
         m_model->setActiveSignals(active_signals);
         QVector<int > v(10,0);
-        qDebug() <<"Start Minimize";
         OptimizerConfig config = m_model->getOptimizerConfig();
         config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
         
         
-        QVector<qreal > constants = m_model->Minimize();
-        addToHistory();
-        qDebug() <<"Minimize done";
-    }
-    qDebug() << "Constants set.";
-    qDebug() << "leaving";
-    
-    emit RequestRemoveCrashFile();
-    
+        int result = m_minimizer->Minimize();
+        if(result == 1)
+        {
+            QJsonObject json = m_minimizer->Parameter();
+            m_model->ImportJSON(json);
+            m_model->CalculateSignal();
+        }
+    }  
 }
 
 
@@ -512,33 +550,9 @@ void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportJSON(object);
     m_model->CalculateSignal();
-            QVector<qreal > constants = m_model->Constants();
-            for(int j = 0; j < constants.size(); ++j)
-                m_constants[j]->setValue(constants[j]);
+    QVector<qreal > constants = m_model->Constants();
+    for(int j = 0; j < constants.size(); ++j)
+        m_constants[j]->setValue(constants[j]);
 }
-
-
-void ModelWidget::addToHistory()
-{
-    QJsonObject model = m_model->ExportJSON();
-    ModelHistoryElement element;
-    element.model = model;
-    element.active_signals = m_model->ActiveSignals();
-    qreal error = 0;
-    for(int j = 0; j < m_model_elements.size(); ++j)
-    {
-        error += m_model->SumOfErrors(j);
-        m_model_elements[j]->Update();
-    }
-    element.error = error;
-    emit InsertModel(element);
-//     m_history[m_history.size()] = element;
-}
-
-// void ModelWidget::ShowHistory()
-// {
-//     m_modelhistorydialog->show();
-// }
-
 
 #include "modelwidget.moc"

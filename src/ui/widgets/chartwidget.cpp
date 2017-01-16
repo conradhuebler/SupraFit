@@ -20,6 +20,10 @@
 #include "src/ui/widgets/chartview.h"
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
+
+#include <QtCore/QTimer>
+#include <QtCore/QWeakPointer>
+#include <QtCore/QSharedPointer>
 #include <QDrag>
 #include <QBuffer>
 #include <QVector>
@@ -33,6 +37,8 @@
 #include <QtCharts/QCategoryAxis>
 #include <QPushButton>
 #include <QTableView>
+#include <iostream>
+
 #include "chartwidget.h"
 
 
@@ -117,12 +123,12 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 
 
 
-void ChartWidget::addModel(QPointer<AbstractTitrationModel > model)
+void ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
 {
     m_models << model;
-    model->UpdatePlotModels();
-    connect(model, SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    connect(model, SIGNAL(ActiveSignalsChanged(QVector<int>)), this, SLOT(setActiveSignals(QVector<int>)));
+//     model->UpdatePlotModels();
+    connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
+    connect(model.data(), SIGNAL(ActiveSignalsChanged(QVector<int>)), this, SLOT(setActiveSignals(QVector<int>)));
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
     for(int i = 0; i < model->SignalCount(); ++i)
@@ -150,38 +156,43 @@ void ChartWidget::addModel(QPointer<AbstractTitrationModel > model)
         }
         
     }
-    connect(model, SIGNAL(Recalculated()), this, SLOT(formatAxis()));
-//     connect(model, SIGNAL(Recalculated()), m_errorview, SLOT(formatAxis()));
+//     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(formatAxis()));
     Repaint(); 
     
 }
 
 void ChartWidget::Repaint()
 {         
-    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
-    if(m_rawdata)
-        m_rawdata->setPlotMode(j);
-      m_rawdata->PlotModel();  
+    if(m_plot_mode != (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1))
+    {
+        m_plot_mode = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1);
+        if(m_rawdata)
+            m_rawdata->setPlotMode(m_plot_mode);
+        m_rawdata->PlotModel();  
+    }    
+    std::cout << "fuenf-eins" << std::endl;
     QVector<int > trash;
     for(int i= 0; i < m_models.size(); ++i)
     {
-        if(m_models[i])
+        if(!m_models[i].isNull())
         {
-            m_models[i]->setPlotMode(j);
-            m_models[i]->UpdatePlotModels();
+            m_models[i].data()->setPlotMode(m_plot_mode);
+            m_models[i].data()->UpdatePlotModels();
         }else
             trash << i;
     }
+    std::cout << "fuenf-zwei" << std::endl;
 //     for(int i = 0; i < trash.size(); ++i)
 //         m_models.remove(trash[i]);
 
     formatAxis();
+    std::cout << "fuenf-drei" << std::endl;
 }
 
 void ChartWidget::formatAxis()
 {
-    m_signalview->formatAxis();
-    m_errorview->formatAxis();      
+    QTimer::singleShot(1,m_signalview, SLOT(formatAxis()));
+    QTimer::singleShot(1,m_errorview, SLOT(formatAxis()));
 }
 
 

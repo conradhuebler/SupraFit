@@ -74,14 +74,14 @@ private:
     QPointer<ChartWidget> m_charts;
     DataClass *m_data;
 //     QPlainTextEdit *m_logWidget;
-    QVector<QPointer< AbstractTitrationModel > > m_models;
+    QVector<QWeakPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
     void SimulateModel(int model);
     OptimizerConfig m_config;
 
     bool CheckCrashFile();
     void Json2Model(const QJsonObject &object, const QString &str);
-    void ActiveModel(QPointer<AbstractTitrationModel > t);
+    void ActiveModel(QSharedPointer<AbstractTitrationModel > t);
     bool m_history;
 private slots:
     void AddModel11();
