@@ -31,6 +31,9 @@
 #include <QDebug>
 #include <QtCore/QBuffer>
 #include <QtCore/QMimeData>
+
+#include <cmath>
+
 #include "chartview.h"
 
 void ChartViewPrivate::mousePressEvent(QMouseEvent *event)
@@ -210,8 +213,6 @@ void ChartView::formatAxis()
             }
         }
     }
-    
-    
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     y_axis->setMax(y_max);
     y_axis->setMin(y_min);
@@ -220,9 +221,13 @@ void ChartView::formatAxis()
 
     
      QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-     x_axis->setMax(x_max);
+     x_axis->setMax(x_max*1.1);
      x_axis->setMin(x_min);
-     x_axis->applyNiceNumbers();
+     /*
+      * In some cases when x_max is slightly higher than five, the nice numbers result in x_max = 10, which looks not nice at all
+      */
+     if(fmod(x_max,5) > 1)
+        x_axis->applyNiceNumbers();
      x_axis->setTitleText(m_x_axis);
 }
 
