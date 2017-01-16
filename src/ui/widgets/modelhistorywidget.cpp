@@ -80,7 +80,6 @@ ModelHistory::~ModelHistory()
 void ModelHistory::InsertElement(const ModelHistoryElement *elm)
 {
     ModelHistoryWidget *element = new ModelHistoryWidget(elm);
-    std::cout << element << std::endl;
         m_vlayout->addWidget(element);
         connect(element, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddJson(QJsonObject)));
         connect(element, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadJson(QJsonObject)));
@@ -89,11 +88,13 @@ void ModelHistory::InsertElement(const ModelHistoryElement *elm)
 
 void ModelHistory::Remove(const QJsonObject *json, ModelHistoryWidget *element)
 {
-    std::cout << element << std::endl;
+    Q_UNUSED(json)
     QLayoutItem * item= m_vlayout->itemAt(m_vlayout->indexOf(element));
     m_vlayout->removeItem(item);
+    /*
+     * I know, that we are only deleting the widget but not the element in the map, will be a FIXME
+     */
     delete element;
-//     m_history->
 }
 
 #include "modelhistorywidget.moc"
