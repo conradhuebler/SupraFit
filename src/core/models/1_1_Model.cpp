@@ -79,9 +79,6 @@ void ItoI_Model::MiniShifts()
     else
         active_signal = ActiveSignals();
     
-        QVector<qreal >signal_0, signal_1;
-        signal_0 = m_model_error->firstRow();
-        signal_1 = m_model_error->lastRow();
         for(int j = 0; j < m_lim_para.size(); ++j)
         {
             for(int i = 0; i < SignalCount(); ++i)    
@@ -91,8 +88,7 @@ void ItoI_Model::MiniShifts()
                  if(m_model_error->firstRow()[i] < 1 && j == 0)
                       *m_lim_para[j][i] -= m_model_error->firstRow()[i];
                  if(m_model_error->lastRow()[i] < 1 && j == 1)
-                     *m_lim_para[j][i] -= m_model_error->lastRow()[i];
-                    
+                     *m_lim_para[j][i] -= m_model_error->lastRow()[i];   
                 }
             }
         }

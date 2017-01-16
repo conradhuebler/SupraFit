@@ -49,16 +49,15 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
     dptr->model->setParamter(parameter);
     
     dptr->model->CalculateSignal();
-    qreal error = 0;
     QVector<qreal > x_var = dptr->model->getCalculatedSignals();
-    QVector<qreal > x_obs = dptr->model->getSignals(dptr->model->ActiveSignals());
-    for(int i = 0; i < x_var.size(); ++i)
-    {
-        x[i] = x_var[i] ;
-        error += x_var[i];
-    }
-    std::cout << dptr->model->ModelError() << " " << error << std::endl;
 
+    for(int i = 0; i < x_var.size(); ++i)
+        x[i] = x_var[i] ;
+    std::cout << dptr->model->ModelError() << " ";
+    for(int i = 0; i < parameter.size(); ++i)
+        std::cout << parameter[i] << " ";
+    std::cout << std::endl;
+    
 }
 
 int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)

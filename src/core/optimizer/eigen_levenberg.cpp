@@ -23,7 +23,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
-
+#include <QtCore/QJsonObject>
 #include <QtGlobal>
 #include <QtMath>
 #include <QDebug>
@@ -73,12 +73,12 @@ struct MyFunctor : Functor<double>
         model->setParamter(param);
         model->CalculateSignal();
         QVector<qreal > CalculatedSignals = model->getCalculatedSignals();
-         for( int i = 0; i < values(); ++i)
-         {
+        for( int i = 0; i < values(); ++i)
+        {
   //           fvec(i) = ((CalculatedSignals[i] - ModelSignals[i]));//*(CalculatedSignals[i] - ModelSignals[i]));
-              fvec(i) = sqrt((CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]));
-              std::cout << "Error found " << fvec(1) << std::endl;
-         }
+              fvec(i) = (CalculatedSignals[i] - ModelSignals[i]);
+        }
+          qDebug() << param << "in each step" << model->ModelError();
         return 0;
     }
     int no_parameter;
@@ -102,23 +102,24 @@ int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int
     for(int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
     
-
+    qDebug() << "the input " << model.data()->ExportJSON();
     
     
-     MyFunctor functor(param.size(), model->DataPoints()*model->SignalCount());
+    MyFunctor functor(param.size(), model->DataPoints()*model->SignalCount());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
-    int iter = 0;
+//     int iter = 0;
 
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-      do {
+//       do {
          status = lm.minimizeOneStep(parameter);
-         iter++;
-      } while (status == -1);
+//          iter++;
+//       } while (status == -1);
     for(int i = 0; i < functor.inputs(); ++i)
             param[i] = parameter(i);
+    qDebug() << param << "in every other step" << model->ModelError();
     return 1;
 }
 #endif

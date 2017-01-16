@@ -443,6 +443,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     for (int i = 0; i < Constants().size(); ++i) {
         
         constants << constantsObject[QString::number(i)].toString().toDouble();
+        qDebug() << constants;
     }
     setConstants(constants);
     

@@ -42,7 +42,7 @@ public:
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     void addToHistory();
     QJsonObject Parameter() const;
-    
+    void setParameter(const QJsonObject &json);
 private:
     QString OptPara2String() const;
     QSharedPointer<AbstractTitrationModel> m_model;

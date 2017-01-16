@@ -341,8 +341,8 @@ void ModelWidget::Repaint()
         error += m_model->SumOfErrors(j);
         m_model_elements[j]->Update();
     }
-    
-    m_sum_error->setText(QString::number(error));
+    qDebug() << error << m_model->ModelError();
+    m_sum_error->setText(QString::number((error)));
     m_pending = false;
     m_minimize_all->setEnabled(true);
     m_minimize_single->setEnabled(true);
@@ -382,6 +382,7 @@ void ModelWidget::CollectParameters()
         m_model->setComplexSignals(complex_signals[j], j);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
+    qDebug() << constants;
     m_model->setActiveSignals(active_signals);
     m_model->setConstants(constants);
     m_model->setPureSignals(pure_signals);
@@ -402,10 +403,13 @@ void ModelWidget::GlobalMinimize()
     }
     if(m_pending)
         return;
-    m_minimize_all->setEnabled(false);
-    m_minimize_single->setEnabled(false);
     m_pending = true;
     CollectParameters();
+    m_minimize_all->setEnabled(false);
+    m_minimize_single->setEnabled(false);
+    QJsonObject json = m_model->ExportJSON();
+    qDebug() << json;
+    m_minimizer->setParameter(json);
     QVector<int > v(10,0);
     OptimizerConfig config = m_model->getOptimizerConfig();
     config.MaxIter = m_maxiter->value();
@@ -414,6 +418,7 @@ void ModelWidget::GlobalMinimize()
     if(result == 1)
     {
         QJsonObject json = m_minimizer->Parameter();
+        qDebug() << json;
         m_model->ImportJSON(json);
         m_model->CalculateSignal();
     }

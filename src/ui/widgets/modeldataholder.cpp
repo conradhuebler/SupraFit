@@ -143,7 +143,7 @@ void ModelDataHolder::AddModel(int model)
            return; 
         
     };
-    t->Minimize();
+//     t->Minimize();
     ActiveModel(t);
 }
 
