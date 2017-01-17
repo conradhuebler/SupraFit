@@ -263,39 +263,14 @@ DataClassPrivate::~DataClassPrivate()
 DataClass::DataClass(QObject *parent) : QObject(parent), m_plotmode(DataClass::HG)
 {
     d = new DataClassPrivate;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-        
-        QStandardItem *item;
-        item = new QStandardItem(x);
-        d->m_plot_signal->setItem(i,0, item);
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
-            d->m_plot_signal->setItem(i,j+1, item);
-        }
-    }
+    CreateClearPlotModel();
 }
 
 DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObject(parent), m_plotmode(DataClass::HG)
 {
     d = new DataClassPrivate(type);
     ImportJSON(json);
-    
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-        
-        QStandardItem *item;
-        item = new QStandardItem(x);
-        d->m_plot_signal->setItem(i,0, item);
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
-            d->m_plot_signal->setItem(i,j+1, item);
-        }
-    }
+    CreateClearPlotModel();
     
 }
 
@@ -308,19 +283,7 @@ DataClass::DataClass(const DataClass& other): QObject()
 {
     m_plotmode = other.m_plotmode;
     d = other.d;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-        
-        QStandardItem *item;
-        item = new QStandardItem(x);
-        d->m_plot_signal->setItem(i,0, item);
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
-            d->m_plot_signal->setItem(i,j+1, item);
-        }
-    }
+    CreateClearPlotModel();
     PlotModel();
 }
 
@@ -328,6 +291,17 @@ DataClass::DataClass(const DataClass* other)
 {
     m_plotmode = other->m_plotmode;
     d = other->d;
+    CreateClearPlotModel();
+    PlotModel();
+}
+
+DataClass::~DataClass()
+{
+    
+}
+
+void DataClass::CreateClearPlotModel()
+{
     for(int i = 0; i < DataPoints(); ++i)
     {
         QString x = QString::number(XValue(i));
@@ -341,13 +315,8 @@ DataClass::DataClass(const DataClass* other)
             d->m_plot_signal->setItem(i,j+1, item);
         }
     }
-    PlotModel();
 }
 
-DataClass::~DataClass()
-{
-    
-}
 
 QColor DataClass::ColorCode(int i) const
 {

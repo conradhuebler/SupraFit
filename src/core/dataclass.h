@@ -174,7 +174,7 @@ public slots:
 private:
     
     QExplicitlySharedDataPointer<DataClassPrivate > d;
-    
+    void CreateClearPlotModel();
 protected:
     PlotMode m_plotmode;
 signals:
