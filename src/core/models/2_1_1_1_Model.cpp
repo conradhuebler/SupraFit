@@ -206,12 +206,7 @@ void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
             }
   
     }
-//     if(m_repaint)
-    {
-//         UpdatePlotModels();
-        std::cout << "vier-eins" << std::endl;
          emit Recalculated();
-    }
 }
 
 void IItoI_ItoI_Model::setPureSignals(const QVector< qreal > &list)
@@ -291,12 +286,8 @@ void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
                 SetSignal(i, j, value);
             }
         }
-    
-    if(m_repaint)
-    {
-        UpdatePlotModels();
+
         emit Recalculated();
-    }  
 }
 
 QSharedPointer<AbstractTitrationModel > IItoI_ItoI_Model::Clone() const

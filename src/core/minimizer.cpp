@@ -108,17 +108,17 @@ int Minimizer::Minimize()
         QVector<qreal > old_constants = constants;
         qreal old_error = m_model->ModelError();
         
-        m_opt_config.LevMar_Constants_PerIter = 1;
+        m_opt_config.LevMar_Constants_PerIter = 10;
         qDebug() << "the first input" << m_model->ExportJSON() << constants;
         max_convergence += MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         m_model->setOptParamater(constants);
-//          m_model->MiniShifts(); 
+        m_model->MiniShifts(); 
         QVector<qreal *> optconst = m_model->getOptConstants();
         QVector<qreal > blub;
         for(int i = 0; i < optconst.size(); ++i)
             blub << *optconst[i];
-//         if(blub.size() > 0)
-//              MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
+        if(blub.size() > 0)
+             MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
         m_model->setOptParamater(constants);
 //         if(max_convergence == 30)
 //             allow_loop = false;

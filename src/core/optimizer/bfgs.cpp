@@ -193,12 +193,8 @@ public:
             qreal y1 = 0, y2 = 0;
             
             input[i] += diff;
-//             std::cout << "parameter to go 1 ";
-//             std::cout << input << std::endl;
             y1 = var(input);
             input[i] -= 2*diff;
-//              std::cout << "parameter to go 2 ";
-//             std::cout << input << std::endl;
             y2 = var(input);
             grad(i) = (y1-y2)/2/diff;
            
@@ -214,16 +210,7 @@ public:
         
         m_model->setParamter(parameter);
         m_model->CalculateSignal();
-        Variables CalculatedSignals = m_model->getCalculatedSignals();
-        qreal error = 0;
-        for( int i = 0; i < CalculatedSignals.size(); ++i)
-        {
-             error += (CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]);
- //           error += (CalculatedSignals[i] - ModelSignals[i]);
-        }
-
-        
-        return error;
+        return m_model->ModelError();
     }
     Variables ModelSignals;
     QSharedPointer<AbstractTitrationModel> m_model;
