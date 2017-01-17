@@ -41,6 +41,10 @@ NonLinearFitThread::~NonLinearFitThread()
 
 void NonLinearFitThread::run()
 {
+    m_best_intermediate = m_model->ExportJSON();
+    m_last_parameter = m_model->ExportJSON();
+    m_steps = 0;
+    m_converged = false;
     FastFit();
 }
 
@@ -59,11 +63,9 @@ void NonLinearFitThread::setParameter(const QJsonObject &json)
 
 
 void NonLinearFitThread::FastFit()
-{
-    int result = -1;
-    QVector<qreal> constants = m_model->Constants();
+{   
     QVector<qreal> old_para_constant = m_model->Constants();
-    
+    QVector<qreal> constants = m_model->Constants();
 
     bool convergence = false;
     bool constants_convergence = false;
@@ -71,7 +73,7 @@ void NonLinearFitThread::FastFit()
     int iter = 0;
     bool allow_loop = true;
     bool process_stopped = false;
-    int max_convergence = 0;
+
     while((allow_loop && !convergence))
     {
         iter++;   
@@ -81,13 +83,11 @@ void NonLinearFitThread::FastFit()
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
-        QVector<qreal > old_constants = constants;
+        QVector<qreal > old_constants =  m_model->Constants();
         qreal old_error = m_model->ModelError();
         
-        m_opt_config.LevMar_Constants_PerIter = 10;
-        qDebug() << "the first input" << m_model->ExportJSON() << constants;
-        max_convergence += MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
-        m_model->setOptParamater(constants);
+        constants = NonLinearFitComplexConstants(1);
+        m_model->setConstants(constants);
         m_model->MiniShifts(); 
         QVector<qreal *> optconst = m_model->getOptConstants();
         QVector<qreal > blub;
@@ -96,8 +96,7 @@ void NonLinearFitThread::FastFit()
         if(blub.size() > 0)
              MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
         m_model->setOptParamater(constants);
-//         if(max_convergence == 30)
-//             allow_loop = false;
+
         qreal error = m_model->ModelError();
         
         qreal constant_diff = 0;
@@ -107,7 +106,7 @@ void NonLinearFitThread::FastFit()
             if(constants[z] < 0)
             {
                 emit Message("*** Something quite seriosly happend to the complexation constant. ***\n", 4);
-                emit Message("*** At least one fall below zero, will stop optimization now and restore old values. ***\n", 4);
+                emit Message("*** At least one fall below zero, will stop optimization now and give the best intermediate result. ***\n", 4);
                 if(m_model->isCorrupt())
                     emit Message("*** Calculated signals seems corrupt (infinity or not even a number (nan)). ***\n", 4);
                 emit Warning("Something quite seriosly happend to the complexation constant.\nAt least one fall below zero, will stop optimization now and restore old values.", 0);
@@ -127,7 +126,8 @@ void NonLinearFitThread::FastFit()
         }
         else
             constants_convergence = false;
-        
+        if(error < old_error)
+            m_best_intermediate = m_model->ExportJSON();
         if(qAbs(error - old_error) < m_opt_config.Error_Convergence)
         {
             if(!error_convergence)
@@ -146,7 +146,7 @@ void NonLinearFitThread::FastFit()
         
         emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
     } 
-    qDebug() << constants << "after optimization";
+
     
     if(!convergence && !process_stopped)
         emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
@@ -172,35 +172,33 @@ void NonLinearFitThread::FastFit()
             message += "Constant "+ QString(i)+ " " +QString::number(m_model->Constants()[i]) +" ";
         message += "Sum of Error is " + QString::number(error);
         message += "\n";
-        Message(message, 2);
-        
-//         m_repaint = true;
-//         m_model->CalculateSignal();
-        result = 1;
-        
+        m_last_parameter = m_model->ExportJSON();
+        m_converged = true;
+        Message(message, 2);        
     }
 }
 
-void NonLinearFitThread::DifferenceFitSignalConstants()
-{
+int NonLinearFitThread::DifferenceFitSignalConstants()
+{    
+    return 0;
 }
 
-void NonLinearFitThread::NonLinearFitComplexConstants()
+QVector<qreal> NonLinearFitThread::NonLinearFitComplexConstants(int maxsteps)
 {
+    QVector<qreal> constants = m_model->Constants();
+    for(int i = 0; i < maxsteps; ++i)
+    {
+        m_opt_config.LevMar_Constants_PerIter = 10;
+        MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
+        m_model->setConstants(constants);
+    }
+    return constants;
 }
 
-void NonLinearFitThread::NonLinearFitSignalConstants()
+int NonLinearFitThread::NonLinearFitSignalConstants()
 {
+        return 0;
 }
-
-
-
-QJsonObject NonLinearFitThread::Parameter() const
-{
-    return m_model->ExportJSON();
-}
-
-
 
 Minimizer::Minimizer(QObject* parent) : QObject(parent), m_inform_config_changed(true)
 {
@@ -257,14 +255,21 @@ int Minimizer::Minimize()
     {
      qDebug() << "wired happend";   
     }
-    m_last_parameter= thread->Parameter();
+    if(thread->Converged())
+        m_last_parameter = thread->ConvergedParameter();
+    else
+        m_last_parameter = thread->BestIntermediateParameter();
     delete thread;
+
+    m_model->ImportJSON(m_last_parameter);
+    m_model->CalculateSignal();
     emit RequestRemoveCrashFile();
     addToHistory();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
     
     QApplication::restoreOverrideCursor();
+    return 0;
 }
 
 void Minimizer::setModel(const QSharedPointer<AbstractTitrationModel> model)

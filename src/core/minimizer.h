@@ -37,17 +37,21 @@ public:
     ~NonLinearFitThread();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
     virtual void run ();
-    QJsonObject Parameter() const;
+    inline QJsonObject ConvergedParameter() { return m_last_parameter; }
+    inline QJsonObject BestIntermediateParameter() const { return m_best_intermediate; }
     void setParameter(const QJsonObject &json);
     inline void setOptimizerConfig(const OptimizerConfig &config) { m_opt_config = config; }
+    inline bool Converged() const { return m_converged; }
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
-    
+    QJsonObject m_last_parameter, m_best_intermediate;
     void FastFit();
-    void NonLinearFitComplexConstants();
-    void NonLinearFitSignalConstants();
-    void DifferenceFitSignalConstants();
+    QVector<qreal> NonLinearFitComplexConstants(int maxsteps);
+    int NonLinearFitSignalConstants();
+    int DifferenceFitSignalConstants();
     OptimizerConfig m_opt_config;
+    bool m_converged;
+    int m_steps;
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);
