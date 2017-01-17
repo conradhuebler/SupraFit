@@ -39,7 +39,7 @@ Minimizer::~Minimizer()
 
 void Minimizer::setModel(const QSharedPointer<AbstractTitrationModel> model)
 {
-    m_model = model->Clone();
+    m_model = model;//->Clone();
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)));
 }
@@ -109,7 +109,8 @@ int Minimizer::Minimize()
         qreal old_error = m_model->ModelError();
         
         m_opt_config.LevMar_Constants_PerIter = 1;
-        max_convergence += MinimizingComplexConstants(m_model->Clone(), m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
+        qDebug() << "the first input" << m_model->ExportJSON() << constants;
+        max_convergence += MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         m_model->setOptParamater(constants);
 //         m_model->MiniShifts(); 
         QVector<qreal *> optconst = m_model->getOptConstants();

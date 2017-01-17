@@ -45,6 +45,16 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
     m_repaint = true;
 }
 
+// ItoI_Model::ItoI_Model(const ItoI_Model& other) : AbstractTitrationModel(other)
+// {
+//     
+// }
+// 
+// ItoI_Model::ItoI_Model(const ItoI_Model* other)
+// {
+// }
+
+
 ItoI_Model::~ItoI_Model() 
 {
 
@@ -150,7 +160,7 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
 //     if(m_repaint)
     {
 //         UpdatePlotModels();
-        emit Recalculated();
+         emit Recalculated();
     }
 }
 

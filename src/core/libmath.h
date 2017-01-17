@@ -36,7 +36,7 @@ qreal df(qreal x, qreal a, qreal b, qreal c);
 //     void TitrationModel(double *p, double *x, int m, int n, void *data);
 // #endif
 
-int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config);
+int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config);
 int SolveEqualSystem(double A_0, double B_0, double beta_11, double beta_21, QVector<double > &concentration);
 int SolveEqualSystem(QVector<double >A_0, QVector<double> B_0, double beta_11, double beta_21, QVector<double > &A_equ, QVector<double > &B_equ);
 #endif // DATACLASS_H

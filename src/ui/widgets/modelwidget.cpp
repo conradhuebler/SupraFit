@@ -404,6 +404,7 @@ void ModelWidget::GlobalMinimize()
     if(m_pending)
         return;
     m_pending = true;
+    std::cout << "the ptr of the model " << m_model.data() << std::endl;
     CollectParameters();
     m_minimize_all->setEnabled(false);
     m_minimize_single->setEnabled(false);

@@ -70,21 +70,21 @@ struct MyFunctor : Functor<double>
         for(int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
         
-        model->setParamter(param);
-        model->CalculateSignal();
-        QVector<qreal > CalculatedSignals = model->getCalculatedSignals();
+        model.data()->setParamter(param);
+        model.data()->CalculateSignal();
+        QVector<qreal > CalculatedSignals = model.data()->getCalculatedSignals();
         for( int i = 0; i < values(); ++i)
         {
   //           fvec(i) = ((CalculatedSignals[i] - ModelSignals[i]));//*(CalculatedSignals[i] - ModelSignals[i]));
               fvec(i) = (CalculatedSignals[i] - ModelSignals[i]);
         }
-          qDebug() << param << "in each step" << model->ModelError();
+          qDebug() << param << "in each step" << model.data()->ModelError();
         return 0;
     }
     int no_parameter;
     int no_points;
     Variables ModelSignals;
-    QSharedPointer<AbstractTitrationModel> model;
+    QWeakPointer<AbstractTitrationModel> model;
     int inputs() const { return no_parameter; } // There are two parameters of the model
     int values() const { return no_points; } // The number of observations
 };
@@ -93,11 +93,11 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
 
 
 
-int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     Q_UNUSED(config)
     Q_UNUSED(max_iter)
-    Variables ModelSignals = model->getSignals(model->ActiveSignals());
+    Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
     Eigen::VectorXd parameter(param.size());
     for(int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
@@ -105,21 +105,21 @@ int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int
     qDebug() << "the input " << model.data()->ExportJSON();
     
     
-    MyFunctor functor(param.size(), model->DataPoints()*model->SignalCount());
+    MyFunctor functor(param.size(), model.data()->DataPoints()*model.data()->SignalCount());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
-//     int iter = 0;
+     int iter = 0;
 
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-//       do {
+       do {
          status = lm.minimizeOneStep(parameter);
-//          iter++;
-//       } while (status == -1);
+          iter++;
+       } while (status == -1);
     for(int i = 0; i < functor.inputs(); ++i)
             param[i] = parameter(i);
-    qDebug() << param << "in every other step" << model->ModelError();
+    qDebug() << param << "in every other step" << model.data()->ModelError();
     return 1;
 }
 #endif

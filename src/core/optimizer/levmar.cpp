@@ -20,6 +20,7 @@
 
 #ifdef USE_levmarOptimizer
 
+#include <QtCore/QJsonObject>
 #include <QtGlobal>
 #include <QtMath>
 #include <QDebug>
@@ -33,7 +34,7 @@
 
 
 struct mydata{
-    QSharedPointer<AbstractTitrationModel> model;
+    QWeakPointer<AbstractTitrationModel> model;
 };
 
 void TitrationModel(double *p, double *x, int m, int n, void *data)
@@ -46,33 +47,33 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
     QVector<qreal> parameter;
     for(int i = 0; i < m; ++i)
         parameter << p[i];
-    dptr->model->setParamter(parameter);
+    dptr->model.data()->setParamter(parameter);
     
-    dptr->model->CalculateSignal();
-    QVector<qreal > x_var = dptr->model->getCalculatedSignals();
+    dptr->model.data()->CalculateSignal();
+    QVector<qreal > x_var = dptr->model.data()->getCalculatedSignals();
 
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i] ;
-    std::cout << dptr->model->ModelError() << " ";
+    std::cout << dptr->model.data()->ModelError() << " ";
     for(int i = 0; i < parameter.size(); ++i)
         std::cout << parameter[i] << " ";
     std::cout << std::endl;
     
 }
 
-int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     double opts[LM_OPTS_SZ], info[LM_INFO_SZ];
     opts[0]=config.LevMar_mu; opts[1]=config.LevMar_Eps1; opts[2]=config.LevMar_Eps2; opts[3]=config.LevMar_Eps3;
     opts[4]=config.LevMar_Delta;
     struct mydata data;
     data.model = model;
-    double *x = new double[data.model->DataPoints()*data.model->SignalCount()];
-    
-    QVector<qreal > x_var = data.model->getSignals(data.model->ActiveSignals());
+    double *x = new double[data.model.data()->DataPoints()*data.model.data()->SignalCount()];
+    std::cout << "ptr of model" << model.data() << std::endl;
+    QVector<qreal > x_var = data.model.data()->getSignals(data.model.data()->ActiveSignals());
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i];
-    
+    qDebug() << "the input " << model.data()->ExportJSON();
     
     QVector<double > parameter = param;
     
@@ -94,7 +95,7 @@ int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int
     }
     
     int m =  parameter.size();
-    int n = model->DataPoints()*model->SignalCount();
+    int n = model.data()->DataPoints()*model.data()->SignalCount();
     
     int nums = dlevmar_dif(TitrationModel, p, x, m, n, max_iter, opts, info, NULL, NULL, (void *)&data);
     QString result;
@@ -111,6 +112,7 @@ int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int
     
     delete[] x;
     delete[] p;
+//     model.clear();
     return nums;
 }
 
