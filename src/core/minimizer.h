@@ -23,8 +23,37 @@
 #include "src/ui/widgets/modelhistorywidget.h"
 #include <QtCore/QSharedPointer>
 #include <QtCore/QJsonObject>
+#include <QtCore/QObject>
+#include <QtCore/QRunnable>
+#include <QtCore/QThreadPool>
 
 class AbstractTitrationModel;
+
+class NonLinearFitThread : public QObject, public QRunnable
+{
+ Q_OBJECT
+public:
+    NonLinearFitThread();
+    ~NonLinearFitThread();
+    void setModel(const QSharedPointer<AbstractTitrationModel> model);
+    virtual void run ();
+    QJsonObject Parameter() const;
+    void setParameter(const QJsonObject &json);
+    inline void setOptimizerConfig(const OptimizerConfig &config) { m_opt_config = config; }
+private:
+    QSharedPointer<AbstractTitrationModel> m_model;
+    
+    void FastFit();
+    void NonLinearFitComplexConstants();
+    void NonLinearFitSignalConstants();
+    void DifferenceFitSignalConstants();
+    OptimizerConfig m_opt_config;
+signals:
+    void Message(const QString &str, int priority);
+    void Warning(const QString &str, int priority);
+};
+
+
 
 class Minimizer : public QObject
 {
@@ -41,14 +70,14 @@ public:
     }
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     void addToHistory();
-    QJsonObject Parameter() const;
+    QJsonObject Parameter() const{ return m_last_parameter; };
     void setParameter(const QJsonObject &json);
 private:
-    QString OptPara2String() const;
     QSharedPointer<AbstractTitrationModel> m_model;
     OptimizerConfig m_opt_config;
     bool m_inform_config_changed;
-    
+    QString OptPara2String() const;
+    QJsonObject m_last_parameter;
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);

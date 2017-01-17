@@ -27,70 +27,46 @@
 #include <QtCore/QDateTime>
 
 #include "minimizer.h"
-
-Minimizer::Minimizer(QObject* parent) : QObject(parent), m_inform_config_changed(true)
+NonLinearFitThread::NonLinearFitThread()
 {
+  setAutoDelete(false);  
+    
+}
+
+NonLinearFitThread::~NonLinearFitThread()
+{
+    
+    
+}
+
+void NonLinearFitThread::run()
+{
+    FastFit();
 }
 
 
-Minimizer::~Minimizer()
-{
-}
-
-void Minimizer::setModel(const QSharedPointer<AbstractTitrationModel> model)
+void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> model)
 {
     m_model = model->Clone();
-    connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-    connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)));
+    connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
+    connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
 }
 
-void Minimizer::setParameter(const QJsonObject &json)
+void NonLinearFitThread::setParameter(const QJsonObject &json)
 {
      m_model->ImportJSON(json);
 }
-QString Minimizer::OptPara2String() const
-{
-    QString result;
-    result += "\n";
-    result += "|***********************************************************************************|\n";
-    result += "|********************General Config for Optimization********************************|\n";
-    result += "|Maximal number of Iteration: " + QString::number(m_opt_config.MaxIter) + "|\n";
-    result += "|Shifts will be optimized for zero and saturation concentration: " + ToolSet::bool2YesNo(m_opt_config.OptimizeBorderShifts) + "|\n";
-    result += "|Shifts will be optimized for any other concentration: " + ToolSet::bool2YesNo(m_opt_config.OptimizeIntermediateShifts) + "|\n";
-    result += "|No. of LevenbergMarquadt Steps to optimize constants each Optimization Step: " + QString::number(m_opt_config.LevMar_Constants_PerIter) + "|\n";
-    result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
-    result += "\n";
-    result += "|********************LevenbergMarquadt Configuration********************************|\n";
-    result += "|scale factor for initial \\mu {opts[0]}}" + QString::number(m_opt_config.LevMar_mu) + "|\n";
-    result += "|stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}" + QString::number(m_opt_config.LevMar_Eps1) + "|\n";
-    result += "|stopping thresholds for ||Dp||_2 = {opts[2]}" +  QString::number(m_opt_config.LevMar_Eps2) + "|\n";
-    result += "|stopping thresholds for ||e||_2 = {opts[3]}" + QString::number(m_opt_config.LevMar_Eps3) + "|\n";
-    result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
-    result += "|********************LevenbergMarquadt Configuration********************************|\n";
-    result += "\n";
-    return result;
-}
 
-int Minimizer::Minimize()
+
+void NonLinearFitThread::FastFit()
 {
     int result = -1;
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-    emit RequestCrashFile();
     QVector<qreal> constants = m_model->Constants();
     QVector<qreal> old_para_constant = m_model->Constants();
     
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    QString OptPara;
-    OptPara += "Starting Optimization Run for " + m_model->Name() +"\n";
-    if(m_inform_config_changed)
-    {
-        OptPara += OptPara2String();
-        m_inform_config_changed = false;
-    }
-    emit Message(OptPara, 2);
+
     bool convergence = false;
     bool constants_convergence = false;
-    //     bool shift_convergence = false;
     bool error_convergence = false;
     int iter = 0;
     bool allow_loop = true;
@@ -171,8 +147,7 @@ int Minimizer::Minimize()
         emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
     } 
     qDebug() << constants << "after optimization";
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
+    
     if(!convergence && !process_stopped)
         emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
     if(process_stopped)
@@ -202,18 +177,105 @@ int Minimizer::Minimize()
 //         m_repaint = true;
 //         m_model->CalculateSignal();
         result = 1;
-        addToHistory();
+        
     }
-    
-    QApplication::restoreOverrideCursor();
-    emit RequestRemoveCrashFile();
-//     return constants;
-    
-    return result;
-//     return true;
+}
+
+void NonLinearFitThread::DifferenceFitSignalConstants()
+{
+}
+
+void NonLinearFitThread::NonLinearFitComplexConstants()
+{
+}
+
+void NonLinearFitThread::NonLinearFitSignalConstants()
+{
 }
 
 
+
+QJsonObject NonLinearFitThread::Parameter() const
+{
+    return m_model->ExportJSON();
+}
+
+
+
+Minimizer::Minimizer(QObject* parent) : QObject(parent), m_inform_config_changed(true)
+{
+}
+
+
+Minimizer::~Minimizer()
+{
+}
+
+QString Minimizer::OptPara2String() const
+{
+    QString result;
+    result += "\n";
+    result += "|***********************************************************************************|\n";
+    result += "|********************General Config for Optimization********************************|\n";
+    result += "|Maximal number of Iteration: " + QString::number(m_opt_config.MaxIter) + "|\n";
+    result += "|Shifts will be optimized for zero and saturation concentration: " + ToolSet::bool2YesNo(m_opt_config.OptimizeBorderShifts) + "|\n";
+    result += "|Shifts will be optimized for any other concentration: " + ToolSet::bool2YesNo(m_opt_config.OptimizeIntermediateShifts) + "|\n";
+    result += "|No. of LevenbergMarquadt Steps to optimize constants each Optimization Step: " + QString::number(m_opt_config.LevMar_Constants_PerIter) + "|\n";
+    result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
+    result += "\n";
+    result += "|********************LevenbergMarquadt Configuration********************************|\n";
+    result += "|scale factor for initial \\mu {opts[0]}}" + QString::number(m_opt_config.LevMar_mu) + "|\n";
+    result += "|stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}" + QString::number(m_opt_config.LevMar_Eps1) + "|\n";
+    result += "|stopping thresholds for ||Dp||_2 = {opts[2]}" +  QString::number(m_opt_config.LevMar_Eps2) + "|\n";
+    result += "|stopping thresholds for ||e||_2 = {opts[3]}" + QString::number(m_opt_config.LevMar_Eps3) + "|\n";
+    result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
+    result += "|********************LevenbergMarquadt Configuration********************************|\n";
+    result += "\n";
+    return result;
+}
+
+int Minimizer::Minimize()
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    emit RequestCrashFile();
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    QString OptPara;
+    OptPara += "Starting Optimization Run for " + m_model->Name() +"\n";
+    if(m_inform_config_changed)
+    {
+        OptPara += OptPara2String();
+        m_inform_config_changed = false;
+    }
+    emit Message(OptPara, 2);
+    NonLinearFitThread *thread = new NonLinearFitThread;
+    connect(thread, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
+    connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
+    thread->setModel(m_model);
+    QThreadPool *threadpool = QThreadPool::globalInstance();
+    threadpool->start(thread);
+    if(!threadpool->waitForDone())
+    {
+     qDebug() << "wired happend";   
+    }
+    m_last_parameter= thread->Parameter();
+    delete thread;
+    emit RequestRemoveCrashFile();
+    addToHistory();
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
+    
+    QApplication::restoreOverrideCursor();
+}
+
+void Minimizer::setModel(const QSharedPointer<AbstractTitrationModel> model)
+{
+    m_model = model;
+}
+
+void Minimizer::setParameter(const QJsonObject& json)
+{
+    m_model->ImportJSON(json);
+}
 
 
 void Minimizer::addToHistory()
@@ -228,11 +290,5 @@ void Minimizer::addToHistory()
     emit InsertModel(element);
 //     m_history[m_history.size()] = element;
 }
-
-QJsonObject Minimizer::Parameter() const
-{
-    return m_model->ExportJSON();
-}
-
 
 #include "minimizer.moc"
