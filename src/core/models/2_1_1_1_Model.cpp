@@ -23,7 +23,7 @@
 
 #include "src/core/libmath.h"
 #include <QtMath>
-
+#include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
 #include <QStandardItemModel>
@@ -301,7 +301,9 @@ void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
 
 QSharedPointer<AbstractTitrationModel > IItoI_ItoI_Model::Clone() const
 {
-    QSharedPointer<IItoI_ItoI_Model > model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractTitrationModel > model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(this), &QObject::deleteLater);
+    model.data()->ImportJSON(ExportJSON());
+    model.data()->setActiveSignals(ActiveSignals());
     return model;
     
 }

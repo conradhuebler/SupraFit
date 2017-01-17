@@ -78,13 +78,12 @@ struct MyFunctor : Functor<double>
   //           fvec(i) = ((CalculatedSignals[i] - ModelSignals[i]));//*(CalculatedSignals[i] - ModelSignals[i]));
               fvec(i) = (CalculatedSignals[i] - ModelSignals[i]);
         }
-          qDebug() << param << "in each step" << model.data()->ModelError();
         return 0;
     }
     int no_parameter;
     int no_points;
     Variables ModelSignals;
-    QWeakPointer<AbstractTitrationModel> model;
+    QSharedPointer<AbstractTitrationModel> model;
     int inputs() const { return no_parameter; } // There are two parameters of the model
     int values() const { return no_points; } // The number of observations
 };
@@ -102,9 +101,6 @@ int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int m
     for(int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
     
-    qDebug() << "the input " << model.data()->ExportJSON();
-    
-    
     MyFunctor functor(param.size(), model.data()->DataPoints()*model.data()->SignalCount());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
@@ -119,7 +115,6 @@ int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int m
        } while (status == -1);
     for(int i = 0; i < functor.inputs(); ++i)
             param[i] = parameter(i);
-    qDebug() << param << "in every other step" << model.data()->ModelError();
     return 1;
 }
 #endif

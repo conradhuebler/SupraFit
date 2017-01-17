@@ -218,7 +218,7 @@ public:
         qreal error = 0;
         for( int i = 0; i < CalculatedSignals.size(); ++i)
         {
-             error += sqrt((CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]));
+             error += (CalculatedSignals[i] - ModelSignals[i])*(CalculatedSignals[i] - ModelSignals[i]);
  //           error += (CalculatedSignals[i] - ModelSignals[i]);
         }
 
@@ -230,7 +230,7 @@ public:
 };    
        
        
-int MinimizingComplexConstants(QSharedPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     Q_UNUSED(max_iter)
     Q_UNUSED(config)

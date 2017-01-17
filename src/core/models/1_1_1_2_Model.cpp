@@ -22,7 +22,7 @@
 #include "src/core/models.h"
 #include "src/core/libmath.h"
 #include <QtMath>
-
+#include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
 #include <QStandardItemModel>
@@ -261,6 +261,8 @@ QPair< qreal, qreal > ItoI_ItoII_Model::Pair(int i, int j) const
 QSharedPointer<AbstractTitrationModel > ItoI_ItoII_Model::Clone() const
 {
     QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);
+    model.data()->ImportJSON(ExportJSON());
+    model.data()->setActiveSignals(ActiveSignals());
     return model;
     
 }

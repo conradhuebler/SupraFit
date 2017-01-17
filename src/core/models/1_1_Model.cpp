@@ -24,6 +24,7 @@
 
 #include <QtMath>
 
+#include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
 #include <QStandardItemModel>
@@ -44,16 +45,6 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
 
     m_repaint = true;
 }
-
-// ItoI_Model::ItoI_Model(const ItoI_Model& other) : AbstractTitrationModel(other)
-// {
-//     
-// }
-// 
-// ItoI_Model::ItoI_Model(const ItoI_Model* other)
-// {
-// }
-
 
 ItoI_Model::~ItoI_Model() 
 {
@@ -113,11 +104,6 @@ QVector<QVector<qreal> > ItoI_Model::AllShifts()
 }
 
 
-// qreal ItoI_Model::Minimize(QVector<int > vars)
-// {
-//  return AbstractTitrationModel::Minimize();
-// }
-
 qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector< qreal > constants)
 {
     if(constants.size() == 0)
@@ -156,12 +142,7 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
             SetSignal(i, j, value);    
         }
     }
-    
-//     if(m_repaint)
-    {
-//         UpdatePlotModels();
-         emit Recalculated();
-    }
+    emit Recalculated();
 }
 
 void ItoI_Model::setConstants(QVector< qreal > list)
@@ -203,7 +184,9 @@ QPair< qreal, qreal > ItoI_Model::Pair(int i, int j) const
 
 QSharedPointer<AbstractTitrationModel > ItoI_Model::Clone() const
 {
-    QSharedPointer<ItoI_Model > model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractTitrationModel > model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
+    model.data()->ImportJSON(ExportJSON());
+    model.data()->setActiveSignals(ActiveSignals());
     return model;
     
 }

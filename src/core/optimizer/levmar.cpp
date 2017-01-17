@@ -85,7 +85,7 @@ int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int m
         message += QString::number(d) + " ";
     }
     message += "\n";
-//     model->Message(message, 5);
+    model.data()->Message(message, 5);
     
     qDebug() << parameter;
     double *p = new double[parameter.size()];
@@ -108,11 +108,10 @@ int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int m
         result +=  QString::number(p[i]) + " ";
     }
     result += "\n";
-//     model->Message(result, 4);
+    model.data()->Message(result, 4);
     
     delete[] x;
     delete[] p;
-//     model.clear();
     return nums;
 }
 

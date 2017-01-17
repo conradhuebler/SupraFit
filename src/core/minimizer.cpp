@@ -110,9 +110,9 @@ int Minimizer::Minimize()
         
         m_opt_config.LevMar_Constants_PerIter = 1;
         qDebug() << "the first input" << m_model->ExportJSON() << constants;
-        max_convergence += MinimizingComplexConstants(m_model->Clone(), m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
+        max_convergence += MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         m_model->setOptParamater(constants);
-//         m_model->MiniShifts(); 
+//          m_model->MiniShifts(); 
         QVector<qreal *> optconst = m_model->getOptConstants();
         QVector<qreal > blub;
         for(int i = 0; i < optconst.size(); ++i)
