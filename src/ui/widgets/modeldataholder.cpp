@@ -54,7 +54,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_modelsWidget->addTab(m_datawidget, tr("Data"));
     m_modelsWidget->setTabsClosable(true);
     connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
-        
+    
     m_add = new QPushButton(tr("Add Titration\n Model"));
     m_add->setFlat(true);
     m_add->setDisabled(true);
@@ -65,47 +65,47 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     QMenu *menu = new QMenu;
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
-        connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel11()));
-        menu->addAction(ItoI_action);
+    connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel11()));
+    menu->addAction(ItoI_action);
     QAction *IItoI_ItoI_action = new QAction(this);
     IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
-        connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel21()));
-        menu->addAction(IItoI_ItoI_action);
-        
-   
-        
+    connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel21()));
+    menu->addAction(IItoI_ItoI_action);
+    
+    
+    
     QAction *ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
-        connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
-        menu->addAction(ItoI_ItoII_action);
-        
-//           QAction *t2 = new QAction(this);
-//      t2->setText(tr("2:1/1:1-test-Model"));
-//          connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
-//          menu->addAction(t2);
-//         
-     m_add->setMenu(menu);
-        menu = new QMenu;
+    connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
+    menu->addAction(ItoI_ItoII_action);
+    
+    //           QAction *t2 = new QAction(this);
+    //      t2->setText(tr("2:1/1:1-test-Model"));
+    //          connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
+    //          menu->addAction(t2);
+    //         
+    m_add->setMenu(menu);
+    menu = new QMenu;
     ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
-        connect(ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel11()));
-        menu->addAction(ItoI_action);
+    connect(ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel11()));
+    menu->addAction(ItoI_action);
     IItoI_ItoI_action = new QAction(this);
     IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
-        connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel21()));
-        menu->addAction(IItoI_ItoI_action);
-        
-        
+    connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel21()));
+    menu->addAction(IItoI_ItoI_action);
+    
+    
     ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
-        connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(SimulateModel12()));
-        menu->addAction(ItoI_ItoII_action);
-        
+    connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(SimulateModel12()));
+    menu->addAction(ItoI_ItoII_action);
+    
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
-//     layout->addWidget(m_simulate, 0,1);
+    //     layout->addWidget(m_simulate, 0,1);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
-        
+    
 }
 
 ModelDataHolder::~ModelDataHolder()
@@ -134,17 +134,17 @@ void ModelDataHolder::AddModel(int model)
         case 3:
             t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
             break;
-//         case 4:
-//              t = new test_II_ItoI_Model(m_data);
-//              break;
+            //         case 4:
+            //              t = new test_II_ItoI_Model(m_data);
+            //              break;
         default:
-//             delete t;
             t.clear();
            return; 
-        
+
     };
 //     t->Minimize();
     ActiveModel(t);
+    
 }
 
 
@@ -184,10 +184,9 @@ void ModelDataHolder::SimulateModel(int model)
             t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
             break;
         default:
-//             delete t;
             t.clear();
            return; 
-        
+
     };
     ActiveModel(t);
 }
@@ -196,6 +195,7 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 {
 
     QSharedPointer<AbstractTitrationModel > t;
+
     /*
      * WARNING and FIXME I dont like this!
      */
@@ -220,7 +220,7 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 
 void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
 {
-   
+    
     m_datawidget->setData(m_data);
     m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t);
@@ -236,9 +236,9 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     
     QScrollArea *scroll = new QScrollArea;
     scroll->setBackgroundRole(QPalette::Midlight);
-      scroll->setWidget(modelwidget);
-      scroll->setWidgetResizable(true);
-      scroll->setAlignment(Qt::AlignHCenter);
+    scroll->setWidget(modelwidget);
+    scroll->setWidgetResizable(true);
+    scroll->setAlignment(Qt::AlignHCenter);
     m_modelsWidget->addTab(scroll, t->Name());
     m_models << t;
     
@@ -279,9 +279,9 @@ void ModelDataHolder::RemoveTab(int i)
         delete scroll;
     }else
     {
-    QMessageBox msgBox;
-    msgBox.setText("Lieber nicht ...");
-    msgBox.exec();
+        QMessageBox msgBox;
+        msgBox.setText("Lieber nicht ...");
+        msgBox.exec();
     }
 }
 
@@ -377,11 +377,11 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
     }
     else
     {
-    foreach(const QString &str, keys)
-    {
-        QJsonObject model = object[str].toObject();
-        Json2Model(model, model["model"].toString());
-    }
+        foreach(const QString &str, keys)
+        {
+            QJsonObject model = object[str].toObject();
+            Json2Model(model, model["model"].toString());
+        }
     }
 }
 
@@ -390,18 +390,15 @@ void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
     QStringList keys = object.keys();
     if(keys.contains("data") && keys.contains("model"))
     {
-        // we don't allow this model to be added to addToHistory
         if(m_modelsWidget->currentIndex() == 0)
         {
             if(m_modelsWidget->count() < 2)
                 return;
             m_modelsWidget->setCurrentIndex(1);
         }
-        
-            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->currentWidget());
-            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
-            model->LoadJson(object);
-        
+        QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->currentWidget());
+        ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+        model->LoadJson(object);
     }
 }
 

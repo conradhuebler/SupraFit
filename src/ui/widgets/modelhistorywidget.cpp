@@ -40,14 +40,14 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     layout->addWidget(new QLabel(QString::number(active) + " used signals"), 2, 0, 1, 2);
     layout->addWidget(new QLabel("Error"), 3, 0);
     layout->addWidget(new QLabel(QString::number(element->error)), 3, 1);
-
-    m_add = new QPushButton(tr("Add Model"));
-        m_add->setFlat(true);
+    
+    m_add = new QPushButton(tr("Duplicate\nModel"));
+    m_add->setFlat(true);
     m_load = new QPushButton(tr("Load Model"));
-        m_load->setFlat(true);
+    m_load->setFlat(true);
     m_remove = new QPushButton(tr("Remove"));
-        m_remove->setFlat(true);
-        
+    m_remove->setFlat(true);
+    
     connect(m_add, SIGNAL(clicked()), this, SLOT(AddModel()));
     connect(m_load, SIGNAL(clicked()), this, SLOT(LoadModel()));
     connect(m_remove, SIGNAL(clicked()), this, SLOT(remove()));
@@ -55,7 +55,7 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     layout->addWidget(m_load, 4, 1);
     layout->addWidget(m_remove, 5, 0, 1, 2);
     setLayout(layout);
-    setFixedSize(200,150);
+    setFixedSize(200,180);
 }
 
 void ModelHistoryWidget::remove()
@@ -68,9 +68,10 @@ ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *par
 {
     m_mainwidget = new QWidget;
     m_vlayout = new QVBoxLayout;
+    m_vlayout->setAlignment(Qt::AlignTop);
     m_mainwidget->setLayout(m_vlayout);
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->setAlignment(Qt::AlignTop);
+    
     setWidget(m_mainwidget);
     setWidgetResizable(true);
     setAlignment(Qt::AlignTop);
@@ -87,10 +88,10 @@ ModelHistory::~ModelHistory()
 void ModelHistory::InsertElement(const ModelHistoryElement *elm)
 {
     QPointer<ModelHistoryWidget > element = new ModelHistoryWidget(elm);
-        m_vlayout->addWidget(element);
-        connect(element, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddJson(QJsonObject)));
-        connect(element, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadJson(QJsonObject)));
-        connect(element, SIGNAL(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)), this, SLOT(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)));
+    m_vlayout->addWidget(element);
+    connect(element, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddJson(QJsonObject)));
+    connect(element, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadJson(QJsonObject)));
+    connect(element, SIGNAL(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)), this, SLOT(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)));
 }
 
 void ModelHistory::Remove(const QJsonObject *json, QPointer<ModelHistoryWidget> element)
@@ -101,8 +102,8 @@ void ModelHistory::Remove(const QJsonObject *json, QPointer<ModelHistoryWidget> 
         QLayoutItem * item= m_vlayout->itemAt(m_vlayout->indexOf(element));
         m_vlayout->removeItem(item);
         /*
-        * I know, that we are only deleting the widget but not the element in the map, will be a FIXME
-        */
+         * I know, that we are only deleting the widget but not the element in the map, will be a FIXME
+         */
         delete element;
     }
 }
