@@ -228,7 +228,16 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     LBFGSParam<double> pam;
     pam.epsilon = 1e-6;
     pam.max_iterations = 1;
-
+    QString message = QString();
+    message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
+    message += "Old vector : ";
+    foreach(double d, param)
+    {
+        message += QString::number(d) + " ";
+    }
+    message += "\n";
+    model.data()->Message(message, 5);
+    
     // Create solver and function object
     LBFGSSolver<double> solver(pam);
     Function fun(model);
@@ -238,7 +247,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
 //     VectorXd x = VectorXd::Zero(n);
     // x will be overwritten to be the best point found
     double fx;
-    int niter = solver.minimize(fun, parameter, fx);
+    int iter = solver.minimize(fun, parameter, fx);
     
     
    /* 
@@ -250,8 +259,17 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     */
     for(int i = 0; i < parameter.size(); ++i)
         param[i] = parameter(i);
+           QString result;
+    result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
+    result += "New vector:";    
+    for(int i = 0; i < param.size(); ++i)
+    {
+        result +=  QString::number(param[i]) + " ";
+    }
+    result += "\n";
+    model.data()->Message(result, 4);
     
-    return niter;
+    return iter;
 }
 
 #endif

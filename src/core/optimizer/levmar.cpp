@@ -19,19 +19,17 @@
 #include "src/global_config.h"
 
 #ifdef USE_levmarOptimizer
-
-#include <QtCore/QJsonObject>
-#include <QtGlobal>
-#include <QtMath>
-#include <QDebug>
-#include <cmath>
-#include <QPair>
 #include "src/core/AbstractModel.h"
-#include "src/core/libmath.h"
+
+#include <QtCore/QtGlobal>
+#include <QtCore/QJsonObject>
+#include <QtCore/QtMath>
+
 #include <iostream>
 
 #include <levmar/levmar.h>
 
+#include "src/core/libmath.h"
 
 struct mydata{
     QWeakPointer<AbstractTitrationModel> model;
@@ -54,11 +52,6 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
 
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i] ;
-    std::cout << dptr->model.data()->ModelError() << " ";
-    for(int i = 0; i < parameter.size(); ++i)
-        std::cout << parameter[i] << " ";
-    std::cout << std::endl;
-    
 }
 
 int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
@@ -69,11 +62,9 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     struct mydata data;
     data.model = model;
     double *x = new double[data.model.data()->DataPoints()*data.model.data()->SignalCount()];
-    std::cout << "ptr of model" << model.data() << std::endl;
     QVector<qreal > x_var = data.model.data()->getSignals(data.model.data()->ActiveSignals());
     for(int i = 0; i < x_var.size(); ++i)
         x[i] = x_var[i];
-    qDebug() << "the input " << model.data()->ExportJSON();
     
     QVector<double > parameter = param;
     
@@ -87,7 +78,6 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     message += "\n";
     model.data()->Message(message, 5);
     
-    qDebug() << parameter;
     double *p = new double[parameter.size()];
     for(int i = 0; i < parameter.size(); ++i)
     {

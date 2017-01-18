@@ -20,20 +20,19 @@
 #include "src/global_config.h"
 
 #ifdef  USE_eigenOptimizer
+#include "src/core/AbstractModel.h"
+
+#include <QtCore/QtGlobal>
+#include <QtCore/QJsonObject>
+#include <QtCore/QtMath>
+
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
-#include <QtCore/QJsonObject>
-#include <QtGlobal>
-#include <QtMath>
-#include <QDebug>
-#include <cmath>
-#include <QPair>
-#include "src/core/AbstractModel.h"
-#include "src/core/libmath.h"
+
 #include <iostream>
 
-
+#include "src/core/libmath.h"
 typedef QVector<qreal > Variables;
 
 template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
@@ -101,6 +100,16 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     for(int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
     
+    QString message = QString();
+    message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
+    message += "Old vector : ";
+    foreach(double d, param)
+    {
+        message += QString::number(d) + " ";
+    }
+    message += "\n";
+    model.data()->Message(message, 5);
+    
     MyFunctor functor(param.size(), model.data()->DataPoints()*model.data()->SignalCount());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
@@ -113,6 +122,16 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
          status = lm.minimizeOneStep(parameter);
           iter++;
        } while (status == -1);
+       QString result;
+    result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
+    result += "New vector:";    
+    for(int i = 0; i < param.size(); ++i)
+    {
+        result +=  QString::number(param[i]) + " ";
+    }
+    result += "\n";
+    model.data()->Message(result, 4);
+    
     for(int i = 0; i < functor.inputs(); ++i)
             param[i] = parameter(i);
     return 1;

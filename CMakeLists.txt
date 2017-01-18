@@ -12,7 +12,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
-
+    
+option (experimental
+    "Include experimental functions" OFF)
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
@@ -71,6 +73,7 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/)
 
 
 set(libmath_SRC
+                src/core/equal_system.cpp
                 src/core/optimizer/levmar.cpp
                 src/core/optimizer/eigen_levenberg.cpp
                 src/core/optimizer/bfgs.cpp

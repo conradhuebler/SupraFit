@@ -2,3 +2,4 @@
 #cmakedefine USE_levmarOptimizer
 #cmakedefine USE_eigenOptimizer
 #cmakedefine USE_bfgsOptimizer
+#cmakedefine experimental
