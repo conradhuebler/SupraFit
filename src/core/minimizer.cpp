@@ -94,7 +94,7 @@ void NonLinearFitThread::FastFit()
         for(int i = 0; i < optconst.size(); ++i)
             blub << *optconst[i];
         if(blub.size() > 0)
-             MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
+             NonlinearFit(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
         m_model->setOptParamater(constants);
 
         qreal error = m_model->ModelError();
@@ -189,7 +189,7 @@ QVector<qreal> NonLinearFitThread::NonLinearFitComplexConstants(int maxsteps)
     for(int i = 0; i < maxsteps; ++i)
     {
         m_opt_config.LevMar_Constants_PerIter = 10;
-        MinimizingComplexConstants(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
+        NonlinearFit(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
         m_model->setConstants(constants);
     }
     return constants;

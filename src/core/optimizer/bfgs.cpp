@@ -217,7 +217,7 @@ public:
 };    
        
        
-int MinimizingComplexConstants(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
 {
     Q_UNUSED(max_iter)
     Q_UNUSED(config)

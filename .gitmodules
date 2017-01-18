@@ -2,3 +2,6 @@
 	path = Eigen
 	url = https://github.com/RLovelett/eigen
 	#branch = 3.3-rc2
+[submodule "LBFGSpp"]
+	path = LBFGSpp
+	url = https://github.com/yixuan/LBFGSpp

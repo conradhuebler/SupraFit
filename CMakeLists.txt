@@ -39,7 +39,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 option(USE_levmarOptimizer "Use levmar optimizing package" OFF)  
 option(USE_eigenOptimizer  "Use Eigen optimizing package" OFF)  
-option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" OFF) 
+option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" ON) 
 
 if(USE_levmarOptimizer)
     if(USE_eigenOptimizer)
