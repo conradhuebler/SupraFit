@@ -35,7 +35,6 @@ bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
     QByteArray saveData = loadFile.readAll();
 
     QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
-    qDebug() << loadDoc.toJson()<< saveData;
     json = loadDoc.object();
     return true;
 }

@@ -42,7 +42,6 @@
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false), m_pending(false)
 {
     
-    qDebug() << DataPoints() << Size();
     //     m_active_signals = 
     setActiveSignals(QVector<int>(SignalCount(), 1));
     ptr_concentrations = data->Concentration();
@@ -291,7 +290,6 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     for (int i = 0; i < Constants().size(); ++i) {
         
         constants << constantsObject[QString::number(i)].toString().toDouble();
-        qDebug() << constants;
     }
     setConstants(constants);
     

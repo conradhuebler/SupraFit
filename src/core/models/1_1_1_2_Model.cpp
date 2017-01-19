@@ -200,7 +200,6 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
     m_corrupt = false;
     if(constants.size() == 0)
         constants = Constants();
-   qDebug() << constants << Constants();
     for(int i = 0; i < DataPoints(); ++i)
     {
          qreal host_0, guest_0;
@@ -242,7 +241,6 @@ void ItoI_ItoII_Model::setPureSignals(const QVector< qreal > &list)
     for(int i = 0; i < list.size(); ++i)
         if(i < m_pure_signals.size())
             {
-                qDebug() << m_pure_signals[i] << list[i];
                 m_pure_signals[i] = list[i];
             }
 }

@@ -17,6 +17,8 @@
  *
  */
 
+#include "src/global_config.h"
+
 #include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
@@ -236,6 +238,7 @@ QString Minimizer::OptPara2String() const
     result += "|No. of LevenbergMarquadt Steps to optimize constants each Optimization Step: " + QString::number(m_opt_config.LevMar_Constants_PerIter) + "|\n";
     result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
     result += "\n";
+#ifdef USE_levmarOptimizer
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
     result += "|scale factor for initial \\mu {opts[0]}}" + QString::number(m_opt_config.LevMar_mu) + "|\n";
     result += "|stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}" + QString::number(m_opt_config.LevMar_Eps1) + "|\n";
@@ -244,6 +247,7 @@ QString Minimizer::OptPara2String() const
     result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
     result += "\n";
+#endif
     return result;
 }
 

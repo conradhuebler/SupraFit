@@ -215,7 +215,6 @@ void ModelElement::ChooseColor()
 
 ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false), m_minimizer(new Minimizer(this))
 {
-    qDebug() << m_model->Constants();
     m_minimizer->setModel(m_model);
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Pure Shift"));
@@ -275,8 +274,8 @@ void ModelWidget::DiscreteUI()
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
     m_maxiter = new QSpinBox;
-    m_runtype = new QCheckBox(tr("Constrained Optimization"));
-    m_runtype->setChecked(true);
+    m_runtype = new QCheckBox(tr("Constrained\nOptimization"));
+    m_runtype->setChecked(false);
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
     QHBoxLayout *mini = new QHBoxLayout;
@@ -341,7 +340,6 @@ void ModelWidget::Repaint()
         error += m_model->SumOfErrors(j);
         m_model_elements[j]->Update();
     }
-    qDebug() << error << m_model->ModelError();
     m_sum_error->setText(QString::number((error)));
     m_pending = false;
     m_minimize_all->setEnabled(true);
@@ -381,7 +379,6 @@ void ModelWidget::CollectParameters()
         m_model->setComplexSignals(complex_signals[j], j);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
-    qDebug() << constants;
     m_model->setActiveSignals(active_signals);
     m_model->setConstants(constants);
     m_model->setPureSignals(pure_signals);
@@ -407,7 +404,6 @@ void ModelWidget::GlobalMinimize()
     m_minimize_all->setEnabled(false);
     m_minimize_single->setEnabled(false);
     QJsonObject json = m_model->ExportJSON();
-    qDebug() << json;
     m_minimizer->setParameter(json);
     QVector<int > v(10,0);
     OptimizerConfig config = m_model->getOptimizerConfig();
@@ -421,7 +417,6 @@ void ModelWidget::GlobalMinimize()
     if(result == 1)
     {
         QJsonObject json = m_minimizer->Parameter();
-        qDebug() << json;
         m_model->ImportJSON(json);
         m_model->CalculateSignal();
     }
