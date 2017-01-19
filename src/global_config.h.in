@@ -3,3 +3,4 @@
 #cmakedefine USE_eigenOptimizer
 #cmakedefine USE_bfgsOptimizer
 #cmakedefine experimental
+#cmakedefine OWN_BFGS

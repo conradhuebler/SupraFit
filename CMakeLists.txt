@@ -15,6 +15,8 @@ option (BENCHMARK_LEVEL
     
 option (experimental
     "Include experimental functions" OFF)
+ option (OWN_BFGS
+    "Include experimental bfgs functions" OFF)   
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
