@@ -171,6 +171,7 @@ void ModelDataHolder::AddModel21_t()
 
 void ModelDataHolder::SimulateModel(int model)
 {
+    Q_UNUSED(model)
     // Disabled and deprecated ... /FIXME
     /*
     QSharedPointer<AbstractTitrationModel > t;

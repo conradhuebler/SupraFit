@@ -36,19 +36,19 @@ class ScientificBox : public QDoubleSpinBox
 {
     Q_OBJECT
 public:
-    QString textFromValue(double val) const
+    inline QString textFromValue(double val) const
     {
         return QString::number(val, 'E', decimals());
     }
 
-    double valueFromText(const QString &text) const
+    inline double valueFromText(const QString &text) const
     {
         QString value = text;
         value.replace(loc.decimalPoint(), '.');
         return value.toDouble();
     }
 
-    QValidator::State validate(QString &input, int &pos) const
+    inline QValidator::State validate(QString &input, int &pos) const
     {
         QDoubleValidator validator;
         validator.setBottom(minimum());

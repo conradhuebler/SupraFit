@@ -18,6 +18,7 @@
  */
 
 #include "src/core/AbstractModel.h"
+
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QCheckBox>
@@ -26,6 +27,7 @@
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QCheckBox>
+
 #include "optimizerwidget.h"
 
 OptimizerWidget::OptimizerWidget(OptimizerConfig config, QWidget *parent) : m_config(config), QWidget(parent)

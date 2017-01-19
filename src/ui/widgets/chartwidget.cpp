@@ -24,19 +24,23 @@
 #include <QtCore/QTimer>
 #include <QtCore/QWeakPointer>
 #include <QtCore/QSharedPointer>
-#include <QDrag>
-#include <QBuffer>
-#include <QVector>
+#include <QtCore/QBuffer>
+#include <QtCore/QVector>
+
 #include <QtWidgets/QComboBox>
-#include <QtCharts/QChart>
-#include <QtCharts/QLineSeries>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QTableView>
+
+#include <QDrag>
 #include <QPrinter>
 #include <QPrintPreviewDialog>
-#include <QGridLayout>
+
+#include <QtCharts/QChart>
+#include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QCategoryAxis>
-#include <QPushButton>
-#include <QTableView>
+
 #include <iostream>
 
 #include "chartwidget.h"

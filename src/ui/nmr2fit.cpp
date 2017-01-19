@@ -166,13 +166,8 @@ MainWindow::~MainWindow()
     QSettings _settings;
     
     _settings.beginGroup("window");
-//     _settings.setValue("geometry", size());
-        _settings.setValue("geometry", saveGeometry());
+    _settings.setValue("geometry", saveGeometry());
     _settings.setValue("state", saveState());
-//     _settings.setValue("model_dock", m_modeldock->geometry());
-//     _settings.setValue("log_dock", m_logdock->geometry());
-//     _settings.setValue("chart_dock", m_chartdock->geometry());
-//     _settings.setValue("history_dock", m_history_dock->geometry());
     _settings.endGroup();
     
 }
@@ -187,8 +182,7 @@ void MainWindow::setActionEnabled(bool enabled)
 
 void MainWindow::NewTableAction()
 {
-    
-      
+
     ImportData dialog(this);
     if(dialog.exec() == QDialog::Accepted)
     {
@@ -197,7 +191,6 @@ void MainWindow::NewTableAction()
         m_hasData = true;
         setActionEnabled(true);
     }
-    
 }
 
 void MainWindow::ImportTableAction()
@@ -376,11 +369,6 @@ void MainWindow::ReadSettings()
     _settings.beginGroup("window");
         restoreGeometry(_settings.value("geometry").toByteArray());
     restoreState(_settings.value("state").toByteArray());
-//     resize(_settings.value("geometry", sizeHint()).toSize());
-//     m_logdock->setGeometry(_settings.value("log_dock").toRect());
-//     m_history_dock->setGeometry(_settings.value("history_dock").toRect());
-//     m_chartdock->setGeometry(_settings.value("chart_dock").toRect());
-//     m_modeldock->setGeometry(_settings.value("model_dock").toRect());
     _settings.endGroup();
     
 }

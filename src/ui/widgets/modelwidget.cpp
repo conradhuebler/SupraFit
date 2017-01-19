@@ -213,7 +213,7 @@ void ModelElement::ChooseColor()
     ColorChanged(color);
 }
 
-ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : m_model(model), QWidget(parent), m_pending(false), m_minimizer(new Minimizer(this))
+ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : QWidget(parent), m_model(model), m_pending(false), m_minimizer(new Minimizer(this))
 {
     m_minimizer->setModel(m_model);
     m_layout = new QGridLayout;

@@ -75,7 +75,6 @@ private:
     QPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
-//     QSharedPointer<QtCharts::QLineSeries > m_error_axis;
     void Paint();
      AbstractTitrationModel::PlotMode m_plot_mode;
 private slots:
