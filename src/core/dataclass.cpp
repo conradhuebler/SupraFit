@@ -297,7 +297,7 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
-    
+
 }
 
 void DataClass::CreateClearPlotModel()

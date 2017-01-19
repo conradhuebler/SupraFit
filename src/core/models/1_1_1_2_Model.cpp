@@ -35,20 +35,17 @@
 
 ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
-    
-    
     setName(tr("1:1/1:2-Model"));
     InitialGuess();
     setOptParamater(m_complex_constants);
     CalculateSignal();
     m_repaint = true;
-//     qDebug() << Constants();
 }
+
 ItoI_ItoII_Model::~ItoI_ItoII_Model()
 {
 
 }
-
 
 void ItoI_ItoII_Model::InitialGuess()
 {
@@ -69,7 +66,6 @@ void ItoI_ItoII_Model::InitialGuess()
          m_ItoII_signals[i] = SignalModel()->data(i,SignalCount() - 1);
     }
         
-//     m_opt_para = QVector<double * >() << &m_K11 << &m_K12;
     QVector<qreal * > line1, line2, line3;
     for(int i = 0; i < m_pure_signals.size(); ++i)
     {
@@ -79,7 +75,6 @@ void ItoI_ItoII_Model::InitialGuess()
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
     m_opt_vec = QVector<QVector<qreal * > >() << line3;
-//     m_opt_para << line3;
     
     CalculateSignal();
        

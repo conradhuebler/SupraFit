@@ -39,7 +39,7 @@ class ModelDataHolder : public QWidget
 public:
     ModelDataHolder();
     ~ModelDataHolder();
-    void setData(DataClass *data);
+    QSharedPointer<DataClass> setData(QPointer<DataClass> data);
     void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
     enum {
         ItoI = 1,
@@ -72,7 +72,7 @@ private:
     QPointer<QTabWidget > m_modelsWidget;
     QPointer<QPushButton > m_add, m_simulate;
     QPointer<ChartWidget> m_charts;
-    DataClass *m_data;
+    QSharedPointer<DataClass> m_data;
 //     QPlainTextEdit *m_logWidget;
     QVector<QWeakPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);

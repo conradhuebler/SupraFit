@@ -29,8 +29,12 @@
 #include "src/ui/widgets/chartwidget.h"
 #include "src/ui/widgets/modeldataholder.h"
 
-#include <QtWidgets/QApplication>
 #include <QtCore/QSharedPointer>
+#include <QtCore/QWeakPointer>
+#include <QtCore/QSettings>
+#include <QtCore/QJsonObject>
+
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QLabel>
@@ -43,8 +47,7 @@
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QMessageBox>
-#include <QtCore/QSettings>
-#include <QtCore/QJsonObject>
+
 #include <QDebug>
 
 #include <stdio.h>
@@ -189,8 +192,7 @@ void MainWindow::NewTableAction()
     ImportData dialog(this);
     if(dialog.exec() == QDialog::Accepted)
     {
-        m_titration_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
-        m_model_dataholder->setData(m_titration_data.data());
+        m_titration_data = m_model_dataholder->setData(new DataClass(dialog.getStoredData()));
         m_charts->setRawData(m_titration_data.data());
         m_hasData = true;
         setActionEnabled(true);
@@ -209,7 +211,7 @@ void MainWindow::ImportTableAction()
         
         if(dialog.exec() == QDialog::Accepted)
         {
-            m_titration_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+            m_titration_data = m_model_dataholder->setData(new DataClass(dialog.getStoredData()));
             LoadData(filename);
         }
     }else
@@ -226,7 +228,7 @@ void MainWindow::ImportAction(const QString& file)
     
     if(dialog.exec() == QDialog::Accepted)
     {
-        m_titration_data = QSharedPointer<DataClass>(new DataClass(dialog.getStoredData()));
+        m_titration_data = m_model_dataholder->setData(new DataClass(dialog.getStoredData()));
         LoadData(file);
     }else
         destroy();
@@ -240,15 +242,16 @@ void MainWindow::LoadProjectAction()
         QJsonObject toplevel;
         if(JsonHandler::ReadJsonFile(toplevel, str))
         {
-            m_titration_data = QSharedPointer<DataClass>(new DataClass(toplevel));  
-            if(m_titration_data->DataPoints() != 0)
+            QPointer<DataClass > data = new DataClass(toplevel);
+            if(data->DataPoints() != 0)
             {
+                m_titration_data = m_model_dataholder->setData(new DataClass(data));  
                 LoadData(str);
                 m_model_dataholder->AddToWorkspace(toplevel);
             }
             else
             {
-                m_titration_data.clear();
+                
                 QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
             }
         }
@@ -257,7 +260,6 @@ void MainWindow::LoadProjectAction()
 
 void MainWindow::LoadData(const QString &file)
 {
-    m_model_dataholder->setData(m_titration_data.data());
     m_charts->setRawData(m_titration_data.data());
     m_hasData = true;
     qApp->instance()->setProperty("projectname", file);

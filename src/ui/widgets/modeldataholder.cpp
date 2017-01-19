@@ -113,11 +113,12 @@ ModelDataHolder::~ModelDataHolder()
     
 }
 
-void ModelDataHolder::setData(DataClass *dataclass)
+QSharedPointer<DataClass> ModelDataHolder::setData(QPointer<DataClass> dataclass)
 {
-    m_data = new DataClass(dataclass); 
+    m_data = QSharedPointer<DataClass>(new DataClass((dataclass))); 
     m_datawidget->setData(m_data);
     m_add->setEnabled(true);
+    return m_data;
 }
 
 void ModelDataHolder::AddModel(int model)
@@ -126,13 +127,13 @@ void ModelDataHolder::AddModel(int model)
     
     switch(model){
         case 1:
-            t =  QSharedPointer<ItoI_Model>(new ItoI_Model(m_data), &QObject::deleteLater);
+            t =  QSharedPointer<ItoI_Model>(new ItoI_Model(m_data.data()), &QObject::deleteLater);
             break;
         case 2:
-            t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data), &QObject::deleteLater);
+            t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
             break;
         case 3:
-            t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
+            t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
             //         case 4:
             //              t = new test_II_ItoI_Model(m_data);
@@ -170,6 +171,8 @@ void ModelDataHolder::AddModel21_t()
 
 void ModelDataHolder::SimulateModel(int model)
 {
+    // Disabled and deprecated ... /FIXME
+    /*
     QSharedPointer<AbstractTitrationModel > t;
     
     m_data = new DataClass(DataClass::EmptyData);
@@ -189,6 +192,7 @@ void ModelDataHolder::SimulateModel(int model)
 
     };
     ActiveModel(t);
+    */
 }
 
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
@@ -201,14 +205,14 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
      */
     if(str == "1:1-Model")
     {
-        t = QSharedPointer<ItoI_Model>(new ItoI_Model(m_data), &QObject::deleteLater);
+        t = QSharedPointer<ItoI_Model>(new ItoI_Model(m_data.data()), &QObject::deleteLater);
     }
     else if(str == "2:1/1:1-Model")
     {
-         t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data), &QObject::deleteLater);
+         t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
     }
     else if(str == "1:1/1:2-Model"){
-        t =  QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
+        t =  QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
     }else
     {
         t.clear();
@@ -279,9 +283,16 @@ void ModelDataHolder::RemoveTab(int i)
         delete scroll;
     }else
     {
-        QMessageBox msgBox;
-        msgBox.setText("Lieber nicht ...");
-        msgBox.exec();
+        return;
+        /*
+        if(m_data)
+        {
+            if (QMessageBox::Yes == QMessageBox(QMessageBox::Information, "Close Project", "Really close that project?", QMessageBox::Yes|QMessageBox::No).exec()) 
+            {
+                m_datawidget->clear();
+                m_data.clear();
+            }
+        }*/
     }
 }
 

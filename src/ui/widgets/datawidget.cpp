@@ -45,14 +45,18 @@ DataWidget::DataWidget()
 
 DataWidget::~DataWidget()
 {
-    
+}
+void DataWidget::clear()
+{
+
 }
 
-void DataWidget::setData(DataClass* dataclass)
+
+void DataWidget::setData(QWeakPointer<DataClass> dataclass)
 {
     m_data = dataclass;
-    m_concentrations->setModel(m_data->ConcentrationModel());
-    m_signals->setModel(m_data->SignalModel());
+    m_concentrations->setModel(m_data.data()->ConcentrationModel());
+    m_signals->setModel(m_data.data()->SignalModel());
     m_switch->setDisabled(false);
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
@@ -60,7 +64,7 @@ void DataWidget::setData(DataClass* dataclass)
 
 void DataWidget::switchHG()
 {
-    m_data->SwitchConentrations();
+    m_data.data()->SwitchConentrations();
     emit recalculate();
 }
 

@@ -34,7 +34,8 @@ class DataWidget : public QWidget
 public:
     DataWidget();
     ~DataWidget();
-    void setData(DataClass *dataclass);
+    void setData(QWeakPointer<DataClass> dataclass);
+    void clear();
 public slots:
        
     void RowAdded();
@@ -42,7 +43,7 @@ public slots:
 private:
     QPointer<QTableView > m_concentrations, m_signals;
     QPointer<QPushButton > m_switch;
-    DataClass *m_data;
+    QWeakPointer<DataClass > m_data;
 private slots:
     void switchHG();
     
