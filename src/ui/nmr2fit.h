@@ -46,12 +46,13 @@ public:
     MainWindow();
     virtual ~MainWindow();
     void ImportAction(const QString &file);
+    bool SetData(QPointer<const DataClass > dataclass, const QString &str = QString("new table"));
     
     
-    
+public slots:
+    virtual bool close();
     
 private:
-    void LoadData(const QString &file);
     void setActionEnabled(bool enabled);
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
@@ -71,6 +72,7 @@ private:
     void LogFile();
     QFile m_file, m_stdout;
     QMap<int, ModelHistoryElement> m_history;
+    bool m_ask_on_exit;
 private slots:
     void NewTableAction();
     void ImportTableAction();

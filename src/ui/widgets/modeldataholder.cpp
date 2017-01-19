@@ -49,9 +49,8 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     
     
     m_datawidget = new DataWidget;
-    
+    connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
     m_modelsWidget = new QTabWidget;
-    m_modelsWidget->addTab(m_datawidget, tr("Data"));
     m_modelsWidget->setTabsClosable(true);
     connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     
@@ -118,8 +117,15 @@ QSharedPointer<DataClass> ModelDataHolder::setData(QPointer<DataClass> dataclass
     m_data = QSharedPointer<DataClass>(new DataClass((dataclass))); 
     m_datawidget->setData(m_data);
     m_add->setEnabled(true);
+    m_modelsWidget->addTab(m_datawidget, qApp->instance()->property("projectname").toString());
     return m_data;
 }
+
+void ModelDataHolder::SetProjectTabName()
+{
+    m_modelsWidget->setTabText(0, qApp->instance()->property("projectname").toString());
+}
+
 
 void ModelDataHolder::AddModel(int model)
 {
@@ -313,14 +319,14 @@ void ModelDataHolder::setSettings(const OptimizerConfig &config)
 
 bool ModelDataHolder::CheckCrashFile()
 {
-    QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
+    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.json";
     return QFile::exists(filename);
 }
 
 void ModelDataHolder::CreateCrashFile()
 {
     RemoveCrashFile();
-    QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
+    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.json";
     for(int i = 0; i < m_models.size(); ++i)
     {
         if(!m_models[i].isNull())
@@ -335,7 +341,7 @@ void ModelDataHolder::RemoveCrashFile()
 {
     if(CheckCrashFile())
     {
-        QString filename = qApp->instance()->property("projectname").toString() + ".crashsave.json";
+        QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.json";
         QFile::remove(filename);
     }
 }
