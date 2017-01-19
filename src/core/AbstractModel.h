@@ -61,6 +61,7 @@ class AbstractTitrationModel : public DataClass
 public:
     AbstractTitrationModel(const DataClass *data);
     virtual ~AbstractTitrationModel();
+    virtual QVector<qreal > OptimizeAllParameters() = 0;
     void setOptParamater(qreal & parameter);
     void addOptParameter(qreal &vector);
     void setOptParamater(QVector< qreal >& parameter);
@@ -86,7 +87,7 @@ public:
     virtual void InitialGuess() = 0;
     QVector<qreal >  getCalculatedSignals(QVector<int > active_signal = QVector<int >(1,0));
     virtual QVector<QVector< qreal > > AllShifts() = 0;
-    virtual QVector<qreal> Minimize();
+
     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
     QVector<double > Parameter() const;
@@ -128,7 +129,6 @@ private:
     QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
     
     bool m_debug;
-    QString OptPara2String() const;
 
     QVector<int > m_active_signals;
     bool m_pending;

@@ -51,6 +51,7 @@ public:
     void MiniShifts();
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
+    QVector<qreal > OptimizeAllParameters();
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 
     {

@@ -112,12 +112,12 @@ public slots:
 private:
     QSharedPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<SpinBox >  >m_pure_signals;
-    QVector< QVector<QPointer<SpinBox > > > m_complex_signals;
+    QVector<QVector <QPointer<SpinBox > > > m_complex_signals;
     QVector<QPointer<SpinBox> > m_constants;
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
-   
+    QPointer<QCheckBox> m_runtype;
     QSpinBox *m_maxiter;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;

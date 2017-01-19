@@ -44,8 +44,6 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationMod
     InitialGuess();   
     
     setOptParamater(m_complex_constants);
-    
-//     m_opt_para << line3;
     CalculateSignal();
 
     m_repaint = true;
@@ -129,10 +127,10 @@ void IItoI_ItoI_Model::MiniShifts()
 QVector<QVector<qreal> > IItoI_ItoI_Model::AllShifts()
 {
     
-        QVector<QVector<qreal> > Shifts;
-    Shifts << m_pure_signals;
-    Shifts << m_ItoI_signals;
-    Shifts << m_IItoI_signals;
+    QVector<QVector<qreal> > Shifts;
+        Shifts << m_pure_signals;
+        Shifts << m_ItoI_signals;
+        Shifts << m_IItoI_signals;
     return Shifts;
     
 }
@@ -238,6 +236,17 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j) const
     return QPair<qreal, qreal>(0, 0);
 }
 
+QVector<qreal > IItoI_ItoI_Model::OptimizeAllParameters()
+{
+    setOptParamater(m_complex_constants);
+    addOptParameter(m_IItoI_signals);
+    addOptParameter(m_pure_signals);
+    addOptParameter(m_ItoI_signals);
+        QVector<qreal > parameter;
+    for(int i = 0; i < m_opt_para.size(); ++i)
+        parameter << *m_opt_para[i];
+    return parameter;
+}
 
 
 void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)

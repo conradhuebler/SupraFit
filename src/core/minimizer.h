@@ -32,10 +32,14 @@ class AbstractTitrationModel;
 class NonLinearFitThread : public QObject, public QRunnable
 {
  Q_OBJECT
+
 public:
+    enum OptimizationRun { Constrained, UnConstrained};
+    
     NonLinearFitThread();
     ~NonLinearFitThread();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
+    inline void setOptimizationRun(OptimizationRun runtype) { m_runtype = runtype; }
     virtual void run ();
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
     inline QJsonObject BestIntermediateParameter() const { return m_best_intermediate; }
@@ -49,9 +53,11 @@ private:
     QVector<qreal> NonLinearFitComplexConstants(int maxsteps);
     int NonLinearFitSignalConstants();
     int DifferenceFitSignalConstants();
+    int NonLinearFit();
     OptimizerConfig m_opt_config;
     bool m_converged;
     int m_steps;
+    OptimizationRun m_runtype;
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);
@@ -66,7 +72,7 @@ public:
     Minimizer(QObject *parent = 0);
     ~Minimizer();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
-    int Minimize();
+    int Minimize(NonLinearFitThread::OptimizationRun runtype);
     void setOptimizerConfig(const OptimizerConfig &config) 
     { 
         m_opt_config = config;

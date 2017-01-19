@@ -95,6 +95,17 @@ void ItoI_Model::MiniShifts()
         }
 }
 
+QVector<qreal > ItoI_Model::OptimizeAllParameters()
+{
+    setOptParamater(m_K11);
+    addOptParameter(m_pure_signals);
+    addOptParameter(m_ItoI_signals);
+        QVector<qreal >parameter;
+    for(int i = 0; i < m_opt_para.size(); ++i)
+        parameter << *m_opt_para[i];
+    return parameter;
+}
+
 QVector<QVector<qreal> > ItoI_Model::AllShifts()
 {
     QVector<QVector<qreal> > Shifts;
@@ -120,7 +131,6 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector< qreal 
 
 void ItoI_Model::CalculateSignal(QVector<qreal > constants)
 {  
-    qDebug() << "constants" << constants;
     m_corrupt = false;
     for(int i = 0; i < DataPoints(); ++i)
     {

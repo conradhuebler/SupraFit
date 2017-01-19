@@ -255,9 +255,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
         EmptyUI();
     
     
-    //     m_modelhistorydialog = new ModelHistoryDialog(&m_history, this);
-    //     connect(m_modelhistorydialog, SIGNAL(AddModel(QJsonObject)), this, SIGNAL(AddModel(QJsonObject)));
-    //     connect(m_modelhistorydialog, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
     setLayout(m_layout);
     m_model->CalculateSignal();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
@@ -278,6 +275,8 @@ void ModelWidget::DiscreteUI()
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
     m_maxiter = new QSpinBox;
+    m_runtype = new QCheckBox(tr("Constrained Optimization"));
+    m_runtype->setChecked(true);
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
     QHBoxLayout *mini = new QHBoxLayout;
@@ -294,6 +293,7 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
+    mini->addWidget(m_runtype);
     mini->addWidget(m_optim_config);
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
     QHBoxLayout *mini_data = new QHBoxLayout;
@@ -358,7 +358,6 @@ void ModelWidget::recalulate()
     
     CollectParameters();
     m_model->CalculateSignal();
-//     Repaint();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
     m_pending = false;
 }
@@ -414,7 +413,11 @@ void ModelWidget::GlobalMinimize()
     OptimizerConfig config = m_model->getOptimizerConfig();
     config.MaxIter = m_maxiter->value();
     m_model->setOptimizerConfig(config);
-    int result = m_minimizer->Minimize();
+    int result;
+    if(m_runtype->isChecked())
+        result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::Constrained);
+    else
+        result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::UnConstrained);
     if(result == 1)
     {
         QJsonObject json = m_minimizer->Parameter();
@@ -444,7 +447,6 @@ void ModelWidget::LocalMinimize()
         return;
     m_minimize_all->setEnabled(false);
     m_minimize_single->setEnabled(false);
-    //     m_pending = true;
     CollectParameters();
     
     for(int i = 0; i < m_model->SignalCount(); ++i)
@@ -457,7 +459,13 @@ void ModelWidget::LocalMinimize()
         OptimizerConfig config = m_model->getOptimizerConfig();
         config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
-        int result = m_minimizer->Minimize();
+        
+        int result;
+        if(m_runtype->isChecked())
+            result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::Constrained);
+        else
+            result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::UnConstrained);
+        
         if(result == 1)
         {
             QJsonObject json = m_minimizer->Parameter();

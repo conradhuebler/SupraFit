@@ -27,7 +27,7 @@
 #include <QtCore/QDateTime>
 
 #include "minimizer.h"
-NonLinearFitThread::NonLinearFitThread()
+NonLinearFitThread::NonLinearFitThread():  m_runtype(OptimizationRun::Constrained)
 {
   setAutoDelete(false);  
     
@@ -45,7 +45,10 @@ void NonLinearFitThread::run()
     m_last_parameter = m_model->ExportJSON();
     m_steps = 0;
     m_converged = false;
-    FastFit();
+    if(m_runtype == OptimizationRun::Constrained)
+        FastFit();
+    else
+        NonLinearFit();
 }
 
 
@@ -197,8 +200,20 @@ QVector<qreal> NonLinearFitThread::NonLinearFitComplexConstants(int maxsteps)
 
 int NonLinearFitThread::NonLinearFitSignalConstants()
 {
-        return 0;
+        
+    return 0;
 }
+
+int NonLinearFitThread::NonLinearFit()
+{
+    QVector<qreal > parameter = m_model->OptimizeAllParameters();
+    NonlinearFit(m_model, 100, parameter, m_opt_config);
+     m_last_parameter = m_model->ExportJSON();
+     m_converged = true;
+     m_best_intermediate = m_model->ExportJSON();
+    return 0;
+}
+
 
 Minimizer::Minimizer(QObject* parent) : QObject(parent), m_inform_config_changed(true)
 {
@@ -232,7 +247,7 @@ QString Minimizer::OptPara2String() const
     return result;
 }
 
-int Minimizer::Minimize()
+int Minimizer::Minimize(NonLinearFitThread::OptimizationRun runtype)
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     emit RequestCrashFile();
@@ -249,6 +264,7 @@ int Minimizer::Minimize()
     connect(thread, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
+    thread->setOptimizationRun(runtype);
     QThreadPool *threadpool = QThreadPool::globalInstance();
     threadpool->start(thread);
     if(!threadpool->waitForDone())
@@ -293,7 +309,6 @@ void Minimizer::addToHistory()
     
     element.error = error;
     emit InsertModel(element);
-//     m_history[m_history.size()] = element;
 }
 
 #include "minimizer.moc"

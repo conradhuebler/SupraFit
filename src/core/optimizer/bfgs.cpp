@@ -229,7 +229,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     pam.epsilon = 1e-6;
     pam.max_iterations = 1;
     QString message = QString();
-    message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
+    message += "Starting BFGS for " + QString::number(parameter.size()) + " parameters:\n";
     message += "Old vector : ";
     foreach(double d, param)
     {
@@ -260,7 +260,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     for(int i = 0; i < parameter.size(); ++i)
         param[i] = parameter(i);
            QString result;
-    result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
+    result += "BFGS returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
     result += "New vector:";    
     for(int i = 0; i < param.size(); ++i)
     {
