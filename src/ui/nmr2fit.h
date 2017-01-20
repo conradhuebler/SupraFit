@@ -50,7 +50,7 @@ public:
     
     
 public slots:
-    virtual bool close();
+
     
 private:
     void setActionEnabled(bool enabled);
@@ -64,7 +64,7 @@ private:
     QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     OptimizerConfig m_opt_config;
     void ReadSettings();
-    void WriteSettings();
+    void WriteSettings(bool ignore_window_state = true);
     QDockWidget *m_logdock, *m_modeldock, *m_chartdock, *m_history_dock;
     QPlainTextEdit *m_logWidget;
     QString m_logfile;
@@ -73,6 +73,7 @@ private:
     QFile m_file, m_stdout;
     QMap<int, ModelHistoryElement> m_history;
     bool m_ask_on_exit;
+    virtual void closeEvent(QCloseEvent *event);
 private slots:
     void NewTableAction();
     void ImportTableAction();

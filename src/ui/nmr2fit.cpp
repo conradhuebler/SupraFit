@@ -159,14 +159,6 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
 
 MainWindow::~MainWindow()
 {
-    m_stdout.close();
-    QSettings _settings;
-    
-    _settings.beginGroup("window");
-    _settings.setValue("geometry", saveGeometry());
-    _settings.setValue("state", saveState());
-    _settings.setValue("Ask_on_exit", m_ask_on_exit);
-    _settings.endGroup();
     
 }
 
@@ -367,13 +359,22 @@ void MainWindow::ReadSettings()
     
 }
 
-void MainWindow::WriteSettings()
+void MainWindow::WriteSettings(bool ignore_window_state)
 {
     QSettings _settings;
     _settings.beginGroup("main"); 
     _settings.setValue("logfile", m_logfile);
     _settings.setValue("printlevel", m_printlevel);
     _settings.endGroup();
+    
+    if(ignore_window_state)
+    {
+        _settings.beginGroup("window");
+        _settings.setValue("geometry", saveGeometry());
+        _settings.setValue("state", saveState());
+        _settings.setValue("Ask_on_exit", m_ask_on_exit);
+        _settings.endGroup();
+    }
 }
 
 
@@ -384,22 +385,27 @@ void MainWindow::InsertHistoryElement(const ModelHistoryElement &element)
     m_historywidget->InsertElement(&m_history[nr]);
 }
 
-bool MainWindow::close()
+
+void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if(!m_ask_on_exit)
-        return QWidget::close();
-    
-    QCheckBox *checkbox = new QCheckBox;
-    checkbox->setText(tr("Don't ask this again!"));
-    QMessageBox question(QMessageBox::Question, tr("About to close"), tr("Do yout really want to close this window?"), QMessageBox::Yes | QMessageBox::No, this);
-    question.setCheckBox(checkbox);
-    if(question.exec() == QMessageBox::Yes)
+    if(m_ask_on_exit)
     {
+        QCheckBox *checkbox = new QCheckBox;
+        checkbox->setText(tr("Don't ask this again!"));
+        QMessageBox question(QMessageBox::Question, tr("About to close"), tr("Do yout really want to close this window?"), QMessageBox::Yes | QMessageBox::No, this);
+        question.setCheckBox(checkbox);
+        if(question.exec() == QMessageBox::No)
+        {
+            m_ask_on_exit = !question.checkBox()->isChecked();
+            event->ignore();
+            return;
+        }
         m_ask_on_exit = !question.checkBox()->isChecked();
-        return QWidget::close();   
     }
-    m_ask_on_exit = !question.checkBox()->isChecked();
-    return false;
-    
+        
+    m_stdout.close();
+
+    WriteSettings(false);
+    QMainWindow::closeEvent(event);
 }
 #include "nmr2fit.moc"
