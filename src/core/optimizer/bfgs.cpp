@@ -87,16 +87,15 @@ public:
         VectorXd grad;
         qreal old_error = m_function(parameter, grad);
         qreal new_error = old_error;
-        qreal tk = 1;
+        qreal tk = 0.5;
         MatrixXd hessian(parameter.size(),parameter.size());
-        hessian = grad*grad.transpose();
         int maxiter = 100;
-//         for(int i = 0; i < parameter.size(); ++i)
-//             for(int j = 0; j < parameter.size(); ++j)
-//                 if(i == j)
-//                     hessian(i,j) = 1;
-//                 else
-//                     hessian(i,j) = 0;
+         for(int i = 0; i < parameter.size(); ++i)
+             for(int j = 0; j < parameter.size(); ++j)
+                 if(i == j)
+                     hessian(i,j) = 1;
+                 else
+                     hessian(i,j) = 0;
         for(iter = 0; iter < maxiter; ++iter)
         {
         if(qAbs(grad.squaredNorm()) < 1e-8)
@@ -124,7 +123,7 @@ public:
         VectorXd dktk = tk*dk;
         if(new_error > old_error)
         {
-            tk *= 0.9;
+//             tk *= 0.9;
         }
 //         std::cout << parameter << std::endl << dktk << std::endl;
         VectorXd param_2 = (parameter + dktk).transpose();
