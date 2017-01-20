@@ -19,6 +19,10 @@
 
 #include "datawidget.h"
 
+#include <QtGui/QApplication>
+
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTableView>
@@ -30,15 +34,23 @@ DataWidget::DataWidget()
 {
     QGridLayout *layout = new QGridLayout;
     m_switch = new QPushButton(tr("switch h/g"));
+    
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
     setLayout(layout);
-    m_switch->setDisabled(true);
-    
+    m_name = new QLineEdit();
+    connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
     m_concentrations = new QTableView;
         m_concentrations->setMaximumWidth(200);
     m_signals = new QTableView;
         m_signals->setMaximumWidth(750);
-        layout->addWidget(m_switch, 0, 0);
+
+    QHBoxLayout *hlayout = new QHBoxLayout;
+    
+    hlayout->addWidget(new QLabel(tr("Project Name")));
+    hlayout->addWidget(m_name);
+    hlayout->addWidget(m_switch);
+    
+    layout->addLayout(hlayout, 0, 0, 1, 2);
     layout->addWidget(m_concentrations, 1, 0);
     layout->addWidget(m_signals, 1, 1);
 }
@@ -57,7 +69,6 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass)
     m_data = dataclass;
     m_concentrations->setModel(m_data.data()->ConcentrationModel());
     m_signals->setModel(m_data.data()->SignalModel());
-    m_switch->setDisabled(false);
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
 }
@@ -80,5 +91,12 @@ void DataWidget::RowAdded()
     m_signals->resizeColumnsToContents();
     
 }
+
+void DataWidget::SetProjectName()
+{
+    qApp->instance()->setProperty("projectname", m_name->text());
+    emit NameChanged();
+}
+
 
 #include "datawidget.moc"

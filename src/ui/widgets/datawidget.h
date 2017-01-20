@@ -44,11 +44,14 @@ private:
     QPointer<QTableView > m_concentrations, m_signals;
     QPointer<QPushButton > m_switch;
     QWeakPointer<DataClass > m_data;
+    QPointer<QLineEdit > m_name;
 private slots:
     void switchHG();
+    void SetProjectName();
     
 signals:
     void recalculate();
+    void NameChanged();
 };
 
 #endif // DATAWIDGET_H

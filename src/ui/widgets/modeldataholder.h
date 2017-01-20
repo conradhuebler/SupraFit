@@ -58,6 +58,7 @@ public:
      */
     void SaveWorkspace(const QString &file);
     
+    bool CheckCrashFile();
 public slots:
     /*
      * Add a new model to the workspace
@@ -79,7 +80,7 @@ private:
     void SimulateModel(int model);
     OptimizerConfig m_config;
 
-    bool CheckCrashFile();
+    
     void Json2Model(const QJsonObject &object, const QString &str);
     void ActiveModel(QSharedPointer<AbstractTitrationModel > t);
     bool m_history;
@@ -95,6 +96,7 @@ private slots:
     
     void CreateCrashFile();
     void RemoveCrashFile();
+    void SetProjectTabName();
 signals:
     void ModelAdded(AbstractTitrationModel *model);
     void Message(const QString &str, int priority);

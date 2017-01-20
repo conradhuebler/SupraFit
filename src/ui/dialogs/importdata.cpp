@@ -148,13 +148,11 @@ void ImportData::setUi()
 {
     QGridLayout *layout = new QGridLayout;
     
-    
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     m_switch_concentration = new QCheckBox;
     m_switch_concentration->setText("Switch Host/Guest");
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    
     
     m_conc = new QSpinBox;
     connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
@@ -194,12 +192,10 @@ void ImportData::NoChanged()
 
 
 void ImportData::LoadFile()
-{
-    
-    
-    
+{ 
     m_line->setText(m_filename);
     FileHandler *filehandler = new FileHandler(m_filename, this); 
+    
     if(filehandler->FileSupported())
     {
         QStandardItemModel *model = filehandler->getData(); 
@@ -207,11 +203,8 @@ void ImportData::LoadFile()
     }else
         QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
     
-    
     delete filehandler;
-    
     NoChanged();
-    
 }
 
 void ImportData::SelectFile()
@@ -239,7 +232,6 @@ void ImportData::ExportFile()
         QVector<qreal > conc, sign;
         for(int j = 0; j < columns; ++j)
         {
-            
             if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
             {
                 if(j < m_conc->value())

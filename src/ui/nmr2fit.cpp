@@ -35,6 +35,7 @@
 #include <QtCore/QJsonObject>
 
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QLabel>
@@ -54,11 +55,8 @@
 
 #include "nmr2fit.h"
 
-MainWindow::MainWindow() :m_hasData(false)
+MainWindow::MainWindow() : m_ask_on_exit(true)
 {
-    
-    
-    
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Data and Models"), this);
     m_modeldock->setObjectName(tr("data_and_models"));
@@ -68,7 +66,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)));
     connect(m_model_dataholder, SIGNAL(MessageBox(QString, int)), this, SLOT(MessageBox(QString, int)));
-
+    
     
     m_charts = new ChartWidget;
     m_model_dataholder->setChartWidget(m_charts);
@@ -95,9 +93,9 @@ MainWindow::MainWindow() :m_hasData(false)
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
     connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)));
     connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
-     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
+    connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
-
+    
     m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
     connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTableAction()));
     
@@ -121,7 +119,7 @@ MainWindow::MainWindow() :m_hasData(false)
     
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()) );
-        
+    
     m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
     connect(m_close, SIGNAL(triggered()), SLOT(close()) );
     
@@ -161,13 +159,13 @@ MainWindow::MainWindow() :m_hasData(false)
 
 MainWindow::~MainWindow()
 {
-    
     m_stdout.close();
     QSettings _settings;
     
     _settings.beginGroup("window");
     _settings.setValue("geometry", saveGeometry());
     _settings.setValue("state", saveState());
+    _settings.setValue("Ask_on_exit", m_ask_on_exit);
     _settings.endGroup();
     
 }
@@ -180,17 +178,46 @@ void MainWindow::setActionEnabled(bool enabled)
     m_importmodel->setEnabled(enabled);
 }
 
+bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str)
+{
+    if(!m_titration_data.isNull())
+    {
+        MainWindow *mainwindow = new MainWindow;
+        mainwindow->SetData(dataclass, str);
+        mainwindow->show();
+        return false;
+    }else
+    {
+        QFileInfo info(str);
+        qApp->instance()->setProperty("projectpath", str);
+        qApp->instance()->setProperty("projectname", info.baseName());
+        m_titration_data = m_model_dataholder->setData(new DataClass(dataclass));
+        m_charts->setRawData(m_titration_data.data());
+        setActionEnabled(true);
+        m_charts->setRawData(m_titration_data.data());
+        if(m_model_dataholder->CheckCrashFile())
+        {
+            QMessageBox::StandardButton replay;
+            QString app_name = QString(qApp->instance()->applicationName());
+            replay = QMessageBox::information(this, tr("Old Models found."), tr("It seems %1 crashed (unfortunately)!\nShall I recover the last models?").arg(app_name), QMessageBox::Yes | QMessageBox::No);
+            if(replay == QMessageBox::Yes) 
+            {
+                QJsonObject toplevel;
+                if(JsonHandler::ReadJsonFile(toplevel, qApp->instance()->property("projectpath").toString() + ".crashsave.json"))
+                    m_model_dataholder->AddToWorkspace(toplevel);
+            }
+        }
+        return true;
+    }
+}
+
+
 void MainWindow::NewTableAction()
 {
-
     ImportData dialog(this);
     if(dialog.exec() == QDialog::Accepted)
-    {
-        m_titration_data = m_model_dataholder->setData(new DataClass(dialog.getStoredData()));
-        m_charts->setRawData(m_titration_data.data());
-        m_hasData = true;
-        setActionEnabled(true);
-    }
+        SetData(new DataClass(dialog.getStoredData()));
+    
 }
 
 void MainWindow::ImportTableAction()
@@ -198,21 +225,9 @@ void MainWindow::ImportTableAction()
     QString filename = QFileDialog::getOpenFileName(this, "Select file", ".");
     if(filename.isEmpty())
         return;
-    if(!m_hasData)
-    {
-        ImportData dialog(filename, this);
-        
-        if(dialog.exec() == QDialog::Accepted)
-        {
-            m_titration_data = m_model_dataholder->setData(new DataClass(dialog.getStoredData()));
-            LoadData(filename);
-        }
-    }else
-    {
-        MainWindow *nw = new MainWindow;
-        nw->show();
-        nw->ImportAction(filename);
-    }
+    ImportData dialog(filename, this);
+    if(dialog.exec() == QDialog::Accepted)
+        SetData(new DataClass(dialog.getStoredData()), filename);
 }
 
 void MainWindow::ImportAction(const QString& file)
@@ -220,11 +235,7 @@ void MainWindow::ImportAction(const QString& file)
     ImportData dialog(file, this);
     
     if(dialog.exec() == QDialog::Accepted)
-    {
-        m_titration_data = m_model_dataholder->setData(new DataClass(dialog.getStoredData()));
-        LoadData(file);
-    }else
-        destroy();
+        SetData(new DataClass(dialog.getStoredData()), file);
 }
 
 void MainWindow::LoadProjectAction()
@@ -237,27 +248,11 @@ void MainWindow::LoadProjectAction()
         {
             QPointer<DataClass > data = new DataClass(toplevel);
             if(data->DataPoints() != 0)
-            {
-                m_titration_data = m_model_dataholder->setData(new DataClass(data));  
-                LoadData(str);
-                m_model_dataholder->AddToWorkspace(toplevel);
-            }
+                SetData(new DataClass(new DataClass(data)), str);
             else
-            {
-                
                 QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
-            }
         }
     }
-}
-
-void MainWindow::LoadData(const QString &file)
-{
-    m_charts->setRawData(m_titration_data.data());
-    m_hasData = true;
-    qApp->instance()->setProperty("projectname", file);
-    setActionEnabled(true);
-
 }
 
 void MainWindow::SaveProjectAction()
@@ -268,10 +263,10 @@ void MainWindow::SaveProjectAction()
         m_model_dataholder->SaveWorkspace(str);
     }
 }
-    
+
 void MainWindow::ImportModelAction()
 {
-  QString str = QFileDialog::getOpenFileName(this, tr("Open File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         QJsonObject toplevel;
@@ -281,14 +276,14 @@ void MainWindow::ImportModelAction()
         }
     }  
 }
-    
-    
+
+
 void MainWindow::ExportModelAction()
 {
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
-       m_model_dataholder->SaveCurrentModels(str);   
+        m_model_dataholder->SaveCurrentModels(str);   
     }   
 }
 
@@ -299,7 +294,6 @@ void MainWindow::EditTableAction()
 
 void MainWindow::SettingsDialog()
 {
-    
     ConfigDialog dialog(m_opt_config, m_printlevel, m_logfile, this);
     if(dialog.exec() == QDialog::Accepted)
     {
@@ -309,7 +303,6 @@ void MainWindow::SettingsDialog()
         m_logfile = dialog.LogFile();
         WriteSettings();
     }
-    
 }
 
 void MainWindow::LogFile()
@@ -333,9 +326,9 @@ void MainWindow::LogFile()
 
 void MainWindow::WriteMessages(const QString &message, int priority)
 {
-
-//     QTextStream stdout_stream(&m_stdout);
-//      stdout_stream << message << "\n";
+    
+    //     QTextStream stdout_stream(&m_stdout);
+    //      stdout_stream << message << "\n";
     
     if(priority <= m_printlevel)
     {
@@ -367,15 +360,16 @@ void MainWindow::ReadSettings()
     _settings.endGroup();
     
     _settings.beginGroup("window");
-        restoreGeometry(_settings.value("geometry").toByteArray());
+    restoreGeometry(_settings.value("geometry").toByteArray());
     restoreState(_settings.value("state").toByteArray());
+    m_ask_on_exit = _settings.value("Ask_on_exit", true).toBool();
     _settings.endGroup();
     
 }
 
 void MainWindow::WriteSettings()
 {
-   QSettings _settings;
+    QSettings _settings;
     _settings.beginGroup("main"); 
     _settings.setValue("logfile", m_logfile);
     _settings.setValue("printlevel", m_printlevel);
@@ -390,4 +384,22 @@ void MainWindow::InsertHistoryElement(const ModelHistoryElement &element)
     m_historywidget->InsertElement(&m_history[nr]);
 }
 
+bool MainWindow::close()
+{
+    if(!m_ask_on_exit)
+        return QWidget::close();
+    
+    QCheckBox *checkbox = new QCheckBox;
+    checkbox->setText(tr("Don't ask this again!"));
+    QMessageBox question(QMessageBox::Question, tr("About to close"), tr("Do yout really want to close this window?"), QMessageBox::Yes | QMessageBox::No, this);
+    question.setCheckBox(checkbox);
+    if(question.exec() == QMessageBox::Yes)
+    {
+        m_ask_on_exit = !question.checkBox()->isChecked();
+        return QWidget::close();   
+    }
+    m_ask_on_exit = !question.checkBox()->isChecked();
+    return false;
+    
+}
 #include "nmr2fit.moc"
