@@ -588,17 +588,17 @@ void ModelWidget::OpenAdvancedSearch()
 
 void ModelWidget::AdvancedSearchFinished(int runtype)
 {
-    if(runtype == 1)
-    {
-        QList<QPointF> series = m_advancedsearch->Series();
-        QtCharts::QChart *chart = new QtCharts::QChart;
-        chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-        xy_series->append(series);
-        view = new ChartView(chart);
-        view->addSeries(xy_series);
-        view->show();
-    }
+//     if(runtype == 1)
+//     {
+//         QList<QPointF> series = m_advancedsearch->Series();
+//         QtCharts::QChart *chart = new QtCharts::QChart;
+//         chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+//         xy_series->append(series);
+//         view = new ChartView(chart);
+//         view->addSeries(xy_series);
+//         view->show();
+//     }
 }
 
 #include "modelwidget.moc"

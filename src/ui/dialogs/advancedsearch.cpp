@@ -19,6 +19,8 @@
 
 #include "src/core/AbstractModel.h"
 
+#include <QtCore/QJsonObject>
+
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
@@ -106,34 +108,86 @@ void AdvancedSearch::SetUi()
 void AdvancedSearch::GlobalSearch()
 {
     
-    QVector<double > list;
+    QVector< QVector<double > > full_list;
     for(int i = 0; i < m_parameter_list.size(); ++i)
     {
+        QVector<double > list;
         double min = 0, max = 0, step = 0;
         min = m_parameter_list[i]->Min();
         max = m_parameter_list[i]->Max();
         step = m_parameter_list[i]->Step();
         for(double s = min; s <= max; s += step)
             list << s;
+        full_list << list;
     }
-    if(m_optim->isChecked())
+    
+    
+    QVector<double > error;
+    QVector< QVector<double > > input  = ConvertList(full_list, error);
+    qDebug() << error;
+
+//     
+}
+
+QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
+{
+    QVector<int > position(full_list.size(), 0);
+    QVector< QVector<double > > input;
+    for(;;)
     {
+        QVector<double > parameter(full_list.size(), 0);
+        for(int j = 0; j < position.size(); ++j)
+            parameter[j] = full_list[j][position[j]];
         
-    }else
-        Scan(list);
+        bool allow_break = true;
+        for(int i = 0; i < position.size(); ++i)
+        {
+            allow_break = allow_break && (position[i] == full_list[i].size() - 1);
+        }
+        m_model->setConstants(parameter);
+        m_model->CalculateSignal();
+        error << m_model->ModelError();
+        for(int k = position.size() - 1; k >= 0; --k)
+        {
+            if(position[k] == ( full_list[k].size() - 1) )
+            {
+                k--;
+                if(k >= 0)
+                {
+                    position[k]++;
+                    if(position[k] <= full_list[k].size() - 1)
+                        position[k + 1] = 0;
+                    break;
+                }
+                
+            }
+            else
+            {
+                 position[k]++;
+                 break;
+            }
+             
+        }
+                
+        if(allow_break)
+            return input;
+    }
 }
 
 
-void AdvancedSearch::Scan(const QVector<qreal>& list)
+void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
 {
-    series.clear();
+
+    QVector<double > error;
+    
     for(int i = 0; i < list.size(); ++i)
     {
-        m_model->setConstants(QVector<qreal>() << list[i]);
+        m_model->setConstants(list[i]);
         m_model->CalculateSignal();
-        qreal error = m_model->ModelError();
-        series.append(QPointF(list[i], error));
+        error << m_model->ModelError();
     }
+    last_result.m_error = error;
+    last_result.m_input = list;
     emit finished(1);
 }
 

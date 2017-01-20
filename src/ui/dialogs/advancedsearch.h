@@ -33,6 +33,16 @@ class Minimizer;
 class QCheckBox;
 class QPushButton;
 class QDoubleSpinBox;
+class QJsonObject;
+
+struct GlobalSearchResult
+{
+    QVector< QVector<double > > m_input;  
+    QVector< double > m_error;
+    QVector< double > m_corr_coeff;
+    QVector< QJsonObject > m_models;
+};
+
 
 class ParameterWidget : public QGroupBox
 {
@@ -59,16 +69,18 @@ public:
     QVector<QPointer<ParameterWidget > > m_parameter_list;
     inline void setMinimizer(QWeakPointer<Minimizer> minimizer) { m_minimizer = minimizer; }
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); SetUi();}
-    inline QList<QPointF>  Series() const { return series; }
-private:
+    inline GlobalSearchResult  LastResult() const { return last_result; }
     
+private:
     void SetUi();
-    void Scan(const QVector<qreal > &list);
+    void Scan(const QVector< QVector<double > > &list);
     QWeakPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
     QPointer<QCheckBox > m_optim;
     QPointer<QPushButton > m_global;
-    QList<QPointF> series;
+    GlobalSearchResult last_result;
+    QVector< QVector<double > > ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
+    
 private slots:
     void GlobalSearch();
 signals:

@@ -92,6 +92,8 @@ endif(USE_levmarOptimizer)
 
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5PrintSupport REQUIRED)
+find_package(Qt5Charts REQUIRED)
+find_package(Qt5DataVisualization REQUIRED)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/)
 
@@ -140,7 +142,7 @@ add_executable(nmr2fit ${nmr2fit_SRCS})
 
 set_property(TARGET math models nmr2fit PROPERTY CXX_STANDARD 11)
 
-qt5_use_modules(nmr2fit Widgets Charts PrintSupport)
+qt5_use_modules(nmr2fit Widgets Charts PrintSupport DataVisualization)
 
 target_link_libraries(nmr2fit models math  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
 
