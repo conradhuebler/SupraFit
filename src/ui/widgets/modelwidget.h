@@ -40,6 +40,8 @@ class QVBoxLayout;
 class QGridLayout;
 class QCheckBox;
 class LineSeries;
+class AdvancedSearch;
+class ChartView;
 
 struct  ModelHistoryElement;
 
@@ -104,9 +106,8 @@ public:
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
     QSharedPointer< AbstractTitrationModel > Model() { return m_model; }
     void setMaxIter(int maxiter);
-    void addToHistory();
-    Minimizer* getMinimizer() { return m_minimizer; }
-    Minimizer *m_minimizer;
+    QSharedPointer<Minimizer > getMinimizer() { return m_minimizer; }
+    QSharedPointer<Minimizer > m_minimizer;
 public slots:
     void LoadJson(const QJsonObject &object);
 private:
@@ -118,18 +119,19 @@ private:
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
     QPointer<QCheckBox> m_runtype;
+    QPointer<AdvancedSearch> m_advancedsearch;
     QSpinBox *m_maxiter;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPushButton *m_switch, *m_minimize_all, *m_minimize_single, *m_add_sim_signal, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_showhistory; 
+    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced; 
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
     void EmptyUI();
     
     void CollectParameters();
-    
+    ChartView *view;
 private slots:
     void GlobalMinimize();
     void LocalMinimize();
@@ -139,8 +141,9 @@ private slots:
     void NewGuess();
     void ImportConstants();
     void ExportConstants();
-//     void ShowHistory();
     void setParameter();
+    void OpenAdvancedSearch();
+    void AdvancedSearchFinished(int runtype);
 public slots:
     void recalulate();
     void OptimizerSettings();

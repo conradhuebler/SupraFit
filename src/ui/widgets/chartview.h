@@ -54,6 +54,7 @@ class ChartView : public QWidget
     Q_OBJECT
 public:
     ChartView(QtCharts::QChart *chart);
+    ChartView();
     void addSeries( QtCharts::QAbstractSeries* series, bool legend = false );
     
 public slots:

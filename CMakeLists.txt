@@ -119,6 +119,7 @@ qt5_use_modules(models Widgets Charts)
 
 set(nmr2fit_SRCS
                 src/ui/widgets/modelhistorywidget.cpp
+                src/ui/dialogs/advancedsearch.cpp
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp
                 src/ui/dialogs/chartconfig.cpp

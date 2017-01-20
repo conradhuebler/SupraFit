@@ -125,6 +125,15 @@ ChartView::ChartView(QtCharts::QChart *chart) : m_chart_private(new ChartViewPri
     
 }
 
+ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false)
+{
+    m_chart = new QtCharts::QChart(); 
+    m_chart_private = new ChartViewPrivate(new ChartViewPrivate(m_chart, this));
+    setUi();
+    m_chart->legend()->setAlignment(Qt::AlignRight);
+    
+}
+
 void ChartView::setUi()
 {
     QGridLayout *layout = new QGridLayout;
@@ -162,10 +171,6 @@ void ChartView::setUi()
         m_config->setMaximumWidth(100);
         m_config->setStyleSheet("QPushButton {background-color: #A3C1DA; color: black;}");
     m_config->setMenu(menu);
-    
-    
-    
-    
     
     layout->addWidget(m_chart_private, 0, 0, 1, 5);//, Qt::AlignHCenter);
     layout->addWidget(m_config, 0, 4, Qt::AlignTop);

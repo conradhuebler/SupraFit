@@ -232,12 +232,12 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     m_modelsWidget->addTab(modelwidget, t->Name());
     
     t->setOptimizerConfig(m_config);
-    connect(modelwidget->getMinimizer(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
-    connect(modelwidget->getMinimizer(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
+    connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)));
+    connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)));
     
-    connect(modelwidget->getMinimizer(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
-    connect(modelwidget->getMinimizer(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
-    connect(modelwidget->getMinimizer(), SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)));
+    connect(modelwidget->getMinimizer().data(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()));
+    connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()));
+    connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)));
     
     QScrollArea *scroll = new QScrollArea;
     scroll->setBackgroundRole(QPalette::Midlight);

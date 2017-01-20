@@ -21,9 +21,10 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 #include "src/ui/dialogs/configdialog.h"
-#include "src/ui/widgets/modelhistorywidget.h"
+#include "src/ui/dialogs/advancedsearch.h"
 
 #include "chartwidget.h"
+#include "chartview.h"
 
 #include <QtMath>
 #include "cmath"
@@ -43,6 +44,8 @@
 #include <QMessageBox>
 #include <QColorDialog>
 
+#include <QtCharts/QChart>
+#include <QtCharts/QXYSeries>
 
 #include <iostream>
 
@@ -213,9 +216,14 @@ void ModelElement::ChooseColor()
     ColorChanged(color);
 }
 
-ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : QWidget(parent), m_model(model), m_pending(false), m_minimizer(new Minimizer(this))
+ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : QWidget(parent), m_model(model), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
 {
     m_minimizer->setModel(m_model);
+    m_advancedsearch = new AdvancedSearch(this);
+    m_advancedsearch->setMinimizer(m_minimizer);
+    m_advancedsearch->setModel(m_model);
+    connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
+    
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Pure Shift"));
     m_layout->addWidget(pure_shift, 0, 0);
@@ -275,6 +283,7 @@ void ModelWidget::DiscreteUI()
     m_export = new QPushButton(tr("Save Constants"));
     m_maxiter = new QSpinBox;
     m_runtype = new QCheckBox(tr("Constrained\nOptimization"));
+    m_advanced = new QPushButton(tr("Advanced\nSearch"));
     m_runtype->setChecked(false);
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
@@ -286,6 +295,8 @@ void ModelWidget::DiscreteUI()
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
     connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
+    connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
+    
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -293,6 +304,7 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
     mini->addWidget(m_runtype);
+    mini->addWidget(m_advanced);
     mini->addWidget(m_optim_config);
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
     QHBoxLayout *mini_data = new QHBoxLayout;
@@ -566,6 +578,27 @@ void ModelWidget::LoadJson(const QJsonObject& object)
     QVector<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
+}
+
+void ModelWidget::OpenAdvancedSearch()
+{
+    if(!m_advancedsearch.isNull())
+        m_advancedsearch->show();    
+}
+
+void ModelWidget::AdvancedSearchFinished(int runtype)
+{
+    if(runtype == 1)
+    {
+        QList<QPointF> series = m_advancedsearch->Series();
+        QtCharts::QChart *chart = new QtCharts::QChart;
+        chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        xy_series->append(series);
+        view = new ChartView(chart);
+        view->addSeries(xy_series);
+        view->show();
+    }
 }
 
 #include "modelwidget.moc"
