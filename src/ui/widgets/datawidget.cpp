@@ -19,7 +19,7 @@
 
 #include "datawidget.h"
 
-#include <QtGui/QApplication>
+#include <QApplication>
 
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
@@ -48,6 +48,7 @@ DataWidget::DataWidget()
     
     hlayout->addWidget(new QLabel(tr("Project Name")));
     hlayout->addWidget(m_name);
+    hlayout->addSpacing(2*width()/3);
     hlayout->addWidget(m_switch);
     
     layout->addLayout(hlayout, 0, 0, 1, 2);
@@ -71,6 +72,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass)
     m_signals->setModel(m_data.data()->SignalModel());
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
+    m_name->setText(qApp->instance()->property("projectname").toString());
 }
 
 void DataWidget::switchHG()
