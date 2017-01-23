@@ -47,13 +47,15 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QXYSeries>
 
+#include <QtDataVisualization>
+
 #include <iostream>
 
 #include "modelwidget.h"
 
 SpinBox::SpinBox(QWidget * parent)
-        : QDoubleSpinBox(parent)
-        , valueBeingSet(false)
+: QDoubleSpinBox(parent)
+, valueBeingSet(false)
 {
     connect(this,SIGNAL(valueChanged(double)),this,SLOT(On_valueChanged(double)));
 }
@@ -136,7 +138,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
-//     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
+    //     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
     
 }
 
@@ -588,17 +590,44 @@ void ModelWidget::OpenAdvancedSearch()
 
 void ModelWidget::AdvancedSearchFinished(int runtype)
 {
-//     if(runtype == 1)
-//     {
-//         QList<QPointF> series = m_advancedsearch->Series();
-//         QtCharts::QChart *chart = new QtCharts::QChart;
-//         chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-//         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-//         xy_series->append(series);
-//         view = new ChartView(chart);
-//         view->addSeries(xy_series);
-//         view->show();
-//     }
+    if(runtype == 0)
+    {
+        
+        surface = new  QtDataVisualization::Q3DSurface;
+        QWidget *container = QWidget::createWindowContainer(surface);
+        QtDataVisualization::QSurface3DSeries *series = new QtDataVisualization::QSurface3DSeries;
+        QtDataVisualization::QSurfaceDataArray *data = new QtDataVisualization::QSurfaceDataArray(m_advancedsearch->dataArray());
+        series->dataProxy()->resetArray(data);
+        surface->addSeries(series);
+        series->setDrawMode(QtDataVisualization::QSurface3DSeries::DrawSurfaceAndWireframe);
+        series->setFlatShadingEnabled(true);
+        
+        surface->axisX()->setLabels(QStringList() << "xaxis");
+        surface->axisX()->setLabelFormat("%.2f");
+        surface->axisZ()->setLabelFormat("%.2f");
+        surface->axisX()->setRange(0, 5);
+        surface->axisY()->setRange(0, 5);
+        surface->axisZ()->setRange(0, 5);
+        surface->axisX()->setLabelAutoRotation(30);
+        surface->axisY()->setLabelAutoRotation(90);
+        surface->axisZ()->setLabelAutoRotation(30);
+        QLinearGradient gr;
+        gr.setColorAt(0.0, Qt::black);
+        gr.setColorAt(0.33, Qt::blue);
+        gr.setColorAt(0.67, Qt::red);
+        gr.setColorAt(1.0, Qt::yellow);
+        surface->seriesList().at(0)->setBaseGradient(gr);
+        surface->seriesList().at(0)->setColorStyle(QtDataVisualization::Q3DTheme::ColorStyleRangeGradient);
+        container->show();
+        //          QList<QPointF> series = m_advancedsearch->Series();
+        //          QtCharts::QChart *chart = new QtCharts::QChart;
+        //          chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        //          QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        //          xy_series->append(series);
+        //          view = new ChartView(chart);
+        //          view->addSeries(xy_series);
+        //          view->show();
+    }
 }
 
 #include "modelwidget.moc"

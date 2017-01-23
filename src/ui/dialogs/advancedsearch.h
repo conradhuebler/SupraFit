@@ -20,7 +20,10 @@
 #ifndef ADVANCEDSEARCH_H
 #define ADVANCEDSEARCH_H
 
+
 #include "src/core/AbstractModel.h"
+
+#include <QtDataVisualization>
 
 #include <QtCore/QWeakPointer>
 #include <QtCore/QPointer>
@@ -70,7 +73,7 @@ public:
     inline void setMinimizer(QWeakPointer<Minimizer> minimizer) { m_minimizer = minimizer; }
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); SetUi();}
     inline GlobalSearchResult  LastResult() const { return last_result; }
-    
+    inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
@@ -80,7 +83,7 @@ private:
     QPointer<QPushButton > m_global;
     GlobalSearchResult last_result;
     QVector< QVector<double > > ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
-    
+    QtDataVisualization::QSurfaceDataArray m_3d_data;
 private slots:
     void GlobalSearch();
 signals:

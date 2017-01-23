@@ -32,6 +32,7 @@
 #include <QtWidgets/QVBoxLayout>
 
 #include <QtCharts/QLineSeries>
+#include <QtDataVisualization>
 
 class QDoubleSpinBox;
 class QPushButton;
@@ -132,6 +133,7 @@ private:
     
     void CollectParameters();
     ChartView *view;
+    QtDataVisualization::Q3DSurface *surface;
 private slots:
     void GlobalMinimize();
     void LocalMinimize();

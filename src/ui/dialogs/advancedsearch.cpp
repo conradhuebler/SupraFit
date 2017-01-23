@@ -39,7 +39,7 @@ ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupB
     m_min = new QDoubleSpinBox;
     m_min->setValue(0.1);
     m_max = new QDoubleSpinBox;
-    m_max->setValue(10);
+    m_max->setValue(5);
     m_step = new QDoubleSpinBox;
     m_step->setValue(0.1);
     
@@ -125,7 +125,8 @@ void AdvancedSearch::GlobalSearch()
     QVector<double > error;
     QVector< QVector<double > > input  = ConvertList(full_list, error);
     qDebug() << error;
-
+    
+    emit finished(m_optim->isChecked());
 //     
 }
 
@@ -133,6 +134,7 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
 {
     QVector<int > position(full_list.size(), 0);
     QVector< QVector<double > > input;
+    QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
     for(;;)
     {
         QVector<double > parameter(full_list.size(), 0);
@@ -147,6 +149,10 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
         m_model->setConstants(parameter);
         m_model->CalculateSignal();
         error << m_model->ModelError();
+        last_result.m_error = error;
+        last_result.m_input = full_list;
+
+        *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
         for(int k = position.size() - 1; k >= 0; --k)
         {
             if(position[k] == ( full_list[k].size() - 1) )
@@ -156,17 +162,19 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                 {
                     position[k]++;
                     if(position[k] <= full_list[k].size() - 1)
+                    {
+                        m_3d_data << dataRow1;
+                        dataRow1 = new QtDataVisualization::QSurfaceDataRow;
                         position[k + 1] = 0;
+                    }
                     break;
                 }
-                
             }
             else
             {
                  position[k]++;
                  break;
             }
-             
         }
                 
         if(allow_break)
@@ -186,9 +194,7 @@ void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
         m_model->CalculateSignal();
         error << m_model->ModelError();
     }
-    last_result.m_error = error;
-    last_result.m_input = list;
-    emit finished(1);
+    
 }
 
 #include "advancedsearch.moc"
