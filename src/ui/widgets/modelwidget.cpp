@@ -22,6 +22,7 @@
 #include "src/core/minimizer.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/advancedsearch.h"
+#include "src/ui/widgets/3dchartview.h"
 
 #include "chartwidget.h"
 #include "chartview.h"
@@ -144,6 +145,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
 
 ModelElement::~ModelElement()
 {
+
     //      m_model.clear();
 }
 
@@ -272,6 +274,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
 ModelWidget::~ModelWidget()
 {
     m_model.clear();
+    if(_3dchart)
+        delete _3dchart;
 }
 
 
@@ -286,6 +290,8 @@ void ModelWidget::DiscreteUI()
     m_maxiter = new QSpinBox;
     m_runtype = new QCheckBox(tr("Constrained\nOptimization"));
     m_advanced = new QPushButton(tr("Advanced\nSearch"));
+    m_plot_3d = new QPushButton(tr("3D Plot"));
+    m_plot_3d->setEnabled(false);
     m_runtype->setChecked(false);
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
@@ -298,7 +304,7 @@ void ModelWidget::DiscreteUI()
     connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
     connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
-    
+    connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -307,6 +313,7 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_minimize_single);
     mini->addWidget(m_runtype);
     mini->addWidget(m_advanced);
+    mini->addWidget(m_plot_3d);
     mini->addWidget(m_optim_config);
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
     QHBoxLayout *mini_data = new QHBoxLayout;
@@ -588,37 +595,24 @@ void ModelWidget::OpenAdvancedSearch()
         m_advancedsearch->show();    
 }
 
+void ModelWidget::triggerPlot3D()
+{
+    if(_3dchart)
+        _3dchart->setVisible(_3dchart->isVisible());
+}
+
+
 void ModelWidget::AdvancedSearchFinished(int runtype)
 {
     if(runtype == 0)
     {
         
-        surface = new  QtDataVisualization::Q3DSurface;
-        QWidget *container = QWidget::createWindowContainer(surface);
-        QtDataVisualization::QSurface3DSeries *series = new QtDataVisualization::QSurface3DSeries;
-        QtDataVisualization::QSurfaceDataArray *data = new QtDataVisualization::QSurfaceDataArray(m_advancedsearch->dataArray());
-        series->dataProxy()->resetArray(data);
-        surface->addSeries(series);
-        series->setDrawMode(QtDataVisualization::QSurface3DSeries::DrawSurfaceAndWireframe);
-        series->setFlatShadingEnabled(true);
+        if(!_3dchart)
+            _3dchart = new _3DChartView;
+        _3dchart->setData((m_advancedsearch->dataArray()));
+        _3dchart->show();
+        m_plot_3d->setEnabled(true);
         
-        surface->axisX()->setLabels(QStringList() << "xaxis");
-        surface->axisX()->setLabelFormat("%.2f");
-        surface->axisZ()->setLabelFormat("%.2f");
-        surface->axisX()->setRange(0, 5);
-        surface->axisY()->setRange(0, 5);
-        surface->axisZ()->setRange(0, 5);
-        surface->axisX()->setLabelAutoRotation(30);
-        surface->axisY()->setLabelAutoRotation(90);
-        surface->axisZ()->setLabelAutoRotation(30);
-        QLinearGradient gr;
-        gr.setColorAt(0.0, Qt::black);
-        gr.setColorAt(0.33, Qt::blue);
-        gr.setColorAt(0.67, Qt::red);
-        gr.setColorAt(1.0, Qt::yellow);
-        surface->seriesList().at(0)->setBaseGradient(gr);
-        surface->seriesList().at(0)->setColorStyle(QtDataVisualization::Q3DTheme::ColorStyleRangeGradient);
-        container->show();
         //          QList<QPointF> series = m_advancedsearch->Series();
         //          QtCharts::QChart *chart = new QtCharts::QChart;
         //          chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);

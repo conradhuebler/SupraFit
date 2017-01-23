@@ -43,6 +43,7 @@ class QCheckBox;
 class LineSeries;
 class AdvancedSearch;
 class ChartView;
+class _3DChartView;
 
 struct  ModelHistoryElement;
 
@@ -125,7 +126,7 @@ private:
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced; 
+    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d; 
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
@@ -133,7 +134,8 @@ private:
     
     void CollectParameters();
     ChartView *view;
-    QtDataVisualization::Q3DSurface *surface;
+    QPointer<_3DChartView > _3dchart;
+    
 private slots:
     void GlobalMinimize();
     void LocalMinimize();
@@ -146,6 +148,7 @@ private slots:
     void setParameter();
     void OpenAdvancedSearch();
     void AdvancedSearchFinished(int runtype);
+    void triggerPlot3D();
 public slots:
     void recalulate();
     void OptimizerSettings();
