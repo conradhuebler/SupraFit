@@ -26,6 +26,7 @@
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/widgets/3dchartview.h"
+#include "src/ui/widgets/optimizerflagwidget.h"
 
 #include "chartwidget.h"
 #include "chartview.h"
@@ -318,22 +319,25 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
-    mini->addWidget(m_constrained);
-    mini->addWidget(m_ignore_zero);
+//     mini->addWidget(m_constrained);
+//     mini->addWidget(m_ignore_zero);
     mini->addWidget(m_advanced);
     mini->addWidget(m_plot_3d);
     mini->addWidget(m_optim_config);
+    
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
+    m_optim_flags = new OptimizerFlagWidget;
+    m_layout->addWidget(m_optim_flags, 4, 0, 1, m_model->ConstantSize()+3);
     QHBoxLayout *mini_data = new QHBoxLayout;
     mini_data->addWidget(m_import);
     mini_data->addWidget(m_export);
-    m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
+    m_layout->addLayout(mini_data, 5, 0,1,m_model->ConstantSize()+3 );
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
     mini2->addWidget(m_maxiter);
     mini2->addWidget(new QLabel(tr("Sum of Error:")));
     mini2->addWidget(m_sum_error);
-    m_layout->addLayout(mini2, 5, 0,1,m_model->ConstantSize()+3);
+    m_layout->addLayout(mini2, 6, 0,1,m_model->ConstantSize()+3);
     
 }
 
@@ -440,16 +444,7 @@ void ModelWidget::GlobalMinimize()
     m_model->setOptimizerConfig(config);
     int result;
     
-    OptimizationType type;
-    if(m_constrained->isChecked())
-        type = (OptimizationType::ComplexationConstants | OptimizationType::ConstrainedShifts);
-    else
-        type = (OptimizationType::ComplexationConstants | OptimizationType::UnconstrainedShifts);
-    
-    if(m_ignore_zero->isChecked())
-        type = type | OptimizationType::IgnoreZeroConcentrations;
-    qDebug() << type;
-    result = m_minimizer->Minimize(type);
+    result = m_minimizer->Minimize(m_optim_flags->getFlags());
     
     if(result == 1)
     {
@@ -493,12 +488,7 @@ void ModelWidget::LocalMinimize()
         m_model->setOptimizerConfig(config);
         
         int result;
-        OptimizationType type;
-        if(m_constrained->isChecked())
-            type = (OptimizationType::ComplexationConstants | OptimizationType::ConstrainedShifts);
-        else
-            type = (OptimizationType::ComplexationConstants | OptimizationType::UnconstrainedShifts);
-        result = m_minimizer->Minimize(type);
+        result = m_minimizer->Minimize(m_optim_flags->getFlags());
         
         
         if(result == 1)

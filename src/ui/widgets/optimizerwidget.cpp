@@ -17,6 +17,8 @@
  *
  */
 
+#include "src/global_config.h"
+
 #include "src/core/AbstractModel.h"
 
 #include <QtWidgets/QLabel>
@@ -29,6 +31,61 @@
 #include <QtWidgets/QCheckBox>
 
 #include "optimizerwidget.h"
+
+#ifdef USE_levmarOptimizer
+LevmarConfig::LevmarConfig(const OptimizerConfig &config)
+{
+    QGridLayout *layout = new QGridLayout;
+    
+    m_levmarmu = new ScientificBox;
+    m_levmarmu->setRange(0, 1E-1);
+    m_levmarmu->setSingleStep(1E-8);
+    m_levmarmu->setValue(config.LevMar_mu);
+    m_levmarmu->setDecimals(2);
+
+    m_levmar_eps1 = new ScientificBox;
+    m_levmar_eps1->setRange(0, 1E-1);
+    m_levmar_eps1->setSingleStep(1E-20);
+    m_levmar_eps1->setDecimals(2);
+    m_levmar_eps1->setValue(config.LevMar_Eps1);
+    
+    m_levmar_eps2 = new ScientificBox;
+    m_levmar_eps2->setRange(0, 1E-1);
+    m_levmar_eps2->setSingleStep(1E-20);
+    m_levmar_eps2->setDecimals(2);
+    m_levmar_eps2->setValue(config.LevMar_Eps2);
+    
+    m_levmar_eps3 = new ScientificBox;
+    m_levmar_eps3->setRange(0, 1E-1);
+    m_levmar_eps3->setSingleStep(1E-20);
+    m_levmar_eps3->setDecimals(2);
+    m_levmar_eps3->setValue(config.LevMar_Eps3);
+    
+    m_levmar_delta = new ScientificBox;
+    m_levmar_delta->setRange(0, 1);
+    m_levmar_delta->setSingleStep(1E-10);
+    m_levmar_delta->setDecimals(2);
+    m_levmar_delta->setValue(config.LevMar_Delta);
+     
+    layout->addWidget(new QLabel(tr("scale factor for initial \\mu {opts[0]}}")), 0, 0);
+    layout->addWidget(m_levmarmu, 0, 1);
+    layout->addWidget(new QLabel(tr("stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}")), 1, 0);
+    layout->addWidget(m_levmar_eps1, 1, 1);
+    layout->addWidget(new QLabel(tr("stopping thresholds for ||Dp||_2 = {opts[2]}")), 2, 0);
+    layout->addWidget(m_levmar_eps2, 2, 1);
+    layout->addWidget(new QLabel(tr("stopping thresholds for ||e||_2 = {opts[3]}")), 3, 0);
+    layout->addWidget(m_levmar_eps3, 3, 1);
+    layout->addWidget(new QLabel(tr("tep used in difference approximation to the Jacobian: = {opts[4]}")), 4, 0);
+    layout->addWidget(m_levmar_delta, 4, 1);
+    
+    setLayout(layout);
+}
+
+LevmarConfig::~LevmarConfig()
+{
+}
+#endif
+
 
 OptimizerWidget::OptimizerWidget(OptimizerConfig config, QWidget *parent) : m_config(config), QWidget(parent)
 {
@@ -51,7 +108,10 @@ void OptimizerWidget::setUi()
     layout->addWidget(m_tabwidget);
     
     setGeneral();
-    setLevMar();
+#ifdef USE_levmarOptimizer
+    m_levmar_config = new LevmarConfig(m_config);
+    m_tabwidget->addTab(m_levmar_config, tr("Levmar Settings"));
+#endif
 }
 
 
@@ -133,55 +193,6 @@ void OptimizerWidget::setGeneral()
 }
 
 
-void OptimizerWidget::setLevMar()
-{
-    QGridLayout *layout = new QGridLayout;
-    
-    m_levmarmu = new ScientificBox;
-    m_levmarmu->setRange(0, 1E-1);
-    m_levmarmu->setSingleStep(1E-8);
-    m_levmarmu->setValue(m_config.LevMar_mu);
-    m_levmarmu->setDecimals(2);
-
-    m_levmar_eps1 = new ScientificBox;
-    m_levmar_eps1->setRange(0, 1E-1);
-    m_levmar_eps1->setSingleStep(1E-20);
-    m_levmar_eps1->setDecimals(2);
-    m_levmar_eps1->setValue(m_config.LevMar_Eps1);
-    
-    m_levmar_eps2 = new ScientificBox;
-    m_levmar_eps2->setRange(0, 1E-1);
-    m_levmar_eps2->setSingleStep(1E-20);
-    m_levmar_eps2->setDecimals(2);
-    m_levmar_eps2->setValue(m_config.LevMar_Eps2);
-    
-    m_levmar_eps3 = new ScientificBox;
-    m_levmar_eps3->setRange(0, 1E-1);
-    m_levmar_eps3->setSingleStep(1E-20);
-    m_levmar_eps3->setDecimals(2);
-    m_levmar_eps3->setValue(m_config.LevMar_Eps3);
-    
-    m_levmar_delta = new ScientificBox;
-    m_levmar_delta->setRange(0, 1);
-    m_levmar_delta->setSingleStep(1E-10);
-    m_levmar_delta->setDecimals(2);
-    m_levmar_delta->setValue(m_config.LevMar_Delta);
-     
-    layout->addWidget(new QLabel(tr("scale factor for initial \\mu {opts[0]}}")), 0, 0);
-    layout->addWidget(m_levmarmu, 0, 1);
-    layout->addWidget(new QLabel(tr("stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}")), 1, 0);
-    layout->addWidget(m_levmar_eps1, 1, 1);
-    layout->addWidget(new QLabel(tr("stopping thresholds for ||Dp||_2 = {opts[2]}")), 2, 0);
-    layout->addWidget(m_levmar_eps2, 2, 1);
-    layout->addWidget(new QLabel(tr("stopping thresholds for ||e||_2 = {opts[3]}")), 3, 0);
-    layout->addWidget(m_levmar_eps3, 3, 1);
-    layout->addWidget(new QLabel(tr("tep used in difference approximation to the Jacobian: = {opts[4]}")), 4, 0);
-    layout->addWidget(m_levmar_delta, 4, 1);
-    
-    QWidget *generalwidget = new QWidget;
-    generalwidget->setLayout(layout);
-    m_tabwidget->addTab(generalwidget, tr("Levmar Settings"));
-}
 
 OptimizerConfig OptimizerWidget::Config() const
 {
@@ -208,11 +219,14 @@ OptimizerConfig OptimizerWidget::Config() const
         config.OptimizeBorderShifts = 1;
         config.OptimizeIntermediateShifts = 1;
     }
-    config.LevMar_mu = m_levmarmu->value();
-    config.LevMar_Eps1 = m_levmar_eps1->value();
-    config.LevMar_Eps2 = m_levmar_eps2->value();
-    config.LevMar_Eps3 = m_levmar_eps3->value();
-    config.LevMar_Delta = m_levmar_delta->value();
+
+#ifdef USE_levmarOptimizer
+    config.LevMar_mu = m_levmar_config->m_levmarmu->value();
+    config.LevMar_Eps1 = m_levmar_config->m_levmar_eps1->value();
+    config.LevMar_Eps2 = m_levmar_config->m_levmar_eps2->value();
+    config.LevMar_Eps3 = m_levmar_config->m_levmar_eps3->value();
+    config.LevMar_Delta = m_levmar_config->m_levmar_delta->value();
+#endif
     
     return config;
 }

@@ -44,6 +44,7 @@ class LineSeries;
 class AdvancedSearch;
 class ChartView;
 class _3DChartView;
+class OptimizerFlagWidget;
 
 struct  ModelHistoryElement;
 
@@ -135,7 +136,7 @@ private:
     void CollectParameters();
     ChartView *view;
     QPointer<_3DChartView > _3dchart;
-    
+    QPointer<OptimizerFlagWidget> m_optim_flags;
 private slots:
     void GlobalMinimize();
     void LocalMinimize();

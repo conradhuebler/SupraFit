@@ -21,6 +21,10 @@
 
 #ifndef OPTIMIZERWIDGET_H
 #define OPTIMIZERWIDGET_H
+
+#include "src/global_config.h"
+
+
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QLocale>
@@ -62,7 +66,15 @@ public:
 private:
     QLocale loc;
 };
-
+#ifdef USE_levmarOptimizer
+class LevmarConfig : public QWidget
+{
+public:
+    LevmarConfig(const OptimizerConfig &config);
+    ~LevmarConfig();
+    ScientificBox *m_levmarmu, *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
+};
+#endif
 class OptimizerWidget : public QWidget
 {
     Q_OBJECT
@@ -75,12 +87,13 @@ private:
     OptimizerConfig m_config;
     QTabWidget *m_tabwidget;
     QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence;
-    ScientificBox *m_levmarmu, *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta, *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
+    ScientificBox *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
     QCheckBox *m_optimize_shifts;
-    
+#ifdef USE_levmarOptimizer
+    LevmarConfig *m_levmar_config;
+#endif
     void setUi();
     void setGeneral();
-    void setLevMar();
 };
 
 #endif // OPTIMIZERWIDGET_H

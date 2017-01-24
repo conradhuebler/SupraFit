@@ -120,6 +120,7 @@ add_library(models STATIC ${models_SRC})
 qt5_use_modules(models Widgets Charts)
 
 set(nmr2fit_SRCS
+                src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/modelhistorywidget.cpp
                 src/ui/dialogs/advancedsearch.cpp
