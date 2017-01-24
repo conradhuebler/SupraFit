@@ -120,7 +120,7 @@ private:
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
-    QPointer<QCheckBox> m_runtype;
+    QPointer<QCheckBox> m_constrained, m_ignore_zero;
     QPointer<AdvancedSearch> m_advancedsearch;
     QSpinBox *m_maxiter;
     QVBoxLayout *m_sign_layout;
@@ -149,6 +149,7 @@ private slots:
     void OpenAdvancedSearch();
     void AdvancedSearchFinished(int runtype);
     void triggerPlot3D();
+    void ConstrainedOptimizationChanged();
 public slots:
     void recalulate();
     void OptimizerSettings();

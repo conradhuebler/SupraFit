@@ -18,6 +18,7 @@
  */
 
 #include "src/core/AbstractModel.h"
+#include "src/core/minimizer.h"
 
 #include <QtCore/QJsonObject>
 
@@ -37,11 +38,11 @@
 ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupBox(name, parent)
 {
     m_min = new QDoubleSpinBox;
-    m_min->setValue(0.1);
+    m_min->setValue(1);
     m_max = new QDoubleSpinBox;
-    m_max->setValue(5);
+    m_max->setValue(7);
     m_step = new QDoubleSpinBox;
-    m_step->setValue(0.1);
+    m_step->setValue(0.25);
     
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(new QLabel(tr("Min")), 0, 0);
@@ -122,12 +123,12 @@ void AdvancedSearch::GlobalSearch()
     }
     
     
-    QVector<double > error;
+    QVector<double > error; 
+    m_type = OptimizationType::ConstrainedShifts;
     QVector< QVector<double > > input  = ConvertList(full_list, error);
     qDebug() << error;
-    
+   
     emit finished(m_optim->isChecked());
-//     
 }
 
 QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
@@ -147,8 +148,16 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
             allow_break = allow_break && (position[i] == full_list[i].size() - 1);
         }
         m_model->setConstants(parameter);
+        
+        m_minimizer.data()->setModel(m_model);
+        m_minimizer.data()->Minimize(m_type);
+        
+        QJsonObject json = m_minimizer.data()->Parameter();
+        m_model->ImportJSON(json);
+        
         m_model->CalculateSignal();
         error << m_model->ModelError();
+        qDebug() << parameter << error.last();
         last_result.m_error = error;
         last_result.m_input = full_list;
 

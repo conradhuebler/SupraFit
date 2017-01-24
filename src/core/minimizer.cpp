@@ -17,6 +17,7 @@
  *
  */
 
+#include "src/global.h"
 #include "src/global_config.h"
 
 #include "src/core/AbstractModel.h"
@@ -29,7 +30,7 @@
 #include <QtCore/QDateTime>
 
 #include "minimizer.h"
-NonLinearFitThread::NonLinearFitThread():  m_runtype(OptimizationRun::Constrained)
+NonLinearFitThread::NonLinearFitThread():  m_runtype(OptimizationType::ComplexationConstants)
 {
   setAutoDelete(false);  
     
@@ -47,9 +48,9 @@ void NonLinearFitThread::run()
     m_last_parameter = m_model->ExportJSON();
     m_steps = 0;
     m_converged = false;
-    if(m_runtype == OptimizationRun::Constrained)
+    if((m_runtype & OptimizationType::ComplexationConstants) && (m_runtype & OptimizationType::ConstrainedShifts))
         FastFit();
-    else
+    else if((m_runtype & OptimizationType::ComplexationConstants) && (m_runtype & OptimizationType::UnconstrainedShifts))
         NonLinearFit();
 }
 
@@ -208,7 +209,7 @@ int NonLinearFitThread::NonLinearFitSignalConstants()
 
 int NonLinearFitThread::NonLinearFit()
 {
-    QVector<qreal > parameter = m_model->OptimizeAllParameters();
+    QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
     NonlinearFit(m_model, 100, parameter, m_opt_config);
      m_last_parameter = m_model->ExportJSON();
      m_converged = true;
@@ -251,7 +252,7 @@ QString Minimizer::OptPara2String() const
     return result;
 }
 
-int Minimizer::Minimize(NonLinearFitThread::OptimizationRun runtype)
+int Minimizer::Minimize(OptimizationType runtype)
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     emit RequestCrashFile();

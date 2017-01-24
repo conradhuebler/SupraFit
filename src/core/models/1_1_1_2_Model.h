@@ -20,6 +20,7 @@
 #ifndef ItoI_ItoII_Model_H
 #define ItoI_ItoII_Model_H
 
+#include "src/global.h"
 #include "src/core/AbstractModel.h"
 
 #include <QDebug>
@@ -39,7 +40,7 @@ class ItoI_ItoII_Model : public AbstractTitrationModel
 public:
     ItoI_ItoII_Model(const DataClass* data);
     ~ItoI_ItoII_Model();
-    
+    virtual QVector<qreal > OptimizeParameters(OptimizationType type);
     QPair<qreal, qreal> Pair(int i, int j = 0) const ;
     inline int ConstantSize() const { return 2;}
     void setPureSignals(const QVector< qreal > &list);
@@ -52,6 +53,7 @@ public:
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     QVector<qreal > OptimizeAllParameters();
+    QVector<qreal > OptimizeAllShifts();
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 
     {

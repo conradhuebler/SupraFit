@@ -75,9 +75,9 @@ void _3DChartView::CreateChart()
         d->axisX()->setLabels(QStringList() << "xaxis");
         d->axisX()->setLabelFormat("%.2f");
         d->axisZ()->setLabelFormat("%.2f");
-        d->axisX()->setRange(0, 5);
-        d->axisY()->setRange(0, 5);
-        d->axisZ()->setRange(0, 5);
+        d->axisX()->setRange(0, 7);
+        d->axisY()->setRange(0, 2);
+        d->axisZ()->setRange(0, 7);
         d->axisX()->setLabelAutoRotation(30);
         d->axisY()->setLabelAutoRotation(90);
         d->axisZ()->setLabelAutoRotation(30);

@@ -21,6 +21,19 @@
 
 #ifndef global_H
 #define global_H
+
+
+enum OptimizationType{
+        ComplexationConstants = 0x01,
+        UnconstrainedShifts = 0x02,
+        ConstrainedShifts = 0x04,
+        IntermediateShifts = 0x08,
+        IgnoreZeroConcentrations = 0x16
+    };
+    
+inline OptimizationType operator|(OptimizationType a, OptimizationType b)
+        {return static_cast<OptimizationType>(static_cast<int>(a) | static_cast<int>(b));}
+        
 class QString;
 
 extern int printLevel;

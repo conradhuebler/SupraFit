@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
+#include "src/global.h"
+
 #include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
@@ -145,7 +148,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
 
 ModelElement::~ModelElement()
 {
-
+    
     //      m_model.clear();
 }
 
@@ -288,11 +291,14 @@ void ModelWidget::DiscreteUI()
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
     m_maxiter = new QSpinBox;
-    m_runtype = new QCheckBox(tr("Constrained\nOptimization"));
+    m_constrained = new QCheckBox(tr("Constrain\nShift Optimization"));
+        m_constrained->setToolTip(tr("If checked, we shifts at zero and saturation/highest concentration will be changed that the difference between experimentall and calulcated signal at this points are zero. Other shifts, if any will be fitted using non-lineare optimiziation. If not checked, all shifts will be fitted using non-linear optimization."));
+    m_ignore_zero = new QCheckBox(tr("Ignore Zero\nShifts"));
+        m_ignore_zero->setToolTip(tr("If you use unconstrained optimization for shifts, you can set the zero concentration shift as ignore during optimization!"));
     m_advanced = new QPushButton(tr("Advanced\nSearch"));
     m_plot_3d = new QPushButton(tr("3D Plot"));
     m_plot_3d->setEnabled(false);
-    m_runtype->setChecked(false);
+    m_constrained->setChecked(false);
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
     QHBoxLayout *mini = new QHBoxLayout;
@@ -305,13 +311,15 @@ void ModelWidget::DiscreteUI()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
     connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
     connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
+    connect(m_constrained, SIGNAL(stateChanged(int)), this, SLOT(ConstrainedOptimizationChanged()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
-    mini->addWidget(m_runtype);
+    mini->addWidget(m_constrained);
+    mini->addWidget(m_ignore_zero);
     mini->addWidget(m_advanced);
     mini->addWidget(m_plot_3d);
     mini->addWidget(m_optim_config);
@@ -431,10 +439,18 @@ void ModelWidget::GlobalMinimize()
     config.MaxIter = m_maxiter->value();
     m_model->setOptimizerConfig(config);
     int result;
-    if(m_runtype->isChecked())
-        result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::Constrained);
+    
+    OptimizationType type;
+    if(m_constrained->isChecked())
+        type = (OptimizationType::ComplexationConstants | OptimizationType::ConstrainedShifts);
     else
-        result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::UnConstrained);
+        type = (OptimizationType::ComplexationConstants | OptimizationType::UnconstrainedShifts);
+    
+    if(m_ignore_zero->isChecked())
+        type = type | OptimizationType::IgnoreZeroConcentrations;
+    qDebug() << type;
+    result = m_minimizer->Minimize(type);
+    
     if(result == 1)
     {
         QJsonObject json = m_minimizer->Parameter();
@@ -477,10 +493,13 @@ void ModelWidget::LocalMinimize()
         m_model->setOptimizerConfig(config);
         
         int result;
-        if(m_runtype->isChecked())
-            result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::Constrained);
+        OptimizationType type;
+        if(m_constrained->isChecked())
+            type = (OptimizationType::ComplexationConstants | OptimizationType::ConstrainedShifts);
         else
-            result = m_minimizer->Minimize(NonLinearFitThread::OptimizationRun::UnConstrained);
+            type = (OptimizationType::ComplexationConstants | OptimizationType::UnconstrainedShifts);
+        result = m_minimizer->Minimize(type);
+        
         
         if(result == 1)
         {
@@ -622,6 +641,11 @@ void ModelWidget::AdvancedSearchFinished(int runtype)
         //          view->addSeries(xy_series);
         //          view->show();
     }
+}
+
+void ModelWidget::ConstrainedOptimizationChanged()
+{
+    m_ignore_zero->setDisabled(m_constrained->isChecked());
 }
 
 #include "modelwidget.moc"

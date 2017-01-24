@@ -91,8 +91,37 @@ QVector<QVector<qreal> > ItoI_ItoII_Model::AllShifts()
     
 }
 
+QVector<qreal> ItoI_ItoII_Model::OptimizeParameters(OptimizationType type)
+{
+    clearOptParameter();
+    
+    if(OptimizationType::ComplexationConstants & type)
+    {
+        setOptParamater(m_complex_constants);
+    }
+    if(OptimizationType::UnconstrainedShifts & type)
+    {
+        addOptParameter(m_ItoI_signals);
+        addOptParameter(m_ItoII_signals);
+    }
+    if(OptimizationType::ConstrainedShifts & type || OptimizationType::IntermediateShifts & type)
+    {
+        addOptParameter(m_ItoI_signals);
+    }
+    
+    if(type & ~(OptimizationType::IgnoreZeroConcentrations))
+        addOptParameter(m_pure_signals);
+        
+    QVector<qreal >parameter;
+    for(int i = 0; i < m_opt_para.size(); ++i)
+        parameter << *m_opt_para[i];
+    return parameter;
+}
+
+
 QVector<qreal > ItoI_ItoII_Model::OptimizeAllParameters()
 {
+    clearOptParameter();
     setOptParamater(m_complex_constants);
     addOptParameter(m_ItoII_signals);
     addOptParameter(m_pure_signals);
@@ -101,6 +130,18 @@ QVector<qreal > ItoI_ItoII_Model::OptimizeAllParameters()
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
+}
+
+QVector<qreal> ItoI_ItoII_Model::OptimizeAllShifts()
+{
+    clearOptParameter();
+    addOptParameter(m_ItoII_signals);
+    addOptParameter(m_pure_signals);
+    addOptParameter(m_ItoI_signals);
+    QVector<qreal >parameter;
+    for(int i = 0; i < m_opt_para.size(); ++i)
+        parameter << *m_opt_para[i];
+    return parameter;   
 }
 
 

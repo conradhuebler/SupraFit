@@ -20,7 +20,7 @@
 #ifndef ADVANCEDSEARCH_H
 #define ADVANCEDSEARCH_H
 
-
+#include "src/global.h"
 #include "src/core/AbstractModel.h"
 
 #include <QtDataVisualization>
@@ -84,6 +84,7 @@ private:
     GlobalSearchResult last_result;
     QVector< QVector<double > > ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
     QtDataVisualization::QSurfaceDataArray m_3d_data;
+    OptimizationType m_type;
 private slots:
     void GlobalSearch();
 signals:

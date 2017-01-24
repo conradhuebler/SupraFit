@@ -21,6 +21,8 @@
 #ifndef ABSTRACTMODEL_H
 #define ABSTRACTMODEL_H
 
+#include "src/global.h"
+
 #include <QtCore/QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
@@ -61,7 +63,9 @@ class AbstractTitrationModel : public DataClass
 public:
     AbstractTitrationModel(const DataClass *data);
     virtual ~AbstractTitrationModel();
+    virtual QVector<qreal > OptimizeParameters(OptimizationType type) = 0;
     virtual QVector<qreal > OptimizeAllParameters() = 0;
+    virtual QVector<qreal > OptimizeAllShifts() = 0;
     void setOptParamater(qreal & parameter);
     void addOptParameter(qreal &vector);
     void setOptParamater(QVector< qreal >& parameter);

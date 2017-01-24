@@ -19,6 +19,9 @@
 
 #ifndef MINIMIZER_H
 #define MINIMIZER_H
+
+#include "src/global.h"
+
 #include "src/core/AbstractModel.h"
 #include "src/ui/widgets/modelhistorywidget.h"
 #include <QtCore/QSharedPointer>
@@ -34,12 +37,11 @@ class NonLinearFitThread : public QObject, public QRunnable
  Q_OBJECT
 
 public:
-    enum OptimizationRun { Constrained, UnConstrained};
     
     NonLinearFitThread();
     ~NonLinearFitThread();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
-    inline void setOptimizationRun(OptimizationRun runtype) { m_runtype = runtype; }
+    inline void setOptimizationRun(OptimizationType runtype) { m_runtype = runtype; }
     virtual void run ();
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
     inline QJsonObject BestIntermediateParameter() const { return m_best_intermediate; }
@@ -57,7 +59,7 @@ private:
     OptimizerConfig m_opt_config;
     bool m_converged;
     int m_steps;
-    OptimizationRun m_runtype;
+    OptimizationType m_runtype;
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);
@@ -72,7 +74,7 @@ public:
     Minimizer(QObject *parent = 0);
     ~Minimizer();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
-    int Minimize(NonLinearFitThread::OptimizationRun runtype);
+    int Minimize(OptimizationType runtype);
     void setOptimizerConfig(const OptimizerConfig &config) 
     { 
         m_opt_config = config;
