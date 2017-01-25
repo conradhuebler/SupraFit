@@ -70,10 +70,11 @@ void OptimizerFlagWidget::setUi()
 
 OptimizationType OptimizerFlagWidget::getFlags() const
 {
-    OptimizationType type;
+    OptimizationType type = static_cast<OptimizationType>(0);
     
     if(m_ComplexationConstants->isChecked())
         type = OptimizationType::ComplexationConstants;
+
     if(!m_IgnoreAllShifts->isChecked())
     {
         if(m_ConstrainedShifts->isChecked())
@@ -87,7 +88,6 @@ OptimizationType OptimizerFlagWidget::getFlags() const
         if(m_IgnoreZeroConcentrations->isChecked())
             type = type | OptimizationType::IgnoreZeroConcentrations;   
     }
-    qDebug() << type;
     
     return type;
 }
@@ -101,7 +101,7 @@ void OptimizerFlagWidget::EnableShiftSelection()
 
 void OptimizerFlagWidget::ConstrainedChanged()
 {
-    m_IgnoreZeroConcentrations->setEnabled(!m_ConstrainedShifts->isChecked());
+    m_IgnoreZeroConcentrations->setEnabled(m_ConstrainedShifts->isChecked());
 }
 
 
