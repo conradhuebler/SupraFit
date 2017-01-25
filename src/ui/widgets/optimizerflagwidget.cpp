@@ -46,19 +46,26 @@ OptimizerFlagWidget::~OptimizerFlagWidget()
 void OptimizerFlagWidget::setUi()
 {
     m_ComplexationConstants = new QCheckBox(tr("Optimize\nComplexation\nConstants"));
-        m_ComplexationConstants->setChecked(m_type & OptimizationType::ComplexationConstants);
+    m_ComplexationConstants->setChecked(m_type & OptimizationType::ComplexationConstants);
+    m_IgnoreAllShifts = new QCheckBox(tr("Ignore\nShifts"));
+    m_IgnoreAllShifts->setChecked(m_type & OptimizationType::IgnoreAllShifts);
     m_ConstrainedShifts = new QCheckBox(tr("Optimize Shift\nParameters\nConstrained"));
-        m_ConstrainedShifts->setChecked(m_type & OptimizationType::ConstrainedShifts);
+    m_ConstrainedShifts->setChecked(m_type & OptimizationType::ConstrainedShifts);
     m_IntermediateShifts = new QCheckBox(tr("Optimize Nonzero-Concentration\nand\nNon-saturated Shifts"));
-        m_IntermediateShifts->setChecked(m_type & OptimizationType::IntermediateShifts);
+    m_IntermediateShifts->setChecked(m_type & OptimizationType::IntermediateShifts);
     m_IgnoreZeroConcentrations = new QCheckBox(tr("Dont Optimize Zero\nConcentration Shifts"));
-        m_IgnoreZeroConcentrations->setChecked(m_type & OptimizationType::IgnoreZeroConcentrations);
+    m_IgnoreZeroConcentrations->setChecked(m_type & OptimizationType::IgnoreZeroConcentrations);
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(m_ComplexationConstants);
+    layout->addWidget(m_IgnoreAllShifts);
     layout->addWidget(m_ConstrainedShifts);
     layout->addWidget(m_IntermediateShifts);
     layout->addWidget(m_IgnoreZeroConcentrations);
     setLayout(layout);
+    connect(m_IgnoreAllShifts, SIGNAL(stateChanged(int)), this, SLOT(EnableShiftSelection()));
+    connect(m_ConstrainedShifts, SIGNAL(stateChanged(int)), this, SLOT(ConstrainedChanged()));
+    EnableShiftSelection();
+    ConstrainedChanged();
 }
 
 OptimizationType OptimizerFlagWidget::getFlags() const
@@ -67,21 +74,35 @@ OptimizationType OptimizerFlagWidget::getFlags() const
     
     if(m_ComplexationConstants->isChecked())
         type = OptimizationType::ComplexationConstants;
-    
-    if(m_ConstrainedShifts->isChecked())
-        type = type | OptimizationType::ConstrainedShifts;   
-    else
-        type = type | OptimizationType::UnconstrainedShifts;  
-    
-    if(m_IntermediateShifts->isChecked())
-        type = type | OptimizationType::IntermediateShifts;   
-    
-    if(m_IgnoreZeroConcentrations->isChecked())
-        type = type | OptimizationType::IgnoreZeroConcentrations;   
-    
+    if(!m_IgnoreAllShifts->isChecked())
+    {
+        if(m_ConstrainedShifts->isChecked())
+            type = type | OptimizationType::ConstrainedShifts;   
+        else
+            type = type | OptimizationType::UnconstrainedShifts;  
+        
+        if(m_IntermediateShifts->isChecked())
+            type = type | OptimizationType::IntermediateShifts;   
+        
+        if(m_IgnoreZeroConcentrations->isChecked())
+            type = type | OptimizationType::IgnoreZeroConcentrations;   
+    }
     qDebug() << type;
     
     return type;
 }
+
+void OptimizerFlagWidget::EnableShiftSelection()
+{
+    m_ConstrainedShifts->setEnabled(!m_IgnoreAllShifts->isChecked());
+    m_IntermediateShifts->setEnabled(!m_IgnoreAllShifts->isChecked());
+    m_IgnoreZeroConcentrations->setEnabled(!m_IgnoreAllShifts->isChecked());
+}
+
+void OptimizerFlagWidget::ConstrainedChanged()
+{
+    m_IgnoreZeroConcentrations->setEnabled(!m_ConstrainedShifts->isChecked());
+}
+
 
 #include "optimizerflagwidget.moc"

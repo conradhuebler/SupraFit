@@ -25,10 +25,11 @@
 
 enum OptimizationType{
         ComplexationConstants = 0x01,
-        UnconstrainedShifts = 0x02,
-        ConstrainedShifts = 0x04,
-        IntermediateShifts = 0x08,
-        IgnoreZeroConcentrations = 0x16
+        IgnoreAllShifts = 0x02,
+        UnconstrainedShifts = 0x04,
+        ConstrainedShifts = 0x08,
+        IntermediateShifts = 0x016,
+        IgnoreZeroConcentrations = 0x32
     };
     
 inline OptimizationType operator|(OptimizationType a, OptimizationType b)

@@ -50,7 +50,7 @@ void NonLinearFitThread::run()
     m_converged = false;
     if((m_runtype & OptimizationType::ComplexationConstants) && (m_runtype & OptimizationType::ConstrainedShifts))
         FastFit();
-    else if((m_runtype & OptimizationType::ComplexationConstants) && (m_runtype & OptimizationType::UnconstrainedShifts))
+    else if((m_runtype & OptimizationType::ComplexationConstants) && (m_runtype & OptimizationType::UnconstrainedShifts || m_runtype & ~OptimizationType::IgnoreAllShifts))
         NonLinearFit();
 }
 
@@ -210,6 +210,7 @@ int NonLinearFitThread::NonLinearFitSignalConstants()
 int NonLinearFitThread::NonLinearFit()
 {
     QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
+    qDebug() << parameter;
     NonlinearFit(m_model, 100, parameter, m_opt_config);
      m_last_parameter = m_model->ExportJSON();
      m_converged = true;

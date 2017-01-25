@@ -38,7 +38,11 @@ public:
 private:
     OptimizationType m_type;
     void setUi();
-    QPointer<QCheckBox > m_ComplexationConstants, m_ConstrainedShifts, m_IntermediateShifts, m_IgnoreZeroConcentrations;
+    QPointer<QCheckBox > m_ComplexationConstants, m_IgnoreAllShifts, m_ConstrainedShifts, m_IntermediateShifts, m_IgnoreZeroConcentrations;
+    
+private slots:
+    void EnableShiftSelection();
+    void ConstrainedChanged();
 };
 
 #endif // OPTIMIZERFLAGWIDGET_H

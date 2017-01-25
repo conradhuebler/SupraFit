@@ -42,22 +42,22 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
     
     InitialGuess();
     CalculateSignal();
-
+    
     m_repaint = true;
 }
 
 ItoI_Model::~ItoI_Model() 
 {
-
+    
 }
 
 void ItoI_Model::InitialGuess()
 {
-     m_repaint = false;
-     m_K11 = 4;
-     m_ItoI_signals = SignalModel()->lastRow();
-     m_pure_signals = SignalModel()->firstRow();
-     
+    m_repaint = false;
+    m_K11 = 4;
+    m_ItoI_signals = SignalModel()->lastRow();
+    m_pure_signals = SignalModel()->firstRow();
+    
     setOptParamater(m_K11);
     QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals.size(); ++i)
@@ -66,7 +66,7 @@ void ItoI_Model::InitialGuess()
         line2 << &m_ItoI_signals[i];
     }
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
-        
+    
     CalculateSignal(QVector<qreal >() << m_K11);
     m_repaint = true;
 }
@@ -80,19 +80,19 @@ void ItoI_Model::MiniShifts()
     else
         active_signal = ActiveSignals();
     
-        for(int j = 0; j < m_lim_para.size(); ++j)
+    for(int j = 0; j < m_lim_para.size(); ++j)
+    {
+        for(int i = 0; i < SignalCount(); ++i)    
         {
-            for(int i = 0; i < SignalCount(); ++i)    
+            if(active_signal[i] == 1)
             {
-                if(active_signal[i] == 1)
-                {
-                 if(m_model_error->firstRow()[i] < 1 && j == 0)
-                      *m_lim_para[j][i] -= m_model_error->firstRow()[i];
-                 if(m_model_error->lastRow()[i] < 1 && j == 1)
-                     *m_lim_para[j][i] -= m_model_error->lastRow()[i];   
-                }
+                if(m_model_error->firstRow()[i] < 1 && j == 0)
+                    *m_lim_para[j][i] -= m_model_error->firstRow()[i];
+                if(m_model_error->lastRow()[i] < 1 && j == 1)
+                    *m_lim_para[j][i] -= m_model_error->lastRow()[i];   
             }
         }
+    }
 }
 
 QVector<qreal> ItoI_Model::OptimizeParameters(OptimizationType type)
@@ -101,12 +101,14 @@ QVector<qreal> ItoI_Model::OptimizeParameters(OptimizationType type)
     
     if(OptimizationType::ComplexationConstants & type)
         setOptParamater(m_K11);
-    if(OptimizationType::UnconstrainedShifts & type)
-        addOptParameter(m_ItoI_signals);
-    
-    if(type & ~(OptimizationType::IgnoreZeroConcentrations))
-        addOptParameter(m_pure_signals);
+    if(type & ~OptimizationType::IgnoreAllShifts)
+    {
+        if(OptimizationType::UnconstrainedShifts & type)
+            addOptParameter(m_ItoI_signals);
         
+        if(type & ~OptimizationType::IgnoreZeroConcentrations)
+            addOptParameter(m_pure_signals);
+    }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
@@ -132,7 +134,7 @@ QVector<qreal > ItoI_Model::OptimizeAllShifts()
     clearOptParameter();
     addOptParameter(m_pure_signals);
     addOptParameter(m_ItoI_signals);
-        QVector<qreal >parameter;
+    QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;    
