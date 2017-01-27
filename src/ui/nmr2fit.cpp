@@ -64,8 +64,8 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
     
-    connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)));
-    connect(m_model_dataholder, SIGNAL(MessageBox(QString, int)), this, SLOT(MessageBox(QString, int)));
+    connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)), Qt::DirectConnection);
+    connect(m_model_dataholder, SIGNAL(MessageBox(QString, int)), this, SLOT(MessageBox(QString, int)), Qt::DirectConnection);
     
     
     m_charts = new ChartWidget;
@@ -91,7 +91,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_history_dock->setWidget(m_historywidget);
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
-    connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)));
+    connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)), Qt::DirectConnection);
     connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);

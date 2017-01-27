@@ -68,11 +68,21 @@ void OptimizerFlagWidget::setUi()
     ConstrainedChanged();
 }
 
+void OptimizerFlagWidget::DisableOptions(OptimizationType type)
+{
+    if(type & OptimizationType::ComplexationConstants)
+    {
+        m_ComplexationConstants->setChecked(false);
+        m_ComplexationConstants->setEnabled(false);
+    }
+}
+
+
 OptimizationType OptimizerFlagWidget::getFlags() const
 {
     OptimizationType type = static_cast<OptimizationType>(0);
     
-    if(m_ComplexationConstants->isChecked())
+    if(m_ComplexationConstants->isChecked() && m_ComplexationConstants->isEnabled())
         type = OptimizationType::ComplexationConstants;
 
     if(!m_IgnoreAllShifts->isChecked())

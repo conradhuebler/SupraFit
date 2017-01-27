@@ -20,7 +20,9 @@
 #include "src/core/toolset.h"
 
 #include <QtCore/QCoreApplication>
-
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QCollator>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
@@ -99,6 +101,7 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
 
 qreal DataTable::data(int column, int row) const
 {
+
     if(row < m_table.size())
         if(column < m_table[row].size())
         {
@@ -118,6 +121,7 @@ qreal DataTable::data(int column, int row) const
 
 qreal & DataTable::data(int column, int row)
 {
+    QReadLocker locker(&mutex);
     m_empty = 0;
     if(row < m_table.size())
         if(column < m_table[row].size())
@@ -524,4 +528,16 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
     }
     
     return true;
+}
+
+void DataClass::MakeThreadSafe()
+{
+    DataClassPrivate *d_2 = new DataClassPrivate(d);
+    d = d_2;
+}
+
+DataTable * DataClass::SignalModel()
+{  
+    QMutexLocker locker(&mutex);
+    return d->m_signal_model; 
 }

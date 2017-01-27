@@ -37,6 +37,7 @@ class QCheckBox;
 class QPushButton;
 class QDoubleSpinBox;
 class QJsonObject;
+class OptimizerFlagWidget;
 
 struct GlobalSearchResult
 {
@@ -77,7 +78,7 @@ public:
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
-    QWeakPointer<Minimizer> m_minimizer;
+    QSharedPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
     QPointer<QCheckBox > m_optim;
     QPointer<QPushButton > m_global;
@@ -85,6 +86,7 @@ private:
     QVector< QVector<double > > ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
     QtDataVisualization::QSurfaceDataArray m_3d_data;
     OptimizationType m_type;
+    QPointer<OptimizerFlagWidget > m_optim_flags;
 private slots:
     void GlobalSearch();
 signals:

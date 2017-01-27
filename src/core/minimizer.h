@@ -41,6 +41,7 @@ public:
     NonLinearFitThread();
     ~NonLinearFitThread();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
+    QSharedPointer<AbstractTitrationModel> Model() const { return m_model; }
     inline void setOptimizationRun(OptimizationType runtype) { m_runtype = runtype; }
     virtual void run ();
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
@@ -84,6 +85,7 @@ public:
     void addToHistory();
     QJsonObject Parameter() const{ return m_last_parameter; };
     void setParameter(const QJsonObject &json);
+    QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype);
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     OptimizerConfig m_opt_config;

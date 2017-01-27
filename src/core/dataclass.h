@@ -20,7 +20,8 @@
 #ifndef DATACLASS_H
 #define DATACLASS_H
 
-
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QMutexLocker>
 #include <QtCore/QSharedData>
 #include <QtCore/QVector>
 #include <QtCore/QMap>
@@ -69,7 +70,7 @@ private:
      */
     QVector<QVector < qreal > > m_table;
     qreal m_empty;
-    
+    QReadWriteLock mutex;
 };
 
 
@@ -139,7 +140,7 @@ class DataClass : public QObject
     inline int Type() const { return d->m_type;     }
     inline void setType(int type) { d->m_type = type; }
     inline DataTable * ConcentrationModel() { return d->m_concentration_model; }
-    inline DataTable * SignalModel() { return d->m_signal_model; }
+    DataTable * SignalModel();
     virtual inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return d->m_plot_signal_mapper[i]; }
     void SwitchConentrations();
     inline bool* Concentration() const { return d->m_concentrations; }
@@ -169,14 +170,16 @@ class DataClass : public QObject
     qreal XValue(int i) const;
     const QJsonObject ExportJSON() const;
     bool ImportJSON(const QJsonObject &topjson);
+    void MakeThreadSafe();
 public slots:
      void PlotModel();
 private:
-    
+    QMutex mutex;
     QExplicitlySharedDataPointer<DataClassPrivate > d;
     void CreateClearPlotModel();
 protected:
     PlotMode m_plotmode;
+    
 signals:
     void RowAdded();
     void ActiveSignalsChanged(QVector<int > active_signals);

@@ -87,7 +87,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     }
     
     m_pure_signals = SignalModel()->firstRow();
-    m_data = data;   
+    m_data = new DataClass(data);   
     connect(m_data, SIGNAL(recalculate()), this, SLOT(CalculateSignal()));
     
 }
@@ -194,7 +194,8 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
     if(Type() != 3)
     {
         m_model_signal->data(j,i) = value;
-        m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
+        qreal var = SignalModel()->data(j,i);
+        m_model_error->data(j,i) = m_model_signal->data(j,i) - var;
     }
     
 }

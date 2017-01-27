@@ -41,7 +41,7 @@ class _3DChartView : public QWidget
 {
     Q_OBJECT
 public:
-    _3DChartView();
+    _3DChartView(QWidget *parent = 0);
     ~_3DChartView();
     void setData(const QtDataVisualization::QSurfaceDataArray &data);
 private:

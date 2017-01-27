@@ -19,8 +19,10 @@
 
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
+#include "src/ui/widgets/optimizerflagwidget.h"
 
 #include <QtCore/QJsonObject>
+#include <QtCore/QThreadPool>
 
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
@@ -71,7 +73,7 @@ double ParameterWidget::Step() const
 
 
 
-AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent)
+AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
 {
     setModal(false);
 }
@@ -85,7 +87,7 @@ void AdvancedSearch::SetUi()
 {
     if(m_model.isNull())
         return;
-    
+    m_minimizer.data()->setModel(m_model);
     QVBoxLayout *layout = new QVBoxLayout;
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
@@ -94,7 +96,11 @@ void AdvancedSearch::SetUi()
         layout->addWidget(widget);
         m_parameter_list << widget;
     }
-    
+    m_optim_flags = new OptimizerFlagWidget;
+    OptimizationType type = static_cast<OptimizationType>(0);
+    type = OptimizationType::ComplexationConstants;
+    m_optim_flags->DisableOptions(type);
+    layout->addWidget(m_optim_flags);
     m_global = new QPushButton(tr("Global Search"));
     connect(m_global, SIGNAL(clicked()), this, SLOT(GlobalSearch()));
     m_optim = new QCheckBox(tr("Optimize"));
@@ -124,9 +130,9 @@ void AdvancedSearch::GlobalSearch()
     
     
     QVector<double > error; 
-    m_type = OptimizationType::ConstrainedShifts;
+    m_type = m_optim_flags->getFlags();
     QVector< QVector<double > > input  = ConvertList(full_list, error);
-    qDebug() << error;
+
    
     emit finished(m_optim->isChecked());
 }
@@ -135,9 +141,14 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
 {
     QVector<int > position(full_list.size(), 0);
     QVector< QVector<double > > input;
-    QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
+    
+    QVector<QVector<QPointer<NonLinearFitThread> > > threads;
+    QVector<QPointer<NonLinearFitThread> > thread_rows;
+    QThreadPool::globalInstance()->setMaxThreadCount(1);
+    int numner  = 0;
     for(;;)
     {
+        
         QVector<double > parameter(full_list.size(), 0);
         for(int j = 0; j < position.size(); ++j)
             parameter[j] = full_list[j][position[j]];
@@ -147,21 +158,14 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
         {
             allow_break = allow_break && (position[i] == full_list[i].size() - 1);
         }
+        
         m_model->setConstants(parameter);
-        
-        m_minimizer.data()->setModel(m_model);
-        m_minimizer.data()->Minimize(m_type);
-        
-        QJsonObject json = m_minimizer.data()->Parameter();
-        m_model->ImportJSON(json);
-        
-        m_model->CalculateSignal();
-        error << m_model->ModelError();
-        qDebug() << parameter << error.last();
-        last_result.m_error = error;
-        last_result.m_input = full_list;
-
-        *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
+        thread_rows << m_minimizer.data()->addJob(m_model, m_type);
+        qDebug() << thread_rows.size();
+        qDebug() << numner++;
+//         m_minimizer.data()->setModel(m_model);
+//         m_minimizer.data()->Minimize(m_type);
+        QThreadPool::globalInstance()->waitForDone(-1);
         for(int k = position.size() - 1; k >= 0; --k)
         {
             if(position[k] == ( full_list[k].size() - 1) )
@@ -172,8 +176,11 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                     position[k]++;
                     if(position[k] <= full_list[k].size() - 1)
                     {
-                        m_3d_data << dataRow1;
-                        dataRow1 = new QtDataVisualization::QSurfaceDataRow;
+                        threads << thread_rows;
+                        thread_rows.clear();
+                        
+//                         m_3d_data << dataRow1;
+//                         dataRow1 = new QtDataVisualization::QSurfaceDataRow;
                         position[k + 1] = 0;
                     }
                     break;
@@ -187,7 +194,33 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
         }
                 
         if(allow_break)
+        {
+            QThreadPool::globalInstance()->setMaxThreadCount(1);
+            QThreadPool::globalInstance()->waitForDone(-1);
+            for(int i = 0; i < threads.size(); ++i)
+            {
+                QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
+                for(int j = 0; j < threads[i].size(); ++j)
+                {
+                    QVector< qreal > parameter = threads[i][j]->Model()->Constants();
+                    qDebug() << i << j;
+                    
+                    QJsonObject json = threads[i][j]->ConvergedParameter();
+                    m_model->ImportJSON(json);
+        
+                    m_model->CalculateSignal();
+                    error << m_model->ModelError();
+                    qDebug() << parameter << error.last();
+                    last_result.m_error = error;
+                    last_result.m_input = full_list;
+
+                    *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
+                    delete threads[i][j];
+                }
+                m_3d_data << dataRow1;
+            }
             return input;
+        }
     }
 }
 

@@ -48,6 +48,8 @@ void NonLinearFitThread::run()
     m_last_parameter = m_model->ExportJSON();
     m_steps = 0;
     m_converged = false;
+    qDebug() << this << "started";
+    m_model->adress();
     if(m_runtype & OptimizationType::ConstrainedShifts)
         FastFit();
     else if(m_runtype & OptimizationType::UnconstrainedShifts || m_runtype & ~OptimizationType::IgnoreAllShifts)
@@ -58,6 +60,9 @@ void NonLinearFitThread::run()
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> model)
 {
     m_model = model->Clone();
+    m_model->adress();
+//     m_model->MakeThreadSafe();
+    m_model->adress();
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
 }
@@ -293,6 +298,18 @@ int Minimizer::Minimize(OptimizationType runtype)
     QApplication::restoreOverrideCursor();
     return 0;
 }
+
+QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype)
+{
+    QPointer<NonLinearFitThread> thread = new NonLinearFitThread;
+    thread->setModel(model);
+    thread->setOptimizationRun(runtype);
+    QThreadPool::globalInstance()->start(thread);
+    qDebug() << thread << "added";
+
+    return thread;
+}
+
 
 void Minimizer::setModel(const QSharedPointer<AbstractTitrationModel> model)
 {

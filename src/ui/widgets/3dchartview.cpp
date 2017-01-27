@@ -37,7 +37,7 @@ _3DChartViewPrivate::~_3DChartViewPrivate()
 }
 
 
-_3DChartView::_3DChartView() : d(new _3DChartViewPrivate())
+_3DChartView::_3DChartView(QWidget *parent) : QWidget(parent), d(new _3DChartViewPrivate())
 {
     QWidget *layer = QWidget::createWindowContainer(d);
     m_config = new QPushButton(tr("Config"));

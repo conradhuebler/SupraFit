@@ -35,6 +35,7 @@ public:
     OptimizerFlagWidget(OptimizationType type);
     ~OptimizerFlagWidget();
     OptimizationType getFlags() const;
+    void DisableOptions(OptimizationType type);
 private:
     OptimizationType m_type;
     void setUi();

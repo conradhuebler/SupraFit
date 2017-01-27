@@ -228,7 +228,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
 {
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
-    m_advancedsearch->setMinimizer(m_minimizer);
+//     m_advancedsearch->setMinimizer(m_minimizer);
     m_advancedsearch->setModel(m_model);
     connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
     
