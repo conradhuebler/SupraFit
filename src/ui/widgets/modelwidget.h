@@ -121,13 +121,12 @@ private:
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
-    QPointer<QCheckBox> m_constrained, m_ignore_zero;
     QPointer<AdvancedSearch> m_advancedsearch;
     QSpinBox *m_maxiter;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d; 
+    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi; 
     bool m_pending;
     QVector<int > ActiveSignals();
     void DiscreteUI();
@@ -150,7 +149,7 @@ private slots:
     void OpenAdvancedSearch();
     void AdvancedSearchFinished(int runtype);
     void triggerPlot3D();
-    void ConstrainedOptimizationChanged();
+    void Confidence();
 public slots:
     void recalulate();
     void OptimizerSettings();

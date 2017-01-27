@@ -17,39 +17,38 @@
  * 
  */
 
-#ifndef OPTIMIZERFLAGWIDGET_H
-#define OPTIMIZERFLAGWIDGET_H
-
-#include <QtCore/QPointer>
-#include <QtWidgets/QGroupBox>
-
+#ifndef STATISTIC_H
+#define STATISTIC_H
 
 #include "src/global.h"
+#include "src/core/AbstractModel.h"
 
-class QVBoxLayout;
-class QCheckBox;
+#include <QtCore/QWeakPointer>
+class Minimizer;
 
-class OptimizerFlagWidget : public QGroupBox
+struct StatisticResult
+{
+    double optim;
+    double max;
+    double min;
+    double error;
+    QList<QPointF > points;  
+};
+
+class Statistic : public QObject
 {
     Q_OBJECT
 public:
-    OptimizerFlagWidget();
-    OptimizerFlagWidget(OptimizationType type);
-    ~OptimizerFlagWidget();
-    OptimizationType getFlags() const;
-    void DisableOptions(OptimizationType type);
-
+    Statistic(QObject *parent = 0);
+    ~Statistic();
+    void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
+    inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
+    void ConfidenceAssesment();
+    void setParameter(const QJsonObject &json);
 private:
+    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
-    void setUi();
-    QPointer<QCheckBox > m_ComplexationConstants, m_IgnoreAllShifts, m_ConstrainedShifts, m_IntermediateShifts, m_IgnoreZeroConcentrations;
-    QPushButton *m_more;
-    QVBoxLayout *m_main_layout;
-    QWidget *m_first_row;
-private slots:
-    void EnableShiftSelection();
-    void ConstrainedChanged();
-    void ShowFirst();
 };
 
-#endif // OPTIMIZERFLAGWIDGET_H
+#endif // STATISTIC_H

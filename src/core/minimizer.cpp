@@ -58,6 +58,7 @@ void NonLinearFitThread::run()
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> model)
 {
     m_model = model->Clone();
+    m_model->LockedParamters();
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
 }
@@ -72,7 +73,7 @@ void NonLinearFitThread::FastFit()
 {   
     QVector<qreal> old_para_constant = m_model->Constants();
     QVector<qreal> constants = m_model->Constants();
-
+    qDebug() << m_model->LockedParamters();
     bool convergence = false;
     bool constants_convergence = false;
     bool error_convergence = false;
@@ -209,7 +210,11 @@ int NonLinearFitThread::NonLinearFitSignalConstants()
 
 int NonLinearFitThread::NonLinearFit()
 {
+    QVector<int >locked = m_model->LockedParamters();
     QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
+    if(locked.size() == parameter.size())
+        m_model->setLockedParameter(locked); 
+
     NonlinearFit(m_model, 100, parameter, m_opt_config);
     m_last_parameter = m_model->ExportJSON();
     m_converged = true;
@@ -255,6 +260,7 @@ QString Minimizer::OptPara2String() const
 int Minimizer::Minimize(OptimizationType runtype)
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    qDebug() << m_model->Constants();
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;

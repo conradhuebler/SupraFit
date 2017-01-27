@@ -105,6 +105,7 @@ set(libmath_SRC
                 src/core/optimizer/bfgs.cpp
                 src/core/libmath.cpp
                 src/core/minimizer.cpp
+                src/core/statistic.cpp
 )
 add_library(math STATIC ${libmath_SRC})
 qt5_use_modules(math Widgets)

@@ -19,6 +19,7 @@
 
 #include "src/global.h"
 
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QCheckBox>
@@ -45,23 +46,36 @@ OptimizerFlagWidget::~OptimizerFlagWidget()
 
 void OptimizerFlagWidget::setUi()
 {
-    m_ComplexationConstants = new QCheckBox(tr("Optimize\nComplexation\nConstants"));
+    
+    m_main_layout = new QVBoxLayout;
+    m_main_layout->setAlignment(Qt::AlignTop);
+    m_ComplexationConstants = new QCheckBox(tr("Optimize Complexation Constants"));
     m_ComplexationConstants->setChecked(m_type & OptimizationType::ComplexationConstants);
-    m_IgnoreAllShifts = new QCheckBox(tr("Ignore\nShifts"));
+    m_IgnoreAllShifts = new QCheckBox(tr("Ignore Shifts"));
     m_IgnoreAllShifts->setChecked(m_type & OptimizationType::IgnoreAllShifts);
-    m_ConstrainedShifts = new QCheckBox(tr("Optimize Shift\nParameters\nConstrained"));
+    m_ConstrainedShifts = new QCheckBox(tr("Optimize Shift\nParameters Constrained"));
     m_ConstrainedShifts->setChecked(m_type & OptimizationType::ConstrainedShifts);
-    m_IntermediateShifts = new QCheckBox(tr("Optimize Nonzero-Concentration\nand\nNon-saturated Shifts"));
+    m_IntermediateShifts = new QCheckBox(tr("Optimize Nonzero-Concentration and\nNon-saturated Shifts"));
     m_IntermediateShifts->setChecked(m_type & OptimizationType::IntermediateShifts);
     m_IgnoreZeroConcentrations = new QCheckBox(tr("Dont Optimize Zero\nConcentration Shifts"));
     m_IgnoreZeroConcentrations->setChecked(m_type & OptimizationType::IgnoreZeroConcentrations);
+    
+    m_more = new QPushButton(tr("<"));
+    connect(m_more, SIGNAL(clicked()), this, SLOT(ShowFirst()));
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(m_ComplexationConstants);
     layout->addWidget(m_IgnoreAllShifts);
+    layout->addStretch(width()/2);
+    layout->addWidget(m_more);
+    m_main_layout->addLayout(layout);
+    layout = new QHBoxLayout;
     layout->addWidget(m_ConstrainedShifts);
     layout->addWidget(m_IntermediateShifts);
     layout->addWidget(m_IgnoreZeroConcentrations);
-    setLayout(layout);
+    m_first_row = new QWidget;
+    m_first_row->setLayout(layout);
+    m_main_layout->addWidget(m_first_row);
+    setLayout(m_main_layout);
     connect(m_IgnoreAllShifts, SIGNAL(stateChanged(int)), this, SLOT(EnableShiftSelection()));
     connect(m_ConstrainedShifts, SIGNAL(stateChanged(int)), this, SLOT(ConstrainedChanged()));
     EnableShiftSelection();
@@ -114,5 +128,22 @@ void OptimizerFlagWidget::ConstrainedChanged()
     m_IgnoreZeroConcentrations->setEnabled(m_ConstrainedShifts->isChecked());
 }
 
+
+void OptimizerFlagWidget::ShowFirst()
+{
+    bool showing = m_more->isFlat();
+    if(!showing)
+    {
+        m_first_row->show();
+        m_more->setText(tr("V"));
+        m_more->setFlat(true);
+    }else{
+        m_first_row->hide();
+        m_more->setText(tr("<"));
+        m_more->setFlat(false);    
+    }
+    adjustSize();
+//     layout()->setSizeConstraint(QLayout::SetFixedSize);
+}
 
 #include "optimizerflagwidget.moc"

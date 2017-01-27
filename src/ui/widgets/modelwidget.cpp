@@ -23,6 +23,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
+#include "src/core/statistic.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/widgets/3dchartview.h"
@@ -292,16 +293,12 @@ void ModelWidget::DiscreteUI()
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
     m_maxiter = new QSpinBox;
-    m_constrained = new QCheckBox(tr("Constrain\nShift Optimization"));
-        m_constrained->setToolTip(tr("If checked, we shifts at zero and saturation/highest concentration will be changed that the difference between experimentall and calulcated signal at this points are zero. Other shifts, if any will be fitted using non-lineare optimiziation. If not checked, all shifts will be fitted using non-linear optimization."));
-    m_ignore_zero = new QCheckBox(tr("Ignore Zero\nShifts"));
-        m_ignore_zero->setToolTip(tr("If you use unconstrained optimization for shifts, you can set the zero concentration shift as ignore during optimization!"));
     m_advanced = new QPushButton(tr("Advanced\nSearch"));
     m_plot_3d = new QPushButton(tr("3D Plot"));
     m_plot_3d->setEnabled(false);
-    m_constrained->setChecked(false);
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
+    m_confi = new QPushButton(tr("Statistic"));
     QHBoxLayout *mini = new QHBoxLayout;
     
     
@@ -312,33 +309,32 @@ void ModelWidget::DiscreteUI()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
     connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
     connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
-    connect(m_constrained, SIGNAL(stateChanged(int)), this, SLOT(ConstrainedOptimizationChanged()));
+    connect(m_confi, SIGNAL(clicked()), this, SLOT(Confidence()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
-//     mini->addWidget(m_constrained);
-//     mini->addWidget(m_ignore_zero);
     mini->addWidget(m_advanced);
     mini->addWidget(m_plot_3d);
     mini->addWidget(m_optim_config);
     
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
     m_optim_flags = new OptimizerFlagWidget;
-    m_layout->addWidget(m_optim_flags, 4, 0, 1, m_model->ConstantSize()+3);
+    
     QHBoxLayout *mini_data = new QHBoxLayout;
     mini_data->addWidget(m_import);
     mini_data->addWidget(m_export);
-    m_layout->addLayout(mini_data, 5, 0,1,m_model->ConstantSize()+3 );
+    mini_data->addWidget(m_confi);
+    m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
     mini2->addWidget(m_maxiter);
     mini2->addWidget(new QLabel(tr("Sum of Error:")));
     mini2->addWidget(m_sum_error);
-    m_layout->addLayout(mini2, 6, 0,1,m_model->ConstantSize()+3);
-    
+    m_layout->addLayout(mini2, 5, 0,1,m_model->ConstantSize()+3);
+    m_layout->addWidget(m_optim_flags, 6, 0, 1, m_model->ConstantSize()+3);
 }
 
 void ModelWidget::EmptyUI()
@@ -446,17 +442,34 @@ void ModelWidget::GlobalMinimize()
     
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
     
-    if(result == 1)
-    {
-        QJsonObject json = m_minimizer->Parameter();
+//     if(result == 1)
+//     {
+        json = m_minimizer->Parameter();
         m_model->ImportJSON(json);
         m_model->CalculateSignal();
-    }
-    Repaint();
+        Repaint();
+          
+    
+//     }
+    
+
+    
     m_pending = false; 
     
 }
 
+
+void ModelWidget::Confidence()
+{
+    Statistic *statistic = new Statistic(this);
+    QJsonObject json = m_minimizer->Parameter();
+    statistic->setModel(m_model);
+     statistic->setParameter(json);
+    statistic->setOptimizationRun(m_optim_flags->getFlags());
+    statistic->ConfidenceAssesment();
+    
+    delete statistic;
+}
 
 void ModelWidget::LocalMinimize()
 {
@@ -632,10 +645,4 @@ void ModelWidget::AdvancedSearchFinished(int runtype)
         //          view->show();
     }
 }
-
-void ModelWidget::ConstrainedOptimizationChanged()
-{
-    m_ignore_zero->setDisabled(m_constrained->isChecked());
-}
-
 #include "modelwidget.moc"

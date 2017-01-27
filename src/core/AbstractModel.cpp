@@ -338,4 +338,11 @@ qreal AbstractTitrationModel::ModelError() const
         error += SumOfErrors(z);
     return error;
 }
+void AbstractTitrationModel::IncrementParameter(double increment, int parameter)
+{
+    if(parameter < m_opt_para.size())
+        *m_opt_para[parameter] += increment; 
+}
+
+
 #include "AbstractModel.moc"
