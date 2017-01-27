@@ -95,10 +95,8 @@ void ItoI_Model::MiniShifts()
     }
 }
 
-QVector<qreal> ItoI_Model::OptimizeParameters(OptimizationType type)
-{
-    clearOptParameter();
-    
+QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
+{    
     if(OptimizationType::ComplexationConstants & type)
         setOptParamater(m_K11);
     if(type & ~OptimizationType::IgnoreAllShifts)
@@ -231,6 +229,7 @@ QSharedPointer<AbstractTitrationModel > ItoI_Model::Clone() const
     QSharedPointer<AbstractTitrationModel > model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportJSON(ExportJSON());
     model.data()->setActiveSignals(ActiveSignals());
+    model.data()->setLockedParameter(LockedParamters());
     return model;
     
 }

@@ -235,10 +235,8 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j) const
     return QPair<qreal, qreal>(0, 0);
 }
 
-QVector<qreal> IItoI_ItoI_Model::OptimizeParameters(OptimizationType type)
-{
-    clearOptParameter();
-    
+QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
+{    
     if(OptimizationType::ComplexationConstants & type)
     {
         setOptParamater(m_complex_constants);
@@ -346,6 +344,7 @@ QSharedPointer<AbstractTitrationModel > IItoI_ItoI_Model::Clone() const
     QSharedPointer<AbstractTitrationModel > model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportJSON(ExportJSON());
     model.data()->setActiveSignals(ActiveSignals());
+    model.data()->setLockedParameter(LockedParamters());
     return model;
     
 }

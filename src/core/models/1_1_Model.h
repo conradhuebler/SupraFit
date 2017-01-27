@@ -41,7 +41,7 @@ class ItoI_Model : public AbstractTitrationModel
 public:
     ItoI_Model(const DataClass *data);
     ~ItoI_Model();
-    virtual QVector<qreal > OptimizeParameters(OptimizationType type);
+    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     QPair<qreal, qreal> Pair(int i, int j = 0) const;
     inline int ConstantSize() const { return 1;}
     void setPureSignals(const QVector< qreal > &list);

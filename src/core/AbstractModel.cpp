@@ -135,6 +135,15 @@ QVector<double>   AbstractTitrationModel::getCalculatedSignals(QVector<int > act
     return x;
 }
 
+QVector<qreal> AbstractTitrationModel::OptimizeParameters(OptimizationType type)
+{
+    clearOptParameter();
+    QVector<qreal > variables =  OptimizeParameters_Private(type);
+    m_locked_parameters = QVector<int>(variables.size(), 1);
+    return variables;
+}
+
+
 void AbstractTitrationModel::setOptParamater(QVector<qreal> &parameter)
 {
     clearOptParameter();
@@ -232,7 +241,8 @@ void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
     if(parameter.size() != m_opt_para.size())
         return;
     for(int i = 0; i < parameter.size(); ++i)
-        *m_opt_para[i] = parameter[i];
+        if(m_locked_parameters[i])
+            *m_opt_para[i] = parameter[i];
 }
 
 

@@ -211,9 +211,9 @@ int NonLinearFitThread::NonLinearFit()
 {
     QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
     NonlinearFit(m_model, 100, parameter, m_opt_config);
-     m_last_parameter = m_model->ExportJSON();
-     m_converged = true;
-     m_best_intermediate = m_model->ExportJSON();
+    m_last_parameter = m_model->ExportJSON();
+    m_converged = true;
+    m_best_intermediate = m_model->ExportJSON();
     return 0;
 }
 

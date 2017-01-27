@@ -63,7 +63,10 @@ class AbstractTitrationModel : public DataClass
 public:
     AbstractTitrationModel(const DataClass *data);
     virtual ~AbstractTitrationModel();
-    virtual QVector<qreal > OptimizeParameters(OptimizationType type) = 0;
+    QVector<qreal > OptimizeParameters(OptimizationType type);
+    inline void setLockedParameter(const QVector<int> &lock){ m_locked_parameters = lock; }
+    inline QVector<int> LockedParamters() const { return m_locked_parameters; }
+    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
     virtual QVector<qreal > OptimizeAllParameters() = 0;
     virtual QVector<qreal > OptimizeAllShifts() = 0;
     void setOptParamater(qreal & parameter);
@@ -136,6 +139,7 @@ private:
 
     QVector<int > m_active_signals;
     bool m_pending;
+    QVector<int > m_locked_parameters;
 protected:
     
     void SetSignal(int i, int j, qreal value);
