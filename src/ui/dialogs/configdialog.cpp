@@ -17,7 +17,13 @@
  *
  */
 #include "src/ui/widgets/optimizerwidget.h"
+
+
+#include <QtCore/QThread>
+
+#include <QApplication>
 #include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
@@ -132,6 +138,15 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(m_selectlogfile);
     layout->addLayout(h_layout);
     
+    m_threads = new QSpinBox;
+    m_threads->setMaximum(QThread::idealThreadCount());
+    m_threads->setValue(qApp->instance()->property("threads").toInt());
+    m_threads->setMinimum(1);
+    
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("Threads:")));
+    h_layout->addWidget(m_threads);
+    layout->addLayout(h_layout);
     QLabel *printlevel = new QLabel(tr("Set Printlevel"));
     layout->addWidget(printlevel);
     
@@ -202,7 +217,7 @@ void ConfigDialog::accept()
         m_printlevel = 4;  
     else
         m_printlevel = 5;  
-        
+   qApp->instance()->setProperty("threads", m_threads->value()); 
    QDialog::accept(); 
 }
 

@@ -21,6 +21,8 @@
 #include "src/core/minimizer.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
 
+#include <QApplication>
+
 #include <QtCore/QJsonObject>
 #include <QtCore/QThreadPool>
 
@@ -34,6 +36,7 @@
 #include <QtWidgets/QPushButton>
 
 #include <QDebug>
+#include <iostream>
 
 #include "advancedsearch.h"
 
@@ -114,7 +117,7 @@ void AdvancedSearch::SetUi()
 
 void AdvancedSearch::GlobalSearch()
 {
-    
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     QVector< QVector<double > > full_list;
     for(int i = 0; i < m_parameter_list.size(); ++i)
     {
@@ -131,21 +134,22 @@ void AdvancedSearch::GlobalSearch()
     
     QVector<double > error; 
     m_type = m_optim_flags->getFlags();
+    int t0 = QDateTime::currentMSecsSinceEpoch();
     QVector< QVector<double > > input  = ConvertList(full_list, error);
-
-   
+    int t1 = QDateTime::currentMSecsSinceEpoch();
+    std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
     emit finished(m_optim->isChecked());
+    QApplication::restoreOverrideCursor();
 }
 
 QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
 {
     QVector<int > position(full_list.size(), 0);
     QVector< QVector<double > > input;
-    
+    int maxthreads =qApp->instance()->property("threads").toInt();
     QVector<QVector<QPointer<NonLinearFitThread> > > threads;
     QVector<QPointer<NonLinearFitThread> > thread_rows;
-    QThreadPool::globalInstance()->setMaxThreadCount(1);
-    int numner  = 0;
+    QThreadPool::globalInstance()->setMaxThreadCount(maxthreads -1 );
     for(;;)
     {
         
@@ -161,11 +165,7 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
         
         m_model->setConstants(parameter);
         thread_rows << m_minimizer.data()->addJob(m_model, m_type);
-        qDebug() << thread_rows.size();
-        qDebug() << numner++;
-//         m_minimizer.data()->setModel(m_model);
-//         m_minimizer.data()->Minimize(m_type);
-        QThreadPool::globalInstance()->waitForDone(-1);
+        
         for(int k = position.size() - 1; k >= 0; --k)
         {
             if(position[k] == ( full_list[k].size() - 1) )
@@ -178,9 +178,6 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                     {
                         threads << thread_rows;
                         thread_rows.clear();
-                        
-//                         m_3d_data << dataRow1;
-//                         dataRow1 = new QtDataVisualization::QSurfaceDataRow;
                         position[k + 1] = 0;
                     }
                     break;
@@ -195,7 +192,7 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                 
         if(allow_break)
         {
-            QThreadPool::globalInstance()->setMaxThreadCount(1);
+            QThreadPool::globalInstance()->setMaxThreadCount(maxthreads);
             QThreadPool::globalInstance()->waitForDone(-1);
             for(int i = 0; i < threads.size(); ++i)
             {
@@ -203,14 +200,12 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                 for(int j = 0; j < threads[i].size(); ++j)
                 {
                     QVector< qreal > parameter = threads[i][j]->Model()->Constants();
-                    qDebug() << i << j;
                     
                     QJsonObject json = threads[i][j]->ConvergedParameter();
                     m_model->ImportJSON(json);
         
                     m_model->CalculateSignal();
                     error << m_model->ModelError();
-                    qDebug() << parameter << error.last();
                     last_result.m_error = error;
                     last_result.m_input = full_list;
 

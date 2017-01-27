@@ -63,6 +63,7 @@ public:
     virtual void accept();
 private:
     QRadioButton *m_printlevel_0, *m_printlevel_1, *m_printlevel_2, *m_printlevel_3, *m_printlevel_4, *m_printlevel_5;
+    QSpinBox *m_threads;
     QLineEdit *m_logfileButton;
     QPushButton *m_selectlogfile;
     QTabWidget *m_mainwidget;

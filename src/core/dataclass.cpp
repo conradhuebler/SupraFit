@@ -144,7 +144,7 @@ QVector<qreal> DataTable::Row(int row)
 {
     QVector<qreal> result;
     if(row < m_table.size())
-        result = m_table[row];
+        result = m_table[row].toVector();
     else
         qDebug() << "Row exceeds size of table!";
     return result;
@@ -169,19 +169,19 @@ void DataTable::insertColumn(QVector<qreal> column)
     if(m_table.size() != 0)
     {
         if((m_table.first().size() == column.size()))
-            m_table << column;
+            m_table << column.toList();
     }else
-        m_table << column;
+        m_table << column.toList();
 }
 
 void DataTable::insertRow(QVector<qreal> row)
 {
     
     if(m_table.isEmpty())
-        m_table << row;
+        m_table << row.toList();
     else
         if(row.size() == m_table.first().size())
-            m_table << row;
+            m_table << row.toList();
         else
             qDebug() << "Wrong number of rows!";
 }
@@ -195,7 +195,7 @@ void DataTable::setColumn(QVector<qreal> vector, int column)
 
 void DataTable::setRow(QVector<qreal> vector, int row)
 {
-    m_table[row] = vector;
+    m_table[row] = vector.toList();
     //     Q_UNUSED(vector);
     //     Q_UNUSED(row);
     return;
@@ -528,16 +528,4 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
     }
     
     return true;
-}
-
-void DataClass::MakeThreadSafe()
-{
-    DataClassPrivate *d_2 = new DataClassPrivate(d);
-    d = d_2;
-}
-
-DataTable * DataClass::SignalModel()
-{  
-    QMutexLocker locker(&mutex);
-    return d->m_signal_model; 
 }

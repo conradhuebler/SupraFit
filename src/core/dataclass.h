@@ -58,17 +58,17 @@ public:
     
     QVector<qreal> Row(int row);
     QVector<qreal> Column(int column);
-    inline QVector<qreal> firstRow() { return m_table.first(); }
+    inline QVector<qreal> firstRow() { return m_table.first().toVector(); }
     inline QVector<qreal> firstColumn() { return Column( 0 ); }
-    inline QVector<qreal> lastRow() { return m_table.last(); };
-    inline QVector<qreal> lastColumn() { return Column(columnCount() -1 ); }
+    inline QVector<qreal> lastRow() { return m_table.last().toVector(); }
+    inline QVector<qreal> lastColumn() { return Column(columnCount() -1 );}
     
     void Debug() const ;
 private:
     /*
      * May the first variable the column and the second the row
      */
-    QVector<QVector < qreal > > m_table;
+    QList<QList < qreal > > m_table;
     qreal m_empty;
     QReadWriteLock mutex;
 };
@@ -140,7 +140,7 @@ class DataClass : public QObject
     inline int Type() const { return d->m_type;     }
     inline void setType(int type) { d->m_type = type; }
     inline DataTable * ConcentrationModel() { return d->m_concentration_model; }
-    DataTable * SignalModel();
+    inline DataTable * SignalModel() { return d->m_signal_model; }
     virtual inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return d->m_plot_signal_mapper[i]; }
     void SwitchConentrations();
     inline bool* Concentration() const { return d->m_concentrations; }
@@ -170,16 +170,15 @@ class DataClass : public QObject
     qreal XValue(int i) const;
     const QJsonObject ExportJSON() const;
     bool ImportJSON(const QJsonObject &topjson);
-    void MakeThreadSafe();
 public slots:
      void PlotModel();
 private:
-    QMutex mutex;
-    QExplicitlySharedDataPointer<DataClassPrivate > d;
+   
     void CreateClearPlotModel();
 protected:
     PlotMode m_plotmode;
-    
+    QExplicitlySharedDataPointer<DataClassPrivate > d;
+     
 signals:
     void RowAdded();
     void ActiveSignalsChanged(QVector<int > active_signals);

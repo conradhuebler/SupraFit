@@ -349,6 +349,7 @@ void MainWindow::ReadSettings()
     _settings.beginGroup("main");
     m_logfile = _settings.value("logfile").toString();
     m_printlevel = _settings.value("printlevel", 3).toInt();
+    qApp->instance()->setProperty("threads", _settings.value("threads", QThread::idealThreadCount())); 
     _settings.endGroup();
     
     _settings.beginGroup("window");
@@ -365,6 +366,7 @@ void MainWindow::WriteSettings(bool ignore_window_state)
     _settings.beginGroup("main"); 
     _settings.setValue("logfile", m_logfile);
     _settings.setValue("printlevel", m_printlevel);
+    _settings.setValue("threads", qApp->instance()->property("threads")); 
     _settings.endGroup();
     
     if(ignore_window_state)
