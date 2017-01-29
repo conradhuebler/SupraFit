@@ -234,7 +234,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
     connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
     
     m_layout = new QGridLayout;
-    QLabel *pure_shift = new QLabel(tr("Pure Shift"));
+    QLabel *pure_shift = new QLabel(tr("Constants:"));
     m_layout->addWidget(pure_shift, 0, 0);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
@@ -245,10 +245,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
         constant->setPrefix("10^");
         constant->setValue(m_model->Constants()[i]);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
-        
-        m_layout->addWidget(constant, 0, i+1);
+        m_layout->addWidget(new QLabel(m_model->ConstantNames()[i]), 0, 2*i+1);
+        m_layout->addWidget(constant, 0, 2*i+2);
     }
-    m_layout->addWidget( new QLabel(tr("Error")), 0, m_model->ConstantSize()+2);
+//     m_layout->addWidget( new QLabel(tr("Error")), 0, 2*m_model->ConstantSize()+2);
     m_sign_layout = new QVBoxLayout;
     m_sign_layout->setAlignment(Qt::AlignTop);
     

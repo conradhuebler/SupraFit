@@ -129,6 +129,7 @@ public:
     virtual void MiniShifts() = 0;
     QVector<qreal *> getOptConstants() const { return m_opt_para; }
     qreal ModelError() const;
+    QStringList ConstantNames() const { return m_constant_names; }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -161,6 +162,7 @@ protected:
     const DataClass *m_data;
     OptimizerConfig m_opt_config;
     bool m_inform_config_changed, m_corrupt;
+    QStringList m_constant_names;
 signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);

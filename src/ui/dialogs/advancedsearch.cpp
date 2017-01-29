@@ -40,7 +40,7 @@
 
 #include "advancedsearch.h"
 
-ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupBox(name, parent)
+ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupBox(QString(tr("Constant: %1").arg(name)),  parent)
 {
     m_min = new QDoubleSpinBox;
     m_min->setValue(1);
@@ -95,7 +95,7 @@ void AdvancedSearch::SetUi()
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
-        QPointer<ParameterWidget > widget = new ParameterWidget("name", this);
+        QPointer<ParameterWidget > widget = new ParameterWidget(m_model->ConstantNames()[i], this);
         layout->addWidget(widget);
         m_parameter_list << widget;
     }

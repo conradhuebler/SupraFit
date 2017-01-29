@@ -40,6 +40,7 @@ ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationMod
     setOptParamater(m_complex_constants);
     CalculateSignal();
     m_repaint = true;
+    m_constant_names = QStringList() << tr("1:1") << tr("1:2");
 }
 
 ItoI_ItoII_Model::~ItoI_ItoII_Model()

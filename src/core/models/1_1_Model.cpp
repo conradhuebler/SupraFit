@@ -44,6 +44,7 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
     CalculateSignal();
     
     m_repaint = true;
+    m_constant_names = QStringList() << tr("1:1");
 }
 
 ItoI_Model::~ItoI_Model() 

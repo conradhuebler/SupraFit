@@ -41,7 +41,7 @@
 
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false), m_pending(false)
 {
-    
+    m_constant_names << tr("no constants");
     //     m_active_signals = 
     setActiveSignals(QVector<int>(SignalCount(), 1));
     ptr_concentrations = data->Concentration();
