@@ -61,17 +61,17 @@ ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupB
 
 double ParameterWidget::Max() const
 {
-    return m_max->text().toDouble();
+    return m_max->value();
 }
 
 double ParameterWidget::Min() const
 {
-    return m_min->text().toDouble();
+    return m_min->value();
 }
 
 double ParameterWidget::Step() const
 {
-    return m_step->text().toDouble();
+    return m_step->value();
 }
 
 
