@@ -150,6 +150,7 @@ void ModelDataHolder::AddModel(int model)
 
     };
 //     t->Minimize();
+    m_history = false;
     ActiveModel(t);
     
 }

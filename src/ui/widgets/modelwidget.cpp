@@ -89,7 +89,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
     m_d_0->setDecimals(4);
     m_d_0->setSuffix(" ppm");
     m_d_0->setValue(m_model->PureSignal(m_no));
-    
+    m_d_0->setToolTip(tr("Shift of the pure - non silent substrat"));
     connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
@@ -100,10 +100,10 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
         constant->setDecimals(4);
         constant->setSuffix("ppm");
         constant->setValue(m_model->Pair(i, m_no).second);
+        constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->ConstantNames()[i]));
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         layout->addWidget(constant, 0, i + 1);
     }
-    
     
     if(m_model->Type() != 3)
     {
@@ -112,8 +112,6 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
         layout->addWidget(error, 0, m_model->ConstantSize() + 1); 
         error->setText(QString::number(m_model->SumOfErrors(m_no)));
     } 
-    
-    
     
     m_include = new QCheckBox(this);
     m_include->setText("Include");
@@ -143,9 +141,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
     connect(m_model->DataMapper(m_no)->series(), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
-    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
-    //     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
-    
+    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
 }
 
 ModelElement::~ModelElement()
@@ -191,13 +187,6 @@ void ModelElement::Update()
     
 }
 
-void ModelElement::SetOptimizer()
-{
-    
-    
-    
-}
-
 void ModelElement::ColorChanged(const QColor &color)
 {
     
@@ -229,7 +218,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
 {
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
-//     m_advancedsearch->setMinimizer(m_minimizer);
     m_advancedsearch->setModel(m_model);
     connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
     

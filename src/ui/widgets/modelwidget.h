@@ -88,7 +88,6 @@ private:
     int m_no;
     QColor m_color;
 private slots:
-    void SetOptimizer();
     void ColorChanged(const QColor &color);
     void ChooseColor();
 signals:

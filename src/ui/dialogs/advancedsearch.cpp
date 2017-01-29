@@ -131,14 +131,20 @@ void AdvancedSearch::GlobalSearch()
         full_list << list;
     }
     
-    
     QVector<double > error; 
-    m_type = m_optim_flags->getFlags();
-    int t0 = QDateTime::currentMSecsSinceEpoch();
-    QVector< QVector<double > > input  = ConvertList(full_list, error);
-    int t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-    emit finished(m_optim->isChecked());
+    m_type = m_optim_flags->getFlags();   
+    if(m_model->ConstantSize() == 2)
+    {
+        int t0 = QDateTime::currentMSecsSinceEpoch();
+        QVector< QVector<double > > input  = ConvertList(full_list, error);
+        int t1 = QDateTime::currentMSecsSinceEpoch();
+        std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
+        emit finished(m_optim->isChecked());
+    }
+    else
+    {
+        Scan(full_list);
+    }
     QApplication::restoreOverrideCursor();
 }
 
