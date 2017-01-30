@@ -63,7 +63,7 @@ void Statistic::ConfidenceAssesment()
         
         m_model->setLockedParameter(locked);
         QVector<double> vars = parameter;
-        double increment = vars[i]/200;
+        double increment = vars[i]/800;
         for(int m = 0; m < 100; ++m)
         {
             double x  = m_model->IncrementParameter(increment, i);
@@ -77,7 +77,7 @@ void Statistic::ConfidenceAssesment()
             }
             qreal new_error = m_model->ModelError();
             
-            if(new_error/error > double(4))
+            if(new_error/error > double(1.05))
                 break;
             series.append(QPointF(x,new_error));
         }
@@ -97,7 +97,7 @@ void Statistic::ConfidenceAssesment()
             }
             qreal new_error = m_model->ModelError();
             
-            if(new_error/error > double(4))
+            if(new_error/error > double(1.05))
                 break;
             series.prepend(QPointF(x,new_error));
         }
