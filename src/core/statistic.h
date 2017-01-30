@@ -22,7 +22,8 @@
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
-
+#include <QtCore/QRunnable>
+#include <QtCore/QObject>
 #include <QtCore/QWeakPointer>
 class Minimizer;
 
@@ -33,6 +34,35 @@ struct StatisticResult
     double min;
     double error;
     QList<QPointF > points;  
+};
+
+
+class StatisticThread : public QObject, public QRunnable
+{
+  Q_OBJECT
+public:
+    enum RunType{
+      ConfidenceByError = 1,
+      ConfidenceByFTest = 2,
+      ConfidenceByCarlo = 3
+    };
+    StatisticThread(RunType runtype);
+    ~StatisticThread();
+    void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); m_minimizer->setModel(m_model); }
+    inline void SetParameterID( int id ) { m_parameter_id = id; }
+    inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
+    void setParameter(const QJsonObject &json);
+    virtual void run();
+    RunType m_runtype;
+    StatisticResult getResult() const { return m_result; }
+    
+private:
+    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<Minimizer> m_minimizer;
+    OptimizationType m_type;
+    void ConfidenceAssesment();
+    int m_parameter_id;
+    StatisticResult m_result;
 };
 
 class Statistic : public QObject
@@ -46,11 +76,13 @@ public:
     void ConfidenceAssesment();
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
+    QList<StatisticResult > Results() const { return m_result; }
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
     QList<QList<QPointF> > m_series;
+    QList<StatisticResult > m_result;
 };
 
 #endif // STATISTIC_H

@@ -457,15 +457,15 @@ void ModelWidget::Confidence()
     statistic->setParameter(json);
     statistic->setOptimizationRun(m_last_run);
     statistic->ConfidenceAssesment();
-    
-    QList<QList<QPointF> > series = statistic->Series();
+           
+    QList<StatisticResult > result = statistic->Results();
         QtCharts::QChart *chart = new QtCharts::QChart;
         chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
         view = new ChartView(chart);
-        for(int i = 0; i < series.size(); ++i)
+        for(int i = 0; i < result.size(); ++i)
         {
             QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-            xy_series->append(series[i]);
+            xy_series->append(result[i].points);
             view->addSeries(xy_series);
         }
         m_statistic_dialog->setWidget(view, "Simple Plot");
