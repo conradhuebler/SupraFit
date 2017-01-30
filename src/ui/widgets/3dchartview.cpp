@@ -37,9 +37,9 @@ _3DChartViewPrivate::~_3DChartViewPrivate()
 }
 
 
-_3DChartView::_3DChartView(QWidget *parent) : QWidget(parent), d(new _3DChartViewPrivate())
+_3DChartView::_3DChartView(QWidget *parent) : QWidget(parent), d(new _3DChartViewPrivate()), has_series(false), Max_Z(0), Max_X(0), Max_Y(0), Min_Z(0), Min_X(0), Min_Y(0)
 {
-    QWidget *layer = QWidget::createWindowContainer(d);
+    layer = QWidget::createWindowContainer(d, this);
     m_config = new QPushButton(tr("Config"));
     m_config->setFlat(true);
         m_config->setIcon(QIcon::fromTheme("applications-system"));
@@ -50,24 +50,26 @@ _3DChartView::_3DChartView(QWidget *parent) : QWidget(parent), d(new _3DChartVie
     layout->addWidget(layer, 0, 0, 1, 5);//, Qt::AlignHCenter);
     layout->addWidget(m_config, 0, 4, Qt::AlignTop);
     setLayout(layout);
-    
 }
 
 _3DChartView::~_3DChartView()
 {
-    delete m_series;
-    delete d;
+//     delete m_series;
 }
 
 
 void _3DChartView::setData(const QtDataVisualization::QSurfaceDataArray& data)
 {
+    if(has_series)
+        d->removeSeries(m_series);
     m_data = new QtDataVisualization::QSurfaceDataArray(data);
     m_series = new QtDataVisualization::QSurface3DSeries;
     m_series->dataProxy()->resetArray(m_data);
     m_series->setDrawMode(QtDataVisualization::QSurface3DSeries::DrawSurfaceAndWireframe);
-    d->addSeries(m_series);
+    d->addSeries(m_series);   
+    has_series = true;
     CreateChart();
+    ApplayRanges();
 }
 
 void _3DChartView::CreateChart()
@@ -75,9 +77,6 @@ void _3DChartView::CreateChart()
         d->axisX()->setLabels(QStringList() << "xaxis");
         d->axisX()->setLabelFormat("%.2f");
         d->axisZ()->setLabelFormat("%.2f");
-        d->axisX()->setRange(0, 7);
-        d->axisY()->setRange(0, 2);
-        d->axisZ()->setRange(0, 7);
         d->axisX()->setLabelAutoRotation(30);
         d->axisY()->setLabelAutoRotation(90);
         d->axisZ()->setLabelAutoRotation(30);
@@ -90,6 +89,14 @@ void _3DChartView::CreateChart()
         m_series->setColorStyle(QtDataVisualization::Q3DTheme::ColorStyleRangeGradient);
 }
 
+void _3DChartView::ApplayRanges()
+{
+    if(!has_series)
+        return;
+    d->axisX()->setRange(Min_X, Max_X);
+    d->axisY()->setRange(Min_Z, Max_Z);
+    d->axisZ()->setRange(Min_Y, Max_Y);
+}
 
 
 #include "3dchartview.moc"

@@ -44,12 +44,23 @@ public:
     _3DChartView(QWidget *parent = 0);
     ~_3DChartView();
     void setData(const QtDataVisualization::QSurfaceDataArray &data);
+    inline void setMaxZ(double val) { Max_Z = val; ApplayRanges();}
+    inline void setMinZ(double val) { Min_Z = val; ApplayRanges();}
+    inline void setMaxX(double val) { Max_X = val; ApplayRanges();}
+    inline void setMinX(double val) { Min_X = val; ApplayRanges();}
+    inline void setMaxY(double val) { Max_Y = val; ApplayRanges();}
+    inline void setMinY(double val) { Min_Y = val; ApplayRanges();}
 private:
     QPointer<_3DChartViewPrivate> d;
     QPushButton *m_config;
     QtDataVisualization::QSurfaceDataArray *m_data;
     QtDataVisualization::QSurface3DSeries *m_series;
     void CreateChart();
+    QWidget *layer;
+    bool has_series;
+    double Max_Z, Max_X, Max_Y, Min_Z, Min_X, Min_Y;
+private slots:
+    void ApplayRanges();
 };
 
 #endif // 3DCHARTVIEW_H

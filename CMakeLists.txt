@@ -124,6 +124,7 @@ set(nmr2fit_SRCS
                 src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/modelhistorywidget.cpp
+                src/ui/dialogs/modeldialog.cpp
                 src/ui/dialogs/advancedsearch.cpp
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp

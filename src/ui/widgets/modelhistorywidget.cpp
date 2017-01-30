@@ -71,7 +71,6 @@ ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *par
     setLayout(m_vlayout);
     setBackgroundRole(QPalette::Midlight);
 
-    
 }
 
 ModelHistory::~ModelHistory()

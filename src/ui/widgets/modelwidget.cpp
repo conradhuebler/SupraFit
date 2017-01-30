@@ -28,6 +28,7 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/widgets/3dchartview.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
+#include "src/ui/dialogs/modeldialog.h"
 
 #include "chartwidget.h"
 #include "chartview.h"
@@ -220,7 +221,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
     connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
-    
+    m_search_dialog = new ModalDialog;
+    m_statistic_dialog = new ModalDialog;
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
     m_layout->addWidget(pure_shift, 0, 0);
@@ -236,7 +238,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
         m_layout->addWidget(new QLabel(m_model->ConstantNames()[i]), 0, 2*i+1);
         m_layout->addWidget(constant, 0, 2*i+2);
     }
-//     m_layout->addWidget( new QLabel(tr("Error")), 0, 2*m_model->ConstantSize()+2);
+    //     m_layout->addWidget( new QLabel(tr("Error")), 0, 2*m_model->ConstantSize()+2);
     m_sign_layout = new QVBoxLayout;
     m_sign_layout->setAlignment(Qt::AlignTop);
     
@@ -430,17 +432,17 @@ void ModelWidget::GlobalMinimize()
     
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
     
-//     if(result == 1)
-//     {
-        json = m_minimizer->Parameter();
-        m_model->ImportJSON(json);
-        m_model->CalculateSignal();
-        Repaint();
-          
+    //     if(result == 1)
+    //     {
+    json = m_minimizer->Parameter();
+    m_model->ImportJSON(json);
+    m_model->CalculateSignal();
+    Repaint();
     
-//     }
     
-
+    //     }
+    
+    
     
     m_pending = false; 
     
@@ -452,7 +454,7 @@ void ModelWidget::Confidence()
     Statistic *statistic = new Statistic(this);
     QJsonObject json = m_minimizer->Parameter();
     statistic->setModel(m_model);
-     statistic->setParameter(json);
+    statistic->setParameter(json);
     statistic->setOptimizationRun(m_optim_flags->getFlags());
     statistic->ConfidenceAssesment();
     
@@ -618,19 +620,38 @@ void ModelWidget::AdvancedSearchFinished(int runtype)
     {
         
         if(!_3dchart)
+        {
             _3dchart = new _3DChartView;
-        _3dchart->setData((m_advancedsearch->dataArray()));
-        _3dchart->show();
-        m_plot_3d->setEnabled(true);
+            m_search_dialog->setWidget(_3dchart, "3D Plot");
+        }
+        else
+            _3dchart = qobject_cast<_3DChartView *>(m_search_dialog->Widget());
         
-        //          QList<QPointF> series = m_advancedsearch->Series();
-        //          QtCharts::QChart *chart = new QtCharts::QChart;
-        //          chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        //          QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-        //          xy_series->append(series);
-        //          view = new ChartView(chart);
-        //          view->addSeries(xy_series);
-        //          view->show();
+        _3dchart->setMaxZ(m_advancedsearch->MaxError());
+        _3dchart->setMaxX(m_advancedsearch->MaxX());
+        _3dchart->setMinX(m_advancedsearch->MinX());
+        _3dchart->setMaxY(m_advancedsearch->MaxY());
+        _3dchart->setMinY(m_advancedsearch->MinY());      
+        
+        _3dchart->setData(m_advancedsearch->dataArray());
+        
+        m_plot_3d->setEnabled(true);
     }
+    else if(runtype == 2)
+    {
+        QList<QList<QPointF> > series = m_advancedsearch->Series();
+        QtCharts::QChart *chart = new QtCharts::QChart;
+        chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        view = new ChartView(chart);
+        for(int i = 0; i < series.size(); ++i)
+        {
+            QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+            xy_series->append(series[i]);
+            view->addSeries(xy_series);
+        }
+        m_search_dialog->setWidget(view, "Simple Plot");
+        
+    }
+    m_search_dialog->show();
 }
 #include "modelwidget.moc"

@@ -24,6 +24,8 @@
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
 
+#include "src/ui/dialogs/modeldialog.h"
+
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
 #include <QtWidgets/QWidget>
@@ -34,6 +36,7 @@
 #include <QtCharts/QLineSeries>
 #include <QtDataVisualization>
 
+class ModalDialog;
 class QDoubleSpinBox;
 class QPushButton;
 class QLineEdit;
@@ -135,6 +138,7 @@ private:
     ChartView *view;
     QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
+    ModalDialog *m_statistic_dialog, *m_search_dialog;
 private slots:
     void GlobalMinimize();
     void LocalMinimize();

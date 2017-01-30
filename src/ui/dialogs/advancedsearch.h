@@ -75,20 +75,30 @@ public:
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); SetUi();}
     inline GlobalSearchResult  LastResult() const { return last_result; }
     inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
+    inline double MaxError() const { return error_max; }
+    double MaxX() const;
+    double MinX() const;
+    double MaxY() const;
+    double MinY() const;
+    QList<QList<QPointF> >Series() const { return m_series; }
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
     QSharedPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
     QPointer<QCheckBox > m_optim;
-    QPointer<QPushButton > m_global;
+    QPointer<QPushButton > m_2d_search, m_1d_search;
     GlobalSearchResult last_result;
     QVector< QVector<double > > ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
     QtDataVisualization::QSurfaceDataArray m_3d_data;
+    QList<QList<QPointF> > m_series;
     OptimizationType m_type;
     QPointer<OptimizerFlagWidget > m_optim_flags;
+    double error_max;
+    QVector< QVector<double > > ParamList() const;
 private slots:
     void GlobalSearch();
+    void LocalSearch();
 signals:
     void finished(int runtype);
 };

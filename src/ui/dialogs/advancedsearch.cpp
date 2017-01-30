@@ -79,11 +79,40 @@ double ParameterWidget::Step() const
 AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
 {
     setModal(false);
+    error_max = 0;
 }
 
 
 AdvancedSearch::~AdvancedSearch()
 {
+}
+
+double AdvancedSearch::MaxX() const
+{
+    if(m_model->ConstantSize() >= 1)
+        return m_parameter_list[0]->Max();
+    return 0;
+}
+
+double AdvancedSearch::MinX() const
+{
+    if(m_model->ConstantSize() >= 1)
+        return m_parameter_list[0]->Min();
+    return 0;
+}
+
+double AdvancedSearch::MaxY() const
+{
+    if(m_model->ConstantSize() >= 2)
+        return m_parameter_list[1]->Max();
+    return 0;
+}
+
+double AdvancedSearch::MinY() const
+{
+    if(m_model->ConstantSize() >= 2)
+        return m_parameter_list[1]->Min();
+    return 0;
 }
 
 void AdvancedSearch::SetUi()
@@ -104,20 +133,23 @@ void AdvancedSearch::SetUi()
     type = OptimizationType::ComplexationConstants;
     m_optim_flags->DisableOptions(type);
     layout->addWidget(m_optim_flags);
-    m_global = new QPushButton(tr("Global Search"));
-    connect(m_global, SIGNAL(clicked()), this, SLOT(GlobalSearch()));
-    m_optim = new QCheckBox(tr("Optimize"));
+    m_1d_search = new QPushButton(tr("1D Search"));
+    m_2d_search = new QPushButton(tr("2D Search"));
+    connect(m_2d_search, SIGNAL(clicked()), this, SLOT(GlobalSearch()));
+    connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));
     
     QGridLayout *mlayout = new QGridLayout;
     mlayout->addLayout(layout, 0, 0, 1, 2);
     mlayout->addWidget(m_optim, 3, 0);
-    mlayout->addWidget(m_global,3, 1);
+    if(m_model->ConstantSize() == 1)
+    mlayout->addWidget(m_1d_search,3, 0);
+    if(m_model->ConstantSize() == 2)
+        mlayout->addWidget(m_2d_search,3, 1);
     setLayout(mlayout);
 }
 
-void AdvancedSearch::GlobalSearch()
+QVector<QVector<double> > AdvancedSearch::ParamList() const
 {
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     QVector< QVector<double > > full_list;
     for(int i = 0; i < m_parameter_list.size(); ++i)
     {
@@ -130,6 +162,26 @@ void AdvancedSearch::GlobalSearch()
             list << s;
         full_list << list;
     }
+    return full_list;
+}
+
+
+void AdvancedSearch::LocalSearch()
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));   
+    QVector< QVector<double > > full_list = ParamList();
+
+        
+    Scan(full_list);
+    emit finished(2);
+    QApplication::restoreOverrideCursor();
+}
+
+
+void AdvancedSearch::GlobalSearch()
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));   
+    QVector< QVector<double > > full_list = ParamList();
     
     QVector<double > error; 
     m_type = m_optim_flags->getFlags();   
@@ -139,12 +191,9 @@ void AdvancedSearch::GlobalSearch()
         QVector< QVector<double > > input  = ConvertList(full_list, error);
         int t1 = QDateTime::currentMSecsSinceEpoch();
         std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-        emit finished(m_optim->isChecked());
+        emit finished(1);
     }
-    else
-    {
-        Scan(full_list);
-    }
+    
     QApplication::restoreOverrideCursor();
 }
 
@@ -211,7 +260,11 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                     m_model->ImportJSON(json);
         
                     m_model->CalculateSignal();
-                    error << m_model->ModelError();
+                    
+                    double current_error = m_model->ModelError();
+                    error << current_error; 
+                    if(error_max < current_error)
+                        error_max = current_error;
                     last_result.m_error = error;
                     last_result.m_input = full_list;
 
@@ -228,16 +281,22 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
 
 void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
 {
-
+    for(int i = 0; i < m_series.size(); ++i)
+        m_series[i].clear();
+    m_series.clear();
     QVector<double > error;
-    
-    for(int i = 0; i < list.size(); ++i)
+    for(int j = 0; j < list.size(); ++j)
     {
-        m_model->setConstants(list[i]);
-        m_model->CalculateSignal();
-        error << m_model->ModelError();
+        QList<QPointF> series;
+        for(int i = 0; i < list[j].size(); ++i)
+        {
+            m_model->setConstants(QVector<qreal> () << list[j][i]);
+            m_model->CalculateSignal();
+            error << m_model->ModelError();
+            series.append(QPointF(list[j][i],m_model->ModelError( )));
+        }
+        m_series << series;
     }
-    
 }
 
 #include "advancedsearch.moc"
