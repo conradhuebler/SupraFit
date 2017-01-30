@@ -45,10 +45,12 @@ public:
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     void ConfidenceAssesment();
     void setParameter(const QJsonObject &json);
+    QList<QList<QPointF> >Series() const { return m_series; }
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
+    QList<QList<QPointF> > m_series;
 };
 
 #endif // STATISTIC_H

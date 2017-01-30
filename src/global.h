@@ -22,6 +22,7 @@
 #ifndef global_H
 #define global_H
 
+#include <QtCore/QFlag>
 
 enum OptimizationType{
         ComplexationConstants = 0x01,
@@ -32,8 +33,15 @@ enum OptimizationType{
         IgnoreZeroConcentrations = 0x32
     };
     
-inline OptimizationType operator|(OptimizationType a, OptimizationType b)
-        {return static_cast<OptimizationType>(static_cast<int>(a) | static_cast<int>(b));}
+inline OptimizationType operator~ (OptimizationType a) { return (OptimizationType)~(int)a; }
+inline OptimizationType operator| (OptimizationType a, OptimizationType b) { return (OptimizationType)((int)a | (int)b); }
+inline OptimizationType operator& (OptimizationType a, OptimizationType b) { return (OptimizationType)((int)a & (int)b); }
+inline OptimizationType operator^ (OptimizationType a, OptimizationType b) { return (OptimizationType)((int)a ^ (int)b); }
+inline OptimizationType& operator|= (OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a |= (int)b); }
+inline OptimizationType& operator&= (OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a &= (int)b); }
+inline OptimizationType& operator^= (OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a ^= (int)b); }
+
+
         
 class QString;
 

@@ -139,6 +139,7 @@ private:
     QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
     ModalDialog *m_statistic_dialog, *m_search_dialog;
+    OptimizationType m_last_run;
 private slots:
     void GlobalMinimize();
     void LocalMinimize();

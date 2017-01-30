@@ -44,13 +44,20 @@ void Statistic::ConfidenceAssesment()
 {
     if(!m_model)
         return;
+    for(int i = 0; i < m_series.size(); ++i)
+        m_series[i].clear();
+    m_series.clear();
+    
     m_minimizer->setModel(m_model);
     QJsonObject optimized = m_model->ExportJSON();
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_type);
+    
     m_model.data()->CalculateSignal();
     qreal error = m_model.data()->ModelError();
     for(int i = 0; i < parameter.size(); ++i)
     {
+        QList<QPointF> series;
+
         QVector<int> locked(parameter.size(), 1);
         locked[i] = 0;
         
@@ -59,7 +66,7 @@ void Statistic::ConfidenceAssesment()
         double increment = vars[i]/200;
         for(int m = 0; m < 100; ++m)
         {
-            m_model->IncrementParameter(increment, i);
+            double x  = m_model->IncrementParameter(increment, i);
             QJsonObject json = m_model->ExportJSON();
             m_minimizer->setParameter(json);
             m_minimizer->Minimize(m_type);
@@ -69,16 +76,17 @@ void Statistic::ConfidenceAssesment()
             m_model->CalculateSignal();
             }
             qreal new_error = m_model->ModelError();
-            qDebug() << m_model->Constants() << new_error << error << new_error/error;
+            
             if(new_error/error > double(4))
                 break;
+            series.append(QPointF(x,new_error));
         }
         increment *= -1;
         qDebug() << "switching";
         m_model->ImportJSON(optimized);
         for(int m = 0; m < 100; ++m)
         {
-            m_model->IncrementParameter(increment, i);
+            double x  = m_model->IncrementParameter(increment, i);
             QJsonObject json = m_model->ExportJSON();
             m_minimizer->setParameter(json);
             m_minimizer->Minimize(m_type);
@@ -88,10 +96,12 @@ void Statistic::ConfidenceAssesment()
             m_model->CalculateSignal();
             }
             qreal new_error = m_model->ModelError();
-            qDebug() << m_model->Constants() << new_error << error << new_error/error;
+            
             if(new_error/error > double(4))
                 break;
+            series.prepend(QPointF(x,new_error));
         }
+        m_series << series;
     }
 }
 

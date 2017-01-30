@@ -438,7 +438,7 @@ void ModelWidget::GlobalMinimize()
     m_model->ImportJSON(json);
     m_model->CalculateSignal();
     Repaint();
-    
+    m_last_run = m_optim_flags->getFlags();
     
     //     }
     
@@ -455,8 +455,24 @@ void ModelWidget::Confidence()
     QJsonObject json = m_minimizer->Parameter();
     statistic->setModel(m_model);
     statistic->setParameter(json);
-    statistic->setOptimizationRun(m_optim_flags->getFlags());
+    statistic->setOptimizationRun(m_last_run);
     statistic->ConfidenceAssesment();
+    
+    QList<QList<QPointF> > series = statistic->Series();
+        QtCharts::QChart *chart = new QtCharts::QChart;
+        chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        view = new ChartView(chart);
+        for(int i = 0; i < series.size(); ++i)
+        {
+            QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+            xy_series->append(series[i]);
+            view->addSeries(xy_series);
+        }
+        m_statistic_dialog->setWidget(view, "Simple Plot");
+        
+    
+    m_statistic_dialog->show();
+    
     
     delete statistic;
 }
@@ -502,6 +518,7 @@ void ModelWidget::LocalMinimize()
         }
     }  
     Repaint();
+    m_last_run = m_optim_flags->getFlags();
     m_pending = false; 
 }
 

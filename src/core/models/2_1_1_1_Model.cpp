@@ -242,7 +242,7 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
     {
         setOptParamater(m_complex_constants);
     }
-    if(type & ~OptimizationType::IgnoreAllShifts)
+    if((type & ~OptimizationType::IgnoreAllShifts) > (OptimizationType::IgnoreAllShifts))
     {
         if(OptimizationType::UnconstrainedShifts & type)
         {

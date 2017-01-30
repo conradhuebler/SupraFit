@@ -69,7 +69,7 @@ public:
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
     virtual QVector<qreal > OptimizeAllParameters() = 0;
     virtual QVector<qreal > OptimizeAllShifts() = 0;
-    void IncrementParameter(double increment, int parameter);
+    double IncrementParameter(double increment, int parameter);
     void setOptParamater(qreal & parameter);
     void addOptParameter(qreal &vector);
     void setOptParamater(QVector< qreal >& parameter);

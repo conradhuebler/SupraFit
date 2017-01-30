@@ -81,6 +81,11 @@ void NonLinearFitThread::FastFit()
     bool allow_loop = true;
     bool process_stopped = false;
 
+    QVector<int >locked = m_model->LockedParamters();
+    QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
+    if(locked.size() == parameter.size())
+        m_model->setLockedParameter(locked); 
+    
     while((allow_loop && !convergence))
     {
         iter++;   
@@ -96,12 +101,9 @@ void NonLinearFitThread::FastFit()
             constants = NonLinearFitComplexConstants(1);
         m_model->setConstants(constants);
         m_model->MiniShifts(); 
-        QVector<qreal *> optconst = m_model->getOptConstants();
-        QVector<qreal > blub;
-        for(int i = 0; i < optconst.size(); ++i)
-            blub << *optconst[i];
-        if(blub.size() > 0)
-             NonlinearFit(m_model, m_opt_config.LevMar_Constants_PerIter, blub, m_opt_config);
+
+
+        NonlinearFit(m_model, m_opt_config.LevMar_Constants_PerIter, parameter, m_opt_config);
         m_model->setOptParamater(constants);
 
         qreal error = m_model->ModelError();
