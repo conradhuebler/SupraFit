@@ -59,7 +59,7 @@ signals:
 };
 
 
-class ModelHistory : public QScrollArea
+class ModelHistory : public QWidget
 {
     Q_OBJECT
 public:

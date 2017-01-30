@@ -86,9 +86,13 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_stdout.open(stdout, QIODevice::WriteOnly);
     
     m_historywidget = new ModelHistory(&m_history);
+    QScrollArea *history_scroll = new QScrollArea(this);
+    history_scroll->setWidget(m_historywidget);
+        history_scroll->setWidgetResizable(true);
+        history_scroll->setAlignment(Qt::AlignTop);
     m_history_dock = new QDockWidget("Stored Models");
     m_history_dock->setObjectName(tr("history"));
-    m_history_dock->setWidget(m_historywidget);
+    m_history_dock->setWidget(history_scroll);
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
     connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)), Qt::DirectConnection);

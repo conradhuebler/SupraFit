@@ -64,20 +64,13 @@ void ModelHistoryWidget::remove()
     emit Remove(m_json, element); 
 }
 
-ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent) : m_history(history), QScrollArea(parent)
+ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent) : m_history(history), QWidget(parent)
 {
-    m_mainwidget = new QWidget;
     m_vlayout = new QVBoxLayout;
     m_vlayout->setAlignment(Qt::AlignTop);
-    m_mainwidget->setLayout(m_vlayout);
-    QHBoxLayout *layout = new QHBoxLayout;
-    
-    setWidget(m_mainwidget);
-    setWidgetResizable(true);
-    setAlignment(Qt::AlignTop);
+    setLayout(m_vlayout);
     setBackgroundRole(QPalette::Midlight);
-    layout->addWidget(m_mainwidget);
-    setLayout(layout);
+
     
 }
 
