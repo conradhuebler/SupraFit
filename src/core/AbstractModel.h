@@ -40,7 +40,7 @@ struct OptimizerConfig
     int Sum_Convergence = 2;
     qreal Shift_Convergence = 1E-3;
     qreal Constant_Convergence = 1E-3;
-    qreal Error_Convergence = 5E-8;
+    qreal Error_Convergence = 5E-7;
     
     bool OptimizeBorderShifts = true;
     bool OptimizeIntermediateShifts = true;

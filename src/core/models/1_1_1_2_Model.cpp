@@ -102,19 +102,19 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
     }
     if((type & ~OptimizationType::IgnoreAllShifts) > (OptimizationType::IgnoreAllShifts))
     {
-        if(OptimizationType::UnconstrainedShifts & type)
+        if((type & OptimizationType::UnconstrainedShifts))
         {
-            addOptParameter(m_ItoI_signals);
             addOptParameter(m_ItoII_signals);
+            addOptParameter(m_ItoI_signals);
+            if(type & ~(OptimizationType::IgnoreZeroConcentrations))
+                addOptParameter(m_pure_signals);
         }
-        if(OptimizationType::ConstrainedShifts & type || OptimizationType::IntermediateShifts & type)
+        if(type & ~OptimizationType::UnconstrainedShifts || type & OptimizationType::IntermediateShifts)
         {
             addOptParameter(m_ItoI_signals);
         }
-        
-        if(type & ~(OptimizationType::IgnoreZeroConcentrations))
-            addOptParameter(m_pure_signals);
-    }   
+
+    } 
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

@@ -98,17 +98,23 @@ void ItoI_Model::MiniShifts()
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-//     std::cout << type << std::endl;
     if(OptimizationType::ComplexationConstants & type)
         setOptParamater(m_K11);
-//     std::cout << (type & ~OptimizationType::IgnoreAllShifts) << " " << (type & OptimizationType::IgnoreAllShifts) << std::endl;
+
     if((type & ~OptimizationType::IgnoreAllShifts) > (OptimizationType::IgnoreAllShifts))
     {
         if(type & OptimizationType::UnconstrainedShifts)
+        {
             addOptParameter(m_ItoI_signals);
-        
-        if(type & ~OptimizationType::IgnoreZeroConcentrations)
-            addOptParameter(m_pure_signals);
+            qDebug() << "Unconstrained";
+            if(type & ~OptimizationType::IgnoreZeroConcentrations)
+            {
+                addOptParameter(m_pure_signals);
+                qDebug() << "with shifts variable";
+            }
+        }
+        else
+            qDebug() << "constrained";
     }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)

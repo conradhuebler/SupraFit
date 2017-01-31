@@ -48,10 +48,10 @@ void NonLinearFitThread::run()
     m_last_parameter = m_model->ExportJSON();
     m_steps = 0;
     m_converged = false;
-    if(m_runtype & OptimizationType::ConstrainedShifts)
-        FastFit();
-    else if(m_runtype & OptimizationType::UnconstrainedShifts || m_runtype & ~OptimizationType::IgnoreAllShifts)
+    if(m_runtype & OptimizationType::UnconstrainedShifts || m_runtype & OptimizationType::IgnoreAllShifts)
         NonLinearFit();
+    else if(m_runtype & ~OptimizationType::UnconstrainedShifts)
+        ConstrainedFit();
 }
 
 
@@ -69,11 +69,10 @@ void NonLinearFitThread::setParameter(const QJsonObject &json)
 }
 
 
-void NonLinearFitThread::FastFit()
+void NonLinearFitThread::ConstrainedFit()
 {   
     QVector<qreal> old_para_constant = m_model->Constants();
-    QVector<qreal> constants = m_model->Constants();
-    qDebug() << m_model->LockedParamters();
+    
     bool convergence = false;
     bool constants_convergence = false;
     bool error_convergence = false;
@@ -91,23 +90,27 @@ void NonLinearFitThread::FastFit()
         iter++;   
         if(iter > m_opt_config.MaxIter - 1)
             allow_loop = false;
-
-        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-
+        
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
         QVector<qreal > old_constants =  m_model->Constants();
         qreal old_error = m_model->ModelError();
         if(m_runtype & OptimizationType::ComplexationConstants)
-            constants = NonLinearFitComplexConstants(1);
-        m_model->setConstants(constants);
+        {
+            if(NonLinearFit(OptimizationType::ComplexationConstants) == 1)
+                m_model->ImportJSON(m_last_parameter);
+        }
+       
         m_model->MiniShifts(); 
-
-
-        NonlinearFit(m_model, m_opt_config.LevMar_Constants_PerIter, parameter, m_opt_config);
-        m_model->setOptParamater(constants);
-
+        
+        if(m_runtype & OptimizationType::IntermediateShifts)
+        {
+            if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
+                m_model->ImportJSON(m_last_parameter);
+        }
+        m_last_parameter = m_model->ExportJSON();
         qreal error = m_model->ModelError();
         
+        QVector<qreal> constants = m_model->Constants();
         qreal constant_diff = 0;
         QString constant_string;
         for(int z = 0; z < constants.size(); ++z)
@@ -162,11 +165,9 @@ void NonLinearFitThread::FastFit()
     if(process_stopped)
     {
         m_model->setConstants(old_para_constant);
-        constants = old_para_constant;
     }else{
         emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
         emit Message("*** Convergence reached  " + ToolSet::bool2YesNo(convergence) + "  ****\n", 3);
-        m_model->setConstants(constants);
         
         QString message = "Using Signals";
         qreal error = 0;
@@ -192,17 +193,6 @@ int NonLinearFitThread::DifferenceFitSignalConstants()
     return 0;
 }
 
-QVector<qreal> NonLinearFitThread::NonLinearFitComplexConstants(int maxsteps)
-{
-    QVector<qreal> constants = m_model->Constants();
-    for(int i = 0; i < maxsteps; ++i)
-    {
-        m_opt_config.LevMar_Constants_PerIter = 10;
-        NonlinearFit(m_model, m_opt_config.LevMar_Constants_PerIter, constants, m_opt_config);
-        m_model->setConstants(constants);
-    }
-    return constants;
-}
 
 int NonLinearFitThread::NonLinearFitSignalConstants()
 {
@@ -210,18 +200,23 @@ int NonLinearFitThread::NonLinearFitSignalConstants()
     return 0;
 }
 
-int NonLinearFitThread::NonLinearFit()
+int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {
+    
     QVector<int >locked = m_model->LockedParamters();
-    QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
-    if(locked.size() == parameter.size())
-        m_model->setLockedParameter(locked); 
-
+    QVector<qreal > parameter = m_model->OptimizeParameters(runtype);
+    if(parameter.isEmpty())
+        return 0;
+    if(runtype == m_runtype)
+    {
+        if(locked.size() == parameter.size())
+            m_model->setLockedParameter(locked); 
+    }
     NonlinearFit(m_model, 100, parameter, m_opt_config);
     m_last_parameter = m_model->ExportJSON();
     m_converged = true;
     m_best_intermediate = m_model->ExportJSON();
-    return 0;
+    return 1;
 }
 
 
@@ -262,7 +257,6 @@ QString Minimizer::OptPara2String() const
 int Minimizer::Minimize(OptimizationType runtype)
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-    qDebug() << m_model->Constants();
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;
@@ -280,6 +274,9 @@ int Minimizer::Minimize(OptimizationType runtype)
     thread->setOptimizationRun(runtype);
     /*
     QThreadPool *threadpool = new QThreadPool;
+    
+    QThreadPool *threadpool = QThreadPool::globalInstance();
+    
     threadpool->start(thread);
     if(!threadpool->waitForDone())
     {

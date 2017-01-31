@@ -63,8 +63,10 @@ void StatisticThread::ConfidenceAssesment()
         m_model->setLockedParameter(locked.toVector());
         m_result.optim = parameter[m_parameter_id];
         
-        QList<double> vars = parameter;
-        double increment = vars[m_parameter_id]/200;
+        m_model->setLockedParameter(locked.toVector());
+        QVector<double> vars = parameter.toVector();
+        double increment = vars[m_parameter_id]/800;
+
         for(int m = 0; m < 100; ++m)
         {
             double x  = m_model->IncrementParameter(increment, m_parameter_id);
@@ -78,7 +80,7 @@ void StatisticThread::ConfidenceAssesment()
             }
             qreal new_error = m_model->ModelError();
             
-            if(new_error/error > double(4))
+            if(new_error/error > double(1.05))
             {
                 m_result.max = x;
                 break;
@@ -101,6 +103,7 @@ void StatisticThread::ConfidenceAssesment()
             }
             qreal new_error = m_model->ModelError();
             
+
             if(new_error/error > double(4))
             {
                 m_result.min = x;

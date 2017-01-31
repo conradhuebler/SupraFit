@@ -52,11 +52,11 @@ public:
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
-    void FastFit();
-    QVector<qreal> NonLinearFitComplexConstants(int maxsteps);
+    void ConstrainedFit();
     int NonLinearFitSignalConstants();
     int DifferenceFitSignalConstants();
-    int NonLinearFit();
+    int NonLinearFit(OptimizationType runtype);
+    inline int NonLinearFit() { return NonLinearFit(m_runtype); }
     OptimizerConfig m_opt_config;
     bool m_converged;
     int m_steps;
