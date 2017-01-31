@@ -28,9 +28,8 @@ enum OptimizationType{
         ComplexationConstants = 0x01,
         IgnoreAllShifts = 0x02,
         UnconstrainedShifts = 0x04,
-        ConstrainedShifts = 0x08,
-        IntermediateShifts = 0x016,
-        IgnoreZeroConcentrations = 0x32
+        IntermediateShifts = 0x08,
+        IgnoreZeroConcentrations = 0x16
     };
     
 inline OptimizationType operator~ (OptimizationType a) { return (OptimizationType)~(int)a; }
