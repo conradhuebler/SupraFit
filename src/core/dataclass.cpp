@@ -295,8 +295,8 @@ DataClass::DataClass(const DataClass* other)
 {
     m_plotmode = other->m_plotmode;
     d = other->d;
-    CreateClearPlotModel();
-    PlotModel();
+//     CreateClearPlotModel();
+//     PlotModel();
 }
 
 DataClass::~DataClass()

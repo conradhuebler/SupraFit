@@ -48,7 +48,7 @@ public:
     };
     StatisticThread(RunType runtype);
     ~StatisticThread();
-    void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); m_minimizer->setModel(m_model); }
+    void setModel(QSharedPointer<AbstractTitrationModel> model); 
     inline void SetParameterID( int id ) { m_parameter_id = id; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     void setParameter(const QJsonObject &json);

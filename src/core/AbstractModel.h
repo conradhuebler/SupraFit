@@ -64,8 +64,8 @@ public:
     AbstractTitrationModel(const DataClass *data);
     virtual ~AbstractTitrationModel();
     QVector<qreal > OptimizeParameters(OptimizationType type);
-    inline void setLockedParameter(const QVector<int> &lock){ m_locked_parameters = lock; }
-    inline QVector<int> LockedParamters() const { return m_locked_parameters; }
+    inline void setLockedParameter(const QList<int> &lock){ m_locked_parameters = lock; }
+    inline QList<int> LockedParamters() const { return m_locked_parameters; }
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
     virtual QVector<qreal > OptimizeAllParameters() = 0;
     virtual QVector<qreal > OptimizeAllShifts() = 0;
@@ -135,13 +135,13 @@ public slots:
      
 private:
     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
-    QVector<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
+    QList<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
     
     bool m_debug;
 
     QVector<int > m_active_signals;
     bool m_pending;
-    QVector<int > m_locked_parameters;
+    QList<int > m_locked_parameters;
 protected:
     
     void SetSignal(int i, int j, qreal value);

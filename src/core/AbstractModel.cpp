@@ -139,7 +139,9 @@ QVector<qreal> AbstractTitrationModel::OptimizeParameters(OptimizationType type)
 {
     clearOptParameter();
     QVector<qreal > variables =  OptimizeParameters_Private(type);
-    m_locked_parameters = QVector<int>(variables.size(), 1);
+    m_locked_parameters.clear();
+    for(int i = 0; i < variables.size(); ++i)
+        m_locked_parameters << 1;
     return variables;
 }
 

@@ -37,6 +37,12 @@ StatisticThread::~StatisticThread()
 {
 }
 
+void StatisticThread::setModel(QSharedPointer<AbstractTitrationModel> model)
+{ 
+    m_model = model->Clone(); 
+    m_minimizer->setModel(m_model); 
+}
+
 void StatisticThread::run()
 {
     
@@ -60,10 +66,10 @@ void StatisticThread::ConfidenceAssesment()
             locked << 1;
 //             parameter.size(), 1);
         locked[m_parameter_id] = 0;
-        m_model->setLockedParameter(locked.toVector());
+        m_model->setLockedParameter(locked);
         m_result.optim = parameter[m_parameter_id];
         
-        m_model->setLockedParameter(locked.toVector());
+        m_model->setLockedParameter(locked);
         QVector<double> vars = parameter.toVector();
         double increment = vars[m_parameter_id]/800;
 

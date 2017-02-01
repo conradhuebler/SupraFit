@@ -89,7 +89,7 @@ public:
      */
     
     QStringList m_names;
-    QVector<QPointer<QtCharts::QVXYModelMapper> >m_plot_signal_mapper;
+    QList<QPointer<QtCharts::QVXYModelMapper> >m_plot_signal_mapper;
     QStandardItemModel *m_plot_signal;
     
     int m_type, m_maxsize;

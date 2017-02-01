@@ -80,7 +80,7 @@ void NonLinearFitThread::ConstrainedFit()
     bool allow_loop = true;
     bool process_stopped = false;
 
-    QVector<int >locked = m_model->LockedParamters();
+    QList<int >locked = m_model->LockedParamters();
     QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
     if(locked.size() == parameter.size())
         m_model->setLockedParameter(locked); 
@@ -203,7 +203,7 @@ int NonLinearFitThread::NonLinearFitSignalConstants()
 int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {
     
-    QVector<int >locked = m_model->LockedParamters();
+    QList<int >locked = m_model->LockedParamters();
     QVector<qreal > parameter = m_model->OptimizeParameters(runtype);
     if(parameter.isEmpty())
         return 0;
