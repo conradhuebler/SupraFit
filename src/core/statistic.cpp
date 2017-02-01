@@ -60,17 +60,16 @@ void StatisticThread::ConfidenceAssesment()
     qreal error = m_model.data()->ModelError();
     QList<QPointF> series;
     QJsonObject optimized = m_model->ExportJSON();
-    QList<double > parameter = m_model.data()->OptimizeParameters(m_type).toList();
+    QVector<double > parameter = m_model.data()->OptimizeParameters(m_type);
         QList<int> locked; 
         for(int i = 0; i < parameter.size(); ++i)
             locked << 1;
-//             parameter.size(), 1);
         locked[m_parameter_id] = 0;
         m_model->setLockedParameter(locked);
         m_result.optim = parameter[m_parameter_id];
         
         m_model->setLockedParameter(locked);
-        QVector<double> vars = parameter.toVector();
+        QVector<double> vars = parameter;
         double increment = vars[m_parameter_id]/800;
 
         for(int m = 0; m < 100; ++m)
@@ -158,11 +157,12 @@ void Statistic::ConfidenceAssesment()
         thread->setModel(m_model);
         thread->SetParameterID(i);
         thread->setOptimizationRun(m_type);
-        threadpool->start(thread);
+//         threadpool->start(thread);
+        thread->run();
         threads << thread;
     }
     
-    threadpool->waitForDone();
+//     threadpool->waitForDone();
     for(int i = 0; i < threads.size(); ++i)
     {
         m_result << threads[i]->getResult();

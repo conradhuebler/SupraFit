@@ -58,7 +58,7 @@ void NonLinearFitThread::run()
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> model)
 {
     m_model = model->Clone();
-    m_model->LockedParamters();
+    m_model->setLockedParameter(model->LockedParamters());
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
 }
