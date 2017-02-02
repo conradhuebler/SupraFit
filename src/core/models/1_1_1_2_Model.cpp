@@ -147,41 +147,6 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeAllShifts()
     return parameter;   
 }
 
-
-void ItoI_ItoII_Model::MiniShifts()
-{
-    QList<int > active_signal;
-    if(ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1).toList();
-    else
-        active_signal = ActiveSignals();
-    
-    QVector<qreal > parameter = m_ItoI_signals;
-    clearOptParameter();
-    setOptParamater(m_ItoI_signals);
-    
-    for(int iter = 0; iter < m_opt_config.LevMar_Shifts_PerIter; ++iter)
-    {
-        QVector<qreal > signal_0, signal_1;
-        signal_0 = m_model_error->firstRow();
-        signal_1 = m_model_error->lastRow();
-        for(int j = 0; j < m_lim_para.size(); ++j)
-        {
-            for(int i = 0; i < SignalCount(); ++i)    
-            {
-                if(active_signal[i] == 1)
-                {
-                    if(m_model_error->firstRow()[i] < 1 && j == 0)
-                        *m_lim_para[j][i] -= m_model_error->firstRow()[i];
-                    if(m_model_error->lastRow()[i] < 1 && j == 1)
-                        *m_lim_para[j][i] -= m_model_error->lastRow()[i];
-                }
-            }
-        }
-    }
-}
-
-
 void ItoI_ItoII_Model::setComplexSignals(QVector< qreal > list, int i)
 {
     for(int j = 0; j < list.size(); ++j)

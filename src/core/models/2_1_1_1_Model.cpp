@@ -85,38 +85,6 @@ void IItoI_ItoI_Model::InitialGuess()
     m_repaint = true;
 }
 
-
-void IItoI_ItoI_Model::MiniShifts()
-{
-    QList<int > active_signal;
-    if(ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1).toList();
-    else
-        active_signal = ActiveSignals();
-    
-    for(int iter = 0; iter < m_opt_config.LevMar_Shifts_PerIter; ++iter)
-    {
-        QVector<qreal >signal_0, signal_1;
-        signal_0 = m_model_error->firstRow();
-        signal_1 = m_model_error->lastRow();
-        
-        for(int j = 0; j < m_lim_para.size(); ++j)
-        {
-            for(int i = 0; i < SignalCount(); ++i)    
-            {
-                if(active_signal[i] == 1)
-                {
-                    if(m_model_error->firstRow()[i] < 1 && j == 0)
-                        *m_lim_para[j][i] -= m_model_error->firstRow()[i];
-                    if(m_model_error->lastRow()[i] < 1 && j == 1)
-                        *m_lim_para[j][i] -= m_model_error->lastRow()[i];
-                }
-            }
-            
-        }
-    }
-}
-
 QVector<QVector<qreal> > IItoI_ItoI_Model::AllShifts()
 {
     

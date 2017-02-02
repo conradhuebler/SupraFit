@@ -126,7 +126,7 @@ public:
         m_active_signals = active_signals; 
         emit ActiveSignalsChanged(m_active_signals);
     }
-    virtual void MiniShifts() = 0;
+    void MiniShifts();
     QVector<qreal *> getOptConstants() const { return m_opt_para; }
     qreal ModelError() const;
     QStringList ConstantNames() const { return m_constant_names; }

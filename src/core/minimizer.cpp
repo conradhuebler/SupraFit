@@ -96,7 +96,6 @@ void NonLinearFitThread::ConstrainedFit()
         qreal old_error = m_model->ModelError();
         if(m_runtype & OptimizationType::ComplexationConstants)
         {
-            qDebug() << "constant run";
             if(NonLinearFit(OptimizationType::ComplexationConstants) == 1)
                 m_model->ImportJSON(m_last_parameter);
         }
@@ -105,7 +104,6 @@ void NonLinearFitThread::ConstrainedFit()
         
         if(m_runtype & OptimizationType::IntermediateShifts)
         {
-            qDebug() << "shift run";
              if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
                  m_model->ImportJSON(m_last_parameter);
         }
@@ -113,7 +111,6 @@ void NonLinearFitThread::ConstrainedFit()
         qreal error = m_model->ModelError();
         
         QVector<qreal> constants = m_model->Constants();
-        qDebug() << constants;
         qreal constant_diff = 0;
         QString constant_string;
         for(int z = 0; z < constants.size(); ++z)

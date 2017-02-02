@@ -80,7 +80,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_logdock->setObjectName(tr("logging"));
     m_logWidget = new QPlainTextEdit(this);
     m_logdock->setWidget(m_logWidget);
-    connect(this, SIGNAL(AppendPlainText(QString)), m_logdock, SLOT(appendPlainText(QString)));
+    connect(this, SIGNAL(AppendPlainText(QString)), m_logWidget, SLOT(appendPlainText(QString)));
     m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
     

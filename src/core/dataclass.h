@@ -20,6 +20,8 @@
 #ifndef DATACLASS_H
 #define DATACLASS_H
 
+#include <Eigen/Dense>
+
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QSharedData>
@@ -52,23 +54,24 @@ public:
     qreal & data(int column, int row);
     
     void insertRow(QVector<qreal> row);
-    void insertColumn(QVector<qreal> column);
+//     void insertColumn(QVector<qreal> column);
     void setRow(QVector<qreal> vector, int row);
     void setColumn(QVector<qreal> vector, int column);
     
     QVector<qreal> Row(int row);
-    QVector<qreal> Column(int column);
-    inline QVector<qreal> firstRow() { return m_table.first().toVector(); }
-    inline QVector<qreal> firstColumn() { return Column( 0 ); }
-    inline QVector<qreal> lastRow() { return m_table.last().toVector(); }
-    inline QVector<qreal> lastColumn() { return Column(columnCount() -1 );}
+//     QVector<qreal> Column(int column);
+    QVector<qreal> firstRow(); 
+//     inline QVector<qreal> firstColumn() { return Column( 0 ); }
+    QVector<qreal> lastRow(); 
+//     inline QVector<qreal> lastColumn() { return Column(columnCount() -1 );}
     
     void Debug() const ;
 private:
     /*
      * May the first variable the column and the second the row
      */
-    QList<QList < qreal > > m_table;
+//     QList<QList < qreal > > m_table;
+    Eigen::MatrixXd m_table;
     qreal m_empty;
     QReadWriteLock mutex;
 };

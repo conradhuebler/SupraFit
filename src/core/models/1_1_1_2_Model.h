@@ -49,7 +49,6 @@ public:
     void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
     QVector<qreal > Constants() const { return m_complex_constants; }
     virtual QVector< QVector< qreal > > AllShifts();
-    void MiniShifts();
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     QVector<qreal > OptimizeAllParameters();

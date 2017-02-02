@@ -19,6 +19,9 @@
 
 #include "src/core/toolset.h"
 
+#include <Eigen/Dense>
+
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
@@ -44,9 +47,7 @@ DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent)
 
 DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent)
 {
-    QVector<qreal > vector(columns,0);
-    for(int i = 0; i < rows; ++i)
-        insertRow(vector);
+    m_table = Eigen::MatrixXd::Zero(rows, columns);
 }
 
 DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME whatever
@@ -67,9 +68,27 @@ DataTable::~DataTable()
     
 }
 
+QVector<qreal> DataTable::firstRow()
+{
+    QVector<qreal> vector;
+    for(int i = 0; i < m_table.cols(); ++i)
+        vector << m_table(0, i);
+    return vector;
+}
+
+QVector<qreal> DataTable::lastRow()
+{
+    QVector<qreal> vector;
+    for(int i = 0; i < m_table.cols(); ++i)
+        vector << m_table(m_table.rows()-1, i);
+    return vector;
+}
+
+
 void DataTable::Debug() const
 {
-    qDebug() << m_table;
+    std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
+    std::cout << m_table <<std::endl;
 }
 Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
 {
@@ -80,7 +99,7 @@ int DataTable::columnCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent)
     if(m_table.size() != 0)
-        return m_table.first().size();
+        return m_table.cols();
     return 0;
     
 }
@@ -88,7 +107,7 @@ int DataTable::columnCount(const QModelIndex& parent) const
 int DataTable::rowCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent)
-    return m_table.size();
+    return m_table.rows();
 }
 
 QVariant DataTable::data(const QModelIndex& index, int role) const
@@ -102,10 +121,10 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
 qreal DataTable::data(int column, int row) const
 {
 
-    if(row < m_table.size())
-        if(column < m_table[row].size())
+    if(row < m_table.rows())
+        if(column < m_table.cols())
         {
-            return m_table[row][column];
+            return m_table(row,column);
         }
         else
         {
@@ -123,10 +142,10 @@ qreal & DataTable::data(int column, int row)
 {
     QReadLocker locker(&mutex);
     m_empty = 0;
-    if(row < m_table.size())
-        if(column < m_table[row].size())
+    if(row < m_table.rows())
+        if(column < m_table.cols())
         {
-            return m_table[row][column];
+            return m_table(row,column);
         }
         else
         {
@@ -142,48 +161,48 @@ qreal & DataTable::data(int column, int row)
 
 QVector<qreal> DataTable::Row(int row)
 {
-    QVector<qreal> result;
-    if(row < m_table.size())
-        result = m_table[row].toVector();
+    QVector<qreal> vector;
+    if(row >= m_table.rows())
+        for(int i = 0; i < m_table.cols(); ++i)
+            vector << m_table(row, i);
     else
         qDebug() << "Row exceeds size of table!";
-    return result;
+    return vector;
     
 }
 
-QVector<qreal> DataTable::Column(int column)
-{
-    QVector<qreal> result;
-    for(int i = 0; i < m_table.size(); ++i)
-    {
-        if(column < m_table[i].size())
-            result << m_table[i][column];
-        else
-            qDebug() << "Column exceeds size of table!";
-    }
-    return result;
-}
+// QVector<qreal> DataTable::Column(int column)
+// {
+//     QVector<qreal> result;
+//     for(int i = 0; i < m_table.size(); ++i)
+//     {
+//         if(column < m_table[i].size())
+//             result << m_table[i][column];
+//         else
+//             qDebug() << "Column exceeds size of table!";
+//     }
+//     return result;
+// }
 
-void DataTable::insertColumn(QVector<qreal> column)
-{
-    if(m_table.size() != 0)
-    {
-        if((m_table.first().size() == column.size()))
-            m_table << column.toList();
-    }else
-        m_table << column.toList();
-}
+// void DataTable::insertColumn(QVector<qreal> column)
+// {
+//     if(m_table.size() != 0)
+//     {
+//         if((m_table.first().size() == column.size()))
+//             m_table << column.toList();
+//     }else
+//         m_table << column.toList();
+// }
 
 void DataTable::insertRow(QVector<qreal> row)
 {
-    
-    if(m_table.isEmpty())
-        m_table << row.toList();
+    if(m_table.cols() == 0)
+        m_table.conservativeResize(m_table.rows() + 1, row.size());
     else
-        if(row.size() == m_table.first().size())
-            m_table << row.toList();
-        else
-            qDebug() << "Wrong number of rows!";
+        m_table.conservativeResize(m_table.rows() + 1, m_table.cols());
+    
+    for(int i = 0; i < row.size(); ++i)
+        m_table(m_table.rows() -1, i) = row[i];
 }
 
 void DataTable::setColumn(QVector<qreal> vector, int column)
@@ -195,7 +214,9 @@ void DataTable::setColumn(QVector<qreal> vector, int column)
 
 void DataTable::setRow(QVector<qreal> vector, int row)
 {
-    m_table[row] = vector.toList();
+    if(m_table.rows() >= row)
+        for(int i = 0; i < vector.size(); ++i)
+            m_table(row, i) = vector[i];   
     //     Q_UNUSED(vector);
     //     Q_UNUSED(row);
     return;

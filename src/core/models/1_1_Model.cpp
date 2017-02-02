@@ -72,30 +72,6 @@ void ItoI_Model::InitialGuess()
     m_repaint = true;
 }
 
-
-void ItoI_Model::MiniShifts()
-{
-    QList<int > active_signal;
-    if(ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1).toList();
-    else
-        active_signal = ActiveSignals();
-    
-    for(int j = 0; j < m_lim_para.size(); ++j)
-    {
-        for(int i = 0; i < SignalCount(); ++i)    
-        {
-            if(active_signal[i] == 1)
-            {
-                if(m_model_error->firstRow()[i] < 1 && j == 0)
-                    *m_lim_para[j][i] -= m_model_error->firstRow()[i];
-                if(m_model_error->lastRow()[i] < 1 && j == 1)
-                    *m_lim_para[j][i] -= m_model_error->lastRow()[i];   
-            }
-        }
-    }
-}
-
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if(OptimizationType::ComplexationConstants & type)
