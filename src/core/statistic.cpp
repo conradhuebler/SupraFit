@@ -99,7 +99,6 @@ void StatisticThread::ConfidenceAssesment()
         series.append(QPointF(x,new_error));
     }
     increment *= -1;
-    qDebug() << "switching";
     m_model->ImportJSON(optimized);
     for(int m = 0; m < 1000; ++m)
     {
@@ -162,13 +161,14 @@ void Statistic::ConfidenceAssesment()
         QPointer<StatisticThread >thread = new StatisticThread(StatisticThread::RunType::ConfidenceByError);
         thread->setModel(m_model);
         thread->SetParameterID(i);
-        thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);
-        //         threadpool->start(thread);
-        thread->run();
+         thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);
+//        thread->setOptimizationRun(m_type);
+        threadpool->start(thread);
+//         thread->run();
         threads << thread;
     }
     
-    //     threadpool->waitForDone();
+    threadpool->waitForDone();
     for(int i = 0; i < threads.size(); ++i)
     {
         m_result << threads[i]->getResult();

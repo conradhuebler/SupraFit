@@ -436,18 +436,16 @@ void ModelWidget::GlobalMinimize()
     
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
     
-    //     if(result == 1)
-    //     {
-    json = m_minimizer->Parameter();
-    m_model->ImportJSON(json);
-    m_model->CalculateSignal();
-    Repaint();
-//     m_last_run = m_optim_flags->getFlags();
-    
-    //     }
+    if(result == 1)
+    {
+        json = m_minimizer->Parameter();
+        m_model->ImportJSON(json);
+        m_model->CalculateSignal();
+        Repaint();
+    }
     
     
-     m_statistic = false;
+    m_statistic = false;
     m_pending = false; 
     
 }
@@ -464,7 +462,8 @@ void ModelWidget::Confidence()
     QJsonObject json = m_minimizer->Parameter();
     statistic->setModel(m_model);
     statistic->setParameter(json);
-//     statistic->setOptimizationRun(m_last_run);
+
+//     statistic->setOptimizationRun(m_optim_flags->getFlags());
     statistic->ConfidenceAssesment();
     
     QList<StatisticResult > result = statistic->Results();
@@ -653,7 +652,7 @@ void ModelWidget::triggerPlot3D()
 
 void ModelWidget::AdvancedSearchFinished(int runtype)
 {
-    if(runtype == 0)
+    if(runtype == 1)
     {
         
         if(!_3dchart)

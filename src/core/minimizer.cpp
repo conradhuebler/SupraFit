@@ -284,7 +284,7 @@ int Minimizer::Minimize(OptimizationType runtype)
     emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
     
     QApplication::restoreOverrideCursor();
-    return 0;
+    return 1;
 }
 
 QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype)

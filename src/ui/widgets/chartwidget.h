@@ -81,7 +81,6 @@ private slots:
     void formatAxis();
     void Repaint();
     void updateUI();
-    void setActiveSignals(QVector<int > active_signals);
 };
 
 #endif // CHARTWIDGET_H

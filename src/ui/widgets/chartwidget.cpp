@@ -132,7 +132,6 @@ void ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
     m_models << model;
 //     model->UpdatePlotModels();
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-//     connect(model.data(), SIGNAL(ActiveSignalsChanged(QList<int>)), this, SLOT(setActiveSignals(QList<int>)));
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
     for(int i = 0; i < model->SignalCount(); ++i)
@@ -160,9 +159,7 @@ void ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
         }
         
     }
-//     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(formatAxis()));
     Repaint(); 
-    
 }
 
 void ChartWidget::Repaint()
@@ -222,21 +219,6 @@ void ChartWidget::updateUI()
      for(int i = 0; i < m_rawdata->SignalCount(); ++i)
          m_rawdata->DataMapper(i)->series()->setColor(m_rawdata->color(i));
 
-}
-
-void ChartWidget::setActiveSignals( QVector<int> active_signals)
-{
-    qDebug() << active_signals;
-/*    if(active_signals.size() < m_signalchart->series().size()  && active_signals.size() <= m_errorchart->series().size())
-    {
-        for(int i = 0; i < active_signals.size(); ++i)
-        {
-            m_signalchart->series()[i]->setVisible(active_signals[i]);
-            m_signalchart->series()[i + active_signals.size()]->setVisible(active_signals[i]);
-            m_errorchart->series()[i]->setVisible(active_signals[i]);
-        }
-        Repaint();
-    }*/
 }
 
 QPair<qreal, qreal > ChartWidget::Series2MinMax(const QtCharts::QXYSeries *series)

@@ -53,7 +53,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     
     m_plot_error = new QStandardItemModel(DataPoints(), SignalCount()+1);
     QStandardItem *item;
-        for(int i = 0; i < DataPoints(); ++i)
+    for(int i = 0; i < DataPoints(); ++i)
     {
         QString x = QString::number(XValue(i));
         item = new QStandardItem(x);
@@ -248,7 +248,6 @@ void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
 
 QJsonObject AbstractTitrationModel::ExportJSON() const
 {
-    
     QJsonObject json, toplevel;
     QJsonObject constantObject;
     for(int i = 0; i < Constants().size(); ++i)
