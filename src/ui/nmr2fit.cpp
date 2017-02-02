@@ -80,6 +80,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_logdock->setObjectName(tr("logging"));
     m_logWidget = new QPlainTextEdit(this);
     m_logdock->setWidget(m_logWidget);
+    connect(this, SIGNAL(AppendPlainText(QString)), m_logdock, SLOT(appendPlainText(QString)));
     m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
     
@@ -325,16 +326,16 @@ void MainWindow::LogFile()
 
 void MainWindow::WriteMessages(const QString &message, int priority)
 {
-    
     //     QTextStream stdout_stream(&m_stdout);
     //      stdout_stream << message << "\n";
-    
+    emit AppendPlainText(message);
+    return;
     if(priority <= m_printlevel)
     {
         QTextStream fileout_stream(&m_file);
         fileout_stream << message << "\n";
         
-        m_logWidget->appendPlainText(message);
+//          QTimer::singleShot(0,m_logWidget, SLOT(appendPlainText(message)));
     }
 }
 
