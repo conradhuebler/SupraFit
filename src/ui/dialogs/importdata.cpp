@@ -263,8 +263,9 @@ void ImportData::accept()
     
     int rows = model->rowCount() - 1; 
     int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
-    for(int i = 0; i < rows; ++i)
+    for(int i = 0; i < model->rowCount(); ++i)
     {
+        bool import = true;
         QVector<qreal > conc, sign;
         for(int j = 0; j < columns; ++j)
         {
@@ -275,6 +276,11 @@ void ImportData::accept()
                 else 
                     sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
             }
+            else
+            {
+                import = false;
+                break;
+            }
         }
         if(m_switch_concentration->isChecked())
         {
@@ -282,7 +288,8 @@ void ImportData::accept()
             conc[1] = conc[0];
             conc[0] = a;
         }
-        m_storeddata->addPoint(conc, sign);
+        if(import)
+            m_storeddata->addPoint(conc, sign);
     }
     QDialog::accept();
 }
