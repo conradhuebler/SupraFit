@@ -215,7 +215,7 @@ void ModelElement::ChooseColor()
     ColorChanged(color);
 }
 
-ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : QWidget(parent), m_model(model), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : QWidget(parent), m_model(model), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
 {
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
@@ -271,6 +271,10 @@ ModelWidget::~ModelWidget()
     m_model.clear();
     if(_3dchart)
         delete _3dchart;
+    m_statistic_dialog->hide();
+    delete m_statistic_dialog;
+    m_search_dialog->hide();
+    delete m_search_dialog;
 }
 
 
@@ -438,12 +442,12 @@ void ModelWidget::GlobalMinimize()
     m_model->ImportJSON(json);
     m_model->CalculateSignal();
     Repaint();
-    m_last_run = m_optim_flags->getFlags();
+//     m_last_run = m_optim_flags->getFlags();
     
     //     }
     
     
-    
+     m_statistic = false;
     m_pending = false; 
     
 }
@@ -451,28 +455,43 @@ void ModelWidget::GlobalMinimize()
 
 void ModelWidget::Confidence()
 {
+    if(m_statistic)
+    {
+        m_statistic_dialog->show();
+        return;
+    }
     Statistic *statistic = new Statistic(this);
     QJsonObject json = m_minimizer->Parameter();
     statistic->setModel(m_model);
     statistic->setParameter(json);
-    statistic->setOptimizationRun(m_last_run);
+//     statistic->setOptimizationRun(m_last_run);
     statistic->ConfidenceAssesment();
-           
+    
     QList<StatisticResult > result = statistic->Results();
-        QtCharts::QChart *chart = new QtCharts::QChart;
-        chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        view = new ChartView(chart);
-        for(int i = 0; i < result.size(); ++i)
-        {
-            QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-            xy_series->append(result[i].points);
-            view->addSeries(xy_series);
-        }
-        m_statistic_dialog->setWidget(view, "Simple Plot");
-        
+    QWidget *resultwidget = new QWidget;
+    QGridLayout *layout = new QGridLayout;
+    resultwidget->setLayout(layout);
     
+    QtCharts::QChart *chart = new QtCharts::QChart;
+    
+    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    view = new ChartView(chart);
+    layout->addWidget(view, 0, 0, 1, 5);
+    for(int i = 0; i < result.size(); ++i)
+    {
+        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        xy_series->append(result[i].points);
+        view->addSeries(xy_series);
+        qreal diff = result[i].max -result[i].min;
+        layout->addWidget(new QLabel("K" + result[i].name), i + 1, 0);
+        layout->addWidget(new QLabel(QString::number(result[i].optim)), i + 1, 1);
+        layout->addWidget(new QLabel(tr("Min: %1").arg(QString::number(result[i].min))), i+1, 2);
+        layout->addWidget(new QLabel(tr("Max: %1").arg(QString::number(result[i].max))), i+1, 3);
+        layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
+    }
+    m_statistic = true;
+    m_statistic_dialog->setWidget(resultwidget, "Simple Plot");
     m_statistic_dialog->show();
-    
     
     delete statistic;
 }
@@ -518,7 +537,8 @@ void ModelWidget::LocalMinimize()
         }
     }  
     Repaint();
-    m_last_run = m_optim_flags->getFlags();
+//     m_last_run = m_optim_flags->getFlags();
+    m_statistic = false;
     m_pending = false; 
 }
 

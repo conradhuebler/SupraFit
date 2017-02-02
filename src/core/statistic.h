@@ -34,6 +34,7 @@ struct StatisticResult
     double min;
     double error;
     QList<QPointF > points;  
+    QString name;
 };
 
 
