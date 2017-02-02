@@ -130,7 +130,7 @@ private:
     QLineEdit *m_sum_error;
     QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi; 
     bool m_pending;
-    QVector<int > ActiveSignals();
+    QList<int > ActiveSignals();
     void DiscreteUI();
     void EmptyUI();
     

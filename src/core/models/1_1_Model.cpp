@@ -75,9 +75,9 @@ void ItoI_Model::InitialGuess()
 
 void ItoI_Model::MiniShifts()
 {
-    QVector<int > active_signal;
+    QList<int > active_signal;
     if(ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1);
+        active_signal = QVector<int>(SignalCount(), 1).toList();
     else
         active_signal = ActiveSignals();
     

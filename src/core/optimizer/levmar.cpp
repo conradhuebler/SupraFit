@@ -46,7 +46,7 @@ void TitrationModel(double *p, double *x, int m, int n, void *data)
     for(int i = 0; i < m; ++i)
         parameter << p[i];
     dptr->model.data()->setParamter(parameter);
-    
+    qDebug() << parameter;
     dptr->model.data()->CalculateSignal();
     QVector<qreal > x_var = dptr->model.data()->getCalculatedSignals();
 

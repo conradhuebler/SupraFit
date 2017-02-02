@@ -258,7 +258,6 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                     
                     QJsonObject json = threads[i][j]->ConvergedParameter();
                     m_model->ImportJSON(json);
-        
                     m_model->CalculateSignal();
                     
                     double current_error = m_model->ModelError();

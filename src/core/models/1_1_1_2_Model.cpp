@@ -113,7 +113,7 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
         {
             addOptParameter(m_ItoI_signals);
         }
-
+        
     } 
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
@@ -150,9 +150,9 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeAllShifts()
 
 void ItoI_ItoII_Model::MiniShifts()
 {
-    QVector<int > active_signal;
+    QList<int > active_signal;
     if(ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1);
+        active_signal = QVector<int>(SignalCount(), 1).toList();
     else
         active_signal = ActiveSignals();
     
@@ -160,29 +160,25 @@ void ItoI_ItoII_Model::MiniShifts()
     clearOptParameter();
     setOptParamater(m_ItoI_signals);
     
-    //     for(int iter = 0; iter < 100; ++iter)
-    //     {
-    QVector<qreal > signal_0, signal_1;
-    signal_0 = m_model_error->firstRow();
-    signal_1 = m_model_error->lastRow();
-    for(int j = 0; j < m_lim_para.size(); ++j)
+    for(int iter = 0; iter < m_opt_config.LevMar_Shifts_PerIter; ++iter)
     {
-        for(int i = 0; i < SignalCount(); ++i)    
+        QVector<qreal > signal_0, signal_1;
+        signal_0 = m_model_error->firstRow();
+        signal_1 = m_model_error->lastRow();
+        for(int j = 0; j < m_lim_para.size(); ++j)
         {
-            if(active_signal[i] == 1)
+            for(int i = 0; i < SignalCount(); ++i)    
             {
-                if(m_model_error->firstRow()[i] < 1 && j == 0)
-                    *m_lim_para[j][i] -= m_model_error->firstRow()[i];
-                if(m_model_error->lastRow()[i] < 1 && j == 1)
-                    *m_lim_para[j][i] -= m_model_error->lastRow()[i];
+                if(active_signal[i] == 1)
+                {
+                    if(m_model_error->firstRow()[i] < 1 && j == 0)
+                        *m_lim_para[j][i] -= m_model_error->firstRow()[i];
+                    if(m_model_error->lastRow()[i] < 1 && j == 1)
+                        *m_lim_para[j][i] -= m_model_error->lastRow()[i];
+                }
             }
         }
     }
-    
-    //         MinimizingComplexConstants(this, m_opt_config.LevMar_Shifts_PerIter, parameter, m_opt_config);
-    //     }
-    //     setComplexSignals(parameter, 0);
-    setOptParamater(m_complex_constants);
 }
 
 

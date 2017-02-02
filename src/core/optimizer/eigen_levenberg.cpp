@@ -109,7 +109,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     }
     message += "\n";
     model.data()->Message(message, 5);
-    
+    qDebug() << message;
     MyFunctor functor(param.size(), model.data()->DataPoints()*model.data()->SignalCount());
     functor.model = model;
     functor.ModelSignals = ModelSignals;

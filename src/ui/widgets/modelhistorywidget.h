@@ -35,7 +35,7 @@ struct ModelHistoryElement
     QJsonObject model;
     qreal error;
     qreal corr_coeff;
-    QVector<int > active_signals;
+    QList<int > active_signals;
 };
 
 class ModelHistoryWidget : public QGroupBox

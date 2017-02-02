@@ -42,15 +42,12 @@
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false), m_pending(false)
 {
     m_constant_names << tr("no constants");
-    //     m_active_signals = 
-    setActiveSignals(QVector<int>(SignalCount(), 1));
+    setActiveSignals(QVector<int>(SignalCount(), 1).toList());
     ptr_concentrations = data->Concentration();
-    //     for(int i = 0; i < DataPoints(); ++i)
-    //     {
+
     m_model_signal = new DataTable(SignalCount(),DataPoints());
     m_model_error = new DataTable(SignalCount(),DataPoints());
-    //         m_signals[&m_data[i]] = 0;//FIXME no contign... signals
-    //     }
+
     
     m_plot_model = new QStandardItemModel(DataPoints(), SignalCount()+1);
     
@@ -115,10 +112,10 @@ void AbstractTitrationModel::adress() const
 }
 
 
-QVector<double>   AbstractTitrationModel::getCalculatedSignals(QVector<int > active_signal)
+QVector<double>   AbstractTitrationModel::getCalculatedSignals(QList<int > active_signal)
 {
     if(active_signal.size() < SignalCount() && ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1);
+        active_signal = QVector<int>(SignalCount(), 1).toList();
     else
         active_signal = ActiveSignals();
     QVector<double> x(DataPoints()*SignalCount(), 0);
@@ -296,7 +293,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     }
     QJsonObject json = topjson["data"].toObject();
     
-    QVector<int > active_signals = QVector<int>(SignalCount(), 0);
+    QList<int > active_signals = QVector<int>(SignalCount(), 0).toList();
     QVector<qreal> constants; 
     QJsonObject constantsObject = json["constants"].toObject();
     for (int i = 0; i < Constants().size(); ++i) {

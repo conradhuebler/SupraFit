@@ -356,10 +356,10 @@ QColor DataClass::ColorCode(int i) const
     }
 }
 
-QVector<double>   DataClass::getSignals(QVector<int > active_signal)
+QVector<double>   DataClass::getSignals(QList<int > active_signal)
 {
     if(active_signal.size() < SignalCount() )
-        active_signal = QVector<int>(SignalCount(), 1);
+        active_signal = QVector<int>(SignalCount(), 1).toList();
     
     QVector<double> x(DataPoints()*SignalCount(), 0);
     int index = 0;

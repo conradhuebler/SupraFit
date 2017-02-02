@@ -388,7 +388,7 @@ void ModelWidget::CollectParameters()
     QVector<qreal > pure_signals, constants;
     QVector<QVector <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
-    QVector<int > active_signals(m_model_elements.size(), 0);
+    QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
         pure_signals << m_model_elements[i]->D0();
@@ -517,7 +517,7 @@ void ModelWidget::LocalMinimize()
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        QVector<int > active_signals(m_model_elements.size(), 0);
+        QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
         active_signals[i] = 1;
         m_model->setActiveSignals(active_signals);
         QVector<int > v(10,0);
@@ -555,17 +555,17 @@ void ModelWidget::AddSimSignal()
     
 }
 
-QVector<int> ModelWidget::ActiveSignals()
+QList<int> ModelWidget::ActiveSignals()
 {
-    QVector<int > active_signals(m_model_elements.size(), 0);
+    QList<int > active_signals; //(m_model_elements.size(), 0);
     for(int i = 0; i < m_model_elements.size(); ++i)
-        active_signals[i] = m_model_elements[i]->Include();
+        active_signals << m_model_elements[i]->Include();
     return active_signals;
 }
 
 void ModelWidget::CollectActiveSignals()
 {
-    QVector<int > active_signals = ActiveSignals();
+    QList<int > active_signals = ActiveSignals();
     //     emit ActiveSignalChanged(active_signals);
     m_model->setActiveSignals(active_signals);
     

@@ -96,6 +96,7 @@ void NonLinearFitThread::ConstrainedFit()
         qreal old_error = m_model->ModelError();
         if(m_runtype & OptimizationType::ComplexationConstants)
         {
+            qDebug() << "constant run";
             if(NonLinearFit(OptimizationType::ComplexationConstants) == 1)
                 m_model->ImportJSON(m_last_parameter);
         }
@@ -104,13 +105,15 @@ void NonLinearFitThread::ConstrainedFit()
         
         if(m_runtype & OptimizationType::IntermediateShifts)
         {
-            if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
-                m_model->ImportJSON(m_last_parameter);
+            qDebug() << "shift run";
+             if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
+                 m_model->ImportJSON(m_last_parameter);
         }
         m_last_parameter = m_model->ExportJSON();
         qreal error = m_model->ModelError();
         
         QVector<qreal> constants = m_model->Constants();
+        qDebug() << constants;
         qreal constant_diff = 0;
         QString constant_string;
         for(int z = 0; z < constants.size(); ++z)
@@ -150,13 +153,11 @@ void NonLinearFitThread::ConstrainedFit()
             error_convergence = false;
         emit Message("*** Change in complexation constant " + QString::number(constant_diff) + " | Convergence at "+ QString::number(m_opt_config.Constant_Convergence)+ " ***\n", 4);
         emit Message("*** New resulting contants " + constant_string + "\n", 5);
-        
         emit Message("*** Change in error for model " + QString::number(qAbs(error - old_error)) + " | Convergence at "+ QString::number(m_opt_config.Error_Convergence)+"***\n", 4);
-        
         emit Message("*** New resulting error " + QString::number(error) + "\n", 5);
-        convergence = error_convergence & constants_convergence;
-        
         emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
+       
+       convergence = error_convergence & constants_convergence;
     } 
 
     
@@ -188,17 +189,6 @@ void NonLinearFitThread::ConstrainedFit()
     }
 }
 
-int NonLinearFitThread::DifferenceFitSignalConstants()
-{    
-    return 0;
-}
-
-
-int NonLinearFitThread::NonLinearFitSignalConstants()
-{
-        
-    return 0;
-}
 
 int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {

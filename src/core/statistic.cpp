@@ -94,7 +94,6 @@ void StatisticThread::ConfidenceAssesment()
         if(new_error/error > double(1.05))
         {
             m_result.max = x;
-            std::cout << x << "fehler" << new_error/error << std::endl;
             break;
         }
         series.append(QPointF(x,new_error));
@@ -119,7 +118,6 @@ void StatisticThread::ConfidenceAssesment()
         if(new_error/error > double(1.05))
         {
             m_result.min = x;
-            std::cout << x << "fehler" << new_error/error << std::endl;
             break;
         }
         series.prepend(QPointF(x,new_error));

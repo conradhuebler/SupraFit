@@ -53,8 +53,6 @@ private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
     void ConstrainedFit();
-    int NonLinearFitSignalConstants();
-    int DifferenceFitSignalConstants();
     int NonLinearFit(OptimizationType runtype);
     inline int NonLinearFit() { return NonLinearFit(m_runtype); }
     OptimizerConfig m_opt_config;

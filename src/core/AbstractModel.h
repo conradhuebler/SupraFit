@@ -93,7 +93,7 @@ public:
     virtual void setConstants(QVector< qreal > list) = 0;
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
     virtual void InitialGuess() = 0;
-    QVector<qreal >  getCalculatedSignals(QVector<int > active_signal = QVector<int >(1,0));
+    QVector<qreal >  getCalculatedSignals(QList<int > active_signal = QList<int >() << 0);
     virtual QVector<QVector< qreal > > AllShifts() = 0;
 
     virtual QVector<qreal > Constants() const = 0;
@@ -119,9 +119,9 @@ public:
     QJsonObject ExportJSON() const;
     void ImportJSON(const QJsonObject &topjson);
     
-    inline QVector<int > ActiveSignals() { return m_active_signals; }
-    inline QVector<int > ActiveSignals() const { return m_active_signals; }
-    inline void setActiveSignals(QVector<int > active_signals) 
+    inline QList<int > ActiveSignals() { return m_active_signals; }
+    inline QList<int > ActiveSignals() const { return m_active_signals; }
+    inline void setActiveSignals(QList<int > active_signals) 
     { 
         m_active_signals = active_signals; 
         emit ActiveSignalsChanged(m_active_signals);
@@ -139,7 +139,7 @@ private:
     
     bool m_debug;
 
-    QVector<int > m_active_signals;
+    QList<int > m_active_signals;
     bool m_pending;
     QList<int > m_locked_parameters;
 protected:

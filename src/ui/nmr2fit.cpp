@@ -244,7 +244,10 @@ void MainWindow::LoadProjectAction()
         {
             QPointer<DataClass > data = new DataClass(toplevel);
             if(data->DataPoints() != 0)
+            {
                 SetData(new DataClass(new DataClass(data)), str);
+                m_model_dataholder->AddToWorkspace(toplevel);
+            }
             else
                 QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
         }

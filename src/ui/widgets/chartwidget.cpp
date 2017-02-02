@@ -132,7 +132,7 @@ void ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
     m_models << model;
 //     model->UpdatePlotModels();
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    connect(model.data(), SIGNAL(ActiveSignalsChanged(QVector<int>)), this, SLOT(setActiveSignals(QVector<int>)));
+//     connect(model.data(), SIGNAL(ActiveSignalsChanged(QList<int>)), this, SLOT(setActiveSignals(QList<int>)));
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
     for(int i = 0; i < model->SignalCount(); ++i)

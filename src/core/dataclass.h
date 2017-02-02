@@ -146,7 +146,7 @@ class DataClass : public QObject
     inline bool* Concentration() const { return d->m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
     inline QStandardItemModel* m() { return d->m_plot_signal; }
-    QVector<qreal >  getSignals(QVector<int > dealing_signals = QVector<int >(1,0));
+    QVector<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
 
 
     /*
@@ -181,7 +181,7 @@ protected:
      
 signals:
     void RowAdded();
-    void ActiveSignalsChanged(QVector<int > active_signals);
+    void ActiveSignalsChanged(QList<int > active_signals);
     void recalculate();
 };
 
