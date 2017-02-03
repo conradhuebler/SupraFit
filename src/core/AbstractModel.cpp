@@ -39,7 +39,7 @@
 #include <iostream>
 #include "AbstractModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_repaint(false), m_debug(false), m_inform_config_changed(true), m_corrupt(false), m_pending(false)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_debug(false), m_inform_config_changed(true), m_corrupt(false), m_pending(false)
 {
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());

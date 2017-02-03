@@ -148,9 +148,7 @@ protected:
     QVector<qreal > m_pure_signals, m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
     bool *ptr_concentrations;
-    bool m_repaint;
     QVector<double * > m_opt_para;
-    QVector<QVector<qreal * > >m_opt_vec;
     QVector<QVector<qreal * > >m_lim_para;
     QStandardItemModel *m_plot_model, *m_plot_error;
     DataTable *m_model_signal, *m_model_error;

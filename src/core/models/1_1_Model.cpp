@@ -21,6 +21,7 @@
 
 #include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
+#include "src/core/minimizer.h"
 
 #include <QtMath>
 
@@ -39,13 +40,17 @@
 ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
 {
     setName(tr("1:1-Model"));
-    
     InitialGuess();
-    CalculateSignal();
-    
-    m_repaint = true;
     m_constant_names = QStringList() << tr("1:1");
 }
+
+ItoI_Model::ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationModel(model)
+{
+    setName(tr("1:1-Model"));
+    InitialGuess();
+    m_constant_names = QStringList() << tr("1:1");
+}
+
 
 ItoI_Model::~ItoI_Model() 
 {
@@ -54,7 +59,6 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess()
 {
-    m_repaint = false;
     m_K11 = 4;
     m_ItoI_signals = SignalModel()->lastRow();
     m_pure_signals = SignalModel()->firstRow();
@@ -68,8 +72,7 @@ void ItoI_Model::InitialGuess()
     }
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
-    CalculateSignal(QVector<qreal >() << m_K11);
-    m_repaint = true;
+    CalculateSignal();
 }
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)

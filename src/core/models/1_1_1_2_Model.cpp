@@ -39,7 +39,6 @@ ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationMod
     InitialGuess();
     setOptParamater(m_complex_constants);
     CalculateSignal();
-    m_repaint = true;
     m_constant_names = QStringList() << tr("1:1") << tr("1:2");
 }
 
@@ -50,8 +49,6 @@ ItoI_ItoII_Model::~ItoI_ItoII_Model()
 
 void ItoI_ItoII_Model::InitialGuess()
 {
-    m_repaint = false;
-    
     ItoI_Model *model = new ItoI_Model(m_data);
     m_K12 = model->Constants()[model->ConstantSize() -1];
     m_K11 = m_K12/2;
@@ -67,25 +64,19 @@ void ItoI_ItoII_Model::InitialGuess()
         m_ItoII_signals[i] = SignalModel()->data(i,SignalCount() - 1);
     }
     
-    QVector<qreal * > line1, line2, line3;
+    QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals.size(); ++i)
     {
         line1 << &m_pure_signals[i];
         line2 << &m_ItoI_signals[i];
-        line3 << &m_ItoII_signals[i];
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    m_opt_vec = QVector<QVector<qreal * > >() << line3;
     
     CalculateSignal();
-    
-    m_repaint = true;
 }
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    
-    
     if(OptimizationType::ComplexationConstants & type)
     {
         setOptParamater(m_complex_constants);

@@ -97,8 +97,8 @@ int SolveEqualSystem(double A_0, double B_0, const QVector<qreal> constants, QVe
         return 1;
     }
     Eigen::VectorXd parameter(2);
-    parameter(0) = 0.5*A_0;
-    parameter(1) = 0.5*B_0;
+    parameter(0) = A_0;
+    parameter(1) = B_0;
     
     Eigen::VectorXd Concen_0(2);
         Concen_0(0) = A_0;
@@ -116,20 +116,20 @@ int SolveEqualSystem(double A_0, double B_0, const QVector<qreal> constants, QVe
           for(int i = 0; i < 2; ++i)
             if(parameter(i) < 0)
             {
-                qDebug() << "numeric error" << i;
+                std::cout << "numeric error (below zero): " << i << std::endl;
                 parameter(i) = qAbs(parameter(i));
             }else if(parameter(i) > Concen_0(i))
             {
+                std::cout << "numeric error (above init): " << i << std::endl;
                 qreal diff = (parameter(i) -Concen_0(i));
                 parameter(i) = diff;
             }
          status = lm.minimizeOneStep(parameter);
-
          iter++;
       } while (status == -1);
     for(int i = 0; i < 2; ++i)
         if(parameter(i) < 0 || parameter(i) > Concen_0(i))
-            qDebug() << "finally numeric error" << i << parameter(i) << Concen_0(i);
+            std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
     concentration << double(parameter(0)) << double(parameter(1));
     return iter;
 }
@@ -141,7 +141,6 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractT
     InitialGuess();
     setOptParamater(m_complex_constants);
     CalculateSignal();
-    m_repaint = true;
     m_constant_names = QStringList() << tr("2:1") << tr("1:1") << tr("1:2"); 
 }
 
@@ -184,7 +183,6 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(QVector<qreal> constants)
             qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ 2*complex_21/host_0*m_IItoI_signals[j] + complex_12/host_0*m_ItoII_signals[j];
             SetSignal(i, j, value);
         }
-        
     }
     emit Recalculated();
 }
@@ -200,8 +198,6 @@ QSharedPointer<AbstractTitrationModel> IItoI_ItoI_ItoII_Model::Clone() const
 
 void IItoI_ItoI_ItoII_Model::InitialGuess()
 {
-    m_repaint = false;
-    
     ItoI_Model *model = new ItoI_Model(m_data);
     m_K12 = model->Constants()[model->ConstantSize() -1];
     m_K21 = m_K12/2;
@@ -212,8 +208,8 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     setOptParamater(m_complex_constants);
     for(int i = 0; i < SignalCount(); ++i)
     {
-        m_ItoII_signals <<SignalModel()->lastRow()[i];
-        m_ItoI_signals<<SignalModel()->lastRow()[i];
+        m_ItoII_signals << SignalModel()->lastRow()[i];
+        m_ItoI_signals  << SignalModel()->lastRow()[i];
         m_IItoI_signals << SignalModel()->firstRow()[i];
     }
     
@@ -226,10 +222,8 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
         line4 << &m_ItoII_signals[i];
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line4;
-    m_opt_vec = QVector<QVector<qreal * > >()  <<line2 << line3;
     
     CalculateSignal();
-    m_repaint = true;
 }
 
 QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)

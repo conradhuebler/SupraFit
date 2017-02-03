@@ -46,7 +46,6 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationMod
     setOptParamater(m_complex_constants);
     CalculateSignal();
     
-    m_repaint = true;
     m_constant_names = QStringList() << tr("2:1") << tr("1:1");
 }
 IItoI_ItoI_Model::~IItoI_ItoI_Model()
@@ -56,8 +55,6 @@ IItoI_ItoI_Model::~IItoI_ItoI_Model()
 
 void IItoI_ItoI_Model::InitialGuess()
 {
-    m_repaint = false;
-    
     ItoI_Model *model = new ItoI_Model(m_data);
     m_K11 = model->Constants()[model->ConstantSize() -1];
     m_K21 = m_K11/2;
@@ -71,18 +68,25 @@ void IItoI_ItoI_Model::InitialGuess()
         m_IItoI_signals << SignalModel()->firstRow()[i];
     }
     
-    QVector<qreal * > line1, line2, line3;
+    QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals.size(); ++i)
     {
         line1 << &m_pure_signals[i];
         line2 << &m_ItoI_signals[i];
-        line3 << &m_IItoI_signals[i];
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    m_opt_vec = QVector<QVector<qreal * > >()  << line3;
+    /*
+    Minimizer *mini = new Minimizer;
+    QSharedPointer<AbstractTitrationModel > model = QSharedPointer<ItoI_Model>(this, &QObject::deleteLater);
+    model.data()->ImportJSON(ExportJSON());
+    model.data()->setActiveSignals(ActiveSignals());
+    model.data()->setLockedParameter(LockedParamters());
+    mini->setModel(model);
+    mini->Minimize(OptimizationType::ComplexationConstants);
+    ImportJSON(mini->Parameter());
     
+    delete mini;*/
     CalculateSignal();
-    m_repaint = true;
 }
 
 void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
@@ -169,8 +173,6 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j) const
 {
     if(i == 0)
     {
-        
-        
         if(j < m_IItoI_signals.size()) 
         {
             return QPair<qreal, qreal>(Constants()[i], m_IItoI_signals[j]);
