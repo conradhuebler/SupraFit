@@ -45,7 +45,8 @@ public:
         ItoI = 1,
         IItoI_ItoI = 2,
         ItoI_ItoII = 3,
-        IItoI_ItoI_t = 4
+        IItoI_ItoI_ItoII = 4,
+        IItoI_ItoI_t = 40
     };
     void setSettings(const OptimizerConfig &config);
     /*
@@ -89,6 +90,7 @@ private slots:
     void AddModel21();
     void AddModel21_t();
     void AddModel12();
+    void AddModel2112();
     void SimulateModel11();
     void SimulateModel21();
     void SimulateModel12();

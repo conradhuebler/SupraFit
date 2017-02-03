@@ -116,6 +116,7 @@ set(models_SRC
                 src/core/models/1_1_Model.cpp
                 src/core/models/2_1_1_1_Model.cpp
                 src/core/models/1_1_1_2_Model.cpp
+                src/core/models/2_1_1_1_1_2_Model.cpp
 )
 add_library(models STATIC ${models_SRC})
 qt5_use_modules(models Widgets Charts)

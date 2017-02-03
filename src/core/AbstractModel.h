@@ -131,7 +131,7 @@ public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
 private:
-    virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
+//     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
     QList<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
     
     bool m_debug;

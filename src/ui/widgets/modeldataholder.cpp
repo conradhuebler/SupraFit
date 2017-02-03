@@ -82,7 +82,12 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     //      t2->setText(tr("2:1/1:1-test-Model"));
     //          connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
     //          menu->addAction(t2);
-    //         
+    //     
+    QAction *II_I_ItoI_ItoII_action = new QAction(this);
+    II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
+    connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel2112()));
+    menu->addAction(II_I_ItoI_ItoII_action);
+    
     m_add->setMenu(menu);
     menu = new QMenu;
     ItoI_action = new QAction(this);
@@ -141,6 +146,9 @@ void ModelDataHolder::AddModel(int model)
         case 3:
             t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
+        case 4:
+            t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
+            break;
             //         case 4:
             //              t = new test_II_ItoI_Model(m_data);
             //              break;
@@ -169,6 +177,11 @@ void ModelDataHolder::AddModel21()
 void ModelDataHolder::AddModel12()
 {
     AddModel(ModelDataHolder::ItoI_ItoII);
+}
+
+void ModelDataHolder::AddModel2112()
+{
+    AddModel(ModelDataHolder::IItoI_ItoI_ItoII);
 }
 
 void ModelDataHolder::AddModel21_t()
@@ -221,7 +234,11 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
     }
     else if(str == "1:1/1:2-Model"){
         t =  QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
-    }else
+    }
+    else if(str == "2:1/1:1/1:2-Model"){
+         t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
+    }
+    else
     {
         t.clear();
         return; 

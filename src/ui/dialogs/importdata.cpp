@@ -263,7 +263,7 @@ void ImportData::accept()
     
     int rows = model->rowCount() - 1; 
     int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
-    for(int i = 0; i < model->rowCount(); ++i)
+    for(int i = 0; i < rows; ++i)
     {
         bool import = true;
         QVector<qreal > conc, sign;
