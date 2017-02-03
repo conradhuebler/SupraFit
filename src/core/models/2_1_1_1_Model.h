@@ -49,11 +49,8 @@ public:
     void setConstants(QVector< qreal > list);
     virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
     QVector<qreal > Constants() const { return m_complex_constants; }
-    virtual QVector< QVector< qreal > > AllShifts();
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
-    QVector<qreal > OptimizeAllParameters();
-    QVector<qreal > OptimizeAllShifts();
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);

@@ -134,8 +134,10 @@ void AdvancedSearch::SetUi()
     m_optim_flags->DisableOptions(type);
     layout->addWidget(m_optim_flags);
     m_1d_search = new QPushButton(tr("1D Search"));
-    m_2d_search = new QPushButton(tr("2D Search"));
-    connect(m_2d_search, SIGNAL(clicked()), this, SLOT(GlobalSearch()));
+    m_2d_search = new QPushButton(tr("Create 2D Plot"));
+    m_scan = new QPushButton(tr("Scan"));
+    connect(m_scan, SIGNAL(clicked()), this, SLOT(GlobalSearch()));
+    connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
     connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));
     
     QGridLayout *mlayout = new QGridLayout;
@@ -144,7 +146,10 @@ void AdvancedSearch::SetUi()
     if(m_model->ConstantSize() == 1)
     mlayout->addWidget(m_1d_search,3, 0);
     if(m_model->ConstantSize() == 2)
+    {
+        mlayout->addWidget(m_scan, 3, 0);
         mlayout->addWidget(m_2d_search,3, 1);
+    }
     setLayout(mlayout);
 }
 
@@ -179,6 +184,28 @@ void AdvancedSearch::LocalSearch()
 
 
 void AdvancedSearch::GlobalSearch()
+{
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));   
+    QVector< QVector<double > > full_list = ParamList();
+    
+    QVector<double > error; 
+    m_type = m_optim_flags->getFlags();   
+    qDebug() << m_type;
+    m_type |= OptimizationType::ComplexationConstants;
+    qDebug() << m_type;
+     if(m_model->ConstantSize() == 2)
+     {
+        int t0 = QDateTime::currentMSecsSinceEpoch();
+        QVector< QVector<double > > input  = ConvertList(full_list, error);
+        int t1 = QDateTime::currentMSecsSinceEpoch();
+        std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
+        emit finished(1);
+     }
+    
+    QApplication::restoreOverrideCursor();   
+}
+
+void AdvancedSearch::Create2DPlot()
 {
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));   
     QVector< QVector<double > > full_list = ParamList();
@@ -257,6 +284,7 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                     QVector< qreal > parameter = threads[i][j]->Model()->Constants();
                     
                     QJsonObject json = threads[i][j]->ConvergedParameter();
+                    qDebug() << json;
                     m_model->ImportJSON(json);
                     m_model->CalculateSignal();
                     

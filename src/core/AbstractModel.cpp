@@ -350,16 +350,16 @@ void AbstractTitrationModel::MiniShifts()
         active_signal = QVector<int>(SignalCount(), 1).toList();
     else
         active_signal = ActiveSignals();
-    
+    double cut_error = 1;
     for(int j = 0; j < m_lim_para.size(); ++j)
     {
         for(int i = 0; i < SignalCount(); ++i)    
         {
             if(active_signal[i] == 1)
             {
-                if(m_model_error->data(i, 0) < 1 && j == 0)
+                if(m_model_error->data(i, 0) < cut_error && j == 0)
                     *m_lim_para[j][i] -= m_model_error->data(i,0);
-                if(m_model_error->data(i, m_model_error->rowCount() -1 ) < 1 && j == 1)
+                if(m_model_error->data(i, m_model_error->rowCount() -1 ) < cut_error && j == 1)
                     *m_lim_para[j][i] -= m_model_error->data(i, m_model_error->rowCount() -1 );   
             }
         }

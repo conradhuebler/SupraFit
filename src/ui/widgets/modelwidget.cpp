@@ -475,7 +475,7 @@ void ModelWidget::Confidence()
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     view = new ChartView(chart);
-    layout->addWidget(view, 0, 0, 1, 5);
+    layout->addWidget(view, 0, 0, 1, 7);
     for(int i = 0; i < result.size(); ++i)
     {
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
@@ -487,6 +487,8 @@ void ModelWidget::Confidence()
         layout->addWidget(new QLabel(tr("Min: %1").arg(QString::number(result[i].min))), i+1, 2);
         layout->addWidget(new QLabel(tr("Max: %1").arg(QString::number(result[i].max))), i+1, 3);
         layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
+        layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
+        layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));
     }
     m_statistic = true;
     m_statistic_dialog->setWidget(resultwidget, "Simple Plot");

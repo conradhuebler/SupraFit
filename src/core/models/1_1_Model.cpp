@@ -82,53 +82,16 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
         if(type & OptimizationType::UnconstrainedShifts)
         {
             addOptParameter(m_ItoI_signals);
-            qDebug() << "Unconstrained";
             if(type & ~OptimizationType::IgnoreZeroConcentrations)
             {
                 addOptParameter(m_pure_signals);
-                qDebug() << "with shifts variable";
             }
         }
-        else
-            qDebug() << "constrained";
     }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
-}
-
-
-QVector<qreal > ItoI_Model::OptimizeAllParameters()
-{
-    clearOptParameter();
-    setOptParamater(m_K11);
-    addOptParameter(m_pure_signals);
-    addOptParameter(m_ItoI_signals);
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
-}
-
-
-QVector<qreal > ItoI_Model::OptimizeAllShifts()
-{
-    clearOptParameter();
-    addOptParameter(m_pure_signals);
-    addOptParameter(m_ItoI_signals);
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;    
-}
-
-QVector<QVector<qreal> > ItoI_Model::AllShifts()
-{
-    QVector<QVector<qreal> > Shifts;
-    Shifts << m_pure_signals;
-    Shifts << m_ItoI_signals;
-    return Shifts;
 }
 
 

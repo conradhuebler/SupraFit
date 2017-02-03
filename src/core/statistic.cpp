@@ -76,8 +76,9 @@ void StatisticThread::ConfidenceAssesment()
     
     m_model->setLockedParameter(locked);
     QVector<double> vars = parameter;
-    double increment = vars[m_parameter_id]/1000;
-    
+    double increment = 1e-3;
+    double integ_5 = 0;
+    double integ_1 = 0;
     for(int m = 0; m < 1000; ++m)
     {
         double x  = m_model->IncrementParameter(increment, m_parameter_id);
@@ -90,8 +91,12 @@ void StatisticThread::ConfidenceAssesment()
             m_model->CalculateSignal();
         }
         qreal new_error = m_model->ModelError();
+        integ_5 += new_error;
         
-        if(new_error/error > double(1.05))
+        if(new_error/error <= double(1.005) && new_error > error)
+            integ_1 += new_error;
+        
+        if(new_error/error > double(1.025))
         {
             m_result.max = x;
             break;
@@ -112,9 +117,12 @@ void StatisticThread::ConfidenceAssesment()
             m_model->CalculateSignal();
         }
         qreal new_error = m_model->ModelError();
+        integ_5 += new_error;
         
+        if(new_error/error <= double(1.005) && new_error > error)
+            integ_1 += new_error;
         
-        if(new_error/error > double(1.05))
+        if(new_error/error > double(1.025))
         {
             m_result.min = x;
             break;
@@ -122,7 +130,8 @@ void StatisticThread::ConfidenceAssesment()
         series.prepend(QPointF(x,new_error));
     }
     m_result.points = series;
-    
+    m_result.integ_5 = integ_5;
+    m_result.integ_1 = integ_1;
 }
 
 Statistic::Statistic(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))

@@ -85,17 +85,6 @@ void IItoI_ItoI_Model::InitialGuess()
     m_repaint = true;
 }
 
-QVector<QVector<qreal> > IItoI_ItoI_Model::AllShifts()
-{
-    
-    QVector<QVector<qreal> > Shifts;
-    Shifts << m_pure_signals;
-    Shifts << m_ItoI_signals;
-    Shifts << m_IItoI_signals;
-    return Shifts;
-    
-}
-
 void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
 {
     for(int j = 0; j < list.size(); ++j)
@@ -212,7 +201,6 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
             addOptParameter(m_ItoI_signals);
             if(type & ~(OptimizationType::IgnoreZeroConcentrations))
                 addOptParameter(m_pure_signals);
-            qDebug() << "unconstrained";
         }
         if(type & ~OptimizationType::UnconstrainedShifts || type & OptimizationType::IntermediateShifts)
         {
@@ -220,33 +208,6 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
         }
     }
     QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
-}
-
-
-
-QVector<qreal > IItoI_ItoI_Model::OptimizeAllParameters()
-{
-    clearOptParameter();
-    setOptParamater(m_complex_constants);
-    addOptParameter(m_IItoI_signals);
-    addOptParameter(m_pure_signals);
-    addOptParameter(m_ItoI_signals);
-    QVector<qreal > parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
-}
-
-QVector<qreal> IItoI_ItoI_Model::OptimizeAllShifts()
-{
-    clearOptParameter();
-    addOptParameter(m_IItoI_signals);
-    addOptParameter(m_pure_signals);
-    addOptParameter(m_ItoI_signals);
-    QVector<qreal > parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;

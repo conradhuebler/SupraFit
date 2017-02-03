@@ -87,7 +87,7 @@ private:
     QSharedPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
     QPointer<QCheckBox > m_optim;
-    QPointer<QPushButton > m_2d_search, m_1d_search;
+    QPointer<QPushButton > m_2d_search, m_1d_search, m_scan;
     GlobalSearchResult last_result;
     QVector< QVector<double > > ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
     QtDataVisualization::QSurfaceDataArray m_3d_data;
@@ -97,8 +97,9 @@ private:
     double error_max;
     QVector< QVector<double > > ParamList() const;
 private slots:
-    void GlobalSearch();
+    void Create2DPlot();
     void LocalSearch();
+    void GlobalSearch();
 signals:
     void finished(int runtype);
 };

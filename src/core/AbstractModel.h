@@ -67,15 +67,13 @@ public:
     inline void setLockedParameter(const QList<int> &lock){ m_locked_parameters = lock; }
     inline QList<int> LockedParamters() const { return m_locked_parameters; }
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
-    virtual QVector<qreal > OptimizeAllParameters() = 0;
-    virtual QVector<qreal > OptimizeAllShifts() = 0;
     double IncrementParameter(double increment, int parameter);
     void setOptParamater(qreal & parameter);
     void addOptParameter(qreal &vector);
     void setOptParamater(QVector< qreal >& parameter);
     void addOptParameter(QVector <qreal > &vector);
     void clearOptParameter();
-    int MaxVars() const { return (m_pure_signals.size()); }
+    inline int MaxVars() const { return (m_pure_signals.size()); }
     qreal SumOfErrors(int i) const;
     virtual QPair<qreal, qreal> Pair(int i, int j = 0) const = 0;
     inline qreal PureSignal(int i) const 
@@ -94,7 +92,6 @@ public:
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
     virtual void InitialGuess() = 0;
     QVector<qreal >  getCalculatedSignals(QList<int > active_signal = QList<int >() << 0);
-    virtual QVector<QVector< qreal > > AllShifts() = 0;
 
     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
@@ -109,12 +106,12 @@ public:
 //     inline DataTable * ModelError() { return m_model_error; }
     void UpdatePlotModels();
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
-    void setOptimizerConfig(const OptimizerConfig &config) 
+    inline void setOptimizerConfig(const OptimizerConfig &config) 
     { 
         m_opt_config = config;
         m_inform_config_changed = true;
     }
-    bool isCorrupt() const { return m_corrupt; }
+    inline bool isCorrupt() const { return m_corrupt; }
     void adress() const;
     QJsonObject ExportJSON() const;
     void ImportJSON(const QJsonObject &topjson);
@@ -127,9 +124,9 @@ public:
         emit ActiveSignalsChanged(m_active_signals);
     }
     void MiniShifts();
-    QVector<qreal *> getOptConstants() const { return m_opt_para; }
+    inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     qreal ModelError() const;
-    QStringList ConstantNames() const { return m_constant_names; }
+    inline QStringList ConstantNames() const { return m_constant_names; }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -148,9 +145,7 @@ protected:
     inline void setName(const QString &str) { m_name = str; }
     void ClearDataSeries() ;
     QString m_name;
-    //QVector< QVector<qreal > >m_pure_signals;
     QVector<qreal > m_pure_signals, m_complex_constants;
-//     QHash<const DataPoint *, QVector< qreal> > m_signals;
     QVector< QVector < qreal > > m_difference; 
     bool *ptr_concentrations;
     bool m_repaint;

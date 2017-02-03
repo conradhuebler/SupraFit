@@ -82,16 +82,6 @@ void ItoI_ItoII_Model::InitialGuess()
     m_repaint = true;
 }
 
-QVector<QVector<qreal> > ItoI_ItoII_Model::AllShifts()
-{
-    QVector<QVector<qreal> > Shifts;
-    Shifts << m_pure_signals;
-    Shifts << m_ItoI_signals;
-    Shifts << m_ItoII_signals;
-    return Shifts;
-    
-}
-
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
     
@@ -121,31 +111,6 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
     return parameter;
 }
 
-
-QVector<qreal > ItoI_ItoII_Model::OptimizeAllParameters()
-{
-    clearOptParameter();
-    setOptParamater(m_complex_constants);
-    addOptParameter(m_ItoII_signals);
-    addOptParameter(m_pure_signals);
-    addOptParameter(m_ItoI_signals);
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
-}
-
-QVector<qreal> ItoI_ItoII_Model::OptimizeAllShifts()
-{
-    clearOptParameter();
-    addOptParameter(m_ItoII_signals);
-    addOptParameter(m_pure_signals);
-    addOptParameter(m_ItoI_signals);
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;   
-}
 
 void ItoI_ItoII_Model::setComplexSignals(QVector< qreal > list, int i)
 {

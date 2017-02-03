@@ -35,6 +35,8 @@ struct StatisticResult
     double error;
     QList<QPointF > points;  
     QString name;
+    double integ_5;
+    double integ_1;
 };
 
 
