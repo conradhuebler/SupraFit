@@ -30,7 +30,7 @@ if(WIN32) # Check if we are on Windows
 			LINK_FLAGS "/ENTRY:mainCRTStartup"
 		)
 	elseif(CMAKE_COMPILER_IS_GNUCXX)
-			 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested
+			 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
 	else()
 		message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
 	endif(MSVC)
@@ -64,8 +64,8 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare")                                        
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 option(USE_levmarOptimizer "Use levmar optimizing package" OFF)  
-option(USE_eigenOptimizer  "Use Eigen optimizing package" OFF)  
-option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" ON) 
+option(USE_eigenOptimizer  "Use Eigen optimizing package" ON)  
+option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" OFF) 
 
 if(USE_levmarOptimizer)
     if(USE_eigenOptimizer)

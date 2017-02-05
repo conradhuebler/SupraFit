@@ -24,6 +24,9 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThreadPool>
+#include <QtCore/QRunnable>
 #include <QtMath>
 #include <QtCore/QJsonObject>
 #include <QDebug>
@@ -130,18 +133,43 @@ int SolveEqualSystem(double A_0, double B_0, const QVector<qreal> constants, QVe
     return iter;
 }
 
+ConcentrationSolver::ConcentrationSolver()
+{
+    setAutoDelete(false);
+}
+
+ConcentrationSolver::~ConcentrationSolver()
+{
+}
+
+void ConcentrationSolver::setInput(double A_0, double B_0, const QVector<qreal> constants)
+{
+    m_A_0 = A_0;
+    m_B_0 = B_0;
+    m_constants = constants;
+}
+
+void ConcentrationSolver::run()
+{
+    SolveEqualSystem(m_A_0, m_B_0, m_constants, m_concentration);
+}
+
 
 IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractTitrationModel(data)
 {
     setName(tr("2:1/1:1/1:2-Model"));
+    for(int i = 0; i < DataPoints(); ++i)
+        m_solvers << new ConcentrationSolver();
     InitialGuess();
     setOptParamater(m_complex_constants);
     CalculateSignal();
     m_constant_names = QStringList() << tr("2:1") << tr("1:1") << tr("1:2"); 
+
 }
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
 {
+    qDeleteAll(m_solvers);
 }
 
 void IItoI_ItoI_ItoII_Model::CalculateSignal(QVector<qreal> constants)
@@ -149,6 +177,28 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(QVector<qreal> constants)
     m_corrupt = false;
     if(constants.size() == 0)
         constants = Constants();
+    QThreadPool *threadpool = new QThreadPool;
+    int maxthreads =qApp->instance()->property("threads").toInt();
+    threadpool->setMaxThreadCount(maxthreads);
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        qreal host_0, guest_0;
+        if(*ptr_concentrations)
+        {
+            host_0 = ConcentrationModel()->data(0,i);
+            guest_0 = ConcentrationModel()->data(1,i);
+        }else
+        {
+            host_0 = ConcentrationModel()->data(1,i);
+            guest_0 = ConcentrationModel()->data(0,i);
+        }
+        
+        
+        m_solvers[i]->setInput(host_0, guest_0, constants);
+        threadpool->start(m_solvers[i]);
+//         SolveEqualSystem(host_0, guest_0, constants, concentration);
+    }
+    threadpool->waitForDone();
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0, guest_0;
@@ -165,9 +215,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(QVector<qreal> constants)
         qreal K21= qPow(10, constants.first());
         qreal K11 =qPow(10, constants[1]);
         qreal K12= qPow(10, constants.last());
-        QVector<double > concentration;
-        SolveEqualSystem(host_0, guest_0, constants, concentration);
-        
+        QVector<double > concentration = m_solvers[i]->Concentrations();
         qreal host = concentration[0];
         qreal guest = concentration[1]; 
         

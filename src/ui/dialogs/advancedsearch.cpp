@@ -190,9 +190,7 @@ void AdvancedSearch::GlobalSearch()
     
     QVector<double > error; 
     m_type = m_optim_flags->getFlags();   
-    qDebug() << m_type;
     m_type |= OptimizationType::ComplexationConstants;
-    qDebug() << m_type;
      if(m_model->ConstantSize() == 2)
      {
         int t0 = QDateTime::currentMSecsSinceEpoch();
@@ -284,7 +282,6 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                     QVector< qreal > parameter = threads[i][j]->Model()->Constants();
                     
                     QJsonObject json = threads[i][j]->ConvergedParameter();
-                    qDebug() << json;
                     m_model->ImportJSON(json);
                     m_model->CalculateSignal();
                     
