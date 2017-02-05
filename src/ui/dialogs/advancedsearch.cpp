@@ -20,6 +20,7 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
+#include "src/ui/widgets/modelwidget.h"
 
 #include <QApplication>
 
@@ -173,19 +174,18 @@ QVector<QVector<double> > AdvancedSearch::ParamList() const
 
 void AdvancedSearch::LocalSearch()
 {
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));   
+    Waiter wait;
     QVector< QVector<double > > full_list = ParamList();
 
         
     Scan(full_list);
     emit finished(2);
-    QApplication::restoreOverrideCursor();
 }
 
 
 void AdvancedSearch::GlobalSearch()
 {
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));   
+    Waiter wait;
     QVector< QVector<double > > full_list = ParamList();
     
     QVector<double > error; 
@@ -200,7 +200,7 @@ void AdvancedSearch::GlobalSearch()
         emit finished(1);
      }
     
-    QApplication::restoreOverrideCursor();   
+    
 }
 
 void AdvancedSearch::Create2DPlot()

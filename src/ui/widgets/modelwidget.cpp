@@ -415,7 +415,7 @@ void ModelWidget::CollectParameters()
 
 void ModelWidget::GlobalMinimize()
 {
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    Waiter wait;
     if(m_maxiter->value() > 10000)
     {
         int r = QMessageBox::warning(this, tr("So viel."),
@@ -452,13 +452,12 @@ void ModelWidget::GlobalMinimize()
     
     m_statistic = false;
     m_pending = false; 
-    QApplication::restoreOverrideCursor();
-    
 }
 
 
 void ModelWidget::Confidence()
 {
+    Waiter wait;
     if(m_statistic)
     {
         m_statistic_dialog->show();
@@ -517,11 +516,10 @@ void ModelWidget::LocalMinimize()
     }
     if(m_pending)
         return;
+    Waiter wait;
     m_minimize_all->setEnabled(false);
     m_minimize_single->setEnabled(false);
     CollectParameters();
-        
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
@@ -549,8 +547,6 @@ void ModelWidget::LocalMinimize()
 //     m_last_run = m_optim_flags->getFlags();
     m_statistic = false;
     m_pending = false; 
-        QApplication::restoreOverrideCursor();
-
 }
 
 

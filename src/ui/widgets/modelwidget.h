@@ -26,6 +26,7 @@
 #include "src/core/AbstractModel.h"
 
 #include "src/ui/dialogs/modeldialog.h"
+#include <QApplication>
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
@@ -52,6 +53,13 @@ class OptimizerFlagWidget;
 
 struct  ModelHistoryElement;
 struct Charts;
+
+class Waiter
+{
+public:
+    Waiter() {QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));}
+    ~Waiter() {QApplication::restoreOverrideCursor();}
+};
 
 class SpinBox : public QDoubleSpinBox
 {

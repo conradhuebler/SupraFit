@@ -38,10 +38,12 @@ public:
     ~ConcentrationSolver();
     virtual void run();
     void setInput(double A_0, double B_0, const QVector<qreal> constants);
-    inline QVector<double> Concentrations() const { return m_concentration; }
+    inline QVector<double> Concentrations() const { return  m_concentration; }
+    
 private:
-    double m_A_0, m_B_0;
-    QVector<double > m_constants, m_concentration;
+    qreal m_A_0, m_B_0;
+    qreal complex_21, complex_11, complex_12;
+    QVector<qreal > m_constants, m_concentration;
 };
 
 

@@ -87,7 +87,7 @@ struct MyEqualSystemNumericalDiff : Eigen::NumericalDiff<MyEqualSystem> {};
 
 
 
-int SolveEqualSystem(double A_0, double B_0, const QVector<qreal> constants, QVector<double > &concentration)
+inline int SolveEqualSystem(double A_0, double B_0, const QVector<qreal> constants, QVector<double > &concentration)
 {
        
     if(A_0 == 0 || B_0 == 0)
@@ -196,20 +196,18 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(QVector<qreal> constants)
         
         m_solvers[i]->setInput(host_0, guest_0, constants);
         threadpool->start(m_solvers[i]);
-//         SolveEqualSystem(host_0, guest_0, constants, concentration);
     }
+    
     threadpool->waitForDone();
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal host_0, guest_0;
+        qreal host_0;
         if(*ptr_concentrations)
         {
             host_0 = ConcentrationModel()->data(0,i);
-            guest_0 = ConcentrationModel()->data(1,i);
         }else
         {
             host_0 = ConcentrationModel()->data(1,i);
-            guest_0 = ConcentrationModel()->data(0,i);
         }
         
         qreal K21= qPow(10, constants.first());
