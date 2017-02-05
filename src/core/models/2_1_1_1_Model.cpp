@@ -26,9 +26,6 @@
 #include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
-#include <QStandardItemModel>
-#include <QtCharts/QVXYModelMapper>
-#include <QApplication>
 #include <cmath>
 #include <cfloat>
 #include <iostream>

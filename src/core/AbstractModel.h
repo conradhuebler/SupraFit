@@ -26,13 +26,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QVXYModelMapper>
 
 #include "dataclass.h"
-
-class QStandardItemModel;
-
 
 struct OptimizerConfig
 {
@@ -97,16 +92,12 @@ public:
     inline QString Name() const { return m_name; }
     QVector<double > Parameter() const;
     void setParamter(const QVector<qreal> &parameter);
-    inline QPointer<QtCharts::QVXYModelMapper> ModelMapper(const int i) { return m_model_mapper[i]; }
-    inline QPointer<QtCharts::QVXYModelMapper> ErrorMapper(const int i) { return m_error_mapper[i]; }
-        
     inline int Size() const { return DataClass::Size(); }
     
     inline DataTable * ModelTable() { return m_model_signal; }
     inline DataTable * ErrorTable() { return m_model_error; }
     inline DataTable * ModelTable() const  { return m_model_signal; }
     inline DataTable * ErrorTable() const { return m_model_error; }
-    void UpdatePlotModels();
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     inline void setOptimizerConfig(const OptimizerConfig &config) 
     { 
@@ -133,8 +124,6 @@ public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
 private:
-//     virtual qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants) = 0;
-    QList<QPointer<QtCharts::QVXYModelMapper> >m_model_mapper, m_error_mapper;
     
     bool m_debug;
 
@@ -152,7 +141,6 @@ protected:
     bool *ptr_concentrations;
     QVector<double * > m_opt_para;
     QVector<QVector<qreal * > >m_lim_para;
-    QStandardItemModel *m_plot_model, *m_plot_error;
     DataTable *m_model_signal, *m_model_error;
     const DataClass *m_data;
     OptimizerConfig m_opt_config;

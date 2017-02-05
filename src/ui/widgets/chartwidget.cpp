@@ -106,7 +106,7 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 {
     m_rawdata = rawdata;
     
-    m_rawdata->PlotModel();
+//     m_rawdata->PlotModel();
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     m_rawdata->setPlotMode(j);
     m_data_mapper = new ChartWrapper(this);
@@ -185,18 +185,18 @@ void ChartWidget::Repaint()
         m_plot_mode = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1);
         if(m_rawdata)
             m_rawdata->setPlotMode(m_plot_mode);
-        m_rawdata->PlotModel();  
+//         m_rawdata->PlotModel();  
     }    
     QVector<int > trash;
-    for(int i= 0; i < m_models.size(); ++i)
-    {
-        if(!m_models[i].isNull())
-        {
-            m_models[i].data()->setPlotMode(m_plot_mode);
-            m_models[i].data()->UpdatePlotModels();
-        }else
-            trash << i;
-    }
+//     for(int i= 0; i < m_models.size(); ++i)
+//     {
+//         if(!m_models[i].isNull())
+//         {
+//             m_models[i].data()->setPlotMode(m_plot_mode);
+//             m_models[i].data()->UpdatePlotModels();
+//         }else
+//             trash << i;
+//     }
 //     for(int i = 0; i < trash.size(); ++i)
 //         m_models.remove(trash[i]);
 
@@ -233,7 +233,7 @@ void ChartWidget::updateUI()
     m_errorchart->setTheme(theme);
     
      for(int i = 0; i < m_rawdata->SignalCount(); ++i)
-         m_rawdata->DataMapper(i)->series()->setColor(m_rawdata->color(i));
+         m_data_mapper->DataMapper(i)->series()->setColor(m_data_mapper->color(i));
 
 }
 

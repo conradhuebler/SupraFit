@@ -108,7 +108,7 @@ set(libmath_SRC
                 src/core/statistic.cpp
 )
 add_library(math STATIC ${libmath_SRC})
-qt5_use_modules(math Widgets)
+qt5_use_modules(math Core)
 
 set(models_SRC
                 src/core/dataclass.cpp
@@ -119,7 +119,7 @@ set(models_SRC
                 src/core/models/2_1_1_1_1_2_Model.cpp
 )
 add_library(models STATIC ${models_SRC})
-qt5_use_modules(models Widgets Charts)
+qt5_use_modules(models Core)
 
 set(nmr2fit_SRCS
                 src/ui/widgets/optimizerflagwidget.cpp

@@ -25,9 +25,6 @@
 #include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
-#include <QStandardItemModel>
-#include <QtCharts/QVXYModelMapper>
-#include <QApplication>
 #include <cmath>
 #include <cfloat>
 #include <iostream>
@@ -176,7 +173,6 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
         qreal guest = GuestConcentration(host_0, guest_0, constants);
         qreal complex_11 = K11*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;
-        //         qDebug() << host_0 << guest_0 << host << guest << complex_11 << complex_12;
         
         for(int j = 0; j < SignalCount(); ++j)
         {
@@ -185,11 +181,8 @@ void ItoI_ItoII_Model::CalculateSignal(QVector<qreal > constants)
         }
         
     }
-    //     if(m_repaint)
-    {
-        //           UpdatePlotModels();
-        emit Recalculated();
-    }
+    emit Recalculated();
+
 }
 
 void ItoI_ItoII_Model::setPureSignals(const QVector< qreal > &list)
@@ -231,7 +224,6 @@ QSharedPointer<AbstractTitrationModel > ItoI_ItoII_Model::Clone() const
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
     return model;
-    
 }
 
 #include "1_1_1_2_Model.moc"

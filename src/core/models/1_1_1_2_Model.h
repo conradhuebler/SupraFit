@@ -24,14 +24,10 @@
 #include "src/core/AbstractModel.h"
 
 #include <QDebug>
-#include <QtCore/qobject.h>
+#include <QtCore/QObject>
 #include <QVector>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QVXYModelMapper>
 
 #include "src/core/dataclass.h"
-
-class QStandardItemModel;
 
 class ItoI_ItoII_Model : public AbstractTitrationModel
 {

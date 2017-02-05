@@ -31,9 +31,6 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
 #include <QtCore/QDateTime>
-#include <QStandardItemModel>
-#include <QtCharts/QVXYModelMapper>
-#include <QApplication>
 #include <cmath>
 #include <cfloat>
 #include <iostream>
@@ -47,41 +44,6 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
 
     m_model_signal = new DataTable(SignalCount(),DataPoints());
     m_model_error = new DataTable(SignalCount(),DataPoints());
-
-    
-    m_plot_model = new QStandardItemModel(DataPoints(), SignalCount()+1);
-    
-    m_plot_error = new QStandardItemModel(DataPoints(), SignalCount()+1);
-    QStandardItem *item;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-        item = new QStandardItem(x);
-         m_plot_model->setItem(i, 0, item);
-        item = new QStandardItem(x);
-         m_plot_error->setItem(i, 0, item);
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            item = new QStandardItem(QString::number(m_model_signal->data(j,i)));
-               m_plot_model->setItem(i, j+1, item);
-            item = new QStandardItem(QString::number(m_model_error->data(j,i)));
-               m_plot_error->setItem(i, j+1, item);
-        }
-    }
-    for(int j = 0; j < SignalCount(); ++j)
-    {
-        QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
-        model->setModel(m_plot_model);
-        model->setXColumn(0);
-        model->setYColumn(j + 1);
-        m_model_mapper << model;
-        
-        QPointer<QtCharts::QVXYModelMapper> error = new QtCharts::QVXYModelMapper;
-        error->setModel(m_plot_error);
-        error->setXColumn(0);
-        error->setYColumn(j + 1);
-        m_error_mapper << error;     
-    }
     
     m_pure_signals = SignalModel()->firstRow();
     m_data = data;
@@ -91,16 +53,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
 
 AbstractTitrationModel::~AbstractTitrationModel()
 {
-    for(int i = 0; i < m_model_mapper.size(); ++i)
-    {
-        delete m_model_mapper[i]->series();
-        delete m_error_mapper[i]->series();
-    }
-    qDeleteAll( m_model_mapper );
-    qDeleteAll( m_error_mapper );
-    //     qDeleteAll( m_signal_mapper );
-    //     qDeleteAll( m_opt_vec );
-    //     qDeleteAll( m_lim_para );
+
 }
 
 void AbstractTitrationModel::adress() const
@@ -205,25 +158,6 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
         m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i); //var;
     }
     
-}
-
-void AbstractTitrationModel::UpdatePlotModels()
-{
-    if(m_pending)
-        return;
-    m_pending = true;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-        m_plot_model->item(i, 0)->setData(x, Qt::DisplayRole);
-        m_plot_error->item(i, 0)->setData(x, Qt::DisplayRole);
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            m_plot_model->item(i, j+1)->setData(QString::number(m_model_signal->data(j,i)), Qt::DisplayRole);
-            m_plot_error->item(i, j+1)->setData(QString::number(m_model_error->data(j,i)), Qt::DisplayRole);
-        }
-    }
-    m_pending = false;
 }
 
 

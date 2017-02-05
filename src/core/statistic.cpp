@@ -20,7 +20,7 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 
 #include <QtCore/QThreadPool>
 #include <QtCore/QObject>

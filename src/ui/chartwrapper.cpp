@@ -30,7 +30,13 @@ ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent)
 
 ChartWrapper::~ChartWrapper()
 {
+     for(int i = 0; i < m_plot_mapper.size(); ++i)
+     {
+          delete m_plot_mapper[i]->series();
+     }
 }
+
+
 void ChartWrapper::setData(QPointer<DataClass> model)
 {
     m_model = model; 
@@ -84,6 +90,7 @@ void ChartWrapper::UpdateModel()
         }
     }
 }
+
 QColor ChartWrapper::color(int i) const
 {
     if(m_plot_mapper.size() <= i)
@@ -130,4 +137,5 @@ QColor ChartWrapper::ColorCode(int i) const
             return Qt::darkGray;
     }
 }
+
 #include "chartwrapper.moc"

@@ -151,7 +151,6 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
 ModelElement::~ModelElement()
 {
     
-    //      m_model.clear();
 }
 
 
@@ -274,6 +273,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
 
 ModelWidget::~ModelWidget()
 {
+    delete m_charts.signal_wrapper;
+    delete m_charts.error_wrapper;
+    
     m_model.clear();
     if(_3dchart)
         delete _3dchart;
@@ -413,7 +415,7 @@ void ModelWidget::CollectParameters()
 
 void ModelWidget::GlobalMinimize()
 {
-    
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
     if(m_maxiter->value() > 10000)
     {
         int r = QMessageBox::warning(this, tr("So viel."),
@@ -450,6 +452,7 @@ void ModelWidget::GlobalMinimize()
     
     m_statistic = false;
     m_pending = false; 
+    QApplication::restoreOverrideCursor();
     
 }
 
@@ -517,7 +520,9 @@ void ModelWidget::LocalMinimize()
     m_minimize_all->setEnabled(false);
     m_minimize_single->setEnabled(false);
     CollectParameters();
-    
+        
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -544,6 +549,8 @@ void ModelWidget::LocalMinimize()
 //     m_last_run = m_optim_flags->getFlags();
     m_statistic = false;
     m_pending = false; 
+        QApplication::restoreOverrideCursor();
+
 }
 
 

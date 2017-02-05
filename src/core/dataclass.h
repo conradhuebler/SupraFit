@@ -27,14 +27,9 @@
 #include <QtCore/QSharedData>
 #include <QtCore/QVector>
 #include <QtCore/QMap>
-#include <QtCharts/QScatterSeries>
-#include <QtCharts/QVXYModelMapper>
 #include <QPointer>
-#include <QColor>
 #include <QDebug>
 #include <QAbstractTableModel>
-
-class QStandardItemModel;
 
 class DataTable : public QAbstractTableModel
 {
@@ -67,10 +62,6 @@ public:
     
     void Debug() const ;
 private:
-    /*
-     * May the first variable the column and the second the row
-     */
-//     QList<QList < qreal > > m_table;
     Eigen::MatrixXd m_table;
     qreal m_empty;
     QReadWriteLock mutex;
@@ -92,8 +83,6 @@ public:
      */
     
     QStringList m_names;
-    QList<QPointer<QtCharts::QVXYModelMapper> >m_plot_signal_mapper;
-    QStandardItemModel *m_plot_signal;
     
     int m_type, m_maxsize;
     bool *m_concentrations;
@@ -134,8 +123,7 @@ class DataClass : public QObject
         d->m_signal_model->insertRow(data);
     }
     
-    virtual QColor color(int i) const; 
-    virtual QColor ColorCode(int i) const;
+
     inline int Size() const { return DataPoints(); } 
     inline int Concentrations() const { return d->m_concentration_model->columnCount(); }
     inline int DataPoints() const { return d->m_signal_model->rowCount(); }
@@ -146,11 +134,9 @@ class DataClass : public QObject
     inline DataTable * SignalModel() { return d->m_signal_model; }
     inline DataTable * ConcentrationModel() const { return d->m_concentration_model; }
     inline DataTable * SignalModel() const { return d->m_signal_model; }
-    virtual inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return d->m_plot_signal_mapper[i]; }
     void SwitchConentrations();
     inline bool* Concentration() const { return d->m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
-    inline QStandardItemModel* m() { return d->m_plot_signal; }
     QVector<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
 
 
@@ -175,11 +161,7 @@ class DataClass : public QObject
     qreal XValue(int i) const;
     const QJsonObject ExportJSON() const;
     bool ImportJSON(const QJsonObject &topjson);
-public slots:
-     void PlotModel();
-private:
-   
-    void CreateClearPlotModel();
+
 protected:
     PlotMode m_plotmode;
     QExplicitlySharedDataPointer<DataClassPrivate > d;

@@ -29,13 +29,9 @@
 #include <QtCore/QCollator>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
-
-
-#include <QStandardItemModel>
 #include <QAbstractTableModel>
 #include <QPointer>
 #include <QDebug>
-#include <QColor>
 #include "dataclass.h"
 #include <QtGlobal>
 
@@ -227,9 +223,6 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_concentrations(new bool(t
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;
-    
-    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
-    
 }
 
 DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_concentrations(new bool(true))
@@ -237,7 +230,6 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_co
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;
-    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
     if(m_type == 3)
     {
         for(int i = 0; i <= 100; ++i)
@@ -254,11 +246,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
     m_concentration_model = new DataTable(other.m_concentration_model);
     m_signal_model = new DataTable(other.m_signal_model);
     m_raw_data = new DataTable(other.m_raw_data);
-    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
-    
-    for(int i = 0; i < other.m_plot_signal_mapper.size(); ++i)
-        m_plot_signal_mapper << other.m_plot_signal_mapper[i];
-    
+
     m_type = other.m_type;
     
 }
@@ -268,11 +256,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_concentration_model = new DataTable(other->m_concentration_model);
     m_signal_model = new DataTable(other->m_signal_model);
     m_raw_data = new DataTable(other->m_raw_data);
-    m_plot_signal = new QStandardItemModel(m_signal_model->rowCount(), m_signal_model->columnCount()+1);
-    
-    for(int i = 0; i < other->m_plot_signal_mapper.size(); ++i)
-        m_plot_signal_mapper << other->m_plot_signal_mapper[i];
-    
+
     m_type = other->m_type;
 }
 
@@ -282,20 +266,17 @@ DataClassPrivate::~DataClassPrivate()
     delete m_concentration_model;
     delete m_signal_model;
     delete m_raw_data;
-    qDeleteAll( m_plot_signal_mapper );
 }
 
 DataClass::DataClass(QObject *parent) : QObject(parent), m_plotmode(DataClass::HG)
 {
     d = new DataClassPrivate;
-    CreateClearPlotModel();
 }
 
 DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObject(parent), m_plotmode(DataClass::HG)
 {
     d = new DataClassPrivate(type);
     ImportJSON(json);
-    CreateClearPlotModel();
     
 }
 
@@ -308,16 +289,12 @@ DataClass::DataClass(const DataClass& other): QObject()
 {
     m_plotmode = other.m_plotmode;
     d = other.d;
-    CreateClearPlotModel();
-    PlotModel();
 }
 
 DataClass::DataClass(const DataClass* other)
 {
     m_plotmode = other->m_plotmode;
     d = other->d;
-//     CreateClearPlotModel();
-//     PlotModel();
 }
 
 DataClass::~DataClass()
@@ -325,57 +302,6 @@ DataClass::~DataClass()
 
 }
 
-void DataClass::CreateClearPlotModel()
-{
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-        
-        QStandardItem *item;
-        item = new QStandardItem(x);
-        d->m_plot_signal->setItem(i,0, item);
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            item = new QStandardItem(QString::number(d->m_signal_model->data(j,i)));
-            d->m_plot_signal->setItem(i,j+1, item);
-        }
-    }
-}
-
-
-QColor DataClass::ColorCode(int i) const
-{
-    switch(i){
-        case 0:
-            return Qt::red;
-        case 1:
-            return Qt::blue;
-        case 2:
-            return Qt::green;
-        case 3:
-            return Qt::yellow;
-        case 4:
-            return Qt::darkRed;
-        case 5:
-            return Qt::darkBlue;
-        case 6:
-            return Qt::darkGreen;
-        case 7:
-            return Qt::magenta;
-        case 8:
-            return Qt::cyan;
-        case 9:
-            return Qt::darkYellow;
-        case 10:
-            return Qt::darkMagenta;
-        case 11:
-            return Qt::darkCyan;
-        case 12:
-            return Qt::gray;
-        default:
-            return Qt::darkGray;
-    }
-}
 
 QVector<double>   DataClass::getSignals(QList<int > active_signal)
 {
@@ -399,38 +325,8 @@ QVector<double>   DataClass::getSignals(QList<int > active_signal)
 void DataClass::SwitchConentrations()
 {
     *d->m_concentrations = !(*d->m_concentrations); 
-    PlotModel();
     emit recalculate();
 }
-
-void DataClass::PlotModel()
-{
-    if(d->m_plot_signal_mapper.isEmpty())
-    {
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
-            model->setModel(d->m_plot_signal);
-            model->setXColumn(0);
-            model->setYColumn(j + 1);
-            d->m_plot_signal_mapper << model;   
-        }
-        
-    }
-    
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-       
-        d->m_plot_signal->item(i,0)->setData(x, Qt::DisplayRole);
-        
-        for(int j = 0; j < SignalCount(); ++j)
-        { 
-            d->m_plot_signal->item(i,j+1)->setData(QString::number(d->m_signal_model->data(j,i)), Qt::DisplayRole);
-        }
-    }
-}
-
 
 qreal DataClass::XValue(int i) const
 {
@@ -466,19 +362,6 @@ qreal DataClass::XValue(int i) const
             break;    
     };
     return 0;
-}
-
-QColor DataClass::color(int i) const
-{
-    if(d->m_plot_signal_mapper.size() <= i)
-        return ColorCode(i);
-    else
-    {
-        QPointer<QtCharts::QVXYModelMapper> mapper = d->m_plot_signal_mapper[i];
-        if(!mapper)
-            return ColorCode(i);
-        return d->m_plot_signal_mapper[i]->series()->color();
-    }
 }
 
 const QJsonObject DataClass::ExportJSON() const

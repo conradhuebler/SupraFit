@@ -26,7 +26,7 @@
 
 #include "src/ui/widgets/modelhistorywidget.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QtCore/QDateTime>
 
 #include "minimizer.h"
@@ -243,7 +243,7 @@ QString Minimizer::OptPara2String() const
 
 int Minimizer::Minimize(OptimizationType runtype)
 {
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+    
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;
@@ -283,7 +283,7 @@ int Minimizer::Minimize(OptimizationType runtype)
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
     
-    QApplication::restoreOverrideCursor();
+    
     return 1;
 }
 
