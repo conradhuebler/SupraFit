@@ -20,6 +20,7 @@
 #ifndef MODELWIDGET_H
 #define MODELWIDGET_H
 #include "src/core/minimizer.h"
+#include "src/ui/widgets/chartwidget.h"
 
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
@@ -50,6 +51,7 @@ class _3DChartView;
 class OptimizerFlagWidget;
 
 struct  ModelHistoryElement;
+struct Charts;
 
 class SpinBox : public QDoubleSpinBox
 {
@@ -71,7 +73,7 @@ class ModelElement : public QGroupBox
 {
     Q_OBJECT
 public:
-    ModelElement(QSharedPointer<AbstractTitrationModel> model, int no, QWidget *parent = 0);
+    ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget *parent = 0);
     ~ModelElement();
     double D0() const;
     QVector<double > D() const;
@@ -90,6 +92,7 @@ private:
     
     int m_no;
     QColor m_color;
+    Charts m_charts;
 private slots:
     void ColorChanged(const QColor &color);
     void ChooseColor();
@@ -106,7 +109,7 @@ class ModelWidget : public QWidget
     Q_OBJECT
     
 public:
-    ModelWidget(QSharedPointer< AbstractTitrationModel > model, QWidget *parent = 0);
+    ModelWidget(QSharedPointer< AbstractTitrationModel > model, Charts charts, QWidget *parent = 0);
     ~ModelWidget();
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
     QSharedPointer< AbstractTitrationModel > Model() { return m_model; }
@@ -141,6 +144,7 @@ private:
     ModalDialog *m_statistic_dialog, *m_search_dialog;
 //     OptimizationType m_last_run;
     bool m_statistic;
+    Charts m_charts;
 private slots:
     void GlobalMinimize();
     void LocalMinimize();

@@ -102,8 +102,10 @@ public:
         
     inline int Size() const { return DataClass::Size(); }
     
-    inline DataTable * ModelSignal() { return m_model_signal; }
-//     inline DataTable * ModelError() { return m_model_error; }
+    inline DataTable * ModelTable() { return m_model_signal; }
+    inline DataTable * ErrorTable() { return m_model_error; }
+    inline DataTable * ModelTable() const  { return m_model_signal; }
+    inline DataTable * ErrorTable() const { return m_model_error; }
     void UpdatePlotModels();
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     inline void setOptimizerConfig(const OptimizerConfig &config) 

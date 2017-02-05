@@ -251,8 +251,8 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
 {
     
     m_datawidget->setData(m_data);
-    m_charts->addModel(t);
-    ModelWidget *modelwidget = new ModelWidget(t);
+    Charts charts = m_charts->addModel(t);
+    ModelWidget *modelwidget = new ModelWidget(t, charts);
     m_modelsWidget->addTab(modelwidget, t->Name());
     
     t->setOptimizerConfig(m_config);

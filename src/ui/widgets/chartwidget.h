@@ -34,7 +34,13 @@ class AbstractTitrationModel;
 class QComboBox;
 class QPushButton;
 class QChartView;
+class ChartWrapper;
 
+struct Charts{
+    ChartWrapper *error_wrapper;
+    ChartWrapper *signal_wrapper;
+    ChartWrapper *data_wrapper;
+};
 
 class LineSeries : public QtCharts::QLineSeries
 {
@@ -57,10 +63,7 @@ public:
     ChartWidget();
     ~ChartWidget();
     void setRawData(const QPointer<DataClass> rawdata); 
-    
-
-public slots:
-    void addModel(QSharedPointer< AbstractTitrationModel > model);
+    Charts addModel(QSharedPointer< AbstractTitrationModel > model);
     
 private:
     qreal max_shift, min_shift;
@@ -76,7 +79,8 @@ private:
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
     void Paint();
-     AbstractTitrationModel::PlotMode m_plot_mode;
+    AbstractTitrationModel::PlotMode m_plot_mode;
+    ChartWrapper *m_data_mapper;
 private slots:
     void formatAxis();
     void Repaint();

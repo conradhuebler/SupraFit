@@ -136,6 +136,7 @@ set(nmr2fit_SRCS
                 src/ui/widgets/chartview.cpp
                 src/ui/widgets/datawidget.cpp
                 src/ui/widgets/modelwidget.cpp
+                src/ui/chartwrapper.cpp
                 src/ui/nmr2fit.cpp 
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp

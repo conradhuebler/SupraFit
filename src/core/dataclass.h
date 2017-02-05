@@ -144,6 +144,8 @@ class DataClass : public QObject
     inline void setType(int type) { d->m_type = type; }
     inline DataTable * ConcentrationModel() { return d->m_concentration_model; }
     inline DataTable * SignalModel() { return d->m_signal_model; }
+    inline DataTable * ConcentrationModel() const { return d->m_concentration_model; }
+    inline DataTable * SignalModel() const { return d->m_signal_model; }
     virtual inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return d->m_plot_signal_mapper[i]; }
     void SwitchConentrations();
     inline bool* Concentration() const { return d->m_concentrations; }

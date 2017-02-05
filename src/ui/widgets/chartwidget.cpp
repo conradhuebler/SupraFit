@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-
+#include "src/ui/chartwrapper.h"
 #include "src/ui/widgets/chartview.h"
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
@@ -109,9 +109,12 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
     m_rawdata->PlotModel();
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     m_rawdata->setPlotMode(j);
+    m_data_mapper = new ChartWrapper(this);
+    m_data_mapper->setDataTable(m_rawdata->SignalModel());
+    m_data_mapper->setData(m_rawdata);
     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
     {
-        QtCharts::QVXYModelMapper * signal= m_rawdata->DataMapper(i);
+        QtCharts::QVXYModelMapper * signal= m_data_mapper->DataMapper(i);
         QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
         signal->setSeries(signal_series);
         signal_series->setName("Signal " + QString::number(i + 1));
@@ -127,39 +130,52 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 
 
 
-void ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
+Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
 {
     m_models << model;
 //     model->UpdatePlotModels();
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
     AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
     model->setPlotMode(j);
+    ChartWrapper *signal_wrapper = new ChartWrapper(this);
+    signal_wrapper->setDataTable(model->ModelTable());
+    signal_wrapper->setData(model.data());
+    
+    ChartWrapper *error_wrapper = new ChartWrapper(this);
+    error_wrapper->setDataTable(model->ErrorTable());
+    error_wrapper->setData(model.data());
+    
     for(int i = 0; i < model->SignalCount(); ++i)
     {
         
         if(model->Type() != 3)
         {
-            QtCharts::QVXYModelMapper * mapper = model->ModelMapper(i);
+            QtCharts::QVXYModelMapper * mapper = signal_wrapper->DataMapper(i);
             LineSeries *model_series = new LineSeries;
             mapper->setSeries(model_series);
             model_series->setName("Signal " + QString::number(i + 1));
-            model_series->setColor(m_rawdata->color(i));
-            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
+            model_series->setColor(m_data_mapper->color(i));
+            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
             m_signalview->addSeries(model_series, true);
         }
         if(model->Type() != 3)
         {
-            QtCharts::QVXYModelMapper * error= model->ErrorMapper(i);
+            QtCharts::QVXYModelMapper * error= error_wrapper->DataMapper(i);
             LineSeries *error_series = new LineSeries;
             error->setSeries(error_series);
             error_series->setName("Signal " + QString::number(i + 1));
-            error_series->setColor(m_rawdata->color(i));
-            connect(m_rawdata->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
+            error_series->setColor(m_data_mapper->color(i));
+            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
             m_errorview->addSeries(error_series, true);
         }
         
     }
     Repaint(); 
+    Charts charts;
+    charts.error_wrapper = error_wrapper;
+    charts.signal_wrapper = signal_wrapper;
+    charts.data_wrapper = m_data_mapper;
+    return charts;
 }
 
 void ChartWidget::Repaint()

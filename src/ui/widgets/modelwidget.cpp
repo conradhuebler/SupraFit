@@ -28,6 +28,9 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/widgets/3dchartview.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
+#include "src/ui/widgets/chartwidget.h"
+#include "src/ui/chartwrapper.h"
+
 #include "src/ui/dialogs/modeldialog.h"
 
 #include "chartwidget.h"
@@ -81,7 +84,7 @@ void SpinBox::On_valueChanged(double val)
 }
 
 
-ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no)
+ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_charts(charts), m_no(no)
 {
     QGridLayout *layout = new QGridLayout;
     m_d_0 = new SpinBox;
@@ -120,8 +123,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
     m_include->setChecked(m_model->ActiveSignals()[m_no]);
     connect(m_include, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
     layout->addWidget(m_include, 1, 0);
-    m_error_series = qobject_cast<LineSeries *>(m_model->ModelMapper(m_no)->series());
-    m_signal_series = qobject_cast<LineSeries *>(m_model->ErrorMapper(m_no)->series());
+    m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->DataMapper(m_no)->series());
+    m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->DataMapper(m_no)->series());
     m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_show = new QCheckBox;
@@ -138,8 +141,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, int no,
     
     setMaximumHeight(75);
     setMinimumHeight(75); 
-    ColorChanged(m_model->color(m_no));
-    connect(m_model->DataMapper(m_no)->series(), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
+    ColorChanged(m_charts.data_wrapper->color(m_no));
+    connect(m_charts.data_wrapper->DataMapper(m_no)->series(), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
@@ -215,7 +218,7 @@ void ModelElement::ChooseColor()
     ColorChanged(color);
 }
 
-ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget *parent ) : QWidget(parent), m_model(model), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
+ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
 {
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
@@ -247,7 +250,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
     
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
-        ModelElement *el = new ModelElement(m_model, i);
+        ModelElement *el = new ModelElement(m_model, m_charts, i);
         connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
         connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
         connect(this, SIGNAL(Update()), el, SLOT(Update()));
@@ -547,12 +550,12 @@ void ModelWidget::LocalMinimize()
 void ModelWidget::AddSimSignal()
 {
     
-    ModelElement *el = new ModelElement(m_model, m_model_elements.size());
-    //     m_model->addRow(m_model_elements.size()); 
-    emit m_model->RowAdded();
-    m_sign_layout->addWidget(el);
-    m_model_elements << el;
-    connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
+//     ModelElement *el = new ModelElement(m_model, m_charts, m_model_elements.size());
+//     //     m_model->addRow(m_model_elements.size()); 
+//     emit m_model->RowAdded();
+//     m_sign_layout->addWidget(el);
+//     m_model_elements << el;
+//     connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
     
 }
 
