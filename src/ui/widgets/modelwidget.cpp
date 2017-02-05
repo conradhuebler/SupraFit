@@ -250,6 +250,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model, QWidget 
         ModelElement *el = new ModelElement(m_model, i);
         connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
         connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
+        connect(this, SIGNAL(Update()), el, SLOT(Update()));
         m_sign_layout->addWidget(el);
         m_model_elements << el;
     }
@@ -346,10 +347,7 @@ void ModelWidget::setParameter()
     
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
-    
-    for(int i = 0; i < m_model_elements.size(); ++i)
-        if(m_model_elements[i])
-            m_model_elements[i]->Update();
+    emit Update();
 }
 
 void ModelWidget::Repaint()
@@ -587,6 +585,7 @@ void ModelWidget::NewGuess()
     QVector<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
+    emit Update();
 }
 
 void ModelWidget::setMaxIter(int maxiter)
@@ -639,6 +638,7 @@ void ModelWidget::LoadJson(const QJsonObject& object)
     QVector<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
+    emit Update();
 }
 
 void ModelWidget::OpenAdvancedSearch()

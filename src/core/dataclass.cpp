@@ -162,7 +162,7 @@ qreal & DataTable::data(int column, int row)
 QVector<qreal> DataTable::Row(int row)
 {
     QVector<qreal> vector;
-    if(row >= m_table.rows())
+    if(row <= m_table.rows())
         for(int i = 0; i < m_table.cols(); ++i)
             vector << m_table(row, i);
     else
