@@ -469,7 +469,11 @@ void ModelWidget::Confidence()
     statistic->setParameter(json);
 
 //     statistic->setOptimizationRun(m_optim_flags->getFlags());
-    statistic->ConfidenceAssesment();
+    if(!statistic->ConfidenceAssesment())
+    {
+        emit Warning("The optimization seems not to be converged with respect to at least one constants!", 1);
+        return;
+    }
     
     QList<StatisticResult > result = statistic->Results();
     QWidget *resultwidget = new QWidget;

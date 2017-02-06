@@ -175,6 +175,7 @@ signals:
     void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void ActiveSignalChanged(QVector<int > active_signals);
     void Update();
+    void Warning(const QString &str, int i);
 //     void AddModel(const QJsonObject &json);
 };
 

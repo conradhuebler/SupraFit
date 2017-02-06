@@ -30,7 +30,7 @@
 
 #include "statistic.h"
 
-StatisticThread::StatisticThread(RunType runtype) : m_runtype(runtype), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+StatisticThread::StatisticThread(RunType runtype) : m_runtype(runtype), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-4), m_maxsteps(1e5), m_converged(true)
 {
     setAutoDelete(false);
 }
@@ -60,7 +60,7 @@ void StatisticThread::setParameter(const QJsonObject& json)
 void StatisticThread::ConfidenceAssesment()
 {
     m_model.data()->CalculateSignal();
-    qreal error = m_model.data()->ModelError();
+    m_error = m_model.data()->ModelError();
     QList<QPointF> series;
     QJsonObject optimized = m_model->ExportJSON();
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_type);
@@ -71,15 +71,31 @@ void StatisticThread::ConfidenceAssesment()
     m_model->setLockedParameter(locked);
     
     m_result.optim = parameter[m_parameter_id];
-    m_result.error = error;
+    m_result.error = m_error;
     m_result.name = m_model->ConstantNames()[m_parameter_id];
     
     m_model->setLockedParameter(locked);
     QVector<double> vars = parameter;
-    double increment = 1e-3;
     double integ_5 = 0;
     double integ_1 = 0;
-    for(int m = 0; m < 1000; ++m)
+    SumErrors(1, integ_5, integ_1, series);
+    m_model->ImportJSON(optimized);
+    SumErrors(0, integ_5, integ_1, series);
+
+    
+    m_result.points = series;
+    m_result.integ_5 = integ_5/m_error;
+    m_result.integ_1 = integ_1/m_error;
+}
+
+void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
+{
+    double increment = m_increment;
+    if(!direction)
+        increment *= -1;
+    qreal old_error = m_error;
+    int counter = 0;
+    for(int m = 0; m < m_maxsteps; ++m)
     {
         double x  = m_model->IncrementParameter(increment, m_parameter_id);
         QJsonObject json = m_model->ExportJSON();
@@ -91,48 +107,35 @@ void StatisticThread::ConfidenceAssesment()
             m_model->CalculateSignal();
         }
         qreal new_error = m_model->ModelError();
-        integ_5 += new_error;
+        if(new_error < m_error)
+            counter++;
+        qreal rect = qMin(new_error,old_error)*qAbs(increment);
+        qreal triangle = 0.5*increment*qAbs(new_error-old_error);
+        qreal integ = rect+triangle; 
+        integ_5 += integ;
+
         
-        if(new_error/error <= double(1.005) && new_error > error)
-            integ_1 += new_error;
+        if(new_error/m_error <= double(1.005) && new_error > m_error)
+            integ_1 += integ;
         
-        if(new_error/error > double(1.025))
+        if(new_error/m_error > double(1.025))
         {
             m_result.max = x;
             break;
         }
-        series.append(QPointF(x,new_error));
-    }
-    increment *= -1;
-    m_model->ImportJSON(optimized);
-    for(int m = 0; m < 1000; ++m)
-    {
-        double x  = m_model->IncrementParameter(increment, m_parameter_id);
-        QJsonObject json = m_model->ExportJSON();
-        m_minimizer->setParameter(json);
-        m_minimizer->Minimize(m_type);
+        if(direction)
+            series.append(QPointF(x,new_error));
+        else
+            series.prepend(QPointF(x,new_error));
+        old_error = new_error;
+        if(counter > 50)
         {
-            QJsonObject json = m_minimizer->Parameter();
-            m_model->ImportJSON(json);
-            m_model->CalculateSignal();
-        }
-        qreal new_error = m_model->ModelError();
-        integ_5 += new_error;
-        
-        if(new_error/error <= double(1.005) && new_error > error)
-            integ_1 += new_error;
-        
-        if(new_error/error > double(1.025))
-        {
-            m_result.min = x;
+            m_converged = false;
             break;
         }
-        series.prepend(QPointF(x,new_error));
     }
-    m_result.points = series;
-    m_result.integ_5 = integ_5;
-    m_result.integ_1 = integ_1;
 }
+
 
 Statistic::Statistic(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
 {
@@ -148,10 +151,10 @@ Statistic::~Statistic()
     
 }
 
-void Statistic::ConfidenceAssesment()
+bool Statistic::ConfidenceAssesment()
 {
     if(!m_model)
-        return;
+        return false;
     for(int i = 0; i < m_series.size(); ++i)
         m_series[i].clear();
     m_series.clear();
@@ -178,12 +181,15 @@ void Statistic::ConfidenceAssesment()
     }
     
     threadpool->waitForDone();
+    bool converged = true;
     for(int i = 0; i < threads.size(); ++i)
     {
         m_result << threads[i]->getResult();
+        converged = converged && threads[i]->Converged();
         delete threads[i];
     }
     qDeleteAll(threads);
+    return converged;
 }
 
 

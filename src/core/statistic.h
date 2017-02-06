@@ -26,6 +26,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QWeakPointer>
 class Minimizer;
+class QPointF;
 
 struct StatisticResult
 {
@@ -58,14 +59,20 @@ public:
     virtual void run();
     RunType m_runtype;
     StatisticResult getResult() const { return m_result; }
-    
+    inline void setIncerement(double increment) { m_increment = increment; }
+    inline  void setMaxSteps(int steps ) { m_maxsteps = steps; }
+    inline bool Converged() const { return m_converged; }
 private:
+    void SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
     void ConfidenceAssesment();
     int m_parameter_id;
     StatisticResult m_result;
+    qreal m_increment, m_error;
+    int m_maxsteps;
+    bool m_converged;
 };
 
 class Statistic : public QObject
@@ -76,7 +83,7 @@ public:
     ~Statistic();
     void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
-    void ConfidenceAssesment();
+    bool ConfidenceAssesment();
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<StatisticResult > Results() const { return m_result; }

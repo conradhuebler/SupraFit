@@ -45,7 +45,6 @@ else()
 endif(WIN32)
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
-
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -pedantic-errors \
                                            -Wextra -Wcast-align -Wcast-qual  -Wchar-subscripts  \
                                            -Wcomment -Wdisabled-optimization \
@@ -63,6 +62,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations\
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare")                                        
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+
 option(USE_levmarOptimizer "Use levmar optimizing package" OFF)  
 option(USE_eigenOptimizer  "Use Eigen optimizing package" ON)  
 option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" OFF) 
