@@ -157,7 +157,6 @@ private slots:
     void GlobalMinimize();
     void LocalMinimize();
     void Repaint();
-    void AddSimSignal();
     void CollectActiveSignals();
     void NewGuess();
     void ImportConstants();

@@ -36,7 +36,7 @@
 #include <iostream>
 #include "AbstractModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data),  m_debug(false), m_inform_config_changed(true), m_corrupt(false), m_pending(false)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false)
 {
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());
@@ -115,10 +115,7 @@ void AbstractTitrationModel::addOptParameter(QVector<qreal>& parameter)
     for(int i = 0; i < parameter.size(); ++i)
         m_opt_para << &parameter[i];    
 }
-void AbstractTitrationModel::addOptParameter(qreal& value)
-{
-    m_opt_para << & value;
-}
+
 
 void AbstractTitrationModel::clearOptParameter()
 {
@@ -144,9 +141,6 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 
 void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 {
-    
-    if(m_debug)
-        qDebug() << i << j << value;
     if(std::isnan(value) || std::isinf(value))
     {
         value = 0;
@@ -160,15 +154,6 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
     
 }
 
-
-QVector<double> AbstractTitrationModel::Parameter() const
-{
-    QVector<double > parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
-}
-
 void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
 {
     if(parameter.size() != m_opt_para.size())
@@ -177,8 +162,6 @@ void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
         if(m_locked_parameters[i])
             *m_opt_para[i] = parameter[i];
 }
-
-
 
 QJsonObject AbstractTitrationModel::ExportJSON() const
 {

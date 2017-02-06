@@ -33,11 +33,8 @@
 
 IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
-    
-    
     setName(tr("2:1/1:1-Model"));
-    
-    
+
     InitialGuess();   
     
     setOptParamater(m_complex_constants);
@@ -212,56 +209,6 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
     return parameter;
 }
 
-
-void test_II_ItoI_Model::CalculateSignal(QVector<qreal> constants)
-{
-    // Highly experimental stuff
-    
-    m_corrupt = false;
-    if(constants.size() == 0)
-        constants = Constants();
-    QVector<qreal> host_0, guest_0;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        
-        if(*ptr_concentrations)
-        {
-            host_0 << ConcentrationModel()->data(0,i);
-            guest_0 << ConcentrationModel()->data(1,i);
-        }else
-        {
-            host_0 << ConcentrationModel()->data(1,i);
-            guest_0 << ConcentrationModel()->data(0,i);
-        }
-    }
-    
-    qreal K21= qPow(10, constants.first());
-    qreal K11 = qPow(10, constants.last());
-    QVector<double > A_equ, B_equ;
-    
-    //         SolveEqualSystem(host_0, guest_0, K11, K11*K21, A_equ, B_equ);
-    
-    //         qreal host = HostConcentration(host_0, guest_0, constants);
-    //         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
-    
-    
-    for(int i = 0; i  < DataPoints(); ++i)
-    {
-        
-        qreal host = A_equ[i];
-        qreal guest = B_equ[i]; //concentration.last();
-        qreal complex_11 = K11*host*guest;
-        qreal complex_21 = K11*K21*host*host*guest;
-        
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            qreal value = host/host_0[i]*m_pure_signals[j] + complex_11/host_0[i]*m_ItoI_signals[j]+ 2*complex_21/host_0[i]*m_IItoI_signals[j];
-            SetSignal(i, j, value);
-        }
-    }
-    
-    emit Recalculated();
-}
 
 QSharedPointer<AbstractTitrationModel > IItoI_ItoI_Model::Clone() const
 {

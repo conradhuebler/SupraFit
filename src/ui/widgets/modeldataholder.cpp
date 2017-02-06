@@ -47,7 +47,6 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     
     setLayout(layout);
     
-    
     m_datawidget = new DataWidget;
     connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
     m_modelsWidget = new QTabWidget;
@@ -71,18 +70,11 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel21()));
     menu->addAction(IItoI_ItoI_action);
     
-    
-    
     QAction *ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
     connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
     menu->addAction(ItoI_ItoII_action);
-    
-    //           QAction *t2 = new QAction(this);
-    //      t2->setText(tr("2:1/1:1-test-Model"));
-    //          connect(t2, SIGNAL(triggered()), this, SLOT(AddModel21_t()));
-    //          menu->addAction(t2);
-    //     
+        
     QAction *II_I_ItoI_ItoII_action = new QAction(this);
     II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
     connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel2112()));
@@ -107,7 +99,6 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
-    //     layout->addWidget(m_simulate, 0,1);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
     
 }
@@ -149,9 +140,6 @@ void ModelDataHolder::AddModel(int model)
         case 4:
             t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
-            //         case 4:
-            //              t = new test_II_ItoI_Model(m_data);
-            //              break;
         default:
             t.clear();
            return; 
@@ -182,38 +170,6 @@ void ModelDataHolder::AddModel12()
 void ModelDataHolder::AddModel2112()
 {
     AddModel(ModelDataHolder::IItoI_ItoI_ItoII);
-}
-
-void ModelDataHolder::AddModel21_t()
-{
-    AddModel(ModelDataHolder::IItoI_ItoI_t);
-}
-
-void ModelDataHolder::SimulateModel(int model)
-{
-    Q_UNUSED(model)
-    // Disabled and deprecated ... /FIXME
-    /*
-    QSharedPointer<AbstractTitrationModel > t;
-    
-    m_data = new DataClass(DataClass::EmptyData);
-    switch(model){
-        case 1:
-            t = QSharedPointer<ItoI_Model>(new ItoI_Model(m_data), &QObject::deleteLater);
-            break;
-        case 2:
-            t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data), &QObject::deleteLater);
-            break;
-        case 3:
-            t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data),  &QObject::deleteLater);
-            break;
-        default:
-            t.clear();
-           return; 
-
-    };
-    ActiveModel(t);
-    */
 }
 
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
@@ -282,22 +238,6 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
         m_history = true;
 }
 
-void ModelDataHolder::SimulateModel11()
-{
-    SimulateModel(ModelDataHolder::ItoI);
-}
-
-void ModelDataHolder::SimulateModel21()
-{
-    SimulateModel(ModelDataHolder::IItoI_ItoI);
-}
-
-void ModelDataHolder::SimulateModel12()
-{
-    SimulateModel(ModelDataHolder::ItoI_ItoII);
-}
-
-
 void ModelDataHolder::RemoveTab(int i)
 {
     if(i)
@@ -310,15 +250,6 @@ void ModelDataHolder::RemoveTab(int i)
     }else
     {
         return;
-        /*
-        if(m_data)
-        {
-            if (QMessageBox::Yes == QMessageBox(QMessageBox::Information, "Close Project", "Really close that project?", QMessageBox::Yes|QMessageBox::No).exec()) 
-            {
-                m_datawidget->clear();
-                m_data.clear();
-            }
-        }*/
     }
 }
 

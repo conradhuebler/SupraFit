@@ -45,8 +45,7 @@ public:
         ItoI = 1,
         IItoI_ItoI = 2,
         ItoI_ItoII = 3,
-        IItoI_ItoI_ItoII = 4,
-        IItoI_ItoI_t = 40
+        IItoI_ItoI_ItoII = 4
     };
     void setSettings(const OptimizerConfig &config);
     /*
@@ -78,7 +77,6 @@ private:
 //     QPlainTextEdit *m_logWidget;
     QVector<QWeakPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
-    void SimulateModel(int model);
     OptimizerConfig m_config;
 
     
@@ -88,12 +86,8 @@ private:
 private slots:
     void AddModel11();
     void AddModel21();
-    void AddModel21_t();
     void AddModel12();
     void AddModel2112();
-    void SimulateModel11();
-    void SimulateModel21();
-    void SimulateModel12();
     void RemoveTab(int i);
     
     void CreateCrashFile();

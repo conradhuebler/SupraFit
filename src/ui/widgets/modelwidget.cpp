@@ -468,11 +468,9 @@ void ModelWidget::Confidence()
     statistic->setModel(m_model);
     statistic->setParameter(json);
 
-//     statistic->setOptimizationRun(m_optim_flags->getFlags());
     if(!statistic->ConfidenceAssesment())
     {
-        emit Warning("The optimization seems not to be converged with respect to at least one constants!", 1);
-        return;
+        emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
     
     QList<StatisticResult > result = statistic->Results();
@@ -548,23 +546,10 @@ void ModelWidget::LocalMinimize()
         }
     }  
     Repaint();
-//     m_last_run = m_optim_flags->getFlags();
     m_statistic = false;
     m_pending = false; 
 }
 
-
-void ModelWidget::AddSimSignal()
-{
-    
-//     ModelElement *el = new ModelElement(m_model, m_charts, m_model_elements.size());
-//     //     m_model->addRow(m_model_elements.size()); 
-//     emit m_model->RowAdded();
-//     m_sign_layout->addWidget(el);
-//     m_model_elements << el;
-//     connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
-    
-}
 
 QList<int> ModelWidget::ActiveSignals()
 {
@@ -631,10 +616,7 @@ void ModelWidget::ImportConstants()
     {
         QJsonObject object;
         if(JsonHandler::ReadJsonFile(object, str))
-        {
             LoadJson(object);
-            //             m_model->CalculateSignal();
-        }
         else
             qDebug() << "loading failed";
     }

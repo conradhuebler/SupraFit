@@ -64,7 +64,6 @@ public:
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
     double IncrementParameter(double increment, int parameter);
     void setOptParamater(qreal & parameter);
-    void addOptParameter(qreal &vector);
     void setOptParamater(QVector< qreal >& parameter);
     void addOptParameter(QVector <qreal > &vector);
     void clearOptParameter();
@@ -90,7 +89,6 @@ public:
 
     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
-    QVector<double > Parameter() const;
     void setParamter(const QVector<qreal> &parameter);
     inline int Size() const { return DataClass::Size(); }
     
@@ -102,7 +100,6 @@ public:
     inline void setOptimizerConfig(const OptimizerConfig &config) 
     { 
         m_opt_config = config;
-        m_inform_config_changed = true;
     }
     inline bool isCorrupt() const { return m_corrupt; }
     void adress() const;
@@ -120,18 +117,15 @@ public:
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     qreal ModelError() const;
     inline QStringList ConstantNames() const { return m_constant_names; }
+    
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
 private:
-    
-    bool m_debug;
-
     QList<int > m_active_signals;
-    bool m_pending;
     QList<int > m_locked_parameters;
-protected:
     
+protected:
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
     void ClearDataSeries() ;
@@ -144,7 +138,7 @@ protected:
     DataTable *m_model_signal, *m_model_error;
     const DataClass *m_data;
     OptimizerConfig m_opt_config;
-    bool m_inform_config_changed, m_corrupt;
+    bool m_corrupt;
     QStringList m_constant_names;
 signals:
     void Recalculated();
