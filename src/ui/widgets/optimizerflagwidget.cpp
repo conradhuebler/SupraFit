@@ -18,6 +18,7 @@
  */
 
 #include "src/global.h"
+#include <QPropertyAnimation>
 
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
@@ -35,7 +36,6 @@ OptimizerFlagWidget::OptimizerFlagWidget() :m_type(OptimizationType::Complexatio
 
 OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type) : m_type(type)
 {
-    qDebug() << m_type;
     setUi();
 }
 
@@ -81,6 +81,7 @@ void OptimizerFlagWidget::setUi()
     connect(m_ConstrainedShifts, SIGNAL(stateChanged(int)), this, SLOT(ConstrainedChanged()));
     EnableShiftSelection();
     ConstrainedChanged();
+    m_more->setFlat(true);
 }
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
@@ -99,14 +100,14 @@ OptimizationType OptimizerFlagWidget::getFlags() const
     
     if(m_ComplexationConstants->isChecked() && m_ComplexationConstants->isEnabled())
         type = OptimizationType::ComplexationConstants;
-
+    
     if(!m_IgnoreAllShifts->isChecked())
     {
         if(!m_ConstrainedShifts->isChecked())
         {
             type = type | OptimizationType::UnconstrainedShifts;  
-                if(m_IgnoreZeroConcentrations->isChecked())
-            type = type | OptimizationType::IgnoreZeroConcentrations;
+            if(m_IgnoreZeroConcentrations->isChecked())
+                type = type | OptimizationType::IgnoreZeroConcentrations;
         }
         else
             if(m_IntermediateShifts->isChecked())
@@ -141,16 +142,30 @@ void OptimizerFlagWidget::ShowFirst()
     bool showing = m_more->isFlat();
     if(!showing)
     {
+        QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
+        QRect geom = geometry();
+        geom.setHeight(m_first_row->geometry().height());
+        animation->setDuration(200);
+        animation->setStartValue(geom);
+        geom.setHeight(2*m_first_row->geometry().height());
+        animation->setEndValue(geom);
         m_first_row->show();
+        animation->start();
         m_more->setText(tr("V"));
         m_more->setFlat(true);
     }else{
+        QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
+        QRect geom = geometry();
+        geom.setHeight(2*m_first_row->geometry().height());
+        animation->setDuration(200);
+        animation->setStartValue(geom);
+        geom.setHeight(m_first_row->geometry().height());
+        animation->setEndValue(geom);
+        animation->start();
         m_first_row->hide();
         m_more->setText(tr("<"));
         m_more->setFlat(false);    
     }
-    adjustSize();
-//     layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
 #include "optimizerflagwidget.moc"
