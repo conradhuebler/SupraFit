@@ -81,21 +81,6 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     menu->addAction(II_I_ItoI_ItoII_action);
     
     m_add->setMenu(menu);
-    menu = new QMenu;
-    ItoI_action = new QAction(this);
-    ItoI_action->setText(tr("1:1-Model"));
-    connect(ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel11()));
-    menu->addAction(ItoI_action);
-    IItoI_ItoI_action = new QAction(this);
-    IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
-    connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(SimulateModel21()));
-    menu->addAction(IItoI_ItoI_action);
-    
-    
-    ItoI_ItoII_action = new QAction(this);
-    ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
-    connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(SimulateModel12()));
-    menu->addAction(ItoI_ItoII_action);
     
     m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);

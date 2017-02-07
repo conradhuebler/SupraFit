@@ -41,7 +41,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());
     ptr_concentrations = data->Concentration();
-
+    
     m_model_signal = new DataTable(SignalCount(),DataPoints());
     m_model_error = new DataTable(SignalCount(),DataPoints());
     
@@ -53,7 +53,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
 
 AbstractTitrationModel::~AbstractTitrationModel()
 {
-
+    
 }
 
 void AbstractTitrationModel::adress() const
@@ -168,8 +168,19 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     QJsonObject json, toplevel;
     QJsonObject constantObject;
     for(int i = 0; i < Constants().size(); ++i)
+    {
         constantObject[QString::number(i)] = (QString::number(Constants()[i]));
-    
+        if(i < m_statistics.size())
+        {
+            QJsonObject statistic;
+            statistic["max"] = QString::number(m_statistics[i].max);
+            statistic["min"] = QString::number(m_statistics[i].min);
+            statistic["error"] = QString::number(m_statistics[i].error);
+            statistic["integ_1"] = QString::number(m_statistics[i].integ_1);
+            statistic["integ_5"] = QString::number(m_statistics[i].integ_5);
+            constantObject[QString::number(i)+"_statistic"] = statistic;
+        }
+    }
     json["constants"] = constantObject;
     
     QJsonObject pureShiftObject;
@@ -196,7 +207,8 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     }
     
     toplevel["data"] = json;
-    toplevel["model"] = m_name;    
+    toplevel["model"] = m_name;  
+    toplevel["runtype"] = m_last_optimization;
     return toplevel;
 }
 
@@ -215,9 +227,18 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     for (int i = 0; i < Constants().size(); ++i) {
         
         constants << constantsObject[QString::number(i)].toString().toDouble();
+        
+        StatisticResult result;
+        QJsonObject statistic = constantsObject[QString::number(i) + "_statistic"].toObject();
+        result.max =  statistic["max"].toString().toDouble();
+        result.min =  statistic["min"].toString().toDouble();
+        result.error =  statistic["error"].toString().toDouble();
+        result.integ_1 =  statistic["integ_1"].toString().toDouble();
+        result.integ_5 =  statistic["integ_5"].toString().toDouble();
+        setStatistic(result, i);
     }
     setConstants(constants);
-    
+    m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
     QVector<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
     for (int i = 0; i < m_pure_signals.size(); ++i) 
@@ -283,5 +304,12 @@ void AbstractTitrationModel::MiniShifts()
     }
 }
 
+void AbstractTitrationModel::setStatistic(const StatisticResult &result, int i)
+{
+    if(i < m_statistics.size())
+        m_statistics[i] = result;
+    else
+        m_statistics << result; 
+}
 
 #include "AbstractModel.moc"

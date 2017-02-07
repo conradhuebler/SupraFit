@@ -28,18 +28,7 @@
 class Minimizer;
 class QPointF;
 
-struct StatisticResult
-{
-    double optim;
-    double max;
-    double min;
-    double error;
-    QList<QPointF > points;  
-    QString name;
-    double integ_5;
-    double integ_1;
-};
-
+struct StatisticResult;
 
 class StatisticThread : public QObject, public QRunnable
 {
@@ -62,6 +51,7 @@ public:
     inline void setIncerement(double increment) { m_increment = increment; }
     inline  void setMaxSteps(int steps ) { m_maxsteps = steps; }
     inline bool Converged() const { return m_converged; }
+    inline QList<QPointF> getSeries() const { return m_series; }
 private:
     void SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<AbstractTitrationModel> m_model;
@@ -73,6 +63,7 @@ private:
     qreal m_increment, m_error;
     int m_maxsteps;
     bool m_converged;
+    QList<QPointF> m_series;
 };
 
 class Statistic : public QObject

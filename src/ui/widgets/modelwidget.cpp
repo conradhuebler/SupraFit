@@ -323,7 +323,7 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_optim_config);
     
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
-    m_optim_flags = new OptimizerFlagWidget;
+    m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
     
     QHBoxLayout *mini_data = new QHBoxLayout;
     mini_data->addWidget(m_import);
@@ -447,6 +447,7 @@ void ModelWidget::GlobalMinimize()
         m_model->ImportJSON(json);
         m_model->CalculateSignal();
         Repaint();
+        m_model->setLastOptimzationRun(m_optim_flags->getFlags());
     }
     
     
@@ -474,6 +475,7 @@ void ModelWidget::Confidence()
     }
     
     QList<StatisticResult > result = statistic->Results();
+    QList<QList<QPointF > >series = statistic->Series();
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
     resultwidget->setLayout(layout);
@@ -486,7 +488,7 @@ void ModelWidget::Confidence()
     for(int i = 0; i < result.size(); ++i)
     {
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-        xy_series->append(result[i].points);
+        xy_series->append(series[i]);
         view->addSeries(xy_series);
         qreal diff = result[i].max -result[i].min;
         layout->addWidget(new QLabel("K" + result[i].name), i + 1, 0);
@@ -496,6 +498,7 @@ void ModelWidget::Confidence()
         layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
         layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
         layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));
+        m_model->setStatistic(result[i], i);
     }
     m_statistic = true;
     m_statistic_dialog->setWidget(resultwidget, "Simple Plot");
@@ -543,6 +546,7 @@ void ModelWidget::LocalMinimize()
             QJsonObject json = m_minimizer->Parameter();
             m_model->ImportJSON(json);
             m_model->CalculateSignal();
+            m_model->setLastOptimzationRun(m_optim_flags->getFlags());
         }
     }  
     Repaint();

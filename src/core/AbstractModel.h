@@ -50,6 +50,16 @@ struct OptimizerConfig
     qreal LevMar_Delta = 1E-06;
 };
 
+struct StatisticResult
+{
+    double optim;
+    double max;
+    double min;
+    double error;
+    QString name;
+    double integ_5;
+    double integ_1;
+};
 
 class AbstractTitrationModel : public DataClass
 {
@@ -62,6 +72,8 @@ public:
     inline void setLockedParameter(const QList<int> &lock){ m_locked_parameters = lock; }
     inline QList<int> LockedParamters() const { return m_locked_parameters; }
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
+    inline void setLastOptimzationRun(OptimizationType last_optimization) { m_last_optimization = last_optimization; }
+    inline OptimizationType LastOptimzationRun() const { return m_last_optimization; }
     double IncrementParameter(double increment, int parameter);
     void setOptParamater(qreal & parameter);
     void setOptParamater(QVector< qreal >& parameter);
@@ -117,18 +129,17 @@ public:
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     qreal ModelError() const;
     inline QStringList ConstantNames() const { return m_constant_names; }
-    
+    void setStatistic(const StatisticResult &result, int i);
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
 private:
     QList<int > m_active_signals;
     QList<int > m_locked_parameters;
-    
+    OptimizationType m_last_optimization;
 protected:
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
-    void ClearDataSeries() ;
     QString m_name;
     QVector<qreal > m_pure_signals, m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
@@ -140,6 +151,7 @@ protected:
     OptimizerConfig m_opt_config;
     bool m_corrupt;
     QStringList m_constant_names;
+    QList<StatisticResult > m_statistics;
 signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);

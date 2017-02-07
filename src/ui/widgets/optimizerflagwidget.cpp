@@ -35,6 +35,7 @@ OptimizerFlagWidget::OptimizerFlagWidget() :m_type(OptimizationType::Complexatio
 
 OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type) : m_type(type)
 {
+    qDebug() << m_type;
     setUi();
 }
 

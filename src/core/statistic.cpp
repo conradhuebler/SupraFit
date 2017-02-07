@@ -83,7 +83,7 @@ void StatisticThread::ConfidenceAssesment()
     SumErrors(0, integ_5, integ_1, series);
 
     
-    m_result.points = series;
+    m_series = series;
     m_result.integ_5 = integ_5/m_error;
     m_result.integ_1 = integ_1/m_error;
 }
@@ -120,7 +120,10 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
         
         if(new_error/m_error > double(1.025))
         {
-            m_result.max = x;
+            if(direction)
+                m_result.max = x;
+            else
+                m_result.min = x;
             break;
         }
         if(direction)
@@ -185,6 +188,7 @@ bool Statistic::ConfidenceAssesment()
     for(int i = 0; i < threads.size(); ++i)
     {
         m_result << threads[i]->getResult();
+        m_series << threads[i]->getSeries();
         converged = converged && threads[i]->Converged();
         delete threads[i];
     }
