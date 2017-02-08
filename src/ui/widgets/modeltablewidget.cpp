@@ -44,6 +44,7 @@ ModelTableWidget::ModelTableWidget()
 
 ModelTableWidget::~ModelTableWidget()
 {
+    m_list.clear();
 }
 
 void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
@@ -52,7 +53,7 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
         return;
     m_list = list;
     QStandardItemModel *model = new QStandardItemModel;
-    
+    QStringList header = QStringList() <<  "Sum of Squares";
     for(int i = 0; i < list.size(); ++i)
     {
         double error = list[i]["sse"].toDouble();
@@ -62,38 +63,41 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
         model->setItem(i, 0, item);
         
         QJsonObject constants = list[i]["data"].toObject()["constants"].toObject();
-    QStringList keys = constants.keys();
-    
-    if(keys.size() > 10)
-    {
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(
-            keys.begin(),
-                  keys.end(),
-                  [&collator](const QString &key1, const QString &key2)
-                  {
-                      return collator.compare(key1, key2) < 0;
-                  });
-    }
-    
-    QString consts;
-    int j = 1;
-    for(const QString &str : qAsConst(keys))
-    {
-        QString element = constants[str].toString();
-        if(!element.isNull() && !element.isEmpty())
+        QStringList keys = constants.keys();
+        
+        if(keys.size() > 10)
         {
-            QStandardItem *item = new QStandardItem(element);
-            item->setData(i, Qt::UserRole);
-            model->setItem(i, j, item);
-            j++;
+            QCollator collator;
+            collator.setNumericMode(true);
+            std::sort(
+                keys.begin(),
+                      keys.end(),
+                      [&collator](const QString &key1, const QString &key2)
+                      {
+                          return collator.compare(key1, key2) < 0;
+                      });
+        }
+        
+        QString consts;
+        int j = 1;
+        for(const QString &str : qAsConst(keys))
+        {
+            QString element = constants[str].toString();
+            if(!element.isNull() && !element.isEmpty())
+            {
+                QStandardItem *item = new QStandardItem(element);
+                item->setData(i, Qt::UserRole);
+                model->setItem(i, j, item);
+                j++;
+            }
+            
         }
     }
-
     
-    }
+    for(const QString &str : m_model.data()->ConstantNames())
+        header << str;
     
+    model->setHorizontalHeaderLabels(header);
     QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
     proxyModel->setSourceModel(model);
     m_table->setModel(proxyModel);
@@ -101,7 +105,6 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
 
 void ModelTableWidget::rowSelected(QModelIndex index)
 {
-    
     int i = index.data(Qt::UserRole).toInt();
     QJsonObject model = m_list[i];
     emit LoadModel(model);

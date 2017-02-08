@@ -286,6 +286,8 @@ ModelWidget::~ModelWidget()
     delete m_statistic_dialog;
     m_search_dialog->hide();
     delete m_search_dialog;
+    m_table_dialog->hide();
+    delete m_table_dialog;
 }
 
 
@@ -638,6 +640,7 @@ void ModelWidget::LoadJson(const QJsonObject& object)
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();
+    Repaint();
 }
 
 void ModelWidget::OpenAdvancedSearch()
