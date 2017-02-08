@@ -30,6 +30,7 @@
 #include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/widgets/chartwidget.h"
 #include "src/ui/chartwrapper.h"
+#include "src/ui/widgets/statisticwidget.h"
 
 #include "src/ui/dialogs/modeldialog.h"
 
@@ -225,6 +226,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
     m_search_dialog = new ModalDialog;
     m_statistic_dialog = new ModalDialog;
+    m_statistic_widget = new StatisticWidget(m_model, this),
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
     m_layout->addWidget(pure_shift, 0, 0);
@@ -244,6 +246,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_layout->addLayout(const_layout, 0, 1, 1, m_model->ConstantSize()+2);
     //     m_layout->addWidget( new QLabel(tr("Error")), 0, 2*m_model->ConstantSize()+2);
     m_sign_layout = new QVBoxLayout;
+    m_sign_layout->addWidget(m_statistic_widget);
     m_sign_layout->setAlignment(Qt::AlignTop);
     
     

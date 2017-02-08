@@ -310,6 +310,7 @@ void AbstractTitrationModel::setStatistic(const StatisticResult &result, int i)
         m_statistics[i] = result;
     else
         m_statistics << result; 
+    emit StatisticChanged(result, i);
 }
 
 #include "AbstractModel.moc"
