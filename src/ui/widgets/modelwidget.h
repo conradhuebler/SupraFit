@@ -149,7 +149,7 @@ private:
     ChartView *view;
     QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
-    ModalDialog *m_statistic_dialog, *m_search_dialog;
+    ModalDialog *m_statistic_dialog, *m_search_dialog, *m_table_dialog;
 //     OptimizationType m_last_run;
     bool m_statistic;
     Charts m_charts;

@@ -30,6 +30,7 @@
 #include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/widgets/chartwidget.h"
 #include "src/ui/chartwrapper.h"
+#include "src/ui/widgets/modeltablewidget.h"
 
 #include "src/ui/dialogs/modeldialog.h"
 
@@ -226,6 +227,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     connect(m_advancedsearch, SIGNAL(MultiScanFinished(int)), this, SLOT(MultiScanFinished(int)));
     m_search_dialog = new ModalDialog;
     m_statistic_dialog = new ModalDialog;
+    m_table_dialog = new ModalDialog;
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
     m_layout->addWidget(pure_shift, 0, 0);
@@ -695,7 +697,13 @@ void ModelWidget::PlotFinished(int runtype)
 
 void ModelWidget::MultiScanFinished(int runtype)
 {
-    
+    ModelTableWidget *table = new ModelTableWidget;
+    connect(table, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
+    table->setModel(m_model);
+    table->setModelList(m_advancedsearch->ModelList());
+    m_table_dialog->setWidget(table, "Scan Results");
+    m_table_dialog->show();
+    m_advancedsearch->hide();
 }
 
 

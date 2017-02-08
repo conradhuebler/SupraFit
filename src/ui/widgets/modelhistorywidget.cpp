@@ -41,18 +41,19 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     
     if(keys.size() > 10)
     {
-    QCollator collator;
-    collator.setNumericMode(true);
-    std::sort(
-        keys.begin(),
-              keys.end(),
-              [&collator](const QString &key1, const QString &key2)
-              {
-                  return collator.compare(key1, key2) < 0;
-              });
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+                  keys.end(),
+                  [&collator](const QString &key1, const QString &key2)
+                  {
+                      return collator.compare(key1, key2) < 0;
+                  });
     }
+    
     QString consts;
-    for(const QString &str : keys)
+    for(const QString &str : qAsConst(keys))
     {
         QString element = constants[str].toString();
         if(!element.isNull() && !element.isEmpty())
@@ -63,10 +64,12 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     }
     consts.chop(2);
     layout->addWidget(new QLabel(consts), 1, 0, 1, 2);
+    
     int active = 0;
     for(int i = 0; i < element->active_signals.size(); ++i)
         active += element->active_signals[i];
     layout->addWidget(new QLabel(QString::number(active) + " used signals"), 2, 0, 1, 2);
+    
     layout->addWidget(new QLabel("Error"), 3, 0);
     layout->addWidget(new QLabel(QString::number(element->error)), 3, 1);
     
@@ -101,7 +104,6 @@ ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *par
     m_vlayout->setAlignment(Qt::AlignTop);
     setLayout(m_vlayout);
     setBackgroundRole(QPalette::Midlight);
-
 }
 
 ModelHistory::~ModelHistory()

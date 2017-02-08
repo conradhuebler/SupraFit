@@ -81,6 +81,7 @@ public:
     double MaxY() const;
     double MinY() const;
     QList<QList<QPointF> >Series() const { return m_series; }
+    QList<QJsonObject > ModelList() const { return m_models_list; }
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
