@@ -31,6 +31,7 @@
 #include "src/ui/widgets/chartwidget.h"
 #include "src/ui/chartwrapper.h"
 #include "src/ui/widgets/statisticwidget.h"
+#include "src/ui/widgets/modeltablewidget.h"
 
 #include "src/ui/dialogs/modeldialog.h"
 
@@ -223,10 +224,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
-    connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
+    connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
+    connect(m_advancedsearch, SIGNAL(MultiScanFinished(int)), this, SLOT(MultiScanFinished(int)));
     m_search_dialog = new ModalDialog;
     m_statistic_dialog = new ModalDialog;
     m_statistic_widget = new StatisticWidget(m_model, this),
+    m_table_dialog = new ModalDialog;
+    
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
     m_layout->addWidget(pure_shift, 0, 0);
@@ -286,6 +290,8 @@ ModelWidget::~ModelWidget()
     delete m_statistic_dialog;
     m_search_dialog->hide();
     delete m_search_dialog;
+    m_table_dialog->hide();
+    delete m_table_dialog;
 }
 
 
@@ -462,11 +468,11 @@ void ModelWidget::GlobalMinimize()
 void ModelWidget::Confidence()
 {
     Waiter wait;
-    if(m_statistic)
-    {
-        m_statistic_dialog->show();
-        return;
-    }
+//     if(m_statistic)
+//     {
+//         m_statistic_dialog->show();
+//         return;
+//     }
     Statistic *statistic = new Statistic(this);
     QJsonObject json = m_minimizer->Parameter();
     statistic->setModel(m_model);
@@ -638,6 +644,7 @@ void ModelWidget::LoadJson(const QJsonObject& object)
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();
+    Repaint();
 }
 
 void ModelWidget::OpenAdvancedSearch()
@@ -653,7 +660,7 @@ void ModelWidget::triggerPlot3D()
 }
 
 
-void ModelWidget::AdvancedSearchFinished(int runtype)
+void ModelWidget::PlotFinished(int runtype)
 {
     if(runtype == 1)
     {
@@ -693,4 +700,18 @@ void ModelWidget::AdvancedSearchFinished(int runtype)
     }
     m_search_dialog->show();
 }
+
+
+void ModelWidget::MultiScanFinished(int runtype)
+{
+    ModelTableWidget *table = new ModelTableWidget;
+    connect(table, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
+    table->setModel(m_model);
+    table->setModelList(m_advancedsearch->ModelList());
+    m_table_dialog->setWidget(table, "Scan Results");
+    m_table_dialog->show();
+    m_advancedsearch->hide();
+}
+
+
 #include "modelwidget.moc"

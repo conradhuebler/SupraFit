@@ -175,7 +175,6 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
             QJsonObject statistic;
             statistic["max"] = QString::number(m_statistics[i].max);
             statistic["min"] = QString::number(m_statistics[i].min);
-            statistic["error"] = QString::number(m_statistics[i].error);
             statistic["integ_1"] = QString::number(m_statistics[i].integ_1);
             statistic["integ_5"] = QString::number(m_statistics[i].integ_5);
             constantObject[QString::number(i)+"_statistic"] = statistic;
@@ -209,6 +208,7 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     toplevel["data"] = json;
     toplevel["model"] = m_name;  
     toplevel["runtype"] = m_last_optimization;
+    toplevel["sse"] = ModelError();
     return toplevel;
 }
 
@@ -232,7 +232,6 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
         QJsonObject statistic = constantsObject[QString::number(i) + "_statistic"].toObject();
         result.max =  statistic["max"].toString().toDouble();
         result.min =  statistic["min"].toString().toDouble();
-        result.error =  statistic["error"].toString().toDouble();
         result.integ_1 =  statistic["integ_1"].toString().toDouble();
         result.integ_5 =  statistic["integ_5"].toString().toDouble();
         setStatistic(result, i);

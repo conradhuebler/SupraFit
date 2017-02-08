@@ -71,7 +71,6 @@ void StatisticThread::ConfidenceAssesment()
     m_model->setLockedParameter(locked);
     
     m_result.optim = parameter[m_parameter_id];
-    m_result.error = m_error;
     m_result.name = m_model->ConstantNames()[m_parameter_id];
     
     m_model->setLockedParameter(locked);

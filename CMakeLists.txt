@@ -123,6 +123,7 @@ qt5_use_modules(models Core)
 
 set(nmr2fit_SRCS
                 src/ui/widgets/statisticwidget.cpp
+                src/ui/widgets/modeltablewidget.cpp
                 src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/modelhistorywidget.cpp

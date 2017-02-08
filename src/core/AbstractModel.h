@@ -55,7 +55,6 @@ struct StatisticResult
     double optim;
     double max;
     double min;
-    double error;
     QString name;
     double integ_5;
     double integ_1;
