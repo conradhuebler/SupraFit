@@ -40,10 +40,11 @@ private:
     QSharedPointer<AbstractTitrationModel> m_model;
     
 private slots:
-    void rowSelected(QModelIndex index);
-    
+    void rowSelected(const QModelIndex &index);
+    void ShowContextMenu(const QPoint& pos);
 signals:
     void LoadModel(const QJsonObject &object);
+    void AddModel(const QJsonObject &object);
 };
 
 #endif // MODELTABLEWIDGET_H

@@ -177,7 +177,7 @@ signals:
     void ActiveSignalChanged(QVector<int > active_signals);
     void Update();
     void Warning(const QString &str, int i);
-//     void AddModel(const QJsonObject &json);
+    void AddModel(const QJsonObject &json);
 };
 
 #endif // MODELWIDGET_H

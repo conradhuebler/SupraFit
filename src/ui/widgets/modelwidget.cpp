@@ -705,7 +705,8 @@ void ModelWidget::PlotFinished(int runtype)
 void ModelWidget::MultiScanFinished(int runtype)
 {
     ModelTableWidget *table = new ModelTableWidget;
-    connect(table, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
+    connect(table, SIGNAL(LoadModel(const QJsonObject)), this, SLOT(LoadJson(const QJsonObject)));
+    connect(table, SIGNAL(AddModel(const QJsonObject)), this, SIGNAL(AddModel(const QJsonObject)));
     table->setModel(m_model);
     table->setModelList(m_advancedsearch->ModelList());
     m_table_dialog->setWidget(table, "Scan Results");
