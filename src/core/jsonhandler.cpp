@@ -45,7 +45,7 @@ bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file, bo
     QFile saveFile(file);
 
     if (!saveFile.open(QIODevice::WriteOnly)) {
-        qWarning("Couldn't open save file.");
+        qWarning("Couldn't open file .");
         return false;
     }
 
@@ -60,7 +60,7 @@ bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file, b
     QFile saveFile(file);
 
     if (!saveFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
-        qWarning("Couldn't open save file.");
+        qWarning("Couldn't open file.");
         return false;
     }
 

@@ -70,7 +70,7 @@ class AdvancedSearch : public QDialog
 public:
     AdvancedSearch(QWidget *parent = 0);
     ~AdvancedSearch();
-    QVector<QPointer<ParameterWidget > > m_parameter_list;
+    
     inline void setMinimizer(QWeakPointer<Minimizer> minimizer) { m_minimizer = minimizer; }
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); SetUi();}
     inline GlobalSearchResult  LastResult() const { return last_result; }
@@ -89,19 +89,22 @@ private:
     QPointer<QCheckBox > m_optim;
     QPointer<QPushButton > m_2d_search, m_1d_search, m_scan;
     GlobalSearchResult last_result;
-    QVector< QVector<double > > ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
+    void ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
     QtDataVisualization::QSurfaceDataArray m_3d_data;
     QList<QList<QPointF> > m_series;
     OptimizationType m_type;
     QPointer<OptimizerFlagWidget > m_optim_flags;
     double error_max;
     QVector< QVector<double > > ParamList() const;
+    QList<QJsonObject > m_models_list;
+    QVector<QPointer<ParameterWidget > > m_parameter_list;
 private slots:
     void Create2DPlot();
     void LocalSearch();
     void GlobalSearch();
 signals:
-    void finished(int runtype);
+    void PlotFinished(int runtype);
+    void MultiScanFinished(int runtype);
 };
 
 #endif // ADVANCEDSEARCH_H

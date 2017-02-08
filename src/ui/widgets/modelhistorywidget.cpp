@@ -17,13 +17,16 @@
  *
  */
 
+#include <QtCore/QCollator>
+#include <QtCore/QMap>
+#include <QtCore/QPointer>
+
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QScrollArea>
-#include <QtCore/QMap>
-#include <QtCore/QPointer>
+
 #include <QDebug>
 
 #include <iostream>
@@ -33,7 +36,33 @@
 ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidget *parent) : QGroupBox(parent), m_json(&element->model)
 {
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(new QLabel("<h3>" + m_json->value("model").toString() + "</h3>"), 0, 0, 1, 2);
+    QJsonObject constants = (*m_json)["data"].toObject()["constants"].toObject();
+    QStringList keys = constants.keys();
+    
+    if(keys.size() > 10)
+    {
+    QCollator collator;
+    collator.setNumericMode(true);
+    std::sort(
+        keys.begin(),
+              keys.end(),
+              [&collator](const QString &key1, const QString &key2)
+              {
+                  return collator.compare(key1, key2) < 0;
+              });
+    }
+    QString consts;
+    for(const QString &str : keys)
+    {
+        QString element = constants[str].toString();
+        if(!element.isNull() && !element.isEmpty())
+        {
+            consts += element;
+            consts +="; ";
+        }
+    }
+    consts.chop(2);
+    layout->addWidget(new QLabel(consts), 1, 0, 1, 2);
     int active = 0;
     for(int i = 0; i < element->active_signals.size(); ++i)
         active += element->active_signals[i];
@@ -56,6 +85,8 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     layout->addWidget(m_remove, 5, 0, 1, 2);
     setLayout(layout);
     setFixedSize(200,180);
+    setAlignment(Qt::AlignHCenter);
+    setTitle(m_json->value("model").toString());
 }
 
 void ModelHistoryWidget::remove()

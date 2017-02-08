@@ -179,7 +179,7 @@ void AdvancedSearch::LocalSearch()
 
         
     Scan(full_list);
-    emit finished(2);
+    emit PlotFinished(2);
 }
 
 
@@ -187,25 +187,23 @@ void AdvancedSearch::GlobalSearch()
 {
     Waiter wait;
     QVector< QVector<double > > full_list = ParamList();
-    
+    m_models_list.clear();
     QVector<double > error; 
     m_type = m_optim_flags->getFlags();   
     m_type |= OptimizationType::ComplexationConstants;
      if(m_model->ConstantSize() == 2)
      {
         int t0 = QDateTime::currentMSecsSinceEpoch();
-        QVector< QVector<double > > input  = ConvertList(full_list, error);
+        ConvertList(full_list, error);
         int t1 = QDateTime::currentMSecsSinceEpoch();
         std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-        emit finished(1);
-     }
-    
-    
+        emit MultiScanFinished(1);
+     }  
 }
 
 void AdvancedSearch::Create2DPlot()
 {
-    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));   
+    Waiter wait;
     QVector< QVector<double > > full_list = ParamList();
     
     QVector<double > error; 
@@ -213,16 +211,14 @@ void AdvancedSearch::Create2DPlot()
     if(m_model->ConstantSize() == 2)
     {
         int t0 = QDateTime::currentMSecsSinceEpoch();
-        QVector< QVector<double > > input  = ConvertList(full_list, error);
+        ConvertList(full_list, error);
         int t1 = QDateTime::currentMSecsSinceEpoch();
         std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-        emit finished(1);
+        emit PlotFinished(1);
     }
-    
-    QApplication::restoreOverrideCursor();
 }
 
-QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
+void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
 {
     QVector<int > position(full_list.size(), 0);
     QVector< QVector<double > > input;
@@ -284,20 +280,23 @@ QVector<QVector<double> > AdvancedSearch::ConvertList(const QVector<QVector<doub
                     QJsonObject json = threads[i][j]->ConvergedParameter();
                     m_model->ImportJSON(json);
                     m_model->CalculateSignal();
-                    
+
                     double current_error = m_model->ModelError();
                     error << current_error; 
                     if(error_max < current_error)
                         error_max = current_error;
                     last_result.m_error = error;
                     last_result.m_input = full_list;
-
-                    *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
+                    if(m_type & OptimizationType::ComplexationConstants)
+                        m_models_list << json;
+                    else
+                        *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
                     delete threads[i][j];
                 }
-                m_3d_data << dataRow1;
+                if(!(m_type & OptimizationType::ComplexationConstants))
+                    m_3d_data << dataRow1;
             }
-            return input;
+            return;
         }
     }
 }

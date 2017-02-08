@@ -163,7 +163,8 @@ private slots:
     void ExportConstants();
     void setParameter();
     void OpenAdvancedSearch();
-    void AdvancedSearchFinished(int runtype);
+    void PlotFinished(int runtype);
+    void MultiScanFinished(int runtype);
     void triggerPlot3D();
     void Confidence();
 public slots:

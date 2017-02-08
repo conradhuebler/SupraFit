@@ -222,7 +222,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
-    connect(m_advancedsearch, SIGNAL(finished(int)), this, SLOT(AdvancedSearchFinished(int)));
+    connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
+    connect(m_advancedsearch, SIGNAL(MultiScanFinished(int)), this, SLOT(MultiScanFinished(int)));
     m_search_dialog = new ModalDialog;
     m_statistic_dialog = new ModalDialog;
     m_layout = new QGridLayout;
@@ -650,7 +651,7 @@ void ModelWidget::triggerPlot3D()
 }
 
 
-void ModelWidget::AdvancedSearchFinished(int runtype)
+void ModelWidget::PlotFinished(int runtype)
 {
     if(runtype == 1)
     {
@@ -690,4 +691,12 @@ void ModelWidget::AdvancedSearchFinished(int runtype)
     }
     m_search_dialog->show();
 }
+
+
+void ModelWidget::MultiScanFinished(int runtype)
+{
+    
+}
+
+
 #include "modelwidget.moc"
