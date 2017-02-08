@@ -36,7 +36,10 @@ ModelTableWidget::ModelTableWidget()
     QGridLayout *layout = new QGridLayout;
     m_table = new QTableView(this);
     m_table->setSortingEnabled(true);
+    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_table->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_table, SIGNAL(clicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
+    connect(m_table, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     layout->addWidget(m_table, 0, 0);
     
     setLayout(layout);
@@ -105,13 +108,20 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
     resize(m_table->sizeHint());
 }
 
-void ModelTableWidget::rowSelected(QModelIndex index)
+void ModelTableWidget::rowSelected(const QModelIndex &index)
 {
     int i = index.data(Qt::UserRole).toInt();
     QJsonObject model = m_list[i];
     emit LoadModel(model);
 }
 
-
+void ModelTableWidget::ShowContextMenu(const QPoint& pos)
+{
+    Q_UNUSED(pos)
+    QModelIndex index = m_table->currentIndex();
+    int i = index.data(Qt::UserRole).toInt();
+    QJsonObject model = m_list[i];
+    emit AddModel(model);
+}
 
 #include "modeltablewidget.moc"

@@ -130,6 +130,8 @@ public:
     inline QStringList ConstantNames() const { return m_constant_names; }
     void setStatistic(const StatisticResult &result, int i);
     virtual bool SupportThreads() const = 0;
+    StatisticResult  getStatisticResult(int i) const { return m_statistics[i]; }
+
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -156,7 +158,7 @@ signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);
     void Warning(const QString &str, int priority = 1);
-    
+    void StatisticChanged(const StatisticResult &result, int i);
 };
 
 #endif // ABSTRACTMODEL_H

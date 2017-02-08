@@ -30,6 +30,7 @@
 #include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/widgets/chartwidget.h"
 #include "src/ui/chartwrapper.h"
+#include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modeltablewidget.h"
 
 #include "src/ui/dialogs/modeldialog.h"
@@ -227,7 +228,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     connect(m_advancedsearch, SIGNAL(MultiScanFinished(int)), this, SLOT(MultiScanFinished(int)));
     m_search_dialog = new ModalDialog;
     m_statistic_dialog = new ModalDialog;
+    m_statistic_widget = new StatisticWidget(m_model, this),
     m_table_dialog = new ModalDialog;
+    
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
     m_layout->addWidget(pure_shift, 0, 0);
@@ -247,6 +250,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_layout->addLayout(const_layout, 0, 1, 1, m_model->ConstantSize()+2);
     //     m_layout->addWidget( new QLabel(tr("Error")), 0, 2*m_model->ConstantSize()+2);
     m_sign_layout = new QVBoxLayout;
+    m_sign_layout->addWidget(m_statistic_widget);
     m_sign_layout->setAlignment(Qt::AlignTop);
     
     
@@ -464,11 +468,11 @@ void ModelWidget::GlobalMinimize()
 void ModelWidget::Confidence()
 {
     Waiter wait;
-    if(m_statistic)
-    {
-        m_statistic_dialog->show();
-        return;
-    }
+//     if(m_statistic)
+//     {
+//         m_statistic_dialog->show();
+//         return;
+//     }
     Statistic *statistic = new Statistic(this);
     QJsonObject json = m_model->ExportJSON();
     statistic->setModel(m_model);
@@ -701,7 +705,8 @@ void ModelWidget::PlotFinished(int runtype)
 void ModelWidget::MultiScanFinished(int runtype)
 {
     ModelTableWidget *table = new ModelTableWidget;
-    connect(table, SIGNAL(LoadModel(QJsonObject)), this, SLOT(LoadJson(QJsonObject)));
+    connect(table, SIGNAL(LoadModel(const QJsonObject)), this, SLOT(LoadJson(const QJsonObject)));
+    connect(table, SIGNAL(AddModel(const QJsonObject)), this, SIGNAL(AddModel(const QJsonObject)));
     table->setModel(m_model);
     table->setModelList(m_advancedsearch->ModelList());
     m_table_dialog->setWidget(table, "Scan Results");

@@ -50,7 +50,7 @@ class AdvancedSearch;
 class ChartView;
 class _3DChartView;
 class OptimizerFlagWidget;
-
+class StatisticWidget;
 struct  ModelHistoryElement;
 struct Charts;
 
@@ -147,6 +147,7 @@ private:
     
     void CollectParameters();
     ChartView *view;
+    StatisticWidget *m_statistic_widget;
     QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
     ModalDialog *m_statistic_dialog, *m_search_dialog, *m_table_dialog;
@@ -176,7 +177,7 @@ signals:
     void ActiveSignalChanged(QVector<int > active_signals);
     void Update();
     void Warning(const QString &str, int i);
-//     void AddModel(const QJsonObject &json);
+    void AddModel(const QJsonObject &json);
 };
 
 #endif // MODELWIDGET_H

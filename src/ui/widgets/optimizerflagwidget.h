@@ -29,7 +29,7 @@
 class QVBoxLayout;
 class QCheckBox;
 
-class OptimizerFlagWidget : public QGroupBox
+class OptimizerFlagWidget : public QWidget
 {
     Q_OBJECT
 public:
@@ -38,7 +38,6 @@ public:
     ~OptimizerFlagWidget();
     OptimizationType getFlags() const;
     void DisableOptions(OptimizationType type);
-
 private:
     OptimizationType m_type;
     void setUi();
