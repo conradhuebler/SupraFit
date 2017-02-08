@@ -135,12 +135,12 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
     emit Recalculated();
 }
 
-void ItoI_Model::setConstants(QVector< qreal > list)
-{
-    if(list.isEmpty())
-        return;
-    m_K11 = list.first();
-}
+// void ItoI_Model::setConstants(QVector< qreal > list)
+// {
+//     if(list.isEmpty())
+//         return;
+//     m_K11 = list.first();
+// }
 
 void ItoI_Model::setPureSignals(const QVector< qreal > &list)
 {

@@ -302,6 +302,11 @@ void Minimizer::setModel(const QSharedPointer<AbstractTitrationModel> model)
     m_model = model;
 }
 
+void Minimizer::setModelCloned(const QSharedPointer<AbstractTitrationModel> model)
+{
+    m_model = model->Clone();
+}
+
 void Minimizer::setParameter(const QJsonObject& json)
 {
     m_model->ImportJSON(json);

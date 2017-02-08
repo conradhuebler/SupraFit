@@ -470,7 +470,7 @@ void ModelWidget::Confidence()
         return;
     }
     Statistic *statistic = new Statistic(this);
-    QJsonObject json = m_minimizer->Parameter();
+    QJsonObject json = m_model->ExportJSON();
     statistic->setModel(m_model);
     statistic->setParameter(json);
 

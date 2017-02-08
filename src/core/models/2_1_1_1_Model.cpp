@@ -95,13 +95,13 @@ void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
     }
 }
 
-void IItoI_ItoI_Model::setConstants(QVector< qreal > list)
-{
-    if(list.size() != m_complex_constants.size())
-        return;
-    for(int i = 0; i < list.size(); ++i)
-        m_complex_constants[i] = list[i];
-}
+// void IItoI_ItoI_Model::setConstants(QVector< qreal > list)
+// {
+//     if(list.size() != m_complex_constants.size())
+//         return;
+//     for(int i = 0; i < list.size(); ++i)
+//         m_complex_constants[i] = list[i];
+// }
 
 qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants)
 {

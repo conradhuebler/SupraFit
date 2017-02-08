@@ -49,7 +49,7 @@ public:
     RunType m_runtype;
     StatisticResult getResult() const { return m_result; }
     inline void setIncerement(double increment) { m_increment = increment; }
-    inline  void setMaxSteps(int steps ) { m_maxsteps = steps; }
+    inline void setMaxSteps(int steps ) { m_maxsteps = steps; }
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> getSeries() const { return m_series; }
 private:

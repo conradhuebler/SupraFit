@@ -41,6 +41,7 @@ public:
     NonLinearFitThread();
     ~NonLinearFitThread();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
+   
     QSharedPointer<AbstractTitrationModel> Model() const { return m_model; }
     inline void setOptimizationRun(OptimizationType runtype) { m_runtype = runtype; }
     virtual void run ();
@@ -73,6 +74,7 @@ public:
     Minimizer(QObject *parent = 0);
     ~Minimizer();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
+    void setModelCloned(const QSharedPointer<AbstractTitrationModel> model);
     int Minimize(OptimizationType runtype);
     void setOptimizerConfig(const OptimizerConfig &config) 
     { 

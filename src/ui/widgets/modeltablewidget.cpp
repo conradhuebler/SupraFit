@@ -101,6 +101,8 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
     QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
     proxyModel->setSourceModel(model);
     m_table->setModel(proxyModel);
+    m_table->resizeColumnsToContents();
+    resize(m_table->sizeHint());
 }
 
 void ModelTableWidget::rowSelected(QModelIndex index)

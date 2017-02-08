@@ -93,7 +93,7 @@ public:
     virtual int ConstantSize() const = 0;
     virtual void setPureSignals(const QVector< qreal > &list) = 0;
     virtual void setComplexSignals(QVector< qreal > list, int i) = 0;
-    virtual void setConstants(QVector< qreal > list) = 0;
+    virtual void setConstants(QVector< qreal > list);
     virtual void CalculateSignal(QVector<qreal > constants) = 0;
     virtual void InitialGuess() = 0;
     QVector<qreal >  getCalculatedSignals(QList<int > active_signal = QList<int >() << 0);
@@ -129,6 +129,7 @@ public:
     qreal ModelError() const;
     inline QStringList ConstantNames() const { return m_constant_names; }
     void setStatistic(const StatisticResult &result, int i);
+    virtual bool SupportThreads() const = 0;
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      

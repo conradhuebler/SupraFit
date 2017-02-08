@@ -46,9 +46,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     m_model_error = new DataTable(SignalCount(),DataPoints());
     
     m_pure_signals = SignalModel()->firstRow();
-    m_data = data;
-    connect(m_data, SIGNAL(recalculate()), this, SLOT(CalculateSignal()));
-    
+    m_data = data;    
 }
 
 AbstractTitrationModel::~AbstractTitrationModel()
@@ -172,12 +170,15 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
         constantObject[QString::number(i)] = (QString::number(Constants()[i]));
         if(i < m_statistics.size())
         {
-            QJsonObject statistic;
-            statistic["max"] = QString::number(m_statistics[i].max);
-            statistic["min"] = QString::number(m_statistics[i].min);
-            statistic["integ_1"] = QString::number(m_statistics[i].integ_1);
-            statistic["integ_5"] = QString::number(m_statistics[i].integ_5);
-            constantObject[QString::number(i)+"_statistic"] = statistic;
+            if(m_statistics[i].integ_5 != 0 || m_statistics[i].integ_1 != 0)
+            {
+                QJsonObject statistic;
+                statistic["max"] = QString::number(m_statistics[i].max);
+                statistic["min"] = QString::number(m_statistics[i].min);
+                statistic["integ_1"] = QString::number(m_statistics[i].integ_1);
+                statistic["integ_5"] = QString::number(m_statistics[i].integ_5);
+                constantObject[QString::number(i)+"_statistic"] = statistic;
+            }
         }
     }
     json["constants"] = constantObject;
@@ -310,5 +311,16 @@ void AbstractTitrationModel::setStatistic(const StatisticResult &result, int i)
     else
         m_statistics << result; 
 }
+
+
+void AbstractTitrationModel::setConstants(QVector<qreal> list)
+{
+      if(list.size() != m_complex_constants.size())
+        return;
+    for(int i = 0; i < list.size(); ++i)
+        m_complex_constants[i] = list[i];  
+}
+
+
 
 #include "AbstractModel.moc"

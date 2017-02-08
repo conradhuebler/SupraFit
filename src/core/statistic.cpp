@@ -30,7 +30,7 @@
 
 #include "statistic.h"
 
-StatisticThread::StatisticThread(RunType runtype) : m_runtype(runtype), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-4), m_maxsteps(1e5), m_converged(true)
+StatisticThread::StatisticThread(RunType runtype) : m_runtype(runtype), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-3), m_maxsteps(1e4), m_converged(true)
 {
     setAutoDelete(false);
 }
@@ -42,7 +42,7 @@ StatisticThread::~StatisticThread()
 void StatisticThread::setModel(QSharedPointer<AbstractTitrationModel> model)
 { 
     m_model = model->Clone(); 
-    m_minimizer->setModel(m_model); 
+    m_minimizer->setModelCloned(m_model); 
 }
 
 void StatisticThread::run()
@@ -80,7 +80,7 @@ void StatisticThread::ConfidenceAssesment()
     SumErrors(1, integ_5, integ_1, series);
     m_model->ImportJSON(optimized);
     SumErrors(0, integ_5, integ_1, series);
-
+    
     
     m_series = series;
     m_result.integ_5 = integ_5/m_error;
@@ -89,6 +89,13 @@ void StatisticThread::ConfidenceAssesment()
 
 void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
 {
+    
+    //FIXME something strange in code-hood
+    /*
+     * i will override the parameters with the original one and multiply the increment with the current step
+     */
+    
+    QJsonObject original = m_model->ExportJSON();
     double increment = m_increment;
     if(!direction)
         increment *= -1;
@@ -96,8 +103,14 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
     int counter = 0;
     for(int m = 0; m < m_maxsteps; ++m)
     {
-        double x  = m_model->IncrementParameter(increment, m_parameter_id);
+        /*
+        * i will override the parameters with the original one and multiply the increment with the current step
+        */
+        m_model->ImportJSON(original);
+        qDebug() << (m+1)*increment << original;
+        double x  = m_model->IncrementParameter((m+1)*increment, m_parameter_id);
         QJsonObject json = m_model->ExportJSON();
+        qDebug() << x << json;
         m_minimizer->setParameter(json);
         m_minimizer->Minimize(m_type);
         {
@@ -105,6 +118,7 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
             m_model->ImportJSON(json);
             m_model->CalculateSignal();
         }
+       
         qreal new_error = m_model->ModelError();
         if(new_error < m_error)
             counter++;
@@ -112,7 +126,7 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
         qreal triangle = 0.5*increment*qAbs(new_error-old_error);
         qreal integ = rect+triangle; 
         integ_5 += integ;
-
+        qDebug() << m << "out of" << m_maxsteps << "done" << new_error/m_error;
         
         if(new_error/m_error <= double(1.005) && new_error > m_error)
             integ_1 += integ;
@@ -170,19 +184,26 @@ bool Statistic::ConfidenceAssesment()
     QList<QPointer <StatisticThread > > threads;
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
+    
     for(int i = 0; i < parameter.size(); ++i)
     {
         QPointer<StatisticThread >thread = new StatisticThread(StatisticThread::RunType::ConfidenceByError);
         thread->setModel(m_model);
         thread->SetParameterID(i);
-         thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);
-//        thread->setOptimizationRun(m_type);
-        threadpool->start(thread);
-//         thread->run();
+        thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);
+        if(m_model->SupportThreads())
+        {
+            thread->run();
+            qDebug() << "ones more done";
+        }
+        else
+            threadpool->start(thread);
         threads << thread;
     }
     
-    threadpool->waitForDone();
+    if(!m_model->SupportThreads())
+        threadpool->waitForDone();
+    
     bool converged = true;
     for(int i = 0; i < threads.size(); ++i)
     {

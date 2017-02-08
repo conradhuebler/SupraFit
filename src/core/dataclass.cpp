@@ -325,7 +325,6 @@ QVector<double>   DataClass::getSignals(QList<int > active_signal)
 void DataClass::SwitchConentrations()
 {
     *d->m_concentrations = !(*d->m_concentrations); 
-    emit recalculate();
 }
 
 qreal DataClass::XValue(int i) const
@@ -425,7 +424,6 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
         QVector<qreal > concentrationsVector, signalVector;
         concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
         signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
-        //         qDebug() << str << concentrationsVector << signalVector;
         int row = str.toInt();
         d->m_concentration_model->setRow(concentrationsVector, row);
         d->m_signal_model->setRow(signalVector, row);

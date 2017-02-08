@@ -169,7 +169,6 @@ protected:
 signals:
     void RowAdded();
     void ActiveSignalsChanged(QList<int > active_signals);
-    void recalculate();
 };
 
 #endif // DATACLASS_H
