@@ -145,10 +145,10 @@ void AdvancedSearch::SetUi()
     mlayout->addLayout(layout, 0, 0, 1, 2);
     mlayout->addWidget(m_optim, 3, 0);
     if(m_model->ConstantSize() == 1)
-    mlayout->addWidget(m_1d_search,3, 0);
+        mlayout->addWidget(m_1d_search,3, 1);
+    mlayout->addWidget(m_scan, 3, 0);
     if(m_model->ConstantSize() == 2)
     {
-        mlayout->addWidget(m_scan, 3, 0);
         mlayout->addWidget(m_2d_search,3, 1);
     }
     setLayout(mlayout);
@@ -176,8 +176,8 @@ void AdvancedSearch::LocalSearch()
 {
     Waiter wait;
     QVector< QVector<double > > full_list = ParamList();
-
-        
+    
+    
     Scan(full_list);
     emit PlotFinished(2);
 }
@@ -191,14 +191,15 @@ void AdvancedSearch::GlobalSearch()
     QVector<double > error; 
     m_type = m_optim_flags->getFlags();   
     m_type |= OptimizationType::ComplexationConstants;
-     if(m_model->ConstantSize() == 2)
-     {
-        int t0 = QDateTime::currentMSecsSinceEpoch();
-        ConvertList(full_list, error);
-        int t1 = QDateTime::currentMSecsSinceEpoch();
-        std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-        emit MultiScanFinished(1);
-     }  
+    //      if(m_model->ConstantSize() == 2)
+    //      {
+    int t0 = QDateTime::currentMSecsSinceEpoch();
+    ConvertList(full_list, error);
+    qDebug() << m_models_list;
+    int t1 = QDateTime::currentMSecsSinceEpoch();
+    std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
+    emit MultiScanFinished(1);
+    //      }  
 }
 
 void AdvancedSearch::Create2DPlot()
@@ -226,79 +227,91 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
     QVector<QVector<QPointer<NonLinearFitThread> > > threads;
     QVector<QPointer<NonLinearFitThread> > thread_rows;
     QThreadPool::globalInstance()->setMaxThreadCount(maxthreads -1 );
-    for(;;)
+    bool allow_break = false;
+    while(!allow_break)
     {
         
         QVector<double > parameter(full_list.size(), 0);
         for(int j = 0; j < position.size(); ++j)
             parameter[j] = full_list[j][position[j]];
         
-        bool allow_break = true;
+        bool temporary = true;
         for(int i = 0; i < position.size(); ++i)
         {
-            allow_break = allow_break && (position[i] == full_list[i].size() - 1);
+            temporary = temporary && (position[i] == full_list[i].size() - 1);
         }
-        
+        if(temporary)
+            allow_break = true;
         m_model->setConstants(parameter);
+        
         thread_rows << m_minimizer.data()->addJob(m_model, m_type);
+        if(m_model->SupportThreads())
+            QThreadPool::globalInstance()->waitForDone();
         
         for(int k = position.size() - 1; k >= 0; --k)
         {
             if(position[k] == ( full_list[k].size() - 1) )
             {
-                k--;
-                if(k >= 0)
+                position[k] = 0;
+                //                 k--;
+                //                                  if(k >= 0)
+                //                                  {
+                //                     position[k]++;
+                if(position[k] <= full_list[k].size() - 1)
                 {
-                    position[k]++;
-                    if(position[k] <= full_list[k].size() - 1)
-                    {
-                        threads << thread_rows;
-                        thread_rows.clear();
-                        position[k + 1] = 0;
-                    }
-                    break;
+                    threads << thread_rows;
+                    thread_rows.clear();
+                    //                         position[k + 1] = 0;
                 }
+                //                     break;
+                //                                 }
             }
             else
             {
-                 position[k]++;
-                 break;
-            }
-        }
-                
-        if(allow_break)
-        {
-            QThreadPool::globalInstance()->setMaxThreadCount(maxthreads);
-            QThreadPool::globalInstance()->waitForDone(-1);
-            for(int i = 0; i < threads.size(); ++i)
-            {
-                QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
-                for(int j = 0; j < threads[i].size(); ++j)
+                position[k]++;
+                if(position[k] == full_list[k].size())
                 {
-                    QVector< qreal > parameter = threads[i][j]->Model()->Constants();
-                    
-                    QJsonObject json = threads[i][j]->ConvergedParameter();
-                    m_model->ImportJSON(json);
-                    m_model->CalculateSignal();
-
-                    double current_error = m_model->ModelError();
-                    error << current_error; 
-                    if(error_max < current_error)
-                        error_max = current_error;
-                    last_result.m_error = error;
-                    last_result.m_input = full_list;
-                    if(m_type & OptimizationType::ComplexationConstants)
-                        m_models_list << json;
-                    else
-                        *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
-                    delete threads[i][j];
+                    position[k] = 0;
+                    if(k > 0)
+                        position[k - 1]++;
                 }
-                if(!(m_type & OptimizationType::ComplexationConstants))
-                    m_3d_data << dataRow1;
+                break;
             }
-            return;
         }
     }
+    if(!m_model->SupportThreads())
+    {
+        QThreadPool::globalInstance()->setMaxThreadCount(maxthreads);
+        QThreadPool::globalInstance()->waitForDone(-1);
+    }
+    for(int i = 0; i < threads.size(); ++i)
+    {
+        QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
+        for(int j = 0; j < threads[i].size(); ++j)
+        {
+            QVector< qreal > parameter = threads[i][j]->Model()->Constants();
+            
+            QJsonObject json = threads[i][j]->ConvergedParameter();
+            m_model->ImportJSON(json);
+            m_model->CalculateSignal();
+            qDebug() << json;
+            double current_error = m_model->ModelError();
+            error << current_error; 
+            if(error_max < current_error)
+                error_max = current_error;
+            last_result.m_error = error;
+            last_result.m_input = full_list;
+            if(m_type & OptimizationType::ComplexationConstants)
+                m_models_list << json;
+            else
+                *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
+            delete threads[i][j];
+        }
+        if(!(m_type & OptimizationType::ComplexationConstants))
+            m_3d_data << dataRow1;
+    }
+    return;
+    
 }
 
 
