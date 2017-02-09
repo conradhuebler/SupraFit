@@ -38,7 +38,7 @@ QVector<qreal > String2DoubleVec(const QString &str)
 {
     QVector<qreal > vector;
     QStringList nums = str.split(" ");
-    foreach(const QString &string, nums)
+    for(const QString &string: qAsConst(nums))
         vector << string.toDouble();
     return vector;
 }

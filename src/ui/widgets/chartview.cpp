@@ -204,7 +204,7 @@ void ChartView::formatAxis()
     qreal x_max = 0;
     qreal y_max = 0;
     qreal y_min = 0;
-    foreach(QtCharts::QAbstractSeries *series, m_chart->series())
+    for(QtCharts::QAbstractSeries *series: m_chart->series())
     {
         QtCharts::QXYSeries *serie = qobject_cast<QtCharts::QXYSeries *>(series);
         if(serie->isVisible())

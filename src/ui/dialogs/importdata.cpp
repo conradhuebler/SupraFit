@@ -55,11 +55,11 @@ void TableView::keyPressEvent(QKeyEvent *event)
         int row = index.row();
         int column = index.column();
         QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
-        foreach(const QString line, lines)
+        for(const QString line: qAsConst(lines))
         {
             int col = column;
             QStringList cells = line.simplified().split(" ");
-            foreach(const QString &cell, cells)
+            for(const QString &cell: qAsConst(cells))
             {
                 model->item(row, col)->setData(QString(cell).replace(",", "."), Qt::DisplayRole);
                 col++;
@@ -246,9 +246,9 @@ void ImportData::ExportFile()
             conc[1] = conc[0];
             conc[0] = a;
         }
-        foreach(double d, conc)
+        for(double d: conc)
             stream << d << " ";
-        foreach(double d, sign)
+        for(double d: sign)
             stream << d << " ";
         stream <<  endl;
     }

@@ -71,7 +71,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     QString message = QString();
     message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
     message += "Old vector : ";
-    foreach(double d, parameter)
+    for(double d: parameter)
     {
         message += QString::number(d) + " ";
     }

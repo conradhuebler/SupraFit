@@ -332,8 +332,11 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
     else
     {
         int i = m_models.size();
-        foreach(const QString &str, keys)
+        for(const QString &str : qAsConst(keys))
         {
+            /*
+             * Dont load to many models to the workspace, this is slow and confusing
+             */
             QJsonObject model = object[str].toObject();
             if(i++ < 5)
                 Json2Model(model, model["model"].toString());

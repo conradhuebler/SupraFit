@@ -177,7 +177,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     QString message = QString();
     message += "Starting BFGS for " + QString::number(parameter.size()) + " parameters:\n";
     message += "Old vector : ";
-    foreach(double d, param)
+    for(double d: param)
     {
         message += QString::number(d) + " ";
     }

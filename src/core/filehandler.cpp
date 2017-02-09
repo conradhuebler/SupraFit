@@ -76,10 +76,11 @@ void FileHandler::CheckForTable()
 QPointer<QStandardItemModel> FileHandler::getData() const
 {
     QPointer<QStandardItemModel > model = new QStandardItemModel;
-    foreach(const QString &line, m_filecontent)
+    for(const QString &line: qAsConst(m_filecontent))
     {
         QList<QStandardItem *> row;
-        foreach(const QString &item, line.simplified().split(" "))
+        QStringList items = line.simplified().split(" ");
+        for(const QString &item: qAsConst(items))
             row.append(new QStandardItem(QString(item).replace(",", ".")));
         model->appendRow(row);
     }

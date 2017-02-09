@@ -404,7 +404,7 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
               });
     if(DataPoints() == 0)
     {
-        foreach(const QString &str, keys)
+        for(const QString &str: qAsConst(keys))
         {
             QVector<qreal > concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
@@ -419,7 +419,7 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
         qWarning() << "table size doesn't fit to imported data";
         return false;
     }
-    foreach(const QString &str, keys)
+    for(const QString &str: qAsConst(keys))
     {
         QVector<qreal > concentrationsVector, signalVector;
         concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
