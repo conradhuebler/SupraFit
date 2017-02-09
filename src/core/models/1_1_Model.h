@@ -43,9 +43,7 @@ public:
     inline int ConstantSize() const { return 1;}
     void setPureSignals(const QVector< qreal > &list);
     void setComplexSignals(QVector< qreal > list, int i);
-//     void setConstants(QVector< qreal > list);
     void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
-    QVector<qreal > Constants() const { return QVector<qreal>() << m_K11; }
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
      virtual bool SupportThreads() const { return false; }

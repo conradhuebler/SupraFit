@@ -358,7 +358,6 @@ void ModelWidget::EmptyUI()
 void ModelWidget::setParameter()
 {
     QVector<qreal > constants = m_model->Constants();
-    
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();
@@ -449,7 +448,7 @@ void ModelWidget::GlobalMinimize()
     int result;
     
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
-    
+
     if(result == 1)
     {
         json = m_minimizer->Parameter();

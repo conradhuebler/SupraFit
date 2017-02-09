@@ -37,14 +37,20 @@
 ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
 {
     setName(tr("1:1-Model"));
+    
     InitialGuess();
+    m_complex_constants = QVector<qreal>() << m_K11;
+    
     m_constant_names = QStringList() << tr("1:1");
 }
 
 ItoI_Model::ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationModel(model)
 {
     setName(tr("1:1-Model"));
+    
     InitialGuess();
+    m_complex_constants = QVector<qreal>() << m_K11;
+
     m_constant_names = QStringList() << tr("1:1");
 }
 
@@ -75,7 +81,7 @@ void ItoI_Model::InitialGuess()
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if(OptimizationType::ComplexationConstants & type)
-        setOptParamater(m_K11);
+        setOptParamater(m_complex_constants);
 
     if((type & ~OptimizationType::IgnoreAllShifts) > (OptimizationType::IgnoreAllShifts))
     {
@@ -135,12 +141,6 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
     emit Recalculated();
 }
 
-// void ItoI_Model::setConstants(QVector< qreal > list)
-// {
-//     if(list.isEmpty())
-//         return;
-//     m_K11 = list.first();
-// }
 
 void ItoI_Model::setPureSignals(const QVector< qreal > &list)
 {

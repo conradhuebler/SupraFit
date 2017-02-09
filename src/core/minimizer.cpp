@@ -259,23 +259,12 @@ int Minimizer::Minimize(OptimizationType runtype)
     connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
     thread->setOptimizationRun(runtype);
-    /*
-    QThreadPool *threadpool = new QThreadPool;
-    
-    QThreadPool *threadpool = QThreadPool::globalInstance();
-    
-    threadpool->start(thread);
-    if(!threadpool->waitForDone())
-    {
-     qDebug() << "wired happend";   
-    }*/
     thread->run();
     if(thread->Converged())
         m_last_parameter = thread->ConvergedParameter();
     else
         m_last_parameter = thread->BestIntermediateParameter();
     delete thread;
-
     m_model->ImportJSON(m_last_parameter);
     m_model->CalculateSignal();
     emit RequestRemoveCrashFile();

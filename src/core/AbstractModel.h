@@ -98,7 +98,7 @@ public:
     virtual void InitialGuess() = 0;
     QVector<qreal >  getCalculatedSignals(QList<int > active_signal = QList<int >() << 0);
 
-    virtual QVector<qreal > Constants() const = 0;
+//     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
     void setParamter(const QVector<qreal> &parameter);
     inline int Size() const { return DataClass::Size(); }
@@ -131,7 +131,7 @@ public:
     void setStatistic(const StatisticResult &result, int i);
     virtual bool SupportThreads() const = 0;
     StatisticResult  getStatisticResult(int i) const { return m_statistics[i]; }
-
+    inline QVector<qreal > Constants() const { return m_complex_constants; }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      

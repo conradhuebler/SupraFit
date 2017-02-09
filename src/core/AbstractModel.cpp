@@ -316,7 +316,7 @@ void AbstractTitrationModel::setStatistic(const StatisticResult &result, int i)
 
 void AbstractTitrationModel::setConstants(QVector<qreal> list)
 {
-      if(list.size() != m_complex_constants.size())
+    if(list.size() != m_complex_constants.size())
         return;
     for(int i = 0; i < list.size(); ++i)
         m_complex_constants[i] = list[i];  
