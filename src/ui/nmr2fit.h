@@ -86,6 +86,7 @@ private slots:
     void WriteMessages(const QString &message, int priority);
     void MessageBox(const QString &str, int priority);
     void InsertHistoryElement(const ModelHistoryElement &element);
+    void InsertHistoryElement(const QJsonObject &model);
 signals:
     void AppendPlainText(const QString &str);
 };

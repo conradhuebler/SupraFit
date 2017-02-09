@@ -17,30 +17,49 @@
  *
  */
 
+
+#include "src/core/jsonhandler.h"
 #include "src/core/models.h"
+#include "src/ui/widgets/optimizerwidget.h"
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QCollator>
+#include <QtCore/QFile>
 
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QFileDialog>
 
 #include "modeltablewidget.h"
 
 ModelTableWidget::ModelTableWidget()
 {
     QGridLayout *layout = new QGridLayout;
+    
+    m_export = new QPushButton(tr("Export Models"));
+    m_valid = new QCheckBox(tr("Invalid Models"));
+    m_threshold = new ScientificBox;
+    m_threshold->setValue(1);
+    layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 0);
+    layout->addWidget(m_threshold, 0, 1);
+    layout->addWidget(m_valid, 0, 2);
+    layout->addWidget(m_export, 0, 3);
+    
     m_table = new QTableView(this);
     m_table->setSortingEnabled(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_table, SIGNAL(clicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
     connect(m_table, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
-    layout->addWidget(m_table, 0, 0);
+    connect(m_export, SIGNAL(clicked()), this, SLOT(ExportModels()));
+    layout->addWidget(m_table, 1, 0, 1, 3);
     
     setLayout(layout);
 }
@@ -122,6 +141,33 @@ void ModelTableWidget::ShowContextMenu(const QPoint& pos)
     int i = index.data(Qt::UserRole).toInt();
     QJsonObject model = m_list[i];
     emit AddModel(model);
+}
+
+void ModelTableWidget::ExportModels()
+{
+    qreal threshold = m_threshold->value();
+    bool allow_invalid = m_valid->isChecked();
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    if(str.isEmpty())
+        return;
+
+    QJsonObject toplevel;
+    int i = 0;
+    for(const QJsonObject &obj: qAsConst(m_list))
+    {
+        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
+        QStringList keys = constants.keys();
+        bool valid = true;
+        for(const QString &str : qAsConst(keys))
+        {
+            double var = constants[str].toString().toDouble();
+            valid = valid && (var > 0);
+        }
+        double error = obj["sse"].toDouble();
+        if(error < threshold && (valid || allow_invalid))
+            toplevel["model_" + QString::number(i++)] = obj;       
+    }
+    JsonHandler::WriteJsonFile(toplevel, str);
 }
 
 #include "modeltablewidget.moc"

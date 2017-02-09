@@ -97,6 +97,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
     connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)), Qt::DirectConnection);
+    connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
     connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
@@ -395,6 +396,15 @@ void MainWindow::InsertHistoryElement(const ModelHistoryElement &element)
     m_historywidget->InsertElement(&m_history[nr]);
 }
 
+void MainWindow::InsertHistoryElement(const QJsonObject &model)
+{
+    int nr = m_history.size();
+    ModelHistoryElement element;
+    element.model = model;
+    element.error = model["sse"].toDouble();
+    m_history[nr] = element;
+    m_historywidget->InsertElement(&m_history[nr]);
+}
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {

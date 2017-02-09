@@ -24,6 +24,9 @@
 
 class AbstractTitrationModel;
 class QTableView;
+class QPushButton;
+class ScientificBox;
+class QCheckBox;
 
 class ModelTableWidget : public QWidget
 {
@@ -38,10 +41,15 @@ private:
     QList<QJsonObject> m_list;
     QTableView *m_table;
     QSharedPointer<AbstractTitrationModel> m_model;
+    QCheckBox *m_valid;
+    ScientificBox *m_threshold;
+    QPushButton *m_export;
     
 private slots:
     void rowSelected(const QModelIndex &index);
     void ShowContextMenu(const QPoint& pos);
+    void ExportModels();
+    
 signals:
     void LoadModel(const QJsonObject &object);
     void AddModel(const QJsonObject &object);

@@ -139,6 +139,7 @@ private:
     QList<int > m_active_signals;
     QList<int > m_locked_parameters;
     OptimizationType m_last_optimization;
+    
 protected:
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
@@ -154,6 +155,7 @@ protected:
     bool m_corrupt;
     QStringList m_constant_names;
     QList<StatisticResult > m_statistics;
+    
 signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);

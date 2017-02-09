@@ -331,10 +331,14 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
     }
     else
     {
+        int i = m_models.size();
         foreach(const QString &str, keys)
         {
             QJsonObject model = object[str].toObject();
-            Json2Model(model, model["model"].toString());
+            if(i++ < 5)
+                Json2Model(model, model["model"].toString());
+            else
+                emit InsertModel(model);
         }
     }
 }

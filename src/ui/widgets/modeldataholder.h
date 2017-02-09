@@ -98,6 +98,7 @@ signals:
     void Message(const QString &str, int priority);
     void MessageBox(const QString &str, int priority);
     void InsertModel(const ModelHistoryElement &element);
+    void InsertModel(const QJsonObject &model);
 };
 
 #endif // MODELDATAHOLDER_H
