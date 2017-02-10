@@ -38,6 +38,7 @@
 
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false)
 {
+    m_last_optimization = static_cast<OptimizationType>(0);
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());
     ptr_concentrations = data->Concentration();
@@ -60,6 +61,9 @@ void AbstractTitrationModel::adress() const
     std::cout << "\t" << m_data;
     std::cout << "\t "<< m_data->Concentration();
     std::cout << "\t" << Concentration() << std::endl;
+    for(int i = 0; i < m_opt_para.size(); ++i)
+        std::cout << m_opt_para[i] << " ";
+    std::cout << std::endl;
 }
 
 
@@ -94,7 +98,7 @@ QVector<qreal> AbstractTitrationModel::OptimizeParameters(OptimizationType type)
 }
 
 
-void AbstractTitrationModel::setOptParamater(QVector<qreal> &parameter)
+void AbstractTitrationModel::setOptParamater(QList<qreal> &parameter)
 {
     clearOptParameter();
     for(int i = 0; i < parameter.size(); ++i)
@@ -108,7 +112,7 @@ void AbstractTitrationModel::setOptParamater(qreal& parameter)
 }
 
 
-void AbstractTitrationModel::addOptParameter(QVector<qreal>& parameter)
+void AbstractTitrationModel::addOptParameter(QList<qreal>& parameter)
 {
     for(int i = 0; i < parameter.size(); ++i)
         m_opt_para << &parameter[i];    
@@ -223,7 +227,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     QJsonObject json = topjson["data"].toObject();
     
     QList<int > active_signals = QVector<int>(SignalCount(), 0).toList();
-    QVector<qreal> constants; 
+    QList<qreal> constants; 
     QJsonObject constantsObject = json["constants"].toObject();
     for (int i = 0; i < Constants().size(); ++i) {
         
@@ -239,7 +243,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     }
     setConstants(constants);
     m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
-    QVector<qreal> pureShift;
+    QList<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
     for (int i = 0; i < m_pure_signals.size(); ++i) 
     {
@@ -254,7 +258,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     
     for(int i = 0; i < Constants().size(); ++i)
     {
-        QVector<qreal> shifts;
+        QList<qreal> shifts;
         QJsonObject object = json["shift_" + QString::number(i)].toObject();
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
@@ -276,9 +280,22 @@ qreal AbstractTitrationModel::ModelError() const
 }
 double AbstractTitrationModel::IncrementParameter(double increment, int parameter)
 {
+    adress();
     if(parameter < m_opt_para.size())
-        *m_opt_para[parameter] += increment; 
+    {
+//         qDebug() << *m_opt_para[parameter];
+        *m_opt_para[parameter] += increment;
+//         qDebug() << *m_opt_para[parameter];
+    }
     return *m_opt_para[parameter];
+}
+
+
+void AbstractTitrationModel::SetSingleParameter(double value, int parameter)
+{
+    if(parameter < m_opt_para.size())
+        *m_opt_para[parameter] = value;
+    qDebug() << *m_opt_para[parameter] << value;
 }
 
 void AbstractTitrationModel::MiniShifts()
@@ -314,12 +331,15 @@ void AbstractTitrationModel::setStatistic(const StatisticResult &result, int i)
 }
 
 
-void AbstractTitrationModel::setConstants(QVector<qreal> list)
+void AbstractTitrationModel::setConstants(const QList<qreal> &list)
 {
     if(list.size() != m_complex_constants.size())
         return;
     for(int i = 0; i < list.size(); ++i)
+    {
+//         qDebug() << list[i] << m_complex_constants[i];
         m_complex_constants[i] = list[i];  
+    }
 }
 
 

@@ -213,7 +213,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     scroll->setAlignment(Qt::AlignHCenter);
     m_modelsWidget->addTab(scroll, t->Name());
     m_models << t;
-    
+    m_modelsWidget->setCurrentWidget(scroll);
     /*
      * Some models are loaded from history, this should no be added again
      * after not added them, we allow the next models to be added to history again

@@ -38,7 +38,7 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationMod
     InitialGuess();   
     
     setOptParamater(m_complex_constants);
-    CalculateSignal();
+    AbstractTitrationModel::CalculateSignal();
     
     m_constant_names = QStringList() << tr("2:1") << tr("1:1");
 }
@@ -54,7 +54,7 @@ void IItoI_ItoI_Model::InitialGuess()
     m_K21 = m_K11/2;
     delete model;
     
-    m_complex_constants = QVector<qreal>() << m_K21 << m_K11;
+    m_complex_constants = QList<qreal>() << m_K21 << m_K11;
     setOptParamater(m_complex_constants);
     for(int i = 0; i < SignalCount(); ++i)
     {
@@ -80,10 +80,10 @@ void IItoI_ItoI_Model::InitialGuess()
     ImportJSON(mini->Parameter());
     
     delete mini;*/
-    CalculateSignal();
+    AbstractTitrationModel::CalculateSignal();
 }
 
-void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
+void IItoI_ItoI_Model::setComplexSignals(const QList< qreal > &list, int i)
 {
     for(int j = 0; j < list.size(); ++j)
     {
@@ -95,7 +95,7 @@ void IItoI_ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
     }
 }
 
-qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants)
+qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
 {
     
     if(constants.size() < 2)
@@ -111,11 +111,11 @@ qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector<q
     return host;
 }
 
-void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
+void IItoI_ItoI_Model::CalculateSignal(const QList<qreal > &constants)
 {
     m_corrupt = false;
     if(constants.size() == 0)
-        constants = Constants();
+        return;
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0, guest_0;
@@ -147,7 +147,7 @@ void IItoI_ItoI_Model::CalculateSignal(QVector<qreal > constants)
     emit Recalculated();
 }
 
-void IItoI_ItoI_Model::setPureSignals(const QVector< qreal > &list)
+void IItoI_ItoI_Model::setPureSignals(const QList< qreal > &list)
 {
     for(int i = 0; i < list.size(); ++i)
         if(i < m_pure_signals.size())

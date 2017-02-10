@@ -87,7 +87,7 @@ struct MyEqualSystemNumericalDiff : Eigen::NumericalDiff<MyEqualSystem> {};
 
 
 
-inline int SolveEqualSystem(double A_0, double B_0, const QVector<qreal> constants, QVector<double > &concentration)
+inline int SolveEqualSystem(double A_0, double B_0, const QList<qreal> &constants, QList<double > &concentration)
 {
        
     if(A_0 == 0 || B_0 == 0)
@@ -142,7 +142,7 @@ ConcentrationSolver::~ConcentrationSolver()
 {
 }
 
-void ConcentrationSolver::setInput(double A_0, double B_0, const QVector<qreal> constants)
+void ConcentrationSolver::setInput(double A_0, double B_0, const QList<qreal> &constants)
 {
     m_A_0 = A_0;
     m_B_0 = B_0;
@@ -162,7 +162,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractT
         m_solvers << new ConcentrationSolver();
     InitialGuess();
     setOptParamater(m_complex_constants);
-    CalculateSignal();
+    AbstractTitrationModel::CalculateSignal();
     m_constant_names = QStringList() << tr("2:1") << tr("1:1") << tr("1:2"); 
 
 }
@@ -172,11 +172,11 @@ IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
     qDeleteAll(m_solvers);
 }
 
-void IItoI_ItoI_ItoII_Model::CalculateSignal(QVector<qreal> constants)
+void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
 {
     m_corrupt = false;
     if(constants.size() == 0)
-        constants = Constants();
+        return;
     
     QThreadPool *threadpool = new QThreadPool;
     int maxthreads =qApp->instance()->property("threads").toInt();
@@ -214,7 +214,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(QVector<qreal> constants)
         qreal K21= qPow(10, constants.first());
         qreal K11 =qPow(10, constants[1]);
         qreal K12= qPow(10, constants.last());
-        QVector<double > concentration = m_solvers[i]->Concentrations();
+        QList<double > concentration = m_solvers[i]->Concentrations();
         qreal host = concentration[0];
         qreal guest = concentration[1]; 
         
@@ -247,7 +247,7 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     m_K11 = m_K12/2;
     delete model;
     
-    m_complex_constants = QVector<qreal>() << m_K21 << m_K11 << m_K12;
+    m_complex_constants = QList<qreal>() << m_K21 << m_K11 << m_K12;
     setOptParamater(m_complex_constants);
     for(int i = 0; i < SignalCount(); ++i)
     {
@@ -266,7 +266,7 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line4;
     
-    CalculateSignal();
+    AbstractTitrationModel::CalculateSignal();
 }
 
 QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
@@ -298,7 +298,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
     return parameter;
 }
 
-void IItoI_ItoI_ItoII_Model::setComplexSignals(QVector<qreal> list, int i)
+void IItoI_ItoI_ItoII_Model::setComplexSignals(const QList<qreal> &list, int i)
 {
     for(int j = 0; j < list.size(); ++j)
     {
@@ -312,7 +312,7 @@ void IItoI_ItoI_ItoII_Model::setComplexSignals(QVector<qreal> list, int i)
 }
 
 
-void IItoI_ItoI_ItoII_Model::setPureSignals(const QVector<qreal>& list)
+void IItoI_ItoI_ItoII_Model::setPureSignals(const QList<qreal>& list)
 {
     for(int i = 0; i < list.size(); ++i)
         if(i < m_pure_signals.size())

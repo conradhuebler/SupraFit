@@ -38,10 +38,12 @@ StatisticElement::StatisticElement(const QSharedPointer<AbstractTitrationModel> 
     layout->addWidget(m_min, 0, 2);
     m_max = new QLabel(QString::number(result.max));
     layout->addWidget(m_max, 0,3);
+    m_range = new QLabel(QString::number(result.max - result.min));
+    layout->addWidget(m_range, 0, 4);
     m_integ_1 = new QLabel(QString::number(result.integ_1));
-    layout->addWidget(m_integ_1, 0, 4);
+    layout->addWidget(m_integ_1, 0, 5);
     m_integ_5 = new QLabel(QString::number(result.integ_5));
-    layout->addWidget(m_integ_5, 0, 5);
+    layout->addWidget(m_integ_5, 0, 6);
     setLayout(layout);
 }
 
@@ -58,6 +60,7 @@ void StatisticElement::UpdateStatistic(const StatisticResult& result, int i)
         m_value->setText(QString::number(m_model->Constants()[m_no]));
         m_min->setText(QString::number(result.min));
         m_max->setText(QString::number(result.max));
+        m_range->setText(QString::number(result.max-result.min));
         m_integ_1->setText(QString::number(result.integ_1));
         m_integ_5->setText(QString::number(result.integ_5));
     }

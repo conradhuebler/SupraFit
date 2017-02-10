@@ -76,6 +76,7 @@ public:
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
     void setModelCloned(const QSharedPointer<AbstractTitrationModel> model);
     int Minimize(OptimizationType runtype);
+    int Minimize(OptimizationType runtype, const QList<int> &locked);
     void setOptimizerConfig(const OptimizerConfig &config) 
     { 
         m_opt_config = config;
@@ -84,6 +85,7 @@ public:
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     void addToHistory();
     QJsonObject Parameter() const{ return m_last_parameter; };
+    void setParameter(const QJsonObject &json, const QList<int> &locked);
     void setParameter(const QJsonObject &json);
     QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype);
 private:

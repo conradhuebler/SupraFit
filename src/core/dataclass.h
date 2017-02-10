@@ -53,11 +53,14 @@ public:
     void setRow(QVector<qreal> vector, int row);
     void setColumn(QVector<qreal> vector, int column);
     
-    QVector<qreal> Row(int row);
+//     QVector<qreal> Row(int row);
+    QList<qreal> Row(int row);
 //     QVector<qreal> Column(int column);
-    QVector<qreal> firstRow(); 
+//     QVector<qreal> firstRow(); 
+    QList<qreal> firstRow(); 
 //     inline QVector<qreal> firstColumn() { return Column( 0 ); }
-    QVector<qreal> lastRow(); 
+//     QVector<qreal> lastRow(); 
+    QList<qreal> lastRow(); 
 //     inline QVector<qreal> lastColumn() { return Column(columnCount() -1 );}
     
     void Debug() const ;

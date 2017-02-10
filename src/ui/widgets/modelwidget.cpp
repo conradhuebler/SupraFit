@@ -357,7 +357,7 @@ void ModelWidget::EmptyUI()
 
 void ModelWidget::setParameter()
 {
-    QVector<qreal > constants = m_model->Constants();
+    QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();
@@ -398,8 +398,8 @@ void ModelWidget::recalulate()
 
 void ModelWidget::CollectParameters()
 {
-    QVector<qreal > pure_signals, constants;
-    QVector<QVector <qreal > > complex_signals;
+    QList<qreal > pure_signals, constants;
+    QVector<QList <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
     QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
     for(int i = 0; i < m_model_elements.size(); ++i)
@@ -589,7 +589,7 @@ void ModelWidget::NewGuess()
     if (r == QMessageBox::No)
         return;
     m_model->InitialGuess();
-    QVector<qreal > constants = m_model->Constants();
+    QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();
@@ -639,7 +639,7 @@ void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportJSON(object);
     m_model->CalculateSignal();
-    QVector<qreal > constants = m_model->Constants();
+    QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();

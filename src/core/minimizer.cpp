@@ -71,7 +71,7 @@ void NonLinearFitThread::setParameter(const QJsonObject &json)
 
 void NonLinearFitThread::ConstrainedFit()
 {   
-    QVector<qreal> old_para_constant = m_model->Constants();
+    QList<qreal> old_para_constant = m_model->Constants();
     
     bool convergence = false;
     bool constants_convergence = false;
@@ -92,7 +92,7 @@ void NonLinearFitThread::ConstrainedFit()
             allow_loop = false;
         
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
-        QVector<qreal > old_constants =  m_model->Constants();
+        QList<qreal > old_constants =  m_model->Constants();
         qreal old_error = m_model->ModelError();
         if(m_runtype & OptimizationType::ComplexationConstants)
         {
@@ -110,7 +110,7 @@ void NonLinearFitThread::ConstrainedFit()
         m_last_parameter = m_model->ExportJSON();
         qreal error = m_model->ModelError();
         
-        QVector<qreal> constants = m_model->Constants();
+        QList<qreal> constants = m_model->Constants();
         qreal constant_diff = 0;
         QString constant_string;
         for(int z = 0; z < constants.size(); ++z)
@@ -241,6 +241,13 @@ QString Minimizer::OptPara2String() const
     return result;
 }
 
+int Minimizer::Minimize(OptimizationType runtype, const QList<int>& locked)
+{
+    m_model->setLockedParameter(locked);
+    return Minimize(runtype);
+}
+
+
 int Minimizer::Minimize(OptimizationType runtype)
 {
     
@@ -271,8 +278,6 @@ int Minimizer::Minimize(OptimizationType runtype)
     addToHistory();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
-    
-    
     return 1;
 }
 
@@ -296,11 +301,16 @@ void Minimizer::setModelCloned(const QSharedPointer<AbstractTitrationModel> mode
     m_model = model->Clone();
 }
 
+void Minimizer::setParameter(const QJsonObject& json, const QList<int> &locked)
+{
+    m_model->ImportJSON(json);
+    m_model->setLockedParameter(locked);
+}
+
 void Minimizer::setParameter(const QJsonObject& json)
 {
     m_model->ImportJSON(json);
 }
-
 
 void Minimizer::addToHistory()
 {

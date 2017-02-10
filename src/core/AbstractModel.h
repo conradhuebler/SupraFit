@@ -74,9 +74,10 @@ public:
     inline void setLastOptimzationRun(OptimizationType last_optimization) { m_last_optimization = last_optimization; }
     inline OptimizationType LastOptimzationRun() const { return m_last_optimization; }
     double IncrementParameter(double increment, int parameter);
+    void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
-    void setOptParamater(QVector< qreal >& parameter);
-    void addOptParameter(QVector <qreal > &vector);
+    void setOptParamater(QList< qreal >& parameter);
+    void addOptParameter(QList <qreal > &vector);
     void clearOptParameter();
     inline int MaxVars() const { return (m_pure_signals.size()); }
     qreal SumOfErrors(int i) const;
@@ -91,14 +92,14 @@ public:
     virtual QSharedPointer<AbstractTitrationModel > Clone() const = 0;
         
     virtual int ConstantSize() const = 0;
-    virtual void setPureSignals(const QVector< qreal > &list) = 0;
-    virtual void setComplexSignals(QVector< qreal > list, int i) = 0;
-    virtual void setConstants(QVector< qreal > list);
-    virtual void CalculateSignal(QVector<qreal > constants) = 0;
+    virtual void setPureSignals(const QList< qreal > &list) = 0;
+    virtual void setComplexSignals(const QList< qreal > &list, int i) = 0;
+    virtual void setConstants(const QList< qreal > &list);
+    virtual void CalculateSignal(const QList<qreal > &constants) = 0;
+//     inline void CalculateSignal() { CalculateSignal(Constants()); }
     virtual void InitialGuess() = 0;
     QVector<qreal >  getCalculatedSignals(QList<int > active_signal = QList<int >() << 0);
 
-//     virtual QVector<qreal > Constants() const = 0;
     inline QString Name() const { return m_name; }
     void setParamter(const QVector<qreal> &parameter);
     inline int Size() const { return DataClass::Size(); }
@@ -119,7 +120,7 @@ public:
     
     inline QList<int > ActiveSignals() { return m_active_signals; }
     inline QList<int > ActiveSignals() const { return m_active_signals; }
-    inline void setActiveSignals(QList<int > active_signals) 
+    inline void setActiveSignals(const QList<int > &active_signals) 
     { 
         m_active_signals = active_signals; 
         emit ActiveSignalsChanged(m_active_signals);
@@ -131,7 +132,8 @@ public:
     void setStatistic(const StatisticResult &result, int i);
     virtual bool SupportThreads() const = 0;
     StatisticResult  getStatisticResult(int i) const { return m_statistics[i]; }
-    inline QVector<qreal > Constants() const { return m_complex_constants; }
+    inline QList<qreal > Constants() const { return m_complex_constants; }
+    
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -144,7 +146,7 @@ protected:
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
     QString m_name;
-    QVector<qreal > m_pure_signals, m_complex_constants;
+    QList<qreal > m_pure_signals, m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
     bool *ptr_concentrations;
     QVector<double * > m_opt_para;

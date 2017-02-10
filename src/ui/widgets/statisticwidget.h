@@ -39,7 +39,7 @@ public:
 private:    
     QSharedPointer<AbstractTitrationModel > m_model;
     int m_no;
-    QLabel *m_min, *m_max, *m_integ_1, *m_integ_5, *m_value;
+    QLabel *m_min, *m_max, *m_range, *m_integ_1, *m_integ_5, *m_value;
     
 private slots:
     void UpdateStatistic(const StatisticResult &result, int i);

@@ -33,10 +33,27 @@ QString DoubleVec2String(const QVector<qreal > &vector)
     return string.left(string.length() - 1);
 }
 
+QString DoubleList2String(const QList<qreal > &vector)
+{
+    QString string;
+    for(int i = 0; i < vector.size(); ++i)    
+        string += QString::number(vector[i]) + " ";
+    
+    return string.left(string.length() - 1);
+}
 
 QVector<qreal > String2DoubleVec(const QString &str)
 {
-    QVector<qreal > vector;
+     QVector<qreal > vector;
+     QStringList nums = str.split(" ");
+     for(const QString &string: qAsConst(nums))
+         vector << string.toDouble();
+     return vector;
+}
+
+QList<qreal > String2DoubleList(const QString &str)
+{
+    QList<qreal > vector;
     QStringList nums = str.split(" ");
     for(const QString &string: qAsConst(nums))
         vector << string.toDouble();

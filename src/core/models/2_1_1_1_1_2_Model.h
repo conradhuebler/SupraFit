@@ -37,13 +37,13 @@ public:
     ConcentrationSolver();
     ~ConcentrationSolver();
     virtual void run();
-    void setInput(double A_0, double B_0, const QVector<qreal> constants);
-    inline QVector<double> Concentrations() const { return  m_concentration; }
+    void setInput(double A_0, double B_0, const QList<qreal> &constants);
+    inline QList<double> Concentrations() const { return  m_concentration; }
     
 private:
     qreal m_A_0, m_B_0;
     qreal complex_21, complex_11, complex_12;
-    QVector<qreal > m_constants, m_concentration;
+    QList<qreal > m_constants, m_concentration;
 };
 
 
@@ -57,15 +57,15 @@ public:
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     QPair<qreal, qreal> Pair(int i, int j = 0) const ;
     inline int ConstantSize() const { return 3;}
-    void setPureSignals(const QVector< qreal > &list);
-    void setComplexSignals(QVector< qreal > list, int i);
-    void CalculateSignal(QVector<qreal > constants = QVector<qreal>());
+    void setPureSignals(const QList< qreal > &list);
+    void setComplexSignals(const QList< qreal > &list, int i);
+    void CalculateSignal(const QList<qreal > &constants); // = QVector<qreal>());
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
      virtual bool SupportThreads() const { return true; }
 private:
     qreal m_K21, m_K11, m_K12;
-    QVector<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;
+    QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;
     QList<QPointer<ConcentrationSolver > > m_solvers;
 };
 

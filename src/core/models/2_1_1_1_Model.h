@@ -41,18 +41,19 @@ public:
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     QPair<qreal, qreal> Pair(int i, int j = 0) const ;
     inline int ConstantSize() const { return 2;}
-    void setPureSignals(const QVector< qreal > &list);
-    void setComplexSignals(QVector< qreal > list, int i);
-    virtual void CalculateSignal(QVector<qreal > constants= QVector<qreal>());
+    void setPureSignals(const QList< qreal > &list);
+    void setComplexSignals(const QList< qreal > &list, int i);
+    virtual void CalculateSignal(const QList<qreal > &constants);
+//     virtual void CalculateSignal() { CalculateSignal(Constants()); }
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
-    qreal HostConcentration(qreal host_0, qreal guest_0, QVector<qreal > constants);
+    qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
 protected:
     qreal m_K21, m_K11;
-    QVector<qreal > m_ItoI_signals, m_IItoI_signals;
+    QList<qreal > m_ItoI_signals, m_IItoI_signals;
 };
 
 

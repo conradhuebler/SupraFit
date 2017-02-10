@@ -64,22 +64,37 @@ DataTable::~DataTable()
     
 }
 
-QVector<qreal> DataTable::firstRow()
+// QVector<qreal> DataTable::firstRow()
+// {
+//     QVector<qreal> vector;
+//     for(int i = 0; i < m_table.cols(); ++i)
+//         vector << m_table(0, i);
+//     return vector;
+// }
+
+QList<qreal> DataTable::firstRow()
 {
-    QVector<qreal> vector;
+    QList<qreal> vector;
     for(int i = 0; i < m_table.cols(); ++i)
         vector << m_table(0, i);
     return vector;
 }
 
-QVector<qreal> DataTable::lastRow()
+// QVector<qreal> DataTable::lastRow()
+// {
+//     QVector<qreal> vector;
+//     for(int i = 0; i < m_table.cols(); ++i)
+//         vector << m_table(m_table.rows()-1, i);
+//     return vector;
+// }
+
+QList<qreal> DataTable::lastRow()
 {
-    QVector<qreal> vector;
+    QList<qreal> vector;
     for(int i = 0; i < m_table.cols(); ++i)
         vector << m_table(m_table.rows()-1, i);
     return vector;
 }
-
 
 void DataTable::Debug() const
 {
@@ -155,9 +170,21 @@ qreal & DataTable::data(int column, int row)
         }
 }
 
-QVector<qreal> DataTable::Row(int row)
+// QVector<qreal> DataTable::Row(int row)
+// {
+//     QVector<qreal> vector;
+//     if(row <= m_table.rows())
+//         for(int i = 0; i < m_table.cols(); ++i)
+//             vector << m_table(row, i);
+//     else
+//         qDebug() << "Row exceeds size of table!";
+//     return vector;
+//     
+// }
+
+QList<qreal> DataTable::Row(int row)
 {
-    QVector<qreal> vector;
+    QList<qreal> vector;
     if(row <= m_table.rows())
         for(int i = 0; i < m_table.cols(); ++i)
             vector << m_table(row, i);
@@ -371,8 +398,8 @@ const QJsonObject DataClass::ExportJSON() const
     
     for(int i = 0; i < DataPoints(); ++i)
     {
-        concentrationObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_concentration_model->Row(i));
-        signalObject[QString::number(i)] = ToolSet::DoubleVec2String(d->m_signal_model->Row(i));
+        concentrationObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_concentration_model->Row(i));
+        signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_signal_model->Row(i));
     }
     
     json["concentrations"] = concentrationObject;

@@ -26,9 +26,11 @@
 namespace ToolSet{
     
     QString DoubleVec2String(const QVector<qreal > &vector);
+    QString DoubleList2String(const QList<qreal > &vector);
     
+
     QVector<qreal > String2DoubleVec(const QString &str);
-    
+    QList<qreal > String2DoubleList(const QString &str);
     QString bool2YesNo(bool var) ;
 }
 

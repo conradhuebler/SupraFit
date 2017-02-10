@@ -39,7 +39,7 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
     setName(tr("1:1-Model"));
     
     InitialGuess();
-    m_complex_constants = QVector<qreal>() << m_K11;
+    m_complex_constants = QList<qreal>() << m_K11;
     
     m_constant_names = QStringList() << tr("1:1");
 }
@@ -49,7 +49,7 @@ ItoI_Model::ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationM
     setName(tr("1:1-Model"));
     
     InitialGuess();
-    m_complex_constants = QVector<qreal>() << m_K11;
+    m_complex_constants = QList<qreal>() << m_K11;
 
     m_constant_names = QStringList() << tr("1:1");
 }
@@ -75,7 +75,7 @@ void ItoI_Model::InitialGuess()
     }
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
-    CalculateSignal();
+    AbstractTitrationModel::CalculateSignal();
 }
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
@@ -101,7 +101,7 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 }
 
 
-qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector< qreal > constants)
+qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList< qreal > &constants)
 {
     if(constants.size() == 0)
         return host_0;
@@ -115,7 +115,7 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, QVector< qreal 
     return host_0 - complex;
 }
 
-void ItoI_Model::CalculateSignal(QVector<qreal > constants)
+void ItoI_Model::CalculateSignal(const QList<qreal > &constants)
 {  
     m_corrupt = false;
     for(int i = 0; i < DataPoints(); ++i)
@@ -142,7 +142,7 @@ void ItoI_Model::CalculateSignal(QVector<qreal > constants)
 }
 
 
-void ItoI_Model::setPureSignals(const QVector< qreal > &list)
+void ItoI_Model::setPureSignals(const QList< qreal > &list)
 {
     for(int i = 0; i < list.size(); ++i)
         if(i < m_pure_signals.size())
@@ -151,7 +151,7 @@ void ItoI_Model::setPureSignals(const QVector< qreal > &list)
             m_pure_signals<<list[i];
 }
 
-void ItoI_Model::setComplexSignals(QVector< qreal > list, int i)
+void ItoI_Model::setComplexSignals(const QList< qreal > &list, int i)
 {
     Q_UNUSED(i)
     if(list.size() << m_ItoI_signals.size())

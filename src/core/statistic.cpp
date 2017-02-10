@@ -42,7 +42,7 @@ StatisticThread::~StatisticThread()
 void StatisticThread::setModel(QSharedPointer<AbstractTitrationModel> model)
 { 
     m_model = model->Clone(); 
-    m_minimizer->setModelCloned(m_model); 
+    m_minimizer->setModel(m_model);//Cloned(m_model); 
 }
 
 void StatisticThread::run()
@@ -64,17 +64,10 @@ void StatisticThread::ConfidenceAssesment()
     QList<QPointF> series;
     QJsonObject optimized = m_model->ExportJSON();
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_type);
-    QList<int> locked; 
-    for(int i = 0; i < parameter.size(); ++i)
-        locked << 1;
-    locked[m_parameter_id] = 0;
-    m_model->setLockedParameter(locked);
     
     m_result.optim = parameter[m_parameter_id];
     m_result.name = m_model->ConstantNames()[m_parameter_id];
     
-    m_model->setLockedParameter(locked);
-    QVector<double> vars = parameter;
     double integ_5 = 0;
     double integ_1 = 0;
     SumErrors(1, integ_5, integ_1, series);
@@ -89,36 +82,28 @@ void StatisticThread::ConfidenceAssesment()
 
 void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
 {
-    
-    //FIXME something strange in code-hood
-    /*
-     * i will override the parameters with the original one and multiply the increment with the current step
-     */
-    
-    QJsonObject original = m_model->ExportJSON();
     double increment = m_increment;
     if(!direction)
         increment *= -1;
     qreal old_error = m_error;
     int counter = 0;
+    QList<int> locked; 
+    for(int i = 0; i <  m_model.data()->OptimizeParameters(m_type).size(); ++i)
+        locked << 1;
+    locked[m_parameter_id] = 0;
+    QList<qreal > consts = m_model->Constants();
+    double constant_ = consts[m_parameter_id];
     for(int m = 0; m < m_maxsteps; ++m)
     {
-        /*
-        * i will override the parameters with the original one and multiply the increment with the current step
-        */
-        m_model->ImportJSON(original);
-        qDebug() << (m+1)*increment << original;
-        double x  = m_model->IncrementParameter((m+1)*increment, m_parameter_id);
-        QJsonObject json = m_model->ExportJSON();
-        qDebug() << x << json;
-        m_minimizer->setParameter(json);
-        m_minimizer->Minimize(m_type);
-        {
-            QJsonObject json = m_minimizer->Parameter();
-            m_model->ImportJSON(json);
-            m_model->CalculateSignal();
-        }
-       
+        double par = constant_ + double(m)*increment;
+        consts[m_parameter_id] = par;
+        m_model->setConstants(consts);
+        m_minimizer->Minimize(m_type, locked);
+        
+        QJsonObject json_exp = m_minimizer->Parameter();
+        m_model->ImportJSON(json_exp);
+        m_model->CalculateSignal();
+        
         qreal new_error = m_model->ModelError();
         if(new_error < m_error)
             counter++;
@@ -126,7 +111,6 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
         qreal triangle = 0.5*increment*qAbs(new_error-old_error);
         qreal integ = rect+triangle; 
         integ_5 += integ;
-        qDebug() << m << "out of" << m_maxsteps << "done" << new_error/m_error;
         
         if(new_error/m_error <= double(1.005) && new_error > m_error)
             integ_1 += integ;
@@ -134,15 +118,15 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
         if(new_error/m_error > double(1.025))
         {
             if(direction)
-                m_result.max = x;
+                m_result.max = par;
             else
-                m_result.min = x;
+                m_result.min = par;
             break;
         }
         if(direction)
-            series.append(QPointF(x,new_error));
+            series.append(QPointF(par,new_error));
         else
-            series.prepend(QPointF(x,new_error));
+            series.prepend(QPointF(par,new_error));
         old_error = new_error;
         if(counter > 50)
         {

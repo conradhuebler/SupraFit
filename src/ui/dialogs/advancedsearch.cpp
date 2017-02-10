@@ -231,9 +231,9 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
     while(!allow_break)
     {
         
-        QVector<double > parameter(full_list.size(), 0);
+        QList<double > parameter; //(full_list.size(), 0);
         for(int j = 0; j < position.size(); ++j)
-            parameter[j] = full_list[j][position[j]];
+            parameter << full_list[j][position[j]];
         
         bool temporary = true;
         for(int i = 0; i < position.size(); ++i)
@@ -289,7 +289,7 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
         QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
         for(int j = 0; j < threads[i].size(); ++j)
         {
-            QVector< qreal > parameter = threads[i][j]->Model()->Constants();
+            QList< qreal > parameter = threads[i][j]->Model()->Constants();
             
             QJsonObject json = threads[i][j]->ConvergedParameter();
             m_model->ImportJSON(json);
@@ -326,7 +326,7 @@ void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
         QList<QPointF> series;
         for(int i = 0; i < list[j].size(); ++i)
         {
-            m_model->setConstants(QVector<qreal> () << list[j][i]);
+            m_model->setConstants(QList<qreal> () << list[j][i]);
             m_model->CalculateSignal();
             error << m_model->ModelError();
             series.append(QPointF(list[j][i],m_model->ModelError( )));
