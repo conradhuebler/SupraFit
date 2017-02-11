@@ -53,12 +53,12 @@
 
 #include <stdio.h>
 
-#include "nmr2fit.h"
+#include "suprafit.h"
 
 MainWindow::MainWindow() : m_ask_on_exit(true)
 {
     m_model_dataholder = new ModelDataHolder;
-    m_modeldock = new QDockWidget(tr("Data and Models"), this);
+    m_modeldock = new QDockWidget(tr("Workspace"), this);
     m_modeldock->setObjectName(tr("data_and_models"));
     m_modeldock->setWidget(m_model_dataholder);
     m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
@@ -91,7 +91,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     history_scroll->setWidget(m_historywidget);
         history_scroll->setWidgetResizable(true);
         history_scroll->setAlignment(Qt::AlignTop);
-    m_history_dock = new QDockWidget("Stored Models");
+    m_history_dock = new QDockWidget("Models Stack");
     m_history_dock->setObjectName(tr("history"));
     m_history_dock->setWidget(history_scroll);
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
@@ -378,7 +378,7 @@ void MainWindow::WriteSettings(bool ignore_window_state)
     _settings.setValue("threads", qApp->instance()->property("threads")); 
     _settings.endGroup();
     
-    if(ignore_window_state)
+    if(!ignore_window_state)
     {
         _settings.beginGroup("window");
         _settings.setValue("geometry", saveGeometry());
@@ -428,4 +428,4 @@ void MainWindow::closeEvent(QCloseEvent *event)
     WriteSettings(false);
     QMainWindow::closeEvent(event);
 }
-#include "nmr2fit.moc"
+#include "suprafit.moc"

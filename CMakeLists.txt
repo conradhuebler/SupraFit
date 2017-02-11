@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(nmr2fit)
+project(suprafit)
 # set the module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
@@ -121,7 +121,7 @@ set(models_SRC
 add_library(models STATIC ${models_SRC})
 qt5_use_modules(models Core)
 
-set(nmr2fit_SRCS
+set(suprafit_SRCS
                 src/ui/widgets/statisticwidget.cpp
                 src/ui/widgets/modeltablewidget.cpp
                 src/ui/widgets/optimizerflagwidget.cpp
@@ -139,23 +139,23 @@ set(nmr2fit_SRCS
                 src/ui/widgets/datawidget.cpp
                 src/ui/widgets/modelwidget.cpp
                 src/ui/chartwrapper.cpp
-                src/ui/nmr2fit.cpp 
+                src/ui/suprafit.cpp 
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp
                 src/core/toolset.cpp
                 src/global.cpp
                 src/main.cpp)
 
-add_executable(nmr2fit ${nmr2fit_SRCS})
+add_executable(suprafit ${suprafit_SRCS})
 
-set_property(TARGET math models nmr2fit PROPERTY CXX_STANDARD 11)
+set_property(TARGET math models suprafit PROPERTY CXX_STANDARD 11)
 
-qt5_use_modules(nmr2fit Widgets Charts PrintSupport DataVisualization)
+qt5_use_modules(suprafit Widgets Charts PrintSupport DataVisualization)
 
-target_link_libraries(nmr2fit models math  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
+target_link_libraries(suprafit models math  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
 
 if(USE_levmarOptimizer)
-    target_link_libraries(nmr2fit levmar)
+    target_link_libraries(suprafit levmar)
 endif(USE_levmarOptimizer)
 
-install(TARGETS nmr2fit RUNTIME DESTINATION bin)
+install(TARGETS suprafit RUNTIME DESTINATION bin)

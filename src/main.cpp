@@ -1,4 +1,4 @@
-#include "ui/nmr2fit.h"
+#include "ui/suprafit.h"
 
 #include <QtWidgets/QApplication>
 
@@ -32,9 +32,9 @@ int main(int argc, char** argv)
     
     QApplication app(argc, argv);
     
-    app.setApplicationName("nmr2fit placeholder");
+    app.setApplicationName("SupraFit");
     app.setOrganizationName("Conrad Huebler");
-    
+    app.setApplicationVersion("0.3-pre");
 
     MainWindow mainwindow;
     mainwindow.show();
