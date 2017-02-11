@@ -56,10 +56,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_add = new QPushButton(tr("Add Titration\n Model"));
     m_add->setFlat(true);
     m_add->setDisabled(true);
-    
-    m_simulate = new QPushButton(tr("Simulate"));
-    m_simulate->setFlat(true);
-    
+
     QMenu *menu = new QMenu;
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
@@ -82,7 +79,6 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     
     m_add->setMenu(menu);
     
-    m_simulate->setMenu(menu);
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
     
@@ -98,13 +94,13 @@ QSharedPointer<DataClass> ModelDataHolder::setData(QPointer<DataClass> dataclass
     m_data = QSharedPointer<DataClass>(new DataClass((dataclass))); 
     m_datawidget->setData(m_data);
     m_add->setEnabled(true);
-    m_modelsWidget->addTab(m_datawidget, qApp->instance()->property("projectname").toString());
+    m_modelsWidget->addTab(m_datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
     return m_data;
 }
 
 void ModelDataHolder::SetProjectTabName()
 {
-    m_modelsWidget->setTabText(0, qApp->instance()->property("projectname").toString());
+    m_modelsWidget->setTabText(0, "Overview: " + qApp->instance()->property("projectname").toString());
 }
 
 

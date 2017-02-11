@@ -21,6 +21,8 @@
 
 #include <QApplication>
 
+#include <QtWidgets/QGroupBox>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
@@ -33,14 +35,12 @@
 DataWidget::DataWidget() 
 {
     QGridLayout *layout = new QGridLayout;
-    m_switch = new QPushButton(tr("switch h/g"));
-    
+    m_switch = new QPushButton(tr("Switch Host/Guest\nAssignment"));
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
-    setLayout(layout);
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
     m_concentrations = new QTableView;
-        m_concentrations->setMaximumWidth(200);
+        m_concentrations->setMaximumWidth(250);
     m_signals = new QTableView;
         m_signals->setMaximumWidth(750);
 
@@ -51,9 +51,24 @@ DataWidget::DataWidget()
     hlayout->addSpacing(2*width()/3);
     hlayout->addWidget(m_switch);
     
-    layout->addLayout(hlayout, 0, 0, 1, 2);
-    layout->addWidget(m_concentrations, 1, 0);
-    layout->addWidget(m_signals, 1, 1);
+    m_datapoints = new QLabel;
+    m_substances = new QLabel;
+    m_const_subs = new QLabel;
+    m_signals_count = new QLabel;
+    m_tables = new QGroupBox(tr("Data Tables"));
+    QHBoxLayout *group_layout = new QHBoxLayout;
+    group_layout->addWidget(m_concentrations);
+    group_layout->addWidget(m_signals);
+    m_tables->setLayout(group_layout);
+    layout->addLayout(hlayout, 0, 0, 1, 3);
+    layout->addWidget(m_datapoints, 1, 0);
+    layout->addWidget(m_substances, 1, 1);
+    layout->addWidget(m_const_subs,1,2);
+    layout->addWidget(m_signals_count, 1, 3);
+    layout->addWidget(m_tables, 4, 0, 1, 4);
+
+    setLayout(layout);
+
 }
 
 DataWidget::~DataWidget()
@@ -73,6 +88,9 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass)
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
     m_name->setText(qApp->instance()->property("projectname").toString());
+    m_substances->setText(tr("Considered Substances: %1").arg(m_data.data()->ConcentrationModel()->columnCount()));
+    m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->SignalModel()->rowCount()));
+    m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SignalCount()));
 }
 
 void DataWidget::switchHG()

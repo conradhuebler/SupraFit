@@ -25,7 +25,10 @@
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTableWidget>
 #include <QtCore/QPointer>
+
 class QPushButton;
+class QLabel;
+class QGroupBox;
 
 class DataWidget : public QWidget
 {
@@ -41,10 +44,12 @@ public slots:
     void RowAdded();
 
 private:
-    QPointer<QTableView > m_concentrations, m_signals;
-    QPointer<QPushButton > m_switch;
+    QTableView  *m_concentrations, *m_signals;
+    QPushButton  *m_switch;
     QWeakPointer<DataClass > m_data;
-    QPointer<QLineEdit > m_name;
+    QLineEdit *m_name;
+    QLabel *m_datapoints, *m_substances, *m_const_subs, *m_signals_count;
+    QGroupBox *m_tables;
 private slots:
     void switchHG();
     void SetProjectName();

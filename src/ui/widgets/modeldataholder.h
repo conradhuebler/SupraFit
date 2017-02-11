@@ -71,7 +71,7 @@ public slots:
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<QTabWidget > m_modelsWidget;
-    QPointer<QPushButton > m_add, m_simulate;
+    QPointer<QPushButton > m_add;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
 //     QPlainTextEdit *m_logWidget;
