@@ -147,16 +147,8 @@ void ItoI_ItoII_Model::CalculateSignal(const QList<qreal > &constants)
         return;
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal host_0, guest_0;
-        if(*ptr_concentrations)
-        {
-            host_0 = ConcentrationModel()->data(0,i);
-            guest_0 = ConcentrationModel()->data(1,i);
-        }else
-        {
-            host_0 = ConcentrationModel()->data(1,i);
-            guest_0 = ConcentrationModel()->data(0,i);
-        }
+        qreal host_0 = InitialHostConcentration(i);
+        qreal guest_0 = InitialGuestConcentration(i);
         
         qreal K12= qPow(10, constants.last());
         qreal K11 = qPow(10, constants.first());

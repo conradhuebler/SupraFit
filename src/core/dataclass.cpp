@@ -245,35 +245,26 @@ void DataTable::setRow(QVector<qreal> vector, int row)
     return;
 }
 
-DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_concentrations(new bool(true))
+DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
 {
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;
 }
 
-DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_concentrations(new bool(true))
+DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_host_assignment(0)
 {
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
-    m_raw_data = new DataTable;
-    if(m_type == 3)
-    {
-        for(int i = 0; i <= 100; ++i)
-        {
-            QVector<qreal > vec = QVector<qreal>() << (i)*6/100 << 3;
-            m_concentration_model->insertRow(vec);
-        }
-    }
-    
+    m_raw_data = new DataTable;    
 }
+
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(other)
 {
     m_concentration_model = new DataTable(other.m_concentration_model);
     m_signal_model = new DataTable(other.m_signal_model);
     m_raw_data = new DataTable(other.m_raw_data);
-
     m_type = other.m_type;
     
 }
@@ -283,7 +274,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_concentration_model = new DataTable(other->m_concentration_model);
     m_signal_model = new DataTable(other->m_signal_model);
     m_raw_data = new DataTable(other->m_raw_data);
-
     m_type = other->m_type;
 }
 
@@ -302,7 +292,8 @@ DataClass::DataClass(QObject *parent) : QObject(parent), m_plotmode(DataClass::H
 
 DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObject(parent), m_plotmode(DataClass::HG)
 {
-    d = new DataClassPrivate(type);
+    d = new DataClassPrivate();
+    d->m_type = type;
     ImportJSON(json);
     
 }
@@ -349,7 +340,7 @@ QList<double>   DataClass::getSignals(QList<int > active_signal)
 
 void DataClass::SwitchConentrations()
 {
-    *d->m_concentrations = !(*d->m_concentrations); 
+    d->m_host_assignment = !HostAssignment();
 }
 
 qreal DataClass::XValue(int i) const
@@ -357,36 +348,36 @@ qreal DataClass::XValue(int i) const
     
     switch(m_plotmode){
         case DataClass::G:
-            if(*d->m_concentrations)
-                return d->m_concentration_model->data(0,i);
-            else
-                return d->m_concentration_model->data(1,i);
+                return d->m_concentration_model->data(!HostAssignment(),i);
             break;
             
         case DataClass::H:   
-            if(!(*d->m_concentrations))
-                return d->m_concentration_model->data(1,i);
-            else
-                return d->m_concentration_model->data(0,i);
+                return d->m_concentration_model->data(HostAssignment(),i);
             break;
             
         case DataClass::HG:
-            if(*d->m_concentrations)
-                return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);
-            else
-                return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);                
+                return d->m_concentration_model->data(HostAssignment(),i)/d->m_concentration_model->data(!HostAssignment(),i);                
             break;    
             
         case DataClass::GH:
         default:
-            if(!(*d->m_concentrations))
-                return d->m_concentration_model->data(0,i)/d->m_concentration_model->data(1,i);
-            else
-                return d->m_concentration_model->data(1,i)/d->m_concentration_model->data(0,i);                   
+                return d->m_concentration_model->data(!HostAssignment(),i)/d->m_concentration_model->data(HostAssignment(),i);                   
             break;    
     };
     return 0;
 }
+
+
+qreal DataClass::InitialGuestConcentration(int i)
+{
+    return d->m_concentration_model->data(!HostAssignment(),i);
+}
+
+qreal DataClass::InitialHostConcentration(int i)
+{
+    return d->m_concentration_model->data(HostAssignment(),i);
+}
+
 
 const QJsonObject DataClass::ExportJSON() const
 {
@@ -453,6 +444,11 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
         d->m_concentration_model->setRow(concentrationsVector, row);
         d->m_signal_model->setRow(signalVector, row);
     }
+//     d->m_type = topjson["datatype"].toString();
     
+    if("discrete" == topjson["datatype"].toString())
+        d->m_type = 1;
+//     if(d->m_type == 0 || d->m_type > 3)
+//         d->m_type = 1;
     return true;
 }

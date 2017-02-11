@@ -183,16 +183,8 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
     threadpool->setMaxThreadCount(maxthreads);
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal host_0, guest_0;
-        if(*ptr_concentrations)
-        {
-            host_0 = ConcentrationModel()->data(0,i);
-            guest_0 = ConcentrationModel()->data(1,i);
-        }else
-        {
-            host_0 = ConcentrationModel()->data(1,i);
-            guest_0 = ConcentrationModel()->data(0,i);
-        }
+        qreal host_0 = InitialHostConcentration(i);
+        qreal guest_0 = InitialGuestConcentration(i);
         
         
         m_solvers[i]->setInput(host_0, guest_0, constants);
@@ -202,14 +194,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
     threadpool->waitForDone();
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal host_0;
-        if(*ptr_concentrations)
-        {
-            host_0 = ConcentrationModel()->data(0,i);
-        }else
-        {
-            host_0 = ConcentrationModel()->data(1,i);
-        }
+        qreal host_0 = InitialHostConcentration(i);
         
         qreal K21= qPow(10, constants.first());
         qreal K11 =qPow(10, constants[1]);

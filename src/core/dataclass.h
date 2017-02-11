@@ -88,8 +88,7 @@ public:
     QStringList m_names;
     
     int m_type, m_maxsize;
-    bool *m_concentrations;
-    
+    int m_host_assignment;
     
     DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
 };
@@ -138,11 +137,11 @@ class DataClass : public QObject
     inline DataTable * ConcentrationModel() const { return d->m_concentration_model; }
     inline DataTable * SignalModel() const { return d->m_signal_model; }
     void SwitchConentrations();
-    inline bool* Concentration() const { return d->m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
-
-
+    qreal InitialHostConcentration(int i);
+    qreal InitialGuestConcentration(int i);
+    inline int HostAssignment() const { return d->m_host_assignment; }
     /*
     void setData(qreal point, int line, int row)
     {

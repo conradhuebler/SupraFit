@@ -120,17 +120,8 @@ void ItoI_Model::CalculateSignal(const QList<qreal > &constants)
     m_corrupt = false;
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal host_0, guest_0;
-        if(*ptr_concentrations)
-        {
-            host_0 = ConcentrationModel()->data(0,i);
-            guest_0 = ConcentrationModel()->data(1,i);
-        }else
-        {
-            host_0 = ConcentrationModel()->data(1,i);
-            guest_0 = ConcentrationModel()->data(0,i);
-        }
-        qDebug() << host_0 << guest_0;
+        qreal host_0 = InitialHostConcentration(i);
+        qreal guest_0 = InitialGuestConcentration(i);
         qreal host = HostConcentration(host_0, guest_0, constants);
         qreal complex = host_0 -host;
         for(int j = 0; j < SignalCount(); ++j)

@@ -153,7 +153,6 @@ protected:
     QString m_name;
     QList<qreal > m_pure_signals, m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
-    bool *ptr_concentrations;
     QVector<double * > m_opt_para;
     QVector<QVector<qreal * > >m_lim_para;
     DataTable *m_model_signal, *m_model_error;

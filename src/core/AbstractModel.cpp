@@ -41,7 +41,6 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     m_last_optimization = static_cast<OptimizationType>(0);
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());
-    ptr_concentrations = data->Concentration();
     
     m_model_signal = new DataTable(SignalCount(),DataPoints());
     m_model_error = new DataTable(SignalCount(),DataPoints());
@@ -59,8 +58,6 @@ void AbstractTitrationModel::adress() const
 {
     std::cout << "We are at " << this;
     std::cout << "\t" << m_data;
-    std::cout << "\t "<< m_data->Concentration();
-    std::cout << "\t" << Concentration() << std::endl;
     for(int i = 0; i < m_opt_para.size(); ++i)
         std::cout << m_opt_para[i] << " ";
     std::cout << std::endl;
