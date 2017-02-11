@@ -63,7 +63,7 @@ void ChartWrapper::CreateModel()
     m_plot_signal = new QStandardItemModel(m_table->rowCount(), m_table->columnCount()+1);
     for(int i = 0; i < m_model->DataPoints(); ++i)
     {
-        QString x = QString::number(m_model->XValue(i));
+        QString x = QString::number(XValue(i));
         
         QStandardItem *item;
         item = new QStandardItem(x);
@@ -80,7 +80,7 @@ void ChartWrapper::UpdateModel()
 {
     for(int i = 0; i < m_model->DataPoints(); ++i)
     {
-        QString x = QString::number(m_model->XValue(i));
+        QString x = QString::number(XValue(i));
        
         m_plot_signal->item(i,0)->setData(x, Qt::DisplayRole);
         
@@ -137,5 +137,30 @@ QColor ChartWrapper::ColorCode(int i) const
             return Qt::darkGray;
     }
 }
+
+qreal ChartWrapper::XValue(int i) const
+{
+    
+    switch(m_plotmode){
+        case PlotMode::G:
+                return m_model->InitialGuestConcentration(i); 
+            break;
+            
+        case PlotMode::H:   
+                return m_model->InitialHostConcentration(i);
+            break;
+            
+        case PlotMode::HG:
+                return m_model->InitialHostConcentration(i)/m_model->InitialGuestConcentration(i);                
+            break;    
+            
+        case PlotMode::GH:
+        default:
+                return m_model->InitialGuestConcentration(i)/m_model->InitialHostConcentration(i);                   
+            break;    
+    };
+    return 0;
+}
+
 
 #include "chartwrapper.moc"

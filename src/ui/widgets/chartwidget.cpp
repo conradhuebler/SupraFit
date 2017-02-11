@@ -63,7 +63,7 @@ void LineSeries::ShowLine(int state)
         setVisible(true);   
 }
 
-ChartWidget::ChartWidget() : m_themebox(createThemeBox())
+ChartWidget::ChartWidget() 
 {
     
     m_signalchart = new QtCharts::QChart;
@@ -83,7 +83,6 @@ ChartWidget::ChartWidget() : m_themebox(createThemeBox())
     m_x_scale->setCurrentIndex(3);
 
     QGridLayout *layout = new QGridLayout;
-//     layout->addWidget(m_themebox, 0, 0);
     layout->addWidget(m_signalview,1, 0);
     layout->addWidget(m_errorview, 2, 0);
     layout->addWidget(m_x_scale, 3, 0);
@@ -91,7 +90,6 @@ ChartWidget::ChartWidget() : m_themebox(createThemeBox())
     m_signalchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
     m_errorchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
     
-    connect(m_themebox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateUI()));
     setLayout(layout);
     max_shift = 0;
     min_shift = 0;
@@ -106,10 +104,9 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 {
     m_rawdata = rawdata;
     
-//     m_rawdata->PlotModel();
-    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
-    m_rawdata->setPlotMode(j);
+    ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
     m_data_mapper = new ChartWrapper(this);
+    m_data_mapper->setPlotMode(j);
     m_data_mapper->setDataTable(m_rawdata->SignalModel());
     m_data_mapper->setData(m_rawdata);
     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
@@ -133,15 +130,15 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
 Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
 {
     m_models << model;
-//     model->UpdatePlotModels();
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    AbstractTitrationModel::PlotMode j = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1) ;
-    model->setPlotMode(j);
+    ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
     ChartWrapper *signal_wrapper = new ChartWrapper(this);
+    signal_wrapper->setPlotMode(j);
     signal_wrapper->setDataTable(model->ModelTable());
     signal_wrapper->setData(model.data());
     
     ChartWrapper *error_wrapper = new ChartWrapper(this);
+    error_wrapper->setPlotMode(j);
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model.data());
     
@@ -180,12 +177,10 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
 
 void ChartWidget::Repaint()
 {         
-    if(m_plot_mode != (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1))
+    if(m_plot_mode != (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1))
     {
-        m_plot_mode = (AbstractTitrationModel::PlotMode)(m_x_scale->currentIndex() + 1);
-        if(m_rawdata)
-            m_rawdata->setPlotMode(m_plot_mode);
-//         m_rawdata->PlotModel();  
+        m_plot_mode = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1);
+        m_data_mapper->setPlotMode(m_plot_mode);
     }    
     QVector<int > trash;
 //     for(int i= 0; i < m_models.size(); ++i)
@@ -209,21 +204,6 @@ void ChartWidget::formatAxis()
     QTimer::singleShot(1,m_errorview, SLOT(formatAxis()));
 }
 
-
-QPointer<QComboBox > ChartWidget::createThemeBox() const
-{
-    // settings layout
-    QPointer<QComboBox >themeComboBox = new QComboBox();
-    themeComboBox->addItem("Light", QtCharts::QChart::ChartThemeLight);
-    themeComboBox->addItem("Blue Cerulean", QtCharts::QChart::ChartThemeBlueCerulean);
-    themeComboBox->addItem("Dark", QtCharts::QChart::ChartThemeDark);
-    themeComboBox->addItem("Brown Sand", QtCharts::QChart::ChartThemeBrownSand);
-    themeComboBox->addItem("Blue NCS", QtCharts::QChart::ChartThemeBlueNcs);
-    themeComboBox->addItem("High Contrast", QtCharts::QChart::ChartThemeHighContrast);
-    themeComboBox->addItem("Blue Icy", QtCharts::QChart::ChartThemeBlueIcy);
-    themeComboBox->addItem("Qt", QtCharts::QChart::ChartThemeQt);
-    return themeComboBox;
-}
 
 void ChartWidget::updateUI()
 {

@@ -112,12 +112,7 @@ class DataClass : public QObject
         EmptyData = 3
     };
     
-    enum PlotMode { 
-        H = 1, 
-        G = 2, 
-        HG = 3, 
-        GH = 4
-    };
+
     
     inline void addPoint(QVector<qreal > conc, QVector<qreal > data)
     {
@@ -137,7 +132,6 @@ class DataClass : public QObject
     inline DataTable * ConcentrationModel() const { return d->m_concentration_model; }
     inline DataTable * SignalModel() const { return d->m_signal_model; }
     void SwitchConentrations();
-    inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
     qreal InitialHostConcentration(int i);
     qreal InitialGuestConcentration(int i);
@@ -165,7 +159,6 @@ class DataClass : public QObject
     bool ImportJSON(const QJsonObject &topjson);
 
 protected:
-    PlotMode m_plotmode;
     QExplicitlySharedDataPointer<DataClassPrivate > d;
      
 signals:

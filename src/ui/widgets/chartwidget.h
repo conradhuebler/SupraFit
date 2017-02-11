@@ -19,6 +19,9 @@
 
 #ifndef CHARTWIDGET_H
 #define CHARTWIDGET_H
+
+#include "src/ui/chartwrapper.h"
+
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 #include <QtCharts/QScatterSeries>
@@ -67,9 +70,7 @@ public:
     
 private:
     qreal max_shift, min_shift;
-    
-    QPointer<QComboBox > createThemeBox() const;
-   
+       
     QPointer<QComboBox > m_x_scale, m_themebox;
     QPointer<ChartView > m_signalview, m_errorview;
     QPointer<QtCharts::QChart > m_signalchart, m_errorchart;
@@ -79,8 +80,9 @@ private:
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
     void Paint();
-    AbstractTitrationModel::PlotMode m_plot_mode;
+    ChartWrapper::PlotMode m_plot_mode;
     ChartWrapper *m_data_mapper;
+    
 private slots:
     void formatAxis();
     void Repaint();

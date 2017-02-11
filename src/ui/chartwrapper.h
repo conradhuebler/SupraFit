@@ -35,21 +35,30 @@ class ChartWrapper : public QObject
 {
     Q_OBJECT
 public:
+    enum PlotMode { 
+        H = 1, 
+        G = 2, 
+        HG = 3, 
+        GH = 4
+    };
+    
     ChartWrapper(QObject *parent = 0);
     ~ChartWrapper();
     void setData(QPointer< DataClass > model);
     inline void setDataTable(const DataTable *table) { m_table = table; }
     inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_plot_mapper[i]; }
     QColor color(int i) const; 
+    inline void setPlotMode(PlotMode plotmode) { m_plotmode = plotmode; }
 public slots:
     void UpdateModel();
 private:
     QColor ColorCode(int i) const;
+    qreal XValue(int i) const;
     void CreateModel();
     const DataTable *m_table;
     QStandardItemModel *m_plot_signal;
     QList<QPointer<QtCharts::QVXYModelMapper> > m_plot_mapper;
-    
+    PlotMode m_plotmode;
     QPointer< DataClass > m_model;
 };
 
