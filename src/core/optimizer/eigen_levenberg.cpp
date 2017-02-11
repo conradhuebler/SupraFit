@@ -33,7 +33,7 @@
 #include <iostream>
 
 #include "src/core/libmath.h"
-typedef QVector<qreal > Variables;
+typedef QList<qreal > Variables;
 
 template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
 
@@ -71,10 +71,9 @@ struct MyFunctor : Functor<double>
         
         model.data()->setParamter(param);
         model.data()->CalculateSignal();
-        QVector<qreal > CalculatedSignals = model.data()->getCalculatedSignals();
-        for( int i = 0; i < values(); ++i)
+        Variables CalculatedSignals = model.data()->getCalculatedSignals();
+        for( int i = 0; i < ModelSignals.size(); ++i)
         {
-  //           fvec(i) = ((CalculatedSignals[i] - ModelSignals[i]));//*(CalculatedSignals[i] - ModelSignals[i]));
               fvec(i) = (CalculatedSignals[i] - ModelSignals[i]);
         }
         return 0;
@@ -96,6 +95,8 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     Q_UNUSED(config)
     Q_UNUSED(max_iter)
     Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
+    if(ModelSignals.size() == 0)
+        return -1;
     Eigen::VectorXd parameter(param.size());
     for(int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
@@ -109,7 +110,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     }
     message += "\n";
     model.data()->Message(message, 5);
-    MyFunctor functor(param.size(), model.data()->DataPoints()*model.data()->SignalCount());
+    MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);

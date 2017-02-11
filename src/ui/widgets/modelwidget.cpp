@@ -182,7 +182,6 @@ void ModelElement::Update()
 {
     
     m_d_0->setValue(m_model->PureSignal(m_no));
-    
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
         m_constants[i]->setValue(m_model->Pair(i, m_no).second);
@@ -401,11 +400,11 @@ void ModelWidget::CollectParameters()
     QList<qreal > pure_signals, constants;
     QVector<QList <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
-    QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
+    QList<int > active_signals;// = QVector<int>(m_model_elements.size(), 0).toList();
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
         pure_signals << m_model_elements[i]->D0();
-        active_signals[i] = m_model_elements[i]->Include();
+        active_signals <<  m_model_elements[i]->Include();
         for(int j = 0; j < m_model_elements[i]->D().size(); ++j)
         {
             complex_signals[j] << m_model_elements[i]->D()[j];
@@ -441,12 +440,10 @@ void ModelWidget::GlobalMinimize()
     m_minimize_single->setEnabled(false);
     QJsonObject json = m_model->ExportJSON();
     m_minimizer->setParameter(json);
-    QVector<int > v(10,0);
     OptimizerConfig config = m_model->getOptimizerConfig();
     config.MaxIter = m_maxiter->value();
     m_model->setOptimizerConfig(config);
     int result;
-    
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
 
     if(result == 1)
@@ -546,6 +543,7 @@ void ModelWidget::LocalMinimize()
         m_model->setOptimizerConfig(config);
         
         int result;
+        m_model->ActiveSignals();
         result = m_minimizer->Minimize(m_optim_flags->getFlags());
         
         

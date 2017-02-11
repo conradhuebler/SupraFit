@@ -98,7 +98,7 @@ public:
     virtual void CalculateSignal(const QList<qreal > &constants) = 0;
 //     inline void CalculateSignal() { CalculateSignal(Constants()); }
     virtual void InitialGuess() = 0;
-    QVector<qreal >  getCalculatedSignals(QList<int > active_signal = QList<int >() << 0);
+    QList<qreal >  getCalculatedSignals();
 
     inline QString Name() const { return m_name; }
     void setParamter(const QVector<qreal> &parameter);
@@ -117,9 +117,14 @@ public:
     void adress() const;
     QJsonObject ExportJSON() const;
     void ImportJSON(const QJsonObject &topjson);
-    
-    inline QList<int > ActiveSignals() { return m_active_signals; }
-    inline QList<int > ActiveSignals() const { return m_active_signals; }
+    inline QList<int> ActiveSignals() const { return m_active_signals; }
+    inline int ActiveSignals(int i) const 
+    { 
+        if(i < m_active_signals.size())
+            return m_active_signals.at(i);
+        else
+            return 0;
+    }
     inline void setActiveSignals(const QList<int > &active_signals) 
     { 
         m_active_signals = active_signals; 

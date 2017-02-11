@@ -330,20 +330,18 @@ DataClass::~DataClass()
 }
 
 
-QVector<double>   DataClass::getSignals(QList<int > active_signal)
+QList<double>   DataClass::getSignals(QList<int > active_signal)
 {
     if(active_signal.size() < SignalCount() )
         active_signal = QVector<int>(SignalCount(), 1).toList();
     
-    QVector<double> x(DataPoints()*SignalCount(), 0);
-    int index = 0;
+    QList<double > x;
     for(int j = 0; j < SignalCount(); ++j)
     {
         for(int i = 0; i < DataPoints(); ++i)
         {
             if(active_signal[j] == 1)
-                x[index] = SignalModel()->data(j,i); 
-            index++;
+                x.append(SignalModel()->data(j,i)); //[index] = SignalModel()->data(j,i); 
         }
     }
     return x;

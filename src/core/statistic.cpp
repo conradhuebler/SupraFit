@@ -178,7 +178,6 @@ bool Statistic::ConfidenceAssesment()
         if(m_model->SupportThreads())
         {
             thread->run();
-            qDebug() << "ones more done";
         }
         else
             threadpool->start(thread);

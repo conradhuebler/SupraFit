@@ -140,7 +140,7 @@ class DataClass : public QObject
     void SwitchConentrations();
     inline bool* Concentration() const { return d->m_concentrations; }
     inline void setPlotMode(PlotMode mode)  {  m_plotmode = mode;  }
-    QVector<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
+    QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
 
 
     /*

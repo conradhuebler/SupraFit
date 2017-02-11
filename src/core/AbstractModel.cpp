@@ -67,21 +67,15 @@ void AbstractTitrationModel::adress() const
 }
 
 
-QVector<double>   AbstractTitrationModel::getCalculatedSignals(QList<int > active_signal)
+QList<double>   AbstractTitrationModel::getCalculatedSignals()
 {
-    if(active_signal.size() < SignalCount() && ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1).toList();
-    else
-        active_signal = ActiveSignals();
-    QVector<double> x(DataPoints()*SignalCount(), 0);
-    int index = 0;
+    QList<double > x;
     for(int j = 0; j < SignalCount(); ++j)
     {
         for(int i = 0; i < DataPoints(); ++i)
         {
-            if(active_signal[j] == 1)
-                x[index] = m_model_signal->data(j,i); 
-            index++;
+            if(ActiveSignals(j) == 1)
+                x.append( m_model_signal->data(j,i)); 
         }
     }
     return x;
@@ -115,7 +109,9 @@ void AbstractTitrationModel::setOptParamater(qreal& parameter)
 void AbstractTitrationModel::addOptParameter(QList<qreal>& parameter)
 {
     for(int i = 0; i < parameter.size(); ++i)
+    {
         m_opt_para << &parameter[i];    
+    }
 }
 
 
@@ -129,11 +125,9 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 {
     qreal sum = 0;
     
-    if(i >= Size() || i >= ActiveSignals().size())
+    if(!ActiveSignals(i) || i >= Size())
         return sum;
     
-    if(ActiveSignals()[i] == 0)
-        return sum;
     for(int j = 0; j < DataPoints(); ++j)
     {
         sum += qPow(m_model_error->data(i,j),2);
@@ -143,6 +137,8 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 
 void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 {
+    if(!ActiveSignals(j))
+        return;
     if(std::isnan(value) || std::isinf(value))
     {
         value = 0;
@@ -151,7 +147,7 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
     if(Type() != 3)
     {
         m_model_signal->data(j,i) = value;
-        m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i); //var;
+        m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
     }
     
 }
@@ -189,7 +185,7 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     
     QJsonObject pureShiftObject;
     for(int i = 0; i < m_pure_signals.size(); ++i)
-        if(ActiveSignals()[i])
+        if(ActiveSignals(i))
             pureShiftObject[QString::number(i)] = (QString::number(m_pure_signals[i]));
         
         json["pureShift"] = pureShiftObject;   
@@ -201,7 +197,7 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
         QJsonObject object;
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
-            if(ActiveSignals()[j])
+            if(ActiveSignals(j))
             {
                 qreal value = Pair(i, j).second;
                 object[QString::number(j)] =  QString::number(value);
@@ -226,7 +222,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     }
     QJsonObject json = topjson["data"].toObject();
     
-    QList<int > active_signals = QVector<int>(SignalCount(), 0).toList();
+    QList<int > active_signals;// = QVector<int>(SignalCount(), 0).toList();
     QList<qreal> constants; 
     QJsonObject constantsObject = json["constants"].toObject();
     for (int i = 0; i < Constants().size(); ++i) {
@@ -247,11 +243,12 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     QJsonObject pureShiftObject = json["pureShift"].toObject();
     for (int i = 0; i < m_pure_signals.size(); ++i) 
     {
-        if(!pureShiftObject[QString::number(i)].isUndefined())
-        {
-            pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
-            active_signals[i] = 1;
-        }
+        pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+        if(!pureShiftObject[QString::number(i)].isNull())
+              active_signals <<  1;
+        else
+            active_signals <<  0;
+
     }
     setPureSignals(pureShift);
     
@@ -262,10 +259,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
         QJsonObject object = json["shift_" + QString::number(i)].toObject();
         for(int j = 0; j < m_pure_signals.size(); ++j)
         {
-            if(!object[QString::number(i)].isNull())
-            {
                 shifts << object[QString::number(j)].toString().toDouble();
-            }
         }
         setComplexSignals(shifts, i);
     }
@@ -282,11 +276,7 @@ double AbstractTitrationModel::IncrementParameter(double increment, int paramete
 {
     adress();
     if(parameter < m_opt_para.size())
-    {
-//         qDebug() << *m_opt_para[parameter];
         *m_opt_para[parameter] += increment;
-//         qDebug() << *m_opt_para[parameter];
-    }
     return *m_opt_para[parameter];
 }
 
@@ -295,22 +285,16 @@ void AbstractTitrationModel::SetSingleParameter(double value, int parameter)
 {
     if(parameter < m_opt_para.size())
         *m_opt_para[parameter] = value;
-    qDebug() << *m_opt_para[parameter] << value;
 }
 
 void AbstractTitrationModel::MiniShifts()
 {
-    QList<int > active_signal;
-    if(ActiveSignals().size() < SignalCount())
-        active_signal = QVector<int>(SignalCount(), 1).toList();
-    else
-        active_signal = ActiveSignals();
     double cut_error = 1;
     for(int j = 0; j < m_lim_para.size(); ++j)
     {
         for(int i = 0; i < SignalCount(); ++i)    
         {
-            if(active_signal[i] == 1)
+            if(ActiveSignals(i) == 1)
             {
                 if(m_model_error->data(i, 0) < cut_error && j == 0)
                     *m_lim_para[j][i] -= m_model_error->data(i,0);
@@ -336,10 +320,7 @@ void AbstractTitrationModel::setConstants(const QList<qreal> &list)
     if(list.size() != m_complex_constants.size())
         return;
     for(int i = 0; i < list.size(); ++i)
-    {
-//         qDebug() << list[i] << m_complex_constants[i];
         m_complex_constants[i] = list[i];  
-    }
 }
 
 
