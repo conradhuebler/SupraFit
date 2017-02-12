@@ -62,7 +62,8 @@ ChartWidget::ChartWidget()
     m_x_scale = new QComboBox;
     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_signalview, SLOT(setXAxis(QString)));
     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_errorview, SLOT(setXAxis(QString)));    
-    m_x_scale->addItems(QStringList()  << tr("c(Guest)")<< tr("c(Host)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
+    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
+    m_x_scale->addItems(QStringList()  << tr("c(Host)") << tr("c(Guest)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
     m_x_scale->setCurrentIndex(3);
 
     QGridLayout *layout = new QGridLayout;
@@ -116,11 +117,13 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
     ChartWrapper *signal_wrapper = new ChartWrapper(this);
+    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper, SLOT(UpdateModel()));
     signal_wrapper->setPlotMode(j);
     signal_wrapper->setDataTable(model->ModelTable());
     signal_wrapper->setData(model.data());
     
     ChartWrapper *error_wrapper = new ChartWrapper(this);
+    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper, SLOT(UpdateModel()));
     error_wrapper->setPlotMode(j);
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model.data());
@@ -159,10 +162,13 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
 
 void ChartWidget::Repaint()
 {         
+    if(!m_data_mapper)
+        return;
     if(m_plot_mode != (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1))
     {
         m_plot_mode = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1);
         m_data_mapper->setPlotMode(m_plot_mode);
+        m_data_mapper->UpdateModel();
     }    
     QVector<int > trash;
 //     for(int i= 0; i < m_models.size(); ++i)

@@ -130,6 +130,7 @@ void ChartWrapper::UpdateModel()
             m_plot_signal->item(i,j+1)->setData(QString::number(m_table->data(j,i)), Qt::DisplayRole);
         }
     }
+    emit ModelChanged();
 }
 
 QColor ChartWrapper::color(int i) const

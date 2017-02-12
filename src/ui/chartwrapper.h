@@ -80,8 +80,10 @@ public:
     inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_plot_mapper[i]; }
     QColor color(int i) const; 
     inline void setPlotMode(PlotMode plotmode) { m_plotmode = plotmode; }
+    
 public slots:
     void UpdateModel();
+    
 private:
     QColor ColorCode(int i) const;
     qreal XValue(int i) const;
@@ -91,6 +93,9 @@ private:
     QList<QPointer<QtCharts::QVXYModelMapper> > m_plot_mapper;
     PlotMode m_plotmode;
     QPointer< DataClass > m_model;
+    
+signals:
+    void ModelChanged();
 };
 
 #endif // CHARTWRAPPER_H

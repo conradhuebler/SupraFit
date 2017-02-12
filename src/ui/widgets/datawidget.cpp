@@ -172,10 +172,8 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_substances->setText(tr("Considered Substances: %1").arg(m_data.data()->ConcentrationModel()->columnCount()));
     m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->SignalModel()->rowCount()));
     m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SignalCount()));
-    
 
     QVBoxLayout *vlayout = new QVBoxLayout;
-    
     for(int i = 0; i < m_data.data()->SignalCount(); ++i)
     {
         QPointer<SignalElement > el = new SignalElement(m_data, m_wrapper, i, this);
@@ -188,6 +186,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 void DataWidget::switchHG()
 {
     m_data.data()->SwitchConentrations();
+    m_wrapper.data()->UpdateModel();
     emit recalculate();
 }
 

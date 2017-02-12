@@ -197,7 +197,7 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
 
 void ChartView::formatAxis()
 {
-    if(m_pending)
+    if(m_pending || m_chart->series().isEmpty())
         return;
     m_pending = true;
     qreal x_min = 0;
