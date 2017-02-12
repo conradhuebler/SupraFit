@@ -46,23 +46,6 @@
 #include "chartwidget.h"
 
 
- void LineSeries::setColor(const QColor &color) 
- { 
-     QPen pen = QtCharts::QLineSeries::pen();
-//      pen.setStyle(Qt::DashDotLine);
-     pen.setWidth(2);
-     pen.setColor(color);
-     setPen(pen);     
-}
-
-void LineSeries::ShowLine(int state)
-{
-    if(state == Qt::Unchecked)
-        setVisible(false);
-    else if(state == Qt::Checked)
-        setVisible(true);   
-}
-
 ChartWidget::ChartWidget() 
 {
     
@@ -100,19 +83,19 @@ ChartWidget::~ChartWidget()
 }
 
 
-void ChartWidget::setRawData(const QPointer<DataClass> rawdata) 
+QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> rawdata) 
 {
     m_rawdata = rawdata;
     
     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
-    m_data_mapper = new ChartWrapper(this);
+    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
     m_data_mapper->setPlotMode(j);
-    m_data_mapper->setDataTable(m_rawdata->SignalModel());
-    m_data_mapper->setData(m_rawdata);
-    for(int i = 0; i < m_rawdata->SignalCount(); ++i)
+    m_data_mapper->setDataTable(m_rawdata.data()->SignalModel());
+    m_data_mapper->setData(m_rawdata.data());
+    for(int i = 0; i < m_rawdata.data()->SignalCount(); ++i)
     {
         QtCharts::QVXYModelMapper * signal= m_data_mapper->DataMapper(i);
-        QtCharts::QScatterSeries *signal_series = new QtCharts::QScatterSeries;
+        ScatterSeries *signal_series = new ScatterSeries;
         signal->setSeries(signal_series);
         signal_series->setName("Signal " + QString::number(i + 1));
         m_signalview->addSeries(signal_series, true);
@@ -122,7 +105,7 @@ void ChartWidget::setRawData(const QPointer<DataClass> rawdata)
     }
     
     m_signalview->formatAxis();
-    
+    return m_data_mapper;
 }
 
 
@@ -144,11 +127,11 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
     
     for(int i = 0; i < model->SignalCount(); ++i)
     {
-        
         if(model->Type() != 3)
         {
             QtCharts::QVXYModelMapper * mapper = signal_wrapper->DataMapper(i);
             LineSeries *model_series = new LineSeries;
+            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
             mapper->setSeries(model_series);
             model_series->setName("Signal " + QString::number(i + 1));
             model_series->setColor(m_data_mapper->color(i));
@@ -165,13 +148,12 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
             connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
             m_errorview->addSeries(error_series, true);
         }
-        
     }
     Repaint(); 
     Charts charts;
     charts.error_wrapper = error_wrapper;
     charts.signal_wrapper = signal_wrapper;
-    charts.data_wrapper = m_data_mapper;
+    charts.data_wrapper = m_data_mapper.data();
     return charts;
 }
 
@@ -212,7 +194,7 @@ void ChartWidget::updateUI()
     m_signalchart->setTheme(theme);
     m_errorchart->setTheme(theme);
     
-     for(int i = 0; i < m_rawdata->SignalCount(); ++i)
+     for(int i = 0; i < m_rawdata.data()->SignalCount(); ++i)
          m_data_mapper->DataMapper(i)->series()->setColor(m_data_mapper->color(i));
 
 }

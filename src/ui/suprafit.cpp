@@ -189,9 +189,11 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str
         QFileInfo info(str);
         qApp->instance()->setProperty("projectpath", str);
         qApp->instance()->setProperty("projectname", info.baseName());
-        m_titration_data = m_model_dataholder->setData(new DataClass(dataclass));
+        m_titration_data = QSharedPointer<DataClass>(new DataClass((dataclass))); 
+        QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(m_titration_data);
+        m_model_dataholder->setData(m_titration_data, wrapper);
         setActionEnabled(true);
-        m_charts->setRawData(m_titration_data.data());
+        
         if(m_model_dataholder->CheckCrashFile())
         {
             QMessageBox::StandardButton replay;

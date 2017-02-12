@@ -41,25 +41,28 @@
 #include <QtMath>
 #include "cmath"
 #include <QApplication>
+
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonDocument>
-#include <QtWidgets/QFileDialog>
 #include <QtCore/QTimer>
+
+#include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGroupBox>
-#include <QGridLayout>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QLabel>
-#include <QPushButton>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QLineEdit>
-#include <QDebug>
-#include <QCheckBox>
-#include <QMessageBox>
-#include <QColorDialog>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QMessageBox>
+#include <QtWidgets/QColorDialog>
 
 #include <QtCharts/QChart>
 #include <QtCharts/QXYSeries>
 
 #include <QtDataVisualization>
+
+#include <QDebug>
 
 #include <iostream>
 

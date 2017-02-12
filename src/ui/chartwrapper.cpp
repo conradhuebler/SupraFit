@@ -24,6 +24,47 @@
 
 #include "chartwrapper.h"
 
+
+ void LineSeries::setColor(const QColor &color) 
+ { 
+     QPen pen = QtCharts::QLineSeries::pen();
+//      pen.setStyle(Qt::DashDotLine);
+     pen.setWidth(2);
+     pen.setColor(color);
+     setPen(pen);     
+}
+
+void LineSeries::ShowLine(int state)
+{
+    if(state == Qt::Unchecked)
+        setVisible(false);
+    else if(state == Qt::Checked)
+        setVisible(true);   
+}
+
+void LineSeries::setName(const QString &str)
+{
+    QtCharts::QLineSeries::setName(str);   
+}
+
+ void ScatterSeries::setColor(const QColor &color) 
+ { 
+     QPen pen = QtCharts::QScatterSeries::pen();
+//      pen.setStyle(Qt::DashDotLine);
+     pen.setWidth(2);
+     pen.setColor(color);
+     setPen(pen);     
+}
+
+void ScatterSeries::ShowLine(int state)
+{
+    if(state == Qt::Unchecked)
+        setVisible(false);
+    else if(state == Qt::Checked)
+        setVisible(true);   
+}
+
+
 ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent)
 {
 }

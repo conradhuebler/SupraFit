@@ -21,14 +21,49 @@
 #define DATAWIDGET_H
 #include "src/core/dataclass.h"
 
+#include <QtCore/QVector>
+#include <QtCore/QPointer>
+
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTableWidget>
-#include <QtCore/QPointer>
 
 class QPushButton;
 class QLabel;
 class QGroupBox;
+class ChartWrapper;
+class QLineEdit;
+class QCheckBox;
+class QGridLayout;
+class ScatterSeries;
+
+class SignalElement : public QGroupBox
+{
+    Q_OBJECT
+    
+public:
+    SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWrapper> wrapper,int no, QWidget *parent = 0);
+    ~SignalElement();
+    
+    
+private:
+    QWeakPointer<DataClass > m_data;
+    QWeakPointer<ChartWrapper> m_wrapper;
+    QLineEdit *m_name;
+    QCheckBox *m_show;
+    QPushButton *m_choose;
+    QPointer<ScatterSeries > m_data_series;
+    QColor m_color;
+    int m_no;
+    
+private slots:
+    void ToggleSeries(int i);
+    void ChooseColor();
+    void ColorChanged(const QColor &color);
+    void ShowLine(int i);
+    void setName(const QString &str);
+};
 
 class DataWidget : public QWidget
 {
@@ -37,19 +72,22 @@ class DataWidget : public QWidget
 public:
     DataWidget();
     ~DataWidget();
-    void setData(QWeakPointer<DataClass> dataclass);
-    void clear();
+    void setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper);
+
+    
 public slots:
-       
     void RowAdded();
 
 private:
     QTableView  *m_concentrations, *m_signals;
     QPushButton  *m_switch;
     QWeakPointer<DataClass > m_data;
+    QWeakPointer<ChartWrapper> m_wrapper;
     QLineEdit *m_name;
     QLabel *m_datapoints, *m_substances, *m_const_subs, *m_signals_count;
     QGroupBox *m_tables;
+    QVector<QPointer<SignalElement > > m_signal_elements;
+    QGridLayout *layout;
 private slots:
     void switchHG();
     void SetProjectName();

@@ -21,7 +21,7 @@
 
 #include <Eigen/Dense>
 
-
+#include <QtCore/QString>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
@@ -250,6 +250,9 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;
+    
+    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
+    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
 }
 
 DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_host_assignment(0)
@@ -257,6 +260,9 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;    
+    
+    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
+    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
 }
 
 
@@ -266,7 +272,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
     m_signal_model = new DataTable(other.m_signal_model);
     m_raw_data = new DataTable(other.m_raw_data);
     m_type = other.m_type;
-    
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
@@ -339,6 +344,15 @@ QList<double>   DataClass::getSignals(QList<int > active_signal)
 void DataClass::SwitchConentrations()
 {
     d->m_host_assignment = !HostAssignment();
+    if(!d->m_host_assignment)
+    {
+       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
+       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
+    }else
+    {
+       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Guest"));
+       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Host"));
+    }
 }
 
 qreal DataClass::InitialGuestConcentration(int i)

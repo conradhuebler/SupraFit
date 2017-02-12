@@ -59,7 +59,8 @@ class ModelDataHolder : public QWidget
 public:
     ModelDataHolder();
     ~ModelDataHolder();
-    QSharedPointer<DataClass> setData(QPointer<DataClass> data);
+    
+    void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper > wrapper);
     void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
     enum {
         ItoI = 1,

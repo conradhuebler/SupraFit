@@ -17,9 +17,10 @@
  * 
  */
 
-#include "datawidget.h"
+#include "src/ui/chartwrapper.h"
 
 #include <QApplication>
+#include <QHeaderView>
 
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
@@ -29,12 +30,97 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTableWidget>
+#include <QtWidgets/QColorDialog>
+#include <QtWidgets/QCheckBox>
+
+#include <QtCharts/QXYSeries>
+
 #include <QStandardItemModel>
 
 #include <QDebug>
+
+#include "datawidget.h"
+
+SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWrapper> wrapper, int no, QWidget *parent) : QGroupBox(parent), m_data(data), m_wrapper(wrapper), m_no(no)
+{
+    m_data_series = qobject_cast<ScatterSeries *>(m_wrapper.data()->DataMapper(m_no)->series());
+    QGridLayout *layout = new QGridLayout;
+    
+    m_show = new QCheckBox;
+    m_show->setText(tr("Show"));
+    m_show->setChecked(true);
+    connect(m_show, SIGNAL(stateChanged(int)), this, SLOT(ShowLine(int)));
+    
+    m_name = new QLineEdit;
+    m_name->setText(tr("Signal %1").arg(m_no + 1));
+    connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(setName(QString)));
+    
+    m_choose = new QPushButton(tr("Color"));
+    m_choose->setFlat(true);
+    connect(m_choose, SIGNAL(clicked()), this, SLOT(ChooseColor()));
+    
+    
+    layout->addWidget(m_name, 0, 0);
+    layout->addWidget(m_show, 0, 1);
+    layout->addWidget(m_choose, 0, 2);
+    
+    setLayout(layout);
+    ColorChanged(m_wrapper.data()->color(m_no));
+}
+
+
+SignalElement::~SignalElement()
+{
+    
+    
+}
+
+void SignalElement::ColorChanged(const QColor &color)
+{
+    
+    #ifdef _WIN32
+    setStyleSheet("background-color:" + color.name()+ ";");
+    #else
+    QPalette pal = palette();
+    pal.setColor(QPalette::Background,color);
+    setPalette(pal); 
+    #endif
+    
+    m_color = color;
+}
+
+
+void SignalElement::ChooseColor()
+{
+    
+    QColor color = QColorDialog::getColor(m_color, this, tr("Choose Color for Series"));
+    if(!color.isValid())
+        return;
+    
+    m_data_series->setColor(color);
+    ColorChanged(color);
+}
+
+void SignalElement::ToggleSeries(int i)
+{
+    m_data_series->setVisible(i);
+    m_show->setChecked(i);
+}
+
+void SignalElement::ShowLine(int i)
+{
+    m_data_series->setVisible(i);
+}
+
+void SignalElement::setName(const QString &str)
+{
+    m_data_series->setName(str);
+    emit m_data_series->NameChanged(str);
+}
+
 DataWidget::DataWidget() 
 {
-    QGridLayout *layout = new QGridLayout;
+    layout = new QGridLayout;
     m_switch = new QPushButton(tr("Switch Host/Guest\nAssignment"));
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
     m_name = new QLineEdit();
@@ -43,7 +129,7 @@ DataWidget::DataWidget()
         m_concentrations->setMaximumWidth(250);
     m_signals = new QTableView;
         m_signals->setMaximumWidth(750);
-
+   
     QHBoxLayout *hlayout = new QHBoxLayout;
     
     hlayout->addWidget(new QLabel(tr("Project Name")));
@@ -62,27 +148,22 @@ DataWidget::DataWidget()
     m_tables->setLayout(group_layout);
     layout->addLayout(hlayout, 0, 0, 1, 3);
     layout->addWidget(m_datapoints, 1, 0);
-    layout->addWidget(m_substances, 1, 1);
-    layout->addWidget(m_const_subs,1,2);
-    layout->addWidget(m_signals_count, 1, 3);
+    layout->addWidget(m_substances, 2, 0);
+    layout->addWidget(m_const_subs,3,0);
+    layout->addWidget(m_signals_count, 4, 0);
     layout->addWidget(m_tables, 4, 0, 1, 4);
 
     setLayout(layout);
-
 }
 
 DataWidget::~DataWidget()
 {
 }
-void DataWidget::clear()
-{
 
-}
-
-
-void DataWidget::setData(QWeakPointer<DataClass> dataclass)
-{
+void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper)
+{  
     m_data = dataclass;
+    m_wrapper = wrapper; 
     m_concentrations->setModel(m_data.data()->ConcentrationModel());
     m_signals->setModel(m_data.data()->SignalModel());
     m_concentrations->resizeColumnsToContents();
@@ -91,6 +172,17 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass)
     m_substances->setText(tr("Considered Substances: %1").arg(m_data.data()->ConcentrationModel()->columnCount()));
     m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->SignalModel()->rowCount()));
     m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SignalCount()));
+    
+
+    QVBoxLayout *vlayout = new QVBoxLayout;
+    
+    for(int i = 0; i < m_data.data()->SignalCount(); ++i)
+    {
+        QPointer<SignalElement > el = new SignalElement(m_data, m_wrapper, i, this);
+        vlayout->addWidget(el);
+        m_signal_elements << el;
+    }
+    layout->addLayout(vlayout, 1,1, 3, 3);
 }
 
 void DataWidget::switchHG()
@@ -101,7 +193,6 @@ void DataWidget::switchHG()
 
 void DataWidget::RowAdded()
 {
-    
     QStandardItemModel *concentration = new QStandardItemModel;
     QStandardItemModel *signal = new QStandardItemModel;
  
@@ -109,7 +200,6 @@ void DataWidget::RowAdded()
     m_signals->setModel(signal);
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
-    
 }
 
 void DataWidget::SetProjectName()

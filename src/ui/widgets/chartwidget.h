@@ -26,6 +26,7 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QScatterSeries>
 #include <QtCharts/QLineSeries>
+
 #include <QtCharts/QValueAxis>
 
 #include <QtWidgets/QWidget>
@@ -45,19 +46,6 @@ struct Charts{
     ChartWrapper *data_wrapper;
 };
 
-class LineSeries : public QtCharts::QLineSeries
-{
-  Q_OBJECT
-  
-public:
-    LineSeries() {}
-public slots:
-    virtual void setColor(const QColor &color); 
-    void ShowLine(int state);
-};
-
-
-
 class ChartWidget : public QWidget
 {
     Q_OBJECT
@@ -65,7 +53,7 @@ class ChartWidget : public QWidget
 public:
     ChartWidget();
     ~ChartWidget();
-    void setRawData(const QPointer<DataClass> rawdata); 
+    QSharedPointer<ChartWrapper > setRawData(QSharedPointer<DataClass> rawdata); 
     Charts addModel(QSharedPointer< AbstractTitrationModel > model);
     
 private:
@@ -76,12 +64,12 @@ private:
     QPointer<QtCharts::QChart > m_signalchart, m_errorchart;
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
     QVector< QWeakPointer<AbstractTitrationModel > > m_models;
-    QPointer<DataClass > m_rawdata;
+    QWeakPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
     void Paint();
     ChartWrapper::PlotMode m_plot_mode;
-    ChartWrapper *m_data_mapper;
+    QSharedPointer<ChartWrapper > m_data_mapper;
     
 private slots:
     void formatAxis();

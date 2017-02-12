@@ -88,7 +88,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_modelsWidget->setMovable(true);
     connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     
-    m_add = new QPushButton(tr("Add Titration\n Model"));
+    m_add = new QPushButton(tr("Add Model"));
     m_add->setFlat(true);
     m_add->setDisabled(true);
 
@@ -142,13 +142,12 @@ ModelDataHolder::~ModelDataHolder()
     
 }
 
-QSharedPointer<DataClass> ModelDataHolder::setData(QPointer<DataClass> dataclass)
+void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
 {
-    m_data = QSharedPointer<DataClass>(new DataClass((dataclass))); 
-    m_datawidget->setData(m_data);
+    m_data = data;
+    m_datawidget->setData(m_data, wrapper);
     m_add->setEnabled(true);
     m_modelsWidget->setDataTab(m_datawidget); 
-    return m_data;
 }
 
 void ModelDataHolder::SetProjectTabName()
@@ -239,8 +238,6 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 
 void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
 {
-    
-    m_datawidget->setData(m_data);
     Charts charts = m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t, charts);
     

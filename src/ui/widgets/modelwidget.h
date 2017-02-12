@@ -51,7 +51,8 @@ class ChartView;
 class _3DChartView;
 class OptimizerFlagWidget;
 class StatisticWidget;
-struct  ModelHistoryElement;
+
+struct ModelHistoryElement;
 struct Charts;
 
 class Waiter

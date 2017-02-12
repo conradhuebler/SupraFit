@@ -24,12 +24,43 @@
 #include <QtCore/QList>
 #include <QtCore/QObject>
 
+#include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
 #include <QtCharts/QVXYModelMapper>
+
 class DataClass;
 class DataTable;
 class QStandardItemModel;
 class AbstractTitrationModel;
+
+
+class LineSeries : public QtCharts::QLineSeries
+{
+  Q_OBJECT
+  
+public:
+    LineSeries() {}
+public slots:
+    virtual void setColor(const QColor &color); 
+    void ShowLine(int state);
+    virtual void setName(const QString &name);
+};
+
+class ScatterSeries : public QtCharts::QScatterSeries
+{
+  Q_OBJECT
+  
+public:
+    ScatterSeries() {}
+    
+public slots:
+    virtual void setColor(const QColor &color); 
+    void ShowLine(int state);
+    
+signals:
+    void NameChanged(const QString &str);
+};
+
 
 class ChartWrapper : public QObject
 {
