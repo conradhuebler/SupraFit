@@ -50,7 +50,6 @@ public:
     void setDataTab( QPointer<DataWidget > datawidget );
     void addModelsTab(QPointer<ModelWidget> modelwidget);
 
-
 };
 
 class ModelDataHolder : public QWidget
@@ -92,7 +91,7 @@ public slots:
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<TabWidget > m_modelsWidget;
-    QPointer<QPushButton > m_add;
+    QPointer<QPushButton > m_add, m_optimize, m_statistics, m_close_all;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
 //     QPlainTextEdit *m_logWidget;
@@ -114,6 +113,10 @@ private slots:
     void CreateCrashFile();
     void RemoveCrashFile();
     void SetProjectTabName();
+    void CloseAll();
+    void Statistic();
+    void OptimizeAll();
+    
 signals:
     void ModelAdded(AbstractTitrationModel *model);
     void Message(const QString &str, int priority);

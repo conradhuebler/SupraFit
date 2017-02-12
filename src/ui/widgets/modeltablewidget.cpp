@@ -59,7 +59,7 @@ ModelTableWidget::ModelTableWidget()
     connect(m_table, SIGNAL(clicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
     connect(m_table, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportModels()));
-    layout->addWidget(m_table, 1, 0, 1, 3);
+    layout->addWidget(m_table, 1, 0, 1, 4);
     
     setLayout(layout);
 }
@@ -79,7 +79,6 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
     for(int i = 0; i < list.size(); ++i)
     {
         double error = list[i]["sse"].toDouble();
-        qDebug() << list[i]["sse"];
         QStandardItem *item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         model->setItem(i, 0, item);

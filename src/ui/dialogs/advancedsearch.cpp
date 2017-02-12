@@ -294,7 +294,6 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
             QJsonObject json = threads[i][j]->ConvergedParameter();
             m_model->ImportJSON(json);
             m_model->CalculateSignal();
-            qDebug() << json;
             double current_error = m_model->ModelError();
             error << current_error; 
             if(error_max < current_error)

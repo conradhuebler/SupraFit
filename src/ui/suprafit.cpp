@@ -190,7 +190,6 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str
         qApp->instance()->setProperty("projectpath", str);
         qApp->instance()->setProperty("projectname", info.baseName());
         m_titration_data = m_model_dataholder->setData(new DataClass(dataclass));
-        m_charts->setRawData(m_titration_data.data());
         setActionEnabled(true);
         m_charts->setRawData(m_titration_data.data());
         if(m_model_dataholder->CheckCrashFile())
@@ -336,7 +335,7 @@ void MainWindow::WriteMessages(const QString &message, int priority)
         QTextStream fileout_stream(&m_file);
         fileout_stream << message << "\n";
         
-//          QTimer::singleShot(0,m_logWidget, SLOT(appendPlainText(message)));
+        QTimer::singleShot(0,m_logWidget, SLOT(appendPlainText(message)));
     }
 }
 

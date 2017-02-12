@@ -38,7 +38,7 @@
 
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false)
 {
-    m_last_optimization = static_cast<OptimizationType>(0);
+    m_last_optimization = static_cast<OptimizationType>(5);
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());
     
@@ -235,7 +235,12 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
         setStatistic(result, i);
     }
     setConstants(constants);
-    m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
+    
+    if(topjson["runtype"].toInt() != 0)
+    {
+        m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
+    }
+    
     QList<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
     for (int i = 0; i < m_pure_signals.size(); ++i) 

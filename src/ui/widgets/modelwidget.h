@@ -131,7 +131,10 @@ public:
     
 public slots:
     void LoadJson(const QJsonObject &object);
-
+    void Confidence();
+    void GlobalMinimize();
+    void LocalMinimize();
+    
 private:
     QSharedPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<SpinBox >  >m_pure_signals;
@@ -160,9 +163,8 @@ private:
 //     OptimizationType m_last_run;
     bool m_statistic;
     Charts m_charts;
+    
 private slots:
-    void GlobalMinimize();
-    void LocalMinimize();
     void Repaint();
     void CollectActiveSignals();
     void NewGuess();
@@ -173,10 +175,11 @@ private slots:
     void PlotFinished(int runtype);
     void MultiScanFinished(int runtype);
     void triggerPlot3D();
-    void Confidence();
+    
 public slots:
     void recalulate();
     void OptimizerSettings();
+    
 signals:
     void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
     void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);

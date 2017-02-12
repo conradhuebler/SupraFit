@@ -514,7 +514,7 @@ void ModelWidget::Confidence()
         m_model->setStatistic(result[i], i);
     }
     m_statistic = true;
-    m_statistic_dialog->setWidget(resultwidget, "Simple Plot");
+    m_statistic_dialog->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
     m_statistic_dialog->show();
     
     delete statistic;

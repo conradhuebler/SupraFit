@@ -92,6 +92,21 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_add->setFlat(true);
     m_add->setDisabled(true);
 
+    m_optimize = new QPushButton(tr("Optimize All"));
+    m_optimize->setFlat(true);
+    m_optimize->setDisabled(true);
+    connect(m_optimize, SIGNAL(clicked()), this, SLOT(OptimizeAll()));
+    
+    m_statistics = new QPushButton(tr("Statistics"));
+    m_statistics->setFlat(true);
+    m_statistics->setDisabled(true);
+    connect(m_statistics, SIGNAL(clicked()), this, SLOT(Statistic()));
+    
+    m_close_all = new QPushButton(tr("Close All"));
+    m_close_all->setFlat(true);
+    m_close_all->setDisabled(true);
+    connect(m_close_all, SIGNAL(clicked()), this, SLOT(CloseAll()));
+    
     QMenu *menu = new QMenu;
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
@@ -115,7 +130,10 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_add->setMenu(menu);
     
     layout->addWidget(m_add, 0, 0);
-    layout->addWidget(m_modelsWidget, 1, 0, 1, 2);
+    layout->addWidget(m_optimize, 0, 1);
+    layout->addWidget(m_statistics, 0, 2);
+    layout->addWidget(m_close_all, 0, 3);
+    layout->addWidget(m_modelsWidget, 1, 0, 1, 4);
     
 }
 
@@ -239,6 +257,10 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
 
     m_modelsWidget->addModelsTab(modelwidget);
     m_models << t;
+    m_close_all->setEnabled(true);
+    m_statistics->setEnabled(true);
+    m_optimize->setEnabled(true);
+    
     /*
      * Some models are loaded from history, this should no be added again
      * after not added them, we allow the next models to be added to history again
@@ -258,6 +280,12 @@ void ModelDataHolder::RemoveTab(int i)
         m_modelsWidget->removeTab(i);
         delete model;
         delete scroll;
+    }
+    if(m_modelsWidget->count() < 2)
+    {
+        m_close_all->setEnabled(false);
+        m_statistics->setEnabled(false);
+        m_optimize->setEnabled(false);
     }
 }
 
@@ -385,5 +413,44 @@ void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
     }
 }
 
+
+
+void ModelDataHolder::CloseAll()
+{
+    QMessageBox::StandardButton replay;
+    QString app_name = QString(qApp->instance()->applicationName());
+    replay = QMessageBox::information(this, tr("Close All."), tr("Do you really want to close all models on the workspace?"), QMessageBox::Yes | QMessageBox::No);
+    if(replay == QMessageBox::Yes) 
+    {
+        for(int i = m_modelsWidget->count(); i > 0; --i)
+            RemoveTab(i);
+    }
+}
+
+void ModelDataHolder::Statistic()
+{
+    for(int i = 1; i < m_modelsWidget->count(); i++)
+    {
+        if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
+        {
+            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
+            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            model->Confidence();
+        }
+    }
+}
+
+void ModelDataHolder::OptimizeAll()
+{
+       for(int i = 1; i < m_modelsWidget->count(); i++)
+    {
+        if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
+        {
+            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
+            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            model->GlobalMinimize();
+        }
+    } 
+}
 
 #include "modeldataholder.moc"
