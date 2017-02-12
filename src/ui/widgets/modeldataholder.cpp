@@ -35,11 +35,45 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QCheckBox>
 
 #include "modeldataholder.h"
 #include "chartwidget.h"
 
 #include <iostream>
+
+TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
+{
+
+}
+
+void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
+{
+    QScrollArea *scroll = new QScrollArea;
+    scroll->setBackgroundRole(QPalette::Midlight);
+    scroll->setWidget(modelwidget);
+    scroll->setWidgetResizable(true);
+    scroll->setAlignment(Qt::AlignHCenter);
+    addTab(scroll, modelwidget->Model()->Name());
+    
+    QCheckBox *hide = new QCheckBox;
+    hide->resize(20,20);
+    hide->setChecked(true);
+    hide->setToolTip(tr("Toggle Series in Charts"));
+    
+    connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
+    setCurrentWidget(scroll);
+    tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, hide);
+}
+
+void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
+{
+    addTab(datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
+    tabBar()->setTabButton(0, QTabBar::RightSide, 0);
+}
+
+
+
 
 ModelDataHolder::ModelDataHolder() : m_history(true)
 {
@@ -49,8 +83,9 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     
     m_datawidget = new DataWidget;
     connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
-    m_modelsWidget = new QTabWidget;
+    m_modelsWidget = new TabWidget(this);
     m_modelsWidget->setTabsClosable(true);
+    m_modelsWidget->setMovable(true);
     connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     
     m_add = new QPushButton(tr("Add Titration\n Model"));
@@ -94,7 +129,7 @@ QSharedPointer<DataClass> ModelDataHolder::setData(QPointer<DataClass> dataclass
     m_data = QSharedPointer<DataClass>(new DataClass((dataclass))); 
     m_datawidget->setData(m_data);
     m_add->setEnabled(true);
-    m_modelsWidget->addTab(m_datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
+    m_modelsWidget->setDataTab(m_datawidget); 
     return m_data;
 }
 
@@ -190,7 +225,6 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     m_datawidget->setData(m_data);
     Charts charts = m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t, charts);
-    m_modelsWidget->addTab(modelwidget, t->Name());
     
     t->setOptimizerConfig(m_config);
     connect(modelwidget, SIGNAL(AddModel(const QJsonObject)), this, SLOT(AddToWorkspace(const QJsonObject)));
@@ -202,14 +236,9 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)), Qt::DirectConnection);
     
-    QScrollArea *scroll = new QScrollArea;
-    scroll->setBackgroundRole(QPalette::Midlight);
-    scroll->setWidget(modelwidget);
-    scroll->setWidgetResizable(true);
-    scroll->setAlignment(Qt::AlignHCenter);
-    m_modelsWidget->addTab(scroll, t->Name());
+
+    m_modelsWidget->addModelsTab(modelwidget);
     m_models << t;
-    m_modelsWidget->setCurrentWidget(scroll);
     /*
      * Some models are loaded from history, this should no be added again
      * after not added them, we allow the next models to be added to history again
@@ -222,16 +251,13 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
 
 void ModelDataHolder::RemoveTab(int i)
 {
-    if(i)
+    if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
     {
         QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
         ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
         m_modelsWidget->removeTab(i);
         delete model;
         delete scroll;
-    }else
-    {
-        return;
     }
 }
 

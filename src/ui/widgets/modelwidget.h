@@ -89,6 +89,8 @@ public:
     
 public slots:
     void Update();
+    void ToggleSeries(int);
+    
 private:
     SpinBox *m_d_0;
     QVector<SpinBox * > m_constants;
@@ -101,9 +103,11 @@ private:
     int m_no;
     QColor m_color;
     Charts m_charts;
+    
 private slots:
     void ColorChanged(const QColor &color);
     void ChooseColor();
+    
 signals:
     void ValueChanged();
     void Minimize(int i);
@@ -124,8 +128,10 @@ public:
     void setMaxIter(int maxiter);
     QSharedPointer<Minimizer > getMinimizer() { return m_minimizer; }
     QSharedPointer<Minimizer > m_minimizer;
+    
 public slots:
     void LoadJson(const QJsonObject &object);
+
 private:
     QSharedPointer< AbstractTitrationModel > m_model;
     QVector<QPointer<SpinBox >  >m_pure_signals;
@@ -178,6 +184,7 @@ signals:
     void Update();
     void Warning(const QString &str, int i);
     void AddModel(const QJsonObject &json);
+    void ToggleSeries(int);
 };
 
 #endif // MODELWIDGET_H

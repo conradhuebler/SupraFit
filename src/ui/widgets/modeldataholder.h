@@ -20,9 +20,16 @@
 #ifndef MODELDATAHOLDER_H
 #define MODELDATAHOLDER_H
 #include "src/core/dataclass.h"
-#include <QtCharts/QChart>
-#include <QtWidgets/QWidget>
+
 #include <QtCore/QPointer>
+
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QTabWidget>
+#include <QtWidgets/QPushButton>
+
+#include <QtCharts/QChart>
+
 
 struct OptimizerConfig;
 
@@ -32,6 +39,20 @@ class QTabWidget;
 class QPushButton;
 class ChartWidget;
 class QPlainTextEdit;
+class QLabel;
+
+class TabWidget: public QTabWidget
+{
+    Q_OBJECT
+
+public:
+    TabWidget(QWidget *parent = 0);
+    void setDataTab( QPointer<DataWidget > datawidget );
+    void addModelsTab(QPointer<ModelWidget> modelwidget);
+
+
+};
+
 class ModelDataHolder : public QWidget
 {
     Q_OBJECT
@@ -70,7 +91,7 @@ public slots:
     void LoadCurrentProject(const QJsonObject &object);
 private:
     QPointer<DataWidget > m_datawidget;
-    QPointer<QTabWidget > m_modelsWidget;
+    QPointer<TabWidget > m_modelsWidget;
     QPointer<QPushButton > m_add;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;

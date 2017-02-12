@@ -218,6 +218,13 @@ void ModelElement::ChooseColor()
     ColorChanged(color);
 }
 
+void ModelElement::ToggleSeries(int i)
+{
+    m_signal_series->setVisible(i);
+    m_error_series->setVisible(i);
+    m_show->setChecked(i);
+}
+
 ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
 {
     m_minimizer->setModel(m_model);
@@ -259,6 +266,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
         connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
         connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
         connect(this, SIGNAL(Update()), el, SLOT(Update()));
+        connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
         m_sign_layout->addWidget(el);
         m_model_elements << el;
     }

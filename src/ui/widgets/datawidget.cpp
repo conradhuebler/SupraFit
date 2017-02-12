@@ -48,7 +48,7 @@ DataWidget::DataWidget()
     
     hlayout->addWidget(new QLabel(tr("Project Name")));
     hlayout->addWidget(m_name);
-    hlayout->addSpacing(2*width()/3);
+    hlayout->addSpacing(4*width()/9);
     hlayout->addWidget(m_switch);
     
     m_datapoints = new QLabel;
