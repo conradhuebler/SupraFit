@@ -46,7 +46,7 @@ public:
     ChartConfigDialog();
     ~ChartConfigDialog();
     void setConfig(const ChartConfig &chartconfig);
-    ChartConfig Config() const { return m_chartconfig; }
+    inline ChartConfig Config() const { return m_chartconfig; }
     QDialogButtonBox *m_buttons;
 private:
     QPushButton *m_scaleaxis;

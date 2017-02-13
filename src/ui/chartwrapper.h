@@ -39,7 +39,9 @@ class LineSeries : public QtCharts::QLineSeries
   Q_OBJECT
   
 public:
-    LineSeries() {}
+    inline LineSeries() {}
+    inline ~LineSeries() {}
+    
 public slots:
     virtual void setColor(const QColor &color); 
     void ShowLine(int state);
@@ -52,7 +54,8 @@ class ScatterSeries : public QtCharts::QScatterSeries
   Q_OBJECT
   
 public:
-    ScatterSeries() {}
+    inline ScatterSeries() {}
+    inline ~ScatterSeries() {}
     
 public slots:
     virtual void setColor(const QColor &color); 

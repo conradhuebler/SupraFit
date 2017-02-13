@@ -47,6 +47,7 @@ class TabWidget: public QTabWidget
 
 public:
     TabWidget(QWidget *parent = 0);
+    inline ~TabWidget() { }
     void setDataTab( QPointer<DataWidget > datawidget );
     void addModelsTab(QPointer<ModelWidget> modelwidget);
 

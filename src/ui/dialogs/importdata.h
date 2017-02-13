@@ -43,12 +43,11 @@ class TableView : public QTableView
     Q_OBJECT
 
 public:
-    TableView() : QTableView() {}
+    inline TableView() : QTableView() {}
+    inline ~TableView() { }
     
 protected:
-  
   virtual void keyPressEvent(QKeyEvent *event);
-    
     
 };
 

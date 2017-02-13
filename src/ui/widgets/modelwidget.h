@@ -58,8 +58,8 @@ struct Charts;
 class Waiter
 {
 public:
-    Waiter() {QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));}
-    ~Waiter() {QApplication::restoreOverrideCursor();}
+    inline Waiter() {QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));}
+    inline ~Waiter() {QApplication::restoreOverrideCursor();}
 };
 
 class SpinBox : public QDoubleSpinBox
@@ -67,12 +67,17 @@ class SpinBox : public QDoubleSpinBox
     Q_OBJECT
 public:
     SpinBox(QWidget * parent = 0 );
+    inline ~SpinBox() { }
+    
 protected:
     bool valueBeingSet;
+    
 public slots:
     void setValue (double val);
+    
 private slots:
     void On_valueChanged(double val);
+    
 signals:
     void valueChangedNotBySet(double val);
 };

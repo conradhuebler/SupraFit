@@ -47,7 +47,7 @@ public:
     void setParameter(const QJsonObject &json);
     virtual void run();
     RunType m_runtype;
-    StatisticResult getResult() const { return m_result; }
+    inline StatisticResult getResult() const { return m_result; }
     inline void setIncerement(double increment) { m_increment = increment; }
     inline void setMaxSteps(int steps ) { m_maxsteps = steps; }
     inline bool Converged() const { return m_converged; }

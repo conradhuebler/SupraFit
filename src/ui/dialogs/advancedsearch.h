@@ -54,9 +54,11 @@ class ParameterWidget : public QGroupBox
   
 public:
     ParameterWidget(const QString &name, QWidget *parent = 0);
+    inline ~ParameterWidget() { }
     double Min() const;
     double Max() const;
     double Step() const;
+    
 private:
     QPointer<QDoubleSpinBox > m_min, m_max, m_step;
 };

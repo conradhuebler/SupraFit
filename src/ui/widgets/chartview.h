@@ -35,9 +35,9 @@ class ChartViewPrivate : public QtCharts::QChartView
 {
   Q_OBJECT
 public:
-    ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {}
-    ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); setRenderHint(QPainter::Antialiasing, true);}
-    ~ChartViewPrivate(){ };
+    inline ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {}
+    inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); setRenderHint(QPainter::Antialiasing, true);}
+    inline ~ChartViewPrivate(){ };
         
 protected:
     void mousePressEvent(QMouseEvent *event);
@@ -55,6 +55,7 @@ class ChartView : public QWidget
 public:
     ChartView(QtCharts::QChart *chart);
     ChartView();
+    inline ~ChartView() { }
     void addSeries( QtCharts::QAbstractSeries* series, bool legend = false );
     
 public slots:

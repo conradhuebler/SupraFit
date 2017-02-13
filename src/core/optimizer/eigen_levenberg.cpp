@@ -50,7 +50,7 @@ struct Functor
     
     int m_inputs, m_values;
     
-    Functor(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+    inline Functor(int inputs, int values) : m_inputs(inputs), m_values(values) {}
     
     int inputs() const { return m_inputs; }
     int values() const { return m_values; }
@@ -59,11 +59,12 @@ struct Functor
 
 struct MyFunctor : Functor<double>
 {
-    MyFunctor(int inputs, int values) : Functor(inputs, values), no_parameter(inputs),  no_points(values) 
+    inline MyFunctor(int inputs, int values) : Functor(inputs, values), no_parameter(inputs),  no_points(values) 
     {
         
     }
-    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+    inline ~MyFunctor() { }
+    inline int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
     {
         QVector<qreal > param(inputs());
         for(int i = 0; i < inputs(); ++i)

@@ -43,7 +43,7 @@ class ModelHistoryWidget : public QGroupBox
   Q_OBJECT
 public:
     ModelHistoryWidget(const ModelHistoryElement *element,  QWidget *parent = 0);
-    ~ModelHistoryWidget(){ };
+    inline ~ModelHistoryWidget(){ };
     
 private:
     const QJsonObject *m_json;
