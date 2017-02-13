@@ -81,7 +81,7 @@ endif(USE_eigenOptimizer)
 
 if(NOT USE_eigenOptimizer)    
     if(NOT USE_levmarOptimizer)
-                set(USE_bfgsOptimizer ON)
+                set(USE_eigenOptimizer ON)
     endif(NOT USE_levmarOptimizer)
 endif(NOT USE_eigenOptimizer)
 
@@ -107,7 +107,7 @@ set(libmath_SRC
                 src/core/minimizer.cpp
                 src/core/statistic.cpp
 )
-add_library(math STATIC ${libmath_SRC})
+add_library(math  ${libmath_SRC})
 qt5_use_modules(math Core)
 
 set(models_SRC
@@ -118,7 +118,7 @@ set(models_SRC
                 src/core/models/1_1_1_2_Model.cpp
                 src/core/models/2_1_1_1_1_2_Model.cpp
 )
-add_library(models STATIC ${models_SRC})
+add_library(models  ${models_SRC})
 qt5_use_modules(models Core)
 
 set(suprafit_SRCS
