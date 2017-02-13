@@ -26,7 +26,9 @@
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QThreadPool>
+#include <QtCore/QMutexLocker>
 
+#include <QtWidgets/QProgressBar>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
@@ -49,6 +51,9 @@ ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupB
     m_max->setValue(7);
     m_step = new QDoubleSpinBox;
     m_step->setValue(0.25);
+    connect(m_min, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
+    connect(m_max, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
+    connect(m_step, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(new QLabel(tr("Min")), 0, 0);
@@ -127,6 +132,7 @@ void AdvancedSearch::SetUi()
     {
         QPointer<ParameterWidget > widget = new ParameterWidget(m_model->ConstantNames()[i], this);
         layout->addWidget(widget);
+        connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
         m_parameter_list << widget;
     }
     m_optim_flags = new OptimizerFlagWidget;
@@ -141,8 +147,12 @@ void AdvancedSearch::SetUi()
     connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
     connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));
     
+    m_progress = new QProgressBar;
+    m_max_steps = new QLabel;
     QGridLayout *mlayout = new QGridLayout;
     mlayout->addLayout(layout, 0, 0, 1, 2);
+    mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
+    mlayout->addWidget(m_progress, 2, 0, 1, 2);
     mlayout->addWidget(m_optim, 3, 0);
     if(m_model->ConstantSize() == 1)
         mlayout->addWidget(m_1d_search,3, 1);
@@ -151,11 +161,31 @@ void AdvancedSearch::SetUi()
     {
         mlayout->addWidget(m_2d_search,3, 1);
     }
+    
+    m_progress->hide();
+    
     setLayout(mlayout);
+    MaxSteps();
 }
+
+void AdvancedSearch::MaxSteps()
+{
+    int max_count = 1;
+    for(int i = 0; i < m_parameter_list.size(); ++i)
+    {
+        double min = 0, max = 0, step = 0;
+        min = m_parameter_list[i]->Min();
+        max = m_parameter_list[i]->Max();
+        step = m_parameter_list[i]->Step();
+        max_count *= (max+step-min)/step;
+    }
+    m_max_steps->setText(tr("No of Optimizations to be done: %1").arg(max_count));
+}
+
 
 QVector<QVector<double> > AdvancedSearch::ParamList() const
 {
+    int max_count = 1;
     QVector< QVector<double > > full_list;
     for(int i = 0; i < m_parameter_list.size(); ++i)
     {
@@ -164,10 +194,12 @@ QVector<QVector<double> > AdvancedSearch::ParamList() const
         min = m_parameter_list[i]->Min();
         max = m_parameter_list[i]->Max();
         step = m_parameter_list[i]->Step();
+        max_count *= (max+step-min)/step;
         for(double s = min; s <= max; s += step)
             list << s;
         full_list << list;
     }
+    m_progress->setMaximum(max_count);
     return full_list;
 }
 
@@ -191,15 +223,12 @@ void AdvancedSearch::GlobalSearch()
     QVector<double > error; 
     m_type = m_optim_flags->getFlags();   
     m_type |= OptimizationType::ComplexationConstants;
-    //      if(m_model->ConstantSize() == 2)
-    //      {
     int t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list, error);
-    qDebug() << m_models_list;
     int t1 = QDateTime::currentMSecsSinceEpoch();
     std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
     emit MultiScanFinished(1);
-    //      }  
+  
 }
 
 void AdvancedSearch::Create2DPlot()
@@ -221,6 +250,9 @@ void AdvancedSearch::Create2DPlot()
 
 void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
 {
+    
+    m_progress->setValue(0);
+    m_progress->show();
     QVector<int > position(full_list.size(), 0);
     QVector< QVector<double > > input;
     int maxthreads =qApp->instance()->property("threads").toInt();
@@ -230,7 +262,7 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
     bool allow_break = false;
     while(!allow_break)
     {
-        
+        QApplication::processEvents();
         QList<double > parameter; //(full_list.size(), 0);
         for(int j = 0; j < position.size(); ++j)
             parameter << full_list[j][position[j]];
@@ -244,9 +276,13 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
             allow_break = true;
         m_model->setConstants(parameter);
         
-        thread_rows << m_minimizer.data()->addJob(m_model, m_type);
+        QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_type);
+        thread_rows << thread;
+        connect(thread, SIGNAL(finished()), this, SLOT(IncrementProgress()), Qt::DirectConnection);
+        
         if(m_model->SupportThreads())
             QThreadPool::globalInstance()->waitForDone();
+           
         
         for(int k = position.size() - 1; k >= 0; --k)
         {
@@ -309,6 +345,7 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
         if(!(m_type & OptimizationType::ComplexationConstants))
             m_3d_data << dataRow1;
     }
+    m_progress->hide();
     return;
     
 }
@@ -333,5 +370,13 @@ void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
         m_series << series;
     }
 }
+
+void AdvancedSearch::IncrementProgress()
+{
+    QMutexLocker locker(&mutex);
+    int val = m_progress->value() + 1;
+    m_progress->setValue(val);
+}
+
 
 #include "advancedsearch.moc"

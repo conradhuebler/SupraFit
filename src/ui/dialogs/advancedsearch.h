@@ -25,12 +25,14 @@
 
 #include <QtDataVisualization>
 
+#include <QtCore/QMutex>
 #include <QtCore/QWeakPointer>
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QDialog>
 
+class QLabel;
 class QLineEdit;
 class Minimizer;
 class QCheckBox;
@@ -38,6 +40,7 @@ class QPushButton;
 class QDoubleSpinBox;
 class QJsonObject;
 class OptimizerFlagWidget;
+class QProgressBar;
 
 struct GlobalSearchResult
 {
@@ -61,6 +64,9 @@ public:
     
 private:
     QPointer<QDoubleSpinBox > m_min, m_max, m_step;
+    
+signals:
+    void valueChanged();
 };
 
 
@@ -84,13 +90,16 @@ public:
     double MinY() const;
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<QJsonObject > ModelList() const { return m_models_list; }
+    
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
+    QProgressBar *m_progress;
     QSharedPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
     QPointer<QCheckBox > m_optim;
     QPointer<QPushButton > m_2d_search, m_1d_search, m_scan;
+    QLabel *m_max_steps;
     GlobalSearchResult last_result;
     void ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
     QtDataVisualization::QSurfaceDataArray m_3d_data;
@@ -101,10 +110,15 @@ private:
     QVector< QVector<double > > ParamList() const;
     QList<QJsonObject > m_models_list;
     QVector<QPointer<ParameterWidget > > m_parameter_list;
+    QMutex mutex;
+    
 private slots:
     void Create2DPlot();
     void LocalSearch();
     void GlobalSearch();
+    void IncrementProgress();
+    void MaxSteps();
+    
 signals:
     void PlotFinished(int runtype);
     void MultiScanFinished(int runtype);

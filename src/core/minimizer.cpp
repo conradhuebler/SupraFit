@@ -52,6 +52,7 @@ void NonLinearFitThread::run()
         NonLinearFit();
     else if(m_runtype & ~OptimizationType::UnconstrainedShifts)
         ConstrainedFit();
+    emit finished();
 }
 
 
