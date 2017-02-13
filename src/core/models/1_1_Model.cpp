@@ -174,4 +174,10 @@ QSharedPointer<AbstractTitrationModel > ItoI_Model::Clone() const
     
 }
 
+qreal ItoI_Model::BC50()
+{
+    return 1/qPow(10,Constants()[0]); 
+}
+
+
 #include "1_1_Model.moc"

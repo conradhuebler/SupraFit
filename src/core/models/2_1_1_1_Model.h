@@ -48,6 +48,7 @@ public:
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
+    virtual qreal BC50();
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);

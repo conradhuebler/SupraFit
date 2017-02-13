@@ -151,6 +151,7 @@ private:
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
     QPointer<AdvancedSearch> m_advancedsearch;
     QSpinBox *m_maxiter;
+    QLabel *m_bc_50;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;

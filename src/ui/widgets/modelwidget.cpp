@@ -256,6 +256,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
         const_layout->addWidget(new QLabel(m_model->ConstantNames()[i]));
         const_layout->addWidget(constant);
     }
+    m_bc_50 = new QLabel(tr("BC50_0"));
+    const_layout->addWidget(m_bc_50);
     m_layout->addLayout(const_layout, 0, 1, 1, m_model->ConstantSize()+2);
     //     m_layout->addWidget( new QLabel(tr("Error")), 0, 2*m_model->ConstantSize()+2);
     m_sign_layout = new QVBoxLayout;
@@ -390,6 +392,11 @@ void ModelWidget::Repaint()
     m_pending = false;
     m_minimize_all->setEnabled(true);
     m_minimize_single->setEnabled(true);
+    qreal bc50 = m_model->BC50()*1E6;
+    QString format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
+    QChar mu = QChar(956);
+    format_text += QString(" [") + mu + QString("M]");
+    m_bc_50->setText(format_text);
 }
 
 

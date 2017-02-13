@@ -325,6 +325,10 @@ void AbstractTitrationModel::setConstants(const QList<qreal> &list)
         m_complex_constants[i] = list[i];  
 }
 
+qreal AbstractTitrationModel::BC50()
+{
+    return 0;
+}
 
 
 #include "AbstractModel.moc"

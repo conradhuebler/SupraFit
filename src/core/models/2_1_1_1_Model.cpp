@@ -200,8 +200,16 @@ QSharedPointer<AbstractTitrationModel > IItoI_ItoI_Model::Clone() const
     model.data()->ImportJSON(ExportJSON());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
-    return model;
-    
+    return model;    
 }
+
+qreal IItoI_ItoI_Model::BC50()
+{
+    qreal b11 = qPow(10,Constants()[0]);
+    qreal b21 = qPow(10,(Constants()[0]+Constants()[1]));
+    qreal bc50 = -b11/b21/double(2) + sqrt(qPow(b11/double(2)/b21,2)+1/b21);
+    return bc50;
+}
+
 
 #include "2_1_1_1_Model.moc"

@@ -138,7 +138,7 @@ public:
     virtual bool SupportThreads() const = 0;
     StatisticResult  getStatisticResult(int i) const { return m_statistics[i]; }
     inline QList<qreal > Constants() const { return m_complex_constants; }
-    
+    virtual qreal BC50();
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
