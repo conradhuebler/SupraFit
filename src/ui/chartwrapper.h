@@ -43,6 +43,7 @@ public:
 public slots:
     virtual void setColor(const QColor &color); 
     void ShowLine(int state);
+    void ShowLine(bool state);
     virtual void setName(const QString &name);
 };
 
@@ -59,6 +60,7 @@ public slots:
     
 signals:
     void NameChanged(const QString &str);
+    void visibleChanged(int state);
 };
 
 

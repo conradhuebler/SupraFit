@@ -21,7 +21,6 @@
 
 #include <QStandardItemModel>
 
-
 #include "chartwrapper.h"
 
 
@@ -32,6 +31,10 @@
      pen.setWidth(2);
      pen.setColor(color);
      setPen(pen);     
+}
+void LineSeries::ShowLine(bool state)
+{
+    setVisible(state);
 }
 
 void LineSeries::ShowLine(int state)
@@ -62,6 +65,7 @@ void ScatterSeries::ShowLine(int state)
         setVisible(false);
     else if(state == Qt::Checked)
         setVisible(true);   
+    emit visibleChanged(state);
 }
 
 

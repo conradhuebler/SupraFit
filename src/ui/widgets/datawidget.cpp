@@ -109,7 +109,7 @@ void SignalElement::ToggleSeries(int i)
 
 void SignalElement::ShowLine(int i)
 {
-    m_data_series->setVisible(i);
+    m_data_series->ShowLine(i);
 }
 
 void SignalElement::setName(const QString &str)

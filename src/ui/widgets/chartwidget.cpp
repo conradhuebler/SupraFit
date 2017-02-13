@@ -135,6 +135,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
             QtCharts::QVXYModelMapper * mapper = signal_wrapper->DataMapper(i);
             LineSeries *model_series = new LineSeries;
             connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
+            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));
             mapper->setSeries(model_series);
             model_series->setName("Signal " + QString::number(i + 1));
             model_series->setColor(m_data_mapper->color(i));
@@ -149,6 +150,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
             error_series->setName("Signal " + QString::number(i + 1));
             error_series->setColor(m_data_mapper->color(i));
             connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
+            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(visibleChanged(int)), error_series, SLOT(ShowLine(int)));
             m_errorview->addSeries(error_series, true);
         }
     }
