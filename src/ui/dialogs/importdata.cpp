@@ -51,20 +51,19 @@ void TableView::keyPressEvent(QKeyEvent *event)
     {
         QString paste =  QApplication::clipboard()->text();
         QStringList lines = paste.split("\n");
-        QModelIndex index = currentIndex();
-        int row = index.row();
-        int column = index.column();
+
+        int cur_row = 0;
         QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
         for(const QString line: qAsConst(lines))
         {
-            int col = column;
+            int cur_col = 0;
             QStringList cells = line.simplified().split(" ");
             for(const QString &cell: qAsConst(cells))
             {
-                model->item(row, col)->setData(QString(cell).replace(",", "."), Qt::DisplayRole);
-                col++;
+                model->setItem(cur_row, cur_col, new QStandardItem(QString(cell).replace(",", ".")));
+                cur_col++;
             }
-            row++;
+            cur_row++;
         }
     }
     else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_C) 
@@ -125,13 +124,7 @@ ImportData::ImportData(QWidget *parent) : QDialog(parent)
     
     setUi(); 
     
-    QStandardItemModel *model = new QStandardItemModel(40,40);
-    for (int row = 0; row < 40; ++row) {
-        for (int column = 0; column < 40; ++column) {
-            QStandardItem *item = new QStandardItem();
-            model->setItem(row, column, item);
-        }
-    }
+    QStandardItemModel *model = new QStandardItemModel(0,0);
     m_table->setModel(model);
 }
 
