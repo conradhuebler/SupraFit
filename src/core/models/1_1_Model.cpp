@@ -170,6 +170,7 @@ QSharedPointer<AbstractTitrationModel > ItoI_Model::Clone() const
     model.data()->ImportJSON(ExportJSON());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
+    model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
     
 }

@@ -75,12 +75,16 @@ struct MyFunctor : Functor<double>
         Variables CalculatedSignals = model.data()->getCalculatedSignals();
         for( int i = 0; i < ModelSignals.size(); ++i)
         {
-              fvec(i) = (CalculatedSignals[i] - ModelSignals[i]);
+            if(m_potenz > 1)
+                fvec(i) = qPow((CalculatedSignals[i] - ModelSignals[i]),m_potenz);
+            else
+                fvec(i) = qAbs((CalculatedSignals[i] - ModelSignals[i]));
         }
         return 0;
     }
     int no_parameter;
     int no_points;
+    int m_potenz;
     Variables ModelSignals;
     QSharedPointer<AbstractTitrationModel> model;
     int inputs() const { return no_parameter; } // There are two parameters of the model
@@ -91,10 +95,11 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
 
 
 
-int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config)
+int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param)
 {
-    Q_UNUSED(config)
+    
     Q_UNUSED(max_iter)
+    OptimizerConfig config = model.data()->getOptimizerConfig();
     Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
     if(ModelSignals.size() == 0)
         return -1;
@@ -114,6 +119,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
+    functor.m_potenz = config.error_potenz;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
      int iter = 0;

@@ -118,6 +118,11 @@ void OptimizerWidget::setUi()
 void OptimizerWidget::setGeneral()
 {
     QGridLayout *layout = new QGridLayout;
+     
+    m_error_potenz = new QSpinBox();
+    m_error_potenz->setValue(m_config.error_potenz);
+    m_error_potenz->setMaximum(10);
+    m_error_potenz->setMinimum(1);
     
     m_maxiter = new QSpinBox;
     m_maxiter->setMaximum(999999);
@@ -185,7 +190,9 @@ void OptimizerWidget::setGeneral()
     
     layout->addWidget(new QLabel(tr("Tolerance Shift Convergence")), 7, 0);
     layout->addWidget(m_shift_convergence, 7, 1);
-
+    
+    layout->addWidget(new QLabel(tr("Potenz of Error")), 8, 0);
+    layout->addWidget(m_error_potenz, 8, 1);
 
     QWidget *generalwidget = new QWidget;
     generalwidget->setLayout(layout);
@@ -205,6 +212,7 @@ OptimizerConfig OptimizerWidget::Config() const
     config.Shift_Convergence = m_shift_convergence->value();
     config.Constant_Convergence = m_constant_convergence->value();
     config.Error_Convergence = m_error_convergence->value();
+    config.error_potenz = m_error_potenz->value();
     
     if(m_optimize_shifts->checkState() == Qt::Unchecked)
     {

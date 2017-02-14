@@ -86,7 +86,7 @@ public:
 private:
     OptimizerConfig m_config;
     QTabWidget *m_tabwidget;
-    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence;
+    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence, *m_error_potenz;
     ScientificBox *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
     QCheckBox *m_optimize_shifts;
 #ifdef USE_levmarOptimizer

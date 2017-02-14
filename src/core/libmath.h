@@ -33,6 +33,6 @@ qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
 qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
-int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param, const OptimizerConfig &config);
+int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param);
 #endif 
 

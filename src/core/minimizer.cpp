@@ -202,7 +202,7 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
         if(locked.size() == parameter.size())
             m_model->setLockedParameter(locked); 
     }
-    NonlinearFit(m_model, 100, parameter, m_opt_config);
+    NonlinearFit(m_model, 100, parameter);
     m_last_parameter = m_model->ExportJSON();
     m_converged = true;
     m_best_intermediate = m_model->ExportJSON();

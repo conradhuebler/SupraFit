@@ -624,7 +624,7 @@ void ModelWidget::OptimizerSettings()
         m_model->setOptimizerConfig(dialog.Config());
         m_maxiter->setValue(dialog.Config().MaxIter);
     }
-    
+    qDebug() << m_model->getOptimizerConfig().error_potenz;
 }
 void ModelWidget::ExportConstants()
 {

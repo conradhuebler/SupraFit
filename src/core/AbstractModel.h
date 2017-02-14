@@ -31,6 +31,8 @@
 
 struct OptimizerConfig
 {
+    int error_potenz = 1;
+    
     int MaxIter = 1000;
     int Sum_Convergence = 2;
     qreal Shift_Convergence = 1E-3;
