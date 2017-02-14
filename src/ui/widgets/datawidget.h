@@ -59,7 +59,7 @@ private:
     
 private slots:
     void ToggleSeries(int i);
-    void ChooseColor();
+    void chooseColor();
     void ColorChanged(const QColor &color);
     void ShowLine(int i);
     void setName(const QString &str);

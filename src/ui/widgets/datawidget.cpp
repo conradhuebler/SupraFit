@@ -57,7 +57,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     
     m_choose = new QPushButton(tr("Color"));
     m_choose->setFlat(true);
-    connect(m_choose, SIGNAL(clicked()), this, SLOT(ChooseColor()));
+    connect(m_choose, SIGNAL(clicked()), this, SLOT(chooseColor()));
     
     
     layout->addWidget(m_name, 0, 0);
@@ -90,7 +90,7 @@ void SignalElement::ColorChanged(const QColor &color)
 }
 
 
-void SignalElement::ChooseColor()
+void SignalElement::chooseColor()
 {
     
     QColor color = QColorDialog::getColor(m_color, this, tr("Choose Color for Series"));
