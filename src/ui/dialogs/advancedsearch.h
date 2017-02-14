@@ -32,6 +32,7 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QDialog>
 
+
 class QLabel;
 class QLineEdit;
 class Minimizer;
@@ -107,16 +108,17 @@ private:
     OptimizationType m_type;
     QPointer<OptimizerFlagWidget > m_optim_flags;
     double error_max;
-    QVector< QVector<double > > ParamList() const;
+    QVector< QVector<double > > ParamList();
     QList<QJsonObject > m_models_list;
     QVector<QPointer<ParameterWidget > > m_parameter_list;
     QMutex mutex;
-    
+    int m_time;
+    quint64 m_time_0;
 private slots:
     void Create2DPlot();
     void LocalSearch();
     void GlobalSearch();
-    void IncrementProgress();
+    void IncrementProgress(int time);
     void MaxSteps();
     
 signals:

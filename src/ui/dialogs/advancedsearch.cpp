@@ -179,13 +179,15 @@ void AdvancedSearch::MaxSteps()
         step = m_parameter_list[i]->Step();
         max_count *= (max+step-min)/step;
     }
-    m_max_steps->setText(tr("No of Optimizations to be done: %1").arg(max_count));
+    m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 
 
-QVector<QVector<double> > AdvancedSearch::ParamList() const
+QVector<QVector<double> > AdvancedSearch::ParamList() 
 {
     int max_count = 1;
+    m_time_0 =  QDateTime::currentMSecsSinceEpoch();
+    m_time = 0;
     QVector< QVector<double > > full_list;
     for(int i = 0; i < m_parameter_list.size(); ++i)
     {
@@ -278,7 +280,7 @@ void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVe
         
         QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_type);
         thread_rows << thread;
-        connect(thread, SIGNAL(finished()), this, SLOT(IncrementProgress()), Qt::DirectConnection);
+        connect(thread, SIGNAL(finished(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
         
         if(m_model->SupportThreads())
             QThreadPool::globalInstance()->waitForDone();
@@ -371,10 +373,16 @@ void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
     }
 }
 
-void AdvancedSearch::IncrementProgress()
+void AdvancedSearch::IncrementProgress(int time)
 {
     QMutexLocker locker(&mutex);
+    m_time += time;
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     int val = m_progress->value() + 1;
+    qreal aver = double(m_time)/val;
+    int remain = double(m_progress->maximum() - val)*aver/3000;
+    int used = (t0 - m_time_0)/1000;
+    m_max_steps->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
     m_progress->setValue(val);
 }
 

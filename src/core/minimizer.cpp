@@ -48,11 +48,13 @@ void NonLinearFitThread::run()
     m_last_parameter = m_model->ExportJSON();
     m_steps = 0;
     m_converged = false;
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     if(m_runtype & OptimizationType::UnconstrainedShifts || m_runtype & OptimizationType::IgnoreAllShifts)
         NonLinearFit();
     else if(m_runtype & ~OptimizationType::UnconstrainedShifts)
         ConstrainedFit();
-    emit finished();
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit finished(t1-t0);
 }
 
 
