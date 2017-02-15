@@ -28,6 +28,9 @@
 #include <QtCore/QObject>
 #include <QVector>
 
+#include <chaiscript/chaiscript.hpp>
+
+
 #include "src/core/dataclass.h"
 
 class ItoI_Model : public AbstractTitrationModel 
@@ -43,8 +46,7 @@ public:
     inline int ConstantSize() const { return 1;}
     void setPureSignals(const QList< qreal > &list);
     void setComplexSignals(const QList< qreal > &list, int i);
-    void CalculateSignal(const QList<qreal > &constants);
-//     void CalculateSignal() { CalculateSignal(Constants()); }
+    virtual void CalculateSignal(const QList<qreal > &constants);
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
@@ -53,9 +55,25 @@ public:
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
-    qreal m_K11;
     
+    
+protected:
     QList<qreal > m_ItoI_signals;
+    qreal m_K11;
+};
+
+
+class ItoI_Model_Script : public ItoI_Model
+{
+  Q_OBJECT
+  
+public:
+    ItoI_Model_Script(const DataClass *data);
+    virtual void CalculateSignal(const QList<qreal > &constants);
+
+private:
+    std::string m_content, m_content_2;
+    chaiscript::ChaiScript *chai;
 };
 
 #endif // 1_1_Model

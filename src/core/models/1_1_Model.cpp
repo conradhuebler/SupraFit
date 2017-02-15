@@ -25,12 +25,16 @@
 
 #include <QtMath>
 
+#include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
 #include <cmath>
 #include <cfloat>
 #include <iostream>
+
+#include <chaiscript/chaiscript.hpp>
+
 
 #include "1_1_Model.h"
 
@@ -50,7 +54,7 @@ ItoI_Model::ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationM
     
     InitialGuess();
     m_complex_constants = QList<qreal>() << m_K11;
-
+    
     m_constant_names = QStringList() << tr("1:1");
 }
 
@@ -82,7 +86,7 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if(OptimizationType::ComplexationConstants & type)
         setOptParamater(m_complex_constants);
-
+    
     if((type & ~OptimizationType::IgnoreAllShifts) > (OptimizationType::IgnoreAllShifts))
     {
         if(type & OptimizationType::UnconstrainedShifts)
@@ -180,5 +184,69 @@ qreal ItoI_Model::BC50()
     return 1/qPow(10,Constants()[0]); 
 }
 
+ItoI_Model_Script::ItoI_Model_Script(const DataClass *data) : ItoI_Model(data)
+{
+    QFile file("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model.chai");
+    if(!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "blub";
+    }
+    
+    QTextStream in(&file);
+    
+    while(!in.atEnd()) {
+        QString line = in.readLine();    
+        m_content += line.toStdString();
+    }
+    
+    file.close();
+    
+    QFile file2("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model_2.chai");
+    if(!file2.open(QIODevice::ReadOnly)) {
+        qDebug() << "blub";
+    }
+    
+    QTextStream in2(&file2);
+    
+    while(!in2.atEnd()) {
+        QString line = in2.readLine();    
+        m_content_2 += line.toStdString();
+    }
+    
+    file2.close();
+    
+    chai = new chaiscript::ChaiScript;
+    
+    chai->add(chaiscript::fun(&qPow), "qPow");
+    chai->add(chaiscript::fun(&qSqrt), "qSqrt");
+    
+    chai->add(chaiscript::base_class<DataClass, AbstractTitrationModel>());
+    chai->add(chaiscript::base_class<DataClass, ItoI_Model_Script>());
+    chai->add(chaiscript::base_class<AbstractTitrationModel, ItoI_Model_Script>());
+    chai->add(chaiscript::fun(&ItoI_Model_Script::Constant), "Constant");
+    chai->add(chaiscript::fun(&ItoI_Model_Script::InitialHostConcentration), "InitialHostConcentration");
+    chai->add(chaiscript::fun(&ItoI_Model_Script::InitialGuestConcentration), "InitialGuestConcentration");
+    chai->add(chaiscript::var(this), "model_1");
+    chai->eval(m_content);
+}
+
+
+void ItoI_Model_Script::CalculateSignal(const QList<qreal > &constants)
+{  
+    m_corrupt = false;
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        qreal host_0 = InitialHostConcentration(i);
+        qreal guest_0 = InitialGuestConcentration(i);
+        chai->add(chaiscript::var(i), "i");
+        double host = chai->eval<double>(m_content_2);
+        qreal complex = host_0 -host;
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            qreal value = host/host_0*m_pure_signals[j] + complex/host_0*m_ItoI_signals[j];
+            SetSignal(i, j, value);    
+        }
+    }
+    emit Recalculated();
+}
 
 #include "1_1_Model.moc"

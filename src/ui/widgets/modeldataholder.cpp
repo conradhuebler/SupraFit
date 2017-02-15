@@ -40,6 +40,7 @@
 #include "modeldataholder.h"
 #include "chartwidget.h"
 
+
 #include <iostream>
 
 TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
@@ -127,6 +128,11 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel2112()));
     menu->addAction(II_I_ItoI_ItoII_action);
     
+    QAction *Script = new QAction(this);
+    Script->setText(tr("1:1-Script"));
+    connect(Script, SIGNAL(triggered()), this, SLOT(AddModelScript()));
+    menu->addAction(Script);
+    
     m_add->setMenu(menu);
     
     layout->addWidget(m_add, 0, 0);
@@ -173,6 +179,9 @@ void ModelDataHolder::AddModel(int model)
         case 4:
             t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
+        case ModelDataHolder::ItoI_Script:
+            t = QSharedPointer<ItoI_Model_Script>(new ItoI_Model_Script(m_data.data()),  &QObject::deleteLater);
+            break;
         default:
             t.clear();
            return; 
@@ -203,6 +212,12 @@ void ModelDataHolder::AddModel12()
 void ModelDataHolder::AddModel2112()
 {
     AddModel(ModelDataHolder::IItoI_ItoI_ItoII);
+}
+
+
+void ModelDataHolder::AddModelScript()
+{
+    AddModel(ModelDataHolder::ItoI_Script);
 }
 
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)

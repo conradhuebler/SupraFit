@@ -55,7 +55,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wmissing-include-dirs -Wmissing-noreturn -Wpacked  -Wparentheses\
                                            -Wpointer-arith -Wredundant-decls -Wreturn-type -Wsequence-point\
                                            -Wsign-compare  -Wstack-protector -Wstrict-aliasing\
-                                           -Wstrict-aliasing=2 -Wswitch  -Wswitch-default -Wswitch-enum\
+                                           -Wstrict-aliasing=2 -Wswitch \
                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
@@ -95,8 +95,7 @@ find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/)
-
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/ ChaiScript/include)
 
 set(libmath_SRC
                 src/core/equal_system.cpp
@@ -148,14 +147,19 @@ set(suprafit_SRCS
 
 add_executable(suprafit ${suprafit_SRCS})
 
-set_property(TARGET math models suprafit PROPERTY CXX_STANDARD 11)
+set_property(TARGET math models suprafit PROPERTY CXX_STANDARD 14)
 
 qt5_use_modules(suprafit Widgets Charts PrintSupport DataVisualization)
+
 
 target_link_libraries(suprafit models math  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
 
 if(USE_levmarOptimizer)
     target_link_libraries(suprafit levmar)
 endif(USE_levmarOptimizer)
+
+if(UNIX)
+target_link_libraries(suprafit pthread dl)
+endif(UNIX)
 
 install(TARGETS suprafit RUNTIME DESTINATION bin)
