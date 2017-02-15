@@ -31,7 +31,7 @@
 
 struct OptimizerConfig
 {
-    int error_potenz = 1;
+    int error_potenz = 2;
     
     int MaxIter = 1000;
     int Sum_Convergence = 2;
