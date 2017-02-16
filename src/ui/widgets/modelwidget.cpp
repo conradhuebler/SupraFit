@@ -639,7 +639,7 @@ void ModelWidget::ExportConstants()
 
 void ModelWidget::ImportConstants()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         QJsonObject object;

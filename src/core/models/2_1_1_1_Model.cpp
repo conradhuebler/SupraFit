@@ -116,13 +116,14 @@ void IItoI_ItoI_Model::CalculateSignal(const QList<qreal > &constants)
     m_corrupt = false;
     if(constants.size() == 0)
         return;
+    
+    qreal K21= qPow(10, constants.first());
+    qreal K11 = qPow(10, constants.last());
+    
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        
-        qreal K21= qPow(10, constants.first());
-        qreal K11 = qPow(10, constants.last());
         qreal host = HostConcentration(host_0, guest_0, constants);
         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
         qreal complex_11 = K11*host*guest;

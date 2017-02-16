@@ -17,8 +17,8 @@
  * 
  */
 
-#ifndef ItoI_Model_H
-#define ItoI_Model_H
+#ifndef ScriptModel_H
+#define ScriptModel_H
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
@@ -26,6 +26,7 @@
 
 #include <QDebug>
 #include <QtCore/QObject>
+#include <QtCore/QJsonObject>
 #include <QVector>
 
 #include <chaiscript/chaiscript.hpp>
@@ -33,17 +34,16 @@
 
 #include "src/core/dataclass.h"
 
-class ItoI_Model : public AbstractTitrationModel 
+class ScriptModel : public AbstractTitrationModel 
 {
     Q_OBJECT
     
 public:
-    ItoI_Model(const DataClass *data);
-    ItoI_Model(const AbstractTitrationModel *model);
-    ~ItoI_Model();
+    ScriptModel(const DataClass *data, const QJsonObject &json);
+    ~ScriptModel();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     QPair<qreal, qreal> Pair(int i, int j = 0) const;
-    inline int ConstantSize() const { return 1;}
+    inline int ConstantSize() const { return Constants().size(); }
     void setPureSignals(const QList< qreal > &list);
     void setComplexSignals(const QList< qreal > &list, int i);
     virtual void CalculateSignal(const QList<qreal > &constants);
@@ -53,27 +53,21 @@ public:
     virtual qreal BC50();
     
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
-    qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
+    chaiscript::ChaiScript *chai;
+    std::string m_mass_balance, m_signal_calculation;
+    QJsonObject m_json;
     
+    /*
+     * Reads the json file and sets the model up
+     */
+    void ParseJson();
+    /*
+     * Setup for the ChaiScript Engine
+     */
+    void InitializeCupofTea();
     
 protected:
-    QList<qreal > m_ItoI_signals;
-    qreal m_K11;
+    QList<qreal > m_signals;
 };
-
-/*
-class ItoI_Model_Script : public ItoI_Model
-{
-  Q_OBJECT
-  
-public:
-    ItoI_Model_Script(const DataClass *data);
-    virtual void CalculateSignal(const QList<qreal > &constants);
-
-private:
-    std::string m_content, m_content_2;
-    chaiscript::ChaiScript *chai;
-};*/
 
 #endif // 1_1_Model

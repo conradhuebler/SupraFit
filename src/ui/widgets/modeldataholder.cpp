@@ -129,7 +129,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     menu->addAction(II_I_ItoI_ItoII_action);
     
     QAction *Script = new QAction(this);
-    Script->setText(tr("1:1-Script"));
+    Script->setText(tr("User Model"));
     connect(Script, SIGNAL(triggered()), this, SLOT(AddModelScript()));
     menu->addAction(Script);
     
@@ -179,9 +179,6 @@ void ModelDataHolder::AddModel(int model)
         case 4:
             t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
-        case ModelDataHolder::ItoI_Script:
-            t = QSharedPointer<ItoI_Model_Script>(new ItoI_Model_Script(m_data.data()),  &QObject::deleteLater);
-            break;
         default:
             t.clear();
            return; 
@@ -193,6 +190,12 @@ void ModelDataHolder::AddModel(int model)
     
 }
 
+void ModelDataHolder::AddModel(const QJsonObject &json)
+{
+    QSharedPointer<AbstractTitrationModel > t =  QSharedPointer<ScriptModel>(new ScriptModel(m_data.data(), json), &QObject::deleteLater);
+    m_history = false;
+    ActiveModel(t);
+}
 
 void ModelDataHolder::AddModel11()
 {
@@ -217,7 +220,20 @@ void ModelDataHolder::AddModel2112()
 
 void ModelDataHolder::AddModelScript()
 {
-    AddModel(ModelDataHolder::ItoI_Script);
+//     QString str = QFileDialog::getOpenFileName(this, tr("Open Model File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = (":/data/models/1_1_model.json");
+    if(!str.isEmpty())
+    {
+        QJsonObject object;
+        if(JsonHandler::ReadJsonFile(object, str))
+        {
+            AddModel(object);
+        }
+        else
+            qDebug() << "loading failed";
+    }
+    
+    
 }
 
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)

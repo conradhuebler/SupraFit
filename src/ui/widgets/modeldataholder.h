@@ -62,13 +62,13 @@ public:
     ~ModelDataHolder();
     
     void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper > wrapper);
-    void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
+    inline void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
     enum {
         ItoI = 1,
         IItoI_ItoI = 2,
         ItoI_ItoII = 3,
         IItoI_ItoI_ItoII = 4,
-        ItoI_Script = 100
+        ScriptedModel = 10
     };
     void setSettings(const OptimizerConfig &config);
     /*
@@ -82,6 +82,7 @@ public:
     void SaveWorkspace(const QString &file);
     
     bool CheckCrashFile();
+    
 public slots:
     /*
      * Add a new model to the workspace
@@ -91,6 +92,7 @@ public slots:
      * Overrides the very current model (opened tabe) with this model, if compatible
      */
     void LoadCurrentProject(const QJsonObject &object);
+    
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<TabWidget > m_modelsWidget;
@@ -100,12 +102,14 @@ private:
 //     QPlainTextEdit *m_logWidget;
     QVector<QWeakPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
+    void AddModel(const QJsonObject &json);
     OptimizerConfig m_config;
 
     
     void Json2Model(const QJsonObject &object, const QString &str);
     void ActiveModel(QSharedPointer<AbstractTitrationModel > t);
     bool m_history;
+    
 private slots:
     void AddModel11();
     void AddModel21();
@@ -113,7 +117,6 @@ private slots:
     void AddModel2112();
     void AddModelScript();
     void RemoveTab(int i);
-    
     void CreateCrashFile();
     void RemoveCrashFile();
     void SetProjectTabName();

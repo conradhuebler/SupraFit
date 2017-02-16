@@ -183,12 +183,11 @@ qreal ItoI_Model::BC50()
 {
     return 1/qPow(10,Constants()[0]); 
 }
-
+/*
 ItoI_Model_Script::ItoI_Model_Script(const DataClass *data) : ItoI_Model(data)
 {
     QFile file("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model.chai");
     if(!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "blub";
     }
     
     QTextStream in(&file);
@@ -202,7 +201,6 @@ ItoI_Model_Script::ItoI_Model_Script(const DataClass *data) : ItoI_Model(data)
     
     QFile file2("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model_2.chai");
     if(!file2.open(QIODevice::ReadOnly)) {
-        qDebug() << "blub";
     }
     
     QTextStream in2(&file2);
@@ -248,5 +246,5 @@ void ItoI_Model_Script::CalculateSignal(const QList<qreal > &constants)
     }
     emit Recalculated();
 }
-
+*/
 #include "1_1_Model.moc"

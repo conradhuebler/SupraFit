@@ -96,7 +96,6 @@ find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/ ChaiScript/include)
-
 set(libmath_SRC
                 src/core/equal_system.cpp
                 src/core/optimizer/levmar.cpp
@@ -116,6 +115,7 @@ set(models_SRC
                 src/core/models/2_1_1_1_Model.cpp
                 src/core/models/1_1_1_2_Model.cpp
                 src/core/models/2_1_1_1_1_2_Model.cpp
+                src/core/models/ScriptModel.cpp
 )
 add_library(models  ${models_SRC})
 qt5_use_modules(models Core)
@@ -144,7 +144,7 @@ set(suprafit_SRCS
                 src/core/toolset.cpp
                 src/global.cpp
                 src/main.cpp)
-
+qt5_add_resources(suprafit_SRCS files.qrc)
 add_executable(suprafit ${suprafit_SRCS})
 
 set_property(TARGET math models suprafit PROPERTY CXX_STANDARD 14)

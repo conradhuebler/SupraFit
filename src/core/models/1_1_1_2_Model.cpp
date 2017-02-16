@@ -53,8 +53,7 @@ void ItoI_ItoII_Model::InitialGuess()
     
     m_complex_constants = QList<qreal>() << m_K11 << m_K12;
     setOptParamater(m_complex_constants);
-//     m_ItoI_signals.resize(m_pure_signals.size());
-//     m_ItoII_signals.resize(m_pure_signals.size());
+    
     for(int i = 0; i < SignalCount(); ++i)
     {
         m_ItoI_signals << ( SignalModel()->data(i,0) +  SignalModel()->data(i,SignalCount() - 1))/2;
@@ -144,14 +143,15 @@ void ItoI_ItoII_Model::CalculateSignal(const QList<qreal > &constants)
 {
     m_corrupt = false;
     if(constants.size() == 0)
-        return;
+        return;        
+    
+    qreal K12= qPow(10, constants.last());
+    qreal K11 = qPow(10, constants.first());
+    
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        
-        qreal K12= qPow(10, constants.last());
-        qreal K11 = qPow(10, constants.first());
         
         qreal host = HostConcentration(host_0, guest_0, constants);
         qreal guest = GuestConcentration(host_0, guest_0, constants);

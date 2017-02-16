@@ -104,9 +104,9 @@ inline int SolveEqualSystem(double A_0, double B_0, const QList<qreal> &constant
         Concen_0(1) = B_0;
     MyEqualSystem functor(2, 2);
     functor.Concen_0 = Concen_0;
-     functor.K21 = qPow(10, constants[0]);
-     functor.K11 = qPow(10, constants[1]);
-     functor.K12 = qPow(10, constants[2]);
+     functor.K21 = constants[0];
+     functor.K11 = constants[1];
+     functor.K12 = constants[2];
     Eigen::NumericalDiff<MyEqualSystem> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyEqualSystem> > lm(numDiff);
     int iter = 0;
@@ -178,6 +178,10 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
     if(constants.size() == 0)
         return;
     
+    qreal K21= qPow(10, constants.first());
+    qreal K11 =qPow(10, constants[1]);
+    qreal K12= qPow(10, constants.last());
+    QList<qreal> constants_pow = QList<qreal>() << K21 << K11 << K12;
     QThreadPool *threadpool = new QThreadPool;
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
@@ -186,8 +190,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         
-        
-        m_solvers[i]->setInput(host_0, guest_0, constants);
+        m_solvers[i]->setInput(host_0, guest_0, constants_pow);
         threadpool->start(m_solvers[i]);
     }
     
@@ -196,9 +199,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
     {
         qreal host_0 = InitialHostConcentration(i);
         
-        qreal K21= qPow(10, constants.first());
-        qreal K11 =qPow(10, constants[1]);
-        qreal K12= qPow(10, constants.last());
+
         QList<double > concentration = m_solvers[i]->Concentrations();
         qreal host = concentration[0];
         qreal guest = concentration[1]; 
