@@ -23,12 +23,18 @@
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/NonLinearOptimization>
+
 #include <QtMath>
 
+#include <QtCore/QMutexLocker>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
+
 #include <cmath>
 #include <cfloat>
 #include <iostream>
@@ -37,6 +43,104 @@
 
 
 #include "ScriptModel.h"
+
+
+
+template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+struct ScriptedEqualSystem
+{
+    typedef _Scalar Scalar;
+    enum {
+        InputsAtCompileTime = NX,
+        ValuesAtCompileTime = NY
+    };
+    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
+    
+    int m_inputs, m_values;
+    
+    ScriptedEqualSystem(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+    
+    int inputs() const { return m_inputs; }
+    int values() const { return m_values; }
+    
+};
+
+struct MyScripteEqualSystem : ScriptedEqualSystem<double>
+{
+    MyScripteEqualSystem(int inputs, int values, QPointer<ScriptModel> model) : ScriptedEqualSystem(inputs, values), no_parameter(inputs),  no_points(values), m_model(model) 
+    {
+        
+    }
+    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+    {
+        qreal A = parameter(0);
+        qreal B = parameter(1); 
+        
+        QList<qreal > balance = m_model.data()->MassBalance(A, B);
+        
+        fvec(0) = (A + balance[0]) - Concen_0(0);
+        fvec(1) = (B + balance[1]) - Concen_0(1);
+        return 0;
+    }
+    QPointer<ScriptModel > m_model;
+    Eigen::VectorXd Concen_0;
+    int no_parameter;
+    int no_points;
+    int inputs() const { return no_parameter; } // There are two parameters of the model
+    int values() const { return no_points; } // The number of observations
+};
+
+struct MyScripteEqualSystemNumericalDiff : Eigen::NumericalDiff<MyScripteEqualSystem> {};
+
+
+
+inline int SolveScriptedEqualSystem(double A_0, double B_0, QList<double > &concentration, QPointer<ScriptModel> model)
+{
+       
+    if(A_0 == 0 || B_0 == 0)
+    {
+        concentration<<  A_0 << B_0;
+        return 1;
+    }
+    Eigen::VectorXd parameter(2);
+    parameter(0) = A_0;
+    parameter(1) = B_0;
+    
+    Eigen::VectorXd Concen_0(2);
+        Concen_0(0) = A_0;
+        Concen_0(1) = B_0;
+        
+    MyScripteEqualSystem functor(2, 2, model);
+    functor.Concen_0 = Concen_0;
+
+    Eigen::NumericalDiff<MyScripteEqualSystem> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyScripteEqualSystem> > lm(numDiff);
+    int iter = 0;
+    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+      do {
+          for(int i = 0; i < 2; ++i)
+            if(parameter(i) < 0)
+            {
+                std::cout << "numeric error (below zero): " << i << std::endl;
+                parameter(i) = qAbs(parameter(i));
+            }else if(parameter(i) > Concen_0(i))
+            {
+                std::cout << "numeric error (above init): " << i << std::endl;
+                qreal diff = (parameter(i) -Concen_0(i));
+                parameter(i) = diff;
+            }
+         status = lm.minimizeOneStep(parameter);
+         iter++;
+      } while (status == -1);
+    for(int i = 0; i < 2; ++i)
+        if(parameter(i) < 0 || parameter(i) > Concen_0(i))
+            std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
+    concentration << double(parameter(0)) << double(parameter(1));
+    return iter;
+}
+
 
 ScriptModel::ScriptModel(const DataClass *data, const QJsonObject &json) : AbstractTitrationModel(data), m_json(json)
 {
@@ -54,15 +158,72 @@ ScriptModel::~ScriptModel()
     
 }
 
+QList<qreal> ScriptModel::MassBalance(qreal A, qreal B)
+{
+//     QMutexLocker (&mutex);
+
+    chai->add(chaiscript::var(A), "A");
+    chai->add(chaiscript::var(B), "B");
+
+    QList<qreal> values;
+    for(int i = 0; i < m_mass_balance.size(); ++i)
+        values << chai->eval<double>(m_mass_balance[i]);
+ 
+    return values;
+}
+
+
+void ScriptModel::CreateMassBalanceEquation(const QJsonObject &json)
+{
+    QVariantHash complex_hashed = json["complexes"].toObject().toVariantHash();
+    QHash<QString, QString> mass_balance;
+    for(const QString &str_component : (m_component_list))
+    {
+        for(const QString &str_constant : m_constant_names)
+        {
+            QVariantMap complex = complex_hashed[str_constant].toMap();
+            mass_balance[str_component] += str_constant;
+            for(const QString &str_complex : (complex.keys()))
+            {
+                if(complex[str_complex].toInt() != 1)
+                {
+                    if(str_component == str_complex)
+                        mass_balance[str_component] += "*"+ QString(complex[str_complex].toByteArray() );
+                    mass_balance[str_component] += "*"+("qPow(" + str_complex +",%1)" ).arg(complex[str_complex].toInt());
+                }else
+                    mass_balance[str_component] += "*" +  str_complex;
+            }
+            mass_balance[str_component] += "+";
+        }
+        mass_balance[str_component].chop(1);
+    }
+    
+    for(const QString &str : mass_balance.keys())
+        m_mass_balance << mass_balance[str].toStdString();
+}
+
 void ScriptModel::ParseJson()
 {
     QJsonObject object = m_json["model_definition"].toObject();
     
     setName(object["name"].toString());
-    QString constant_names = object["constant_names"].toString().simplified();
-    m_constant_names = constant_names.split(" ");
+    QJsonObject complexes = object["complexes"].toObject();
+    m_constant_names = complexes.keys();
+    for(const QString &str : m_constant_names)
+    {
+        QJsonObject components = complexes[str].toObject();
+        m_component_list << components.keys();
+    }
+    m_component_list.removeDuplicates();
+
+
+
     for(int i = 0; i < m_constant_names.size(); ++i)
         m_complex_constants << 4/m_constant_names.size();
+    
+    
+    
+    CreateMassBalanceEquation(object);
     
 }
 
@@ -156,7 +317,7 @@ QPair< qreal, qreal > ScriptModel::Pair(int i, int j) const
 
 void ScriptModel::CalculateSignal(const QList<qreal > &constants)
 {  
-    m_corrupt = false;
+ /*   m_corrupt = false;
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
@@ -170,7 +331,64 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
             SetSignal(i, j, value);    
         }
     }
+    emit Recalculated();*/
+ 
+ m_corrupt = false;
+    if(constants.size() == 0)
+        return;
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    
+    for(int i = 0; i < Constants().size(); ++i)
+        chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
+    
+    /*QThreadPool *threadpool = new QThreadPool;
+    int maxthreads =qApp->instance()->property("threads").toInt();
+    threadpool->setMaxThreadCount(maxthreads);*/
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        qreal host_0 = InitialHostConcentration(i);
+        qreal guest_0 = InitialGuestConcentration(i);
+        
+        /*
+        m_solvers[i]->setInput(host_0, guest_0, constants_pow);
+        threadpool->start(m_solvers[i]);
+        */
+        QList<qreal > concentrations;
+        
+        SolveScriptedEqualSystem(host_0, guest_0, concentrations, this);
+        
+        qreal complex = qPow(10,Constant(0))*concentrations[0]*concentrations[1];         
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            qreal value = concentrations[0]/host_0*m_pure_signals[j] + complex/host_0*m_signals[j];
+            SetSignal(i, j, value);
+        }
+    }
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    std::cout << t1-t0 << " msecs for all signals!" << std::endl;
+   /* threadpool->waitForDone();
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        qreal host_0 = InitialHostConcentration(i);
+        
+
+        QList<double > concentration = m_solvers[i]->Concentrations();
+        qreal host = concentration[0];
+        qreal guest = concentration[1]; 
+        
+        qreal complex_11 = K11*host*guest;
+        qreal complex_21 = K11*K21*host*host*guest;
+        qreal complex_12 = K11*K12*host*guest*guest;         
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ 2*complex_21/host_0*m_IItoI_signals[j] + complex_12/host_0*m_ItoII_signals[j];
+            SetSignal(i, j, value);
+        }
+    }*/
     emit Recalculated();
+ 
+ 
+ 
 }
 
 QSharedPointer<AbstractTitrationModel > ScriptModel::Clone() const

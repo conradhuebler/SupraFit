@@ -23,7 +23,7 @@
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
 
-
+#include <QtCore/QMutex>
 #include <QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QJsonObject>
@@ -51,12 +51,15 @@ public:
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
     virtual qreal BC50();
+    QList<qreal> MassBalance(qreal A, qreal B);
     
 private:
+    QStringList m_component_list;
     chaiscript::ChaiScript *chai;
-    std::string m_mass_balance, m_signal_calculation;
+    std::string m_signal_calculation;
     QJsonObject m_json;
-    
+    QVector<std::string > m_mass_balance;
+    QMutex mutex;
     /*
      * Reads the json file and sets the model up
      */
@@ -65,6 +68,10 @@ private:
      * Setup for the ChaiScript Engine
      */
     void InitializeCupofTea();
+    /*
+     * 
+     */
+    void CreateMassBalanceEquation(const QJsonObject &json);
     
 protected:
     QList<qreal > m_signals;

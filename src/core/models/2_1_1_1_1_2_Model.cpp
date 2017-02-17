@@ -24,6 +24,7 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
@@ -177,7 +178,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
     m_corrupt = false;
     if(constants.size() == 0)
         return;
-    
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     qreal K21= qPow(10, constants.first());
     qreal K11 =qPow(10, constants[1]);
     qreal K12= qPow(10, constants.last());
@@ -213,6 +214,8 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
             SetSignal(i, j, value);
         }
     }
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    std::cout << t1-t0 << " msecs for all signals!" << std::endl;
     emit Recalculated();
 }
 

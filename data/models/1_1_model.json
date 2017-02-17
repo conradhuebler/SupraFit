@@ -2,20 +2,15 @@
     "model_definition":
     {
     "name" : "1:1-Model",
-    "constant_names": "K11",
     "complexes" :{
-        "complex_0" : {
+        "b11" : {
             "A" : 1,
             "B" : 1
             }
         },
-    "mass_balance_equation" : {
-        "A" : "complex_0",
-        "B" : "complex_0"
-        },
     "signals" : {
         "signal_0" : "A",
-        "signal_1" : "complex_0"
+        "signal_1" : "b11"
         }
     }
 }
