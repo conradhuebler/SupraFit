@@ -58,6 +58,7 @@ public:
     virtual Vector MassBalance(qreal A, qreal B);
     
 private:
+    QVariantMap m_complex_map;
     QStringList m_component_list;
     chaiscript::ChaiScript *chai;
     std::string m_signal_calculation;
@@ -77,7 +78,7 @@ private:
      * 
      */
     void CreateMassBalanceEquation(const QJsonObject &json);
-    
+    QList<qreal > m_constants_pow;
 protected:
     QList<qreal > m_signals;
 };

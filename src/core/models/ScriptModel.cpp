@@ -45,104 +45,6 @@
 
 #include "ScriptModel.h"
 
-/*
-
-template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
-struct ScriptedEqualSystem
-{
-    typedef _Scalar Scalar;
-    enum {
-        InputsAtCompileTime = NX,
-        ValuesAtCompileTime = NY
-    };
-    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
-    
-    int m_inputs, m_values;
-    
-    ScriptedEqualSystem(int inputs, int values) : m_inputs(inputs), m_values(values) {}
-    
-    int inputs() const { return m_inputs; }
-    int values() const { return m_values; }
-    
-};
-
-struct MyScripteEqualSystem : ScriptedEqualSystem<double>
-{
-    MyScripteEqualSystem(int inputs, int values, QPointer<ScriptModel> model) : ScriptedEqualSystem(inputs, values), no_parameter(inputs),  no_points(values), m_model(model) 
-    {
-        
-    }
-    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
-    {
-        qreal A = parameter(0);
-        qreal B = parameter(1); 
-        
-        QList<qreal > balance = m_model.data()->MassBalance(A, B);
-        
-        fvec(0) = (A + balance[0]) - Concen_0(0);
-        fvec(1) = (B + balance[1]) - Concen_0(1);
-        return 0;
-    }
-    QPointer<ScriptModel > m_model;
-    Eigen::VectorXd Concen_0;
-    int no_parameter;
-    int no_points;
-    int inputs() const { return no_parameter; } // There are two parameters of the model
-    int values() const { return no_points; } // The number of observations
-};
-
-struct MyScripteEqualSystemNumericalDiff : Eigen::NumericalDiff<MyScripteEqualSystem> {};
-
-
-
-inline int SolveScriptedEqualSystem(double A_0, double B_0, QList<double > &concentration, QPointer<ScriptModel> model)
-{
-       
-    if(A_0 == 0 || B_0 == 0)
-    {
-        concentration<<  A_0 << B_0;
-        return 1;
-    }
-    Eigen::VectorXd parameter(2);
-    parameter(0) = A_0;
-    parameter(1) = B_0;
-    
-    Eigen::VectorXd Concen_0(2);
-        Concen_0(0) = A_0;
-        Concen_0(1) = B_0;
-        
-    MyScripteEqualSystem functor(2, 2, model);
-    functor.Concen_0 = Concen_0;
-
-    Eigen::NumericalDiff<MyScripteEqualSystem> numDiff(functor);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyScripteEqualSystem> > lm(numDiff);
-    int iter = 0;
-    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-      do {
-          for(int i = 0; i < 2; ++i)
-            if(parameter(i) < 0)
-            {
-                std::cout << "numeric error (below zero): " << i << std::endl;
-                parameter(i) = qAbs(parameter(i));
-            }else if(parameter(i) > Concen_0(i))
-            {
-                std::cout << "numeric error (above init): " << i << std::endl;
-                qreal diff = (parameter(i) -Concen_0(i));
-                parameter(i) = diff;
-            }
-         status = lm.minimizeOneStep(parameter);
-         iter++;
-      } while (status == -1);
-    for(int i = 0; i < 2; ++i)
-        if(parameter(i) < 0 || parameter(i) > Concen_0(i))
-            std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
-    concentration << double(parameter(0)) << double(parameter(1));
-    return iter;
-}
-*/
-
 ScriptModel::ScriptModel(const DataClass *data, const QJsonObject &json) : AbstractTitrationModel(data), m_json(json)
 {
     chai = new chaiscript::ChaiScript;
@@ -164,15 +66,52 @@ ScriptModel::~ScriptModel()
 
 Vector ScriptModel::MassBalance(qreal A, qreal B)
 {
-//     QMutexLocker (&mutex);
-
+    
+    //     QMutexLocker locker(&mutex);
+    
+    /*    
+    
+     for(int i = 0; i < Constants().size(); ++i)
+        chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
     chai->add(chaiscript::var(A), "A");
-    chai->add(chaiscript::var(B), "B");
-
+    chai->add(chaiscript::var(B), "B");*/
+    QList<qreal > variables;
+    variables << A << B;
     Vector values(2);
-    for(int i = 0; i < m_mass_balance.size(); ++i)
-        values(i) = chai->eval<double>(m_mass_balance[i]);
- 
+    values(0) = 1;
+    values(1) = 1;
+
+    QStringList keys = m_complex_map.keys();
+//     qreal m = chai->eval<double>(m_mass_balance[0]);
+//     std::vector<chaiscript::Boxed_Value> m = chai->eval_file< std::vector<chaiscript::Boxed_Value> >("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model.chai");
+    
+    /*
+     * Allways parsing the complexation structure
+     * 
+     */
+    
+    for(int i = 0; i < m_component_list.size(); ++i)
+    {
+        for(int j = 0; j < m_constant_names.size(); ++j) // b11, b21, b12 ...
+        {
+            values(i) *=  qPow(10,Constant(j));
+            for(int k = 0; k < keys.size(); ++k)
+            {
+                int pow = m_complex_map[keys[j]].toInt();
+                if(pow == 1)
+                    values(i) *= variables[k];
+                else
+                    values(i) *= qPow(variables[k], pow);
+                if(k == i)
+                    values(i) *= pow;
+            }
+        }
+        
+//           values(i) = qPow(10, Constant(0))*A*B;
+ //        values(i) = m;
+    }
+    
+    
     return values;
 }
 
@@ -185,15 +124,15 @@ void ScriptModel::CreateMassBalanceEquation(const QJsonObject &json)
     {
         for(const QString &str_constant : m_constant_names)
         {
-            QVariantMap complex = complex_hashed[str_constant].toMap();
+            m_complex_map = complex_hashed[str_constant].toMap();
             mass_balance[str_component] += str_constant;
-            for(const QString &str_complex : (complex.keys()))
+            for(const QString &str_complex : (m_complex_map.keys()))
             {
-                if(complex[str_complex].toInt() != 1)
+                if(m_complex_map[str_complex].toInt() != 1)
                 {
                     if(str_component == str_complex)
-                        mass_balance[str_component] += "*"+ QString(complex[str_complex].toByteArray() );
-                    mass_balance[str_component] += "*"+("qPow(" + str_complex +",%1)" ).arg(complex[str_complex].toInt());
+                        mass_balance[str_component] += "*"+ QString(m_complex_map[str_complex].toByteArray() );
+                    mass_balance[str_component] += "*"+("qPow(" + str_complex +",%1)" ).arg(m_complex_map[str_complex].toInt());
                 }else
                     mass_balance[str_component] += "*" +  str_complex;
             }
@@ -219,9 +158,9 @@ void ScriptModel::ParseJson()
         m_component_list << components.keys();
     }
     m_component_list.removeDuplicates();
-
-
-
+    
+    
+    
     for(int i = 0; i < m_constant_names.size(); ++i)
         m_complex_constants << 4/m_constant_names.size();
     
@@ -244,7 +183,7 @@ void ScriptModel::InitializeCupofTea()
     chai->add(chaiscript::fun(&ScriptModel::InitialGuestConcentration), "InitialGuestConcentration");
     chai->add(chaiscript::var(this), "model");
     
-//     chai->eval(m_content);
+    //     chai->eval(m_content);
     
 }
 
@@ -321,54 +260,31 @@ QPair< qreal, qreal > ScriptModel::Pair(int i, int j) const
 
 void ScriptModel::CalculateSignal(const QList<qreal > &constants)
 {  
- /*   m_corrupt = false;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        qreal host_0 = InitialHostConcentration(i);
-        qreal guest_0 = InitialGuestConcentration(i);
-        chai->add(chaiscript::var(i), "i");
-        double host = chai->eval<double>(m_mass_balance);
-        qreal complex = host_0 -host;
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            qreal value = chai->eval<double>(m_signal_calculation);; //host/host_0*m_pure_signals[j] + complex/host_0*m_ItoI_signals[j];
-            SetSignal(i, j, value);    
-        }
-    }
-    emit Recalculated();*/
- 
- m_corrupt = false;
+    m_corrupt = false;
     if(constants.size() == 0)
         return;
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     
     for(int i = 0; i < Constants().size(); ++i)
         chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
+    
     QThreadPool *threadpool = new QThreadPool;
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
-    
-    /*QThreadPool *threadpool = new QThreadPool;
-    int maxthreads =qApp->instance()->property("threads").toInt();
-    threadpool->setMaxThreadCount(maxthreads);*/
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         
-        /*
-        m_solvers[i]->setInput(host_0, guest_0, constants_pow);
-        threadpool->start(m_solvers[i]);
-        */
-        QList<qreal > concentrations;
         
-        quint64 t0 = QDateTime::currentMSecsSinceEpoch();
         m_solvers[i]->setInput(host_0, guest_0);
-        m_solvers[i]->run();
-//         threadpool->start(m_solvers[i]);
-        quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-        std::cout << t1-t0 << " msecs for all signals!" << std::endl;
-        
+        //         m_solvers[i]->run();
+        threadpool->start(m_solvers[i]);
+    }
+    threadpool->waitForDone();
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        qreal host_0 = InitialHostConcentration(i);
+        QList<qreal > concentrations = m_solvers[i]->Concentrations();
         
         qreal complex = qPow(10,Constant(0))*concentrations[0]*concentrations[1];         
         for(int j = 0; j < SignalCount(); ++j)
@@ -377,31 +293,9 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
             SetSignal(i, j, value);
         }
     }
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << t1-t0 << " msecs for all signals!" << std::endl;
-   /* threadpool->waitForDone();
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        qreal host_0 = InitialHostConcentration(i);
-        
-
-        QList<double > concentration = m_solvers[i]->Concentrations();
-        qreal host = concentration[0];
-        qreal guest = concentration[1]; 
-        
-        qreal complex_11 = K11*host*guest;
-        qreal complex_21 = K11*K21*host*host*guest;
-        qreal complex_12 = K11*K12*host*guest*guest;         
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ 2*complex_21/host_0*m_IItoI_signals[j] + complex_12/host_0*m_ItoII_signals[j];
-            SetSignal(i, j, value);
-        }
-    }*/
+    
     emit Recalculated();
- 
- 
- 
+    
 }
 
 QSharedPointer<AbstractTitrationModel > ScriptModel::Clone() const

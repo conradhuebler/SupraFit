@@ -40,24 +40,13 @@ int MyScripteEqualSystem::operator()(const Eigen::VectorXd &parameter, Eigen::Ve
         qreal A = parameter(0);
         qreal B = parameter(1); 
         
-        Vector balance = MassBalance(A, B);
+        Vector balance = m_model->MassBalance(A, B);
         
         fvec = parameter + balance - Concen_0;
 
         return 0;
 }
- 
-Vector MyScripteEqualSystem::MassBalance(qreal host, qreal guest) const
-{
-    qreal complex_21 = K11*K21*host*host*guest;
-    qreal complex_11 = K11*host*guest;
-    qreal complex_12 = K11*K12*host*guest*guest;
-    Vector vec(2);
-    vec(0) = 2*complex_21 + complex_11 + complex_12;
-    vec(1) = complex_21 + complex_11 + 2*complex_12;
-    return vec;
-}
- 
+
 ConcentrationSolver::ConcentrationSolver(QPointer<AbstractTitrationModel> model) : m_model(model)
 {
     setAutoDelete(false);
@@ -78,13 +67,6 @@ void ConcentrationSolver::setInput(double A_0, double B_0)
 void ConcentrationSolver::run()
 {
     SolveEqualSystem(m_A_0, m_B_0);
-}
-
-void ConcentrationSolver::setConstants(const QList<double> &constants)
-{
-    functor->K21 = constants[0];
-    functor->K11 = constants[1];
-    functor->K12 = constants[2];
 }
 
 int ConcentrationSolver::SolveEqualSystem(double A_0, double B_0)

@@ -62,8 +62,6 @@ struct MyScripteEqualSystem : ScriptedEqualSystem<double>
         
     }
     int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const;
-    double A_0, B_0, K21, K11, K12; 
-    Vector MassBalance(qreal A, qreal B) const;
     QPointer<AbstractTitrationModel > m_model;
     Eigen::VectorXd Concen_0;
     int no_parameter;
@@ -84,16 +82,14 @@ public:
     ~ConcentrationSolver();
     virtual void run();
     void setInput(double A_0, double B_0);
-    void setConstants(const QList<double> &constants);
     inline QList<double> Concentrations() const { return  m_concentration; }
     
 private:
     qreal m_A_0, m_B_0;
-    qreal complex_21, complex_11, complex_12;
-    QList<qreal >  m_concentration;
+//     qreal complex_21, complex_11, complex_12;
     QPointer<AbstractTitrationModel> m_model;
-    
-    MyScripteEqualSystem *functor; //(2, 2, m_model);
+    QList<double> m_concentration;
+    MyScripteEqualSystem *functor;
     int SolveEqualSystem(double A_0, double B_0);
 };
 
