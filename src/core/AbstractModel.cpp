@@ -331,4 +331,10 @@ qreal AbstractTitrationModel::BC50()
 }
 
 
+Vector AbstractTitrationModel::MassBalance(qreal A, qreal B)
+{
+    Vector values(1) ;
+    values(0) = 0;
+    return values;
+}
 #include "AbstractModel.moc"

@@ -17,6 +17,7 @@
  * 
  */
 
+#include "src/core/equal_system.h"
 #include "src/core/models.h"
 #include "src/core/libmath.h"
 
@@ -36,136 +37,116 @@
 #include <iostream>
 #include "2_1_1_1_1_2_Model.h"
 
-template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
-struct EqualSystem
-{
-    typedef _Scalar Scalar;
-    enum {
-        InputsAtCompileTime = NX,
-        ValuesAtCompileTime = NY
-    };
-    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
-    
-    int m_inputs, m_values;
-    
-    EqualSystem(int inputs, int values) : m_inputs(inputs), m_values(values) {}
-    
-    int inputs() const { return m_inputs; }
-    int values() const { return m_values; }
-    
-};
-
-struct MyEqualSystem : EqualSystem<double>
-{
-    MyEqualSystem(int inputs, int values) : EqualSystem(inputs, values), no_parameter(inputs),  no_points(values) 
-    {
-        
-    }
-    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
-    {
-        qreal host = parameter(0);
-        qreal guest = parameter(1); 
-        
-        qreal complex_21 = K11*K21*host*host*guest;
-        qreal complex_11 = K11*host*guest;
-        qreal complex_12 = K11*K12*host*guest*guest;
-        
-        fvec(0) = (host + 2*complex_21 + complex_11 + complex_12) - Concen_0(0);
-        fvec(1) = (guest + complex_21 + complex_11 + 2*complex_12) - Concen_0(1);
-        return 0;
-    }
-    Eigen::VectorXd Concen_0;
-    double A_0, B_0, K21, K11, K12; 
-    int no_parameter;
-    int no_points;
-    int inputs() const { return no_parameter; } // There are two parameters of the model
-    int values() const { return no_points; } // The number of observations
-};
-
-struct MyEqualSystemNumericalDiff : Eigen::NumericalDiff<MyEqualSystem> {};
-
-
-
-inline int SolveEqualSystem(double A_0, double B_0, const QList<qreal> &constants, QList<double > &concentration)
-{
-       
-    if(A_0 == 0 || B_0 == 0)
-    {
-        concentration<<  A_0 << B_0;
-        return 1;
-    }
-    Eigen::VectorXd parameter(2);
-    parameter(0) = A_0;
-    parameter(1) = B_0;
-    
-    Eigen::VectorXd Concen_0(2);
-        Concen_0(0) = A_0;
-        Concen_0(1) = B_0;
-    MyEqualSystem functor(2, 2);
-    functor.Concen_0 = Concen_0;
-     functor.K21 = constants[0];
-     functor.K11 = constants[1];
-     functor.K12 = constants[2];
-    Eigen::NumericalDiff<MyEqualSystem> numDiff(functor);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyEqualSystem> > lm(numDiff);
-    int iter = 0;
-    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-      do {
-          for(int i = 0; i < 2; ++i)
-            if(parameter(i) < 0)
-            {
-                std::cout << "numeric error (below zero): " << i << std::endl;
-                parameter(i) = qAbs(parameter(i));
-            }else if(parameter(i) > Concen_0(i))
-            {
-                std::cout << "numeric error (above init): " << i << std::endl;
-                qreal diff = (parameter(i) -Concen_0(i));
-                parameter(i) = diff;
-            }
-         status = lm.minimizeOneStep(parameter);
-         iter++;
-      } while (status == -1);
-    for(int i = 0; i < 2; ++i)
-        if(parameter(i) < 0 || parameter(i) > Concen_0(i))
-            std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
-    concentration << double(parameter(0)) << double(parameter(1));
-    return iter;
-}
-
-ConcentrationSolver::ConcentrationSolver()
-{
-    setAutoDelete(false);
-}
-
-ConcentrationSolver::~ConcentrationSolver()
-{
-}
-
-void ConcentrationSolver::setInput(double A_0, double B_0, const QList<qreal> &constants)
-{
-    m_A_0 = A_0;
-    m_B_0 = B_0;
-    m_constants = constants;
-}
-
-void ConcentrationSolver::run()
-{
-    SolveEqualSystem(m_A_0, m_B_0, m_constants, m_concentration);
-}
-
+/*
+ * template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+ * struct EqualSystem
+ * {
+ *    typedef _Scalar Scalar;
+ *    enum {
+ *        InputsAtCompileTime = NX,
+ *        ValuesAtCompileTime = NY
+ *    };
+ *    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
+ *    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
+ *    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
+ *    
+ *    int m_inputs, m_values;
+ *    
+ *    EqualSystem(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+ *    
+ *    int inputs() const { return m_inputs; }
+ *    int values() const { return m_values; }
+ *    
+ * };
+ * 
+ * struct MyEqualSystem : EqualSystem<double>
+ * {
+ *    MyEqualSystem(int inputs, int values) : EqualSystem(inputs, values), no_parameter(inputs),  no_points(values) 
+ *    {
+ *        
+ *    }
+ *    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+ *    {
+ *        qreal host = parameter(0);
+ *        qreal guest = parameter(1); 
+ *        
+ *        qreal complex_21 = K11*K21*host*host*guest;
+ *        qreal complex_11 = K11*host*guest;
+ *        qreal complex_12 = K11*K12*host*guest*guest;
+ *        
+ *        fvec(0) = (host + 2*complex_21 + complex_11 + complex_12) - Concen_0(0);
+ *        fvec(1) = (guest + complex_21 + complex_11 + 2*complex_12) - Concen_0(1);
+ *        return 0;
+ *    }
+ *    Eigen::VectorXd Concen_0;
+ *    double A_0, B_0, K21, K11, K12; 
+ *    int no_parameter;
+ *    int no_points;
+ *    int inputs() const { return no_parameter; } // There are two parameters of the model
+ *    int values() const { return no_points; } // The number of observations
+ * };
+ * 
+ * struct MyEqualSystemNumericalDiff : Eigen::NumericalDiff<MyEqualSystem> {};
+ * 
+ * 
+ * 
+ * inline int SolveEqualSystem(double A_0, double B_0, const QList<qreal> &constants, QList<double > &concentration)
+ * {
+ *       
+ *    if(A_0 == 0 || B_0 == 0)
+ *    {
+ *        concentration<<  A_0 << B_0;
+ *        return 1;
+ *    }
+ *    Eigen::VectorXd parameter(2);
+ *    parameter(0) = A_0;
+ *    parameter(1) = B_0;
+ *    
+ *    Eigen::VectorXd Concen_0(2);
+ *        Concen_0(0) = A_0;
+ *        Concen_0(1) = B_0;
+ *    MyEqualSystem functor(2, 2);
+ *    functor.Concen_0 = Concen_0;
+ *     functor.K21 = constants[0];
+ *     functor.K11 = constants[1];
+ *     functor.K12 = constants[2];
+ *    Eigen::NumericalDiff<MyEqualSystem> numDiff(functor);
+ *    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyEqualSystem> > lm(numDiff);
+ *    int iter = 0;
+ *    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+ *      do {
+ *          for(int i = 0; i < 2; ++i)
+ *            if(parameter(i) < 0)
+ *            {
+ *                std::cout << "numeric error (below zero): " << i << std::endl;
+ *                parameter(i) = qAbs(parameter(i));
+ *            }else if(parameter(i) > Concen_0(i))
+ *            {
+ *                std::cout << "numeric error (above init): " << i << std::endl;
+ *                qreal diff = (parameter(i) -Concen_0(i));
+ *                parameter(i) = diff;
+ *            }
+ *         status = lm.minimizeOneStep(parameter);
+ *         iter++;
+ *      } while (status == -1);
+ *    for(int i = 0; i < 2; ++i)
+ *        if(parameter(i) < 0 || parameter(i) > Concen_0(i))
+ *            std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
+ *    concentration << double(parameter(0)) << double(parameter(1));
+ *    return iter;
+ * }
+ */
 
 IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractTitrationModel(data)
 {
     setName(tr("2:1/1:1/1:2-Model"));
     for(int i = 0; i < DataPoints(); ++i)
-        m_solvers << new ConcentrationSolver();
+        m_solvers << new ConcentrationSolver(this);
     InitialGuess();
     setOptParamater(m_complex_constants);
     AbstractTitrationModel::CalculateSignal();
     m_constant_names = QStringList() << tr("2:1") << tr("1:1") << tr("1:2"); 
-
+    
 }
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
@@ -178,11 +159,11 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
     m_corrupt = false;
     if(constants.size() == 0)
         return;
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    
     qreal K21= qPow(10, constants.first());
     qreal K11 =qPow(10, constants[1]);
     qreal K12= qPow(10, constants.last());
-    QList<qreal> constants_pow = QList<qreal>() << K21 << K11 << K12;
+    m_constants_pow = QList<qreal>() << K21 << K11 << K12;
     QThreadPool *threadpool = new QThreadPool;
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
@@ -191,8 +172,13 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         
-        m_solvers[i]->setInput(host_0, guest_0, constants_pow);
+        //         quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+        m_solvers[i]->setInput(host_0, guest_0);
+        m_solvers[i]->setConstants(m_constants_pow);
+        //         m_solvers[i]->run();
         threadpool->start(m_solvers[i]);
+        //         quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+        //         std::cout << t1-t0 << " msecs for all signals!" << std::endl;
     }
     
     threadpool->waitForDone();
@@ -200,7 +186,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
     {
         qreal host_0 = InitialHostConcentration(i);
         
-
+        
         QList<double > concentration = m_solvers[i]->Concentrations();
         qreal host = concentration[0];
         qreal guest = concentration[1]; 
@@ -214,8 +200,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
             SetSignal(i, j, value);
         }
     }
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << t1-t0 << " msecs for all signals!" << std::endl;
+    
     emit Recalculated();
 }
 
@@ -327,7 +312,7 @@ QPair<qreal, qreal> IItoI_ItoI_ItoII_Model::Pair(int i, int j) const
     }
     else if(i == 2)
     {
-       if(j < m_ItoII_signals.size()) 
+        if(j < m_ItoII_signals.size()) 
         {
             return QPair<qreal, qreal>(Constants()[i], m_ItoII_signals[j]);
         }   
@@ -336,4 +321,23 @@ QPair<qreal, qreal> IItoI_ItoI_ItoII_Model::Pair(int i, int j) const
 }
 
 
+Vector IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
+{
+    //     QMutexLocker (&mutex);
+    
+    qreal K11 = m_constants_pow[0];
+    qreal K21 = m_constants_pow[1];
+    qreal K12 = m_constants_pow[2];
+    
+    Vector values(2);
+    
+    qreal complex_21 = K11*K21*A*A*B;
+    qreal complex_11 = K11*A*B;
+    qreal complex_12 = K11*K12*A*B*B;
+    
+    values(0) = (2*complex_21 + complex_11 + complex_12) ;
+    values(1) = (complex_21 + complex_11 + 2*complex_12) ;
+    
+    return values;
+}
 

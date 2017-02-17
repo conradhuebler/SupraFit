@@ -19,13 +19,83 @@
 
 #include "src/global_config.h"
 
-#ifdef experimental
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/NonLinearOptimization>
+
+#include <QtCore/QObject>
+#include <QtCore/QRunnable>
+#include <QtCore/QPointer>
 
 #ifndef EQUAL_H
 #define EQUAL_H
 
-int SolveEqualSystem(double A_0, double B_0, double beta_11, double beta_21, QVector<double > &concentration);
-int SolveEqualSystem(QVector<double >A_0, QVector<double> B_0, double beta_11, double beta_21, QVector<double > &A_equ, QVector<double > &B_equ);
+class AbstractTitrationModel;
+
+typedef Eigen::VectorXd Vector;
+
+template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+struct ScriptedEqualSystem
+{
+    typedef _Scalar Scalar;
+    enum {
+        InputsAtCompileTime = NX,
+        ValuesAtCompileTime = NY
+    };
+    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
+    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
+    
+    int m_inputs, m_values;
+    
+    inline ScriptedEqualSystem(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+    
+    int inputs() const { return m_inputs; }
+    int values() const { return m_values; }
+    
+};
+
+struct MyScripteEqualSystem : ScriptedEqualSystem<double>
+{
+    inline MyScripteEqualSystem(int inputs, int values, QPointer<AbstractTitrationModel> model) : ScriptedEqualSystem(inputs, values), no_parameter(inputs),  no_points(values), m_model(model) 
+    {
+        
+    }
+    int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const;
+    double A_0, B_0, K21, K11, K12; 
+    Vector MassBalance(qreal A, qreal B) const;
+    QPointer<AbstractTitrationModel > m_model;
+    Eigen::VectorXd Concen_0;
+    int no_parameter;
+    int no_points;
+    int inputs() const { return no_parameter; } // There are two parameters of the model
+    int values() const { return no_points; } // The number of observations
+};
+
+struct MyScripteEqualSystemNumericalDiff : Eigen::NumericalDiff<MyScripteEqualSystem> {};
+
+
+
+class ConcentrationSolver : public QObject, public QRunnable
+{
+  Q_OBJECT  
+public:
+    ConcentrationSolver(QPointer<AbstractTitrationModel> model);
+    ~ConcentrationSolver();
+    virtual void run();
+    void setInput(double A_0, double B_0);
+    void setConstants(const QList<double> &constants);
+    inline QList<double> Concentrations() const { return  m_concentration; }
+    
+private:
+    qreal m_A_0, m_B_0;
+    qreal complex_21, complex_11, complex_12;
+    QList<qreal >  m_concentration;
+    QPointer<AbstractTitrationModel> m_model;
+    
+    MyScripteEqualSystem *functor; //(2, 2, m_model);
+    int SolveEqualSystem(double A_0, double B_0);
+};
 
 #endif 
-#endif
+

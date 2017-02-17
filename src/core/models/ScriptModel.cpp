@@ -18,7 +18,7 @@
  */
 
 
-
+#include "src/core/equal_system.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
@@ -29,6 +29,7 @@
 
 #include <QtMath>
 
+#include <QCoreApplication>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
@@ -44,7 +45,7 @@
 
 #include "ScriptModel.h"
 
-
+/*
 
 template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
 struct ScriptedEqualSystem
@@ -140,11 +141,14 @@ inline int SolveScriptedEqualSystem(double A_0, double B_0, QList<double > &conc
     concentration << double(parameter(0)) << double(parameter(1));
     return iter;
 }
-
+*/
 
 ScriptModel::ScriptModel(const DataClass *data, const QJsonObject &json) : AbstractTitrationModel(data), m_json(json)
 {
     chai = new chaiscript::ChaiScript;
+    
+    for(int i = 0; i < DataPoints(); ++i)
+        m_solvers << new ConcentrationSolver(this);
     
     ParseJson();
     InitializeCupofTea();
@@ -158,16 +162,16 @@ ScriptModel::~ScriptModel()
     
 }
 
-QList<qreal> ScriptModel::MassBalance(qreal A, qreal B)
+Vector ScriptModel::MassBalance(qreal A, qreal B)
 {
 //     QMutexLocker (&mutex);
 
     chai->add(chaiscript::var(A), "A");
     chai->add(chaiscript::var(B), "B");
 
-    QList<qreal> values;
+    Vector values(2);
     for(int i = 0; i < m_mass_balance.size(); ++i)
-        values << chai->eval<double>(m_mass_balance[i]);
+        values(i) = chai->eval<double>(m_mass_balance[i]);
  
     return values;
 }
@@ -340,6 +344,9 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
     
     for(int i = 0; i < Constants().size(); ++i)
         chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
+    QThreadPool *threadpool = new QThreadPool;
+    int maxthreads =qApp->instance()->property("threads").toInt();
+    threadpool->setMaxThreadCount(maxthreads);
     
     /*QThreadPool *threadpool = new QThreadPool;
     int maxthreads =qApp->instance()->property("threads").toInt();
@@ -355,7 +362,13 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
         */
         QList<qreal > concentrations;
         
-        SolveScriptedEqualSystem(host_0, guest_0, concentrations, this);
+        quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+        m_solvers[i]->setInput(host_0, guest_0);
+        m_solvers[i]->run();
+//         threadpool->start(m_solvers[i]);
+        quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+        std::cout << t1-t0 << " msecs for all signals!" << std::endl;
+        
         
         qreal complex = qPow(10,Constant(0))*concentrations[0]*concentrations[1];         
         for(int j = 0; j < SignalCount(); ++j)

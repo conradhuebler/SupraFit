@@ -34,6 +34,10 @@
 
 #include "src/core/dataclass.h"
 
+typedef Eigen::VectorXd Vector;
+
+class ConcentrationSolver;
+
 class ScriptModel : public AbstractTitrationModel 
 {
     Q_OBJECT
@@ -51,7 +55,7 @@ public:
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
     virtual qreal BC50();
-    QList<qreal> MassBalance(qreal A, qreal B);
+    virtual Vector MassBalance(qreal A, qreal B);
     
 private:
     QStringList m_component_list;
@@ -60,6 +64,7 @@ private:
     QJsonObject m_json;
     QVector<std::string > m_mass_balance;
     QMutex mutex;
+    QList<QPointer<ConcentrationSolver > > m_solvers;
     /*
      * Reads the json file and sets the model up
      */

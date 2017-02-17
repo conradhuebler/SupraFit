@@ -30,22 +30,9 @@
 
 #include "src/core/dataclass.h"
 
-class ConcentrationSolver : public QObject, public QRunnable
-{
-  Q_OBJECT  
-public:
-    ConcentrationSolver();
-    ~ConcentrationSolver();
-    virtual void run();
-    void setInput(double A_0, double B_0, const QList<qreal> &constants);
-    inline QList<double> Concentrations() const { return  m_concentration; }
-    
-private:
-    qreal m_A_0, m_B_0;
-    qreal complex_21, complex_11, complex_12;
-    QList<qreal > m_constants, m_concentration;
-};
+typedef Eigen::VectorXd Vector;
 
+class ConcentrationSolver;
 
 class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
 {
@@ -62,11 +49,13 @@ public:
     void CalculateSignal(const QList<qreal > &constants); // = QVector<qreal>());
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
-     virtual bool SupportThreads() const { return true; }
+    virtual bool SupportThreads() const { return true; }
+    virtual Vector MassBalance(qreal A, qreal B);
 private:
     qreal m_K21, m_K11, m_K12;
     QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;
     QList<QPointer<ConcentrationSolver > > m_solvers;
+    QList<qreal> m_constants_pow;
 };
 
 #endif // 2_1_1_1_MODEL_H

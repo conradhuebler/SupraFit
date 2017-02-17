@@ -23,11 +23,15 @@
 
 #include "src/global.h"
 
+#include <Eigen/Dense>
+
 #include <QtCore/QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
 #include "dataclass.h"
+
+typedef Eigen::VectorXd Vector;
 
 struct OptimizerConfig
 {
@@ -142,6 +146,7 @@ public:
     inline QList<qreal > Constants() const { return m_complex_constants; }
     inline qreal Constant(int i) const { return m_complex_constants[i]; }
     virtual qreal BC50();
+    virtual Vector MassBalance(qreal A, qreal B);
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
