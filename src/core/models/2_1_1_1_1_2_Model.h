@@ -33,6 +33,7 @@
 typedef Eigen::VectorXd Vector;
 
 class ConcentrationSolver;
+struct MassResults;
 
 class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
 {
@@ -47,7 +48,7 @@ public:
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return true; }
-//     virtual Vector MassBalance(qreal A, qreal B);
+    virtual MassResults MassBalance(qreal A, qreal B);
 private:
     qreal m_K21, m_K11, m_K12;
     QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;

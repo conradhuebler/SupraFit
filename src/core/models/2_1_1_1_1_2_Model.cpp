@@ -166,11 +166,11 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
     return parameter;
 }
 
-/*
-Vector IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
+
+MassResults IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
 {
     //     QMutexLocker (&mutex);
-    
+    MassResults result;
     qreal K11 = m_constants_pow[0];
     qreal K21 = m_constants_pow[1];
     qreal K12 = m_constants_pow[2];
@@ -183,7 +183,7 @@ Vector IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
     
     values(0) = (2*complex_21 + complex_11 + complex_12) ;
     values(1) = (complex_21 + complex_11 + 2*complex_12) ;
-    
-    return values;
-}*/
+    result.MassBalance = values;
+    return result;
+}
 

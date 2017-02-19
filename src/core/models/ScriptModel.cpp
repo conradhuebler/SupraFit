@@ -265,6 +265,8 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
         QList<qreal > concentrations = m_solvers[i]->Concentrations();
         MassResults result = MassBalance(concentrations[0], concentrations[1]);
             
+        std::cout << "Components" << result.Components << std::endl;
+        std::cout << "Mass Bilanz Vector" << result.MassBalance << std::endl;
         for(int j = 0; j < SignalCount(); ++j)
         {
             qreal value = concentrations[0]/host_0*m_pure_signals_parameter(j, 0);
