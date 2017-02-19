@@ -37,6 +37,7 @@
 typedef Eigen::VectorXd Vector;
 
 class ConcentrationSolver;
+struct MassResults;
 
 class ScriptModel : public AbstractTitrationModel 
 {
@@ -46,20 +47,18 @@ public:
     ScriptModel(const DataClass *data, const QJsonObject &json);
     ~ScriptModel();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
-//     QPair<qreal, qreal> Pair(int i, int j = 0) const;
     inline int ConstantSize() const { return Constants().size(); }
-//     void setPureSignals(const QList< qreal > &list);
-//     void setComplexSignals(const QList< qreal > &list, int i);
     virtual void CalculateSignal(const QList<qreal > &constants);
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
     virtual qreal BC50();
-    virtual Vector MassBalance(qreal A, qreal B);
+    virtual MassResults MassBalance(qreal A, qreal B);
     
 private:
     QVariantMap m_complex_map;
     QStringList m_component_list;
+    QVariantHash m_complex_hashed;
     chaiscript::ChaiScript *chai;
     std::string m_signal_calculation;
     QJsonObject m_json;

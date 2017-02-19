@@ -337,11 +337,13 @@ qreal AbstractTitrationModel::BC50()
 }
 
 
-Vector AbstractTitrationModel::MassBalance(qreal A, qreal B)
+MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
 {
+    MassResults result;
     Vector values(1) ;
     values(0) = 0;
-    return values;
+    result.MassBalance = values;
+    return result;
 }
 
 void AbstractTitrationModel::setComplexSignals(const QList< qreal > &list, int i)

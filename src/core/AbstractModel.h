@@ -66,6 +66,13 @@ struct StatisticResult
     double integ_1;
 };
 
+
+struct MassResults
+{
+    Vector MassBalance;
+    Vector Components;
+};
+
 class AbstractTitrationModel : public DataClass
 {
     Q_OBJECT
@@ -147,7 +154,7 @@ public:
     inline QList<qreal > Constants() const { return m_complex_constants; }
     inline qreal Constant(int i) const { return m_complex_constants[i]; }
     virtual qreal BC50();
-    virtual Vector MassBalance(qreal A, qreal B);
+    virtual MassResults MassBalance(qreal A, qreal B);
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      

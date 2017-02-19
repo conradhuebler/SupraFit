@@ -65,9 +65,9 @@ ScriptModel::~ScriptModel()
     
 }
 
-Vector ScriptModel::MassBalance(qreal A, qreal B)
+MassResults ScriptModel::MassBalance(qreal A, qreal B)
 {
-    
+    MassResults result;
     //     QMutexLocker locker(&mutex);
     
     /*    
@@ -79,10 +79,10 @@ Vector ScriptModel::MassBalance(qreal A, qreal B)
     QList<qreal > variables;
     variables << A << B;
     Vector values(2);
-    values(0) = 1;
-    values(1) = 1;
-
-    QStringList keys = m_complex_map.keys();
+    values(0) = 0;
+    values(1) = 0;
+    Vector Components(ConstantSize());
+    QStringList keys = m_complex_hashed.keys();
 //     qreal m = chai->eval<double>(m_mass_balance[0]);
 //     std::vector<chaiscript::Boxed_Value> m = chai->eval_file< std::vector<chaiscript::Boxed_Value> >("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model.chai");
     
@@ -95,37 +95,43 @@ Vector ScriptModel::MassBalance(qreal A, qreal B)
     {
         for(int j = 0; j < m_constant_names.size(); ++j) // b11, b21, b12 ...
         {
-            values(i) *=  qPow(10,Constant(j));
-            for(int k = 0; k < keys.size(); ++k)
+            qreal compound = 1;
+            compound *=  qPow(10,Constant(j));
+            for(int k = 0; k < m_component_list.size(); ++k)
             {
-                int pow = m_complex_map[keys[j]].toInt();
+                int pow = m_complex_map[m_component_list[k]].toInt();
                 if(pow == 1)
-                    values(i) *= variables[k];
+                    compound *= variables[k];
                 else
-                    values(i) *= qPow(variables[k], pow);
+                    compound *= qPow(variables[k], pow);
+                
+                Components(j) = compound;
+                if(k == 0)
+                    Components(j) *= pow;
                 if(k == i)
-                    values(i) *= pow;
+                    compound *= pow;
             }
+            values(i) += compound;
         }
         
 //           values(i) = qPow(10, Constant(0))*A*B;
  //        values(i) = m;
     }
-    
-    
-    return values;
+    result.Components = Components;
+    result.MassBalance = values;
+    return result;
 }
 
 
 void ScriptModel::CreateMassBalanceEquation(const QJsonObject &json)
 {
-    QVariantHash complex_hashed = json["complexes"].toObject().toVariantHash();
+    m_complex_hashed = json["complexes"].toObject().toVariantHash();
     QHash<QString, QString> mass_balance;
     for(const QString &str_component : (m_component_list))
     {
         for(const QString &str_constant : m_constant_names)
         {
-            m_complex_map = complex_hashed[str_constant].toMap();
+            m_complex_map = m_complex_hashed[str_constant].toMap();
             mass_balance[str_component] += str_constant;
             for(const QString &str_complex : (m_complex_map.keys()))
             {
@@ -191,12 +197,12 @@ void ScriptModel::InitializeCupofTea()
 
 void ScriptModel::InitialGuess()
 {
-    m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
-//     m_pure_signals = SignalModel()->firstRow();
+    for(int i = 0; i < m_complex_signal_parameter.cols(); ++i)
+        m_complex_signal_parameter.col(i) = SignalModel()->lastRow();
     
     setOptParamater(m_complex_constants);
     QVector<qreal * > line1, line2;
-    for(int i = 0; i < m_complex_signal_parameter.size(); ++i)
+    for(int i = 0; i < m_complex_signal_parameter.rows(); ++i)
     {
         line1 << &m_pure_signals_parameter(i, 0);
         line2 << &m_complex_signal_parameter(i,0);
@@ -215,7 +221,8 @@ QVector<qreal> ScriptModel::OptimizeParameters_Private(OptimizationType type)
     {
         if(type & OptimizationType::UnconstrainedShifts)
         {
-            addOptParameterList_fromConstant(0);
+            for(int i = 0; i < m_complex_signal_parameter.cols(); ++i)
+                addOptParameterList_fromConstant(i);
             if(type & ~OptimizationType::IgnoreZeroConcentrations)
             {
                 addOptParameterList_fromPure(0);
@@ -229,37 +236,6 @@ QVector<qreal> ScriptModel::OptimizeParameters_Private(OptimizationType type)
 }
 
 
-/*
-void ScriptModel::setPureSignals(const QList< qreal > &list)
-{
-    for(int i = 0; i < list.size(); ++i)
-        if(i < m_pure_signals.size())
-            m_pure_signals[i] = list[i];
-        else if(Type() == 3)
-            m_pure_signals<<list[i];
-}
-
-void ScriptModel::setComplexSignals(const QList< qreal > &list, int i)
-{
-    Q_UNUSED(i)
-    if(list.size() << m_signals.size())
-    {
-        for(int j = 0; j < list.size(); ++j)
-            m_signals[j] = list[j];
-    }
-}
-
-
-QPair< qreal, qreal > ScriptModel::Pair(int i, int j) const
-{
-    Q_UNUSED(i);
-    if(j < m_signals.size()) 
-    {
-        return QPair<qreal, qreal>(Constant(0), m_signals[j]);
-    }
-    return QPair<qreal, qreal>(0, 0);
-}
-*/
 void ScriptModel::CalculateSignal(const QList<qreal > &constants)
 {  
     m_corrupt = false;
@@ -287,13 +263,13 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
     {
         qreal host_0 = InitialHostConcentration(i);
         QList<qreal > concentrations = m_solvers[i]->Concentrations();
-        
-        qreal complex = qPow(10,Constant(0))*concentrations[0]*concentrations[1];         
+        MassResults result = MassBalance(concentrations[0], concentrations[1]);
+            
         for(int j = 0; j < SignalCount(); ++j)
         {
             qreal value = concentrations[0]/host_0*m_pure_signals_parameter(j, 0);
-            for(int k = 0; k < m_complex_signal_parameter.rows(); ++k)
-                value += complex/host_0*m_complex_signal_parameter(j,k);
+            for(int k = 0; k < result.Components.rows(); ++k)
+                 value += result.Components[k]/host_0*m_complex_signal_parameter(j,k);
             SetSignal(i, j, value);
         }
     }

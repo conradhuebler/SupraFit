@@ -45,7 +45,7 @@
 
 TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 {
-
+    
 }
 
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
@@ -92,7 +92,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_add = new QPushButton(tr("Add Model"));
     m_add->setFlat(true);
     m_add->setDisabled(true);
-
+    
     m_optimize = new QPushButton(tr("Optimize All"));
     m_optimize->setFlat(true);
     m_optimize->setDisabled(true);
@@ -122,16 +122,16 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
     connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
     menu->addAction(ItoI_ItoII_action);
-        
+    
     QAction *II_I_ItoI_ItoII_action = new QAction(this);
     II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
     connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel2112()));
     menu->addAction(II_I_ItoI_ItoII_action);
     
-    QAction *Script = new QAction(this);
-    Script->setText(tr("User Model"));
-    connect(Script, SIGNAL(triggered()), this, SLOT(AddModelScript()));
-    menu->addAction(Script);
+    m_script_action = new QAction(this);
+    m_script_action->setText(tr("Scripted Models"));
+    ParseScriptedModels();
+    menu->addAction(m_script_action);
     
     m_add->setMenu(menu);
     
@@ -181,10 +181,10 @@ void ModelDataHolder::AddModel(int model)
             break;
         default:
             t.clear();
-           return; 
-
+            return; 
+            
     };
-//     t->Minimize();
+    //     t->Minimize();
     m_history = false;
     ActiveModel(t);
     
@@ -220,27 +220,47 @@ void ModelDataHolder::AddModel2112()
 
 void ModelDataHolder::AddModelScript()
 {
-//     QString str = QFileDialog::getOpenFileName(this, tr("Open Model File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
-    QString str = (":/data/models/1_1_model.json");
-    if(!str.isEmpty())
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action)
     {
-        QJsonObject object;
-        if(JsonHandler::ReadJsonFile(object, str))
+        QString str = action->data().toString();
+        
+        if(!str.isEmpty())
         {
-            AddModel(object);
+            QJsonObject object;
+            if(JsonHandler::ReadJsonFile(object, str))
+            {
+                AddModel(object);
+            }
+            else
+                qDebug() << "loading failed";
         }
-        else
-            qDebug() << "loading failed";
     }
-    
+}
+
+
+void ModelDataHolder::ParseScriptedModels()
+{
+    QMenu *menu = new QMenu;
+    QDirIterator it(":/data/models/", QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        QString name = it.next();
+        
+        QAction *sub_model = new QAction(this);
+        sub_model->setData(name);
+        sub_model->setText(name.remove(".json").remove(":/data/models/"));
+        connect(sub_model, SIGNAL(triggered()), this, SLOT(AddModelScript()));
+        menu->addAction(sub_model);
+    }
+    m_script_action->setMenu(menu);
     
 }
 
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 {
-
+    
     QSharedPointer<AbstractTitrationModel > t;
-
+    
     /*
      * WARNING and FIXME I dont like this!
      */
@@ -250,13 +270,13 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
     }
     else if(str == "2:1/1:1-Model")
     {
-         t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
+        t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
     }
     else if(str == "1:1/1:2-Model"){
         t =  QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
     }
     else if(str == "2:1/1:1/1:2-Model"){
-         t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
+        t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
     }
     else
     {
@@ -277,12 +297,12 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
-
+    
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)), Qt::DirectConnection);
     
-
+    
     m_modelsWidget->addModelsTab(modelwidget);
     m_models << t;
     m_close_all->setEnabled(true);
@@ -378,18 +398,18 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
 
 void ModelDataHolder::SaveWorkspace(const QString &file)
 {
-        QJsonObject toplevel;
-        toplevel["data"] = m_data->ExportJSON();
-        
-        for(int i = 0; i < m_models.size(); ++i)
-        {    
-            if(!m_models[i].isNull())
-            {
-                QJsonObject obj = m_models[i].data()->ExportJSON();
-                toplevel["model_" + QString::number(i)] = obj;       
-            }
-        }   
-        JsonHandler::WriteJsonFile(toplevel, file);
+    QJsonObject toplevel;
+    toplevel["data"] = m_data->ExportJSON();
+    
+    for(int i = 0; i < m_models.size(); ++i)
+    {    
+        if(!m_models[i].isNull())
+        {
+            QJsonObject obj = m_models[i].data()->ExportJSON();
+            toplevel["model_" + QString::number(i)] = obj;       
+        }
+    }   
+    JsonHandler::WriteJsonFile(toplevel, file);
 }
 
 void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
@@ -470,7 +490,7 @@ void ModelDataHolder::Statistic()
 
 void ModelDataHolder::OptimizeAll()
 {
-       for(int i = 1; i < m_modelsWidget->count(); i++)
+    for(int i = 1; i < m_modelsWidget->count(); i++)
     {
         if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
         {

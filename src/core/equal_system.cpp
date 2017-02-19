@@ -40,7 +40,7 @@ int MyScripteEqualSystem::operator()(const Eigen::VectorXd &parameter, Eigen::Ve
         qreal A = parameter(0);
         qreal B = parameter(1); 
         
-        Vector balance = m_model->MassBalance(A, B);
+        Vector balance = m_model->MassBalance(A, B).MassBalance;
         
         fvec = parameter + balance - Concen_0;
 

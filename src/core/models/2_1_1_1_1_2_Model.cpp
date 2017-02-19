@@ -166,7 +166,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
     return parameter;
 }
 
-
+/*
 Vector IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
 {
     //     QMutexLocker (&mutex);
@@ -185,5 +185,5 @@ Vector IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
     values(1) = (complex_21 + complex_11 + 2*complex_12) ;
     
     return values;
-}
+}*/
 

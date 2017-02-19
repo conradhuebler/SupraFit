@@ -103,6 +103,9 @@ private:
     QVector<QWeakPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
     void AddModel(const QJsonObject &json);
+    void ParseScriptedModels();
+    QAction *m_script_action;
+    
     OptimizerConfig m_config;
 
     
