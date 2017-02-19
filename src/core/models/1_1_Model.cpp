@@ -41,7 +41,7 @@
 ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
 {
     setName(tr("1:1-Model"));
-    
+    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
     InitialGuess();
     m_complex_constants = QList<qreal>() << m_K11;
     
@@ -51,7 +51,7 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
 ItoI_Model::ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationModel(model)
 {
     setName(tr("1:1-Model"));
-    
+    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
     InitialGuess();
     m_complex_constants = QList<qreal>() << m_K11;
     
@@ -67,15 +67,18 @@ ItoI_Model::~ItoI_Model()
 void ItoI_Model::InitialGuess()
 {
     m_K11 = 4;
-    m_ItoI_signals = SignalModel()->lastRow();
-    m_pure_signals = SignalModel()->firstRow();
+    
+    m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
+    
+//     m_ItoI_signals = SignalModel()->lastRow();
+//     m_pure_signals = SignalModel()->firstRow();
     
     setOptParamater(m_K11);
     QVector<qreal * > line1, line2;
-    for(int i = 0; i < m_pure_signals.size(); ++i)
+    for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
     {
-        line1 << &m_pure_signals[i];
-        line2 << &m_ItoI_signals[i];
+        line1 << &m_pure_signals_parameter(i, 0);
+        line2 << &m_complex_signal_parameter(i,0);
     }
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
@@ -91,10 +94,10 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
     {
         if(type & OptimizationType::UnconstrainedShifts)
         {
-            addOptParameter(m_ItoI_signals);
+            addOptParameterList_fromConstant(0);
             if(type & ~OptimizationType::IgnoreZeroConcentrations)
             {
-                addOptParameter(m_pure_signals);
+                addOptParameterList_fromPure(0);
             }
         }
     }
@@ -130,43 +133,13 @@ void ItoI_Model::CalculateSignal(const QList<qreal > &constants)
         qreal complex = host_0 -host;
         for(int j = 0; j < SignalCount(); ++j)
         {
-            qreal value = host/host_0*m_pure_signals[j] + complex/host_0*m_ItoI_signals[j];
+            qreal value = host/host_0*m_pure_signals_parameter(j, 0)+ complex/host_0*m_complex_signal_parameter(j,0);
             SetSignal(i, j, value);    
         }
     }
     emit Recalculated();
 }
 
-
-void ItoI_Model::setPureSignals(const QList< qreal > &list)
-{
-    for(int i = 0; i < list.size(); ++i)
-        if(i < m_pure_signals.size())
-            m_pure_signals[i] = list[i];
-        else if(Type() == 3)
-            m_pure_signals<<list[i];
-}
-
-void ItoI_Model::setComplexSignals(const QList< qreal > &list, int i)
-{
-    Q_UNUSED(i)
-    if(list.size() << m_ItoI_signals.size())
-    {
-        for(int j = 0; j < list.size(); ++j)
-            m_ItoI_signals[j] = list[j];
-    }
-}
-
-
-QPair< qreal, qreal > ItoI_Model::Pair(int i, int j) const
-{
-    Q_UNUSED(i);
-    if(j < m_ItoI_signals.size()) 
-    {
-        return QPair<qreal, qreal>(m_K11, m_ItoI_signals[j]);
-    }
-    return QPair<qreal, qreal>(0, 0);
-}
 
 QSharedPointer<AbstractTitrationModel > ItoI_Model::Clone() const
 {
@@ -183,68 +156,5 @@ qreal ItoI_Model::BC50()
 {
     return 1/qPow(10,Constants()[0]); 
 }
-/*
-ItoI_Model_Script::ItoI_Model_Script(const DataClass *data) : ItoI_Model(data)
-{
-    QFile file("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model.chai");
-    if(!file.open(QIODevice::ReadOnly)) {
-    }
-    
-    QTextStream in(&file);
-    
-    while(!in.atEnd()) {
-        QString line = in.readLine();    
-        m_content += line.toStdString();
-    }
-    
-    file.close();
-    
-    QFile file2("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model_2.chai");
-    if(!file2.open(QIODevice::ReadOnly)) {
-    }
-    
-    QTextStream in2(&file2);
-    
-    while(!in2.atEnd()) {
-        QString line = in2.readLine();    
-        m_content_2 += line.toStdString();
-    }
-    
-    file2.close();
-    
-    chai = new chaiscript::ChaiScript;
-    
-    chai->add(chaiscript::fun(&qPow), "qPow");
-    chai->add(chaiscript::fun(&qSqrt), "qSqrt");
-    
-    chai->add(chaiscript::base_class<DataClass, AbstractTitrationModel>());
-    chai->add(chaiscript::base_class<DataClass, ItoI_Model_Script>());
-    chai->add(chaiscript::base_class<AbstractTitrationModel, ItoI_Model_Script>());
-    chai->add(chaiscript::fun(&ItoI_Model_Script::Constant), "Constant");
-    chai->add(chaiscript::fun(&ItoI_Model_Script::InitialHostConcentration), "InitialHostConcentration");
-    chai->add(chaiscript::fun(&ItoI_Model_Script::InitialGuestConcentration), "InitialGuestConcentration");
-    chai->add(chaiscript::var(this), "model_1");
-    chai->eval(m_content);
-}
 
-
-void ItoI_Model_Script::CalculateSignal(const QList<qreal > &constants)
-{  
-    m_corrupt = false;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        qreal host_0 = InitialHostConcentration(i);
-        qreal guest_0 = InitialGuestConcentration(i);
-        chai->add(chaiscript::var(i), "i");
-        double host = chai->eval<double>(m_content_2);
-        qreal complex = host_0 -host;
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            qreal value = host/host_0*m_pure_signals[j] + complex/host_0*m_ItoI_signals[j];
-            SetSignal(i, j, value);    
-        }
-    }
-    emit Recalculated();
-}
-*/
 #include "1_1_Model.moc"

@@ -54,6 +54,7 @@ ScriptModel::ScriptModel(const DataClass *data, const QJsonObject &json) : Abstr
     
     ParseJson();
     InitializeCupofTea();
+    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), m_complex_constants.size());
     InitialGuess();
     
 }
@@ -166,6 +167,7 @@ void ScriptModel::ParseJson()
     
     
     
+    
     CreateMassBalanceEquation(object);
     
 }
@@ -189,15 +191,15 @@ void ScriptModel::InitializeCupofTea()
 
 void ScriptModel::InitialGuess()
 {
-    m_signals = SignalModel()->lastRow();
-    m_pure_signals = SignalModel()->firstRow();
+    m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
+//     m_pure_signals = SignalModel()->firstRow();
     
     setOptParamater(m_complex_constants);
     QVector<qreal * > line1, line2;
-    for(int i = 0; i < m_pure_signals.size(); ++i)
+    for(int i = 0; i < m_complex_signal_parameter.size(); ++i)
     {
-        line1 << &m_pure_signals[i];
-        line2 << &m_signals[i];
+        line1 << &m_pure_signals_parameter(i, 0);
+        line2 << &m_complex_signal_parameter(i,0);
     }
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
@@ -213,10 +215,10 @@ QVector<qreal> ScriptModel::OptimizeParameters_Private(OptimizationType type)
     {
         if(type & OptimizationType::UnconstrainedShifts)
         {
-            addOptParameter(m_signals);
+            addOptParameterList_fromConstant(0);
             if(type & ~OptimizationType::IgnoreZeroConcentrations)
             {
-                addOptParameter(m_pure_signals);
+                addOptParameterList_fromPure(0);
             }
         }
     }
@@ -227,7 +229,7 @@ QVector<qreal> ScriptModel::OptimizeParameters_Private(OptimizationType type)
 }
 
 
-
+/*
 void ScriptModel::setPureSignals(const QList< qreal > &list)
 {
     for(int i = 0; i < list.size(); ++i)
@@ -257,7 +259,7 @@ QPair< qreal, qreal > ScriptModel::Pair(int i, int j) const
     }
     return QPair<qreal, qreal>(0, 0);
 }
-
+*/
 void ScriptModel::CalculateSignal(const QList<qreal > &constants)
 {  
     m_corrupt = false;
@@ -289,7 +291,9 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
         qreal complex = qPow(10,Constant(0))*concentrations[0]*concentrations[1];         
         for(int j = 0; j < SignalCount(); ++j)
         {
-            qreal value = concentrations[0]/host_0*m_pure_signals[j] + complex/host_0*m_signals[j];
+            qreal value = concentrations[0]/host_0*m_pure_signals_parameter(j, 0);
+            for(int k = 0; k < m_complex_signal_parameter.rows(); ++k)
+                value += complex/host_0*m_complex_signal_parameter(j,k);
             SetSignal(i, j, value);
         }
     }

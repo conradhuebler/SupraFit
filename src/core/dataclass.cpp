@@ -72,12 +72,14 @@ DataTable::~DataTable()
 //     return vector;
 // }
 
-QList<qreal> DataTable::firstRow()
+Vector DataTable::firstRow()
 {
+    return m_table.row(0);
+    /*
     QList<qreal> vector;
     for(int i = 0; i < m_table.cols(); ++i)
         vector << m_table(0, i);
-    return vector;
+    return vector;*/
 }
 
 // QVector<qreal> DataTable::lastRow()
@@ -88,12 +90,13 @@ QList<qreal> DataTable::firstRow()
 //     return vector;
 // }
 
-QList<qreal> DataTable::lastRow()
+Vector DataTable::lastRow()
 {
-    QList<qreal> vector;
-    for(int i = 0; i < m_table.cols(); ++i)
-        vector << m_table(m_table.rows()-1, i);
-    return vector;
+    return m_table.row(m_table.rows()-1);
+//     QList<qreal> vector;
+//     for(int i = 0; i < m_table.cols(); ++i)
+//         vector << m_table(m_table.rows()-1, i);
+//     return vector;
 }
 
 void DataTable::Debug() const
@@ -182,8 +185,9 @@ qreal & DataTable::data(int column, int row)
 //     
 // }
 
-QList<qreal> DataTable::Row(int row)
+Vector DataTable::Row(int row)
 {
+    /*
     QList<qreal> vector;
     if(row <= m_table.rows())
         for(int i = 0; i < m_table.cols(); ++i)
@@ -191,7 +195,8 @@ QList<qreal> DataTable::Row(int row)
     else
         qDebug() << "Row exceeds size of table!";
     return vector;
-    
+    */
+    return m_table.row(row);
 }
 
 // QVector<qreal> DataTable::Column(int column)

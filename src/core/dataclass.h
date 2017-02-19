@@ -31,6 +31,8 @@
 #include <QDebug>
 #include <QAbstractTableModel>
 
+typedef Eigen::VectorXd Vector;
+
 class DataTable : public QAbstractTableModel
 {
 public:
@@ -54,13 +56,13 @@ public:
     void setColumn(QVector<qreal> vector, int column);
     
 //     QVector<qreal> Row(int row);
-    QList<qreal> Row(int row);
+    Vector Row(int row);
 //     QVector<qreal> Column(int column);
 //     QVector<qreal> firstRow(); 
-    QList<qreal> firstRow(); 
+    Vector firstRow(); 
 //     inline QVector<qreal> firstColumn() { return Column( 0 ); }
 //     QVector<qreal> lastRow(); 
-    QList<qreal> lastRow(); 
+    Vector lastRow(); 
 //     inline QVector<qreal> lastColumn() { return Column(columnCount() -1 );}
     
     void Debug() const ;

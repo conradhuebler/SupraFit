@@ -20,7 +20,10 @@
 #include <QString>
 #include <QVector>
 
+#include <Eigen/Dense>
+
 #include "toolset.h"
+typedef Eigen::VectorXd Vector;
 
 namespace ToolSet{
     
@@ -38,6 +41,15 @@ QString DoubleList2String(const QList<qreal > &vector)
     QString string;
     for(int i = 0; i < vector.size(); ++i)    
         string += QString::number(vector[i]) + " ";
+    
+    return string.left(string.length() - 1);
+}
+
+QString DoubleList2String(const Vector &vector)
+{
+    QString string;
+    for(int i = 0; i < vector.cols(); ++i)    
+        string += QString::number(vector(i)) + " ";
     
     return string.left(string.length() - 1);
 }

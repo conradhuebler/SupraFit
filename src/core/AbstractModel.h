@@ -79,27 +79,29 @@ public:
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
     inline void setLastOptimzationRun(OptimizationType last_optimization) { m_last_optimization = last_optimization; }
     inline OptimizationType LastOptimzationRun() const { return m_last_optimization; }
-    double IncrementParameter(double increment, int parameter);
+    
     void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
     void setOptParamater(QList< qreal >& parameter);
     void addOptParameter(QList <qreal > &vector);
+    void addOptParameterList_fromPure(int i);
+    void addOptParameterList_fromConstant(int i);
     void clearOptParameter();
-    inline int MaxVars() const { return (m_pure_signals.size()); }
+    inline int MaxVars() const { return (m_pure_signals_parameter.rows()); }
     qreal SumOfErrors(int i) const;
-    virtual QPair<qreal, qreal> Pair(int i, int j = 0) const = 0;
+    virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
     inline qreal PureSignal(int i) const 
         { 
             if(i >= MaxVars())
                 return 0;
-            return m_pure_signals[i]; 
+            return m_pure_signals_parameter(i,0); 
         }
         
     virtual QSharedPointer<AbstractTitrationModel > Clone() const = 0;
         
     virtual int ConstantSize() const = 0;
-    virtual void setPureSignals(const QList< qreal > &list) = 0;
-    virtual void setComplexSignals(const QList< qreal > &list, int i) = 0;
+    virtual void setPureSignals(const QList< qreal > &list);
+    virtual void setComplexSignals(const QList< qreal > &list, int i);
     virtual void setConstants(const QList< qreal > &list);
     virtual void CalculateSignal(const QList<qreal > &constants) = 0;
 //     inline void CalculateSignal() { CalculateSignal(Constants()); }
@@ -159,11 +161,12 @@ protected:
     void SetSignal(int i, int j, qreal value);
     inline void setName(const QString &str) { m_name = str; }
     QString m_name;
-    QList<qreal > m_pure_signals, m_complex_constants;
+    QList<qreal > m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
     QVector<double * > m_opt_para;
     QVector<QVector<qreal * > >m_lim_para;
     DataTable *m_model_signal, *m_model_error;
+    Eigen::MatrixXd m_complex_signal_parameter, m_pure_signals_parameter;
     const DataClass *m_data;
     OptimizerConfig m_opt_config;
     bool m_corrupt;

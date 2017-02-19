@@ -34,7 +34,7 @@
 IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
     setName(tr("2:1/1:1-Model"));
-
+    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 2);
     InitialGuess();   
     
     setOptParamater(m_complex_constants);
@@ -56,17 +56,20 @@ void IItoI_ItoI_Model::InitialGuess()
     
     m_complex_constants = QList<qreal>() << m_K21 << m_K11;
     setOptParamater(m_complex_constants);
-    for(int i = 0; i < SignalCount(); ++i)
-    {
-        m_ItoI_signals <<SignalModel()->lastRow()[i];
-        m_IItoI_signals << SignalModel()->firstRow()[i];
-    }
+    
+    m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
+    m_complex_signal_parameter.col(1) = SignalModel()->firstRow();
+    
+//     for(int i = 0; i < SignalCount(); ++i)
+//     {
+
+//     }
     
     QVector<qreal * > line1, line2;
-    for(int i = 0; i < m_pure_signals.size(); ++i)
+    for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
     {
-        line1 << &m_pure_signals[i];
-        line2 << &m_ItoI_signals[i];
+        line1 << &m_pure_signals_parameter(i);
+        line2 << &m_complex_signal_parameter(i,0);
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
     /*
@@ -82,7 +85,7 @@ void IItoI_ItoI_Model::InitialGuess()
     delete mini;*/
     AbstractTitrationModel::CalculateSignal();
 }
-
+/*
 void IItoI_ItoI_Model::setComplexSignals(const QList< qreal > &list, int i)
 {
     for(int j = 0; j < list.size(); ++j)
@@ -94,7 +97,7 @@ void IItoI_ItoI_Model::setComplexSignals(const QList< qreal > &list, int i)
             m_ItoI_signals[j] = list[j];
     }
 }
-
+*/
 qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
 {
     
@@ -132,14 +135,14 @@ void IItoI_ItoI_Model::CalculateSignal(const QList<qreal > &constants)
         
         for(int j = 0; j < SignalCount(); ++j)
         {
-            qreal value = host/host_0*m_pure_signals[j] + complex_11/host_0*m_ItoI_signals[j]+ 2*complex_21/host_0*m_IItoI_signals[j];
+            qreal value = host/host_0*m_pure_signals_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,1)+ 2*complex_21/host_0*m_complex_signal_parameter(j, 0);
             SetSignal(i, j, value);
         }
         
     }
     emit Recalculated();
 }
-
+/*
 void IItoI_ItoI_Model::setPureSignals(const QList< qreal > &list)
 {
     for(int i = 0; i < list.size(); ++i)
@@ -166,7 +169,7 @@ QPair< qreal, qreal > IItoI_ItoI_Model::Pair(int i, int j) const
     }
     return QPair<qreal, qreal>(0, 0);
 }
-
+*/
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     clearOptParameter();
@@ -178,14 +181,15 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
     {
         if((type & OptimizationType::UnconstrainedShifts))
         {
-            addOptParameter(m_IItoI_signals);
-            addOptParameter(m_ItoI_signals);
+            addOptParameterList_fromConstant(0);
+//             addOptParameter(m_ItoI_signals);
+            addOptParameterList_fromConstant(1);
             if(type & ~(OptimizationType::IgnoreZeroConcentrations))
-                addOptParameter(m_pure_signals);
+                addOptParameterList_fromPure(0);
         }
         if(type & ~OptimizationType::UnconstrainedShifts || type & OptimizationType::IntermediateShifts)
         {
-            addOptParameter(m_IItoI_signals);
+            addOptParameterList_fromConstant(0);
         }
     }
     QVector<qreal >parameter;

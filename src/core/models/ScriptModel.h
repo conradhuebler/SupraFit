@@ -46,10 +46,10 @@ public:
     ScriptModel(const DataClass *data, const QJsonObject &json);
     ~ScriptModel();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
-    QPair<qreal, qreal> Pair(int i, int j = 0) const;
+//     QPair<qreal, qreal> Pair(int i, int j = 0) const;
     inline int ConstantSize() const { return Constants().size(); }
-    void setPureSignals(const QList< qreal > &list);
-    void setComplexSignals(const QList< qreal > &list, int i);
+//     void setPureSignals(const QList< qreal > &list);
+//     void setComplexSignals(const QList< qreal > &list, int i);
     virtual void CalculateSignal(const QList<qreal > &constants);
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;

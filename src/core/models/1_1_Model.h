@@ -42,10 +42,10 @@ public:
     ItoI_Model(const AbstractTitrationModel *model);
     ~ItoI_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
-    QPair<qreal, qreal> Pair(int i, int j = 0) const;
+//     QPair<qreal, qreal> Pair(int i, int j = 0) const;
     inline int ConstantSize() const { return 1;}
-    void setPureSignals(const QList< qreal > &list);
-    void setComplexSignals(const QList< qreal > &list, int i);
+//     void setPureSignals(const QList< qreal > &list);
+//     void setComplexSignals(const QList< qreal > &list, int i);
     virtual void CalculateSignal(const QList<qreal > &constants);
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
