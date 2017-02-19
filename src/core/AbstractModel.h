@@ -104,7 +104,6 @@ public:
     virtual void setComplexSignals(const QList< qreal > &list, int i);
     virtual void setConstants(const QList< qreal > &list);
     virtual void CalculateSignal(const QList<qreal > &constants) = 0;
-//     inline void CalculateSignal() { CalculateSignal(Constants()); }
     virtual void InitialGuess() = 0;
     QList<qreal >  getCalculatedSignals();
 

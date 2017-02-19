@@ -279,8 +279,6 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
         }
         setComplexSignals(shifts, i);
     }
-    std::cout << m_pure_signals_parameter << std::endl;
-    std::cout << m_complex_signal_parameter << std::endl;
     setActiveSignals(active_signals);
 }
 qreal AbstractTitrationModel::ModelError() const
@@ -348,19 +346,18 @@ Vector AbstractTitrationModel::MassBalance(qreal A, qreal B)
 
 void AbstractTitrationModel::setComplexSignals(const QList< qreal > &list, int i)
 {
+    if(!(i < m_complex_signal_parameter.cols()))
+        return;
     for(int j = 0; j < list.size(); ++j)
     {
-        if(i == 0 && j < m_complex_signal_parameter.rows())
-            m_complex_signal_parameter(j) = list[j];
+        if(j < m_complex_signal_parameter.rows())
+            m_complex_signal_parameter(j,i) = list[j];
     }
 }
 
 
 void AbstractTitrationModel::setPureSignals(const QList<qreal>& list)
 {
-    std::cout << m_pure_signals_parameter << std::endl;
-    std::cout << m_pure_signals_parameter(0,0) << std::endl;
-    std::cout << m_pure_signals_parameter(1,0) << std::endl;
     for(int i = 0; i < list.size(); ++i)
             m_pure_signals_parameter(i,0) = list[i];
 }

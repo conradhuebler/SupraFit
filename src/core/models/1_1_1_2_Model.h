@@ -37,11 +37,8 @@ public:
     ItoI_ItoII_Model(const DataClass* data);
     ~ItoI_ItoII_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
-//     QPair<qreal, qreal> Pair(int i, int j = 0) const ;
     inline int ConstantSize() const { return 2;}
-//     void setPureSignals(const QList< qreal > &list);
-//     void setComplexSignals(const QList< qreal > &list, int i);
-    void CalculateSignal(const QList<qreal > &constants); // = QVector<qreal>());
+    void CalculateSignal(const QList<qreal > &constants); 
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }

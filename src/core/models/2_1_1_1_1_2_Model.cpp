@@ -92,8 +92,7 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
         qreal complex_12 = K11*K12*host*guest*guest;         
         for(int j = 0; j < SignalCount(); ++j)
         {
-            qreal value = host/host_0*m_pure_signals_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,1)+ 2*complex_21/host_0*m_complex_signal_parameter(j,0) + complex_12/host_0*m_complex_signal_parameter(j,2);
-//             qreal value = host/host_0*m_pure_signals_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,1)+ 2*complex_21/host_0*m_complex_signal_parameter(j, 0);
+            qreal value = host/host_0*m_pure_signals_parameter(j, 0) + 2*complex_21/host_0*m_complex_signal_parameter(j,0) + complex_11/host_0*m_complex_signal_parameter(j,1) + complex_12/host_0*m_complex_signal_parameter(j,2);
             SetSignal(i, j, value);
         }
     }
@@ -121,13 +120,10 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     
     m_complex_constants = QList<qreal>() << m_K21 << m_K11 << m_K12;
     setOptParamater(m_complex_constants);
-//     for(int i = 0; i < SignalCount(); ++i)
-//     {
-//         m_ItoII_signals << SignalModel()->lastRow()[i];
-//         m_ItoI_signals  << SignalModel()->lastRow()[i];
-//         m_IItoI_signals << SignalModel()->firstRow()[i];
-//     }
     
+    m_complex_signal_parameter.col(0) = SignalModel()->firstRow();
+    m_complex_signal_parameter.col(2) = SignalModel()->lastRow();
+    m_complex_signal_parameter.col(1) = (m_complex_signal_parameter.col(0) + m_complex_signal_parameter.col(2))/2;
     QVector<qreal * > line1, line2, line3, line4;
     for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
     {
@@ -169,54 +165,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
         parameter << *m_opt_para[i];
     return parameter;
 }
-/*
-void IItoI_ItoI_ItoII_Model::setComplexSignals(const QList<qreal> &list, int i)
-{
-    for(int j = 0; j < list.size(); ++j)
-    {
-        if(i == 0 && j < m_IItoI_signals.size())
-            m_IItoI_signals[j] = list[j];
-        if(i == 1 && j < m_ItoI_signals.size())
-            m_ItoI_signals[j] = list[j];
-        if(i == 2 && j < m_ItoII_signals.size())
-            m_ItoII_signals[j] = list[j];
-    }
-}
 
-
-void IItoI_ItoI_ItoII_Model::setPureSignals(const QList<qreal>& list)
-{
-    for(int i = 0; i < list.size(); ++i)
-        if(i < m_pure_signals.size())
-            m_pure_signals[i] = list[i];
-}
-
-QPair<qreal, qreal> IItoI_ItoI_ItoII_Model::Pair(int i, int j) const
-{
-    if(i == 0)
-    {
-        if(j < m_IItoI_signals.size()) 
-        {
-            return QPair<qreal, qreal>(Constants()[i], m_IItoI_signals[j]);
-        } 
-        
-    }else if(i == 1)
-    {
-        if(j < m_ItoI_signals.size()) 
-        {
-            return QPair<qreal, qreal>(Constants()[i], m_ItoI_signals[j]);
-        }          
-    }
-    else if(i == 2)
-    {
-        if(j < m_ItoII_signals.size()) 
-        {
-            return QPair<qreal, qreal>(Constants()[i], m_ItoII_signals[j]);
-        }   
-    }
-    return QPair<qreal, qreal>(0, 0);
-}
-*/
 
 Vector IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
 {

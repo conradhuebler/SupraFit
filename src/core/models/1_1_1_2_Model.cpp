@@ -55,11 +55,8 @@ void ItoI_ItoII_Model::InitialGuess()
     m_complex_constants = QList<qreal>() << m_K11 << m_K12;
     setOptParamater(m_complex_constants);
     
-//     for(int i = 0; i < SignalCount(); ++i)
-//     {
-//         m_ItoI_signals << ( SignalModel()->data(i,0) +  SignalModel()->data(i,SignalCount() - 1))/2;
-//         m_ItoII_signals << SignalModel()->data(i,SignalCount() - 1);
-//     }
+    m_complex_signal_parameter.col(0) = SignalModel()->firstRow();
+    m_complex_signal_parameter.col(1) = SignalModel()->lastRow();
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
@@ -99,18 +96,7 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
     return parameter;
 }
 
-/*
-void ItoI_ItoII_Model::setComplexSignals(const QList< qreal > &list, int i)
-{
-    for(int j = 0; j < list.size(); ++j)
-    {
-        if(i == 0 && j < m_ItoI_signals.size())
-            m_ItoI_signals[j] = list[j];        
-        if(i == 1 && j < m_ItoII_signals.size())
-            m_ItoII_signals[j] = list[j];
-    }
-}
-*/
+
 qreal ItoI_ItoII_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
 {
     
@@ -162,7 +148,6 @@ void ItoI_ItoII_Model::CalculateSignal(const QList<qreal > &constants)
         for(int j = 0; j < SignalCount(); ++j)
         {
             qreal value = host/host_0*m_pure_signals_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,0)+ complex_12/host_0*m_complex_signal_parameter(j,1);
-//             qreal value = host/host_0*m_pure_signals_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,1)+ 2*complex_21/host_0*m_complex_signal_parameter(j, 0);
             SetSignal(i, j, value);
         }
         
@@ -170,39 +155,7 @@ void ItoI_ItoII_Model::CalculateSignal(const QList<qreal > &constants)
     emit Recalculated();
 
 }
-/*
-void ItoI_ItoII_Model::setPureSignals(const QList< qreal > &list)
-{
-    for(int i = 0; i < list.size(); ++i)
-        if(i < m_pure_signals.size())
-        {
-            m_pure_signals[i] = list[i];
-        }
-}
 
-
-QPair< qreal, qreal > ItoI_ItoII_Model::Pair(int i, int j) const
-{
-    if(i == 0)
-    {
-        if(j < m_ItoI_signals.size()) 
-        {
-            return QPair<qreal, qreal>(Constants()[i], m_ItoI_signals[j]);
-        }          
-    }
-    else if(i == 1)
-    {
-        
-        
-        if(j < m_ItoII_signals.size()) 
-        {
-            return QPair<qreal, qreal>(Constants()[i], m_ItoII_signals[j]);
-        } 
-        
-    }
-    return QPair<qreal, qreal>(0, 0);
-}
-*/
 QSharedPointer<AbstractTitrationModel > ItoI_ItoII_Model::Clone() const
 {
     QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);

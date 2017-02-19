@@ -418,7 +418,7 @@ void ModelWidget::CollectParameters()
     QList<qreal > pure_signals, constants;
     QVector<QList <qreal > > complex_signals;
     complex_signals.resize(m_model->ConstantSize());
-    QList<int > active_signals;// = QVector<int>(m_model_elements.size(), 0).toList();
+    QList<int > active_signals;
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
         pure_signals << m_model_elements[i]->D0();

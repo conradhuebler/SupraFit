@@ -70,9 +70,6 @@ void ItoI_Model::InitialGuess()
     
     m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
     
-//     m_ItoI_signals = SignalModel()->lastRow();
-//     m_pure_signals = SignalModel()->firstRow();
-    
     setOptParamater(m_K11);
     QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
