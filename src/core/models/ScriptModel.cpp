@@ -224,10 +224,8 @@ QVector<qreal> ScriptModel::OptimizeParameters_Private(OptimizationType type)
         {
             for(int i = 0; i < m_complex_signal_parameter.cols(); ++i)
                 addOptParameterList_fromConstant(i);
-            if(type & ~OptimizationType::IgnoreZeroConcentrations)
-            {
+            if(type < OptimizationType::IgnoreZeroConcentrations)
                 addOptParameterList_fromPure(0);
-            }
         }
     }
     QVector<qreal >parameter;

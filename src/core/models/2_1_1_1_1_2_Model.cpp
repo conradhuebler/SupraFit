@@ -151,7 +151,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
             addOptParameterList_fromConstant(0);
             addOptParameterList_fromConstant(1);
             addOptParameterList_fromConstant(2);
-            if(type & ~(OptimizationType::IgnoreZeroConcentrations))
+            if(type < OptimizationType::IgnoreZeroConcentrations)
                 addOptParameterList_fromPure(0);
         }
         if(type & ~OptimizationType::UnconstrainedShifts || type & OptimizationType::IntermediateShifts)

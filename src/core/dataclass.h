@@ -123,6 +123,7 @@ public:
     {
         d->m_concentration_model->insertRow(conc);
         d->m_signal_model->insertRow(data);
+        d->m_scaling = QVector<qreal>(d->m_concentration_model->columnCount(), 1);
     }
     
 
