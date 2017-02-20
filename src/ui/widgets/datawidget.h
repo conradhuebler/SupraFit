@@ -37,6 +37,7 @@ class QLineEdit;
 class QCheckBox;
 class QGridLayout;
 class ScatterSeries;
+class QDoubleSpinBox;
 
 class SignalElement : public QGroupBox
 {
@@ -88,9 +89,12 @@ private:
     QGroupBox *m_tables;
     QVector<QPointer<SignalElement > > m_signal_elements;
     QGridLayout *layout;
+    QList<QPointer<QDoubleSpinBox > > m_scaling_boxes;
+    
 private slots:
     void switchHG();
     void SetProjectName();
+    void setScaling();
     
 signals:
     void recalculate();

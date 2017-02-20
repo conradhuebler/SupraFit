@@ -93,14 +93,17 @@ public:
     int m_host_assignment;
     
     DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
+    QVector<qreal > m_scaling;
+    
 };
 
 
 class DataClass : public QObject
 {
+    
     Q_OBJECT
-    public: 
-        
+    
+public:         
     DataClass(QObject *parent = 0);
     DataClass(const QJsonObject &json,int type = 1,  QObject *parent = 0);
     DataClass(int type = 1, QObject *parent = 0);
@@ -159,7 +162,9 @@ class DataClass : public QObject
     qreal XValue(int i) const;
     const QJsonObject ExportJSON() const;
     bool ImportJSON(const QJsonObject &topjson);
-
+    inline QVector<qreal> getScaling() const { return d->m_scaling; }
+    inline void setScaling(const QVector<qreal> &scaling) { d->m_scaling = scaling; }
+    
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;
      

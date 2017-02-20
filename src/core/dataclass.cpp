@@ -255,7 +255,7 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;
-    
+    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
     m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
 }
@@ -265,7 +265,7 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
     m_raw_data = new DataTable;    
-    
+    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
     m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
 }
@@ -274,6 +274,7 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(other)
 {
     m_concentration_model = new DataTable(other.m_concentration_model);
+    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
     m_signal_model = new DataTable(other.m_signal_model);
     m_raw_data = new DataTable(other.m_raw_data);
     m_type = other.m_type;
@@ -282,6 +283,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
 {
     m_concentration_model = new DataTable(other->m_concentration_model);
+    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
     m_signal_model = new DataTable(other->m_signal_model);
     m_raw_data = new DataTable(other->m_raw_data);
     m_type = other->m_type;
@@ -305,7 +307,7 @@ DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObje
     d = new DataClassPrivate();
     d->m_type = type;
     ImportJSON(json);
-    
+    d->m_scaling = QVector<qreal>(d->m_concentration_model->columnCount(), 1);
 }
 
 DataClass::DataClass(int type, QObject *parent) :  QObject(parent)
@@ -362,12 +364,12 @@ void DataClass::SwitchConentrations()
 
 qreal DataClass::InitialGuestConcentration(int i)
 {
-    return d->m_concentration_model->data(!HostAssignment(),i);
+    return d->m_concentration_model->data(!HostAssignment(),i)*d->m_scaling[!HostAssignment()];
 }
 
 qreal DataClass::InitialHostConcentration(int i)
 {
-    return d->m_concentration_model->data(HostAssignment(),i);
+    return d->m_concentration_model->data(HostAssignment(),i)*d->m_scaling[HostAssignment()];
 }
 
 

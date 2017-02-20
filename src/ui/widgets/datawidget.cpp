@@ -32,6 +32,7 @@
 #include <QtWidgets/QTableWidget>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QDoubleSpinBox>
 
 #include <QtCharts/QXYSeries>
 
@@ -126,10 +127,10 @@ DataWidget::DataWidget()
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
     m_concentrations = new QTableView;
-        m_concentrations->setMaximumWidth(250);
+    m_concentrations->setMaximumWidth(250);
     m_signals = new QTableView;
-        m_signals->setMaximumWidth(750);
-   
+    m_signals->setMaximumWidth(750);
+    
     QHBoxLayout *hlayout = new QHBoxLayout;
     
     hlayout->addWidget(new QLabel(tr("Project Name")));
@@ -146,13 +147,17 @@ DataWidget::DataWidget()
     group_layout->addWidget(m_concentrations);
     group_layout->addWidget(m_signals);
     m_tables->setLayout(group_layout);
+    
+    
+    
     layout->addLayout(hlayout, 0, 0, 1, 3);
     layout->addWidget(m_datapoints, 1, 0);
     layout->addWidget(m_substances, 2, 0);
     layout->addWidget(m_const_subs,3,0);
-    layout->addWidget(m_signals_count, 4, 0);
-    layout->addWidget(m_tables, 4, 0, 1, 4);
-
+    
+    layout->addWidget(m_signals_count, 5, 0);
+    layout->addWidget(m_tables, 5, 0, 1, 4);
+    
     setLayout(layout);
 }
 
@@ -172,7 +177,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_substances->setText(tr("Considered Substances: %1").arg(m_data.data()->ConcentrationModel()->columnCount()));
     m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->SignalModel()->rowCount()));
     m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SignalCount()));
-
+    
     QVBoxLayout *vlayout = new QVBoxLayout;
     for(int i = 0; i < m_data.data()->SignalCount(); ++i)
     {
@@ -180,7 +185,26 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         vlayout->addWidget(el);
         m_signal_elements << el;
     }
-    layout->addLayout(vlayout, 1,1, 3, 3);
+    layout->addLayout(vlayout, 1,1, 4, 3);
+    
+    QVBoxLayout *scaling_layout = new QVBoxLayout;
+    for(int i = 0; i < m_data.data()->getScaling().size(); ++i)
+    {
+        
+        QDoubleSpinBox *spin_box = new QDoubleSpinBox;
+        spin_box->setMaximum(1);
+        spin_box->setValue(m_data.data()->getScaling()[i]);
+        spin_box->setSingleStep(1e-2);
+        
+        connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
+        m_scaling_boxes << spin_box;
+        QHBoxLayout *lay = new QHBoxLayout;
+        lay->addWidget(new QLabel(tr("scaling factor\n%1. concentration").arg(i + 1)));
+        lay->addWidget(spin_box);
+        scaling_layout->addLayout(lay);
+    }
+    layout->addLayout(scaling_layout,4,0);
+    
 }
 
 void DataWidget::switchHG()
@@ -194,7 +218,6 @@ void DataWidget::RowAdded()
 {
     QStandardItemModel *concentration = new QStandardItemModel;
     QStandardItemModel *signal = new QStandardItemModel;
- 
     m_concentrations->setModel(concentration);
     m_signals->setModel(signal);
     m_concentrations->resizeColumnsToContents();
@@ -207,5 +230,14 @@ void DataWidget::SetProjectName()
     emit NameChanged();
 }
 
+void DataWidget::setScaling()
+{
+    QVector<qreal> scaling;
+    for(int i = 0; i < m_scaling_boxes.size(); ++i)
+        scaling << m_scaling_boxes[i]->value();
+    m_data.data()->setScaling(scaling);
+    m_wrapper.data()->UpdateModel();
+    emit recalculate();
+}
 
 #include "datawidget.moc"

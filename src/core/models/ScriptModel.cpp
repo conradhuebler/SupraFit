@@ -70,12 +70,12 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
     MassResults result;
     //     QMutexLocker locker(&mutex);
     
-    /*    
+        
     
      for(int i = 0; i < Constants().size(); ++i)
         chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
     chai->add(chaiscript::var(A), "A");
-    chai->add(chaiscript::var(B), "B");*/
+    chai->add(chaiscript::var(B), "B");
     QList<qreal > variables;
     variables << A << B;
     Vector values(2);
@@ -83,7 +83,8 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
     values(1) = 0;
     Vector Components(ConstantSize());
     QStringList keys = m_complex_hashed.keys();
-//     qreal m = chai->eval<double>(m_mass_balance[0]);
+
+    qreal m = chai->eval<double>(m_mass_balance[0]);
 //     std::vector<chaiscript::Boxed_Value> m = chai->eval_file< std::vector<chaiscript::Boxed_Value> >("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model.chai");
     
     /*
@@ -93,7 +94,7 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
     
     for(int i = 0; i < m_component_list.size(); ++i)
     {
-        for(int j = 0; j < m_constant_names.size(); ++j) // b11, b21, b12 ...
+     /*   for(int j = 0; j < m_constant_names.size(); ++j) // b11, b21, b12 ...
         {
             qreal compound = 1;
             compound *=  qPow(10,Constant(j));
@@ -113,9 +114,9 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
             }
             values(i) += compound;
         }
-        
+        */
 //           values(i) = qPow(10, Constant(0))*A*B;
- //        values(i) = m;
+         values(i) = m;
     }
     result.Components = Components;
     result.MassBalance = values;
@@ -245,6 +246,10 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
     for(int i = 0; i < Constants().size(); ++i)
         chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
     
+    qreal b21= qPow(10, constants.first());
+    qreal b11 =qPow(10, constants[1]);
+    qreal b12= qPow(10, constants.last());
+    
     QThreadPool *threadpool = new QThreadPool;
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
@@ -264,14 +269,29 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
         qreal host_0 = InitialHostConcentration(i);
         QList<qreal > concentrations = m_solvers[i]->Concentrations();
         MassResults result = MassBalance(concentrations[0], concentrations[1]);
-            
+        qreal host = concentrations[0];
+        qreal guest = concentrations[1]; 
+        
+        qreal complex_11 = b11*host*guest;
+        qreal complex_21 = b21*host*host*guest;
+        qreal complex_12 = b12*host*guest*guest; 
+        
         std::cout << "Components" << result.Components << std::endl;
         std::cout << "Mass Bilanz Vector" << result.MassBalance << std::endl;
         for(int j = 0; j < SignalCount(); ++j)
         {
-            qreal value = concentrations[0]/host_0*m_pure_signals_parameter(j, 0);
-            for(int k = 0; k < result.Components.rows(); ++k)
-                 value += result.Components[k]/host_0*m_complex_signal_parameter(j,k);
+            
+            qreal value = host/host_0*m_pure_signals_parameter(j, 0) + 2*complex_21/host_0*m_complex_signal_parameter(j,0) + complex_11/host_0*m_complex_signal_parameter(j,1) + complex_12/host_0*m_complex_signal_parameter(j,2);
+            
+//             qreal value = concentrations[0]/host_0*m_pure_signals_parameter(j, 0);
+//             if(m_complex_constants().size() == 3)
+//             {
+//                 
+//                 
+//             }
+            
+//             for(int k = 0; k < result.Components.rows(); ++k)
+//                  value += result.Components[k]/host_0*m_complex_signal_parameter(j,k);
             SetSignal(i, j, value);
         }
     }
