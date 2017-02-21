@@ -46,28 +46,25 @@ public:
     virtual Qt::ItemFlags flags(const QModelIndex& index) const Q_DECL_OVERRIDE;
     
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-//     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
     
-    void insertRow(QVector<qreal> row);
-//     void insertColumn(QVector<qreal> column);
-    void setRow(QVector<qreal> vector, int row);
-    void setColumn(QVector<qreal> vector, int column);
+    void insertRow(const QVector<qreal> &row);
+    void setRow(const QVector<qreal> &vector, int row);
+    void setColumn(const QVector<qreal> &vector, int column);
     
-//     QVector<qreal> Row(int row);
     Vector Row(int row);
-//     QVector<qreal> Column(int column);
-//     QVector<qreal> firstRow(); 
     Vector firstRow(); 
-//     inline QVector<qreal> firstColumn() { return Column( 0 ); }
-//     QVector<qreal> lastRow(); 
     Vector lastRow(); 
-//     inline QVector<qreal> lastColumn() { return Column(columnCount() -1 );}
     
     void Debug() const ;
+    inline QStringList header() const { return m_header; }
+    
 private:
     Eigen::MatrixXd m_table;
+    QStringList m_header;
     qreal m_empty;
     QReadWriteLock mutex;
 };
@@ -165,6 +162,7 @@ public:
     bool ImportJSON(const QJsonObject &topjson);
     inline QVector<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QVector<qreal> &scaling) { d->m_scaling = scaling; }
+    void setHeader(const QStringList &strlist);
     
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;

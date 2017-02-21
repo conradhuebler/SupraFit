@@ -48,7 +48,7 @@ QString DoubleList2String(const QList<qreal > &vector)
 QString DoubleList2String(const Vector &vector)
 {
     QString string;
-    for(int i = 0; i < vector.cols(); ++i)    
+    for(int i = 0; i < vector.rows(); ++i)    
         string += QString::number(vector(i)) + " ";
     
     return string.left(string.length() - 1);

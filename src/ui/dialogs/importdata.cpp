@@ -253,7 +253,7 @@ void ImportData::accept()
     m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
     
     QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
-    
+    QStringList header;
     int rows = model->rowCount() - 1; 
     int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
     for(int i = 0; i < rows; ++i)
@@ -264,10 +264,20 @@ void ImportData::accept()
         {
             if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
             {
-                if(j < m_conc->value())
-                    conc << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
-                else 
-                    sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
+                bool ok;
+                qreal var = model->item(i, j)->data(Qt::DisplayRole).toDouble(&ok);
+                
+                if(ok)
+                {                
+                    if(j < m_conc->value())
+                        conc << var;
+                    else 
+                        sign << var;
+                }else
+                {
+                    header << model->item(i, j)->data(Qt::DisplayRole).toString();
+                    import = false;
+                }
             }
             else
             {
@@ -284,6 +294,7 @@ void ImportData::accept()
         if(import)
             m_storeddata->addPoint(conc, sign);
     }
+    m_storeddata->setHeader(header);
     QDialog::accept();
 }
 

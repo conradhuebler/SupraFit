@@ -44,16 +44,20 @@ DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent)
 DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent)
 {
     m_table = Eigen::MatrixXd::Zero(rows, columns);
+    for(int i = 0; i < columns; ++i)
+        m_header << QString::number(i + 1);
 }
 
 DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME whatever
 {
     m_table = other.m_table;
+    m_header = other.m_header;
 }
 
 DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whatever
 {
     m_table = other->m_table;
+    m_header = other->m_header;
 }
 
 
@@ -64,39 +68,15 @@ DataTable::~DataTable()
     
 }
 
-// QVector<qreal> DataTable::firstRow()
-// {
-//     QVector<qreal> vector;
-//     for(int i = 0; i < m_table.cols(); ++i)
-//         vector << m_table(0, i);
-//     return vector;
-// }
-
 Vector DataTable::firstRow()
 {
     return m_table.row(0);
-    /*
-    QList<qreal> vector;
-    for(int i = 0; i < m_table.cols(); ++i)
-        vector << m_table(0, i);
-    return vector;*/
 }
 
-// QVector<qreal> DataTable::lastRow()
-// {
-//     QVector<qreal> vector;
-//     for(int i = 0; i < m_table.cols(); ++i)
-//         vector << m_table(m_table.rows()-1, i);
-//     return vector;
-// }
 
 Vector DataTable::lastRow()
 {
     return m_table.row(m_table.rows()-1);
-//     QList<qreal> vector;
-//     for(int i = 0; i < m_table.cols(); ++i)
-//         vector << m_table(m_table.rows()-1, i);
-//     return vector;
 }
 
 void DataTable::Debug() const
@@ -104,17 +84,42 @@ void DataTable::Debug() const
     std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
     std::cout << m_table <<std::endl;
 }
+
 Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
 {
     Q_UNUSED(index);
     return Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemNeverHasChildren;
 }
+
 int DataTable::columnCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent)
     if(m_table.size() != 0)
         return m_table.cols();
     return 0;
+    
+}
+
+QVariant DataTable::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if(orientation == Qt::Orientation::Horizontal)
+    {
+        if(section < m_header.size())
+            return QVariant(m_header.at(section));
+        else 
+            return QVariant(section);
+    }
+    return QAbstractTableModel::headerData(section, orientation, role);
+}
+
+bool DataTable::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role)
+{
+    if(section < m_header.size() && role == Qt::EditRole)
+    {
+        m_header[section] = value.toString();
+        return true;
+    }
+    return false;
     
 }
 
@@ -173,57 +178,16 @@ qreal & DataTable::data(int column, int row)
         }
 }
 
-// QVector<qreal> DataTable::Row(int row)
-// {
-//     QVector<qreal> vector;
-//     if(row <= m_table.rows())
-//         for(int i = 0; i < m_table.cols(); ++i)
-//             vector << m_table(row, i);
-//     else
-//         qDebug() << "Row exceeds size of table!";
-//     return vector;
-//     
-// }
-
 Vector DataTable::Row(int row)
 {
-    /*
-    QList<qreal> vector;
-    if(row <= m_table.rows())
-        for(int i = 0; i < m_table.cols(); ++i)
-            vector << m_table(row, i);
-    else
-        qDebug() << "Row exceeds size of table!";
-    return vector;
-    */
     return m_table.row(row);
 }
 
-// QVector<qreal> DataTable::Column(int column)
-// {
-//     QVector<qreal> result;
-//     for(int i = 0; i < m_table.size(); ++i)
-//     {
-//         if(column < m_table[i].size())
-//             result << m_table[i][column];
-//         else
-//             qDebug() << "Column exceeds size of table!";
-//     }
-//     return result;
-// }
-
-// void DataTable::insertColumn(QVector<qreal> column)
-// {
-//     if(m_table.size() != 0)
-//     {
-//         if((m_table.first().size() == column.size()))
-//             m_table << column.toList();
-//     }else
-//         m_table << column.toList();
-// }
-
-void DataTable::insertRow(QVector<qreal> row)
+void DataTable::insertRow(const QVector<qreal> &row)
 {
+    while(m_header.size() < row.size())
+        m_header << QString::number(m_header.size() + 1);
+    
     if(m_table.cols() == 0)
         m_table.conservativeResize(m_table.rows() + 1, row.size());
     else
@@ -233,20 +197,18 @@ void DataTable::insertRow(QVector<qreal> row)
         m_table(m_table.rows() -1, i) = row[i];
 }
 
-void DataTable::setColumn(QVector<qreal> vector, int column)
+void DataTable::setColumn(const QVector<qreal> &vector, int column)
 {
     Q_UNUSED(vector);
     Q_UNUSED(column);
     return;
 }
 
-void DataTable::setRow(QVector<qreal> vector, int row)
+void DataTable::setRow(const QVector<qreal> &vector, int row)
 {
     if(m_table.rows() >= row)
         for(int i = 0; i < vector.size(); ++i)
             m_table(row, i) = vector[i];   
-    //     Q_UNUSED(vector);
-    //     Q_UNUSED(row);
     return;
 }
 
@@ -388,6 +350,7 @@ const QJsonObject DataClass::ExportJSON() const
     json["concentrations"] = concentrationObject;
     json["signals"] = signalObject;
     json["datatype"] = QString("discrete");
+    json["header"] = (QStringList() << d->m_concentration_model->header() << d->m_signal_model->header()).join("|");
     return json;
 }
 
@@ -422,6 +385,8 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
             d->m_concentration_model->insertRow(concentrationsVector);
             d->m_signal_model->insertRow(signalVector);
         }
+            QStringList header = topjson["data"].toObject()["header"].toString().split("|");
+            setHeader(header);
         return true;
     }
     else if(keys.size() != DataPoints())
@@ -439,7 +404,23 @@ bool DataClass::ImportJSON(const QJsonObject &topjson)
         d->m_signal_model->setRow(signalVector, row);
     }
     
-    if("discrete" == topjson["datatype"].toString())
+    if("discrete" == topjson["data"].toObject()["datatype"].toString())
         d->m_type = 1;
+    QStringList header = topjson["data"].toObject()["header"].toString().split("|");
+    setHeader(header);
     return true;
+}
+
+void DataClass::setHeader(const QStringList& strlist)
+{
+    if(strlist.size() == (d->m_concentration_model->columnCount() + d->m_signal_model->columnCount()))
+    {
+        for(int i = 0; i < strlist.size(); ++i)
+        {
+            if(i < d->m_concentration_model->columnCount())
+                d->m_concentration_model->setHeaderData(i, Qt::Horizontal, (strlist[i]), Qt::EditRole);
+            else
+                d->m_signal_model->setHeaderData(i - d->m_concentration_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::EditRole);
+        }
+    }
 }

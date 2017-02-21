@@ -38,6 +38,7 @@ private:
     
     bool m_table, m_allint, m_file_supported;
     QString m_filename;
+    QString sep;
     QStringList m_filecontent;
     int m_lines;
 };

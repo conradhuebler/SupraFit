@@ -62,9 +62,9 @@ public:
     ImportData(QWidget *parent = 0);
     ~ImportData();
 
-     inline DataClass getStoredData(){ return *m_storeddata;}
-private:
+    inline DataClass getStoredData(){ return *m_storeddata;}
     
+private:
     void setUi();
     
     QPointer<TableView > m_table;
@@ -75,6 +75,7 @@ private:
     QPointer<DataClass > m_storeddata;
     QPointer<QCheckBox > m_switch_concentration;
     QString m_filename;
+    
 private slots:
     void LoadFile();
     void SelectFile();

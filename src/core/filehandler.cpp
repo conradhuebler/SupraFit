@@ -41,8 +41,17 @@ void FileHandler::ReadFile()
         qDebug() << file.errorString();
 //         return; //FIXME Hää
     }
-
+    int tab = 0, semi = 0;
     m_filecontent = QString(file.readAll()).split("\n");
+    for(const QString &str : qAsConst(m_filecontent))
+    {
+        tab += str.count("\t");
+        semi+= str.count(";");
+    }
+    if(tab > semi)
+        sep = "\t";
+    else
+        sep = ";";
     m_lines = m_filecontent.size();
 }
 
@@ -54,15 +63,15 @@ void FileHandler::CheckForTable()
     {
         
         if(size)
-            m_table = (size == m_filecontent[i].simplified().split(" ").size());
-        size = m_filecontent[i].simplified().split(" ").size();
+            m_table = (size == m_filecontent[i].split(sep).size());
+        size = m_filecontent[i].split(sep).size();
         
         if(!m_table)
             return;
         
         if(m_table)
         {
-            QStringList elements = m_filecontent[i].simplified().split(" ");
+            QStringList elements = m_filecontent[i].split("\n");
             for(int j = 0; j < elements.size(); ++j)
             {
                 if(elements[j].contains(QRegExp("[Aa-Zz]")))
@@ -79,7 +88,7 @@ QPointer<QStandardItemModel> FileHandler::getData() const
     for(const QString &line: qAsConst(m_filecontent))
     {
         QList<QStandardItem *> row;
-        QStringList items = line.simplified().split(" ");
+        QStringList items = line.split(sep);
         for(const QString &item: qAsConst(items))
             row.append(new QStandardItem(QString(item).replace(",", ".")));
         model->appendRow(row);

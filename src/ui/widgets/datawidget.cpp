@@ -53,7 +53,10 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     connect(m_show, SIGNAL(stateChanged(int)), this, SLOT(ShowLine(int)));
     
     m_name = new QLineEdit;
-    m_name->setText(tr("Signal %1").arg(m_no + 1));
+    QString name;
+    name = data.data()->SignalModel()->headerData(m_no, Qt::Horizontal).toString();
+    m_name->setText(name);
+    m_data_series->setName(name);
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(setName(QString)));
     
     m_choose = new QPushButton(tr("Color"));
