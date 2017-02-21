@@ -63,11 +63,23 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     m_choose->setFlat(true);
     connect(m_choose, SIGNAL(clicked()), this, SLOT(chooseColor()));
     
+    m_markerSize = new QDoubleSpinBox;
+    m_markerSize->setMaximum(20);
+    m_markerSize->setMinimum(0.1);
+    m_markerSize->setSingleStep(1e-1);
+    m_markerSize->setValue(10);
+    setMarkerSize(10);
+    connect(m_markerSize, SIGNAL(valueChanged(qreal)), this, SLOT(setMarkerSize(qreal)));
+    
+    m_rectangle = new QCheckBox(tr("Rectangle"));
+    connect(m_rectangle, SIGNAL(stateChanged(int)), this, SLOT(setMarkerShape(int)));
     
     layout->addWidget(m_name, 0, 0);
     layout->addWidget(m_show, 0, 1);
     layout->addWidget(m_choose, 0, 2);
-    
+    layout->addWidget(new QLabel(tr("Size")), 0, 3);
+    layout->addWidget(m_markerSize, 0, 4);
+    layout->addWidget(m_rectangle, 0, 5);
     setLayout(layout);
     ColorChanged(m_wrapper.data()->color(m_no));
 }
@@ -120,6 +132,19 @@ void SignalElement::setName(const QString &str)
 {
     m_data_series->setName(str);
     emit m_data_series->NameChanged(str);
+}
+
+void SignalElement::setMarkerSize(qreal value)
+{
+    m_data_series->setMarkerSize(value);
+}
+
+void SignalElement::setMarkerShape(int shape)
+{
+    if(shape)
+        m_data_series->setMarkerShape(ScatterSeries::MarkerShapeRectangle);
+    else
+        m_data_series->setMarkerShape(ScatterSeries::MarkerShapeCircle);
 }
 
 DataWidget::DataWidget() 
