@@ -189,6 +189,7 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
         m_chart->createDefaultAxes();
     }
     m_chart->legend()->markers(series).first()->setVisible(legend);
+    connect(series, SIGNAL(visibleChanged()), this, SLOT(formatAxis()));
     if(!connected)
         if(connect(this, SIGNAL(AxisChanged()), this, SLOT(formatAxis())))
             connected = true;
@@ -200,10 +201,12 @@ void ChartView::formatAxis()
     if(m_pending || m_chart->series().isEmpty())
         return;
     m_pending = true;
-    qreal x_min = 0;
+    // This is much hacking and I don't like it, I will work on this in a muse minute
+    
+    qreal x_min = 1000;
     qreal x_max = 0;
     qreal y_max = 0;
-    qreal y_min = 0;
+    qreal y_min = 1000;
     for(QtCharts::QAbstractSeries *series: m_chart->series())
     {
         QtCharts::QXYSeries *serie = qobject_cast<QtCharts::QXYSeries *>(series);
@@ -220,21 +223,56 @@ void ChartView::formatAxis()
             }
         }
     }
+
+    qreal y_scale = y_max-y_min;
+    qreal x_real_max = -2, x_real_min = -2, y_real_max = -2, y_real_min = -2;
+    double increment = 0.01;
+    if(y_min < 0)
+        increment = 0.0001;
+    for(double i = -1; i < 30; i += increment)
+    { 
+        if(i > y_min && y_real_min == -2)
+        {
+            if(y_scale > 0.5)
+                y_real_min = i-0.5;
+            else if(y_scale < 0.5)
+                y_real_min = i-increment;
+        }
+        
+        if(i > y_max && y_real_max == -2)
+        {
+            if(y_scale > 0.5)
+                y_real_max = i+0.5;
+            else if(y_scale < 0.5)
+                y_real_max = i+increment;
+        }
+
+        if(i > x_max && x_real_max == -2)
+            x_real_max = i+0.5;
+        
+        if(i > x_min && x_real_min == -2)
+            x_real_min = i-0.5;
+    }
+        
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
-    y_axis->setMax(y_max);
-    y_axis->setMin(y_min);
-    y_axis->applyNiceNumbers();
+    if(y_real_min < 0)
+        {
+            qreal y_real_min_2 = qMin(y_real_min, -1*y_real_max);
+            qreal y_real_max_2 = qMax(y_real_max, -1*y_real_min);
+            y_real_max = y_real_max_2;
+            y_real_min = y_real_min_2;
+        }
+    y_axis->setMax(y_real_max);
+    y_axis->setMin(y_real_min);
+    y_axis->setTickCount(y_real_max-y_real_min);
     y_axis->setTitleText(m_y_axis);
 
     
      QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-     x_axis->setMax(x_max*1.1);
-     x_axis->setMin(x_min);
-     /*
-      * In some cases when x_max is slightly higher than five, the nice numbers result in x_max = 10, which looks not nice at all
-      */
-     if(fmod(x_max,5) > 1)
-        x_axis->applyNiceNumbers();
+     x_axis->setMax(x_real_max);
+     x_axis->setMin(0);
+     x_axis->setTickCount((x_real_max+0.2));
+
      x_axis->setTitleText(m_x_axis);
      m_pending = false;
 }
