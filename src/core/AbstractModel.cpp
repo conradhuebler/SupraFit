@@ -148,7 +148,7 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 
 void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 {
-    if(!ActiveSignals(j))
+    if(!ActiveSignals(j) || !SignalModel()->isChecked(j,i))
         return;
     if(std::isnan(value) || std::isinf(value))
     {

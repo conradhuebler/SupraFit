@@ -44,7 +44,7 @@
 
 SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWrapper> wrapper, int no, QWidget *parent) : QGroupBox(parent), m_data(data), m_wrapper(wrapper), m_no(no)
 {
-    m_data_series = qobject_cast<ScatterSeries *>(m_wrapper.data()->DataMapper(m_no)->series());
+    m_data_series = qobject_cast<ScatterSeries *>(m_wrapper.data()->Series(m_no)); //DataMapper(m_no)->series());
     QGridLayout *layout = new QGridLayout;
     
     m_show = new QCheckBox;
@@ -198,7 +198,9 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_data = dataclass;
     m_wrapper = wrapper; 
     m_concentrations->setModel(m_data.data()->ConcentrationModel());
+    
     m_signals->setModel(m_data.data()->SignalModel());
+    connect(m_data.data()->SignalModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(HidePoint(QModelIndex,QModelIndex)));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
     m_name->setText(qApp->instance()->property("projectname").toString());
@@ -266,6 +268,12 @@ void DataWidget::setScaling()
     m_data.data()->setScaling(scaling);
     m_wrapper.data()->UpdateModel();
     emit recalculate();
+}
+
+void DataWidget::HidePoint(QModelIndex index, QModelIndex index2)
+{
+//     qDebug() << index.row() << index.column();
+//      m_wrapper.data()->Series(index.column())->remove(index.row());
 }
 
 #include "datawidget.moc"

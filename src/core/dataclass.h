@@ -46,11 +46,12 @@ public:
     virtual Qt::ItemFlags flags(const QModelIndex& index) const Q_DECL_OVERRIDE;
     
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
     virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
-    
+    bool isChecked(int i, int j) const;
     void insertRow(const QVector<qreal> &row);
     void setRow(const QVector<qreal> &vector, int row);
     void setColumn(const QVector<qreal> &vector, int column);
@@ -61,12 +62,14 @@ public:
     
     void Debug() const ;
     inline QStringList header() const { return m_header; }
+    inline void setCheckable(bool checkable) { m_checkable = checkable; }
     
 private:
-    Eigen::MatrixXd m_table;
+    Eigen::MatrixXd m_table, m_checked_table;
     QStringList m_header;
     qreal m_empty;
     QReadWriteLock mutex;
+    bool m_checkable;
 };
 
 

@@ -128,8 +128,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_include->setChecked(m_model->ActiveSignals()[m_no]);
     connect(m_include, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
     layout->addWidget(m_include, 1, 0);
-    m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->DataMapper(m_no)->series());
-    m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->DataMapper(m_no)->series());
+    m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no)); //DataMapper(m_no)->series());
+    m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no)); //DataMapper(m_no)->series());
     m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_show = new QCheckBox;
@@ -147,7 +147,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     setMaximumHeight(75);
     setMinimumHeight(75); 
     ColorChanged(m_charts.data_wrapper->color(m_no));
-    connect(m_charts.data_wrapper->DataMapper(m_no)->series(), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
+    connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    

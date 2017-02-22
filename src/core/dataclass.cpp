@@ -37,13 +37,14 @@
 
 #include <iostream>
 
-DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent)
+DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent), m_checkable(false)
 {
 }
 
-DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent)
+DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent), m_checkable(false)
 {
     m_table = Eigen::MatrixXd::Zero(rows, columns);
+    m_checked_table = Eigen::MatrixXd::Ones(rows, columns);
     for(int i = 0; i < columns; ++i)
         m_header << QString::number(i + 1);
 }
@@ -52,12 +53,16 @@ DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME wha
 {
     m_table = other.m_table;
     m_header = other.m_header;
+    m_checked_table = other.m_checked_table;
+    m_checkable = other.m_checkable;
 }
 
 DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whatever
 {
     m_table = other->m_table;
     m_header = other->m_header;
+    m_checked_table = other->m_checked_table;
+    m_checkable = other->m_checkable;
 }
 
 
@@ -88,7 +93,13 @@ void DataTable::Debug() const
 Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
 {
     Q_UNUSED(index);
-    return Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemNeverHasChildren;
+    Qt::ItemFlags flags;
+    if(m_checkable)
+        flags = Qt::ItemIsEnabled | Qt::ItemNeverHasChildren | Qt::ItemIsUserCheckable;
+    else
+        flags = Qt::ItemIsEnabled | Qt::ItemNeverHasChildren;
+    
+    return flags;
 }
 
 int DataTable::columnCount(const QModelIndex& parent) const
@@ -133,8 +144,54 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
 {
     if(role == Qt::DisplayRole || role == Qt::EditRole )
         return data(index.column(), index.row());
+    else if (role == Qt::CheckStateRole && m_checkable)
+        return isChecked(index.column(), index.row()); //m_checked_table(index.column(), index.row());
     else
         return QVariant();
+}
+
+bool DataTable::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if(role == Qt::EditRole)
+    {
+        bool ok;
+        qreal var = value.toDouble(&ok);
+        if(ok)
+        {
+            data(index.column(), index.row()) = var;
+            emit dataChanged(index, index);
+        }
+        return ok;
+    }else if(role == Qt::CheckStateRole)
+    {
+        if(m_checked_table(index.row(), index.column()) == 0)
+            m_checked_table(index.row(), index.column()) = 1;
+        else
+            m_checked_table(index.row(), index.column()) = 0;
+        emit dataChanged(index, index);
+        return true;
+    }
+    
+}
+
+
+bool DataTable::isChecked(int column, int row) const
+{
+    if(row < m_checked_table.rows())
+        if(column < m_checked_table.cols())
+        {
+            return m_checked_table(row,column);
+        }
+        else
+        {
+            qDebug() << "Column exceeds size of table!";
+            return 0;
+        }
+        else
+        {
+            qDebug() << "Row exceeds size of table!";
+            return 0;
+        }
 }
 
 qreal DataTable::data(int column, int row) const
@@ -189,12 +246,21 @@ void DataTable::insertRow(const QVector<qreal> &row)
         m_header << QString::number(m_header.size() + 1);
     
     if(m_table.cols() == 0)
+    {
         m_table.conservativeResize(m_table.rows() + 1, row.size());
+        m_checked_table.conservativeResize(m_checked_table.rows() + 1, row.size());
+    }
     else
+    {
         m_table.conservativeResize(m_table.rows() + 1, m_table.cols());
+        m_checked_table.conservativeResize(m_checked_table.rows() + 1, m_checked_table.cols());
+    }
     
     for(int i = 0; i < row.size(); ++i)
+    {
         m_table(m_table.rows() -1, i) = row[i];
+        m_checked_table(m_checked_table.rows() - 1, i) = 1;
+    }
 }
 
 void DataTable::setColumn(const QVector<qreal> &vector, int column)
@@ -216,6 +282,7 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
 {
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
+    m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;
     m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
@@ -226,6 +293,7 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
 {
     m_concentration_model = new DataTable;
     m_signal_model = new DataTable;
+    m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;    
     m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));

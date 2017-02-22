@@ -19,10 +19,27 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 
+#include <QtCharts/QAbstractSeries>
 #include <QStandardItemModel>
 
 #include "chartwrapper.h"
 
+// LineSeries::LineSeries(LineSeries *other)
+// {
+//     setColor(other->pen().color());
+//     QVector<QPointF> points = other->pointsVector();
+//     for(int i = 0; i < points.size(); ++i)
+//         append(points[i]);
+// }
+// 
+// 
+// ScatterSeries::ScatterSeries(ScatterSeries *other)
+// {
+//     setColor(other->pen().color());
+//     QVector<QPointF> points = other->pointsVector();
+//     for(int i = 0; i < points.size(); ++i)
+//         append(points[i]);
+// }
 
  void LineSeries::setColor(const QColor &color) 
  { 
@@ -98,7 +115,14 @@ void ChartWrapper::setData(QPointer<DataClass> model)
             model->setModel(m_plot_signal);
             model->setXColumn(0);
             model->setYColumn(j + 1);
-            m_plot_mapper<< model;   
+            m_plot_mapper<< model;  
+            QPointer<QtCharts::QXYSeries > series;
+            if(qobject_cast<AbstractTitrationModel *>(m_model))
+                series = new LineSeries;
+            else
+                series = new ScatterSeries;
+            model->setSeries(series);
+            m_stored_series << series;
         }
     }
 }

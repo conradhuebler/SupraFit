@@ -95,10 +95,11 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
     m_data_mapper->setData(m_rawdata.data());
     for(int i = 0; i < m_rawdata.data()->SignalCount(); ++i)
     {
-        QtCharts::QVXYModelMapper * signal= m_data_mapper->DataMapper(i);
-        ScatterSeries *signal_series = new ScatterSeries;
-        signal->setSeries(signal_series);
-        signal_series->setName("Signal " + QString::number(i + 1));
+//         QtCharts::QVXYModelMapper * signal= m_data_mapper->DataMapper(i);
+        ScatterSeries *signal_series = (qobject_cast<ScatterSeries *>(m_data_mapper->Series(i)));
+        m_data_mapper->setSeries(signal_series, i);
+//         signal->setSeries(signal_series);
+//         signal_series->setName("Signal " + QString::number(i + 1));
         m_signalview->addSeries(signal_series, true);
         QPair<qreal, qreal > minmax = Series2MinMax(signal_series);
         min_shift = minmax.first;
@@ -132,25 +133,29 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
     {
         if(model->Type() != 3)
         {
-            QtCharts::QVXYModelMapper * mapper = signal_wrapper->DataMapper(i);
-            LineSeries *model_series = new LineSeries;
+//             QtCharts::QVXYModelMapper * mapper = signal_wrapper->DataMapper(i);
+//             LineSeries *model_series = new LineSeries;
+            LineSeries *model_series = (qobject_cast<LineSeries *>(signal_wrapper->Series(i)));
+            signal_wrapper->setSeries(model_series, i);
             connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
             connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));
-            mapper->setSeries(model_series);
-            model_series->setName("Signal " + QString::number(i + 1));
+//             mapper->setSeries(model_series);
+//             model_series->setName("Signal " + QString::number(i + 1));
             model_series->setColor(m_data_mapper->color(i));
-            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
+            connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
             m_signalview->addSeries(model_series, true);
         }
         if(model->Type() != 3)
         {
-            QtCharts::QVXYModelMapper * error= error_wrapper->DataMapper(i);
-            LineSeries *error_series = new LineSeries;
-            error->setSeries(error_series);
-            error_series->setName("Signal " + QString::number(i + 1));
+//             QtCharts::QVXYModelMapper * error= error_wrapper->DataMapper(i);
+//             LineSeries *error_series = new LineSeries;
+//             error->setSeries(error_series);
+            LineSeries *error_series = (qobject_cast<LineSeries *>(error_wrapper->Series(i)));
+            error_wrapper->setSeries(error_series, i);
+//             error_series->setName("Signal " + QString::number(i + 1));
             error_series->setColor(m_data_mapper->color(i));
-            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
-            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(visibleChanged(int)), error_series, SLOT(ShowLine(int)));
+            connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
+            connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), error_series, SLOT(ShowLine(int)));
             m_errorview->addSeries(error_series, true);
         }
     }
@@ -203,7 +208,7 @@ void ChartWidget::updateUI()
     m_errorchart->setTheme(theme);
     
      for(int i = 0; i < m_rawdata.data()->SignalCount(); ++i)
-         m_data_mapper->DataMapper(i)->series()->setColor(m_data_mapper->color(i));
+         m_data_mapper->Series(i)->setColor(m_data_mapper->color(i));
 
 }
 

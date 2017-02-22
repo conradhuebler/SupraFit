@@ -26,6 +26,7 @@
 
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
+#include <QtCharts/QXYSeries>
 #include <QtCharts/QVXYModelMapper>
 
 class DataClass;
@@ -40,6 +41,7 @@ class LineSeries : public QtCharts::QLineSeries
   
 public:
     inline LineSeries() {}
+//     LineSeries(LineSeries *other);
     inline ~LineSeries() {}
     
 public slots:
@@ -55,6 +57,7 @@ class ScatterSeries : public QtCharts::QScatterSeries
   
 public:
     inline ScatterSeries() {}
+//     ScatterSeries(ScatterSeries *other);
     inline ~ScatterSeries() {}
     
 public slots:
@@ -83,6 +86,8 @@ public:
     void setData(QPointer< DataClass > model);
     inline void setDataTable(const DataTable *table) { m_table = table; }
     inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_plot_mapper[i]; }
+    inline QPointer<QtCharts::QXYSeries > Series(int i) { return m_stored_series[i]; }
+    inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
     inline void setPlotMode(PlotMode plotmode) { m_plotmode = plotmode; }
     
@@ -96,6 +101,7 @@ private:
     const DataTable *m_table;
     QStandardItemModel *m_plot_signal;
     QList<QPointer<QtCharts::QVXYModelMapper> > m_plot_mapper;
+    QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
     PlotMode m_plotmode;
     QPointer< DataClass > m_model;
     
