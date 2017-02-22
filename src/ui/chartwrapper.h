@@ -41,7 +41,6 @@ class LineSeries : public QtCharts::QLineSeries
   
 public:
     inline LineSeries() {}
-//     LineSeries(LineSeries *other);
     inline ~LineSeries() {}
     
 public slots:
@@ -57,7 +56,6 @@ class ScatterSeries : public QtCharts::QScatterSeries
   
 public:
     inline ScatterSeries() {}
-//     ScatterSeries(ScatterSeries *other);
     inline ~ScatterSeries() {}
     
 public slots:
@@ -85,7 +83,6 @@ public:
     ~ChartWrapper();
     void setData(QPointer< DataClass > model);
     inline void setDataTable(const DataTable *table) { m_table = table; }
-    inline QPointer<QtCharts::QVXYModelMapper> DataMapper(int i) { return m_plot_mapper[i]; }
     inline QPointer<QtCharts::QXYSeries > Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
@@ -97,9 +94,8 @@ public slots:
 private:
     QColor ColorCode(int i) const;
     qreal XValue(int i) const;
-    void CreateModel();
     const DataTable *m_table;
-    QStandardItemModel *m_plot_signal;
+    QList<QStandardItemModel *> m_plot_signal_list;
     QList<QPointer<QtCharts::QVXYModelMapper> > m_plot_mapper;
     QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
     PlotMode m_plotmode;
@@ -107,6 +103,8 @@ private:
     
 signals:
     void ModelChanged();
+    void stopAnimiation();
+    void restartAnimation();
 };
 
 #endif // CHARTWRAPPER_H

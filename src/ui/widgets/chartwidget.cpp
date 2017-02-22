@@ -50,11 +50,9 @@ ChartWidget::ChartWidget()
 {
     
     m_signalchart = new QtCharts::QChart;
-    m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     
     m_errorchart = new QtCharts::QChart;
-    m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    
+        
     m_signalview = new ChartView(m_signalchart);
     m_signalview->setYAxis("Shift [ppm]");
     m_errorview = new ChartView(m_errorchart);
@@ -73,7 +71,7 @@ ChartWidget::ChartWidget()
     
     m_signalchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
     m_errorchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
-    
+    restartAnimation();
     setLayout(layout);
     max_shift = 0;
     min_shift = 0;
@@ -93,13 +91,12 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
     m_data_mapper->setPlotMode(j);
     m_data_mapper->setDataTable(m_rawdata.data()->SignalModel());
     m_data_mapper->setData(m_rawdata.data());
+    connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
+    connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
     for(int i = 0; i < m_rawdata.data()->SignalCount(); ++i)
     {
-//         QtCharts::QVXYModelMapper * signal= m_data_mapper->DataMapper(i);
         ScatterSeries *signal_series = (qobject_cast<ScatterSeries *>(m_data_mapper->Series(i)));
         m_data_mapper->setSeries(signal_series, i);
-//         signal->setSeries(signal_series);
-//         signal_series->setName("Signal " + QString::number(i + 1));
         m_signalview->addSeries(signal_series, true);
         QPair<qreal, qreal > minmax = Series2MinMax(signal_series);
         min_shift = minmax.first;
@@ -133,26 +130,20 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
     {
         if(model->Type() != 3)
         {
-//             QtCharts::QVXYModelMapper * mapper = signal_wrapper->DataMapper(i);
-//             LineSeries *model_series = new LineSeries;
             LineSeries *model_series = (qobject_cast<LineSeries *>(signal_wrapper->Series(i)));
             signal_wrapper->setSeries(model_series, i);
-            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
-            connect(m_data_mapper->DataMapper(i)->series(), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));
-//             mapper->setSeries(model_series);
-//             model_series->setName("Signal " + QString::number(i + 1));
+            connect(m_data_mapper->Series(i), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
+            connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));    
+            model_series->setName(m_data_mapper.data()->Series(i)->name());
             model_series->setColor(m_data_mapper->color(i));
             connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
             m_signalview->addSeries(model_series, true);
         }
         if(model->Type() != 3)
         {
-//             QtCharts::QVXYModelMapper * error= error_wrapper->DataMapper(i);
-//             LineSeries *error_series = new LineSeries;
-//             error->setSeries(error_series);
             LineSeries *error_series = (qobject_cast<LineSeries *>(error_wrapper->Series(i)));
             error_wrapper->setSeries(error_series, i);
-//             error_series->setName("Signal " + QString::number(i + 1));
+            error_series->setName(m_data_mapper.data()->Series(i)->name());
             error_series->setColor(m_data_mapper->color(i));
             connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
             connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), error_series, SLOT(ShowLine(int)));
@@ -227,4 +218,15 @@ QPair<qreal, qreal > ChartWidget::Series2MinMax(const QtCharts::QXYSeries *serie
     return values;
 }
 
+void ChartWidget::stopAnimiation()
+{
+    m_signalchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+    m_errorchart->setAnimationOptions(QtCharts::QChart::NoAnimation);  
+}
+
+void ChartWidget::restartAnimation()
+{
+    m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+}
 #include "chartwidget.moc"

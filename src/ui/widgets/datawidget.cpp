@@ -200,7 +200,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_concentrations->setModel(m_data.data()->ConcentrationModel());
     
     m_signals->setModel(m_data.data()->SignalModel());
-    connect(m_data.data()->SignalModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(HidePoint(QModelIndex,QModelIndex)));
+    connect(m_data.data()->SignalModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
     m_name->setText(qApp->instance()->property("projectname").toString());
@@ -270,10 +270,11 @@ void DataWidget::setScaling()
     emit recalculate();
 }
 
-void DataWidget::HidePoint(QModelIndex index, QModelIndex index2)
+void DataWidget::HidePoint()
 {
-//     qDebug() << index.row() << index.column();
-//      m_wrapper.data()->Series(index.column())->remove(index.row());
+    m_wrapper.data()->stopAnimiation();
+    m_wrapper.data()->UpdateModel();
+    m_wrapper.data()->restartAnimation();
 }
 
 #include "datawidget.moc"

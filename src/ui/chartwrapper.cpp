@@ -24,23 +24,6 @@
 
 #include "chartwrapper.h"
 
-// LineSeries::LineSeries(LineSeries *other)
-// {
-//     setColor(other->pen().color());
-//     QVector<QPointF> points = other->pointsVector();
-//     for(int i = 0; i < points.size(); ++i)
-//         append(points[i]);
-// }
-// 
-// 
-// ScatterSeries::ScatterSeries(ScatterSeries *other)
-// {
-//     setColor(other->pen().color());
-//     QVector<QPointF> points = other->pointsVector();
-//     for(int i = 0; i < points.size(); ++i)
-//         append(points[i]);
-// }
-
  void LineSeries::setColor(const QColor &color) 
  { 
      QPen pen = QtCharts::QLineSeries::pen();
@@ -92,9 +75,10 @@ ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent)
 
 ChartWrapper::~ChartWrapper()
 {
-     for(int i = 0; i < m_plot_mapper.size(); ++i)
+     for(int i = 0; i < m_stored_series.size(); ++i)
      {
-          delete m_plot_mapper[i]->series();
+          m_stored_series[i]->clear();
+          delete m_stored_series[i];
      }
 }
 
@@ -103,59 +87,35 @@ void ChartWrapper::setData(QPointer<DataClass> model)
 {
     m_model = model; 
     
-    CreateModel(); 
     if(qobject_cast<AbstractTitrationModel *>(m_model))
         connect(m_model, SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     
-    if(m_plot_mapper.isEmpty())
+    if(m_stored_series.isEmpty())
     {
         for(int j = 0; j < m_model->SignalCount(); ++j)
-        {
-            QPointer<QtCharts::QVXYModelMapper> model = new QtCharts::QVXYModelMapper;
-            model->setModel(m_plot_signal);
-            model->setXColumn(0);
-            model->setYColumn(j + 1);
-            m_plot_mapper<< model;  
+        { 
             QPointer<QtCharts::QXYSeries > series;
             if(qobject_cast<AbstractTitrationModel *>(m_model))
                 series = new LineSeries;
             else
                 series = new ScatterSeries;
-            model->setSeries(series);
             m_stored_series << series;
         }
     }
-}
-
-void ChartWrapper::CreateModel()
-{
-    m_plot_signal = new QStandardItemModel(m_table->rowCount(), m_table->columnCount()+1);
-    for(int i = 0; i < m_model->DataPoints(); ++i)
-    {
-        QString x = QString::number(XValue(i));
-        
-        QStandardItem *item;
-        item = new QStandardItem(x);
-        m_plot_signal->setItem(i,0, item);
-        for(int j = 0; j < m_model->SignalCount(); ++j)
-        {
-            item = new QStandardItem(QString::number(m_table->data(j,i)));
-            m_plot_signal->setItem(i,j+1, item);
-        }
-    }
+    UpdateModel();
 }
 
 void ChartWrapper::UpdateModel()
 {
+    for(int j = 0; j < m_model->SignalCount(); ++j)
+        m_stored_series[j]->clear();
     for(int i = 0; i < m_model->DataPoints(); ++i)
     {
-        QString x = QString::number(XValue(i));
-       
-        m_plot_signal->item(i,0)->setData(x, Qt::DisplayRole);
-        
+        double x = XValue(i);
         for(int j = 0; j < m_model->SignalCount(); ++j)
-        { 
-            m_plot_signal->item(i,j+1)->setData(QString::number(m_table->data(j,i)), Qt::DisplayRole);
+        {
+            if(m_model->SignalModel()->isChecked(j,i))
+                m_stored_series[j]->append(x, m_table->data(j,i));
         }
     }
     emit ModelChanged();
@@ -163,14 +123,14 @@ void ChartWrapper::UpdateModel()
 
 QColor ChartWrapper::color(int i) const
 {
-    if(m_plot_mapper.size() <= i)
+    if(m_stored_series.size() <= i)
         return ColorCode(i);
     else
     {
-        QPointer<QtCharts::QVXYModelMapper> mapper = m_plot_mapper[i];
-        if(!mapper)
+        QPointer<QtCharts::QXYSeries> series = m_stored_series[i];
+        if(!series)
             return ColorCode(i);
-        return m_plot_mapper[i]->series()->color();
+        return m_stored_series[i]->color();
     }
 }
 

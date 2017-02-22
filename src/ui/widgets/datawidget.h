@@ -98,7 +98,7 @@ private slots:
     void switchHG();
     void SetProjectName();
     void setScaling();
-    void HidePoint(QModelIndex index, QModelIndex index2);
+    void HidePoint();
     
 signals:
     void recalculate();

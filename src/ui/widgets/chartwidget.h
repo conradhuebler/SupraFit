@@ -75,6 +75,8 @@ private slots:
     void formatAxis();
     void Repaint();
     void updateUI();
+    void stopAnimiation();
+    void restartAnimation();
 };
 
 #endif // CHARTWIDGET_H
