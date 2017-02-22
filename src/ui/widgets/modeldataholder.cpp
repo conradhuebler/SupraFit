@@ -131,7 +131,9 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
     ParseScriptedModels();
+#ifdef experimentel
     menu->addAction(m_script_action);
+#endif
     
     m_add->setMenu(menu);
     
@@ -192,9 +194,11 @@ void ModelDataHolder::AddModel(int model)
 
 void ModelDataHolder::AddModel(const QJsonObject &json)
 {
+#ifdef experimental
     QSharedPointer<AbstractTitrationModel > t =  QSharedPointer<ScriptModel>(new ScriptModel(m_data.data(), json), &QObject::deleteLater);
     m_history = false;
     ActiveModel(t);
+#endif
 }
 
 void ModelDataHolder::AddModel11()

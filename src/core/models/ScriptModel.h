@@ -17,6 +17,10 @@
  * 
  */
 
+#include "src/global.h"
+
+#ifdef experimental
+
 #ifndef ScriptModel_H
 #define ScriptModel_H
 
@@ -83,3 +87,4 @@ protected:
 };
 
 #endif // 1_1_Model
+#endif

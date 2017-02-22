@@ -17,6 +17,9 @@
  * 
  */
 
+#include "src/global.h"
+
+#ifdef experimental
 
 #include "src/core/equal_system.h"
 #include "src/core/AbstractModel.h"
@@ -319,3 +322,4 @@ qreal ScriptModel::BC50()
 
 
 #include "ScriptModel.moc"
+#endif

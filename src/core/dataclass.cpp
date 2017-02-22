@@ -171,7 +171,7 @@ bool DataTable::setData(const QModelIndex &index, const QVariant &value, int rol
         emit dataChanged(index, index);
         return true;
     }
-    
+    return false;
 }
 
 
