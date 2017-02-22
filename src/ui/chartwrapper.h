@@ -90,6 +90,7 @@ public:
     
 public slots:
     void UpdateModel();
+    void showSeries(int i);
     
 private:
     QColor ColorCode(int i) const;
@@ -105,6 +106,7 @@ signals:
     void ModelChanged();
     void stopAnimiation();
     void restartAnimation();
+    void ShowSeries(int i);
 };
 
 #endif // CHARTWRAPPER_H

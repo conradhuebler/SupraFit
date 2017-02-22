@@ -101,7 +101,7 @@ private:
     SpinBox *m_d_0;
     QVector<SpinBox * > m_constants;
     QPointer<QLineEdit > error;
-    QPushButton *m_remove, *m_optimize, *m_plot;
+    QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
     QCheckBox *m_include, *m_show;
     QSharedPointer<AbstractTitrationModel > m_model;
     QPointer<LineSeries > m_error_series, m_signal_series;
@@ -109,10 +109,12 @@ private:
     int m_no;
     QColor m_color;
     Charts m_charts;
+
     
 private slots:
     void ColorChanged(const QColor &color);
     void ChooseColor();
+    void togglePlot();
     
 signals:
     void ValueChanged();

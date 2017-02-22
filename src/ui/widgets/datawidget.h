@@ -53,7 +53,7 @@ private:
     QWeakPointer<ChartWrapper> m_wrapper;
     QLineEdit *m_name;
     QCheckBox *m_show, *m_rectangle;
-    QPushButton *m_choose;
+    QPushButton *m_choose, *m_toggle;
     QPointer<ScatterSeries > m_data_series;
     QDoubleSpinBox *m_markerSize;
     QColor m_color;
@@ -67,6 +67,7 @@ private slots:
     void setName(const QString &str);
     void setMarkerSize(qreal value);
     void setMarkerShape(int shape);
+    void togglePlot();
 };
 
 class DataWidget : public QWidget

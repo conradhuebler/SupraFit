@@ -116,12 +116,14 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
     ChartWrapper *signal_wrapper = new ChartWrapper(this);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper, SLOT(UpdateModel()));
+    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper, SLOT(showSeries(int)));
     signal_wrapper->setPlotMode(j);
     signal_wrapper->setDataTable(model->ModelTable());
     signal_wrapper->setData(model.data());
     
     ChartWrapper *error_wrapper = new ChartWrapper(this);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper, SLOT(UpdateModel()));
+    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper, SLOT(showSeries(int)));
     error_wrapper->setPlotMode(j);
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model.data());
@@ -228,5 +230,7 @@ void ChartWidget::restartAnimation()
 {
     m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//     m_signalchart->setAnimationDuration(100);
+//     m_errorchart->setAnimationDuration(100);
 }
 #include "chartwidget.moc"

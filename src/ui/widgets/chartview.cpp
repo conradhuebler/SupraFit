@@ -259,8 +259,8 @@ void ChartView::formatAxis()
         {
             qreal y_real_min_2 = qMin(y_real_min, -1*y_real_max);
             qreal y_real_max_2 = qMax(y_real_max, -1*y_real_min);
-            y_real_max = y_real_max_2;
-            y_real_min = y_real_min_2;
+            y_real_max = y_real_max_2 + increment;
+            y_real_min = y_real_min_2 - increment;
         }
     y_axis->setMax(y_real_max);
     y_axis->setMin(y_real_min);

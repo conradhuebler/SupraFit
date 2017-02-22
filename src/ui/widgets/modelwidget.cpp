@@ -91,9 +91,10 @@ void SpinBox::On_valueChanged(double val)
 
 ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_charts(charts), m_no(no)
 {
-    QGridLayout *layout = new QGridLayout;
+    QVBoxLayout *layout = new QVBoxLayout;
+    QHBoxLayout *shifts = new QHBoxLayout;
     m_d_0 = new SpinBox;
-    layout->addWidget(m_d_0, 0, 0);
+    shifts->addWidget(m_d_0);
     m_d_0->setSingleStep(1e-2);
     m_d_0->setDecimals(4);
     m_d_0->setSuffix(" ppm");
@@ -111,39 +112,46 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
         constant->setValue(m_model->Pair(i, m_no).second);
         constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->ConstantNames()[i]));
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-        layout->addWidget(constant, 0, i + 1);
+        shifts->addWidget(constant, 0);
     }
     
     if(m_model->Type() != 3)
     {
         error = new QLineEdit;
         error->setReadOnly(true);
-        layout->addWidget(error, 0, m_model->ConstantSize() + 1); 
+        shifts->addWidget(error); 
         error->setText(QString::number(m_model->SumOfErrors(m_no)));
     } 
-    
+    layout->addLayout(shifts);
+    QHBoxLayout *tools = new QHBoxLayout;
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("Include in Model Generation"));
     m_include->setChecked(m_model->ActiveSignals()[m_no]);
     connect(m_include, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
-    layout->addWidget(m_include, 1, 0);
-    m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no)); //DataMapper(m_no)->series());
-    m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no)); //DataMapper(m_no)->series());
+    tools->addWidget(m_include);
+    m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no));
+    m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
     m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_show = new QCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
     m_show->setChecked(m_model->ActiveSignals()[m_no]);
-    layout->addWidget(m_show,1,1);
+    tools->addWidget(m_show);
     
     m_plot = new QPushButton;
     m_plot->setText(tr("Color"));
     m_plot->setFlat(true);
-    layout->addWidget(m_plot, 1, 2);
+    tools->addWidget(m_plot);
     setLayout(layout);
-    
+
+    m_toggle = new QPushButton(tr("Single Plot"));
+    m_toggle->setFlat(true);
+    m_toggle->setCheckable(true);
+    tools->addWidget(m_toggle);
+    connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
+    layout->addLayout(tools);
     setMaximumHeight(75);
     setMinimumHeight(75); 
     ColorChanged(m_charts.data_wrapper->color(m_no));
@@ -226,6 +234,14 @@ void ModelElement::ToggleSeries(int i)
     m_signal_series->setVisible(i);
     m_error_series->setVisible(i);
     m_show->setChecked(i);
+}
+
+void ModelElement::togglePlot()
+{
+    if(m_toggle->isChecked())
+       m_charts.data_wrapper->showSeries(m_no); 
+    else
+        m_charts.data_wrapper->showSeries(-1);
 }
 
 ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)

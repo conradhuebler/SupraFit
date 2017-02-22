@@ -74,12 +74,18 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     m_rectangle = new QCheckBox(tr("Rectangle"));
     connect(m_rectangle, SIGNAL(stateChanged(int)), this, SLOT(setMarkerShape(int)));
     
+    m_toggle = new QPushButton(tr("Single Plot"));
+    m_toggle->setFlat(true);
+    m_toggle->setCheckable(true);
+    connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
+    
     layout->addWidget(m_name, 0, 0);
     layout->addWidget(m_show, 0, 1);
     layout->addWidget(m_choose, 0, 2);
     layout->addWidget(new QLabel(tr("Size")), 0, 3);
     layout->addWidget(m_markerSize, 0, 4);
     layout->addWidget(m_rectangle, 0, 5);
+    layout->addWidget(m_toggle, 0, 6);
     setLayout(layout);
     ColorChanged(m_wrapper.data()->color(m_no));
 }
@@ -145,6 +151,14 @@ void SignalElement::setMarkerShape(int shape)
         m_data_series->setMarkerShape(ScatterSeries::MarkerShapeRectangle);
     else
         m_data_series->setMarkerShape(ScatterSeries::MarkerShapeCircle);
+}
+
+void SignalElement::togglePlot()
+{
+    if(m_toggle->isChecked())
+        m_wrapper.data()->showSeries(m_no); 
+    else
+        m_wrapper.data()->showSeries(-1);
 }
 
 DataWidget::DataWidget() 
