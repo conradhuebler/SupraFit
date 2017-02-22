@@ -27,9 +27,8 @@
 #include <QtCore/QSharedData>
 #include <QtCore/QVector>
 #include <QtCore/QMap>
-#include <QPointer>
-#include <QDebug>
-#include <QAbstractTableModel>
+#include <QtCore/QPointer>
+#include <QtCore/QAbstractTableModel>
 
 typedef Eigen::VectorXd Vector;
 

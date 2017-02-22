@@ -24,12 +24,8 @@
 #include "src/core/AbstractModel.h"
 
 
-#include <QDebug>
 #include <QtCore/QObject>
-#include <QVector>
-
-#include <chaiscript/chaiscript.hpp>
-
+#include <QtCore/QVector>
 
 #include "src/core/dataclass.h"
 
@@ -58,19 +54,5 @@ protected:
     QList<qreal > m_ItoI_signals;
     qreal m_K11;
 };
-
-/*
-class ItoI_Model_Script : public ItoI_Model
-{
-  Q_OBJECT
-  
-public:
-    ItoI_Model_Script(const DataClass *data);
-    virtual void CalculateSignal(const QList<qreal > &constants);
-
-private:
-    std::string m_content, m_content_2;
-    chaiscript::ChaiScript *chai;
-};*/
 
 #endif // 1_1_Model

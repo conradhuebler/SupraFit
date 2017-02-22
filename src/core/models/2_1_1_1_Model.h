@@ -23,9 +23,8 @@
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
 
-#include <QDebug>
 #include <QtCore/QObject>
-#include <QVector>
+#include <QtCore/QVector>
 
 
 #include "src/core/dataclass.h"

@@ -95,7 +95,13 @@ find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
+
+
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/ ChaiScript/include)
+
+enable_testing(true)
+include(test/CMakeLists.txt)
+
 set(libmath_SRC
                 src/core/equal_system.cpp
                 src/core/optimizer/levmar.cpp
