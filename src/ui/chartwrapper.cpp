@@ -107,6 +107,33 @@ void ChartWrapper::setData(QPointer<DataClass> model)
 
 void ChartWrapper::UpdateModel()
 {
+    /* FIXME - this a not working solution, will be done later
+    for(int i = 0; i < m_model->DataPoints(); ++i)
+    {
+        double x = XValue(i);
+        for(int j = 0; j < m_model->SignalCount(); ++j)
+        {
+            QPointF new_point = QPointF(x, m_table->data(j,i));
+            if(m_model->SignalModel()->isChecked(j,i))
+            {
+                if(i < m_stored_series[j]->count())
+                {
+                    QPointF old_point =  m_stored_series[j]->at(i);
+                
+                    m_stored_series[j]->replace(old_point,new_point);
+                }
+                else
+                    m_stored_series[j]->append(new_point);
+            }
+        }
+    }
+    for(int j = 0; j < m_model->SignalCount(); ++j)
+    {
+        for(int i = m_model->DataPoints(); i < m_stored_series[j]->count(); ++i)
+            m_stored_series[j]->remove(i);
+    }
+    */
+    
     for(int j = 0; j < m_model->SignalCount(); ++j)
         m_stored_series[j]->clear();
     for(int i = 0; i < m_model->DataPoints(); ++i)
