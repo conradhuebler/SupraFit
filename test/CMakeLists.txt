@@ -7,4 +7,6 @@ set(test_additional
 )
 
 add_test( test_additional json_test )
+
 add_executable(json_test  test/testjson.cpp)
+set_property(TARGET json_test PROPERTY CXX_STANDARD 14)

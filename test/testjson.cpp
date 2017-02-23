@@ -19,37 +19,32 @@
 
 #include <src/core/models.h>
 #include <src/core/jsonhandler.h>
-
-#include <QtCore/QJsonObject>
-
 #include <QtTest/QtTest>
 
+#include <QtCore>
+
+#include <QDebug>
 class TestJson : public QObject
 {
     Q_OBJECT
-
-
 private slots:
     void ImportExport();
-
 };
 
 
-void TestJson::ImportExport
+void TestJson::ImportExport()
 {
-    QJsonObject toplevel;
-    if(JsonHandler::ReadJsonFile(toplevel, "../data/samples/2_1_1_1_testcase.json"))
-    {
-        QPointer<DataClass > data = new DataClass(toplevel);
-        if(data->DataPoints() != 0)
-        {
-            SetData(new DataClass(new DataClass(data)), str);
-            m_model_dataholder->AddToWorkspace(toplevel);
-            QPointer< AbstractTitrationModel > t = new ItoI_ItoII_Model(data);
-            QJsonObject export_file = t->ExportJson();
-            QCOMPARE(toplevel, export_file);   
-        }
-    }
+     QJsonObject toplevel;
+     if(JsonHandler::ReadJsonFile(toplevel, "../data/samples/2_1_1_1_testcase.json"))
+     {
+         QPointer<DataClass > data = new DataClass(toplevel);
+         if(data->DataPoints() != 0)
+         {
+             QPointer< AbstractTitrationModel > t = new IItoI_ItoI_Model(data);
+             QJsonObject export_file = t->ExportJSON();
+             QCOMPARE(toplevel, export_file);   
+         }
+     }
 }
 
 QTEST_MAIN(TestJson)
