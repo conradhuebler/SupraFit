@@ -18,6 +18,8 @@
  * 
  */
 
+#include "src/global_config.h"
+
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 #include "src/ui/widgets/datawidget.h"
@@ -131,7 +133,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
     ParseScriptedModels();
-#ifdef experimentel
+#ifdef experimental
     menu->addAction(m_script_action);
 #endif
     

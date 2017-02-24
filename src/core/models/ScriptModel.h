@@ -17,7 +17,7 @@
  * 
  */
 
-#include "src/global.h"
+#include "src/global_config.h"
 
 #ifdef experimental
 
@@ -63,7 +63,7 @@ private:
     QVariantMap m_complex_map;
     QStringList m_component_list;
     QVariantHash m_complex_hashed;
-    chaiscript::ChaiScript *chai;
+//     chaiscript::ChaiScript *chai;
     std::string m_signal_calculation;
     QJsonObject m_json;
     QVector<std::string > m_mass_balance;
@@ -76,7 +76,7 @@ private:
     /*
      * Setup for the ChaiScript Engine
      */
-    void InitializeCupofTea();
+//     void InitializeCupofTea();
     /*
      * 
      */

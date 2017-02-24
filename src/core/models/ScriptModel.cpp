@@ -17,9 +17,10 @@
  * 
  */
 
-#include "src/global.h"
+#include "src/global_config.h"
 
 #ifdef experimental
+#include "src/global.h"
 
 #include "src/core/equal_system.h"
 #include "src/core/AbstractModel.h"
@@ -50,13 +51,13 @@
 
 ScriptModel::ScriptModel(const DataClass *data, const QJsonObject &json) : AbstractTitrationModel(data), m_json(json)
 {
-    chai = new chaiscript::ChaiScript;
+//     chai = new chaiscript::ChaiScript;
     
     for(int i = 0; i < DataPoints(); ++i)
         m_solvers << new ConcentrationSolver(this);
     
     ParseJson();
-    InitializeCupofTea();
+//     InitializeCupofTea();
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), m_complex_constants.size());
     InitialGuess();
     
@@ -75,10 +76,10 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
     
         
     
-     for(int i = 0; i < Constants().size(); ++i)
+   /*  for(int i = 0; i < Constants().size(); ++i)
         chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
     chai->add(chaiscript::var(A), "A");
-    chai->add(chaiscript::var(B), "B");
+    chai->add(chaiscript::var(B), "B");*/
     QList<qreal > variables;
     variables << A << B;
     Vector values(2);
@@ -87,7 +88,7 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
     Vector Components(ConstantSize());
     QStringList keys = m_complex_hashed.keys();
 
-    qreal m = chai->eval<double>(m_mass_balance[0]);
+//     qreal m = chai->eval<double>(m_mass_balance[0]);
 //     std::vector<chaiscript::Boxed_Value> m = chai->eval_file< std::vector<chaiscript::Boxed_Value> >("/media/Daten/conrad/Programme/nmr2fit/src/core/models/1_1_model.chai");
     
     /*
@@ -97,7 +98,7 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
     
     for(int i = 0; i < m_component_list.size(); ++i)
     {
-     /*   for(int j = 0; j < m_constant_names.size(); ++j) // b11, b21, b12 ...
+        for(int j = 0; j < m_constant_names.size(); ++j) // b11, b21, b12 ...
         {
             qreal compound = 1;
             compound *=  qPow(10,Constant(j));
@@ -117,9 +118,8 @@ MassResults ScriptModel::MassBalance(qreal A, qreal B)
             }
             values(i) += compound;
         }
-        */
 //           values(i) = qPow(10, Constant(0))*A*B;
-         values(i) = m;
+//          values(i) = m;
     }
     result.Components = Components;
     result.MassBalance = values;
@@ -181,7 +181,7 @@ void ScriptModel::ParseJson()
     CreateMassBalanceEquation(object);
     
 }
-
+/*
 void ScriptModel::InitializeCupofTea()
 {
     chai->add(chaiscript::fun(&qPow), "qPow");
@@ -198,7 +198,7 @@ void ScriptModel::InitializeCupofTea()
     //     chai->eval(m_content);
     
 }
-
+*/
 void ScriptModel::InitialGuess()
 {
     for(int i = 0; i < m_complex_signal_parameter.cols(); ++i)
@@ -244,8 +244,8 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
     if(constants.size() == 0)
         return;
     
-    for(int i = 0; i < Constants().size(); ++i)
-        chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
+//     for(int i = 0; i < Constants().size(); ++i)
+//         chai->add(chaiscript::var(qPow(10,Constant(i))), m_constant_names[i].toStdString());
     
     qreal b21= qPow(10, constants.first());
     qreal b11 =qPow(10, constants[1]);
@@ -279,6 +279,7 @@ void ScriptModel::CalculateSignal(const QList<qreal > &constants)
         
         std::cout << "Components" << result.Components << std::endl;
         std::cout << "Mass Bilanz Vector" << result.MassBalance << std::endl;
+        SetConcentration(i, result.Components);
         for(int j = 0; j < SignalCount(); ++j)
         {
             
