@@ -270,6 +270,13 @@ void DataTable::setColumn(const QVector<qreal> &vector, int column)
     return;
 }
 
+void DataTable::setColumn(const Vector &vector, int column)
+{
+    if(m_table.cols() >= column)
+        m_table.col(column) = vector; 
+    return;
+}
+
 void DataTable::setRow(const QVector<qreal> &vector, int row)
 {
     if(m_table.rows() >= row)
@@ -278,6 +285,14 @@ void DataTable::setRow(const QVector<qreal> &vector, int row)
     return;
 }
 
+void DataTable::setRow(const Vector &vector, int row)
+{
+    if(m_table.rows() >= row)
+        m_table.row(row) = vector;   
+    return;
+}
+
+
 DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
 {
     m_concentration_model = new DataTable;
@@ -285,8 +300,8 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
     m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;
     m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
-    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
-    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
+    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
 
 DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_host_assignment(0)
@@ -296,8 +311,8 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
     m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;    
     m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
-    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
-    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
+    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
 
 
@@ -383,12 +398,12 @@ void DataClass::SwitchConentrations()
     d->m_host_assignment = !HostAssignment();
     if(!d->m_host_assignment)
     {
-       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"));
-       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"));
+       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
     }else
     {
-       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Guest"));
-       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Host"));
+       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     }
 }
 
@@ -486,9 +501,9 @@ void DataClass::setHeader(const QStringList& strlist)
         for(int i = 0; i < strlist.size(); ++i)
         {
             if(i < d->m_concentration_model->columnCount())
-                d->m_concentration_model->setHeaderData(i, Qt::Horizontal, (strlist[i]), Qt::EditRole);
+                d->m_concentration_model->setHeaderData(i, Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
             else
-                d->m_signal_model->setHeaderData(i - d->m_concentration_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::EditRole);
+                d->m_signal_model->setHeaderData(i - d->m_concentration_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
         }
     }
 }

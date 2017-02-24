@@ -155,6 +155,7 @@ public:
     inline qreal Constant(int i) const { return m_complex_constants[i]; }
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);
+    inline QPointer<DataTable > getConcentrations() { return m_concentrations; }
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -165,13 +166,14 @@ private:
     
 protected:
     void SetSignal(int i, int j, qreal value);
+    void SetConcentration(int i, const Vector &equlibrium);
     inline void setName(const QString &str) { m_name = str; }
     QString m_name;
     QList<qreal > m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
     QVector<double * > m_opt_para;
     QVector<QVector<qreal * > >m_lim_para;
-    DataTable *m_model_signal, *m_model_error;
+    QPointer<DataTable > m_model_signal, m_model_error, m_concentrations;
     Eigen::MatrixXd m_complex_signal_parameter, m_pure_signals_parameter;
     const DataClass *m_data;
     OptimizerConfig m_opt_config;

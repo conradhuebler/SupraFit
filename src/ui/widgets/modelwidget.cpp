@@ -56,6 +56,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QColorDialog>
+#include <QtWidgets/QTableView>
 
 #include <QtCharts/QChart>
 #include <QtCharts/QXYSeries>
@@ -255,6 +256,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_statistic_dialog = new ModalDialog;
     m_statistic_widget = new StatisticWidget(m_model, this),
     m_table_dialog = new ModalDialog;
+    m_concentrations = new ModalDialog;
     
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
@@ -338,6 +340,7 @@ void ModelWidget::DiscreteUI()
     m_maxiter->setValue(20);
     m_maxiter->setMaximum(999999);
     m_confi = new QPushButton(tr("Statistic"));
+    m_concen = new QPushButton(tr("Concentration"));
     QHBoxLayout *mini = new QHBoxLayout;
     
     
@@ -349,6 +352,7 @@ void ModelWidget::DiscreteUI()
     connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
     connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
     connect(m_confi, SIGNAL(clicked()), this, SLOT(Confidence()));
+    connect(m_concen, SIGNAL(clicked()), this, SLOT(toggleConcentrations()));
     m_sum_error = new QLineEdit;
     m_sum_error->setReadOnly(true);
     
@@ -366,6 +370,7 @@ void ModelWidget::DiscreteUI()
     mini_data->addWidget(m_import);
     mini_data->addWidget(m_export);
     mini_data->addWidget(m_confi);
+    mini_data->addWidget(m_concen);
     m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
@@ -745,5 +750,12 @@ void ModelWidget::MultiScanFinished(int runtype)
     m_advancedsearch->hide();
 }
 
-
+void ModelWidget::toggleConcentrations()
+{
+    
+    QTableView *table = new QTableView;
+    table->setModel(m_model->getConcentrations());
+    m_concentrations->setWidget(table);
+    m_concentrations->show();
+}
 #include "modelwidget.moc"

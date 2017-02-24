@@ -89,7 +89,17 @@ void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
         
         qreal complex_11 = K11*host*guest;
         qreal complex_21 = K11*K21*host*host*guest;
-        qreal complex_12 = K11*K12*host*guest*guest;         
+        qreal complex_12 = K11*K12*host*guest*guest;       
+        
+        Vector vector(6);
+        vector(0) = i + 1;
+        vector(1) = host;
+        vector(2) = guest;
+        vector(3) = complex_21;
+        vector(4) = complex_11;
+        vector(5) = complex_12;
+        SetConcentration(i, vector);
+        
         for(int j = 0; j < SignalCount(); ++j)
         {
             qreal value = host/host_0*m_pure_signals_parameter(j, 0) + 2*complex_21/host_0*m_complex_signal_parameter(j,0) + complex_11/host_0*m_complex_signal_parameter(j,1) + complex_12/host_0*m_complex_signal_parameter(j,2);

@@ -53,7 +53,9 @@ public:
     bool isChecked(int i, int j) const;
     void insertRow(const QVector<qreal> &row);
     void setRow(const QVector<qreal> &vector, int row);
+    void setRow(const Vector &vector, int row);
     void setColumn(const QVector<qreal> &vector, int column);
+    void setColumn(const Vector &vector, int column);
     
     Vector Row(int row);
     Vector firstRow(); 

@@ -126,6 +126,12 @@ void ItoI_Model::CalculateSignal(const QList<qreal > &constants)
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = HostConcentration(host_0, guest_0, constants);
         qreal complex = host_0 -host;
+        Vector vector(4);
+        vector(0) = i + 1;
+        vector(1) = host;
+        vector(2) = guest_0 - complex;
+        vector(3) = complex;
+        SetConcentration(i, vector);
         for(int j = 0; j < SignalCount(); ++j)
         {
             qreal value = host/host_0*m_pure_signals_parameter(j, 0)+ complex/host_0*m_complex_signal_parameter(j,0);

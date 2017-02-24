@@ -157,7 +157,7 @@ private:
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     QLineEdit *m_sum_error;
-    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi; 
+    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi, m_concen; 
     bool m_pending;
     QList<int > ActiveSignals();
     void DiscreteUI();
@@ -168,7 +168,7 @@ private:
     StatisticWidget *m_statistic_widget;
     QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
-    ModalDialog *m_statistic_dialog, *m_search_dialog, *m_table_dialog;
+    ModalDialog *m_statistic_dialog, *m_search_dialog, *m_table_dialog, *m_concentrations;
 //     OptimizationType m_last_run;
     bool m_statistic;
     Charts m_charts;
@@ -184,6 +184,7 @@ private slots:
     void PlotFinished(int runtype);
     void MultiScanFinished(int runtype);
     void triggerPlot3D();
+    void toggleConcentrations();
     
 public slots:
     void recalulate();
