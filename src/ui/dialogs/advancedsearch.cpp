@@ -39,6 +39,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QPushButton>
+#include <QtCore/QPointer>
 
 #include <QDebug>
 #include <iostream>
@@ -88,6 +89,7 @@ AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent)
 {
     setModal(false);
     error_max = 0;
+
 }
 
 
@@ -127,7 +129,11 @@ void AdvancedSearch::SetUi()
 {
     if(m_model.isNull())
         return;
-
+    
+    m_search = new GlobalSearch(this);
+    m_search->setModel(m_model);
+    connect(m_search, SIGNAL(SingeStepFinished(int)), this, SLOT(IncrementProgress(int)));
+    connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
     QVBoxLayout *layout = new QVBoxLayout;
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
@@ -145,7 +151,7 @@ void AdvancedSearch::SetUi()
     m_1d_search = new QPushButton(tr("1D Search"));
     m_2d_search = new QPushButton(tr("Create 2D Plot"));
     m_scan = new QPushButton(tr("Scan"));
-    connect(m_scan, SIGNAL(clicked()), this, SLOT(GlobalSearch()));
+    connect(m_scan, SIGNAL(clicked()), this, SLOT(SearchGlobal()));
     connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
     connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));
     
@@ -172,6 +178,7 @@ void AdvancedSearch::SetUi()
 
 void AdvancedSearch::MaxSteps()
 {
+    m_parameter.clear();
     int max_count = 1;
     for(int i = 0; i < m_parameter_list.size(); ++i)
     {
@@ -179,12 +186,13 @@ void AdvancedSearch::MaxSteps()
         min = m_parameter_list[i]->Min();
         max = m_parameter_list[i]->Max();
         step = m_parameter_list[i]->Step();
+        m_parameter.append( QVector<qreal>() << min << max << step );
         max_count *= (max+step-min)/step;
     }
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 
-void AdvancedSearch::GlobalSearch()
+void AdvancedSearch::SearchGlobal()
 {
 //     Waiter wait;
 //     QVector< QVector<double > > full_list = ParamList();
@@ -202,12 +210,11 @@ void AdvancedSearch::GlobalSearch()
 
 void AdvancedSearch::LocalSearch()
 {
-//     Waiter wait;
-//     QVector< QVector<double > > full_list = ParamList();
-//     
-//     
-//     Scan(full_list);
-//     emit PlotFinished(2);
+     Waiter wait;
+     
+     m_search->setParameter(m_parameter);
+     m_series = m_search->LocalSearch();
+     emit PlotFinished(2);
 }
 
 void AdvancedSearch::Create2DPlot()

@@ -109,11 +109,13 @@ private:
     QMutex mutex;
     int m_time;
     quint64 m_time_0;
+    QVector<QVector <qreal > > m_parameter;
+    QPointer<GlobalSearch> m_search;
     
 private slots:
     void Create2DPlot();
     void LocalSearch();
-    void GlobalSearch();
+    void SearchGlobal();
     void IncrementProgress(int time);
     void MaxSteps();
     
