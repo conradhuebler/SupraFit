@@ -15,8 +15,7 @@ option (BENCHMARK_LEVEL
     
 option (experimental
     "Include experimental functions" OFF)
- option (OWN_BFGS
-    "Include experimental bfgs functions" OFF)   
+ 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
@@ -63,44 +62,16 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare")                                        
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-option(USE_levmarOptimizer "Use levmar optimizing package" OFF)  
-option(USE_eigenOptimizer  "Use Eigen optimizing package" ON)  
-option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" OFF) 
-
-if(USE_levmarOptimizer)
-    if(USE_eigenOptimizer)
-            message( FATAL_ERROR "Can't use levmar and eigen together.")
-    endif(USE_eigenOptimizer)
-endif(USE_levmarOptimizer)
-
-if(USE_eigenOptimizer)
-    if(USE_levmarOptimizer)
-            message( FATAL_ERROR "Can't use levmar and eigen together.")
-    endif(USE_levmarOptimizer)
-endif(USE_eigenOptimizer)
-
-if(NOT USE_eigenOptimizer)    
-    if(NOT USE_levmarOptimizer)
-                set(USE_eigenOptimizer ON)
-    endif(NOT USE_levmarOptimizer)
-endif(NOT USE_eigenOptimizer)
-
-if(USE_levmarOptimizer)
-    set(CMAKE_C_FLAGS "-I/usr/include/levmar")
-endif(USE_levmarOptimizer)
-
-
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/)
 
-
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/ ChaiScript/include)
-
-enable_testing(true)
-#include(test/CMakeLists.txt)
+if(experimental)
+    include_directories(ChaiScript/include)
+endif(experimental)
 
 set(utils_SRC
                 src/core/jsonhandler.cpp
@@ -113,9 +84,7 @@ qt5_use_modules(utils Core Gui)
 
 set(libmath_SRC
                 src/core/equal_system.cpp
-                src/core/optimizer/levmar.cpp
                 src/core/optimizer/eigen_levenberg.cpp
-                src/core/optimizer/bfgs.cpp
                 src/core/libmath.cpp
                 src/core/minimizer.cpp
                 src/core/statistic.cpp
@@ -175,9 +144,6 @@ target_link_libraries(suprafit  models math  utils ${QT_QTCORE_LIBRARY} ${QT_QTG
 
 #target_link_libraries(json_test utils models math  ${QT_QTCORE_LIBRARY})
 
-if(USE_levmarOptimizer)
-    target_link_libraries(suprafit levmar)
-endif(USE_levmarOptimizer)
 
 if(UNIX)
 target_link_libraries(suprafit pthread dl)
