@@ -76,26 +76,11 @@ if(experimental)
     include_directories(ChaiScript/include)
 endif(experimental)
 
-set(utils_SRC
-                src/core/jsonhandler.cpp
-                src/core/filehandler.cpp
-                src/core/toolset.cpp
-                src/global.cpp
-)
-if(testing)
-    add_library(utils ${utils_SRC})
-else()
-    add_library(utils STATIC ${utils_SRC})
-endif(testing)
-
-qt5_use_modules(utils Core Gui)
-
 set(libmath_SRC
                 src/core/equal_system.cpp
                 src/core/optimizer/eigen_levenberg.cpp
                 src/core/libmath.cpp
                 src/core/minimizer.cpp
-                src/core/statistic.cpp
 )
 if(testing)
     add_library(math ${libmath_SRC})
@@ -113,6 +98,7 @@ set(models_SRC
                 src/core/models/2_1_1_1_1_2_Model.cpp
                 src/core/models/ScriptModel.cpp
 )
+
 if(testing)
     add_library(models ${models_SRC})
 else()
@@ -120,6 +106,22 @@ else()
 endif(testing)
 
 qt5_use_modules(models Core)
+set(utils_SRC
+                src/capabilities/montecarlostatistics.cpp
+                src/capabilities/globalsearch.cpp
+                src/capabilities/statistic.cpp
+                src/core/jsonhandler.cpp
+                src/core/filehandler.cpp
+                src/core/toolset.cpp
+                src/global.cpp
+)
+if(testing)
+    add_library(utils ${utils_SRC})
+else()
+    add_library(utils STATIC ${utils_SRC})
+endif(testing)
+
+qt5_use_modules(utils Core Gui)
 
 set(suprafit_SRCS
                 src/ui/widgets/statisticwidget.cpp

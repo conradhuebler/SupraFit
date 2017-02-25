@@ -17,6 +17,8 @@
  *
  */
 
+#include "src/capabilities/globalsearch.h"
+
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
@@ -82,7 +84,7 @@ double ParameterWidget::Step() const
 
 
 
-AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent)
 {
     setModal(false);
     error_max = 0;
@@ -125,7 +127,7 @@ void AdvancedSearch::SetUi()
 {
     if(m_model.isNull())
         return;
-    m_minimizer.data()->setModel(m_model);
+
     QVBoxLayout *layout = new QVBoxLayout;
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
@@ -182,196 +184,50 @@ void AdvancedSearch::MaxSteps()
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 
-
-QVector<QVector<double> > AdvancedSearch::ParamList() 
+void AdvancedSearch::GlobalSearch()
 {
-    int max_count = 1;
-    m_time_0 =  QDateTime::currentMSecsSinceEpoch();
-    m_time = 0;
-    QVector< QVector<double > > full_list;
-    for(int i = 0; i < m_parameter_list.size(); ++i)
-    {
-        QVector<double > list;
-        double min = 0, max = 0, step = 0;
-        min = m_parameter_list[i]->Min();
-        max = m_parameter_list[i]->Max();
-        step = m_parameter_list[i]->Step();
-        max_count *= (max+step-min)/step;
-        for(double s = min; s <= max; s += step)
-            list << s;
-        full_list << list;
-    }
-    m_progress->setMaximum(max_count);
-    return full_list;
+//     Waiter wait;
+//     QVector< QVector<double > > full_list = ParamList();
+//     m_models_list.clear();
+//     QVector<double > error; 
+//     m_type = m_optim_flags->getFlags();   
+//     m_type |= OptimizationType::ComplexationConstants;
+//     int t0 = QDateTime::currentMSecsSinceEpoch();
+//     ConvertList(full_list, error);
+//     int t1 = QDateTime::currentMSecsSinceEpoch();
+//     std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
+//     emit MultiScanFinished(1);
+  
 }
-
 
 void AdvancedSearch::LocalSearch()
 {
-    Waiter wait;
-    QVector< QVector<double > > full_list = ParamList();
-    
-    
-    Scan(full_list);
-    emit PlotFinished(2);
-}
-
-
-void AdvancedSearch::GlobalSearch()
-{
-    Waiter wait;
-    QVector< QVector<double > > full_list = ParamList();
-    m_models_list.clear();
-    QVector<double > error; 
-    m_type = m_optim_flags->getFlags();   
-    m_type |= OptimizationType::ComplexationConstants;
-    int t0 = QDateTime::currentMSecsSinceEpoch();
-    ConvertList(full_list, error);
-    int t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-    emit MultiScanFinished(1);
-  
+//     Waiter wait;
+//     QVector< QVector<double > > full_list = ParamList();
+//     
+//     
+//     Scan(full_list);
+//     emit PlotFinished(2);
 }
 
 void AdvancedSearch::Create2DPlot()
 {
-    Waiter wait;
-    QVector< QVector<double > > full_list = ParamList();
-    
-    QVector<double > error; 
-    m_type = m_optim_flags->getFlags();   
-    if(m_model->ConstantSize() == 2)
-    {
-        int t0 = QDateTime::currentMSecsSinceEpoch();
-        ConvertList(full_list, error);
-        int t1 = QDateTime::currentMSecsSinceEpoch();
-        std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-        emit PlotFinished(1);
-    }
-}
-
-void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
-{
-    
-    m_progress->setValue(0);
-    m_progress->show();
-    QVector<int > position(full_list.size(), 0);
-    QVector< QVector<double > > input;
-    int maxthreads =qApp->instance()->property("threads").toInt();
-    QVector<QVector<QPointer<NonLinearFitThread> > > threads;
-    QVector<QPointer<NonLinearFitThread> > thread_rows;
-    QThreadPool::globalInstance()->setMaxThreadCount(maxthreads -1 );
-    bool allow_break = false;
-    while(!allow_break)
-    {
-        QApplication::processEvents();
-        QList<double > parameter; //(full_list.size(), 0);
-        for(int j = 0; j < position.size(); ++j)
-            parameter << full_list[j][position[j]];
-        
-        bool temporary = true;
-        for(int i = 0; i < position.size(); ++i)
-        {
-            temporary = temporary && (position[i] == full_list[i].size() - 1);
-        }
-        if(temporary)
-            allow_break = true;
-        m_model->setConstants(parameter);
-        
-        QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_type);
-        thread_rows << thread;
-        connect(thread, SIGNAL(finished(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-        
-        if(m_model->SupportThreads())
-            QThreadPool::globalInstance()->waitForDone();
-           
-        
-        for(int k = position.size() - 1; k >= 0; --k)
-        {
-            if(position[k] == ( full_list[k].size() - 1) )
-            {
-                position[k] = 0;
-                //                 k--;
-                //                                  if(k >= 0)
-                //                                  {
-                //                     position[k]++;
-                if(position[k] <= full_list[k].size() - 1)
-                {
-                    threads << thread_rows;
-                    thread_rows.clear();
-                    //                         position[k + 1] = 0;
-                }
-                //                     break;
-                //                                 }
-            }
-            else
-            {
-                position[k]++;
-                if(position[k] == full_list[k].size())
-                {
-                    position[k] = 0;
-                    if(k > 0)
-                        position[k - 1]++;
-                }
-                break;
-            }
-        }
-    }
-    if(!m_model->SupportThreads())
-    {
-        QThreadPool::globalInstance()->setMaxThreadCount(maxthreads);
-        QThreadPool::globalInstance()->waitForDone(-1);
-    }
-    for(int i = 0; i < threads.size(); ++i)
-    {
-        QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
-        for(int j = 0; j < threads[i].size(); ++j)
-        {
-            QList< qreal > parameter = threads[i][j]->Model()->Constants();
-            
-            QJsonObject json = threads[i][j]->ConvergedParameter();
-            m_model->ImportJSON(json);
-            m_model->CalculateSignal();
-            double current_error = m_model->ModelError();
-            error << current_error; 
-            if(error_max < current_error)
-                error_max = current_error;
-            last_result.m_error = error;
-            last_result.m_input = full_list;
-            if(m_type & OptimizationType::ComplexationConstants)
-                m_models_list << json;
-            else
-                *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
-            delete threads[i][j];
-        }
-        if(!(m_type & OptimizationType::ComplexationConstants))
-            m_3d_data << dataRow1;
-    }
-    m_progress->hide();
-    return;
-    
+//     Waiter wait;
+//     QVector< QVector<double > > full_list = ParamList();
+//     
+//     QVector<double > error; 
+//     m_type = m_optim_flags->getFlags();   
+//     if(m_model->ConstantSize() == 2)
+//     {
+//         int t0 = QDateTime::currentMSecsSinceEpoch();
+//         ConvertList(full_list, error);
+//         int t1 = QDateTime::currentMSecsSinceEpoch();
+//         std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
+//         emit PlotFinished(1);
+//     }
 }
 
 
-void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
-{
-    for(int i = 0; i < m_series.size(); ++i)
-        m_series[i].clear();
-    m_series.clear();
-    QVector<double > error;
-    for(int j = 0; j < list.size(); ++j)
-    {
-        QList<QPointF> series;
-        for(int i = 0; i < list[j].size(); ++i)
-        {
-            m_model->setConstants(QList<qreal> () << list[j][i]);
-            m_model->CalculateSignal();
-            error << m_model->ModelError();
-            series.append(QPointF(list[j][i],m_model->ModelError( )));
-        }
-        m_series << series;
-    }
-}
 
 void AdvancedSearch::IncrementProgress(int time)
 {

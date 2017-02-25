@@ -23,7 +23,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
-#include "src/core/statistic.h"
+#include "src/capabilities/statistic.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/widgets/3dchartview.h"

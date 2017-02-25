@@ -20,6 +20,8 @@
 #ifndef ADVANCEDSEARCH_H
 #define ADVANCEDSEARCH_H
 
+#include "src/capabilities/globalsearch.h"
+
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
 
@@ -43,14 +45,7 @@ class QJsonObject;
 class OptimizerFlagWidget;
 class QProgressBar;
 
-struct GlobalSearchResult
-{
-    QVector< QVector<double > > m_input;  
-    QVector< double > m_error;
-    QVector< double > m_corr_coeff;
-    QVector< QJsonObject > m_models;
-};
-
+struct GlobalSearchResult;
 
 class ParameterWidget : public QGroupBox
 {
@@ -80,7 +75,7 @@ public:
     AdvancedSearch(QWidget *parent = 0);
     ~AdvancedSearch();
     
-    inline void setMinimizer(QWeakPointer<Minimizer> minimizer) { m_minimizer = minimizer; }
+    
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); SetUi();}
     inline GlobalSearchResult  LastResult() const { return last_result; }
     inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
@@ -96,7 +91,7 @@ private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
     QProgressBar *m_progress;
-    QSharedPointer<Minimizer> m_minimizer;
+    
     QSharedPointer<AbstractTitrationModel> m_model;
     QPointer<QCheckBox > m_optim;
     QPointer<QPushButton > m_2d_search, m_1d_search, m_scan;
@@ -114,6 +109,7 @@ private:
     QMutex mutex;
     int m_time;
     quint64 m_time_0;
+    
 private slots:
     void Create2DPlot();
     void LocalSearch();
