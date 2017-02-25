@@ -142,7 +142,7 @@ void ChartView::setUi()
 
     QAction *scaleAction = new QAction(this);
     scaleAction->setText(tr("Rescale Axis"));
-    connect(scaleAction, SIGNAL(triggered()), this, SLOT(formatAxisPrivate()));
+    connect(scaleAction, SIGNAL(triggered()), this, SLOT(forceformatAxis()));
     menu->addAction(scaleAction);    
 
     QAction *printplot = new QAction(this);
@@ -172,7 +172,7 @@ void ChartView::setUi()
     setLayout(layout);
     
     connect(&m_chartconfigdialog, SIGNAL(ConfigChanged(ChartConfig)), this, SLOT(setChartConfig(ChartConfig)));
-    connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(formatAxisPrivate()));
+    connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
 }
 
 
@@ -184,9 +184,9 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
         m_chart->createDefaultAxes();
     }
     m_chart->legend()->markers(series).first()->setVisible(legend);
-    connect(series, SIGNAL(visibleChanged()), this, SLOT(formatAxis()));
+    connect(series, SIGNAL(visibleChanged()), this, SLOT(forceformatAxis()));
     if(!connected)
-        if(connect(this, SIGNAL(AxisChanged()), this, SLOT(formatAxis())))
+        if(connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))
             connected = true;
 }
 
@@ -195,10 +195,10 @@ void ChartView::formatAxis()
 {
     if(m_pending || m_chart->series().isEmpty() || m_lock_scaling)
         return;
-    formatAxisPrivate();
+    forceformatAxis();
 }
 
-void ChartView::formatAxisPrivate()
+void ChartView::forceformatAxis()
 {
     m_lock_scaling = false;   
     m_pending = true;
@@ -222,24 +222,33 @@ void ChartView::formatAxisPrivate()
             }
         }
     }
+    int x_mean = (x_max + x_min)/2;
+    int y_mean = (y_max + y_min)/2;
     
-    x_max = ceil(x_max);
-    y_max = ceil(y_max);
-    x_min = floor(x_min);
-    y_min = floor(y_min);
+    x_max = ceil(x_max-x_mean) + x_mean;
+    y_max = ceil(y_max-y_mean) + y_mean;
+    
+    if(x_min)
+        x_min = floor(x_min-x_mean) + x_mean;
+    if(y_min)
+        y_min = floor(y_min-y_mean) + y_mean;
+    
+    
+    int x_ticks = scale(x_max-x_min)/int(scale(x_max-x_min)/ 5) + 1;
+    int y_ticks = 6; //scale(y_max-y_min)/int(scale(y_max-y_min)/ 5) + 1;
     
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     
     y_axis->setMax(y_max);
     y_axis->setMin((y_min));
-    y_axis->setTickCount(scale(y_max-y_min) + 1);
+    y_axis->setTickCount(y_ticks);
     y_axis->setTitleText(m_y_axis);
     
     
     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
     x_axis->setMax((x_max));
     x_axis->setMin((x_min));
-    x_axis->setTickCount(scale(x_max-x_min) + 1);
+    x_axis->setTickCount(x_ticks);
     
     x_axis->setTitleText(m_x_axis);
     m_pending = false;
@@ -274,7 +283,6 @@ qreal ChartView::scale(qreal value, qreal &pow)
 
 qreal ChartView::ceil(qreal value)
 {
-
     double pot = 1;
     value = scale(value, pot);
     int integer = int(value) + 1;    

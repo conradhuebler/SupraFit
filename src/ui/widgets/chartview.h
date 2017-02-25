@@ -60,6 +60,7 @@ public:
     
 public slots:
     void formatAxis();
+    
     void setXAxis(const QString &str) { m_x_axis = str; emit AxisChanged(); }
     void setYAxis(const QString &str) { m_y_axis = str; emit AxisChanged(); };
     
@@ -86,7 +87,7 @@ private slots:
     void ExportLatex();
     void ExportGnuplot();
     void setChartConfig(const ChartConfig &chartconfig);
-    void formatAxisPrivate();
+    void forceformatAxis();
     
 signals:
     void AxisChanged();
