@@ -15,8 +15,10 @@ option (BENCHMARK_LEVEL
     
 option (experimental
     "Include experimental functions" OFF)
- option (OWN_BFGS
-    "Include experimental bfgs functions" OFF)   
+ 
+option (testing
+    "Enable unittests" OFF)
+ 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
@@ -63,44 +65,16 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare")                                        
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-option(USE_levmarOptimizer "Use levmar optimizing package" OFF)  
-option(USE_eigenOptimizer  "Use Eigen optimizing package" ON)  
-option(USE_bfgsOptimizer  "Use Eigen based bfgs optimizing package" OFF) 
-
-if(USE_levmarOptimizer)
-    if(USE_eigenOptimizer)
-            message( FATAL_ERROR "Can't use levmar and eigen together.")
-    endif(USE_eigenOptimizer)
-endif(USE_levmarOptimizer)
-
-if(USE_eigenOptimizer)
-    if(USE_levmarOptimizer)
-            message( FATAL_ERROR "Can't use levmar and eigen together.")
-    endif(USE_levmarOptimizer)
-endif(USE_eigenOptimizer)
-
-if(NOT USE_eigenOptimizer)    
-    if(NOT USE_levmarOptimizer)
-                set(USE_eigenOptimizer ON)
-    endif(NOT USE_levmarOptimizer)
-endif(NOT USE_eigenOptimizer)
-
-if(USE_levmarOptimizer)
-    set(CMAKE_C_FLAGS "-I/usr/include/levmar")
-endif(USE_levmarOptimizer)
-
-
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/)
 
-
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/ ChaiScript/include)
-
-enable_testing(true)
-#include(test/CMakeLists.txt)
+if(experimental)
+    include_directories(ChaiScript/include)
+endif(experimental)
 
 set(utils_SRC
                 src/core/jsonhandler.cpp
@@ -108,19 +82,26 @@ set(utils_SRC
                 src/core/toolset.cpp
                 src/global.cpp
 )
-add_library(utils SHARED ${utils_SRC})
+if(testing)
+    add_library(utils ${utils_SRC})
+else()
+    add_library(utils STATIC ${utils_SRC})
+endif(testing)
+
 qt5_use_modules(utils Core Gui)
 
 set(libmath_SRC
                 src/core/equal_system.cpp
-                src/core/optimizer/levmar.cpp
                 src/core/optimizer/eigen_levenberg.cpp
-                src/core/optimizer/bfgs.cpp
                 src/core/libmath.cpp
                 src/core/minimizer.cpp
                 src/core/statistic.cpp
 )
-add_library(math SHARED ${libmath_SRC})
+if(testing)
+    add_library(math ${libmath_SRC})
+else()
+    add_library(math STATIC ${libmath_SRC})
+endif(testing)
 qt5_use_modules(math Core)
 
 set(models_SRC
@@ -132,7 +113,12 @@ set(models_SRC
                 src/core/models/2_1_1_1_1_2_Model.cpp
                 src/core/models/ScriptModel.cpp
 )
-add_library(models SHARED ${models_SRC})
+if(testing)
+    add_library(models ${models_SRC})
+else()
+    add_library(models STATIC ${models_SRC})
+endif(testing)
+
 qt5_use_modules(models Core)
 
 set(suprafit_SRCS
@@ -158,28 +144,28 @@ set(suprafit_SRCS
 qt5_add_resources(suprafit_SRCS files.qrc)
 add_executable(suprafit ${suprafit_SRCS})
 
-set(test_additional
-   test/testjson.cpp
-)
-add_test( test_additional json_test )
-add_executable(json_test  ${test_additional})
 
-set_property(TARGET utils math models suprafit json_test PROPERTY CXX_STANDARD 14)
-set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
+set_property(TARGET utils math models suprafit PROPERTY CXX_STANDARD 14)
 
-
-qt5_use_modules(json_test Core Test)
 qt5_use_modules(suprafit Widgets Charts PrintSupport DataVisualization)
-target_link_libraries(suprafit utils models math  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
+target_link_libraries(suprafit  models math  utils ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
 
-target_link_libraries(json_test utils models math  ${QT_QTCORE_LIBRARY})
+if(testing)
+    enable_testing()
+    set(test_additional
+        test/testjson.cpp
+    )
+    add_test( test_additional json_test )
+    add_executable(json_test  ${test_additional})
+    set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
+    set_property(TARGET  json_test PROPERTY CXX_STANDARD 14)
+    qt5_use_modules(json_test Core Test)
+    target_link_libraries(json_test utils models math suprafit ${QT_QTCORE_LIBRARY})
+endif(testing)
 
-if(USE_levmarOptimizer)
-    target_link_libraries(suprafit levmar)
-endif(USE_levmarOptimizer)
 
 if(UNIX)
-target_link_libraries(suprafit pthread dl)
+    target_link_libraries(suprafit pthread dl)
 endif(UNIX)
 
 install(TARGETS suprafit RUNTIME DESTINATION bin)

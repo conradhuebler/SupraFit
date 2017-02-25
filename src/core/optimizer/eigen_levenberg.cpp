@@ -19,7 +19,6 @@
 
 #include "src/global_config.h"
 
-#ifdef  USE_eigenOptimizer
 #include "src/core/AbstractModel.h"
 
 #include <QtCore/QtGlobal>
@@ -143,4 +142,4 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
             param[i] = parameter(i);
     return 1;
 }
-#endif
+

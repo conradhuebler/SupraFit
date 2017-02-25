@@ -33,9 +33,6 @@
 #include <cfloat>
 #include <iostream>
 
-#include <chaiscript/chaiscript.hpp>
-
-
 #include "1_1_Model.h"
 
 ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
