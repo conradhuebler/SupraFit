@@ -35,17 +35,18 @@ class ChartViewPrivate : public QtCharts::QChartView
 {
   Q_OBJECT
 public:
-    inline ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {}
-    inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); setRenderHint(QPainter::Antialiasing, true);}
+    inline ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {setRubberBand(QChartView::RectangleRubberBand);}
+    inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); setRenderHint(QPainter::Antialiasing, true);setRubberBand(QChartView::RectangleRubberBand);}
     inline ~ChartViewPrivate(){ };
         
 protected:
-    void mousePressEvent(QMouseEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void mouseReleaseEvent(QMouseEvent * event) override;
     void dragEnterEvent(QDragEnterEvent *event);
     void dragMoveEvent(QDragMoveEvent *event);
     void keyPressEvent(QKeyEvent *event);
 private:
-    
+
 };
 
 

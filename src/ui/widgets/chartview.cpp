@@ -38,27 +38,41 @@
 
 void ChartViewPrivate::mousePressEvent(QMouseEvent *event)
 {
-    QImage image(scene()->sceneRect().size().toSize(), QImage::Format_ARGB32);
-    image.fill(Qt::transparent);
-    QPainter painter(&image);
-    painter.setRenderHint(QPainter::Antialiasing);
-    scene()->render(&painter);
-    QPixmap pixmap = QPixmap::fromImage(image);
-    QByteArray itemData;
-    QBuffer outputBuffer(&itemData);
+    if(event->button() == Qt::MiddleButton || event->buttons() == Qt::MiddleButton)
+    {
+        QImage image(scene()->sceneRect().size().toSize(), QImage::Format_ARGB32);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::Antialiasing);
+        scene()->render(&painter);
+        QPixmap pixmap = QPixmap::fromImage(image);
+        QByteArray itemData;
+        QBuffer outputBuffer(&itemData);
 
-    outputBuffer.open(QIODevice::WriteOnly);
-    pixmap.toImage().save(&outputBuffer, "PNG");
+        outputBuffer.open(QIODevice::WriteOnly);
+        pixmap.toImage().save(&outputBuffer, "PNG");
 
-    QMimeData *mimeData = new QMimeData;
-    mimeData->setData("image/png", itemData);
+        QMimeData *mimeData = new QMimeData;
+        mimeData->setData("image/png", itemData);
 
-    QDrag *drag = new QDrag(this);
-    drag->setMimeData(mimeData);
-    drag->setPixmap(pixmap);
-    drag->setHotSpot(event->pos());
-    
-    drag->exec(Qt::CopyAction);
+        QDrag *drag = new QDrag(this);
+        drag->setMimeData(mimeData);
+        drag->setPixmap(pixmap);
+        drag->setHotSpot(event->pos());
+        
+        drag->exec(Qt::CopyAction);
+    }else if(event->button() == Qt::RightButton)
+        event->ignore();
+    else
+        QChartView::mousePressEvent(event);
+}
+
+void ChartViewPrivate::mouseReleaseEvent(QMouseEvent *event)
+{
+    if(event->button() == Qt::RightButton)
+        chart()->zoomReset();
+    else
+        QChartView::mouseReleaseEvent(event);
 }
 
 void ChartViewPrivate::dragEnterEvent(QDragEnterEvent *event)
