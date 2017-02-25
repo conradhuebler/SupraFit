@@ -62,6 +62,7 @@ public slots:
     void formatAxis();
     void setXAxis(const QString &str) { m_x_axis = str; emit AxisChanged(); }
     void setYAxis(const QString &str) { m_y_axis = str; emit AxisChanged(); };
+    
 private:
     ChartViewPrivate *m_chart_private;
     QPointer< QtCharts::QChart > m_chart;
@@ -72,14 +73,21 @@ private:
     ChartConfig getChartConfig() const;
     
     ChartConfigDialog m_chartconfigdialog;
-    bool m_pending;
+    bool m_pending, m_lock_scaling;
+    qreal ceil(qreal value);
+    qreal floor(qreal value);
+    qreal scale(qreal value, qreal &pow);
+    qreal scale(qreal value);
+    
+    
 private slots:
     void PlotSettings();
     void PrintPlot();
     void ExportLatex();
     void ExportGnuplot();
     void setChartConfig(const ChartConfig &chartconfig);
-    void MaxValueChanged(qreal value);
+    void formatAxisPrivate();
+    
 signals:
     void AxisChanged();
 };

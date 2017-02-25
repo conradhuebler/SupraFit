@@ -46,7 +46,7 @@ void ChartViewPrivate::mousePressEvent(QMouseEvent *event)
     QPixmap pixmap = QPixmap::fromImage(image);
     QByteArray itemData;
     QBuffer outputBuffer(&itemData);
-        
+
     outputBuffer.open(QIODevice::WriteOnly);
     pixmap.toImage().save(&outputBuffer, "PNG");
 
@@ -63,8 +63,7 @@ void ChartViewPrivate::mousePressEvent(QMouseEvent *event)
 
 void ChartViewPrivate::dragEnterEvent(QDragEnterEvent *event)
 {
-    
-     if (event->mimeData()->hasFormat("image/png")) {
+    if (event->mimeData()->hasFormat("image/png")) {
         if (event->source() == this) {
             event->setDropAction(Qt::CopyAction);
             event->accept();
@@ -78,8 +77,7 @@ void ChartViewPrivate::dragEnterEvent(QDragEnterEvent *event)
 
 void ChartViewPrivate::dragMoveEvent(QDragMoveEvent *event)
 {
-    
-      if (event->mimeData()->hasFormat("image/png")) {
+    if (event->mimeData()->hasFormat("image/png")) {
         if (event->source() == this) {
             event->setDropAction(Qt::CopyAction);
             event->accept();
@@ -94,35 +92,34 @@ void ChartViewPrivate::dragMoveEvent(QDragMoveEvent *event)
 void ChartViewPrivate::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key()) {
-    case Qt::Key_Plus:
-        chart()->zoomIn();
-        break;
-    case Qt::Key_Minus:
-        chart()->zoomOut();
-        break;
-    case Qt::Key_Left:
-        chart()->scroll(-10, 0);
-        break;
-    case Qt::Key_Right:
-        chart()->scroll(10, 0);
-        break;
-    case Qt::Key_Up:
-        chart()->scroll(0, 10);
-        break;
-    case Qt::Key_Down:
-        chart()->scroll(0, -10);
-        break;
-    default:
-        QGraphicsView::keyPressEvent(event);
-        break;
+        case Qt::Key_Plus:
+            chart()->zoomIn();
+            break;
+        case Qt::Key_Minus:
+            chart()->zoomOut();
+            break;
+        case Qt::Key_Left:
+            chart()->scroll(-10, 0);
+            break;
+        case Qt::Key_Right:
+            chart()->scroll(10, 0);
+            break;
+        case Qt::Key_Up:
+            chart()->scroll(0, 10);
+            break;
+        case Qt::Key_Down:
+            chart()->scroll(0, -10);
+            break;
+        default:
+            QGraphicsView::keyPressEvent(event);
+            break;
     }
 }
 
-ChartView::ChartView(QtCharts::QChart *chart) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false)
+ChartView::ChartView(QtCharts::QChart *chart) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false)
 {
     setUi();
     m_chart->legend()->setAlignment(Qt::AlignRight);
-    
 }
 
 ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false)
@@ -131,7 +128,6 @@ ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()
     m_chart_private = new ChartViewPrivate(new ChartViewPrivate(m_chart, this));
     setUi();
     m_chart->legend()->setAlignment(Qt::AlignRight);
-    
 }
 
 void ChartView::setUi()
@@ -141,43 +137,42 @@ void ChartView::setUi()
     
     QAction *plotsettings = new QAction(this);
     plotsettings->setText(tr("Plot Settings"));
-        connect(plotsettings, SIGNAL(triggered()), this, SLOT(PlotSettings()));
-        menu->addAction(plotsettings);
-    
+    connect(plotsettings, SIGNAL(triggered()), this, SLOT(PlotSettings()));
+    menu->addAction(plotsettings);
+
     QAction *scaleAction = new QAction(this);
     scaleAction->setText(tr("Rescale Axis"));
-        connect(scaleAction, SIGNAL(triggered()), this, SLOT(formatAxis()));
-        menu->addAction(scaleAction);    
-        
+    connect(scaleAction, SIGNAL(triggered()), this, SLOT(formatAxisPrivate()));
+    menu->addAction(scaleAction);    
+
     QAction *printplot = new QAction(this);
     printplot->setText(tr("Print Diagram"));
-        connect(printplot, SIGNAL(triggered()), this, SLOT(PlotSettings()));
-        menu->addAction(printplot);
-       
+    connect(printplot, SIGNAL(triggered()), this, SLOT(PlotSettings()));
+    menu->addAction(printplot);
+
     QAction *exportlatex = new QAction(this);
     exportlatex->setText(tr("Export to Latex (tikz)"));
-        connect(exportlatex, SIGNAL(triggered()), this, SLOT(ExportLatex()));
-        menu->addAction(exportlatex);
-    
+    connect(exportlatex, SIGNAL(triggered()), this, SLOT(ExportLatex()));
+    menu->addAction(exportlatex);
+
     QAction *exportgnuplot = new QAction(this);
     exportgnuplot->setText(tr("Export to Latex (tikz)"));
-        connect(exportgnuplot, SIGNAL(triggered()), this, SLOT(ExportGnuplot()));
-        menu->addAction(exportgnuplot);
-    
+    connect(exportgnuplot, SIGNAL(triggered()), this, SLOT(ExportGnuplot()));
+    menu->addAction(exportgnuplot);
     
     m_config = new QPushButton(tr("Tools"));
-        m_config->setFlat(true);
-        m_config->setIcon(QIcon::fromTheme("applications-system"));
-        m_config->setMaximumWidth(100);
-        m_config->setStyleSheet("QPushButton {background-color: #A3C1DA; color: black;}");
+    m_config->setFlat(true);
+    m_config->setIcon(QIcon::fromTheme("applications-system"));
+    m_config->setMaximumWidth(100);
+    m_config->setStyleSheet("QPushButton {background-color: #A3C1DA; color: black;}");
     m_config->setMenu(menu);
-    
+
     layout->addWidget(m_chart_private, 0, 0, 1, 5);//, Qt::AlignHCenter);
     layout->addWidget(m_config, 0, 4, Qt::AlignTop);
     setLayout(layout);
     
     connect(&m_chartconfigdialog, SIGNAL(ConfigChanged(ChartConfig)), this, SLOT(setChartConfig(ChartConfig)));
-    connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(formatAxis()));
+    connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(formatAxisPrivate()));
 }
 
 
@@ -198,11 +193,15 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
 
 void ChartView::formatAxis()
 {
-    if(m_pending || m_chart->series().isEmpty())
+    if(m_pending || m_chart->series().isEmpty() || m_lock_scaling)
         return;
+    formatAxisPrivate();
+}
+
+void ChartView::formatAxisPrivate()
+{
+    m_lock_scaling = false;   
     m_pending = true;
-    // This is much hacking and I don't like it, I will work on this in a muse minute
-    
     qreal x_min = 1000;
     qreal x_max = 0;
     qreal y_max = 0;
@@ -223,65 +222,78 @@ void ChartView::formatAxis()
             }
         }
     }
-
-    qreal y_scale = y_max-y_min;
-    qreal x_real_max = -2, x_real_min = -2, y_real_max = -2, y_real_min = -2;
-    double increment = 0.01;
-    if(y_min < 0)
-        increment = 0.0001;
-    for(double i = -1; i < 30; i += increment)
-    { 
-        if(i > y_min && y_real_min == -2)
-        {
-            if(y_scale > 0.5)
-                y_real_min = i-0.5;
-            else if(y_scale < 0.5)
-                y_real_min = i-increment;
-        }
-        
-        if(i > y_max && y_real_max == -2)
-        {
-            if(y_scale > 0.5)
-                y_real_max = i+0.5;
-            else if(y_scale < 0.5)
-                y_real_max = i+increment;
-        }
-
-        if(i > x_max && x_real_max == -2)
-            x_real_max = i+0.5;
-        
-        if(i > x_min && x_real_min == -2)
-            x_real_min = i-0.5;
-    }
-        
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
-    if(y_real_min < 0)
-        {
-            qreal y_real_min_2 = qMin(y_real_min, -1*y_real_max);
-            qreal y_real_max_2 = qMax(y_real_max, -1*y_real_min);
-            y_real_max = y_real_max_2 + increment;
-            y_real_min = y_real_min_2 - increment;
-        }
-    y_axis->setMax(y_real_max);
-    y_axis->setMin(y_real_min);
-    y_axis->setTickCount(y_real_max-y_real_min);
-    y_axis->setTitleText(m_y_axis);
-
     
-     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-     x_axis->setMax(x_real_max);
-     x_axis->setMin(0);
-     x_axis->setTickCount((x_real_max+0.2));
-
-     x_axis->setTitleText(m_x_axis);
-     m_pending = false;
+    x_max = ceil(x_max);
+    y_max = ceil(y_max);
+    x_min = floor(x_min);
+    y_min = floor(y_min);
+    
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    
+    y_axis->setMax(y_max);
+    y_axis->setMin((y_min));
+    y_axis->setTickCount(scale(y_max-y_min) + 1);
+    y_axis->setTitleText(m_y_axis);
+    
+    
+    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
+    x_axis->setMax((x_max));
+    x_axis->setMin((x_min));
+    x_axis->setTickCount(scale(x_max-x_min) + 1);
+    
+    x_axis->setTitleText(m_x_axis);
+    m_pending = false;
 }
 
-
-void ChartView::MaxValueChanged(qreal value)
+qreal ChartView::scale(qreal value)
 {
-    qDebug() << value;
+    qreal pot;
+    return scale(value, pot);
 }
+
+qreal ChartView::scale(qreal value, qreal &pow)
+{
+    if(qAbs(value) < 1 && value)
+    {
+        while(qAbs(value) < 1)
+        {
+            pow /= 10;
+            value *= 10;
+        }
+    }
+    else if(qAbs(value) > 10)
+    {
+        while(qAbs(value) > 10)
+        {
+            pow *= 10;
+            value /= 10;
+        }
+    }
+    return value;
+}
+
+qreal ChartView::ceil(qreal value)
+{
+
+    double pot = 1;
+    value = scale(value, pot);
+    int integer = int(value) + 1;    
+    if(value < 0)
+        integer -= 1;
+    return qreal(integer)*pot;
+}
+
+qreal ChartView::floor(qreal value)
+{
+    double pot = 1;
+    value = scale(value, pot);
+    
+    int integer = int(value);
+    if(value < 0)
+        integer -= 1;
+    return qreal(integer)*pot;
+}
+
 
 void ChartView::PlotSettings()
 {
@@ -294,7 +306,7 @@ void ChartView::PlotSettings()
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
 {
     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-    
+    m_lock_scaling = true;
     x_axis->setTitleText(chartconfig.x_axis);
     x_axis->setTickCount(chartconfig.x_step);
     x_axis->setMin(chartconfig.x_min);
@@ -320,7 +332,7 @@ ChartConfig ChartView::getChartConfig() const
     chartconfig.y_min = y_axis->min();
     chartconfig.y_max = y_axis->max();
     chartconfig.y_step = y_axis->tickCount();
-    
+   
     return chartconfig;
 }
 
