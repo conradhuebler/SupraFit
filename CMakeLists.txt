@@ -16,6 +16,9 @@ option (BENCHMARK_LEVEL
 option (experimental
     "Include experimental functions" OFF)
  
+option (testing
+    "Enable unittests" OFF)
+ 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
@@ -79,7 +82,12 @@ set(utils_SRC
                 src/core/toolset.cpp
                 src/global.cpp
 )
-add_library(utils ${utils_SRC})
+if(testing)
+    add_library(utils ${utils_SRC})
+else()
+    add_library(utils STATIC ${utils_SRC})
+endif(testing)
+
 qt5_use_modules(utils Core Gui)
 
 set(libmath_SRC
@@ -89,7 +97,11 @@ set(libmath_SRC
                 src/core/minimizer.cpp
                 src/core/statistic.cpp
 )
-add_library(math ${libmath_SRC})
+if(testing)
+    add_library(math ${libmath_SRC})
+else()
+    add_library(math STATIC ${libmath_SRC})
+endif(testing)
 qt5_use_modules(math Core)
 
 set(models_SRC
@@ -101,7 +113,12 @@ set(models_SRC
                 src/core/models/2_1_1_1_1_2_Model.cpp
                 src/core/models/ScriptModel.cpp
 )
-add_library(models ${models_SRC})
+if(testing)
+    add_library(models ${models_SRC})
+else()
+    add_library(models STATIC ${models_SRC})
+endif(testing)
+
 qt5_use_modules(models Core)
 
 set(suprafit_SRCS
@@ -127,26 +144,28 @@ set(suprafit_SRCS
 qt5_add_resources(suprafit_SRCS files.qrc)
 add_executable(suprafit ${suprafit_SRCS})
 
-#set(test_additional
-#   test/testjson.cpp
-#)
-#add_test( test_additional json_test )
-#add_executable(json_test  ${test_additional})
 
-#set_property(TARGET  json_test PROPERTY CXX_STANDARD 14)
 set_property(TARGET utils math models suprafit PROPERTY CXX_STANDARD 14)
-#set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
 
-
-#qt5_use_modules(json_test Core Test)
 qt5_use_modules(suprafit Widgets Charts PrintSupport DataVisualization)
 target_link_libraries(suprafit  models math  utils ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
 
-#target_link_libraries(json_test utils models math  ${QT_QTCORE_LIBRARY})
+if(testing)
+    enable_testing()
+    set(test_additional
+        test/testjson.cpp
+    )
+    add_test( test_additional json_test )
+    add_executable(json_test  ${test_additional})
+    set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
+    set_property(TARGET  json_test PROPERTY CXX_STANDARD 14)
+    qt5_use_modules(json_test Core Test)
+    target_link_libraries(json_test utils models math suprafit ${QT_QTCORE_LIBRARY})
+endif(testing)
 
 
 if(UNIX)
-target_link_libraries(suprafit pthread dl)
+    target_link_libraries(suprafit pthread dl)
 endif(UNIX)
 
 install(TARGETS suprafit RUNTIME DESTINATION bin)
