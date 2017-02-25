@@ -108,7 +108,7 @@ set(utils_SRC
                 src/core/toolset.cpp
                 src/global.cpp
 )
-add_library(utils SHARED ${utils_SRC})
+add_library(utils ${utils_SRC})
 qt5_use_modules(utils Core Gui)
 
 set(libmath_SRC
@@ -120,7 +120,7 @@ set(libmath_SRC
                 src/core/minimizer.cpp
                 src/core/statistic.cpp
 )
-add_library(math SHARED ${libmath_SRC})
+add_library(math ${libmath_SRC})
 qt5_use_modules(math Core)
 
 set(models_SRC
@@ -132,7 +132,7 @@ set(models_SRC
                 src/core/models/2_1_1_1_1_2_Model.cpp
                 src/core/models/ScriptModel.cpp
 )
-add_library(models SHARED ${models_SRC})
+add_library(models ${models_SRC})
 qt5_use_modules(models Core)
 
 set(suprafit_SRCS
@@ -158,21 +158,22 @@ set(suprafit_SRCS
 qt5_add_resources(suprafit_SRCS files.qrc)
 add_executable(suprafit ${suprafit_SRCS})
 
-set(test_additional
-   test/testjson.cpp
-)
-add_test( test_additional json_test )
-add_executable(json_test  ${test_additional})
+#set(test_additional
+#   test/testjson.cpp
+#)
+#add_test( test_additional json_test )
+#add_executable(json_test  ${test_additional})
 
-set_property(TARGET utils math models suprafit json_test PROPERTY CXX_STANDARD 14)
-set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
+#set_property(TARGET  json_test PROPERTY CXX_STANDARD 14)
+set_property(TARGET utils math models suprafit PROPERTY CXX_STANDARD 14)
+#set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
 
 
-qt5_use_modules(json_test Core Test)
+#qt5_use_modules(json_test Core Test)
 qt5_use_modules(suprafit Widgets Charts PrintSupport DataVisualization)
-target_link_libraries(suprafit utils models math  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
+target_link_libraries(suprafit  models math  utils ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
 
-target_link_libraries(json_test utils models math  ${QT_QTCORE_LIBRARY})
+#target_link_libraries(json_test utils models math  ${QT_QTCORE_LIBRARY})
 
 if(USE_levmarOptimizer)
     target_link_libraries(suprafit levmar)
