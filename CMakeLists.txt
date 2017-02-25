@@ -70,7 +70,7 @@ find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} Eigen/)
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} eigen/)
 
 if(experimental)
     include_directories(ChaiScript/include)

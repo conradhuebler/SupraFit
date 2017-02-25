@@ -1,6 +1,6 @@
-[submodule "Eigen"]
-	path = Eigen
-	url = https://github.com/RLovelett/eigen
 [submodule "ChaiScript"]
 	path = ChaiScript
 	url = https://github.com/ChaiScript/ChaiScript
+[submodule "eigen"]
+	path = eigen
+	url = https://github.com/RLovelett/eigen
