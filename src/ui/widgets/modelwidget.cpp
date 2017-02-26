@@ -353,8 +353,8 @@ void ModelWidget::DiscreteUI()
     connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
     connect(m_confi, SIGNAL(clicked()), this, SLOT(Confidence()));
     connect(m_concen, SIGNAL(clicked()), this, SLOT(toggleConcentrations()));
-    m_sum_error = new QLineEdit;
-    m_sum_error->setReadOnly(true);
+    m_sum_squares = new QLineEdit;
+    m_sum_squares->setReadOnly(true);
     
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_all);
@@ -375,8 +375,8 @@ void ModelWidget::DiscreteUI()
     QHBoxLayout *mini2 = new QHBoxLayout;
     mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
     mini2->addWidget(m_maxiter);
-    mini2->addWidget(new QLabel(tr("Sum of Error:")));
-    mini2->addWidget(m_sum_error);
+    mini2->addWidget(new QLabel(tr("Error: (squared / absolute)")));
+    mini2->addWidget(m_sum_squares);
     m_layout->addLayout(mini2, 5, 0,1,m_model->ConstantSize()+3);
     m_layout->addWidget(m_optim_flags, 6, 0, 1, m_model->ConstantSize()+3);
 }
@@ -409,7 +409,7 @@ void ModelWidget::Repaint()
         error += m_model->SumOfErrors(j);
         m_model_elements[j]->Update();
     }
-    m_sum_error->setText(QString::number((error)));
+    m_sum_squares->setText(QString::number(m_model->SumofSquares()) + "/" + QString::number(m_model->SumofAbsolute()));
     m_pending = false;
     m_minimize_all->setEnabled(true);
     m_minimize_single->setEnabled(true);
@@ -744,10 +744,12 @@ void ModelWidget::MultiScanFinished(int runtype)
     connect(table, SIGNAL(LoadModel(const QJsonObject)), this, SLOT(LoadJson(const QJsonObject)));
     connect(table, SIGNAL(AddModel(const QJsonObject)), this, SIGNAL(AddModel(const QJsonObject)));
     table->setModel(m_model);
+    table->setInputList(m_advancedsearch->FullList());
     table->setModelList(m_advancedsearch->ModelList());
     m_table_dialog->setWidget(table, "Scan Results");
-    m_table_dialog->show();
+    
     m_advancedsearch->hide();
+    m_table_dialog->show();
 }
 
 void ModelWidget::toggleConcentrations()

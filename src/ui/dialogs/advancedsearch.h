@@ -86,6 +86,7 @@ public:
     double MinY() const;
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<QJsonObject > ModelList() const { return m_models_list; }
+    inline QVector<QList<qreal > > FullList() const { return m_full_list; }
     
 private:
     void SetUi();
@@ -94,7 +95,7 @@ private:
     
     QSharedPointer<AbstractTitrationModel> m_model;
     QPointer<QCheckBox > m_optim;
-    QPointer<QPushButton > m_2d_search, m_1d_search, m_scan;
+    QPointer<QPushButton > m_2d_search, m_1d_search, m_scan, m_interrupt;
     QLabel *m_max_steps;
     GlobalSearchResult last_result;
     void ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
@@ -111,6 +112,9 @@ private:
     quint64 m_time_0;
     QVector<QVector <qreal > > m_parameter;
     QPointer<GlobalSearch> m_search;
+    void PrepareProgress();
+    void Finished();
+    QVector<QList<double> > m_full_list;
     
 private slots:
     void Create2DPlot();

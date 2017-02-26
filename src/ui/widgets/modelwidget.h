@@ -156,7 +156,7 @@ private:
     QLabel *m_bc_50;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
-    QLineEdit *m_sum_error;
+    QLineEdit *m_sum_squares;
     QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi, m_concen; 
     bool m_pending;
     QList<int > ActiveSignals();

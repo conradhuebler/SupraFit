@@ -100,8 +100,12 @@ qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QLi
 void IItoI_ItoI_Model::CalculateSignal(const QList<qreal > &constants)
 {
     m_corrupt = false;
+
     if(constants.size() == 0)
         return;
+    
+    m_sum_absolute = 0;
+    m_sum_squares = 0;
     
     qreal K21= qPow(10, constants.first());
     qreal K11 = qPow(10, constants.last());

@@ -171,6 +171,8 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
     {
         m_model_signal->data(j,i) = value;
         m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
+        m_sum_absolute += qAbs(m_model_signal->data(j,i) - SignalModel()->data(j,i));
+        m_sum_squares += qPow(m_model_signal->data(j,i) - SignalModel()->data(j,i), 2);
     }
     
 }
@@ -232,7 +234,8 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     toplevel["data"] = json;
     toplevel["model"] = m_name;  
     toplevel["runtype"] = m_last_optimization;
-    toplevel["sse"] = ModelError();
+    toplevel["sum_of_squares"] = m_sum_squares;
+    toplevel["sum_of_absolute"] = m_sum_absolute;
     return toplevel;
 }
 

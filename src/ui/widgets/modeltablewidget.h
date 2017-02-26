@@ -37,6 +37,8 @@ public:
     ~ModelTableWidget();
     void setModelList(const QList<QJsonObject> &list);
     void setModel(const QSharedPointer<AbstractTitrationModel> model){ m_model = model; }
+    void setInputList(const QVector<QList <qreal > >&input) { m_input = input; }
+    
 private:
     QList<QJsonObject> m_list;
     QTableView *m_table;
@@ -44,6 +46,7 @@ private:
     QCheckBox *m_valid;
     ScientificBox *m_threshold;
     QPushButton *m_export;
+    QVector<QList <qreal > >m_input;
     
 private slots:
     void rowSelected(const QModelIndex &index);

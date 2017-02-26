@@ -132,8 +132,7 @@ void AdvancedSearch::SetUi()
     
     m_search = new GlobalSearch(this);
     m_search->setModel(m_model);
-    connect(m_search, SIGNAL(SingeStepFinished(int)), this, SLOT(IncrementProgress(int)));
-    connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
+    
     QVBoxLayout *layout = new QVBoxLayout;
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
@@ -151,10 +150,12 @@ void AdvancedSearch::SetUi()
     m_1d_search = new QPushButton(tr("1D Search"));
     m_2d_search = new QPushButton(tr("Create 2D Plot"));
     m_scan = new QPushButton(tr("Scan"));
+    m_interrupt = new QPushButton(tr("Interrupt"));
+    
     connect(m_scan, SIGNAL(clicked()), this, SLOT(SearchGlobal()));
     connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
     connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));
-    
+    connect(m_interrupt, SIGNAL(clicked()), m_search, SLOT(Interrupt()), Qt::DirectConnection);
     m_progress = new QProgressBar;
     m_max_steps = new QLabel;
     QGridLayout *mlayout = new QGridLayout;
@@ -165,13 +166,16 @@ void AdvancedSearch::SetUi()
     if(m_model->ConstantSize() == 1)
         mlayout->addWidget(m_1d_search,3, 1);
     mlayout->addWidget(m_scan, 3, 0);
+    mlayout->addWidget(m_interrupt, 3, 0);
     if(m_model->ConstantSize() == 2)
     {
         mlayout->addWidget(m_2d_search,3, 1);
     }
     
     m_progress->hide();
-    
+    m_interrupt->hide();
+    connect(m_search, SIGNAL(SingeStepFinished(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
     setLayout(mlayout);
     MaxSteps();
 }
@@ -192,28 +196,44 @@ void AdvancedSearch::MaxSteps()
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 
+void AdvancedSearch::PrepareProgress()
+{
+    m_scan->hide();
+    m_interrupt->show();
+    m_time_0 =  QDateTime::currentMSecsSinceEpoch();
+    m_time = 0;
+    m_progress->setValue(0);
+    m_progress->show();   
+}
+
+void AdvancedSearch::Finished()
+{
+    m_progress->hide();   
+    m_scan->show();
+    m_interrupt->hide();
+}
+
 void AdvancedSearch::SearchGlobal()
 {
-//     Waiter wait;
-//     QVector< QVector<double > > full_list = ParamList();
-//     m_models_list.clear();
-//     QVector<double > error; 
-//     m_type = m_optim_flags->getFlags();   
-//     m_type |= OptimizationType::ComplexationConstants;
-//     int t0 = QDateTime::currentMSecsSinceEpoch();
-//     ConvertList(full_list, error);
-//     int t1 = QDateTime::currentMSecsSinceEpoch();
-//     std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-//     emit MultiScanFinished(1);
-  
+     Waiter wait;
+     PrepareProgress();
+     m_search->setParameter(m_parameter);
+     m_models_list.clear();
+     QVector<double > error; 
+     m_search->setOptimizationFlags(m_optim_flags->getFlags()); 
+     m_models_list = m_search->SearchGlobal();
+     m_full_list = m_search->FullList();
+     Finished();
+     emit MultiScanFinished(1);
 }
 
 void AdvancedSearch::LocalSearch()
 {
      Waiter wait;
-     
+     PrepareProgress();
      m_search->setParameter(m_parameter);
      m_series = m_search->LocalSearch();
+     Finished();
      emit PlotFinished(2);
 }
 

@@ -78,10 +78,18 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
     QStringList header = QStringList() <<  "Sum of Squares";
     for(int i = 0; i < list.size(); ++i)
     {
-        double error = list[i]["sse"].toDouble();
+        double error = list[i]["sum_of_squares"].toDouble();
         QStandardItem *item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         model->setItem(i, 0, item);
+        int j = 1;
+        for(int l = 0; l < m_input[i].size(); ++l)
+        {
+            QStandardItem *item = new QStandardItem(QString::number(m_input[i][l]));
+            item->setData(i, Qt::UserRole);
+            model->setItem(i, j, item);
+            j++;
+        }
         
         QJsonObject constants = list[i]["data"].toObject()["constants"].toObject();
         QStringList keys = constants.keys();
@@ -100,7 +108,7 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
         }
         
         QString consts;
-        int j = 1;
+        
         for(const QString &str : qAsConst(keys))
         {
             QString element = constants[str].toString();
@@ -114,10 +122,10 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
             
         }
     }
-    
+    QStringList head;
     for(const QString &str : m_model.data()->ConstantNames())
-        header << str;
-    
+        head << str;
+    header << head << head;
     model->setHorizontalHeaderLabels(header);
     QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
     proxyModel->setSourceModel(model);

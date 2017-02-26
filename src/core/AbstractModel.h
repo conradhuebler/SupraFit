@@ -156,6 +156,9 @@ public:
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);
     inline QPointer<DataTable > getConcentrations() { return m_concentrations; }
+    inline qreal SumofSquares() const { return m_sum_squares; }
+    inline qreal SumofAbsolute() const { return m_sum_absolute; }
+    
 public slots:
      inline  void CalculateSignal() { CalculateSignal(Constants());}
      
@@ -180,7 +183,8 @@ protected:
     bool m_corrupt;
     QStringList m_constant_names;
     QList<StatisticResult > m_statistics;
-    
+    qreal m_sum_absolute, m_sum_squares;
+        
 signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);

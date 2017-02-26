@@ -132,6 +132,9 @@ void ItoI_ItoII_Model::CalculateSignal(const QList<qreal > &constants)
     if(constants.size() == 0)
         return;        
     
+    m_sum_absolute = 0;
+    m_sum_squares = 0;
+    
     qreal K12= qPow(10, constants.last());
     qreal K11 = qPow(10, constants.first());
     

@@ -117,6 +117,10 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList< qr
 void ItoI_Model::CalculateSignal(const QList<qreal > &constants)
 {  
     m_corrupt = false;
+    
+    m_sum_absolute = 0;
+    m_sum_squares = 0;
+    
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
