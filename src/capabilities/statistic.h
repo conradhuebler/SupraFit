@@ -52,6 +52,8 @@ public:
     inline void setMaxSteps(int steps ) { m_maxsteps = steps; }
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> getSeries() const { return m_series; }
+    inline void setOptimizationConfig(OptimizerConfig config) { m_config = config; }
+    
 private:
     void SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<AbstractTitrationModel> m_model;
@@ -64,6 +66,7 @@ private:
     int m_maxsteps;
     bool m_converged;
     QList<QPointF> m_series;
+    OptimizerConfig m_config;
 };
 
 class Statistic : public QObject
@@ -78,12 +81,15 @@ public:
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<StatisticResult > Results() const { return m_result; }
+    inline void setOptimizationConfig(OptimizerConfig config) { m_config = config; }
+    
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
     QList<QList<QPointF> > m_series;
     QList<StatisticResult > m_result;
+    OptimizerConfig m_config;
 };
 
 #endif // STATISTIC_H

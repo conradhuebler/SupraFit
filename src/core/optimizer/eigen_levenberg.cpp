@@ -74,10 +74,10 @@ struct MyFunctor : Functor<double>
         Variables CalculatedSignals = model.data()->getCalculatedSignals();
         for( int i = 0; i < ModelSignals.size(); ++i)
         {
-            if(m_potenz > 1)
-                fvec(i) = qPow((CalculatedSignals[i] - ModelSignals[i]),m_potenz);
-            else
-                fvec(i) = qAbs((CalculatedSignals[i] - ModelSignals[i]));
+            if(m_potenz == 2)
+                fvec(i) = CalculatedSignals[i] - ModelSignals[i];
+            else if(m_potenz == 1)
+                fvec(i) = qSqrt(qAbs((CalculatedSignals[i] - ModelSignals[i])));
         }
         return 0;
     }
@@ -97,7 +97,7 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
 int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param)
 {
     
-    Q_UNUSED(max_iter)
+    
     OptimizerConfig config = model.data()->getOptimizerConfig();
     Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
     if(ModelSignals.size() == 0)
@@ -122,7 +122,12 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
      int iter = 0;
-
+    lm.parameters.factor = 100; //step bound for the diagonal shift, is this related to damping parameter, lambda?
+    lm.parameters.maxfev = max_iter;//max number of function evaluations
+    lm.parameters.xtol = 1.49012e-08; //tolerance for the norm of the solution vector
+    lm.parameters.ftol = 1.49012e-08; //tolerance for the norm of the vector function
+    lm.parameters.gtol = 0; // tolerance for the norm of the gradient of the error vector
+    lm.parameters.epsfcn = 0; //error precision
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
        do {
          status = lm.minimizeOneStep(parameter);

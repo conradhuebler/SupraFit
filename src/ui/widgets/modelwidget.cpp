@@ -512,7 +512,8 @@ void ModelWidget::Confidence()
     QJsonObject json = m_model->ExportJSON();
     statistic->setModel(m_model);
     statistic->setParameter(json);
-
+    statistic->setOptimizationConfig(m_model->getOptimizerConfig());
+    statistic->setOptimizationRun(m_optim_flags->getFlags());
     if(!statistic->ConfidenceAssesment())
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
@@ -602,7 +603,7 @@ void ModelWidget::LocalMinimize()
 
 QList<int> ModelWidget::ActiveSignals()
 {
-    QList<int > active_signals; //(m_model_elements.size(), 0);
+    QList<int > active_signals;
     for(int i = 0; i < m_model_elements.size(); ++i)
         active_signals << m_model_elements[i]->Include();
     return active_signals;
@@ -611,7 +612,6 @@ QList<int> ModelWidget::ActiveSignals()
 void ModelWidget::CollectActiveSignals()
 {
     QList<int > active_signals = ActiveSignals();
-    //     emit ActiveSignalChanged(active_signals);
     m_model->setActiveSignals(active_signals);
     
 }

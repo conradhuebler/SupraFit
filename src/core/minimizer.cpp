@@ -96,7 +96,11 @@ void NonLinearFitThread::ConstrainedFit()
         
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
         QList<qreal > old_constants =  m_model->Constants();
-        qreal old_error = m_model->ModelError();
+        qreal old_error;
+        if(m_opt_config.error_potenz == 2)
+            old_error = m_model->SumofSquares();
+        else
+            old_error = m_model->SumofAbsolute();
         if(m_runtype & OptimizationType::ComplexationConstants)
         {
             if(NonLinearFit(OptimizationType::ComplexationConstants) == 1)
@@ -111,7 +115,12 @@ void NonLinearFitThread::ConstrainedFit()
                  m_model->ImportJSON(m_last_parameter);
         }
         m_last_parameter = m_model->ExportJSON();
-        qreal error = m_model->ModelError();
+        qreal error;
+        
+        if(m_opt_config.error_potenz == 2)
+            error = m_model->SumofSquares();
+        else
+            error = m_model->SumofAbsolute();
         
         QList<qreal> constants = m_model->Constants();
         qreal constant_diff = 0;

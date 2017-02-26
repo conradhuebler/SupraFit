@@ -60,7 +60,10 @@ void StatisticThread::setParameter(const QJsonObject& json)
 void StatisticThread::ConfidenceAssesment()
 {
     m_model.data()->CalculateSignal();
-    m_error = m_model.data()->ModelError();
+    if(m_config.error_potenz == 2)
+        m_error = m_model.data()->SumofSquares();
+    else
+        m_error = m_model.data()->SumofAbsolute();
     QList<QPointF> series;
     QJsonObject optimized = m_model->ExportJSON();
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_type);
@@ -96,15 +99,23 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
     for(int m = 0; m < m_maxsteps; ++m)
     {
         double par = constant_ + double(m)*increment;
+       
         consts[m_parameter_id] = par;
         m_model->setConstants(consts);
+        m_model->setOptimizerConfig(m_config);
         m_minimizer->Minimize(m_type, locked);
         
         QJsonObject json_exp = m_minimizer->Parameter();
         m_model->ImportJSON(json_exp);
         m_model->CalculateSignal();
         
-        qreal new_error = m_model->ModelError();
+        qreal new_error;
+        
+        if(m_config.error_potenz == 2)
+            new_error = m_model.data()->SumofSquares();
+        else
+            new_error = m_model.data()->SumofAbsolute();
+        
         if(new_error < m_error)
             counter++;
         qreal rect = qMin(new_error,old_error)*qAbs(increment);
@@ -131,6 +142,7 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
         if(counter > 50)
         {
             m_converged = false;
+            qDebug() << "not converged " << direction;
             break;
         }
     }
@@ -175,6 +187,7 @@ bool Statistic::ConfidenceAssesment()
         thread->setModel(m_model);
         thread->SetParameterID(i);
         thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);
+        thread->setOptimizationConfig(m_config);
         if(m_model->SupportThreads())
         {
             thread->run();
