@@ -32,10 +32,17 @@ namespace ToolSet{
     QString DoubleVec2String(const QVector<qreal > &vector);
     QString DoubleList2String(const QList<qreal > &vector);
     QString DoubleList2String(const Vector &vector);
-
+    
     QVector<qreal > String2DoubleVec(const QString &str);
     QList<qreal > String2DoubleList(const QString &str);
     QString bool2YesNo(bool var) ;
+    
+    qreal ceil(qreal value);
+    qreal floor(qreal value);
+    qreal scale(qreal value, qreal &pow);
+    qreal scale(qreal value);
+    
+    QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
 }
 
 #endif // TOOLSET_H

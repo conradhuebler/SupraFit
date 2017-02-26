@@ -179,7 +179,6 @@ DataWidget::DataWidget()
     hlayout->addWidget(m_name);
     hlayout->addSpacing(4*width()/9);
     hlayout->addWidget(m_switch);
-    
     m_datapoints = new QLabel;
     m_substances = new QLabel;
     m_const_subs = new QLabel;
@@ -276,7 +275,7 @@ void DataWidget::SetProjectName()
 
 void DataWidget::setScaling()
 {
-    QVector<qreal> scaling;
+    QList<qreal> scaling;
     for(int i = 0; i < m_scaling_boxes.size(); ++i)
         scaling << m_scaling_boxes[i]->value();
     m_data.data()->setScaling(scaling);

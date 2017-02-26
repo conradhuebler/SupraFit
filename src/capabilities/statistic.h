@@ -34,19 +34,14 @@ class StatisticThread : public QObject, public QRunnable
 {
   Q_OBJECT
 public:
-    enum RunType{
-      ConfidenceByError = 1,
-      ConfidenceByFTest = 2,
-      ConfidenceByCarlo = 3
-    };
-    StatisticThread(RunType runtype);
+
+    StatisticThread();
     ~StatisticThread();
     void setModel(QSharedPointer<AbstractTitrationModel> model); 
     inline void SetParameterID( int id ) { m_parameter_id = id; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     void setParameter(const QJsonObject &json);
     virtual void run();
-    RunType m_runtype;
     inline StatisticResult getResult() const { return m_result; }
     inline void setIncerement(double increment) { m_increment = increment; }
     inline void setMaxSteps(int steps ) { m_maxsteps = steps; }

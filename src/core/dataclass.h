@@ -64,6 +64,7 @@ public:
     void Debug() const ;
     inline QStringList header() const { return m_header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
+    DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng);
     
 private:
     Eigen::MatrixXd m_table, m_checked_table;
@@ -94,7 +95,7 @@ public:
     int m_host_assignment;
     
     DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
-    QVector<qreal > m_scaling;
+    QList<qreal > m_scaling;
     
 };
 
@@ -124,7 +125,8 @@ public:
     {
         d->m_concentration_model->insertRow(conc);
         d->m_signal_model->insertRow(data);
-        d->m_scaling = QVector<qreal>(d->m_concentration_model->columnCount(), 1);
+        for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
+            d->m_scaling << 1;
     }
     
 
@@ -164,9 +166,11 @@ public:
     qreal XValue(int i) const;
     const QJsonObject ExportJSON() const;
     bool ImportJSON(const QJsonObject &topjson);
-    inline QVector<qreal> getScaling() const { return d->m_scaling; }
-    inline void setScaling(const QVector<qreal> &scaling) { d->m_scaling = scaling; }
+    inline QList<qreal> getScaling() const { return d->m_scaling; }
+    inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);
+    void OverrideSignalTable(DataTable *table);
+    
     
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;

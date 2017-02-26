@@ -34,7 +34,8 @@
 #include <QDebug>
 #include "dataclass.h"
 #include <QtGlobal>
-
+#include <cmath>
+#include <random>
 #include <iostream>
 
 DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent), m_checkable(false)
@@ -292,6 +293,19 @@ void DataTable::setRow(const Vector &vector, int row)
     return;
 }
 
+DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng)
+{
+    DataTable *table = new DataTable(this);
+    for(int j = 0; j <  columnCount(); ++j)
+        {
+            for(int i = 0; i < rowCount(); ++i)
+            {
+                double  randed = Phi(rng);
+                table->data(j,i) += randed;
+            }
+        }
+        return table;
+}
 
 DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
 {
@@ -299,7 +313,8 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
     m_signal_model = new DataTable;
     m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;
-    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
+    for(int i = 0; i < m_concentration_model->columnCount(); ++i)
+        m_scaling << 1;
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
@@ -310,7 +325,8 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
     m_signal_model = new DataTable;
     m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;    
-    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
+    for(int i = 0; i < m_concentration_model->columnCount(); ++i)
+        m_scaling << 1;
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
@@ -319,7 +335,9 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(other)
 {
     m_concentration_model = new DataTable(other.m_concentration_model);
-    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
+    
+    m_scaling = other.m_scaling;
+    
     m_signal_model = new DataTable(other.m_signal_model);
     m_raw_data = new DataTable(other.m_raw_data);
     m_type = other.m_type;
@@ -328,7 +346,9 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
 {
     m_concentration_model = new DataTable(other->m_concentration_model);
-    m_scaling = QVector<qreal>(m_concentration_model->columnCount(), 1);
+    
+    m_scaling = other->m_scaling;
+        
     m_signal_model = new DataTable(other->m_signal_model);
     m_raw_data = new DataTable(other->m_raw_data);
     m_type = other->m_type;
@@ -352,7 +372,8 @@ DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObje
     d = new DataClassPrivate();
     d->m_type = type;
     ImportJSON(json);
-    d->m_scaling = QVector<qreal>(d->m_concentration_model->columnCount(), 1);
+    for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
+        d->m_scaling << 1;
 }
 
 DataClass::DataClass(int type, QObject *parent) :  QObject(parent)
@@ -506,4 +527,11 @@ void DataClass::setHeader(const QStringList& strlist)
                 d->m_signal_model->setHeaderData(i - d->m_concentration_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
         }
     }
+}
+
+void DataClass::OverrideSignalTable(DataTable *table)
+{
+//     QSharedDataPointer<DataClassPrivate > ptr = QSharedDataPointer<DataClassPrivate>(d.data());
+    d->m_signal_model = table;
+//     d = ptr;
 }

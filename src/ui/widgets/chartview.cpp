@@ -18,7 +18,7 @@
  */
 
 #include "src/ui/dialogs/chartconfig.h"
-
+#include "src/core/toolset.h"
 
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
@@ -239,16 +239,16 @@ void ChartView::forceformatAxis()
     int x_mean = (x_max + x_min)/2;
     int y_mean = (y_max + y_min)/2;
     
-    x_max = ceil(x_max-x_mean) + x_mean;
-    y_max = ceil(y_max-y_mean) + y_mean;
+    x_max = ToolSet::ceil(x_max-x_mean) + x_mean;
+    y_max = ToolSet::ceil(y_max-y_mean) + y_mean;
     
     if(x_min)
-        x_min = floor(x_min-x_mean) + x_mean;
+        x_min = ToolSet::floor(x_min-x_mean) + x_mean;
     if(y_min)
-        y_min = floor(y_min-y_mean) + y_mean;
+        y_min = ToolSet::floor(y_min-y_mean) + y_mean;
     
     
-    int x_ticks = scale(x_max-x_min)/int(scale(x_max-x_min)/ 5) + 1;
+    int x_ticks = ToolSet::scale(x_max-x_min)/int(ToolSet::scale(x_max-x_min)/ 5) + 1;
     int y_ticks = 6; //scale(y_max-y_min)/int(scale(y_max-y_min)/ 5) + 1;
     
     QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
@@ -267,55 +267,6 @@ void ChartView::forceformatAxis()
     x_axis->setTitleText(m_x_axis);
     m_pending = false;
 }
-
-qreal ChartView::scale(qreal value)
-{
-    qreal pot;
-    return scale(value, pot);
-}
-
-qreal ChartView::scale(qreal value, qreal &pow)
-{
-    if(qAbs(value) < 1 && value)
-    {
-        while(qAbs(value) < 1)
-        {
-            pow /= 10;
-            value *= 10;
-        }
-    }
-    else if(qAbs(value) > 10)
-    {
-        while(qAbs(value) > 10)
-        {
-            pow *= 10;
-            value /= 10;
-        }
-    }
-    return value;
-}
-
-qreal ChartView::ceil(qreal value)
-{
-    double pot = 1;
-    value = scale(value, pot);
-    int integer = int(value) + 1;    
-    if(value < 0)
-        integer -= 1;
-    return qreal(integer)*pot;
-}
-
-qreal ChartView::floor(qreal value)
-{
-    double pot = 1;
-    value = scale(value, pot);
-    
-    int integer = int(value);
-    if(value < 0)
-        integer -= 1;
-    return qreal(integer)*pot;
-}
-
 
 void ChartView::PlotSettings()
 {

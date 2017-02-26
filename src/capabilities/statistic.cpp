@@ -30,7 +30,7 @@
 
 #include "statistic.h"
 
-StatisticThread::StatisticThread(RunType runtype) : m_runtype(runtype), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-3), m_maxsteps(1e4), m_converged(true)
+StatisticThread::StatisticThread() : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-3), m_maxsteps(1e4), m_converged(true)
 {
     setAutoDelete(false);
 }
@@ -47,9 +47,7 @@ void StatisticThread::setModel(QSharedPointer<AbstractTitrationModel> model)
 
 void StatisticThread::run()
 {
-    
-    if(m_runtype == RunType::ConfidenceByError)
-        ConfidenceAssesment();
+    ConfidenceAssesment();
 }
 
 void StatisticThread::setParameter(const QJsonObject& json)
@@ -183,7 +181,7 @@ bool Statistic::ConfidenceAssesment()
     
     for(int i = 0; i < parameter.size(); ++i)
     {
-        QPointer<StatisticThread >thread = new StatisticThread(StatisticThread::RunType::ConfidenceByError);
+        QPointer<StatisticThread >thread = new StatisticThread();
         thread->setModel(m_model);
         thread->SetParameterID(i);
         thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);

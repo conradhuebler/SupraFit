@@ -24,6 +24,7 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 #include "src/capabilities/statistic.h"
+#include "src/capabilities/montecarlostatistics.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/widgets/3dchartview.h"
@@ -57,6 +58,9 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QTableView>
+#include <QtWidgets/QAction>
+#include <QtWidgets/QMenu>
+
 
 #include <QtCharts/QChart>
 #include <QtCharts/QXYSeries>
@@ -351,7 +355,18 @@ void ModelWidget::DiscreteUI()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
     connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
     connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
-    connect(m_confi, SIGNAL(clicked()), this, SLOT(Confidence()));
+//     
+    
+    QAction *confidence = new QAction(tr("Continuous Variation"));
+    connect(confidence, SIGNAL(triggered()), this, SLOT(Confidence()));
+    QAction *mc = new QAction(tr("Monte Carlo"));
+    connect(mc, SIGNAL(triggered()), this, SLOT(MonteCarlo()));
+    
+    QMenu *statistic_menu = new QMenu;
+    statistic_menu->addAction(confidence);
+    statistic_menu->addAction(mc);
+    m_confi->setMenu(statistic_menu);
+    
     connect(m_concen, SIGNAL(clicked()), this, SLOT(toggleConcentrations()));
     m_sum_squares = new QLineEdit;
     m_sum_squares->setReadOnly(true);
@@ -497,6 +512,39 @@ void ModelWidget::GlobalMinimize()
     
     m_statistic = false;
     m_pending = false; 
+}
+
+void ModelWidget::MonteCarlo()
+{
+    Waiter wait;
+    
+    QPointer<MonteCarloStatistics > monte_carlo = new MonteCarloStatistics(this);
+    monte_carlo->setOptimizationRun(m_optim_flags->getFlags());
+    monte_carlo->setModel(m_model);
+    monte_carlo->setMaxSteps(1000);
+    monte_carlo->Evaluate();
+    
+    QList<QList<QPointF > >series = monte_carlo->getSeries();
+    
+    QWidget *resultwidget = new QWidget;
+    QGridLayout *layout = new QGridLayout;
+    resultwidget->setLayout(layout);
+    
+    QtCharts::QChart *chart = new QtCharts::QChart;
+    
+    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    view = new ChartView(chart);
+    layout->addWidget(view, 0, 0, 1, 7);
+    for(int i = 0; i < series.size(); ++i)
+    {
+        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        xy_series->append(series[i]);
+        view->addSeries(xy_series);
+        
+      }
+    m_statistic_dialog->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
+    m_statistic_dialog->show();  
+    delete monte_carlo;
 }
 
 

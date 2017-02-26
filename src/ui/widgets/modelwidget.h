@@ -140,6 +140,7 @@ public:
 public slots:
     void LoadJson(const QJsonObject &object);
     void Confidence();
+    void MonteCarlo();
     void GlobalMinimize();
     void LocalMinimize();
     

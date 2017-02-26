@@ -75,12 +75,7 @@ private:
     ChartConfig getChartConfig() const;
     
     ChartConfigDialog m_chartconfigdialog;
-    bool m_pending, m_lock_scaling;
-    qreal ceil(qreal value);
-    qreal floor(qreal value);
-    qreal scale(qreal value, qreal &pow);
-    qreal scale(qreal value);
-    
+    bool m_pending, m_lock_scaling;   
     
 private slots:
     void PlotSettings();

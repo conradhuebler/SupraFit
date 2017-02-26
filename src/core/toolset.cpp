@@ -19,7 +19,7 @@
 
 #include <QString>
 #include <QVector>
-
+#include <QDebug>
 #include <Eigen/Dense>
 
 #include "toolset.h"
@@ -27,57 +27,152 @@ typedef Eigen::VectorXd Vector;
 
 namespace ToolSet{
     
-QString DoubleVec2String(const QVector<qreal > &vector)
-{
-    QString string;
-    for(int i = 0; i < vector.size(); ++i)    
-        string += QString::number(vector[i]) + " ";
+    QString DoubleVec2String(const QVector<qreal > &vector)
+    {
+        QString string;
+        for(int i = 0; i < vector.size(); ++i)    
+            string += QString::number(vector[i]) + " ";
+        
+        return string.left(string.length() - 1);
+    }
     
-    return string.left(string.length() - 1);
-}
-
-QString DoubleList2String(const QList<qreal > &vector)
-{
-    QString string;
-    for(int i = 0; i < vector.size(); ++i)    
-        string += QString::number(vector[i]) + " ";
+    QString DoubleList2String(const QList<qreal > &vector)
+    {
+        QString string;
+        for(int i = 0; i < vector.size(); ++i)    
+            string += QString::number(vector[i]) + " ";
+        
+        return string.left(string.length() - 1);
+    }
     
-    return string.left(string.length() - 1);
-}
-
-QString DoubleList2String(const Vector &vector)
-{
-    QString string;
-    for(int i = 0; i < vector.rows(); ++i)    
-        string += QString::number(vector(i)) + " ";
+    QString DoubleList2String(const Vector &vector)
+    {
+        QString string;
+        for(int i = 0; i < vector.rows(); ++i)    
+            string += QString::number(vector(i)) + " ";
+        
+        return string.left(string.length() - 1);
+    }
     
-    return string.left(string.length() - 1);
-}
-
-QVector<qreal > String2DoubleVec(const QString &str)
-{
-     QVector<qreal > vector;
-     QStringList nums = str.split(" ");
-     for(const QString &string: qAsConst(nums))
-         vector << string.toDouble();
-     return vector;
-}
-
-QList<qreal > String2DoubleList(const QString &str)
-{
-    QList<qreal > vector;
-    QStringList nums = str.split(" ");
-    for(const QString &string: qAsConst(nums))
-        vector << string.toDouble();
-    return vector;
-}
-
-QString bool2YesNo(bool var) 
+    QVector<qreal > String2DoubleVec(const QString &str)
+    {
+        QVector<qreal > vector;
+        QStringList nums = str.split(" ");
+        for(const QString &string: qAsConst(nums))
+            vector << string.toDouble();
+        return vector;
+    }
+    
+    QList<qreal > String2DoubleList(const QString &str)
+    {
+        QList<qreal > vector;
+        QStringList nums = str.split(" ");
+        for(const QString &string: qAsConst(nums))
+            vector << string.toDouble();
+        return vector;
+    }
+    
+    QString bool2YesNo(bool var) 
     {
         if(var)
             return QString("yes");
         else
             return QString("No");
+    }
+    
+    qreal scale(qreal value)
+    {
+        qreal pot;
+        return scale(value, pot);
+    }
+    
+    qreal scale(qreal value, qreal &pow)
+    {
+        if(qAbs(value) < 1 && value)
+        {
+            while(qAbs(value) < 1)
+            {
+                pow /= 10;
+                value *= 10;
+            }
+        }
+        else if(qAbs(value) > 10)
+        {
+            while(qAbs(value) > 10)
+            {
+                pow *= 10;
+                value /= 10;
+            }
+        }
+        return value;
+    }
+    
+    qreal ceil(qreal value)
+    {
+        double pot = 1;
+        value = scale(value, pot);
+        int integer = int(value) + 1;    
+        if(value < 0)
+            integer -= 1;
+        return qreal(integer)*pot;
+    }
+    
+    qreal floor(qreal value)
+    {
+        double pot = 1;
+        value = scale(value, pot);
+        
+        int integer = int(value);
+        if(value < 0)
+            integer -= 1;
+        return qreal(integer)*pot;
+    }
+    
+    QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins, qreal min, qreal max)
+    {
+        
+        
+        if(min == max)
+        {
+            for(int i = 0; i < vector.size(); ++i)   
+            {
+                min = qMin(min, vector[i]);
+                max = qMax(max, vector[i]);
+            }  
+        }
+        min = floor(min);
+        max = ceil(max);
+        if(bins == 0)
+        {
+            if(vector.size() > 1e5)
+                bins = vector.size()/1e4;
+            else if(vector.size() < 1e2)
+                bins = vector.size()/1e2;
+            else
+                bins = 10;
+        }
+        
+        QVector<QPair<qreal, int > > histogram;
+        double h=(max-min)/bins;
+        QVector<double > x(bins,0);
+        QVector<int> counter(bins, 0);
+
+        for(int j=0;j<bins;j++)
+        {
+            x[j] = min+h/2.+j*h;  
+            QPair<qreal, int> bin;
+            bin.second = 0;
+            bin.first = min+h/2.+j*h;
+            histogram << bin;
+        }
+        for(int i = 0; i < vector.size(); ++i)
+        {
+            int jStar = std::floor( (vector[i]-min)/h ); // use the floor function to get j* for the nearest point to x_j* to phi
+            if(jStar>=bins || jStar<0)continue; // if you are outside the grid continue
+                counter[jStar]++;
+                histogram[jStar].second++;
+        }
+        return histogram;
     }
     
 }
