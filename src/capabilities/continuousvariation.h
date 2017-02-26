@@ -30,13 +30,22 @@ class QPointF;
 
 struct StatisticResult;
 
-class StatisticThread : public QObject, public QRunnable
+struct CVConfig
+{
+    double increment = 1e-3;
+    int maxsteps = 1e4;
+    OptimizerConfig optimizer_config;
+    OptimizationType runtype;
+};
+
+
+class ContinuousVariationThread : public QObject, public QRunnable
 {
   Q_OBJECT
 public:
 
-    StatisticThread();
-    ~StatisticThread();
+    ContinuousVariationThread(const CVConfig &config);
+    ~ContinuousVariationThread();
     void setModel(QSharedPointer<AbstractTitrationModel> model); 
     inline void SetParameterID( int id ) { m_parameter_id = id; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
@@ -47,36 +56,35 @@ public:
     inline void setMaxSteps(int steps ) { m_maxsteps = steps; }
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> getSeries() const { return m_series; }
-    inline void setOptimizationConfig(OptimizerConfig config) { m_config = config; }
     
 private:
     void SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
-    void ConfidenceAssesment();
     int m_parameter_id;
     StatisticResult m_result;
     qreal m_increment, m_error;
     int m_maxsteps;
     bool m_converged;
     QList<QPointF> m_series;
-    OptimizerConfig m_config;
+    CVConfig m_config;
 };
 
-class Statistic : public QObject
+class ContinuousVariation : public QObject
 {
     Q_OBJECT
+    
 public:
-    Statistic(QObject *parent = 0);
-    ~Statistic();
+    ContinuousVariation(const CVConfig &config, QObject *parent = 0);
+    ~ContinuousVariation();
     void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
+    inline void setConfig(const CVConfig &config) { m_config = config;}
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<StatisticResult > Results() const { return m_result; }
-    inline void setOptimizationConfig(OptimizerConfig config) { m_config = config; }
     
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
@@ -84,7 +92,7 @@ private:
     OptimizationType m_type;
     QList<QList<QPointF> > m_series;
     QList<StatisticResult > m_result;
-    OptimizerConfig m_config;
+    CVConfig m_config;
 };
 
 #endif // STATISTIC_H

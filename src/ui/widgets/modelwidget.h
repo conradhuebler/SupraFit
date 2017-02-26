@@ -51,6 +51,7 @@ class ChartView;
 class _3DChartView;
 class OptimizerFlagWidget;
 class StatisticWidget;
+class StatisticDialog;
 
 struct ModelHistoryElement;
 struct Charts;
@@ -139,8 +140,8 @@ public:
     
 public slots:
     void LoadJson(const QJsonObject &object);
-    void Confidence();
-    void MonteCarlo();
+    void CVStatistic();
+    void MCStatistic();
     void GlobalMinimize();
     void LocalMinimize();
     
@@ -153,6 +154,7 @@ private:
     QVector<QPointer<QLineEdit > > m_errors;
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
     QPointer<AdvancedSearch> m_advancedsearch;
+    QPointer<StatisticDialog> m_statistic_dialog;
     QSpinBox *m_maxiter;
     QLabel *m_bc_50;
     QVBoxLayout *m_sign_layout;
@@ -169,7 +171,7 @@ private:
     StatisticWidget *m_statistic_widget;
     QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
-    ModalDialog *m_statistic_dialog, *m_search_dialog, *m_table_dialog, *m_concentrations;
+    ModalDialog *m_statistic_result, *m_search_result, *m_table_result, *m_concentrations_result;
 //     OptimizationType m_last_run;
     bool m_statistic;
     Charts m_charts;
@@ -186,6 +188,8 @@ private slots:
     void MultiScanFinished(int runtype);
     void triggerPlot3D();
     void toggleConcentrations();
+    void toggleStatisticDialog();
+    
     
 public slots:
     void recalulate();

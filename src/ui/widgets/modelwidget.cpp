@@ -23,7 +23,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
-#include "src/capabilities/statistic.h"
+#include "src/capabilities/continuousvariation.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/advancedsearch.h"
@@ -35,6 +35,7 @@
 #include "src/ui/widgets/modeltablewidget.h"
 
 #include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/dialogs/statisticdialog.h"
 
 #include "chartwidget.h"
 #include "chartview.h"
@@ -254,13 +255,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
+    
+    m_statistic_dialog = new StatisticDialog(this);
+    connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
+    connect(m_statistic_dialog, SIGNAL(CVStatistic()), this, SLOT(CVStatistic()));
+    
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
     connect(m_advancedsearch, SIGNAL(MultiScanFinished(int)), this, SLOT(MultiScanFinished(int)));
-    m_search_dialog = new ModalDialog;
-    m_statistic_dialog = new ModalDialog;
+    m_search_result = new ModalDialog;
+    m_statistic_result = new ModalDialog;
     m_statistic_widget = new StatisticWidget(m_model, this),
-    m_table_dialog = new ModalDialog;
-    m_concentrations = new ModalDialog;
+    m_table_result= new ModalDialog;
+    m_concentrations_result = new ModalDialog;
     
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
@@ -320,12 +326,12 @@ ModelWidget::~ModelWidget()
     m_model.clear();
     if(_3dchart)
         delete _3dchart;
-    m_statistic_dialog->hide();
-    delete m_statistic_dialog;
-    m_search_dialog->hide();
-    delete m_search_dialog;
-    m_table_dialog->hide();
-    delete m_table_dialog;
+//     m_statistic_dialog->hide();
+     delete m_statistic_result;
+//     m_search_result->hide();
+     delete m_search_result;
+//     m_table_dialog->hide();
+     delete m_table_result;
 }
 
 
@@ -355,17 +361,7 @@ void ModelWidget::DiscreteUI()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
     connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
     connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
-//     
-    
-    QAction *confidence = new QAction(tr("Continuous Variation"));
-    connect(confidence, SIGNAL(triggered()), this, SLOT(Confidence()));
-    QAction *mc = new QAction(tr("Monte Carlo"));
-    connect(mc, SIGNAL(triggered()), this, SLOT(MonteCarlo()));
-    
-    QMenu *statistic_menu = new QMenu;
-    statistic_menu->addAction(confidence);
-    statistic_menu->addAction(mc);
-    m_confi->setMenu(statistic_menu);
+    connect(m_confi, SIGNAL(clicked()), this, SLOT(toggleStatisticDialog()));
     
     connect(m_concen, SIGNAL(clicked()), this, SLOT(toggleConcentrations()));
     m_sum_squares = new QLineEdit;
@@ -514,14 +510,22 @@ void ModelWidget::GlobalMinimize()
     m_pending = false; 
 }
 
-void ModelWidget::MonteCarlo()
+void ModelWidget::toggleStatisticDialog()
+{
+    m_statistic_dialog->show();
+}
+
+
+void ModelWidget::MCStatistic()
 {
     Waiter wait;
+    MCConfig config = m_statistic_dialog->getMCConfig();
     
-    QPointer<MonteCarloStatistics > monte_carlo = new MonteCarloStatistics(this);
-    monte_carlo->setOptimizationRun(m_optim_flags->getFlags());
+    config.optimizer_config = m_model->getOptimizerConfig();
+    config.runtype = m_optim_flags->getFlags();
+    
+    QPointer<MonteCarloStatistics > monte_carlo = new MonteCarloStatistics(config, this);
     monte_carlo->setModel(m_model);
-    monte_carlo->setMaxSteps(1000);
     monte_carlo->Evaluate();
     
     QList<QList<QPointF > >series = monte_carlo->getSeries();
@@ -542,26 +546,24 @@ void ModelWidget::MonteCarlo()
         view->addSeries(xy_series);
         
       }
-    m_statistic_dialog->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
-    m_statistic_dialog->show();  
+    m_statistic_result->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
+    m_statistic_result->show();  
     delete monte_carlo;
 }
 
 
-void ModelWidget::Confidence()
+void ModelWidget::CVStatistic()
 {
     Waiter wait;
-//     if(m_statistic)
-//     {
-//         m_statistic_dialog->show();
-//         return;
-//     }
-    Statistic *statistic = new Statistic(this);
+
+    CVConfig config = m_statistic_dialog->getCVConfig();;
+    config.optimizer_config = m_model->getOptimizerConfig();
+    config.runtype = m_optim_flags->getFlags();
+    ContinuousVariation *statistic = new ContinuousVariation(config, this);
     QJsonObject json = m_model->ExportJSON();
     statistic->setModel(m_model);
     statistic->setParameter(json);
-    statistic->setOptimizationConfig(m_model->getOptimizerConfig());
-    statistic->setOptimizationRun(m_optim_flags->getFlags());
+
     if(!statistic->ConfidenceAssesment())
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
@@ -591,12 +593,11 @@ void ModelWidget::Confidence()
         layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
         layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
         layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));
-        m_model->setStatistic(result[i], i);
+         m_model->setStatistic(result[i], i);
     }
-    m_statistic = true;
-    m_statistic_dialog->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
-    m_statistic_dialog->show();
-    
+    m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
+    m_statistic_result->show();
+
     delete statistic;
 }
 
@@ -752,10 +753,10 @@ void ModelWidget::PlotFinished(int runtype)
         if(!_3dchart)
         {
             _3dchart = new _3DChartView;
-            m_search_dialog->setWidget(_3dchart, "3D Plot");
+            m_search_result->setWidget(_3dchart, "3D Plot");
         }
         else
-            _3dchart = qobject_cast<_3DChartView *>(m_search_dialog->Widget());
+            _3dchart = qobject_cast<_3DChartView *>(m_search_result->Widget());
         
         _3dchart->setMaxZ(m_advancedsearch->MaxError());
         _3dchart->setMaxX(m_advancedsearch->MaxX());
@@ -779,10 +780,10 @@ void ModelWidget::PlotFinished(int runtype)
             xy_series->append(series[i]);
             view->addSeries(xy_series);
         }
-        m_search_dialog->setWidget(view, "Simple Plot");
+        m_search_result->setWidget(view, "Simple Plot");
         
     }
-    m_search_dialog->show();
+    m_search_result->show();
 }
 
 
@@ -794,10 +795,10 @@ void ModelWidget::MultiScanFinished(int runtype)
     table->setModel(m_model);
     table->setInputList(m_advancedsearch->FullList());
     table->setModelList(m_advancedsearch->ModelList());
-    m_table_dialog->setWidget(table, "Scan Results");
+    m_table_result->setWidget(table, "Scan Results");
     
     m_advancedsearch->hide();
-    m_table_dialog->show();
+    m_table_result->show();
 }
 
 void ModelWidget::toggleConcentrations()
@@ -805,7 +806,7 @@ void ModelWidget::toggleConcentrations()
     
     QTableView *table = new QTableView;
     table->setModel(m_model->getConcentrations());
-    m_concentrations->setWidget(table);
-    m_concentrations->show();
+    m_concentrations_result->setWidget(table);
+    m_concentrations_result->show();
 }
 #include "modelwidget.moc"

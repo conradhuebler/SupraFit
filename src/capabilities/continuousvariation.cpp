@@ -28,51 +28,41 @@
 
 #include <iostream>
 
-#include "statistic.h"
+#include "continuousvariation.h"
 
-StatisticThread::StatisticThread() : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-3), m_maxsteps(1e4), m_converged(true)
+ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config) : m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-3), m_maxsteps(1e4), m_converged(true)
 {
     setAutoDelete(false);
 }
 
-StatisticThread::~StatisticThread()
+ContinuousVariationThread::~ContinuousVariationThread()
 {
 }
 
-void StatisticThread::setModel(QSharedPointer<AbstractTitrationModel> model)
+void ContinuousVariationThread::setModel(QSharedPointer<AbstractTitrationModel> model)
 { 
     m_model = model->Clone(); 
-    m_minimizer->setModel(m_model);//Cloned(m_model); 
+    m_minimizer->setModel(m_model);
 }
 
-void StatisticThread::run()
-{
-    ConfidenceAssesment();
-}
-
-void StatisticThread::setParameter(const QJsonObject& json)
-{
-    m_model->ImportJSON(json);
-}
-
-void StatisticThread::ConfidenceAssesment()
+void ContinuousVariationThread::run()
 {
     m_model.data()->CalculateSignal();
-    if(m_config.error_potenz == 2)
+    if(m_config.optimizer_config.error_potenz == 2)
         m_error = m_model.data()->SumofSquares();
     else
         m_error = m_model.data()->SumofAbsolute();
     QList<QPointF> series;
-    QJsonObject optimized = m_model->ExportJSON();
-    QVector<double > parameter = m_model.data()->OptimizeParameters(m_type);
+    QJsonObject optimized = m_model.data()->ExportJSON();
+    QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
     
     m_result.optim = parameter[m_parameter_id];
-    m_result.name = m_model->ConstantNames()[m_parameter_id];
+    m_result.name = m_model.data()->ConstantNames()[m_parameter_id];
     
     double integ_5 = 0;
     double integ_1 = 0;
     SumErrors(1, integ_5, integ_1, series);
-    m_model->ImportJSON(optimized);
+    m_model.data()->ImportJSON(optimized);
     SumErrors(0, integ_5, integ_1, series);
     
     
@@ -81,7 +71,13 @@ void StatisticThread::ConfidenceAssesment()
     m_result.integ_1 = integ_1/m_error;
 }
 
-void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
+void ContinuousVariationThread::setParameter(const QJsonObject& json)
+{
+    m_model.data()->ImportJSON(json);
+}
+
+
+void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
 {
     double increment = m_increment;
     if(!direction)
@@ -89,27 +85,26 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
     qreal old_error = m_error;
     int counter = 0;
     QList<int> locked; 
-    for(int i = 0; i <  m_model.data()->OptimizeParameters(m_type).size(); ++i)
+    for(int i = 0; i <  m_model.data()->OptimizeParameters(m_config.runtype).size(); ++i)
         locked << 1;
     locked[m_parameter_id] = 0;
-    QList<qreal > consts = m_model->Constants();
+    QList<qreal > consts = m_model.data()->Constants();
     double constant_ = consts[m_parameter_id];
     for(int m = 0; m < m_maxsteps; ++m)
     {
         double par = constant_ + double(m)*increment;
        
         consts[m_parameter_id] = par;
-        m_model->setConstants(consts);
-        m_model->setOptimizerConfig(m_config);
-        m_minimizer->Minimize(m_type, locked);
+        m_model.data()->setConstants(consts);
+        m_minimizer->Minimize(m_config.runtype, locked);
         
         QJsonObject json_exp = m_minimizer->Parameter();
-        m_model->ImportJSON(json_exp);
-        m_model->CalculateSignal();
+        m_model.data()->ImportJSON(json_exp);
+        m_model.data()->CalculateSignal();
         
         qreal new_error;
         
-        if(m_config.error_potenz == 2)
+        if(m_config.optimizer_config.error_potenz == 2)
             new_error = m_model.data()->SumofSquares();
         else
             new_error = m_model.data()->SumofAbsolute();
@@ -147,21 +142,21 @@ void StatisticThread::SumErrors(bool direction, double& integ_5, double& integ_1
 }
 
 
-Statistic::Statistic(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+ContinuousVariation::ContinuousVariation(const CVConfig &config, QObject *parent) : QObject(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
 {
     
     
     
 }
 
-Statistic::~Statistic()
+ContinuousVariation::~ContinuousVariation()
 {
     
     
     
 }
 
-bool Statistic::ConfidenceAssesment()
+bool ContinuousVariation::ConfidenceAssesment()
 {
     if(!m_model)
         return false;
@@ -170,23 +165,22 @@ bool Statistic::ConfidenceAssesment()
     m_series.clear();
     
     m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model->ExportJSON();
+    QJsonObject optimized = m_model.data()->ExportJSON();
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | OptimizationType::IgnoreAllShifts).toList();
     
     m_model.data()->CalculateSignal();
     QThreadPool *threadpool = QThreadPool::globalInstance();
-    QList<QPointer <StatisticThread > > threads;
+    QList<QPointer <ContinuousVariationThread > > threads;
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
     
     for(int i = 0; i < parameter.size(); ++i)
     {
-        QPointer<StatisticThread >thread = new StatisticThread();
+        QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config);
         thread->setModel(m_model);
         thread->SetParameterID(i);
         thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);
-        thread->setOptimizationConfig(m_config);
-        if(m_model->SupportThreads())
+        if(m_model.data()->SupportThreads())
         {
             thread->run();
         }
@@ -195,7 +189,7 @@ bool Statistic::ConfidenceAssesment()
         threads << thread;
     }
     
-    if(!m_model->SupportThreads())
+    if(!m_model.data()->SupportThreads())
         threadpool->waitForDone();
     
     bool converged = true;
@@ -211,9 +205,9 @@ bool Statistic::ConfidenceAssesment()
 }
 
 
-void Statistic::setParameter(const QJsonObject& json)
+void ContinuousVariation::setParameter(const QJsonObject& json)
 {
-    m_model->ImportJSON(json);
+    m_model.data()->ImportJSON(json);
 }
 
-#include "statistic.moc"
+#include "continuousvariation.moc"

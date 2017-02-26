@@ -32,7 +32,7 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(QObject* parent): QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+MonteCarloThread::MonteCarloThread(const MCConfig &config, QObject* parent): QObject(parent), m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
 {
     setAutoDelete(false);
 }
@@ -55,7 +55,7 @@ void MonteCarloThread::run()
     }
     
     m_minimizer->setModel(m_model);
-    m_minimizer->Minimize(m_runtype);
+    m_minimizer->Minimize(m_config.runtype);
     
     m_optimized = m_minimizer->Parameter();
     m_model->ImportJSON(m_optimized);
@@ -65,11 +65,11 @@ void MonteCarloThread::run()
 }
 
 
-MonteCarloStatistics::MonteCarloStatistics(QObject *parent): QObject(parent), m_maxsteps(100)
+MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *parent): QObject(parent), m_config(config)
 {
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);
-    Phi = std::normal_distribution<double>(0,1e-2);
+    Phi = std::normal_distribution<double>(0,m_config.varianz);
 }
 
 MonteCarloStatistics::~MonteCarloStatistics()
@@ -82,12 +82,11 @@ void MonteCarloStatistics::Evaluate()
     QThreadPool *threadpool = QThreadPool::globalInstance();
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
-    m_table = new DataTable(m_model->SignalModel());
+    m_table = new DataTable(m_model->ModelTable());
     QVector<QPointer <MonteCarloThread > > threads;
-    for(int step = 0; step < m_maxsteps; ++step)
+    for(int step = 0; step < m_config.maxsteps; ++step)
     {
-        QPointer<MonteCarloThread > thread = new MonteCarloThread(this);
-        thread->setOptimizationRun(m_runtype);
+        QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
         thread->setModel(m_model);
         thread->setDataTable(m_model->SignalModel()->PrepareMC(Phi, rng));
         threadpool->start(thread);

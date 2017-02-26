@@ -52,7 +52,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
 
 AbstractTitrationModel::~AbstractTitrationModel()
 {
-    
+
 }
 
 void AbstractTitrationModel::adress() const

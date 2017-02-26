@@ -28,6 +28,7 @@
 
 class QVBoxLayout;
 class QCheckBox;
+class QPushButton;
 
 class OptimizerFlagWidget : public QWidget
 {

@@ -109,7 +109,7 @@ qt5_use_modules(models Core)
 set(utils_SRC
                 src/capabilities/montecarlostatistics.cpp
                 src/capabilities/globalsearch.cpp
-                src/capabilities/statistic.cpp
+                src/capabilities/continuousvariation.cpp
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp
                 src/core/toolset.cpp
@@ -129,6 +129,7 @@ set(suprafit_SRCS
                 src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/modelhistorywidget.cpp
+                src/ui/dialogs/statisticdialog.cpp
                 src/ui/dialogs/modeldialog.cpp
                 src/ui/dialogs/advancedsearch.cpp
                 src/ui/dialogs/importdata.cpp

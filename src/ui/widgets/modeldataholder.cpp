@@ -487,7 +487,7 @@ void ModelDataHolder::Statistic()
         {
             QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
             ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
-            model->Confidence();
+            model->CVStatistic();
         }
     }
 }
