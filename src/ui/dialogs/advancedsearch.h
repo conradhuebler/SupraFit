@@ -79,7 +79,7 @@ public:
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); SetUi();}
     inline GlobalSearchResult  LastResult() const { return last_result; }
     inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
-    inline double MaxError() const { return error_max; }
+    inline double MaxError() const { return m_error_max; }
     double MaxX() const;
     double MinX() const;
     double MaxY() const;
@@ -103,7 +103,7 @@ private:
     QList<QList<QPointF> > m_series;
     OptimizationType m_type;
     QPointer<OptimizerFlagWidget > m_optim_flags;
-    double error_max;
+    double m_error_max;
     QVector< QVector<double > > ParamList();
     QList<QJsonObject > m_models_list;
     QVector<QPointer<ParameterWidget > > m_parameter_list;

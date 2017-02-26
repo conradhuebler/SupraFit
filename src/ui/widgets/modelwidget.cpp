@@ -714,7 +714,7 @@ void ModelWidget::PlotFinished(int runtype)
         _3dchart->setMinX(m_advancedsearch->MinX());
         _3dchart->setMaxY(m_advancedsearch->MaxY());
         _3dchart->setMinY(m_advancedsearch->MinY());      
-        
+        qDebug() << m_advancedsearch->MaxError();
         _3dchart->setData(m_advancedsearch->dataArray());
         
         m_plot_3d->setEnabled(true);

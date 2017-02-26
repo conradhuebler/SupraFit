@@ -88,8 +88,7 @@ double ParameterWidget::Step() const
 AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent)
 {
     setModal(false);
-    error_max = 0;
-
+    m_error_max = 0;
 }
 
 
@@ -239,19 +238,24 @@ void AdvancedSearch::LocalSearch()
 
 void AdvancedSearch::Create2DPlot()
 {
-//     Waiter wait;
-//     QVector< QVector<double > > full_list = ParamList();
-//     
-//     QVector<double > error; 
-//     m_type = m_optim_flags->getFlags();   
-//     if(m_model->ConstantSize() == 2)
-//     {
-//         int t0 = QDateTime::currentMSecsSinceEpoch();
-//         ConvertList(full_list, error);
-//         int t1 = QDateTime::currentMSecsSinceEpoch();
-//         std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-//         emit PlotFinished(1);
-//     }
+     Waiter wait;
+     PrepareProgress();
+     
+     m_search->setParameter(m_parameter);
+     QVector<VisualData> data_list = m_search->Create2DPLot();
+     m_error_max = 0;
+     for(const VisualData &data : data_list)
+     {
+         QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
+         for(int i = 0; i < data.data.size(); ++i)
+         {
+             *dataRow1 << QVector3D(data.data[i][0],data.data[i][1],data.data[i][2]);
+             m_error_max = qMax(m_error_max, data.data[i][1]);
+         }
+        m_3d_data << dataRow1;
+     }
+     Finished();
+     emit PlotFinished(1);
 }
 
 
