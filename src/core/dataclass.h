@@ -97,6 +97,7 @@ public:
     DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
     QList<qreal > m_scaling;
     
+    void check();
 };
 
 
@@ -170,7 +171,6 @@ public:
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);
     void OverrideSignalTable(DataTable *table);
-    
     
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;

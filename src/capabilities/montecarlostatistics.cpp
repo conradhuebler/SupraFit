@@ -78,7 +78,10 @@ MonteCarloStatistics::~MonteCarloStatistics()
 }
 
 void MonteCarloStatistics::Evaluate()
-{
+{    
+    QThreadPool *threadpool = QThreadPool::globalInstance();
+    int maxthreads =qApp->instance()->property("threads").toInt();
+    threadpool->setMaxThreadCount(maxthreads);
     m_table = new DataTable(m_model->SignalModel());
     QVector<QPointer <MonteCarloThread > > threads;
     for(int step = 0; step < m_maxsteps; ++step)
@@ -87,13 +90,11 @@ void MonteCarloStatistics::Evaluate()
         thread->setOptimizationRun(m_runtype);
         thread->setModel(m_model);
         thread->setDataTable(m_model->SignalModel()->PrepareMC(Phi, rng));
-        thread->run();
-//         QThreadPool::globalInstance()->start(thread);
-        threads << thread;
-//          QThreadPool::globalInstance()->waitForDone();
-        m_model->OverrideSignalTable(m_table);
+        threadpool->start(thread);
+        threads << thread; 
     }
     
+    threadpool->waitForDone();
     QVector<QVector<qreal > > m_constants_list(m_model->Constants().size());
     for(int i = 0; i < threads.size(); ++i)
     {
@@ -106,6 +107,7 @@ void MonteCarloStatistics::Evaluate()
             delete threads[i];
         }
     }
+    
     for(int i = 0; i < m_constants_list.size(); ++i)
     {
         QVector<QPair<qreal, int> > histogram = ToolSet::List2Histogram(m_constants_list[i], 500);
@@ -116,7 +118,6 @@ void MonteCarloStatistics::Evaluate()
         }
         m_series << series;
     }
-    
 }
 
 #include "montecarlostatistics.moc"

@@ -120,7 +120,6 @@ void ItoI_Model::CalculateSignal(const QList<qreal > &constants)
     
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);

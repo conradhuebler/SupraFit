@@ -337,7 +337,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
     m_concentration_model = new DataTable(other.m_concentration_model);
     
     m_scaling = other.m_scaling;
-    
+    m_host_assignment = other.m_host_assignment;
     m_signal_model = new DataTable(other.m_signal_model);
     m_raw_data = new DataTable(other.m_raw_data);
     m_type = other.m_type;
@@ -348,7 +348,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_concentration_model = new DataTable(other->m_concentration_model);
     
     m_scaling = other->m_scaling;
-        
+       m_host_assignment = other->m_host_assignment; 
     m_signal_model = new DataTable(other->m_signal_model);
     m_raw_data = new DataTable(other->m_raw_data);
     m_type = other->m_type;
@@ -361,6 +361,17 @@ DataClassPrivate::~DataClassPrivate()
     delete m_signal_model;
     delete m_raw_data;
 }
+
+
+void DataClassPrivate::check()
+{
+    std::cout << "Check of data " << std::endl;
+    std::cout << "Concentration Table ## Row:" << m_concentration_model->rowCount() << " Colums: " << m_concentration_model->columnCount()<< std::endl;
+    std::cout << "Signal Table ## Row:" << m_signal_model->rowCount() << " Colums: " << m_signal_model->columnCount()<< std::endl;
+    std::cout << "Raw Table ## Row:" << m_raw_data->rowCount() << " Colums: " << m_raw_data->columnCount()<< std::endl;
+    
+}
+
 
 DataClass::DataClass(QObject *parent) : QObject(parent)
 {
@@ -531,7 +542,6 @@ void DataClass::setHeader(const QStringList& strlist)
 
 void DataClass::OverrideSignalTable(DataTable *table)
 {
-//     QSharedDataPointer<DataClassPrivate > ptr = QSharedDataPointer<DataClassPrivate>(d.data());
+    d.detach();
     d->m_signal_model = table;
-//     d = ptr;
 }
