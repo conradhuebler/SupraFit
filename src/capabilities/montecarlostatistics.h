@@ -54,6 +54,9 @@ private:
     QJsonObject m_optimized;
     MCConfig m_config;
     QList<qreal > m_constants;
+    
+signals:
+    void IncrementProgress(int time);
 };
 
 class MonteCarloStatistics : public QObject
@@ -69,6 +72,8 @@ public:
     inline QVector<StatisticResult >getResult() const { return m_result; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }
 
+public slots:
+    void Interrupt();
     
 private:
 
@@ -79,6 +84,9 @@ private:
     std::normal_distribution<double> Phi;
     DataTable *m_table;
     MCConfig m_config;
+    
+signals:
+    void IncrementProgress(int time);
 };
 
 #endif // MONTECARLOSTATISTICS_H

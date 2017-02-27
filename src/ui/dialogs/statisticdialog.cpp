@@ -24,6 +24,7 @@
 #include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/widgets/modelwidget.h"
 
+#include <QtCore/QMutexLocker>
 
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
@@ -38,6 +39,8 @@
 StatisticDialog::StatisticDialog(QWidget *parent) : QDialog(parent)
 {
     setUi();
+    Pending();
+    connect(this, SIGNAL(Interrupt()), this, SLOT(Pending()));
 }
 
 
@@ -56,7 +59,21 @@ void StatisticDialog::setUi()
     widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
     m_optim_flags = new OptimizerFlagWidget; 
     layout->addWidget(widget);
+    m_time_info = new QLabel;
     m_progress = new QProgressBar;
+    layout->addWidget(m_time_info);
+    
+    
+    m_hide = new QPushButton(tr("Hide"));
+    m_interrupt = new QPushButton(tr("Interrupt"));
+    QHBoxLayout *hLayout = new QHBoxLayout;
+    hLayout->addWidget(m_progress);
+    hLayout->addWidget(m_interrupt);
+    layout->addLayout(hLayout);
+    layout->addWidget(m_hide);
+    connect(m_hide, SIGNAL(clicked()), this, SLOT(reject()));
+    connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
+    
     setLayout(layout);
 }
 
@@ -120,21 +137,64 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     return cv_widget;
 }
 
-CVConfig StatisticDialog::getCVConfig() const
+CVConfig StatisticDialog::getCVConfig()
 {
     CVConfig config;
     config.increment = m_cv_increment->value();
     config.maxsteps = m_cv_steps->value();
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setMaximum(-1);
+    m_progress->setValue(0);
+    Pending();
     return config;
 }
 
-MCConfig StatisticDialog::getMCConfig() const
+MCConfig StatisticDialog::getMCConfig()
 {
     MCConfig config;
     config.varianz = m_varianz_box->value();
     config.maxsteps = m_mc_steps->value();
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setMaximum(m_mc_steps->value() + m_mc_steps->value()/100);
+    m_progress->setValue(0);
+    Pending();
     return config;
 }
+void StatisticDialog::IncrementProgress(int time)
+{
+    QMutexLocker locker(&mutex);
+    
+    m_time += time;
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    int val = m_progress->value() + 1;
+    qreal aver = double(m_time)/val;
+    int remain = double(m_progress->maximum() - val)*aver/3000;
+    int used = (t0 - m_time_0)/1000;
+    
+    if(m_progress->maximum() == -1)
+    {
+        m_time_info->setText(tr("Nobody knows when this will end.\nBut you hold the door for %2 sec. .").arg(used));
+    }else{
+        m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
+        m_progress->setValue(val);
+    }
+    
+}
 
+void StatisticDialog::Pending()
+{
+    bool ishidden = m_progress->isHidden();
+    if(ishidden)
+    {
+        m_interrupt->show();
+        m_progress->show();
+    }else
+    {
+        m_interrupt->hide();
+        m_progress->hide();
+    }
+}
 
 #include "statisticdialog.moc"

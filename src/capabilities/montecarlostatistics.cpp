@@ -53,7 +53,7 @@ void MonteCarloThread::run()
         qDebug() << "no model set";
         return;
     }
-    
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     m_minimizer->setModel(m_model);
     m_minimizer->Minimize(m_config.runtype);
     
@@ -61,7 +61,8 @@ void MonteCarloThread::run()
     m_model->ImportJSON(m_optimized);
     m_model->CalculateSignal();
     m_constants = m_model->Constants();
-    
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit IncrementProgress(t1-t0);
 }
 
 
@@ -87,13 +88,21 @@ void MonteCarloStatistics::Evaluate()
     for(int step = 0; step < m_config.maxsteps; ++step)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->setDataTable(m_model->SignalModel()->PrepareMC(Phi, rng));
         threadpool->start(thread);
         threads << thread; 
+        QCoreApplication::processEvents();
+        if(step % 100 == 0)
+            emit IncrementProgress(0);
     }
     
-    threadpool->waitForDone();
+    while(threadpool->activeThreadCount())
+    {
+            QCoreApplication::processEvents();
+    }
+    
     QVector<QVector<qreal > > m_constants_list(m_model->Constants().size());
     for(int i = 0; i < threads.size(); ++i)
     {
@@ -117,6 +126,11 @@ void MonteCarloStatistics::Evaluate()
         }
         m_series << series;
     }
+}
+
+void MonteCarloStatistics::Interrupt()
+{
+    QThreadPool::globalInstance()->clear();
 }
 
 #include "montecarlostatistics.moc"

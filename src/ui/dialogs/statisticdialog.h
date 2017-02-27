@@ -20,6 +20,8 @@
 #ifndef STATISTICDIALOG_H
 #define STATISTICDIALOG_H
 
+#include <QtCore/QMutex>
+
 #include <QtWidgets/QDialog>
 
 class QPushButton;
@@ -40,27 +42,42 @@ public:
     StatisticDialog(QWidget *parent = 0);
     ~StatisticDialog();
     
-    MCConfig getMCConfig() const;
-    CVConfig getCVConfig() const;
+    MCConfig getMCConfig();
+    CVConfig getCVConfig();
+    
+public slots:
+    void IncrementProgress(int time);
     
 private:
     void setUi();
+   
+    
     QWidget *MonteCarloWidget();
     QWidget *ContinuousVariationWidget();
     
     QDoubleSpinBox *m_varianz_box, *m_cv_increment;
     QSpinBox *m_mc_steps, *m_cv_steps;
     QCheckBox *m_original;
-    QPushButton *m_mc, *m_cv, *m_interrupt;
+    QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide;
     QProgressBar *m_progress;
-    
+    QLabel *m_time_info;
     OptimizerFlagWidget *m_optim_flags;
+    
+    QMutex mutex;
     
     QSharedPointer<AbstractTitrationModel> m_model;
     
+    int m_time;
+    quint64 m_time_0;
+     
+    
+private slots:
+     void Pending();
+     
 signals:
     void CVStatistic();
     void MCStatistic();
+    void Interrupt();
 };
 
 #endif // STATISTICDIALOG_H

@@ -57,6 +57,9 @@ public:
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> getSeries() const { return m_series; }
     
+public slots:
+    void Interrupt();
+    
 private:
     void SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<AbstractTitrationModel> m_model;
@@ -69,6 +72,10 @@ private:
     bool m_converged;
     QList<QPointF> m_series;
     CVConfig m_config;
+    bool allow_break;
+    
+signals:
+    void IncrementProgress(int time);
 };
 
 class ContinuousVariation : public QObject
@@ -86,6 +93,9 @@ public:
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<StatisticResult > Results() const { return m_result; }
     
+public slots:
+    void Interrupt();
+    
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
@@ -93,6 +103,10 @@ private:
     QList<QList<QPointF> > m_series;
     QList<StatisticResult > m_result;
     CVConfig m_config;
+    bool allow_break;
+signals:
+    void StopSubThreads();
+    void IncrementProgress(int time);
 };
 
 #endif // STATISTIC_H
