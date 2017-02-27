@@ -313,8 +313,9 @@ DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
     m_signal_model = new DataTable;
     m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;
-    for(int i = 0; i < m_concentration_model->columnCount(); ++i)
-        m_scaling << 1;
+    if(m_concentration_model->columnCount() != m_scaling.size())
+        for(int i = 0; i < m_concentration_model->columnCount(); ++i)
+            m_scaling << 1;
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
@@ -325,8 +326,9 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
     m_signal_model = new DataTable;
     m_signal_model->setCheckable(true);
     m_raw_data = new DataTable;    
-    for(int i = 0; i < m_concentration_model->columnCount(); ++i)
-        m_scaling << 1;
+    if(m_concentration_model->columnCount() != m_scaling.size())
+        for(int i = 0; i < m_concentration_model->columnCount(); ++i)
+            m_scaling << 1;
     m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
@@ -383,6 +385,7 @@ DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObje
     d = new DataClassPrivate();
     d->m_type = type;
     ImportJSON(json);
+    if(d->m_concentration_model->columnCount() != d->m_scaling.size())
     for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
         d->m_scaling << 1;
 }

@@ -126,8 +126,9 @@ public:
     {
         d->m_concentration_model->insertRow(conc);
         d->m_signal_model->insertRow(data);
-        for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
-            d->m_scaling << 1;
+        if(conc.size() != d->m_scaling.size())
+            for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
+                d->m_scaling << 1;
     }
     
 
