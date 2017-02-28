@@ -156,7 +156,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
     {
         addOptParameter(m_complex_constants);
     }
-    if((type & ~OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
@@ -166,7 +166,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
                 addOptParameterList_fromPure(0);
         }
-        if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) || ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
+        if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) && ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
         {
             addOptParameterList_fromConstant(0);
             addOptParameterList_fromConstant(1);

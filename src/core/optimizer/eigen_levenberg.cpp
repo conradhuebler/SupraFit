@@ -121,7 +121,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     functor.m_potenz = config.error_potenz;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
-     int iter = 0;
+    int iter = 0;
     lm.parameters.factor = 100; //step bound for the diagonal shift, is this related to damping parameter, lambda?
     lm.parameters.maxfev = max_iter;//max number of function evaluations
     lm.parameters.xtol = 1.49012e-08; //tolerance for the norm of the solution vector
@@ -129,11 +129,17 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     lm.parameters.gtol = 0; // tolerance for the norm of the gradient of the error vector
     lm.parameters.epsfcn = 0; //error precision
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-       do {
-         status = lm.minimizeOneStep(parameter);
-          iter++;
-       } while (status == -1);
-       QString result;
+    qreal error_0 = 0; 
+    qreal error_2 = 0;
+    do {
+        error_0 = model.data()->SumofSquares();
+        status = lm.minimizeOneStep(parameter);
+        error_2 = model.data()->SumofSquares();
+        iter++;
+        if(iter > max_iter)
+            break;
+    } while (qAbs(error_0 -error_2)> 1e-5);
+    QString result;
     result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
     result += "New vector:";    
     for(int i = 0; i < param.size(); ++i)
@@ -144,7 +150,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVect
     model.data()->Message(result, 4);
     
     for(int i = 0; i < functor.inputs(); ++i)
-            param[i] = parameter(i);
+        param[i] = parameter(i);
     return 1;
 }
 
