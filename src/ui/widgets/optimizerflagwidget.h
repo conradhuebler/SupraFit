@@ -42,7 +42,7 @@ public:
 private:
     OptimizationType m_type;
     void setUi();
-    QPointer<QCheckBox > m_ComplexationConstants, m_IgnoreAllShifts, m_ConstrainedShifts, m_IntermediateShifts, m_IgnoreZeroConcentrations;
+    QPointer<QCheckBox > m_ComplexationConstants, m_OptimizeShifts, m_ConstrainedShifts, m_IntermediateShifts, m_IgnoreZeroConcentrations;
     QPushButton *m_more;
     QVBoxLayout *m_main_layout;
     QWidget *m_first_row;

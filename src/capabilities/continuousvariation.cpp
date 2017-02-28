@@ -177,7 +177,7 @@ bool ContinuousVariation::ConfidenceAssesment()
     
     m_minimizer->setModel(m_model);
     QJsonObject optimized = m_model.data()->ExportJSON();
-    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | OptimizationType::IgnoreAllShifts).toList();
+    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->CalculateSignal();
     QThreadPool *threadpool = QThreadPool::globalInstance();
@@ -192,7 +192,7 @@ bool ContinuousVariation::ConfidenceAssesment()
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->SetParameterID(i);
-        thread->setOptimizationRun(OptimizationType::ComplexationConstants| OptimizationType::IgnoreAllShifts);
+        thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
         if(m_model.data()->SupportThreads())
         {
             thread->run();

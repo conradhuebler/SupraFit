@@ -22,14 +22,13 @@
 #ifndef global_H
 #define global_H
 
-#include <QtCore/QFlag>
-
 enum OptimizationType{
         ComplexationConstants = 0x01,
-        IgnoreAllShifts = 0x02,
-        UnconstrainedShifts = 0x04,
-        IntermediateShifts = 0x08,
-        IgnoreZeroConcentrations = 0x16
+        OptimizeShifts = 0x02,
+        ConstrainedShifts = 0x04,
+        UnconstrainedShifts = 0x08,
+        IntermediateShifts = 0x16,
+        IgnoreZeroConcentrations = 0x32
     };
     
 inline OptimizationType operator~ (OptimizationType a) { return (OptimizationType)~(int)a; }

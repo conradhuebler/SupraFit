@@ -152,22 +152,21 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    clearOptParameter();
-    if(OptimizationType::ComplexationConstants & type)
+    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
         addOptParameter(m_complex_constants);
     }
-    if((type & ~OptimizationType::IgnoreAllShifts) > (OptimizationType::IgnoreAllShifts))
+    if((type & ~OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-        if((type & OptimizationType::UnconstrainedShifts))
+        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
             addOptParameterList_fromConstant(0);
             addOptParameterList_fromConstant(1);
             addOptParameterList_fromConstant(2);
-            if(type < OptimizationType::IgnoreZeroConcentrations)
+            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
                 addOptParameterList_fromPure(0);
         }
-        if(type & ~OptimizationType::UnconstrainedShifts || type & OptimizationType::IntermediateShifts)
+        if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) || ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
         {
             addOptParameterList_fromConstant(0);
             addOptParameterList_fromConstant(1);

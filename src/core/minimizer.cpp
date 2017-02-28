@@ -49,9 +49,9 @@ void NonLinearFitThread::run()
     m_steps = 0;
     m_converged = false;
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    if(m_runtype & OptimizationType::UnconstrainedShifts || m_runtype & OptimizationType::IgnoreAllShifts)
+     if((m_runtype & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         NonLinearFit();
-    else if(m_runtype & ~OptimizationType::UnconstrainedShifts)
+    else if((m_runtype & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts)
         ConstrainedFit();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit finished(t1-t0);

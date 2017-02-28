@@ -81,15 +81,16 @@ void ItoI_Model::InitialGuess()
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    if(OptimizationType::ComplexationConstants & type)
+    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
         setOptParamater(m_complex_constants);
-    
-    if((type & ~OptimizationType::IgnoreAllShifts) > (OptimizationType::IgnoreAllShifts))
+
+    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-        if(type & OptimizationType::UnconstrainedShifts)
+         
+        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
             addOptParameterList_fromConstant(0);
-            if(type < OptimizationType::IgnoreZeroConcentrations)
+            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
                 addOptParameterList_fromPure(0);
         }
     }
