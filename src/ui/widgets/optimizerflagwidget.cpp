@@ -81,6 +81,7 @@ void OptimizerFlagWidget::setUi()
     EnableShiftSelection();
     ConstrainedChanged();
     m_more->setFlat(true);
+    ShowFirst();
 }
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
