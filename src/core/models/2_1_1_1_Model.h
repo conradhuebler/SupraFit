@@ -39,15 +39,19 @@ public:
     ~IItoI_ItoI_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     inline int ConstantSize() const { return 2;}
-    virtual void CalculateSignal(const QList<qreal > &constants);
+    
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
     virtual qreal BC50();
+    
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
+    
 protected:
+    virtual void CalculateVariables(const QList<qreal > &constants);
+    
     qreal m_K21, m_K11;
     QList<qreal > m_ItoI_signals, m_IItoI_signals;
 };

@@ -177,7 +177,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             
             QJsonObject json = threads[i][j]->ConvergedParameter();
             m_model->ImportJSON(json);
-            m_model->CalculateSignal();
+            m_model->Calculate();
             double current_error = m_model->ModelError();
             error << current_error; 
             if(error_max < current_error)
@@ -217,7 +217,7 @@ void GlobalSearch::Scan(const QVector< QVector<double > >& list)
         for(int i = 0; i < list[j].size(); ++i)
         {
             m_model->setConstants(QList<qreal> () << list[j][i]);
-            m_model->CalculateSignal();
+            m_model->Calculate();
             error << m_model->ModelError();
             series.append(QPointF(list[j][i],m_model->ModelError( )));
         }

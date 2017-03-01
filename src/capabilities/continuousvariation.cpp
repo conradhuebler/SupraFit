@@ -30,7 +30,7 @@
 
 #include "continuousvariation.h"
 
-ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config) : m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_increment(1e-3), m_maxsteps(1e4), m_converged(true)
+ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config) : m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_converged(true)
 {
     setAutoDelete(false);
 }
@@ -47,7 +47,7 @@ void ContinuousVariationThread::setModel(QSharedPointer<AbstractTitrationModel> 
 
 void ContinuousVariationThread::run()
 {
-    m_model.data()->CalculateSignal();
+    m_model.data()->Calculate();
     if(m_config.optimizer_config.error_potenz == 2)
         m_error = m_model.data()->SumofSquares();
     else
@@ -79,7 +79,7 @@ void ContinuousVariationThread::setParameter(const QJsonObject& json)
 
 void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
 {
-    double increment = m_increment;
+    double increment = m_config.increment;
     if(!direction)
         increment *= -1;
     qreal old_error = m_error;
@@ -91,7 +91,7 @@ void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doubl
     QList<qreal > consts = m_model.data()->Constants();
     double constant_ = consts[m_parameter_id];
     allow_break = false;
-    for(int m = 0; m < m_maxsteps; ++m)
+    for(int m = 0; m < m_config.maxsteps; ++m)
     {
         
         double par = constant_ + double(m)*increment;
@@ -102,7 +102,7 @@ void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doubl
         
         QJsonObject json_exp = m_minimizer->Parameter();
         m_model.data()->ImportJSON(json_exp);
-        m_model.data()->CalculateSignal();
+        m_model.data()->Calculate();
         
         qreal new_error;
         
@@ -179,7 +179,7 @@ bool ContinuousVariation::ConfidenceAssesment()
     QJsonObject optimized = m_model.data()->ExportJSON();
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
-    m_model.data()->CalculateSignal();
+    m_model.data()->Calculate();
     QThreadPool *threadpool = QThreadPool::globalInstance();
     QList<QPointer <ContinuousVariationThread > > threads;
     int maxthreads =qApp->instance()->property("threads").toInt();

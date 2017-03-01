@@ -238,7 +238,7 @@ QVector<qreal> ScriptModel::OptimizeParameters_Private(OptimizationType type)
 }
 
 
-void ScriptModel::CalculateSignal(const QList<qreal > &constants)
+void ScriptModel::CalculateVariables(const QList<qreal > &constants)
 {  
     m_corrupt = false;
     if(constants.size() == 0)

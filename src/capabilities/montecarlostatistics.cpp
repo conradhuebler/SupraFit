@@ -59,7 +59,7 @@ void MonteCarloThread::run()
     
     m_optimized = m_minimizer->Parameter();
     m_model->ImportJSON(m_optimized);
-    m_model->CalculateSignal();
+    m_model->Calculate();
     m_constants = m_model->Constants();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);

@@ -285,7 +285,7 @@ int Minimizer::Minimize(OptimizationType runtype)
         m_last_parameter = thread->BestIntermediateParameter();
     delete thread;
     m_model->ImportJSON(m_last_parameter);
-    m_model->CalculateSignal();
+    m_model->Calculate();
     emit RequestRemoveCrashFile();
     addToHistory();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();

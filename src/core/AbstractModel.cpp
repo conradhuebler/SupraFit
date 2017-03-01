@@ -158,6 +158,13 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
     return sum;
 }
 
+void AbstractTitrationModel::Calculate(const QList<qreal > &constants)
+{
+    m_corrupt = false;
+    CalculateVariables(constants);
+    emit Recalculated();
+}
+
 void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 {
     if(!ActiveSignals(j) || !SignalModel()->isChecked(j,i))

@@ -43,16 +43,20 @@ public:
     ~IItoI_ItoI_ItoII_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     inline int ConstantSize() const { return 3;}
-    void CalculateSignal(const QList<qreal > &constants); 
+//     void CalculateSignal(const QList<qreal > &constants); 
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return true; }
     virtual MassResults MassBalance(qreal A, qreal B);
+    
 private:
     qreal m_K21, m_K11, m_K12;
     QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;
     QList<QPointer<ConcentrationSolver > > m_solvers;
     QList<qreal> m_constants_pow;
+    
+protected:
+    virtual void CalculateVariables(const QList<qreal > &constants);
 };
 
 #endif // 2_1_1_1_MODEL_H

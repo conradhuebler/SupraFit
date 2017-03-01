@@ -52,8 +52,6 @@ public:
     void setParameter(const QJsonObject &json);
     virtual void run();
     inline StatisticResult getResult() const { return m_result; }
-    inline void setIncerement(double increment) { m_increment = increment; }
-    inline void setMaxSteps(int steps ) { m_maxsteps = steps; }
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> getSeries() const { return m_series; }
     
@@ -67,8 +65,7 @@ private:
     OptimizationType m_type;
     int m_parameter_id;
     StatisticResult m_result;
-    qreal m_increment, m_error;
-    int m_maxsteps;
+    qreal m_error;
     bool m_converged;
     QList<QPointF> m_series;
     CVConfig m_config;

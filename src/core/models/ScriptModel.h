@@ -52,7 +52,7 @@ public:
     ~ScriptModel();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     inline int ConstantSize() const { return Constants().size(); }
-    virtual void CalculateSignal(const QList<qreal > &constants);
+    
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
@@ -84,6 +84,7 @@ private:
     QList<qreal > m_constants_pow;
 protected:
     QList<qreal > m_signals;
+    virtual void CalculateVariables(const QList<qreal > &constants);
 };
 
 #endif // 1_1_Model

@@ -76,7 +76,7 @@ void ItoI_Model::InitialGuess()
     }
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
-    AbstractTitrationModel::CalculateSignal();
+    AbstractTitrationModel::Calculate();
 }
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
@@ -115,7 +115,7 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList< qr
     return host_0 - complex;
 }
 
-void ItoI_Model::CalculateSignal(const QList<qreal > &constants)
+void ItoI_Model::CalculateVariables(const QList<qreal > &constants)
 {  
     m_corrupt = false;
     

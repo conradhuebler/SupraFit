@@ -36,7 +36,7 @@ ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationMod
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 2);
     InitialGuess();
     setOptParamater(m_complex_constants);
-    AbstractTitrationModel::CalculateSignal();
+    AbstractTitrationModel::Calculate();
     m_constant_names = QStringList() << tr("1:1") << tr("1:2");
 }
 
@@ -66,7 +66,7 @@ void ItoI_ItoII_Model::InitialGuess()
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
     
-    AbstractTitrationModel::CalculateSignal();
+    AbstractTitrationModel::Calculate();
 }
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
@@ -126,7 +126,7 @@ qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, const QL
     return guest;
 }
 
-void ItoI_ItoII_Model::CalculateSignal(const QList<qreal > &constants)
+void ItoI_ItoII_Model::CalculateVariables(const QList<qreal > &constants)
 {
     m_corrupt = false;
     if(constants.size() == 0)

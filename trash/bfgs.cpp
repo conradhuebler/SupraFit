@@ -69,7 +69,7 @@ public:
             parameter[i] = value(i);
         
         m_model->setParamter(parameter);
-        m_model->CalculateSignal();
+        m_model->Calculate();
         return m_model->ModelError();
     }
     Variables ModelSignals;

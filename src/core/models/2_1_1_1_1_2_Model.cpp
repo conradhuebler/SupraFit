@@ -45,7 +45,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractT
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 3);
     InitialGuess();
     setOptParamater(m_complex_constants);
-    AbstractTitrationModel::CalculateSignal();
+    AbstractTitrationModel::Calculate();
     m_constant_names = QStringList() << tr("2:1") << tr("1:1") << tr("1:2"); 
     
 }
@@ -55,7 +55,7 @@ IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
     qDeleteAll(m_solvers);
 }
 
-void IItoI_ItoI_ItoII_Model::CalculateSignal(const QList<qreal> &constants)
+void IItoI_ItoI_ItoII_Model::CalculateVariables(const QList<qreal> &constants)
 {
     m_corrupt = false;
     if(constants.size() == 0)
@@ -147,7 +147,7 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line4;
     
-    AbstractTitrationModel::CalculateSignal();
+    AbstractTitrationModel::Calculate();
 }
 
 QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)

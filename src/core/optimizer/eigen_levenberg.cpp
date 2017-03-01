@@ -70,7 +70,7 @@ struct MyFunctor : Functor<double>
             param[i] = parameter(i);
         
         model.data()->setParamter(param);
-        model.data()->CalculateSignal();
+        model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedSignals();
         for( int i = 0; i < ModelSignals.size(); ++i)
         {

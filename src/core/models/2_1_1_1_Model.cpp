@@ -38,7 +38,7 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationMod
     InitialGuess();   
     
     setOptParamater(m_complex_constants);
-    AbstractTitrationModel::CalculateSignal();
+    AbstractTitrationModel::Calculate();
     
     m_constant_names = QStringList() << tr("2:1") << tr("1:1");
 }
@@ -78,7 +78,7 @@ void IItoI_ItoI_Model::InitialGuess()
     ImportJSON(mini->Parameter());
     
     delete mini;*/
-    AbstractTitrationModel::CalculateSignal();
+    AbstractTitrationModel::Calculate();
 }
 
 qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
@@ -97,7 +97,7 @@ qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QLi
     return host;
 }
 
-void IItoI_ItoI_Model::CalculateSignal(const QList<qreal > &constants)
+void IItoI_ItoI_Model::CalculateVariables(const QList<qreal > &constants)
 {
     m_corrupt = false;
 

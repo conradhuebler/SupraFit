@@ -39,7 +39,7 @@ public:
     ~ItoI_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     inline int ConstantSize() const { return 1;}
-    virtual void CalculateSignal(const QList<qreal > &constants);
+//     virtual void CalculateSignal(const QList<qreal > &constants);
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractTitrationModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
@@ -51,6 +51,8 @@ private:
     
     
 protected:
+    virtual void CalculateVariables(const QList<qreal > &constants);
+    
     QList<qreal > m_ItoI_signals;
     qreal m_K11;
 };

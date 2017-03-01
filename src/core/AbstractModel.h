@@ -83,7 +83,7 @@ public:
     QVector<qreal > OptimizeParameters(OptimizationType type);
     inline void setLockedParameter(const QList<int> &lock){ m_locked_parameters = lock; }
     inline QList<int> LockedParamters() const { return m_locked_parameters; }
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
+    
     inline void setLastOptimzationRun(OptimizationType last_optimization) { m_last_optimization = last_optimization; }
     inline OptimizationType LastOptimzationRun() const { return m_last_optimization; }
     
@@ -103,14 +103,19 @@ public:
                 return 0;
             return m_pure_signals_parameter(i,0); 
         }
-        
+    /*
+     * function to create a new instance of the model, this way was quite easier than
+     * a copy constructor
+     */
     virtual QSharedPointer<AbstractTitrationModel > Clone() const = 0;
         
     virtual int ConstantSize() const = 0;
     virtual void setPureSignals(const QList< qreal > &list);
     virtual void setComplexSignals(const QList< qreal > &list, int i);
     virtual void setConstants(const QList< qreal > &list);
-    virtual void CalculateSignal(const QList<qreal > &constants) = 0;
+    /*
+     * defines the initial guess for the model
+     */
     virtual void InitialGuess() = 0;
     QList<qreal >  getCalculatedSignals();
 
@@ -149,6 +154,10 @@ public:
     qreal ModelError() const;
     inline QStringList ConstantNames() const { return m_constant_names; }
     void setStatistic(const StatisticResult &result, int i);
+    /*
+     * definies wheater this model can calculate equilibrium concentrations in parallel
+     * should be useful when the equilibrium concentrations are calculated numerically
+     */
     virtual bool SupportThreads() const = 0;
     StatisticResult  getStatisticResult(int i) const { return m_statistics[i]; }
     inline QList<qreal > Constants() const { return m_complex_constants; }
@@ -160,7 +169,8 @@ public:
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
     
 public slots:
-     inline  void CalculateSignal() { CalculateSignal(Constants());}
+     inline  void Calculate() { Calculate(Constants());}
+     void Calculate(const QList<qreal > &constants);
      
 private:
     QList<int > m_active_signals;
@@ -168,9 +178,37 @@ private:
     OptimizationType m_last_optimization;
     
 protected:
+    /* 
+     * @param int i, in j and qreal value
+     * of the model signal - DataTable 
+     */
     void SetSignal(int i, int j, qreal value);
+    
+    /*
+     * set the concentration of the @param int i datapoint to
+     * @param const Vector& equilibrium, 
+     * the vector holds the concentration of
+     * each species in that model
+     */
     void SetConcentration(int i, const Vector &equlibrium);
+    /*
+     * Sets the name of the model, to be identifyed by 
+     * the user
+     */
     inline void setName(const QString &str) { m_name = str; }
+    /*
+     * This function handles the optimization flags, which get passed by
+     * @param OptimizationType type
+     * and returns the selected current CalculateVariables
+     * @return QVector<qreal>
+     * 
+     */
+    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
+    /*
+     * This function defines the model 
+     * 
+     */
+    virtual void CalculateVariables(const QList<qreal > &constants) = 0;
     QString m_name;
     QList<qreal > m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
@@ -186,6 +224,9 @@ protected:
     qreal m_sum_absolute, m_sum_squares;
         
 signals:
+    /*
+     * Signal is emitted whenever void Calculate() is finished
+     */
     void Recalculated();
     void Message(const QString &str, int priority = 3);
     void Warning(const QString &str, int priority = 1);

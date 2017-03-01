@@ -314,7 +314,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     
     setLayout(m_layout);
-    m_model->CalculateSignal();
+    m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
 
@@ -440,7 +440,7 @@ void ModelWidget::recalulate()
     m_pending = true;
     
     CollectParameters();
-    m_model->CalculateSignal();
+    m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
     m_pending = false;
 }
@@ -500,7 +500,7 @@ void ModelWidget::GlobalMinimize()
     {
         json = m_minimizer->Parameter();
         m_model->ImportJSON(json);
-        m_model->CalculateSignal();
+        m_model->Calculate();
         Repaint();
         m_model->setLastOptimzationRun(m_optim_flags->getFlags());
     }
@@ -647,7 +647,7 @@ void ModelWidget::LocalMinimize()
         {
             QJsonObject json = m_minimizer->Parameter();
             m_model->ImportJSON(json);
-            m_model->CalculateSignal();
+            m_model->Calculate();
             m_model->setLastOptimzationRun(m_optim_flags->getFlags());
         }
     }  
@@ -731,7 +731,7 @@ void ModelWidget::ImportConstants()
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportJSON(object);
-    m_model->CalculateSignal();
+    m_model->Calculate();
     QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
