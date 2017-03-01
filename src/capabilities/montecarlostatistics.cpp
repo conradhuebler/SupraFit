@@ -20,11 +20,13 @@
 #include "src/core/models.h"
 #include "src/core/toolset.h"
 
+#include <QtCore/QCollator>
 #include <QtCore/QObject>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThreadPool>
 #include <QtCore/QVector>
 #include <QtCore/QDateTime>
+#include <QtCore/QTimer>
 
 #include <iostream>
 #include <cmath>
@@ -71,6 +73,7 @@ MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *pare
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);
     Phi = std::normal_distribution<double>(0,m_config.varianz);
+    m_threadpool = QThreadPool::globalInstance();
 }
 
 MonteCarloStatistics::~MonteCarloStatistics()
@@ -79,10 +82,26 @@ MonteCarloStatistics::~MonteCarloStatistics()
 }
 
 void MonteCarloStatistics::Evaluate()
+{
+    m_constant_list.clear();
+    m_shift_list.clear();
+    m_constants.clear();
+    m_shifts.clear();
+    QVector<QPointer <MonteCarloThread > > threads = GenerateData();
+    while(m_threadpool->activeThreadCount())
+    {
+        QCoreApplication::processEvents();
+    }
+    Collect(threads);
+    AnalyseData();
+}
+
+
+QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 {    
-    QThreadPool *threadpool = QThreadPool::globalInstance();
+    
     int maxthreads =qApp->instance()->property("threads").toInt();
-    threadpool->setMaxThreadCount(maxthreads);
+    m_threadpool->setMaxThreadCount(maxthreads);
     m_table = new DataTable(m_model->ModelTable());
     QVector<QPointer <MonteCarloThread > > threads;
     for(int step = 0; step < m_config.maxsteps; ++step)
@@ -91,18 +110,18 @@ void MonteCarloStatistics::Evaluate()
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->setDataTable(m_model->SignalModel()->PrepareMC(Phi, rng));
-        threadpool->start(thread);
+        m_threadpool->start(thread);
         threads << thread; 
         QCoreApplication::processEvents();
         if(step % 100 == 0)
             emit IncrementProgress(0);
     }
+    return threads;
     
-    while(threadpool->activeThreadCount())
-    {
-            QCoreApplication::processEvents();
-    }
-    
+}
+
+void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& threads)
+{ 
     QVector<QVector<qreal > > m_constants_list(m_model->Constants().size());
     for(int i = 0; i < threads.size(); ++i)
     {
@@ -111,7 +130,7 @@ void MonteCarloStatistics::Evaluate()
             QList<qreal > constants = threads[i]->Constants();
             for(int j = 0; j < constants.size(); ++j)
                 m_constants_list[j] << constants[j];
-            
+            m_models << threads[i]->Model()->ExportJSON();
             delete threads[i];
         }
     }
@@ -127,6 +146,61 @@ void MonteCarloStatistics::Evaluate()
         m_series << series;
     }
 }
+
+void MonteCarloStatistics::AnalyseData()
+{
+    m_constant_list.resize(m_model->ConstantSize());
+    m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount());
+    for(int i = 0; i < m_models.size(); ++i)
+    {
+        //         for(int j = 0; j < m_constant_list.size(); ++j)
+        //         {
+        
+        QJsonObject constants = m_models[i]["data"].toObject()["constants"].toObject();
+        QStringList keys = constants.keys();
+        
+        if(keys.size() > 10)
+        {
+            QCollator collator;
+            collator.setNumericMode(true);
+            std::sort(
+                keys.begin(),
+                      keys.end(),
+                      [&collator](const QString &key1, const QString &key2)
+                      {
+                          return collator.compare(key1, key2) < 0;
+                      });
+        }
+        
+        QString consts;
+        int j = 0;
+        for(const QString &str : qAsConst(keys))
+        {
+            QString element = constants[str].toString();
+            m_constant_list[j] << element.toDouble();
+            j++;
+        }
+        
+        
+        
+        for(int j = 0; j < m_shift_list.size(); ++j)
+        {
+            //             m_shift_list[j] << m_models[j].
+        }
+        
+    }
+    
+    for(int i = 0; i < m_constant_list.size(); ++i)
+    {
+        QList<qreal > list = m_constant_list[i];
+        ConfidenceBar bar = ToolSet::Confidence(list);
+        StatisticResult result;
+        result.bar = bar;
+        result.optim = m_model->Constant(i);
+        m_constants << result;
+    }
+}
+
 
 void MonteCarloStatistics::Interrupt()
 {

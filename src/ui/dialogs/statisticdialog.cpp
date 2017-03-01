@@ -36,11 +36,12 @@
 #include <QtWidgets/QProgressBar>
 
 #include "statisticdialog.h"
-StatisticDialog::StatisticDialog(QWidget *parent) : QDialog(parent)
+StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QDialog(parent), m_model(model)
 {
     setUi();
-    Pending();
+//     Pending();
     connect(this, SIGNAL(Interrupt()), this, SLOT(Pending()));
+    connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
 }
 
 
@@ -73,7 +74,6 @@ void StatisticDialog::setUi()
     layout->addWidget(m_hide);
     connect(m_hide, SIGNAL(clicked()), this, SLOT(reject()));
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
-    
     setLayout(layout);
 }
 
@@ -83,16 +83,17 @@ QWidget *StatisticDialog::MonteCarloWidget()
     QGridLayout *layout = new QGridLayout;
     
     m_mc_steps = new QSpinBox;
-    m_mc_steps->setValue(100);
+    m_mc_steps->setMinimum(1);
     m_mc_steps->setMaximum(1e9);
+    m_mc_steps->setValue(1000);
     m_mc_steps->setSingleStep(1e2);
     layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
     layout->addWidget(m_mc_steps, 0, 1);
     
     m_varianz_box = new QDoubleSpinBox;
-    m_varianz_box->setValue(1e-2);
     m_varianz_box->setDecimals(5);
     m_varianz_box->setSingleStep(1e-2);
+    m_varianz_box->setValue(m_model.data()->StdDeviation());
     layout->addWidget(new QLabel(tr("Varianz")), 1, 0);
     layout->addWidget(m_varianz_box, 1, 1);
     
@@ -146,7 +147,7 @@ CVConfig StatisticDialog::getCVConfig()
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(-1);
     m_progress->setValue(0);
-    Pending();
+//     Pending();
     return config;
 }
 
@@ -159,7 +160,7 @@ MCConfig StatisticDialog::getMCConfig()
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_mc_steps->value() + m_mc_steps->value()/100);
     m_progress->setValue(0);
-    Pending();
+//     Pending();
     return config;
 }
 void StatisticDialog::IncrementProgress(int time)
@@ -195,6 +196,11 @@ void StatisticDialog::Pending()
         m_interrupt->hide();
         m_progress->hide();
     }
+}
+
+void StatisticDialog::Update()
+{
+    m_varianz_box->setValue(m_model.data()->StdDeviation());
 }
 
 #include "statisticdialog.moc"

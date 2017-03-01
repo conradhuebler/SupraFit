@@ -39,7 +39,7 @@ class StatisticDialog : public QDialog
 {
     Q_OBJECT
 public:
-    StatisticDialog(QWidget *parent = 0);
+    StatisticDialog(QSharedPointer<AbstractTitrationModel> m_model, QWidget *parent = 0);
     ~StatisticDialog();
     
     MCConfig getMCConfig();
@@ -65,7 +65,7 @@ private:
     
     QMutex mutex;
     
-    QSharedPointer<AbstractTitrationModel> m_model;
+    QWeakPointer<AbstractTitrationModel> m_model;
     
     int m_time;
     quint64 m_time_0;
@@ -73,6 +73,7 @@ private:
     
 private slots:
      void Pending();
+     void Update();
      
 signals:
     void CVStatistic();

@@ -256,7 +256,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
     
-    m_statistic_dialog = new StatisticDialog(this);
+    m_statistic_dialog = new StatisticDialog(m_model, this);
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
     connect(m_statistic_dialog, SIGNAL(CVStatistic()), this, SLOT(CVStatistic()));
     
@@ -532,7 +532,7 @@ void ModelWidget::MCStatistic()
     monte_carlo->Evaluate();
     
     QList<QList<QPointF > >series = monte_carlo->getSeries();
-    
+    QList<StatisticResult > constant_results = monte_carlo->getConstantResult();
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
     resultwidget->setLayout(layout);
@@ -547,7 +547,7 @@ void ModelWidget::MCStatistic()
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
         xy_series->append(series[i]);
         view->addSeries(xy_series);
-        
+        m_model->setStatistic(constant_results[i], i);
       }
     m_statistic_result->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
     m_statistic_result->show();  

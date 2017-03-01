@@ -20,6 +20,8 @@
 #ifndef TOOLSET_H
 #define TOOLSET_H
 
+#include "src/core/AbstractModel.h"
+
 #include <QtCore/QString>
 #include <QtCore/QVector>
 
@@ -43,6 +45,7 @@ namespace ToolSet{
     qreal scale(qreal value);
     
     QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
+    ConfidenceBar Confidence(QList<qreal > &list);
 }
 
 #endif // TOOLSET_H

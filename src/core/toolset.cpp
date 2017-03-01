@@ -175,4 +175,33 @@ namespace ToolSet{
         return histogram;
     }
     
+    ConfidenceBar Confidence(QList<qreal > &list)
+    {
+        ConfidenceBar result;
+        std::sort(list.begin(), list.end());
+        qDebug() << list;
+        int size_0 = list.size();
+        while(double(list.size())/double(size_0) > 0.975)
+        {
+            list.removeFirst();
+            list.removeLast();
+        }
+        result.lower_2_5 = list.first();
+        result.upper_2_5 = list.last();
+        
+        while(double(list.size())/double(size_0) > 0.95)
+        {
+            list.removeFirst();
+            list.removeLast();
+        }
+        result.lower_5 = list.first();
+        result.upper_5 = list.last();
+//         qDebug() << size_0 << list.size();
+//         while(double(list.size())/double(size_0) > 0.95)
+//             list.removeLast();
+//         qDebug() << list.size();
+//         qDebug() << list;
+        return result;
+    }
+    
 }

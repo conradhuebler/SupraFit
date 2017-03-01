@@ -57,6 +57,14 @@ struct OptimizerConfig
     qreal LevMar_Delta = 1E-06;
 };
 
+struct ConfidenceBar
+{
+    qreal upper_2_5 = 0;
+    qreal upper_5 = 0;
+    qreal lower_2_5 = 0;
+    qreal lower_5 = 0;
+};
+    
 struct StatisticResult
 {
     double optim;
@@ -65,6 +73,7 @@ struct StatisticResult
     QString name;
     double integ_5;
     double integ_1;
+    ConfidenceBar bar;
 };
 
 

@@ -58,8 +58,8 @@ void StatisticElement::UpdateStatistic(const StatisticResult& result, int i)
     if(m_no == i)
     {
         m_value->setText(QString::number(m_model->Constants()[m_no]));
-        m_min->setText(QString::number(result.min));
-        m_max->setText(QString::number(result.max));
+        m_min->setText(QString::number(result.bar.lower_5));
+        m_max->setText(QString::number(result.bar.upper_5));
         m_range->setText(QString::number(result.max-result.min));
         m_integ_1->setText(QString::number(result.integ_1));
         m_integ_5->setText(QString::number(result.integ_5));

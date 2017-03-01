@@ -23,9 +23,10 @@
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
+#include <QtCore/QSharedPointer>
 
 class Minimizer;
-
+class QThreadPool;
 
 struct MCConfig
 {
@@ -48,6 +49,7 @@ public:
     inline QJsonObject OptimizedParameter() const { return m_optimized; }
     inline QList<qreal > Constants() const { return m_constants; }
     void setDataTable(DataTable *table);
+    inline AbstractTitrationModel* Model() const { return m_model.data(); }
 private:
     QSharedPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
@@ -69,21 +71,29 @@ public:
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
-    inline QVector<StatisticResult >getResult() const { return m_result; }
+    
+    inline QList<StatisticResult > getConstantResult() const { return m_constants; }
+    inline QList<StatisticResult > getShiftResults() const { return m_shifts; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }
 
 public slots:
     void Interrupt();
     
 private:
-
+    QVector<QPointer <MonteCarloThread > > GenerateData();
+    void Collect(const QVector<QPointer <MonteCarloThread > > &threads);
+    void AnalyseData();
+    
     QSharedPointer<AbstractTitrationModel> m_model;
+    QThreadPool *m_threadpool;
     QList<QList<QPointF> > m_series;
-    QVector<StatisticResult > m_result;
+    QList<StatisticResult > m_constants, m_shifts;
+    QList<QJsonObject > m_models;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;
     DataTable *m_table;
     MCConfig m_config;
+    QVector<QList<qreal > > m_constant_list, m_shift_list;
     
 signals:
     void IncrementProgress(int time);
