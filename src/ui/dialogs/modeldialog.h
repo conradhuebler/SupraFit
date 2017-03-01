@@ -27,11 +27,11 @@ class ModalDialog : public QDialog
 {
     Q_OBJECT
 public:
-//     ModalDialog();
     ModalDialog(QWidget *widget = 0, const QString &str= QString(tr("no name")));
     ~ModalDialog();
     void setWidget(QWidget *widget, const QString &str = QString(tr("no name")));
     QWidget * Widget() { return m_widget; }
+    
 private:
     QGridLayout *layout;
     QPointer<QWidget > m_widget;

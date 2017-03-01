@@ -266,6 +266,7 @@ void ChartView::forceformatAxis()
     
     x_axis->setTitleText(m_x_axis);
     m_pending = false;
+    m_ymax = y_max;
 }
 
 void ChartView::PlotSettings()

@@ -22,16 +22,6 @@
 #include "modeldialog.h"
 
 
-
-// ModalDialog::ModalDialog()
-// {
-//     layout = new QGridLayout;
-//     m_widget = new QWidget;
-//     layout->addWidget(m_widget, 0, 0);
-//     setModal(false);
-//     setLayout(layout);
-// }
-
 ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
 {
     layout = new QGridLayout;
@@ -39,6 +29,7 @@ ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
     setModal(false);
     setWindowTitle(str);
     setLayout(layout);
+    resize(800, 400);
 }
 
 

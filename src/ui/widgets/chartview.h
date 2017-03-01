@@ -58,7 +58,7 @@ public:
     ChartView();
     inline ~ChartView() { }
     void addSeries( QtCharts::QAbstractSeries* series, bool legend = false );
-    
+    qreal YMax() const { return m_ymax; }
 public slots:
     void formatAxis();
     
@@ -76,7 +76,7 @@ private:
     
     ChartConfigDialog m_chartconfigdialog;
     bool m_pending, m_lock_scaling;   
-    
+    qreal m_ymax;
 private slots:
     void PlotSettings();
     void PrintPlot();

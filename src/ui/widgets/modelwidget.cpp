@@ -65,6 +65,8 @@
 
 #include <QtCharts/QChart>
 #include <QtCharts/QXYSeries>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QAreaSeries>
 
 #include <QtDataVisualization>
 
@@ -151,7 +153,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_plot->setFlat(true);
     tools->addWidget(m_plot);
     setLayout(layout);
-
+    
     m_toggle = new QPushButton(tr("Single Plot"));
     m_toggle->setFlat(true);
     m_toggle->setCheckable(true);
@@ -245,7 +247,7 @@ void ModelElement::ToggleSeries(int i)
 void ModelElement::togglePlot()
 {
     if(m_toggle->isChecked())
-       m_charts.data_wrapper->showSeries(m_no); 
+        m_charts.data_wrapper->showSeries(m_no); 
     else
         m_charts.data_wrapper->showSeries(-1);
 }
@@ -326,12 +328,12 @@ ModelWidget::~ModelWidget()
     m_model.clear();
     if(_3dchart)
         delete _3dchart;
-//     m_statistic_dialog->hide();
-     delete m_statistic_result;
-//     m_search_result->hide();
-     delete m_search_result;
-//     m_table_dialog->hide();
-     delete m_table_result;
+    //     m_statistic_dialog->hide();
+    delete m_statistic_result;
+    //     m_search_result->hide();
+    delete m_search_result;
+    //     m_table_dialog->hide();
+    delete m_table_result;
 }
 
 
@@ -495,7 +497,7 @@ void ModelWidget::GlobalMinimize()
     m_model->setOptimizerConfig(config);
     int result;
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
-
+    
     if(result == 1)
     {
         json = m_minimizer->Parameter();
@@ -542,13 +544,40 @@ void ModelWidget::MCStatistic()
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
+    bool formated = false;
     for(int i = 0; i < series.size(); ++i)
     {
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
         xy_series->append(series[i]);
         view->addSeries(xy_series);
+        if(!formated)
+            view->formatAxis();
+        formated = true;
         m_model->setStatistic(constant_results[i], i);
-      }
+        
+        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
+        *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());
+        current_constant->setColor(xy_series->color());
+        view->addSeries(current_constant);
+        QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
+        QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
+        *series1 << QPointF(constant_results[i].bar.lower_5, 0) << QPointF(constant_results[i].bar.lower_5, view->YMax());
+        *series2 << QPointF(constant_results[i].bar.upper_5, 0) << QPointF(constant_results[i].bar.upper_5, view->YMax());
+        QtCharts::QAreaSeries *series = new QtCharts::QAreaSeries(series1, series2);
+        QPen pen(0x059605);
+        pen.setWidth(3);
+        series->setPen(pen);
+        
+        QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
+        gradient.setColorAt(0.0, xy_series->color());
+        gradient.setColorAt(1.0, 0x26f626);
+        gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+        series->setBrush(gradient);
+        series->setOpacity(0.4);
+        view->addSeries(series);
+        qDebug() << current_constant->points();
+    }
+    
     m_statistic_result->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
     m_statistic_result->show();  
     delete monte_carlo;
@@ -558,7 +587,7 @@ void ModelWidget::MCStatistic()
 void ModelWidget::CVStatistic()
 {
     Waiter wait;
-
+    
     CVConfig config = m_statistic_dialog->getCVConfig();;
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
@@ -570,7 +599,7 @@ void ModelWidget::CVStatistic()
     QJsonObject json = m_model->ExportJSON();
     statistic->setModel(m_model);
     statistic->setParameter(json);
-
+    
     if(!statistic->ConfidenceAssesment())
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
@@ -600,11 +629,11 @@ void ModelWidget::CVStatistic()
         layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
         layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
         layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));
-         m_model->setStatistic(result[i], i);
+        m_model->setStatistic(result[i], i);
     }
     m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
     m_statistic_result->show();
-
+    
     delete statistic;
 }
 
@@ -626,7 +655,7 @@ void ModelWidget::LocalMinimize()
     m_minimize_all->setEnabled(false);
     m_minimize_single->setEnabled(false);
     CollectParameters();
-
+    
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
