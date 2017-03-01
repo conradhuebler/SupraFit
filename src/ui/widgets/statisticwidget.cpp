@@ -72,21 +72,29 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractTitrationModel> mo
     QVBoxLayout *layout = new QVBoxLayout;
     m_subwidget = new QWidget;
     m_subwidget->setLayout(layout);
-    QVBoxLayout *m_layout = new QVBoxLayout;
-    m_show = new QPushButton(tr("Toggle Statistic View"));
+    QVBoxLayout *m_layout = new QVBoxLayout;    
+    m_overview = new QLabel;
+    m_overview->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_layout->addWidget(m_overview);
+    
+    m_show = new QPushButton(tr("Show more information"));
     m_show->setFlat(true);
     m_show->setMaximumHeight(25);
     connect(m_show, SIGNAL(clicked()), this, SLOT(toggleView()));
     m_layout->addWidget(m_show);
+    
+
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
         StatisticElement *element = new StatisticElement(m_model, i);
         layout->addWidget(element);
         m_elements << element;
     }
-    
+    connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
     m_layout->addWidget(m_subwidget); 
     setLayout(m_layout);
+    emit m_show->clicked();
+    Update();
 }
 
 StatisticWidget::~StatisticWidget()
@@ -100,6 +108,16 @@ void StatisticWidget::toggleView()
     m_subwidget->setHidden(!hidden);
 }
 
-
+void StatisticWidget::Update()
+{
+    QString overview("<table style=\'width:100%\'>");
+    overview +=  "<tr><td>Number of used Points:</t><td><b>" + QString::number(m_model.data()->Points()) + "</b></td></tr>\n";
+    overview +=  "<tr><td>Mean Error in Model:</td><td><b> " + QString::number(m_model.data()->MeanError()) + "</b></td></tr>\n";
+    overview +=  "<tr><td>Variance of Error:</td><td><b>" + QString::number(m_model.data()->Variance())  +"</b></td></tr>\n";
+    overview +=  "<tr><td>Standard deviation:</td><td><b>"+  QString::number(m_model.data()->StdDeviation()) +"</b></td></tr>\n";
+    overview +=  "<tr><td>Standard Error:</td><td><b>"  + QString::number(m_model.data()->StdError()) + "</b></td></tr>\n";
+    overview += "</table>";
+    m_overview->setText(overview);
+}
 
 #include "statisticwidget.moc"

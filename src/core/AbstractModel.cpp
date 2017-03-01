@@ -161,7 +161,15 @@ qreal AbstractTitrationModel::SumOfErrors(int i) const
 void AbstractTitrationModel::Calculate(const QList<qreal > &constants)
 {
     m_corrupt = false;
+    m_mean = 0;
+    m_variance = 0;
+    m_used_variables = 0;
+    m_stderror = 0;
     CalculateVariables(constants);
+    
+    m_mean /= qreal(m_used_variables);
+    m_variance = CalculateVariance();
+    m_stderror = qSqrt(m_variance)/qSqrt(m_used_variables);
     emit Recalculated();
 }
 
@@ -180,9 +188,30 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
         m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
         m_sum_absolute += qAbs(m_model_signal->data(j,i) - SignalModel()->data(j,i));
         m_sum_squares += qPow(m_model_signal->data(j,i) - SignalModel()->data(j,i), 2);
+        m_mean += m_model_signal->data(j,i) - SignalModel()->data(j,i);
+        m_used_variables++;
     }
-    
 }
+
+qreal AbstractTitrationModel::CalculateVariance()
+{
+    qreal v = 0;
+    int count = 0;
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            if(SignalModel()->isChecked(j,i))
+            {
+                v += qPow(m_model_error->data(j,i) - m_mean, 2);
+                count++;
+            }
+        }
+    }
+    return v/(count -1 );
+}
+
+
 
 void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
 {

@@ -57,9 +57,10 @@ private:
     QList<QPointer<StatisticElement> > m_elements;
     QPushButton *m_show;
     QWidget *m_subwidget;
-    
+    QLabel *m_overview;
 private slots:
     void toggleView();
+    void Update();
 };
 
 #endif // STATISTICWIDGET_H
