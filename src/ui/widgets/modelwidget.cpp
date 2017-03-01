@@ -534,7 +534,7 @@ void ModelWidget::MCStatistic()
     monte_carlo->Evaluate();
     
     QList<QList<QPointF > >series = monte_carlo->getSeries();
-    QList<StatisticResult > constant_results = monte_carlo->getConstantResult();
+    QList<QJsonObject > constant_results = monte_carlo->getConstantResult();
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
     resultwidget->setLayout(layout);
@@ -553,7 +553,7 @@ void ModelWidget::MCStatistic()
         if(!formated)
             view->formatAxis();
         formated = true;
-        m_model->setStatistic(constant_results[i], i);
+//         m_model->setStatistic(constant_results[i], i);
         
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());
@@ -561,8 +561,8 @@ void ModelWidget::MCStatistic()
         view->addSeries(current_constant);
         QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
         QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
-        *series1 << QPointF(constant_results[i].bar.lower_5, 0) << QPointF(constant_results[i].bar.lower_5, view->YMax());
-        *series2 << QPointF(constant_results[i].bar.upper_5, 0) << QPointF(constant_results[i].bar.upper_5, view->YMax());
+//         *series1 << QPointF(constant_results[i].bar.lower_5, 0) << QPointF(constant_results[i].bar.lower_5, view->YMax());
+//         *series2 << QPointF(constant_results[i].bar.upper_5, 0) << QPointF(constant_results[i].bar.upper_5, view->YMax());
         QtCharts::QAreaSeries *series = new QtCharts::QAreaSeries(series1, series2);
         QPen pen(0x059605);
         pen.setWidth(3);
@@ -575,7 +575,6 @@ void ModelWidget::MCStatistic()
         series->setBrush(gradient);
         series->setOpacity(0.4);
         view->addSeries(series);
-        qDebug() << current_constant->points();
     }
     
     m_statistic_result->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
@@ -605,7 +604,7 @@ void ModelWidget::CVStatistic()
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
     
-    QList<StatisticResult > result = statistic->Results();
+    QList<QJsonObject > result = statistic->Results();
     QList<QList<QPointF > >series = statistic->Series();
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
@@ -618,7 +617,7 @@ void ModelWidget::CVStatistic()
     layout->addWidget(view, 0, 0, 1, 7);
     for(int i = 0; i < result.size(); ++i)
     {
-        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+/*        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
         xy_series->append(series[i]);
         view->addSeries(xy_series);
         qreal diff = result[i].max -result[i].min;
@@ -628,8 +627,8 @@ void ModelWidget::CVStatistic()
         layout->addWidget(new QLabel(tr("Max: %1").arg(QString::number(result[i].max))), i+1, 3);
         layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
         layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
-        layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));
-        m_model->setStatistic(result[i], i);
+        layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));*/
+        m_model->setCVStatistic(result[i], i);
     }
     m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
     m_statistic_result->show();

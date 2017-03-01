@@ -22,9 +22,11 @@
 #define ABSTRACTMODEL_H
 
 #include "src/global.h"
+#include "src/core/statstruct.h"
 
 #include <Eigen/Dense>
 
+#include <QtCore/QJsonObject>
 #include <QtCore/QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
@@ -34,47 +36,9 @@
 
 typedef Eigen::VectorXd Vector;
 
-struct OptimizerConfig
-{
-    int error_potenz = 2;
-    
-    int MaxIter = 1000;
-    int Sum_Convergence = 2;
-    qreal Shift_Convergence = 1E-3;
-    qreal Constant_Convergence = 1E-3;
-    qreal Error_Convergence = 5E-7;
-    
-    bool OptimizeBorderShifts = true;
-    bool OptimizeIntermediateShifts = true;
-    
-    int LevMar_Constants_PerIter = 1;
-    int LevMar_Shifts_PerIter = 1;
-    
-    qreal LevMar_mu = 1E-03;
-    qreal LevMar_Eps1 = 1E-15;
-    qreal LevMar_Eps2 = 1E-15;
-    qreal LevMar_Eps3 = 1E-20;
-    qreal LevMar_Delta = 1E-06;
-};
-
-struct ConfidenceBar
-{
-    qreal upper_2_5 = 0;
-    qreal upper_5 = 0;
-    qreal lower_2_5 = 0;
-    qreal lower_5 = 0;
-};
-    
-struct StatisticResult
-{
-    double optim;
-    double max;
-    double min;
-    QString name;
-    double integ_5;
-    double integ_1;
-    ConfidenceBar bar;
-};
+/*
+struct CVResult;
+struct MCResult;*/
 
 
 struct MassResults
@@ -163,13 +127,15 @@ public:
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     qreal ModelError() const;
     inline QStringList ConstantNames() const { return m_constant_names; }
-    void setStatistic(const StatisticResult &result, int i);
+    void setCVStatistic(const QJsonObject &result, int i);
+    void setMCStatistic(const QJsonObject &result, int i);
     /*
      * definies wheater this model can calculate equilibrium concentrations in parallel
      * should be useful when the equilibrium concentrations are calculated numerically
      */
     virtual bool SupportThreads() const = 0;
-    StatisticResult  getStatisticResult(int i) const { return m_statistics[i]; }
+    QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
+    QJsonObject getCVStatisticResult(int i) const { return m_cv_statistics[i]; }
     inline QList<qreal > Constants() const { return m_complex_constants; }
     inline qreal Constant(int i) const { return m_complex_constants[i]; }
     virtual qreal BC50();
@@ -234,7 +200,8 @@ protected:
     OptimizerConfig m_opt_config;
     bool m_corrupt;
     QStringList m_constant_names;
-    QList<StatisticResult > m_statistics;
+    QList< QJsonObject> m_mc_statistics;
+    QList< QJsonObject> m_cv_statistics;
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror;
     int m_used_variables;
         
@@ -245,7 +212,7 @@ signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);
     void Warning(const QString &str, int priority = 1);
-    void StatisticChanged(const StatisticResult &result, int i);
+    void StatisticChanged(const QJsonObject &result, int i);
 };
 
 #endif // ABSTRACTMODEL_H

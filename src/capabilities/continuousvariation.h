@@ -28,17 +28,6 @@
 class Minimizer;
 class QPointF;
 
-struct StatisticResult;
-
-struct CVConfig
-{
-    double increment = 1e-3;
-    int maxsteps = 1e4;
-    OptimizerConfig optimizer_config;
-    OptimizationType runtype;
-};
-
-
 class ContinuousVariationThread : public QObject, public QRunnable
 {
   Q_OBJECT
@@ -51,7 +40,7 @@ public:
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     void setParameter(const QJsonObject &json);
     virtual void run();
-    inline StatisticResult getResult() const { return m_result; }
+    inline QJsonObject getResult() const { return m_result; }
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> getSeries() const { return m_series; }
     
@@ -64,7 +53,7 @@ private:
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
     int m_parameter_id;
-    StatisticResult m_result;
+    QJsonObject m_result;
     qreal m_error;
     bool m_converged;
     QList<QPointF> m_series;
@@ -88,7 +77,7 @@ public:
     bool ConfidenceAssesment();
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
-    QList<StatisticResult > Results() const { return m_result; }
+    QList<QJsonObject > Results() const { return m_result; }
     
 public slots:
     void Interrupt();
@@ -98,7 +87,7 @@ private:
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
     QList<QList<QPointF> > m_series;
-    QList<StatisticResult > m_result;
+    QList<QJsonObject > m_result;
     CVConfig m_config;
     bool allow_break;
 signals:

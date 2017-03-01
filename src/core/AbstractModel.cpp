@@ -229,18 +229,19 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     for(int i = 0; i < Constants().size(); ++i)
     {
         constantObject[QString::number(i)] = (QString::number(Constants()[i]));
-        if(i < m_statistics.size())
+        //FIXME please adopt me to the new system
+        /*if(i < m_cv_statistics.size())
         {
-            if(m_statistics[i].integ_5 != 0 || m_statistics[i].integ_1 != 0)
+            if(m_cv_statistics[i].integ_5 != 0 || m_cv_statistics[i].integ_1 != 0)
             {
                 QJsonObject statistic;
-                statistic["max"] = QString::number(m_statistics[i].max);
-                statistic["min"] = QString::number(m_statistics[i].min);
-                statistic["integ_1"] = QString::number(m_statistics[i].integ_1);
+                statistic["max"] = QString::number(m_cv_statistics[i].max);
+                statistic["min"] = QString::number(m_cv_statistics[i].min);
+                statistic["integ_1"] = QString::number(m_cv_statistics[i].integ_1);
                 statistic["integ_5"] = QString::number(m_statistics[i].integ_5);
                 constantObject[QString::number(i)+"_statistic"] = statistic;
             }
-        }
+        }*/
     }
     json["constants"] = constantObject;
     
@@ -290,14 +291,14 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     for (int i = 0; i < Constants().size(); ++i) {
         
         constants << constantsObject[QString::number(i)].toString().toDouble();
-        
-        StatisticResult result;
+        //FIXME to be adopted
+        /*StatisticResult result;
         QJsonObject statistic = constantsObject[QString::number(i) + "_statistic"].toObject();
         result.max =  statistic["max"].toString().toDouble();
         result.min =  statistic["min"].toString().toDouble();
         result.integ_1 =  statistic["integ_1"].toString().toDouble();
         result.integ_5 =  statistic["integ_5"].toString().toDouble();
-        setStatistic(result, i);
+        setStatistic(result, i);*/
     }
     setConstants(constants);
     
@@ -364,15 +365,23 @@ void AbstractTitrationModel::MiniShifts()
     }
 }
 
-void AbstractTitrationModel::setStatistic(const StatisticResult &result, int i)
+void AbstractTitrationModel::setCVStatistic(const QJsonObject &result, int i)
 {
-    if(i < m_statistics.size())
-        m_statistics[i] = result;
+    if(i < m_cv_statistics.size())
+        m_cv_statistics[i] = result;
     else
-        m_statistics << result; 
+        m_cv_statistics << result; 
     emit StatisticChanged(result, i);
 }
 
+void AbstractTitrationModel::setMCStatistic(const QJsonObject &result, int i)
+{
+    if(i < m_mc_statistics.size())
+        m_mc_statistics[i] = result;
+    else
+        m_mc_statistics << result; 
+    emit StatisticChanged(result, i);
+}
 
 void AbstractTitrationModel::setConstants(const QList<qreal> &list)
 {

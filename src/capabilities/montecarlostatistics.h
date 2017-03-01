@@ -28,15 +28,6 @@
 class Minimizer;
 class QThreadPool;
 
-struct MCConfig
-{
-    int maxsteps = 1000;
-    double varianz = 1e-2;
-    bool original = false;
-    OptimizerConfig optimizer_config;
-    OptimizationType runtype;
-};
-
 class MonteCarloThread : public QObject, public QRunnable
 {
  Q_OBJECT
@@ -50,6 +41,7 @@ public:
     inline QList<qreal > Constants() const { return m_constants; }
     void setDataTable(DataTable *table);
     inline AbstractTitrationModel* Model() const { return m_model.data(); }
+    
 private:
     QSharedPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
@@ -72,8 +64,8 @@ public:
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
     
-    inline QList<StatisticResult > getConstantResult() const { return m_constants; }
-    inline QList<StatisticResult > getShiftResults() const { return m_shifts; }
+    inline QList<QJsonObject > getConstantResult() const { return m_constants; }
+    inline QList<QJsonObject > getShiftResults() const { return m_shifts; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }
 
 public slots:
@@ -87,7 +79,7 @@ private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QThreadPool *m_threadpool;
     QList<QList<QPointF> > m_series;
-    QList<StatisticResult > m_constants, m_shifts;
+    QList<QJsonObject > m_constants, m_shifts;
     QList<QJsonObject > m_models;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;

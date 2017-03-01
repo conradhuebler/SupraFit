@@ -28,9 +28,9 @@
 
 StatisticElement::StatisticElement(const QSharedPointer<AbstractTitrationModel> model, int no): m_model(model), m_no(no)
 {
-    connect(m_model.data(), SIGNAL(StatisticChanged(StatisticResult, int)), this, SLOT(UpdateStatistic(StatisticResult, int)));
+ /*   connect(m_model.data(), SIGNAL(StatisticChanged(QJsonObject, int)), this, SLOT(UpdateStatistic(QJsonObject, int)));
     QGridLayout *layout = new QGridLayout;
-    StatisticResult result;// = m_model->getStatisticResult(m_no);
+    QJsonObject result;// = m_model->getStatisticResult(m_no);
     layout->addWidget(new QLabel(m_model->ConstantNames()[m_no]), 0, 0);
     m_value = new QLabel(QString::number(m_model->Constants()[m_no]));
     layout->addWidget(m_value, 0, 1);
@@ -44,7 +44,7 @@ StatisticElement::StatisticElement(const QSharedPointer<AbstractTitrationModel> 
     layout->addWidget(m_integ_1, 0, 5);
     m_integ_5 = new QLabel(QString::number(result.integ_5));
     layout->addWidget(m_integ_5, 0, 6);
-    setLayout(layout);
+    setLayout(layout);*/
 }
 
 
@@ -55,7 +55,7 @@ StatisticElement::~StatisticElement()
 
 void StatisticElement::UpdateStatistic(const StatisticResult& result, int i)
 {
-    if(m_no == i)
+ /*   if(m_no == i)
     {
         m_value->setText(QString::number(m_model->Constants()[m_no]));
         m_min->setText(QString::number(result.bar.lower_5));
@@ -63,7 +63,7 @@ void StatisticElement::UpdateStatistic(const StatisticResult& result, int i)
         m_range->setText(QString::number(result.max-result.min));
         m_integ_1->setText(QString::number(result.integ_1));
         m_integ_5->setText(QString::number(result.integ_5));
-    }
+    }*/
 }
 
 

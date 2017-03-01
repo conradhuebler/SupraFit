@@ -197,9 +197,9 @@ void MonteCarloStatistics::AnalyseData()
     {
         QList<qreal > list = m_constant_list[i];
         ConfidenceBar bar = ToolSet::Confidence(list);
-        StatisticResult result;
-        result.bar = bar;
-        result.optim = m_model->Constant(i);
+        QJsonObject result;
+//         result.bar = bar;
+//         result.optim = m_model->Constant(i);
         m_constants << result;
     }
 }

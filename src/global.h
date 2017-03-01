@@ -22,6 +22,8 @@
 #ifndef global_H
 #define global_H
 
+#include <QtGlobal>
+
 enum OptimizationType{
         ComplexationConstants = 0x01,
         OptimizeShifts = 0x02,
@@ -38,6 +40,30 @@ inline OptimizationType operator^ (OptimizationType a, OptimizationType b) { ret
 inline OptimizationType& operator|= (OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a |= (int)b); }
 inline OptimizationType& operator&= (OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a &= (int)b); }
 inline OptimizationType& operator^= (OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a ^= (int)b); }
+
+
+struct OptimizerConfig
+{
+    int error_potenz = 2;
+    
+    int MaxIter = 1000;
+    int Sum_Convergence = 2;
+    qreal Shift_Convergence = 1E-3;
+    qreal Constant_Convergence = 1E-3;
+    qreal Error_Convergence = 5E-7;
+    
+    bool OptimizeBorderShifts = true;
+    bool OptimizeIntermediateShifts = true;
+    
+    int LevMar_Constants_PerIter = 1;
+    int LevMar_Shifts_PerIter = 1;
+    
+    qreal LevMar_mu = 1E-03;
+    qreal LevMar_Eps1 = 1E-15;
+    qreal LevMar_Eps2 = 1E-15;
+    qreal LevMar_Eps3 = 1E-20;
+    qreal LevMar_Delta = 1E-06;
+};
 
 
         
