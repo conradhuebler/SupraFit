@@ -108,6 +108,7 @@ private:
     
     OptimizerConfig m_config;
 
+    int m_last_tab;
     
     void Json2Model(const QJsonObject &object, const QString &str);
     void ActiveModel(QSharedPointer<AbstractTitrationModel > t);
@@ -126,6 +127,7 @@ private slots:
     void CloseAll();
     void Statistic();
     void OptimizeAll();
+    void HideSubWindows(int index);
     
 signals:
     void ModelAdded(AbstractTitrationModel *model);

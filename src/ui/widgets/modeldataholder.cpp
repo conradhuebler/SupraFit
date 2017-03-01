@@ -88,7 +88,8 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_modelsWidget->setTabsClosable(true);
     m_modelsWidget->setMovable(true);
     connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
-    
+    connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
+     
     m_add = new QPushButton(tr("Add Model"));
     m_add->setFlat(true);
     m_add->setDisabled(true);
@@ -142,7 +143,6 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     layout->addWidget(m_statistics, 0, 2);
     layout->addWidget(m_close_all, 0, 3);
     layout->addWidget(m_modelsWidget, 1, 0, 1, 4);
-    
 }
 
 ModelDataHolder::~ModelDataHolder()
@@ -308,6 +308,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     
     
     m_modelsWidget->addModelsTab(modelwidget);
+    m_last_tab = m_modelsWidget->currentIndex();
     m_models << t;
     m_close_all->setEnabled(true);
     m_statistics->setEnabled(true);
@@ -505,4 +506,14 @@ void ModelDataHolder::OptimizeAll()
     } 
 }
 
+void ModelDataHolder::HideSubWindows(int index)
+{
+    if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(m_last_tab)))
+        {
+            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(m_last_tab));
+            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            model->HideAllWindows();
+            m_last_tab = index;
+        }
+}
 #include "modeldataholder.moc"

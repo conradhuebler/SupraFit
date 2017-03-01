@@ -144,6 +144,7 @@ public slots:
     void MCStatistic();
     void GlobalMinimize();
     void LocalMinimize();
+    void HideAllWindows();
     
 private:
     QSharedPointer< AbstractTitrationModel > m_model;

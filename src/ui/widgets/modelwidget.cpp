@@ -845,4 +845,11 @@ void ModelWidget::toggleConcentrations()
     m_concentrations_result->setWidget(table);
     m_concentrations_result->show();
 }
+
+void ModelWidget::HideAllWindows()
+{
+    m_advancedsearch->hide();
+    m_statistic_dialog->hide();
+}
+
 #include "modelwidget.moc"
