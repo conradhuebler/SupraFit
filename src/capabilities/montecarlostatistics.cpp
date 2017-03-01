@@ -87,6 +87,7 @@ void MonteCarloStatistics::Evaluate()
     m_shift_list.clear();
     m_constants.clear();
     m_shifts.clear();
+    m_models.clear();
     QVector<QPointer <MonteCarloThread > > threads = GenerateData();
     while(m_threadpool->activeThreadCount())
     {
@@ -176,6 +177,8 @@ void MonteCarloStatistics::AnalyseData()
         int j = 0;
         for(const QString &str : qAsConst(keys))
         {
+            if(str.contains("statistic"))
+                continue;
             QString element = constants[str].toString();
             m_constant_list[j] << element.toDouble();
             j++;

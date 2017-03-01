@@ -171,7 +171,7 @@ void StatisticDialog::IncrementProgress(int time)
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     int val = m_progress->value() + 1;
     qreal aver = double(m_time)/val;
-    int remain = double(m_progress->maximum() - val)*aver/3000;
+    int remain = double(m_progress->maximum() - val)*aver/qAbs(QThreadPool::globalInstance()->maxThreadCount())/1000;
     int used = (t0 - m_time_0)/1000;
     
     if(m_progress->maximum() == -1)
