@@ -29,12 +29,12 @@
 
 #include "optimizerflagwidget.h"
 
-OptimizerFlagWidget::OptimizerFlagWidget() :m_type(OptimizationType::ComplexationConstants)
+OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants)
 {
     setUi();
 }
 
-OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type) : m_type(type)
+OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget *parent) :QWidget(parent), m_type(type)
 {
     setUi();
 }

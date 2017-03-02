@@ -99,7 +99,6 @@ private:
     QPointer<QPushButton > m_add, m_optimize, m_statistics, m_close_all;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
-//     QPlainTextEdit *m_logWidget;
     QVector<QWeakPointer< AbstractTitrationModel > > m_models;
     void AddModel(int model);
     void AddModel(const QJsonObject &json);

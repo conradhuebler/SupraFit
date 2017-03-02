@@ -63,13 +63,15 @@ void ContinuousVariationThread::run()
     m_result["controller"] = controller;
     m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
     m_result["value"] = parameter[m_parameter_id];
-    
+    m_result["type"] = "Complexation Constant";
     double integ_5 = 0;
     double integ_1 = 0;
-    SumErrors(1, integ_5, integ_1, series);
+    QJsonObject confidence;
+    //FIXME this must be adopted to F-statistics
+    confidence["upper_5"] = SumErrors(1, integ_5, integ_1, series);
     m_model.data()->ImportJSON(optimized);
-    SumErrors(0, integ_5, integ_1, series);
-    
+    confidence["lower_5"] = SumErrors(0, integ_5, integ_1, series);
+    m_result["confidence"] = confidence;
     
     m_series = series;
     m_result["integ_5"] = integ_5/m_error;
@@ -82,7 +84,7 @@ void ContinuousVariationThread::setParameter(const QJsonObject& json)
 }
 
 
-void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
+qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
 {
     double increment = m_config.increment;
     if(!direction)
@@ -96,10 +98,11 @@ void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doubl
     QList<qreal > consts = m_model.data()->Constants();
     double constant_ = consts[m_parameter_id];
     allow_break = false;
+    double par;
     for(int m = 0; m < m_config.maxsteps; ++m)
     {
         
-        double par = constant_ + double(m)*increment;
+        par = constant_ + double(m)*increment;
        
         consts[m_parameter_id] = par;
         m_model.data()->setConstants(consts);
@@ -128,13 +131,6 @@ void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doubl
         
         if(new_error/m_error > double(1.025))
         {
-            QJsonObject confidence;
-            //FIXME this must be adopted to F-statistics
-             if(direction)
-                 confidence["upper_5"] = par;
-             else
-                 confidence["lower_5"] = par;
-             m_result["confidence"] = confidence;
              break;
         }
         if(direction)
@@ -154,6 +150,7 @@ void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doubl
             break;
         emit IncrementProgress(0);
     }
+    return par;
 }
 
 void ContinuousVariationThread::Interrupt()

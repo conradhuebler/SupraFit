@@ -101,7 +101,7 @@ public slots:
 private:
     SpinBox *m_d_0;
     QVector<SpinBox * > m_constants;
-    QPointer<QLineEdit > error;
+    QLabel *m_error;
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
     QCheckBox *m_include, *m_show;
     QSharedPointer<AbstractTitrationModel > m_model;
@@ -156,17 +156,15 @@ private:
     QVector<QPointer< QPushButton > > m_sim_signal_remove;
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
-    QSpinBox *m_maxiter;
-    QLabel *m_bc_50;
+    QLabel *m_bc_50; //, *m_sum_squares;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
-    QLineEdit *m_sum_squares;
     QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi, m_concen; 
     bool m_pending;
     QList<int > ActiveSignals();
     void DiscreteUI();
     void EmptyUI();
-    
+    void resizeButtons();
     void CollectParameters();
     ChartView *view;
     StatisticWidget *m_statistic_widget;

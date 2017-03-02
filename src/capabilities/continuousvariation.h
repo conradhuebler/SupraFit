@@ -56,7 +56,7 @@ public slots:
     void Interrupt();
     
 private:
-    void SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
+    qreal SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;

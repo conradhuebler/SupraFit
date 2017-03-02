@@ -108,6 +108,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_d_0->setSuffix(" ppm");
     m_d_0->setValue(m_model->PureSignal(m_no));
     m_d_0->setToolTip(tr("Shift of the pure - non silent substrat"));
+    m_d_0->setMaximumWidth(130);
     connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
     
     for(int i = 0; i < m_model->ConstantSize(); ++i)
@@ -119,16 +120,17 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
         constant->setSuffix("ppm");
         constant->setValue(m_model->Pair(i, m_no).second);
         constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->ConstantNames()[i]));
+        constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         shifts->addWidget(constant, 0);
     }
     
     if(m_model->Type() != 3)
     {
-        error = new QLineEdit;
-        error->setReadOnly(true);
-        shifts->addWidget(error); 
-        error->setText(QString::number(m_model->SumOfErrors(m_no)));
+        m_error = new QLabel;
+        shifts->addStretch(300);
+        shifts->addWidget(m_error); 
+        m_error->setText("Sum of Squares: <b>" + QString::number(m_model->SumOfErrors(m_no)) + "</b>");
     } 
     layout->addLayout(shifts);
     QHBoxLayout *tools = new QHBoxLayout;
@@ -206,7 +208,7 @@ void ModelElement::Update()
         m_constants[i]->setValue(m_model->Pair(i, m_no).second);
     }
     if(m_model->Type() != 3)
-        error->setText(QString::number(m_model->SumOfErrors(m_no)));
+        m_error->setText("Sum of Squares: " + QString::number(m_model->SumOfErrors(m_no)));
     
 }
 
@@ -272,26 +274,30 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
-    m_layout->addWidget(pure_shift, 0, 0);
     QHBoxLayout *const_layout = new QHBoxLayout;
+    const_layout->addWidget(pure_shift, 0, 0);
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
         QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
-        constant->setPrefix("10^");
+        constant->setPrefix(m_model->ConstantNames()[i] + "=10^");
         constant->setValue(m_model->Constants()[i]);
+        constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
-        const_layout->addWidget(new QLabel(m_model->ConstantNames()[i]));
         const_layout->addWidget(constant);
     }
     m_bc_50 = new QLabel(tr("BC50_0"));
     const_layout->addWidget(m_bc_50);
-    m_layout->addLayout(const_layout, 0, 1, 1, m_model->ConstantSize()+2);
-    //     m_layout->addWidget( new QLabel(tr("Error")), 0, 2*m_model->ConstantSize()+2);
+    const_layout->addStretch(100);
+    m_minimize_all = new QPushButton(tr("Fit"));
+
+    connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
+    const_layout->addWidget(m_minimize_all);
+    m_layout->addLayout(const_layout, 0, 0, 1, m_model->ConstantSize()+3);
     m_sign_layout = new QVBoxLayout;
-    m_sign_layout->addWidget(m_statistic_widget);
+    
     m_sign_layout->setAlignment(Qt::AlignTop);
     
     
@@ -305,16 +311,19 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
         m_sign_layout->addWidget(el);
         m_model_elements << el;
     }
+    
     m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
     
     m_new_guess = new QPushButton(tr("New Guess"));
+    m_new_guess->setMaximumSize(80, 30);
     connect(m_new_guess, SIGNAL(clicked()), this, SLOT(NewGuess()));
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)
         EmptyUI();
     
-    
+    m_layout->addWidget(m_statistic_widget, 7, 0, 1, m_model->ConstantSize()+3);
+    resizeButtons();
     setLayout(m_layout);
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
@@ -340,23 +349,20 @@ ModelWidget::~ModelWidget()
 
 void ModelWidget::DiscreteUI()
 {
-    m_minimize_all = new QPushButton(tr("Global Fit"));
+   
     m_minimize_single = new QPushButton(tr("Local Fits"));
     m_optim_config = new QPushButton(tr("Fit Settings"));
     m_import = new QPushButton(tr("Load Constants"));
     m_export = new QPushButton(tr("Save Constants"));
-    m_maxiter = new QSpinBox;
-    m_advanced = new QPushButton(tr("Advanced\nSearch"));
+    m_advanced = new QPushButton(tr("Scan"));
     m_plot_3d = new QPushButton(tr("3D Plot"));
     m_plot_3d->setEnabled(false);
-    m_maxiter->setValue(20);
-    m_maxiter->setMaximum(999999);
     m_confi = new QPushButton(tr("Statistic"));
     m_concen = new QPushButton(tr("Concentration"));
     QHBoxLayout *mini = new QHBoxLayout;
     
     
-    connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
+    
     connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
     connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
@@ -366,32 +372,47 @@ void ModelWidget::DiscreteUI()
     connect(m_confi, SIGNAL(clicked()), this, SLOT(toggleStatisticDialog()));
     
     connect(m_concen, SIGNAL(clicked()), this, SLOT(toggleConcentrations()));
-    m_sum_squares = new QLineEdit;
-    m_sum_squares->setReadOnly(true);
-    
     mini->addWidget(m_new_guess);
-    mini->addWidget(m_minimize_all);
     mini->addWidget(m_minimize_single);
     mini->addWidget(m_advanced);
-    mini->addWidget(m_plot_3d);
+//     mini->addWidget(m_plot_3d);
     mini->addWidget(m_optim_config);
     
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
     
-    QHBoxLayout *mini_data = new QHBoxLayout;
-    mini_data->addWidget(m_import);
-    mini_data->addWidget(m_export);
-    mini_data->addWidget(m_confi);
-    mini_data->addWidget(m_concen);
-    m_layout->addLayout(mini_data, 4, 0,1,m_model->ConstantSize()+3 );
-    QHBoxLayout *mini2 = new QHBoxLayout;
-    mini2->addWidget(new QLabel(tr("No. of max. Iter.")));
-    mini2->addWidget(m_maxiter);
-    mini2->addWidget(new QLabel(tr("Error: (squared / absolute)")));
-    mini2->addWidget(m_sum_squares);
-    m_layout->addLayout(mini2, 5, 0,1,m_model->ConstantSize()+3);
-    m_layout->addWidget(m_optim_flags, 6, 0, 1, m_model->ConstantSize()+3);
+    mini->addWidget(m_import);
+    mini->addWidget(m_export);
+    mini->addWidget(m_confi);
+    mini->addWidget(m_concen);
+//     QHBoxLayout *mini2 = new QHBoxLayout;
+//     mini2->addWidget(m_optim_flags);
+    m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);    
+}
+
+void ModelWidget::resizeButtons()
+{
+
+    m_minimize_single->setMaximumSize(70, 30);
+    m_optim_config->setMaximumSize(80, 30);
+    m_minimize_all->setMaximumSize(70, 30);
+    m_import->setMaximumSize(100, 30);
+    m_export->setMaximumSize(100, 30);
+    m_advanced->setMaximumSize(70, 30);
+//     m_plot_3d->setMaximumSize(70, 30);
+    m_confi->setMaximumSize(70, 30);
+    m_concen->setMaximumSize(100, 30);
+    
+    m_new_guess->setFlat(true);
+    m_minimize_single->setFlat(true);
+    m_optim_config->setFlat(true);
+    m_minimize_all->setFlat(true);
+    m_import->setFlat(true);
+    m_export->setFlat(true);
+    m_advanced->setFlat(true);
+//     m_plot_3d->setFlat(true);
+    m_confi->setFlat(true);
+    m_concen->setFlat(true);
 }
 
 void ModelWidget::EmptyUI()
@@ -422,7 +443,7 @@ void ModelWidget::Repaint()
         error += m_model->SumOfErrors(j);
         m_model_elements[j]->Update();
     }
-    m_sum_squares->setText(QString::number(m_model->SumofSquares()) + "/" + QString::number(m_model->SumofAbsolute()));
+//     m_sum_squares->setText("Error: (squared / absolute)" + QString::number(m_model->SumofSquares()) + "/" + QString::number(m_model->SumofAbsolute()));
     m_pending = false;
     m_minimize_all->setEnabled(true);
     m_minimize_single->setEnabled(true);
@@ -475,15 +496,6 @@ void ModelWidget::CollectParameters()
 void ModelWidget::GlobalMinimize()
 {
     Waiter wait;
-    if(m_maxiter->value() > 10000)
-    {
-        int r = QMessageBox::warning(this, tr("So viel."),
-                                     tr("Wirklich so lange rechnen? "),
-                                     QMessageBox::Yes | QMessageBox::Default,
-                                     QMessageBox::No | QMessageBox::Escape);
-        if (r == QMessageBox::No)
-            return;
-    }
     if(m_pending)
         return;
     m_pending = true;
@@ -493,7 +505,7 @@ void ModelWidget::GlobalMinimize()
     QJsonObject json = m_model->ExportJSON();
     m_minimizer->setParameter(json);
     OptimizerConfig config = m_model->getOptimizerConfig();
-    config.MaxIter = m_maxiter->value();
+
     m_model->setOptimizerConfig(config);
     int result;
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
@@ -641,15 +653,6 @@ void ModelWidget::CVStatistic()
 void ModelWidget::LocalMinimize()
 {
     
-    if(m_maxiter->value() > 10000)
-    {
-        int r = QMessageBox::warning(this, tr("So viel."),
-                                     tr("Wirklich so lange rechnen? "),
-                                     QMessageBox::Yes | QMessageBox::Default,
-                                     QMessageBox::No | QMessageBox::Escape);
-        if (r == QMessageBox::No)
-            return;
-    }
     if(m_pending)
         return;
     Waiter wait;
@@ -665,7 +668,6 @@ void ModelWidget::LocalMinimize()
         m_model->setActiveSignals(active_signals);
         QVector<int > v(10,0);
         OptimizerConfig config = m_model->getOptimizerConfig();
-        config.MaxIter = m_maxiter->value();
         m_model->setOptimizerConfig(config);
         
         int result;
@@ -718,20 +720,13 @@ void ModelWidget::NewGuess()
     emit Update();
 }
 
-void ModelWidget::setMaxIter(int maxiter)
-{
-    m_maxiter->setValue(maxiter);
-}
-
 void ModelWidget::OptimizerSettings()
 {
     OptimizerDialog dialog(m_model->getOptimizerConfig(), this);
     if(dialog.exec() == QDialog::Accepted)
     {
         m_model->setOptimizerConfig(dialog.Config());
-        m_maxiter->setValue(dialog.Config().MaxIter);
     }
-    qDebug() << m_model->getOptimizerConfig().error_potenz;
 }
 void ModelWidget::ExportConstants()
 {

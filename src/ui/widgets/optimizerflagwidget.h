@@ -34,8 +34,8 @@ class OptimizerFlagWidget : public QWidget
 {
     Q_OBJECT
 public:
-    OptimizerFlagWidget();
-    OptimizerFlagWidget(OptimizationType type);
+    OptimizerFlagWidget(QWidget *parent = 0);
+    OptimizerFlagWidget(OptimizationType type, QWidget *parent = 0);
     ~OptimizerFlagWidget();
     OptimizationType getFlags() const;
     void DisableOptions(OptimizationType type);

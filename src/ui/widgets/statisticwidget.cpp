@@ -23,88 +23,21 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QVBoxLayout>
-
+#include <QtWidgets/QTextEdit>
 #include "statisticwidget.h"
-
-StatisticElement::StatisticElement(const QSharedPointer<AbstractTitrationModel> model, int no): m_model(model), m_no(no)
-{
- /*   connect(m_model.data(), SIGNAL(StatisticChanged(QJsonObject, int)), this, SLOT(UpdateStatistic(QJsonObject, int)));
-    QGridLayout *layout = new QGridLayout;
-    QJsonObject result;// = m_model->getStatisticResult(m_no);
-    layout->addWidget(new QLabel(m_model->ConstantNames()[m_no]), 0, 0);
-    m_value = new QLabel(QString::number(m_model->Constants()[m_no]));
-    layout->addWidget(m_value, 0, 1);
-    m_min = new QLabel(QString::number(result.min));
-    layout->addWidget(m_min, 0, 2);
-    m_max = new QLabel(QString::number(result.max));
-    layout->addWidget(m_max, 0,3);
-    m_range = new QLabel(QString::number(result.max - result.min));
-    layout->addWidget(m_range, 0, 4);
-    m_integ_1 = new QLabel(QString::number(result.integ_1));
-    layout->addWidget(m_integ_1, 0, 5);
-    m_integ_5 = new QLabel(QString::number(result.integ_5));
-    layout->addWidget(m_integ_5, 0, 6);
-    setLayout(layout);*/
-}
-
-
-StatisticElement::~StatisticElement()
-{
-    
-}
-
-void StatisticElement::UpdateStatistic(const StatisticResult& result, int i)
-{
- /*   if(m_no == i)
-    {
-        m_value->setText(QString::number(m_model->Constants()[m_no]));
-        m_min->setText(QString::number(result.bar.lower_5));
-        m_max->setText(QString::number(result.bar.upper_5));
-        m_range->setText(QString::number(result.max-result.min));
-        m_integ_1->setText(QString::number(result.integ_1));
-        m_integ_5->setText(QString::number(result.integ_5));
-    }*/
-}
 
 
 StatisticWidget::StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : m_model(model), QWidget(parent)
 {
-//     QVBoxLayout *layout = new QVBoxLayout;
-//     m_subwidget = new QWidget;
-//     m_subwidget->setLayout(layout);
+
     QVBoxLayout *m_layout = new QVBoxLayout;    
-    m_overview = new QLabel;
-    m_overview->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_overview = new QTextEdit;
+    m_overview->setReadOnly(true);
     m_layout->addWidget(m_overview);
     
-    m_mc = new QLabel;
-    m_mc->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    m_layout->addWidget(m_mc);
     
-    m_cv = new QLabel;
-    m_cv->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    m_layout->addWidget(m_cv);
-    
-    
-    
-    
-//     m_show = new QPushButton(tr("Show more information"));
-//     m_show->setFlat(true);
-//     m_show->setMaximumHeight(25);
-//     connect(m_show, SIGNAL(clicked()), this, SLOT(toggleView()));
-//     m_layout->addWidget(m_show);
-    
-
-//     for(int i = 0; i < m_model->ConstantSize(); ++i)
-//     {
-//         StatisticElement *element = new StatisticElement(m_model, i);
-//         layout->addWidget(element);
-//         m_elements << element;
-//     }
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
-//     m_layout->addWidget(m_subwidget); 
     setLayout(m_layout);
-//     emit m_show->clicked();
     Update();
 }
 
@@ -127,8 +60,8 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper_5"].toDouble();
     qreal lower = confidence["lower_5"].toDouble();
-    text = result["name"].toString() + ": " + QString::number(value) + "(+ " + QString::number(upper-value) + "/-" + QString::number(value-lower) + "\n";
-    text += "5% Confidence = " + QString::number(lower) + " - " + QString::number(upper) + "\n"; 
+    text = "<p><b>" + result["type"].toString() + " " + result["name"].toString() + "</b>: <b> 10^" + QString::number(value) + " = "  +QString::number(qPow(10,value)) +  " 10^(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></p>";
+    text += "<p>95% Confidence Intervall= <b> 10^" + QString::number(lower) + " - 10^" + QString::number(upper) + "</b></p>\n"; 
     return text;    
 }
 
@@ -136,31 +69,39 @@ void StatisticWidget::Update()
 {
     QString overview("<table style=\'width:100%\'>");
     overview +=  "<tr><td>Number of used Points:</t><td><b>" + QString::number(m_model.data()->Points()) + "</b></td></tr>\n";
+    overview +=  "<tr><td>Error: (squared / absolute)</td><td><b>" + QString::number(m_model->SumofSquares()) + "/" + QString::number(m_model->SumofAbsolute()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Mean Error in Model:</td><td><b> " + QString::number(m_model.data()->MeanError()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Variance of Error:</td><td><b>" + QString::number(m_model.data()->Variance())  +"</b></td></tr>\n";
     overview +=  "<tr><td>Standard deviation:</td><td><b>"+  QString::number(m_model.data()->StdDeviation()) +"</b></td></tr>\n";
     overview +=  "<tr><td>Standard Error:</td><td><b>"  + QString::number(m_model.data()->StdError()) + "</b></td></tr>\n";
     overview += "</table>";
-    m_overview->setText(overview);
+    
     
     QString cv;
+    cv += "<p><b>Continuouse Variation / Model Comparison Results:</b></p>\n";
+    cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
     for(int i = 0; i < m_model->getCVStatisticResult(); ++i)
     {
      QJsonObject result = m_model->getCVStatisticResult(i);   
      QJsonObject confidence = result["confidence"].toObject();
-     cv += "Continuouse Variation / Model Comparison Results:\n";
+     
      cv += TextFromConfidence(result);
     }
-    m_cv->setText(cv);
+     if(m_model->getCVStatisticResult())
+         overview += cv;
+    
     QString mc;
+    mc += "<p><b>Monte Carlo Simulation Results:</b></p>\n";
     for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getMCStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
-        mc += "Monte Carlo Simulation Results:\n";
+        
         mc += TextFromConfidence(result);
     }
-    m_mc->setText(mc);
+     if(m_model->getMCStatisticResult())
+         overview += mc;   
+    m_overview->setText(overview);
 }
 
 #include "statisticwidget.moc"

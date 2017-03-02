@@ -349,7 +349,6 @@ void ModelDataHolder::setSettings(const OptimizerConfig &config)
         ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
         if(w != 0)
         {
-            w->setMaxIter(config.MaxIter);
             w->Model()->setOptimizerConfig(config);
             m_config = config;
         }

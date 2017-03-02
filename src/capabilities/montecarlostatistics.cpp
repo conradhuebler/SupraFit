@@ -210,6 +210,7 @@ void MonteCarloStatistics::AnalyseData()
         result["controller"] = controller;
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
+        result["type"] = "Complexation Constant";
         m_constants << result;
     }
 }

@@ -27,23 +27,8 @@
 class AbstractTitrationModel;
 class QLabel;
 class QPushButton;
+class QTextEdit;
 struct StatisticResult;
-
-class StatisticElement : public QGroupBox
-{
-    Q_OBJECT
-public:
-    StatisticElement(const QSharedPointer<AbstractTitrationModel> model, int no);
-    ~StatisticElement();
-    
-private:    
-    QSharedPointer<AbstractTitrationModel > m_model;
-    int m_no;
-    QLabel *m_min, *m_max, *m_range, *m_integ_1, *m_integ_5, *m_value;
-    
-private slots:
-    void UpdateStatistic(const StatisticResult &result, int i);
-};
 
 class StatisticWidget : public QWidget
 {
@@ -59,7 +44,7 @@ private:
 //     QList<QPointer<StatisticElement> > m_elements;
     QPushButton *m_show;
     QWidget *m_subwidget;
-    QLabel *m_overview, *m_mc, *m_cv;
+    QTextEdit *m_overview;
     
 private slots:
     void toggleView();
