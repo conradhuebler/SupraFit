@@ -65,16 +65,18 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
     qreal value = result["value"].toDouble();
     QString pot;
     QString nr;
+    QString const_name;
     if(result["type"] == "Complexation Constant")
     {
         nr = QString::number(qPow(10,value));
         pot = "10^";
+        const_name = " complexation constant ";
     }
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper_5"].toDouble();
     qreal lower = confidence["lower_5"].toDouble();
-    text = "<table> <tr><td><b>" + result["name"].toString() + ":</b></td><td> <b>" + pot + QString::number(value) + " = "  +nr +  pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr>";
-    text += "<tr><td>95% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower) + " -" + pot + QString::number(upper) + "</b></td></tr>\n"; 
+    text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " = "  +nr +  pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr> ";
+    text += "<tr><td>95% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower) + " -" + pot + QString::number(upper) + "</b></td></tr></p>\n"; 
     text += "</table>";
     return text;    
 }
@@ -90,7 +92,8 @@ void StatisticWidget::Update()
     overview +=  "<tr><td>Standard Error:</td><td><b>"  + QString::number(m_model.data()->StdError()) + "</b></td></tr>\n";
     overview += "</table>";
     
-    
+    m_short = overview;
+    overview.clear();
     QString cv;
     cv += "<p><b>Continuouse Variation / Model Comparison Results:</b></p>\n";
     cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
@@ -115,7 +118,8 @@ void StatisticWidget::Update()
     }
      if(m_model->getMCStatisticResult())
          overview += mc;   
-    m_overview->setText(overview);
+    m_overview->setText(m_short + overview);
+    m_statistics = overview;
 }
 
 #include "statisticwidget.moc"

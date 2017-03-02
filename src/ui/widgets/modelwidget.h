@@ -159,7 +159,7 @@ private:
     QLabel *m_bc_50; //, *m_sum_squares;
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
-    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi, m_concen; 
+    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi, m_concen, m_save; 
     bool m_pending;
     QList<int > ActiveSignals();
     void DiscreteUI();
@@ -174,6 +174,7 @@ private:
 //     OptimizationType m_last_run;
     bool m_statistic;
     Charts m_charts;
+    QString m_logging;
     
 private slots:
     void Repaint();
@@ -188,7 +189,7 @@ private slots:
     void triggerPlot3D();
     void toggleConcentrations();
     void toggleStatisticDialog();
-    
+    void Save2File();
     
 public slots:
     void recalulate();

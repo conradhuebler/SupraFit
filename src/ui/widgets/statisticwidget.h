@@ -36,7 +36,8 @@ class StatisticWidget : public QWidget
 public:
     StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
     ~StatisticWidget();
-    
+    inline QString Overview() const { return m_short; }
+    inline QString Statistic() const { return m_statistics; }
 private:
     QString TextFromConfidence(const QJsonObject &result);
     
@@ -45,7 +46,7 @@ private:
     QPushButton *m_show;
     QWidget *m_subwidget;
     QTextEdit *m_overview;
-    
+    QString m_short, m_statistics;
 private slots:
     void toggleView();
     void Update();

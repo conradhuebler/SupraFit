@@ -358,6 +358,7 @@ void ModelWidget::DiscreteUI()
     m_plot_3d->setEnabled(false);
     m_confi = new QPushButton(tr("Statistic"));
     m_concen = new QPushButton(tr("Concentration"));
+    m_save = new QPushButton(tr("Save"));
     QHBoxLayout *mini = new QHBoxLayout;
     
     connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
@@ -367,7 +368,7 @@ void ModelWidget::DiscreteUI()
     connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
     connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
     connect(m_confi, SIGNAL(clicked()), this, SLOT(toggleStatisticDialog()));
-    
+    connect(m_save, SIGNAL(clicked()), this, SLOT(Save2File()));
     connect(m_concen, SIGNAL(clicked()), this, SLOT(toggleConcentrations()));
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_single);
@@ -382,6 +383,7 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_export);
     mini->addWidget(m_confi);
     mini->addWidget(m_concen);
+    mini->addWidget(m_save);
     m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);    
 }
 
@@ -397,6 +399,7 @@ void ModelWidget::resizeButtons()
 //     m_plot_3d->setMaximumSize(70, 30);
     m_confi->setMaximumSize(70, 30);
     m_concen->setMaximumSize(100, 30);
+    m_save->setMaximumSize(70, 30);
     
     m_new_guess->setStyleSheet("background-color: #77d740;");
      m_minimize_single->setStyleSheet("background-color: #77d740;");
@@ -408,6 +411,7 @@ void ModelWidget::resizeButtons()
 //     m_plot_3d->setStyleSheet("background-color: #77d740;");
     m_confi->setStyleSheet("background-color: #77d740;");
     m_concen->setStyleSheet("background-color: #77d740;");
+    m_save->setStyleSheet("background-color: #77d740;");
 }
 
 void ModelWidget::EmptyUI()
@@ -446,6 +450,7 @@ void ModelWidget::Repaint()
     QChar mu = QChar(956);
     format_text += QString(" [") + mu + QString("M]");
     m_bc_50->setText(format_text);
+    m_logging += m_statistic_widget->Overview();
 }
 
 
@@ -455,7 +460,6 @@ void ModelWidget::recalulate()
     if(m_pending)
         return;
     m_pending = true;
-    
     CollectParameters();
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
@@ -586,7 +590,14 @@ void ModelWidget::MCStatistic()
         series->setOpacity(0.4);
         view->addSeries(series);
     }
-    
+    QString buff = m_statistic_widget->Statistic();
+    buff.remove("<tr>");
+    buff.remove("<table>");
+    buff.remove("</tr>");
+    buff.remove("</table>");
+    buff.replace("</td>", "\t");
+    buff.replace("<td>", "\t");
+    m_logging += buff;
     m_statistic_result->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
     m_statistic_result->show();  
     delete monte_carlo;
@@ -836,4 +847,19 @@ void ModelWidget::HideAllWindows()
     m_statistic_dialog->hide();
 }
 
+void ModelWidget::Save2File()
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("All files (*.*)" ));
+    if(!str.isEmpty())
+    {
+        QFile file( str );
+        if ( file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text ) )
+        {
+            QTextStream stream( &file );
+            QTextDocument doc;
+            doc.setHtml(m_logging);
+            stream << doc.toPlainText() << endl;
+        }
+    } 
+}
 #include "modelwidget.moc"
