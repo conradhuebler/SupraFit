@@ -152,6 +152,8 @@ public:
     inline qreal Variance() const { return m_variance; }
     inline qreal StdDeviation() const { return qSqrt(m_variance); }
     inline qreal StdError() const { return m_stderror; }
+    inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
+    inline Eigen::MatrixXd ComplexParameter() const { return m_complex_signal_parameter; }
 public slots:
      inline  void Calculate() { Calculate(Constants());}
      void Calculate(const QList<qreal > &constants);

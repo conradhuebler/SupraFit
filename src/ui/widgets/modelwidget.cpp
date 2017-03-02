@@ -540,7 +540,7 @@ void ModelWidget::MCStatistic()
     monte_carlo->Evaluate();
     
     QList<QList<QPointF > >series = monte_carlo->getSeries();
-    QList<QJsonObject > constant_results = monte_carlo->getConstantResult();
+    QList<QJsonObject > constant_results = monte_carlo->getResult();
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
     resultwidget->setLayout(layout);
@@ -551,6 +551,8 @@ void ModelWidget::MCStatistic()
     view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
     bool formated = false;
+    for(int i = 0; i < constant_results.size(); ++i)
+        m_model->setMCStatistic(constant_results[i], i);
     for(int i = 0; i < series.size(); ++i)
     {
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
@@ -559,7 +561,7 @@ void ModelWidget::MCStatistic()
         if(!formated)
             view->formatAxis();
         formated = true;
-        m_model->setMCStatistic(constant_results[i], i);
+        
         
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());

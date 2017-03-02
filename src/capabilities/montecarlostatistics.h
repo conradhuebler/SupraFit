@@ -74,8 +74,7 @@ public:
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
     
-    inline QList<QJsonObject > getConstantResult() const { return m_constants; }
-    inline QList<QJsonObject > getShiftResults() const { return m_shifts; }
+    inline QList<QJsonObject > getResult() const { return m_mc_results; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }
 
 public slots:
@@ -85,11 +84,12 @@ private:
     QVector<QPointer <MonteCarloThread > > GenerateData();
     void Collect(const QVector<QPointer <MonteCarloThread > > &threads);
     void AnalyseData();
-    
+    void ExtractFromJson(int i, const QString &string);
+    QJsonObject MakeJson(QList<qreal > &list);
     QSharedPointer<AbstractTitrationModel> m_model;
     QThreadPool *m_threadpool;
     QList<QList<QPointF> > m_series;
-    QList<QJsonObject > m_constants, m_shifts;
+    QList<QJsonObject > m_mc_results;
     QList<QJsonObject > m_models;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;

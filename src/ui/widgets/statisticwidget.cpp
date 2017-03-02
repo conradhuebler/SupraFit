@@ -63,12 +63,19 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
 {
     QString text;
     qreal value = result["value"].toDouble();
-    
+    QString pot;
+    QString nr;
+    if(result["type"] == "Complexation Constant")
+    {
+        nr = QString::number(qPow(10,value));
+        pot = "10^";
+    }
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper_5"].toDouble();
     qreal lower = confidence["lower_5"].toDouble();
-    text = "<table> <tr><td><b>" + result["name"].toString() + ":</b></td><td> <b> 10^" + QString::number(value) + " = "  +QString::number(qPow(10,value)) +  " 10^(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr>";
-    text += "<tr><td>95% Confidence Intervall=</td><td> <b> 10^" + QString::number(lower) + " - 10^" + QString::number(upper) + "</b></td></tr>\n"; 
+    text = "<table> <tr><td><b>" + result["name"].toString() + ":</b></td><td> <b>" + pot + QString::number(value) + " = "  +nr +  pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr>";
+    text += "<tr><td>95% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower) + " -" + pot + QString::number(upper) + "</b></td></tr>\n"; 
+    text += "</table>";
     return text;    
 }
 

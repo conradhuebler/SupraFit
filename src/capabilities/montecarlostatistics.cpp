@@ -85,8 +85,7 @@ void MonteCarloStatistics::Evaluate()
 {
     m_constant_list.clear();
     m_shift_list.clear();
-    m_constants.clear();
-    m_shifts.clear();
+    m_mc_results.clear();
     m_models.clear();
     QVector<QPointer <MonteCarloThread > > threads = GenerateData();
     while(m_threadpool->activeThreadCount())
@@ -151,68 +150,115 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
 void MonteCarloStatistics::AnalyseData()
 {
     m_constant_list.resize(m_model->ConstantSize());
-    m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount());
+    m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount()+m_model->SignalCount());
     for(int i = 0; i < m_models.size(); ++i)
     {       
-        QJsonObject constants = m_models[i]["data"].toObject()["constants"].toObject();
-        QStringList keys = constants.keys();
+        ExtractFromJson(i, "constants");
+        ExtractFromJson(i, "pureShift");
         
-        if(keys.size() > 10)
+        for(int k = 0; k < m_model->ConstantSize(); ++k)
         {
-            QCollator collator;
-            collator.setNumericMode(true);
-            std::sort(
-                keys.begin(),
-                      keys.end(),
-                      [&collator](const QString &key1, const QString &key2)
-                      {
-                          return collator.compare(key1, key2) < 0;
-                      });
+            ExtractFromJson(i, "shift_" + QString::number(k));
         }
-        
-        QString consts;
-        int j = 0;
-        for(const QString &str : qAsConst(keys))
-        {
-            if(str.contains("statistic"))
-                continue;
-            QString element = constants[str].toString();
-            m_constant_list[j] << element.toDouble();
-            j++;
-        }
-        
-        
-        
-        for(int j = 0; j < m_shift_list.size(); ++j)
-        {
-            //             m_shift_list[j] << m_models[j].
-        }
-        
     }
     
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
         QList<qreal > list = m_constant_list[i];
-        ConfidenceBar bar = ToolSet::Confidence(list);
-        QJsonObject result;
-        QJsonObject confidence;
-        confidence["upper_5"] = bar.upper_5;
-        confidence["upper_2_5"] = bar.upper_2_5;
-        confidence["lower_2_5"] = bar.lower_2_5;
-        confidence["lower_5"] = bar.lower_5;
-        result["confidence"] = confidence;
-        QJsonObject controller;
-        controller["runtype"] = m_config.runtype;
-        controller["steps"] = m_config.maxsteps;
-        controller["variance"] = m_config.variance;
-        controller["original"] = m_config.original;
-        controller["bootstrap"] = m_config.bootstrap;
-        result["controller"] = controller;
+        QJsonObject result = MakeJson(list);
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
-        m_constants << result;
+        m_mc_results << result;
     }
+    
+    for(int i = 0; i < m_shift_list.size(); ++i)
+    {
+        QList<qreal > list = m_shift_list[i];
+        QJsonObject result = MakeJson(list);
+        /*
+         * Some fun goes here, since our data are one long vector
+         * the 0 - SignalCount() Datas are one block
+         */
+        int nr = ceil(i/m_model->SignalCount()); // nr = 0 -> pure shifts, after SignalCount() runs, it gets incremented
+        int mod = i%m_model->SignalCount(); // this is the modulo, which says what index the parameter is
+        if(nr == 0)
+        {
+            result["value"] = m_model->PureParameter()(i,0);
+            result["name"] = "Host Shift: " + m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString();
+        }else
+        {
+            result["value"] = m_model->ComplexParameter()(mod,nr-1);
+            result["name"] = m_model->ConstantNames()[nr-1] + " Component Shift: " + m_model->SignalModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
+        }
+        result["type"] = "Shift";
+        m_mc_results << result;
+    }
+    
+}
+void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
+{
+    QJsonObject object =  m_models[i]["data"].toObject()[string].toObject();
+    QStringList keys = object.keys();
+    if(keys.size() > 10)
+    {
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+                  keys.end(),
+                  [&collator](const QString &key1, const QString &key2)
+                  {
+                      return collator.compare(key1, key2) < 0;
+                  });
+    }
+    
+    int j = 0;
+    for(const QString &str : qAsConst(keys))
+    {
+        QString element = object[str].toString();
+        /*
+         * Thank to json, we know what is to find where
+         * constants as constants
+         * pureShifts are the first n = SignalCount() Entries 
+         * shift_0 are the next n +1 - 2n entries
+         * and so on
+         * it really is not the best solution
+         */
+        if(string == "constants")
+            m_constant_list[j] << element.toDouble();
+        else if(string == "pureShift")
+            m_shift_list[j] << element.toDouble();
+        else
+        {
+            int add = QString(string).remove("shift_").toInt() + 1;
+            m_shift_list[j + add*m_model->SignalCount()] << element.toDouble();
+        }
+        j++;
+    }  
+    
+}
+
+QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list)
+{
+    ConfidenceBar bar = ToolSet::Confidence(list);
+    QJsonObject result;
+    
+    QJsonObject confidence;
+    confidence["upper_5"] = bar.upper_5;
+    confidence["upper_2_5"] = bar.upper_2_5;
+    confidence["lower_2_5"] = bar.lower_2_5;
+    confidence["lower_5"] = bar.lower_5;
+    result["confidence"] = confidence;
+    
+    QJsonObject controller;
+    controller["runtype"] = m_config.runtype;
+    controller["steps"] = m_config.maxsteps;
+    controller["variance"] = m_config.variance;
+    controller["original"] = m_config.original;
+    controller["bootstrap"] = m_config.bootstrap;
+    result["controller"] = controller;
+    return result;
 }
 
 
