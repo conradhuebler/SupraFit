@@ -53,11 +53,14 @@ public:
     ~StatisticWidget();
     
 private:
+    QString TextFromConfidence(const QJsonObject &result);
+    
     QSharedPointer<AbstractTitrationModel > m_model;
-    QList<QPointer<StatisticElement> > m_elements;
+//     QList<QPointer<StatisticElement> > m_elements;
     QPushButton *m_show;
     QWidget *m_subwidget;
-    QLabel *m_overview;
+    QLabel *m_overview, *m_mc, *m_cv;
+    
 private slots:
     void toggleView();
     void Update();

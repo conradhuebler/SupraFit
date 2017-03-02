@@ -153,10 +153,7 @@ void MonteCarloStatistics::AnalyseData()
     m_constant_list.resize(m_model->ConstantSize());
     m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount());
     for(int i = 0; i < m_models.size(); ++i)
-    {
-        //         for(int j = 0; j < m_constant_list.size(); ++j)
-        //         {
-        
+    {       
         QJsonObject constants = m_models[i]["data"].toObject()["constants"].toObject();
         QStringList keys = constants.keys();
         

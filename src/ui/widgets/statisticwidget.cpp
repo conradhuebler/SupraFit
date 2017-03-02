@@ -69,31 +69,42 @@ void StatisticElement::UpdateStatistic(const StatisticResult& result, int i)
 
 StatisticWidget::StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : m_model(model), QWidget(parent)
 {
-    QVBoxLayout *layout = new QVBoxLayout;
-    m_subwidget = new QWidget;
-    m_subwidget->setLayout(layout);
+//     QVBoxLayout *layout = new QVBoxLayout;
+//     m_subwidget = new QWidget;
+//     m_subwidget->setLayout(layout);
     QVBoxLayout *m_layout = new QVBoxLayout;    
     m_overview = new QLabel;
     m_overview->setTextInteractionFlags(Qt::TextSelectableByMouse);
     m_layout->addWidget(m_overview);
     
-    m_show = new QPushButton(tr("Show more information"));
-    m_show->setFlat(true);
-    m_show->setMaximumHeight(25);
-    connect(m_show, SIGNAL(clicked()), this, SLOT(toggleView()));
-    m_layout->addWidget(m_show);
+    m_mc = new QLabel;
+    m_mc->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_layout->addWidget(m_mc);
+    
+    m_cv = new QLabel;
+    m_cv->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_layout->addWidget(m_cv);
+    
+    
+    
+    
+//     m_show = new QPushButton(tr("Show more information"));
+//     m_show->setFlat(true);
+//     m_show->setMaximumHeight(25);
+//     connect(m_show, SIGNAL(clicked()), this, SLOT(toggleView()));
+//     m_layout->addWidget(m_show);
     
 
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
-    {
-        StatisticElement *element = new StatisticElement(m_model, i);
-        layout->addWidget(element);
-        m_elements << element;
-    }
+//     for(int i = 0; i < m_model->ConstantSize(); ++i)
+//     {
+//         StatisticElement *element = new StatisticElement(m_model, i);
+//         layout->addWidget(element);
+//         m_elements << element;
+//     }
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
-    m_layout->addWidget(m_subwidget); 
+//     m_layout->addWidget(m_subwidget); 
     setLayout(m_layout);
-    emit m_show->clicked();
+//     emit m_show->clicked();
     Update();
 }
 
@@ -108,6 +119,19 @@ void StatisticWidget::toggleView()
     m_subwidget->setHidden(!hidden);
 }
 
+QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
+{
+    QString text;
+    qreal value = result["value"].toDouble();
+    
+    QJsonObject confidence = result["confidence"].toObject();
+    qreal upper = confidence["upper_5"].toDouble();
+    qreal lower = confidence["lower_5"].toDouble();
+    text = result["name"].toString() + ": " + QString::number(value) + "(+ " + QString::number(upper-value) + "/-" + QString::number(value-lower) + "\n";
+    text += "5% Confidence = " + QString::number(lower) + " - " + QString::number(upper) + "\n"; 
+    return text;    
+}
+
 void StatisticWidget::Update()
 {
     QString overview("<table style=\'width:100%\'>");
@@ -118,6 +142,25 @@ void StatisticWidget::Update()
     overview +=  "<tr><td>Standard Error:</td><td><b>"  + QString::number(m_model.data()->StdError()) + "</b></td></tr>\n";
     overview += "</table>";
     m_overview->setText(overview);
+    
+    QString cv;
+    for(int i = 0; i < m_model->getCVStatisticResult(); ++i)
+    {
+     QJsonObject result = m_model->getCVStatisticResult(i);   
+     QJsonObject confidence = result["confidence"].toObject();
+     cv += "Continuouse Variation / Model Comparison Results:\n";
+     cv += TextFromConfidence(result);
+    }
+    m_cv->setText(cv);
+    QString mc;
+    for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
+    {
+        QJsonObject result = m_model->getMCStatisticResult(i);   
+        QJsonObject confidence = result["confidence"].toObject();
+        mc += "Monte Carlo Simulation Results:\n";
+        mc += TextFromConfidence(result);
+    }
+    m_mc->setText(mc);
 }
 
 #include "statisticwidget.moc"

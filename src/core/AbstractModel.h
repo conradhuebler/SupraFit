@@ -138,6 +138,8 @@ public:
     virtual bool SupportThreads() const = 0;
     QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
     QJsonObject getCVStatisticResult(int i) const { return m_cv_statistics[i]; }
+    int getMCStatisticResult() const { return m_mc_statistics.size(); }
+    int getCVStatisticResult() const { return m_cv_statistics.size(); }
     inline QList<qreal > Constants() const { return m_complex_constants; }
     inline qreal Constant(int i) const { return m_complex_constants[i]; }
     virtual qreal BC50();
