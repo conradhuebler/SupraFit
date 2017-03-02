@@ -349,7 +349,6 @@ ModelWidget::~ModelWidget()
 
 void ModelWidget::DiscreteUI()
 {
-   
     m_minimize_single = new QPushButton(tr("Local Fits"));
     m_optim_config = new QPushButton(tr("Fit Settings"));
     m_import = new QPushButton(tr("Load Constants"));
@@ -360,8 +359,6 @@ void ModelWidget::DiscreteUI()
     m_confi = new QPushButton(tr("Statistic"));
     m_concen = new QPushButton(tr("Concentration"));
     QHBoxLayout *mini = new QHBoxLayout;
-    
-    
     
     connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
     connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
@@ -385,34 +382,32 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_export);
     mini->addWidget(m_confi);
     mini->addWidget(m_concen);
-//     QHBoxLayout *mini2 = new QHBoxLayout;
-//     mini2->addWidget(m_optim_flags);
     m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);    
 }
 
 void ModelWidget::resizeButtons()
 {
-
+    // Thats awfull and hackish, but it works for now doesn't look that bad
     m_minimize_single->setMaximumSize(70, 30);
     m_optim_config->setMaximumSize(80, 30);
     m_minimize_all->setMaximumSize(70, 30);
-    m_import->setMaximumSize(100, 30);
-    m_export->setMaximumSize(100, 30);
-    m_advanced->setMaximumSize(70, 30);
+    m_import->setMaximumSize(110, 30);
+    m_export->setMaximumSize(110, 30);
+    m_advanced->setMaximumSize(50, 30);
 //     m_plot_3d->setMaximumSize(70, 30);
     m_confi->setMaximumSize(70, 30);
     m_concen->setMaximumSize(100, 30);
     
-    m_new_guess->setFlat(true);
-    m_minimize_single->setFlat(true);
-    m_optim_config->setFlat(true);
-    m_minimize_all->setFlat(true);
-    m_import->setFlat(true);
-    m_export->setFlat(true);
-    m_advanced->setFlat(true);
-//     m_plot_3d->setFlat(true);
-    m_confi->setFlat(true);
-    m_concen->setFlat(true);
+    m_new_guess->setStyleSheet("background-color: #77d740;");
+     m_minimize_single->setStyleSheet("background-color: #77d740;");
+    m_optim_config->setStyleSheet("background-color: #77d740;");
+    m_minimize_all->setStyleSheet("background-color: #77d740;");
+    m_import->setStyleSheet("background-color: #77d740;");
+    m_export->setStyleSheet("background-color: #77d740;");
+    m_advanced->setStyleSheet("background-color: #77d740;");
+//     m_plot_3d->setStyleSheet("background-color: #77d740;");
+    m_confi->setStyleSheet("background-color: #77d740;");
+    m_concen->setStyleSheet("background-color: #77d740;");
 }
 
 void ModelWidget::EmptyUI()
@@ -443,7 +438,6 @@ void ModelWidget::Repaint()
         error += m_model->SumOfErrors(j);
         m_model_elements[j]->Update();
     }
-//     m_sum_squares->setText("Error: (squared / absolute)" + QString::number(m_model->SumofSquares()) + "/" + QString::number(m_model->SumofAbsolute()));
     m_pending = false;
     m_minimize_all->setEnabled(true);
     m_minimize_single->setEnabled(true);
@@ -634,14 +628,6 @@ void ModelWidget::CVStatistic()
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
         xy_series->append(series[i]);
         view->addSeries(xy_series);
-        /*qreal diff = result[i].max -result[i].min;
-        layout->addWidget(new QLabel("K" + result[i].name), i + 1, 0);
-        layout->addWidget(new QLabel(QString::number(result[i].optim)), i + 1, 1);
-        layout->addWidget(new QLabel(tr("Min: %1").arg(QString::number(result[i].min))), i+1, 2);
-        layout->addWidget(new QLabel(tr("Max: %1").arg(QString::number(result[i].max))), i+1, 3);
-        layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
-        layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
-        layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));*/
         m_model->setCVStatistic(result[i], i);
     }
     m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());

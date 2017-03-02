@@ -33,6 +33,13 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractTitrationModel> mo
     QVBoxLayout *m_layout = new QVBoxLayout;    
     m_overview = new QTextEdit;
     m_overview->setReadOnly(true);
+    QPalette p = m_overview->palette();
+
+    p.setColor(QPalette::Active, QPalette::Base, Qt::gray);
+    p.setColor(QPalette::Inactive, QPalette::Base, Qt::gray);
+    p.setColor(QPalette::Inactive, QPalette::Text, Qt::black);
+    p.setColor(QPalette::Inactive, QPalette::Window, Qt::black);
+    m_overview->setPalette(p);
     m_layout->addWidget(m_overview);
     
     
@@ -60,8 +67,8 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper_5"].toDouble();
     qreal lower = confidence["lower_5"].toDouble();
-    text = "<p><b>" + result["type"].toString() + " " + result["name"].toString() + "</b>: <b> 10^" + QString::number(value) + " = "  +QString::number(qPow(10,value)) +  " 10^(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></p>";
-    text += "<p>95% Confidence Intervall= <b> 10^" + QString::number(lower) + " - 10^" + QString::number(upper) + "</b></p>\n"; 
+    text = "<table> <tr><td><b>" + result["name"].toString() + ":</b></td><td> <b> 10^" + QString::number(value) + " = "  +QString::number(qPow(10,value)) +  " 10^(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr>";
+    text += "<tr><td>95% Confidence Intervall=</td><td> <b> 10^" + QString::number(lower) + " - 10^" + QString::number(upper) + "</b></td></tr>\n"; 
     return text;    
 }
 
