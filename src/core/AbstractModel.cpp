@@ -31,6 +31,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
 #include <QtCore/QDateTime>
+#include <QtCore/QCollator>
 #include <cmath>
 #include <cfloat>
 #include <iostream>
@@ -229,22 +230,20 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     for(int i = 0; i < Constants().size(); ++i)
     {
         constantObject[QString::number(i)] = (QString::number(Constants()[i]));
-        //FIXME please adopt me to the new system
-        /*if(i < m_cv_statistics.size())
-        {
-            if(m_cv_statistics[i].integ_5 != 0 || m_cv_statistics[i].integ_1 != 0)
-            {
-                QJsonObject statistic;
-                statistic["max"] = QString::number(m_cv_statistics[i].max);
-                statistic["min"] = QString::number(m_cv_statistics[i].min);
-                statistic["integ_1"] = QString::number(m_cv_statistics[i].integ_1);
-                statistic["integ_5"] = QString::number(m_statistics[i].integ_5);
-                constantObject[QString::number(i)+"_statistic"] = statistic;
-            }
-        }*/
     }
     json["constants"] = constantObject;
-    
+    QJsonObject statisticObject;
+    for(int i = 0; i < m_cv_statistics.size(); ++i)
+    {
+        statisticObject["CVResult_"+QString::number(i)] = m_cv_statistics[i];
+        
+    }
+    for(int i = 0; i < m_mc_statistics.size(); ++i)
+    {
+        statisticObject["MCResult_"+QString::number(i)] = m_mc_statistics[i];
+        
+    }
+    json["statistics"] = statisticObject;
     QJsonObject pureShiftObject;
     for(int i = 0; i < m_pure_signals_parameter.rows(); ++i)
         if(ActiveSignals(i))
@@ -273,6 +272,10 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
     toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
     toplevel["sum_of_absolute"] = m_sum_absolute;
+    toplevel["mean_error"] = m_mean;
+    toplevel["variance"] = m_variance;
+    toplevel["standard_error"] = m_stderror;
+    
     return toplevel;
 }
 
@@ -285,22 +288,35 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     }
     QJsonObject json = topjson["data"].toObject();
     
-    QList<int > active_signals;// = QVector<int>(SignalCount(), 0).toList();
+    QList<int > active_signals;
     QList<qreal> constants; 
     QJsonObject constantsObject = json["constants"].toObject();
-    for (int i = 0; i < Constants().size(); ++i) {
-        
+    for (int i = 0; i < Constants().size(); ++i) 
+    {
         constants << constantsObject[QString::number(i)].toString().toDouble();
-        //FIXME to be adopted
-        /*StatisticResult result;
-        QJsonObject statistic = constantsObject[QString::number(i) + "_statistic"].toObject();
-        result.max =  statistic["max"].toString().toDouble();
-        result.min =  statistic["min"].toString().toDouble();
-        result.integ_1 =  statistic["integ_1"].toString().toDouble();
-        result.integ_5 =  statistic["integ_5"].toString().toDouble();
-        setStatistic(result, i);*/
     }
     setConstants(constants);
+    QStringList keys = json["statistics"].toObject().keys();
+    
+    if(keys.size() > 9)
+    {
+    QCollator collator;
+    collator.setNumericMode(true);
+    std::sort(
+        keys.begin(),
+              keys.end(),
+              [&collator](const QString &key1, const QString &key2)
+              {
+                  return collator.compare(key1, key2) < 0;
+              });
+    }
+    for(const QString &str : qAsConst(keys))
+    {
+        if(str.contains("cv"))
+            m_cv_statistics << json["statistics"].toObject()[str].toObject();
+        else if(str.contains("mc"))
+            m_mc_statistics << json["statistics"].toObject()[str].toObject();
+    }
     
     if(topjson["runtype"].toInt() != 0)
     {

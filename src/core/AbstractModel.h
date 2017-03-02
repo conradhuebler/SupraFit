@@ -22,7 +22,6 @@
 #define ABSTRACTMODEL_H
 
 #include "src/global.h"
-#include "src/core/statstruct.h"
 
 #include <Eigen/Dense>
 
@@ -36,10 +35,13 @@
 
 typedef Eigen::VectorXd Vector;
 
-/*
-struct CVResult;
-struct MCResult;*/
-
+struct ConfidenceBar
+{
+    qreal upper_2_5 = 0;
+    qreal upper_5 = 0;
+    qreal lower_2_5 = 0;
+    qreal lower_5 = 0;
+};
 
 struct MassResults
 {

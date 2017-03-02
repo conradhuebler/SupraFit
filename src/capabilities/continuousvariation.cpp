@@ -56,8 +56,13 @@ void ContinuousVariationThread::run()
     QJsonObject optimized = m_model.data()->ExportJSON();
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
     
-//     m_result.optim = parameter[m_parameter_id];
-//     m_result.name = m_model.data()->ConstantNames()[m_parameter_id];
+    QJsonObject controller;
+    controller["runtype"] = m_config.runtype;
+    controller["steps"] = m_config.maxsteps;
+    controller["increment"] = m_config.increment;
+    m_result["controller"] = controller;
+    m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
+    m_result["value"] = parameter[m_parameter_id];
     
     double integ_5 = 0;
     double integ_1 = 0;
@@ -67,9 +72,8 @@ void ContinuousVariationThread::run()
     
     
     m_series = series;
-//     m_result.integ_5 = integ_5/m_error;
-//     m_result.integ_1 = integ_1/m_error;
-//     m_result.config = m_config;
+    m_result["integ_5"] = integ_5/m_error;
+    m_result["integ_1"] = integ_1/m_error;
 }
 
 void ContinuousVariationThread::setParameter(const QJsonObject& json)
@@ -124,12 +128,14 @@ void ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doubl
         
         if(new_error/m_error > double(1.025))
         {
+            QJsonObject confidence;
             //FIXME this must be adopted to F-statistics
-//             if(direction)
-//                 m_result.bar.upper_5 = par;
-//             else
-//                 m_result.bar.lower_5 = par;
-//             break;
+             if(direction)
+                 confidence["upper_5"] = par;
+             else
+                 confidence["lower_5"] = par;
+             m_result["confidence"] = confidence;
+             break;
         }
         if(direction)
             series.append(QPointF(par,new_error));

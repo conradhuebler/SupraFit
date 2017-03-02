@@ -72,7 +72,7 @@ MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *pare
 {
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);
-    Phi = std::normal_distribution<double>(0,m_config.varianz);
+    Phi = std::normal_distribution<double>(0,m_config.variance);
     m_threadpool = QThreadPool::globalInstance();
 }
 
@@ -198,8 +198,21 @@ void MonteCarloStatistics::AnalyseData()
         QList<qreal > list = m_constant_list[i];
         ConfidenceBar bar = ToolSet::Confidence(list);
         QJsonObject result;
-//         result.bar = bar;
-//         result.optim = m_model->Constant(i);
+        QJsonObject confidence;
+        confidence["upper_5"] = bar.upper_5;
+        confidence["upper_2_5"] = bar.upper_2_5;
+        confidence["lower_2_5"] = bar.lower_2_5;
+        confidence["lower_5"] = bar.lower_5;
+        result["confidence"] = confidence;
+        QJsonObject controller;
+        controller["runtype"] = m_config.runtype;
+        controller["steps"] = m_config.maxsteps;
+        controller["variance"] = m_config.variance;
+        controller["original"] = m_config.original;
+        controller["bootstrap"] = m_config.bootstrap;
+        result["controller"] = controller;
+        result["value"] = m_model->Constant(i);
+        result["name"] = m_model->ConstantNames()[i];
         m_constants << result;
     }
 }

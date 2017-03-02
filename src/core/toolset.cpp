@@ -179,7 +179,6 @@ namespace ToolSet{
     {
         ConfidenceBar result;
         std::sort(list.begin(), list.end());
-        qDebug() << list;
         int size_0 = list.size();
         while(double(list.size())/double(size_0) > 0.975)
         {
@@ -196,11 +195,6 @@ namespace ToolSet{
         }
         result.lower_5 = list.first();
         result.upper_5 = list.last();
-//         qDebug() << size_0 << list.size();
-//         while(double(list.size())/double(size_0) > 0.95)
-//             list.removeLast();
-//         qDebug() << list.size();
-//         qDebug() << list;
         return result;
     }
     

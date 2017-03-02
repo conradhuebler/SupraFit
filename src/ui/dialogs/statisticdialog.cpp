@@ -154,7 +154,7 @@ CVConfig StatisticDialog::getCVConfig()
 MCConfig StatisticDialog::getMCConfig()
 {
     MCConfig config;
-    config.varianz = m_varianz_box->value();
+    config.variance = m_varianz_box->value();
     config.maxsteps = m_mc_steps->value();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();

@@ -28,6 +28,16 @@
 class Minimizer;
 class QThreadPool;
 
+struct MCConfig
+{
+    int maxsteps = 1000;
+    double variance = 1e-2;
+    bool original = false;
+    bool bootstrap = false;
+    OptimizerConfig optimizer_config;
+    OptimizationType runtype;
+};
+
 class MonteCarloThread : public QObject, public QRunnable
 {
  Q_OBJECT

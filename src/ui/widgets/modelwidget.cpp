@@ -553,7 +553,7 @@ void ModelWidget::MCStatistic()
         if(!formated)
             view->formatAxis();
         formated = true;
-//         m_model->setStatistic(constant_results[i], i);
+        m_model->setMCStatistic(constant_results[i], i);
         
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());
@@ -561,8 +561,10 @@ void ModelWidget::MCStatistic()
         view->addSeries(current_constant);
         QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
         QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
-//         *series1 << QPointF(constant_results[i].bar.lower_5, 0) << QPointF(constant_results[i].bar.lower_5, view->YMax());
-//         *series2 << QPointF(constant_results[i].bar.upper_5, 0) << QPointF(constant_results[i].bar.upper_5, view->YMax());
+
+        QJsonObject confidence = constant_results[i]["confidence"].toObject();
+        *series1 << QPointF(confidence["lower_5"].toVariant().toDouble(), 0) << QPointF(confidence["lower_5"].toVariant().toDouble(), view->YMax());
+        *series2 << QPointF(confidence["upper_5"].toVariant().toDouble(), 0) << QPointF(confidence["upper_5"].toVariant().toDouble(), view->YMax());
         QtCharts::QAreaSeries *series = new QtCharts::QAreaSeries(series1, series2);
         QPen pen(0x059605);
         pen.setWidth(3);
@@ -617,10 +619,10 @@ void ModelWidget::CVStatistic()
     layout->addWidget(view, 0, 0, 1, 7);
     for(int i = 0; i < result.size(); ++i)
     {
-/*        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
         xy_series->append(series[i]);
         view->addSeries(xy_series);
-        qreal diff = result[i].max -result[i].min;
+        /*qreal diff = result[i].max -result[i].min;
         layout->addWidget(new QLabel("K" + result[i].name), i + 1, 0);
         layout->addWidget(new QLabel(QString::number(result[i].optim)), i + 1, 1);
         layout->addWidget(new QLabel(tr("Min: %1").arg(QString::number(result[i].min))), i+1, 2);

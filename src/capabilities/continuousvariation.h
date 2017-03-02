@@ -28,6 +28,14 @@
 class Minimizer;
 class QPointF;
 
+struct CVConfig
+{
+    double increment = 1e-3;
+    int maxsteps = 1e4;
+    OptimizerConfig optimizer_config;
+    OptimizationType runtype;
+};
+
 class ContinuousVariationThread : public QObject, public QRunnable
 {
   Q_OBJECT
