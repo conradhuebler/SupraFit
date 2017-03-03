@@ -166,6 +166,9 @@ private:
     void EmptyUI();
     void resizeButtons();
     void CollectParameters();
+    void Data2Text();
+    void Model2Text();
+    
     ChartView *view;
     StatisticWidget *m_statistic_widget;
     QPointer<_3DChartView > _3dchart;

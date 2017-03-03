@@ -18,6 +18,7 @@
  */
 
 #include "src/global.h"
+#include "src/version.h"
 
 #include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
@@ -256,6 +257,7 @@ void ModelElement::togglePlot()
 
 ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
 {
+    Data2Text();
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
@@ -292,7 +294,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     const_layout->addWidget(m_bc_50);
     const_layout->addStretch(100);
     m_minimize_all = new QPushButton(tr("Fit"));
-
+    
     connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
     const_layout->addWidget(m_minimize_all);
     m_layout->addLayout(const_layout, 0, 0, 1, m_model->ConstantSize()+3);
@@ -373,7 +375,7 @@ void ModelWidget::DiscreteUI()
     mini->addWidget(m_new_guess);
     mini->addWidget(m_minimize_single);
     mini->addWidget(m_advanced);
-//     mini->addWidget(m_plot_3d);
+    //     mini->addWidget(m_plot_3d);
     mini->addWidget(m_optim_config);
     
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
@@ -396,19 +398,19 @@ void ModelWidget::resizeButtons()
     m_import->setMaximumSize(110, 30);
     m_export->setMaximumSize(110, 30);
     m_advanced->setMaximumSize(50, 30);
-//     m_plot_3d->setMaximumSize(70, 30);
+    //     m_plot_3d->setMaximumSize(70, 30);
     m_confi->setMaximumSize(70, 30);
     m_concen->setMaximumSize(100, 30);
     m_save->setMaximumSize(70, 30);
     
     m_new_guess->setStyleSheet("background-color: #77d740;");
-     m_minimize_single->setStyleSheet("background-color: #77d740;");
+    m_minimize_single->setStyleSheet("background-color: #77d740;");
     m_optim_config->setStyleSheet("background-color: #77d740;");
     m_minimize_all->setStyleSheet("background-color: #77d740;");
     m_import->setStyleSheet("background-color: #77d740;");
     m_export->setStyleSheet("background-color: #77d740;");
     m_advanced->setStyleSheet("background-color: #77d740;");
-//     m_plot_3d->setStyleSheet("background-color: #77d740;");
+    //     m_plot_3d->setStyleSheet("background-color: #77d740;");
     m_confi->setStyleSheet("background-color: #77d740;");
     m_concen->setStyleSheet("background-color: #77d740;");
     m_save->setStyleSheet("background-color: #77d740;");
@@ -450,7 +452,11 @@ void ModelWidget::Repaint()
     QChar mu = QChar(956);
     format_text += QString(" [") + mu + QString("M]");
     m_bc_50->setText(format_text);
-    m_logging += m_statistic_widget->Overview();
+    Model2Text();
+    QTextDocument doc;
+    doc.setHtml(m_statistic_widget->Overview());
+    m_logging += "\n\n" +  doc.toPlainText();
+//     m_logging += m_statistic_widget->Overview();
 }
 
 
@@ -503,7 +509,7 @@ void ModelWidget::GlobalMinimize()
     QJsonObject json = m_model->ExportJSON();
     m_minimizer->setParameter(json);
     OptimizerConfig config = m_model->getOptimizerConfig();
-
+    
     m_model->setOptimizerConfig(config);
     int result;
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
@@ -573,7 +579,7 @@ void ModelWidget::MCStatistic()
         view->addSeries(current_constant);
         QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
         QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
-
+        
         QJsonObject confidence = constant_results[i]["confidence"].toObject();
         *series1 << QPointF(confidence["lower_5"].toVariant().toDouble(), 0) << QPointF(confidence["lower_5"].toVariant().toDouble(), view->YMax());
         *series2 << QPointF(confidence["upper_5"].toVariant().toDouble(), 0) << QPointF(confidence["upper_5"].toVariant().toDouble(), view->YMax());
@@ -597,7 +603,11 @@ void ModelWidget::MCStatistic()
     buff.remove("</table>");
     buff.replace("</td>", "\t");
     buff.replace("<td>", "\t");
-    m_logging += buff;
+    
+    QTextDocument doc;
+    doc.setHtml(buff);
+    
+    m_logging += "\n\n" +  doc.toPlainText();
     m_statistic_result->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
     m_statistic_result->show();  
     delete monte_carlo;
@@ -834,7 +844,6 @@ void ModelWidget::MultiScanFinished(int runtype)
 
 void ModelWidget::toggleConcentrations()
 {
-    
     QTableView *table = new QTableView;
     table->setModel(m_model->getConcentrations());
     m_concentrations_result->setWidget(table);
@@ -847,6 +856,66 @@ void ModelWidget::HideAllWindows()
     m_statistic_dialog->hide();
 }
 
+void ModelWidget::Data2Text()
+{
+    QString text;
+    text += "******************************************************************************************************\n";
+    text += "This is a SupraFit save file for " + m_model->Name() + "\n";
+    text += "SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + "\n";
+    text += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".\n";
+    text += "******************************************************************************************************\n";
+    text += "\n";
+    text += "#### Begin of Data Description ####\n";
+    text += "Concentrations :   " + QString::number(m_model->DataPoints())  + "\n";
+    for(int i = 0; i < m_model->ConcentrationModel()->columnCount(); ++i)
+        text += m_model->ConcentrationModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += m_model->ConcentrationModel()->ExportAsString();
+    text += "\n";
+    text += "Signals :          " + QString::number(m_model->SignalCount()) + "\n";
+    for(int i = 0; i < m_model->SignalModel()->columnCount(); ++i)
+        text += m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += m_model->SignalModel()->ExportAsString();
+    text += "\n";
+    text += "#### End of Data Description #####\n";
+    text += "******************************************************************************************************\n";
+    m_logging += text;
+}
+
+void ModelWidget::Model2Text()
+{
+    QString text;
+    text += "\n";
+    text += "******************************************************************************************************\n";
+    text += "#### Current Model Results #####\n";
+    text += "Equilibrium Model Calculation with complexation constants:\n";
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+        text += m_model->ConstantNames()[i] + ":\t" + QString::number(m_model->Constant(i))+ "\n";
+    for(int i = 0; i < m_model->ConcentrationModel()->columnCount(); ++i)
+        text += m_model->ConcentrationModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+        text += m_model->ConstantNames()[i] + "\t";
+    text += "\n";
+    text += m_model->getConcentrations()->ExportAsString();
+    text += "\n";
+    text += "\n";
+    text += "Equilibrium Model Signal Calculation with complexation constants:\n";
+    for(int i = 0; i < m_model->SignalModel()->columnCount(); ++i)
+        text += m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += m_model->ModelTable()->ExportAsString();
+    text += "\n";
+    text += "Errors obtained from that calculcation:\n";
+    for(int i = 0; i < m_model->SignalModel()->columnCount(); ++i)
+        text += m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += m_model->ErrorTable()->ExportAsString();
+    text += "\n";
+    text += "## Current Model Results Done ####\n";
+    m_logging += text;
+}
+
 void ModelWidget::Save2File()
 {
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("All files (*.*)" ));
@@ -856,9 +925,7 @@ void ModelWidget::Save2File()
         if ( file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text ) )
         {
             QTextStream stream( &file );
-            QTextDocument doc;
-            doc.setHtml(m_logging);
-            stream << doc.toPlainText() << endl;
+            stream << m_logging << endl;
         }
     } 
 }

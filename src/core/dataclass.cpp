@@ -307,6 +307,21 @@ DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19
         return table;
 }
 
+
+QString DataTable::ExportAsString() const
+{
+    QString str;
+    for(int j = 0; j < rowCount(); ++j)
+    {
+        for(int i = 0; i< columnCount(); ++i)
+        {
+            str += QString::number(data(i,j)) + "\t";
+        }
+        str += "\n";
+    }
+    return str;
+}
+
 DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
 {
     m_concentration_model = new DataTable;

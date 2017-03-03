@@ -1,6 +1,12 @@
+#ifndef VERSION_H
+#define VERSION_H
+
 #cmakedefine BENCHMARK_LEVEL
 #cmakedefine USE_levmarOptimizer
 #cmakedefine USE_eigenOptimizer
 #cmakedefine USE_bfgsOptimizer
 #cmakedefine experimental
 #cmakedefine OWN_BFGS
+
+
+#endif

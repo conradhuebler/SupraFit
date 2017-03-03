@@ -1,4 +1,5 @@
 #include "ui/suprafit.h"
+#include "src/version.h"
 
 #include <QtWidgets/QApplication>
 
@@ -34,8 +35,9 @@ int main(int argc, char** argv)
     
     app.setApplicationName("SupraFit");
     app.setOrganizationName("Conrad Huebler");
-    app.setApplicationVersion("0.3-pre");
-
+//     app.setApplicationVersion(version);
+//     app.setProperty("GIT_BRANCH", git_branch);
+//     app.setProperty("GIT_COMMIT_HASH", git_commit_hash);
     MainWindow mainwindow;
     mainwindow.show();
     return app.exec();

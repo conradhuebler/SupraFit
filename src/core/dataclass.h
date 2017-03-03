@@ -65,7 +65,7 @@ public:
     inline QStringList header() const { return m_header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
     DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng);
-    
+    QString ExportAsString() const;
 private:
     Eigen::MatrixXd m_table, m_checked_table;
     QStringList m_header;

@@ -1,0 +1,19 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+#include <QtCore/QString>
+    
+extern const QString git_branch = "@GIT_BRANCH@";      /*! Current name of the branch     */
+extern const QString git_commit_hash = "@GIT_COMMIT_HASH@"; /*! Current hash of the git branch */
+extern const QString git_date = "@GIT_COMMIT_DATE@"; /*! Current date of the git branch */
+extern const QString git_tag = "@GIT_TAG@";         /*! Current tag of the git branch  */
+
+#if _DEBUG
+extern const QString conf_mode = "DEBUG"; /*! Last compilation mode used */
+#else
+extern const QString conf_mode = "RELEASE"; /*! Last compilation mode used */
+#endif
+
+extern const QString version = "@GIT_BRANCH@ - @GIT_TAG@ - @GIT_COMMIT_HASH@ - @GIT_COMMIT_DATE@ - " + conf_mode; /*! Version name */
+
+#endif
