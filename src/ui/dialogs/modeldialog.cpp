@@ -18,15 +18,16 @@
  */
 
 #include <QtWidgets/QGridLayout>
-
+#include <QtWidgets/QTabWidget>
 #include "modeldialog.h"
 
 
 ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
 {
     layout = new QGridLayout;
-    layout->addWidget(m_widget, 0, 0);
     setModal(false);
+    m_tab = new QTabWidget;
+    layout->addWidget(m_tab, 0, 0);
     setWindowTitle(str);
     setLayout(layout);
     resize(800, 400);
@@ -39,10 +40,10 @@ ModalDialog::~ModalDialog()
 
 void ModalDialog::setWidget(QWidget* widget, const QString &str)
 {
-    setWindowTitle(str);
-    delete m_widget;
+    if(windowTitle().isEmpty() || windowTitle().isNull())
+        setWindowTitle(str);
     m_widget = widget;
-    layout->addWidget(m_widget, 0, 0);
+    m_tab->addTab(m_widget, str);
 }
 
 

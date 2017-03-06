@@ -597,6 +597,15 @@ void ModelWidget::MCStatistic()
         series->setBrush(gradient);
         series->setOpacity(0.4);
         view->addSeries(series);
+        //FIXME to be adopted
+     /*           
+        layout->addWidget(new QLabel("K:" + constant_results[i]["value"].toString()), i + 1, 0);
+        layout->addWidget(new QLabel(constant_results[i]["value"].toString()), i + 1, 1);
+        layout->addWidget(new QLabel(tr("Steps: %1").arg((constant_results[i]["controller"].toObject()["steps"].toString()), i+1, 2)));
+        layout->addWidget(new QLabel(tr("Max: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 3);
+        layout->addWidget(new QLabel(tr("Diff: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 4);
+        layout->addWidget(new QLabel(tr("5%: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 5);
+        layout->addWidget(new QLabel(tr("1%: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 6);*/
     }
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
@@ -628,6 +637,7 @@ void ModelWidget::CVStatistic()
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     
+
     QJsonObject json = m_model->ExportJSON();
     statistic->setModel(m_model);
     statistic->setParameter(json);
@@ -658,7 +668,15 @@ void ModelWidget::CVStatistic()
         *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
         view->addSeries(current_constant);
-        
+        //FIXME to be adopted
+       /* layout->addWidget(new QLabel("K" + result[i]["value"].toString()), i + 1, 0);
+        layout->addWidget(new QLabel(QString::number(result[i].optim)), i + 1, 1);
+        layout->addWidget(new QLabel(tr("Min: %1").arg(QString::number(result[i].min))), i+1, 2);
+        layout->addWidget(new QLabel(tr("Max: %1").arg(QString::number(result[i].max))), i+1, 3);
+        layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
+        layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
+        layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));
+        */
     }
     m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
     m_statistic_result->show();

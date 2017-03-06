@@ -22,7 +22,9 @@
 #include <QtCore/QPointer>
 #include <QtWidgets/QDialog>
 
+class QTabWidget;
 class QGridLayout;
+
 class ModalDialog : public QDialog
 {
     Q_OBJECT
@@ -35,6 +37,7 @@ public:
 private:
     QGridLayout *layout;
     QPointer<QWidget > m_widget;
+    QTabWidget *m_tab;
 };
 
 #endif // MODELDIALOG_H
