@@ -104,7 +104,8 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     m_threadpool->setMaxThreadCount(maxthreads);
     m_table = new DataTable(m_model->ModelTable());
     QVector<QPointer <MonteCarloThread > > threads;
-    for(int step = 0; step < m_config.maxsteps; ++step)
+    m_generate = true;
+    for(int step = 0; step < m_config.maxsteps || m_generate; ++step)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
@@ -264,7 +265,8 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list)
 
 void MonteCarloStatistics::Interrupt()
 {
-    QThreadPool::globalInstance()->clear();
+    m_generate = false;
+    m_threadpool->clear();
 }
 
 #include "montecarlostatistics.moc"

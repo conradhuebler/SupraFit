@@ -96,7 +96,7 @@ private:
     DataTable *m_table;
     MCConfig m_config;
     QVector<QList<qreal > > m_constant_list, m_shift_list;
-    
+    bool m_generate;
 signals:
     void IncrementProgress(int time);
 };

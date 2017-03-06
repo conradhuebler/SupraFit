@@ -40,7 +40,7 @@ StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, Q
 {
     setUi();
 //     Pending();
-    connect(this, SIGNAL(Interrupt()), this, SLOT(Pending()));
+//     connect(this, SIGNAL(Interrupt()), this, SLOT(Pending()));
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
 }
 

@@ -642,7 +642,6 @@ void ModelWidget::CVStatistic()
     resultwidget->setLayout(layout);
     
     QtCharts::QChart *chart = new QtCharts::QChart;
-    
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
@@ -652,6 +651,12 @@ void ModelWidget::CVStatistic()
         xy_series->append(series[i]);
         view->addSeries(xy_series);
         m_model->setCVStatistic(result[i], i);
+        
+        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
+        *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
+        current_constant->setColor(xy_series->color());
+        view->addSeries(current_constant);
+        
     }
     m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
     m_statistic_result->show();
@@ -804,7 +809,6 @@ void ModelWidget::PlotFinished(int runtype)
         _3dchart->setMinX(m_advancedsearch->MinX());
         _3dchart->setMaxY(m_advancedsearch->MaxY());
         _3dchart->setMinY(m_advancedsearch->MinY());      
-        qDebug() << m_advancedsearch->MaxError();
         _3dchart->setData(m_advancedsearch->dataArray());
         
         m_plot_3d->setEnabled(true);
