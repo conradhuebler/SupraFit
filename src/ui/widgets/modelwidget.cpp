@@ -380,18 +380,20 @@ void ModelWidget::DiscreteUI()
     
     m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
-    
+   
+     
     mini->addWidget(m_import);
     mini->addWidget(m_export);
     mini->addWidget(m_confi);
     mini->addWidget(m_concen);
     mini->addWidget(m_save);
-    m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);    
+    m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);  
+   
 }
 
 void ModelWidget::resizeButtons()
 {
-    // Thats awfull and hackish, but it works for now doesn't look that bad
+    // Thats awfull and hackish, but it works for now and doesn't look that bad
     m_minimize_single->setMaximumSize(70, 30);
     m_optim_config->setMaximumSize(80, 30);
     m_minimize_all->setMaximumSize(70, 30);

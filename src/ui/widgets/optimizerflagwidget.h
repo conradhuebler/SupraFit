@@ -39,6 +39,7 @@ public:
     ~OptimizerFlagWidget();
     OptimizationType getFlags() const;
     void DisableOptions(OptimizationType type);
+    
 private:
     OptimizationType m_type;
     void setUi();
@@ -46,6 +47,7 @@ private:
     QPushButton *m_more;
     QVBoxLayout *m_main_layout;
     QWidget *m_first_row;
+    
 private slots:
     void EnableShiftSelection();
     void ConstrainedChanged();

@@ -105,7 +105,7 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     m_table = new DataTable(m_model->ModelTable());
     QVector<QPointer <MonteCarloThread > > threads;
     m_generate = true;
-    for(int step = 0; step < m_config.maxsteps || m_generate; ++step)
+    for(int step = 0; step < m_config.maxsteps; ++step)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
@@ -116,6 +116,8 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
         QCoreApplication::processEvents();
         if(step % 100 == 0)
             emit IncrementProgress(0);
+        if(!m_generate)
+            break;
     }
     return threads;
     

@@ -20,6 +20,8 @@
 #include "src/global.h"
 #include <QPropertyAnimation>
 
+#include <QtCore/QTimer>
+
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -31,12 +33,14 @@
 
 OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants)
 {
-    setUi();
+     setUi();
+
 }
 
 OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget *parent) :QWidget(parent), m_type(type)
 {
-    setUi();
+     setUi();
+
 }
 
 
@@ -81,7 +85,7 @@ void OptimizerFlagWidget::setUi()
     EnableShiftSelection();
     ConstrainedChanged();
     m_more->setFlat(true);
-    ShowFirst();
+    QTimer::singleShot(0, this, SLOT(ShowFirst()));
 }
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
