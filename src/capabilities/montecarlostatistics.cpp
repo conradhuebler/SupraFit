@@ -102,6 +102,7 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
+    m_model->Calculate();
     m_table = new DataTable(m_model->ModelTable());
     QVector<QPointer <MonteCarloThread > > threads;
     m_generate = true;
@@ -110,7 +111,10 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
-        thread->setDataTable(m_model->SignalModel()->PrepareMC(Phi, rng));
+        if(m_config.original)
+            thread->setDataTable(m_model->SignalModel()->PrepareMC(Phi, rng));
+        else
+            thread->setDataTable(m_model->ModelTable()->PrepareMC(Phi, rng));
         m_threadpool->start(thread);
         threads << thread; 
         QCoreApplication::processEvents();

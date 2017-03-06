@@ -101,8 +101,12 @@ QWidget *StatisticDialog::MonteCarloWidget()
     m_original->setText(tr("Use Original Data"));
     layout->addWidget(m_original, 2, 0, 1, 2);
     
+    m_bootstrap = new QCheckBox;
+    m_bootstrap->setText(tr("Bootstrap"));
+    layout->addWidget(m_bootstrap, 3, 0, 1, 2);
+    
     m_mc = new QPushButton(tr("Simulate"));
-    layout->addWidget(m_mc, 2, 0, 1, 2);
+    layout->addWidget(m_mc, 4, 0, 1, 2);
     
     connect(m_mc, SIGNAL(clicked()), this, SIGNAL(MCStatistic()));
     mc_widget->setLayout(layout);
@@ -156,6 +160,8 @@ MCConfig StatisticDialog::getMCConfig()
     MCConfig config;
     config.variance = m_varianz_box->value();
     config.maxsteps = m_mc_steps->value();
+    config.original = m_original->isChecked();
+    config.bootstrap = m_bootstrap->isChecked();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_mc_steps->value() + m_mc_steps->value()/100);
