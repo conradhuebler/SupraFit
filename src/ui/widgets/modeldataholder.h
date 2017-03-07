@@ -100,6 +100,7 @@ private:
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
     QVector<QWeakPointer< AbstractTitrationModel > > m_models;
+    QPointer<StatisticDialog> m_statistic_dialog;
     void AddModel(int model);
     void AddModel(const QJsonObject &json);
     void ParseScriptedModels();
@@ -124,7 +125,8 @@ private slots:
     void RemoveCrashFile();
     void SetProjectTabName();
     void CloseAll();
-    void Statistic();
+    void CVStatistic();
+    void MCStatistic();
     void OptimizeAll();
     void HideSubWindows(int index);
     

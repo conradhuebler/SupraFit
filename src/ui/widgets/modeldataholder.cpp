@@ -17,11 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/capabilities/continuousvariation.h"
+#include "src/capabilities/montecarlostatistics.h"
 
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
+
 #include "src/ui/widgets/datawidget.h"
 #include "src/ui/widgets/modelwidget.h"
+#include "src/ui/dialogs/statisticdialog.h"
 
 #include <QApplication>
 
@@ -90,6 +94,10 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
      
+    m_statistic_dialog = new StatisticDialog(this);
+    connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
+    connect(m_statistic_dialog, SIGNAL(CVStatistic()), this, SLOT(CVStatistic()));
+    
     m_add = new QPushButton(tr("Add Model"));
     m_add->setFlat(true);
     m_add->setDisabled(true);
@@ -102,7 +110,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_statistics = new QPushButton(tr("Statistics"));
     m_statistics->setFlat(true);
     m_statistics->setDisabled(true);
-    connect(m_statistics, SIGNAL(clicked()), this, SLOT(Statistic()));
+    connect(m_statistics, SIGNAL(clicked()), m_statistic_dialog, SLOT(show()));
     
     m_close_all = new QPushButton(tr("Close All"));
     m_close_all->setFlat(true);
@@ -479,15 +487,31 @@ void ModelDataHolder::CloseAll()
     }
 }
 
-void ModelDataHolder::Statistic()
+void ModelDataHolder::CVStatistic()
 {
+    CVConfig config;
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
         if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
         {
             QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
             ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
-            model->CVStatistic();
+            model->CVStatistic(config);
+        }
+    }
+}
+
+void ModelDataHolder::MCStatistic()
+{
+    MCConfig config;
+    for(int i = 1; i < m_modelsWidget->count(); i++)
+    {
+        if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
+        {
+            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
+            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            config.variance = model->Model()->StdDeviation();
+            model->MCStatistic(config);
         }
     }
 }

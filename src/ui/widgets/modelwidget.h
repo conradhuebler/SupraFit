@@ -55,6 +55,8 @@ class StatisticDialog;
 
 struct ModelHistoryElement;
 struct Charts;
+struct CVConfig;
+struct MCConfig;
 
 class Waiter
 {
@@ -137,6 +139,9 @@ public:
     void setMaxIter(int maxiter);
     QSharedPointer<Minimizer > getMinimizer() { return m_minimizer; }
     QSharedPointer<Minimizer > m_minimizer;
+    
+    void CVStatistic(CVConfig config);
+    void MCStatistic(MCConfig config);
     
 public slots:
     void LoadJson(const QJsonObject &object);

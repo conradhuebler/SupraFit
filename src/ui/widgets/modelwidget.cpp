@@ -538,9 +538,14 @@ void ModelWidget::toggleStatisticDialog()
 
 void ModelWidget::MCStatistic()
 {
-    Waiter wait;
     MCConfig config = m_statistic_dialog->getMCConfig();
-    
+    MCStatistic(config);
+}
+
+void ModelWidget::MCStatistic(MCConfig config)
+{
+    Waiter wait;
+
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     
@@ -630,17 +635,21 @@ void ModelWidget::MCStatistic()
     doc.setHtml(buff);
     
     m_logging += "\n\n" +  doc.toPlainText();
-    m_statistic_result->setWidget(resultwidget, "Monte Carlo" + m_model->Name());
+    m_statistic_result->setWidget(resultwidget, "Monte Carlo Simulation for " + m_model->Name());
     m_statistic_result->show();  
     delete monte_carlo;
+    
 }
-
-
 void ModelWidget::CVStatistic()
+{
+    CVConfig config = m_statistic_dialog->getCVConfig();
+    CVStatistic(config);
+}
+void ModelWidget::CVStatistic(CVConfig config)
 {
     Waiter wait;
     
-    CVConfig config = m_statistic_dialog->getCVConfig();;
+    
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
@@ -692,7 +701,7 @@ void ModelWidget::CVStatistic()
         label->setTextFormat(Qt::RichText);
         layout->addWidget(label, i + 1, 0);
     }
-    m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
+    m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
     
     delete statistic;

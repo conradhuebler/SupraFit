@@ -40,6 +40,7 @@ class StatisticDialog : public QDialog
     Q_OBJECT
 public:
     StatisticDialog(QSharedPointer<AbstractTitrationModel> m_model, QWidget *parent = 0);
+    StatisticDialog(QWidget *parent = 0);
     ~StatisticDialog();
     
     MCConfig getMCConfig();

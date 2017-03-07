@@ -44,6 +44,11 @@ StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, Q
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
 }
 
+StatisticDialog::StatisticDialog(QWidget *parent) : QDialog(parent)
+{
+    setUi();
+
+}
 
 StatisticDialog::~StatisticDialog()
 {
@@ -90,10 +95,18 @@ QWidget *StatisticDialog::MonteCarloWidget()
     layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
     layout->addWidget(m_mc_steps, 0, 1);
     
+    
+        
     m_varianz_box = new QDoubleSpinBox;
-    m_varianz_box->setDecimals(5);
-    m_varianz_box->setSingleStep(1e-2);
-    m_varianz_box->setValue(m_model.data()->StdDeviation());
+    if(m_model)
+    {
+        m_varianz_box->setDecimals(5);
+        m_varianz_box->setSingleStep(1e-2);
+        m_varianz_box->setValue(m_model.data()->StdDeviation());
+    }else{
+        m_varianz_box->setDisabled(true);
+        m_varianz_box->setToolTip(tr("Variance of each model will be set automatically."));
+    }
     layout->addWidget(new QLabel(tr("Varianz")), 1, 0);
     layout->addWidget(m_varianz_box, 1, 1);
     
