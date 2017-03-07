@@ -82,6 +82,7 @@ private slots:
     void PrintPlot();
     void ExportLatex();
     void ExportGnuplot();
+    void ExportPNG();
     void setChartConfig(const ChartConfig &chartconfig);
     void forceformatAxis();
     

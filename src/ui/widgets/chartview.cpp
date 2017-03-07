@@ -20,17 +20,21 @@
 #include "src/ui/dialogs/chartconfig.h"
 #include "src/core/toolset.h"
 
+#include <QtCore/QBuffer>
+#include <QtCore/QMimeData>
+
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QLayout>
-#include <QDrag>
+#include <QtWidgets/QFileDialog>
+
 #include <QtCharts/QChart>
 #include <QtCharts/QLegendMarker>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QXYSeries>
+
 #include <QDebug>
-#include <QtCore/QBuffer>
-#include <QtCore/QMimeData>
+#include <QDrag>
 
 #include <cmath>
 #include <iostream>
@@ -159,6 +163,11 @@ void ChartView::setUi()
     connect(scaleAction, SIGNAL(triggered()), this, SLOT(forceformatAxis()));
     menu->addAction(scaleAction);    
 
+    QAction *exportpng = new QAction(this);
+    exportpng->setText(tr("Export Diagram (PNG)"));
+    connect(exportpng, SIGNAL(triggered()), this, SLOT(ExportPNG()));
+    menu->addAction(exportpng);
+    
     QAction *printplot = new QAction(this);
     printplot->setText(tr("Print Diagram"));
     connect(printplot, SIGNAL(triggered()), this, SLOT(PlotSettings()));
@@ -181,7 +190,7 @@ void ChartView::setUi()
     m_config->setStyleSheet("QPushButton {background-color: #A3C1DA; color: black;}");
     m_config->setMenu(menu);
 
-    layout->addWidget(m_chart_private, 0, 0, 1, 5);//, Qt::AlignHCenter);
+    layout->addWidget(m_chart_private, 0, 0, 1, 5);
     layout->addWidget(m_config, 0, 4, Qt::AlignTop);
     setLayout(layout);
     
@@ -313,7 +322,7 @@ ChartConfig ChartView::getChartConfig() const
 
 void ChartView::PrintPlot()
 {
-    
+
 }
 
 void ChartView::ExportLatex()
@@ -324,4 +333,26 @@ void ChartView::ExportGnuplot()
 {
 }
 
+void ChartView::ExportPNG()
+{
+    const QString str = QFileDialog::getSaveFileName(this, tr("Save File"),
+                           ".",
+                           tr("Images (*.png)"));
+    if(str.isEmpty() || str.isNull())
+        return;
+    int w = m_chart->scene()->sceneRect().size().toSize().width();
+    int h = m_chart->scene()->sceneRect().size().toSize().height();
+    int scale = 4;
+    QImage image(QSize(scale*w, scale*h), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    m_chart->scene()->render(&painter, QRectF(0,0, scale*w,scale*h), QRectF(0,0, w, h), Qt::KeepAspectRatio);
+    QPixmap pixmap = QPixmap::fromImage(image);
+    QByteArray itemData;
+    
+    QFile file(str);
+    file.open(QIODevice::WriteOnly);
+    pixmap.save(&file, "PNG");
+}
 #include "chartview.moc"
