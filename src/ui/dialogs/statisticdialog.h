@@ -55,7 +55,7 @@ private:
     QWidget *MonteCarloWidget();
     QWidget *ContinuousVariationWidget();
     
-    QDoubleSpinBox *m_varianz_box, *m_cv_increment;
+    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror;
     QSpinBox *m_mc_steps, *m_cv_steps;
     QCheckBox *m_original, *m_bootstrap;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide;

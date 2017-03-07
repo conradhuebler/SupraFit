@@ -38,8 +38,10 @@ public:
     ~StatisticWidget();
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
-private:
     QString TextFromConfidence(const QJsonObject &result);
+    
+private:
+    
     
     QSharedPointer<AbstractTitrationModel > m_model;
 //     QList<QPointer<StatisticElement> > m_elements;

@@ -124,11 +124,11 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
             break;
     }
     return threads;
-    
 }
 
 void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& threads)
 { 
+    m_steps = 0;
     QVector<QVector<qreal > > m_constants_list(m_model->Constants().size());
     for(int i = 0; i < threads.size(); ++i)
     {
@@ -138,6 +138,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
             for(int j = 0; j < constants.size(); ++j)
                 m_constants_list[j] << constants[j];
             m_models << threads[i]->Model()->ExportJSON();
+            m_steps++;
             delete threads[i];
         }
     }
@@ -260,7 +261,7 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list)
     
     QJsonObject controller;
     controller["runtype"] = m_config.runtype;
-    controller["steps"] = m_config.maxsteps;
+    controller["steps"] = m_steps;
     controller["variance"] = m_config.variance;
     controller["original"] = m_config.original;
     controller["bootstrap"] = m_config.bootstrap;

@@ -60,6 +60,7 @@ void ContinuousVariationThread::run()
     controller["runtype"] = m_config.runtype;
     controller["steps"] = m_config.maxsteps;
     controller["increment"] = m_config.increment;
+    controller["maxerror"] = m_config.maxerror;
     m_result["controller"] = controller;
     m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
     m_result["value"] = parameter[m_parameter_id];
@@ -129,7 +130,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         if(new_error/m_error <= double(1.005) && new_error > m_error)
             integ_1 += integ;
         
-        if(new_error/m_error > double(1.025))
+        if(new_error/m_error > double(1+m_config.maxerror/200))
         {
              break;
         }

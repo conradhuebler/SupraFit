@@ -27,6 +27,7 @@ ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
     layout = new QGridLayout;
     setModal(false);
     m_tab = new QTabWidget;
+    m_tab->setTabsClosable(true);
     layout->addWidget(m_tab, 0, 0);
     setWindowTitle(str);
     setLayout(layout);

@@ -126,16 +126,25 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     layout->addWidget(new QLabel(tr("Increment")), 0, 0);
     layout->addWidget(m_cv_increment, 0, 1);
     
+    m_cv_maxerror = new QDoubleSpinBox;
+    m_cv_maxerror->setMaximum(100);
+    m_cv_maxerror->setSingleStep(0.5);
+    m_cv_maxerror->setValue(5);
+    m_cv_maxerror->setDecimals(1);
+    
+    layout->addWidget(new QLabel(tr("Max. Error in %")), 1, 0);
+    layout->addWidget(m_cv_maxerror, 1, 1);
+    
     m_cv_steps = new QSpinBox;
-    m_cv_steps->setValue(1000);
     m_cv_steps->setMaximum(1e7);
+    m_cv_steps->setValue(1000);
     m_cv_steps->setSingleStep(100);
     
-    layout->addWidget(new QLabel(tr("Max. Steps")), 1, 0);
-    layout->addWidget(m_cv_steps, 1, 1);
+    layout->addWidget(new QLabel(tr("Max. Steps")), 2, 0);
+    layout->addWidget(m_cv_steps, 2, 1);
     
     m_cv = new QPushButton(tr("Calculate"));
-    layout->addWidget(m_cv, 2, 0, 1, 2);
+    layout->addWidget(m_cv, 3, 0, 1, 2);
     
     connect(m_cv, SIGNAL(clicked()), this, SIGNAL(CVStatistic()));
     cv_widget->setLayout(layout);
@@ -147,6 +156,7 @@ CVConfig StatisticDialog::getCVConfig()
     CVConfig config;
     config.increment = m_cv_increment->value();
     config.maxsteps = m_cv_steps->value();
+    config.maxerror = m_cv_maxerror->value();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(-1);

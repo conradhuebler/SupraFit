@@ -585,27 +585,38 @@ void ModelWidget::MCStatistic()
         QJsonObject confidence = constant_results[i]["confidence"].toObject();
         *series1 << QPointF(confidence["lower_5"].toVariant().toDouble(), 0) << QPointF(confidence["lower_5"].toVariant().toDouble(), view->YMax());
         *series2 << QPointF(confidence["upper_5"].toVariant().toDouble(), 0) << QPointF(confidence["upper_5"].toVariant().toDouble(), view->YMax());
-        QtCharts::QAreaSeries *series = new QtCharts::QAreaSeries(series1, series2);
+        QtCharts::QAreaSeries *area_series = new QtCharts::QAreaSeries(series1, series2);
         QPen pen(0x059605);
         pen.setWidth(3);
-        series->setPen(pen);
+        area_series->setPen(pen);
         
         QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
         gradient.setColorAt(0.0, xy_series->color());
         gradient.setColorAt(1.0, 0x26f626);
         gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
-        series->setBrush(gradient);
-        series->setOpacity(0.4);
-        view->addSeries(series);
-        //FIXME to be adopted
-     /*           
-        layout->addWidget(new QLabel("K:" + constant_results[i]["value"].toString()), i + 1, 0);
-        layout->addWidget(new QLabel(constant_results[i]["value"].toString()), i + 1, 1);
-        layout->addWidget(new QLabel(tr("Steps: %1").arg((constant_results[i]["controller"].toObject()["steps"].toString()), i+1, 2)));
-        layout->addWidget(new QLabel(tr("Max: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 3);
-        layout->addWidget(new QLabel(tr("Diff: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 4);
-        layout->addWidget(new QLabel(tr("5%: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 5);
-        layout->addWidget(new QLabel(tr("1%: %1").arg(constant_results[i]["controller"].toObject()["steps"].toString())), i+1, 6);*/
+        area_series->setBrush(gradient);
+        area_series->setOpacity(0.4);
+        view->addSeries(area_series);
+        
+        QString text;
+        if(i == 0)
+        {
+            text += "MC Steps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
+            if(constant_results[i]["controller"].toObject()["bootstrap"].toBool())
+                text += "Bootstrapped ";
+            else
+                text += "Variance = " + QString::number(constant_results[i]["controller"].toObject()["variance"].toDouble()) + " ";
+            
+            if(constant_results[i]["controller"].toObject()["original"].toBool())
+                text += "operated on original data\n";
+            else
+                text += "operated on modelled data\n";
+        }
+        text  += m_statistic_widget->TextFromConfidence(constant_results[i]) + "\n";
+        QLabel *label = new QLabel(text);
+        label->setTextFormat(Qt::RichText);
+        layout->addWidget(label, i + 1, 0);
+ 
     }
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
@@ -647,7 +658,7 @@ void ModelWidget::CVStatistic()
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
     
-    QList<QJsonObject > result = statistic->Results();
+    QList<QJsonObject > constant_results = statistic->Results();
     QList<QList<QPointF > >series = statistic->Series();
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
@@ -657,26 +668,29 @@ void ModelWidget::CVStatistic()
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
-    for(int i = 0; i < result.size(); ++i)
+    for(int i = 0; i < constant_results.size(); ++i)
     {
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
         xy_series->append(series[i]);
         view->addSeries(xy_series);
-        m_model->setCVStatistic(result[i], i);
+        m_model->setCVStatistic(constant_results[i], i);
         
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
         view->addSeries(current_constant);
-        //FIXME to be adopted
-       /* layout->addWidget(new QLabel("K" + result[i]["value"].toString()), i + 1, 0);
-        layout->addWidget(new QLabel(QString::number(result[i].optim)), i + 1, 1);
-        layout->addWidget(new QLabel(tr("Min: %1").arg(QString::number(result[i].min))), i+1, 2);
-        layout->addWidget(new QLabel(tr("Max: %1").arg(QString::number(result[i].max))), i+1, 3);
-        layout->addWidget(new QLabel(tr("Diff: %1").arg(QString::number(diff))), i+1, 4);
-        layout->addWidget(new QLabel(tr("5%: %1").arg(QString::number(result[i].integ_5, i+1, 5))));
-        layout->addWidget(new QLabel(tr("1%: %1").arg(QString::number(result[i].integ_1, i+1, 6))));
-        */
+        
+        QString text;
+        if(i == 0)
+        {
+            text += "Maxsteps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
+            text += "Increment = " + QString::number(constant_results[i]["controller"].toObject()["increment"].toDouble()) + "\t";
+            text += "Max Error = " + QString::number(constant_results[i]["controller"].toObject()["maxerror"].toDouble()) + "\n";
+        }
+        text  += m_statistic_widget->TextFromConfidence(constant_results[i]) + "\n";
+        QLabel *label = new QLabel(text);
+        label->setTextFormat(Qt::RichText);
+        layout->addWidget(label, i + 1, 0);
     }
     m_statistic_result->setWidget(resultwidget, "Confidence Assessment for " + m_model->Name());
     m_statistic_result->show();

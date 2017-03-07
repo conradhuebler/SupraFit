@@ -97,6 +97,8 @@ private:
     MCConfig m_config;
     QVector<QList<qreal > > m_constant_list, m_shift_list;
     bool m_generate;
+    int m_steps;
+    
 signals:
     void IncrementProgress(int time);
 };
