@@ -53,9 +53,9 @@ ChartWidget::ChartWidget()
     
     m_errorchart = new QtCharts::QChart;
         
-    m_signalview = new ChartView(m_signalchart);
+    m_signalview = new ChartView(m_signalchart, true);
     m_signalview->setYAxis("Shift [ppm]");
-    m_errorview = new ChartView(m_errorchart);
+    m_errorview = new ChartView(m_errorchart, true);
     m_errorview->setYAxis("Error [ppm]");
     m_x_scale = new QComboBox;
     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_signalview, SLOT(setXAxis(QString)));

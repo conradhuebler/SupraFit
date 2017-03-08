@@ -59,7 +59,7 @@ class ChartView : public QWidget
 {
     Q_OBJECT
 public:
-    ChartView(QtCharts::QChart *chart);
+    ChartView(QtCharts::QChart *chart, bool latex_supported = false);
     ChartView();
     inline ~ChartView() { }
     void addSeries( QtCharts::QAbstractSeries* series, bool legend = false );
@@ -83,7 +83,7 @@ private:
     QString Color2RGB(const QColor &color) const;
     void WriteTable(const QString &str) const;
     ChartConfigDialog m_chartconfigdialog;
-    bool m_pending, m_lock_scaling;   
+    bool m_pending, m_lock_scaling, m_latex_supported;   
     qreal m_ymax;
 private slots:
     void PlotSettings();

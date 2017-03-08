@@ -140,7 +140,7 @@ void ChartViewPrivate::keyPressEvent(QKeyEvent *event)
     }
 }
 
-ChartView::ChartView(QtCharts::QChart *chart) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false)
+ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false), m_latex_supported(latex_supported)
 {
     setUi();
     m_chart->legend()->setAlignment(Qt::AlignRight);
@@ -179,10 +179,13 @@ void ChartView::setUi()
     connect(printplot, SIGNAL(triggered()), this, SLOT(PlotSettings()));
     menu->addAction(printplot);
 
-    QAction *exportlatex = new QAction(this);
-    exportlatex->setText(tr("Export to Latex (tikz)"));
-    connect(exportlatex, SIGNAL(triggered()), this, SLOT(ExportLatex()));
-    menu->addAction(exportlatex);
+    if(m_latex_supported)
+    {
+        QAction *exportlatex = new QAction(this);
+        exportlatex->setText(tr("Export to Latex (tikz)"));
+        connect(exportlatex, SIGNAL(triggered()), this, SLOT(ExportLatex()));
+        menu->addAction(exportlatex);
+    }
 /*
     QAction *exportgnuplot = new QAction(this);
     exportgnuplot->setText(tr("Export to Latex (tikz)"));
@@ -442,8 +445,8 @@ void ChartView::WriteTable(const QString &str) const
         out << line_table.colordefinition;
         out << "\\begin{document}" << "\n";
         out << "\\pagestyle{empty}" << "\n";
-        out << "\\pgfplotstableread{table_scatter.dat}{\\scatter}" << "\n";
-        out << "\\pgfplotstableread{table_line.dat}{\\lines}" << "\n";
+        out << "\\pgfplotstableread{"+ str+"_scatter.dat}{\\scatter}" << "\n";
+        out << "\\pgfplotstableread{"+ str+"_line.dat}{\\lines}" << "\n";
         out << "\\begin{tikzpicture}" << "\n";
         out << "\\tikzstyle{every node}=[font=\\footnotesize]" << "\n";
         out << "\\begin{axis}[title={"+m_chart->title()+"}, legend style={at={(1.08,0.9))},anchor=north,legend cell align=left},x tick label style={at={(1,10)},anchor=north},xlabel={\\begin{footnotesize}"+m_x_axis+"\\end{footnotesize}}, xlabel near ticks, ylabel={\\begin{footnotesize}"+m_y_axis+"\\end{footnotesize}},ylabel near ticks]" << "\n";
