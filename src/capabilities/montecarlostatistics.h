@@ -93,12 +93,13 @@ private:
     QList<QJsonObject > m_models;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;
+    std::uniform_int_distribution<int> Uni;
     DataTable *m_table;
     MCConfig m_config;
     QVector<QList<qreal > > m_constant_list, m_shift_list;
     bool m_generate;
     int m_steps;
-    
+
 signals:
     void IncrementProgress(int time);
 };

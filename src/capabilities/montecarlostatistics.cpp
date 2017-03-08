@@ -106,15 +106,23 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     m_table = new DataTable(m_model->ModelTable());
     QVector<QPointer <MonteCarloThread > > threads;
     m_generate = true;
+    QVector<qreal> vector = m_model->ErrorTable()->toList();
+    Uni = std::uniform_int_distribution<int>(0,vector.size()-1);
     for(int step = 0; step < m_config.maxsteps; ++step)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
+        DataTable *table;
         if(m_config.original)
-            thread->setDataTable(m_model->SignalModel()->PrepareMC(Phi, rng));
+            table = m_model->SignalModel();
         else
-            thread->setDataTable(m_model->ModelTable()->PrepareMC(Phi, rng));
+            table = m_model->ModelTable();
+
+        if(m_config.bootstrap)
+            thread->setDataTable(table->PrepareBootStrap(Uni, rng, vector));
+        else
+            thread->setDataTable(table->PrepareMC(Phi, rng));
         m_threadpool->start(thread);
         threads << thread; 
         QCoreApplication::processEvents();

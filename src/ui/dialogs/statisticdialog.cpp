@@ -80,6 +80,7 @@ void StatisticDialog::setUi()
     connect(m_hide, SIGNAL(clicked()), this, SLOT(reject()));
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
     setLayout(layout);
+    EnableWidgets();
 }
 
 QWidget *StatisticDialog::MonteCarloWidget()
@@ -122,6 +123,7 @@ QWidget *StatisticDialog::MonteCarloWidget()
     layout->addWidget(m_mc, 4, 0, 1, 2);
     
     connect(m_mc, SIGNAL(clicked()), this, SIGNAL(MCStatistic()));
+    connect(m_bootstrap, SIGNAL(stateChanged(int)), this, SLOT(EnableWidgets()));
     mc_widget->setLayout(layout);
     return mc_widget;
 }
@@ -230,6 +232,11 @@ void StatisticDialog::Pending()
 void StatisticDialog::Update()
 {
     m_varianz_box->setValue(m_model.data()->StdDeviation());
+}
+
+void StatisticDialog::EnableWidgets()
+{
+    m_varianz_box->setEnabled(!m_bootstrap->isChecked());
 }
 
 #include "statisticdialog.moc"

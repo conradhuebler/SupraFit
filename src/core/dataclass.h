@@ -61,10 +61,13 @@ public:
     Vector firstRow(); 
     Vector lastRow(); 
     
+    QVector<qreal> toList() const;
+    
     void Debug() const ;
     inline QStringList header() const { return m_header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
     DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng);
+    DataTable *PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector);
     QString ExportAsString() const;
 private:
     Eigen::MatrixXd m_table, m_checked_table;

@@ -307,6 +307,21 @@ DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19
         return table;
 }
 
+DataTable * DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector)
+{
+    DataTable *table = new DataTable(this);
+    for(int j = 0; j <  columnCount(); ++j)
+        {
+            for(int i = 0; i < rowCount(); ++i)
+            {
+                int randed = Uni(rng);
+                table->data(j,i) += vector[randed];
+            }
+        }
+    return table;
+}
+
+
 
 QString DataTable::ExportAsString() const
 {
@@ -320,6 +335,19 @@ QString DataTable::ExportAsString() const
         str += "\n";
     }
     return str;
+}
+
+QVector<qreal> DataTable::toList() const
+{
+    QVector<qreal> vector;
+    for(int j = 0; j < rowCount(); ++j)
+    {
+        for(int i = 0; i< columnCount(); ++i)
+        {
+            vector << data(i,j);
+        }
+    }
+    return vector;
 }
 
 DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)

@@ -75,6 +75,7 @@ private:
 private slots:
      void Pending();
      void Update();
+     void EnableWidgets();
      
 signals:
     void CVStatistic();
