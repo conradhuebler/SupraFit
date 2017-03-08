@@ -314,6 +314,9 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)), Qt::DirectConnection);
     
+    connect(modelwidget, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)));
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), modelwidget, SIGNAL(Interrupt()));
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), this, SLOT(Interrupt()));
     
     m_modelsWidget->addModelsTab(modelwidget);
     m_last_tab = m_modelsWidget->currentIndex();
@@ -489,7 +492,7 @@ void ModelDataHolder::CloseAll()
 
 void ModelDataHolder::CVStatistic()
 {
-    CVConfig config;
+    CVConfig config = m_statistic_dialog->getCVConfig();
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
         if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
@@ -503,7 +506,9 @@ void ModelDataHolder::CVStatistic()
 
 void ModelDataHolder::MCStatistic()
 {
-    MCConfig config;
+    m_statistic_dialog->setRuns(m_models.size() - 1);
+    MCConfig config = m_statistic_dialog->getMCConfig();
+    m_allow_loop = true;
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
         if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
@@ -513,6 +518,8 @@ void ModelDataHolder::MCStatistic()
             config.variance = model->Model()->StdDeviation();
             model->MCStatistic(config);
         }
+        if(!m_allow_loop)
+            break;
     }
 }
 

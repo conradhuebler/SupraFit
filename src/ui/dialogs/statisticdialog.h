@@ -46,6 +46,7 @@ public:
     MCConfig getMCConfig();
     CVConfig getCVConfig();
     
+    inline void setRuns(int runs) { m_runs = runs; }
 public slots:
     void IncrementProgress(int time);
     
@@ -68,7 +69,7 @@ private:
     
     QWeakPointer<AbstractTitrationModel> m_model;
     
-    int m_time;
+    int m_time, m_runs;
     quint64 m_time_0;
      
     

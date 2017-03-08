@@ -211,6 +211,8 @@ signals:
     void Warning(const QString &str, int i);
     void AddModel(const QJsonObject &json);
     void ToggleSeries(int);
+    void IncrementProgress(int value);
+    void Interrupt();
 };
 
 #endif // MODELWIDGET_H

@@ -551,8 +551,9 @@ void ModelWidget::MCStatistic(MCConfig config)
     
     QPointer<MonteCarloStatistics > monte_carlo = new MonteCarloStatistics(config, this);
     connect(m_statistic_dialog, SIGNAL(Interrupt()), monte_carlo, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), monte_carlo, SLOT(Interrupt()), Qt::DirectConnection);
     connect(monte_carlo, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    
+    connect(monte_carlo, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
@@ -655,8 +656,9 @@ void ModelWidget::CVStatistic(CVConfig config)
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
 
     QJsonObject json = m_model->ExportJSON();
     statistic->setModel(m_model);

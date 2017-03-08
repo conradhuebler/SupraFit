@@ -112,7 +112,7 @@ private:
     
     void Json2Model(const QJsonObject &object, const QString &str);
     void ActiveModel(QSharedPointer<AbstractTitrationModel > t);
-    bool m_history;
+    bool m_history, m_allow_loop;
     
 private slots:
     void AddModel11();
@@ -129,6 +129,7 @@ private slots:
     void MCStatistic();
     void OptimizeAll();
     void HideSubWindows(int index);
+    inline void Interrupt() { m_allow_loop = false; }
     
 signals:
     void ModelAdded(AbstractTitrationModel *model);

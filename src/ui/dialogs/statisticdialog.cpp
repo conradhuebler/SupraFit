@@ -189,7 +189,7 @@ MCConfig StatisticDialog::getMCConfig()
     config.bootstrap = m_bootstrap->isChecked();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(m_mc_steps->value() + m_mc_steps->value()/100);
+    m_progress->setMaximum(m_runs*(m_mc_steps->value() + m_mc_steps->value()/100));
     m_progress->setValue(0);
 //     Pending();
     return config;
