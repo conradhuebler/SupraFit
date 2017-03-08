@@ -22,16 +22,22 @@
 
 #include <QtCore/QBuffer>
 #include <QtCore/QMimeData>
+#include <QtCore/QTextStream>
+
+#include <QtGui/QApplication>
 
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QInputDialog>
 
 #include <QtCharts/QChart>
 #include <QtCharts/QLegendMarker>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QXYSeries>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QScatterSeries>
 
 #include <QDebug>
 #include <QDrag>
@@ -177,12 +183,12 @@ void ChartView::setUi()
     exportlatex->setText(tr("Export to Latex (tikz)"));
     connect(exportlatex, SIGNAL(triggered()), this, SLOT(ExportLatex()));
     menu->addAction(exportlatex);
-
+/*
     QAction *exportgnuplot = new QAction(this);
     exportgnuplot->setText(tr("Export to Latex (tikz)"));
     connect(exportgnuplot, SIGNAL(triggered()), this, SLOT(ExportGnuplot()));
     menu->addAction(exportgnuplot);
-    
+  */  
     m_config = new QPushButton(tr("Tools"));
     m_config->setFlat(true);
     m_config->setIcon(QIcon::fromTheme("applications-system"));
@@ -325,14 +331,146 @@ void ChartView::PrintPlot()
 
 }
 
+QString ChartView::Color2RGB(const QColor &color) const
+{
+    QString result;
+    result = QString::number(color.toRgb().red()) + "," + QString::number(color.toRgb().green()) + ","+ QString::number(color.toRgb().blue()); 
+    return result;
+}
+
+PgfPlotConfig ChartView::getScatterTable() const
+{
+    PgfPlotConfig config;
+    QStringList table;
+    int i = 0;
+    for(QtCharts::QAbstractSeries *series: m_chart->series())
+    {
+        if(!qobject_cast<QtCharts::QScatterSeries *>(series))
+            continue;
+        QtCharts::QScatterSeries *serie = qobject_cast<QtCharts::QScatterSeries *>(series);
+        if(serie->isVisible())
+        {
+            QVector<QPointF> points = serie->pointsVector();
+            for(int i = 0; i < points.size(); ++i)
+            {
+                if(i == table.size())
+                    table << QString::number(points[i].x());
+                table[i] += " " + QString::number(points[i].y());
+            }
+            QString definecolor;
+            definecolor = "\\definecolor{scatter" + QString::number(i) + "}{RGB}{"+Color2RGB(serie->color())+"}";
+            config.colordefinition += definecolor + "\n";
+            
+            QString defineplot;
+            defineplot = "\\addplot+[color = scatter" + QString::number(i) + ",only marks,mark = *,mark options={scale=0.75, fill=scatter"+ QString::number(i) + "}]" +QString("table[x=0, y = %1] from \\scatter;").arg(QString::number(i + 1)) + "\n";
+            defineplot += "\\addlegendentry{"+ serie->name() +"};";
+            config.plots += defineplot + "\n";
+            ++i;
+        }
+    } 
+    config.table = table;
+    return config;
+}
+
+PgfPlotConfig ChartView::getLineTable() const
+{
+    PgfPlotConfig config;
+    QStringList table;
+    int i = 0;
+    for(QtCharts::QAbstractSeries *series: m_chart->series())
+    {
+        if(!qobject_cast<QtCharts::QLineSeries *>(series))
+            continue;
+        QtCharts::QLineSeries *serie = qobject_cast<QtCharts::QLineSeries *>(series);
+        if(serie->isVisible())
+        {
+            QVector<QPointF> points = serie->pointsVector();
+            for(int i = 0; i < points.size(); ++i)
+            {
+                if(i == table.size())
+                    table << QString::number(points[i].x());
+                table[i] += " " + QString::number(points[i].y());
+            }
+            QString definecolor;
+            definecolor = "\\definecolor{line" + QString::number(i) + "}{RGB}{"+Color2RGB(serie->color())+"}";
+            config.colordefinition += definecolor + "\n";
+            
+            QString defineplot;
+            defineplot = "\\addplot+[color = line" + QString::number(i) + QString(",no marks, solid] table[x=0, y = %1] from \\lines;").arg(QString::number(i + 1)) + "\n";
+            defineplot += "\\addlegendentry{"+ serie->name() +"};";
+            config.plots += defineplot + "\n";
+            ++i;
+        }
+    } 
+    config.table = table;
+    return config;
+}
+
+void ChartView::WriteTable(const QString &str) const
+{
+    QFile data(str + "_scatter.dat");
+
+    PgfPlotConfig scatter_table = getScatterTable();
+    if (data.open(QFile::WriteOnly | QFile::Truncate)) 
+    {
+        QTextStream out(&data);
+        for(const QString &str : qAsConst(scatter_table.table))
+            out << str << "\n";
+    }
+    
+    data.setFileName(str + "_line.dat");
+    PgfPlotConfig line_table = getLineTable();
+    if (data.open(QFile::WriteOnly | QFile::Truncate)) 
+    {
+        QTextStream out(&data);
+        for(const QString &str : qAsConst(line_table.table))
+            out << str << "\n";
+    }
+    
+    data.setFileName(str + ".tex");
+    if (data.open(QFile::WriteOnly | QFile::Truncate)) 
+    {
+        QTextStream out(&data);
+        out << "\\documentclass{standalone}" << "\n";
+        out << "\\usepackage[latin1]{inputenc}" << "\n";
+        out << "\\usepackage{tikz}" << "\n";
+        out << "\\usepackage{xcolor}" << "\n";
+        out << "\\usepackage{pgfplots} % LaTeX" << "\n";
+        out << "\\renewcommand\\familydefault{\\sfdefault}" << "\n";
+        out << "\\usepackage{pgfplotstable} " << "\n";
+        out << scatter_table.colordefinition;
+        out << line_table.colordefinition;
+        out << "\\begin{document}" << "\n";
+        out << "\\pagestyle{empty}" << "\n";
+        out << "\\pgfplotstableread{table_scatter.dat}{\\scatter}" << "\n";
+        out << "\\pgfplotstableread{table_line.dat}{\\lines}" << "\n";
+        out << "\\begin{tikzpicture}" << "\n";
+        out << "\\tikzstyle{every node}=[font=\\footnotesize]" << "\n";
+        out << "\\begin{axis}[title={"+m_chart->title()+"}, legend style={at={(1.08,0.9))},anchor=north,legend cell align=left},x tick label style={at={(1,10)},anchor=north},xlabel={\\begin{footnotesize}"+m_x_axis+"\\end{footnotesize}}, xlabel near ticks, ylabel={\\begin{footnotesize}"+m_y_axis+"\\end{footnotesize}},ylabel near ticks]" << "\n";
+        out << scatter_table.plots;
+        out << line_table.plots;
+        out << "\\end{axis}" << "\n";
+        out << "\\end{tikzpicture}" << "\n";
+        out << "\\end{document}" << "\n";
+
+    }
+}
+
 void ChartView::ExportLatex()
 {
+    bool ok;
+    QString str = QInputDialog::getText(this, tr("Select output file"),
+                                         tr("Please specify the base name of the files.\nA tex file, file for scatter and line table data will be created."), QLineEdit::Normal,
+                                         qApp->instance()->property("projectname").toString(), &ok);
+    if(ok)
+        WriteTable(str);
 }
-
+/*
 void ChartView::ExportGnuplot()
 {
+    WriteTable("table");
 }
-
+*/
 void ChartView::ExportPNG()
 {
     const QString str = QFileDialog::getSaveFileName(this, tr("Save File"),

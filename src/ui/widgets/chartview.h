@@ -29,7 +29,12 @@ class QPushButton;
 class QChart;
 
 struct ChartConfig;
-
+struct PgfPlotConfig
+{
+    QString colordefinition;
+    QString plots;
+    QStringList table;
+};
 
 class ChartViewPrivate : public QtCharts::QChartView
 {
@@ -73,7 +78,10 @@ private:
     bool has_legend, connected;
     QString m_x_axis, m_y_axis;
     ChartConfig getChartConfig() const;
-    
+    PgfPlotConfig getScatterTable() const;
+    PgfPlotConfig getLineTable() const;
+    QString Color2RGB(const QColor &color) const;
+    void WriteTable(const QString &str) const;
     ChartConfigDialog m_chartconfigdialog;
     bool m_pending, m_lock_scaling;   
     qreal m_ymax;
@@ -81,7 +89,7 @@ private slots:
     void PlotSettings();
     void PrintPlot();
     void ExportLatex();
-    void ExportGnuplot();
+//     void ExportGnuplot();
     void ExportPNG();
     void setChartConfig(const ChartConfig &chartconfig);
     void forceformatAxis();
