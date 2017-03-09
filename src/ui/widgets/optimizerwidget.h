@@ -42,7 +42,7 @@ class ScientificBox : public QDoubleSpinBox
 public:
     inline QString textFromValue(double val) const
     {
-        return QString::number(val, 'E', decimals());
+        return QString::number(val, 'E', 2);
     }
 
     inline double valueFromText(const QString &text) const
@@ -57,7 +57,7 @@ public:
         QDoubleValidator validator;
         validator.setBottom(minimum());
         validator.setTop(maximum());
-        validator.setDecimals(decimals());
+        validator.setDecimals(2);
         validator.setNotation(QDoubleValidator::ScientificNotation);
         input.replace('.', loc.decimalPoint());
         return validator.validate(input, pos);

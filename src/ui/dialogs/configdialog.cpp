@@ -35,7 +35,7 @@
 
 
 
-OptimizerDialog::OptimizerDialog(OptimizerConfig config, QWidget *parent) : m_opt_config(config), QDialog(parent)
+OptimizerDialog::OptimizerDialog(OptimizerConfig config, QWidget *parent) :QDialog(parent), m_opt_config(config)
 {
     setUi();
 }

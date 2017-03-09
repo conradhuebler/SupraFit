@@ -32,7 +32,7 @@
 
 #include "optimizerwidget.h"
 
-OptimizerWidget::OptimizerWidget(OptimizerConfig config, QWidget *parent) : m_config(config), QWidget(parent)
+OptimizerWidget::OptimizerWidget(OptimizerConfig config, QWidget *parent) : QWidget(parent), m_config(config)
 {
     
     setUi();
@@ -97,9 +97,8 @@ QWidget * OptimizerWidget::GeneralWidget()
     m_error_convergence = new ScientificBox;
     m_error_convergence->setRange(0, 1E-1);
     m_error_convergence->setSingleStep(1E-8);
+    m_error_convergence->setDecimals(8);
     m_error_convergence->setValue(m_config.Error_Convergence);
-    m_error_convergence->setDecimals(4);
-    
     layout->addWidget(new QLabel(tr("Maximal No. of Iterations")), 0, 0);
     layout->addWidget(m_maxiter, 0, 1);
     
@@ -120,30 +119,30 @@ QWidget * OptimizerWidget::LevmarWidget()
     m_levmarmu->setRange(0, 1E-1);
     m_levmarmu->setSingleStep(1E-8);
     m_levmarmu->setValue(m_config.LevMar_mu);
-    m_levmarmu->setDecimals(5);
+    m_levmarmu->setDecimals(20);
 
     m_levmar_eps1 = new ScientificBox;
     m_levmar_eps1->setRange(0, 1E-1);
     m_levmar_eps1->setSingleStep(1E-20);
-    m_levmar_eps1->setDecimals(5);
+    m_levmar_eps1->setDecimals(20);
     m_levmar_eps1->setValue(m_config.LevMar_Eps1);
     
     m_levmar_eps2 = new ScientificBox;
     m_levmar_eps2->setRange(0, 1E-1);
     m_levmar_eps2->setSingleStep(1E-20);
-    m_levmar_eps2->setDecimals(5);
+    m_levmar_eps2->setDecimals(20);
     m_levmar_eps2->setValue(m_config.LevMar_Eps2);
     
     m_levmar_eps3 = new ScientificBox;
     m_levmar_eps3->setRange(0, 1E-1);
     m_levmar_eps3->setSingleStep(1E-20);
-    m_levmar_eps3->setDecimals(5);
+    m_levmar_eps3->setDecimals(20);
     m_levmar_eps3->setValue(m_config.LevMar_Eps3);
     
     m_levmar_delta = new ScientificBox;
     m_levmar_delta->setRange(0, 1);
     m_levmar_delta->setSingleStep(1E-10);
-    m_levmar_delta->setDecimals(5);
+    m_levmar_delta->setDecimals(20);
     m_levmar_delta->setValue(m_config.LevMar_Delta);
      
     layout->addWidget(new QLabel(tr("scale factor for initial \\mu {opts[0]}}")), 0, 0);
@@ -179,11 +178,13 @@ QWidget * OptimizerWidget::AdvancedWidget()
     m_shift_convergence = new ScientificBox;
     m_shift_convergence->setRange(0, 1E-1);
     m_shift_convergence->setSingleStep(1E-4);
+    m_shift_convergence->setDecimals(5);
     m_shift_convergence->setValue(m_config.Shift_Convergence);
   
     m_constant_convergence = new ScientificBox;
     m_constant_convergence->setRange(0, 1E-1);
     m_constant_convergence->setSingleStep(1E-4);
+    m_constant_convergence->setDecimals(5);
     m_constant_convergence->setValue(m_config.Constant_Convergence);
     
     m_levmar_constants_periter = new QSpinBox;
