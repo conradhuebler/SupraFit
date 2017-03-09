@@ -31,13 +31,13 @@
 
 #include "optimizerflagwidget.h"
 
-OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants), m_hidden(false)
+OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants), m_hidden(true)
 {
      setUi();
 
 }
 
-OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget *parent) :QWidget(parent), m_type(type)
+OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget *parent) :QWidget(parent), m_type(type), m_hidden(true)
 {
      setUi();
 
@@ -64,7 +64,7 @@ void OptimizerFlagWidget::setUi()
     m_IgnoreZeroConcentrations = new QCheckBox(tr("Dont Optimize Zero\nConcentration Shifts"));
     m_IgnoreZeroConcentrations->setChecked((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations);
     
-    m_more = new QPushButton(tr("<"));
+    m_more = new QPushButton(tr("..less.."));
     connect(m_more, SIGNAL(clicked()), this, SLOT(ShowFirst()));
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(m_ComplexationConstants);
@@ -85,7 +85,7 @@ void OptimizerFlagWidget::setUi()
     EnableShiftSelection();
     ConstrainedChanged();
     m_more->setFlat(true);
-//     QTimer::singleShot(0, this, SLOT(ShowFirst()));
+    QTimer::singleShot(0, this, SLOT(ShowFirst()));
 }
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)

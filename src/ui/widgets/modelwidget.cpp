@@ -50,6 +50,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QTimer>
 
+#include <QtWidgets/QInputDialog>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QGridLayout>
@@ -75,6 +76,7 @@
 #include <QDebug>
 
 #include <iostream>
+#include <random>
 
 #include "modelwidget.h"
 
@@ -796,6 +798,29 @@ void ModelWidget::OpenAdvancedSearch()
 
 void ModelWidget::ExportSimModel()
 {
+    bool ok;
+    qreal scatter = QInputDialog::getDouble(this, tr("Set Standard Deviation"), tr("Set Standard Deviation for scatter"), m_model->StdDeviation(), 0, 2147483647, 4, &ok);
+    if(ok)
+    {
+        quint64 seed = QDateTime::currentMSecsSinceEpoch();
+        std::mt19937 rng;
+        rng.seed(seed);
+        std::normal_distribution<double> Phi = std::normal_distribution<double>(0,scatter);
+        DataTable *table = m_model->ModelTable()->PrepareMC(Phi, rng);
+        QString str = table->ExportAsString();
+        
+        QString filename = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("All files (*.*)" ));
+        if(!filename.isEmpty())
+        {
+            setLastDir(filename);
+            QFile file( filename );
+            if ( file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text ) )
+            {
+                QTextStream stream( &file );
+                stream << str << endl;
+            }
+        } 
+    }
 }
 
 void ModelWidget::TogglePlot()
