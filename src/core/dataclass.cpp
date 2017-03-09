@@ -330,11 +330,30 @@ QString DataTable::ExportAsString() const
     {
         for(int i = 0; i< columnCount(); ++i)
         {
-            str += QString::number(data(i,j)) + "\t";
+            str += QString::number(data(i,j));
+            if(i < columnCount() - 1)
+                str += "\t";
         }
         str += "\n";
     }
     return str;
+}
+
+QStringList DataTable::ExportAsStringList() const
+{
+    QStringList list;
+    for(int j = 0; j < rowCount(); ++j)
+    {
+        QString str;
+        for(int i = 0; i< columnCount(); ++i)
+        {
+            str += QString::number(data(i,j)) ;
+            if(i < columnCount() - 1)
+                str += "\t";
+        }
+        list << str;
+    }
+    return list;
 }
 
 QVector<qreal> DataTable::toList() const

@@ -20,6 +20,7 @@
 #include "src/global.h"
 #include "src/version.h"
 
+#include "src/core/toolset.h"
 #include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/AbstractModel.h"
@@ -806,8 +807,26 @@ void ModelWidget::ExportSimModel()
         std::mt19937 rng;
         rng.seed(seed);
         std::normal_distribution<double> Phi = std::normal_distribution<double>(0,scatter);
-        DataTable *table = m_model->ModelTable()->PrepareMC(Phi, rng);
-        QString str = table->ExportAsString();
+        DataTable *model_table = m_model->ModelTable()->PrepareMC(Phi, rng);
+        QStringList model = model_table->ExportAsStringList();
+        QStringList concentrations = m_model->ConcentrationModel()->ExportAsStringList();
+        
+        QString first = concentrations.first();
+        QStringList host = first.split("\t");
+        /*
+         * Add pure shifts only, when concentration table don't provide them
+         */
+        if(host[1].toDouble() != 0 )
+        {
+            model.prepend(ToolSet::DoubleList2String(m_model->PureParameter(), QString("\t")));
+            concentrations.prepend(QString( host[0] + "\t" + QString("0")));
+        }
+                
+        if(model.size() != concentrations.size())
+        {
+            QMessageBox::warning(this, tr("Strange"), tr("Tables don't fit, sorry!"));
+            return;
+        }
         
         QString filename = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("All files (*.*)" ));
         if(!filename.isEmpty())
@@ -817,7 +836,8 @@ void ModelWidget::ExportSimModel()
             if ( file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text ) )
             {
                 QTextStream stream( &file );
-                stream << str << endl;
+                for(int i = 0; i < model.size(); ++i)
+                    stream << concentrations[i] << "\t" << model[i] << endl;
             }
         } 
     }

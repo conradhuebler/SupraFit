@@ -69,6 +69,7 @@ public:
     DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng);
     DataTable *PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector);
     QString ExportAsString() const;
+    QStringList ExportAsStringList() const;
 private:
     Eigen::MatrixXd m_table, m_checked_table;
     QStringList m_header;

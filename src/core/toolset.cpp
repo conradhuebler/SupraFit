@@ -27,31 +27,38 @@ typedef Eigen::VectorXd Vector;
 
 namespace ToolSet{
     
-    QString DoubleVec2String(const QVector<qreal > &vector)
+    QString DoubleVec2String(const QVector<qreal > &vector, const QString &str)
     {
         QString string;
         for(int i = 0; i < vector.size(); ++i)    
-            string += QString::number(vector[i]) + " ";
+            string += QString::number(vector[i]) + str;
         
         return string.left(string.length() - 1);
     }
     
-    QString DoubleList2String(const QList<qreal > &vector)
+    QString DoubleList2String(const QList<qreal > &vector, const QString &str)
     {
         QString string;
         for(int i = 0; i < vector.size(); ++i)    
-            string += QString::number(vector[i]) + " ";
+            string += QString::number(vector[i]) + str;
         
         return string.left(string.length() - 1);
     }
     
-    QString DoubleList2String(const Vector &vector)
+    QString DoubleList2String(const Vector &vector, const QString &str)
     {
         QString string;
         for(int i = 0; i < vector.rows(); ++i)    
-            string += QString::number(vector(i)) + " ";
+            string += QString::number(vector(i)) + str;
         
         return string.left(string.length() - 1);
+    }
+    QStringList DoubleList2StringList(const Vector &vector)
+    {
+        QStringList list;
+        for(int i = 0; i < vector.rows(); ++i)    
+            list << QString::number(vector(i));
+        return list;
     }
     
     QVector<qreal > String2DoubleVec(const QString &str)

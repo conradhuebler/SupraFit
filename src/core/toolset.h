@@ -31,9 +31,10 @@ typedef Eigen::VectorXd Vector;
 
 namespace ToolSet{
     
-    QString DoubleVec2String(const QVector<qreal > &vector);
-    QString DoubleList2String(const QList<qreal > &vector);
-    QString DoubleList2String(const Vector &vector);
+    QString DoubleVec2String(const QVector<qreal > &vector, const QString &str = " ");
+    QString DoubleList2String(const QList<qreal > &vector, const QString &str = " ");
+    QString DoubleList2String(const Vector &vector, const QString &str = " ");
+    QStringList DoubleList2StringList(const Vector &vector);
     
     QVector<qreal > String2DoubleVec(const QString &str);
     QList<qreal > String2DoubleList(const QString &str);
