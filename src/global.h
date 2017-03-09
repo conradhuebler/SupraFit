@@ -52,9 +52,6 @@ struct OptimizerConfig
     qreal Constant_Convergence = 1E-3;
     qreal Error_Convergence = 5E-7;
     
-    bool OptimizeBorderShifts = true;
-    bool OptimizeIntermediateShifts = true;
-    
     int LevMar_Constants_PerIter = 1;
     int LevMar_Shifts_PerIter = 1;
     

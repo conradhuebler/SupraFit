@@ -235,12 +235,9 @@ QString Minimizer::OptPara2String() const
     result += "|***********************************************************************************|\n";
     result += "|********************General Config for Optimization********************************|\n";
     result += "|Maximal number of Iteration: " + QString::number(m_opt_config.MaxIter) + "|\n";
-    result += "|Shifts will be optimized for zero and saturation concentration: " + ToolSet::bool2YesNo(m_opt_config.OptimizeBorderShifts) + "|\n";
-    result += "|Shifts will be optimized for any other concentration: " + ToolSet::bool2YesNo(m_opt_config.OptimizeIntermediateShifts) + "|\n";
     result += "|No. of LevenbergMarquadt Steps to optimize constants each Optimization Step: " + QString::number(m_opt_config.LevMar_Constants_PerIter) + "|\n";
     result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
     result += "\n";
-#ifdef USE_levmarOptimizer
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
     result += "|scale factor for initial \\mu {opts[0]}}" + QString::number(m_opt_config.LevMar_mu) + "|\n";
     result += "|stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}" + QString::number(m_opt_config.LevMar_Eps1) + "|\n";
@@ -249,7 +246,6 @@ QString Minimizer::OptPara2String() const
     result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
     result += "\n";
-#endif
     return result;
 }
 

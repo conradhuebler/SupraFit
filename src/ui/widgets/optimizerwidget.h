@@ -66,15 +66,7 @@ public:
 private:
     QLocale loc;
 };
-#ifdef USE_levmarOptimizer
-class LevmarConfig : public QWidget
-{
-public:
-    LevmarConfig(const OptimizerConfig &config);
-    ~LevmarConfig();
-    ScientificBox *m_levmarmu, *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
-};
-#endif
+
 class OptimizerWidget : public QWidget
 {
     Q_OBJECT
@@ -83,17 +75,20 @@ public:
     
     ~OptimizerWidget();
      OptimizerConfig Config() const;
+     
 private:
+    QWidget *GeneralWidget();
+    QWidget *LevmarWidget();
+    QWidget *AdvancedWidget();
+    
     OptimizerConfig m_config;
     QTabWidget *m_tabwidget;
     QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence, *m_error_potenz;
     ScientificBox *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
-    QCheckBox *m_optimize_shifts;
-#ifdef USE_levmarOptimizer
-    LevmarConfig *m_levmar_config;
-#endif
+    ScientificBox *m_levmarmu, *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
+
+
     void setUi();
-    void setGeneral();
 };
 
 #endif // OPTIMIZERWIDGET_H
