@@ -86,9 +86,8 @@ void OptimizerDialog::createOptimTab()
 
 ConfigDialog::ConfigDialog(OptimizerConfig config, int printlevel,const QString &logfile, QWidget *parent) : m_opt_config(config), m_printlevel(printlevel), m_logfile(logfile), QDialog(parent)
 {
-    
+    m_dirlevel = qApp->instance()->property("dirlevel").toInt();
     setUi();
-    
 }
 
 ConfigDialog::~ConfigDialog()
@@ -150,7 +149,37 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(new QLabel(tr("Threads:")));
     h_layout->addWidget(m_threads);
     layout->addLayout(h_layout);
-
+    
+    layout->addWidget(new QLabel(tr("Set directory behavior to:")));
+    
+    m_current_dir = new QRadioButton(tr("Current Directory, where Application was started"), generalTab);
+    if(m_dirlevel == 0)
+        m_current_dir->setChecked(true);
+    layout->addWidget(m_current_dir);
+    
+    m_last_dir = new QRadioButton(tr("Last Directory"), generalTab);
+    if(m_dirlevel == 1)
+        m_last_dir->setChecked(true);
+    layout->addWidget(m_last_dir);
+    
+    m_working_dir = new QRadioButton(tr("Set a working Directory"), generalTab);
+    if(m_dirlevel == 2)
+        m_working_dir->setChecked(true);
+    layout->addWidget(m_working_dir);
+    
+    m_working = new QLineEdit;
+    m_working->setClearButtonEnabled(true);
+    m_working->setText(m_logfile);
+    m_select_working = new QPushButton(this);
+    m_select_working->setText(tr("Select file"));
+    connect(m_select_working, SIGNAL(clicked()), this, SLOT(SelectWorkingDir()));
+    
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("Working Directory:")));
+    h_layout->addWidget(m_working);
+    h_layout->addWidget(m_select_working);
+    layout->addLayout(h_layout);
+    
     layout->addWidget(new QLabel(tr("All changes below will only take effect after restarting the application\nor creating a new instance of anything being affected by that change.")));
     h_layout = new QHBoxLayout;
     h_layout->addWidget(new QLabel(tr("Chart Theme")));
@@ -219,8 +248,25 @@ void ConfigDialog::SelectLogFile()
     
 }
 
+void ConfigDialog::SelectWorkingDir()
+{
+    QString filename = QFileDialog::getExistingDirectory(this, "Choose Working Directory", qApp->instance()->property("workingdir").toString());
+    if(filename.isEmpty())
+        return;
+    
+    m_working->setText(filename);
+}
+
+
 void ConfigDialog::accept()
 {
+    if(m_current_dir->isChecked())
+        m_dirlevel = 0;
+    else if(m_last_dir->isChecked())
+        m_dirlevel = 1;
+    else if(m_working_dir->isChecked())
+        m_dirlevel = 2;
+    
     /*
     if(m_printlevel_0->isChecked())
         m_printlevel = 0;    
@@ -237,6 +283,8 @@ void ConfigDialog::accept()
    qApp->instance()->setProperty("charttheme", m_charttheme->itemData(m_charttheme->currentIndex()).toInt()); 
    qApp->instance()->setProperty("threads", m_threads->value()); 
    qApp->instance()->setProperty("chartanimation", m_animated_charts->isChecked());
+   qApp->instance()->setProperty("workingdir", m_working->text());
+   qApp->instance()->setProperty("dirlevel", m_dirlevel);
    QDialog::accept(); 
 }
 

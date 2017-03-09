@@ -483,10 +483,11 @@ void ChartView::ExportGnuplot()
 void ChartView::ExportPNG()
 {
     const QString str = QFileDialog::getSaveFileName(this, tr("Save File"),
-                           ".",
+                           getDir(),
                            tr("Images (*.png)"));
     if(str.isEmpty() || str.isNull())
         return;
+    setLastDir(str);
     Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();

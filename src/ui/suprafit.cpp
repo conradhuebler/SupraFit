@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/global.h"
 
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
@@ -224,9 +225,10 @@ void MainWindow::NewTableAction()
 
 void MainWindow::ImportTableAction()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", ".");
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
     if(filename.isEmpty())
         return;
+    setLastDir(filename);
     ImportData dialog(filename, this);
     if(dialog.exec() == QDialog::Accepted)
         SetData(new DataClass(dialog.getStoredData()), filename);
@@ -242,9 +244,10 @@ void MainWindow::ImportAction(const QString& file)
 
 void MainWindow::LoadProjectAction()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Load File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Load File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
+        setLastDir(str);
         QJsonObject toplevel;
         if(JsonHandler::ReadJsonFile(toplevel, str))
         {
@@ -262,18 +265,20 @@ void MainWindow::LoadProjectAction()
 
 void MainWindow::SaveProjectAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
-    {
+    { 
+        setLastDir(str);
         m_model_dataholder->SaveWorkspace(str);
     }
 }
 
 void MainWindow::ImportModelAction()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
+        setLastDir(str);
         QJsonObject toplevel;
         if(JsonHandler::ReadJsonFile(toplevel, str))
         {
@@ -285,9 +290,10 @@ void MainWindow::ImportModelAction()
 
 void MainWindow::ExportModelAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
+        setLastDir(str);
         m_model_dataholder->SaveCurrentModels(str);   
     }   
 }
@@ -365,6 +371,9 @@ void MainWindow::ReadSettings()
     qApp->instance()->setProperty("threads", _settings.value("threads", QThread::idealThreadCount())); 
     qApp->instance()->setProperty("charttheme", _settings.value("charttheme", QtCharts::QChart::ChartThemeBlueIcy));
     qApp->instance()->setProperty("chartanimation", _settings.value("chartanimation", true));
+    qApp->instance()->setProperty("workingdir", _settings.value("workingdir", "."));
+    qApp->instance()->setProperty("dirlevel", _settings.value("dirlevel", 0));
+    qApp->instance()->setProperty("lastdir", _settings.value("lastdir", "."));
     _settings.endGroup();
 }
 
@@ -387,6 +396,9 @@ void MainWindow::WriteSettings(bool ignore_window_state)
     _settings.setValue("threads", qApp->instance()->property("threads")); 
     _settings.setValue("charttheme", qApp->instance()->property("charttheme"));
     _settings.setValue("chartanimation", qApp->instance()->property("chartanimation"));
+    _settings.setValue("workingdir", qApp->instance()->property("workingdir"));
+    _settings.setValue("dirlevel", qApp->instance()->property("dirlevel"));
+    _settings.setValue("lastdir", qApp->instance()->property("lastdir"));
     _settings.endGroup();
      
     if(!ignore_window_state)

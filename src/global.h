@@ -69,6 +69,6 @@ class QString;
 extern int printLevel;
 
 void PrintMessage(const QString &str, int Level);
-
-
+QString getDir();
+void setLastDir(const QString &str);
 #endif // global_H

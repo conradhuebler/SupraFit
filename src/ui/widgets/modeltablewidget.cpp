@@ -154,10 +154,10 @@ void ModelTableWidget::ExportModels()
 {
     qreal threshold = m_threshold->value();
     bool allow_invalid = m_valid->isChecked();
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(str.isEmpty())
         return;
-
+    setLastDir(str);
     QJsonObject toplevel;
     int i = 0;
     for(const QJsonObject &obj: qAsConst(m_list))

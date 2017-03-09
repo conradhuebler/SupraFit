@@ -66,9 +66,10 @@ public:
     virtual void accept();
 private:
     QRadioButton *m_printlevel_0, *m_printlevel_1, *m_printlevel_2, *m_printlevel_3, *m_printlevel_4, *m_printlevel_5;
+    QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
     QSpinBox *m_threads;
-    QLineEdit *m_logfileButton;
-    QPushButton *m_selectlogfile;
+    QLineEdit *m_logfileButton, *m_working;
+    QPushButton *m_selectlogfile, *m_select_working;
     QTabWidget *m_mainwidget;
     QDialogButtonBox *m_buttons;
     QComboBox *m_charttheme;
@@ -79,11 +80,12 @@ private:
     QComboBox *createThemeBox() const;
     OptimizerConfig m_opt_config;
     OptimizerWidget *m_opt_widget;
-    int m_printlevel;
-    QString m_logfile;
+    int m_printlevel, m_dirlevel;
+    QString m_logfile, m_working_string;
+    
 private slots:
     void SelectLogFile(); 
-
+    void SelectWorkingDir();
     
 };
 

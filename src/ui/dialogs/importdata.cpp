@@ -18,6 +18,7 @@
  */
 #include "src/core/dataclass.h"
 #include "src/core/filehandler.h"
+#include "src/global.h"
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -202,15 +203,17 @@ void ImportData::LoadFile()
 
 void ImportData::SelectFile()
 {
-    m_filename = QFileDialog::getOpenFileName(this, "Select file", ".");
+    m_filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
+    setLastDir(m_filename);
     LoadFile();
 }
 
 void ImportData::ExportFile()
 {
-    QString filename = QFileDialog::getSaveFileName(this, "Select file", ".");
+    QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
     if(filename.isEmpty())
         return;
+    setLastDir(filename);
     QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
     
     int rows = model->rowCount() - 1; 

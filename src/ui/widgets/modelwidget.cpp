@@ -795,9 +795,10 @@ void ModelWidget::OptimizerSettings()
 }
 void ModelWidget::ExportConstants()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
+        setLastDir(str);
         QJsonObject gameObject = m_model->ExportJSON();
         JsonHandler::WriteJsonFile(gameObject, str);
     }
@@ -806,9 +807,10 @@ void ModelWidget::ExportConstants()
 
 void ModelWidget::ImportConstants()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), ".", tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
     if(!str.isEmpty())
     {
+        setLastDir(str);
         QJsonObject object;
         if(JsonHandler::ReadJsonFile(object, str))
             LoadJson(object);
@@ -973,9 +975,10 @@ void ModelWidget::Model2Text()
 
 void ModelWidget::Save2File()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), ".", tr("All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("All files (*.*)" ));
     if(!str.isEmpty())
     {
+        setLastDir(str);
         QFile file( str );
         if ( file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text ) )
         {
