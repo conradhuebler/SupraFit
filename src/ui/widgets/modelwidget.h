@@ -194,10 +194,12 @@ private slots:
     void OpenAdvancedSearch();
     void PlotFinished(int runtype);
     void MultiScanFinished(int runtype);
-    void triggerPlot3D();
-    void toggleConcentrations();
-    void toggleStatisticDialog();
+    void TogglePlot3D();
+    void TogglePlot();
+    void ToggleConcentrations();
+    void ToggleStatisticDialog();
     void Save2File();
+    void ExportSimModel();
     
 public slots:
     void recalulate();

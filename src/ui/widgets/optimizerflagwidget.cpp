@@ -31,7 +31,7 @@
 
 #include "optimizerflagwidget.h"
 
-OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants)
+OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants), m_hidden(false)
 {
      setUi();
 
@@ -85,7 +85,7 @@ void OptimizerFlagWidget::setUi()
     EnableShiftSelection();
     ConstrainedChanged();
     m_more->setFlat(true);
-    QTimer::singleShot(0, this, SLOT(ShowFirst()));
+//     QTimer::singleShot(0, this, SLOT(ShowFirst()));
 }
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
@@ -150,8 +150,8 @@ void OptimizerFlagWidget::ConstrainedChanged()
 
 void OptimizerFlagWidget::ShowFirst()
 {
-    bool showing = m_more->isFlat();
-    if(!showing)
+    
+    if(!m_hidden)
     {
         QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
         QRect geom = geometry();
@@ -162,8 +162,9 @@ void OptimizerFlagWidget::ShowFirst()
         animation->setEndValue(geom);
         m_first_row->show();
         animation->start();
-        m_more->setText(tr("V"));
-        m_more->setFlat(true);
+        m_more->setText(tr("..less.."));
+//         m_more->setFlat(true);
+        m_hidden = true;
     }else{
         QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
         QRect geom = geometry();
@@ -174,8 +175,9 @@ void OptimizerFlagWidget::ShowFirst()
         animation->setEndValue(geom);
         animation->start();
         m_first_row->hide();
-        m_more->setText(tr("<"));
-        m_more->setFlat(false);    
+        m_more->setText(tr("..more.."));
+//         m_more->setFlat(false);    
+        m_hidden = false;
     }
 }
 

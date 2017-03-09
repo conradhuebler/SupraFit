@@ -366,11 +366,12 @@ void ModelWidget::DiscreteUI()
     connect(actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
     connect(actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
     connect(actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
-    connect(actions, SIGNAL(triggerPlot3D()), this, SLOT(triggerPlot3D()));
-    connect(actions, SIGNAL(toggleStatisticDialog()), this, SLOT(toggleStatisticDialog()));
+    connect(actions, SIGNAL(TogglePlot3D()), this, SLOT(TogglePlot3D()));
+    connect(actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
+    connect(actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
     connect(actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
-    connect(actions, SIGNAL(toggleConcentrations()), this, SLOT(toggleConcentrations()));
-    
+    connect(actions, SIGNAL(ToggleConcentrations()), this, SLOT(ToggleConcentrations()));
+    connect(actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     m_layout->addWidget(actions, 3, 0,1,m_model->ConstantSize()+3);  
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
     m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);  
@@ -493,7 +494,7 @@ void ModelWidget::GlobalMinimize()
     m_pending = false; 
 }
 
-void ModelWidget::toggleStatisticDialog()
+void ModelWidget::ToggleStatisticDialog()
 {
     m_statistic_dialog->show();
 }
@@ -792,7 +793,18 @@ void ModelWidget::OpenAdvancedSearch()
         m_advancedsearch->show();    
 }
 
-void ModelWidget::triggerPlot3D()
+
+void ModelWidget::ExportSimModel()
+{
+}
+
+void ModelWidget::TogglePlot()
+{
+    m_statistic_result->show();
+}
+
+
+void ModelWidget::TogglePlot3D()
 {
     if(_3dchart)
         _3dchart->setVisible(_3dchart->isVisible());
@@ -854,7 +866,7 @@ void ModelWidget::MultiScanFinished(int runtype)
     m_table_result->show();
 }
 
-void ModelWidget::toggleConcentrations()
+void ModelWidget::ToggleConcentrations()
 {
     QTableView *table = new QTableView;
     table->setModel(m_model->getConcentrations());

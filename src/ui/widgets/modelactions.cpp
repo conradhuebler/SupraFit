@@ -16,13 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
+#include <QtCore/QTimer>
+
+#include <QPropertyAnimation>
+
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QPushButton>
 
 #include "modelactions.h"
 
-ModelActions::ModelActions(QWidget* parent) : QWidget(parent)
+ModelActions::ModelActions(QWidget* parent) : QWidget(parent), m_hidden(true)
 {
     setUi();
     resizeButtons();
@@ -34,7 +39,7 @@ ModelActions::~ModelActions()
 
 void ModelActions::setUi()
 {
-    QHBoxLayout *layout = new QHBoxLayout;
+    QVBoxLayout *layout = new QVBoxLayout;
     m_minimize_single = new PushButton(tr("Local Fits"));
     m_optim_config = new PushButton(tr("Fit Settings"));
     m_import = new PushButton(tr("Load Constants"));
@@ -46,28 +51,53 @@ void ModelActions::setUi()
     m_concentration = new PushButton(tr("Concentration"));
     m_save = new PushButton(tr("Save"));
     m_new_guess = new PushButton(tr("New Guess"));
+    m_simulate = new PushButton(tr("Export Simulated"));
+    m_plots = new PushButton(tr("Toggle Charts"));
     
+    m_toggle = new QPushButton(tr("..more.."));
+    m_toggle->setFlat(true);
+    
+    
+    QHBoxLayout *h_layout = new QHBoxLayout;
+    h_layout->addWidget(m_advanced);
+    h_layout->addWidget(m_statistics); 
+    h_layout->addWidget(m_plots);
+    h_layout->addWidget(m_import);
+    h_layout->addWidget(m_export);
+    h_layout->addWidget(m_optim_config);
+    h_layout->addStretch();
+    h_layout->addWidget(m_toggle);
+    h_layout->setAlignment(Qt::AlignLeft);
+    layout->addLayout(h_layout);
+    
+    m_second = new QWidget;
+    layout->addWidget(m_second);
+    
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(m_new_guess);
+    h_layout->addWidget(m_minimize_single);
+    h_layout->addWidget(m_plot_3d);
+    h_layout->addWidget(m_concentration);
+    h_layout->addWidget(m_save); 
+    h_layout->addWidget(m_simulate);
+    h_layout->addStretch();
+    h_layout->setAlignment(Qt::AlignLeft);
+    m_second->setLayout(h_layout);
+    
+    connect(m_toggle, SIGNAL(clicked()), this, SLOT(ToggleMore()));
     connect(m_new_guess, SIGNAL(clicked()), this, SIGNAL(NewGuess()));
     connect(m_minimize_single, SIGNAL(clicked()), this, SIGNAL(LocalMinimize()));
     connect(m_optim_config, SIGNAL(clicked()), this, SIGNAL(OptimizerSettings()));
     connect(m_import, SIGNAL(clicked()), this, SIGNAL(ImportConstants()));
     connect(m_export, SIGNAL(clicked()), this, SIGNAL(ExportConstants()));
     connect(m_advanced, SIGNAL(clicked()), this, SIGNAL(OpenAdvancedSearch()));
-    connect(m_plot_3d, SIGNAL(clicked()), this, SIGNAL(triggerPlot3D()));
-    connect(m_statistics, SIGNAL(clicked()), this, SIGNAL(toggleStatisticDialog()));
+    connect(m_plot_3d, SIGNAL(clicked()), this, SIGNAL(TogglePlot3D()));
+    connect(m_statistics, SIGNAL(clicked()), this, SIGNAL(ToggleStatisticDialog()));
     connect(m_save, SIGNAL(clicked()), this, SIGNAL(Save2File()));
-    connect(m_concentration, SIGNAL(clicked()), this, SIGNAL(toggleConcentrations()));
-    
-    layout->addWidget(m_new_guess);
-    layout->addWidget(m_minimize_single);
-    layout->addWidget(m_advanced);
-    //     mini->addWidget(m_plot_3d);
-    layout->addWidget(m_optim_config);
-    layout->addWidget(m_import);
-    layout->addWidget(m_export);
-    layout->addWidget(m_statistics);
-    layout->addWidget(m_concentration);
-    layout->addWidget(m_save); 
+    connect(m_concentration, SIGNAL(clicked()), this, SIGNAL(ToggleConcentrations()));
+    connect(m_simulate, SIGNAL(clicked()), this, SIGNAL(ExportSimModel()));
+    connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
+    QTimer::singleShot(0, this, SLOT(ToggleMore()));
     setLayout(layout);
 }
 
@@ -79,11 +109,46 @@ void ModelActions::resizeButtons()
     m_import->setMaximumSize(110, 30);
     m_export->setMaximumSize(110, 30);
     m_advanced->setMaximumSize(50, 30);
-    //     m_plot_3d->setMaximumSize(70, 30);
+    m_toggle->setMaximumSize(50,30);
+    m_plots->setMaximumSize(110, 30);
+    m_plot_3d->setMaximumSize(70, 30);
     m_statistics->setMaximumSize(70, 30);
     m_concentration->setMaximumSize(100, 30);
     m_save->setMaximumSize(70, 30);
     m_new_guess->setMaximumSize(80, 30);
+    m_simulate->setMaximumSize(120, 30);
 }
+
+void ModelActions::ToggleMore()
+{
+
+    if(!m_hidden)
+    {
+//         QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
+//         QRect geom = geometry();
+//         geom.setHeight(m_second->geometry().height());
+//         animation->setDuration(200);
+//         animation->setStartValue(geom);
+//         geom.setHeight(2*m_second->geometry().height());
+//         animation->setEndValue(geom);
+        m_second->show();
+//         animation->start();
+        m_toggle->setText(tr("..less.."));
+        m_hidden = true;
+    }else{
+//         QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
+//         QRect geom = geometry();
+//         geom.setHeight(2*m_second->geometry().height());
+//         animation->setDuration(200);
+//         animation->setStartValue(geom);
+//         geom.setHeight(m_second->geometry().height());
+//         animation->setEndValue(geom);
+//         animation->start();
+        m_second->hide();
+        m_toggle->setText(tr("..more.."));  
+        m_hidden = false;
+    }
+}
+
 
 #include "modelactions.moc"

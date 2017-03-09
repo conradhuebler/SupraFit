@@ -47,7 +47,8 @@ private:
     QPushButton *m_more;
     QVBoxLayout *m_main_layout;
     QWidget *m_first_row;
-    
+    bool m_hidden;
+     
 private slots:
     void EnableShiftSelection();
     void ConstrainedChanged();
