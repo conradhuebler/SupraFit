@@ -159,13 +159,12 @@ private:
     QVector<QPointer<SpinBox> > m_constants;
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;
-    QVector<QPointer< QPushButton > > m_sim_signal_remove;
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
-    QLabel *m_bc_50; //, *m_sum_squares;
+    QPushButton *m_switch, *m_minimize_all;
+    QLabel *m_bc_50; 
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
-    QPointer< QPushButton > m_switch, m_minimize_all, m_minimize_single, m_add_sim_signal, m_new_guess, m_optim_config, m_export, m_import, m_advanced, m_plot_3d, m_confi, m_concen, m_save; 
     bool m_pending;
     QList<int > ActiveSignals();
     void DiscreteUI();

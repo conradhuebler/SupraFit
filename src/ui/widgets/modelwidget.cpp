@@ -34,6 +34,7 @@
 #include "src/ui/chartwrapper.h"
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modeltablewidget.h"
+#include "src/ui/widgets/modelactions.h"
 
 #include "src/ui/dialogs/modeldialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
@@ -322,9 +323,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
     
-    m_new_guess = new QPushButton(tr("New Guess"));
-    m_new_guess->setMaximumSize(80, 30);
-    connect(m_new_guess, SIGNAL(clicked()), this, SLOT(NewGuess()));
+//     m_new_guess = new QPushButton(tr("New Guess"));
+//     m_new_guess->setMaximumSize(80, 30);
+//     connect(m_new_guess, SIGNAL(clicked()), this, SLOT(NewGuess()));
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)
@@ -357,78 +358,36 @@ ModelWidget::~ModelWidget()
 
 void ModelWidget::DiscreteUI()
 {
-    m_minimize_single = new QPushButton(tr("Local Fits"));
-    m_optim_config = new QPushButton(tr("Fit Settings"));
-    m_import = new QPushButton(tr("Load Constants"));
-    m_export = new QPushButton(tr("Save Constants"));
-    m_advanced = new QPushButton(tr("Scan"));
-    m_plot_3d = new QPushButton(tr("3D Plot"));
-    m_plot_3d->setEnabled(false);
-    m_confi = new QPushButton(tr("Statistic"));
-    m_concen = new QPushButton(tr("Concentration"));
-    m_save = new QPushButton(tr("Save"));
-    QHBoxLayout *mini = new QHBoxLayout;
+    ModelActions *actions = new ModelActions;
     
-    connect(m_minimize_single, SIGNAL(clicked()), this, SLOT(LocalMinimize()));
-    connect(m_optim_config, SIGNAL(clicked()), this, SLOT(OptimizerSettings()));
-    connect(m_import, SIGNAL(clicked()), this, SLOT(ImportConstants()));
-    connect(m_export, SIGNAL(clicked()), this, SLOT(ExportConstants()));
-    connect(m_advanced, SIGNAL(clicked()), this, SLOT(OpenAdvancedSearch()));
-    connect(m_plot_3d, SIGNAL(clicked()), this, SLOT(triggerPlot3D()));
-    connect(m_confi, SIGNAL(clicked()), this, SLOT(toggleStatisticDialog()));
-    connect(m_save, SIGNAL(clicked()), this, SLOT(Save2File()));
-    connect(m_concen, SIGNAL(clicked()), this, SLOT(toggleConcentrations()));
-    mini->addWidget(m_new_guess);
-    mini->addWidget(m_minimize_single);
-    mini->addWidget(m_advanced);
-    //     mini->addWidget(m_plot_3d);
-    mini->addWidget(m_optim_config);
+    connect(actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
+    connect(actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
+    connect(actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
+    connect(actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
+    connect(actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
+    connect(actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
+    connect(actions, SIGNAL(triggerPlot3D()), this, SLOT(triggerPlot3D()));
+    connect(actions, SIGNAL(toggleStatisticDialog()), this, SLOT(toggleStatisticDialog()));
+    connect(actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
+    connect(actions, SIGNAL(toggleConcentrations()), this, SLOT(toggleConcentrations()));
     
-    m_layout->addLayout(mini, 3, 0,1,m_model->ConstantSize()+3);
+    m_layout->addWidget(actions, 3, 0,1,m_model->ConstantSize()+3);  
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
-   
-     
-    mini->addWidget(m_import);
-    mini->addWidget(m_export);
-    mini->addWidget(m_confi);
-    mini->addWidget(m_concen);
-    mini->addWidget(m_save);
     m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);  
    
 }
 
-void ModelWidget::resizeButtons()
+ void ModelWidget::resizeButtons()
 {
-    // Thats awfull and hackish, but it works for now and doesn't look that bad
-    m_minimize_single->setMaximumSize(70, 30);
-    m_optim_config->setMaximumSize(80, 30);
-    m_minimize_all->setMaximumSize(70, 30);
-    m_import->setMaximumSize(110, 30);
-    m_export->setMaximumSize(110, 30);
-    m_advanced->setMaximumSize(50, 30);
-    //     m_plot_3d->setMaximumSize(70, 30);
-    m_confi->setMaximumSize(70, 30);
-    m_concen->setMaximumSize(100, 30);
-    m_save->setMaximumSize(70, 30);
-    
-    m_new_guess->setStyleSheet("background-color: #77d740;");
-    m_minimize_single->setStyleSheet("background-color: #77d740;");
-    m_optim_config->setStyleSheet("background-color: #77d740;");
-    m_minimize_all->setStyleSheet("background-color: #77d740;");
-    m_import->setStyleSheet("background-color: #77d740;");
-    m_export->setStyleSheet("background-color: #77d740;");
-    m_advanced->setStyleSheet("background-color: #77d740;");
-    //     m_plot_3d->setStyleSheet("background-color: #77d740;");
-    m_confi->setStyleSheet("background-color: #77d740;");
-    m_concen->setStyleSheet("background-color: #77d740;");
-    m_save->setStyleSheet("background-color: #77d740;");
+     m_minimize_all->setMaximumSize(70, 30);
+     m_minimize_all->setStyleSheet("background-color: #77d740;");
 }
 
 void ModelWidget::EmptyUI()
 {
-    m_add_sim_signal = new QPushButton(tr("Add Signal"));
-    connect(m_add_sim_signal, SIGNAL(clicked()), this, SLOT(AddSimSignal()));
-    m_layout->addWidget(m_add_sim_signal);
+// //     m_add_sim_signal = new QPushButton(tr("Add Signal"));
+// //     connect(m_add_sim_signal, SIGNAL(clicked()), this, SLOT(AddSimSignal()));
+// //     m_layout->addWidget(m_add_sim_signal);
 }
 
 void ModelWidget::setParameter()
@@ -454,7 +413,7 @@ void ModelWidget::Repaint()
     }
     m_pending = false;
     m_minimize_all->setEnabled(true);
-    m_minimize_single->setEnabled(true);
+
     qreal bc50 = m_model->BC50()*1E6;
     QString format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
     QChar mu = QChar(956);
@@ -512,8 +471,6 @@ void ModelWidget::GlobalMinimize()
         return;
     m_pending = true;
     CollectParameters();
-    m_minimize_all->setEnabled(false);
-    m_minimize_single->setEnabled(false);
     QJsonObject json = m_model->ExportJSON();
     m_minimizer->setParameter(json);
     OptimizerConfig config = m_model->getOptimizerConfig();
@@ -721,8 +678,6 @@ void ModelWidget::LocalMinimize()
     if(m_pending)
         return;
     Waiter wait;
-    m_minimize_all->setEnabled(false);
-    m_minimize_single->setEnabled(false);
     CollectParameters();
     
     for(int i = 0; i < m_model->SignalCount(); ++i)
@@ -864,7 +819,7 @@ void ModelWidget::PlotFinished(int runtype)
         _3dchart->setMinY(m_advancedsearch->MinY());      
         _3dchart->setData(m_advancedsearch->dataArray());
         
-        m_plot_3d->setEnabled(true);
+//         m_plot_3d->setEnabled(true);
     }
     else if(runtype == 2)
     {

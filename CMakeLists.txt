@@ -149,6 +149,7 @@ endif(testing)
 qt5_use_modules(utils Core Gui)
 
 set(suprafit_SRCS
+                src/ui/widgets/modelactions.cpp
                 src/ui/widgets/statisticwidget.cpp
                 src/ui/widgets/modeltablewidget.cpp
                 src/ui/widgets/optimizerflagwidget.cpp
