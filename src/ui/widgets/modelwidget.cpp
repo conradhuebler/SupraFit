@@ -137,9 +137,9 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     QHBoxLayout *tools = new QHBoxLayout;
     m_include = new QCheckBox(this);
     m_include->setText("Include");
-    m_include->setToolTip(tr("Include in Model Generation"));
+    m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
     m_include->setChecked(m_model->ActiveSignals()[m_no]);
-    connect(m_include, SIGNAL(stateChanged(int)), this, SIGNAL(ActiveSignalChanged()));
+    connect(m_include, SIGNAL(stateChanged(int)), this, SLOT(toggleActive(int)));
     tools->addWidget(m_include);
     m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no));
     m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
@@ -177,7 +177,13 @@ ModelElement::~ModelElement()
     
 }
 
-
+void ModelElement::toggleActive(int state)
+{
+    m_show->setChecked(state);
+    m_error_series->ShowLine(state);
+    m_signal_series->ShowLine(state);
+    emit ActiveSignalChanged();
+}
 
 bool ModelElement::Include() const
 {

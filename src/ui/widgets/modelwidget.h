@@ -118,6 +118,7 @@ private slots:
     void ColorChanged(const QColor &color);
     void ChooseColor();
     void togglePlot();
+    void toggleActive(int state);
     
 signals:
     void ValueChanged();
