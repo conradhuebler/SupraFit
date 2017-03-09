@@ -35,6 +35,7 @@
 #include <QDrag>
 #include <QPrinter>
 #include <QPrintPreviewDialog>
+#include <QApplication>
 
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
@@ -69,8 +70,8 @@ ChartWidget::ChartWidget()
     layout->addWidget(m_errorview, 2, 0);
     layout->addWidget(m_x_scale, 3, 0);
     
-    m_signalchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
-    m_errorchart->setTheme(QtCharts::QChart::ChartThemeBlueCerulean);
+    m_signalchart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
+    m_errorchart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     restartAnimation();
     setLayout(layout);
     max_shift = 0;
@@ -228,9 +229,10 @@ void ChartWidget::stopAnimiation()
 
 void ChartWidget::restartAnimation()
 {
-    m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-//     m_signalchart->setAnimationDuration(100);
-//     m_errorchart->setAnimationDuration(100);
+    if(qApp->instance()->property("chartanimation").toBool())
+    {
+        m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    }
 }
 #include "chartwidget.moc"

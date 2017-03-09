@@ -57,6 +57,9 @@
 
 MainWindow::MainWindow() : m_ask_on_exit(true)
 {
+    
+    ReadSettings();
+    
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Workspace"), this);
     m_modeldock->setObjectName(tr("data_and_models"));
@@ -158,7 +161,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     addToolBar(m_system_toolbar);
     
-    ReadSettings();
+    ReadGeometry();
     LogFile();
     setActionEnabled(false);
 }
@@ -360,14 +363,19 @@ void MainWindow::ReadSettings()
     m_logfile = _settings.value("logfile").toString();
     m_printlevel = _settings.value("printlevel", 3).toInt();
     qApp->instance()->setProperty("threads", _settings.value("threads", QThread::idealThreadCount())); 
+    qApp->instance()->setProperty("charttheme", _settings.value("charttheme", QtCharts::QChart::ChartThemeBlueIcy));
+    qApp->instance()->setProperty("chartanimation", _settings.value("chartanimation", true));
     _settings.endGroup();
-    
+}
+
+void MainWindow::ReadGeometry()
+{
+    QSettings _settings;
     _settings.beginGroup("window");
     restoreGeometry(_settings.value("geometry").toByteArray());
     restoreState(_settings.value("state").toByteArray());
     m_ask_on_exit = _settings.value("Ask_on_exit", true).toBool();
     _settings.endGroup();
-    
 }
 
 void MainWindow::WriteSettings(bool ignore_window_state)
@@ -377,8 +385,10 @@ void MainWindow::WriteSettings(bool ignore_window_state)
     _settings.setValue("logfile", m_logfile);
     _settings.setValue("printlevel", m_printlevel);
     _settings.setValue("threads", qApp->instance()->property("threads")); 
+    _settings.setValue("charttheme", qApp->instance()->property("charttheme"));
+    _settings.setValue("chartanimation", qApp->instance()->property("chartanimation"));
     _settings.endGroup();
-    
+     
     if(!ignore_window_state)
     {
         _settings.beginGroup("window");

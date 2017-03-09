@@ -145,6 +145,11 @@ ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_pr
 {
     setUi();
     m_chart->legend()->setAlignment(Qt::AlignRight);
+    if(qApp->instance()->property("chartanimation").toBool())
+        m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    else
+        m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+    
 }
 
 ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false)
@@ -153,7 +158,6 @@ ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()
     m_chart_private = new ChartViewPrivate(new ChartViewPrivate(m_chart, this));
     setUi();
     m_chart->legend()->setAlignment(Qt::AlignRight);
-    m_rectf = m_chart->rect();
 }
 
 void ChartView::setUi()

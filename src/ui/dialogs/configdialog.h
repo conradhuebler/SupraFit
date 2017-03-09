@@ -20,7 +20,10 @@
 #ifndef CONFIGDIALOG_H
 #define CONFIGDIALOG_H
 #include "src/ui/widgets/optimizerwidget.h"
-#include <QDialog>
+
+#include <QtCore/QPointer>
+
+#include <QtWidgets/QDialog>
 #include <QtWidgets/QLineEdit>
 
 struct OptimizerConfig;
@@ -28,7 +31,7 @@ struct OptimizerConfig;
 class QRadioButton;
 class QTabWidget;
 class QDialogButtonBox;
-
+class QComboBox;
 
 class OptimizerDialog : public QDialog
 {
@@ -68,9 +71,12 @@ private:
     QPushButton *m_selectlogfile;
     QTabWidget *m_mainwidget;
     QDialogButtonBox *m_buttons;
+    QComboBox *m_charttheme;
+    QCheckBox *m_animated_charts;
     void setUi();
     void createGeneralTab();
     void createOptimTab();
+    QComboBox *createThemeBox() const;
     OptimizerConfig m_opt_config;
     OptimizerWidget *m_opt_widget;
     int m_printlevel;

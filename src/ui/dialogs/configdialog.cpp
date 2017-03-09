@@ -22,6 +22,9 @@
 #include <QtCore/QThread>
 
 #include <QApplication>
+
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QRadioButton>
@@ -31,9 +34,9 @@
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
 
+#include <QtCharts/QChart>
+
 #include "configdialog.h"
-
-
 
 OptimizerDialog::OptimizerDialog(OptimizerConfig config, QWidget *parent) :QDialog(parent), m_opt_config(config)
 {
@@ -147,7 +150,20 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(new QLabel(tr("Threads:")));
     h_layout->addWidget(m_threads);
     layout->addLayout(h_layout);
-    QLabel *printlevel = new QLabel(tr("Set Printlevel"));
+
+    layout->addWidget(new QLabel(tr("All changes below will only take effect after restarting the application\nor creating a new instance of anything being affected by that change.")));
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("Chart Theme")));
+    m_charttheme = createThemeBox();
+    h_layout->addWidget(m_charttheme);
+    m_charttheme->setCurrentIndex(qApp->instance()->property("charttheme").toInt());
+    layout->addLayout(h_layout);
+    
+    
+    m_animated_charts = new QCheckBox(tr("Animated Charts"));
+    layout->addWidget(m_animated_charts);
+    m_animated_charts->setChecked(qApp->instance()->property("chartanimation").toBool());
+    /*QLabel *printlevel = new QLabel(tr("Set Printlevel"));
     layout->addWidget(printlevel);
     
     m_printlevel_0 = new QRadioButton(tr("No Console Output (Printlevel 0)"), generalTab);
@@ -178,7 +194,7 @@ void ConfigDialog::createGeneralTab()
     m_printlevel_5 = new QRadioButton(tr("Include debug information (Printlevel 5)"), generalTab);
     if(m_printlevel == 5)
         m_printlevel_5->setChecked(true);
-    layout->addWidget(m_printlevel_5);
+    layout->addWidget(m_printlevel_5);*/
     m_mainwidget->addTab(generalTab, tr("General Settings"));
 }
 
@@ -205,6 +221,7 @@ void ConfigDialog::SelectLogFile()
 
 void ConfigDialog::accept()
 {
+    /*
     if(m_printlevel_0->isChecked())
         m_printlevel = 0;    
     else if(m_printlevel_1->isChecked())
@@ -216,9 +233,25 @@ void ConfigDialog::accept()
     else if(m_printlevel_4->isChecked())
         m_printlevel = 4;  
     else
-        m_printlevel = 5;  
+        m_printlevel = 5;  */
+   qApp->instance()->setProperty("charttheme", m_charttheme->itemData(m_charttheme->currentIndex()).toInt()); 
    qApp->instance()->setProperty("threads", m_threads->value()); 
+   qApp->instance()->setProperty("chartanimation", m_animated_charts->isChecked());
    QDialog::accept(); 
+}
+
+QComboBox *ConfigDialog::createThemeBox() const
+{
+    QComboBox * themeComboBox = new QComboBox();
+    themeComboBox->addItem("Light", QtCharts::QChart::ChartThemeLight);
+    themeComboBox->addItem("Blue Cerulean", QtCharts::QChart::ChartThemeBlueCerulean);
+    themeComboBox->addItem("Dark", QtCharts::QChart::ChartThemeDark);
+    themeComboBox->addItem("Brown Sand", QtCharts::QChart::ChartThemeBrownSand);
+    themeComboBox->addItem("Blue NCS", QtCharts::QChart::ChartThemeBlueNcs);
+    themeComboBox->addItem("High Contrast", QtCharts::QChart::ChartThemeHighContrast);
+    themeComboBox->addItem("Blue Icy", QtCharts::QChart::ChartThemeBlueIcy);
+    themeComboBox->addItem("Qt", QtCharts::QChart::ChartThemeQt);
+    return themeComboBox;
 }
 
 #include "configdialog.moc"

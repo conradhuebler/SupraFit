@@ -54,6 +54,11 @@ public slots:
     
 private:
     void setActionEnabled(bool enabled);
+    void ReadSettings();
+    void ReadGeometry();
+    void WriteSettings(bool ignore_window_state = true);
+    
+    
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
     QPointer<ModelDataHolder > m_model_dataholder;
@@ -63,8 +68,7 @@ private:
     bool m_hasData;
     QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     OptimizerConfig m_opt_config;
-    void ReadSettings();
-    void WriteSettings(bool ignore_window_state = true);
+
     QDockWidget *m_logdock, *m_modeldock, *m_chartdock, *m_history_dock;
     QPlainTextEdit *m_logWidget;
     QString m_logfile;
@@ -74,6 +78,7 @@ private:
     QMap<int, ModelHistoryElement> m_history;
     bool m_ask_on_exit;
     virtual void closeEvent(QCloseEvent *event);
+    
 private slots:
     void NewTableAction();
     void ImportTableAction();
