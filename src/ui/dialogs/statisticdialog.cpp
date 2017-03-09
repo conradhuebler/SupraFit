@@ -36,7 +36,7 @@
 #include <QtWidgets/QProgressBar>
 
 #include "statisticdialog.h"
-StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QDialog(parent), m_model(model)
+StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QDialog(parent), m_model(model), m_runs(1)
 {
     setUi();
 //     Pending();

@@ -85,6 +85,7 @@ private:
     ChartConfigDialog m_chartconfigdialog;
     bool m_pending, m_lock_scaling, m_latex_supported;   
     qreal m_ymax;
+    QRectF m_rectf;
 private slots:
     void PlotSettings();
     void PrintPlot();

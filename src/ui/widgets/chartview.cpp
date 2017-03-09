@@ -19,12 +19,13 @@
 
 #include "src/ui/dialogs/chartconfig.h"
 #include "src/core/toolset.h"
+#include "src/ui/widgets/modelwidget.h"
 
 #include <QtCore/QBuffer>
 #include <QtCore/QMimeData>
 #include <QtCore/QTextStream>
 
-#include <QtGui/QApplication>
+#include <QApplication>
 
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
@@ -152,6 +153,7 @@ ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()
     m_chart_private = new ChartViewPrivate(new ChartViewPrivate(m_chart, this));
     setUi();
     m_chart->legend()->setAlignment(Qt::AlignRight);
+    m_rectf = m_chart->rect();
 }
 
 void ChartView::setUi()
@@ -481,14 +483,15 @@ void ChartView::ExportPNG()
                            tr("Images (*.png)"));
     if(str.isEmpty() || str.isNull())
         return;
-    int w = m_chart->scene()->sceneRect().size().toSize().width();
-    int h = m_chart->scene()->sceneRect().size().toSize().height();
+    Waiter wait;
+    int w = m_chart->rect().size().width();
+    int h = m_chart->rect().size().height();
     int scale = 4;
     QImage image(QSize(scale*w, scale*h), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
-    m_chart->scene()->render(&painter, QRectF(0,0, scale*w,scale*h), QRectF(0,0, w, h), Qt::KeepAspectRatio);
+    m_chart->scene()->render(&painter , QRectF(0,0, scale*w,scale*h),m_chart->rect());
     QPixmap pixmap = QPixmap::fromImage(image);
     QByteArray itemData;
     
