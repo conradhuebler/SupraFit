@@ -104,6 +104,7 @@ ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *par
     m_vlayout->setAlignment(Qt::AlignTop);
     setLayout(m_vlayout);
     setBackgroundRole(QPalette::Midlight);
+    setMaximumWidth(230);
 }
 
 ModelHistory::~ModelHistory()

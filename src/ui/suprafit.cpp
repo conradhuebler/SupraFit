@@ -99,6 +99,8 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_history_dock->setObjectName(tr("history"));
     m_history_dock->setWidget(history_scroll);
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
+    m_history_dock->setMaximumWidth(240);
+    m_history_dock->setMinimumWidth(240);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
     connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)), Qt::DirectConnection);
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
