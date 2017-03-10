@@ -42,6 +42,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractT
     setName(tr("2:1/1:1/1:2-Model"));
     for(int i = 0; i < DataPoints(); ++i)
         m_solvers << new ConcentrationSolver(this);
+    m_pure_signals_parameter = SignalModel()->firstRow();
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 3);
     InitialGuess();
     setOptParamater(m_complex_constants);

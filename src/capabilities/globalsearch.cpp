@@ -33,7 +33,7 @@
 
 #include "globalsearch.h"
 
-GlobalSearch::GlobalSearch(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_initial_guess(false), m_optimize(true)
+GlobalSearch::GlobalSearch(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_initial_guess(true), m_optimize(true)
 {
     
     

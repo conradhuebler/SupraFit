@@ -142,7 +142,7 @@ void AdvancedSearch::SetUi()
         m_parameter_list << widget;
     } 
     m_initial_guess = new QCheckBox(tr("Apply initial Guess"));
-    m_initial_guess->setChecked(false);
+    m_initial_guess->setChecked(true);
     connect(m_initial_guess, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));
     m_optim = new QCheckBox(tr("Optimise"));
     m_optim->setChecked(true);
