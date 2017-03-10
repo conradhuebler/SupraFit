@@ -74,11 +74,11 @@ OptimizerConfig OptimizerWidget::Config() const
     config.error_potenz = m_error_potenz->value();
     
 
-    config.LevMar_mu = m_levmarmu->value();
-    config.LevMar_Eps1 = m_levmar_eps1->value();
-    config.LevMar_Eps2 = m_levmar_eps2->value();
-    config.LevMar_Eps3 = m_levmar_eps3->value();
-    config.LevMar_Delta = m_levmar_delta->value();
+    config.LevMar_Factor = m_levmar_factor->value();
+    config.LevMar_Xtol = m_levmar_eps1->value();
+    config.LevMar_Ftol = m_levmar_eps2->value();
+    config.LevMar_Gtol = m_levmar_eps3->value();
+    config.LevMar_epsfcn = m_levmar_delta->value();
 
     
     return config;
@@ -115,45 +115,44 @@ QWidget * OptimizerWidget::LevmarWidget()
     QWidget *widget = new QWidget;
     QGridLayout *layout = new QGridLayout;
     
-    m_levmarmu = new ScientificBox;
-    m_levmarmu->setRange(0, 1E-1);
-    m_levmarmu->setSingleStep(1E-8);
-    m_levmarmu->setValue(m_config.LevMar_mu);
-    m_levmarmu->setDecimals(20);
+    m_levmar_factor = new QSpinBox;
+    m_levmar_factor->setRange(0, 1000);
+    m_levmar_factor->setSingleStep(10);
+    m_levmar_factor->setValue(m_config.LevMar_Factor);
 
     m_levmar_eps1 = new ScientificBox;
     m_levmar_eps1->setRange(0, 1E-1);
     m_levmar_eps1->setSingleStep(1E-20);
     m_levmar_eps1->setDecimals(20);
-    m_levmar_eps1->setValue(m_config.LevMar_Eps1);
+    m_levmar_eps1->setValue(m_config.LevMar_Xtol);
     
     m_levmar_eps2 = new ScientificBox;
     m_levmar_eps2->setRange(0, 1E-1);
     m_levmar_eps2->setSingleStep(1E-20);
     m_levmar_eps2->setDecimals(20);
-    m_levmar_eps2->setValue(m_config.LevMar_Eps2);
+    m_levmar_eps2->setValue(m_config.LevMar_Ftol);
     
     m_levmar_eps3 = new ScientificBox;
     m_levmar_eps3->setRange(0, 1E-1);
     m_levmar_eps3->setSingleStep(1E-20);
     m_levmar_eps3->setDecimals(20);
-    m_levmar_eps3->setValue(m_config.LevMar_Eps3);
+    m_levmar_eps3->setValue(m_config.LevMar_Gtol);
     
     m_levmar_delta = new ScientificBox;
     m_levmar_delta->setRange(0, 1);
     m_levmar_delta->setSingleStep(1E-10);
     m_levmar_delta->setDecimals(20);
-    m_levmar_delta->setValue(m_config.LevMar_Delta);
+    m_levmar_delta->setValue(m_config.LevMar_epsfcn);
      
-    layout->addWidget(new QLabel(tr("scale factor for initial \\mu {opts[0]}}")), 0, 0);
-    layout->addWidget(m_levmarmu, 0, 1);
-    layout->addWidget(new QLabel(tr("stopping thresholds for ||J<sup>T</<sup> e||<sub>inf</<ub>, \\mu = {opts[1]}")), 1, 0);
+    layout->addWidget(new QLabel(tr("Minipack Factor")), 0, 0);
+    layout->addWidget(m_levmar_factor, 0, 1);
+    layout->addWidget(new QLabel(tr("Minipack XTol")), 1, 0);
     layout->addWidget(m_levmar_eps1, 1, 1);
-    layout->addWidget(new QLabel(tr("stopping thresholds for ||Dp||<sub>2</sub> = {opts[2]}")), 2, 0);
+    layout->addWidget(new QLabel(tr("Minipack Ftol")), 2, 0);
     layout->addWidget(m_levmar_eps2, 2, 1);
-    layout->addWidget(new QLabel(tr("stopping thresholds for ||e||<sub>2</sub> = {opts[3]}")), 3, 0);
+    layout->addWidget(new QLabel(tr("Minipack GTol")), 3, 0);
     layout->addWidget(m_levmar_eps3, 3, 1);
-    layout->addWidget(new QLabel(tr("tep used in difference approximation to the Jacobian: = {opts[4]}")), 4, 0);
+    layout->addWidget(new QLabel(tr("Minipack epsfcn")), 4, 0);
     layout->addWidget(m_levmar_delta, 4, 1);
     
     widget->setLayout(layout);

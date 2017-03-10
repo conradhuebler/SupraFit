@@ -83,9 +83,9 @@ private:
     
     OptimizerConfig m_config;
     QTabWidget *m_tabwidget;
-    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence, *m_error_potenz;
+    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence, *m_error_potenz, *m_levmar_factor;
     ScientificBox *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
-    ScientificBox *m_levmarmu, *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
+    ScientificBox *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
 
 
     void setUi();

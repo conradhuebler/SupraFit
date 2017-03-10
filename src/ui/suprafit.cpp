@@ -369,7 +369,7 @@ void MainWindow::ReadSettings()
     m_logfile = _settings.value("logfile").toString();
     m_printlevel = _settings.value("printlevel", 3).toInt();
     qApp->instance()->setProperty("threads", _settings.value("threads", QThread::idealThreadCount())); 
-    qApp->instance()->setProperty("charttheme", _settings.value("charttheme", QtCharts::QChart::ChartThemeBlueIcy));
+    qApp->instance()->setProperty("charttheme", _settings.value("charttheme", QtCharts::QChart::ChartThemeBlueCerulean));
     qApp->instance()->setProperty("chartanimation", _settings.value("chartanimation", true));
     qApp->instance()->setProperty("workingdir", _settings.value("workingdir", "."));
     qApp->instance()->setProperty("dirlevel", _settings.value("dirlevel", 0));

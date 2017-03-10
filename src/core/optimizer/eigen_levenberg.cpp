@@ -122,12 +122,12 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, QVector<qreal > &pa
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
     int iter = 0;
-    lm.parameters.factor = 100; //step bound for the diagonal shift, is this related to damping parameter, lambda?
+    lm.parameters.factor = config.LevMar_Factor; //step bound for the diagonal shift, is this related to damping parameter, lambda?
     lm.parameters.maxfev = config.MaxIter;//max number of function evaluations
-    lm.parameters.xtol = 1.49012e-08; //tolerance for the norm of the solution vector
-    lm.parameters.ftol = 1.49012e-08; //tolerance for the norm of the vector function
-    lm.parameters.gtol = 0; // tolerance for the norm of the gradient of the error vector
-    lm.parameters.epsfcn = 0; //error precision
+    lm.parameters.xtol = config.LevMar_Xtol; //tolerance for the norm of the solution vector
+    lm.parameters.ftol = config.LevMar_Ftol; //tolerance for the norm of the vector function
+    lm.parameters.gtol = config.LevMar_Gtol; // tolerance for the norm of the gradient of the error vector
+    lm.parameters.epsfcn = config.LevMar_epsfcn; //error precision
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
     qreal error_0 = 0; 
     qreal error_2 = 0;

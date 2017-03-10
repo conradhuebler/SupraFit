@@ -46,7 +46,7 @@ struct OptimizerConfig
 {
     int error_potenz = 2;
     
-    int MaxIter = 1000;
+    int MaxIter = 75;
     int Sum_Convergence = 2;
     qreal Shift_Convergence = 1E-3;
     qreal Constant_Convergence = 1E-3;
@@ -55,11 +55,11 @@ struct OptimizerConfig
     int LevMar_Constants_PerIter = 1;
     int LevMar_Shifts_PerIter = 1;
     
-    qreal LevMar_mu = 1E-03;
-    qreal LevMar_Eps1 = 1E-15;
-    qreal LevMar_Eps2 = 1E-15;
-    qreal LevMar_Eps3 = 1E-20;
-    qreal LevMar_Delta = 1E-06;
+    qreal LevMar_Factor = 100;
+    qreal LevMar_Xtol = 1E-10;
+    qreal LevMar_Gtol = 1E-10;
+    qreal LevMar_Ftol = 1E-10;
+    qreal LevMar_epsfcn = 1E-8;
 };
 
 

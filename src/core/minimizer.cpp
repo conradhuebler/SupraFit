@@ -239,11 +239,11 @@ QString Minimizer::OptPara2String() const
     result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
     result += "\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
-    result += "|scale factor for initial \\mu {opts[0]}}" + QString::number(m_opt_config.LevMar_mu) + "|\n";
-    result += "|stopping thresholds for ||J^T e||_inf, \\mu = {opts[1]}" + QString::number(m_opt_config.LevMar_Eps1) + "|\n";
-    result += "|stopping thresholds for ||Dp||_2 = {opts[2]}" +  QString::number(m_opt_config.LevMar_Eps2) + "|\n";
-    result += "|stopping thresholds for ||e||_2 = {opts[3]}" + QString::number(m_opt_config.LevMar_Eps3) + "|\n";
-    result += "|step used in difference approximation to the Jacobian: = {opts[4]}" + QString::number(m_opt_config.LevMar_Delta) + "|\n";
+    result += "|Minipack Factor " + QString::number(m_opt_config.LevMar_Factor) + "|\n";
+    result += "|Minipack XTol" + QString::number(m_opt_config.LevMar_Xtol) + "|\n";
+    result += "|Minipack Gtol" +  QString::number(m_opt_config.LevMar_Gtol) + "|\n";
+    result += "|Minipack Ftol" + QString::number(m_opt_config.LevMar_Ftol) + "|\n";
+    result += "|Minipack epsfcn" + QString::number(m_opt_config.LevMar_epsfcn) + "|\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
     result += "\n";
     return result;
