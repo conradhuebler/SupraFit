@@ -312,9 +312,9 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
     }
     for(const QString &str : qAsConst(keys))
     {
-        if(str.contains("cv"))
+        if(str.contains("CV"))
             m_cv_statistics << json["statistics"].toObject()[str].toObject();
-        else if(str.contains("mc"))
+        else if(str.contains("MC"))
             m_mc_statistics << json["statistics"].toObject()[str].toObject();
     }
     
