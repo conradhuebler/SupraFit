@@ -200,6 +200,12 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str
         m_model_dataholder->setData(m_titration_data, wrapper);
         setActionEnabled(true);
         
+        QJsonObject toplevel;
+        if(JsonHandler::ReadJsonFile(toplevel, str))
+        {
+            m_model_dataholder->AddToWorkspace(toplevel);
+        }
+        
         if(m_model_dataholder->CheckCrashFile())
         {
             QMessageBox::StandardButton replay;
@@ -256,8 +262,8 @@ void MainWindow::LoadProjectAction()
             QPointer<DataClass > data = new DataClass(toplevel);
             if(data->DataPoints() != 0)
             {
-                SetData(new DataClass(new DataClass(data)), str);
-                m_model_dataholder->AddToWorkspace(toplevel);
+                if(SetData(new DataClass(new DataClass(data)), str))
+                    m_model_dataholder->AddToWorkspace(toplevel);
             }
             else
                 QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
