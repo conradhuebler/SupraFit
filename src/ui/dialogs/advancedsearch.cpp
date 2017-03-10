@@ -140,12 +140,27 @@ void AdvancedSearch::SetUi()
         layout->addWidget(widget);
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
         m_parameter_list << widget;
-    }
+    } 
+    m_initial_guess = new QCheckBox(tr("Apply initial Guess"));
+    m_initial_guess->setChecked(false);
+    connect(m_initial_guess, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));
+    m_optim = new QCheckBox(tr("Optimise"));
+    m_optim->setChecked(true);
+    connect(m_optim, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));
+    QHBoxLayout *options = new QHBoxLayout;
+    
+    options->addWidget(m_optim);
+    options->addWidget(m_initial_guess);
+    layout->addLayout(options);
+    
     m_optim_flags = new OptimizerFlagWidget;
     OptimizationType type = static_cast<OptimizationType>(0);
     type = OptimizationType::ComplexationConstants;
     m_optim_flags->DisableOptions(type);
     layout->addWidget(m_optim_flags);
+    
+
+    
     m_1d_search = new QPushButton(tr("1D Search"));
     m_2d_search = new QPushButton(tr("Create 2D Plot"));
     m_scan = new QPushButton(tr("Scan"));
@@ -171,12 +186,22 @@ void AdvancedSearch::SetUi()
         mlayout->addWidget(m_2d_search,3, 1);
     }
     
-    m_progress->hide();
+//     m_progress->hide();
     m_interrupt->hide();
     connect(m_search, SIGNAL(SingeStepFinished(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
+    connect(this, SIGNAL(setValue(int)), m_progress, SLOT(setValue(int)));
+    
     setLayout(mlayout);
     MaxSteps();
+    setOptions();
+}
+
+void AdvancedSearch::setOptions()
+{
+    m_search->setInitialGuess(m_initial_guess->isChecked());
+    m_search->setOptimize(m_optim->isChecked());
+    m_optim_flags->setEnabled(m_optim->isChecked());
 }
 
 void AdvancedSearch::MaxSteps()
@@ -202,14 +227,14 @@ void AdvancedSearch::PrepareProgress()
     m_time_0 =  QDateTime::currentMSecsSinceEpoch();
     m_time = 0;
     m_progress->setValue(0);
-    m_progress->show();   
+//     m_progress->show();   
 }
 
 void AdvancedSearch::Finished()
 {
-    m_progress->hide();   
-    m_scan->show();
-    m_interrupt->hide();
+//     m_progress->hide();   
+     m_scan->show();
+     m_interrupt->hide();
 }
 
 void AdvancedSearch::SearchGlobal()
@@ -270,7 +295,8 @@ void AdvancedSearch::IncrementProgress(int time)
     int remain = double(m_progress->maximum() - val)*aver/3000;
     int used = (t0 - m_time_0)/1000;
     m_max_steps->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
-    m_progress->setValue(val);
+    emit setValue(val);
+    
 }
 
 

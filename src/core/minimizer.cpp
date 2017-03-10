@@ -44,8 +44,7 @@ NonLinearFitThread::~NonLinearFitThread()
 
 void NonLinearFitThread::run()
 {
-    m_best_intermediate = m_model->ExportJSON();
-    m_last_parameter = m_model->ExportJSON();
+
     m_steps = 0;
     m_converged = false;
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
@@ -61,6 +60,9 @@ void NonLinearFitThread::run()
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> model)
 {
     m_model = model->Clone();
+    m_model->Calculate();
+    m_best_intermediate = m_model->ExportJSON();
+    m_last_parameter = m_model->ExportJSON();
     m_model->setLockedParameter(model->LockedParamters());
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
@@ -289,12 +291,15 @@ int Minimizer::Minimize(OptimizationType runtype)
     return 1;
 }
 
-QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype)
+QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype, bool start)
 {
     QPointer<NonLinearFitThread> thread = new NonLinearFitThread;
     thread->setModel(model);
     thread->setOptimizationRun(runtype);
-    QThreadPool::globalInstance()->start(thread);
+    if(start)
+        QThreadPool::globalInstance()->start(thread);
+    else
+        
     return thread;
 }
 

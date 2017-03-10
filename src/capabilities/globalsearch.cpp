@@ -33,7 +33,7 @@
 
 #include "globalsearch.h"
 
-GlobalSearch::GlobalSearch(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+GlobalSearch::GlobalSearch(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_initial_guess(false), m_optimize(true)
 {
     
     
@@ -108,6 +108,8 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
     QVector<QPointer<NonLinearFitThread> > thread_rows;
     QThreadPool::globalInstance()->setMaxThreadCount(maxthreads -1 );
     m_allow_break = false;
+    if(m_initial_guess)
+        m_model->InitialGuess();
     while(!m_allow_break)
     {
         QCoreApplication::processEvents();
@@ -124,8 +126,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             m_allow_break = true;
         m_model->setConstants(parameter);
         m_full_list.append( parameter );
-        
-        QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_type);
+        QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_type, m_optimize);
         thread_rows << thread;
         connect(thread, SIGNAL(finished(int)), this, SIGNAL(SingeStepFinished(int)), Qt::DirectConnection);
         
@@ -157,16 +158,17 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             }
         }
     }
-    
-    if(!m_model->SupportThreads())
+    if(m_optimize)
     {
-        QThreadPool::globalInstance()->setMaxThreadCount(maxthreads);
-        while(QThreadPool::globalInstance()->activeThreadCount())
+        if(!m_model->SupportThreads())
         {
-            QCoreApplication::processEvents();
+            QThreadPool::globalInstance()->setMaxThreadCount(maxthreads);
+            while(QThreadPool::globalInstance()->activeThreadCount())
+            {
+                QCoreApplication::processEvents();
+            }
         }
     }
-    
     for(int i = 0; i < threads.size(); ++i)
     {
         VisualData dataRow1;

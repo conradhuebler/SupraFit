@@ -473,6 +473,7 @@ void ModelWidget::GlobalMinimize()
     Waiter wait;
     if(m_pending)
         return;
+    
     m_pending = true;
     CollectParameters();
     QJsonObject json = m_model->ExportJSON();
@@ -482,7 +483,6 @@ void ModelWidget::GlobalMinimize()
     m_model->setOptimizerConfig(config);
     int result;
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
-    
     if(result == 1)
     {
         json = m_minimizer->Parameter();

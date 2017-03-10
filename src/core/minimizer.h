@@ -44,12 +44,13 @@ public:
    
     QSharedPointer<AbstractTitrationModel> Model() const { return m_model; }
     inline void setOptimizationRun(OptimizationType runtype) { m_runtype = runtype; }
-    virtual void run ();
+    virtual void run();
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
     inline QJsonObject BestIntermediateParameter() const { return m_best_intermediate; }
     void setParameter(const QJsonObject &json);
     inline void setOptimizerConfig(const OptimizerConfig &config) { m_opt_config = config; }
     inline bool Converged() const { return m_converged; }
+    
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
@@ -88,7 +89,7 @@ public:
     QJsonObject Parameter() const{ return m_last_parameter; };
     void setParameter(const QJsonObject &json, const QList<int> &locked);
     void setParameter(const QJsonObject &json);
-    QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype);
+    QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype, bool start = true);
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     OptimizerConfig m_opt_config;

@@ -53,6 +53,8 @@ public:
     inline void setParameter(const QVector<QVector< qreal > > &parameter) { m_parameter = parameter; }
     inline void setOptimizationFlags(OptimizationType type) { m_type = type; }
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
+    inline void setOptimize(bool optimize) { m_optimize = optimize; }
+    inline void setInitialGuess(bool guess) { m_initial_guess = guess; }
     inline QVector<QList<qreal > > FullList() const { return m_full_list; }
     QList<QList<QPointF> >  LocalSearch();
     QList<QJsonObject > SearchGlobal();
@@ -76,7 +78,7 @@ private:
     GlobalSearchResult last_result;
     double error_max;
     QSharedPointer<Minimizer> m_minimizer;
-    bool m_allow_break;
+    bool m_allow_break, m_optimize, m_initial_guess;
     QVector<VisualData> m_3d_data;
     
 signals:

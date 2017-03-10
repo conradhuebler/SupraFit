@@ -91,10 +91,11 @@ public:
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
+    
     QProgressBar *m_progress;
     
     QSharedPointer<AbstractTitrationModel> m_model;
-    QPointer<QCheckBox > m_optim;
+    QCheckBox  *m_optim, *m_initial_guess;
     QPointer<QPushButton > m_2d_search, m_1d_search, m_scan, m_interrupt;
     QLabel *m_max_steps;
     GlobalSearchResult last_result;
@@ -122,10 +123,12 @@ private slots:
     void SearchGlobal();
     void IncrementProgress(int time);
     void MaxSteps();
+    void setOptions();
     
 signals:
     void PlotFinished(int runtype);
     void MultiScanFinished(int runtype);
+    void setValue(int value);
 };
 
 #endif // ADVANCEDSEARCH_H
