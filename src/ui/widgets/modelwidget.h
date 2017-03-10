@@ -198,6 +198,7 @@ private slots:
     void TogglePlot();
     void ToggleConcentrations();
     void ToggleStatisticDialog();
+    void ToggleSearchTable();
     void Save2File();
     void ExportSimModel();
     

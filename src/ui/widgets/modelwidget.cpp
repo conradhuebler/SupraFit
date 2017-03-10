@@ -374,7 +374,9 @@ void ModelWidget::DiscreteUI()
     connect(actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
     connect(actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
     connect(actions, SIGNAL(ToggleConcentrations()), this, SLOT(ToggleConcentrations()));
+    connect(actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
     connect(actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
+    
     m_layout->addWidget(actions, 3, 0,1,m_model->ConstantSize()+3);  
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
     m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);  
@@ -500,6 +502,11 @@ void ModelWidget::GlobalMinimize()
 void ModelWidget::ToggleStatisticDialog()
 {
     m_statistic_dialog->show();
+}
+
+void ModelWidget::ToggleSearchTable()
+{
+    m_table_result->show();
 }
 
 

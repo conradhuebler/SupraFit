@@ -44,7 +44,7 @@ public:
 private:
     void setUi();
     void resizeButtons();
-    PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced, *m_plot_3d, *m_statistics, *m_concentration, *m_save, *m_simulate, *m_plots;
+    PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced, *m_plot_3d, *m_statistics, *m_concentration, *m_save, *m_simulate, *m_plots, *m_search;
     QPushButton *m_toggle;
     QWidget *m_second;
     bool m_hidden;
@@ -63,6 +63,7 @@ signals:
     void ToggleStatisticDialog();
     void Save2File();
     void ToggleConcentrations();
+    void ToggleSearch();
     void NewGuess();
     void ExportSimModel();
 };

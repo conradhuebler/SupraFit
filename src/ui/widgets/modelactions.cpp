@@ -53,7 +53,7 @@ void ModelActions::setUi()
     m_new_guess = new PushButton(tr("New Guess"));
     m_simulate = new PushButton(tr("Export Simulated"));
     m_plots = new PushButton(tr("Toggle Charts"));
-    
+    m_search = new PushButton(tr("Search Table"));
     m_toggle = new QPushButton(tr("..more.."));
     m_toggle->setFlat(true);
     
@@ -80,6 +80,7 @@ void ModelActions::setUi()
     h_layout->addWidget(m_concentration);
     h_layout->addWidget(m_save); 
     h_layout->addWidget(m_simulate);
+    h_layout->addWidget(m_search);
     h_layout->addStretch();
     h_layout->setAlignment(Qt::AlignLeft);
     m_second->setLayout(h_layout);
@@ -97,6 +98,7 @@ void ModelActions::setUi()
     connect(m_concentration, SIGNAL(clicked()), this, SIGNAL(ToggleConcentrations()));
     connect(m_simulate, SIGNAL(clicked()), this, SIGNAL(ExportSimModel()));
     connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
+    connect(m_search, SIGNAL(clicked()), this, SIGNAL(ToggleSearch()));
     m_second->setMaximumHeight(0);
     setLayout(layout);
 }
