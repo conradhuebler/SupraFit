@@ -31,7 +31,7 @@
 
 #include "optimizerflagwidget.h"
 
-OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants), m_hidden(true)
+OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts), m_hidden(true)
 {
      setUi();
 
@@ -56,7 +56,7 @@ void OptimizerFlagWidget::setUi()
     m_ComplexationConstants = new QCheckBox(tr("Optimize Complexation Constants"));
     m_ComplexationConstants->setChecked((m_type & OptimizationType::ComplexationConstants) == OptimizationType::ComplexationConstants);
     m_OptimizeShifts = new QCheckBox(tr("Optimize Shifts"));
-    m_OptimizeShifts->setChecked(!((m_type & OptimizationType::OptimizeShifts) == OptimizationType::OptimizeShifts));
+    m_OptimizeShifts->setChecked(((m_type & OptimizationType::OptimizeShifts) == OptimizationType::OptimizeShifts));
     m_ConstrainedShifts = new QCheckBox(tr("Optimize Shift\nParameters Constrained"));
     m_ConstrainedShifts->setChecked((m_type & OptimizationType::UnconstrainedShifts) != OptimizationType::UnconstrainedShifts);
     m_IntermediateShifts = new QCheckBox(tr("Optimize Nonzero-Concentration and\nNon-saturated Shifts"));

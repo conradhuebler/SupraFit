@@ -40,7 +40,7 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
     setName(tr("1:1-Model"));
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
     InitialGuess();
-    m_complex_constants = QList<qreal>() << m_K11;
+    
     
     m_constant_names = QStringList() << tr("1:1");
 }
@@ -50,8 +50,7 @@ ItoI_Model::ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationM
     setName(tr("1:1-Model"));
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
     InitialGuess();
-    m_complex_constants = QList<qreal>() << m_K11;
-    
+        
     m_constant_names = QStringList() << tr("1:1");
 }
 
@@ -64,10 +63,11 @@ ItoI_Model::~ItoI_Model()
 void ItoI_Model::InitialGuess()
 {
     m_K11 = 4;
-    
+    m_complex_constants = QList<qreal>() << m_K11;
     m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
+    m_pure_signals_parameter = SignalModel()->firstRow();
+    setOptParamater(m_complex_constants);
     
-    setOptParamater(m_K11);
     QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
     {

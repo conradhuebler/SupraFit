@@ -39,7 +39,7 @@
 
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false)
 {
-    m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::UnconstrainedShifts);
+    m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts);
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());
     
@@ -47,7 +47,7 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     m_model_error = new DataTable(SignalCount(),DataPoints());
 
     
-    m_pure_signals_parameter = SignalModel()->firstRow();
+    
     m_data = data;    
 }
 
