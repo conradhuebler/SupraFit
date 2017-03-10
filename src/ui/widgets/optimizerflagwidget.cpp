@@ -64,7 +64,8 @@ void OptimizerFlagWidget::setUi()
     m_IgnoreZeroConcentrations = new QCheckBox(tr("Dont Optimize Zero\nConcentration Shifts"));
     m_IgnoreZeroConcentrations->setChecked((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations);
     
-    m_more = new QPushButton(tr("..less.."));
+    m_more = new QPushButton(tr("..more.."));
+    m_more->setMaximumSize(50,30);
     connect(m_more, SIGNAL(clicked()), this, SLOT(ShowFirst()));
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(m_ComplexationConstants);
@@ -85,7 +86,7 @@ void OptimizerFlagWidget::setUi()
     EnableShiftSelection();
     ConstrainedChanged();
     m_more->setFlat(true);
-    QTimer::singleShot(0, this, SLOT(ShowFirst()));
+    m_first_row->setMaximumHeight(0);
 }
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
@@ -153,30 +154,23 @@ void OptimizerFlagWidget::ShowFirst()
     
     if(!m_hidden)
     {
-        QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
-        QRect geom = geometry();
-        geom.setHeight(m_first_row->geometry().height());
+        QPropertyAnimation *animation = new QPropertyAnimation(m_first_row, "maximumHeight");
+        animation->setEasingCurve(QEasingCurve::InOutCubic);
         animation->setDuration(200);
-        animation->setStartValue(geom);
-        geom.setHeight(2*m_first_row->geometry().height());
-        animation->setEndValue(geom);
-        m_first_row->show();
+        animation->setStartValue(100);
+        animation->setEndValue(0);
         animation->start();
-        m_more->setText(tr("..less.."));
-//         m_more->setFlat(true);
+        m_more->setText(tr("..more.."));
         m_hidden = true;
     }else{
-        QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
-        QRect geom = geometry();
-        geom.setHeight(2*m_first_row->geometry().height());
-        animation->setDuration(200);
-        animation->setStartValue(geom);
-        geom.setHeight(m_first_row->geometry().height());
-        animation->setEndValue(geom);
+        QPropertyAnimation *animation = new QPropertyAnimation(m_first_row, "maximumHeight");
+        
+        animation->setEasingCurve(QEasingCurve::InOutCubic);
+        animation->setDuration(200);         
+        animation->setStartValue(0);
+        animation->setEndValue(100);
         animation->start();
-        m_first_row->hide();
-        m_more->setText(tr("..more.."));
-//         m_more->setFlat(false);    
+        m_more->setText(tr("..less.."));
         m_hidden = false;
     }
 }

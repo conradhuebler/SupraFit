@@ -97,7 +97,7 @@ void ModelActions::setUi()
     connect(m_concentration, SIGNAL(clicked()), this, SIGNAL(ToggleConcentrations()));
     connect(m_simulate, SIGNAL(clicked()), this, SIGNAL(ExportSimModel()));
     connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
-    QTimer::singleShot(0, this, SLOT(ToggleMore()));
+    m_second->setMaximumHeight(0);
     setLayout(layout);
 }
 
@@ -124,28 +124,22 @@ void ModelActions::ToggleMore()
 
     if(!m_hidden)
     {
-//         QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
-//         QRect geom = geometry();
-//         geom.setHeight(m_second->geometry().height());
-//         animation->setDuration(200);
-//         animation->setStartValue(geom);
-//         geom.setHeight(2*m_second->geometry().height());
-//         animation->setEndValue(geom);
-        m_second->show();
-//         animation->start();
-        m_toggle->setText(tr("..less.."));
+        QPropertyAnimation *animation = new QPropertyAnimation(m_second, "maximumHeight");
+        animation->setEasingCurve(QEasingCurve::InOutCubic);
+        animation->setDuration(200);
+        animation->setStartValue(100);
+        animation->setEndValue(0);
+        animation->start();
+        m_toggle->setText(tr("..more.."));
         m_hidden = true;
     }else{
-//         QPropertyAnimation *animation = new QPropertyAnimation(this, "geometry");
-//         QRect geom = geometry();
-//         geom.setHeight(2*m_second->geometry().height());
-//         animation->setDuration(200);
-//         animation->setStartValue(geom);
-//         geom.setHeight(m_second->geometry().height());
-//         animation->setEndValue(geom);
-//         animation->start();
-        m_second->hide();
-        m_toggle->setText(tr("..more.."));  
+        QPropertyAnimation *animation = new QPropertyAnimation(m_second, "maximumHeight");
+        animation->setEasingCurve(QEasingCurve::InOutCubic);
+        animation->setDuration(200);         
+        animation->setStartValue(0);
+        animation->setEndValue(100);
+        animation->start();
+        m_toggle->setText(tr("..less.."));  
         m_hidden = false;
     }
 }
