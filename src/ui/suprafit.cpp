@@ -259,11 +259,10 @@ void MainWindow::LoadProjectAction()
         QJsonObject toplevel;
         if(JsonHandler::ReadJsonFile(toplevel, str))
         {
-            QPointer<DataClass > data = new DataClass(toplevel);
+            QPointer<const DataClass > data = new DataClass(toplevel);
             if(data->DataPoints() != 0)
             {
-                if(SetData(new DataClass(new DataClass(data)), str))
-                    m_model_dataholder->AddToWorkspace(toplevel);
+                SetData(data, str);
             }
             else
                 QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
