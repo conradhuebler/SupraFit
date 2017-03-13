@@ -29,12 +29,12 @@
 
 StatisticWidget::StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : m_model(model), QWidget(parent)
 {
-
+    
     QVBoxLayout *m_layout = new QVBoxLayout;    
     m_overview = new QTextEdit;
     m_overview->setReadOnly(true);
     QPalette p = m_overview->palette();
-
+    
     p.setColor(QPalette::Active, QPalette::Base, Qt::gray);
     p.setColor(QPalette::Inactive, QPalette::Base, Qt::gray);
     p.setColor(QPalette::Inactive, QPalette::Text, Qt::black);
@@ -94,18 +94,32 @@ void StatisticWidget::Update()
     
     m_short = overview;
     overview.clear();
+    QString moco;
+    moco += "<p><b>Unrelaxed Continuouse Variation / Model Comparison Results:</b></p>\n";
+    moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
+    for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
+    {
+        QJsonObject result = m_model->getMoCoStatisticResult(i);   
+        QJsonObject confidence = result["confidence"].toObject();
+        
+        moco += TextFromConfidence(result);
+    }
+    if(m_model->getMoCoStatisticResult())
+        overview += moco;
+    
     QString cv;
-    cv += "<p><b>Continuouse Variation / Model Comparison Results:</b></p>\n";
+    cv += "<p><b>Relaxed Continuouse Variation / Model Comparison Results:</b></p>\n";
     cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
     for(int i = 0; i < m_model->getCVStatisticResult(); ++i)
     {
-     QJsonObject result = m_model->getCVStatisticResult(i);   
-     QJsonObject confidence = result["confidence"].toObject();
-     
-     cv += TextFromConfidence(result);
+        QJsonObject result = m_model->getCVStatisticResult(i);   
+        QJsonObject confidence = result["confidence"].toObject();
+        
+        cv += TextFromConfidence(result);
     }
-     if(m_model->getCVStatisticResult())
-         overview += cv;
+    if(m_model->getCVStatisticResult())
+        overview += cv;
+    
     
     QString mc;
     mc += "<p><b>Monte Carlo Simulation Results:</b></p>\n";
@@ -116,8 +130,8 @@ void StatisticWidget::Update()
         
         mc += TextFromConfidence(result);
     }
-     if(m_model->getMCStatisticResult())
-         overview += mc;   
+    if(m_model->getMCStatisticResult())
+        overview += mc;   
     m_overview->setText(m_short + overview);
     m_statistics = overview;
 }

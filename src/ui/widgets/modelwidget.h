@@ -201,6 +201,7 @@ private slots:
     void ToggleSearchTable();
     void Save2File();
     void ExportSimModel();
+    void FastConfidence();
     
 public slots:
     void recalulate();

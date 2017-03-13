@@ -85,6 +85,7 @@ public:
     inline void setConfig(const CVConfig &config) { m_config = config;}
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
+    bool FastConfidence();
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<QJsonObject > Results() const { return m_result; }

@@ -150,6 +150,10 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(m_threads);
     layout->addLayout(h_layout);
     
+    m_auto_confidence = new QCheckBox(tr("Automatic Confidence Calculation"));
+    m_auto_confidence->setCheckable(qApp->instance()->property("auto_confidence").toBool());
+    layout->addWidget(m_auto_confidence);
+    
     layout->addWidget(new QLabel(tr("Set directory behavior to:")));
     
     m_current_dir = new QRadioButton(tr("Current Directory, where Application was started"), generalTab);
@@ -285,6 +289,7 @@ void ConfigDialog::accept()
    qApp->instance()->setProperty("chartanimation", m_animated_charts->isChecked());
    qApp->instance()->setProperty("workingdir", m_working->text());
    qApp->instance()->setProperty("dirlevel", m_dirlevel);
+   qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
    QDialog::accept(); 
 }
 

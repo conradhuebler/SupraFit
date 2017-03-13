@@ -183,7 +183,7 @@ CVConfig StatisticDialog::getCVConfig()
     config.increment = m_cv_increment->value();
     config.maxsteps = m_cv_steps->value();
     qreal error = m_model.data()->SumofSquares();
-    config.maxerror =error+error*m_cv_maxerror->value()/100;
+    config.maxerror =error+error*m_cv_maxerror->value()/double(100);
     config.relax = true;
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
@@ -258,7 +258,7 @@ void StatisticDialog::CalculateError()
     if(!m_model.data())
         return;
     qreal error = m_model.data()->SumofSquares();
-    qreal max_error = error+error*m_cv_maxerror->value()/100;
+    qreal max_error = error+error*m_cv_maxerror->value()/double(100);
     QString message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_error) + "\nF-Test is not respected!";
     m_error_info->setText(message);
 }

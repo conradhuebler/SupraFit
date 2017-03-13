@@ -238,12 +238,14 @@ QJsonObject AbstractTitrationModel::ExportJSON(bool statistics) const
         for(int i = 0; i < m_cv_statistics.size(); ++i)
         {
             statisticObject["CVResult_"+QString::number(i)] = m_cv_statistics[i];
-            
         }
         for(int i = 0; i < m_mc_statistics.size(); ++i)
         {
             statisticObject["MCResult_"+QString::number(i)] = m_mc_statistics[i];
-            
+        }
+        for(int i = 0; i < m_moco_statistics.size(); ++i)
+        {
+            statisticObject["MoCoResult_"+QString::number(i)] = m_moco_statistics[i];
         }
         json["statistics"] = statisticObject;
     }
@@ -319,6 +321,8 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson)
             m_cv_statistics << json["statistics"].toObject()[str].toObject();
         else if(str.contains("MC"))
             m_mc_statistics << json["statistics"].toObject()[str].toObject();
+        else if(str.contains("MoCo"))
+            m_moco_statistics << json["statistics"].toObject()[str].toObject();
     }
     
     if(topjson["runtype"].toInt() != 0)
@@ -400,6 +404,16 @@ void AbstractTitrationModel::setMCStatistic(const QJsonObject &result, int i)
         m_mc_statistics[i] = result;
     else
         m_mc_statistics << result; 
+    emit StatisticChanged(result, i);
+     emit Recalculated();
+}
+
+void AbstractTitrationModel::setMoCoStatistic(const QJsonObject &result, int i)
+{
+    if(i < m_moco_statistics.size())
+        m_moco_statistics[i] = result;
+    else
+        m_moco_statistics << result; 
     emit StatisticChanged(result, i);
      emit Recalculated();
 }

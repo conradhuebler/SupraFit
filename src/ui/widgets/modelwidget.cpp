@@ -490,9 +490,10 @@ void ModelWidget::GlobalMinimize()
         m_model->Calculate();
         Repaint();
         m_model->setLastOptimzationRun(m_optim_flags->getFlags());
+        if(qApp->instance()->property("auto_confidence").toBool())
+            FastConfidence();
     }
-    
-    
+
     m_statistic = false;
     m_pending = false; 
 }
@@ -613,11 +614,35 @@ void ModelWidget::MCStatistic(MCConfig config)
     delete monte_carlo;
     
 }
+
+void ModelWidget::FastConfidence()
+{
+    CVConfig config;
+    config.relax = false;
+    config.increment = 1e-4;
+    qreal error = m_model.data()->SumofSquares();
+    config.maxerror = error+error*0.05;
+    config.optimizer_config = m_model->getOptimizerConfig();
+    config.runtype = m_optim_flags->getFlags();
+    ContinuousVariation *statistic = new ContinuousVariation(config, this);
+    QJsonObject json = m_model->ExportJSON();
+    statistic->setModel(m_model);
+    statistic->setParameter(json);
+    
+    statistic->FastConfidence();
+    QList<QJsonObject > constant_results = statistic->Results();
+    for(int i = 0; i < constant_results.size(); ++i)
+    {
+        m_model->setMoCoStatistic(constant_results[i], i);
+    }
+}
+
 void ModelWidget::CVStatistic()
 {
     CVConfig config = m_statistic_dialog->getCVConfig();
     CVStatistic(config);
 }
+
 void ModelWidget::CVStatistic(CVConfig config)
 {
     Waiter wait;

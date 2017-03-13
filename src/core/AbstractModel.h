@@ -131,6 +131,7 @@ public:
     inline QStringList ConstantNames() const { return m_constant_names; }
     void setCVStatistic(const QJsonObject &result, int i);
     void setMCStatistic(const QJsonObject &result, int i);
+    void setMoCoStatistic(const QJsonObject &result, int i);
     /*
      * definies wheater this model can calculate equilibrium concentrations in parallel
      * should be useful when the equilibrium concentrations are calculated numerically
@@ -138,8 +139,10 @@ public:
     virtual bool SupportThreads() const = 0;
     QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
     QJsonObject getCVStatisticResult(int i) const { return m_cv_statistics[i]; }
+    QJsonObject getMoCoStatisticResult(int i) const { return m_moco_statistics[i]; }
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
     int getCVStatisticResult() const { return m_cv_statistics.size(); }
+    int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
     inline QList<qreal > Constants() const { return m_complex_constants; }
     inline qreal Constant(int i) const { return m_complex_constants[i]; }
     virtual qreal BC50();
@@ -208,6 +211,7 @@ protected:
     QStringList m_constant_names;
     QList< QJsonObject> m_mc_statistics;
     QList< QJsonObject> m_cv_statistics;
+    QList< QJsonObject> m_moco_statistics;
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror;
     int m_used_variables;
         

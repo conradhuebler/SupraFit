@@ -73,7 +73,7 @@ private:
     QTabWidget *m_mainwidget;
     QDialogButtonBox *m_buttons;
     QComboBox *m_charttheme;
-    QCheckBox *m_animated_charts;
+    QCheckBox *m_animated_charts, *m_auto_confidence;
     void setUi();
     void createGeneralTab();
     void createOptimTab();

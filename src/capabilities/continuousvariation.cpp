@@ -177,6 +177,64 @@ ContinuousVariation::~ContinuousVariation()
     
 }
 
+bool ContinuousVariation::FastConfidence()
+{
+    if(!m_model)
+        return false;
+    for(int i = 0; i < m_series.size(); ++i)
+        m_series[i].clear();
+    m_series.clear();
+    
+     m_minimizer->setModel(m_model);
+    QJsonObject optimized = m_model.data()->ExportJSON();
+    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
+    
+    m_model.data()->Calculate();
+    QThreadPool *threadpool = QThreadPool::globalInstance();
+    QList<QPointer <ContinuousVariationThread > > threads;
+    int maxthreads =qApp->instance()->property("threads").toInt();
+    threadpool->setMaxThreadCount(maxthreads);
+    allow_break = false;
+    for(int i = 0; i < parameter.size(); ++i)
+    {
+        QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config);
+        connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        thread->setModel(m_model);
+        thread->SetParameterID(i);
+        thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
+        if(m_model.data()->SupportThreads())
+        {
+            thread->run();
+        }
+        else
+            threadpool->start(thread);
+        threads << thread;
+        if(allow_break)
+            break;
+    }
+    
+    if(!m_model.data()->SupportThreads())
+    {
+        while(threadpool->activeThreadCount())
+        {
+            QCoreApplication::processEvents();
+        }
+    }
+
+    bool converged = true;
+    for(int i = 0; i < threads.size(); ++i)
+    {
+        m_result << threads[i]->getResult();
+        m_series << threads[i]->getSeries();
+        converged = converged && threads[i]->Converged();
+        delete threads[i];
+    }
+    qDeleteAll(threads);
+    return converged;
+}
+
+
 bool ContinuousVariation::ConfidenceAssesment()
 {
     if(!m_model)

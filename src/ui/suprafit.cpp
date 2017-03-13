@@ -381,6 +381,7 @@ void MainWindow::ReadSettings()
     qApp->instance()->setProperty("workingdir", _settings.value("workingdir", "."));
     qApp->instance()->setProperty("dirlevel", _settings.value("dirlevel", 0));
     qApp->instance()->setProperty("lastdir", _settings.value("lastdir", "."));
+    qApp->instance()->setProperty("auto_confidence", _settings.value("auto_confidence", 1));
     _settings.endGroup();
 }
 
@@ -406,6 +407,7 @@ void MainWindow::WriteSettings(bool ignore_window_state)
     _settings.setValue("workingdir", qApp->instance()->property("workingdir"));
     _settings.setValue("dirlevel", qApp->instance()->property("dirlevel"));
     _settings.setValue("lastdir", qApp->instance()->property("lastdir"));
+    _settings.setValue("auto_confidence", qApp->instance()->property("auto_confidence"));
     _settings.endGroup();
      
     if(!ignore_window_state)
