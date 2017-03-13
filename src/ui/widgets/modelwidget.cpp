@@ -619,7 +619,7 @@ void ModelWidget::FastConfidence()
 {
     CVConfig config;
     config.relax = false;
-    config.increment = 1e-4;
+    config.increment = 2.5e-4;
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error+error*0.05;
     config.optimizer_config = m_model->getOptimizerConfig();

@@ -30,7 +30,7 @@
 
 #include "continuousvariation.h"
 
-ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config) : m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
+ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config, bool check_convergence) : m_config(config), m_check_convergence(check_convergence), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
 {
     setAutoDelete(false);
 }
@@ -104,7 +104,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
     {
         
         par = constant_ + double(m)*increment;
-       
+        
         consts[m_parameter_id] = par;
         m_model.data()->setConstants(consts);
         
@@ -124,7 +124,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         else
             new_error = m_model.data()->SumofAbsolute();
         
-        if(new_error < m_error)
+        if(new_error < m_error && m_check_convergence)
             counter++;
         qreal rect = qMin(new_error,old_error)*qAbs(increment);
         qreal triangle = 0.5*increment*qAbs(new_error-old_error);
@@ -133,10 +133,10 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         
         if(new_error/m_error <= double(1.005) && new_error > m_error)
             integ_1 += integ;
-
+        
         if(new_error > m_config.maxerror)
         {
-             break;
+            break;
         }
         if(direction)
             series.append(QPointF(par,new_error));
@@ -184,8 +184,8 @@ bool ContinuousVariation::FastConfidence()
     for(int i = 0; i < m_series.size(); ++i)
         m_series[i].clear();
     m_series.clear();
-    
-     m_minimizer->setModel(m_model);
+    m_result.clear();
+    m_minimizer->setModel(m_model);
     QJsonObject optimized = m_model.data()->ExportJSON();
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
@@ -195,9 +195,10 @@ bool ContinuousVariation::FastConfidence()
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
     allow_break = false;
+    
     for(int i = 0; i < parameter.size(); ++i)
     {
-        QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config);
+        QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config, false);
         connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
@@ -221,17 +222,102 @@ bool ContinuousVariation::FastConfidence()
             QCoreApplication::processEvents();
         }
     }
-
+    
     bool converged = true;
+    QHash<QString, QList<qreal> > constants = ConstantsFromThreads(threads);
+    qDeleteAll(threads);
+    if(constants.size() == 1)
+        return true;
+    QHashIterator<QString, QList<qreal> > i(constants);
+    while (i.hasNext()) 
+    {
+        i.next();
+        for(qreal par = i.value().first(); par <= i.value().last(); par += m_config.increment)
+        {
+            QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config, false);
+            QList<qreal > consts = m_model.data()->Constants();
+            if(i.hasNext())
+            {
+                thread->SetParameterID(1);
+                consts[0] = par;
+            }
+            else
+            {
+                thread->SetParameterID(0);
+                consts[1] = par;
+            }
+            m_model->setConstants(consts);
+            thread->setModel(m_model);
+            thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
+            if(m_model.data()->SupportThreads())
+            {
+                thread->run();
+            }
+            else
+                threadpool->start(thread);
+            threads << thread;
+        }
+    }
+    
+    if(!m_model.data()->SupportThreads())
+    {
+        while(threadpool->activeThreadCount())
+        {
+            QCoreApplication::processEvents();
+        }
+    }
+    
+    QHash<QString, QList<qreal> > final_constants = ConstantsFromThreads(threads);
+    qDeleteAll(threads);
+    QHashIterator<QString, QList<qreal> > j(constants);
+    while (j.hasNext()) 
+    {
+        j.next();
+        QList<qreal > values = j.value();
+        qreal min = values.first();
+        qreal max = values.first();
+        for(int i = 0; i < values.size(); ++i)
+        {
+            if(values[i] < min)
+                min = values[i];
+            if(values[i] > max)
+                max = values[i];
+        }
+        QJsonObject controller;
+        controller["runtype"] = m_config.runtype;
+        controller["steps"] = m_config.maxsteps;
+        controller["increment"] = m_config.increment;
+        controller["maxerror"] = m_config.maxerror;
+        QJsonObject result;
+        result["controller"] = controller;
+        result["name"] = j.key();
+        result["value"] = parameter[m_model->ConstantNames().indexOf(j.key())];
+        result["type"] = "Complexation Constant";
+        QJsonObject confidence;
+        confidence["upper_5"] = max;
+        confidence["lower_5"] = min;
+        result["confidence"] = confidence;
+        m_result << result;
+    }
+    return converged;
+}
+
+QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QPointer<ContinuousVariationThread> >& threads)
+{
+    QHash<QString, QList<qreal> > constants;
     for(int i = 0; i < threads.size(); ++i)
     {
-        m_result << threads[i]->getResult();
-        m_series << threads[i]->getSeries();
-        converged = converged && threads[i]->Converged();
+        if(threads.size() == 1)
+            m_result << threads[i]->getResult();
+        
+        QList<qreal > vars;
+        if(!threads[i])
+            continue;
+        vars << threads[i]->getResult()["confidence"].toObject()["lower_5"].toDouble() << threads[i]->getResult()["confidence"].toObject()["upper_5"].toDouble();
+        constants[threads[i]->getResult()["name"].toString()].append( vars );
         delete threads[i];
     }
-    qDeleteAll(threads);
-    return converged;
+    return constants;
 }
 
 
@@ -279,7 +365,7 @@ bool ContinuousVariation::ConfidenceAssesment()
             QCoreApplication::processEvents();
         }
     }
-
+    
     bool converged = true;
     for(int i = 0; i < threads.size(); ++i)
     {

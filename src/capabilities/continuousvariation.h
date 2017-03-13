@@ -43,7 +43,7 @@ class ContinuousVariationThread : public QObject, public QRunnable
   Q_OBJECT
 public:
 
-    ContinuousVariationThread(const CVConfig &config);
+    ContinuousVariationThread(const CVConfig &config, bool check_convergence = true);
     ~ContinuousVariationThread();
     void setModel(QSharedPointer<AbstractTitrationModel> model); 
     inline void SetParameterID( int id ) { m_parameter_id = id; }
@@ -65,7 +65,7 @@ private:
     int m_parameter_id;
     QJsonObject m_result;
     qreal m_error;
-    bool m_converged;
+    bool m_converged, m_check_convergence;
     QList<QPointF> m_series;
     CVConfig m_config;
     bool allow_break;
@@ -101,6 +101,8 @@ private:
     QList<QJsonObject > m_result;
     CVConfig m_config;
     bool allow_break;
+    QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads);
+    
 signals:
     void StopSubThreads();
     void IncrementProgress(int time);
