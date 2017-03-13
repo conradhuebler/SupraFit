@@ -326,9 +326,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
     
-//     m_new_guess = new QPushButton(tr("New Guess"));
-//     m_new_guess->setMaximumSize(80, 30);
-//     connect(m_new_guess, SIGNAL(clicked()), this, SLOT(NewGuess()));
+
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)

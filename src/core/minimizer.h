@@ -38,7 +38,7 @@ class NonLinearFitThread : public QObject, public QRunnable
 
 public:
     
-    NonLinearFitThread();
+    NonLinearFitThread(bool exchange_statistics = true);
     ~NonLinearFitThread();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
    
@@ -61,6 +61,8 @@ private:
     bool m_converged;
     int m_steps;
     OptimizationType m_runtype;
+    bool m_exc_statistics;
+    
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);
@@ -73,7 +75,7 @@ class Minimizer : public QObject
 {
     Q_OBJECT
 public:
-    Minimizer(QObject *parent = 0);
+    Minimizer(bool exchange_statistics = true, QObject *parent = 0);
     ~Minimizer();
     void setModel(const QSharedPointer<AbstractTitrationModel> model);
     void setModelCloned(const QSharedPointer<AbstractTitrationModel> model);
@@ -96,6 +98,7 @@ private:
     bool m_inform_config_changed;
     QString OptPara2String() const;
     QJsonObject m_last_parameter;
+    bool m_exc_statistics;
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);

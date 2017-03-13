@@ -223,7 +223,7 @@ void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
             *m_opt_para[i] = parameter[i];
 }
 
-QJsonObject AbstractTitrationModel::ExportJSON() const
+QJsonObject AbstractTitrationModel::ExportJSON(bool statistics) const
 {
     QJsonObject json, toplevel;
     QJsonObject constantObject;
@@ -232,18 +232,21 @@ QJsonObject AbstractTitrationModel::ExportJSON() const
         constantObject[QString::number(i)] = (QString::number(Constants()[i]));
     }
     json["constants"] = constantObject;
-    QJsonObject statisticObject;
-    for(int i = 0; i < m_cv_statistics.size(); ++i)
+    if(statistics)
     {
-        statisticObject["CVResult_"+QString::number(i)] = m_cv_statistics[i];
-        
+        QJsonObject statisticObject;
+        for(int i = 0; i < m_cv_statistics.size(); ++i)
+        {
+            statisticObject["CVResult_"+QString::number(i)] = m_cv_statistics[i];
+            
+        }
+        for(int i = 0; i < m_mc_statistics.size(); ++i)
+        {
+            statisticObject["MCResult_"+QString::number(i)] = m_mc_statistics[i];
+            
+        }
+        json["statistics"] = statisticObject;
     }
-    for(int i = 0; i < m_mc_statistics.size(); ++i)
-    {
-        statisticObject["MCResult_"+QString::number(i)] = m_mc_statistics[i];
-        
-    }
-    json["statistics"] = statisticObject;
     QJsonObject pureShiftObject;
     for(int i = 0; i < m_pure_signals_parameter.rows(); ++i)
         if(ActiveSignals(i))

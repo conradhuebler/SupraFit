@@ -59,10 +59,10 @@ private:
     
     QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror;
     QSpinBox *m_mc_steps, *m_cv_steps;
-    QCheckBox *m_original, *m_bootstrap;
+    QCheckBox *m_original, *m_bootstrap, *m_f_test;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide;
     QProgressBar *m_progress;
-    QLabel *m_time_info;
+    QLabel *m_time_info, *m_error_info;
     OptimizerFlagWidget *m_optim_flags;
     
     QMutex mutex;
@@ -77,6 +77,7 @@ private slots:
      void Pending();
      void Update();
      void EnableWidgets();
+     void CalculateError();
      
 signals:
     void CVStatistic();

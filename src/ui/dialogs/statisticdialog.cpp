@@ -42,6 +42,7 @@ StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, Q
 //     Pending();
 //     connect(this, SIGNAL(Interrupt()), this, SLOT(Pending()));
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
+    
 }
 
 StatisticDialog::StatisticDialog(QWidget *parent) : QDialog(parent)
@@ -81,6 +82,7 @@ void StatisticDialog::setUi()
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
     setLayout(layout);
     EnableWidgets();
+    CalculateError();
 }
 
 QWidget *StatisticDialog::MonteCarloWidget()
@@ -139,27 +141,36 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     m_cv_increment->setValue(0.01);
     m_cv_increment->setDecimals(6);
     layout->addWidget(new QLabel(tr("Increment")), 0, 0);
-    layout->addWidget(m_cv_increment, 0, 1);
+    layout->addWidget(m_cv_increment, 0, 1, 1, 2);
     
     m_cv_maxerror = new QDoubleSpinBox;
     m_cv_maxerror->setMaximum(100);
     m_cv_maxerror->setSingleStep(0.5);
     m_cv_maxerror->setValue(5);
     m_cv_maxerror->setDecimals(1);
+    m_f_test = new QCheckBox(tr("Use F-Statistic"));
+    m_f_test->setChecked(false);
+    m_f_test->setDisabled(true);
+    
+    connect(m_cv_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
+    connect(m_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
     
     layout->addWidget(new QLabel(tr("Max. Error in %")), 1, 0);
     layout->addWidget(m_cv_maxerror, 1, 1);
+    layout->addWidget(m_f_test, 1, 2);
+    m_error_info = new QLabel;
+    layout->addWidget(m_error_info, 2, 0, 1, 3);
     
     m_cv_steps = new QSpinBox;
     m_cv_steps->setMaximum(1e7);
     m_cv_steps->setValue(1000);
     m_cv_steps->setSingleStep(100);
     
-    layout->addWidget(new QLabel(tr("Max. Steps")), 2, 0);
-    layout->addWidget(m_cv_steps, 2, 1);
+    layout->addWidget(new QLabel(tr("Max. Steps")), 3, 0);
+    layout->addWidget(m_cv_steps, 3, 1, 1, 2);
     
     m_cv = new QPushButton(tr("Calculate"));
-    layout->addWidget(m_cv, 3, 0, 1, 2);
+    layout->addWidget(m_cv, 4, 0, 1, 3);
     
     connect(m_cv, SIGNAL(clicked()), this, SIGNAL(CVStatistic()));
     cv_widget->setLayout(layout);
@@ -171,7 +182,9 @@ CVConfig StatisticDialog::getCVConfig()
     CVConfig config;
     config.increment = m_cv_increment->value();
     config.maxsteps = m_cv_steps->value();
-    config.maxerror = m_cv_maxerror->value();
+    qreal error = m_model.data()->SumofSquares();
+    config.maxerror =error+error*m_cv_maxerror->value()/100;
+    config.relax = true;
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(-1);
@@ -237,6 +250,17 @@ void StatisticDialog::Update()
 void StatisticDialog::EnableWidgets()
 {
     m_varianz_box->setEnabled(!m_bootstrap->isChecked());
+}
+
+
+void StatisticDialog::CalculateError()
+{
+    if(!m_model.data())
+        return;
+    qreal error = m_model.data()->SumofSquares();
+    qreal max_error = error+error*m_cv_maxerror->value()/100;
+    QString message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_error) + "\nF-Test is not respected!";
+    m_error_info->setText(message);
 }
 
 #include "statisticdialog.moc"

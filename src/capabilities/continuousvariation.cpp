@@ -30,7 +30,7 @@
 
 #include "continuousvariation.h"
 
-ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config) : m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_converged(true)
+ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config) : m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
 {
     setAutoDelete(false);
 }
@@ -107,10 +107,14 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
        
         consts[m_parameter_id] = par;
         m_model.data()->setConstants(consts);
-        m_minimizer->Minimize(m_config.runtype, locked);
         
-        QJsonObject json_exp = m_minimizer->Parameter();
-        m_model.data()->ImportJSON(json_exp);
+        if(m_config.relax)
+        {
+            m_minimizer->Minimize(m_config.runtype, locked);
+            QJsonObject json_exp = m_minimizer->Parameter();
+            m_model.data()->ImportJSON(json_exp);
+        }
+        
         m_model.data()->Calculate();
         
         qreal new_error;
@@ -129,8 +133,8 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         
         if(new_error/m_error <= double(1.005) && new_error > m_error)
             integ_1 += integ;
-        
-        if(new_error/m_error > double(1+m_config.maxerror/200))
+
+        if(new_error > m_config.maxerror)
         {
              break;
         }
@@ -159,7 +163,7 @@ void ContinuousVariationThread::Interrupt()
     allow_break = true;
 }
 
-ContinuousVariation::ContinuousVariation(const CVConfig &config, QObject *parent) : QObject(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+ContinuousVariation::ContinuousVariation(const CVConfig &config, QObject *parent) : QObject(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     
     
@@ -217,7 +221,7 @@ bool ContinuousVariation::ConfidenceAssesment()
             QCoreApplication::processEvents();
         }
     }
-    
+
     bool converged = true;
     for(int i = 0; i < threads.size(); ++i)
     {

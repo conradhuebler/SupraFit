@@ -30,7 +30,7 @@
 #include <QtCore/QDateTime>
 
 #include "minimizer.h"
-NonLinearFitThread::NonLinearFitThread():  m_runtype(OptimizationType::ComplexationConstants)
+NonLinearFitThread::NonLinearFitThread(bool exchange_statistics): m_exc_statistics(exchange_statistics), m_runtype(OptimizationType::ComplexationConstants)
 {
   setAutoDelete(false);  
     
@@ -61,8 +61,8 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> m
 {
     m_model = model->Clone();
     m_model->Calculate();
-    m_best_intermediate = m_model->ExportJSON();
-    m_last_parameter = m_model->ExportJSON();
+    m_best_intermediate = m_model->ExportJSON(m_exc_statistics);
+    m_last_parameter = m_model->ExportJSON(m_exc_statistics);
     m_model->setLockedParameter(model->LockedParamters());
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
@@ -116,7 +116,7 @@ void NonLinearFitThread::ConstrainedFit()
              if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
                  m_model->ImportJSON(m_last_parameter);
         }
-        m_last_parameter = m_model->ExportJSON();
+        m_last_parameter = m_model->ExportJSON(m_exc_statistics);
         qreal error;
         
         if(m_opt_config.error_potenz == 2)
@@ -153,7 +153,7 @@ void NonLinearFitThread::ConstrainedFit()
         else
             constants_convergence = false;
         if(error < old_error)
-            m_best_intermediate = m_model->ExportJSON();
+            m_best_intermediate = m_model->ExportJSON(m_exc_statistics);
         if(qAbs(error - old_error) < m_opt_config.Error_Convergence)
         {
             if(!error_convergence)
@@ -194,7 +194,7 @@ void NonLinearFitThread::ConstrainedFit()
             message += "Constant "+ QString(i)+ " " +QString::number(m_model->Constants()[i]) +" ";
         message += "Sum of Error is " + QString::number(error);
         message += "\n";
-        m_last_parameter = m_model->ExportJSON();
+        m_last_parameter = m_model->ExportJSON(m_exc_statistics);
         m_converged = true;
         Message(message, 2);        
     }
@@ -214,14 +214,14 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
             m_model->setLockedParameter(locked); 
     }
     int iter = NonlinearFit(m_model, parameter);
-    m_last_parameter = m_model->ExportJSON();
+    m_last_parameter = m_model->ExportJSON(m_exc_statistics);
     m_converged = true;
-    m_best_intermediate = m_model->ExportJSON();
+    m_best_intermediate = m_model->ExportJSON(m_exc_statistics);
     return iter;
 }
 
 
-Minimizer::Minimizer(QObject* parent) : QObject(parent), m_inform_config_changed(true)
+Minimizer::Minimizer(bool exchange_statistics, QObject* parent) : QObject(parent), m_exc_statistics(exchange_statistics),m_inform_config_changed(true)
 {
 }
 
@@ -271,7 +271,7 @@ int Minimizer::Minimize(OptimizationType runtype)
         m_inform_config_changed = false;
     }
     emit Message(OptPara, 2);
-    NonLinearFitThread *thread = new NonLinearFitThread;
+    NonLinearFitThread *thread = new NonLinearFitThread(m_exc_statistics);
     connect(thread, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
@@ -293,7 +293,7 @@ int Minimizer::Minimize(OptimizationType runtype)
 
 QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype, bool start)
 {
-    QPointer<NonLinearFitThread> thread = new NonLinearFitThread;
+    QPointer<NonLinearFitThread> thread = new NonLinearFitThread(m_exc_statistics);
     thread->setModel(model);
     thread->setOptimizationRun(runtype);
     if(start)

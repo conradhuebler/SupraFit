@@ -33,6 +33,7 @@ struct CVConfig
     double increment = 1e-3;
     int maxsteps = 1e4;
     double maxerror = 5;
+    bool relax = true;
     OptimizerConfig optimizer_config;
     OptimizationType runtype;
 };
