@@ -53,15 +53,15 @@ void OptimizerFlagWidget::setUi()
 {
     m_main_layout = new QVBoxLayout;
     m_main_layout->setAlignment(Qt::AlignTop);
-    m_ComplexationConstants = new QCheckBox(tr("Optimize Complexation Constants"));
+    m_ComplexationConstants = new QCheckBox(tr("Complexation Constants"));
     m_ComplexationConstants->setChecked((m_type & OptimizationType::ComplexationConstants) == OptimizationType::ComplexationConstants);
-    m_OptimizeShifts = new QCheckBox(tr("Optimize Shifts"));
+    m_OptimizeShifts = new QCheckBox(tr("Shifts"));
     m_OptimizeShifts->setChecked(((m_type & OptimizationType::OptimizeShifts) == OptimizationType::OptimizeShifts));
-    m_ConstrainedShifts = new QCheckBox(tr("Optimize Shift\nParameters Constrained"));
+    m_ConstrainedShifts = new QCheckBox(tr("Optimise Shift Constrained"));
     m_ConstrainedShifts->setChecked((m_type & OptimizationType::UnconstrainedShifts) != OptimizationType::UnconstrainedShifts);
-    m_IntermediateShifts = new QCheckBox(tr("Optimize Nonzero-Concentration and\nNon-saturated Shifts"));
+    m_IntermediateShifts = new QCheckBox(tr("Fit remaining Shifts"));
     m_IntermediateShifts->setChecked((m_type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts);
-    m_IgnoreZeroConcentrations = new QCheckBox(tr("Dont Optimize Zero\nConcentration Shifts"));
+    m_IgnoreZeroConcentrations = new QCheckBox(tr("Skip Host Shift"));
     m_IgnoreZeroConcentrations->setChecked((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations);
     
     m_more = new QPushButton(tr("..more.."));
