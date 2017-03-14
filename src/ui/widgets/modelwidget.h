@@ -183,7 +183,7 @@ private:
     bool m_statistic;
     Charts m_charts;
     QString m_logging;
-    
+    QList<QJsonObject> m_local_fits;
 private slots:
     void Repaint();
     void CollectActiveSignals();

@@ -174,6 +174,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
+    toggleActive(m_include->isChecked());
+    
 }
 
 ModelElement::~ModelElement()
@@ -186,6 +188,11 @@ void ModelElement::toggleActive(int state)
     m_show->setChecked(state);
     m_error_series->ShowLine(state);
     m_signal_series->ShowLine(state);
+    m_d_0->setEnabled(m_include->isChecked());
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    {
+        m_constants[i]->setEnabled(m_include->isChecked());
+    }
     emit ActiveSignalChanged();
 }
 
@@ -212,7 +219,8 @@ QVector<double > ModelElement::D() const
 
 void ModelElement::Update()
 {
-    
+    if(!m_include->isChecked())
+        return;
     m_d_0->setValue(m_model->PureSignal(m_no));
     for(int i = 0; i < m_model->ConstantSize(); ++i)
     {
@@ -713,31 +721,30 @@ void ModelWidget::LocalMinimize()
         return;
     Waiter wait;
     CollectParameters();
-    
+    m_local_fits.clear();
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
+        
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        QSharedPointer<AbstractTitrationModel > model = m_model->Clone();
         QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
         active_signals[i] = 1;
-        m_model->setActiveSignals(active_signals);
+        model->setActiveSignals(active_signals);
         QVector<int > v(10,0);
-        OptimizerConfig config = m_model->getOptimizerConfig();
-        m_model->setOptimizerConfig(config);
-        
+        OptimizerConfig config = model->getOptimizerConfig();
+        model->setOptimizerConfig(config);
+        m_minimizer->setModel(model);
         int result;
-        m_model->ActiveSignals();
+        model->ActiveSignals();
         result = m_minimizer->Minimize(m_optim_flags->getFlags());
-        
         
         if(result == 1)
         {
             QJsonObject json = m_minimizer->Parameter();
-            m_model->ImportJSON(json);
-            m_model->Calculate();
-            m_model->setLastOptimzationRun(m_optim_flags->getFlags());
+            m_local_fits << json;
         }
     }  
-    Repaint();
+    m_minimizer->setModel(m_model);
     m_statistic = false;
     m_pending = false; 
 }
