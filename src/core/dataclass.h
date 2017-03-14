@@ -58,6 +58,7 @@ public:
     void setColumn(const Vector &vector, int column);
     
     Vector Row(int row);
+    Vector Row(int row, const QList<int> &active);
     Vector firstRow(); 
     Vector lastRow(); 
     
@@ -170,7 +171,7 @@ public:
         emit RowAdded();
     }*/  
     qreal XValue(int i) const;
-    const QJsonObject ExportJSON() const;
+    const QJsonObject ExportJSON(const QList<int> &active = QList<int>()) const;
     bool ImportJSON(const QJsonObject &topjson);
     inline QList<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }

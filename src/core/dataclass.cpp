@@ -241,6 +241,28 @@ Vector DataTable::Row(int row)
     return m_table.row(row);
 }
 
+Vector DataTable::Row(int row, const QList<int> &active)
+{
+    Vector vector = m_table.row(row);
+    if(vector.cols() != active.size())
+        return vector;
+    int size = 0;
+    for(int i = 0; i < active.size(); ++i)
+        if(active[i] == 1)
+            size++;
+    Vector vect(size);
+    int pos = 0;
+    for(int i = 0; i < active.size(); ++i)
+    {
+        if(active[i] == 1)
+        {
+            vect(pos) = vector(i);
+            pos++;
+        }
+    }
+    return vect;
+}
+
 void DataTable::insertRow(const QVector<qreal> &row)
 {
     while(m_header.size() < row.size())
@@ -515,7 +537,7 @@ qreal DataClass::InitialHostConcentration(int i)
 }
 
 
-const QJsonObject DataClass::ExportJSON() const
+const QJsonObject DataClass::ExportJSON(const QList<int> &active) const
 {
     QJsonObject json;
     
@@ -524,13 +546,27 @@ const QJsonObject DataClass::ExportJSON() const
     for(int i = 0; i < DataPoints(); ++i)
     {
         concentrationObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_concentration_model->Row(i));
-        signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_signal_model->Row(i));
+        if(active.size())
+            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_signal_model->Row(i, active));
+        else
+            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_signal_model->Row(i));
     }
     
     json["concentrations"] = concentrationObject;
     json["signals"] = signalObject;
     json["datatype"] = QString("discrete");
-    json["header"] = (QStringList() << d->m_concentration_model->header() << d->m_signal_model->header()).join("|");
+    QStringList headers = QStringList() << d->m_concentration_model->header();
+    if(active.size())
+    {
+        for(int i = 0; i < active.size(); ++i)
+            if(active[i])
+                headers << d->m_signal_model->header()[i];
+    }
+    else
+    {
+       headers  << d->m_signal_model->header();
+    }
+    json["header"] = headers.join("|");
     return json;
 }
 
