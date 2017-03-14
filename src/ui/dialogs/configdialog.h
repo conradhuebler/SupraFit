@@ -32,6 +32,7 @@ class QRadioButton;
 class QTabWidget;
 class QDialogButtonBox;
 class QComboBox;
+class ScientificBox;
 
 class OptimizerDialog : public QDialog
 {
@@ -70,12 +71,14 @@ private:
     QSpinBox *m_threads;
     QLineEdit *m_logfileButton, *m_working;
     QPushButton *m_selectlogfile, *m_select_working;
+    ScientificBox *m_fast_increment;
     QTabWidget *m_mainwidget;
     QDialogButtonBox *m_buttons;
     QComboBox *m_charttheme;
     QCheckBox *m_animated_charts, *m_auto_confidence;
     void setUi();
     void createGeneralTab();
+    void createStandardCalTab();
     void createOptimTab();
     QComboBox *createThemeBox() const;
     OptimizerConfig m_opt_config;

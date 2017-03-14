@@ -109,6 +109,7 @@ void ConfigDialog::setUi()
     mainlayout->addWidget(m_mainwidget);
     
     createGeneralTab();
+    createStandardCalTab();
     createOptimTab();
     
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok
@@ -149,10 +150,6 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(new QLabel(tr("Threads:")));
     h_layout->addWidget(m_threads);
     layout->addLayout(h_layout);
-    
-    m_auto_confidence = new QCheckBox(tr("Automatic Confidence Calculation"));
-    m_auto_confidence->setCheckable(qApp->instance()->property("auto_confidence").toBool());
-    layout->addWidget(m_auto_confidence);
     
     layout->addWidget(new QLabel(tr("Set directory behavior to:")));
     
@@ -231,6 +228,30 @@ void ConfigDialog::createGeneralTab()
     m_mainwidget->addTab(generalTab, tr("General Settings"));
 }
 
+void ConfigDialog::createStandardCalTab()
+{
+    QVBoxLayout *layout = new QVBoxLayout;
+    QWidget *calcTab = new QWidget;
+    calcTab->setLayout(layout);
+    
+    m_auto_confidence = new QCheckBox(tr("Automatic Confidence Calculation"));
+    m_auto_confidence->setChecked(qApp->instance()->property("auto_confidence").toBool());
+    layout->addWidget(m_auto_confidence);
+    
+    m_fast_increment = new ScientificBox;
+    m_fast_increment->setRange(1E-5, 1E-1);
+    m_fast_increment->setSingleStep(1E-4);
+    m_fast_increment->setDecimals(6);
+    m_fast_increment->setValue(qApp->instance()->property("fast_increment").toDouble());
+    
+    QHBoxLayout *h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("Increment:")));
+    h_layout->addWidget(m_fast_increment);
+    layout->addLayout(h_layout);
+    
+    m_mainwidget->addTab(calcTab, tr("Standard Calculation"));
+}
+
 
 void ConfigDialog::createOptimTab()
 {
@@ -290,6 +311,7 @@ void ConfigDialog::accept()
    qApp->instance()->setProperty("workingdir", m_working->text());
    qApp->instance()->setProperty("dirlevel", m_dirlevel);
    qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
+   qApp->instance()->setProperty("fast_increment", m_fast_increment->value());
    QDialog::accept(); 
 }
 

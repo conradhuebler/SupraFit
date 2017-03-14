@@ -111,7 +111,7 @@ public:
     inline bool isCorrupt() const { return m_corrupt; }
     void adress() const;
     QJsonObject ExportJSON(bool statistics = true) const;
-    void ImportJSON(const QJsonObject &topjson);
+    void ImportJSON(const QJsonObject &topjson, bool override = true);
     inline QList<int> ActiveSignals() const { return m_active_signals; }
     inline int ActiveSignals(int i) const 
     { 

@@ -619,13 +619,13 @@ void ModelWidget::FastConfidence()
 {
     CVConfig config;
     config.relax = false;
-    config.increment = 2.5e-4;
+    config.increment = qApp->instance()->property("fast_increment").toDouble();
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error+error*0.05;
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
-    QJsonObject json = m_model->ExportJSON();
+    QJsonObject json = m_model->ExportJSON(false);
     statistic->setModel(m_model);
     statistic->setParameter(json);
     
@@ -657,7 +657,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
 
-    QJsonObject json = m_model->ExportJSON();
+    QJsonObject json = m_model->ExportJSON(false);
     statistic->setModel(m_model);
     statistic->setParameter(json);
     

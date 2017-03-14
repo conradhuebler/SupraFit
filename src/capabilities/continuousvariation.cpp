@@ -53,7 +53,7 @@ void ContinuousVariationThread::run()
     else
         m_error = m_model.data()->SumofAbsolute();
     QList<QPointF> series;
-    QJsonObject optimized = m_model.data()->ExportJSON();
+    QJsonObject optimized = m_model.data()->ExportJSON(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
     
     QJsonObject controller;
@@ -381,7 +381,7 @@ bool ContinuousVariation::ConfidenceAssesment()
     m_series.clear();
     
     m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportJSON();
+    QJsonObject optimized = m_model.data()->ExportJSON(false);
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
