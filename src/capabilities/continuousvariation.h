@@ -86,6 +86,7 @@ public:
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
     bool FastConfidence();
+    bool EllipsoideConfidence();
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<QJsonObject > Results() const { return m_result; }
@@ -101,7 +102,7 @@ private:
     QList<QJsonObject > m_result;
     CVConfig m_config;
     bool allow_break;
-    QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads);
+    QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads, bool store = false);
     
 signals:
     void StopSubThreads();
