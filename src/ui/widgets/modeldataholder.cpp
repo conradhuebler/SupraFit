@@ -470,9 +470,18 @@ void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
                 return;
             m_modelsWidget->setCurrentIndex(1);
         }
-        QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->currentWidget());
-        ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
-        model->LoadJson(object);
+        QMessageBox::StandardButton replay;
+        replay = QMessageBox::information(this, tr("Override Model."), tr("Do you want to override the current loaded model [Y]\nor just add to workspace [N]?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+        if(replay == QMessageBox::Yes) 
+        {
+            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->currentWidget());
+            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            model->LoadJson(object);
+        }
+        else if(replay == QMessageBox::No)
+        {
+            AddToWorkspace(object);
+        }
     }
 }
 

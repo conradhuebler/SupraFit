@@ -113,12 +113,13 @@ private:
     QColor m_color;
     Charts m_charts;
 
+    void DisableSignal(int state);
     
 private slots:
     void ColorChanged(const QColor &color);
     void ChooseColor();
     void togglePlot();
-    void toggleActive(int state);
+    void toggleActive();
     
 signals:
     void ValueChanged();

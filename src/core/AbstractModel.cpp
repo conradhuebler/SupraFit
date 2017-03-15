@@ -370,6 +370,7 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson, bool overrid
     }
     setActiveSignals(active_signals);
 }
+
 qreal AbstractTitrationModel::ModelError() const
 {
     qreal error = 0;

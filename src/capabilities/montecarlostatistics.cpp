@@ -191,6 +191,8 @@ void MonteCarloStatistics::AnalyseData()
     for(int i = 0; i < m_shift_list.size(); ++i)
     {
         QList<qreal > list = m_shift_list[i];
+        if(m_shift_list[i].size() == 0)
+            continue;
         QJsonObject result = MakeJson(list);
         /*
          * Some fun goes here, since our data are one long vector

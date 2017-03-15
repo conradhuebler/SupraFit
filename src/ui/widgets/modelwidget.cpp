@@ -143,7 +143,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
     m_include->setChecked(m_model->ActiveSignals()[m_no]);
-    connect(m_include, SIGNAL(stateChanged(int)), this, SLOT(toggleActive(int)));
+    connect(m_include, SIGNAL(clicked()), this, SLOT(toggleActive()));
     tools->addWidget(m_include);
     m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no));
     m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
@@ -174,8 +174,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
-    toggleActive(m_include->isChecked());
-    
+    toggleActive();
 }
 
 ModelElement::~ModelElement()
@@ -183,7 +182,14 @@ ModelElement::~ModelElement()
     
 }
 
-void ModelElement::toggleActive(int state)
+void ModelElement::toggleActive()
+{
+    int state = m_include->isChecked();
+    DisableSignal(state);
+    emit ActiveSignalChanged();
+}
+
+void ModelElement::DisableSignal(int state)
 {
     m_show->setChecked(state);
     m_error_series->ShowLine(state);
@@ -193,7 +199,6 @@ void ModelElement::toggleActive(int state)
     {
         m_constants[i]->setEnabled(m_include->isChecked());
     }
-    emit ActiveSignalChanged();
 }
 
 bool ModelElement::Include() const
@@ -219,6 +224,8 @@ QVector<double > ModelElement::D() const
 
 void ModelElement::Update()
 {
+    m_include->setChecked(m_model->ActiveSignals()[m_no]);
+    DisableSignal(m_model->ActiveSignals()[m_no]);
     if(!m_include->isChecked())
         return;
     m_d_0->setValue(m_model->PureSignal(m_no));
@@ -823,7 +830,6 @@ void ModelWidget::LoadJson(const QJsonObject& object)
     QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
-    emit Update();
     Repaint();
 }
 
