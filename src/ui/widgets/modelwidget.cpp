@@ -290,6 +290,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_statistic_dialog = new StatisticDialog(m_model, this);
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
     connect(m_statistic_dialog, SIGNAL(CVStatistic()), this, SLOT(CVStatistic()));
+    connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
     connect(m_advancedsearch, SIGNAL(MultiScanFinished(int)), this, SLOT(MultiScanFinished(int)));
@@ -714,6 +715,71 @@ void ModelWidget::CVStatistic(CVConfig config)
         QLabel *label = new QLabel(text);
         label->setTextFormat(Qt::RichText);
         layout->addWidget(label, i + 1, 0);
+    }
+    m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
+    m_statistic_result->show();
+    
+    delete statistic;
+}
+
+void ModelWidget::MoCoStatistic()
+{
+    CVConfig config = m_statistic_dialog->getMoCoConfig();
+    MoCoStatistic(config);
+}
+
+void ModelWidget::MoCoStatistic(CVConfig config)
+{
+    Waiter wait;
+    
+    
+    config.optimizer_config = m_model->getOptimizerConfig();
+    config.runtype = m_optim_flags->getFlags();
+    ContinuousVariation *statistic = new ContinuousVariation(config, this);
+    
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+
+    QJsonObject json = m_model->ExportJSON(false);
+    statistic->setModel(m_model);
+    statistic->setParameter(json);
+    statistic->EllipsoideConfidence();
+     
+    QList<QJsonObject > constant_results = statistic->Results();
+    QList<QList<QPointF > >series = statistic->Series();
+    QWidget *resultwidget = new QWidget;
+    QGridLayout *layout = new QGridLayout;
+    resultwidget->setLayout(layout);
+    
+    QtCharts::QChart *chart = new QtCharts::QChart;
+    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    view = new ChartView(chart);
+    layout->addWidget(view, 0, 0, 1, 7);
+    for(int i = 0; i < constant_results.size(); ++i)
+    {
+/*        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        xy_series->append(series[i]);
+        view->addSeries(xy_series);
+        m_model->setCVStatistic(constant_results[i], i);
+        
+        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
+        *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
+        current_constant->setColor(xy_series->color());
+        view->addSeries(current_constant);
+        
+        QString text;
+        if(i == 0)
+        {
+            text += "Maxsteps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
+            text += "Increment = " + QString::number(constant_results[i]["controller"].toObject()["increment"].toDouble()) + "\t";
+            text += "Max Error = " + QString::number(constant_results[i]["controller"].toObject()["maxerror"].toDouble()) + "\n";
+        }
+        text  += m_statistic_widget->TextFromConfidence(constant_results[i]) + "\n";
+        QLabel *label = new QLabel(text);
+        label->setTextFormat(Qt::RichText);
+        layout->addWidget(label, i + 1, 0);*/
     }
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();

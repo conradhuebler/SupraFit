@@ -62,8 +62,9 @@ void StatisticDialog::setUi()
 {
     QVBoxLayout *layout = new QVBoxLayout;
     QTabWidget *widget = new QTabWidget;
-    widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
     widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
+    widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
+    widget->addTab(ModelComparison(), tr("Model Comparison"));
     m_optim_flags = new OptimizerFlagWidget; 
     layout->addWidget(widget);
     m_time_info = new QLabel;
@@ -177,6 +178,54 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     return cv_widget;
 }
 
+
+QWidget * StatisticDialog::ModelComparison()
+{
+    QWidget *mo_widget = new QWidget;
+    QGridLayout *layout = new QGridLayout;   
+    
+    m_moco_increment = new QDoubleSpinBox;
+    m_moco_increment->setSingleStep(1e-3);
+    m_moco_increment->setValue(0.01);
+    m_moco_increment->setDecimals(6);
+    layout->addWidget(new QLabel(tr("Increment")), 0, 0);
+    layout->addWidget(m_moco_increment, 0, 1, 1, 2);
+    
+    m_moco_maxerror = new QDoubleSpinBox;
+    m_moco_maxerror->setMaximum(100);
+    m_moco_maxerror->setSingleStep(0.5);
+    m_moco_maxerror->setValue(5);
+    m_moco_maxerror->setDecimals(1);
+    m_moco_f_test = new QCheckBox(tr("Use F-Statistic"));
+    m_moco_f_test->setChecked(false);
+    m_moco_f_test->setDisabled(true);
+    
+    connect(m_moco_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
+    connect(m_moco_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
+    
+    layout->addWidget(new QLabel(tr("Max. Error in %")), 1, 0);
+    layout->addWidget(m_moco_maxerror, 1, 1);
+    layout->addWidget(m_moco_f_test, 1, 2);
+    m_moco_error_info = new QLabel;
+    layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
+    
+    m_moco_steps = new QSpinBox;
+    m_moco_steps->setMaximum(1e7);
+    m_moco_steps->setValue(1000);
+    m_moco_steps->setSingleStep(100);
+    
+    layout->addWidget(new QLabel(tr("Max. Steps")), 3, 0);
+    layout->addWidget(m_moco_steps, 3, 1, 1, 2);
+    
+    m_moco = new QPushButton(tr("Generate Plot"));
+    layout->addWidget(m_moco, 4, 0, 1, 3);
+    
+    connect(m_moco, SIGNAL(clicked()), this, SIGNAL(MoCoStatistic()));
+    mo_widget->setLayout(layout);
+    return mo_widget;
+}
+
+
 CVConfig StatisticDialog::getCVConfig()
 {
     CVConfig config;
@@ -184,6 +233,22 @@ CVConfig StatisticDialog::getCVConfig()
     config.maxsteps = m_cv_steps->value();
     qreal error = m_model.data()->SumofSquares();
     config.maxerror =error+error*m_cv_maxerror->value()/double(100);
+    config.relax = true;
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setMaximum(-1);
+    m_progress->setValue(0);
+//     Pending();
+    return config;
+}
+
+CVConfig StatisticDialog::getMoCoConfig()
+{
+    CVConfig config;
+    config.increment = m_moco_increment->value();
+    config.maxsteps = m_moco_steps->value();
+    qreal error = m_model.data()->SumofSquares();
+    config.maxerror =error+error*m_moco_maxerror->value()/double(100);
     config.relax = true;
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();

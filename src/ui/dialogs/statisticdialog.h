@@ -45,6 +45,7 @@ public:
     
     MCConfig getMCConfig();
     CVConfig getCVConfig();
+    CVConfig getMoCoConfig();
     
     inline void setRuns(int runs) { m_runs = runs; }
 public slots:
@@ -56,13 +57,14 @@ private:
     
     QWidget *MonteCarloWidget();
     QWidget *ContinuousVariationWidget();
+    QWidget *ModelComparison();
     
-    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror;
-    QSpinBox *m_mc_steps, *m_cv_steps;
-    QCheckBox *m_original, *m_bootstrap, *m_f_test;
-    QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide;
+    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_increment, *m_moco_maxerror;
+    QSpinBox *m_mc_steps, *m_cv_steps, *m_moco_steps;
+    QCheckBox *m_original, *m_bootstrap, *m_f_test, *m_moco_f_test;
+    QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco;
     QProgressBar *m_progress;
-    QLabel *m_time_info, *m_error_info;
+    QLabel *m_time_info, *m_error_info, *m_moco_error_info;
     OptimizerFlagWidget *m_optim_flags;
     
     QMutex mutex;
@@ -82,6 +84,7 @@ private slots:
 signals:
     void CVStatistic();
     void MCStatistic();
+    void MoCoStatistic();
     void Interrupt();
 };
 

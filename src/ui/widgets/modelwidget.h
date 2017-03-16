@@ -143,12 +143,14 @@ public:
     QSharedPointer<Minimizer > m_minimizer;
     
     void CVStatistic(CVConfig config);
+    void MoCoStatistic(CVConfig config);
     void MCStatistic(MCConfig config);
     
 public slots:
     void LoadJson(const QJsonObject &object);
     void CVStatistic();
     void MCStatistic();
+    void MoCoStatistic();
     void GlobalMinimize();
     void LocalMinimize();
     void HideAllWindows();
