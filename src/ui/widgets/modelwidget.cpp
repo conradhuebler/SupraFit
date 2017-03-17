@@ -614,9 +614,10 @@ void ModelWidget::MCStatistic(MCConfig config)
  
     }
     // FIXME all that stuff will be cleaned up some times ...
-    QList<QPointF > data = fromModelsList(monte_carlo->Models());
-    if(data.size() != 0)
+    
+    if(m_model->ConstantSize() == 2)
     {
+        QList<QPointF > data = ToolSet::fromModelsList(monte_carlo->Models());
         QWidget *resultwidget_ellipsoid = new QWidget;
         QGridLayout *layout_ellipsoid = new QGridLayout;
         resultwidget_ellipsoid->setLayout(layout_ellipsoid);
@@ -776,26 +777,13 @@ void ModelWidget::MoCoStatistic(CVConfig config)
     view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
-    xy_series->append(fromModelsList(statistic->Models()));
+    xy_series->append(ToolSet::fromModelsList(statistic->Models()));
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
     
     delete statistic;
-}
-
-QList<QPointF> ModelWidget::fromModelsList(const QList<QJsonObject> &models)
-{
-    QList<QPointF> series;
-    if(!(m_model->ConstantSize() == 2))
-        return series;
-    for(const QJsonObject &obj : qAsConst(models))
-    {
-        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
-        series << QPointF(constants[QString::number(0)].toString().toDouble(), constants[QString::number(1)].toString().toDouble());
-    }
-    return series;
 }
 
 
@@ -1029,9 +1017,10 @@ void ModelWidget::MultiScanFinished(int runtype)
     m_table_result->setWidget(table, "Scan Results");
     
     
-    QList<QPointF > data = fromModelsList(m_advancedsearch->ModelList());
-    if(data.size() != 0)
+    
+    if(m_model->ConstantSize() == 0)
     {
+        QList<QPointF > data = ToolSet::fromModelsList(m_advancedsearch->ModelList());
         QWidget *resultwidget_ellipsoid = new QWidget;
         QGridLayout *layout_ellipsoid = new QGridLayout;
         resultwidget_ellipsoid->setLayout(layout_ellipsoid);

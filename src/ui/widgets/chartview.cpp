@@ -226,6 +226,8 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
     if(!connected)
         if(connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))
             connected = true;
+        
+    forceformatAxis();
 }
 
 
@@ -246,7 +248,9 @@ void ChartView::forceformatAxis()
     qreal y_min = 1000;
     for(QtCharts::QAbstractSeries *series: m_chart->series())
     {
-        QtCharts::QXYSeries *serie = qobject_cast<QtCharts::QXYSeries *>(series);
+        QPointer<QtCharts::QXYSeries > serie = qobject_cast<QtCharts::QXYSeries * >(series);
+        if(!serie)
+            continue;
         if(serie->isVisible())
         {
             QVector<QPointF> points = serie->pointsVector();

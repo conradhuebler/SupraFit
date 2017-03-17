@@ -327,7 +327,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     
     /*
      * Some models are loaded from history, this should no be added again
-     * after not added them, we allow the next models to be added to history again
+     * after not adding them, we allow the next models to be added to history again
      */
     if(m_history)
         modelwidget->getMinimizer()->addToHistory();

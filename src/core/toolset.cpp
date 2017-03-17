@@ -17,8 +17,12 @@
  *
  */
 
-#include <QString>
-#include <QVector>
+
+#include <QtCore/QJsonObject>
+#include <QtCore/QString>
+#include <QtCore/QPointF>
+#include <QtCore/QVector>
+
 #include <QDebug>
 #include <Eigen/Dense>
 
@@ -205,4 +209,15 @@ namespace ToolSet{
         return result;
     }
     
+    
+    QList<QPointF> fromModelsList(const QList<QJsonObject> &models)
+    {
+        QList<QPointF> series;
+        for(const QJsonObject &obj : qAsConst(models))
+        {
+            QJsonObject constants = obj["data"].toObject()["constants"].toObject();
+            series << QPointF(constants[QString::number(0)].toString().toDouble(), constants[QString::number(1)].toString().toDouble());
+        }
+        return series;
+    }
 }

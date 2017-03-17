@@ -187,7 +187,7 @@ private:
     Charts m_charts;
     QString m_logging;
     QList<QJsonObject> m_local_fits;
-    QList<QPointF> fromModelsList(const QList<QJsonObject> &models);
+    
     
 private slots:
     void Repaint();
