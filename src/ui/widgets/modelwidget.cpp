@@ -613,6 +613,24 @@ void ModelWidget::MCStatistic(MCConfig config)
         layout->addWidget(label, i + 1, 0);
  
     }
+    // FIXME all that stuff will be cleaned up some times ...
+    QList<QPointF > data = fromModelsList(monte_carlo->Models());
+    if(data.size() != 0)
+    {
+        QWidget *resultwidget_ellipsoid = new QWidget;
+        QGridLayout *layout_ellipsoid = new QGridLayout;
+        resultwidget_ellipsoid->setLayout(layout_ellipsoid);
+        QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
+        chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        view = new ChartView(chart_ellipsoid);
+        layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
+        QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+        xy_series->append(data);
+        xy_series->setMarkerSize(8);
+        view->addSeries(xy_series);
+        m_statistic_result->setWidget(resultwidget_ellipsoid, "Monte Carlo Simulation for " + m_model->Name());
+    }
+    
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
     buff.remove("<table>");
@@ -757,35 +775,29 @@ void ModelWidget::MoCoStatistic(CVConfig config)
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
-    for(int i = 0; i < constant_results.size(); ++i)
-    {
-/*        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-        xy_series->append(series[i]);
-        view->addSeries(xy_series);
-        m_model->setCVStatistic(constant_results[i], i);
-        
-        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
-        *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
-        current_constant->setColor(xy_series->color());
-        view->addSeries(current_constant);
-        
-        QString text;
-        if(i == 0)
-        {
-            text += "Maxsteps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
-            text += "Increment = " + QString::number(constant_results[i]["controller"].toObject()["increment"].toDouble()) + "\t";
-            text += "Max Error = " + QString::number(constant_results[i]["controller"].toObject()["maxerror"].toDouble()) + "\n";
-        }
-        text  += m_statistic_widget->TextFromConfidence(constant_results[i]) + "\n";
-        QLabel *label = new QLabel(text);
-        label->setTextFormat(Qt::RichText);
-        layout->addWidget(label, i + 1, 0);*/
-    }
+    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+    xy_series->append(fromModelsList(statistic->Models()));
+    xy_series->setMarkerSize(8);
+    view->addSeries(xy_series);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
     
     delete statistic;
 }
+
+QList<QPointF> ModelWidget::fromModelsList(const QList<QJsonObject> &models)
+{
+    QList<QPointF> series;
+    if(!(m_model->ConstantSize() == 2))
+        return series;
+    for(const QJsonObject &obj : qAsConst(models))
+    {
+        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
+        series << QPointF(constants[QString::number(0)].toString().toDouble(), constants[QString::number(1)].toString().toDouble());
+    }
+    return series;
+}
+
 
 void ModelWidget::LocalMinimize()
 {
@@ -1015,6 +1027,25 @@ void ModelWidget::MultiScanFinished(int runtype)
     table->setInputList(m_advancedsearch->FullList());
     table->setModelList(m_advancedsearch->ModelList());
     m_table_result->setWidget(table, "Scan Results");
+    
+    
+    QList<QPointF > data = fromModelsList(m_advancedsearch->ModelList());
+    if(data.size() != 0)
+    {
+        QWidget *resultwidget_ellipsoid = new QWidget;
+        QGridLayout *layout_ellipsoid = new QGridLayout;
+        resultwidget_ellipsoid->setLayout(layout_ellipsoid);
+        QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
+        chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        view = new ChartView(chart_ellipsoid);
+        layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
+        QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+        xy_series->append(data);
+        xy_series->setMarkerSize(8);
+        view->addSeries(xy_series);
+        m_table_result->setWidget(resultwidget_ellipsoid, "Scattering " + m_model->Name());
+    }
+    
     
     m_advancedsearch->hide();
     m_table_result->show();

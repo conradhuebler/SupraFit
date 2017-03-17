@@ -364,6 +364,7 @@ QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QP
         QList<qreal > vars;
         if(!threads[i])
             continue;
+        m_models << threads[i]->Model();
         vars << threads[i]->getResult()["confidence"].toObject()["lower_5"].toDouble() << threads[i]->getResult()["confidence"].toObject()["upper_5"].toDouble();
         constants[threads[i]->getResult()["name"].toString()].append( vars );
         delete threads[i];
@@ -420,6 +421,7 @@ bool ContinuousVariation::ConfidenceAssesment()
     bool converged = true;
     for(int i = 0; i < threads.size(); ++i)
     {
+        m_models << threads[i]->Model();
         m_result << threads[i]->getResult();
         m_series << threads[i]->getSeries();
         converged = converged && threads[i]->Converged();

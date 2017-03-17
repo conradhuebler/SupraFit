@@ -145,7 +145,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
             QList<qreal > constants = threads[i]->Constants();
             for(int j = 0; j < constants.size(); ++j)
                 m_constants_list[j] << constants[j];
-            m_models << threads[i]->Model()->ExportJSON();
+            m_models << threads[i]->Model();
             m_steps++;
             delete threads[i];
         }

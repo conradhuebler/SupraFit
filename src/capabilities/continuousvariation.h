@@ -53,7 +53,7 @@ public:
     inline QJsonObject getResult() const { return m_result; }
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> getSeries() const { return m_series; }
-    
+    inline QJsonObject Model() const { return m_model->ExportJSON(); }
 public slots:
     void Interrupt();
     
@@ -90,6 +90,7 @@ public:
     void setParameter(const QJsonObject &json);
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<QJsonObject > Results() const { return m_result; }
+    inline QList<QJsonObject > Models() const { return m_models; }
     
 public slots:
     void Interrupt();
@@ -103,6 +104,7 @@ private:
     CVConfig m_config;
     bool allow_break;
     QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads, bool store = false);
+    QList<QJsonObject > m_models;
     
 signals:
     void StopSubThreads();

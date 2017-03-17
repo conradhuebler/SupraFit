@@ -64,7 +64,7 @@ void StatisticDialog::setUi()
     QTabWidget *widget = new QTabWidget;
     widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
     widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
-    widget->addTab(ModelComparison(), tr("Model Comparison"));
+//     widget->addTab(ModelComparison(), tr("Model Comparison"));
     m_optim_flags = new OptimizerFlagWidget; 
     layout->addWidget(widget);
     m_time_info = new QLabel;
