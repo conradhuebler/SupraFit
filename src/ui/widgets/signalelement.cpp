@@ -26,12 +26,9 @@
 
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QGridLayout>
-#include <QtWidgets/QTableView>
-#include <QtWidgets/QTableWidget>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>

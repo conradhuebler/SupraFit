@@ -22,10 +22,10 @@
 
 #include "src/core/models.h"
 
-#include <QtCore/QVector>
+#include <QtCore/QObject>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
-#include <QtCore/QObject>
+#include <QtCore/QVector>
 
 class Minimizer;
 class AbstractTitrationModel;

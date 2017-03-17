@@ -33,7 +33,7 @@
 
 #include "modelhistorywidget.h"
 
-ModelHistoryWidget::ModelHistoryWidget(const QJsonObject *element, int active, QWidget *parent) : QGroupBox(parent), m_json(element)
+ModelHistoryWidget::ModelHistoryWidget(const QJsonObject *element, int active, int index, QWidget *parent) : QGroupBox(parent), m_json(element), m_index(index)
 {
     QGridLayout *layout = new QGridLayout;
     QJsonObject constants = (*m_json)["data"].toObject()["constants"].toObject();
@@ -93,10 +93,10 @@ ModelHistoryWidget::ModelHistoryWidget(const QJsonObject *element, int active, Q
 void ModelHistoryWidget::remove()
 {
     QPointer<ModelHistoryWidget > element = qobject_cast<ModelHistoryWidget *>( this);
-    emit Remove(m_json, element); 
+    emit Remove(m_index, element); 
 }
 
-ModelHistory::ModelHistory( QWidget *parent) : QWidget(parent)
+ModelHistory::ModelHistory( QWidget *parent) : QWidget(parent), m_index(0)
 {
     m_vlayout = new QVBoxLayout;
     m_vlayout->setAlignment(Qt::AlignTop);
@@ -113,34 +113,30 @@ void ModelHistory::InsertElement(const QJsonObject &model)
     int active;
     QStringList keys = model["pureShift"].toObject().keys();
     active = keys.size();
-
     InsertElement(model, active);    
 }
 
 
 void ModelHistory::InsertElement(const QJsonObject &model, int active)
 {
-    int nr = m_history.size();
     QJsonObject *object = new QJsonObject(model);
-    m_history[nr] = object;
-    QPointer<ModelHistoryWidget > element = new ModelHistoryWidget(object, active);
+    m_history[m_index] = object;
+    QPointer<ModelHistoryWidget > element = new ModelHistoryWidget(object, active, m_index); 
     m_vlayout->addWidget(element);
     connect(element, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddJson(QJsonObject)));
     connect(element, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadJson(QJsonObject)));
-    connect(element, SIGNAL(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)), this, SLOT(Remove(const QJsonObject *, QPointer<ModelHistoryWidget>)));
+    connect(element, SIGNAL(Remove(int, QPointer<ModelHistoryWidget>)), this, SLOT(Remove(int, QPointer<ModelHistoryWidget>)));
+    m_index++;
 }
 
-void ModelHistory::Remove(const QJsonObject *json, QPointer<ModelHistoryWidget> element)
+void ModelHistory::Remove(int index, QPointer<ModelHistoryWidget> element)
 {
-    Q_UNUSED(json)
     if(element)
     {
         QLayoutItem * item= m_vlayout->itemAt(m_vlayout->indexOf(element));
         m_vlayout->removeItem(item);
-        /*
-         * I know, that we are only deleting the widget but not the element in the map, will be a FIXME
-         */
         delete element;
+        m_history.remove(index);
     }
 }
 

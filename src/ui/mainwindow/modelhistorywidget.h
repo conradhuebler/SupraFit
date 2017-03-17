@@ -42,20 +42,23 @@ class ModelHistoryWidget : public QGroupBox
 {
   Q_OBJECT
 public:
-    ModelHistoryWidget(const QJsonObject *element, int active,  QWidget *parent = 0);
+    ModelHistoryWidget(const QJsonObject *element, int active, int index, QWidget *parent = 0);
     inline ~ModelHistoryWidget(){ };
     
 private:
     const QJsonObject *m_json;
     QPushButton *m_add, *m_load, *m_remove;
+    int m_index;
+    
 private slots:
     inline void AddModel() { emit AddJson(*m_json); }
     inline void LoadModel() { emit LoadJson(*m_json); }
     void remove(); 
+
 signals:
     void LoadJson(const QJsonObject &json);
     void AddJson(const QJsonObject &json);
-    void Remove(const QJsonObject *json, QPointer<ModelHistoryWidget>);
+    void Remove(int index, QPointer<ModelHistoryWidget>);
 };
 
 
@@ -72,9 +75,10 @@ private:
     QMap<int, QJsonObject*> m_history;
     QWidget *m_mainwidget;
     QVBoxLayout *m_vlayout;
+    int m_index;
     
 private slots:
-    void Remove(const QJsonObject *json, QPointer<ModelHistoryWidget> element);
+    void Remove(int index, QPointer<ModelHistoryWidget> element);
     
 signals:
     void AddJson(const QJsonObject &json);
