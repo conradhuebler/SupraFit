@@ -73,10 +73,8 @@ public:
     ModelWidget(QSharedPointer< AbstractTitrationModel > model, Charts charts, QWidget *parent = 0);
     ~ModelWidget();
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
-    QSharedPointer< AbstractTitrationModel > Model() { return m_model; }
-    void setMaxIter(int maxiter);
-    QSharedPointer<Minimizer > getMinimizer() { return m_minimizer; }
-    QSharedPointer<Minimizer > m_minimizer;
+    QSharedPointer< AbstractTitrationModel > Model() const { return m_model; }
+    QSharedPointer< Minimizer > getMinimizer() const { return m_minimizer; }
     
     void CVStatistic(CVConfig config);
     void MoCoStatistic(CVConfig config);
@@ -93,9 +91,10 @@ public slots:
     
 private:
     QSharedPointer< AbstractTitrationModel > m_model;
+    QSharedPointer< Minimizer > m_minimizer;
+    
     QVector<QPointer<SpinBox> > m_constants;
     QVector<QPointer<ModelElement > > m_model_elements;
-    QVector<QPointer<QLineEdit > > m_errors;
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
     QPushButton *m_switch, *m_minimize_all;
@@ -111,7 +110,6 @@ private:
     void Data2Text();
     void Model2Text();
     
-    ChartView *view;
     StatisticWidget *m_statistic_widget;
     QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
@@ -121,7 +119,6 @@ private:
     Charts m_charts;
     QString m_logging;
     QList<QJsonObject> m_local_fits;
-    
     
 private slots:
     void Repaint();
@@ -147,9 +144,6 @@ public slots:
     void OptimizerSettings();
     
 signals:
-    void Fit(QVector< QPointer< QtCharts::QLineSeries > > fit);
-    void Error(QVector< QPointer< QtCharts::QLineSeries > > fit);
-    void ActiveSignalChanged(QVector<int > active_signals);
     void Update();
     void Warning(const QString &str, int i);
     void AddModel(const QJsonObject &json);

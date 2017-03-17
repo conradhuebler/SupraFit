@@ -56,7 +56,7 @@ private:
     
 private slots:
     void ColorChanged(const QColor &color);
-    void ChooseColor();
+    void chooseColor();
     void togglePlot();
     void toggleActive();
     

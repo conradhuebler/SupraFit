@@ -27,11 +27,12 @@ class PushButton : public QPushButton
 {
      Q_OBJECT
 public:
+    
     inline PushButton(const QString &str) : QPushButton(str)
     {
         setStyleSheet("background-color: #77d740;");
     }
-    
+    inline ~PushButton() {}
 };
 
 class ModelActions : public QWidget

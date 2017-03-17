@@ -74,7 +74,6 @@ public:
     void setSettings(const OptimizerConfig &config);
     /*
      * Export currently open models to file
-     * 
      */
     void SaveCurrentModels(const QString &file);
     /*

@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
 #include "src/capabilities/continuousvariation.h"
 #include "src/capabilities/montecarlostatistics.h"
 
@@ -42,9 +43,6 @@
 #include <QtWidgets/QCheckBox>
 
 #include "modeldataholder.h"
-
-
-#include <iostream>
 
 TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 {
@@ -193,10 +191,8 @@ void ModelDataHolder::AddModel(int model)
             return; 
             
     };
-    //     t->Minimize();
     m_history = false;
     ActiveModel(t);
-    
 }
 
 void ModelDataHolder::AddModel(const QJsonObject &json)
@@ -547,11 +543,11 @@ void ModelDataHolder::OptimizeAll()
 void ModelDataHolder::HideSubWindows(int index)
 {
     if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(m_last_tab)))
-        {
-            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(m_last_tab));
-            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
-            model->HideAllWindows();
-            m_last_tab = index;
-        }
+    {
+        QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(m_last_tab));
+        ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+        model->HideAllWindows();
+        m_last_tab = index;
+    }
 }
 #include "modeldataholder.moc"

@@ -53,7 +53,7 @@
 #include "modelelement.h"
 
 
-ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_charts(charts), m_no(no)
+ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no), m_charts(charts)
 {
     QVBoxLayout *layout = new QVBoxLayout;
     QHBoxLayout *shifts = new QHBoxLayout;
@@ -86,7 +86,6 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
         m_error = new QLabel;
         shifts->addStretch(300);
         shifts->addWidget(m_error); 
-        m_error->setText("Sum of Squares: <b>" + QString::number(m_model->SumOfErrors(m_no)) + "</b>");
     } 
     layout->addLayout(shifts);
     QHBoxLayout *tools = new QHBoxLayout;
@@ -122,10 +121,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     setMinimumHeight(75); 
     ColorChanged(m_charts.data_wrapper->color(m_no));
     connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
-    connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
+    connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
     toggleActive();
+    Update();
 }
 
 ModelElement::~ModelElement()
@@ -185,13 +185,12 @@ void ModelElement::Update()
         m_constants[i]->setValue(m_model->Pair(i, m_no).second);
     }
     if(m_model->Type() != 3)
-        m_error->setText("Sum of Squares: " + QString::number(m_model->SumOfErrors(m_no)));
+        m_error->setText("Sum of Squares: <b>" + QString::number(m_model->SumOfErrors(m_no), 'e', 2) + "</b>");
     
 }
 
 void ModelElement::ColorChanged(const QColor &color)
 {
-    
     #ifdef _WIN32
     setStyleSheet("background-color:" + color.name()+ ";");
     #else
@@ -199,14 +198,12 @@ void ModelElement::ColorChanged(const QColor &color)
     pal.setColor(QPalette::Background,color);
     setPalette(pal); 
     #endif
-    
     m_color = color;
 }
 
 
-void ModelElement::ChooseColor()
+void ModelElement::chooseColor()
 {
-    
     QColor color = QColorDialog::getColor(m_color, this, tr("Choose Color for Series"));
     if(!color.isValid())
         return;

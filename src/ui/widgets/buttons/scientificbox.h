@@ -28,6 +28,8 @@ class ScientificBox : public QDoubleSpinBox
 {
     Q_OBJECT
 public:
+    inline ScientificBox() {}
+    inline ~ScientificBox() {}
     inline QString textFromValue(double val) const
     {
         return QString::number(val, 'E', 2);

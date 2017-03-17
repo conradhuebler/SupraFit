@@ -21,25 +21,21 @@
 #include "src/ui/widgets/signalelement.h"
 
 #include <QApplication>
+#include <QDebug>
 #include <QHeaderView>
+#include <QStandardItemModel>
 
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QColorDialog>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
-#include <QtWidgets/QLabel>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTableView>
-#include <QtWidgets/QTableWidget>
-#include <QtWidgets/QColorDialog>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QDoubleSpinBox>
 
 #include <QtCharts/QXYSeries>
-
-#include <QStandardItemModel>
-
-#include <QDebug>
 
 #include "datawidget.h"
 
@@ -71,8 +67,6 @@ DataWidget::DataWidget()
     group_layout->addWidget(m_concentrations);
     group_layout->addWidget(m_signals);
     m_tables->setLayout(group_layout);
-    
-    
     
     layout->addLayout(hlayout, 0, 0, 1, 3);
     layout->addWidget(m_datapoints, 1, 0);

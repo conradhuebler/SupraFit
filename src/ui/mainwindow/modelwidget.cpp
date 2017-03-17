@@ -165,12 +165,11 @@ ModelWidget::~ModelWidget()
     m_model.clear();
     if(_3dchart)
         delete _3dchart;
-    //     m_statistic_dialog->hide();
+    
     delete m_statistic_result;
-    //     m_search_result->hide();
     delete m_search_result;
-    //     m_table_dialog->hide();
     delete m_table_result;
+    delete m_concentrations_result;
 }
 
 
@@ -245,7 +244,6 @@ void ModelWidget::Repaint()
     QTextDocument doc;
     doc.setHtml(m_statistic_widget->Overview());
     m_logging += "\n\n" +  doc.toPlainText();
-//     m_logging += m_statistic_widget->Overview();
 }
 
 
@@ -357,7 +355,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     QtCharts::QChart *chart = new QtCharts::QChart;
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    view = new ChartView(chart);
+    ChartView *view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
     bool formated = false;
     for(int i = 0; i < constant_results.size(); ++i)
@@ -425,7 +423,7 @@ void ModelWidget::MCStatistic(MCConfig config)
         resultwidget_ellipsoid->setLayout(layout_ellipsoid);
         QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
         chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        view = new ChartView(chart_ellipsoid);
+        ChartView *view = new ChartView(chart_ellipsoid);
         layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
         QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
         xy_series->append(data);
@@ -449,7 +447,6 @@ void ModelWidget::MCStatistic(MCConfig config)
     m_statistic_result->setWidget(resultwidget, "Monte Carlo Simulation for " + m_model->Name());
     m_statistic_result->show();  
     delete monte_carlo;
-    
 }
 
 void ModelWidget::FastConfidence()
@@ -484,7 +481,6 @@ void ModelWidget::CVStatistic(CVConfig config)
 {
     Waiter wait;
     
-    
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
@@ -511,7 +507,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    view = new ChartView(chart);
+    ChartView *view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
     for(int i = 0; i < constant_results.size(); ++i)
     {
@@ -553,7 +549,6 @@ void ModelWidget::MoCoStatistic(CVConfig config)
 {
     Waiter wait;
     
-    
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
@@ -576,7 +571,7 @@ void ModelWidget::MoCoStatistic(CVConfig config)
     
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    view = new ChartView(chart);
+    ChartView *view = new ChartView(chart);
     layout->addWidget(view, 0, 0, 1, 7);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
     xy_series->append(ToolSet::fromModelsList(statistic->Models()));
@@ -794,7 +789,7 @@ void ModelWidget::PlotFinished(int runtype)
         QList<QList<QPointF> > series = m_advancedsearch->Series();
         QtCharts::QChart *chart = new QtCharts::QChart;
         chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        view = new ChartView(chart);
+        ChartView *view = new ChartView(chart);
         for(int i = 0; i < series.size(); ++i)
         {
             QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
@@ -817,9 +812,7 @@ void ModelWidget::MultiScanFinished(int runtype)
     table->setInputList(m_advancedsearch->FullList());
     table->setModelList(m_advancedsearch->ModelList());
     m_table_result->setWidget(table, "Scan Results");
-    
-    
-    
+
     if(m_model->ConstantSize() == 0)
     {
         QList<QPointF > data = ToolSet::fromModelsList(m_advancedsearch->ModelList());
@@ -828,7 +821,7 @@ void ModelWidget::MultiScanFinished(int runtype)
         resultwidget_ellipsoid->setLayout(layout_ellipsoid);
         QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
         chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        view = new ChartView(chart_ellipsoid);
+        ChartView *view = new ChartView(chart_ellipsoid);
         layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
         QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
         xy_series->append(data);
@@ -836,8 +829,7 @@ void ModelWidget::MultiScanFinished(int runtype)
         view->addSeries(xy_series);
         m_table_result->setWidget(resultwidget_ellipsoid, "Scattering " + m_model->Name());
     }
-    
-    
+
     m_advancedsearch->hide();
     m_table_result->show();
 }
