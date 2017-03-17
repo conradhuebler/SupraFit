@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "src/ui/widgets/optimizerwidget.h"
 
+#include "src/ui/widgets/buttons/scientificbox.h"
+#include "src/ui/widgets/optimizerwidget.h"
 
 #include <QtCore/QThread>
 
@@ -45,12 +46,8 @@ OptimizerDialog::OptimizerDialog(OptimizerConfig config, QWidget *parent) :QDial
 
 OptimizerDialog::~OptimizerDialog()
 {
-    
-    
-    
-    
+  
 }
-
 
 void OptimizerDialog::setUi()
 {
@@ -63,8 +60,7 @@ void OptimizerDialog::setUi()
     
     createOptimTab();
     
-    m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok
-                                     | QDialogButtonBox::Cancel);
+    m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok| QDialogButtonBox::Cancel);
 
     connect(m_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -92,9 +88,7 @@ ConfigDialog::ConfigDialog(OptimizerConfig config, int printlevel,const QString 
 
 ConfigDialog::~ConfigDialog()
 {
-    
-    
-    
+
     
 }
 
@@ -170,9 +164,9 @@ void ConfigDialog::createGeneralTab()
     
     m_working = new QLineEdit;
     m_working->setClearButtonEnabled(true);
-    m_working->setText(m_logfile);
+    m_working->setText(qApp->instance()->property("workingdir").toString());
     m_select_working = new QPushButton(this);
-    m_select_working->setText(tr("Select file"));
+    m_select_working->setText(tr("Select"));
     connect(m_select_working, SIGNAL(clicked()), this, SLOT(SelectWorkingDir()));
     
     h_layout = new QHBoxLayout;

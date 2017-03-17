@@ -22,9 +22,12 @@
 
 #include <QCoreApplication>
 
-#include <QtCore/QThreadPool>
+
 #include <QtCore/QObject>
+#include <QtCore/QPointF>
+#include <QtCore/QThreadPool>
 #include <QtCore/QWeakPointer>
+
 
 #include <iostream>
 

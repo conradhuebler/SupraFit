@@ -1,4 +1,4 @@
-#include "ui/suprafit.h"
+#include "ui/mainwindow/suprafit.h"
 #include "src/version.h"
 
 #include <QtWidgets/QApplication>

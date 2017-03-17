@@ -20,7 +20,7 @@
 #ifndef CHARTWIDGET_H
 #define CHARTWIDGET_H
 
-#include "src/ui/chartwrapper.h"
+#include "src/ui/guitools/chartwrapper.h"
 
 #include <QtCharts/QChart>
 #include <QtCharts/QChartView>

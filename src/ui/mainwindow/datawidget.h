@@ -38,37 +38,8 @@ class QCheckBox;
 class QGridLayout;
 class ScatterSeries;
 class QDoubleSpinBox;
+class SignalElement;
 
-class SignalElement : public QGroupBox
-{
-    Q_OBJECT
-    
-public:
-    SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWrapper> wrapper,int no, QWidget *parent = 0);
-    ~SignalElement();
-    
-    
-private:
-    QWeakPointer<DataClass > m_data;
-    QWeakPointer<ChartWrapper> m_wrapper;
-    QLineEdit *m_name;
-    QCheckBox *m_show, *m_rectangle;
-    QPushButton *m_choose, *m_toggle;
-    QPointer<ScatterSeries > m_data_series;
-    QDoubleSpinBox *m_markerSize;
-    QColor m_color;
-    int m_no;
-    
-private slots:
-    void ToggleSeries(int i);
-    void chooseColor();
-    void ColorChanged(const QColor &color);
-    void ShowLine(int i);
-    void setName(const QString &str);
-    void setMarkerSize(qreal value);
-    void setMarkerShape(int shape);
-    void togglePlot();
-};
 
 class DataWidget : public QWidget
 {

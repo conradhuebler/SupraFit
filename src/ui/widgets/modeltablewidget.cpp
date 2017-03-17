@@ -20,7 +20,7 @@
 
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
-#include "src/ui/widgets/optimizerwidget.h"
+#include "src/ui/widgets/buttons/scientificbox.h"
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QSharedPointer>

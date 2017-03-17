@@ -22,9 +22,11 @@
 #include "src/core/models.h"
 
 #include "src/ui/widgets/optimizerflagwidget.h"
-#include "src/ui/widgets/modelwidget.h"
+#include "src/ui/guitools/waiter.h"
 
+#include <QtCore/QDateTime>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QThreadPool>
 
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>

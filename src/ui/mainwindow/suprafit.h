@@ -20,13 +20,17 @@
 
 #ifndef nmr2fit_H
 #define nmr2fit_H
+
 #include "src/ui/widgets/optimizerwidget.h"
-#include "src/ui/widgets/modelhistorywidget.h"
+#include "src/ui/mainwindow/modelhistorywidget.h"
+
+#include <QtCore/QFile>
+#include <QtCore/QPointer>
+
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
-#include <QtCore/QPointer>
-#include <QtCharts/QLineSeries>
-#include <QtCore/QFile>
+
+
 struct OptimizerConfig;
 
 class ModelDataHolder;
@@ -75,7 +79,6 @@ private:
     int m_printlevel;
     void LogFile();
     QFile m_file, m_stdout;
-    QMap<int, ModelHistoryElement> m_history;
     bool m_ask_on_exit;
     virtual void closeEvent(QCloseEvent *event);
     
@@ -90,8 +93,8 @@ private slots:
     void SettingsDialog();
     void WriteMessages(const QString &message, int priority);
     void MessageBox(const QString &str, int priority);
-    void InsertHistoryElement(const ModelHistoryElement &element);
     void InsertHistoryElement(const QJsonObject &model);
+    void InsertHistoryElement(const QJsonObject &model, int active);
 signals:
     void AppendPlainText(const QString &str);
 };

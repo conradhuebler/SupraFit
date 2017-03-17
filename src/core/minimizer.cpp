@@ -24,7 +24,7 @@
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
 
-#include "src/ui/widgets/modelhistorywidget.h"
+// #include "src/ui/widgets/modelhistorywidget.h"
 
 #include <QCoreApplication>
 #include <QtCore/QDateTime>
@@ -327,13 +327,10 @@ void Minimizer::setParameter(const QJsonObject& json)
 void Minimizer::addToHistory()
 {
     QJsonObject model = m_model->ExportJSON();
-    ModelHistoryElement element;
-    element.model = model;
-    element.active_signals = m_model->ActiveSignals();
-    qreal error = m_model->ModelError();
-    
-    element.error = error;
-    emit InsertModel(element);
+    int active = 0;
+    for(int i = 0; i < m_model->ActiveSignals().size(); ++i)
+        active += m_model->ActiveSignals()[i];
+    emit InsertModel(model, active);
 }
 
 #include "minimizer.moc"

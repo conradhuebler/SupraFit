@@ -19,13 +19,16 @@
 
 #ifndef MODELWIDGET_H
 #define MODELWIDGET_H
+
 #include "src/core/minimizer.h"
-#include "src/ui/widgets/chartwidget.h"
 
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
 
+#include "src/ui/guitools/waiter.h"
 #include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/mainwindow/chartwidget.h"
+
 #include <QApplication>
 
 #include <QtCore/QJsonObject>
@@ -52,81 +55,14 @@ class _3DChartView;
 class OptimizerFlagWidget;
 class StatisticWidget;
 class StatisticDialog;
+class SpinBox;
+class ModelElement;
 
 struct ModelHistoryElement;
 struct Charts;
 struct CVConfig;
 struct MCConfig;
 
-class Waiter
-{
-public:
-    inline Waiter() {QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));}
-    inline ~Waiter() {QApplication::restoreOverrideCursor();}
-};
-
-class SpinBox : public QDoubleSpinBox
-{
-    Q_OBJECT
-public:
-    SpinBox(QWidget * parent = 0 );
-    inline ~SpinBox() { }
-    
-protected:
-    bool valueBeingSet;
-    
-public slots:
-    void setValue (double val);
-    
-private slots:
-    void On_valueChanged(double val);
-    
-signals:
-    void valueChangedNotBySet(double val);
-};
-
-
-class ModelElement : public QGroupBox
-{
-    Q_OBJECT
-public:
-    ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget *parent = 0);
-    ~ModelElement();
-    double D0() const;
-    QVector<double > D() const;
-    bool Include() const;
-    
-public slots:
-    void Update();
-    void ToggleSeries(int);
-    
-private:
-    SpinBox *m_d_0;
-    QVector<SpinBox * > m_constants;
-    QLabel *m_error;
-    QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
-    QCheckBox *m_include, *m_show;
-    QSharedPointer<AbstractTitrationModel > m_model;
-    QPointer<LineSeries > m_error_series, m_signal_series;
-    
-    int m_no;
-    QColor m_color;
-    Charts m_charts;
-
-    void DisableSignal(int state);
-    
-private slots:
-    void ColorChanged(const QColor &color);
-    void ChooseColor();
-    void togglePlot();
-    void toggleActive();
-    
-signals:
-    void ValueChanged();
-    void Minimize(int i);
-    void SetColor();
-    void ActiveSignalChanged();
-};
 
 
 class ModelWidget : public QWidget
@@ -157,8 +93,6 @@ public slots:
     
 private:
     QSharedPointer< AbstractTitrationModel > m_model;
-    QVector<QPointer<SpinBox >  >m_pure_signals;
-    QVector<QVector <QPointer<SpinBox > > > m_complex_signals;
     QVector<QPointer<SpinBox> > m_constants;
     QVector<QPointer<ModelElement > > m_model_elements;
     QVector<QPointer<QLineEdit > > m_errors;

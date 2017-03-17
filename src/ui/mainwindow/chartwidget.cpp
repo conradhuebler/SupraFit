@@ -16,10 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-#include "src/ui/chartwrapper.h"
-#include "src/ui/widgets/chartview.h"
+
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
+
+#include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/widgets/chartview.h"
 
 #include <QtCore/QTimer>
 #include <QtCore/QWeakPointer>

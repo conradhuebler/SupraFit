@@ -40,6 +40,7 @@ class QPushButton;
 class ChartWidget;
 class QPlainTextEdit;
 class QLabel;
+class StatisticDialog;
 
 class TabWidget: public QTabWidget
 {
@@ -135,7 +136,7 @@ signals:
     void ModelAdded(AbstractTitrationModel *model);
     void Message(const QString &str, int priority);
     void MessageBox(const QString &str, int priority);
-    void InsertModel(const ModelHistoryElement &element);
+    void InsertModel(const QJsonObject &model, int active);
     void InsertModel(const QJsonObject &model);
 };
 

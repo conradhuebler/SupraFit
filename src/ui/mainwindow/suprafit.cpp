@@ -25,30 +25,30 @@
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
 
-#include "src/ui/widgets/modelwidget.h"
-#include "src/ui/widgets/datawidget.h"
-#include "src/ui/widgets/chartwidget.h"
-#include "src/ui/widgets/modeldataholder.h"
+#include "src/ui/mainwindow/chartwidget.h"
+#include "src/ui/mainwindow/datawidget.h"
+#include "src/ui/mainwindow/modeldataholder.h"
+#include "src/ui/mainwindow/modelwidget.h"
 
 #include <QtCore/QSharedPointer>
 #include <QtCore/QWeakPointer>
 #include <QtCore/QSettings>
 #include <QtCore/QJsonObject>
 
+#include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
-#include <QtWidgets/QToolBar>
-#include <QtWidgets/QToolButton>
+#include <QtWidgets/QDockWidget>
+#include <QtWidgets/QFileDialog>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QListWidget>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
-#include <QtWidgets/QAction>
-#include <QtWidgets/QSplitter>
-#include <QtWidgets/QListWidget>
-#include <QtWidgets/QFileDialog>
-#include <QtWidgets/QPlainTextEdit>
-#include <QtWidgets/QDockWidget>
 #include <QtWidgets/QMessageBox>
+#include <QtWidgets/QSplitter>
+#include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QToolBar>
+#include <QtWidgets/QToolButton>
 
 #include <QDebug>
 
@@ -90,7 +90,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     
     m_stdout.open(stdout, QIODevice::WriteOnly);
     
-    m_historywidget = new ModelHistory(&m_history);
+    m_historywidget = new ModelHistory(this);
     QScrollArea *history_scroll = new QScrollArea(this);
     history_scroll->setWidget(m_historywidget);
         history_scroll->setWidgetResizable(true);
@@ -102,7 +102,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_history_dock->setMaximumWidth(240);
     m_history_dock->setMinimumWidth(240);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
-    connect(m_model_dataholder, SIGNAL(InsertModel(ModelHistoryElement)), this, SLOT(InsertHistoryElement(ModelHistoryElement)), Qt::DirectConnection);
+    connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject, int)), this, SLOT(InsertHistoryElement(QJsonObject, int)), Qt::DirectConnection);
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
     connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
@@ -432,21 +432,14 @@ void MainWindow::WriteSettings(bool ignore_window_state)
 }
 
 
-void MainWindow::InsertHistoryElement(const ModelHistoryElement &element)
-{
-    int nr = m_history.size();
-    m_history[nr] = element;
-    m_historywidget->InsertElement(&m_history[nr]);
-}
-
 void MainWindow::InsertHistoryElement(const QJsonObject &model)
 {
-    int nr = m_history.size();
-    ModelHistoryElement element;
-    element.model = model;
-    element.error = model["sse"].toDouble();
-    m_history[nr] = element;
-    m_historywidget->InsertElement(&m_history[nr]);
+     m_historywidget->InsertElement(model);
+}
+
+void MainWindow::InsertHistoryElement(const QJsonObject &model, int active)
+{
+    m_historywidget->InsertElement(model, active);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

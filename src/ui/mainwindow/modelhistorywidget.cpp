@@ -33,7 +33,7 @@
 
 #include "modelhistorywidget.h"
 
-ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidget *parent) : QGroupBox(parent), m_json(&element->model)
+ModelHistoryWidget::ModelHistoryWidget(const QJsonObject *element, int active, QWidget *parent) : QGroupBox(parent), m_json(element)
 {
     QGridLayout *layout = new QGridLayout;
     QJsonObject constants = (*m_json)["data"].toObject()["constants"].toObject();
@@ -65,13 +65,11 @@ ModelHistoryWidget::ModelHistoryWidget(const ModelHistoryElement *element, QWidg
     consts.chop(2);
     layout->addWidget(new QLabel(consts), 1, 0, 1, 2);
     
-    int active = 0;
-    for(int i = 0; i < element->active_signals.size(); ++i)
-        active += element->active_signals[i];
+
     layout->addWidget(new QLabel(QString::number(active) + " used signals"), 2, 0, 1, 2);
     
     layout->addWidget(new QLabel("Error"), 3, 0);
-    layout->addWidget(new QLabel(QString::number(element->error)), 3, 1);
+    layout->addWidget(new QLabel(QString::number((*m_json)["sum_of_squares"].toDouble())), 3, 1);
     
     m_add = new QPushButton(tr("Duplicate\nModel"));
     m_add->setFlat(true);
@@ -98,7 +96,7 @@ void ModelHistoryWidget::remove()
     emit Remove(m_json, element); 
 }
 
-ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent) : m_history(history), QWidget(parent)
+ModelHistory::ModelHistory( QWidget *parent) : QWidget(parent)
 {
     m_vlayout = new QVBoxLayout;
     m_vlayout->setAlignment(Qt::AlignTop);
@@ -110,10 +108,22 @@ ModelHistory::ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *par
 ModelHistory::~ModelHistory()
 {
 }
-
-void ModelHistory::InsertElement(const ModelHistoryElement *elm)
+void ModelHistory::InsertElement(const QJsonObject &model)
 {
-    QPointer<ModelHistoryWidget > element = new ModelHistoryWidget(elm);
+    int active;
+    QStringList keys = model["pureShift"].toObject().keys();
+    active = keys.size();
+
+    InsertElement(model, active);    
+}
+
+
+void ModelHistory::InsertElement(const QJsonObject &model, int active)
+{
+    int nr = m_history.size();
+    QJsonObject *object = new QJsonObject(model);
+    m_history[nr] = object;
+    QPointer<ModelHistoryWidget > element = new ModelHistoryWidget(object, active);
     m_vlayout->addWidget(element);
     connect(element, SIGNAL(AddJson(QJsonObject)), this, SIGNAL(AddJson(QJsonObject)));
     connect(element, SIGNAL(LoadJson(QJsonObject)), this, SIGNAL(LoadJson(QJsonObject)));

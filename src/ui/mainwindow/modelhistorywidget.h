@@ -42,7 +42,7 @@ class ModelHistoryWidget : public QGroupBox
 {
   Q_OBJECT
 public:
-    ModelHistoryWidget(const ModelHistoryElement *element,  QWidget *parent = 0);
+    ModelHistoryWidget(const QJsonObject *element, int active,  QWidget *parent = 0);
     inline ~ModelHistoryWidget(){ };
     
 private:
@@ -63,12 +63,13 @@ class ModelHistory : public QWidget
 {
     Q_OBJECT
 public:
-    ModelHistory(QMap<int, ModelHistoryElement> *history, QWidget *parent = 0);
+    ModelHistory(QWidget *parent = 0);
     ~ModelHistory();
-    void InsertElement(const ModelHistoryElement *elm);
+    void InsertElement(const QJsonObject &model, int active);
+    void InsertElement(const QJsonObject &model);
     
 private:
-    QMap<int, ModelHistoryElement> *m_history;
+    QMap<int, QJsonObject*> m_history;
     QWidget *m_mainwidget;
     QVBoxLayout *m_vlayout;
     

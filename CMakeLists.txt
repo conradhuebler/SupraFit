@@ -149,26 +149,30 @@ endif(testing)
 qt5_use_modules(utils Core Gui)
 
 set(suprafit_SRCS
+                src/ui/guitools/chartwrapper.cpp
                 src/ui/widgets/modelactions.cpp
+                src/ui/widgets/modelelement.cpp
+                src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
                 src/ui/widgets/modeltablewidget.cpp
                 src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/3dchartview.cpp
-                src/ui/widgets/modelhistorywidget.cpp
+                src/ui/widgets/chartview.cpp
+                src/ui/widgets/buttons/spinbox.h
+                src/ui/widgets/buttons/scientificbox.h
                 src/ui/dialogs/statisticdialog.cpp
                 src/ui/dialogs/modeldialog.cpp
                 src/ui/dialogs/advancedsearch.cpp
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp
                 src/ui/dialogs/chartconfig.cpp
-                src/ui/widgets/modeldataholder.cpp
                 src/ui/widgets/optimizerwidget.cpp
-                src/ui/widgets/chartwidget.cpp
-                src/ui/widgets/chartview.cpp
-                src/ui/widgets/datawidget.cpp
-                src/ui/widgets/modelwidget.cpp
-                src/ui/chartwrapper.cpp
-                src/ui/suprafit.cpp 
+                src/ui/mainwindow/modelhistorywidget.cpp
+                src/ui/mainwindow/chartwidget.cpp
+                src/ui/mainwindow/modeldataholder.cpp
+                src/ui/mainwindow/datawidget.cpp
+                src/ui/mainwindow/modelwidget.cpp
+                src/ui/mainwindow/suprafit.cpp 
                 src/main.cpp)
 qt5_add_resources(suprafit_SRCS files.qrc)
 add_executable(suprafit ${suprafit_SRCS})

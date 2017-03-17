@@ -1,0 +1,234 @@
+/*
+ * <one line to give the program's name and a brief idea of what it does.>
+ * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+#include "src/global.h"
+
+#include "src/core/toolset.h"
+#include "src/core/dataclass.h"
+#include "src/core/AbstractModel.h"
+
+#include "src/ui/widgets/buttons/spinbox.h"
+#include "src/ui/mainwindow/chartwidget.h"
+
+
+#include <QtMath>
+#include "cmath"
+#include <QApplication>
+
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QTimer>
+
+
+#include <QtWidgets/QGroupBox>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QLineEdit>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QColorDialog>
+
+#include <QtCharts/QXYSeries>
+#include <QtCharts/QLineSeries>
+
+#include <QDebug>
+
+#include "modelelement.h"
+
+
+ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_charts(charts), m_no(no)
+{
+    QVBoxLayout *layout = new QVBoxLayout;
+    QHBoxLayout *shifts = new QHBoxLayout;
+    m_d_0 = new SpinBox;
+    shifts->addWidget(m_d_0);
+    m_d_0->setSingleStep(1e-2);
+    m_d_0->setDecimals(4);
+    m_d_0->setSuffix(" ppm");
+    m_d_0->setValue(m_model->PureSignal(m_no));
+    m_d_0->setToolTip(tr("Shift of the pure - non silent substrat"));
+    m_d_0->setMaximumWidth(130);
+    connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
+    
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    {
+        QPointer<SpinBox >constant = new SpinBox;
+        m_constants << constant;
+        constant->setSingleStep(1e-2);
+        constant->setDecimals(4);
+        constant->setSuffix("ppm");
+        constant->setValue(m_model->Pair(i, m_no).second);
+        constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->ConstantNames()[i]));
+        constant->setMaximumWidth(130);
+        connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
+        shifts->addWidget(constant, 0);
+    }
+    
+    if(m_model->Type() != 3)
+    {
+        m_error = new QLabel;
+        shifts->addStretch(300);
+        shifts->addWidget(m_error); 
+        m_error->setText("Sum of Squares: <b>" + QString::number(m_model->SumOfErrors(m_no)) + "</b>");
+    } 
+    layout->addLayout(shifts);
+    QHBoxLayout *tools = new QHBoxLayout;
+    m_include = new QCheckBox(this);
+    m_include->setText("Include");
+    m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
+    m_include->setChecked(m_model->ActiveSignals()[m_no]);
+    connect(m_include, SIGNAL(clicked()), this, SLOT(toggleActive()));
+    tools->addWidget(m_include);
+    m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no));
+    m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
+    m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
+    m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
+    m_show = new QCheckBox;
+    m_show->setText(tr("Show in Plot"));
+    m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
+    m_show->setChecked(m_model->ActiveSignals()[m_no]);
+    tools->addWidget(m_show);
+    
+    m_plot = new QPushButton;
+    m_plot->setText(tr("Color"));
+    m_plot->setFlat(true);
+    tools->addWidget(m_plot);
+    setLayout(layout);
+    
+    m_toggle = new QPushButton(tr("Single Plot"));
+    m_toggle->setFlat(true);
+    m_toggle->setCheckable(true);
+    tools->addWidget(m_toggle);
+    connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
+    layout->addLayout(tools);
+    setMaximumHeight(75);
+    setMinimumHeight(75); 
+    ColorChanged(m_charts.data_wrapper->color(m_no));
+    connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
+    connect(m_plot, SIGNAL(clicked()), this, SLOT(ChooseColor()));
+    connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
+    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
+    toggleActive();
+}
+
+ModelElement::~ModelElement()
+{
+    
+}
+
+void ModelElement::toggleActive()
+{
+    int state = m_include->isChecked();
+    DisableSignal(state);
+    emit ActiveSignalChanged();
+}
+
+void ModelElement::DisableSignal(int state)
+{
+    m_show->setChecked(state);
+    m_error_series->ShowLine(state);
+    m_signal_series->ShowLine(state);
+    m_d_0->setEnabled(m_include->isChecked());
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    {
+        m_constants[i]->setEnabled(m_include->isChecked());
+    }
+}
+
+bool ModelElement::Include() const
+{
+    return m_include->isChecked();
+}
+
+
+double ModelElement::D0() const
+{
+    
+    return m_d_0->value();
+}
+
+
+QVector<double > ModelElement::D() const
+{
+    QVector<double > numbers;
+    for(int i = 0; i < m_constants.size(); ++i)
+        numbers << m_constants[i]->value();
+    return numbers;
+}
+
+void ModelElement::Update()
+{
+    m_include->setChecked(m_model->ActiveSignals()[m_no]);
+    DisableSignal(m_model->ActiveSignals()[m_no]);
+    if(!m_include->isChecked())
+        return;
+    m_d_0->setValue(m_model->PureSignal(m_no));
+    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    {
+        m_constants[i]->setValue(m_model->Pair(i, m_no).second);
+    }
+    if(m_model->Type() != 3)
+        m_error->setText("Sum of Squares: " + QString::number(m_model->SumOfErrors(m_no)));
+    
+}
+
+void ModelElement::ColorChanged(const QColor &color)
+{
+    
+    #ifdef _WIN32
+    setStyleSheet("background-color:" + color.name()+ ";");
+    #else
+    QPalette pal = palette();
+    pal.setColor(QPalette::Background,color);
+    setPalette(pal); 
+    #endif
+    
+    m_color = color;
+}
+
+
+void ModelElement::ChooseColor()
+{
+    
+    QColor color = QColorDialog::getColor(m_color, this, tr("Choose Color for Series"));
+    if(!color.isValid())
+        return;
+    
+    m_signal_series->setColor(color);
+    m_error_series->setColor(color);
+    ColorChanged(color);
+}
+
+void ModelElement::ToggleSeries(int i)
+{
+    m_signal_series->setVisible(i);
+    m_error_series->setVisible(i);
+    m_show->setChecked(i);
+}
+
+void ModelElement::togglePlot()
+{
+    if(m_toggle->isChecked())
+        m_charts.data_wrapper->showSeries(m_no); 
+    else
+        m_charts.data_wrapper->showSeries(-1);
+}
+
+#include "modelelement.moc"

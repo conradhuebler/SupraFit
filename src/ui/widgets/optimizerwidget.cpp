@@ -21,6 +21,8 @@
 
 #include "src/core/AbstractModel.h"
 
+#include "src/ui/widgets/buttons/scientificbox.h"
+
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QCheckBox>

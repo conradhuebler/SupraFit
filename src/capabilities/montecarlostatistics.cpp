@@ -21,12 +21,13 @@
 #include "src/core/toolset.h"
 
 #include <QtCore/QCollator>
-#include <QtCore/QObject>
 #include <QtCore/QCoreApplication>
-#include <QtCore/QThreadPool>
-#include <QtCore/QVector>
+#include <QtCore/QObject>
 #include <QtCore/QDateTime>
+#include <QtCore/QPointF>
+#include <QtCore/QThreadPool>
 #include <QtCore/QTimer>
+#include <QtCore/QVector>
 
 #include <iostream>
 #include <cmath>

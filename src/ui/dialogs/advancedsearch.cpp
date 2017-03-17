@@ -22,7 +22,7 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
-#include "src/ui/widgets/modelwidget.h"
+#include "src/ui/guitools/waiter.h"
 
 #include <QApplication>
 

@@ -35,37 +35,8 @@ class QValidator;
 class QSpinBox;
 class QCheckBox;
 class QTabWidget;
+class ScientificBox;
 
-class ScientificBox : public QDoubleSpinBox
-{
-    Q_OBJECT
-public:
-    inline QString textFromValue(double val) const
-    {
-        return QString::number(val, 'E', 2);
-    }
-
-    inline double valueFromText(const QString &text) const
-    {
-        QString value = text;
-        value.replace(loc.decimalPoint(), '.');
-        return value.toDouble();
-    }
-
-    inline QValidator::State validate(QString &input, int &pos) const
-    {
-        QDoubleValidator validator;
-        validator.setBottom(minimum());
-        validator.setTop(maximum());
-        validator.setDecimals(2);
-        validator.setNotation(QDoubleValidator::ScientificNotation);
-        input.replace('.', loc.decimalPoint());
-        return validator.validate(input, pos);
-    }
-
-private:
-    QLocale loc;
-};
 
 class OptimizerWidget : public QWidget
 {

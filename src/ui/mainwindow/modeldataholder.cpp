@@ -23,8 +23,8 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 
-#include "src/ui/widgets/datawidget.h"
-#include "src/ui/widgets/modelwidget.h"
+#include "src/ui/mainwindow/datawidget.h"
+#include "src/ui/mainwindow/modelwidget.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
 #include <QApplication>
@@ -42,7 +42,6 @@
 #include <QtWidgets/QCheckBox>
 
 #include "modeldataholder.h"
-#include "chartwidget.h"
 
 
 #include <iostream>
@@ -312,7 +311,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
-    connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(ModelHistoryElement)), this, SIGNAL(InsertModel(ModelHistoryElement)), Qt::DirectConnection);
+    connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(QJsonObject, int)), this, SIGNAL(InsertModel(QJsonObject, int)), Qt::DirectConnection);
     
     connect(modelwidget, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)));
     connect(m_statistic_dialog, SIGNAL(Interrupt()), modelwidget, SIGNAL(Interrupt()));

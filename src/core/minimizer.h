@@ -23,11 +23,11 @@
 #include "src/global.h"
 
 #include "src/core/AbstractModel.h"
-#include "src/ui/widgets/modelhistorywidget.h"
-#include <QtCore/QSharedPointer>
+
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
+#include <QtCore/QSharedPointer>
 #include <QtCore/QThreadPool>
 
 class AbstractTitrationModel;
@@ -104,7 +104,7 @@ signals:
     void Warning(const QString &str, int priority);
     void RequestCrashFile();
     void RequestRemoveCrashFile();
-    void InsertModel(const ModelHistoryElement &element);
+    void InsertModel(const QJsonObject &model, int active);
 };
 
 #endif // MINIMIZER_H

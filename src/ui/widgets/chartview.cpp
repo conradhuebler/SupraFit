@@ -17,9 +17,10 @@
  * 
  */
 
-#include "src/ui/dialogs/chartconfig.h"
 #include "src/core/toolset.h"
-#include "src/ui/widgets/modelwidget.h"
+
+#include "src/ui/dialogs/chartconfig.h"
+#include "src/ui/mainwindow/modelwidget.h"
 
 #include <QtCore/QBuffer>
 #include <QtCore/QMimeData>
@@ -251,18 +252,19 @@ void ChartView::forceformatAxis()
         QPointer<QtCharts::QXYSeries > serie = qobject_cast<QtCharts::QXYSeries * >(series);
         if(!serie)
             continue;
-        if(serie->isVisible())
+        if(!serie->isVisible())
+            continue;
+        
+        QVector<QPointF> points = serie->pointsVector();
+        for(int i = 0; i < points.size(); ++i)
         {
-            QVector<QPointF> points = serie->pointsVector();
-            for(int i = 0; i < points.size(); ++i)
-            {
-                y_min = qMin(y_min, points[i].y());
-                y_max = qMax(y_max, points[i].y());
-                
-                x_min = qMin(x_min, points[i].x());
-                x_max = qMax(x_max, points[i].x());
-            }
+            y_min = qMin(y_min, points[i].y());
+            y_max = qMax(y_max, points[i].y());
+            
+            x_min = qMin(x_min, points[i].x());
+            x_max = qMax(x_max, points[i].x());
         }
+        
     }
     int x_mean = (x_max + x_min)/2;
     int y_mean = (y_max + y_min)/2;
