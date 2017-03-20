@@ -248,7 +248,7 @@ void AdvancedSearch::SearchGlobal()
      m_models_list = m_search->SearchGlobal();
      m_full_list = m_search->FullList();
      Finished();
-     emit MultiScanFinished(1);
+     emit MultiScanFinished();
 }
 
 void AdvancedSearch::LocalSearch()

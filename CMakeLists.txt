@@ -150,11 +150,13 @@ qt5_use_modules(utils Core Gui)
 
 set(suprafit_SRCS
                 src/ui/guitools/chartwrapper.cpp
+                src/ui/widgets/results/searchresultwidget.cpp
+                src/ui/widgets/results/cvresultswidget.cpp
+                src/ui/widgets/results/mcresultswidget.cpp
                 src/ui/widgets/modelactions.cpp
                 src/ui/widgets/modelelement.cpp
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
-                src/ui/widgets/modeltablewidget.cpp
                 src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/chartview.cpp

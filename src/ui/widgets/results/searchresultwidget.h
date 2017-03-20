@@ -17,8 +17,8 @@
  * 
  */
 
-#ifndef MODELTABLEWIDGET_H
-#define MODELTABLEWIDGET_H
+#ifndef SearchResultWidget_H
+#define SearchResultWidget_H
 
 #include <QtWidgets/QWidget>
 
@@ -28,13 +28,13 @@ class QPushButton;
 class ScientificBox;
 class QCheckBox;
 
-class ModelTableWidget : public QWidget
+class SearchResultWidget : public QWidget
 {
     Q_OBJECT
     
 public:
-    ModelTableWidget();
-    ~ModelTableWidget();
+    SearchResultWidget();
+    ~SearchResultWidget();
     void setModelList(const QList<QJsonObject> &list);
     void setModel(const QSharedPointer<AbstractTitrationModel> model){ m_model = model; }
     void setInputList(const QVector<QList <qreal > >&input) { m_input = input; }
@@ -58,4 +58,4 @@ signals:
     void AddModel(const QJsonObject &object);
 };
 
-#endif // MODELTABLEWIDGET_H
+#endif // SearchResultWidget_H

@@ -41,7 +41,9 @@
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
-#include "src/ui/widgets/modeltablewidget.h"
+#include "src/ui/widgets/results/cvresultswidget.h"
+#include "src/ui/widgets/results/mcresultswidget.h"
+#include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/mainwindow/chartwidget.h"
 
 #include <QtMath>
@@ -95,7 +97,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
-    connect(m_advancedsearch, SIGNAL(MultiScanFinished(int)), this, SLOT(MultiScanFinished(int)));
+    connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
     m_search_result = new ModalDialog;
     m_statistic_result = new ModalDialog;
     m_statistic_widget = new StatisticWidget(m_model, this),
@@ -346,92 +348,8 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
-    QList<QList<QPointF > >series = monte_carlo->getSeries();
-    QList<QJsonObject > constant_results = monte_carlo->getResult();
-    QWidget *resultwidget = new QWidget;
-    QGridLayout *layout = new QGridLayout;
-    resultwidget->setLayout(layout);
-    
-    QtCharts::QChart *chart = new QtCharts::QChart;
-    
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    ChartView *view = new ChartView(chart);
-    layout->addWidget(view, 0, 0, 1, 7);
-    bool formated = false;
-    for(int i = 0; i < constant_results.size(); ++i)
-        m_model->setMCStatistic(constant_results[i], i);
-    for(int i = 0; i < series.size(); ++i)
-    {
-        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-        xy_series->append(series[i]);
-        view->addSeries(xy_series);
-        if(!formated)
-            view->formatAxis();
-        formated = true;
-        
-        
-        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
-        *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());
-        current_constant->setColor(xy_series->color());
-        view->addSeries(current_constant);
-        QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
-        QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
-        
-        QJsonObject confidence = constant_results[i]["confidence"].toObject();
-        *series1 << QPointF(confidence["lower_5"].toVariant().toDouble(), 0) << QPointF(confidence["lower_5"].toVariant().toDouble(), view->YMax());
-        *series2 << QPointF(confidence["upper_5"].toVariant().toDouble(), 0) << QPointF(confidence["upper_5"].toVariant().toDouble(), view->YMax());
-        QtCharts::QAreaSeries *area_series = new QtCharts::QAreaSeries(series1, series2);
-        QPen pen(0x059605);
-        pen.setWidth(3);
-        area_series->setPen(pen);
-        
-        QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
-        gradient.setColorAt(0.0, xy_series->color());
-        gradient.setColorAt(1.0, 0x26f626);
-        gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
-        area_series->setBrush(gradient);
-        area_series->setOpacity(0.4);
-        view->addSeries(area_series);
-        
-        QString text;
-        if(i == 0)
-        {
-            text += "MC Steps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
-            if(constant_results[i]["controller"].toObject()["bootstrap"].toBool())
-                text += "Bootstrapped ";
-            else
-                text += "Variance = " + QString::number(constant_results[i]["controller"].toObject()["variance"].toDouble()) + " ";
-            
-            if(constant_results[i]["controller"].toObject()["original"].toBool())
-                text += "operated on original data\n";
-            else
-                text += "operated on modelled data\n";
-        }
-        text  += m_statistic_widget->TextFromConfidence(constant_results[i]) + "\n";
-        QLabel *label = new QLabel(text);
-        label->setTextFormat(Qt::RichText);
-        layout->addWidget(label, i + 1, 0);
- 
-    }
-    // FIXME all that stuff will be cleaned up some times ...
-    
-    if(m_model->ConstantSize() == 2)
-    {
-        QList<QPointF > data = ToolSet::fromModelsList(monte_carlo->Models());
-        QWidget *resultwidget_ellipsoid = new QWidget;
-        QGridLayout *layout_ellipsoid = new QGridLayout;
-        resultwidget_ellipsoid->setLayout(layout_ellipsoid);
-        QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
-        chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        ChartView *view = new ChartView(chart_ellipsoid);
-        layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
-        QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
-        xy_series->append(data);
-        xy_series->setMarkerSize(8);
-        view->addSeries(xy_series);
-        m_statistic_result->setWidget(resultwidget_ellipsoid, "Monte Carlo Simulation for " + m_model->Name());
-    }
-    
+    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model, this);
+
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
     buff.remove("<table>");
@@ -444,9 +362,8 @@ void ModelWidget::MCStatistic(MCConfig config)
     doc.setHtml(buff);
     
     m_logging += "\n\n" +  doc.toPlainText();
-    m_statistic_result->setWidget(resultwidget, "Monte Carlo Simulation for " + m_model->Name());
+    m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
     m_statistic_result->show();  
-    delete monte_carlo;
 }
 
 void ModelWidget::FastConfidence()
@@ -498,45 +415,11 @@ void ModelWidget::CVStatistic(CVConfig config)
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
-    
-    QList<QJsonObject > constant_results = statistic->Results();
-    QList<QList<QPointF > >series = statistic->Series();
-    QWidget *resultwidget = new QWidget;
-    QGridLayout *layout = new QGridLayout;
-    resultwidget->setLayout(layout);
-    
-    QtCharts::QChart *chart = new QtCharts::QChart;
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    ChartView *view = new ChartView(chart);
-    layout->addWidget(view, 0, 0, 1, 7);
-    for(int i = 0; i < constant_results.size(); ++i)
-    {
-        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
-        xy_series->append(series[i]);
-        view->addSeries(xy_series);
-        m_model->setCVStatistic(constant_results[i], i);
-        
-        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
-        *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
-        current_constant->setColor(xy_series->color());
-        view->addSeries(current_constant);
-        
-        QString text;
-        if(i == 0)
-        {
-            text += "Maxsteps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
-            text += "Increment = " + QString::number(constant_results[i]["controller"].toObject()["increment"].toDouble()) + "\t";
-            text += "Max Error = " + QString::number(constant_results[i]["controller"].toObject()["maxerror"].toDouble()) + "\n";
-        }
-        text  += m_statistic_widget->TextFromConfidence(constant_results[i]) + "\n";
-        QLabel *label = new QLabel(text);
-        label->setTextFormat(Qt::RichText);
-        layout->addWidget(label, i + 1, 0);
-    }
+    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
     
-    delete statistic;
+
 }
 
 void ModelWidget::MoCoStatistic()
@@ -563,20 +446,7 @@ void ModelWidget::MoCoStatistic(CVConfig config)
     statistic->setParameter(json);
     statistic->EllipsoideConfidence();
      
-    QList<QJsonObject > constant_results = statistic->Results();
-    QList<QList<QPointF > >series = statistic->Series();
-    QWidget *resultwidget = new QWidget;
-    QGridLayout *layout = new QGridLayout;
-    resultwidget->setLayout(layout);
-    
-    QtCharts::QChart *chart = new QtCharts::QChart;
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    ChartView *view = new ChartView(chart);
-    layout->addWidget(view, 0, 0, 1, 7);
-    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
-    xy_series->append(ToolSet::fromModelsList(statistic->Models()));
-    xy_series->setMarkerSize(8);
-    view->addSeries(xy_series);
+    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
     
@@ -803,9 +673,9 @@ void ModelWidget::PlotFinished(int runtype)
 }
 
 
-void ModelWidget::MultiScanFinished(int runtype)
+void ModelWidget::MultiScanFinished()
 {
-    ModelTableWidget *table = new ModelTableWidget;
+    SearchResultWidget *table = new SearchResultWidget;
     connect(table, SIGNAL(LoadModel(const QJsonObject)), this, SLOT(LoadJson(const QJsonObject)));
     connect(table, SIGNAL(AddModel(const QJsonObject)), this, SIGNAL(AddModel(const QJsonObject)));
     table->setModel(m_model);

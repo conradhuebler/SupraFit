@@ -129,7 +129,7 @@ private slots:
     void setParameter();
     void OpenAdvancedSearch();
     void PlotFinished(int runtype);
-    void MultiScanFinished(int runtype);
+    void MultiScanFinished();
     void TogglePlot3D();
     void TogglePlot();
     void ToggleConcentrations();

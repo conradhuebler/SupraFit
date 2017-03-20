@@ -37,9 +37,9 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QFileDialog>
 
-#include "modeltablewidget.h"
+#include "searchresultwidget.h"
 
-ModelTableWidget::ModelTableWidget()
+SearchResultWidget::SearchResultWidget()
 {
     QGridLayout *layout = new QGridLayout;
     
@@ -64,12 +64,12 @@ ModelTableWidget::ModelTableWidget()
     setLayout(layout);
 }
 
-ModelTableWidget::~ModelTableWidget()
+SearchResultWidget::~SearchResultWidget()
 {
     m_list.clear();
 }
 
-void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
+void SearchResultWidget::setModelList(const QList<QJsonObject>& list)
 {
     if(m_model.isNull())
         return;
@@ -134,14 +134,14 @@ void ModelTableWidget::setModelList(const QList<QJsonObject>& list)
     resize(m_table->sizeHint());
 }
 
-void ModelTableWidget::rowSelected(const QModelIndex &index)
+void SearchResultWidget::rowSelected(const QModelIndex &index)
 {
     int i = index.data(Qt::UserRole).toInt();
     QJsonObject model = m_list[i];
     emit LoadModel(model);
 }
 
-void ModelTableWidget::ShowContextMenu(const QPoint& pos)
+void SearchResultWidget::ShowContextMenu(const QPoint& pos)
 {
     Q_UNUSED(pos)
     QModelIndex index = m_table->currentIndex();
@@ -150,7 +150,7 @@ void ModelTableWidget::ShowContextMenu(const QPoint& pos)
     emit AddModel(model);
 }
 
-void ModelTableWidget::ExportModels()
+void SearchResultWidget::ExportModels()
 {
     qreal threshold = m_threshold->value();
     bool allow_invalid = m_valid->isChecked();
@@ -177,4 +177,4 @@ void ModelTableWidget::ExportModels()
     JsonHandler::WriteJsonFile(toplevel, str);
 }
 
-#include "modeltablewidget.moc"
+#include "searchresultwidget.h"
