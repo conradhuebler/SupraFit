@@ -41,6 +41,8 @@ struct ConfidenceBar
     qreal upper_5 = 0;
     qreal lower_2_5 = 0;
     qreal lower_5 = 0;
+    qreal lower = 0;
+    qreal upper = 0;
 };
 
 struct MassResults

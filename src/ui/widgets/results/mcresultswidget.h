@@ -24,8 +24,14 @@
 
 #include <QtWidgets/QWidget>
 
+#include <QtCharts/QAreaSeries>
+
 class MonteCarloStatistics;
 class AbstractTitrationModel;
+class QPushButton;
+class QDoubleSpinBox;
+
+class ChartView;
 
 class MCResultsWidget : public QWidget
 {
@@ -39,11 +45,21 @@ private:
     QPointer<MonteCarloStatistics> m_statistics;
     QSharedPointer< AbstractTitrationModel > m_model;
     
+    QPushButton *m_switch, *m_save;
+    QDoubleSpinBox *m_error;
+    QPointer<ChartView > m_histgram, m_contour;
+    QVector<QColor> m_colors;
     void setUi();
-    void ShowContour();
+    
+    QtCharts::QAreaSeries *AreaSeries(const QJsonObject &confidence, const QColor &color, double max) const;
+    void ClearArea(); 
+    QPointer<ChartView > MakeHistogram(QString &confidence);
+    QPointer<ChartView > MakeContour();
     
 private slots:
     void ChangeConfidence();
+    void ExportResults();
+    void SwitchView();
     
 };
 

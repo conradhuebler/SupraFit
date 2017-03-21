@@ -72,10 +72,13 @@ public:
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
-    
+    void AnalyseData(qreal error = 5);
+     
     inline QList<QJsonObject > getResult() const { return m_mc_results; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }
     inline QList<QJsonObject > Models() const { return m_models; }
+    
+   
     
 public slots:
     void Interrupt();
@@ -83,9 +86,9 @@ public slots:
 private:
     QVector<QPointer <MonteCarloThread > > GenerateData();
     void Collect(const QVector<QPointer <MonteCarloThread > > &threads);
-    void AnalyseData();
+    
     void ExtractFromJson(int i, const QString &string);
-    QJsonObject MakeJson(QList<qreal > &list);
+    QJsonObject MakeJson(QList<qreal > &list, qreal error);
     QSharedPointer<AbstractTitrationModel> m_model;
     QThreadPool *m_threadpool;
     QList<QList<QPointF> > m_series;

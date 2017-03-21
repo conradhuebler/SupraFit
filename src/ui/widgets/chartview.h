@@ -43,7 +43,7 @@ public:
     inline ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {setRubberBand(QChartView::RectangleRubberBand);}
     inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); setRenderHint(QPainter::Antialiasing, true);setRubberBand(QChartView::RectangleRubberBand);}
     inline ~ChartViewPrivate(){ };
-        
+    
 protected:
     virtual void mousePressEvent(QMouseEvent *event) override;
     virtual void mouseReleaseEvent(QMouseEvent * event) override;
@@ -64,6 +64,9 @@ public:
     inline ~ChartView() { }
     void addSeries( QtCharts::QAbstractSeries* series, bool legend = false );
     qreal YMax() const { return m_ymax; }
+    inline void removeSeries(QtCharts::QAbstractSeries *series) { m_chart->removeSeries(series); }
+    inline QList<QtCharts::QAbstractSeries *> series() const { return m_chart->series(); }
+    
 public slots:
     void formatAxis();
     

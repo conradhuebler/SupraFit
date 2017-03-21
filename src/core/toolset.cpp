@@ -185,6 +185,31 @@ namespace ToolSet{
         }
         return histogram;
     }
+    /*
+     * FIXME
+     * some redundant and double things happend here
+     * will change this 
+     */
+    ConfidenceBar Confidence(QList<qreal > &list, qreal error)
+    {
+        if(error == 0 || error == 5)
+            return Confidence(list);
+        
+        ConfidenceBar result;
+        std::sort(list.begin(), list.end());
+        int size_0 = list.size();
+        
+        while(double(list.size())/double(size_0) > (1-error/100))
+        {
+            list.removeFirst();
+            list.removeLast();
+        }
+        result.lower = list.first();
+        result.upper = list.last();
+        result.lower_5 = list.first();
+        result.upper_5 = list.last();
+        return result;
+    }
     
     ConfidenceBar Confidence(QList<qreal > &list)
     {
@@ -206,9 +231,10 @@ namespace ToolSet{
         }
         result.lower_5 = list.first();
         result.upper_5 = list.last();
+        result.lower = list.first();
+        result.upper = list.last();
         return result;
     }
-    
     
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models)
     {

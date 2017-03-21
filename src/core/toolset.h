@@ -46,6 +46,7 @@ namespace ToolSet{
     qreal scale(qreal value);
     
     QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
+    ConfidenceBar Confidence(QList<qreal > &list, qreal error);
     ConfidenceBar Confidence(QList<qreal > &list);
     
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models);

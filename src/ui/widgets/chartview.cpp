@@ -142,7 +142,7 @@ void ChartViewPrivate::keyPressEvent(QKeyEvent *event)
     }
 }
 
-ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false), m_latex_supported(latex_supported)
+ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false), m_latex_supported(latex_supported), m_ymax(0)
 {
     setUi();
     m_chart->legend()->setAlignment(Qt::AlignRight);

@@ -164,7 +164,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
     }
 }
 
-void MonteCarloStatistics::AnalyseData()
+void MonteCarloStatistics::AnalyseData(qreal error)
 {
     m_constant_list.resize(m_model->ConstantSize());
     m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount()+m_model->SignalCount());
@@ -182,7 +182,7 @@ void MonteCarloStatistics::AnalyseData()
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
         QList<qreal > list = m_constant_list[i];
-        QJsonObject result = MakeJson(list);
+        QJsonObject result = MakeJson(list, error);
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
@@ -194,7 +194,7 @@ void MonteCarloStatistics::AnalyseData()
         QList<qreal > list = m_shift_list[i];
         if(m_shift_list[i].size() == 0)
             continue;
-        QJsonObject result = MakeJson(list);
+        QJsonObject result = MakeJson(list, error);
         /*
          * Some fun goes here, since our data are one long vector
          * the 0 - SignalCount() Datas are one block
@@ -213,8 +213,8 @@ void MonteCarloStatistics::AnalyseData()
         result["type"] = "Shift";
         m_mc_results << result;
     }
-    
 }
+
 void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
 {
     QJsonObject object =  m_models[i]["data"].toObject()[string].toObject();
@@ -258,9 +258,9 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
     
 }
 
-QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list)
+QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
 {
-    ConfidenceBar bar = ToolSet::Confidence(list);
+    ConfidenceBar bar = ToolSet::Confidence(list, error);
     QJsonObject result;
     
     QJsonObject confidence;
@@ -268,6 +268,8 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list)
     confidence["upper_2_5"] = bar.upper_2_5;
     confidence["lower_2_5"] = bar.lower_2_5;
     confidence["lower_5"] = bar.lower_5;
+    confidence["lower"] = bar.lower;
+    confidence["upper"] = bar.upper;
     result["confidence"] = confidence;
     
     QJsonObject controller;
