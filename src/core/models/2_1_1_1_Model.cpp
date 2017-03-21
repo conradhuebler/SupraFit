@@ -177,7 +177,7 @@ QSharedPointer<AbstractTitrationModel > IItoI_ItoI_Model::Clone() const
 
 qreal IItoI_ItoI_Model::BC50()
 {
-    qreal b11 = qPow(10,Constants()[0]);
+    qreal b11 = qPow(10,Constants()[1]);
     qreal b21 = qPow(10,(Constants()[0]+Constants()[1]));
     qreal bc50 = -b11/b21/double(2) + sqrt(qPow(b11/double(2)/b21,2)+1/b21);
     return bc50;
