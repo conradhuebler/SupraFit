@@ -17,41 +17,34 @@
  * 
  */
 
-#ifndef STATISTICWIDGET_H
-#define STATISTICWIDGET_H
+#ifndef MCRESULTSWIDGET_H
+#define MCRESULTSWIDGET_H
 
-#include <QtCore/QSharedPointer>
+#include <QtCore/QPointer>
 
 #include <QtWidgets/QWidget>
 
+class MonteCarloStatistics;
 class AbstractTitrationModel;
-class QLabel;
-class QPushButton;
-class QTextEdit;
-struct StatisticResult;
 
-class StatisticWidget : public QWidget
+class MCResultsWidget : public QWidget
 {
     Q_OBJECT
+    
 public:
-    StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
-    ~StatisticWidget();
-    inline QString Overview() const { return m_short; }
-    inline QString Statistic() const { return m_statistics; }
-    static QString TextFromConfidence(const QJsonObject &result);
+    MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    ~MCResultsWidget();
     
 private:
+    QPointer<MonteCarloStatistics> m_statistics;
+    QSharedPointer< AbstractTitrationModel > m_model;
     
+    void setUi();
+    void ShowContour();
     
-    QSharedPointer<AbstractTitrationModel > m_model;
-//     QList<QPointer<StatisticElement> > m_elements;
-    QPushButton *m_show;
-    QWidget *m_subwidget;
-    QTextEdit *m_overview;
-    QString m_short, m_statistics;
 private slots:
-    void toggleView();
-    void Update();
+    void ChangeConfidence();
+    
 };
 
-#endif // STATISTICWIDGET_H
+#endif // MCRESULTSWIDGET_H

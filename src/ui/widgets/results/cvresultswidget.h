@@ -17,41 +17,31 @@
  * 
  */
 
-#ifndef STATISTICWIDGET_H
-#define STATISTICWIDGET_H
-
-#include <QtCore/QSharedPointer>
+#ifndef CVRESULTSWIDGET_H
+#define CVRESULTSWIDGET_H
 
 #include <QtWidgets/QWidget>
 
+class ContinuousVariation;
 class AbstractTitrationModel;
-class QLabel;
-class QPushButton;
-class QTextEdit;
-struct StatisticResult;
 
-class StatisticWidget : public QWidget
+class CVResultsWidget : public QWidget
 {
     Q_OBJECT
 public:
-    StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
-    ~StatisticWidget();
-    inline QString Overview() const { return m_short; }
-    inline QString Statistic() const { return m_statistics; }
-    static QString TextFromConfidence(const QJsonObject &result);
-    
+    CVResultsWidget(QPointer<ContinuousVariation > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    ~CVResultsWidget();
 private:
+    QPointer<ContinuousVariation> m_statistics;
+    QSharedPointer< AbstractTitrationModel > m_model;
     
+    void setUi();
+    void Ellipsoidal();
+    void CVPlot();
+//     void ShowContour();
     
-    QSharedPointer<AbstractTitrationModel > m_model;
-//     QList<QPointer<StatisticElement> > m_elements;
-    QPushButton *m_show;
-    QWidget *m_subwidget;
-    QTextEdit *m_overview;
-    QString m_short, m_statistics;
 private slots:
-    void toggleView();
-    void Update();
+    void ChangeConfidence();
 };
 
-#endif // STATISTICWIDGET_H
+#endif // CVRESULTSWIDGET_H

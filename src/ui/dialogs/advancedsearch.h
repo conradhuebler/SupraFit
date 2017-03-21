@@ -127,7 +127,7 @@ private slots:
     
 signals:
     void PlotFinished(int runtype);
-    void MultiScanFinished(int runtype);
+    void MultiScanFinished();
     void setValue(int value);
 };
 
