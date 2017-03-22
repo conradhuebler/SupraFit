@@ -109,13 +109,10 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
     
     m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
-    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTableAction()));
+    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
     
-    m_import = new QAction(QIcon::fromTheme("document-open"), tr("Import Table"));
-    connect(m_import, SIGNAL(triggered(bool)), this, SLOT(ImportTableAction()));
-    
-    m_load = new QAction(QIcon::fromTheme("document-open"), tr("Load Project"));
-    connect(m_load, SIGNAL(triggered(bool)), this, SLOT(LoadProjectAction()));
+    m_load = new QAction(QIcon::fromTheme("document-open"), tr("Open File"));
+    connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
     
     m_save = new QAction(QIcon::fromTheme("document-save"), tr("Save Project"));
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
@@ -139,7 +136,6 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_main_toolbar = new QToolBar;
     m_main_toolbar->setObjectName(tr("main_toolbar"));
     m_main_toolbar->addAction(m_new);
-    m_main_toolbar->addAction(m_import);
     m_main_toolbar->addAction(m_load);
     m_main_toolbar->addAction(m_save);
     m_main_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
@@ -172,6 +168,22 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
 MainWindow::~MainWindow()
 {
     
+}
+
+void MainWindow::LoadFile(const QString &file)
+{
+    bool invalid_json = false;
+    if(file.contains("json"))
+    {
+        invalid_json = !LoadProject(file);
+        if(!invalid_json)
+            return;
+    }else{
+        ImportTable(file);
+    }
+    
+    if(invalid_json)
+        QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
 }
 
 void MainWindow::setActionEnabled(bool enabled)
@@ -223,7 +235,7 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str
 }
 
 
-void MainWindow::NewTableAction()
+void MainWindow::NewTable()
 {
     ImportData dialog(this);
     if(dialog.exec() == QDialog::Accepted)
@@ -231,18 +243,16 @@ void MainWindow::NewTableAction()
     
 }
 
-void MainWindow::ImportTableAction()
+void MainWindow::OpenFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(),  tr("Supported files (*.json *.jdat *.txt *.dat);;Json File (*.json);;Binary (*.jdat);;Table Files (*.dat *.txt);;All files (*.*)" ));
     if(filename.isEmpty())
         return;
     setLastDir(filename);
-    ImportData dialog(filename, this);
-    if(dialog.exec() == QDialog::Accepted)
-        SetData(new DataClass(dialog.getStoredData()), filename);
+    LoadFile(filename);
 }
 
-void MainWindow::ImportAction(const QString& file)
+void MainWindow::ImportTable(const QString& file)
 {
     ImportData dialog(file, this);
     
@@ -250,25 +260,24 @@ void MainWindow::ImportAction(const QString& file)
         SetData(new DataClass(dialog.getStoredData()), file);
 }
 
-void MainWindow::LoadProjectAction()
+
+bool MainWindow::LoadProject(const QString& filename)
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Load File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
-    if(!str.isEmpty())
+    QJsonObject toplevel;
+    if(JsonHandler::ReadJsonFile(toplevel, filename))
     {
-        setLastDir(str);
-        QJsonObject toplevel;
-        if(JsonHandler::ReadJsonFile(toplevel, str))
+        QPointer<const DataClass > data = new DataClass(toplevel);
+        if(data->DataPoints() != 0)
         {
-            QPointer<const DataClass > data = new DataClass(toplevel);
-            if(data->DataPoints() != 0)
-            {
-                SetData(data, str);
-            }
-            else
-                QMessageBox::warning(this, tr("Loading Datas."),  tr("Sorry, but this doesn't contain any titration tables!"),  QMessageBox::Ok | QMessageBox::Default);
+            SetData(data, filename);
+            return true;
         }
+        else
+            return false;
     }
+    return false;
 }
+
 
 void MainWindow::SaveProjectAction()
 {
@@ -464,4 +473,5 @@ void MainWindow::closeEvent(QCloseEvent *event)
     WriteSettings(false);
     QMainWindow::closeEvent(event);
 }
+
 #include "suprafit.moc"

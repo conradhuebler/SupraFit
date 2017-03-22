@@ -198,7 +198,7 @@ void ImportData::LoadFile()
         QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
     
     delete filehandler;
-    NoChanged();
+//     NoChanged();
 }
 
 void ImportData::SelectFile()

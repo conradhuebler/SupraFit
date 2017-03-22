@@ -49,12 +49,13 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
     virtual ~MainWindow();
-    void ImportAction(const QString &file);
+    
+    
     bool SetData(QPointer<const DataClass > dataclass, const QString &str = QString("new table"));
     
     
 public slots:
-
+    void LoadFile(const QString &file);
     
 private:
     void setActionEnabled(bool enabled);
@@ -62,6 +63,8 @@ private:
     void ReadGeometry();
     void WriteSettings(bool ignore_window_state = true);
     
+    bool LoadProject(const QString &filename);
+    void ImportTable(const QString &file);
     
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;
@@ -70,7 +73,7 @@ private:
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer <DataClass > m_titration_data;
     bool m_hasData;
-    QAction *m_new, *m_import, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
+    QAction *m_new, *m_edit, *m_config, *m_about, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     OptimizerConfig m_opt_config;
 
     QDockWidget *m_logdock, *m_modeldock, *m_chartdock, *m_history_dock;
@@ -83,10 +86,9 @@ private:
     virtual void closeEvent(QCloseEvent *event);
     
 private slots:
-    void NewTableAction();
-    void ImportTableAction();
+    void NewTable();
+    void OpenFile();
     void EditTableAction();
-    void LoadProjectAction();
     void SaveProjectAction();
     void ImportModelAction();
     void ExportModelAction();
