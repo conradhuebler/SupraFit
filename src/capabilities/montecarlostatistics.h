@@ -72,7 +72,7 @@ public:
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
-    
+    void ExportResults(const QString &filename);
      
     inline QList<QJsonObject > getResult() const { return m_mc_results; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }

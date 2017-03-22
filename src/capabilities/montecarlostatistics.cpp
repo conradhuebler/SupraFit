@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
+#include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
 #include "src/core/toolset.h"
@@ -283,6 +285,26 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
     controller["bootstrap"] = m_config.bootstrap;
     result["controller"] = controller;
     return result;
+}
+
+void MonteCarloStatistics::ExportResults(const QString& filename)
+{
+    QJsonObject toplevel;
+    int i = 0;
+//     QList<QJsonObject > list = Models();
+    for(const QJsonObject &obj: qAsConst(m_models))
+    {
+        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
+        QStringList keys = constants.keys();
+        bool valid = true;
+        for(const QString &str : qAsConst(keys))
+        {
+            double var = constants[str].toString().toDouble();
+            valid = valid && (var > 0);
+        }
+        toplevel["model_" + QString::number(i++)] = obj;       
+    }
+    JsonHandler::WriteJsonFile(toplevel, filename);
 }
 
 

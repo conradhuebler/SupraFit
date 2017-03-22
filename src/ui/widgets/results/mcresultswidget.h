@@ -54,14 +54,14 @@ private:
     
     void setUi();
     void WriteConfidence(const QList<QJsonObject > &constant_results);
+    void UpdateBoxes(const QList<QList<QPointF > > &series, const QList<QJsonObject > &constant_results);
     
-    QtCharts::QAreaSeries *AreaSeries(const QJsonObject &confidence, const QColor &color, double max) const;
-    void ClearArea(); 
+    QtCharts::QAreaSeries *AreaSeries(const QColor &color) const;
     QPointer<ChartView > MakeHistogram();
     QPointer<ChartView > MakeContour();
     
 private slots:
-    void ChangeConfidence();
+    void UpdateConfidence();
     void ExportResults();
     void SwitchView();
     

@@ -20,12 +20,14 @@
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
+#include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/statisticwidget.h"
 
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
@@ -59,9 +61,6 @@ void MCResultsWidget::setUi()
     resultwidget->setLayout(layout);
     m_confidence_label = new QLabel();
     m_confidence_label->setTextFormat(Qt::RichText);
-    QtCharts::QChart *chart = new QtCharts::QChart;
-    
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
 
     m_histgram = MakeHistogram();
     layout->addWidget(m_histgram, 0, 0, 1, 7);
@@ -72,22 +71,23 @@ void MCResultsWidget::setUi()
     m_switch = new QPushButton(tr("Switch Plots"));
     connect(m_switch, SIGNAL(clicked()), this, SLOT(SwitchView()));
     m_save = new QPushButton(tr("Export Results"));
+    connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
     m_error = new QDoubleSpinBox;
     m_error->setValue(5);
     m_error->setSingleStep(0.5);
     m_error->setSuffix(tr("%"));
     m_error->setMaximum(100);
     connect(m_error, SIGNAL(valueChanged(double)), m_statistics, SLOT(AnalyseData(double)));
-    connect(m_statistics, SIGNAL(AnalyseFinished()), this, SLOT(ChangeConfidence()));
+    connect(m_statistics, SIGNAL(AnalyseFinished()), this, SLOT(UpdateConfidence()));
     layout->addWidget(new QLabel(tr("Confidence for Error")), 1, 0);
     layout->addWidget(m_error, 1, 1);
     layout->addWidget(m_save, 1, 2);
     if(m_model->ConstantSize() == 2)
         layout->addWidget(m_switch, 1, 3);
     
-    
     layout->addWidget(m_confidence_label,2, 0, 1, 3);
     setLayout(layout);
+    UpdateConfidence();
 }
 
 QPointer<ChartView> MCResultsWidget::MakeContour()
@@ -132,23 +132,19 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         if(!formated)
             view->formatAxis();
         formated = true;
-        
-        
+
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());
         current_constant->setColor(xy_series->color());
         view->addSeries(current_constant);
         
         QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
-        double max = view->YMax();
         if(view)
         {
-            QtCharts::QAreaSeries *series = AreaSeries(confidenceObject, xy_series->color(), max);
-            view->addSeries(series);
-            m_area_series << series;
-        }
-        
-        
+            QtCharts::QAreaSeries *area_series = AreaSeries(xy_series->color());
+            view->addSeries(area_series);
+            m_area_series << area_series;
+        } 
         m_colors << xy_series->color();
     }   
     return view;
@@ -182,7 +178,7 @@ void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
 }
 
 
-void MCResultsWidget::ChangeConfidence()
+void MCResultsWidget::UpdateConfidence()
 {    
     QList<QList<QPointF > >series = m_statistics->getSeries();
     QList<QJsonObject > constant_results = m_statistics->getResult();
@@ -190,42 +186,53 @@ void MCResultsWidget::ChangeConfidence()
     for(int i = 0; i < constant_results.size(); ++i)
     {
         m_model->setMCStatistic(constant_results[i], i);
-        
     }
-//     ClearArea();
+
     WriteConfidence(constant_results);
+    UpdateBoxes(series, constant_results);
+}
+
+void MCResultsWidget::UpdateBoxes(const QList<QList<QPointF > > &series, const QList<QJsonObject > &constant_results)
+{    
     for(int i = 0; i < series.size(); ++i)
     {
-        double max = m_histgram->YMax();
+        double max = m_histgram->YMax()/2;
         QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
 
         if(m_histgram)
         {
             QtCharts::QAreaSeries *area_series = m_area_series[i];
-            QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
-            QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
+            QtCharts::QLineSeries *series1 = area_series->lowerSeries();
+            QtCharts::QLineSeries *series2 = area_series->upperSeries();
+            
+            series1->clear();
+            series2->clear();
             
             *series1 << QPointF(confidenceObject["lower"].toVariant().toDouble(), 0) << QPointF(confidenceObject["lower"].toVariant().toDouble(), max);
             *series2 << QPointF(confidenceObject["upper"].toVariant().toDouble(), 0) << QPointF(confidenceObject["upper"].toVariant().toDouble(), max);
-            area_series->setUpperSeries(series2);
+            
             area_series->setLowerSeries(series1);
+            area_series->setUpperSeries(series2);
         }
     }
 }
 
+
 void MCResultsWidget::ExportResults()
 {
-    
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    if(str.isEmpty())
+        return;
+    Waiter wait;
+    setLastDir(str);
+    m_statistics->ExportResults(str);
 }
 
 
-QtCharts::QAreaSeries * MCResultsWidget::AreaSeries(const QJsonObject &confidence, const QColor &color, double max) const
+QtCharts::QAreaSeries * MCResultsWidget::AreaSeries(const QColor &color) const
 {
     QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
     QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
-    
-    *series1 << QPointF(confidence["lower"].toVariant().toDouble(), 0) << QPointF(confidence["lower"].toVariant().toDouble(), max);
-    *series2 << QPointF(confidence["upper"].toVariant().toDouble(), 0) << QPointF(confidence["upper"].toVariant().toDouble(), max);
     QtCharts::QAreaSeries *area_series = new QtCharts::QAreaSeries(series1, series2);
     QPen pen(0x059605);
     pen.setWidth(3);
@@ -238,20 +245,6 @@ QtCharts::QAreaSeries * MCResultsWidget::AreaSeries(const QJsonObject &confidenc
     area_series->setBrush(gradient);
     area_series->setOpacity(0.4);
     return area_series;
-}
-
-void MCResultsWidget::ClearArea()
-{
-    for(QtCharts::QAbstractSeries *series: m_histgram->series())
-    {
-        QPointer<QtCharts::QAreaSeries > serie = qobject_cast<QtCharts::QAreaSeries * >(series);
-        if(serie)
-        {
-            m_histgram->removeSeries(serie);
-            if(serie)
-                delete serie;
-        }
-    }
 }
 
 void MCResultsWidget::SwitchView()
