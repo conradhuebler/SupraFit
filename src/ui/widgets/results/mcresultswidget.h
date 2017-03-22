@@ -30,7 +30,7 @@ class MonteCarloStatistics;
 class AbstractTitrationModel;
 class QPushButton;
 class QDoubleSpinBox;
-
+class QLabel;
 class ChartView;
 
 class MCResultsWidget : public QWidget
@@ -48,18 +48,23 @@ private:
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox *m_error;
     QPointer<ChartView > m_histgram, m_contour;
+    QLabel *m_confidence_label;
     QVector<QColor> m_colors;
+    QVector<QtCharts::QAreaSeries * > m_area_series;
+    
     void setUi();
+    void WriteConfidence(const QList<QJsonObject > &constant_results);
     
     QtCharts::QAreaSeries *AreaSeries(const QJsonObject &confidence, const QColor &color, double max) const;
     void ClearArea(); 
-    QPointer<ChartView > MakeHistogram(QString &confidence);
+    QPointer<ChartView > MakeHistogram();
     QPointer<ChartView > MakeContour();
     
 private slots:
     void ChangeConfidence();
     void ExportResults();
     void SwitchView();
+    
     
 };
 

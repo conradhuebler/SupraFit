@@ -192,22 +192,33 @@ namespace ToolSet{
      */
     ConfidenceBar Confidence(QList<qreal > &list, qreal error)
     {
-        if(error == 0 || error == 5)
+        if(error == 5)
             return Confidence(list);
         
         ConfidenceBar result;
         std::sort(list.begin(), list.end());
         int size_0 = list.size();
-        
+        double single = 0;
         while(double(list.size())/double(size_0) > (1-error/100))
         {
+            single = list.first();
             list.removeFirst();
-            list.removeLast();
+            if(list.size() != 0)
+                list.removeLast();
         }
-        result.lower = list.first();
-        result.upper = list.last();
-        result.lower_5 = list.first();
-        result.upper_5 = list.last();
+        if(list.size() != 0)
+        {
+            result.lower = list.first();
+            result.upper = list.last();
+            result.lower_5 = list.first();
+            result.upper_5 = list.last();
+        }else
+        {
+            result.lower = single;
+            result.upper = single;
+            result.lower_5 = single;
+            result.upper_5 = single;
+        }
         return result;
     }
     

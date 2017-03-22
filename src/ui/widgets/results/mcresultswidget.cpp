@@ -57,12 +57,13 @@ void MCResultsWidget::setUi()
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
     resultwidget->setLayout(layout);
-    
+    m_confidence_label = new QLabel();
+    m_confidence_label->setTextFormat(Qt::RichText);
     QtCharts::QChart *chart = new QtCharts::QChart;
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    QString confidence;
-    m_histgram = MakeHistogram(confidence);
+
+    m_histgram = MakeHistogram();
     layout->addWidget(m_histgram, 0, 0, 1, 7);
     m_contour = MakeContour();
     layout->addWidget(m_contour, 0, 0, 1, 7);
@@ -75,16 +76,17 @@ void MCResultsWidget::setUi()
     m_error->setValue(5);
     m_error->setSingleStep(0.5);
     m_error->setSuffix(tr("%"));
-    connect(m_error, SIGNAL(valueChanged(double)), this, SLOT(ChangeConfidence()));
+    m_error->setMaximum(100);
+    connect(m_error, SIGNAL(valueChanged(double)), m_statistics, SLOT(AnalyseData(double)));
+    connect(m_statistics, SIGNAL(AnalyseFinished()), this, SLOT(ChangeConfidence()));
     layout->addWidget(new QLabel(tr("Confidence for Error")), 1, 0);
     layout->addWidget(m_error, 1, 1);
     layout->addWidget(m_save, 1, 2);
     if(m_model->ConstantSize() == 2)
         layout->addWidget(m_switch, 1, 3);
     
-    QLabel *label = new QLabel(confidence);
-    label->setTextFormat(Qt::RichText);
-    layout->addWidget(label,2, 0, 1, 3);
+    
+    layout->addWidget(m_confidence_label,2, 0, 1, 3);
     setLayout(layout);
 }
 
@@ -108,7 +110,7 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     return view;
 }
 
-QPointer<ChartView> MCResultsWidget::MakeHistogram(QString &confidence)
+QPointer<ChartView> MCResultsWidget::MakeHistogram()
 {
     QtCharts::QChart *chart = new QtCharts::QChart;
     
@@ -120,8 +122,7 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram(QString &confidence)
     QList<QList<QPointF > >series = m_statistics->getSeries();
     QList<QJsonObject > constant_results = m_statistics->getResult();
     
-    for(int i = 0; i < constant_results.size(); ++i)
-        m_model->setMCStatistic(constant_results[i], i);
+    WriteConfidence(constant_results);
     
     for(int i = 0; i < series.size(); ++i)
     {
@@ -141,46 +142,74 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram(QString &confidence)
         QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
         double max = view->YMax();
         if(view)
-            view->addSeries(AreaSeries(confidenceObject, xy_series->color(), max));
-        
-        
-        if(i == 0)
         {
-            confidence += "MC Steps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
-            if(constant_results[i]["controller"].toObject()["bootstrap"].toBool())
-                confidence += "Bootstrapped ";
-            else
-                confidence += "Variance = " + QString::number(constant_results[i]["controller"].toObject()["variance"].toDouble()) + " ";
-            
-            if(constant_results[i]["controller"].toObject()["original"].toBool())
-                confidence += "operated on original data\n";
-            else
-                confidence += "operated on modelled data\n";
+            QtCharts::QAreaSeries *series = AreaSeries(confidenceObject, xy_series->color(), max);
+            view->addSeries(series);
+            m_area_series << series;
         }
-        confidence  += StatisticWidget::TextFromConfidence(constant_results[i]) + "\n";
+        
+        
         m_colors << xy_series->color();
     }   
     return view;
 }
 
+void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_results)
+{ 
+    QString confidence;
+    QJsonObject controller = constant_results.first()["controller"].toObject();
+    confidence += "MC Steps: " + QString::number(controller["steps"].toInt()) + "\t";
+    if(controller["bootstrap"].toBool())
+        confidence += "Bootstrapped ";
+    else
+        confidence += "Variance = " + QString::number(controller["variance"].toDouble()) + " ";
+    
+    if(controller["original"].toBool())
+        confidence += "operated on original data\n";
+    else
+        confidence += "operated on modelled data\n";
+    
+    for(int i = 0; i < constant_results.size(); ++i)
+    {
+        m_model->setMCStatistic(constant_results[i], i);
+        if(i < m_model->ConstantSize())
+        {
+            QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
+            confidence  += StatisticWidget::TextFromConfidence(constant_results[i]) + "\n";
+        }
+    }
+    m_confidence_label->setText(confidence);
+}
+
 
 void MCResultsWidget::ChangeConfidence()
-{
-    qreal error = m_error->value();
-    m_statistics->AnalyseData(error);
-    
+{    
     QList<QList<QPointF > >series = m_statistics->getSeries();
     QList<QJsonObject > constant_results = m_statistics->getResult();
     
     for(int i = 0; i < constant_results.size(); ++i)
+    {
         m_model->setMCStatistic(constant_results[i], i);
-    ClearArea();
+        
+    }
+//     ClearArea();
+    WriteConfidence(constant_results);
     for(int i = 0; i < series.size(); ++i)
     {
         double max = m_histgram->YMax();
-         QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
+        QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
+
         if(m_histgram)
-            m_histgram->addSeries(AreaSeries(confidenceObject, m_colors[i], max));
+        {
+            QtCharts::QAreaSeries *area_series = m_area_series[i];
+            QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
+            QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
+            
+            *series1 << QPointF(confidenceObject["lower"].toVariant().toDouble(), 0) << QPointF(confidenceObject["lower"].toVariant().toDouble(), max);
+            *series2 << QPointF(confidenceObject["upper"].toVariant().toDouble(), 0) << QPointF(confidenceObject["upper"].toVariant().toDouble(), max);
+            area_series->setUpperSeries(series2);
+            area_series->setLowerSeries(series1);
+        }
     }
 }
 

@@ -86,7 +86,7 @@ void MonteCarloStatistics::Evaluate()
 {
     m_constant_list.clear();
     m_shift_list.clear();
-    m_mc_results.clear();
+    
     m_models.clear();
     QVector<QPointer <MonteCarloThread > > threads = GenerateData();
     while(m_threadpool->activeThreadCount())
@@ -94,6 +94,20 @@ void MonteCarloStatistics::Evaluate()
         QCoreApplication::processEvents();
     }
     Collect(threads);
+    
+    m_constant_list.resize(m_model->ConstantSize());
+    m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount()+m_model->SignalCount());
+    for(int i = 0; i < m_models.size(); ++i)
+    {       
+        ExtractFromJson(i, "constants");
+        ExtractFromJson(i, "pureShift");
+        
+        for(int k = 0; k < m_model->ConstantSize(); ++k)
+        {
+            ExtractFromJson(i, "shift_" + QString::number(k));
+        }
+    }
+    
     AnalyseData();
 }
 
@@ -166,19 +180,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
 
 void MonteCarloStatistics::AnalyseData(qreal error)
 {
-    m_constant_list.resize(m_model->ConstantSize());
-    m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount()+m_model->SignalCount());
-    for(int i = 0; i < m_models.size(); ++i)
-    {       
-        ExtractFromJson(i, "constants");
-        ExtractFromJson(i, "pureShift");
-        
-        for(int k = 0; k < m_model->ConstantSize(); ++k)
-        {
-            ExtractFromJson(i, "shift_" + QString::number(k));
-        }
-    }
-    
+    m_mc_results.clear();
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
         QList<qreal > list = m_constant_list[i];
@@ -213,6 +215,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         result["type"] = "Shift";
         m_mc_results << result;
     }
+    emit AnalyseFinished();
 }
 
 void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)

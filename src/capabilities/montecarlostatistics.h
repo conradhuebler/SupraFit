@@ -72,7 +72,7 @@ public:
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
-    void AnalyseData(qreal error = 5);
+    
      
     inline QList<QJsonObject > getResult() const { return m_mc_results; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }
@@ -82,6 +82,7 @@ public:
     
 public slots:
     void Interrupt();
+    void AnalyseData(qreal error = 5);
     
 private:
     QVector<QPointer <MonteCarloThread > > GenerateData();
@@ -105,6 +106,7 @@ private:
 
 signals:
     void IncrementProgress(int time);
+    void AnalyseFinished();
 };
 
 #endif // MONTECARLOSTATISTICS_H
