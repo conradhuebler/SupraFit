@@ -17,6 +17,7 @@
  * 
  */
 #include "src/global.h"
+#include "src/version.h"
 
 #include "src/core/dataclass.h"
 #include "src/core/AbstractModel.h"
@@ -129,6 +130,12 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()) );
     
+    m_about = new QAction(QIcon::fromTheme("applications-system"), tr("Info"));
+    connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
+    
+    m_aboutqt = new QAction(QIcon::fromTheme("applications-system"), tr("About Qt"));
+    connect(m_aboutqt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+    
     m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
     connect(m_close, SIGNAL(triggered()), SLOT(close()) );
     
@@ -156,6 +163,8 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_system_toolbar->addAction(m_logdock->toggleViewAction());
     m_system_toolbar->addAction(m_history_dock->toggleViewAction());
     m_system_toolbar->addAction(m_config);
+    m_system_toolbar->addAction(m_about);
+    m_system_toolbar->addAction(m_aboutqt);
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
     addToolBar(m_system_toolbar);
@@ -449,6 +458,18 @@ void MainWindow::InsertHistoryElement(const QJsonObject &model)
 void MainWindow::InsertHistoryElement(const QJsonObject &model, int active)
 {
     m_historywidget->InsertElement(model, active);
+}
+
+void MainWindow::about()
+{
+    QString info;
+    info  = "This is all about SupraFit, nothing else matters\n";
+    info += "Created by Conrad Hübler\n";
+    info += "Special thanks Prof. M. Mazik, TU Bergakademie Freiberg for her support\n";
+    info += "Special thanks to all encouraged me writing the application\n";
+    info += "SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + "\n";
+    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".\n";
+    QMessageBox::about(this, tr("SuprFit"), info);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

@@ -1,5 +1,8 @@
-#include "ui/mainwindow/suprafit.h"
 #include "src/version.h"
+#include "ui/mainwindow/suprafit.h"
+
+#include <QtCore/QCommandLineParser>
+#include <QtCore/QCommandLineOption>
 
 #include <QtWidgets/QApplication>
 
@@ -35,10 +38,23 @@ int main(int argc, char** argv)
     
     app.setApplicationName("SupraFit");
     app.setOrganizationName("Conrad Huebler");
-//     app.setApplicationVersion(version);
-//     app.setProperty("GIT_BRANCH", git_branch);
-//     app.setProperty("GIT_COMMIT_HASH", git_commit_hash);
+    
+    app.setApplicationVersion(version);
+    app.setProperty("GIT_BRANCH", git_branch);
+    app.setProperty("GIT_COMMIT_HASH", git_commit_hash); 
+    
+    QCommandLineParser parser;
+    parser.setApplicationDescription ( "A Open Source Qt5 based fitting tool for supramolecular titration experiments." );
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.addPositionalArgument("input file", QCoreApplication::translate("main", "File to open."));
+    parser.process(app);
+
+    const QStringList args = parser.positionalArguments();
+
     MainWindow mainwindow;
     mainwindow.show();
+    for(const QString &str : qAsConst(args))
+        mainwindow.LoadFile(str);
     return app.exec();
 }
