@@ -55,11 +55,12 @@ public:
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setOptimize(bool optimize) { m_optimize = optimize; }
     inline void setInitialGuess(bool guess) { m_initial_guess = guess; }
-    inline QVector<QList<qreal > > FullList() const { return m_full_list; }
+    inline QVector<QList<qreal > > InputList() const { return m_full_list; }
     QList<QList<QPointF> >  LocalSearch();
     QList<QJsonObject > SearchGlobal();
     QVector<VisualData> Create2DPLot();
-    
+    void ExportResults(const QString &filename, double threshold, bool allow_invalid);
+    QList<QJsonObject > Models() const { return m_models; }
 public slots:
     void Interrupt();
     
@@ -71,7 +72,7 @@ private:
     quint64 m_time_0;
     OptimizationType m_type;
     int m_time;
-    QList<QJsonObject > m_models_list;
+    QList<QJsonObject > m_models;
     QSharedPointer<AbstractTitrationModel> m_model;
     QList< QList<QPointF> > m_series;
     QVector<QList<double> > m_full_list;

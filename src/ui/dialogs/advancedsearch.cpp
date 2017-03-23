@@ -246,7 +246,7 @@ void AdvancedSearch::SearchGlobal()
      QVector<double > error; 
      m_search->setOptimizationFlags(m_optim_flags->getFlags()); 
      m_models_list = m_search->SearchGlobal();
-     m_full_list = m_search->FullList();
+//      m_full_list = m_search->Inputlist();
      Finished();
      emit MultiScanFinished();
 }
@@ -296,7 +296,6 @@ void AdvancedSearch::IncrementProgress(int time)
     int used = (t0 - m_time_0)/1000;
     m_max_steps->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
     emit setValue(val);
-    
 }
 
 

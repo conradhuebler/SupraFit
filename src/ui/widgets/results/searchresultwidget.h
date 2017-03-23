@@ -22,6 +22,9 @@
 
 #include <QtWidgets/QWidget>
 
+class ChartView;
+
+class GlobalSearch;
 class AbstractTitrationModel;
 class QTableView;
 class QPushButton;
@@ -33,25 +36,30 @@ class SearchResultWidget : public QWidget
     Q_OBJECT
     
 public:
-    SearchResultWidget();
+    SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
     ~SearchResultWidget();
-    void setModelList(const QList<QJsonObject> &list);
+    inline void setModelList(const QList<QJsonObject> &models){m_models = models;};
     void setModel(const QSharedPointer<AbstractTitrationModel> model){ m_model = model; }
     void setInputList(const QVector<QList <qreal > >&input) { m_input = input; }
     
 private:
-    QList<QJsonObject> m_list;
+    QList<QJsonObject> m_models;
     QTableView *m_table;
+    ChartView *m_contour;
     QSharedPointer<AbstractTitrationModel> m_model;
     QCheckBox *m_valid;
     ScientificBox *m_threshold;
-    QPushButton *m_export;
+    QPushButton *m_export, *m_switch;
     QVector<QList <qreal > >m_input;
+    QPointer<GlobalSearch> m_globalsearch;
+    QTableView* BuildList();
+    ChartView* BuildContour();
     
 private slots:
     void rowSelected(const QModelIndex &index);
     void ShowContextMenu(const QPoint& pos);
     void ExportModels();
+    void SwitchView();
     
 signals:
     void LoadModel(const QJsonObject &object);

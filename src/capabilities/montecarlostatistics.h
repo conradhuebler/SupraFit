@@ -51,6 +51,7 @@ public:
     inline QList<qreal > Constants() const { return m_constants; }
     void setDataTable(DataTable *table);
     inline QJsonObject Model() const { return m_model->ExportJSON(); }
+    
 private:
     QSharedPointer<Minimizer> m_minimizer;
     QSharedPointer<AbstractTitrationModel> m_model;
@@ -77,8 +78,6 @@ public:
     inline QList<QJsonObject > getResult() const { return m_mc_results; }
     inline QList<QList<QPointF> > getSeries() const { return m_series; }
     inline QList<QJsonObject > Models() const { return m_models; }
-    
-   
     
 public slots:
     void Interrupt();

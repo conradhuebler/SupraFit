@@ -111,8 +111,3 @@ void CVResultsWidget::Ellipsoidal()
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
 }
-
-
-void CVResultsWidget::ChangeConfidence()
-{
-}

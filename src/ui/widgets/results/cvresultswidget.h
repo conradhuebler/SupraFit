@@ -31,6 +31,7 @@ class CVResultsWidget : public QWidget
 public:
     CVResultsWidget(QPointer<ContinuousVariation > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
     ~CVResultsWidget();
+    
 private:
     QPointer<ContinuousVariation> m_statistics;
     QSharedPointer< AbstractTitrationModel > m_model;
@@ -38,10 +39,7 @@ private:
     void setUi();
     void Ellipsoidal();
     void CVPlot();
-//     void ShowContour();
-    
-private slots:
-    void ChangeConfidence();
+
 };
 
 #endif // CVRESULTSWIDGET_H

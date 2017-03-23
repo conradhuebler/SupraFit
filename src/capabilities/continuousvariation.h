@@ -91,6 +91,7 @@ public:
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<QJsonObject > Results() const { return m_result; }
     inline QList<QJsonObject > Models() const { return m_models; }
+    void ExportResults(const QString &filename);
     
 public slots:
     void Interrupt();

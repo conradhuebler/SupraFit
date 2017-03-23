@@ -86,7 +86,8 @@ public:
     double MinY() const;
     QList<QList<QPointF> >Series() const { return m_series; }
     QList<QJsonObject > ModelList() const { return m_models_list; }
-    inline QVector<QList<qreal > > FullList() const { return m_full_list; }
+//     inline QVector<QList<qreal > > FullList() const { return m_full_list; }
+    QPointer<GlobalSearch > globalSearch() const { return m_search; }
     
 private:
     void SetUi();
@@ -115,7 +116,7 @@ private:
     QPointer<GlobalSearch> m_search;
     void PrepareProgress();
     void Finished();
-    QVector<QList<double> > m_full_list;
+//     QVector<QList<double> > m_full_list;
     
 private slots:
     void Create2DPlot();

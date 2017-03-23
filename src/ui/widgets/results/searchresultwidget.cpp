@@ -17,10 +17,12 @@
  *
  */
 
-
+#include "src/capabilities/globalsearch.h"
+#include "src/core/toolset.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 #include "src/ui/widgets/buttons/scientificbox.h"
+#include "src/ui/widgets/chartview.h"
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QSharedPointer>
@@ -37,48 +39,61 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QFileDialog>
 
+#include <QtCharts/QScatterSeries>
+#include <QtCharts/QChart>
+
 #include "searchresultwidget.h"
 
-SearchResultWidget::SearchResultWidget()
-{
-    QGridLayout *layout = new QGridLayout;
+SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QWidget(parent), m_globalsearch(globalsearch), m_model(model)
+{    
+    setInputList(m_globalsearch->InputList());
+    setModelList(m_globalsearch->Models());
     
+    QGridLayout *layout = new QGridLayout;
+    m_switch = new QPushButton(tr("Switch View"));
     m_export = new QPushButton(tr("Export Models"));
     m_valid = new QCheckBox(tr("Invalid Models"));
     m_threshold = new ScientificBox;
     m_threshold->setValue(1);
-    layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 0);
-    layout->addWidget(m_threshold, 0, 1);
-    layout->addWidget(m_valid, 0, 2);
-    layout->addWidget(m_export, 0, 3);
+    layout->addWidget(m_switch, 0, 0);
+    layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 1);
+    layout->addWidget(m_threshold, 0, 2);
+    layout->addWidget(m_valid, 0, 3);
+    layout->addWidget(m_export, 0, 4);
     
-    m_table = new QTableView(this);
+    if(!m_model)
+        throw 1;
+    
+    m_table = BuildList();
     m_table->setSortingEnabled(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_table, SIGNAL(clicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
     connect(m_table, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportModels()));
-    layout->addWidget(m_table, 1, 0, 1, 4);
+    connect(m_switch, SIGNAL(clicked()), this, SLOT(SwitchView()));
+    layout->addWidget(m_table, 1, 0, 1, 5);
     
+    m_contour = BuildContour();
+    layout->addWidget(m_contour, 1, 0, 1, 5);
+    m_contour->hide();
     setLayout(layout);
 }
 
 SearchResultWidget::~SearchResultWidget()
 {
-    m_list.clear();
+    m_models.clear();
+    delete m_globalsearch;
 }
 
-void SearchResultWidget::setModelList(const QList<QJsonObject>& list)
+QTableView* SearchResultWidget::BuildList()
 {
-    if(m_model.isNull())
-        return;
-    m_list = list;
+    QTableView *table = new QTableView(this);
     QStandardItemModel *model = new QStandardItemModel;
     QStringList header = QStringList() <<  "Sum of Squares";
-    for(int i = 0; i < list.size(); ++i)
+    for(int i = 0; i < m_models.size(); ++i)
     {
-        double error = list[i]["sum_of_squares"].toDouble();
+        double error = m_models[i]["sum_of_squares"].toDouble();
         QStandardItem *item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         model->setItem(i, 0, item);
@@ -91,7 +106,7 @@ void SearchResultWidget::setModelList(const QList<QJsonObject>& list)
             j++;
         }
         
-        QJsonObject constants = list[i]["data"].toObject()["constants"].toObject();
+        QJsonObject constants = m_models[i]["data"].toObject()["constants"].toObject();
         QStringList keys = constants.keys();
         
         if(keys.size() > 10)
@@ -129,15 +144,30 @@ void SearchResultWidget::setModelList(const QList<QJsonObject>& list)
     model->setHorizontalHeaderLabels(header);
     QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
     proxyModel->setSourceModel(model);
-    m_table->setModel(proxyModel);
-    m_table->resizeColumnsToContents();
-    resize(m_table->sizeHint());
+    table->setModel(proxyModel);
+    table->resizeColumnsToContents();
+    resize(table->sizeHint());
+    return table;
 }
+
+ChartView * SearchResultWidget::BuildContour()
+{
+    QList<QPointF > data = ToolSet::fromModelsList(m_models);
+    QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
+    chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    ChartView *view = new ChartView(chart_ellipsoid);
+    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+    xy_series->append(data);
+    xy_series->setMarkerSize(8);
+    view->addSeries(xy_series);
+    return view;
+}
+
 
 void SearchResultWidget::rowSelected(const QModelIndex &index)
 {
     int i = index.data(Qt::UserRole).toInt();
-    QJsonObject model = m_list[i];
+    QJsonObject model = m_models[i];
     emit LoadModel(model);
 }
 
@@ -146,7 +176,7 @@ void SearchResultWidget::ShowContextMenu(const QPoint& pos)
     Q_UNUSED(pos)
     QModelIndex index = m_table->currentIndex();
     int i = index.data(Qt::UserRole).toInt();
-    QJsonObject model = m_list[i];
+    QJsonObject model = m_models[i];
     emit AddModel(model);
 }
 
@@ -158,23 +188,15 @@ void SearchResultWidget::ExportModels()
     if(str.isEmpty())
         return;
     setLastDir(str);
-    QJsonObject toplevel;
-    int i = 0;
-    for(const QJsonObject &obj: qAsConst(m_list))
-    {
-        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
-        QStringList keys = constants.keys();
-        bool valid = true;
-        for(const QString &str : qAsConst(keys))
-        {
-            double var = constants[str].toString().toDouble();
-            valid = valid && (var > 0);
-        }
-        double error = obj["sse"].toDouble();
-        if(error < threshold && (valid || allow_invalid))
-            toplevel["model_" + QString::number(i++)] = obj;       
-    }
-    JsonHandler::WriteJsonFile(toplevel, str);
+    m_globalsearch->ExportResults(str, threshold, allow_invalid);
+    
+}
+
+void SearchResultWidget::SwitchView()
+{
+    bool histogram = m_table->isHidden();
+    m_table->setHidden(!histogram);
+    m_contour->setHidden(histogram);
 }
 
 #include "searchresultwidget.h"

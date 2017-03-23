@@ -44,7 +44,8 @@ void ModalDialog::setWidget(QWidget* widget, const QString &str)
     if(windowTitle().isEmpty() || windowTitle().isNull())
         setWindowTitle(str);
     m_widget = widget;
-    m_tab->addTab(m_widget, str);
+    int i = m_tab->addTab(m_widget, str);
+    m_tab->setCurrentIndex(i);
 }
 
 

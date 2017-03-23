@@ -417,9 +417,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     }
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
-    m_statistic_result->show();
-    
-
+    m_statistic_result->show();  
 }
 
 void ModelWidget::MoCoStatistic()
@@ -449,8 +447,6 @@ void ModelWidget::MoCoStatistic(CVConfig config)
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
-    
-    delete statistic;
 }
 
 
@@ -675,30 +671,28 @@ void ModelWidget::PlotFinished(int runtype)
 
 void ModelWidget::MultiScanFinished()
 {
-    SearchResultWidget *table = new SearchResultWidget;
+    SearchResultWidget *table = new SearchResultWidget(m_advancedsearch->globalSearch(), m_model, this);
     connect(table, SIGNAL(LoadModel(const QJsonObject)), this, SLOT(LoadJson(const QJsonObject)));
     connect(table, SIGNAL(AddModel(const QJsonObject)), this, SIGNAL(AddModel(const QJsonObject)));
-    table->setModel(m_model);
-    table->setInputList(m_advancedsearch->FullList());
-    table->setModelList(m_advancedsearch->ModelList());
+    
     m_table_result->setWidget(table, "Scan Results");
 
-    if(m_model->ConstantSize() == 0)
-    {
-        QList<QPointF > data = ToolSet::fromModelsList(m_advancedsearch->ModelList());
-        QWidget *resultwidget_ellipsoid = new QWidget;
-        QGridLayout *layout_ellipsoid = new QGridLayout;
-        resultwidget_ellipsoid->setLayout(layout_ellipsoid);
-        QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
-        chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        ChartView *view = new ChartView(chart_ellipsoid);
-        layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
-        QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
-        xy_series->append(data);
-        xy_series->setMarkerSize(8);
-        view->addSeries(xy_series);
-        m_table_result->setWidget(resultwidget_ellipsoid, "Scattering " + m_model->Name());
-    }
+//     if(m_model->ConstantSize() == 0)
+//     {
+//         QList<QPointF > data = ToolSet::fromModelsList(m_advancedsearch->ModelList());
+//         QWidget *resultwidget_ellipsoid = new QWidget;
+//         QGridLayout *layout_ellipsoid = new QGridLayout;
+//         resultwidget_ellipsoid->setLayout(layout_ellipsoid);
+//         QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
+//         chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//         ChartView *view = new ChartView(chart_ellipsoid);
+//         layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
+//         QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+//         xy_series->append(data);
+//         xy_series->setMarkerSize(8);
+//         view->addSeries(xy_series);
+//         m_table_result->setWidget(resultwidget_ellipsoid, "Scattering " + m_model->Name());
+//     }
 
     m_advancedsearch->hide();
     m_table_result->show();

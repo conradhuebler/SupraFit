@@ -17,6 +17,7 @@
  * 
  */
 
+#include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
 
@@ -75,20 +76,20 @@ QVector<QVector<double> > GlobalSearch::ParamList()
 QList<QJsonObject > GlobalSearch::SearchGlobal()
 {
     QVector< QVector<double > > full_list = ParamList();
-    m_models_list.clear();
+    m_models.clear();
     QVector<double > error; 
     m_type |= OptimizationType::ComplexationConstants;
     int t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list, error);
     int t1 = QDateTime::currentMSecsSinceEpoch();
     std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-    return m_models_list;
+    return m_models;
 }
 
 QVector<VisualData> GlobalSearch::Create2DPLot()
 {
     QVector< QVector<double > > full_list = ParamList();
-    m_models_list.clear();
+    m_models.clear();
     QVector<double > error; 
 
     int t0 = QDateTime::currentMSecsSinceEpoch();
@@ -187,7 +188,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             last_result.m_error = error;
             last_result.m_input = full_list;
             if(m_type & OptimizationType::ComplexationConstants)
-                m_models_list << json;
+                m_models << json;
             else
                 dataRow1.data.append(QVector<qreal >() << parameter[0] << m_model->SumofSquares() << parameter[1]);
             delete threads[i][j];
@@ -227,5 +228,25 @@ void GlobalSearch::Scan(const QVector< QVector<double > >& list)
     }
 }
 
+void GlobalSearch::ExportResults(const QString& filename, double threshold, bool allow_invalid)
+{
+    QJsonObject toplevel;
+    int i = 0;
+    for(const QJsonObject &obj: qAsConst(m_models))
+    {
+        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
+        QStringList keys = constants.keys();
+        bool valid = true;
+        for(const QString &str : qAsConst(keys))
+        {
+            double var = constants[str].toString().toDouble();
+            valid = valid && (var > 0);
+        }
+        double error = obj["sse"].toDouble();
+        if(error < threshold && (valid || allow_invalid))
+            toplevel["model_" + QString::number(i++)] = obj;       
+    }
+    JsonHandler::WriteJsonFile(toplevel, filename);
+}
 
 #include "globalsearch.moc"
