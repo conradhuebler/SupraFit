@@ -35,11 +35,14 @@ public:
 private:
     QPointer<ContinuousVariation> m_statistics;
     QSharedPointer< AbstractTitrationModel > m_model;
+    void WriteConfidence(const QList<QJsonObject > &constant_results);
     
     void setUi();
-    void Ellipsoidal();
-    void CVPlot();
+    ChartView * EllipsoidalPlot();
+    ChartView * CVPlot();
 
+    ChartView *m_view;
+    QLabel *m_confidence_label;
 };
 
 #endif // CVRESULTSWIDGET_H

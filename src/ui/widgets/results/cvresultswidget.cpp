@@ -38,8 +38,9 @@
 
 CVResultsWidget::CVResultsWidget(QPointer<ContinuousVariation> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent): QWidget(parent), m_model(model), m_statistics(statistics)
 {
-    if(m_statistics)
-        setUi();
+    if(!m_statistics)
+        throw 1;
+    setUi();
 }
 
 CVResultsWidget::~CVResultsWidget()
@@ -50,64 +51,75 @@ CVResultsWidget::~CVResultsWidget()
 
 void CVResultsWidget::setUi()
 {
-    CVPlot();
+    QGridLayout *layout = new QGridLayout;
+
+    m_confidence_label = new QLabel();
+    m_confidence_label->setTextFormat(Qt::RichText);
+    layout->addWidget(m_confidence_label, 1, 0);
+    
+    if(m_statistics->CV())
+        m_view = CVPlot();
+    else
+        m_view = EllipsoidalPlot();
+    
+    layout->addWidget(m_view, 0, 0);
+    setLayout(layout);
+}
+void CVResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_results)
+{
+    QString text;
+    
+    QJsonObject controller = constant_results.first()["controller"].toObject();
+    text += "Maxsteps: " + QString::number(controller["steps"].toInt()) + "\t";
+    text += "Increment = " + QString::number(controller["increment"].toDouble()) + "\t";
+    text += "Max Error = " + QString::number(controller["maxerror"].toDouble()) + "\n";
+    
+    for(int i = 0; i < constant_results.size(); ++i)
+    {
+        m_model->setCVStatistic(constant_results[i], i);
+        if(i < m_model->ConstantSize())
+        {
+            QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
+            text  += StatisticWidget::TextFromConfidence(constant_results[i]) + "\n";
+        }
+    }
+    m_confidence_label->setText(text);
 }
 
-
-void CVResultsWidget::CVPlot()
+ChartView * CVResultsWidget::CVPlot()
 {
     QList<QJsonObject > constant_results = m_statistics->Results();
     QList<QList<QPointF > >series = m_statistics->Series();
-    QWidget *resultwidget = new QWidget;
-    QGridLayout *layout = new QGridLayout;
-    resultwidget->setLayout(layout);
-    
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart);
-    layout->addWidget(view, 0, 0, 1, 7);
+    WriteConfidence(constant_results);
     for(int i = 0; i < constant_results.size(); ++i)
     {
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
         xy_series->append(series[i]);
         view->addSeries(xy_series);
-        m_model->setCVStatistic(constant_results[i], i);
         
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
         view->addSeries(current_constant);
-        
-        QString text;
-        if(i == 0)
-        {
-            text += "Maxsteps: " + QString::number(constant_results[i]["controller"].toObject()["steps"].toInt()) + "\t";
-            text += "Increment = " + QString::number(constant_results[i]["controller"].toObject()["increment"].toDouble()) + "\t";
-            text += "Max Error = " + QString::number(constant_results[i]["controller"].toObject()["maxerror"].toDouble()) + "\n";
-        }
-        text  += StatisticWidget::TextFromConfidence(constant_results[i]) + "\n";
-        QLabel *label = new QLabel(text);
-        label->setTextFormat(Qt::RichText);
-        layout->addWidget(label, i + 1, 0);
     }
-    setLayout(layout);
+    return view;
 }
 
 
-void CVResultsWidget::Ellipsoidal()
+ChartView *  CVResultsWidget::EllipsoidalPlot()
 {
     QList<QJsonObject > constant_results = m_statistics->Results();
     QList<QList<QPointF > >series = m_statistics->Series();
-    QWidget *resultwidget = new QWidget;
-    QGridLayout *layout = new QGridLayout;
-    resultwidget->setLayout(layout);
     
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart);
-    layout->addWidget(view, 0, 0, 1, 7);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
     xy_series->append(ToolSet::fromModelsList(m_statistics->Models()));
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
+    return view;
 }

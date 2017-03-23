@@ -83,6 +83,7 @@ public:
     ~ContinuousVariation();
     void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setConfig(const CVConfig &config) { m_config = config;}
+    inline bool CV() { return m_cv; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
     bool FastConfidence();
@@ -103,7 +104,7 @@ private:
     QList<QList<QPointF> > m_series;
     QList<QJsonObject > m_result;
     CVConfig m_config;
-    bool allow_break;
+    bool allow_break, m_cv;
     QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads, bool store = false);
     QList<QJsonObject > m_models;
     

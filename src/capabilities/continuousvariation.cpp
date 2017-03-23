@@ -232,6 +232,7 @@ bool ContinuousVariation::FastConfidence()
 
 bool ContinuousVariation::EllipsoideConfidence()
 {
+    m_cv = false;
     if(!m_model)
         return false;
     for(int i = 0; i < m_series.size(); ++i)
@@ -378,6 +379,7 @@ QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QP
 
 bool ContinuousVariation::ConfidenceAssesment()
 {
+    m_cv = true;
     if(!m_model)
         return false;
     for(int i = 0; i < m_series.size(); ++i)
