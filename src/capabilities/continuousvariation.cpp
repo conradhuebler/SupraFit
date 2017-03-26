@@ -17,6 +17,8 @@
  *
  */
 
+#include "globalsearch.h"
+
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 
@@ -58,7 +60,6 @@ void ContinuousVariationThread::run()
     QList<QPointF> series;
     QJsonObject optimized = m_model.data()->ExportJSON(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
-    
     QJsonObject controller;
     controller["runtype"] = m_config.runtype;
     controller["steps"] = m_config.maxsteps;
@@ -126,7 +127,6 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
             new_error = m_model.data()->SumofSquares();
         else
             new_error = m_model.data()->SumofAbsolute();
-        
         if(new_error < m_error && m_check_convergence)
             counter++;
         qreal rect = qMin(new_error,old_error)*qAbs(increment);
@@ -203,7 +203,7 @@ bool ContinuousVariation::FastConfidence()
     {
         QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config, false);
         connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
-        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        //         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->SetParameterID(i);
         thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
@@ -230,130 +230,79 @@ bool ContinuousVariation::FastConfidence()
     return true;
 }
 
+QVector<QVector<qreal> > ContinuousVariation::MakeBox() const
+{    
+    QList<QJsonObject > constant_results = Results();
+    QVector<QVector< qreal > > parameter;
+    for(const QJsonObject &object : qAsConst(constant_results))
+    {
+        QVector<qreal> constant;
+        qreal lower = object["confidence"].toObject()["lower_5"].toDouble();
+        qreal upper = object["confidence"].toObject()["upper_5"].toDouble();
+        qreal value = object["value"].toDouble();
+        constant << value-2*(value-lower);
+        constant << value+2*(upper-value);
+        constant << 0.0015;
+        parameter << constant;
+    }
+    return parameter;
+}
+
+
 bool ContinuousVariation::EllipsoideConfidence()
 {
     m_cv = false;
     if(!m_model)
         return false;
-    for(int i = 0; i < m_series.size(); ++i)
-        m_series[i].clear();
-    m_series.clear();
-    m_result.clear();
-    m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportJSON();
-    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
-    
+    // We make an initial guess to estimate the dimension
     m_model.data()->Calculate();
-    QThreadPool *threadpool = QThreadPool::globalInstance();
-    QList<QPointer <ContinuousVariationThread > > threads;
-    int maxthreads =qApp->instance()->property("threads").toInt();
-    threadpool->setMaxThreadCount(maxthreads);
-    allow_break = false;
+    CVConfig config;
+    config.relax = false;
+    config.increment = qApp->instance()->property("fast_increment").toDouble();
+    qreal error = m_model.data()->SumofSquares();
+    config.maxerror = error+error*0.05;
+    m_config = config;
+    m_config.runtype = m_model.data()->LastOptimzationRun();
+    FastConfidence();
     
-    for(int i = 0; i < parameter.size(); ++i)
-    {
-        QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config, false);
-        connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
-        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-        thread->setModel(m_model);
-        thread->SetParameterID(i);
-        thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
-        if(m_model.data()->SupportThreads())
-        {
-            thread->run();
-        }
-        else
-            threadpool->start(thread);
-        threads << thread;
-        if(allow_break)
-            break;
-    }
     
-    if(!m_model.data()->SupportThreads())
-    {
-        while(threadpool->activeThreadCount())
-        {
-            QCoreApplication::processEvents();
-        }
-    }
+    QVector<QVector<qreal> > box = MakeBox();
+    qDebug() << box;
+    Search(box);
+    return true;
+}
+
+void ContinuousVariation::Search(const QVector<QVector<qreal> >& box)
+{
+    GlobalSearch *globalsearch = new GlobalSearch(this);
+    globalsearch->setModel(m_model); 
+    globalsearch->setParameter(box);
     
-    bool converged = true;
-    QHash<QString, QList<qreal> > constants = ConstantsFromThreads(threads, parameter.size() == 1);
-    qDeleteAll(threads);
-    if(constants.size() == 1)
-        return true;
-    QHashIterator<QString, QList<qreal> > i(constants);
-    while (i.hasNext()) 
-    {
-        i.next();
-        for(qreal par = i.value().first(); par <= i.value().last(); par += m_config.increment)
-        {
-            QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config, false);
-            QList<qreal > consts = m_model.data()->Constants();
-            if(i.hasNext())
-            {
-                thread->SetParameterID(1);
-                consts[0] = par;
-            }
-            else
-            {
-                thread->SetParameterID(0);
-                consts[1] = par;
-            }
-            m_model->setConstants(consts);
-            thread->setModel(m_model);
-            thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
-            if(m_model.data()->SupportThreads())
-            {
-                thread->run();
-            }
-            else
-                threadpool->start(thread);
-            threads << thread;
-        }
-    }
+    globalsearch->setInitialGuess(false);
+    globalsearch->setOptimize(false);
     
-    if(!m_model.data()->SupportThreads())
+    //     connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(SingeStepFinished(int)));
+    //     connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)));
+    connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
+    QList<QJsonObject > results = globalsearch->SearchGlobal();
+    qDebug() << "done";
+    StripResults(results);
+    delete globalsearch;
+    qDebug() << "collected";
+}
+
+void ContinuousVariation::MCSearch(const QVector<QVector<qreal> >& box)
+{
+}
+
+void ContinuousVariation::StripResults(const QList<QJsonObject>& results)
+{ 
+    for(const QJsonObject &object : qAsConst(results))
     {
-        while(threadpool->activeThreadCount())
-        {
-            QCoreApplication::processEvents();
-        }
+        if(object["sum_of_squares"].toDouble() <= m_config.maxerror)
+            m_models << object;
     }
-    
-    QHash<QString, QList<qreal> > final_constants = ConstantsFromThreads(threads);
-    qDeleteAll(threads);
-    QHashIterator<QString, QList<qreal> > j(constants);
-    while (j.hasNext()) 
-    {
-        j.next();
-        QList<qreal > values = j.value();
-        qreal min = values.first();
-        qreal max = values.first();
-        for(int i = 0; i < values.size(); ++i)
-        {
-            if(values[i] < min)
-                min = values[i];
-            if(values[i] > max)
-                max = values[i];
-        }
-        QJsonObject controller;
-        controller["runtype"] = m_config.runtype;
-        controller["steps"] = m_config.maxsteps;
-        controller["increment"] = m_config.increment;
-        controller["maxerror"] = m_config.maxerror;
-        QJsonObject result;
-        result["controller"] = controller;
-        result["name"] = j.key();
-        result["value"] = parameter[m_model->ConstantNames().indexOf(j.key())];
-        result["type"] = "Complexation Constant";
-        QJsonObject confidence;
-        confidence["upper_5"] = max;
-        confidence["lower_5"] = min;
-        result["confidence"] = confidence;
-        m_result << result;
-    }
-    return converged;
 }
 
 

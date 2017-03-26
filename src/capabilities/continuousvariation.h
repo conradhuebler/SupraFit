@@ -106,11 +106,17 @@ private:
     CVConfig m_config;
     bool allow_break, m_cv;
     QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads, bool store = false);
+    QVector<QVector <qreal > > MakeBox() const;
     QList<QJsonObject > m_models;
+    void MCSearch(const QVector<QVector<qreal> > &box);
+    void Search(const QVector<QVector<qreal> > &box);
+    void StripResults(const QList<QJsonObject > &results);
     
 signals:
     void StopSubThreads();
     void IncrementProgress(int time);
+    void setMaximumSteps(int maxsteps);
+    void SingeStepFinished(int time);
 };
 
 #endif // STATISTIC_H

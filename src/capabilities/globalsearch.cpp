@@ -79,6 +79,7 @@ QList<QJsonObject > GlobalSearch::SearchGlobal()
     m_models.clear();
     QVector<double > error; 
     m_type |= OptimizationType::ComplexationConstants;
+    std::cout << "starting the scanning ..." << std::endl;
     int t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list, error);
     int t1 = QDateTime::currentMSecsSinceEpoch();
@@ -103,6 +104,7 @@ QVector<VisualData> GlobalSearch::Create2DPLot()
 void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
 {  
     m_full_list.clear();
+    int step = 0;
     QVector<int > position(full_list.size(), 0);
     int maxthreads =qApp->instance()->property("threads").toInt();
     QVector<QVector<QPointer<NonLinearFitThread> > > threads;

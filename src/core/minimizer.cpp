@@ -44,7 +44,6 @@ NonLinearFitThread::~NonLinearFitThread()
 
 void NonLinearFitThread::run()
 {
-
     m_steps = 0;
     m_converged = false;
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
@@ -298,7 +297,6 @@ QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitr
     thread->setOptimizationRun(runtype);
     if(start)
         QThreadPool::globalInstance()->start(thread);
-        
     return thread;
 }
 

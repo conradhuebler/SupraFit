@@ -119,7 +119,7 @@ ChartView *  CVResultsWidget::EllipsoidalPlot()
     ChartView *view = new ChartView(chart);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
     xy_series->append(ToolSet::fromModelsList(m_statistics->Models()));
-    xy_series->setMarkerSize(8);
+    xy_series->setMarkerSize(7);
     view->addSeries(xy_series);
     return view;
 }

@@ -27,6 +27,7 @@
 #include <QtCore/QDateTime>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QThreadPool>
+#include <QtCore/QTimer>
 
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
@@ -329,6 +330,11 @@ void StatisticDialog::CalculateError()
     qreal max_error = error+error*m_cv_maxerror->value()/double(100);
     QString message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_error) + "\nF-Test is not respected!";
     m_error_info->setText(message);
+}
+
+void StatisticDialog::setMaximumSteps(int steps)
+{
+    QTimer::singleShot(0, m_progress, SLOT(setMaximum(steps)));
 }
 
 #include "statisticdialog.moc"

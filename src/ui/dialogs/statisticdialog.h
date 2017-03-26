@@ -50,6 +50,7 @@ public:
     inline void setRuns(int runs) { m_runs = runs; }
 public slots:
     void IncrementProgress(int time);
+    void setMaximumSteps(int steps);
     
 private:
     void setUi();
