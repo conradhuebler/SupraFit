@@ -24,13 +24,14 @@
 
 #include <QCoreApplication>
 
+#include <QtCore/QDateTime>
 
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
 #include <QtCore/QThreadPool>
 #include <QtCore/QWeakPointer>
 
-
+#include <random>
 #include <iostream>
 
 #include "continuousvariation.h"
@@ -267,8 +268,8 @@ bool ContinuousVariation::EllipsoideConfidence()
     
     
     QVector<QVector<qreal> > box = MakeBox();
-    qDebug() << box;
-    Search(box);
+//     Search(box);
+    MCSearch(box);
     return true;
 }
 
@@ -281,19 +282,39 @@ void ContinuousVariation::Search(const QVector<QVector<qreal> >& box)
     globalsearch->setInitialGuess(false);
     globalsearch->setOptimize(false);
     
-    //     connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(SingeStepFinished(int)));
-    //     connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)));
     connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
     QList<QJsonObject > results = globalsearch->SearchGlobal();
-    qDebug() << "done";
     StripResults(results);
     delete globalsearch;
-    qDebug() << "collected";
 }
 
 void ContinuousVariation::MCSearch(const QVector<QVector<qreal> >& box)
 {
+        QVector<std::uniform_int_distribution<int> > dist;
+        for(int i = 0; i < box.size(); ++i)
+        {
+            int lower = 1000*box[i][0];
+            int upper = 1000*box[i][1];
+            dist << std::uniform_int_distribution<int>(lower, upper);
+        }
+        quint64 seed = QDateTime::currentMSecsSinceEpoch();
+        std::mt19937 rng;
+        rng.seed(seed);
+        int maxsteps = 10000;
+        QList<QJsonObject > results;
+        for(int step = 0; step < maxsteps; ++step)
+        {
+            QList<qreal > consts = m_model.data()->Constants();
+            for(int i = 0; i < consts.size(); ++i)
+            {
+                consts[i] = dist[i](rng)/double(1000);
+            }
+            m_model->setConstants(consts);
+            m_model->Calculate();
+            results << m_model->ExportJSON();
+        }
+    StripResults(results);
 }
 
 void ContinuousVariation::StripResults(const QList<QJsonObject>& results)
