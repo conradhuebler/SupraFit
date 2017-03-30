@@ -37,7 +37,7 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(const MCConfig &config, QObject* parent): QObject(parent), m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+MonteCarloThread::MonteCarloThread(const MCConfig &config, QObject* parent): AbstractSearchThread(parent), m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     setAutoDelete(false);
 }
@@ -71,7 +71,7 @@ void MonteCarloThread::run()
 }
 
 
-MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *parent): QObject(parent), m_config(config)
+MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *parent): AbstractSearchClass(parent), m_config(config)
 {
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);

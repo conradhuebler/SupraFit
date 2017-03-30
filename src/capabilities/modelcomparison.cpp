@@ -19,6 +19,7 @@
 
 #include "src/core/AbstractModel.h"
 
+#include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
 #include <QtCore/QVector>
 
@@ -62,17 +63,17 @@ void MCThread::run()
 
 ModelComparison::ModelComparison()
 {
+    
 }
 
 ModelComparison::~ModelComparison()
 {
+    
 }
-
-
 
 QVector<QVector<qreal> > ModelComparison::MakeBox() const
 {    
-    QList<QJsonObject > constant_results = Results();
+    /*QList<QJsonObject > constant_results = Results();
     QVector<QVector< qreal > > parameter;
     for(const QJsonObject &object : qAsConst(constant_results))
     {
@@ -85,12 +86,12 @@ QVector<QVector<qreal> > ModelComparison::MakeBox() const
         constant << 0.0015;
         parameter << constant;
     }
-    return parameter;
+    return parameter;*/
 }
-
 
 bool ModelComparison::EllipsoideConfidence()
 {
+    /*
     m_cv = false;
     if(!m_model)
         return false;
@@ -109,11 +110,13 @@ bool ModelComparison::EllipsoideConfidence()
     QVector<QVector<qreal> > box = MakeBox();
     //     Search(box);
     MCSearch(box);
+    */
     return true;
 }
 
 void ModelComparison::Search(const QVector<QVector<qreal> >& box)
 {
+    /*
     GlobalSearch *globalsearch = new GlobalSearch(this);
     globalsearch->setModel(m_model); 
     globalsearch->setParameter(box);
@@ -126,10 +129,12 @@ void ModelComparison::Search(const QVector<QVector<qreal> >& box)
     QList<QJsonObject > results = globalsearch->SearchGlobal();
     StripResults(results);
     delete globalsearch;
+    */
 }
 
 void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
 {
+    /*
     QVector<QPointer<MCThread> > threads;
     QThreadPool *threadpool = QThreadPool::globalInstance();
     int maxsteps = 10000;
@@ -154,14 +159,17 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
         }
     }
     StripResults(results);
+    */
 }
 
 
 void ModelComparison::StripResults(const QList<QJsonObject>& results)
 { 
+    /*
     for(const QJsonObject &object : qAsConst(results))
     {
         if(object["sum_of_squares"].toDouble() <= m_config.maxerror)
             m_models << object;
     }
+    */
 }

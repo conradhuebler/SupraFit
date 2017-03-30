@@ -132,6 +132,8 @@ endif(testing)
 
 qt5_use_modules(models Core)
 set(utils_SRC
+                src/capabilities/abstractsearchclass.cpp
+                src/capabilities/modelcomparison.cpp
                 src/capabilities/montecarlostatistics.cpp
                 src/capabilities/globalsearch.cpp
                 src/capabilities/continuousvariation.cpp
