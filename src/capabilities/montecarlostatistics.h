@@ -31,8 +31,9 @@
 class Minimizer;
 class QThreadPool;
 
-struct MCConfig
+class MCConfig : public AbstractConfig
 {
+public:
     int maxsteps = 1000;
     double variance = 1e-2;
     bool original = false;
@@ -73,8 +74,6 @@ public:
     
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
-     
-//     inline QList<QJsonObject > getResult() const { return m_mc_results; }
     
 public slots:
     void Interrupt();
@@ -86,7 +85,6 @@ private:
     
     void ExtractFromJson(int i, const QString &string);
     QJsonObject MakeJson(QList<qreal > &list, qreal error);
-//     QList<QJsonObject > m_mc_results;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;
     std::uniform_int_distribution<int> Uni;

@@ -33,8 +33,9 @@
 class Minimizer;
 class QPointF;
 
-struct CVConfig
+class CVConfig : public AbstractConfig
 {
+public:
     double increment = 1e-3;
     int maxsteps = 1e4;
     double maxerror = 5;
@@ -92,7 +93,6 @@ public:
     bool FastConfidence();
     bool EllipsoideConfidence();
     void setParameter(const QJsonObject &json);
-//     QList<QJsonObject > Results() const { return m_result; }
    
 public slots:
     void Interrupt();
@@ -100,12 +100,10 @@ public slots:
 private:
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
-//     QList<QJsonObject > m_result;
     CVConfig m_config;
     bool allow_break, m_cv;
     QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads, bool store = false);
     QVector<QVector <qreal > > MakeBox() const;
-//     QList<QJsonObject > m_models;
     void MCSearch(const QVector<QVector<qreal> > &box);
     void Search(const QVector<QVector<qreal> > &box);
     void StripResults(const QList<QJsonObject > &results);

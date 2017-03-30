@@ -22,6 +22,7 @@
 
 #include "src/capabilities/continuousvariation.h"
 #include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/modelcomparison.h"
 
 #include "src/core/toolset.h"
 #include "src/core/dataclass.h"
@@ -426,28 +427,30 @@ void ModelWidget::MoCoStatistic()
     MoCoStatistic(config);
 }
 
-void ModelWidget::MoCoStatistic(CVConfig config)
+void ModelWidget::MoCoStatistic(CVConfig cv_config)
 {
-//     Waiter wait;
-//     
-//     config.optimizer_config = m_model->getOptimizerConfig();
-//     config.runtype = m_optim_flags->getFlags();
-//     ContinuousVariation *statistic = new ContinuousVariation(config, this);
-//     
-//     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-//     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-// //     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-// //     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-// //     connect(statistic, SIGNAL(SingeStepFinished(int)), m_statistic_dialog, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-// //     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-//     QJsonObject json = m_model->ExportJSON(false);
-//     statistic->setModel(m_model);
+    Waiter wait;
+    
+    cv_config.optimizer_config = m_model->getOptimizerConfig();
+    cv_config.runtype = m_optim_flags->getFlags();
+    MoCoConfig config;
+    config.cv_config = cv_config;
+    ModelComparison *statistic = new ModelComparison(config, this);
+    
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+//     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+//     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+//     connect(statistic, SIGNAL(SingeStepFinished(int)), m_statistic_dialog, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+//     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
+    QJsonObject json = m_model->ExportJSON(false);
+    statistic->setModel(m_model);
 //     statistic->setParameter(json);
-//     statistic->EllipsoideConfidence();
-//      
-//     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
-//     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
-//     m_statistic_result->show();
+    statistic->EllipsoideConfidence();
+     
+    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
+    m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
+    m_statistic_result->show();
 }
 
 

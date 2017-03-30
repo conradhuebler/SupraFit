@@ -22,18 +22,18 @@
 
 #include <QtWidgets/QWidget>
 
-class ContinuousVariation;
+class AbstractSearchClass;
 class AbstractTitrationModel;
 
 class CVResultsWidget : public QWidget
 {
     Q_OBJECT
 public:
-    CVResultsWidget(QPointer<ContinuousVariation > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
     ~CVResultsWidget();
     
 private:
-    QPointer<ContinuousVariation> m_statistics;
+    QPointer<AbstractSearchClass> m_statistics;
     QSharedPointer< AbstractTitrationModel > m_model;
     void WriteConfidence(const QList<QJsonObject > &constant_results);
     

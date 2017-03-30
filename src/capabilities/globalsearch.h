@@ -20,6 +20,8 @@
 #ifndef GLOBALSEARCH_H
 #define GLOBALSEARCH_H
 
+#include "abstractsearchclass.h"
+
 #include "src/core/models.h"
 
 #include <QtCore/QObject>
@@ -43,7 +45,7 @@ struct VisualData
     QVector<QVector<qreal > > data;
 };
 
-class GlobalSearch : public QObject
+class GlobalSearch : public AbstractSearchClass
 {
     Q_OBJECT
     
@@ -52,7 +54,6 @@ public:
     ~GlobalSearch();
     inline void setParameter(const QVector<QVector< qreal > > &parameter) { m_parameter = parameter; }
     inline void setOptimizationFlags(OptimizationType type) { m_type = type; }
-    inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setOptimize(bool optimize) { m_optimize = optimize; }
     inline void setInitialGuess(bool guess) { m_initial_guess = guess; }
     inline QVector<QList<qreal > > InputList() const { return m_full_list; }
@@ -60,7 +61,7 @@ public:
     QList<QJsonObject > SearchGlobal();
     QVector<VisualData> Create2DPLot();
     void ExportResults(const QString &filename, double threshold, bool allow_invalid);
-    QList<QJsonObject > Models() const { return m_models; }
+    
 public slots:
     void Interrupt();
     
@@ -72,9 +73,6 @@ private:
     quint64 m_time_0;
     OptimizationType m_type;
     int m_time;
-    QList<QJsonObject > m_models;
-    QSharedPointer<AbstractTitrationModel> m_model;
-    QList< QList<QPointF> > m_series;
     QVector<QList<double> > m_full_list;
     GlobalSearchResult last_result;
     double error_max;

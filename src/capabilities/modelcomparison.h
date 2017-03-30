@@ -20,18 +20,28 @@
 #ifndef MODELCOMPARISON_H
 #define MODELCOMPARISON_H
 
+#include "abstractsearchclass.h"
+#include "continuousvariation.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 
 
+class MoCoConfig : AbstractConfig
+{
+public:
+  CVConfig cv_config;  
+    
+};
+
 class AbstractTitrationModel;
 
-class MCThread : public QObject, public QRunnable
+class MCThread : public AbstractSearchThread
 {
   Q_OBJECT
   
 public:
-    MCThread();
+    inline MCThread( QObject *parent = 0) : AbstractSearchThread(parent) { };
     inline ~MCThread() { };
     void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     void run();
@@ -47,20 +57,22 @@ private:
 };
 
 
-class ModelComparison :  QObject
+class ModelComparison : public AbstractSearchClass
 {
     Q_OBJECT
 
 public:
-    ModelComparison();
+    ModelComparison(MoCoConfig config, QObject *parent = 0);
     ~ModelComparison();
+    bool EllipsoideConfidence();
     
 private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal> >& box);
     void Search(const QVector<QVector<qreal> >& box);
-    bool EllipsoideConfidence();
+    
     QVector<QVector<qreal> > MakeBox() const;
+    MoCoConfig m_config;
 };
 
 #endif // MODELCOMPARISON_H

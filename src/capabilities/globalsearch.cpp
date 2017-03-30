@@ -17,6 +17,7 @@
  * 
  */
 
+#include "abstractsearchclass.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
@@ -34,7 +35,7 @@
 
 #include "globalsearch.h"
 
-GlobalSearch::GlobalSearch(QObject *parent) : QObject(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_initial_guess(true), m_optimize(true)
+GlobalSearch::GlobalSearch(QObject *parent) : AbstractSearchClass(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_initial_guess(true), m_optimize(true)
 {
     
     

@@ -17,19 +17,19 @@
  *
  */
 
+#include "abstractsearchclass.h"
+#include "globalsearch.h"
+#include "continuousvariation.h"
+
 #include "src/core/AbstractModel.h"
+
+#include <QtCore/QCoreApplication>
 
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
 #include <QtCore/QVector>
 
 #include "modelcomparison.h"
-
-
-MCThread::MCThread()
-{
-    setAutoDelete(false);
-}
 
 
 void MCThread::run()
@@ -61,7 +61,7 @@ void MCThread::run()
 
 
 
-ModelComparison::ModelComparison()
+ModelComparison::ModelComparison(MoCoConfig config, QObject *parent) : AbstractSearchClass(parent), m_config(config)
 {
     
 }
@@ -73,7 +73,7 @@ ModelComparison::~ModelComparison()
 
 QVector<QVector<qreal> > ModelComparison::MakeBox() const
 {    
-    /*QList<QJsonObject > constant_results = Results();
+    QList<QJsonObject > constant_results = Results();
     QVector<QVector< qreal > > parameter;
     for(const QJsonObject &object : qAsConst(constant_results))
     {
@@ -86,13 +86,12 @@ QVector<QVector<qreal> > ModelComparison::MakeBox() const
         constant << 0.0015;
         parameter << constant;
     }
-    return parameter;*/
+    return parameter;
 }
 
 bool ModelComparison::EllipsoideConfidence()
 {
-    /*
-    m_cv = false;
+
     if(!m_model)
         return false;
     // We make an initial guess to estimate the dimension
@@ -102,21 +101,25 @@ bool ModelComparison::EllipsoideConfidence()
     config.increment = qApp->instance()->property("fast_increment").toDouble();
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error+error*0.05;
-    m_config = config;
-    m_config.runtype = m_model.data()->LastOptimzationRun();
-    FastConfidence();
+    m_config.cv_config = config;
+    m_config.cv_config.runtype = m_model.data()->LastOptimzationRun();
     
+    ContinuousVariation *cv = new ContinuousVariation(m_config.cv_config, this);
+    cv->setModel(m_model);
+    cv->FastConfidence();
+    m_results = cv->Results();
+    delete cv;
     
     QVector<QVector<qreal> > box = MakeBox();
-    //     Search(box);
+    Search(box);
     MCSearch(box);
-    */
+    
     return true;
 }
 
 void ModelComparison::Search(const QVector<QVector<qreal> >& box)
 {
-    /*
+    
     GlobalSearch *globalsearch = new GlobalSearch(this);
     globalsearch->setModel(m_model); 
     globalsearch->setParameter(box);
@@ -129,14 +132,14 @@ void ModelComparison::Search(const QVector<QVector<qreal> >& box)
     QList<QJsonObject > results = globalsearch->SearchGlobal();
     StripResults(results);
     delete globalsearch;
-    */
+    
 }
 
 void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
 {
-    /*
+    
     QVector<QPointer<MCThread> > threads;
-    QThreadPool *threadpool = QThreadPool::globalInstance();
+    
     int maxsteps = 10000;
     int thread_count =  qApp->instance()->property("threads").toInt();
     for(int i = 0; i < thread_count; ++i)
@@ -146,9 +149,9 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
         thread->setMaxSteps(maxsteps/thread_count);
         thread->setBox(box);
         threads << thread;
-        threadpool->start(thread);
+        m_threadpool->start(thread);
     }
-    threadpool->waitForDone();
+    m_threadpool->waitForDone();
     QList<QJsonObject> results;
     for(int i = 0; i < threads.size(); ++i)
     {
@@ -159,17 +162,14 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
         }
     }
     StripResults(results);
-    */
 }
 
 
 void ModelComparison::StripResults(const QList<QJsonObject>& results)
 { 
-    /*
     for(const QJsonObject &object : qAsConst(results))
     {
-        if(object["sum_of_squares"].toDouble() <= m_config.maxerror)
+        if(object["sum_of_squares"].toDouble() <= m_config.cv_config.maxerror)
             m_models << object;
     }
-    */
 }
