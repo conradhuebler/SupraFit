@@ -182,7 +182,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
 
 void MonteCarloStatistics::AnalyseData(qreal error)
 {
-    m_mc_results.clear();
+    m_results.clear();
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
         QList<qreal > list = m_constant_list[i];
@@ -190,7 +190,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
-        m_mc_results << result;
+        m_results << result;
     }
     
     for(int i = 0; i < m_shift_list.size(); ++i)
@@ -215,7 +215,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
             result["name"] = m_model->ConstantNames()[nr-1] + " Component Shift: " + m_model->SignalModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
         }
         result["type"] = "Shift";
-        m_mc_results << result;
+        m_results << result;
     }
     emit AnalyseFinished();
 }
@@ -286,27 +286,6 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
     result["controller"] = controller;
     return result;
 }
-
-void MonteCarloStatistics::ExportResults(const QString& filename)
-{
-    QJsonObject toplevel;
-    int i = 0;
-//     QList<QJsonObject > list = Models();
-    for(const QJsonObject &obj: qAsConst(m_models))
-    {
-        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
-        QStringList keys = constants.keys();
-        bool valid = true;
-        for(const QString &str : qAsConst(keys))
-        {
-            double var = constants[str].toString().toDouble();
-            valid = valid && (var > 0);
-        }
-        toplevel["model_" + QString::number(i++)] = obj;       
-    }
-    JsonHandler::WriteJsonFile(toplevel, filename);
-}
-
 
 void MonteCarloStatistics::Interrupt()
 {

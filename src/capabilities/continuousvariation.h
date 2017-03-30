@@ -20,6 +20,7 @@
 #ifndef STATISTIC_H
 #define STATISTIC_H
 
+#include "abstractsearchclass.h"
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
 
@@ -42,28 +43,27 @@ struct CVConfig
     OptimizationType runtype;
 };
 
-class ContinuousVariationThread : public QObject, public QRunnable
+class ContinuousVariationThread : public AbstractSearchThread
 {
   Q_OBJECT
 public:
 
     ContinuousVariationThread(const CVConfig &config, bool check_convergence = true);
     ~ContinuousVariationThread();
-    void setModel(QSharedPointer<AbstractTitrationModel> model); 
     inline void SetParameterID( int id ) { m_parameter_id = id; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     void setParameter(const QJsonObject &json);
     virtual void run();
-    inline QJsonObject getResult() const { return m_result; }
+    inline QJsonObject Result() const { return m_result; }
     inline bool Converged() const { return m_converged; }
-    inline QList<QPointF> getSeries() const { return m_series; }
+    inline QList<QPointF> Series() const { return m_series; }
     inline QJsonObject Model() const { return m_model->ExportJSON(); }
+    
 public slots:
     void Interrupt();
     
 private:
     qreal SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
-    QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
     int m_parameter_id;
@@ -78,14 +78,13 @@ signals:
     void IncrementProgress(int time);
 };
 
-class ContinuousVariation : public QObject
+class ContinuousVariation : public AbstractSearchClass
 {
     Q_OBJECT
     
 public:
     ContinuousVariation(const CVConfig &config, QObject *parent = 0);
     ~ContinuousVariation();
-    void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setConfig(const CVConfig &config) { m_config = config;}
     inline bool CV() { return m_cv; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
@@ -93,25 +92,20 @@ public:
     bool FastConfidence();
     bool EllipsoideConfidence();
     void setParameter(const QJsonObject &json);
-    QList<QList<QPointF> >Series() const { return m_series; }
-    QList<QJsonObject > Results() const { return m_result; }
-    inline QList<QJsonObject > Models() const { return m_models; }
-    void ExportResults(const QString &filename);
-    
+//     QList<QJsonObject > Results() const { return m_result; }
+   
 public slots:
     void Interrupt();
     
 private:
-    QSharedPointer<AbstractTitrationModel> m_model;
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
-    QList<QList<QPointF> > m_series;
-    QList<QJsonObject > m_result;
+//     QList<QJsonObject > m_result;
     CVConfig m_config;
     bool allow_break, m_cv;
     QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads, bool store = false);
     QVector<QVector <qreal > > MakeBox() const;
-    QList<QJsonObject > m_models;
+//     QList<QJsonObject > m_models;
     void MCSearch(const QVector<QVector<qreal> > &box);
     void Search(const QVector<QVector<qreal> > &box);
     void StripResults(const QList<QJsonObject > &results);
