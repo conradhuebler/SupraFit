@@ -428,26 +428,26 @@ void ModelWidget::MoCoStatistic()
 
 void ModelWidget::MoCoStatistic(CVConfig config)
 {
-    Waiter wait;
-    
-    config.optimizer_config = m_model->getOptimizerConfig();
-    config.runtype = m_optim_flags->getFlags();
-    ContinuousVariation *statistic = new ContinuousVariation(config, this);
-    
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(SingeStepFinished(int)), m_statistic_dialog, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-    QJsonObject json = m_model->ExportJSON(false);
-    statistic->setModel(m_model);
-    statistic->setParameter(json);
-    statistic->EllipsoideConfidence();
-     
-    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
-    m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
-    m_statistic_result->show();
+//     Waiter wait;
+//     
+//     config.optimizer_config = m_model->getOptimizerConfig();
+//     config.runtype = m_optim_flags->getFlags();
+//     ContinuousVariation *statistic = new ContinuousVariation(config, this);
+//     
+//     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+//     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+// //     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+// //     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+// //     connect(statistic, SIGNAL(SingeStepFinished(int)), m_statistic_dialog, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+// //     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
+//     QJsonObject json = m_model->ExportJSON(false);
+//     statistic->setModel(m_model);
+//     statistic->setParameter(json);
+//     statistic->EllipsoideConfidence();
+//      
+//     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
+//     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
+//     m_statistic_result->show();
 }
 
 

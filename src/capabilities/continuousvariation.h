@@ -22,9 +22,13 @@
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
+
 #include <QtCore/QRunnable>
 #include <QtCore/QObject>
+#include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
+
+
 class Minimizer;
 class QPointF;
 

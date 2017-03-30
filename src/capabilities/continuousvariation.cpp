@@ -166,6 +166,8 @@ void ContinuousVariationThread::Interrupt()
     allow_break = true;
 }
 
+
+
 ContinuousVariation::ContinuousVariation(const CVConfig &config, QObject *parent) : QObject(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     
@@ -229,82 +231,6 @@ bool ContinuousVariation::FastConfidence()
     qDeleteAll(threads);
     return true;
 }
-
-QVector<QVector<qreal> > ContinuousVariation::MakeBox() const
-{    
-    QList<QJsonObject > constant_results = Results();
-    QVector<QVector< qreal > > parameter;
-    for(const QJsonObject &object : qAsConst(constant_results))
-    {
-        QVector<qreal> constant;
-        qreal lower = object["confidence"].toObject()["lower_5"].toDouble();
-        qreal upper = object["confidence"].toObject()["upper_5"].toDouble();
-        qreal value = object["value"].toDouble();
-        constant << value-2*(value-lower);
-        constant << value+2*(upper-value);
-        constant << 0.0015;
-        parameter << constant;
-    }
-    return parameter;
-}
-
-
-bool ContinuousVariation::EllipsoideConfidence()
-{
-    m_cv = false;
-    if(!m_model)
-        return false;
-    // We make an initial guess to estimate the dimension
-    m_model.data()->Calculate();
-    CVConfig config;
-    config.relax = false;
-    config.increment = qApp->instance()->property("fast_increment").toDouble();
-    qreal error = m_model.data()->SumofSquares();
-    config.maxerror = error+error*0.05;
-    m_config = config;
-    m_config.runtype = m_model.data()->LastOptimzationRun();
-    FastConfidence();
-    
-    
-    QVector<QVector<qreal> > box = MakeBox();
-    qDebug() << box;
-    Search(box);
-    return true;
-}
-
-void ContinuousVariation::Search(const QVector<QVector<qreal> >& box)
-{
-    GlobalSearch *globalsearch = new GlobalSearch(this);
-    globalsearch->setModel(m_model); 
-    globalsearch->setParameter(box);
-    
-    globalsearch->setInitialGuess(false);
-    globalsearch->setOptimize(false);
-    
-    //     connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(SingeStepFinished(int)));
-    //     connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)));
-    connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-    QList<QJsonObject > results = globalsearch->SearchGlobal();
-    qDebug() << "done";
-    StripResults(results);
-    delete globalsearch;
-    qDebug() << "collected";
-}
-
-void ContinuousVariation::MCSearch(const QVector<QVector<qreal> >& box)
-{
-}
-
-void ContinuousVariation::StripResults(const QList<QJsonObject>& results)
-{ 
-    for(const QJsonObject &object : qAsConst(results))
-    {
-        if(object["sum_of_squares"].toDouble() <= m_config.maxerror)
-            m_models << object;
-    }
-}
-
 
 QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QPointer<ContinuousVariationThread> >& threads, bool store)
 {
