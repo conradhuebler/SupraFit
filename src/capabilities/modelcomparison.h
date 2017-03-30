@@ -30,8 +30,9 @@
 class MoCoConfig : AbstractConfig
 {
 public:
-  CVConfig cv_config;  
+    CVConfig cv_config;  
     
+  
 };
 
 class AbstractTitrationModel;

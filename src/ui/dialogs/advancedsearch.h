@@ -88,7 +88,7 @@ public:
     QList<QJsonObject > ModelList() const { return m_models_list; }
 //     inline QVector<QList<qreal > > FullList() const { return m_full_list; }
     QPointer<GlobalSearch > globalSearch() const { return m_search; }
-    
+    GSConfig Config() const;
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);

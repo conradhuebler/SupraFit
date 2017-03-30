@@ -131,7 +131,7 @@ bool ModelComparison::EllipsoideConfidence()
 
 void ModelComparison::Search(const QVector<QVector<qreal> >& box)
 {
-    
+    /*
     GlobalSearch *globalsearch = new GlobalSearch(this);
     globalsearch->setModel(m_model); 
     globalsearch->setParameter(box);
@@ -144,6 +144,7 @@ void ModelComparison::Search(const QVector<QVector<qreal> >& box)
     QList<QJsonObject > results = globalsearch->SearchGlobal();
     StripResults(results);
     delete globalsearch;
+    */
 }
 
 void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
