@@ -74,9 +74,7 @@ private:
     QList<QPointF> m_series;
     CVConfig m_config;
     bool allow_break;
-    
-signals:
-    void IncrementProgress(int time);
+
 };
 
 class ContinuousVariation : public AbstractSearchClass

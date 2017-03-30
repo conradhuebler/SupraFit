@@ -60,9 +60,7 @@ private:
     QJsonObject m_optimized;
     MCConfig m_config;
     QList<qreal > m_constants;
-    
-signals:
-    void IncrementProgress(int time);
+
 };
 
 class MonteCarloStatistics : public AbstractSearchClass

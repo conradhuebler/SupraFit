@@ -50,7 +50,7 @@ public:
     inline void setRuns(int runs) { m_runs = runs; }
 public slots:
     void IncrementProgress(int time);
-    void setMaximumSteps(int steps);
+    
     
 private:
     void setUi();
@@ -87,6 +87,7 @@ signals:
     void MCStatistic();
     void MoCoStatistic();
     void Interrupt();
+    void setMaximumSteps(int steps);
 };
 
 #endif // STATISTICDIALOG_H

@@ -31,6 +31,7 @@
 
 #include "modelcomparison.h"
 
+const int update_intervall = 10;
 
 void MCThread::run()
 {
@@ -46,6 +47,10 @@ void MCThread::run()
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
     rng.seed(seed);
+    
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+
     for(int step = 0; step < m_maxsteps; ++step)
     {
         QList<qreal > consts = m_model.data()->Constants();
@@ -56,6 +61,13 @@ void MCThread::run()
         m_model->setConstants(consts);
         m_model->Calculate();
         m_results << m_model->ExportJSON();
+        if( step % update_intervall == 0 )
+        {
+            t1 = QDateTime::currentMSecsSinceEpoch();
+            emit IncrementProgress(t1-t0);
+            t0 = QDateTime::currentMSecsSinceEpoch();
+            QCoreApplication::processEvents();
+        }
     }
 }
 
@@ -111,7 +123,7 @@ bool ModelComparison::EllipsoideConfidence()
     delete cv;
     
     QVector<QVector<qreal> > box = MakeBox();
-    Search(box);
+//     Search(box);
     MCSearch(box);
     
     return true;
@@ -132,7 +144,6 @@ void ModelComparison::Search(const QVector<QVector<qreal> >& box)
     QList<QJsonObject > results = globalsearch->SearchGlobal();
     StripResults(results);
     delete globalsearch;
-    
 }
 
 void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
@@ -141,10 +152,12 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
     QVector<QPointer<MCThread> > threads;
     
     int maxsteps = 10000;
+    emit setMaximumSteps(maxsteps/update_intervall);
     int thread_count =  qApp->instance()->property("threads").toInt();
     for(int i = 0; i < thread_count; ++i)
     {
         MCThread *thread = new MCThread;
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
         thread->setModel(m_model);
         thread->setMaxSteps(maxsteps/thread_count);
         thread->setBox(box);
