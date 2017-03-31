@@ -423,18 +423,16 @@ void ModelWidget::CVStatistic(CVConfig config)
 
 void ModelWidget::MoCoStatistic()
 {
-    CVConfig config = m_statistic_dialog->getMoCoConfig();
+    MoCoConfig config = m_statistic_dialog->getMoCoConfig();
     MoCoStatistic(config);
 }
 
-void ModelWidget::MoCoStatistic(CVConfig cv_config)
+void ModelWidget::MoCoStatistic(MoCoConfig config)
 {
     Waiter wait;
-    
-    cv_config.optimizer_config = m_model->getOptimizerConfig();
-    cv_config.runtype = m_optim_flags->getFlags();
-    MoCoConfig config;
-    config.cv_config = cv_config;
+ 
+    config.optimizer_config = m_model->getOptimizerConfig();
+    config.runtype = m_optim_flags->getFlags();
     ModelComparison *statistic = new ModelComparison(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);

@@ -48,13 +48,11 @@ struct VisualData
 class GSConfig : public AbstractConfig
 {
 public:
-    inline GSConfig(OptimizerConfig config, OptimizationType type) : optimizer_config(config), runtype(type) { }
+    inline GSConfig(OptimizerConfig config, OptimizationType type) : AbstractConfig(config, type) { }
     inline GSConfig() { }
     bool initial_guess = true;
     bool optimize = true;
     QVector<QVector< qreal > > parameter;
-    OptimizerConfig optimizer_config;
-    OptimizationType runtype;
 };
 
 class GlobalSearch : public AbstractSearchClass
@@ -65,10 +63,6 @@ public:
     GlobalSearch(GSConfig config = GSConfig(), QObject *parent = 0);
     GlobalSearch(QObject *parent = 0);
     ~GlobalSearch();
-//     inline void setParameter(const QVector<QVector< qreal > > &parameter) { m_parameter = parameter; }
-//     inline void setOptimizationFlags(OptimizationType type) { m_type = type; }
-//     inline void setOptimize(bool optimize) { m_optimize = optimize; }
-//     inline void setInitialGuess(bool guess) { m_initial_guess = guess; }
     inline void setConfig(const GSConfig &config) { m_config = config; }
     inline QVector<QList<qreal > > InputList() const { return m_full_list; }
     QList<QList<QPointF> >  LocalSearch();
@@ -86,7 +80,7 @@ private:
 //     QVector<QVector < qreal > > m_parameter;
     quint64 m_time_0;
 //     OptimizationType m_type;
-    int m_time;
+    int m_time, m_max_count;
     QVector<QList<double> > m_full_list;
     GlobalSearchResult last_result;
     double error_max;
@@ -94,10 +88,6 @@ private:
     bool m_allow_break; //, m_optimize, m_initial_guess;
     QVector<VisualData> m_3d_data;
     GSConfig m_config;
-    
-signals:
-    void SingeStepFinished(int time);
-    void setMaximumSteps(int maxsteps);
 };
 
 #endif // GLOBALSEARCH_H

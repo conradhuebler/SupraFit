@@ -18,6 +18,7 @@
  */
 
 #include "src/capabilities/continuousvariation.h"
+#include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/core/models.h"
 
@@ -37,6 +38,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QProgressBar>
+#include <QtWidgets/QRadioButton>
 
 #include "statisticdialog.h"
 StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QDialog(parent), m_model(model), m_runs(1)
@@ -188,12 +190,8 @@ QWidget * StatisticDialog::ModelComparison()
     QWidget *mo_widget = new QWidget;
     QGridLayout *layout = new QGridLayout;   
     
-    m_moco_increment = new QDoubleSpinBox;
-    m_moco_increment->setSingleStep(1e-3);
-    m_moco_increment->setValue(0.01);
-    m_moco_increment->setDecimals(6);
-    layout->addWidget(new QLabel(tr("Increment")), 0, 0);
-    layout->addWidget(m_moco_increment, 0, 1, 1, 2);
+    m_moco_global = new QGroupBox(tr("Settings"));
+    QGridLayout *global_layout = new QGridLayout;
     
     m_moco_maxerror = new QDoubleSpinBox;
     m_moco_maxerror->setMaximum(100);
@@ -207,22 +205,54 @@ QWidget * StatisticDialog::ModelComparison()
     connect(m_moco_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
     connect(m_moco_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
     
-    layout->addWidget(new QLabel(tr("Max. Error in %")), 1, 0);
-    layout->addWidget(m_moco_maxerror, 1, 1);
-    layout->addWidget(m_moco_f_test, 1, 2);
+    global_layout->addWidget(new QLabel(tr("Max. Error in %")), 0, 0);
+    global_layout->addWidget(m_moco_maxerror, 0, 1);
+    global_layout->addWidget(m_moco_f_test, 0, 2);
     m_moco_error_info = new QLabel;
-    layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
+    global_layout->addWidget(m_moco_error_info, 1, 0, 1, 3);
     
-    m_moco_steps = new QSpinBox;
-    m_moco_steps->setMaximum(1e7);
-    m_moco_steps->setValue(1000);
-    m_moco_steps->setSingleStep(100);
+    m_moco_box_multi = new QDoubleSpinBox;
+    m_moco_box_multi->setMaximum(3);
+    m_moco_box_multi->setSingleStep(0.5);
+    m_moco_box_multi->setValue(2);
+    m_moco_box_multi->setDecimals(2);
+    global_layout->addWidget(new QLabel(tr("Box Scaling")), 2, 0);
+    global_layout->addWidget(m_moco_box_multi, 2, 1);
     
-    layout->addWidget(new QLabel(tr("Max. Steps")), 3, 0);
-    layout->addWidget(m_moco_steps, 3, 1, 1, 2);
+    m_moco_mc = new QRadioButton(tr("Monte Carlo Search"));
+    m_moco_mc->setChecked(true);
+    m_moco_gs = new QRadioButton(tr("Global Search Search"));;
+    global_layout->addWidget(m_moco_mc, 3, 0);
+    global_layout->addWidget(m_moco_gs, 3, 2);
+    m_moco_global->setLayout(global_layout);
+    layout->addWidget(m_moco_global, 0, 0, 1, 3);
+    m_moco_monte_carlo = new QGroupBox(tr("Monte Carlo Settings"));
+    QGridLayout *monte_layout = new QGridLayout;
     
-    m_moco = new QPushButton(tr("Generate Plot"));
-    layout->addWidget(m_moco, 4, 0, 1, 3);
+    m_moco_mc_steps = new QSpinBox;
+    m_moco_mc_steps->setMaximum(1e7);
+    m_moco_mc_steps->setValue(1000);
+    m_moco_mc_steps->setSingleStep(100);
+    
+    monte_layout->addWidget(new QLabel(tr("Max. Steps")), 1, 0);
+    monte_layout->addWidget(m_moco_mc_steps, 1, 1, 1, 2);
+    m_moco_monte_carlo->setLayout(monte_layout);
+    layout->addWidget(m_moco_monte_carlo, 1, 0, 1, 3);
+    
+    m_moco_global_search = new QGroupBox(tr("Global Search Settings"));
+    QGridLayout *gs_layout = new QGridLayout;
+    
+    m_moco_gs_increment = new QDoubleSpinBox;
+    m_moco_gs_increment->setSingleStep(1e-2);
+    m_moco_gs_increment->setValue(0.01);
+    m_moco_gs_increment->setDecimals(6);
+    gs_layout->addWidget(new QLabel(tr("Increment for Global Seach")), 0, 0);
+    gs_layout->addWidget(m_moco_gs_increment, 0, 1, 1, 2);
+    
+    m_moco_global_search->setLayout(gs_layout);
+    layout->addWidget(m_moco_global_search, 4, 0, 1, 3);
+    m_moco = new QPushButton(tr("Start ..."));
+    layout->addWidget(m_moco, 5, 0, 1, 3);
     
     connect(m_moco, SIGNAL(clicked()), this, SIGNAL(MoCoStatistic()));
     mo_widget->setLayout(layout);
@@ -246,14 +276,20 @@ CVConfig StatisticDialog::getCVConfig()
     return config;
 }
 
-CVConfig StatisticDialog::getMoCoConfig()
+MoCoConfig StatisticDialog::getMoCoConfig()
 {
-    CVConfig config;
-    config.increment = m_moco_increment->value();
-    config.maxsteps = m_moco_steps->value();
-    qreal error = m_model.data()->SumofSquares();
-    config.maxerror =error+error*m_moco_maxerror->value()/double(100);
-    config.relax = true;
+    MoCoConfig config;
+    CVConfig cv_config;
+    if(m_moco_mc->isChecked())
+        config.method = 1;
+    else
+        config.method = 2;
+    cv_config.increment = m_moco_gs_increment->value();
+    config.mc_steps = m_moco_mc_steps->value();
+    config.box_multi = m_moco_box_multi->value();
+    config.maxerror = m_moco_maxerror->value()/double(100);
+    cv_config.relax = true;
+    config.cv_config = cv_config;
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(-1);

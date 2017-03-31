@@ -60,9 +60,10 @@ class ModelElement;
 
 struct ModelHistoryElement;
 struct Charts;
-struct CVConfig;
-struct MCConfig;
 
+class CVConfig;
+class MCConfig;
+class MoCoConfig;
 
 
 class ModelWidget : public QWidget
@@ -77,7 +78,7 @@ public:
     QSharedPointer< Minimizer > getMinimizer() const { return m_minimizer; }
     
     void CVStatistic(CVConfig config);
-    void MoCoStatistic(CVConfig config);
+    void MoCoStatistic(MoCoConfig config);
     void MCStatistic(MCConfig config);
     
 public slots:

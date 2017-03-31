@@ -38,8 +38,6 @@ public:
     double variance = 1e-2;
     bool original = false;
     bool bootstrap = false;
-    OptimizerConfig optimizer_config;
-    OptimizationType runtype;
 };
 
 class MonteCarloThread : public AbstractSearchThread

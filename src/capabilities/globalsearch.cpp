@@ -59,7 +59,7 @@ void GlobalSearch::Interrupt()
 
 QVector<QVector<double> > GlobalSearch::ParamList() 
 {
-    int max_count = 1;
+    m_max_count = 1;
     
     m_time = 0;
     QVector< QVector<double > > full_list;
@@ -70,12 +70,12 @@ QVector<QVector<double> > GlobalSearch::ParamList()
         min = m_config.parameter[i][0];
         max = m_config.parameter[i][1];
         step = m_config.parameter[i][2];
-        max_count *= (max+step-min)/step;
+        m_max_count *= (max+step-min)/step;
         for(double s = min; s <= max; s += step)
             list << s;
         full_list << list;
     }
-    emit setMaximumSteps(max_count);
+    emit setMaximumSteps(m_max_count);
     return full_list;
 }
 
@@ -85,7 +85,7 @@ QList<QJsonObject > GlobalSearch::SearchGlobal()
     m_models.clear();
     QVector<double > error; 
     m_config.runtype |= OptimizationType::ComplexationConstants;
-    std::cout << "starting the scanning ..." << std::endl;
+    std::cout << "starting the scanning ..." << m_max_count << " steps approx."<< std::endl;
     int t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list, error);
     int t1 = QDateTime::currentMSecsSinceEpoch();
@@ -110,7 +110,6 @@ QVector<VisualData> GlobalSearch::Create2DPLot()
 void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
 {  
     m_full_list.clear();
-    int step = 0;
     QVector<int > position(full_list.size(), 0);
     int maxthreads =qApp->instance()->property("threads").toInt();
     QVector<QVector<QPointer<NonLinearFitThread> > > threads;
@@ -137,7 +136,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
         m_full_list.append( parameter );
         QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_config.runtype, m_config.optimize);
         thread_rows << thread;
-        connect(thread, SIGNAL(finished(int)), this, SIGNAL(SingeStepFinished(int)), Qt::DirectConnection);
+        connect(thread, SIGNAL(finished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
         
         if(m_model->SupportThreads())
             QThreadPool::globalInstance()->waitForDone();
@@ -152,7 +151,6 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
                     threads << thread_rows;
                     thread_rows.clear();
                 }
-                
             }
             else
             {

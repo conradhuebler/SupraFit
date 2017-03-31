@@ -93,9 +93,9 @@ QVector<QVector<qreal> > ModelComparison::MakeBox() const
         qreal lower = object["confidence"].toObject()["lower_5"].toDouble();
         qreal upper = object["confidence"].toObject()["upper_5"].toDouble();
         qreal value = object["value"].toDouble();
-        constant << value-2*(value-lower);
-        constant << value+2*(upper-value);
-        constant << 0.0015;
+        constant << value-m_config.box_multi*(value-lower);
+        constant << value+m_config.box_multi*(upper-value);
+        constant << m_config.cv_config.increment;
         parameter << constant;
     }
     return parameter;
@@ -108,43 +108,44 @@ bool ModelComparison::EllipsoideConfidence()
         return false;
     // We make an initial guess to estimate the dimension
     m_model.data()->Calculate();
-    CVConfig config;
-    config.relax = false;
-    config.increment = qApp->instance()->property("fast_increment").toDouble();
+    CVConfig cv_config = m_config.cv_config;
+    cv_config.relax = false;
+    cv_config.increment = qApp->instance()->property("fast_increment").toDouble();
     qreal error = m_model.data()->SumofSquares();
-    config.maxerror = error+error*0.05;
-    m_config.cv_config = config;
-    m_config.cv_config.runtype = m_model.data()->LastOptimzationRun();
+    m_effective_error = error+error*m_config.maxerror;
+    qDebug() << error << m_config.maxerror << error+error*m_config.maxerror;
+    cv_config.maxerror = m_effective_error;
+    cv_config.runtype = m_model.data()->LastOptimzationRun();
     
-    ContinuousVariation *cv = new ContinuousVariation(m_config.cv_config, this);
+    ContinuousVariation *cv = new ContinuousVariation(cv_config, this);
     cv->setModel(m_model);
     cv->FastConfidence();
     m_results = cv->Results();
     delete cv;
     
     QVector<QVector<qreal> > box = MakeBox();
-//     Search(box);
-    MCSearch(box);
+    
+    if(m_config.method == 1)
+        MCSearch(box);
+    else
+        Search(box);
     
     return true;
 }
 
 void ModelComparison::Search(const QVector<QVector<qreal> >& box)
 {
-    /*
-    GlobalSearch *globalsearch = new GlobalSearch(this);
+    GSConfig config;
+    config.optimize = false;
+    config.initial_guess = false;
+    config.parameter = box;
+    GlobalSearch *globalsearch = new GlobalSearch(config, this);
     globalsearch->setModel(m_model); 
-    globalsearch->setParameter(box);
-    
-    globalsearch->setInitialGuess(false);
-    globalsearch->setOptimize(false);
-    
-    connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    connect(globalsearch, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
     QList<QJsonObject > results = globalsearch->SearchGlobal();
     StripResults(results);
     delete globalsearch;
-    */
 }
 
 void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
@@ -152,7 +153,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
     
     QVector<QPointer<MCThread> > threads;
     
-    int maxsteps = 10000;
+    int maxsteps = m_config.mc_steps;
     emit setMaximumSteps(maxsteps/update_intervall);
     int thread_count =  qApp->instance()->property("threads").toInt();
     for(int i = 0; i < thread_count; ++i)
@@ -183,7 +184,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
 { 
     for(const QJsonObject &object : qAsConst(results))
     {
-        if(object["sum_of_squares"].toDouble() <= m_config.cv_config.maxerror)
+        if(object["sum_of_squares"].toDouble() <= m_effective_error)
             m_models << object;
     }
 }

@@ -188,7 +188,7 @@ void AdvancedSearch::SetUi()
     
 //     m_progress->hide();
     m_interrupt->hide();
-    connect(m_search, SIGNAL(SingeStepFinished(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(m_search, SIGNAL(IncrementProgress(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
     connect(this, SIGNAL(setValue(int)), m_progress, SLOT(setValue(int)));
     

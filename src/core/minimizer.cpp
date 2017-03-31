@@ -297,6 +297,8 @@ QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitr
     thread->setOptimizationRun(runtype);
     if(start)
         QThreadPool::globalInstance()->start(thread);
+    else
+        emit thread->finished(1);
     return thread;
 }
 

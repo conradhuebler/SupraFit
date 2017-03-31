@@ -27,12 +27,14 @@
 #include <QtCore/QRunnable>
 
 
-class MoCoConfig : AbstractConfig
+class MoCoConfig : public AbstractConfig
 {
 public:
     CVConfig cv_config;  
-    
-  
+    int method = 1;
+    int mc_steps = 10000;
+    qreal box_multi = 1.5;
+    qreal maxerror; 
 };
 
 class AbstractTitrationModel;
@@ -74,6 +76,8 @@ private:
     
     QVector<QVector<qreal> > MakeBox() const;
     MoCoConfig m_config;
+    
+    double m_effective_error;
 };
 
 #endif // MODELCOMPARISON_H
