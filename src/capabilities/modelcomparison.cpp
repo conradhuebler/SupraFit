@@ -110,10 +110,9 @@ bool ModelComparison::EllipsoideConfidence()
     m_model.data()->Calculate();
     CVConfig cv_config = m_config.cv_config;
     cv_config.relax = false;
-    cv_config.increment = qApp->instance()->property("fast_increment").toDouble();
+    cv_config.increment = 10e-3; //qApp->instance()->property("fast_increment").toDouble();
     qreal error = m_model.data()->SumofSquares();
     m_effective_error = error+error*m_config.maxerror;
-    qDebug() << error << m_config.maxerror << error+error*m_config.maxerror;
     cv_config.maxerror = m_effective_error;
     cv_config.runtype = m_model.data()->LastOptimzationRun();
     
@@ -182,9 +181,48 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
 
 void ModelComparison::StripResults(const QList<QJsonObject>& results)
 { 
+    
+    QVector<QPair<qreal, qreal> > confidence(m_model->ConstantSize(), QPair<qreal, qreal>(0,0));
     for(const QJsonObject &object : qAsConst(results))
     {
         if(object["sum_of_squares"].toDouble() <= m_effective_error)
+        {
             m_models << object;
+            QJsonObject constants = object["data"].toObject()["constants"].toObject();
+
+            for(int i = 0; i < m_model->ConstantSize(); ++i)
+            {
+                qreal min = confidence[i].first;
+                qreal max = confidence[i].second;
+                
+                if(min != 0)
+                    confidence[i].first = qMin(min, constants[QString::number(i)].toString().toDouble());
+                else
+                    confidence[i].first = constants[QString::number(i)].toString().toDouble();
+                
+                confidence[i].second = qMax(max, constants[QString::number(i)].toString().toDouble());  
+            }
+        }
+    }
+    m_results.clear();
+    for(int i = 0; i < confidence.size(); ++i)
+    { 
+        QJsonObject result;
+        
+        QJsonObject conf;
+        conf["lower"] = confidence[i].first;
+        conf["upper"] = confidence[i].second;
+        conf["lower_5"] = confidence[i].first;
+        conf["upper_5"] = confidence[i].second;
+        result["confidence"] = conf;
+
+        QJsonObject controller;
+        controller["runtype"] = m_config.runtype;
+        controller["steps"] = m_config.mc_steps;
+        result["controller"] = controller;
+        result["value"] = m_model->Constant(i);
+        result["name"] = m_model->ConstantNames()[i];
+        result["type"] = "Complexation Constant";
+        m_results << result;
     }
 }

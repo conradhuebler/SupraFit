@@ -112,6 +112,7 @@ ChartView * CVResultsWidget::CVPlot()
 ChartView *  CVResultsWidget::EllipsoidalPlot()
 {
     QList<QJsonObject > constant_results = m_statistics->Results();
+    WriteConfidence(constant_results);
     QList<QList<QPointF > >series = m_statistics->Series();
     
     QtCharts::QChart *chart = new QtCharts::QChart;
@@ -121,5 +122,6 @@ ChartView *  CVResultsWidget::EllipsoidalPlot()
     xy_series->append(ToolSet::fromModelsList(m_statistics->Models()));
     xy_series->setMarkerSize(7);
     view->addSeries(xy_series);
+
     return view;
 }
