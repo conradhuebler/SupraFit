@@ -26,6 +26,8 @@
 #include <QDebug>
 #include <Eigen/Dense>
 
+#include <functional>
+
 #include "toolset.h"
 typedef Eigen::VectorXd Vector;
 
@@ -256,5 +258,17 @@ namespace ToolSet{
             series << QPointF(constants[QString::number(0)].toString().toDouble(), constants[QString::number(1)].toString().toDouble());
         }
         return series;
+    }
+    
+    qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter)
+    {
+        qreal integ = 0;
+        qreal delta = 1E-4;
+        for(qreal x = lower; x <= (upper- delta); x += delta)
+        {
+            qreal b = x + delta;
+            integ += (b-x)/6*(function(x,parameter)+4*function((x+b)/2,parameter)+function(b,parameter));
+        }
+        return integ;
     }
 }

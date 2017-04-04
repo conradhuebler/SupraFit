@@ -52,8 +52,7 @@ private:
     
     qreal m_K11, m_K12;
     QList<qreal > m_ItoI_signals, m_ItoII_signals;
-    qreal Y(qreal x, qreal b11, qreal b12) const;
-    
+    static qreal Y(qreal x, const QVector<qreal > & parameter);
 protected:
     virtual void CalculateVariables(const QList<qreal > &constants);
 };

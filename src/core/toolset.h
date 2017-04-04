@@ -27,6 +27,8 @@
 
 #include <Eigen/Dense>
 
+#include <functional>
+
 typedef Eigen::VectorXd Vector;
 
 namespace ToolSet{
@@ -50,6 +52,7 @@ namespace ToolSet{
     ConfidenceBar Confidence(QList<qreal > &list);
     
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models);
+    qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter);
 }
 
 #endif // TOOLSET_H
