@@ -73,8 +73,8 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
         const_name = " complexation constant ";
     }
     QJsonObject confidence = result["confidence"].toObject();
-    qreal upper = confidence["upper_5"].toDouble();
-    qreal lower = confidence["lower_5"].toDouble();
+    qreal upper = confidence["upper"].toDouble();
+    qreal lower = confidence["lower"].toDouble();
     text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " = "  +nr +  pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr> ";
     text += "<tr><td>95% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower) + " -" + pot + QString::number(upper) + "</b></td></tr></p>\n"; 
     text += "</table>";

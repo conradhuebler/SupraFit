@@ -109,6 +109,19 @@ void MonteCarloStatistics::Evaluate()
             ExtractFromJson(i, "shift_" + QString::number(k));
         }
     }
+    for(int i = 0; i < m_constant_list.size(); ++i)
+    {
+        QList<double > vector = m_constant_list[i];
+        std::sort(vector.begin(), vector.end());
+        m_constant_list[i] = vector;
+    }
+    
+    for(int i = 0; i < m_shift_list.size(); ++i)
+    {
+        QList<double > vector = m_shift_list[i];
+        std::sort(vector.begin(), vector.end());
+        m_shift_list[i] = vector;
+    }
     
     AnalyseData();
 }
@@ -192,7 +205,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         result["type"] = "Complexation Constant";
         m_results << result;
     }
-    
+
     for(int i = 0; i < m_shift_list.size(); ++i)
     {
         QList<qreal > list = m_shift_list[i];
@@ -269,12 +282,9 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
     QJsonObject result;
     
     QJsonObject confidence;
-    confidence["upper_5"] = bar.upper_5;
-    confidence["upper_2_5"] = bar.upper_2_5;
-    confidence["lower_2_5"] = bar.lower_2_5;
-    confidence["lower_5"] = bar.lower_5;
     confidence["lower"] = bar.lower;
     confidence["upper"] = bar.upper;
+    confidence["error"] = error;
     result["confidence"] = confidence;
     
     QJsonObject controller;

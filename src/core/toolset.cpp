@@ -187,65 +187,34 @@ namespace ToolSet{
         }
         return histogram;
     }
-    /*
-     * FIXME
-     * some redundant and double things happend here
-     * will change this 
-     */
-    ConfidenceBar Confidence(QList<qreal > &list, qreal error)
-    {
-        if(error == 5)
-            return Confidence(list);
-        
+
+    ConfidenceBar Confidence(const QList<qreal > &list, qreal error)
+    {   
         ConfidenceBar result;
-        std::sort(list.begin(), list.end());
-        int size_0 = list.size();
-        double single = 0;
-        while(double(list.size())/double(size_0) > (1-error/100))
-        {
-            single = list.first();
-            list.removeFirst();
-            if(list.size() != 0)
-                list.removeLast();
-        }
-        if(list.size() != 0)
+
+        if(error == 0)
         {
             result.lower = list.first();
             result.upper = list.last();
-            result.lower_5 = list.first();
-            result.upper_5 = list.last();
-        }else
+        }else if(error == 100)
         {
-            result.lower = single;
-            result.upper = single;
-            result.lower_5 = single;
-            result.upper_5 = single;
+            int max = list.size();
+            int pos = max/2;
+            if(max % 2 == 1)
+            {
+                result.lower = list[pos];
+                result.upper = list[pos+1];
+            }else{
+                result.lower = list[pos];
+                result.upper = list[pos];
+            }
+        }else{
+            int max = list.size();
+            int pos_upper = max*(1-error/100);
+            int pos_lower = max*(error/100);
+            result.lower = list[pos_lower];
+            result.upper = list[pos_upper];
         }
-        return result;
-    }
-    
-    ConfidenceBar Confidence(QList<qreal > &list)
-    {
-        ConfidenceBar result;
-        std::sort(list.begin(), list.end());
-        int size_0 = list.size();
-        while(double(list.size())/double(size_0) > 0.975)
-        {
-            list.removeFirst();
-            list.removeLast();
-        }
-        result.lower_2_5 = list.first();
-        result.upper_2_5 = list.last();
-        
-        while(double(list.size())/double(size_0) > 0.95)
-        {
-            list.removeFirst();
-            list.removeLast();
-        }
-        result.lower_5 = list.first();
-        result.upper_5 = list.last();
-        result.lower = list.first();
-        result.upper = list.last();
         return result;
     }
     
