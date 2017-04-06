@@ -133,7 +133,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_sign_layout->setAlignment(Qt::AlignTop);
     
-    
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         ModelElement *el = new ModelElement(m_model, m_charts, i);
@@ -147,7 +146,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
     
-
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)
@@ -308,7 +306,7 @@ void ModelWidget::GlobalMinimize()
         m_model->ImportJSON(json);
         m_model->Calculate();
         Repaint();
-        m_model->setLastOptimzationRun(m_optim_flags->getFlags());
+        m_model->OptimizeParameters(m_optim_flags->getFlags());
         if(qApp->instance()->property("auto_confidence").toBool())
             FastConfidence();
     }

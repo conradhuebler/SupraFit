@@ -326,7 +326,7 @@ DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19
                 table->data(j,i) += randed;
             }
         }
-        return table;
+    return table;
 }
 
 DataTable * DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector)

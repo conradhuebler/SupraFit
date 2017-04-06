@@ -67,10 +67,9 @@ void ContinuousVariationThread::run()
     double integ_5 = 0;
     double integ_1 = 0;
     QJsonObject confidence;
-    //FIXME this must be adopted to F-statistics
-    confidence["upper_5"] = SumErrors(1, integ_5, integ_1, series);
+    confidence["upper"] = SumErrors(1, integ_5, integ_1, series);
     m_model.data()->ImportJSON(optimized);
-    confidence["lower_5"] = SumErrors(0, integ_5, integ_1, series);
+    confidence["lower"] = SumErrors(0, integ_5, integ_1, series);
     m_result["confidence"] = confidence;
     
     m_series = series;
@@ -239,7 +238,7 @@ QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QP
         if(!threads[i])
             continue;
         m_models << threads[i]->Model();
-        vars << threads[i]->Result()["confidence"].toObject()["lower_5"].toDouble() << threads[i]->Result()["confidence"].toObject()["upper_5"].toDouble();
+        vars << threads[i]->Result()["confidence"].toObject()["lower"].toDouble() << threads[i]->Result()["confidence"].toObject()["upper"].toDouble();
         constants[threads[i]->Result()["name"].toString()].append( vars );
         delete threads[i];
     }

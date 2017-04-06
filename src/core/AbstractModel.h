@@ -153,6 +153,7 @@ public:
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
     inline int Points() const { return m_used_variables; }
+    inline int Paramter() { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
     inline qreal Variance() const { return m_variance; }
     inline qreal StdDeviation() const { return qSqrt(m_variance); }

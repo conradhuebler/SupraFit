@@ -90,8 +90,8 @@ QVector<QVector<qreal> > ModelComparison::MakeBox() const
     for(const QJsonObject &object : qAsConst(constant_results))
     {
         QVector<qreal> constant;
-        qreal lower = object["confidence"].toObject()["lower_5"].toDouble();
-        qreal upper = object["confidence"].toObject()["upper_5"].toDouble();
+        qreal lower = object["confidence"].toObject()["lower"].toDouble();
+        qreal upper = object["confidence"].toObject()["upper"].toDouble();
         qreal value = object["value"].toDouble();
         constant << value-m_config.box_multi*(value-lower);
         constant << value+m_config.box_multi*(upper-value);
@@ -110,7 +110,7 @@ bool ModelComparison::EllipsoideConfidence()
     m_model.data()->Calculate();
     CVConfig cv_config = m_config.cv_config;
     cv_config.relax = false;
-    cv_config.increment = 10e-3; //qApp->instance()->property("fast_increment").toDouble();
+    cv_config.increment = 10e-4; //qApp->instance()->property("fast_increment").toDouble();
     qreal error = m_model.data()->SumofSquares();
     m_effective_error = error+error*m_config.maxerror;
     cv_config.maxerror = m_effective_error;
@@ -121,7 +121,6 @@ bool ModelComparison::EllipsoideConfidence()
     cv->FastConfidence();
     m_results = cv->Results();
     delete cv;
-    
     QVector<QVector<qreal> > box = MakeBox();
     
     if(m_config.method == 1)
@@ -212,8 +211,6 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         QJsonObject conf;
         conf["lower"] = confidence[i].first;
         conf["upper"] = confidence[i].second;
-        conf["lower_5"] = confidence[i].first;
-        conf["upper_5"] = confidence[i].second;
         result["confidence"] = conf;
 
         QJsonObject controller;

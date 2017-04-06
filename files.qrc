@@ -4,5 +4,8 @@
         <file>data/models/2_1_1_1_model.json</file>
         <file>data/models/1_1_1_2_model.json</file>
         <file>data/models/2_1_1_1_1_2_model.json</file>
+        <file>data/f-table-090.dat</file>
+        <file>data/f-table-095.dat</file>
+        <file>data/f-table-099.dat</file>
     </qresource>
 </RCC>

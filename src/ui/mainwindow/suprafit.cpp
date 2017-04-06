@@ -56,10 +56,8 @@
 #include <stdio.h>
 
 #include "suprafit.h"
-
 MainWindow::MainWindow() : m_ask_on_exit(true)
 {
-    
     ReadSettings();
     
     m_model_dataholder = new ModelDataHolder;

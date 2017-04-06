@@ -36,7 +36,7 @@ class DataTable : public QAbstractTableModel
 {
 public:
     DataTable(QObject *parent = 0);
-    DataTable(int columns, int rows, QObject *parent = 0);
+    DataTable(int columns, int rows, QObject *parent);
     DataTable(DataTable *other);
     DataTable(DataTable &other);
     ~DataTable();

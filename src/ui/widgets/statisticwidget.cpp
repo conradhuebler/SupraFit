@@ -84,7 +84,9 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
 void StatisticWidget::Update()
 {
     QString overview("<table style=\'width:100%\'>");
+    overview +=  "<tr><td>Parameter fitted:</t><td><b>" + QString::number(m_model.data()->Paramter()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Number of used Points:</t><td><b>" + QString::number(m_model.data()->Points()) + "</b></td></tr>\n";
+    overview +=  "<tr><td>Degrees of Freedom:</t><td><b>" + QString::number(m_model.data()->Points()-m_model.data()->Paramter()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Error: (squared / absolute)</td><td><b>" + QString::number(m_model->SumofSquares()) + "/" + QString::number(m_model->SumofAbsolute()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Mean Error in Model:</td><td><b> " + QString::number(m_model.data()->MeanError()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Variance of Error:</td><td><b>" + QString::number(m_model.data()->Variance())  +"</b></td></tr>\n";

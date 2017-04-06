@@ -43,17 +43,15 @@ AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClas
     m_constant_names << tr("no constants");
     setActiveSignals(QVector<int>(SignalCount(), 1).toList());
     
-    m_model_signal = new DataTable(SignalCount(),DataPoints());
-    m_model_error = new DataTable(SignalCount(),DataPoints());
-    
-    
+    m_model_signal = new DataTable(SignalCount(),DataPoints(), this);
+    m_model_error = new DataTable(SignalCount(),DataPoints(), this);
     
     m_data = data;    
 }
 
 AbstractTitrationModel::~AbstractTitrationModel()
 {
-    
+
 }
 
 void AbstractTitrationModel::adress() const
@@ -84,7 +82,7 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 {
     if(!m_concentrations)
     {
-        m_concentrations = new DataTable( equilibrium.rows(), DataPoints());
+        m_concentrations = new DataTable( equilibrium.rows(), DataPoints(), this);
     }
     m_concentrations->setRow(equilibrium, i);
 }

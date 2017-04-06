@@ -17,7 +17,7 @@
  *
  */
 
-
+#include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
 #include <QtCore/QPointF>
@@ -143,8 +143,6 @@ namespace ToolSet{
     
     QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins, qreal min, qreal max)
     {
-        
-        
         if(min == max)
         {
             for(int i = 0; i < vector.size(); ++i)   
@@ -239,5 +237,38 @@ namespace ToolSet{
             integ += (b-x)/6*(function(x,parameter)+4*function((x+b)/2,parameter)+function(b,parameter));
         }
         return integ;
+    }
+    
+    qreal finv(qreal p, int m, int n)
+    {
+        QFile file;
+        if(p == 0.95 || p == 0.05)
+        {
+            file.setFileName(":/data/f-table-095.dat");
+        }else if(p == 0.90 || p == 0.1){
+            file.setFileName(":/data/f-table-090.dat");
+        }else if(p == 0.99 || p == 0.91){
+            file.setFileName(":/data/f-table-099.dat");
+        }else
+            return -3;
+        
+        file.open(QIODevice::ReadOnly);
+        
+        QTextStream in(&file);
+        int i = 1;
+        while (!in.atEnd())
+        {
+            QString line = in.readLine();
+            if( i == n)
+            {
+                QStringList data = line.split(",");
+                if(m < data.size() && m > 0)
+                    return data[m - 1].toDouble();
+                else
+                    return -1;
+            }
+            i++;
+        }
+        return -2;
     }
 }
