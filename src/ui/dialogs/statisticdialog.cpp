@@ -416,7 +416,7 @@ void StatisticDialog::CalculateError()
     QString cv_message, moco_message;
     if(m_cv_f_test->isChecked())
     {
-        max_cv_error = error*m_f_value*(m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
+        max_cv_error = error*(m_f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
         cv_message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_cv_error) + ".";
     }else
     {
@@ -426,7 +426,7 @@ void StatisticDialog::CalculateError()
     
     if(m_moco_f_test->isChecked())
     {
-        max_moco_error = error*m_f_value*(m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
+        max_moco_error = error*(m_f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
         moco_message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ".";
     }else
     {
