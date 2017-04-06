@@ -36,7 +36,7 @@ const int update_intervall = 10;
 void MCThread::run()
 {
     QVector<std::uniform_int_distribution<int> > dist;
-    double mult = 1e6;
+    double mult = 1e7;
     for(int i = 0; i < m_box.size(); ++i)
     {
         int lower = mult*m_box[i][0];

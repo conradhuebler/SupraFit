@@ -123,8 +123,6 @@ QWidget *StatisticDialog::MonteCarloWidget()
     layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
     layout->addWidget(m_mc_steps, 0, 1);
     
-    
-        
     m_varianz_box = new QDoubleSpinBox;
     if(m_model)
     {
@@ -248,7 +246,7 @@ QWidget * StatisticDialog::ModelComparison()
     global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
     
     m_moco_box_multi = new QDoubleSpinBox;
-    m_moco_box_multi->setMaximum(3);
+    m_moco_box_multi->setMaximum(20);
     m_moco_box_multi->setSingleStep(0.5);
     m_moco_box_multi->setValue(2);
     m_moco_box_multi->setDecimals(2);

@@ -189,7 +189,7 @@ namespace ToolSet{
     ConfidenceBar Confidence(const QList<qreal > &list, qreal error)
     {   
         ConfidenceBar result;
-
+        error /= 2;
         if(error == 0)
         {
             result.lower = list.first();
