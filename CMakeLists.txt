@@ -38,6 +38,12 @@ execute_process(
 add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
 add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
 
+if (${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
+    set (_DEBUG ON)
+else()
+     set (_DEBUG  OFF)
+endif(${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
+
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
@@ -195,7 +201,7 @@ if(testing)
     add_test( test_additional json_test )
     add_executable(json_test  ${test_additional})
     set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
-    set_property(TARGET  json_test PROPERTY CXX_STANDARD 14)
+    set_property(TARGET json_test PROPERTY CXX_STANDARD 14)
     qt5_use_modules(json_test Core Test)
     target_link_libraries(json_test utils models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)

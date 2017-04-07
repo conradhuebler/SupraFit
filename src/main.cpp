@@ -1,3 +1,4 @@
+#include "src/global_config.h"
 #include "src/version.h"
 #include "ui/mainwindow/suprafit.h"
 
@@ -6,6 +7,7 @@
 
 #include <QtWidgets/QApplication>
 
+#include <iostream>
 void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
@@ -55,6 +57,11 @@ int main(int argc, char** argv)
 
     const QStringList args = parser.positionalArguments();
 
+#ifdef _DEBUG
+        qDebug() << "Debug output enabled, good fun!";
+#endif
+    
+    
     MainWindow mainwindow;
     mainwindow.show();
     for(const QString &str : qAsConst(args))

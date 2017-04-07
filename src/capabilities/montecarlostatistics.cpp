@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/global_config.h"
 
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
@@ -59,6 +60,9 @@ void MonteCarloThread::run()
         return;
     }
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+#ifdef _DEBUG
+        qDebug() << this << "started!";
+#endif
     m_minimizer->setModel(m_model);
     m_minimizer->Minimize(m_config.runtype);
     
@@ -68,6 +72,9 @@ void MonteCarloThread::run()
     m_constants = m_model->Constants();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
+#ifdef _DEBUG
+        qDebug() <<  this << "finished after " << t1-t0 << "msecs!";
+#endif
 }
 
 
@@ -138,6 +145,9 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     m_generate = true;
     QVector<qreal> vector = m_model->ErrorTable()->toList();
     Uni = std::uniform_int_distribution<int>(0,vector.size()-1);
+#ifdef _DEBUG
+    qDebug() << "Starting MC Simulation with" << m_config.maxsteps << "steps";
+#endif
     for(int step = 0; step < m_config.maxsteps; ++step)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
@@ -154,6 +164,9 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
         else
             thread->setDataTable(table->PrepareMC(Phi, rng));
         m_threadpool->start(thread);
+#ifdef _DEBUG
+        qDebug() << "Thread added to queue!" << thread;
+#endif
         threads << thread; 
         QCoreApplication::processEvents();
         if(step % 100 == 0)

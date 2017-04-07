@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/global_config.h"
 
 #include "src/core/toolset.h"
 
@@ -318,14 +319,24 @@ void DataTable::setRow(const Vector &vector, int row)
 DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng)
 {
     DataTable *table = new DataTable(this);
+#ifdef _DEBUG
+    QVector<qreal > random;
+#endif    
     for(int j = 0; j <  columnCount(); ++j)
         {
             for(int i = 0; i < rowCount(); ++i)
             {
                 double  randed = Phi(rng);
                 table->data(j,i) += randed;
+#ifdef _DEBUG
+                if(random.size() < 10)
+                    random << randed;
+#endif                   
             }
         }
+#ifdef _DEBUG
+    qDebug() << "truncated random numbers: " << random;
+#endif         
     return table;
 }
 
