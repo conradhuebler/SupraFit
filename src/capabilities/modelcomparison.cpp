@@ -111,8 +111,7 @@ bool ModelComparison::EllipsoideConfidence()
     CVConfig cv_config = m_config.cv_config;
     cv_config.relax = false;
     cv_config.increment = 10e-4; //qApp->instance()->property("fast_increment").toDouble();
-    qreal error = m_model.data()->SumofSquares();
-    m_effective_error = error+error*m_config.maxerror;
+    m_effective_error = m_config.maxerror;
     cv_config.maxerror = m_effective_error;
     cv_config.runtype = m_model.data()->LastOptimzationRun();
     
