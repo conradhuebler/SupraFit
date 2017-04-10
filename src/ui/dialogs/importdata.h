@@ -36,7 +36,7 @@ class QLineEdit;
 class QPushButton;
 class QSpinBox;
 class QCheckBox;
-
+class QStandardItemModel;
 
 class TableView : public QTableView
 {
@@ -66,7 +66,7 @@ public:
     
 private:
     void setUi();
-    
+    void WriteData(const QStandardItemModel *model);
     QPointer<TableView > m_table;
     QPointer<QLineEdit > m_line;
     QPointer<QPushButton > m_select, m_export, m_file;

@@ -19,20 +19,22 @@
 
 #include <src/core/models.h>
 #include <src/core/jsonhandler.h>
+#include <src/core/filehandler.h>
 #include <QtTest/QtTest>
 
 #include <QtCore>
-
+#include <QtGui/QStandardItemModel>
 #include <QDebug>
-class TestJson : public QObject
+class Save_and_Load : public QObject
 {
     Q_OBJECT
 private slots:
-    void ImportExport();
+    void ImportExportJSON();
+    void ImportTable();
 };
 
 
-void TestJson::ImportExport()
+void Save_and_Load::ImportExportJSON()
 {
      QJsonObject toplevel;
      if(JsonHandler::ReadJsonFile(toplevel, "../data/samples/2_1_1_1_model.json"))
@@ -53,5 +55,14 @@ void TestJson::ImportExport()
      }
 }
 
-QTEST_MAIN(TestJson)
-#include "testjson.moc"
+void Save_and_Load::ImportTable()
+{
+    FileHandler *filehandler = new FileHandler("../data/samples/2_1_1_1.dat", this); 
+    QStandardItemModel *model = filehandler->getData(); 
+//     filehandler->WriteData(model);
+//     QPointer<DataClass > data = getStoredData();
+}
+
+
+QTEST_MAIN(Save_and_Load)
+#include "save_and_load.moc"

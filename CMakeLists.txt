@@ -195,15 +195,15 @@ target_link_libraries(suprafit  models math  utils ${QT_QTCORE_LIBRARY} ${QT_QTG
 
 if(testing)
     enable_testing()
-    set(test_additional
-        test/testjson.cpp
+    set(basic_test
+        test/save_and_load.cpp
     )
-    add_test( test_additional json_test )
-    add_executable(json_test  ${test_additional})
+    add_test( basic_test supratest )
+    add_executable(supratest  ${basic_test})
     set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
-    set_property(TARGET json_test PROPERTY CXX_STANDARD 14)
-    qt5_use_modules(json_test Core Test)
-    target_link_libraries(json_test utils models math suprafit ${QT_QTCORE_LIBRARY})
+    set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
+    qt5_use_modules(supratest Core Test)
+    target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)
 
 

@@ -251,11 +251,11 @@ void ImportData::ExportFile()
     
 }
 
-void ImportData::accept()
+void ImportData::WriteData(const QStandardItemModel* model)
 {
+   
     m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
-    
-    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
+
     QStringList header;
     int rows = model->rowCount() - 1; 
     int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
@@ -297,7 +297,14 @@ void ImportData::accept()
         if(import)
             m_storeddata->addPoint(conc, sign);
     }
-    m_storeddata->setHeader(header);
+    m_storeddata->setHeader(header); 
+}
+
+
+void ImportData::accept()
+{
+    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
+    WriteData(model);
     QDialog::accept();
 }
 
