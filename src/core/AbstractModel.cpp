@@ -104,6 +104,7 @@ QVector<qreal> AbstractTitrationModel::OptimizeParameters(OptimizationType type)
     m_locked_parameters.clear();
     for(int i = 0; i < variables.size(); ++i)
         m_locked_parameters << 1;
+    m_last_optimization = type;
     return variables;
 }
 
@@ -339,7 +340,8 @@ void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson, bool overrid
     
     if(topjson["runtype"].toInt() != 0)
     {
-        m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
+//         m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
+        OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
     }
     
     QList<qreal> pureShift;
