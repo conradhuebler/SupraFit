@@ -215,6 +215,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         QJsonObject controller;
         controller["runtype"] = m_config.runtype;
         controller["steps"] = m_config.mc_steps;
+        controller["fisher"] = m_config.fisher_statistic;
         result["controller"] = controller;
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];

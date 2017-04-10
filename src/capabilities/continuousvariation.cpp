@@ -60,6 +60,7 @@ void ContinuousVariationThread::run()
     controller["steps"] = m_config.maxsteps;
     controller["increment"] = m_config.increment;
     controller["maxerror"] = m_config.maxerror;
+    controller["fisher"] = m_config.fisher_statistic;
     m_result["controller"] = controller;
     m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
     m_result["value"] = parameter[m_parameter_id];
@@ -97,7 +98,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
     QList<qreal > consts = m_model.data()->Constants();
     double constant_ = consts[m_parameter_id];
     allow_break = false;
-    double par;
+    double par = 0;
     for(int m = 0; m < m_config.maxsteps; ++m)
     {
         

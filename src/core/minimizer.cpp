@@ -24,8 +24,6 @@
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
 
-// #include "src/ui/widgets/modelhistorywidget.h"
-
 #include <QCoreApplication>
 #include <QtCore/QDateTime>
 

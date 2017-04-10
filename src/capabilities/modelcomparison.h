@@ -35,6 +35,7 @@ public:
     int mc_steps = 10000;
     qreal box_multi = 1.5;
     qreal maxerror; 
+    bool fisher_statistic = false;
 };
 
 class AbstractTitrationModel;

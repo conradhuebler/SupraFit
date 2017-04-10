@@ -100,10 +100,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
     m_search_result = new ModalDialog;
+    m_search_result->setWindowTitle("Charts for " + m_model->Name());
+    
     m_statistic_result = new ModalDialog;
+    m_statistic_result->setWindowTitle("Statistics for " + m_model->Name());
+    
     m_statistic_widget = new StatisticWidget(m_model, this),
     m_table_result= new ModalDialog;
+    m_table_result->setWindowTitle("Search Results " + m_model->Name());
+    
     m_concentrations_result = new ModalDialog;
+    m_concentrations_result->setWindowTitle("Concentration Table for " + m_model->Name());
     
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
@@ -370,10 +377,12 @@ void ModelWidget::FastConfidence()
     CVConfig config;
     config.relax = false;
     config.increment = qApp->instance()->property("fast_increment").toDouble();
+    qreal f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
     qreal error = m_model.data()->SumofSquares();
-    config.maxerror = error+error*0.05;
+    config.maxerror = error*(f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
+    config.fisher_statistic = true;
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
     QJsonObject json = m_model->ExportJSON(false);
     statistic->setModel(m_model);
@@ -436,12 +445,9 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(SingeStepFinished(int)), m_statistic_dialog, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
     QJsonObject json = m_model->ExportJSON(false);
     statistic->setModel(m_model);
-//     statistic->setParameter(json);
     statistic->EllipsoideConfidence();
      
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);

@@ -97,26 +97,26 @@ void StatisticWidget::Update()
     m_short = overview;
     overview.clear();
     QString moco;
-    moco += "<p><b>Unrelaxed Continuouse Variation / Model Comparison Results:</b></p>\n";
-    moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
+    moco += "<p><b>Model Comparison Results:</b></p>\n";
     for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getMoCoStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
-        
+        if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
+            moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
         moco += TextFromConfidence(result);
     }
     if(m_model->getMoCoStatisticResult())
         overview += moco;
     
     QString cv;
-    cv += "<p><b>Relaxed Continuouse Variation / Model Comparison Results:</b></p>\n";
-    cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
+    cv += "<p><b>Continuouse Variation:</b></p>\n";    
     for(int i = 0; i < m_model->getCVStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getCVStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
-        
+        if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
+            cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
         cv += TextFromConfidence(result);
     }
     if(m_model->getCVStatisticResult())

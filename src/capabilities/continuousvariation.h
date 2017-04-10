@@ -40,6 +40,7 @@ public:
     int maxsteps = 1e4;
     double maxerror = 5;
     bool relax = true;
+    bool fisher_statistic = false;
 };
 
 class ContinuousVariationThread : public AbstractSearchThread
