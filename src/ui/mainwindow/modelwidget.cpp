@@ -300,7 +300,7 @@ void ModelWidget::GlobalMinimize()
     
     m_pending = true;
     CollectParameters();
-    QJsonObject json = m_model->ExportJSON();
+    QJsonObject json = m_model->ExportModel();
     m_minimizer->setParameter(json);
     OptimizerConfig config = m_model->getOptimizerConfig();
     
@@ -310,7 +310,7 @@ void ModelWidget::GlobalMinimize()
     if(result == 1)
     {
         json = m_minimizer->Parameter();
-        m_model->ImportJSON(json);
+        m_model->ImportModel(json);
         m_model->Calculate();
         Repaint();
         m_model->OptimizeParameters(m_optim_flags->getFlags());
@@ -384,7 +384,7 @@ void ModelWidget::FastConfidence()
     config.runtype = m_optim_flags->getFlags();
     config.fisher_statistic = true;
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
-    QJsonObject json = m_model->ExportJSON(false);
+    QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->setParameter(json);
     
@@ -415,7 +415,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
 
-    QJsonObject json = m_model->ExportJSON(false);
+    QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->setParameter(json);
     
@@ -446,7 +446,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-    QJsonObject json = m_model->ExportJSON(false);
+    QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->EllipsoideConfidence();
      
@@ -537,7 +537,7 @@ void ModelWidget::ExportConstants()
     if(!str.isEmpty())
     {
         setLastDir(str);
-        QJsonObject gameObject = m_model->ExportJSON();
+        QJsonObject gameObject = m_model->ExportModel();
         JsonHandler::WriteJsonFile(gameObject, str);
     }
     
@@ -560,7 +560,7 @@ void ModelWidget::ImportConstants()
 
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
-    m_model->ImportJSON(object);
+    m_model->ImportModel(object);
     m_model->Calculate();
     QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)

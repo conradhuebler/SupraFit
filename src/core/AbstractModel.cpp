@@ -230,7 +230,7 @@ void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
             *m_opt_para[i] = parameter[i];
 }
 
-QJsonObject AbstractTitrationModel::ExportJSON(bool statistics) const
+QJsonObject AbstractTitrationModel::ExportModel(bool statistics) const
 {
     QJsonObject json, toplevel;
     QJsonObject constantObject;
@@ -291,7 +291,7 @@ QJsonObject AbstractTitrationModel::ExportJSON(bool statistics) const
     return toplevel;
 }
 
-void AbstractTitrationModel::ImportJSON(const QJsonObject &topjson, bool override)
+void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool override)
 {
     if(topjson[m_name].isNull())
     {

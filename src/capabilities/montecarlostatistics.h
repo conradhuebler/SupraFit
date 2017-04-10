@@ -51,7 +51,7 @@ public:
     inline QJsonObject OptimizedParameter() const { return m_optimized; }
     inline QList<qreal > Constants() const { return m_constants; }
     void setDataTable(DataTable *table);
-    inline QJsonObject Model() const { return m_model->ExportJSON(); }
+    inline QJsonObject Model() const { return m_model->ExportModel(); }
     
 private:
     QSharedPointer<Minimizer> m_minimizer;

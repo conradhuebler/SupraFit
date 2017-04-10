@@ -57,7 +57,7 @@ public:
     inline QJsonObject Result() const { return m_result; }
     inline bool Converged() const { return m_converged; }
     inline QList<QPointF> Series() const { return m_series; }
-    inline QJsonObject Model() const { return m_model->ExportJSON(); }
+    inline QJsonObject Model() const { return m_model->ExportModel(); }
     
 public slots:
     void Interrupt();

@@ -479,7 +479,7 @@ DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObje
 {
     d = new DataClassPrivate();
     d->m_type = type;
-    ImportJSON(json);
+    ImportData(json);
     if(d->m_concentration_model->columnCount() != d->m_scaling.size())
     for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
         d->m_scaling << 1;
@@ -548,7 +548,7 @@ qreal DataClass::InitialHostConcentration(int i)
 }
 
 
-const QJsonObject DataClass::ExportJSON(const QList<int> &active) const
+const QJsonObject DataClass::ExportData(const QList<int> &active) const
 {
     QJsonObject json;
     
@@ -582,7 +582,7 @@ const QJsonObject DataClass::ExportJSON(const QList<int> &active) const
 }
 
 
-bool DataClass::ImportJSON(const QJsonObject &topjson)
+bool DataClass::ImportData(const QJsonObject &topjson)
 {
     QJsonObject concentrationObject, signalObject;
     concentrationObject = topjson["data"].toObject()["concentrations"].toObject();

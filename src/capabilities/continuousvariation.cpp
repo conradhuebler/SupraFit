@@ -53,7 +53,7 @@ void ContinuousVariationThread::run()
     else
         m_error = m_model.data()->SumofAbsolute();
     QList<QPointF> series;
-    QJsonObject optimized = m_model.data()->ExportJSON(false);
+    QJsonObject optimized = m_model.data()->ExportModel(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
     QJsonObject controller;
     controller["runtype"] = m_config.runtype;
@@ -69,7 +69,7 @@ void ContinuousVariationThread::run()
     double integ_1 = 0;
     QJsonObject confidence;
     confidence["upper"] = SumErrors(1, integ_5, integ_1, series);
-    m_model.data()->ImportJSON(optimized);
+    m_model.data()->ImportModel(optimized);
     confidence["lower"] = SumErrors(0, integ_5, integ_1, series);
     m_result["confidence"] = confidence;
     
@@ -80,7 +80,7 @@ void ContinuousVariationThread::run()
 
 void ContinuousVariationThread::setParameter(const QJsonObject& json)
 {
-    m_model.data()->ImportJSON(json);
+    m_model.data()->ImportModel(json);
 }
 
 
@@ -111,7 +111,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         {
             m_minimizer->Minimize(m_config.runtype, locked);
             QJsonObject json_exp = m_minimizer->Parameter();
-            m_model.data()->ImportJSON(json_exp);
+            m_model.data()->ImportModel(json_exp);
         }
         
         m_model.data()->Calculate();
@@ -186,7 +186,7 @@ bool ContinuousVariation::FastConfidence()
     m_series.clear();
     m_results.clear();
     m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportJSON();
+    QJsonObject optimized = m_model.data()->ExportModel();
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
@@ -257,7 +257,7 @@ bool ContinuousVariation::ConfidenceAssesment()
     m_series.clear();
     
     m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportJSON(false);
+    QJsonObject optimized = m_model.data()->ExportModel(false);
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
@@ -309,7 +309,7 @@ bool ContinuousVariation::ConfidenceAssesment()
 
 void ContinuousVariation::setParameter(const QJsonObject& json)
 {
-    m_model.data()->ImportJSON(json);
+    m_model.data()->ImportModel(json);
 }
 
 

@@ -58,8 +58,8 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> m
 {
     m_model = model->Clone();
     m_model->Calculate();
-    m_best_intermediate = m_model->ExportJSON(m_exc_statistics);
-    m_last_parameter = m_model->ExportJSON(m_exc_statistics);
+    m_best_intermediate = m_model->ExportModel(m_exc_statistics);
+    m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_model->setLockedParameter(model->LockedParamters());
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
@@ -67,7 +67,7 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractTitrationModel> m
 
 void NonLinearFitThread::setParameter(const QJsonObject &json)
 {
-     m_model->ImportJSON(json);
+     m_model->ImportModel(json);
 }
 
 
@@ -103,7 +103,7 @@ void NonLinearFitThread::ConstrainedFit()
         if(m_runtype & OptimizationType::ComplexationConstants)
         {
             if(NonLinearFit(OptimizationType::ComplexationConstants) == 1)
-                m_model->ImportJSON(m_last_parameter);
+                m_model->ImportModel(m_last_parameter);
         }
        
         m_model->MiniShifts(); 
@@ -111,9 +111,9 @@ void NonLinearFitThread::ConstrainedFit()
         if(m_runtype & OptimizationType::IntermediateShifts)
         {
              if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
-                 m_model->ImportJSON(m_last_parameter);
+                 m_model->ImportModel(m_last_parameter);
         }
-        m_last_parameter = m_model->ExportJSON(m_exc_statistics);
+        m_last_parameter = m_model->ExportModel(m_exc_statistics);
         qreal error;
         
         if(m_opt_config.error_potenz == 2)
@@ -150,7 +150,7 @@ void NonLinearFitThread::ConstrainedFit()
         else
             constants_convergence = false;
         if(error < old_error)
-            m_best_intermediate = m_model->ExportJSON(m_exc_statistics);
+            m_best_intermediate = m_model->ExportModel(m_exc_statistics);
         if(qAbs(error - old_error) < m_opt_config.Error_Convergence)
         {
             if(!error_convergence)
@@ -191,7 +191,7 @@ void NonLinearFitThread::ConstrainedFit()
             message += "Constant "+ QString(i)+ " " +QString::number(m_model->Constants()[i]) +" ";
         message += "Sum of Error is " + QString::number(error);
         message += "\n";
-        m_last_parameter = m_model->ExportJSON(m_exc_statistics);
+        m_last_parameter = m_model->ExportModel(m_exc_statistics);
         m_converged = true;
         Message(message, 2);        
     }
@@ -211,9 +211,9 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
             m_model->setLockedParameter(locked); 
     }
     int iter = NonlinearFit(m_model, parameter);
-    m_last_parameter = m_model->ExportJSON(m_exc_statistics);
+    m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_converged = true;
-    m_best_intermediate = m_model->ExportJSON(m_exc_statistics);
+    m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     return iter;
 }
 
@@ -279,7 +279,7 @@ int Minimizer::Minimize(OptimizationType runtype)
     else
         m_last_parameter = thread->BestIntermediateParameter();
     delete thread;
-    m_model->ImportJSON(m_last_parameter);
+    m_model->ImportModel(m_last_parameter);
     m_model->Calculate();
     emit RequestRemoveCrashFile();
     addToHistory();
@@ -313,18 +313,18 @@ void Minimizer::setModelCloned(const QSharedPointer<AbstractTitrationModel> mode
 
 void Minimizer::setParameter(const QJsonObject& json, const QList<int> &locked)
 {
-    m_model->ImportJSON(json);
+    m_model->ImportModel(json);
     m_model->setLockedParameter(locked);
 }
 
 void Minimizer::setParameter(const QJsonObject& json)
 {
-    m_model->ImportJSON(json);
+    m_model->ImportModel(json);
 }
 
 void Minimizer::addToHistory()
 {
-    QJsonObject model = m_model->ExportJSON();
+    QJsonObject model = m_model->ExportModel();
     int active = 0;
     for(int i = 0; i < m_model->ActiveSignals().size(); ++i)
         active += m_model->ActiveSignals()[i];

@@ -60,7 +60,7 @@ void MCThread::run()
         }
         m_model->setConstants(consts);
         m_model->Calculate();
-        m_results << m_model->ExportJSON();
+        m_results << m_model->ExportModel();
         if( step % update_intervall == 0 )
         {
             t1 = QDateTime::currentMSecsSinceEpoch();

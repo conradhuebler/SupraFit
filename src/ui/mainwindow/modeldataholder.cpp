@@ -290,7 +290,7 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         t.clear();
         return; 
     }
-    t->ImportJSON(object);
+    t->ImportModel(object);
     ActiveModel(t);
 }
 
@@ -375,7 +375,7 @@ void ModelDataHolder::CreateCrashFile()
     {
         if(!m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i].data()->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportModel();
             JsonHandler::AppendJsonFile(obj, filename);        
         }
     }   
@@ -398,7 +398,7 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
         
         if(m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i].data()->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportModel();
             toplevel["model_" + QString::number(i)] = obj;
             
         }
@@ -409,13 +409,13 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
 void ModelDataHolder::SaveWorkspace(const QString &file)
 {
     QJsonObject toplevel;
-    toplevel["data"] = m_data->ExportJSON();
+    toplevel["data"] = m_data->ExportData();
     
     for(int i = 0; i < m_models.size(); ++i)
     {    
         if(!m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i].data()->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportModel();
             toplevel["model_" + QString::number(i)] = obj;       
         }
     }   

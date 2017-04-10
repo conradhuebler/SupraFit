@@ -173,7 +173,7 @@ void ItoI_ItoII_Model::CalculateVariables(const QList<qreal > &constants)
 QSharedPointer<AbstractTitrationModel > ItoI_ItoII_Model::Clone() const
 {
     QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportJSON(ExportJSON());
+    model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());

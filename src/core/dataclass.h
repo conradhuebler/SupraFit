@@ -171,8 +171,14 @@ public:
         emit RowAdded();
     }*/  
     qreal XValue(int i) const;
-    const QJsonObject ExportJSON(const QList<int> &active = QList<int>()) const;
-    bool ImportJSON(const QJsonObject &topjson);
+    /* 
+     * !\brief Export data to json
+     */
+    const QJsonObject ExportData(const QList<int> &active = QList<int>()) const;
+    /*
+     * !\brief Import data from json
+     */
+    bool ImportData(const QJsonObject &topjson);
     inline QList<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);

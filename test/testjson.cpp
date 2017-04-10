@@ -35,13 +35,19 @@ private slots:
 void TestJson::ImportExport()
 {
      QJsonObject toplevel;
-     if(JsonHandler::ReadJsonFile(toplevel, "../data/samples/2_1_1_1_testcase.json"))
+     if(JsonHandler::ReadJsonFile(toplevel, "../data/samples/2_1_1_1_model.json"))
      {
          QPointer<DataClass > data = new DataClass(toplevel);
          if(data->DataPoints() != 0)
          {
              QPointer< AbstractTitrationModel > t = new IItoI_ItoI_Model(data);
-             QJsonObject export_file = t->ExportJSON();
+             t->ImportModel(toplevel["model_0"].toObject());
+             t->Calculate();
+             QJsonObject modelObject = t->ExportModel();
+             QJsonObject dataObject = t->ExportData();
+             QJsonObject export_file;
+             export_file["model_0"] = modelObject;
+             export_file["data"] = dataObject;
              QCOMPARE(toplevel, export_file);   
          }
      }
