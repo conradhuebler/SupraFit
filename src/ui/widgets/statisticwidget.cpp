@@ -77,6 +77,8 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
     qreal lower = confidence["lower"].toDouble();
     text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " = "  +nr +  pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr> ";
     text += "<tr><td>95% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower) + " -" + pot + QString::number(upper) + "</b></td></tr></p>\n"; 
+    if(result["method"].toString() == "model comparison")
+        text += "<tr><td>Approximated area  <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n"; 
     text += "</table>";
     return text;    
 }

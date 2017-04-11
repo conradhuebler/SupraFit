@@ -83,10 +83,12 @@ ModelComparison::~ModelComparison()
     
 }
 
-QVector<QVector<qreal> > ModelComparison::MakeBox() const
+QVector<QVector<qreal> > ModelComparison::MakeBox()
 {    
     QList<QJsonObject > constant_results = Results();
     QVector<QVector< qreal > > parameter;
+    int i = 0;
+    m_box_area = 1.0;
     for(const QJsonObject &object : qAsConst(constant_results))
     {
         QVector<qreal> constant;
@@ -97,6 +99,14 @@ QVector<QVector<qreal> > ModelComparison::MakeBox() const
         constant << value+m_config.box_multi*(upper-value);
         constant << m_config.cv_config.increment;
         parameter << constant;
+        m_box_area *= double(m_config.box_multi*(upper-value)+m_config.box_multi*(value-lower));
+        QList<QPointF> points;
+        if(!i)
+            points << QPointF(lower, m_model->Constant(1)) << QPointF(upper, m_model->Constant(1));
+        else
+            points << QPointF(m_model->Constant(0), lower) << QPointF( m_model->Constant(0), upper);
+        m_series.append( points );
+        ++i;
     }
     return parameter;
 }
@@ -181,10 +191,14 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
 { 
     
     QVector<QPair<qreal, qreal> > confidence(m_model->ConstantSize(), QPair<qreal, qreal>(0,0));
+    int inner = 0;
+    int all = 0;
     for(const QJsonObject &object : qAsConst(results))
     {
+        all++;
         if(object["sum_of_squares"].toDouble() <= m_effective_error)
         {
+            inner++;
             m_models << object;
             QJsonObject constants = object["data"].toObject()["constants"].toObject();
 
@@ -202,6 +216,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
             }
         }
     }
+    m_ellipsoid_area = double(inner)/double(all)*m_box_area;
     m_results.clear();
     for(int i = 0; i < confidence.size(); ++i)
     { 
@@ -220,6 +235,8 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
+        result["method"] = "model comparison";
+        result["moco_area"] = m_ellipsoid_area;
         m_results << result;
     }
 }

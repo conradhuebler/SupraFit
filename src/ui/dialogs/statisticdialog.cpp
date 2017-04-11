@@ -256,8 +256,8 @@ QWidget * StatisticDialog::ModelComparison()
     m_moco_mc = new QRadioButton(tr("Monte Carlo Search"));
     m_moco_mc->setChecked(true);
     m_moco_gs = new QRadioButton(tr("Global Search Search"));;
-    global_layout->addWidget(m_moco_mc, 4, 0);
-    global_layout->addWidget(m_moco_gs, 4, 2);
+//     global_layout->addWidget(m_moco_mc, 4, 0);
+//     global_layout->addWidget(m_moco_gs, 4, 2);
     m_moco_global->setLayout(global_layout);
     layout->addWidget(m_moco_global, 0, 0, 1, 3);
     m_moco_monte_carlo = new QGroupBox(tr("Monte Carlo Settings"));
@@ -284,7 +284,7 @@ QWidget * StatisticDialog::ModelComparison()
     gs_layout->addWidget(m_moco_gs_increment, 0, 1, 1, 2);
     
     m_moco_global_search->setLayout(gs_layout);
-    layout->addWidget(m_moco_global_search, 4, 0, 1, 3);
+//     layout->addWidget(m_moco_global_search, 4, 0, 1, 3);
     m_moco = new QPushButton(tr("Start ..."));
     layout->addWidget(m_moco, 5, 0, 1, 3);
     

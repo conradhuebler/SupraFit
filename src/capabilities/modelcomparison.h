@@ -52,7 +52,7 @@ public:
     QList<QJsonObject > Results() const { return m_results; }
     inline void setMaxSteps(int steps) { m_maxsteps = steps; }
     inline void setBox(const QVector<QVector<qreal> > &box) { m_box = box; }
-    
+   
 private:
     QSharedPointer<AbstractTitrationModel> m_model;
     QList<QJsonObject > m_results;
@@ -69,16 +69,17 @@ public:
     ModelComparison(MoCoConfig config, QObject *parent = 0);
     ~ModelComparison();
     bool EllipsoideConfidence();
-    
+    inline qreal Area() const { return m_ellipsoid_area; }
+     
 private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal> >& box);
     void Search(const QVector<QVector<qreal> >& box);
     
-    QVector<QVector<qreal> > MakeBox() const;
+    QVector<QVector<qreal> > MakeBox();
     MoCoConfig m_config;
     
-    double m_effective_error;
+    double m_effective_error, m_box_area, m_ellipsoid_area;
 };
 
 #endif // MODELCOMPARISON_H
