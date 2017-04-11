@@ -67,12 +67,16 @@ DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whate
     m_checkable = other->m_checkable;
 }
 
+DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table) : m_table(table), m_checked_table(checked_table), m_checkable(false)
+{
+    for(int i = 0; i < columnCount(); ++i)
+        m_header << QString::number(i + 1);
+}
+
 
 DataTable::~DataTable()
 {
-    
-    
-    
+
 }
 
 Vector DataTable::firstRow()
@@ -237,6 +241,19 @@ qreal & DataTable::data(int column, int row)
         }
 }
 
+DataTable * DataTable::Block(int row_begin,  int column_begin, int row_end, int column_end) const
+{
+    if(row_begin < 0 || column_begin < 0 || row_begin >= rowCount() || column_begin >= columnCount() || row_end < 0 || column_end < 0 || row_end >= rowCount() || column_end >= columnCount())
+        return new DataTable;
+    
+    Eigen::MatrixXd table = m_table.block(row_begin,column_begin,row_end,column_end);
+    Eigen::MatrixXd checked_table = m_checked_table.block(row_begin,column_begin,row_end,column_end);
+    return new DataTable(table, checked_table);
+}
+
+
+
+
 Vector DataTable::Row(int row)
 {
     return m_table.row(row);
@@ -353,8 +370,6 @@ DataTable * DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni,
         }
     return table;
 }
-
-
 
 QString DataTable::ExportAsString() const
 {

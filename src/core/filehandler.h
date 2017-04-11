@@ -20,7 +20,7 @@
 #ifndef FILEHANDLER_H
 #define FILEHANDLER_H
 #include <QtCore/QObject>
-class QStandardItemModel;
+class DataTable;
 class FileHandler : public QObject
 {
     Q_OBJECT
@@ -29,7 +29,7 @@ public:
     ~FileHandler();
     bool AllInt() const { return m_allint;}
     bool Table() const { return m_table; }
-    QPointer<QStandardItemModel >getData() const;
+    QPointer<DataTable > getData() const;
     bool FileSupported()const {return m_file_supported;}
     
 private:

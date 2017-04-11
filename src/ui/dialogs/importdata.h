@@ -38,6 +38,8 @@ class QSpinBox;
 class QCheckBox;
 class QStandardItemModel;
 
+class DataTable;
+
 class TableView : public QTableView
 {
     Q_OBJECT
@@ -66,7 +68,7 @@ public:
     
 private:
     void setUi();
-    void WriteData(const QStandardItemModel *model);
+    void WriteData(const DataTable *model);
     QPointer<TableView > m_table;
     QPointer<QLineEdit > m_line;
     QPointer<QPushButton > m_select, m_export, m_file;

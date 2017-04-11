@@ -125,7 +125,7 @@ ImportData::ImportData(QWidget *parent) : QDialog(parent)
     
     setUi(); 
     
-    QStandardItemModel *model = new QStandardItemModel(0,0);
+    DataTable *model = new DataTable(0,0, this);
     m_table->setModel(model);
 }
 
@@ -192,7 +192,7 @@ void ImportData::LoadFile()
     
     if(filehandler->FileSupported())
     {
-        QStandardItemModel *model = filehandler->getData(); 
+        DataTable *model = filehandler->getData(); 
         m_table->setModel(model);
     }else
         QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
@@ -213,97 +213,31 @@ void ImportData::ExportFile()
     QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
     if(filename.isEmpty())
         return;
-    setLastDir(filename);
-    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
     
-    int rows = model->rowCount() - 1; 
-    int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
+    setLastDir(filename);
+    DataTable *model = qobject_cast<DataTable *>(m_table->model());
     
     QFile file(filename);
     if(!file.open(QIODevice::ReadWrite))
         return;
-    QTextStream stream(&file);
-    for(int i = 0; i < rows; ++i)
-    {
-        QVector<qreal > conc, sign;
-        for(int j = 0; j < columns; ++j)
-        {
-            if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
-            {
-                if(j < m_conc->value())
-                    conc << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
-                else 
-                    sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
-            }
-        }
-        if(m_switch_concentration->isChecked())
-        {
-            qreal a = conc[1];
-            conc[1] = conc[0];
-            conc[0] = a;
-        }
-        for(double d: conc)
-            stream << d << " ";
-        for(double d: sign)
-            stream << d << " ";
-        stream <<  endl;
-    }
     
+    QTextStream stream(&file);
+    stream << model->ExportAsString();
 }
 
-void ImportData::WriteData(const QStandardItemModel* model)
+void ImportData::WriteData(const DataTable* model)
 {
-   
     m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
-
-    QStringList header;
-    int rows = model->rowCount() - 1; 
-    int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
-    for(int i = 0; i < rows; ++i)
-    {
-        bool import = true;
-        QVector<qreal > conc, sign;
-        for(int j = 0; j < columns; ++j)
-        {
-            if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
-            {
-                bool ok;
-                qreal var = model->item(i, j)->data(Qt::DisplayRole).toDouble(&ok);
-                
-                if(ok)
-                {                
-                    if(j < m_conc->value())
-                        conc << var;
-                    else 
-                        sign << var;
-                }else
-                {
-                    header << model->item(i, j)->data(Qt::DisplayRole).toString();
-                    import = false;
-                }
-            }
-            else
-            {
-                import = false;
-                break;
-            }
-        }
-        if(m_switch_concentration->isChecked())
-        {
-            qreal a = conc[1];
-            conc[1] = conc[0];
-            conc[0] = a;
-        }
-        if(import)
-            m_storeddata->addPoint(conc, sign);
-    }
-    m_storeddata->setHeader(header); 
+    DataTable *concentration_block = model->BlockColumns(0,2);
+    DataTable *signals_block = model->BlockColumns(2,model->columnCount() -2 );
+    m_storeddata->setSignalTable( signals_block );
+    m_storeddata->setConcentrationTable( concentration_block );
 }
 
 
 void ImportData::accept()
 {
-    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
+    DataTable *model = qobject_cast<DataTable *>(m_table->model());
     WriteData(model);
     QDialog::accept();
 }

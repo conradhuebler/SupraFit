@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+#include "src/core/dataclass.h"
+
 #include <QStandardItemModel>
 #include <QPointer>
 #include <QtCore/QFile>
@@ -82,16 +85,32 @@ void FileHandler::CheckForTable()
     m_file_supported = m_allint && m_table; 
 }
 
-QPointer<QStandardItemModel> FileHandler::getData() const
+QPointer<DataTable> FileHandler::getData() const
 {
-    QPointer<QStandardItemModel > model = new QStandardItemModel;
+    QPointer<DataTable > model = new DataTable;
+    int i = 0;
     for(const QString &line: qAsConst(m_filecontent))
     {
-        QList<QStandardItem *> row;
-        QStringList items = line.split(sep);
-        for(const QString &item: qAsConst(items))
-            row.append(new QStandardItem(QString(item).replace(",", ".")));
-        model->appendRow(row);
+        if(!line.isEmpty() && !line.isNull())
+        {
+            QVector<qreal> row;
+            QStringList header;
+            QStringList items = line.split(sep);
+            double sum = 0;
+            for(const QString &item: qAsConst(items))
+            {
+                row.append((QString(item).replace(",", ".")).toDouble());
+                sum += (QString(item).replace(",", ".")).toDouble();
+                header << item;
+            }
+            if(!i && !sum)
+            {
+                for(int j = 0; j < header.size(); ++j)
+                    model->setHeaderData(j, Qt::Horizontal, (header[j]), Qt::DisplayRole);
+            }
+            else
+                model->insertRow(row);
+        }
     }
     return model;
 }
