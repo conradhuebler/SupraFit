@@ -19,8 +19,7 @@
 
 #include "src/core/dataclass.h"
 
-#include <QStandardItemModel>
-#include <QPointer>
+#include <QtCore/QPointer>
 #include <QtCore/QFile>
 #include <QDebug>
 #include "filehandler.h"
@@ -28,24 +27,36 @@
 
 FileHandler::FileHandler(const QString &filename, QObject *parent) :m_filename(filename), QObject(parent), m_lines(0), m_table(true), m_allint(true), m_file_supported(true)
 {
-    ReadFile();
+    LoadFile();
+    Read();
     CheckForTable();
 }
+
+FileHandler::FileHandler(QObject* parent) : QObject(parent), m_lines(0), m_table(true), m_allint(true), m_file_supported(true)
+{
+}
+
 
 FileHandler::~FileHandler()
 {
 }
 
-void FileHandler::ReadFile()
-{
+void FileHandler::LoadFile()
+{    
     QFile file(m_filename);
     if(!file.open(QIODevice::ReadOnly))
     {
         qDebug() << file.errorString();
 //         return; //FIXME Hää
     }
-    int tab = 0, semi = 0;
+    
     m_filecontent = QString(file.readAll()).split("\n");
+}
+
+
+void FileHandler::Read()
+{
+    int tab = 0, semi = 0;
     for(const QString &str : qAsConst(m_filecontent))
     {
         tab += str.count("\t");
@@ -64,7 +75,6 @@ void FileHandler::CheckForTable()
     
     for(int i = 0; i < m_lines; ++i)
     {
-        
         if(size)
             m_table = (size == m_filecontent[i].split(sep).size());
         size = m_filecontent[i].split(sep).size();

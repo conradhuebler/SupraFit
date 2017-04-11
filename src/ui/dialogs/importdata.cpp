@@ -20,16 +20,16 @@
 #include "src/core/filehandler.h"
 #include "src/global.h"
 
+#include <QtCore/QFile>
+
+#include <QtGui/QKeyEvent>
+#include <QtGui/QClipboard>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
-#include <QKeyEvent>
-#include <QtGui/QClipboard>
-#include <QtCore/QFile>
-#include <QStandardItemModel>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QLabel>
-
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QSpinBox>
@@ -40,8 +40,6 @@
 #include <QDebug>
 #include "importdata.h"
 
-
-
 void TableView::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) 
@@ -51,65 +49,15 @@ void TableView::keyPressEvent(QKeyEvent *event)
     else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_V) 
     {
         QString paste =  QApplication::clipboard()->text();
-        QStringList lines = paste.split("\n");
-
-        int cur_row = 0;
-        QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
-        for(const QString line: qAsConst(lines))
-        {
-            int cur_col = 0;
-            QStringList cells = line.simplified().split(" ");
-            for(const QString &cell: qAsConst(cells))
-            {
-                model->setItem(cur_row, cur_col, new QStandardItem(QString(cell).replace(",", ".")));
-                cur_col++;
-            }
-            cur_row++;
-        }
-    }
-    else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_C) 
-    {
-        
-        /*QItemSelectionModel *select = this->selectionModel();
-
-        if(!select->hasSelection())
-            return; 
-        QModelIndexList rows = select->selectedRows();
-        QModelIndexList columns = select->selectedColumns();
-        QString cliptext;
-        
-        foreach(const QModelIndex &column, columns)
-        {    
-            foreach(const QModelIndex &row, rows)
-            {
-                
-            }
-        }
-        */
-        /*
-        QString paste =  QApplication::clipboard()->text();
-        QStringList lines = paste.split("\n");
-        QModelIndex index = currentIndex();
-        int row = index.row();
-        int column = index.column();
-        QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
-        foreach(const QString line, lines)
-        {
-            int col = column;
-            QStringList cells = line.simplified().split(" ");
-            foreach(const QString &cell, cells)
-            {
-                model->item(row, col)->setData(QString(cell).replace(",", "."), Qt::DisplayRole);
-                col++;
-            }
-            row++;
-        }*/
-    }
-    else {
+        FileHandler *handler = new FileHandler(this);
+        handler->setFileContent(paste);
+        DataTable *model = handler->getData();
+        setModel(model);
+        delete handler;
+    } else {
         
         QTableView::keyPressEvent(event);
     }
-    
 }
 
 
@@ -117,14 +65,11 @@ ImportData::ImportData(const QString &file, QWidget *parent) : QDialog(parent), 
 {
     setUi();
     LoadFile();
-    
 }
 
 ImportData::ImportData(QWidget *parent) : QDialog(parent)
 {
-    
     setUi(); 
-    
     DataTable *model = new DataTable(0,0, this);
     m_table->setModel(model);
 }
@@ -165,17 +110,19 @@ void ImportData::setUi()
     
     layout->addWidget(m_select, 0, 0);
     layout->addWidget(m_line, 0, 1);
-    layout->addWidget(m_file, 0, 2);
+//     layout->addWidget(m_file, 0, 2);
     layout->addWidget(m_export, 0, 3);
-    layout->addWidget(m_switch_concentration, 0, 4);
-    layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
-    layout->addWidget(m_conc, 1, 1);
-    layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
-    layout->addWidget(m_sign, 1, 3);
+//     layout->addWidget(m_switch_concentration, 0, 4);
+//     layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
+//     layout->addWidget(m_conc, 1, 1);
+//     layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
+//     layout->addWidget(m_sign, 1, 3);
     layout->addWidget(m_table, 3, 0, 1, 4);
     layout->addWidget(m_buttonbox, 4, 1, 1, 4);
     
     setLayout(layout);
+    setWindowTitle(tr("Import Table"));
+    resize(800,600);
 }
 
 void ImportData::NoChanged()

@@ -23,7 +23,6 @@
 #include "src/core/dataclass.h"
 
 
-#include <QtWidgets/QTableWidget>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
@@ -36,7 +35,6 @@ class QLineEdit;
 class QPushButton;
 class QSpinBox;
 class QCheckBox;
-class QStandardItemModel;
 
 class DataTable;
 
