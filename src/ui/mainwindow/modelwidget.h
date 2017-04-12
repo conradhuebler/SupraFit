@@ -143,6 +143,7 @@ private slots:
 public slots:
     void recalulate();
     void OptimizerSettings();
+    void ChangeColor();
     
 signals:
     void Update();
@@ -151,6 +152,7 @@ signals:
     void ToggleSeries(int);
     void IncrementProgress(int value);
     void Interrupt();
+    void ColorChanged(const QColor &color);
 };
 
 #endif // MODELWIDGET_H

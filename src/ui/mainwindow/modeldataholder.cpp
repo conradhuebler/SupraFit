@@ -33,6 +33,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
+#include <QtGui/QColor>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QPushButton>
@@ -41,6 +42,7 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QToolButton>
 
 #include "modeldataholder.h"
 
@@ -59,13 +61,26 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     addTab(scroll, modelwidget->Model()->Name());
     
     QCheckBox *hide = new QCheckBox;
-    hide->resize(20,20);
+    hide->setMaximumSize(20,20);
     hide->setChecked(true);
     hide->setToolTip(tr("Toggle Series in Charts"));
     
+    m_color = new QToolButton;
+    m_color->setMaximumSize(15,15);
+    m_color->setStyleSheet("background-color: #77d740;");
+    
+    QWidget *tools = new QWidget;
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->addWidget(hide);
+    layout->addWidget(m_color);
+    tools->setLayout(layout);
+    
     connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
+    connect(m_color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
+    connect(modelwidget, SIGNAL(ColorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
+    
     setCurrentWidget(scroll);
-    tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, hide);
+    tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, tools);
 }
 
 void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
@@ -74,6 +89,10 @@ void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
     tabBar()->setTabButton(0, QTabBar::RightSide, 0);
 }
 
+void TabWidget::ChangeColor(const QColor& color)
+{
+    m_color->setStyleSheet("background-color:" + color.name()+ ";");
+}
 
 
 

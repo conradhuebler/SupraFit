@@ -119,8 +119,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     layout->addLayout(tools);
     setMaximumHeight(75);
     setMinimumHeight(75); 
-    ColorChanged(m_charts.data_wrapper->color(m_no));
-    connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ColorChanged(QColor)));
+    ChangeColor(m_charts.data_wrapper->color(m_no));
+    connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
@@ -189,8 +189,10 @@ void ModelElement::Update()
     
 }
 
-void ModelElement::ColorChanged(const QColor &color)
+void ModelElement::ChangeColor(const QColor &color)
 {
+    m_signal_series->setColor(color);
+    m_error_series->setColor(color);
     #ifdef _WIN32
     setStyleSheet("background-color:" + color.name()+ ";");
     #else
@@ -208,9 +210,7 @@ void ModelElement::chooseColor()
     if(!color.isValid())
         return;
     
-    m_signal_series->setColor(color);
-    m_error_series->setColor(color);
-    ColorChanged(color);
+    ChangeColor(color);
 }
 
 void ModelElement::ToggleSeries(int i)

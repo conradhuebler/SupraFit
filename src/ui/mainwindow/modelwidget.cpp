@@ -57,13 +57,13 @@
 
 #include <QtWidgets/QAction>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QLabel>
-
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -782,5 +782,18 @@ void ModelWidget::Save2File()
             stream << m_logging << endl;
         }
     } 
+}
+
+void ModelWidget::ChangeColor()
+{
+    QColor color = QColorDialog::getColor(tr("Choose Color for Series"));
+    if(!color.isValid())
+        return;
+    
+    for(int i = 0; i < m_model_elements.size(); ++i)
+    {
+        m_model_elements[i]->ChangeColor(color);
+    }
+    emit ColorChanged(color);
 }
 #include "modelwidget.moc"
