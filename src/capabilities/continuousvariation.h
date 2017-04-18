@@ -88,6 +88,7 @@ public:
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
     bool FastConfidence();
+    bool FastConfidence_old();
     bool EllipsoideConfidence();
     void setParameter(const QJsonObject &json);
    
@@ -104,7 +105,7 @@ private:
     void MCSearch(const QVector<QVector<qreal> > &box);
     void Search(const QVector<QVector<qreal> > &box);
     void StripResults(const QList<QJsonObject > &results);
-    
+    double FastConfidence_iter(int parameter_id, int direction = 1);
 signals:
     void StopSubThreads();
     void IncrementProgress(int time);

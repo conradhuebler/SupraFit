@@ -188,6 +188,90 @@ bool ContinuousVariation::FastConfidence()
     m_minimizer->setModel(m_model);
     QJsonObject optimized = m_model.data()->ExportModel();
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
+    for(int i = 0; i < parameter.size(); ++i)
+    {
+        m_model.data()->ImportModel(optimized);
+        m_model.data()->Calculate();
+        double upper = FastConfidence_iter(i, +1);
+        
+        m_model.data()->ImportModel(optimized);
+        m_model.data()->Calculate();
+        double lower = FastConfidence_iter(i, -1);
+        
+        QJsonObject result;
+        QJsonObject controller;
+        controller["runtype"] = m_config.runtype;
+        controller["steps"] = m_config.maxsteps;
+        controller["increment"] = m_config.increment;
+        controller["maxerror"] = m_config.maxerror;
+        controller["fisher"] = m_config.fisher_statistic;
+        result["controller"] = controller;
+        result["name"] = m_model.data()->ConstantNames()[i];
+        result["value"] = parameter[i];
+        result["type"] = "Complexation Constant";
+        QJsonObject confidence;
+        confidence["upper"] = upper;
+        m_model.data()->ImportModel(optimized);
+        confidence["lower"] = lower;
+        result["confidence"] = confidence;
+        
+        m_results << result;
+    }
+    return true;
+}
+
+double ContinuousVariation::FastConfidence_iter(int parameter_id, int direction)
+{
+    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
+    double param = parameter[parameter_id];
+    double old_param = param;
+    int iter = 0;
+    int maxiter = 100;
+    double step = 0.5;
+    param += direction*step;
+    double error = m_model.data()->SumofSquares();
+    while(qAbs(error-m_config.maxerror) > 1e-7)
+    {
+        parameter[parameter_id] = param;
+        m_model.data()->setConstants(parameter);
+        m_model.data()->Calculate();
+        error = m_model.data()->SumofSquares();
+        
+        if( error < m_config.maxerror )
+        {
+            old_param = param;
+            param += step*direction;
+            
+        }else
+        {
+            step = qAbs(param - old_param)*0.5;
+            param = old_param + step*direction;
+            old_param -= step*direction;
+        }
+        parameter[parameter_id] = param;
+        m_model.data()->setConstants(parameter);
+        m_model.data()->Calculate();
+        error = m_model.data()->SumofSquares();
+        iter++;
+        
+        if(iter >= maxiter)
+            break;
+    }
+    return param;
+}
+
+
+bool ContinuousVariation::FastConfidence_old()
+{
+    if(!m_model)
+        return false;
+    for(int i = 0; i < m_series.size(); ++i)
+        m_series[i].clear();
+    m_series.clear();
+    m_results.clear();
+    m_minimizer->setModel(m_model);
+    QJsonObject optimized = m_model.data()->ExportModel();
+    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
     QThreadPool *threadpool = QThreadPool::globalInstance();

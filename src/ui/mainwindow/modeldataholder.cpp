@@ -48,7 +48,7 @@
 
 TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 {
-    
+    setStyleSheet("QTabBar::tab { height: 20px;}");
 }
 
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
@@ -67,7 +67,13 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     
     m_color = new QToolButton;
     m_color->setMaximumSize(15,15);
-    m_color->setStyleSheet("background-color: #77d740;");
+    QPalette palette = m_color->palette();
+    QLinearGradient gradient(m_color->rect().topLeft(),m_color->rect().bottomLeft());
+    gradient.setColorAt(0.0, QColor(255, 0, 0, 127));
+    gradient.setColorAt(1.0, QColor(0, 0, 255, 127));
+    gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+    palette.setBrush(QPalette::Button, QBrush(gradient));
+    m_color->setPalette(palette);
     
     QWidget *tools = new QWidget;
     QHBoxLayout *layout = new QHBoxLayout;
