@@ -78,6 +78,11 @@ void StatisticDialog::updateUI()
     m_f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
     m_cv_f_value->setValue(m_f_value);
     m_moco_f_value->setValue(m_f_value);
+    if(m_model.data()->ConstantSize() != 2)
+    {
+        m_moco_widget->setDisabled(true);
+        m_moco_widget->setToolTip("<p>Model Comparison is not enabled for 1:1 and 2:1/1:1/1:2 models.</p><p>For 1:1 models the result are equal to the automatic confidence calculation.</p><p>For more complicated models the confidence region becomes an ellipsoid, which is not supported yet.</br>This may come in later release of suprafit</p>");
+    }
 }
 
 
@@ -87,7 +92,8 @@ void StatisticDialog::setUi()
     QTabWidget *widget = new QTabWidget;
     widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
     widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
-    widget->addTab(ModelComparison(), tr("Model Comparison"));
+    m_moco_widget = ModelComparison();
+    widget->addTab(m_moco_widget, tr("Model Comparison"));
     m_optim_flags = new OptimizerFlagWidget; 
     layout->addWidget(widget);
     m_time_info = new QLabel;
@@ -265,7 +271,7 @@ QWidget * StatisticDialog::ModelComparison()
     
     m_moco_mc_steps = new QSpinBox;
     m_moco_mc_steps->setMaximum(1e7);
-    m_moco_mc_steps->setValue(1000);
+    m_moco_mc_steps->setValue(10000);
     m_moco_mc_steps->setSingleStep(100);
     
     monte_layout->addWidget(new QLabel(tr("Max. Steps")), 1, 0);

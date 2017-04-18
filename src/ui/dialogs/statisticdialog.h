@@ -72,7 +72,7 @@ private:
     QProgressBar *m_progress;
     QLabel *m_time_info, *m_cv_error_info, *m_moco_error_info;
     OptimizerFlagWidget *m_optim_flags;
-    
+    QWidget *m_moco_widget;
     QMutex mutex;
     
     QWeakPointer<AbstractTitrationModel> m_model;

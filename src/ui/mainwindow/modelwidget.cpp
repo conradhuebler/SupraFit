@@ -374,26 +374,24 @@ void ModelWidget::MCStatistic(MCConfig config)
 
 void ModelWidget::FastConfidence()
 {
-    CVConfig config;
-    config.relax = false;
-    config.increment = qApp->instance()->property("fast_increment").toDouble();
+    MoCoConfig config;
+    
     qreal f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error*(f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     config.fisher_statistic = true;
-    ContinuousVariation *statistic = new ContinuousVariation(config, this);
+    ModelComparison *statistic = new ModelComparison(config, this);
     QJsonObject json = m_model->ExportModel(false);
-    statistic->setModel(m_model);
-    statistic->setParameter(json);
-    
+    statistic->setModel(m_model);    
     statistic->FastConfidence();
     QList<QJsonObject > constant_results = statistic->Results();
     for(int i = 0; i < constant_results.size(); ++i)
     {
         m_model->setMoCoStatistic(constant_results[i], i);
     }
+    delete statistic;
 }
 
 void ModelWidget::CVStatistic()
@@ -448,7 +446,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
-    statistic->EllipsoideConfidence();
+    statistic->Confidence();
      
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());

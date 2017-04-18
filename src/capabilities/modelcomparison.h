@@ -68,13 +68,15 @@ class ModelComparison : public AbstractSearchClass
 public:
     ModelComparison(MoCoConfig config, QObject *parent = 0);
     ~ModelComparison();
-    bool EllipsoideConfidence();
+    bool Confidence();
+    bool FastConfidence();
     inline qreal Area() const { return m_ellipsoid_area; }
      
 private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal> >& box);
     void Search(const QVector<QVector<qreal> >& box);
+    double SingleLimit(int parameter_id, int direction = 1);
     
     QVector<QVector<qreal> > MakeBox();
     MoCoConfig m_config;
