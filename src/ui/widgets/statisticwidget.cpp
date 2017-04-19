@@ -43,7 +43,7 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractTitrationModel> mo
     m_layout->addWidget(m_overview);
     
     
-    connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
+    connect(m_model.data(), SIGNAL(StatisticChanged()), this, SLOT(Update()));
     setLayout(m_layout);
     Update();
 }

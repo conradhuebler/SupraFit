@@ -27,6 +27,8 @@
 
 #include <Eigen/Dense>
 
+#include <fisher/fisher_dist.h>
+
 #include <functional>
 
 typedef Eigen::VectorXd Vector;
@@ -54,7 +56,7 @@ namespace ToolSet{
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models);
     qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter);
     
-    qreal finv(qreal p, int m, int n);
+    inline qreal finv(qreal p, int m, int n){ return Fisher_Dist::finv(p,m,n); }
     
 }
 

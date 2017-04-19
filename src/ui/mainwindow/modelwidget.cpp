@@ -376,7 +376,7 @@ void ModelWidget::FastConfidence()
 {
     MoCoConfig config;
     
-    qreal f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
+    qreal f_value = ToolSet::finv(qApp->instance()->property("p_value").toDouble(), m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error*(f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
     config.optimizer_config = m_model->getOptimizerConfig();

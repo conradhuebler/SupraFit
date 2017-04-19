@@ -26,7 +26,6 @@
 #include <QDebug>
 #include <Eigen/Dense>
 
-#include <fisher/fisher_dist.h>
 
 #include <functional>
 
@@ -241,42 +240,8 @@ namespace ToolSet{
         return integ;
     }
     
-    qreal finv(qreal p, int m, int n)
-    {
-        qDebug() << "p value for" << p << m << n;
-        /*QFile file;
-        if(p == 0.95 || p == 0.05)
-        {
-            file.setFileName(":/data/f-table-095.dat");
-        }else if(p == 0.90 || p == 0.1){
-            file.setFileName(":/data/f-table-090.dat");
-        }else if(p == 0.99 || p == 0.91){
-            file.setFileName(":/data/f-table-099.dat");
-        }else
-            return -3;
-        
-        file.open(QIODevice::ReadOnly);
-        
-        QTextStream in(&file);
-        int i = 1;
-        while (!in.atEnd())
-        {
-            QString line = in.readLine();
-            if( i == n)
-            {
-                QStringList data = line.split(",");
-                if(m < data.size() && m > 0)
-                {
-                    qDebug() << Fisher_Dist::finv(p,m,n) << " and from file " << data[m - 1].toDouble();
-                    return data[m - 1].toDouble();
-                }
-                else
-                    return -1;
-            }
-            i++;
-        }
-        return -2;*/
-        
-         return Fisher_Dist::finv(p,m,n);
-    }
+//     qreal finv(qreal p, int m, int n)
+//     {
+//          return Fisher_Dist::finv(p,m,n);
+//     }
 }

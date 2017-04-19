@@ -232,7 +232,7 @@ signals:
     void Recalculated();
     void Message(const QString &str, int priority = 3);
     void Warning(const QString &str, int priority = 1);
-    void StatisticChanged(const QJsonObject &result, int i);
+    void StatisticChanged();
 };
 
 #endif // ABSTRACTMODEL_H

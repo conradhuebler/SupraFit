@@ -69,9 +69,10 @@ private:
     QRadioButton *m_printlevel_0, *m_printlevel_1, *m_printlevel_2, *m_printlevel_3, *m_printlevel_4, *m_printlevel_5;
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
     QSpinBox *m_threads;
+    QDoubleSpinBox *m_p_value;
     QLineEdit *m_logfileButton, *m_working;
     QPushButton *m_selectlogfile, *m_select_working;
-    ScientificBox *m_fast_increment;
+//     ScientificBox *m_fast_increment;
     QTabWidget *m_mainwidget;
     QDialogButtonBox *m_buttons;
     QComboBox *m_charttheme;

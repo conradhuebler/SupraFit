@@ -73,11 +73,13 @@ void StatisticDialog::setVisible(bool visible)
 
 void StatisticDialog::updateUI()
 {
+    if(!m_model)
+        return;
     m_cv_f_value->setToolTip(FOutput());
     m_moco_f_value->setToolTip(FOutput());
-    m_f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
-    m_cv_f_value->setValue(m_f_value);
-    m_moco_f_value->setValue(m_f_value);
+//     m_f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
+    m_cv_f_value->setValue(ToolSet::finv(1-m_cv_maxerror->value()/100, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter()));
+    m_moco_f_value->setValue(ToolSet::finv(1-m_moco_maxerror->value()/100, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter()));
     if(m_model.data()->ConstantSize() != 2)
     {
         m_moco_widget->setDisabled(true);
@@ -113,6 +115,7 @@ void StatisticDialog::setUi()
     connect(this, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
     setLayout(layout);
     EnableWidgets();
+    updateUI();
     CalculateError();
 }
 
@@ -179,7 +182,7 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     m_cv_maxerror->setDecimals(1);
     
     m_cv_f_test = new QCheckBox(tr("Use F-Statistic"));
-    m_cv_f_test->setChecked(false);
+    m_cv_f_test->setChecked(true);
     m_cv_f_value = new QDoubleSpinBox;
     m_cv_f_value->setMaximum(1000);
     m_cv_f_value->setMinimum(0);
@@ -231,7 +234,7 @@ QWidget * StatisticDialog::ModelComparison()
     m_moco_maxerror->setValue(5);
     m_moco_maxerror->setDecimals(1);
     m_moco_f_test = new QCheckBox(tr("Use F-Statistic"));
-    m_moco_f_test->setChecked(false);
+    m_moco_f_test->setChecked(true);
         
     m_moco_f_value = new QDoubleSpinBox;
     m_moco_f_value->setMaximum(1000);
@@ -417,12 +420,13 @@ void StatisticDialog::CalculateError()
 {
     if(!m_model.data())
         return;
+    updateUI();
     qreal error = m_model.data()->SumofSquares();
     qreal max_moco_error, max_cv_error;
     QString cv_message, moco_message;
     if(m_cv_f_test->isChecked())
     {
-        max_cv_error = error*(m_f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
+        max_cv_error = error*(m_cv_f_value->value()*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
         cv_message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_cv_error) + ".";
     }else
     {
@@ -432,7 +436,7 @@ void StatisticDialog::CalculateError()
     
     if(m_moco_f_test->isChecked())
     {
-        max_moco_error = error*(m_f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
+        max_moco_error = error*(m_moco_f_value->value()*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
         moco_message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ".";
     }else
     {

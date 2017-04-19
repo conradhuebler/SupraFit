@@ -232,15 +232,17 @@ void ConfigDialog::createStandardCalTab()
     m_auto_confidence->setChecked(qApp->instance()->property("auto_confidence").toBool());
     layout->addWidget(m_auto_confidence);
     
-    m_fast_increment = new ScientificBox;
-    m_fast_increment->setRange(1E-5, 1E-1);
-    m_fast_increment->setSingleStep(1E-4);
-    m_fast_increment->setDecimals(6);
-    m_fast_increment->setValue(qApp->instance()->property("fast_increment").toDouble());
+    m_p_value = new QDoubleSpinBox;
+    m_p_value->setMaximum(1);
+    m_p_value->setMinimum(0);
+    m_p_value->setSingleStep(1E-2);
+    m_p_value->setValue(0.95);
+    m_p_value->setDecimals(2);
+    m_p_value->setValue(qApp->instance()->property("p_value").toDouble());
     
     QHBoxLayout *h_layout = new QHBoxLayout;
-    h_layout->addWidget(new QLabel(tr("Increment:")));
-    h_layout->addWidget(m_fast_increment);
+    h_layout->addWidget(new QLabel(tr("P Value:")));
+    h_layout->addWidget(m_p_value);
     layout->addLayout(h_layout);
     
     m_mainwidget->addTab(calcTab, tr("Standard Calculation"));
@@ -305,7 +307,7 @@ void ConfigDialog::accept()
    qApp->instance()->setProperty("workingdir", m_working->text());
    qApp->instance()->setProperty("dirlevel", m_dirlevel);
    qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
-   qApp->instance()->setProperty("fast_increment", m_fast_increment->value());
+   qApp->instance()->setProperty("p_value", m_p_value->value());
    QDialog::accept(); 
 }
 

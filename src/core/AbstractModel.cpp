@@ -409,8 +409,8 @@ void AbstractTitrationModel::setCVStatistic(const QJsonObject &result, int i)
         m_cv_statistics[i] = result;
     else
         m_cv_statistics << result; 
-    emit StatisticChanged(result, i);
-    emit Recalculated();
+    emit StatisticChanged();
+//     emit Recalculated();
 }
 
 void AbstractTitrationModel::setMCStatistic(const QJsonObject &result, int i)
@@ -419,8 +419,8 @@ void AbstractTitrationModel::setMCStatistic(const QJsonObject &result, int i)
         m_mc_statistics[i] = result;
     else
         m_mc_statistics << result; 
-    emit StatisticChanged(result, i);
-    emit Recalculated();
+    emit StatisticChanged();
+//     emit Recalculated();
 }
 
 void AbstractTitrationModel::setMoCoStatistic(const QJsonObject &result, int i)
@@ -429,8 +429,8 @@ void AbstractTitrationModel::setMoCoStatistic(const QJsonObject &result, int i)
         m_moco_statistics[i] = result;
     else
         m_moco_statistics << result; 
-    emit StatisticChanged(result, i);
-    emit Recalculated();
+    emit StatisticChanged();
+//     emit Recalculated();
 }
 
 void AbstractTitrationModel::setConstants(const QList<qreal> &list)
