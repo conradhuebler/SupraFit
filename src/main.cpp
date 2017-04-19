@@ -1,3 +1,4 @@
+#include "src/global_config.h"
 #include "src/version.h"
 #include "ui/mainwindow/suprafit.h"
 
@@ -6,6 +7,7 @@
 
 #include <QtWidgets/QApplication>
 
+#include <iostream>
 void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
@@ -17,7 +19,10 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
         fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
         break;
     case QtWarningMsg:
-        fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        if(context.line != 0)
+            fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        else
+            fprintf(stderr, "Warning: %s \n", localMsg.constData());
         break;
     case QtCriticalMsg:
         fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
@@ -52,6 +57,11 @@ int main(int argc, char** argv)
 
     const QStringList args = parser.positionalArguments();
 
+#ifdef _DEBUG
+        qDebug() << "Debug output enabled, good fun!";
+#endif
+    
+    
     MainWindow mainwindow;
     mainwindow.show();
     for(const QString &str : qAsConst(args))

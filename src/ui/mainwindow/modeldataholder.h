@@ -33,6 +33,7 @@
 
 struct OptimizerConfig;
 
+class QToolButton;
 class ModelWidget;
 class DataWidget;
 class QTabWidget;
@@ -51,7 +52,12 @@ public:
     inline ~TabWidget() { }
     void setDataTab( QPointer<DataWidget > datawidget );
     void addModelsTab(QPointer<ModelWidget> modelwidget);
-
+    
+private:
+    QToolButton *m_color;
+    
+private slots:
+    void ChangeColor(const QColor &color);
 };
 
 class ModelDataHolder : public QWidget

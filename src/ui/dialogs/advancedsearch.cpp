@@ -188,7 +188,7 @@ void AdvancedSearch::SetUi()
     
 //     m_progress->hide();
     m_interrupt->hide();
-    connect(m_search, SIGNAL(SingeStepFinished(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(m_search, SIGNAL(IncrementProgress(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
     connect(this, SIGNAL(setValue(int)), m_progress, SLOT(setValue(int)));
     
@@ -199,8 +199,6 @@ void AdvancedSearch::SetUi()
 
 void AdvancedSearch::setOptions()
 {
-    m_search->setInitialGuess(m_initial_guess->isChecked());
-    m_search->setOptimize(m_optim->isChecked());
     m_optim_flags->setEnabled(m_optim->isChecked());
 }
 
@@ -241,10 +239,9 @@ void AdvancedSearch::SearchGlobal()
 {
      Waiter wait;
      PrepareProgress();
-     m_search->setParameter(m_parameter);
+     m_search->setConfig(Config());
      m_models_list.clear();
      QVector<double > error; 
-     m_search->setOptimizationFlags(m_optim_flags->getFlags()); 
      m_models_list = m_search->SearchGlobal();
 //      m_full_list = m_search->Inputlist();
      Finished();
@@ -255,7 +252,7 @@ void AdvancedSearch::LocalSearch()
 {
      Waiter wait;
      PrepareProgress();
-     m_search->setParameter(m_parameter);
+     m_search->setConfig(Config());
      m_series = m_search->LocalSearch();
      Finished();
      emit PlotFinished(2);
@@ -265,8 +262,7 @@ void AdvancedSearch::Create2DPlot()
 {
      Waiter wait;
      PrepareProgress();
-     
-     m_search->setParameter(m_parameter);
+     m_search->setConfig(Config());
      QVector<VisualData> data_list = m_search->Create2DPLot();
      m_error_max = 0;
      for(const VisualData &data : data_list)
@@ -296,6 +292,17 @@ void AdvancedSearch::IncrementProgress(int time)
     int used = (t0 - m_time_0)/1000;
     m_max_steps->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
     emit setValue(val);
+}
+
+
+GSConfig AdvancedSearch::Config() const
+{
+    GSConfig config;
+    config.parameter = m_parameter;
+    config.runtype = m_optim_flags->getFlags();
+    config.initial_guess = m_initial_guess->isChecked();
+    config.optimize = m_optim->isChecked();
+    return config;
 }
 
 

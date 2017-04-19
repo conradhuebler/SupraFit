@@ -119,8 +119,8 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
     view->setMinimumSize(300,400);
     bool formated = false;
     
-    QList<QList<QPointF > >series = m_statistics->getSeries();
-    QList<QJsonObject > constant_results = m_statistics->getResult();
+    QList<QList<QPointF > >series = m_statistics->Series();
+    QList<QJsonObject > constant_results = m_statistics->Results();
     
     WriteConfidence(constant_results);
     
@@ -180,8 +180,8 @@ void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
 
 void MCResultsWidget::UpdateConfidence()
 {    
-    QList<QList<QPointF > >series = m_statistics->getSeries();
-    QList<QJsonObject > constant_results = m_statistics->getResult();
+    QList<QList<QPointF > >series = m_statistics->Series();
+    QList<QJsonObject > constant_results = m_statistics->Results();
     
     for(int i = 0; i < constant_results.size(); ++i)
     {

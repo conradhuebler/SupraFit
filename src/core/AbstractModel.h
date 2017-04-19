@@ -112,8 +112,15 @@ public:
     }
     inline bool isCorrupt() const { return m_corrupt; }
     void adress() const;
-    QJsonObject ExportJSON(bool statistics = true) const;
-    void ImportJSON(const QJsonObject &topjson, bool override = true);
+    /*
+     * ! \brief Export model to json file
+     * 
+     */
+    QJsonObject ExportModel(bool statistics = true) const;
+    /* ! \brief Import model from json
+     * 
+     */
+    void ImportModel(const QJsonObject &topjson, bool override = true);
     inline QList<int> ActiveSignals() const { return m_active_signals; }
     inline int ActiveSignals(int i) const 
     { 
@@ -153,6 +160,7 @@ public:
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
     inline int Points() const { return m_used_variables; }
+    inline int Paramter() { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
     inline qreal Variance() const { return m_variance; }
     inline qreal StdDeviation() const { return qSqrt(m_variance); }

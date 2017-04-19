@@ -23,7 +23,6 @@
 #include "src/core/dataclass.h"
 
 
-#include <QtWidgets/QTableWidget>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
@@ -37,6 +36,7 @@ class QPushButton;
 class QSpinBox;
 class QCheckBox;
 
+class DataTable;
 
 class TableView : public QTableView
 {
@@ -66,7 +66,7 @@ public:
     
 private:
     void setUi();
-    
+    void WriteData(const DataTable *model);
     QPointer<TableView > m_table;
     QPointer<QLineEdit > m_line;
     QPointer<QPushButton > m_select, m_export, m_file;

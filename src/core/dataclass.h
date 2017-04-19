@@ -34,9 +34,11 @@ typedef Eigen::VectorXd Vector;
 
 class DataTable : public QAbstractTableModel
 {
+    Q_OBJECT
 public:
     DataTable(QObject *parent = 0);
-    DataTable(int columns, int rows, QObject *parent = 0);
+    DataTable(int columns, int rows, QObject *parent);
+    DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table);
     DataTable(DataTable *other);
     DataTable(DataTable &other);
     ~DataTable();
@@ -50,6 +52,11 @@ public:
     virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
+    
+    inline DataTable *BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() -1); } 
+    inline DataTable *BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount() -1, column_end); } 
+    DataTable *Block(int row_begin, int column_begin, int row_end, int column_end) const;
+    
     bool isChecked(int i, int j) const;
     void insertRow(const QVector<qreal> &row);
     void setRow(const QVector<qreal> &vector, int row);
@@ -147,32 +154,29 @@ public:
     inline DataTable * SignalModel() { return d->m_signal_model; }
     inline DataTable * ConcentrationModel() const { return d->m_concentration_model; }
     inline DataTable * SignalModel() const { return d->m_signal_model; }
+    inline void setConcentrationTable(DataTable *table) 
+    { 
+        d->m_concentration_model = table;     
+        if(d->m_concentration_model->columnCount() != d->m_scaling.size())
+            for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
+                d->m_scaling << 1;
+    }
+    inline void setSignalTable(DataTable *table) { d->m_signal_model = table; }
     void SwitchConentrations();
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
     qreal InitialHostConcentration(int i);
     qreal InitialGuestConcentration(int i);
     inline int HostAssignment() const { return d->m_host_assignment; }
-    /*
-    void setData(qreal point, int line, int row)
-    {
-        if(m_data.size() > line)
-            m_data[line].setData(point, row);
-    }
-    
-    inline void addRow(int row) 
-    {
-        for(int i = 0; i < m_data.size(); ++i)
-        {
-            m_data[i].setData(0, row);
-            qDebug() << m_data[i][row];      
-        }
-        m_maxsize++;
-  
-        emit RowAdded();
-    }*/  
+ 
     qreal XValue(int i) const;
-    const QJsonObject ExportJSON(const QList<int> &active = QList<int>()) const;
-    bool ImportJSON(const QJsonObject &topjson);
+    /* 
+     * !\brief Export data to json
+     */
+    const QJsonObject ExportData(const QList<int> &active = QList<int>()) const;
+    /*
+     * !\brief Import data from json
+     */
+    bool ImportData(const QJsonObject &topjson);
     inline QList<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);

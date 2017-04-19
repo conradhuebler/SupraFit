@@ -73,10 +73,12 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
         const_name = " complexation constant ";
     }
     QJsonObject confidence = result["confidence"].toObject();
-    qreal upper = confidence["upper_5"].toDouble();
-    qreal lower = confidence["lower_5"].toDouble();
+    qreal upper = confidence["upper"].toDouble();
+    qreal lower = confidence["lower"].toDouble();
     text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " = "  +nr +  pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr> ";
     text += "<tr><td>95% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower) + " -" + pot + QString::number(upper) + "</b></td></tr></p>\n"; 
+    if(result["method"].toString() == "model comparison")
+        text += "<tr><td>Approximated area  <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n"; 
     text += "</table>";
     return text;    
 }
@@ -84,7 +86,9 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
 void StatisticWidget::Update()
 {
     QString overview("<table style=\'width:100%\'>");
+    overview +=  "<tr><td>Parameter fitted:</t><td><b>" + QString::number(m_model.data()->Paramter()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Number of used Points:</t><td><b>" + QString::number(m_model.data()->Points()) + "</b></td></tr>\n";
+    overview +=  "<tr><td>Degrees of Freedom:</t><td><b>" + QString::number(m_model.data()->Points()-m_model.data()->Paramter()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Error: (squared / absolute)</td><td><b>" + QString::number(m_model->SumofSquares()) + "/" + QString::number(m_model->SumofAbsolute()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Mean Error in Model:</td><td><b> " + QString::number(m_model.data()->MeanError()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Variance of Error:</td><td><b>" + QString::number(m_model.data()->Variance())  +"</b></td></tr>\n";
@@ -95,26 +99,26 @@ void StatisticWidget::Update()
     m_short = overview;
     overview.clear();
     QString moco;
-    moco += "<p><b>Unrelaxed Continuouse Variation / Model Comparison Results:</b></p>\n";
-    moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
+    moco += "<p><b>Model Comparison Results:</b></p>\n";
     for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getMoCoStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
-        
+        if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
+            moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
         moco += TextFromConfidence(result);
     }
     if(m_model->getMoCoStatisticResult())
         overview += moco;
     
     QString cv;
-    cv += "<p><b>Relaxed Continuouse Variation / Model Comparison Results:</b></p>\n";
-    cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics yet!</font>\n";
+    cv += "<p><b>Continuouse Variation:</b></p>\n";    
     for(int i = 0; i < m_model->getCVStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getCVStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
-        
+        if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
+            cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
         cv += TextFromConfidence(result);
     }
     if(m_model->getCVStatisticResult())

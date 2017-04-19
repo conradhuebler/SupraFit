@@ -38,6 +38,12 @@ execute_process(
 add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
 add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
 
+if (${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
+    set (_DEBUG ON)
+else()
+     set (_DEBUG  OFF)
+endif(${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
+
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
   "${PROJECT_BINARY_DIR}/src/global_config.h"
@@ -95,7 +101,7 @@ find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} eigen/)
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} eigen/ fisher_dist/)
 
 if(experimental)
     include_directories(ChaiScript/include)
@@ -132,6 +138,8 @@ endif(testing)
 
 qt5_use_modules(models Core)
 set(utils_SRC
+                src/capabilities/abstractsearchclass.cpp
+                src/capabilities/modelcomparison.cpp
                 src/capabilities/montecarlostatistics.cpp
                 src/capabilities/globalsearch.cpp
                 src/capabilities/continuousvariation.cpp
@@ -187,15 +195,15 @@ target_link_libraries(suprafit  models math  utils ${QT_QTCORE_LIBRARY} ${QT_QTG
 
 if(testing)
     enable_testing()
-    set(test_additional
-        test/testjson.cpp
+    set(basic_test
+        test/save_and_load.cpp
     )
-    add_test( test_additional json_test )
-    add_executable(json_test  ${test_additional})
+    add_test( basic_test supratest )
+    add_executable(supratest  ${basic_test})
     set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
-    set_property(TARGET  json_test PROPERTY CXX_STANDARD 14)
-    qt5_use_modules(json_test Core Test)
-    target_link_libraries(json_test utils models math suprafit ${QT_QTCORE_LIBRARY})
+    set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
+    qt5_use_modules(supratest Core Test)
+    target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)
 
 

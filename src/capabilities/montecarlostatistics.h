@@ -19,6 +19,9 @@
 
 #ifndef MONTECARLOSTATISTICS_H
 #define MONTECARLOSTATISTICS_H
+
+#include "abstractsearchclass.h"
+
 #include "src/core/models.h"
 
 #include <QtCore/QJsonObject>
@@ -28,56 +31,45 @@
 class Minimizer;
 class QThreadPool;
 
-struct MCConfig
+class MCConfig : public AbstractConfig
 {
+public:
     int maxsteps = 1000;
     double variance = 1e-2;
     bool original = false;
     bool bootstrap = false;
-    OptimizerConfig optimizer_config;
-    OptimizationType runtype;
 };
 
-class MonteCarloThread : public QObject, public QRunnable
+class MonteCarloThread : public AbstractSearchThread
 {
  Q_OBJECT
  
 public:
     MonteCarloThread(const MCConfig &config, QObject *parent = 0);
     ~MonteCarloThread();
-    inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     virtual void run();
     inline QJsonObject OptimizedParameter() const { return m_optimized; }
     inline QList<qreal > Constants() const { return m_constants; }
     void setDataTable(DataTable *table);
-    inline QJsonObject Model() const { return m_model->ExportJSON(); }
+    inline QJsonObject Model() const { return m_model->ExportModel(); }
     
 private:
     QSharedPointer<Minimizer> m_minimizer;
-    QSharedPointer<AbstractTitrationModel> m_model;
     QJsonObject m_optimized;
     MCConfig m_config;
     QList<qreal > m_constants;
-    
-signals:
-    void IncrementProgress(int time);
+
 };
 
-class MonteCarloStatistics : public QObject
+class MonteCarloStatistics : public AbstractSearchClass
 {
     Q_OBJECT
 public:
     MonteCarloStatistics(const MCConfig &config, QObject *parent = 0);
     ~MonteCarloStatistics();
     
-    inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
-    void ExportResults(const QString &filename);
-     
-    inline QList<QJsonObject > getResult() const { return m_mc_results; }
-    inline QList<QList<QPointF> > getSeries() const { return m_series; }
-    inline QList<QJsonObject > Models() const { return m_models; }
     
 public slots:
     void Interrupt();
@@ -89,11 +81,6 @@ private:
     
     void ExtractFromJson(int i, const QString &string);
     QJsonObject MakeJson(QList<qreal > &list, qreal error);
-    QSharedPointer<AbstractTitrationModel> m_model;
-    QThreadPool *m_threadpool;
-    QList<QList<QPointF> > m_series;
-    QList<QJsonObject > m_mc_results;
-    QList<QJsonObject > m_models;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;
     std::uniform_int_distribution<int> Uni;

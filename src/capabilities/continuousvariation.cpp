@@ -38,34 +38,30 @@
 
 ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config, bool check_convergence) : m_config(config), m_check_convergence(check_convergence), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
 {
-    setAutoDelete(false);
+    
 }
 
 ContinuousVariationThread::~ContinuousVariationThread()
 {
 }
 
-void ContinuousVariationThread::setModel(QSharedPointer<AbstractTitrationModel> model)
-{ 
-    m_model = model->Clone(); 
-    m_minimizer->setModel(m_model);
-}
-
 void ContinuousVariationThread::run()
 {
+    m_minimizer->setModel(m_model);
     m_model.data()->Calculate();
     if(m_config.optimizer_config.error_potenz == 2)
         m_error = m_model.data()->SumofSquares();
     else
         m_error = m_model.data()->SumofAbsolute();
     QList<QPointF> series;
-    QJsonObject optimized = m_model.data()->ExportJSON(false);
+    QJsonObject optimized = m_model.data()->ExportModel(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
     QJsonObject controller;
     controller["runtype"] = m_config.runtype;
     controller["steps"] = m_config.maxsteps;
     controller["increment"] = m_config.increment;
     controller["maxerror"] = m_config.maxerror;
+    controller["fisher"] = m_config.fisher_statistic;
     m_result["controller"] = controller;
     m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
     m_result["value"] = parameter[m_parameter_id];
@@ -73,10 +69,9 @@ void ContinuousVariationThread::run()
     double integ_5 = 0;
     double integ_1 = 0;
     QJsonObject confidence;
-    //FIXME this must be adopted to F-statistics
-    confidence["upper_5"] = SumErrors(1, integ_5, integ_1, series);
-    m_model.data()->ImportJSON(optimized);
-    confidence["lower_5"] = SumErrors(0, integ_5, integ_1, series);
+    confidence["upper"] = SumErrors(1, integ_5, integ_1, series);
+    m_model.data()->ImportModel(optimized);
+    confidence["lower"] = SumErrors(0, integ_5, integ_1, series);
     m_result["confidence"] = confidence;
     
     m_series = series;
@@ -86,7 +81,7 @@ void ContinuousVariationThread::run()
 
 void ContinuousVariationThread::setParameter(const QJsonObject& json)
 {
-    m_model.data()->ImportJSON(json);
+    m_model.data()->ImportModel(json);
 }
 
 
@@ -104,7 +99,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
     QList<qreal > consts = m_model.data()->Constants();
     double constant_ = consts[m_parameter_id];
     allow_break = false;
-    double par;
+    double par = 0;
     for(int m = 0; m < m_config.maxsteps; ++m)
     {
         
@@ -117,7 +112,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         {
             m_minimizer->Minimize(m_config.runtype, locked);
             QJsonObject json_exp = m_minimizer->Parameter();
-            m_model.data()->ImportJSON(json_exp);
+            m_model.data()->ImportModel(json_exp);
         }
         
         m_model.data()->Calculate();
@@ -167,7 +162,9 @@ void ContinuousVariationThread::Interrupt()
     allow_break = true;
 }
 
-ContinuousVariation::ContinuousVariation(const CVConfig &config, QObject *parent) : QObject(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+
+
+ContinuousVariation::ContinuousVariation(const CVConfig &config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     
     
@@ -188,9 +185,9 @@ bool ContinuousVariation::FastConfidence()
     for(int i = 0; i < m_series.size(); ++i)
         m_series[i].clear();
     m_series.clear();
-    m_result.clear();
+    m_results.clear();
     m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportJSON();
+    QJsonObject optimized = m_model.data()->ExportModel();
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
@@ -231,116 +228,20 @@ bool ContinuousVariation::FastConfidence()
     return true;
 }
 
-QVector<QVector<qreal> > ContinuousVariation::MakeBox() const
-{    
-    QList<QJsonObject > constant_results = Results();
-    QVector<QVector< qreal > > parameter;
-    for(const QJsonObject &object : qAsConst(constant_results))
-    {
-        QVector<qreal> constant;
-        qreal lower = object["confidence"].toObject()["lower_5"].toDouble();
-        qreal upper = object["confidence"].toObject()["upper_5"].toDouble();
-        qreal value = object["value"].toDouble();
-        constant << value-2*(value-lower);
-        constant << value+2*(upper-value);
-        constant << 0.0015;
-        parameter << constant;
-    }
-    return parameter;
-}
-
-
-bool ContinuousVariation::EllipsoideConfidence()
-{
-    m_cv = false;
-    if(!m_model)
-        return false;
-    // We make an initial guess to estimate the dimension
-    m_model.data()->Calculate();
-    CVConfig config;
-    config.relax = false;
-    config.increment = qApp->instance()->property("fast_increment").toDouble();
-    qreal error = m_model.data()->SumofSquares();
-    config.maxerror = error+error*0.05;
-    m_config = config;
-    m_config.runtype = m_model.data()->LastOptimzationRun();
-    FastConfidence();
-    
-    
-    QVector<QVector<qreal> > box = MakeBox();
-//     Search(box);
-    MCSearch(box);
-    return true;
-}
-
-void ContinuousVariation::Search(const QVector<QVector<qreal> >& box)
-{
-    GlobalSearch *globalsearch = new GlobalSearch(this);
-    globalsearch->setModel(m_model); 
-    globalsearch->setParameter(box);
-    
-    globalsearch->setInitialGuess(false);
-    globalsearch->setOptimize(false);
-    
-    connect(globalsearch, SIGNAL(SingeStepFinished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-    QList<QJsonObject > results = globalsearch->SearchGlobal();
-    StripResults(results);
-    delete globalsearch;
-}
-
-void ContinuousVariation::MCSearch(const QVector<QVector<qreal> >& box)
-{
-        QVector<std::uniform_int_distribution<int> > dist;
-        for(int i = 0; i < box.size(); ++i)
-        {
-            int lower = 1000*box[i][0];
-            int upper = 1000*box[i][1];
-            dist << std::uniform_int_distribution<int>(lower, upper);
-        }
-        quint64 seed = QDateTime::currentMSecsSinceEpoch();
-        std::mt19937 rng;
-        rng.seed(seed);
-        int maxsteps = 10000;
-        QList<QJsonObject > results;
-        for(int step = 0; step < maxsteps; ++step)
-        {
-            QList<qreal > consts = m_model.data()->Constants();
-            for(int i = 0; i < consts.size(); ++i)
-            {
-                consts[i] = dist[i](rng)/double(1000);
-            }
-            m_model->setConstants(consts);
-            m_model->Calculate();
-            results << m_model->ExportJSON();
-        }
-    StripResults(results);
-}
-
-void ContinuousVariation::StripResults(const QList<QJsonObject>& results)
-{ 
-    for(const QJsonObject &object : qAsConst(results))
-    {
-        if(object["sum_of_squares"].toDouble() <= m_config.maxerror)
-            m_models << object;
-    }
-}
-
-
 QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QPointer<ContinuousVariationThread> >& threads, bool store)
 {
     QHash<QString, QList<qreal> > constants;
     for(int i = 0; i < threads.size(); ++i)
     {
         if(store)
-            m_result << threads[i]->getResult();
+            m_results << threads[i]->Result();
         
         QList<qreal > vars;
         if(!threads[i])
             continue;
         m_models << threads[i]->Model();
-        vars << threads[i]->getResult()["confidence"].toObject()["lower_5"].toDouble() << threads[i]->getResult()["confidence"].toObject()["upper_5"].toDouble();
-        constants[threads[i]->getResult()["name"].toString()].append( vars );
+        vars << threads[i]->Result()["confidence"].toObject()["lower"].toDouble() << threads[i]->Result()["confidence"].toObject()["upper"].toDouble();
+        constants[threads[i]->Result()["name"].toString()].append( vars );
         delete threads[i];
     }
     return constants;
@@ -357,7 +258,7 @@ bool ContinuousVariation::ConfidenceAssesment()
     m_series.clear();
     
     m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportJSON(false);
+    QJsonObject optimized = m_model.data()->ExportModel(false);
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
@@ -397,8 +298,8 @@ bool ContinuousVariation::ConfidenceAssesment()
     for(int i = 0; i < threads.size(); ++i)
     {
         m_models << threads[i]->Model();
-        m_result << threads[i]->getResult();
-        m_series << threads[i]->getSeries();
+        m_results << threads[i]->Result();
+        m_series << threads[i]->Series();
         converged = converged && threads[i]->Converged();
         delete threads[i];
     }
@@ -409,7 +310,7 @@ bool ContinuousVariation::ConfidenceAssesment()
 
 void ContinuousVariation::setParameter(const QJsonObject& json)
 {
-    m_model.data()->ImportJSON(json);
+    m_model.data()->ImportModel(json);
 }
 
 

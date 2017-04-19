@@ -22,6 +22,7 @@
 
 #include "src/capabilities/continuousvariation.h"
 #include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/modelcomparison.h"
 
 #include "src/core/toolset.h"
 #include "src/core/dataclass.h"
@@ -56,13 +57,13 @@
 
 #include <QtWidgets/QAction>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QLabel>
-
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -99,10 +100,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
     m_search_result = new ModalDialog;
+    m_search_result->setWindowTitle("Charts for " + m_model->Name());
+    
     m_statistic_result = new ModalDialog;
+    m_statistic_result->setWindowTitle("Statistics for " + m_model->Name());
+    
     m_statistic_widget = new StatisticWidget(m_model, this),
     m_table_result= new ModalDialog;
+    m_table_result->setWindowTitle("Search Results " + m_model->Name());
+    
     m_concentrations_result = new ModalDialog;
+    m_concentrations_result->setWindowTitle("Concentration Table for " + m_model->Name());
     
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
@@ -132,7 +140,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_sign_layout->setAlignment(Qt::AlignTop);
     
-    
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         ModelElement *el = new ModelElement(m_model, m_charts, i);
@@ -146,7 +153,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
     
-
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)
@@ -294,7 +300,7 @@ void ModelWidget::GlobalMinimize()
     
     m_pending = true;
     CollectParameters();
-    QJsonObject json = m_model->ExportJSON();
+    QJsonObject json = m_model->ExportModel();
     m_minimizer->setParameter(json);
     OptimizerConfig config = m_model->getOptimizerConfig();
     
@@ -304,10 +310,10 @@ void ModelWidget::GlobalMinimize()
     if(result == 1)
     {
         json = m_minimizer->Parameter();
-        m_model->ImportJSON(json);
+        m_model->ImportModel(json);
         m_model->Calculate();
         Repaint();
-        m_model->setLastOptimzationRun(m_optim_flags->getFlags());
+        m_model->OptimizeParameters(m_optim_flags->getFlags());
         if(qApp->instance()->property("auto_confidence").toBool())
             FastConfidence();
     }
@@ -368,24 +374,24 @@ void ModelWidget::MCStatistic(MCConfig config)
 
 void ModelWidget::FastConfidence()
 {
-    CVConfig config;
-    config.relax = false;
-    config.increment = qApp->instance()->property("fast_increment").toDouble();
+    MoCoConfig config;
+    
+    qreal f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
     qreal error = m_model.data()->SumofSquares();
-    config.maxerror = error+error*0.05;
+    config.maxerror = error*(f_value*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
-    ContinuousVariation *statistic = new ContinuousVariation(config, this);
-    QJsonObject json = m_model->ExportJSON(false);
-    statistic->setModel(m_model);
-    statistic->setParameter(json);
-    
+    config.fisher_statistic = true;
+    ModelComparison *statistic = new ModelComparison(config, this);
+    QJsonObject json = m_model->ExportModel(false);
+    statistic->setModel(m_model);    
     statistic->FastConfidence();
     QList<QJsonObject > constant_results = statistic->Results();
     for(int i = 0; i < constant_results.size(); ++i)
     {
         m_model->setMoCoStatistic(constant_results[i], i);
     }
+    delete statistic;
 }
 
 void ModelWidget::CVStatistic()
@@ -407,7 +413,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
 
-    QJsonObject json = m_model->ExportJSON(false);
+    QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->setParameter(json);
     
@@ -422,28 +428,25 @@ void ModelWidget::CVStatistic(CVConfig config)
 
 void ModelWidget::MoCoStatistic()
 {
-    CVConfig config = m_statistic_dialog->getMoCoConfig();
+    MoCoConfig config = m_statistic_dialog->getMoCoConfig();
     MoCoStatistic(config);
 }
 
-void ModelWidget::MoCoStatistic(CVConfig config)
+void ModelWidget::MoCoStatistic(MoCoConfig config)
 {
     Waiter wait;
-    
+ 
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
-    ContinuousVariation *statistic = new ContinuousVariation(config, this);
+    ModelComparison *statistic = new ModelComparison(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(SingeStepFinished(int)), m_statistic_dialog, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-//     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-    QJsonObject json = m_model->ExportJSON(false);
+    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
+    QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
-    statistic->setParameter(json);
-    statistic->EllipsoideConfidence();
+    statistic->Confidence();
      
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
@@ -532,7 +535,7 @@ void ModelWidget::ExportConstants()
     if(!str.isEmpty())
     {
         setLastDir(str);
-        QJsonObject gameObject = m_model->ExportJSON();
+        QJsonObject gameObject = m_model->ExportModel();
         JsonHandler::WriteJsonFile(gameObject, str);
     }
     
@@ -555,7 +558,7 @@ void ModelWidget::ImportConstants()
 
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
-    m_model->ImportJSON(object);
+    m_model->ImportModel(object);
     m_model->Calculate();
     QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
@@ -777,5 +780,18 @@ void ModelWidget::Save2File()
             stream << m_logging << endl;
         }
     } 
+}
+
+void ModelWidget::ChangeColor()
+{
+    QColor color = QColorDialog::getColor(tr("Choose Color for Series"));
+    if(!color.isValid())
+        return;
+    
+    for(int i = 0; i < m_model_elements.size(); ++i)
+    {
+        m_model_elements[i]->ChangeColor(color);
+    }
+    emit ColorChanged(color);
 }
 #include "modelwidget.moc"

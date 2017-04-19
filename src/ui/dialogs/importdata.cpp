@@ -20,16 +20,16 @@
 #include "src/core/filehandler.h"
 #include "src/global.h"
 
+#include <QtCore/QFile>
+
+#include <QtGui/QKeyEvent>
+#include <QtGui/QClipboard>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
-#include <QKeyEvent>
-#include <QtGui/QClipboard>
-#include <QtCore/QFile>
-#include <QStandardItemModel>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QLabel>
-
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QSpinBox>
@@ -40,8 +40,6 @@
 #include <QDebug>
 #include "importdata.h"
 
-
-
 void TableView::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) 
@@ -51,65 +49,15 @@ void TableView::keyPressEvent(QKeyEvent *event)
     else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_V) 
     {
         QString paste =  QApplication::clipboard()->text();
-        QStringList lines = paste.split("\n");
-
-        int cur_row = 0;
-        QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
-        for(const QString line: qAsConst(lines))
-        {
-            int cur_col = 0;
-            QStringList cells = line.simplified().split(" ");
-            for(const QString &cell: qAsConst(cells))
-            {
-                model->setItem(cur_row, cur_col, new QStandardItem(QString(cell).replace(",", ".")));
-                cur_col++;
-            }
-            cur_row++;
-        }
-    }
-    else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_C) 
-    {
-        
-        /*QItemSelectionModel *select = this->selectionModel();
-
-        if(!select->hasSelection())
-            return; 
-        QModelIndexList rows = select->selectedRows();
-        QModelIndexList columns = select->selectedColumns();
-        QString cliptext;
-        
-        foreach(const QModelIndex &column, columns)
-        {    
-            foreach(const QModelIndex &row, rows)
-            {
-                
-            }
-        }
-        */
-        /*
-        QString paste =  QApplication::clipboard()->text();
-        QStringList lines = paste.split("\n");
-        QModelIndex index = currentIndex();
-        int row = index.row();
-        int column = index.column();
-        QStandardItemModel *model = qobject_cast<QStandardItemModel *>(this->model());
-        foreach(const QString line, lines)
-        {
-            int col = column;
-            QStringList cells = line.simplified().split(" ");
-            foreach(const QString &cell, cells)
-            {
-                model->item(row, col)->setData(QString(cell).replace(",", "."), Qt::DisplayRole);
-                col++;
-            }
-            row++;
-        }*/
-    }
-    else {
+        FileHandler *handler = new FileHandler(this);
+        handler->setFileContent(paste);
+        DataTable *model = handler->getData();
+        setModel(model);
+        delete handler;
+    } else {
         
         QTableView::keyPressEvent(event);
     }
-    
 }
 
 
@@ -117,15 +65,12 @@ ImportData::ImportData(const QString &file, QWidget *parent) : QDialog(parent), 
 {
     setUi();
     LoadFile();
-    
 }
 
 ImportData::ImportData(QWidget *parent) : QDialog(parent)
 {
-    
     setUi(); 
-    
-    QStandardItemModel *model = new QStandardItemModel(0,0);
+    DataTable *model = new DataTable(0,0, this);
     m_table->setModel(model);
 }
 
@@ -165,17 +110,19 @@ void ImportData::setUi()
     
     layout->addWidget(m_select, 0, 0);
     layout->addWidget(m_line, 0, 1);
-    layout->addWidget(m_file, 0, 2);
+//     layout->addWidget(m_file, 0, 2);
     layout->addWidget(m_export, 0, 3);
-    layout->addWidget(m_switch_concentration, 0, 4);
-    layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
-    layout->addWidget(m_conc, 1, 1);
-    layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
-    layout->addWidget(m_sign, 1, 3);
+//     layout->addWidget(m_switch_concentration, 0, 4);
+//     layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
+//     layout->addWidget(m_conc, 1, 1);
+//     layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
+//     layout->addWidget(m_sign, 1, 3);
     layout->addWidget(m_table, 3, 0, 1, 4);
     layout->addWidget(m_buttonbox, 4, 1, 1, 4);
     
     setLayout(layout);
+    setWindowTitle(tr("Import Table"));
+    resize(800,600);
 }
 
 void ImportData::NoChanged()
@@ -192,7 +139,7 @@ void ImportData::LoadFile()
     
     if(filehandler->FileSupported())
     {
-        QStandardItemModel *model = filehandler->getData(); 
+        DataTable *model = filehandler->getData(); 
         m_table->setModel(model);
     }else
         QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
@@ -213,91 +160,32 @@ void ImportData::ExportFile()
     QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
     if(filename.isEmpty())
         return;
-    setLastDir(filename);
-    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
     
-    int rows = model->rowCount() - 1; 
-    int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
+    setLastDir(filename);
+    DataTable *model = qobject_cast<DataTable *>(m_table->model());
     
     QFile file(filename);
     if(!file.open(QIODevice::ReadWrite))
         return;
-    QTextStream stream(&file);
-    for(int i = 0; i < rows; ++i)
-    {
-        QVector<qreal > conc, sign;
-        for(int j = 0; j < columns; ++j)
-        {
-            if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
-            {
-                if(j < m_conc->value())
-                    conc << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
-                else 
-                    sign << (model->item(i, j)->data(Qt::DisplayRole).toDouble());
-            }
-        }
-        if(m_switch_concentration->isChecked())
-        {
-            qreal a = conc[1];
-            conc[1] = conc[0];
-            conc[0] = a;
-        }
-        for(double d: conc)
-            stream << d << " ";
-        for(double d: sign)
-            stream << d << " ";
-        stream <<  endl;
-    }
     
+    QTextStream stream(&file);
+    stream << model->ExportAsString();
 }
+
+void ImportData::WriteData(const DataTable* model)
+{
+    m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
+    DataTable *concentration_block = model->BlockColumns(0,2);
+    DataTable *signals_block = model->BlockColumns(2,model->columnCount() -2 );
+    m_storeddata->setSignalTable( signals_block );
+    m_storeddata->setConcentrationTable( concentration_block );
+}
+
 
 void ImportData::accept()
 {
-    m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
-    
-    QStandardItemModel *model = qobject_cast<QStandardItemModel *>(m_table->model());
-    QStringList header;
-    int rows = model->rowCount() - 1; 
-    int columns = model->columnCount(model->indexFromItem(model->invisibleRootItem()));
-    for(int i = 0; i < rows; ++i)
-    {
-        bool import = true;
-        QVector<qreal > conc, sign;
-        for(int j = 0; j < columns; ++j)
-        {
-            if(!model->item(i, j)->data(Qt::DisplayRole).toString().isNull() && !model->item(i, j)->data(Qt::DisplayRole).toString().isEmpty())
-            {
-                bool ok;
-                qreal var = model->item(i, j)->data(Qt::DisplayRole).toDouble(&ok);
-                
-                if(ok)
-                {                
-                    if(j < m_conc->value())
-                        conc << var;
-                    else 
-                        sign << var;
-                }else
-                {
-                    header << model->item(i, j)->data(Qt::DisplayRole).toString();
-                    import = false;
-                }
-            }
-            else
-            {
-                import = false;
-                break;
-            }
-        }
-        if(m_switch_concentration->isChecked())
-        {
-            qreal a = conc[1];
-            conc[1] = conc[0];
-            conc[0] = a;
-        }
-        if(import)
-            m_storeddata->addPoint(conc, sign);
-    }
-    m_storeddata->setHeader(header);
+    DataTable *model = qobject_cast<DataTable *>(m_table->model());
+    WriteData(model);
     QDialog::accept();
 }
 

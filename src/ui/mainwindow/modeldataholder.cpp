@@ -33,6 +33,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
+#include <QtGui/QColor>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QPushButton>
@@ -41,12 +42,13 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QToolButton>
 
 #include "modeldataholder.h"
 
 TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 {
-    
+    setStyleSheet("QTabBar::tab { height: 20px;}");
 }
 
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
@@ -59,13 +61,32 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     addTab(scroll, modelwidget->Model()->Name());
     
     QCheckBox *hide = new QCheckBox;
-    hide->resize(20,20);
+    hide->setMaximumSize(20,20);
     hide->setChecked(true);
     hide->setToolTip(tr("Toggle Series in Charts"));
     
+    m_color = new QToolButton;
+    m_color->setMaximumSize(15,15);
+    QPalette palette = m_color->palette();
+    QLinearGradient gradient(m_color->rect().topLeft(),m_color->rect().bottomLeft());
+    gradient.setColorAt(0.0, QColor(255, 0, 0, 127));
+    gradient.setColorAt(1.0, QColor(0, 0, 255, 127));
+    gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+    palette.setBrush(QPalette::Button, QBrush(gradient));
+    m_color->setPalette(palette);
+    
+    QWidget *tools = new QWidget;
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->addWidget(hide);
+    layout->addWidget(m_color);
+    tools->setLayout(layout);
+    
     connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
+    connect(m_color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
+    connect(modelwidget, SIGNAL(ColorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
+    
     setCurrentWidget(scroll);
-    tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, hide);
+    tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, tools);
 }
 
 void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
@@ -74,6 +95,10 @@ void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
     tabBar()->setTabButton(0, QTabBar::RightSide, 0);
 }
 
+void TabWidget::ChangeColor(const QColor& color)
+{
+    m_color->setStyleSheet("background-color:" + color.name()+ ";");
+}
 
 
 
@@ -290,7 +315,7 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         t.clear();
         return; 
     }
-    t->ImportJSON(object);
+    t->ImportModel(object);
     ActiveModel(t);
 }
 
@@ -375,7 +400,7 @@ void ModelDataHolder::CreateCrashFile()
     {
         if(!m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i].data()->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportModel();
             JsonHandler::AppendJsonFile(obj, filename);        
         }
     }   
@@ -398,7 +423,7 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
         
         if(m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i].data()->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportModel();
             toplevel["model_" + QString::number(i)] = obj;
             
         }
@@ -409,13 +434,13 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
 void ModelDataHolder::SaveWorkspace(const QString &file)
 {
     QJsonObject toplevel;
-    toplevel["data"] = m_data->ExportJSON();
+    toplevel["data"] = m_data->ExportData();
     
     for(int i = 0; i < m_models.size(); ++i)
     {    
         if(!m_models[i].isNull())
         {
-            QJsonObject obj = m_models[i].data()->ExportJSON();
+            QJsonObject obj = m_models[i].data()->ExportModel();
             toplevel["model_" + QString::number(i)] = obj;       
         }
     }   

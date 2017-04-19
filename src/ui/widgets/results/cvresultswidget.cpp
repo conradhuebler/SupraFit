@@ -16,10 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-
+#include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/continuousvariation.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
+
+#include "src/ui/guitools/chartwrapper.h"
+
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/statisticwidget.h"
 
@@ -36,7 +39,7 @@
 #include "cvresultswidget.h"
 
 
-CVResultsWidget::CVResultsWidget(QPointer<ContinuousVariation> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent): QWidget(parent), m_model(model), m_statistics(statistics)
+CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent): QWidget(parent), m_model(model), m_statistics(statistics)
 {
     if(!m_statistics)
         throw 1;
@@ -57,7 +60,7 @@ void CVResultsWidget::setUi()
     m_confidence_label->setTextFormat(Qt::RichText);
     layout->addWidget(m_confidence_label, 1, 0);
     
-    if(m_statistics->CV())
+    if(qobject_cast<ContinuousVariation *>(m_statistics))
         m_view = CVPlot();
     else
         m_view = EllipsoidalPlot();
@@ -112,6 +115,7 @@ ChartView * CVResultsWidget::CVPlot()
 ChartView *  CVResultsWidget::EllipsoidalPlot()
 {
     QList<QJsonObject > constant_results = m_statistics->Results();
+    WriteConfidence(constant_results);
     QList<QList<QPointF > >series = m_statistics->Series();
     
     QtCharts::QChart *chart = new QtCharts::QChart;
@@ -121,5 +125,11 @@ ChartView *  CVResultsWidget::EllipsoidalPlot()
     xy_series->append(ToolSet::fromModelsList(m_statistics->Models()));
     xy_series->setMarkerSize(7);
     view->addSeries(xy_series);
+    for(const QList<QPointF> &serie : qAsConst(series))
+    {
+        LineSeries *xy_serie = new LineSeries;
+        xy_serie->append(serie);
+        view->addSeries(xy_serie);
+    }
     return view;
 }

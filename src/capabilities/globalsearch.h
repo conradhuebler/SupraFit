@@ -20,6 +20,8 @@
 #ifndef GLOBALSEARCH_H
 #define GLOBALSEARCH_H
 
+#include "abstractsearchclass.h"
+
 #include "src/core/models.h"
 
 #include <QtCore/QObject>
@@ -43,24 +45,31 @@ struct VisualData
     QVector<QVector<qreal > > data;
 };
 
-class GlobalSearch : public QObject
+class GSConfig : public AbstractConfig
+{
+public:
+    inline GSConfig(OptimizerConfig config, OptimizationType type) : AbstractConfig(config, type) { }
+    inline GSConfig() { }
+    bool initial_guess = true;
+    bool optimize = true;
+    QVector<QVector< qreal > > parameter;
+};
+
+class GlobalSearch : public AbstractSearchClass
 {
     Q_OBJECT
     
 public:
+    GlobalSearch(GSConfig config = GSConfig(), QObject *parent = 0);
     GlobalSearch(QObject *parent = 0);
     ~GlobalSearch();
-    inline void setParameter(const QVector<QVector< qreal > > &parameter) { m_parameter = parameter; }
-    inline void setOptimizationFlags(OptimizationType type) { m_type = type; }
-    inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
-    inline void setOptimize(bool optimize) { m_optimize = optimize; }
-    inline void setInitialGuess(bool guess) { m_initial_guess = guess; }
+    inline void setConfig(const GSConfig &config) { m_config = config; }
     inline QVector<QList<qreal > > InputList() const { return m_full_list; }
     QList<QList<QPointF> >  LocalSearch();
     QList<QJsonObject > SearchGlobal();
     QVector<VisualData> Create2DPLot();
     void ExportResults(const QString &filename, double threshold, bool allow_invalid);
-    QList<QJsonObject > Models() const { return m_models; }
+    
 public slots:
     void Interrupt();
     
@@ -68,23 +77,17 @@ private:
     QVector<QVector<double> > ParamList();
     void ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error);
     void Scan(const QVector< QVector<double > >& list);
-    QVector<QVector < qreal > > m_parameter;
+//     QVector<QVector < qreal > > m_parameter;
     quint64 m_time_0;
-    OptimizationType m_type;
-    int m_time;
-    QList<QJsonObject > m_models;
-    QSharedPointer<AbstractTitrationModel> m_model;
-    QList< QList<QPointF> > m_series;
+//     OptimizationType m_type;
+    int m_time, m_max_count;
     QVector<QList<double> > m_full_list;
     GlobalSearchResult last_result;
     double error_max;
     QSharedPointer<Minimizer> m_minimizer;
-    bool m_allow_break, m_optimize, m_initial_guess;
+    bool m_allow_break; //, m_optimize, m_initial_guess;
     QVector<VisualData> m_3d_data;
-    
-signals:
-    void SingeStepFinished(int time);
-    void setMaximumSteps(int maxsteps);
+    GSConfig m_config;
 };
 
 #endif // GLOBALSEARCH_H

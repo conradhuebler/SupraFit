@@ -28,7 +28,7 @@ bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 {
     QFile loadFile(file);
      if (!loadFile.open(QIODevice::ReadOnly)) {
-        qWarning("Couldn't open file.");
+        qWarning() << "Couldn't open file!" <<  loadFile.errorString();
         return false;
     }
 

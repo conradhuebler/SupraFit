@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/global_config.h"
 
 #include "src/core/toolset.h"
 
@@ -66,12 +67,16 @@ DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whate
     m_checkable = other->m_checkable;
 }
 
+DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table) : m_table(table), m_checked_table(checked_table), m_checkable(false)
+{
+    for(int i = 0; i < columnCount(); ++i)
+        m_header << QString::number(i + 1);
+}
+
 
 DataTable::~DataTable()
 {
-    
-    
-    
+
 }
 
 Vector DataTable::firstRow()
@@ -236,6 +241,19 @@ qreal & DataTable::data(int column, int row)
         }
 }
 
+DataTable * DataTable::Block(int row_begin,  int column_begin, int row_end, int column_end) const
+{
+    if(row_begin < 0 || column_begin < 0 || row_begin >= rowCount() || column_begin >= columnCount() || row_end < 0 || column_end < 0 || row_end >= rowCount() || column_end >= columnCount())
+        return new DataTable;
+    
+    Eigen::MatrixXd table = m_table.block(row_begin,column_begin,row_end,column_end);
+    Eigen::MatrixXd checked_table = m_checked_table.block(row_begin,column_begin,row_end,column_end);
+    return new DataTable(table, checked_table);
+}
+
+
+
+
 Vector DataTable::Row(int row)
 {
     return m_table.row(row);
@@ -318,15 +336,25 @@ void DataTable::setRow(const Vector &vector, int row)
 DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng)
 {
     DataTable *table = new DataTable(this);
+#ifdef _DEBUG
+    QVector<qreal > random;
+#endif    
     for(int j = 0; j <  columnCount(); ++j)
         {
             for(int i = 0; i < rowCount(); ++i)
             {
                 double  randed = Phi(rng);
                 table->data(j,i) += randed;
+#ifdef _DEBUG
+                if(random.size() < 10)
+                    random << randed;
+#endif                   
             }
         }
-        return table;
+#ifdef _DEBUG
+    qDebug() << "truncated random numbers: " << random;
+#endif         
+    return table;
 }
 
 DataTable * DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector)
@@ -342,8 +370,6 @@ DataTable * DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni,
         }
     return table;
 }
-
-
 
 QString DataTable::ExportAsString() const
 {
@@ -468,7 +494,7 @@ DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObje
 {
     d = new DataClassPrivate();
     d->m_type = type;
-    ImportJSON(json);
+    ImportData(json);
     if(d->m_concentration_model->columnCount() != d->m_scaling.size())
     for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
         d->m_scaling << 1;
@@ -537,7 +563,7 @@ qreal DataClass::InitialHostConcentration(int i)
 }
 
 
-const QJsonObject DataClass::ExportJSON(const QList<int> &active) const
+const QJsonObject DataClass::ExportData(const QList<int> &active) const
 {
     QJsonObject json;
     
@@ -571,7 +597,7 @@ const QJsonObject DataClass::ExportJSON(const QList<int> &active) const
 }
 
 
-bool DataClass::ImportJSON(const QJsonObject &topjson)
+bool DataClass::ImportData(const QJsonObject &topjson)
 {
     QJsonObject concentrationObject, signalObject;
     concentrationObject = topjson["data"].toObject()["concentrations"].toObject();

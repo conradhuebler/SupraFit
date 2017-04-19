@@ -20,20 +20,28 @@
 #ifndef FILEHANDLER_H
 #define FILEHANDLER_H
 #include <QtCore/QObject>
-class QStandardItemModel;
+class DataTable;
 class FileHandler : public QObject
 {
     Q_OBJECT
 public:
     FileHandler(const QString &filename, QObject *parent = 0);
+    FileHandler(QObject *parent = 0);
     ~FileHandler();
     bool AllInt() const { return m_allint;}
     bool Table() const { return m_table; }
-    QPointer<QStandardItemModel >getData() const;
+    QPointer<DataTable > getData() const;
     bool FileSupported()const {return m_file_supported;}
+    inline void setFileContent(const QString &str) 
+    { 
+        m_filecontent = str.split("\n"); 
+        Read();
+        CheckForTable();
+    }
     
 private:
-    void ReadFile();
+    void LoadFile();
+    void Read();
     void CheckForTable();
     
     bool m_table, m_allint, m_file_supported;

@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/global_config.h"
 
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
@@ -37,7 +38,7 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(const MCConfig &config, QObject* parent): QObject(parent), m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+MonteCarloThread::MonteCarloThread(const MCConfig &config, QObject* parent): AbstractSearchThread(parent), m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     setAutoDelete(false);
 }
@@ -59,19 +60,25 @@ void MonteCarloThread::run()
         return;
     }
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+#ifdef _DEBUG
+        qDebug() << this << "started!";
+#endif
     m_minimizer->setModel(m_model);
     m_minimizer->Minimize(m_config.runtype);
     
     m_optimized = m_minimizer->Parameter();
-    m_model->ImportJSON(m_optimized);
+    m_model->ImportModel(m_optimized);
     m_model->Calculate();
     m_constants = m_model->Constants();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
+#ifdef _DEBUG
+        qDebug() <<  this << "finished after " << t1-t0 << "msecs!";
+#endif
 }
 
 
-MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *parent): QObject(parent), m_config(config)
+MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *parent): AbstractSearchClass(parent), m_config(config)
 {
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);
@@ -109,6 +116,19 @@ void MonteCarloStatistics::Evaluate()
             ExtractFromJson(i, "shift_" + QString::number(k));
         }
     }
+    for(int i = 0; i < m_constant_list.size(); ++i)
+    {
+        QList<double > vector = m_constant_list[i];
+        std::sort(vector.begin(), vector.end());
+        m_constant_list[i] = vector;
+    }
+    
+    for(int i = 0; i < m_shift_list.size(); ++i)
+    {
+        QList<double > vector = m_shift_list[i];
+        std::sort(vector.begin(), vector.end());
+        m_shift_list[i] = vector;
+    }
     
     AnalyseData();
 }
@@ -125,6 +145,9 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     m_generate = true;
     QVector<qreal> vector = m_model->ErrorTable()->toList();
     Uni = std::uniform_int_distribution<int>(0,vector.size()-1);
+#ifdef _DEBUG
+    qDebug() << "Starting MC Simulation with" << m_config.maxsteps << "steps";
+#endif
     for(int step = 0; step < m_config.maxsteps; ++step)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
@@ -141,6 +164,9 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
         else
             thread->setDataTable(table->PrepareMC(Phi, rng));
         m_threadpool->start(thread);
+#ifdef _DEBUG
+        qDebug() << "Thread added to queue!" << thread;
+#endif
         threads << thread; 
         QCoreApplication::processEvents();
         if(step % 100 == 0)
@@ -182,7 +208,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
 
 void MonteCarloStatistics::AnalyseData(qreal error)
 {
-    m_mc_results.clear();
+    m_results.clear();
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
         QList<qreal > list = m_constant_list[i];
@@ -190,9 +216,9 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
-        m_mc_results << result;
+        m_results << result;
     }
-    
+
     for(int i = 0; i < m_shift_list.size(); ++i)
     {
         QList<qreal > list = m_shift_list[i];
@@ -215,7 +241,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
             result["name"] = m_model->ConstantNames()[nr-1] + " Component Shift: " + m_model->SignalModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
         }
         result["type"] = "Shift";
-        m_mc_results << result;
+        m_results << result;
     }
     emit AnalyseFinished();
 }
@@ -269,12 +295,9 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
     QJsonObject result;
     
     QJsonObject confidence;
-    confidence["upper_5"] = bar.upper_5;
-    confidence["upper_2_5"] = bar.upper_2_5;
-    confidence["lower_2_5"] = bar.lower_2_5;
-    confidence["lower_5"] = bar.lower_5;
     confidence["lower"] = bar.lower;
     confidence["upper"] = bar.upper;
+    confidence["error"] = error;
     result["confidence"] = confidence;
     
     QJsonObject controller;
@@ -286,27 +309,6 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
     result["controller"] = controller;
     return result;
 }
-
-void MonteCarloStatistics::ExportResults(const QString& filename)
-{
-    QJsonObject toplevel;
-    int i = 0;
-//     QList<QJsonObject > list = Models();
-    for(const QJsonObject &obj: qAsConst(m_models))
-    {
-        QJsonObject constants = obj["data"].toObject()["constants"].toObject();
-        QStringList keys = constants.keys();
-        bool valid = true;
-        for(const QString &str : qAsConst(keys))
-        {
-            double var = constants[str].toString().toDouble();
-            valid = valid && (var > 0);
-        }
-        toplevel["model_" + QString::number(i++)] = obj;       
-    }
-    JsonHandler::WriteJsonFile(toplevel, filename);
-}
-
 
 void MonteCarloStatistics::Interrupt()
 {

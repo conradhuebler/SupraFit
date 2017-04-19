@@ -38,6 +38,7 @@ public:
 public slots:
     void Update();
     void ToggleSeries(int);
+    void ChangeColor(const QColor &color);
     
 private:
     SpinBox *m_d_0;
@@ -55,7 +56,7 @@ private:
     void DisableSignal(int state);
     
 private slots:
-    void ColorChanged(const QColor &color);
+    
     void chooseColor();
     void togglePlot();
     void toggleActive();

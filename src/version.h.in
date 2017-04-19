@@ -8,7 +8,7 @@ const QString git_commit_hash = "@GIT_COMMIT_HASH@"; /*! Current hash of the git
 const QString git_date = "@GIT_COMMIT_DATE@"; /*! Current date of the git branch */
 const QString git_tag = "@GIT_TAG@";         /*! Current tag of the git branch  */
 
-#if _DEBUG
+#ifdef _DEBUG
 const QString conf_mode = "DEBUG Mode"; /*! Last compilation mode used */
 #else
 const QString conf_mode = "RELEASE Mode"; /*! Last compilation mode used */

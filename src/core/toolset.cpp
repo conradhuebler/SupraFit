@@ -17,7 +17,7 @@
  *
  */
 
-
+#include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
 #include <QtCore/QPointF>
@@ -25,6 +25,10 @@
 
 #include <QDebug>
 #include <Eigen/Dense>
+
+#include <fisher/fisher_dist.h>
+
+#include <functional>
 
 #include "toolset.h"
 typedef Eigen::VectorXd Vector;
@@ -141,8 +145,6 @@ namespace ToolSet{
     
     QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins, qreal min, qreal max)
     {
-        
-        
         if(min == max)
         {
             for(int i = 0; i < vector.size(); ++i)   
@@ -185,65 +187,34 @@ namespace ToolSet{
         }
         return histogram;
     }
-    /*
-     * FIXME
-     * some redundant and double things happend here
-     * will change this 
-     */
-    ConfidenceBar Confidence(QList<qreal > &list, qreal error)
-    {
-        if(error == 5)
-            return Confidence(list);
-        
+
+    ConfidenceBar Confidence(const QList<qreal > &list, qreal error)
+    {   
         ConfidenceBar result;
-        std::sort(list.begin(), list.end());
-        int size_0 = list.size();
-        double single = 0;
-        while(double(list.size())/double(size_0) > (1-error/100))
-        {
-            single = list.first();
-            list.removeFirst();
-            if(list.size() != 0)
-                list.removeLast();
-        }
-        if(list.size() != 0)
+        error /= 2;
+        if(error == 0)
         {
             result.lower = list.first();
             result.upper = list.last();
-            result.lower_5 = list.first();
-            result.upper_5 = list.last();
-        }else
+        }else if(error == 100)
         {
-            result.lower = single;
-            result.upper = single;
-            result.lower_5 = single;
-            result.upper_5 = single;
+            int max = list.size();
+            int pos = max/2;
+            if(max % 2 == 1)
+            {
+                result.lower = list[pos];
+                result.upper = list[pos+1];
+            }else{
+                result.lower = list[pos];
+                result.upper = list[pos];
+            }
+        }else{
+            int max = list.size();
+            int pos_upper = max*(1-error/100);
+            int pos_lower = max*(error/100);
+            result.lower = list[pos_lower];
+            result.upper = list[pos_upper];
         }
-        return result;
-    }
-    
-    ConfidenceBar Confidence(QList<qreal > &list)
-    {
-        ConfidenceBar result;
-        std::sort(list.begin(), list.end());
-        int size_0 = list.size();
-        while(double(list.size())/double(size_0) > 0.975)
-        {
-            list.removeFirst();
-            list.removeLast();
-        }
-        result.lower_2_5 = list.first();
-        result.upper_2_5 = list.last();
-        
-        while(double(list.size())/double(size_0) > 0.95)
-        {
-            list.removeFirst();
-            list.removeLast();
-        }
-        result.lower_5 = list.first();
-        result.upper_5 = list.last();
-        result.lower = list.first();
-        result.upper = list.last();
         return result;
     }
     
@@ -256,5 +227,56 @@ namespace ToolSet{
             series << QPointF(constants[QString::number(0)].toString().toDouble(), constants[QString::number(1)].toString().toDouble());
         }
         return series;
+    }
+    
+    qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter)
+    {
+        qreal integ = 0;
+        qreal delta = 5E-4;
+        for(qreal x = lower; x <= (upper- delta); x += delta)
+        {
+            qreal b = x + delta;
+            integ += (b-x)/6*(function(x,parameter)+4*function((x+b)/2,parameter)+function(b,parameter));
+        }
+        return integ;
+    }
+    
+    qreal finv(qreal p, int m, int n)
+    {
+        qDebug() << "p value for" << p << m << n;
+        /*QFile file;
+        if(p == 0.95 || p == 0.05)
+        {
+            file.setFileName(":/data/f-table-095.dat");
+        }else if(p == 0.90 || p == 0.1){
+            file.setFileName(":/data/f-table-090.dat");
+        }else if(p == 0.99 || p == 0.91){
+            file.setFileName(":/data/f-table-099.dat");
+        }else
+            return -3;
+        
+        file.open(QIODevice::ReadOnly);
+        
+        QTextStream in(&file);
+        int i = 1;
+        while (!in.atEnd())
+        {
+            QString line = in.readLine();
+            if( i == n)
+            {
+                QStringList data = line.split(",");
+                if(m < data.size() && m > 0)
+                {
+                    qDebug() << Fisher_Dist::finv(p,m,n) << " and from file " << data[m - 1].toDouble();
+                    return data[m - 1].toDouble();
+                }
+                else
+                    return -1;
+            }
+            i++;
+        }
+        return -2;*/
+        
+         return Fisher_Dist::finv(p,m,n);
     }
 }
