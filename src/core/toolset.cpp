@@ -26,6 +26,8 @@
 #include <QDebug>
 #include <Eigen/Dense>
 
+#include <fisher/fisher_dist.h>
+
 #include <functional>
 
 #include "toolset.h"
@@ -230,7 +232,7 @@ namespace ToolSet{
     qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter)
     {
         qreal integ = 0;
-        qreal delta = 1E-4;
+        qreal delta = 5E-4;
         for(qreal x = lower; x <= (upper- delta); x += delta)
         {
             qreal b = x + delta;
@@ -241,7 +243,8 @@ namespace ToolSet{
     
     qreal finv(qreal p, int m, int n)
     {
-        QFile file;
+        qDebug() << "p value for" << p << m << n;
+        /*QFile file;
         if(p == 0.95 || p == 0.05)
         {
             file.setFileName(":/data/f-table-095.dat");
@@ -263,12 +266,17 @@ namespace ToolSet{
             {
                 QStringList data = line.split(",");
                 if(m < data.size() && m > 0)
+                {
+                    qDebug() << Fisher_Dist::finv(p,m,n) << " and from file " << data[m - 1].toDouble();
                     return data[m - 1].toDouble();
+                }
                 else
                     return -1;
             }
             i++;
         }
-        return -2;
+        return -2;*/
+        
+         return Fisher_Dist::finv(p,m,n);
     }
 }
