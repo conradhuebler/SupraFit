@@ -49,7 +49,6 @@ StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, Q
 //     Pending();
 //     connect(this, SIGNAL(Interrupt()), this, SLOT(Pending()));
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
-    m_f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
 }
 
 StatisticDialog::StatisticDialog(QWidget *parent) : QDialog(parent)
@@ -77,9 +76,8 @@ void StatisticDialog::updateUI()
         return;
     m_cv_f_value->setToolTip(FOutput());
     m_moco_f_value->setToolTip(FOutput());
-//     m_f_value = ToolSet::finv(0.95, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter());
-    m_cv_f_value->setValue(ToolSet::finv(1-m_cv_maxerror->value()/100, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter()));
-    m_moco_f_value->setValue(ToolSet::finv(1-m_moco_maxerror->value()/100, m_model.data()->Paramter(), m_model.data()->Points()-m_model.data()->Paramter()));
+    m_cv_f_value->setValue(m_model.data()->finv(1-m_cv_maxerror->value()/100)); 
+    m_moco_f_value->setValue(m_model.data()->finv(1-m_moco_maxerror->value()/100));
     if(m_model.data()->ConstantSize() != 2)
     {
         m_moco_widget->setDisabled(true);
@@ -382,9 +380,9 @@ QString StatisticDialog::FOutput() const
     QString string;
     if(m_model)
     {
-        string +=  "Parameter fitted:<b>" + QString::number(m_model.data()->Paramter()) + "</b>\n";
+        string +=  "Parameter fitted:<b>" + QString::number(m_model.data()->Parameter()) + "</b>\n";
         string +=  "Number of used Points:<b>" + QString::number(m_model.data()->Points()) + "</b>\n";
-        string +=  "Degrees of Freedom:<b>" + QString::number(m_model.data()->Points()-m_model.data()->Paramter()) + "</b>\n";
+        string +=  "Degrees of Freedom:<b>" + QString::number(m_model.data()->Points()-m_model.data()->Parameter()) + "</b>\n";
     }
     return string;
 }
@@ -426,7 +424,7 @@ void StatisticDialog::CalculateError()
     QString cv_message, moco_message;
     if(m_cv_f_test->isChecked())
     {
-        max_cv_error = error*(m_cv_f_value->value()*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
+        max_cv_error = error*(m_cv_f_value->value()*m_model.data()->Parameter()/(m_model.data()->Points()-m_model.data()->Parameter()) +1);
         cv_message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_cv_error) + ".";
     }else
     {
@@ -436,7 +434,7 @@ void StatisticDialog::CalculateError()
     
     if(m_moco_f_test->isChecked())
     {
-        max_moco_error = error*(m_moco_f_value->value()*m_model.data()->Paramter()/(m_model.data()->Points()-m_model.data()->Paramter()) +1);
+        max_moco_error = error*(m_moco_f_value->value()*m_model.data()->Parameter()/(m_model.data()->Points()-m_model.data()->Parameter()) +1);
         moco_message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ".";
     }else
     {

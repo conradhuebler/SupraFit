@@ -160,13 +160,17 @@ public:
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
     inline int Points() const { return m_used_variables; }
-    inline int Paramter() { return m_opt_para.size(); }
+    inline int Parameter() { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
     inline qreal Variance() const { return m_variance; }
     inline qreal StdDeviation() const { return qSqrt(m_variance); }
     inline qreal StdError() const { return m_stderror; }
     inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
     inline Eigen::MatrixXd ComplexParameter() const { return m_complex_signal_parameter; }
+    /*! \brief Returns the f value for the given p value
+     *  Degrees of freedom and number of parameters are taken in account
+     */
+    qreal finv(qreal p);
 public slots:
      inline  void Calculate() { Calculate(Constants());}
      void Calculate(const QList<qreal > &constants);
@@ -176,6 +180,8 @@ private:
     QList<int > m_locked_parameters;
     OptimizationType m_last_optimization;
     qreal CalculateVariance();
+    qreal m_last_p, m_f_value;
+    int m_last_parameter, m_last_freedom;
 protected:
     /* 
      * @param int i, in j and qreal value

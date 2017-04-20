@@ -37,7 +37,7 @@
 #include <iostream>
 #include "AbstractModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts);
     m_constant_names << tr("no constants");
@@ -478,5 +478,22 @@ QPair<qreal, qreal> AbstractTitrationModel::Pair(int i, int j) const
 {
     return QPair<qreal, qreal>(Constant(i), m_complex_signal_parameter(j,i));
 }
+
+qreal AbstractTitrationModel::finv(qreal p)
+{
+    /*
+     * Lets cache the f-value, that if nothing changes, no integration is needed
+     */
+    if(!(p == m_last_p && m_last_parameter == Parameter() && m_last_freedom == Points()-Parameter()))
+    {
+        m_f_value = ToolSet::finv(p, Parameter(),Points()-Parameter());
+        m_last_p = p;
+        m_last_parameter = Parameter();
+        m_last_freedom = Points()-Parameter();
+    }   
+    return m_f_value;
+}
+
+
 
 #include "AbstractModel.moc"
