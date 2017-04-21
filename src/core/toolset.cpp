@@ -240,8 +240,20 @@ namespace ToolSet{
         return integ;
     }
     
-//     qreal finv(qreal p, int m, int n)
-//     {
-//          return Fisher_Dist::finv(p,m,n);
-//     }
+     qreal finv(qreal p, int m, int n)
+     {
+         qreal f_value(1);
+         try{
+          f_value = Fisher_Dist::finv(p,m,n);
+         }
+         catch (int i)
+         {
+             if( i == -1)
+                 qDebug() << "p value out of range";
+             else if( i == -2)
+                 qDebug() << "m or n are below 0";
+                 
+        }
+        return f_value;
+     }
 }

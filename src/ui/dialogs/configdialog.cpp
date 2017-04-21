@@ -237,7 +237,7 @@ void ConfigDialog::createStandardCalTab()
     m_p_value->setMinimum(0);
     m_p_value->setSingleStep(1E-2);
     m_p_value->setValue(95);
-    m_p_value->setDecimals(1);
+    m_p_value->setDecimals(2);
     m_p_value->setSuffix("%");
     m_p_value->setValue(qApp->instance()->property("p_value").toDouble());
     

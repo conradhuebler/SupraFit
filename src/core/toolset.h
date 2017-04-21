@@ -56,7 +56,7 @@ namespace ToolSet{
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models);
     qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter);
     
-    inline qreal finv(qreal p, int m, int n){ return Fisher_Dist::finv(p,m,n); }
+    qreal finv(qreal p, int m, int n);
     
 }
 

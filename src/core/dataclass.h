@@ -54,7 +54,7 @@ public:
     qreal & data(int column, int row);
     
     inline DataTable *BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() -1); } 
-    inline DataTable *BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount() -1, column_end); } 
+    inline DataTable *BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount(), column_end); } 
     DataTable *Block(int row_begin, int column_begin, int row_end, int column_end) const;
     
     bool isChecked(int i, int j) const;

@@ -46,6 +46,11 @@
 
 #include "modeldataholder.h"
 
+void ToolButton::ChangeColor(const QColor &color)
+{
+    setStyleSheet("background-color:" + color.name()+ ";");
+}
+
 TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 {
     setStyleSheet("QTabBar::tab { height: 20px;}");
@@ -65,25 +70,25 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     hide->setChecked(true);
     hide->setToolTip(tr("Toggle Series in Charts"));
     
-    m_color = new QToolButton;
-    m_color->setMaximumSize(15,15);
-    QPalette palette = m_color->palette();
-    QLinearGradient gradient(m_color->rect().topLeft(),m_color->rect().bottomLeft());
+    ToolButton *color = new ToolButton;
+    color->setMaximumSize(15,15);
+    QPalette palette = color->palette();
+    QLinearGradient gradient(color->rect().topLeft(),color->rect().bottomLeft());
     gradient.setColorAt(0.0, QColor(255, 0, 0, 127));
     gradient.setColorAt(1.0, QColor(0, 0, 255, 127));
     gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
     palette.setBrush(QPalette::Button, QBrush(gradient));
-    m_color->setPalette(palette);
+    color->setPalette(palette);
     
     QWidget *tools = new QWidget;
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(hide);
-    layout->addWidget(m_color);
+    layout->addWidget(color);
     tools->setLayout(layout);
     
     connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
-    connect(m_color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
-    connect(modelwidget, SIGNAL(ColorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
+    connect(color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
+    connect(modelwidget, SIGNAL(ColorChanged(QColor)), color, SLOT(ChangeColor(QColor)));
     
     setCurrentWidget(scroll);
     tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, tools);
@@ -94,12 +99,6 @@ void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
     addTab(datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
     tabBar()->setTabButton(0, QTabBar::RightSide, 0);
 }
-
-void TabWidget::ChangeColor(const QColor& color)
-{
-    m_color->setStyleSheet("background-color:" + color.name()+ ";");
-}
-
 
 
 ModelDataHolder::ModelDataHolder() : m_history(true)

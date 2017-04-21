@@ -243,7 +243,7 @@ qreal & DataTable::data(int column, int row)
 
 DataTable * DataTable::Block(int row_begin,  int column_begin, int row_end, int column_end) const
 {
-    if(row_begin < 0 || column_begin < 0 || row_begin >= rowCount() || column_begin >= columnCount() || row_end < 0 || column_end < 0 || row_end >= rowCount() || column_end >= columnCount())
+    if(row_begin < 0 || column_begin < 0 || row_begin >= rowCount() || column_begin >= columnCount() || row_end < 0 || column_end < 0 || row_end > rowCount() || column_end > columnCount())
         return new DataTable;
     
     Eigen::MatrixXd table = m_table.block(row_begin,column_begin,row_end,column_end);

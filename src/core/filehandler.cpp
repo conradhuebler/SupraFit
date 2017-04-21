@@ -120,6 +120,7 @@ QPointer<DataTable> FileHandler::getData() const
             }
             else
                 model->insertRow(row);
+            
         }
     }
     return model;

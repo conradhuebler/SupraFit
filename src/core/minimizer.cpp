@@ -31,7 +31,7 @@
 NonLinearFitThread::NonLinearFitThread(bool exchange_statistics): m_exc_statistics(exchange_statistics), m_runtype(OptimizationType::ComplexationConstants)
 {
   setAutoDelete(false);  
-    
+  connect(this, SIGNAL(Message(QString, int)), this, SLOT(Print(QString)));
 }
 
 NonLinearFitThread::~NonLinearFitThread()
@@ -216,6 +216,14 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     return iter;
 }
+
+void NonLinearFitThread::Print(const QString& message)
+{
+#ifdef _DEBUG
+    qDebug() << message;
+#endif
+}
+
 
 
 Minimizer::Minimizer(bool exchange_statistics, QObject* parent) : QObject(parent), m_exc_statistics(exchange_statistics),m_inform_config_changed(true)

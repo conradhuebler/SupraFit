@@ -24,9 +24,10 @@
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QTabWidget>
+#include <QtWidgets/QToolButton>
+#include <QtWidgets/QWidget>
 
 #include <QtCharts/QChart>
 
@@ -43,6 +44,15 @@ class QPlainTextEdit;
 class QLabel;
 class StatisticDialog;
 
+class ToolButton : public QToolButton
+{
+    Q_OBJECT
+    
+private slots:
+    void ChangeColor(const QColor &color);
+};
+
+
 class TabWidget: public QTabWidget
 {
     Q_OBJECT
@@ -52,12 +62,6 @@ public:
     inline ~TabWidget() { }
     void setDataTab( QPointer<DataWidget > datawidget );
     void addModelsTab(QPointer<ModelWidget> modelwidget);
-    
-private:
-    QToolButton *m_color;
-    
-private slots:
-    void ChangeColor(const QColor &color);
 };
 
 class ModelDataHolder : public QWidget
