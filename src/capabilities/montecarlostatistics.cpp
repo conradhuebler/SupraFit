@@ -212,7 +212,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
         QList<qreal > list = m_constant_list[i];
-        QJsonObject result = MakeJson(list, error);
+        QJsonObject result = MakeJson(list, 100-error);
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
@@ -224,7 +224,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         QList<qreal > list = m_shift_list[i];
         if(m_shift_list[i].size() == 0)
             continue;
-        QJsonObject result = MakeJson(list, error);
+        QJsonObject result = MakeJson(list, 100-error);
         /*
          * Some fun goes here, since our data are one long vector
          * the 0 - SignalCount() Datas are one block

@@ -233,15 +233,16 @@ void ConfigDialog::createStandardCalTab()
     layout->addWidget(m_auto_confidence);
     
     m_p_value = new QDoubleSpinBox;
-    m_p_value->setMaximum(1);
+    m_p_value->setMaximum(100);
     m_p_value->setMinimum(0);
     m_p_value->setSingleStep(1E-2);
-    m_p_value->setValue(0.95);
-    m_p_value->setDecimals(2);
+    m_p_value->setValue(95);
+    m_p_value->setDecimals(1);
+    m_p_value->setSuffix("%");
     m_p_value->setValue(qApp->instance()->property("p_value").toDouble());
     
     QHBoxLayout *h_layout = new QHBoxLayout;
-    h_layout->addWidget(new QLabel(tr("P Value:")));
+    h_layout->addWidget(new QLabel(tr("Confidence Interval")));
     h_layout->addWidget(m_p_value);
     layout->addLayout(h_layout);
     

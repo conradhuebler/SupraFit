@@ -73,13 +73,13 @@ void MCResultsWidget::setUi()
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
     m_error = new QDoubleSpinBox;
-    m_error->setValue(5);
+    m_error->setValue(95);
     m_error->setSingleStep(0.5);
     m_error->setSuffix(tr("%"));
     m_error->setMaximum(100);
     connect(m_error, SIGNAL(valueChanged(double)), m_statistics, SLOT(AnalyseData(double)));
     connect(m_statistics, SIGNAL(AnalyseFinished()), this, SLOT(UpdateConfidence()));
-    layout->addWidget(new QLabel(tr("Confidence for Error")), 1, 0);
+    layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
     layout->addWidget(m_error, 1, 1);
     layout->addWidget(m_save, 1, 2);
     if(m_model->ConstantSize() == 2)

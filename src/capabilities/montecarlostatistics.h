@@ -73,7 +73,7 @@ public:
     
 public slots:
     void Interrupt();
-    void AnalyseData(qreal error = 5);
+    void AnalyseData(qreal error = 95);
     
 private:
     QVector<QPointer <MonteCarloThread > > GenerateData();

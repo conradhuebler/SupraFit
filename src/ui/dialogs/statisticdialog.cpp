@@ -76,8 +76,8 @@ void StatisticDialog::updateUI()
         return;
     m_cv_f_value->setToolTip(FOutput());
     m_moco_f_value->setToolTip(FOutput());
-    m_cv_f_value->setValue(m_model.data()->finv(1-m_cv_maxerror->value()/100)); 
-    m_moco_f_value->setValue(m_model.data()->finv(1-m_moco_maxerror->value()/100));
+    m_cv_f_value->setValue(m_model.data()->finv(m_cv_maxerror->value()/100)); 
+    m_moco_f_value->setValue(m_model.data()->finv(m_moco_maxerror->value()/100));
     if(m_model.data()->ConstantSize() != 2)
     {
         m_moco_widget->setDisabled(true);
@@ -176,9 +176,9 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     m_cv_maxerror = new QDoubleSpinBox;
     m_cv_maxerror->setMaximum(100);
     m_cv_maxerror->setSingleStep(0.5);
-    m_cv_maxerror->setValue(5);
+    m_cv_maxerror->setValue(95);
     m_cv_maxerror->setDecimals(1);
-    
+    m_cv_maxerror->setSuffix("%");
     m_cv_f_test = new QCheckBox(tr("Use F-Statistic"));
     m_cv_f_test->setChecked(true);
     m_cv_f_value = new QDoubleSpinBox;
@@ -191,11 +191,11 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     connect(m_cv_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
     connect(m_cv_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
 
-    layout->addWidget(new QLabel(tr("Max. Error in %")), 1, 0);
+    layout->addWidget(new QLabel(tr("Confidence Inerval")), 1, 0);
     layout->addWidget(m_cv_maxerror, 1, 1);
     layout->addWidget(m_cv_f_test, 1, 2);  
     
-    layout->addWidget(new QLabel(tr("F-Value (P=0.05):")), 2, 0);
+    layout->addWidget(new QLabel(tr("F-Value:")), 2, 0);
     layout->addWidget(m_cv_f_value, 2, 1);
     
     m_cv_error_info = new QLabel;
@@ -229,8 +229,9 @@ QWidget * StatisticDialog::ModelComparison()
     m_moco_maxerror = new QDoubleSpinBox;
     m_moco_maxerror->setMaximum(100);
     m_moco_maxerror->setSingleStep(0.5);
-    m_moco_maxerror->setValue(5);
+    m_moco_maxerror->setValue(95);
     m_moco_maxerror->setDecimals(1);
+    m_moco_maxerror->setSuffix("%");
     m_moco_f_test = new QCheckBox(tr("Use F-Statistic"));
     m_moco_f_test->setChecked(true);
         
@@ -244,10 +245,10 @@ QWidget * StatisticDialog::ModelComparison()
     connect(m_moco_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
     connect(m_moco_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
     
-    global_layout->addWidget(new QLabel(tr("Max. Error in %")), 0, 0);
+    global_layout->addWidget(new QLabel(tr("Confidence Intervall")), 0, 0);
     global_layout->addWidget(m_moco_maxerror, 0, 1);
     global_layout->addWidget(m_moco_f_test, 0, 2);
-    global_layout->addWidget(new QLabel(tr("F-Value (P=0.05):")), 1, 0);
+    global_layout->addWidget(new QLabel(tr("F-Value:")), 1, 0);
     global_layout->addWidget(m_moco_f_value, 1, 1);
     m_moco_error_info = new QLabel;
     global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
