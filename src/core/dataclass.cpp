@@ -119,19 +119,22 @@ int DataTable::columnCount(const QModelIndex& parent) const
 
 QVariant DataTable::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(orientation == Qt::Orientation::Horizontal)
+    if(role == Qt::DisplayRole)
     {
-        if(section < m_header.size())
-            return QVariant(m_header.at(section));
-        else 
-            return QVariant(section);
+        if(orientation == Qt::Orientation::Horizontal)
+        {
+            if(section < m_header.size())
+                return QVariant(QString(m_header.at(section)));
+            
+        }else
+            return section + 1;
     }
-    return QAbstractTableModel::headerData(section, orientation, role);
+    return QVariant();
 }
 
 bool DataTable::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role)
 {
-    if(section < m_header.size() && role == Qt::EditRole)
+    if(section < m_header.size() && role == Qt::EditRole && orientation == Qt::Orientation::Horizontal)
     {
         m_header[section] = value.toString();
         return true;
@@ -151,7 +154,7 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
     if(role == Qt::DisplayRole || role == Qt::EditRole )
         return data(index.column(), index.row());
     else if (role == Qt::CheckStateRole && m_checkable)
-        return isChecked(index.column(), index.row()); //m_checked_table(index.column(), index.row());
+        return isChecked(index.column(), index.row()); 
     else
         return QVariant();
 }
@@ -180,6 +183,16 @@ bool DataTable::setData(const QModelIndex &index, const QVariant &value, int rol
     return false;
 }
 
+void DataTable::CheckRow(int row)
+{
+    int check = 0;
+    for(int i = 0; i < columnCount(); ++i)
+        check += m_checked_table(row, i);
+    bool checked = check < columnCount()/2;
+    for(int i = 0; i < columnCount(); ++i)
+        m_checked_table(row, i) = checked;
+    emit layoutChanged();
+}
 
 bool DataTable::isChecked(int column, int row) const
 {

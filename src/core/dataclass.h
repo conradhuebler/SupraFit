@@ -52,7 +52,7 @@ public:
     virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
-    
+    void CheckRow(int row);
     inline DataTable *BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() -1); } 
     inline DataTable *BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount(), column_end); } 
     DataTable *Block(int row_begin, int column_begin, int row_end, int column_end) const;
@@ -74,6 +74,7 @@ public:
     void Debug() const ;
     inline QStringList header() const { return m_header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
+    inline bool Checkable() const { return m_checkable; }
     DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng);
     DataTable *PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector);
     QString ExportAsString() const;
@@ -157,11 +158,12 @@ public:
     inline void setConcentrationTable(DataTable *table) 
     { 
         d->m_concentration_model = table;     
+        d->m_concentration_model->setCheckable(false);
         if(d->m_concentration_model->columnCount() != d->m_scaling.size())
             for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
-    inline void setSignalTable(DataTable *table) { d->m_signal_model = table; }
+    inline void setSignalTable(DataTable *table) { d->m_signal_model = table; d->m_signal_model->setCheckable(true); }
     void SwitchConentrations();
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
     qreal InitialHostConcentration(int i);

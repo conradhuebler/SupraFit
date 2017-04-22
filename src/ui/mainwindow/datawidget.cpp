@@ -22,8 +22,6 @@
 
 #include <QApplication>
 #include <QDebug>
-#include <QHeaderView>
-#include <QStandardItemModel>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
@@ -51,7 +49,9 @@ DataWidget::DataWidget()
     m_concentrations->setMaximumWidth(250);
     m_signals = new QTableView;
     m_signals->setMaximumWidth(750);
-    
+    m_signals->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_signals->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_signals, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     QHBoxLayout *hlayout = new QHBoxLayout;
     
     hlayout->addWidget(new QLabel(tr("Project Name")));
@@ -134,16 +134,6 @@ void DataWidget::switchHG()
     emit recalculate();
 }
 
-void DataWidget::RowAdded()
-{
-    QStandardItemModel *concentration = new QStandardItemModel;
-    QStandardItemModel *signal = new QStandardItemModel;
-    m_concentrations->setModel(concentration);
-    m_signals->setModel(signal);
-    m_concentrations->resizeColumnsToContents();
-    m_signals->resizeColumnsToContents();
-}
-
 void DataWidget::SetProjectName()
 {
     qApp->instance()->setProperty("projectname", m_name->text());
@@ -158,6 +148,15 @@ void DataWidget::setScaling()
     m_data.data()->setScaling(scaling);
     m_wrapper.data()->UpdateModel();
     emit recalculate();
+}
+
+void DataWidget::ShowContextMenu(const QPoint& pos)
+{
+    Q_UNUSED(pos)
+    QModelIndex index = m_signals->currentIndex();
+    int row = index.row();
+    m_data.data()->SignalModel()->CheckRow(row);
+    HidePoint();
 }
 
 void DataWidget::HidePoint()

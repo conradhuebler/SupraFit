@@ -50,10 +50,6 @@ public:
     ~DataWidget();
     void setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper);
 
-    
-public slots:
-    void RowAdded();
-
 private:
     QTableView  *m_concentrations, *m_signals;
     QPushButton  *m_switch;
@@ -67,6 +63,7 @@ private:
     QList<QPointer<QDoubleSpinBox > > m_scaling_boxes;
     
 private slots:
+    void ShowContextMenu(const QPoint& pos);
     void switchHG();
     void SetProjectName();
     void setScaling();
