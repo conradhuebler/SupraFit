@@ -84,7 +84,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     if(m_model->Type() != 3)
     {
         m_error = new QLabel;
-        shifts->addStretch(300);
+        shifts->addStretch(150);
         shifts->addWidget(m_error); 
     } 
     layout->addLayout(shifts);
@@ -108,12 +108,14 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_plot = new QPushButton;
     m_plot->setText(tr("Color"));
     m_plot->setFlat(true);
+    m_plot->setMaximumSize(70,30);
     tools->addWidget(m_plot);
     setLayout(layout);
     
     m_toggle = new QPushButton(tr("Single Plot"));
     m_toggle->setFlat(true);
     m_toggle->setCheckable(true);
+    m_toggle->setMaximumSize(90,30);
     tools->addWidget(m_toggle);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
     layout->addLayout(tools);

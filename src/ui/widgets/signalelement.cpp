@@ -60,6 +60,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     
     m_choose = new QPushButton(tr("Color"));
     m_choose->setFlat(true);
+    m_choose->setMaximumSize(70, 30);
     connect(m_choose, SIGNAL(clicked()), this, SLOT(chooseColor()));
     
     m_markerSize = new QDoubleSpinBox;
