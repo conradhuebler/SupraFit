@@ -107,34 +107,34 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
     
-    m_new = new QAction(QIcon::fromTheme("document-new"), tr("New Table"));
+    m_new = new QAction(Icon("document-new"), tr("New Table"));
     connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
     
-    m_load = new QAction(QIcon::fromTheme("document-open"), tr("Open File"));
+    m_load = new QAction(Icon("document-open"), tr("Open File"));
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
     
-    m_save = new QAction(QIcon::fromTheme("document-save"), tr("Save Project"));
+    m_save = new QAction(Icon("document-save-all"), tr("Save Project"));
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
     
-    m_edit = new QAction(QIcon::fromTheme("document-edit"), tr("Edit Data"));
+    m_edit = new QAction(Icon("document-edit"), tr("Edit Data"));
     connect(m_edit, SIGNAL(triggered(bool)), this, SLOT(EditTableAction()));   
     
-    m_importmodel = new QAction(QIcon::fromTheme("document-open"), tr("Import Models"));
+    m_importmodel = new QAction(Icon("document-import"), tr("Import Models"));
     connect(m_importmodel, SIGNAL(triggered(bool)), this, SLOT(ImportModelAction()));
     
-    m_export = new QAction(QIcon::fromTheme("document-edit"), tr("Export Models"));
+    m_export = new QAction(Icon("document-export"), tr("Export Models"));
     connect(m_export, SIGNAL(triggered(bool)), this, SLOT(ExportModelAction()));   
     
-    m_config = new QAction(QIcon::fromTheme("applications-system"), tr("Settings"));
+    m_config = new QAction(Icon("configure"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()) );
     
-    m_about = new QAction(QIcon::fromTheme("applications-system"), tr("Info"));
+    m_about = new QAction(Icon("help-about"), tr("Info"));
     connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
     
-    m_aboutqt = new QAction(QIcon::fromTheme("applications-system"), tr("About Qt"));
+    m_aboutqt = new QAction(Icon("help-about"), tr("About Qt"));
     connect(m_aboutqt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
     
-    m_close= new QAction(QIcon::fromTheme("application-exit"), tr("Quit"));
+    m_close= new QAction(Icon("application-exit"), tr("Quit"));
     connect(m_close, SIGNAL(triggered()), SLOT(close()) );
     
     
@@ -149,17 +149,31 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_model_toolbar = new QToolBar;
     m_model_toolbar->setObjectName(tr("model_toolbar"));
     m_model_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
-    m_model_toolbar->addAction(m_edit);
+//     m_model_toolbar->addAction(m_edit);
     m_model_toolbar->addAction(m_importmodel);
     m_model_toolbar->addAction(m_export);
     addToolBar(m_model_toolbar);
     
     m_system_toolbar = new QToolBar;
     m_system_toolbar->setObjectName(tr("system_toolbar"));
-    m_system_toolbar->addAction(m_modeldock->toggleViewAction());
-    m_system_toolbar->addAction(m_chartdock->toggleViewAction());
-    m_system_toolbar->addAction(m_logdock->toggleViewAction());
-    m_system_toolbar->addAction(m_history_dock->toggleViewAction());
+    QAction *toggleView;
+    
+    toggleView = m_modeldock->toggleViewAction();
+    toggleView->setIcon(QIcon(":/icons/workspace.png"));
+    m_system_toolbar->addAction(toggleView);
+    
+    toggleView = m_chartdock->toggleViewAction();
+    toggleView->setIcon(QIcon(":/icons/charts.png"));
+    m_system_toolbar->addAction(toggleView);
+    
+    toggleView = m_logdock->toggleViewAction();
+    toggleView->setIcon(Icon("text-field"));
+    m_system_toolbar->addAction(toggleView);
+    
+    toggleView = m_history_dock->toggleViewAction();
+    toggleView->setIcon(Icon("view-list-text"));
+    m_system_toolbar->addAction(toggleView);
+    m_system_toolbar->addSeparator();
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_about);
     m_system_toolbar->addAction(m_aboutqt);
@@ -175,6 +189,15 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
 MainWindow::~MainWindow()
 {
     
+}
+
+QIcon MainWindow::Icon(const QString &str)
+{
+#ifdef _Theme
+    return QIcon::fromTheme(str);
+#else
+    return QIcon(":/icons/" + str + ".png");
+#endif
 }
 
 void MainWindow::LoadFile(const QString &file)
@@ -461,12 +484,14 @@ void MainWindow::InsertHistoryElement(const QJsonObject &model, int active)
 void MainWindow::about()
 {
     QString info;
-    info  = "This is all about SupraFit, nothing else matters\n";
-    info += "Created by Conrad Hübler\n";
-    info += "Special thanks Prof. M. Mazik, TU Bergakademie Freiberg for her support\n";
-    info += "Special thanks to all encouraged me writing the application\n";
-    info += "SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + "\n";
-    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".\n";
+    info  = "<p>This is all about SupraFit, nothing else matters< /p>";
+    info += "<p>Created by Conrad Hübler</p>";
+    info += "<p>Special thanks to <b>Prof. M. Mazik</b>, TU Bergakademie Freiberg for her support.</p>";
+    info += "<p>Special thanks to <b>Stefan Kaiser</b> for finding bugs and constructive feedback.</p>";
+    info += "<p>Thanks to all encouraged me writing the application.</p>";
+    info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
+    info += "<p>SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + ".\n";
+    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".</p>";
     QMessageBox::about(this, tr("SuprFit"), info);
 }
 

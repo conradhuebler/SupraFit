@@ -27,6 +27,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QPointer>
 
+
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
 
@@ -65,6 +66,8 @@ private:
     
     bool LoadProject(const QString &filename);
     void ImportTable(const QString &file);
+    
+    QIcon Icon(const QString &str);
     
     QPointer<QSplitter >m_mainsplitter;
     QPointer<ChartWidget > m_charts;

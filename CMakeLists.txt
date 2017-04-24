@@ -44,15 +44,7 @@ else()
      set (_DEBUG  OFF)
 endif(${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
 
-configure_file (
-  "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
-  "${PROJECT_BINARY_DIR}/src/global_config.h"
-)
 
-configure_file(
-  "${CMAKE_SOURCE_DIR}/src/version.h.in"
-  "${CMAKE_BINARY_DIR}/src/version.h"
-)
 
 
 # generate proper GUI program on specified platform
@@ -73,9 +65,20 @@ elseif(APPLE)
 	)
 elseif(UNIX)
 	# Nothing special required
+	set (_Theme ON)
 else()
 	message(SEND_ERROR "You are on an unsupported platform! (Not Win32, Mac OS X or Unix)")
 endif(WIN32)
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
+  "${PROJECT_BINARY_DIR}/src/global_config.h"
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/src/version.h.in"
+  "${CMAKE_BINARY_DIR}/src/version.h"
+)
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -pedantic-errors \

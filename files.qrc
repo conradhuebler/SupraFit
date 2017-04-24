@@ -4,5 +4,19 @@
         <file>data/models/2_1_1_1_model.json</file>
         <file>data/models/1_1_1_2_model.json</file>
         <file>data/models/2_1_1_1_1_2_model.json</file>
+        <file>icons/application-exit.png</file>
+        <file>icons/document-edit.png</file>
+        <file>icons/document-export.png</file>
+        <file>icons/document-import.png</file>
+        <file>icons/document-new.png</file>
+        <file>icons/document-open.png</file>
+        <file>icons/document-save-all.png</file>
+        <file>icons/document-save.png</file>
+        <file>icons/help-about.png</file>
+        <file>icons/configure.png</file>
+        <file>icons/view-list-text.png</file>
+        <file>icons/charts.png</file>
+        <file>icons/workspace.png</file>
+        <file>icons/text-field.png</file>
     </qresource>
 </RCC>
