@@ -114,6 +114,8 @@ private:
     void AddModel(int model);
     void AddModel(const QJsonObject &json);
     void ParseScriptedModels();
+    void ActiveBatch();
+    
     QAction *m_script_action;
     
     OptimizerConfig m_config;
@@ -137,6 +139,7 @@ private slots:
     void CloseAll();
     void CVStatistic();
     void MCStatistic();
+    void MoCoStatistic();
     void OptimizeAll();
     void HideSubWindows(int index);
     inline void Interrupt() { m_allow_loop = false; }

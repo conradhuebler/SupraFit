@@ -36,9 +36,10 @@ class QPointF;
 class CVConfig : public AbstractConfig
 {
 public:
-    double increment = 1e-3;
+    qreal increment = 1e-3;
     int maxsteps = 1e4;
-    double maxerror = 5;
+    qreal maxerror = 0;
+    qreal confidence = 95;
     bool relax = true;
     bool fisher_statistic = false;
 };

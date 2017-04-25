@@ -462,6 +462,10 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
  
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
+    
+    if(config.maxerror < 1E-8)
+        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
+
     ModelComparison *statistic = new ModelComparison(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);

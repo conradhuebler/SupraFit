@@ -491,6 +491,16 @@ qreal AbstractTitrationModel::finv(qreal p)
     return m_f_value;
 }
 
+qreal AbstractTitrationModel::Error(qreal confidence, bool f)
+{
+    if(f)
+    {
+        qreal f_value = finv(confidence/100);
+        return SumofSquares()*(f_value*Parameter()/(Points()-Parameter()) +1);
+    } else {
+        return SumofSquares()+SumofSquares()*confidence/double(100);
+    }
+}
 
 
 #include "AbstractModel.moc"

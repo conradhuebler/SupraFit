@@ -171,6 +171,8 @@ public:
      *  Degrees of freedom and number of parameters are taken in account
      */
     qreal finv(qreal p);
+    qreal Error(qreal confidence, bool f = true);
+    
 public slots:
      inline  void Calculate() { Calculate(Constants());}
      void Calculate(const QList<qreal > &constants);

@@ -19,6 +19,7 @@
  */
 
 #include "src/capabilities/continuousvariation.h"
+#include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
 
 #include "src/core/jsonhandler.h"
@@ -58,12 +59,7 @@ TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
 {
-    QScrollArea *scroll = new QScrollArea;
-    scroll->setBackgroundRole(QPalette::Midlight);
-    scroll->setWidget(modelwidget);
-    scroll->setWidgetResizable(true);
-    scroll->setAlignment(Qt::AlignHCenter);
-    addTab(scroll, modelwidget->Model()->Name());
+    addTab(modelwidget, modelwidget->Model()->Name());
     
     QCheckBox *hide = new QCheckBox;
     hide->setMaximumSize(20,20);
@@ -90,7 +86,7 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     connect(color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
     connect(modelwidget, SIGNAL(ColorChanged(QColor)), color, SLOT(ChangeColor(QColor)));
     
-    setCurrentWidget(scroll);
+    setCurrentWidget(modelwidget);
     tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, tools);
 }
 
@@ -118,6 +114,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_statistic_dialog = new StatisticDialog(this);
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
     connect(m_statistic_dialog, SIGNAL(CVStatistic()), this, SLOT(CVStatistic()));
+    connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
     m_add = new QPushButton(tr("Add Model"));
     m_add->setFlat(true);
@@ -340,9 +337,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     m_modelsWidget->addModelsTab(modelwidget);
     m_last_tab = m_modelsWidget->currentIndex();
     m_models << t;
-    m_close_all->setEnabled(true);
-    m_statistics->setEnabled(true);
-    m_optimize->setEnabled(true);
+
     
     /*
      * Some models are loaded from history, this should no be added again
@@ -352,24 +347,25 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
         modelwidget->getMinimizer()->addToHistory();
     else
         m_history = true;
+    ActiveBatch();
+}
+
+void ModelDataHolder::ActiveBatch()
+{
+    m_close_all->setEnabled(m_modelsWidget->count() > 2);
+    m_statistics->setEnabled(m_modelsWidget->count() > 2);
+    m_optimize->setEnabled(m_modelsWidget->count() > 2);
 }
 
 void ModelDataHolder::RemoveTab(int i)
 {
-    if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
+    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
     {
-        QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
-        ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
         m_modelsWidget->removeTab(i);
         delete model;
-        delete scroll;
     }
-    if(m_modelsWidget->count() < 2)
-    {
-        m_close_all->setEnabled(false);
-        m_statistics->setEnabled(false);
-        m_optimize->setEnabled(false);
-    }
+    ActiveBatch();
 }
 
 void ModelDataHolder::setSettings(const OptimizerConfig &config)
@@ -493,8 +489,7 @@ void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
         replay = QMessageBox::information(this, tr("Override Model."), tr("Do you want to override the current loaded model [Y]\nor just add to workspace [N]?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
         if(replay == QMessageBox::Yes) 
         {
-            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->currentWidget());
-            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->currentWidget());
             model->LoadJson(object);
         }
         else if(replay == QMessageBox::No)
@@ -523,10 +518,9 @@ void ModelDataHolder::CVStatistic()
     CVConfig config = m_statistic_dialog->getCVConfig();
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
-        if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
+        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
-            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
-            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
             model->CVStatistic(config);
         }
     }
@@ -539,10 +533,9 @@ void ModelDataHolder::MCStatistic()
     m_allow_loop = true;
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
-        if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
+        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
-            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
-            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
             config.variance = model->Model()->StdDeviation();
             model->MCStatistic(config);
         }
@@ -551,14 +544,31 @@ void ModelDataHolder::MCStatistic()
     }
 }
 
+void ModelDataHolder::MoCoStatistic()
+{
+    MoCoConfig config = m_statistic_dialog->getMoCoConfig();
+    m_allow_loop = true;
+    for(int i = 1; i < m_modelsWidget->count(); i++)
+    {
+        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
+        {
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+            if(model->Model()->ConstantSize() == 2)
+                model->MoCoStatistic(config);
+        }
+        if(!m_allow_loop)
+            break;
+    }
+}
+
+
 void ModelDataHolder::OptimizeAll()
 {
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
-        if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(i)))
+        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
-            QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(i));
-            ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
             model->GlobalMinimize();
         }
     } 
@@ -566,10 +576,9 @@ void ModelDataHolder::OptimizeAll()
 
 void ModelDataHolder::HideSubWindows(int index)
 {
-    if(qobject_cast<QScrollArea *>(m_modelsWidget->widget(m_last_tab)))
+    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(m_last_tab)))
     {
-        QScrollArea *scroll = qobject_cast<QScrollArea *>(m_modelsWidget->widget(m_last_tab));
-        ModelWidget *model = qobject_cast<ModelWidget *>(scroll->widget());
+        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(m_last_tab));
         model->HideAllWindows();
         m_last_tab = index;
     }
