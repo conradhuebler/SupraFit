@@ -340,7 +340,7 @@ MoCoConfig StatisticDialog::getMoCoConfig()
     config.fisher_statistic = m_moco_f_test->isChecked();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(-1);
+    m_progress->setMaximum(m_runs*(m_moco_mc_steps->value())/10);
     m_progress->setValue(0);
 //     Pending();
     return config;

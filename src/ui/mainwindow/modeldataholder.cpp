@@ -330,7 +330,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(QJsonObject, int)), this, SIGNAL(InsertModel(QJsonObject, int)), Qt::DirectConnection);
     
-    connect(modelwidget, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)));
+    connect(modelwidget, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(m_statistic_dialog, SIGNAL(Interrupt()), modelwidget, SIGNAL(Interrupt()));
     connect(m_statistic_dialog, SIGNAL(Interrupt()), this, SLOT(Interrupt()));
     
@@ -499,8 +499,6 @@ void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
     }
 }
 
-
-
 void ModelDataHolder::CloseAll()
 {
     QMessageBox::StandardButton replay;
@@ -528,7 +526,7 @@ void ModelDataHolder::CVStatistic()
 
 void ModelDataHolder::MCStatistic()
 {
-    m_statistic_dialog->setRuns(m_models.size() - 1);
+    m_statistic_dialog->setRuns(m_models.size());
     MCConfig config = m_statistic_dialog->getMCConfig();
     m_allow_loop = true;
     for(int i = 1; i < m_modelsWidget->count(); i++)
@@ -546,8 +544,20 @@ void ModelDataHolder::MCStatistic()
 
 void ModelDataHolder::MoCoStatistic()
 {
-    MoCoConfig config = m_statistic_dialog->getMoCoConfig();
     m_allow_loop = true;
+    int count = 0;
+    
+    for(int i = 1; i < m_modelsWidget->count(); i++)
+        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
+        {
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+            if(model->Model()->ConstantSize() == 2)
+                count++;
+        }
+    m_statistic_dialog->setRuns(count);
+    
+    MoCoConfig config = m_statistic_dialog->getMoCoConfig();
+    
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
         if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))

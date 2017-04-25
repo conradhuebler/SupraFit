@@ -430,6 +430,10 @@ void ModelWidget::CVStatistic(CVConfig config)
     
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
+    
+     if(config.maxerror < 1E-8)
+        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
+     
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
@@ -472,6 +476,8 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->Confidence();
