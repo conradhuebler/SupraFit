@@ -22,6 +22,7 @@
 
 #include <QApplication>
 #include <QDebug>
+#include <QSettings>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
@@ -31,7 +32,9 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
 #include <QtWidgets/QScrollBar>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableView>
 
 #include <QtCharts/QXYSeries>
@@ -41,6 +44,7 @@
 
 DataWidget::DataWidget() 
 {
+    m_widget = new QWidget;
     layout = new QGridLayout;
     m_switch = new QPushButton(tr("Switch H/G"));
     m_switch->setToolTip(tr("Switch Host/Guest\nAssignment"));
@@ -67,7 +71,7 @@ DataWidget::DataWidget()
     m_substances = new QLabel;
     m_const_subs = new QLabel;
     m_signals_count = new QLabel;
-    m_tables = new QGroupBox(tr("Data Tables"));
+    m_tables = new QWidget; //(tr("Data Tables"));
     QHBoxLayout *group_layout = new QHBoxLayout;
     group_layout->addWidget(m_concentrations);
     group_layout->addWidget(m_signals);
@@ -78,13 +82,26 @@ DataWidget::DataWidget()
     layout->addWidget(m_substances, 1, 1);
     layout->addWidget(m_const_subs,1,2);
     layout->addWidget(m_signals_count, 1, 3);
-    layout->addWidget(m_tables, 4, 0, 1, 4);
     
-    setLayout(layout);
+    m_widget->setLayout(layout);
+    QScrollArea *area = new QScrollArea;
+    area->setWidgetResizable(true);
+    area->setWidget(m_widget);
+    m_splitter = new QSplitter;
+    m_splitter->setOrientation(Qt::Vertical);
+    m_splitter->addWidget(area);
+    m_splitter->addWidget(m_tables);
+    
+    hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_splitter);
+    setLayout(hlayout);
 }
 
 DataWidget::~DataWidget()
 {
+    QSettings settings;
+    settings.beginGroup("overview");
+    settings.setValue("splitterSizes", m_splitter->saveState());
 }
 
 void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper)
@@ -131,6 +148,9 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     }
     layout->addLayout(scaling_layout,3,0,1,4);
     
+    QSettings settings;
+    settings.beginGroup("overview");
+    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
 }
 
 void DataWidget::switchHG()

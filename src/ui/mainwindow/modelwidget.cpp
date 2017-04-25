@@ -67,6 +67,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableView>
 
@@ -87,6 +88,7 @@
 
 ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
 {
+    m_model_widget = new QWidget;
     Data2Text();
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
@@ -150,23 +152,39 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
         m_sign_layout->addWidget(el);
         m_model_elements << el;
     }
-    
-    m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
+    QWidget *scroll = new QWidget;
+    scroll->setLayout(m_sign_layout);
+    QScrollArea *area = new QScrollArea;
+    area->setWidgetResizable(true);
+    area->setWidget(scroll);
+    m_layout->addWidget(area, 2,0,1,m_model->ConstantSize()+3);
     
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)
         EmptyUI();
     
-    m_layout->addWidget(m_statistic_widget, 7, 0, 1, m_model->ConstantSize()+3);
     resizeButtons();
-    setLayout(m_layout);
+    m_model_widget->setLayout(m_layout);
+    m_splitter = new QSplitter(this);
+    m_splitter->setOrientation(Qt::Vertical);
+    m_splitter->addWidget(m_model_widget);
+    m_splitter->addWidget(m_statistic_widget);
+    connect(m_splitter, SIGNAL(splitterMoved(int,int)), this, SLOT(SplitterResized()));
+    QVBoxLayout *vlayout = new QVBoxLayout;
+    vlayout->addWidget(m_splitter);
+    setLayout(vlayout);
+    QSettings settings;
+    settings.beginGroup("model");
+    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
 
 ModelWidget::~ModelWidget()
 {
+    
+    
     delete m_charts.signal_wrapper;
     delete m_charts.error_wrapper;
     
@@ -180,6 +198,12 @@ ModelWidget::~ModelWidget()
     delete m_concentrations_result;
 }
 
+void ModelWidget::SplitterResized()
+{
+    QSettings settings;
+    settings.beginGroup("model");
+    settings.setValue("splitterSizes", m_splitter->saveState());
+}
 
 
 void ModelWidget::DiscreteUI()

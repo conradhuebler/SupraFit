@@ -36,6 +36,7 @@ class ChartWrapper;
 class QLineEdit;
 class QCheckBox;
 class QGridLayout;
+class QSplitter;
 class ScatterSeries;
 class QDoubleSpinBox;
 class SignalElement;
@@ -57,7 +58,8 @@ private:
     QWeakPointer<ChartWrapper> m_wrapper;
     QLineEdit *m_name;
     QLabel *m_datapoints, *m_substances, *m_const_subs, *m_signals_count;
-    QGroupBox *m_tables;
+    QWidget *m_tables, *m_widget;
+    QSplitter *m_splitter;
     QVector<QPointer<SignalElement > > m_signal_elements;
     QGridLayout *layout;
     QList<QPointer<QDoubleSpinBox > > m_scaling_boxes;
