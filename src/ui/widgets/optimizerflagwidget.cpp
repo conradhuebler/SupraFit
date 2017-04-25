@@ -34,13 +34,14 @@
 OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts), m_hidden(true)
 {
      setUi();
+     setFlags(m_type);
 
 }
 
-OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget *parent) :QWidget(parent), m_type(type), m_hidden(true)
+OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget *parent) :QWidget(parent), m_hidden(true)
 {
      setUi();
-
+     setFlags(type);
 }
 
 
@@ -54,15 +55,11 @@ void OptimizerFlagWidget::setUi()
     m_main_layout = new QVBoxLayout;
     m_main_layout->setAlignment(Qt::AlignTop);
     m_ComplexationConstants = new QCheckBox(tr("Complexation Constants"));
-    m_ComplexationConstants->setChecked((m_type & OptimizationType::ComplexationConstants) == OptimizationType::ComplexationConstants);
+    
     m_OptimizeShifts = new QCheckBox(tr("Shifts"));
-    m_OptimizeShifts->setChecked(((m_type & OptimizationType::OptimizeShifts) == OptimizationType::OptimizeShifts));
     m_ConstrainedShifts = new QCheckBox(tr("Optimise Shift Constrained"));
-    m_ConstrainedShifts->setChecked((m_type & OptimizationType::UnconstrainedShifts) != OptimizationType::UnconstrainedShifts);
     m_IntermediateShifts = new QCheckBox(tr("Fit remaining Shifts"));
-    m_IntermediateShifts->setChecked((m_type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts);
     m_IgnoreZeroConcentrations = new QCheckBox(tr("Skip Host Shift"));
-    m_IgnoreZeroConcentrations->setChecked((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations);
     
     m_more = new QPushButton(tr("..more.."));
     m_more->setMaximumSize(50,30);
@@ -83,11 +80,22 @@ void OptimizerFlagWidget::setUi()
     setLayout(m_main_layout);
     connect(m_OptimizeShifts, SIGNAL(stateChanged(int)), this, SLOT(EnableShiftSelection()));
     connect(m_ConstrainedShifts, SIGNAL(stateChanged(int)), this, SLOT(ConstrainedChanged()));
-    EnableShiftSelection();
-    ConstrainedChanged();
+
     m_more->setFlat(true);
     m_first_row->setMaximumHeight(0);
 }
+
+void OptimizerFlagWidget::setFlags(OptimizationType type)
+{
+    m_type = type;
+    m_ComplexationConstants->setChecked((m_type & OptimizationType::ComplexationConstants) == OptimizationType::ComplexationConstants);
+    m_OptimizeShifts->setChecked(((m_type & OptimizationType::OptimizeShifts) == OptimizationType::OptimizeShifts));
+    m_ConstrainedShifts->setChecked((m_type & OptimizationType::UnconstrainedShifts) != OptimizationType::UnconstrainedShifts);
+    m_IntermediateShifts->setChecked((m_type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts);
+    m_IgnoreZeroConcentrations->setChecked((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations);
+    EnableShiftSelection();
+}
+
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
 {
@@ -135,8 +143,7 @@ void OptimizerFlagWidget::EnableShiftSelection()
     m_ConstrainedShifts->setEnabled(m_OptimizeShifts->isChecked());
     m_IntermediateShifts->setEnabled(m_OptimizeShifts->isChecked());
     m_IgnoreZeroConcentrations->setEnabled(m_OptimizeShifts->isChecked());
-    
-    
+    ConstrainedChanged();
 }
 
 void OptimizerFlagWidget::ConstrainedChanged()
@@ -144,8 +151,8 @@ void OptimizerFlagWidget::ConstrainedChanged()
     m_IntermediateShifts->setEnabled(m_ConstrainedShifts->isChecked());
     m_IntermediateShifts->setChecked(m_ConstrainedShifts->isChecked());
     
-    m_IgnoreZeroConcentrations->setEnabled(!m_ConstrainedShifts->isChecked());
-    m_IgnoreZeroConcentrations->setChecked(!m_ConstrainedShifts->isChecked());
+    m_IgnoreZeroConcentrations->setEnabled(!m_ConstrainedShifts->isChecked() && m_OptimizeShifts->isChecked());
+    m_IgnoreZeroConcentrations->setChecked(!m_ConstrainedShifts->isChecked() && ((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations));
 }
 
 

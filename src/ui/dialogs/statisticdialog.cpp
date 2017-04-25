@@ -94,7 +94,10 @@ void StatisticDialog::setUi()
     widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
     m_moco_widget = ModelComparison();
     widget->addTab(m_moco_widget, tr("Model Comparison"));
-    m_optim_flags = new OptimizerFlagWidget; 
+    if(m_model)
+        m_optim_flags = new OptimizerFlagWidget(m_model.data()->LastOptimzationRun()); 
+    else
+        m_optim_flags = new OptimizerFlagWidget;
     layout->addWidget(widget);
     m_time_info = new QLabel;
     m_progress = new QProgressBar;

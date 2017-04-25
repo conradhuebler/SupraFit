@@ -281,6 +281,7 @@ QJsonObject AbstractTitrationModel::ExportModel(bool statistics) const
     
     toplevel["data"] = json;
     toplevel["model"] = m_name;  
+//     qDebug() << m_last_optimization;
     toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
     toplevel["sum_of_absolute"] = m_sum_absolute;
@@ -339,10 +340,8 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
     }
     
     if(topjson["runtype"].toInt() != 0)
-    {
-//         m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
         OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
-    }
+    
     
     QList<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
@@ -369,6 +368,7 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
         setComplexSignals(shifts, i);
     }
     setActiveSignals(active_signals);
+    Calculate();
 }
 
 qreal AbstractTitrationModel::ModelError() const

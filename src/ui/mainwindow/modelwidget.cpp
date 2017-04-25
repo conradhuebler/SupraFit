@@ -311,7 +311,7 @@ void ModelWidget::GlobalMinimize()
     {
         json = m_minimizer->Parameter();
         m_model->ImportModel(json);
-        m_model->Calculate();
+//         m_model->Calculate();
         Repaint();
         m_model->OptimizeParameters(m_optim_flags->getFlags());
         if(qApp->instance()->property("auto_confidence").toBool())
@@ -559,11 +559,12 @@ void ModelWidget::ImportConstants()
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportModel(object);
-    m_model->Calculate();
+//     m_model->Calculate();
     QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     Repaint();
+    m_optim_flags->setFlags(m_model->LastOptimzationRun());
 }
 
 void ModelWidget::OpenAdvancedSearch()

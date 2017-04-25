@@ -61,7 +61,7 @@ DataWidget::DataWidget()
     
     hlayout->addWidget(new QLabel(tr("Project Name")), 0, Qt::AlignLeft);
     hlayout->addWidget(m_name, 0, Qt::AlignLeft);
-    hlayout->addSpacerItem(new QSpacerItem(400,1));
+    hlayout->addSpacerItem(new QSpacerItem(100,1));
     hlayout->addWidget(m_switch, 0, Qt::AlignRight);
     m_datapoints = new QLabel;
     m_substances = new QLabel;
