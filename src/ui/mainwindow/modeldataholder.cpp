@@ -444,6 +444,7 @@ void ModelDataHolder::SaveWorkspace(const QString &file)
 
 void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
 {
+    Waiter wait;
     QStringList keys = object.keys();
     
     /*
@@ -470,6 +471,7 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
                 Json2Model(model, model["model"].toString());
             else
                 emit InsertModel(model);
+            QApplication::processEvents();
         }
     }
 }
