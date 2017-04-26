@@ -183,8 +183,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
 
 ModelWidget::~ModelWidget()
 {
-    
-    
     delete m_charts.signal_wrapper;
     delete m_charts.error_wrapper;
     
@@ -192,10 +190,16 @@ ModelWidget::~ModelWidget()
     if(_3dchart)
         delete _3dchart;
     
+    m_statistic_dialog->hide();
+    m_search_result->hide();
+    m_concentrations_result->hide();
+    m_statistic_result->hide();
+    
     delete m_statistic_result;
     delete m_search_result;
     delete m_table_result;
     delete m_concentrations_result;
+    delete m_statistic_dialog;
 }
 
 void ModelWidget::SplitterResized()
@@ -378,7 +382,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model, this);
+    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model, m_statistic_result);
 
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
@@ -449,7 +453,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
-    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
+    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();  
 }
@@ -482,7 +486,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     statistic->setModel(m_model);
     statistic->Confidence();
      
-    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
+    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
 }

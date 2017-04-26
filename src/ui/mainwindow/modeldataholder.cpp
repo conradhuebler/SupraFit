@@ -94,6 +94,7 @@ void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
 {
     addTab(datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
     tabBar()->setTabButton(0, QTabBar::RightSide, 0);
+    m_datawidget = datawidget;
 }
 
 
@@ -173,7 +174,13 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
 
 ModelDataHolder::~ModelDataHolder()
 {
-    
+    for(int i = 0; i < m_modelsWidget->count(); ++i)
+    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
+    {
+        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+        m_modelsWidget->removeTab(i);
+        delete model;
+    }
 }
 
 void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)

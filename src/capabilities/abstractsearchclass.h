@@ -73,7 +73,7 @@ public:
     void ExportResults(const QString& filename);
     
 public slots:
-    void Interrupt();
+    virtual void Interrupt();
     
 private:
     

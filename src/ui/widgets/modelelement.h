@@ -23,7 +23,7 @@
 #include "src/ui/mainwindow/chartwidget.h"
 
 class SpinBox;
-
+class HoverCheckBox;
 
 class ModelElement : public QGroupBox
 {
@@ -45,7 +45,8 @@ private:
     QVector<SpinBox * > m_constants;
     QLabel *m_error;
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
-    QCheckBox *m_include, *m_show;
+    QCheckBox *m_include;
+    HoverCheckBox *m_show;
     QSharedPointer<AbstractTitrationModel > m_model;
     QPointer<LineSeries > m_error_series, m_signal_series;
     

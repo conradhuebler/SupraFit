@@ -59,9 +59,12 @@ class TabWidget: public QTabWidget
 
 public:
     TabWidget(QWidget *parent = 0);
-    inline ~TabWidget() { }
+    inline ~TabWidget() { if(m_datawidget) delete m_datawidget; }
     void setDataTab( QPointer<DataWidget > datawidget );
     void addModelsTab(QPointer<ModelWidget> modelwidget);
+    
+private:
+    QPointer<DataWidget > m_datawidget;
 };
 
 class ModelDataHolder : public QWidget

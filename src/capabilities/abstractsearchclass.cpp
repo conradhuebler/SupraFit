@@ -30,12 +30,13 @@ AbstractSearchClass::AbstractSearchClass(QObject *parent) : QObject(parent)
 
 AbstractSearchClass::~AbstractSearchClass()
 {
+    
 }
 
 
 void AbstractSearchClass::Interrupt()
 {
-    
+    m_threadpool->clear();
 }
 
 void AbstractSearchClass::ExportResults(const QString& filename)

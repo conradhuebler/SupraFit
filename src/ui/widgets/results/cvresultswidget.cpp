@@ -48,6 +48,8 @@ CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QShar
 
 CVResultsWidget::~CVResultsWidget()
 {
+    m_statistics->Interrupt();
+    
     if(m_statistics)
         delete m_statistics;
 }

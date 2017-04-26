@@ -36,7 +36,7 @@ class SearchResultWidget : public QWidget
     Q_OBJECT
     
 public:
-    SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractTitrationModel> model, QWidget *parent);
     ~SearchResultWidget();
     inline void setModelList(const QList<QJsonObject> &models){m_models = models;};
     void setModel(const QSharedPointer<AbstractTitrationModel> model){ m_model = model; }

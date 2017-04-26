@@ -32,6 +32,7 @@ ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
     setWindowTitle(str);
     setLayout(layout);
     resize(800, 400);
+    connect(m_tab, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
 }
 
 
@@ -48,5 +49,11 @@ void ModalDialog::setWidget(QWidget* widget, const QString &str)
     m_tab->setCurrentIndex(i);
 }
 
+void ModalDialog::RemoveTab(int tab)
+{
+    QWidget *model = qobject_cast<QWidget *>(m_tab->widget(tab));
+    m_tab->removeTab(tab);
+    delete model;
+}
 
 #include "modeldialog.moc"

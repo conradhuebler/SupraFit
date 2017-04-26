@@ -273,7 +273,6 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
          * pureShifts are the first n = SignalCount() Entries 
          * shift_0 are the next n +1 - 2n entries
          * and so on
-         * it really is not the best solution
          */
         if(string == "constants")
             m_constant_list[j] << element.toDouble();

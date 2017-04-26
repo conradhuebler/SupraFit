@@ -524,6 +524,14 @@ void MainWindow::closeEvent(QCloseEvent *event)
     m_stdout.close();
 
     WriteSettings(false);
+    
+    if(m_model_dataholder)
+        delete m_model_dataholder;
+    if(m_charts)
+        delete m_charts;
+    if(m_historywidget)
+        delete m_historywidget;
+    
     QMainWindow::closeEvent(event);
 }
 

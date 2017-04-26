@@ -34,21 +34,19 @@ class StatisticWidget : public QWidget
 {
     Q_OBJECT
 public:
-    StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent);
     ~StatisticWidget();
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
     static QString TextFromConfidence(const QJsonObject &result);
     
 private:
-    
-    
     QSharedPointer<AbstractTitrationModel > m_model;
-//     QList<QPointer<StatisticElement> > m_elements;
     QPushButton *m_show;
     QWidget *m_subwidget;
     QTextEdit *m_overview;
     QString m_short, m_statistics;
+    
 private slots:
     void toggleView();
     void Update();

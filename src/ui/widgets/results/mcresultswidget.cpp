@@ -49,6 +49,8 @@ MCResultsWidget::MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSh
 
 MCResultsWidget::~MCResultsWidget()
 {
+    m_statistics->Interrupt();
+    
     if(m_statistics)
         delete m_statistics;
 }

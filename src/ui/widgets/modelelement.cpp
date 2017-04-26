@@ -24,6 +24,7 @@
 #include "src/core/AbstractModel.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"
+#include "src/ui/widgets/buttons/hovercheckbox.h"
 #include "src/ui/mainwindow/chartwidget.h"
 
 
@@ -99,7 +100,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
     m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
-    m_show = new QCheckBox;
+    m_show = new HoverCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
     m_show->setChecked(m_model->ActiveSignals()[m_no]);
