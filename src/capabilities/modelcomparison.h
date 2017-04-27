@@ -46,7 +46,7 @@ class MCThread : public AbstractSearchThread
   Q_OBJECT
   
 public:
-    inline MCThread( QObject *parent = 0) : AbstractSearchThread(parent) { };
+    inline MCThread( ) : AbstractSearchThread() { };
     inline ~MCThread() { };
     void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     void run();

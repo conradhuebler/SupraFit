@@ -38,7 +38,7 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(const MCConfig &config, QObject* parent): AbstractSearchThread(parent), m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+MonteCarloThread::MonteCarloThread(const MCConfig &config): m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     setAutoDelete(false);
 }
@@ -150,7 +150,7 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 #endif
     for(int step = 0; step < m_config.maxsteps; ++step)
     {
-        QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
+        QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         DataTable *table;
