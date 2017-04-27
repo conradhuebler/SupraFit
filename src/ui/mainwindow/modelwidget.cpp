@@ -67,6 +67,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableView>
 
@@ -87,6 +88,7 @@
 
 ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
 {
+    m_model_widget = new QWidget;
     Data2Text();
     m_minimizer->setModel(m_model);
     m_advancedsearch = new AdvancedSearch(this);
@@ -150,17 +152,31 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
         m_sign_layout->addWidget(el);
         m_model_elements << el;
     }
-    
-    m_layout->addLayout(m_sign_layout,2,0,1,m_model->ConstantSize()+3);
+    QWidget *scroll = new QWidget;
+    scroll->setLayout(m_sign_layout);
+    QScrollArea *area = new QScrollArea;
+    area->setWidgetResizable(true);
+    area->setWidget(scroll);
+    m_layout->addWidget(area, 2,0,1,m_model->ConstantSize()+3);
     
     if(m_model->Type() == 1)
         DiscreteUI();
     else if(m_model->Type() == 3)
         EmptyUI();
     
-    m_layout->addWidget(m_statistic_widget, 7, 0, 1, m_model->ConstantSize()+3);
     resizeButtons();
-    setLayout(m_layout);
+    m_model_widget->setLayout(m_layout);
+    m_splitter = new QSplitter(this);
+    m_splitter->setOrientation(Qt::Vertical);
+    m_splitter->addWidget(m_model_widget);
+    m_splitter->addWidget(m_statistic_widget);
+    connect(m_splitter, SIGNAL(splitterMoved(int,int)), this, SLOT(SplitterResized()));
+    QVBoxLayout *vlayout = new QVBoxLayout;
+    vlayout->addWidget(m_splitter);
+    setLayout(vlayout);
+    QSettings settings;
+    settings.beginGroup("model");
+    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
@@ -174,12 +190,24 @@ ModelWidget::~ModelWidget()
     if(_3dchart)
         delete _3dchart;
     
+    m_statistic_dialog->hide();
+    m_search_result->hide();
+    m_concentrations_result->hide();
+    m_statistic_result->hide();
+    
     delete m_statistic_result;
     delete m_search_result;
     delete m_table_result;
     delete m_concentrations_result;
+    delete m_statistic_dialog;
 }
 
+void ModelWidget::SplitterResized()
+{
+    QSettings settings;
+    settings.beginGroup("model");
+    settings.setValue("splitterSizes", m_splitter->saveState());
+}
 
 
 void ModelWidget::DiscreteUI()
@@ -311,7 +339,7 @@ void ModelWidget::GlobalMinimize()
     {
         json = m_minimizer->Parameter();
         m_model->ImportModel(json);
-        m_model->Calculate();
+//         m_model->Calculate();
         Repaint();
         m_model->OptimizeParameters(m_optim_flags->getFlags());
         if(qApp->instance()->property("auto_confidence").toBool())
@@ -354,7 +382,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model, this);
+    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model, m_statistic_result);
 
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
@@ -406,6 +434,10 @@ void ModelWidget::CVStatistic(CVConfig config)
     
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
+    
+     if(config.maxerror < 1E-8)
+        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
+     
     ContinuousVariation *statistic = new ContinuousVariation(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
@@ -421,7 +453,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
-    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
+    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();  
 }
@@ -438,17 +470,23 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
  
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
+    
+    if(config.maxerror < 1E-8)
+        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
+
     ModelComparison *statistic = new ModelComparison(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->Confidence();
      
-    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, this);
+    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
 }
@@ -559,11 +597,12 @@ void ModelWidget::ImportConstants()
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportModel(object);
-    m_model->Calculate();
+//     m_model->Calculate();
     QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     Repaint();
+    m_optim_flags->setFlags(m_model->LastOptimzationRun());
 }
 
 void ModelWidget::OpenAdvancedSearch()

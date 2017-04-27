@@ -24,6 +24,7 @@
 #include "src/core/AbstractModel.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"
+#include "src/ui/widgets/buttons/hovercheckbox.h"
 #include "src/ui/mainwindow/chartwidget.h"
 
 
@@ -84,7 +85,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     if(m_model->Type() != 3)
     {
         m_error = new QLabel;
-        shifts->addStretch(300);
+        shifts->addStretch(150);
         shifts->addWidget(m_error); 
     } 
     layout->addLayout(shifts);
@@ -99,7 +100,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
     m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
-    m_show = new QCheckBox;
+    m_show = new HoverCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
     m_show->setChecked(m_model->ActiveSignals()[m_no]);
@@ -108,12 +109,14 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_plot = new QPushButton;
     m_plot->setText(tr("Color"));
     m_plot->setFlat(true);
+    m_plot->setMaximumSize(70,30);
     tools->addWidget(m_plot);
     setLayout(layout);
     
     m_toggle = new QPushButton(tr("Single Plot"));
     m_toggle->setFlat(true);
     m_toggle->setCheckable(true);
+    m_toggle->setMaximumSize(90,30);
     tools->addWidget(m_toggle);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
     layout->addLayout(tools);

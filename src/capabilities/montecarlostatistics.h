@@ -45,7 +45,7 @@ class MonteCarloThread : public AbstractSearchThread
  Q_OBJECT
  
 public:
-    MonteCarloThread(const MCConfig &config, QObject *parent = 0);
+    MonteCarloThread(const MCConfig &config);
     ~MonteCarloThread();
     virtual void run();
     inline QJsonObject OptimizedParameter() const { return m_optimized; }

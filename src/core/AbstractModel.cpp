@@ -281,6 +281,7 @@ QJsonObject AbstractTitrationModel::ExportModel(bool statistics) const
     
     toplevel["data"] = json;
     toplevel["model"] = m_name;  
+//     qDebug() << m_last_optimization;
     toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
     toplevel["sum_of_absolute"] = m_sum_absolute;
@@ -339,10 +340,8 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
     }
     
     if(topjson["runtype"].toInt() != 0)
-    {
-//         m_last_optimization = static_cast<OptimizationType>(topjson["runtype"].toInt()); 
         OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
-    }
+    
     
     QList<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
@@ -369,6 +368,7 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
         setComplexSignals(shifts, i);
     }
     setActiveSignals(active_signals);
+    Calculate();
 }
 
 qreal AbstractTitrationModel::ModelError() const
@@ -410,7 +410,6 @@ void AbstractTitrationModel::setCVStatistic(const QJsonObject &result, int i)
     else
         m_cv_statistics << result; 
     emit StatisticChanged();
-//     emit Recalculated();
 }
 
 void AbstractTitrationModel::setMCStatistic(const QJsonObject &result, int i)
@@ -420,7 +419,6 @@ void AbstractTitrationModel::setMCStatistic(const QJsonObject &result, int i)
     else
         m_mc_statistics << result; 
     emit StatisticChanged();
-//     emit Recalculated();
 }
 
 void AbstractTitrationModel::setMoCoStatistic(const QJsonObject &result, int i)
@@ -430,7 +428,6 @@ void AbstractTitrationModel::setMoCoStatistic(const QJsonObject &result, int i)
     else
         m_moco_statistics << result; 
     emit StatisticChanged();
-//     emit Recalculated();
 }
 
 void AbstractTitrationModel::setConstants(const QList<qreal> &list)
@@ -494,6 +491,16 @@ qreal AbstractTitrationModel::finv(qreal p)
     return m_f_value;
 }
 
+qreal AbstractTitrationModel::Error(qreal confidence, bool f)
+{
+    if(f)
+    {
+        qreal f_value = finv(confidence/100);
+        return SumofSquares()*(f_value*Parameter()/(Points()-Parameter()) +1);
+    } else {
+        return SumofSquares()+SumofSquares()*confidence/double(100);
+    }
+}
 
 
 #include "AbstractModel.moc"

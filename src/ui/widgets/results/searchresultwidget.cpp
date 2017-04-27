@@ -83,7 +83,6 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
 SearchResultWidget::~SearchResultWidget()
 {
     m_models.clear();
-    delete m_globalsearch;
 }
 
 QTableView* SearchResultWidget::BuildList()

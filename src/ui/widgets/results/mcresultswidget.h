@@ -38,7 +38,7 @@ class MCResultsWidget : public QWidget
     Q_OBJECT
     
 public:
-    MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent);
     ~MCResultsWidget();
     
 private:

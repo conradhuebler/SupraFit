@@ -40,8 +40,6 @@ add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
     set (_DEBUG ON)
-else()
-     set (_DEBUG  OFF)
 endif(${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
 
 
@@ -174,6 +172,7 @@ set(suprafit_SRCS
                 src/ui/widgets/chartview.cpp
                 src/ui/widgets/buttons/spinbox.h
                 src/ui/widgets/buttons/scientificbox.h
+                src/ui/widgets/buttons/hovercheckbox.h
                 src/ui/dialogs/statisticdialog.cpp
                 src/ui/dialogs/modeldialog.cpp
                 src/ui/dialogs/advancedsearch.cpp

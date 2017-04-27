@@ -96,11 +96,11 @@ bool ModelComparison::FastConfidence()
     for(int i = 0; i < parameter.size(); ++i)
     {
         m_model.data()->ImportModel(optimized);
-        m_model.data()->Calculate();
+//         m_model.data()->Calculate();
         double upper = SingleLimit(i, +1);
         
         m_model.data()->ImportModel(optimized);
-        m_model.data()->Calculate();
+//         m_model.data()->Calculate();
         double lower = SingleLimit(i, -1);
         
         QJsonObject result;
@@ -206,12 +206,10 @@ bool ModelComparison::Confidence()
     cv_config.maxerror = m_effective_error;
     cv_config.runtype = m_model.data()->LastOptimzationRun();
     
-    /*ContinuousVariation *cv = new ContinuousVariation(cv_config, this);
-    cv->setModel(m_model);
-    cv->FastConfidence();
-    m_results = cv->Results();*/
+
     FastConfidence();
-//     delete cv;
+    if(m_model.data()->ConstantSize() != 2)
+        return true;
     QVector<QVector<qreal> > box = MakeBox();
     
     if(m_config.method == 1)

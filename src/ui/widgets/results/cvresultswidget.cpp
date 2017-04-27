@@ -48,6 +48,8 @@ CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QShar
 
 CVResultsWidget::~CVResultsWidget()
 {
+    m_statistics->Interrupt();
+    
     if(m_statistics)
         delete m_statistics;
 }
@@ -68,6 +70,7 @@ void CVResultsWidget::setUi()
     layout->addWidget(m_view, 0, 0);
     setLayout(layout);
 }
+
 void CVResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_results)
 {
     QString text;
@@ -79,7 +82,10 @@ void CVResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
     
     for(int i = 0; i < constant_results.size(); ++i)
     {
-        m_model->setCVStatistic(constant_results[i], i);
+        if(constant_results[i].contains("moco_area"))
+            m_model->setMoCoStatistic(constant_results[i], i);
+        else
+            m_model->setCVStatistic(constant_results[i], i);
         if(i < m_model->ConstantSize())
         {
             QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
@@ -110,7 +116,6 @@ ChartView * CVResultsWidget::CVPlot()
     }
     return view;
 }
-
 
 ChartView *  CVResultsWidget::EllipsoidalPlot()
 {

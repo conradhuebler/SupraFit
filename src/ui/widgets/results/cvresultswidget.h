@@ -29,7 +29,7 @@ class CVResultsWidget : public QWidget
 {
     Q_OBJECT
 public:
-    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent);
     ~CVResultsWidget();
     
 private:

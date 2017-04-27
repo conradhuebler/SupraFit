@@ -22,6 +22,7 @@
 
 #include <QApplication>
 #include <QDebug>
+#include <QSettings>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
@@ -31,6 +32,9 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
+#include <QtWidgets/QScrollBar>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableView>
 
 #include <QtCharts/QXYSeries>
@@ -40,47 +44,64 @@
 
 DataWidget::DataWidget() 
 {
+    m_widget = new QWidget;
     layout = new QGridLayout;
-    m_switch = new QPushButton(tr("Switch Host/Guest\nAssignment"));
+    m_switch = new QPushButton(tr("Switch H/G"));
+    m_switch->setToolTip(tr("Switch Host/Guest\nAssignment"));
+    m_switch->setStyleSheet("background-color: #77d740;");
+    m_switch->setMaximumSize(100, 30);
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
     m_concentrations = new QTableView;
-    m_concentrations->setMaximumWidth(250);
+    m_concentrations->setMaximumWidth(230);
     m_signals = new QTableView;
     m_signals->setMaximumWidth(750);
     m_signals->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_signals->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_signals, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
+    connect(m_concentrations->verticalScrollBar(), SIGNAL(valueChanged(int)), m_signals->verticalScrollBar(), SLOT(setValue(int)));
     QHBoxLayout *hlayout = new QHBoxLayout;
     
-    hlayout->addWidget(new QLabel(tr("Project Name")));
-    hlayout->addWidget(m_name);
-    hlayout->addSpacing(4*width()/9);
-    hlayout->addWidget(m_switch);
+    hlayout->addWidget(new QLabel(tr("Project Name")), 0, Qt::AlignLeft);
+    hlayout->addWidget(m_name, 0, Qt::AlignLeft);
+    hlayout->addSpacerItem(new QSpacerItem(100,1));
+    hlayout->addWidget(m_switch, 0, Qt::AlignRight);
     m_datapoints = new QLabel;
     m_substances = new QLabel;
     m_const_subs = new QLabel;
     m_signals_count = new QLabel;
-    m_tables = new QGroupBox(tr("Data Tables"));
+    m_tables = new QWidget; //(tr("Data Tables"));
     QHBoxLayout *group_layout = new QHBoxLayout;
     group_layout->addWidget(m_concentrations);
     group_layout->addWidget(m_signals);
     m_tables->setLayout(group_layout);
     
-    layout->addLayout(hlayout, 0, 0, 1, 3);
+    layout->addLayout(hlayout, 0, 0, 1, 4);
     layout->addWidget(m_datapoints, 1, 0);
-    layout->addWidget(m_substances, 2, 0);
-    layout->addWidget(m_const_subs,3,0);
+    layout->addWidget(m_substances, 1, 1);
+    layout->addWidget(m_const_subs,1,2);
+    layout->addWidget(m_signals_count, 1, 3);
     
-    layout->addWidget(m_signals_count, 5, 0);
-    layout->addWidget(m_tables, 5, 0, 1, 4);
+    m_widget->setLayout(layout);
+    QScrollArea *area = new QScrollArea;
+    area->setWidgetResizable(true);
+    area->setWidget(m_widget);
+    m_splitter = new QSplitter;
+    m_splitter->setOrientation(Qt::Vertical);
+    m_splitter->addWidget(area);
+    m_splitter->addWidget(m_tables);
     
-    setLayout(layout);
+    hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_splitter);
+    setLayout(hlayout);
 }
 
 DataWidget::~DataWidget()
 {
+    QSettings settings;
+    settings.beginGroup("overview");
+    settings.setValue("splitterSizes", m_splitter->saveState());
 }
 
 void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper)
@@ -94,7 +115,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
     m_name->setText(qApp->instance()->property("projectname").toString());
-    m_substances->setText(tr("Considered Substances: %1").arg(m_data.data()->ConcentrationModel()->columnCount()));
+    m_substances->setText(tr("Substances: %1").arg(m_data.data()->ConcentrationModel()->columnCount()));
     m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->SignalModel()->rowCount()));
     m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SignalCount()));
     
@@ -105,26 +126,31 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         vlayout->addWidget(el);
         m_signal_elements << el;
     }
-    layout->addLayout(vlayout, 1,1, 4, 3);
+    layout->addLayout(vlayout, 2,0, 1, 4);
     
-    QVBoxLayout *scaling_layout = new QVBoxLayout;
+    QHBoxLayout *scaling_layout = new QHBoxLayout;
+    scaling_layout->addWidget(new QLabel(tr("Scaling factors for concentration:")));
+    
     for(int i = 0; i < m_data.data()->getScaling().size(); ++i)
     {
         
         QDoubleSpinBox *spin_box = new QDoubleSpinBox;
-        spin_box->setMaximum(1);
+        spin_box->setMaximum(1.2);
         spin_box->setValue(m_data.data()->getScaling()[i]);
         spin_box->setSingleStep(1e-2);
         
         connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
         m_scaling_boxes << spin_box;
         QHBoxLayout *lay = new QHBoxLayout;
-        lay->addWidget(new QLabel(tr("scaling factor\n%1. concentration").arg(i + 1)));
+        lay->addWidget(new QLabel(tr("%1. substance").arg(i + 1)));
         lay->addWidget(spin_box);
         scaling_layout->addLayout(lay);
     }
-    layout->addLayout(scaling_layout,4,0);
+    layout->addLayout(scaling_layout,3,0,1,4);
     
+    QSettings settings;
+    settings.beginGroup("overview");
+    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
 }
 
 void DataWidget::switchHG()

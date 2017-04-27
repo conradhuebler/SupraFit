@@ -38,7 +38,7 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(const MCConfig &config, QObject* parent): AbstractSearchThread(parent), m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+MonteCarloThread::MonteCarloThread(const MCConfig &config): m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     setAutoDelete(false);
 }
@@ -68,7 +68,7 @@ void MonteCarloThread::run()
     
     m_optimized = m_minimizer->Parameter();
     m_model->ImportModel(m_optimized);
-    m_model->Calculate();
+//     m_model->Calculate();
     m_constants = m_model->Constants();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
@@ -150,7 +150,7 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 #endif
     for(int step = 0; step < m_config.maxsteps; ++step)
     {
-        QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config, this);
+        QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         DataTable *table;
@@ -273,7 +273,6 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
          * pureShifts are the first n = SignalCount() Entries 
          * shift_0 are the next n +1 - 2n entries
          * and so on
-         * it really is not the best solution
          */
         if(string == "constants")
             m_constant_list[j] << element.toDouble();

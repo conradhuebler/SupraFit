@@ -94,7 +94,10 @@ void StatisticDialog::setUi()
     widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
     m_moco_widget = ModelComparison();
     widget->addTab(m_moco_widget, tr("Model Comparison"));
-    m_optim_flags = new OptimizerFlagWidget; 
+    if(m_model)
+        m_optim_flags = new OptimizerFlagWidget(m_model.data()->LastOptimzationRun()); 
+    else
+        m_optim_flags = new OptimizerFlagWidget;
     layout->addWidget(widget);
     m_time_info = new QLabel;
     m_progress = new QProgressBar;
@@ -310,6 +313,7 @@ CVConfig StatisticDialog::getCVConfig()
     config.maxerror = m_cv_max;
     config.relax = true;
     config.fisher_statistic = m_cv_f_test->isChecked();
+    config.confidence = m_cv_maxerror->value();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(-1);
@@ -330,12 +334,13 @@ MoCoConfig StatisticDialog::getMoCoConfig()
     config.mc_steps = m_moco_mc_steps->value();
     config.box_multi = m_moco_box_multi->value();
     config.maxerror = m_moco_max;
+    config.confidence = m_moco_maxerror->value();
     cv_config.relax = true;
     config.cv_config = cv_config;
     config.fisher_statistic = m_moco_f_test->isChecked();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(-1);
+    m_progress->setMaximum(m_runs*(m_moco_mc_steps->value())/10);
     m_progress->setValue(0);
 //     Pending();
     return config;
@@ -442,10 +447,10 @@ void StatisticDialog::CalculateError()
         max_moco_error = error+error*m_moco_maxerror->value()/double(100);
         moco_message = "The current error is "+ QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ". F-Statistic is not used!";
     }
-    
     m_moco_max = max_moco_error;
     m_cv_max = max_cv_error;
     
+//     qDebug() << m_model.data()->Error(m_moco_maxerror->value(), m_moco_f_test->isChecked()) << m_moco_max;
     m_cv_error_info->setText(cv_message);
     m_moco_error_info->setText(moco_message);
 }

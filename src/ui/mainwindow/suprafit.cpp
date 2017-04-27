@@ -184,6 +184,15 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     ReadGeometry();
     LogFile();
     setActionEnabled(false);
+    setStyleSheet("QSplitter::handle:vertical {"
+                    "background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
+                    "stop:0 #eee, stop:1 #ccc);"
+                    "border: 1px solid #777;"
+                    "height: 1px;"
+                    "margin-top: 2px;"
+                    "margin-bottom: 2px;"
+                    "border-radius: 4px;"
+                    "}");
 }
 
 MainWindow::~MainWindow()
@@ -515,6 +524,14 @@ void MainWindow::closeEvent(QCloseEvent *event)
     m_stdout.close();
 
     WriteSettings(false);
+    
+    if(m_model_dataholder)
+        delete m_model_dataholder;
+    if(m_charts)
+        delete m_charts;
+    if(m_historywidget)
+        delete m_historywidget;
+    
     QMainWindow::closeEvent(event);
 }
 

@@ -186,7 +186,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             
             QJsonObject json = threads[i][j]->ConvergedParameter();
             m_model->ImportModel(json);
-            m_model->Calculate();
+//             m_model->Calculate();
             double current_error = m_model->ModelError();
             error << current_error; 
             if(error_max < current_error)

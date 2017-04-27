@@ -45,7 +45,7 @@ class AbstractSearchThread : public QObject, public QRunnable
   Q_OBJECT
   
 public:
-    inline AbstractSearchThread(QObject *parent = 0) : QObject(parent) { setAutoDelete(false); }
+    inline AbstractSearchThread() { setAutoDelete(false); }
     inline ~AbstractSearchThread() { }
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     
@@ -73,7 +73,7 @@ public:
     void ExportResults(const QString& filename);
     
 public slots:
-    void Interrupt();
+    virtual void Interrupt();
     
 private:
     
