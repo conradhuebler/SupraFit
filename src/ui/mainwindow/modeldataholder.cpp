@@ -158,6 +158,11 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel2112()));
     menu->addAction(II_I_ItoI_ItoII_action);
     
+    QAction *mm_action = new QAction(this);
+    mm_action->setText(tr("Michaelis Menten"));
+    connect(mm_action, SIGNAL(triggered()), this, SLOT(AddMMModel()));
+    menu->addAction(mm_action);
+    
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
     ParseScriptedModels();
@@ -210,6 +215,9 @@ void ModelDataHolder::AddModel(int model)
         case 4:
             t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
+        case 5:
+            t = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(m_data.data()),  &QObject::deleteLater);
+            break;
         default:
             t.clear();
             return; 
@@ -248,6 +256,10 @@ void ModelDataHolder::AddModel2112()
     AddModel(ModelDataHolder::IItoI_ItoI_ItoII);
 }
 
+void ModelDataHolder::AddMMModel()
+{
+    AddModel(ModelDataHolder::Michaelis_Menten);
+}
 
 void ModelDataHolder::AddModelScript()
 {
