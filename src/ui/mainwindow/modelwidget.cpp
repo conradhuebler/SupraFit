@@ -177,6 +177,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     QSettings settings;
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
+    settings.endGroup();
+    settings.beginGroup("minimizer");
+    m_optim_flags->setFlags(settings.value("flags", 11).toInt());
+    settings.endGroup();
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
@@ -207,6 +211,7 @@ void ModelWidget::SplitterResized()
     QSettings settings;
     settings.beginGroup("model");
     settings.setValue("splitterSizes", m_splitter->saveState());
+    settings.endGroup();
 }
 
 
@@ -291,7 +296,7 @@ void ModelWidget::recalulate()
     m_pending = true;
     CollectParameters();
     m_model->Calculate();
-    QTimer::singleShot(1, this, SLOT(Repaint()));;
+    QTimer::singleShot(1, this, SLOT(Repaint()));
     m_pending = false;
 }
 
@@ -339,11 +344,15 @@ void ModelWidget::GlobalMinimize()
     {
         json = m_minimizer->Parameter();
         m_model->ImportModel(json);
-//         m_model->Calculate();
         Repaint();
         m_model->OptimizeParameters(m_optim_flags->getFlags());
         if(qApp->instance()->property("auto_confidence").toBool())
             FastConfidence();
+        
+        QSettings settings;
+        settings.beginGroup("minimizer");
+        settings.setValue("flags", m_optim_flags->getFlags());
+        settings.endGroup();
     }
 
     m_statistic = false;
@@ -520,6 +529,11 @@ void ModelWidget::LocalMinimize()
         {
             QJsonObject json = m_minimizer->Parameter();
             m_local_fits << json;
+            
+            QSettings settings;
+            settings.beginGroup("minimizer");
+            settings.setValue("flags", m_optim_flags->getFlags());
+            settings.endGroup();
         }
     }  
     m_minimizer->setModel(m_model);
