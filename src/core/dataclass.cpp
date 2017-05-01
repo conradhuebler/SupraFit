@@ -39,11 +39,11 @@
 #include <random>
 #include <iostream>
 
-DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent), m_checkable(false)
+DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent), m_checkable(false), m_editable(false)
 {
 }
 
-DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent), m_checkable(false)
+DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent), m_checkable(false), m_editable(false)
 {
     m_table = Eigen::MatrixXd::Zero(rows, columns);
     m_checked_table = Eigen::MatrixXd::Ones(rows, columns);
@@ -57,6 +57,7 @@ DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME wha
     m_header = other.m_header;
     m_checked_table = other.m_checked_table;
     m_checkable = other.m_checkable;
+    m_editable = other.m_editable;
 }
 
 DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whatever
@@ -65,9 +66,10 @@ DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whate
     m_header = other->m_header;
     m_checked_table = other->m_checked_table;
     m_checkable = other->m_checkable;
+    m_editable = other->m_editable;
 }
 
-DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table) : m_table(table), m_checked_table(checked_table), m_checkable(false)
+DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table) : m_table(table), m_checked_table(checked_table), m_checkable(false), m_editable(false)
 {
     for(int i = 0; i < columnCount(); ++i)
         m_header << QString::number(i + 1);
@@ -104,6 +106,9 @@ Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
         flags = Qt::ItemIsEnabled | Qt::ItemNeverHasChildren | Qt::ItemIsUserCheckable;
     else
         flags = Qt::ItemIsEnabled | Qt::ItemNeverHasChildren;
+    
+    if(m_editable)
+        flags = flags | Qt::ItemIsEditable;
     
     return flags;
 }
@@ -152,7 +157,10 @@ int DataTable::rowCount(const QModelIndex& parent) const
 QVariant DataTable::data(const QModelIndex& index, int role) const
 {
     if(role == Qt::DisplayRole || role == Qt::EditRole )
-        return data(index.column(), index.row());
+        if(m_editable)
+            return QString::number(data(index.column(), index.row()), 'f', 4);
+        else
+            return data(index.column(), index.row());
     else if (role == Qt::CheckStateRole && m_checkable)
         return isChecked(index.column(), index.row()); 
     else

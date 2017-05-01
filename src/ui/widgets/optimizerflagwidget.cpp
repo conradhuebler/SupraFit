@@ -149,7 +149,7 @@ void OptimizerFlagWidget::EnableShiftSelection()
 void OptimizerFlagWidget::ConstrainedChanged()
 {
     m_IntermediateShifts->setEnabled(m_ConstrainedShifts->isChecked());
-    m_IntermediateShifts->setChecked(m_ConstrainedShifts->isChecked());
+    m_IntermediateShifts->setChecked(m_ConstrainedShifts->isChecked() && (m_type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts);
     
     m_IgnoreZeroConcentrations->setEnabled(!m_ConstrainedShifts->isChecked() && m_OptimizeShifts->isChecked());
     m_IgnoreZeroConcentrations->setChecked(!m_ConstrainedShifts->isChecked() && ((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations));

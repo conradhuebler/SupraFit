@@ -50,7 +50,8 @@ public:
     DataWidget();
     ~DataWidget();
     void setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper);
-
+    void setEditable(bool editable);
+    
 private:
     QTableView  *m_concentrations, *m_signals;
     QPushButton  *m_switch;
