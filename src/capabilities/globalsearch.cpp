@@ -35,12 +35,12 @@
 
 #include "globalsearch.h"
 
-GlobalSearch::GlobalSearch(GSConfig config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+GlobalSearch::GlobalSearch(GSConfig config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     
     
 }
-GlobalSearch::GlobalSearch( QObject *parent) : AbstractSearchClass(parent), m_config(GSConfig()), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+GlobalSearch::GlobalSearch( QObject *parent) : AbstractSearchClass(parent), m_config(GSConfig()), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     
     
