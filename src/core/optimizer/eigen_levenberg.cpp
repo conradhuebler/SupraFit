@@ -19,7 +19,7 @@
 
 #include "src/global_config.h"
 
-#include "src/core/AbstractModel.h"
+#include "src/core/AbstractTitrationModel.h"
 
 #include <QtCore/QtGlobal>
 #include <QtCore/QJsonObject>

@@ -41,7 +41,7 @@ public:
     inline int ConstantSize() const { return 2;}
     
     virtual void InitialGuess();
-    virtual QSharedPointer<AbstractTitrationModel > Clone() const;
+    virtual QSharedPointer<AbstractModel > Clone() const;
     virtual bool SupportThreads() const { return false; }
     virtual qreal BC50();
     

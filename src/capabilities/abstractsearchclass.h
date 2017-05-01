@@ -28,7 +28,7 @@
 #include <QtCore/QSharedPointer>
 #include <QtCore/QThreadPool>
 
-class AbstractTitrationModel;
+class AbstractModel;
 
 class AbstractConfig
 {
@@ -47,11 +47,11 @@ class AbstractSearchThread : public QObject, public QRunnable
 public:
     inline AbstractSearchThread() { setAutoDelete(false); }
     inline ~AbstractSearchThread() { }
-    inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
+    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     
     
 protected:
-    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<AbstractModel> m_model;
     
 signals:
     void IncrementProgress(int msecs);
@@ -64,7 +64,7 @@ class AbstractSearchClass : public QObject
 public:
     AbstractSearchClass(QObject *parent = 0);
     ~AbstractSearchClass();
-    inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
+    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     
     inline QList<QList<QPointF> > Series() const { return m_series; }
     inline QList<QJsonObject > Models() const { return m_models; }
@@ -78,7 +78,7 @@ public slots:
 private:
     
 protected:
-    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<AbstractModel> m_model;
     QThreadPool *m_threadpool;
     QList<QList<QPointF> > m_series;
     QList<QJsonObject > m_models;
