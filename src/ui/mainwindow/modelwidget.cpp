@@ -766,7 +766,7 @@ void ModelWidget::Data2Text()
     text += "******************************************************************************************************\n";
     text += "This is a SupraFit save file for " + m_model->Name() + "\n";
     text += "SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + "\n";
-    text += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".\n";
+    text += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + " at "+ git_date + ".\n";
     text += "******************************************************************************************************\n";
     text += "\n";
     text += "#### Begin of Data Description ####\n";

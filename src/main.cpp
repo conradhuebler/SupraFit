@@ -45,8 +45,6 @@ int main(int argc, char** argv)
     app.setOrganizationName("Conrad Huebler");
     
     app.setApplicationVersion(version);
-    app.setProperty("GIT_BRANCH", git_branch);
-    app.setProperty("GIT_COMMIT_HASH", git_commit_hash); 
     
     QCommandLineParser parser;
     parser.setApplicationDescription ( "A Open Source Qt5 based fitting tool for supramolecular titration experiments." );

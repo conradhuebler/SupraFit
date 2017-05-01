@@ -6,7 +6,6 @@
 const QString git_branch = "@GIT_BRANCH@";      /*! Current name of the branch     */
 const QString git_commit_hash = "@GIT_COMMIT_HASH@"; /*! Current hash of the git branch */
 const QString git_date = "@GIT_COMMIT_DATE@"; /*! Current date of the git branch */
-const QString git_tag = "@GIT_TAG@";         /*! Current tag of the git branch  */
 
 #ifdef _DEBUG
 const QString conf_mode = "DEBUG Mode"; /*! Last compilation mode used */
@@ -14,6 +13,6 @@ const QString conf_mode = "DEBUG Mode"; /*! Last compilation mode used */
 const QString conf_mode = "RELEASE Mode"; /*! Last compilation mode used */
 #endif
 
-const QString version = "@GIT_BRANCH@ - @GIT_TAG@ - @GIT_COMMIT_HASH@ - @GIT_COMMIT_DATE@ - " + conf_mode; /*! Version name */
+const QString version = "Suprafit 1.0 Beta 1\n Git Branch: @GIT_BRANCH@ -- Commit: @GIT_COMMIT_HASH@  -- Commit Date : @GIT_COMMIT_DATE@ - " + conf_mode; /*! Version name */
 
 #endif

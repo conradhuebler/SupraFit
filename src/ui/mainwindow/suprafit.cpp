@@ -495,14 +495,15 @@ void MainWindow::InsertHistoryElement(const QJsonObject &model, int active)
 void MainWindow::about()
 {
     QString info;
-    info  = "<p>This is all about SupraFit, nothing else matters< /p>";
+    info  = "<h4>" + version + "</h4>";
+    info += "<p>This is all about SupraFit, nothing else matters< /p>";
     info += "<p>Created by Conrad Hübler</p>";
     info += "<p>Special thanks to <b>Prof. M. Mazik</b>, TU Bergakademie Freiberg for her support.</p>";
     info += "<p>Special thanks to <b>Stefan Kaiser</b> for finding bugs and constructive feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
     info += "<p>SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + ".\n";
-    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".</p>";
+    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + ".</p>";
     QMessageBox::about(this, tr("SuprFit"), info);
 }
 
