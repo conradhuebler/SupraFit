@@ -40,6 +40,7 @@ public:
     OptimizationType getFlags() const;
     void DisableOptions(OptimizationType type);
     void setFlags(OptimizationType type);
+    inline void setFlags(int type) { setFlags(static_cast<OptimizationType>(type)); }
     
 private:
     OptimizationType m_type;

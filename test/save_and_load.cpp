@@ -58,7 +58,7 @@ void Save_and_Load::ImportExportJSON()
 void Save_and_Load::ImportTable()
 {
     FileHandler *filehandler = new FileHandler("../data/samples/2_1_1_1.dat", this); 
-//     QStandardItemModel *model = filehandler->getData(); 
+    DataTable *model = filehandler->getData(); 
 //     filehandler->WriteData(model);
 //     QPointer<DataClass > data = getStoredData();
 }

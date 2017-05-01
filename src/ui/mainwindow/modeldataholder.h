@@ -106,7 +106,10 @@ public slots:
      * Overrides the very current model (opened tabe) with this model, if compatible
      */
     void LoadCurrentProject(const QJsonObject &object);
-    
+    /*
+     * Make Datatable editable 
+     */
+    inline void EditTableAction(bool checked) {m_datawidget->setEditable(checked) ; }
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<TabWidget > m_modelsWidget;

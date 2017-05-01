@@ -74,6 +74,7 @@ public:
     void Debug() const ;
     inline QStringList header() const { return m_header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
+    inline void setEditable(bool editable) { m_editable = editable; }
     inline bool Checkable() const { return m_checkable; }
     DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng);
     DataTable *PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector);
@@ -84,7 +85,7 @@ private:
     QStringList m_header;
     qreal m_empty;
     QReadWriteLock mutex;
-    bool m_checkable;
+    bool m_checkable, m_editable;
 };
 
 

@@ -86,7 +86,7 @@
 #include "modelwidget.h"
 
 
-ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater)), m_statistic(false)
+ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(true, this), &QObject::deleteLater)), m_statistic(false)
 {
     m_model_widget = new QWidget;
     Data2Text();
@@ -177,6 +177,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     QSettings settings;
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
+    settings.endGroup();
+    settings.beginGroup("minimizer");
+    m_optim_flags->setFlags(settings.value("flags", 11).toInt());
+    settings.endGroup();
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
@@ -207,6 +211,7 @@ void ModelWidget::SplitterResized()
     QSettings settings;
     settings.beginGroup("model");
     settings.setValue("splitterSizes", m_splitter->saveState());
+    settings.endGroup();
 }
 
 
@@ -291,7 +296,7 @@ void ModelWidget::recalulate()
     m_pending = true;
     CollectParameters();
     m_model->Calculate();
-    QTimer::singleShot(1, this, SLOT(Repaint()));;
+    QTimer::singleShot(1, this, SLOT(Repaint()));
     m_pending = false;
 }
 
@@ -339,11 +344,15 @@ void ModelWidget::GlobalMinimize()
     {
         json = m_minimizer->Parameter();
         m_model->ImportModel(json);
-//         m_model->Calculate();
         Repaint();
         m_model->OptimizeParameters(m_optim_flags->getFlags());
         if(qApp->instance()->property("auto_confidence").toBool())
             FastConfidence();
+        
+        QSettings settings;
+        settings.beginGroup("minimizer");
+        settings.setValue("flags", m_optim_flags->getFlags());
+        settings.endGroup();
     }
 
     m_statistic = false;
@@ -520,6 +529,11 @@ void ModelWidget::LocalMinimize()
         {
             QJsonObject json = m_minimizer->Parameter();
             m_local_fits << json;
+            
+            QSettings settings;
+            settings.beginGroup("minimizer");
+            settings.setValue("flags", m_optim_flags->getFlags());
+            settings.endGroup();
         }
     }  
     m_minimizer->setModel(m_model);
@@ -752,7 +766,7 @@ void ModelWidget::Data2Text()
     text += "******************************************************************************************************\n";
     text += "This is a SupraFit save file for " + m_model->Name() + "\n";
     text += "SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + "\n";
-    text += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".\n";
+    text += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + " at "+ git_date + ".\n";
     text += "******************************************************************************************************\n";
     text += "\n";
     text += "#### Begin of Data Description ####\n";

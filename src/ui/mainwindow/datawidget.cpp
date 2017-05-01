@@ -166,6 +166,12 @@ void DataWidget::SetProjectName()
     emit NameChanged();
 }
 
+void DataWidget::setEditable(bool editable)
+{
+    m_data.data()->SignalModel()->setEditable(editable);
+}
+
+
 void DataWidget::setScaling()
 {
     QList<qreal> scaling;

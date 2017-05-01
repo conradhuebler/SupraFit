@@ -117,7 +117,9 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
     
     m_edit = new QAction(Icon("document-edit"), tr("Edit Data"));
-    connect(m_edit, SIGNAL(triggered(bool)), this, SLOT(EditTableAction()));   
+    m_edit->setCheckable(true);
+    m_edit->setChecked(false);
+    connect(m_edit, SIGNAL(toggled(bool)), m_model_dataholder, SLOT(EditTableAction(bool)));   
     
     m_importmodel = new QAction(Icon("document-import"), tr("Import Models"));
     connect(m_importmodel, SIGNAL(triggered(bool)), this, SLOT(ImportModelAction()));
@@ -149,7 +151,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_model_toolbar = new QToolBar;
     m_model_toolbar->setObjectName(tr("model_toolbar"));
     m_model_toolbar->setToolButtonStyle( Qt::ToolButtonTextUnderIcon );
-//     m_model_toolbar->addAction(m_edit);
+    m_model_toolbar->addAction(m_edit);
     m_model_toolbar->addAction(m_importmodel);
     m_model_toolbar->addAction(m_export);
     addToolBar(m_model_toolbar);
@@ -353,10 +355,10 @@ void MainWindow::ExportModelAction()
     }   
 }
 
-void MainWindow::EditTableAction()
-{
-    
-}
+// void MainWindow::EditTableAction(bool checked)
+// {
+//     m_model_dataholder->setEditable(checked);
+// }
 
 void MainWindow::SettingsDialog()
 {
@@ -493,14 +495,15 @@ void MainWindow::InsertHistoryElement(const QJsonObject &model, int active)
 void MainWindow::about()
 {
     QString info;
-    info  = "<p>This is all about SupraFit, nothing else matters< /p>";
+    info  = "<h4>" + version + "</h4>";
+    info += "<p>This is all about SupraFit, nothing else matters< /p>";
     info += "<p>Created by Conrad Hübler</p>";
     info += "<p>Special thanks to <b>Prof. M. Mazik</b>, TU Bergakademie Freiberg for her support.</p>";
     info += "<p>Special thanks to <b>Stefan Kaiser</b> for finding bugs and constructive feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
     info += "<p>SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + ".\n";
-    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + "as tagged as "+ git_tag + ".</p>";
+    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + ".</p>";
     QMessageBox::about(this, tr("SuprFit"), info);
 }
 

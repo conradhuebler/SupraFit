@@ -91,7 +91,7 @@ private:
 private slots:
     void NewTable();
     void OpenFile();
-    void EditTableAction();
+    
     void SaveProjectAction();
     void ImportModelAction();
     void ExportModelAction();
@@ -101,8 +101,10 @@ private slots:
     void MessageBox(const QString &str, int priority);
     void InsertHistoryElement(const QJsonObject &model);
     void InsertHistoryElement(const QJsonObject &model, int active);
+    
 signals:
     void AppendPlainText(const QString &str);
+   
 };
 
 #endif // nmr2fit_H

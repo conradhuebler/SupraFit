@@ -46,8 +46,8 @@ class MCThread : public AbstractSearchThread
   Q_OBJECT
   
 public:
-    inline MCThread( ) : AbstractSearchThread() { };
-    inline ~MCThread() { };
+    inline MCThread( ) : AbstractSearchThread() { }
+    inline ~MCThread() { }
     void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     void run();
     QList<QJsonObject > Results() const { return m_results; }
