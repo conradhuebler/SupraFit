@@ -93,7 +93,7 @@ public:
     void setParameter(const QJsonObject &json);
    
 public slots:
-    void Interrupt();
+    void Interrupt() override;
     
 private:
     QSharedPointer<Minimizer> m_minimizer;
@@ -107,9 +107,6 @@ private:
     void StripResults(const QList<QJsonObject > &results);
 signals:
     void StopSubThreads();
-    void IncrementProgress(int time);
-    void setMaximumSteps(int maxsteps);
-    void SingeStepFinished(int time);
 };
 
 #endif // STATISTIC_H

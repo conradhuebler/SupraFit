@@ -264,11 +264,6 @@ QWidget * StatisticDialog::ModelComparison()
     global_layout->addWidget(new QLabel(tr("Box Scaling")), 3, 0);
     global_layout->addWidget(m_moco_box_multi, 3, 1);
     
-    m_moco_mc = new QRadioButton(tr("Monte Carlo Search"));
-    m_moco_mc->setChecked(true);
-    m_moco_gs = new QRadioButton(tr("Global Search Search"));;
-//     global_layout->addWidget(m_moco_mc, 4, 0);
-//     global_layout->addWidget(m_moco_gs, 4, 2);
     m_moco_global->setLayout(global_layout);
     layout->addWidget(m_moco_global, 0, 0, 1, 3);
     m_moco_monte_carlo = new QGroupBox(tr("Monte Carlo Settings"));
@@ -284,18 +279,6 @@ QWidget * StatisticDialog::ModelComparison()
     m_moco_monte_carlo->setLayout(monte_layout);
     layout->addWidget(m_moco_monte_carlo, 1, 0, 1, 3);
     
-    m_moco_global_search = new QGroupBox(tr("Global Search Settings"));
-    QGridLayout *gs_layout = new QGridLayout;
-    
-    m_moco_gs_increment = new QDoubleSpinBox;
-    m_moco_gs_increment->setSingleStep(1e-2);
-    m_moco_gs_increment->setValue(0.01);
-    m_moco_gs_increment->setDecimals(6);
-    gs_layout->addWidget(new QLabel(tr("Increment for Global Seach")), 0, 0);
-    gs_layout->addWidget(m_moco_gs_increment, 0, 1, 1, 2);
-    
-    m_moco_global_search->setLayout(gs_layout);
-//     layout->addWidget(m_moco_global_search, 4, 0, 1, 3);
     m_moco = new QPushButton(tr("Start ..."));
     layout->addWidget(m_moco, 5, 0, 1, 3);
     
@@ -326,11 +309,6 @@ MoCoConfig StatisticDialog::getMoCoConfig()
 {
     MoCoConfig config;
     CVConfig cv_config;
-    if(m_moco_mc->isChecked())
-        config.method = 1;
-    else
-        config.method = 2;
-    cv_config.increment = m_moco_gs_increment->value();
     config.mc_steps = m_moco_mc_steps->value();
     config.box_multi = m_moco_box_multi->value();
     config.maxerror = m_moco_max;
@@ -340,7 +318,7 @@ MoCoConfig StatisticDialog::getMoCoConfig()
     config.fisher_statistic = m_moco_f_test->isChecked();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(m_runs*(m_moco_mc_steps->value())/10);
+//     m_progress->setMaximum(m_runs*(m_moco_mc_steps->value())/10);
     m_progress->setValue(0);
 //     Pending();
     return config;

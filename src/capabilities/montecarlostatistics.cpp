@@ -136,7 +136,6 @@ void MonteCarloStatistics::Evaluate()
 
 QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 {    
-    
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     m_model->Calculate();

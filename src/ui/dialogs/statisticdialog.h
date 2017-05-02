@@ -63,12 +63,11 @@ private:
     QWidget *ContinuousVariationWidget();
     QWidget *ModelComparison();
     
-    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_gs_increment, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_cv_f_value;
+    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_cv_f_value;
     QSpinBox *m_mc_steps, *m_cv_steps, *m_moco_mc_steps;
     QCheckBox *m_original, *m_bootstrap, *m_cv_f_test, *m_moco_f_test;
-    QRadioButton *m_moco_mc, *m_moco_gs;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco;
-    QGroupBox *m_moco_global, *m_moco_monte_carlo, *m_moco_global_search;
+    QGroupBox *m_moco_global, *m_moco_monte_carlo;
     QProgressBar *m_progress;
     QLabel *m_time_info, *m_cv_error_info, *m_moco_error_info;
     OptimizerFlagWidget *m_optim_flags;

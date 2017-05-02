@@ -31,7 +31,6 @@ class MoCoConfig : public AbstractConfig
 {
 public:
     CVConfig cv_config;  
-    int method = 1;
     int mc_steps = 10000;
     qreal box_multi = 1.5;
     qreal maxerror = 0; 
@@ -76,7 +75,6 @@ public:
 private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal> >& box);
-    void Search(const QVector<QVector<qreal> >& box);
     double SingleLimit(int parameter_id, int direction = 1);
     
     QVector<QVector<qreal> > MakeBox();
