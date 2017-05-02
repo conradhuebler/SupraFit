@@ -19,7 +19,7 @@
 
 
 
-#include "src/core/AbstractModel.h"
+#include "src/core/AbstractTitrationModel.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 
@@ -143,9 +143,9 @@ void ItoI_Model::CalculateVariables(const QList<qreal > &constants)
 }
 
 
-QSharedPointer<AbstractTitrationModel > ItoI_Model::Clone() const
+QSharedPointer<AbstractModel > ItoI_Model::Clone() const
 {
-    QSharedPointer<AbstractTitrationModel > model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractModel > model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());

@@ -29,16 +29,16 @@
 
 #include "src/core/dataclass.h"
 
-class Michaelis_Menten_Model : public AbstractTitrationModel 
+class Michaelis_Menten_Model : public AbstractModel 
 {
     Q_OBJECT
     
 public:
     Michaelis_Menten_Model(const DataClass *data);
-    Michaelis_Menten_Model(const AbstractTitrationModel *model);
+    Michaelis_Menten_Model(const AbstractModel *model);
     ~Michaelis_Menten_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
-    inline int ConstantSize() const { return 2;}
+    inline int GlobalParameterSize() const override { return 2;} 
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractModel > Clone() const;
     virtual bool SupportThreads() const { return false; }

@@ -21,8 +21,7 @@
 #define ItoI_Model_H
 
 #include "src/global.h"
-#include "src/core/AbstractModel.h"
-
+#include "src/core/AbstractTitrationModel.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
@@ -37,9 +36,8 @@ public:
     ItoI_Model(const DataClass *data);
     ItoI_Model(const AbstractTitrationModel *model);
     ~ItoI_Model();
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
-    inline int ConstantSize() const { return 1;}
-//     virtual void CalculateSignal(const QList<qreal > &constants);
+    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 1;}
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractModel > Clone() const;
     virtual bool SupportThreads() const { return false; }

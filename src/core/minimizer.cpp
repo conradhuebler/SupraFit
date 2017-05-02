@@ -296,7 +296,7 @@ int Minimizer::Minimize(OptimizationType runtype)
     return 1;
 }
 
-QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype, bool start)
+QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start)
 {
     QPointer<NonLinearFitThread> thread = new NonLinearFitThread(m_exc_statistics);
     thread->setModel(model);
@@ -309,12 +309,12 @@ QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractTitr
 }
 
 
-void Minimizer::setModel(const QSharedPointer<AbstractTitrationModel> model)
+void Minimizer::setModel(const QSharedPointer<AbstractModel> model)
 {
     m_model = model;
 }
 
-void Minimizer::setModelCloned(const QSharedPointer<AbstractTitrationModel> model)
+void Minimizer::setModelCloned(const QSharedPointer<AbstractModel> model)
 {
     m_model = model->Clone();
 }

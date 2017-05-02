@@ -41,9 +41,8 @@ class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
 public:
     IItoI_ItoI_ItoII_Model(const DataClass* data);
     ~IItoI_ItoI_ItoII_Model();
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
-    inline int ConstantSize() const { return 3;}
-//     void CalculateSignal(const QList<qreal > &constants); 
+    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 3;}
     virtual void InitialGuess();
     virtual QSharedPointer<AbstractModel > Clone() const;
     virtual bool SupportThreads() const { return true; }

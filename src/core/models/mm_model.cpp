@@ -35,7 +35,7 @@
 
 #include "mm_model.h"
 
-Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : AbstractTitrationModel(data)
+Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : AbstractModel(data)
 {
     setName(tr("Michaelis Menten"));
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
@@ -45,7 +45,7 @@ Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : Abstract
     m_constant_names = QStringList() << tr("vmax") << tr("Km");
 }
 
-Michaelis_Menten_Model::Michaelis_Menten_Model(const AbstractTitrationModel* model) : AbstractTitrationModel(model)
+Michaelis_Menten_Model::Michaelis_Menten_Model(const AbstractModel* model) : AbstractModel(model)
 {
     setName(tr("Michaelis Menten"));
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
@@ -64,35 +64,35 @@ void Michaelis_Menten_Model::InitialGuess()
 {
     m_vmax = 4;
     m_Km = 2;
-    m_complex_constants = QList<qreal>() << m_vmax << m_Km;
+    m_global_parameter = QList<qreal>() << m_vmax << m_Km;
     m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
     m_pure_signals_parameter = SignalModel()->firstRow();
-    setOptParamater(m_complex_constants);
+    setOptParamater(m_global_parameter);
     
-    QVector<qreal * > line1, line2;
-    for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
-    {
-        line1 << &m_pure_signals_parameter(i, 0);
-        line2 << &m_complex_signal_parameter(i,0);
-    }
-    m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
+//     QVector<qreal * > line1, line2;
+//     for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
+//     {
+//         line1 << &m_pure_signals_parameter(i, 0);
+//         line2 << &m_complex_signal_parameter(i,0);
+//     }
+//     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
-    AbstractTitrationModel::Calculate();
+    AbstractModel::Calculate();
 }
 
 QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
-        setOptParamater(m_complex_constants);
+        setOptParamater(m_global_parameter);
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
          
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
-            addOptParameterList_fromConstant(0);
-            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addOptParameterList_fromPure(0);
+//             addOptParameterList_fromConstant(0);
+//             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+//                 addOptParameterList_fromPure(0);
         }
     }
     QVector<qreal >parameter;
@@ -129,9 +129,9 @@ void Michaelis_Menten_Model::CalculateVariables(const QList<qreal > &constants)
 }
 
 
-QSharedPointer<AbstractTitrationModel > Michaelis_Menten_Model::Clone() const
+QSharedPointer<AbstractModel > Michaelis_Menten_Model::Clone() const
 {
-    QSharedPointer<AbstractTitrationModel > model = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(this), &QObject::deleteLater);
+    QSharedPointer<Michaelis_Menten_Model > model = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());

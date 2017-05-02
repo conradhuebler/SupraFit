@@ -22,7 +22,7 @@
 #include "src/global_config.h"
 #include "src/core/AbstractModel.h"
 #include <QtCore/QPair>
-class AbstractTitrationModel;
+class AbstractModel;
 struct OptimizerConfig;
 
 qreal MinQuadraticRoot(qreal a, qreal b, qreal c);
@@ -33,6 +33,6 @@ qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
 qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
-int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, QVector<qreal > &param);
+int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param);
 #endif 
 

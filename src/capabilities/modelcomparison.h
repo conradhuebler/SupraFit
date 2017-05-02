@@ -39,7 +39,7 @@ public:
     bool fisher_statistic = false;
 };
 
-class AbstractTitrationModel;
+class AbstractModel;
 
 class MCThread : public AbstractSearchThread
 {
@@ -48,14 +48,14 @@ class MCThread : public AbstractSearchThread
 public:
     inline MCThread( ) : AbstractSearchThread() { }
     inline ~MCThread() { }
-    void setModel(QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
+    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     void run();
     QList<QJsonObject > Results() const { return m_results; }
     inline void setMaxSteps(int steps) { m_maxsteps = steps; }
     inline void setBox(const QVector<QVector<qreal> > &box) { m_box = box; }
    
 private:
-    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<AbstractModel> m_model;
     QList<QJsonObject > m_results;
     int m_maxsteps;
     QVector<QVector<qreal> > m_box;

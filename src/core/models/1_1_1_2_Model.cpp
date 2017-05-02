@@ -170,7 +170,7 @@ void ItoI_ItoII_Model::CalculateVariables(const QList<qreal > &constants)
 
 }
 
-QSharedPointer<AbstractTitrationModel > ItoI_ItoII_Model::Clone() const
+QSharedPointer<AbstractModel > ItoI_ItoII_Model::Clone() const
 {
     QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());

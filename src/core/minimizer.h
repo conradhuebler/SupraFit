@@ -30,7 +30,7 @@
 #include <QtCore/QSharedPointer>
 #include <QtCore/QThreadPool>
 
-class AbstractTitrationModel;
+class AbstractModel;
 
 class NonLinearFitThread : public QObject, public QRunnable
 {
@@ -40,9 +40,9 @@ public:
     
     NonLinearFitThread(bool exchange_statistics = true);
     ~NonLinearFitThread();
-    void setModel(const QSharedPointer<AbstractTitrationModel> model);
+    void setModel(const QSharedPointer< AbstractModel > model);
    
-    QSharedPointer<AbstractTitrationModel> Model() const { return m_model; }
+    QSharedPointer<AbstractModel> Model() const { return m_model; }
     inline void setOptimizationRun(OptimizationType runtype) { m_runtype = runtype; }
     virtual void run();
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
@@ -52,7 +52,7 @@ public:
     inline bool Converged() const { return m_converged; }
     
 private:
-    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<AbstractModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
     void ConstrainedFit();
     int NonLinearFit(OptimizationType runtype);
@@ -81,8 +81,8 @@ class Minimizer : public QObject
 public:
     Minimizer(bool exchange_statistics = true, QObject *parent = 0);
     ~Minimizer();
-    void setModel(const QSharedPointer<AbstractTitrationModel> model);
-    void setModelCloned(const QSharedPointer<AbstractTitrationModel> model);
+    void setModel(const QSharedPointer<AbstractModel> model);
+    void setModelCloned(const QSharedPointer<AbstractModel> model);
     int Minimize(OptimizationType runtype);
     int Minimize(OptimizationType runtype, const QList<int> &locked);
     void setOptimizerConfig(const OptimizerConfig &config) 
@@ -95,9 +95,9 @@ public:
     QJsonObject Parameter() const{ return m_last_parameter; };
     void setParameter(const QJsonObject &json, const QList<int> &locked);
     void setParameter(const QJsonObject &json);
-    QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractTitrationModel> model, OptimizationType runtype, bool start = true);
+    QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start = true);
 private:
-    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<AbstractModel> m_model;
     OptimizerConfig m_opt_config;
     bool m_inform_config_changed;
     QString OptPara2String() const;

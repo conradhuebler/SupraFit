@@ -37,7 +37,7 @@
 #include <iostream>
 #include "AbstractTitrationModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const AbstractModel *data) : AbstractModel(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : AbstractModel(data)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts);
     m_constant_names << tr("no constants");
@@ -87,49 +87,6 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
     m_concentrations->setRow(equilibrium, i);
 }
 
-
-
-QVector<qreal> AbstractTitrationModel::OptimizeParameters(OptimizationType type)
-{
-    clearOptParameter();
-    QVector<qreal > variables =  OptimizeParameters_Private(type);
-    for(int j = m_opt_para.size() - 1; j >= 0; --j)
-    {
-        if(variables[j] == 0)
-        {
-            variables.removeAt(j);
-            m_opt_para.removeAt(j);
-        }
-    }
-    m_locked_parameters.clear();
-    for(int i = 0; i < variables.size(); ++i)
-        m_locked_parameters << 1;
-    m_last_optimization = type;
-    return variables;
-}
-
-
-void AbstractTitrationModel::setOptParamater(QList<qreal> &parameter)
-{
-    clearOptParameter();
-    for(int i = 0; i < parameter.size(); ++i)
-        m_opt_para << &parameter[i];
-}
-
-void AbstractTitrationModel::setOptParamater(qreal& parameter)
-{   
-    clearOptParameter();
-    m_opt_para << &parameter;
-}
-
-
-void AbstractTitrationModel::addOptParameter(QList<qreal>& parameter)
-{
-    for(int i = 0; i < parameter.size(); ++i)
-    {
-        m_opt_para << &parameter[i];    
-    }
-}
 void AbstractTitrationModel::addOptParameterList_fromConstant(int i)
 {
     for(int j = 0; j < m_complex_signal_parameter.rows(); ++j)
@@ -145,28 +102,6 @@ void AbstractTitrationModel::addOptParameterList_fromPure(int i)
         m_opt_para << &m_pure_signals_parameter(j, i);    
     } 
 }
-
-void AbstractTitrationModel::clearOptParameter()
-{
-    m_opt_para.clear();
-}
-
-
-qreal AbstractTitrationModel::SumOfErrors(int i) const
-{
-    qreal sum = 0;
-    
-    if(!ActiveSignals(i) || i >= Size())
-        return sum;
-    
-    for(int j = 0; j < DataPoints(); ++j)
-    {
-        sum += qPow(m_model_error->data(i,j),2);
-    }
-    return sum;
-}
-
-v
 
 void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
 {
@@ -187,26 +122,6 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
         m_used_variables++;
     }
 }
-
-qreal AbstractTitrationModel::CalculateVariance()
-{
-    qreal v = 0;
-    int count = 0;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        for(int j = 0; j < SignalCount(); ++j)
-        {
-            if(SignalModel()->isChecked(j,i))
-            {
-                v += qPow(m_model_error->data(j,i) - m_mean, 2);
-                count++;
-            }
-        }
-    }
-    return v/(count -1 );
-}
-
-
 
 void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
 {
@@ -358,20 +273,6 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
     Calculate();
 }
 
-qreal AbstractTitrationModel::ModelError() const
-{
-    qreal error = 0;
-    for(int z = 0; z < SignalCount(); ++z)
-        error += SumOfErrors(z);
-    return error;
-}
-
-void AbstractTitrationModel::SetSingleParameter(double value, int parameter)
-{
-    if(parameter < m_opt_para.size())
-        *m_opt_para[parameter] = value;
-}
-
 void AbstractTitrationModel::MiniShifts()
 {
     double cut_error = 1;
@@ -417,14 +318,6 @@ void AbstractTitrationModel::setMoCoStatistic(const QJsonObject &result, int i)
     emit StatisticChanged();
 }
 
-void AbstractTitrationModel::setConstants(const QList<qreal> &list)
-{
-    if(list.size() != m_complex_constants.size())
-        return;
-    for(int i = 0; i < list.size(); ++i)
-        m_complex_constants[i] = list[i];  
-}
-
 qreal AbstractTitrationModel::BC50()
 {
     return 0;
@@ -461,32 +354,6 @@ void AbstractTitrationModel::setPureSignals(const QList<qreal>& list)
 QPair<qreal, qreal> AbstractTitrationModel::Pair(int i, int j) const
 {
     return QPair<qreal, qreal>(Constant(i), m_complex_signal_parameter(j,i));
-}
-
-qreal AbstractTitrationModel::finv(qreal p)
-{
-    /*
-     * Lets cache the f-value, that if nothing changes, no integration is needed
-     */
-    if(!(p == m_last_p && m_last_parameter == Parameter() && m_last_freedom == Points()-Parameter()))
-    {
-        m_f_value = ToolSet::finv(p, Parameter(),Points()-Parameter());
-        m_last_p = p;
-        m_last_parameter = Parameter();
-        m_last_freedom = Points()-Parameter();
-    }   
-    return m_f_value;
-}
-
-qreal AbstractTitrationModel::Error(qreal confidence, bool f)
-{
-    if(f)
-    {
-        qreal f_value = finv(confidence/100);
-        return SumofSquares()*(f_value*Parameter()/(Points()-Parameter()) +1);
-    } else {
-        return SumofSquares()+SumofSquares()*confidence/double(100);
-    }
 }
 
 

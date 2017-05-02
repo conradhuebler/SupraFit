@@ -113,9 +113,9 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables(const QList<qreal> &constants)
     emit Recalculated();
 }
 
-QSharedPointer<AbstractTitrationModel> IItoI_ItoI_ItoII_Model::Clone() const
+QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone() const
 {
-    QSharedPointer<AbstractTitrationModel > model = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(this), &QObject::deleteLater);
+    QSharedPointer<IItoI_ItoI_ItoII_Model > model = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
