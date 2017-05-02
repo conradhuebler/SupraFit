@@ -566,7 +566,7 @@ void ModelDataHolder::MoCoStatistic()
     m_statistic_dialog->setRuns(count);
     
     MoCoConfig config = m_statistic_dialog->getMoCoConfig();
-    
+    config.maxerror = 0;
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
         if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
