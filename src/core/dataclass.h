@@ -53,6 +53,8 @@ public:
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
     void CheckRow(int row);
+    inline void setCheckedTable(Eigen::MatrixXd checked) { m_checked_table = checked; }
+    inline Eigen::MatrixXd CheckedTable() const { return m_checked_table; }
     inline DataTable *BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() -1); } 
     inline DataTable *BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount(), column_end); } 
     DataTable *Block(int row_begin, int column_begin, int row_end, int column_end) const;

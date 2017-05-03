@@ -94,8 +94,13 @@ Vector DataTable::lastRow()
 
 void DataTable::Debug() const
 {
+    std::cout << "Table Content" << std::endl;
     std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
     std::cout << m_table <<std::endl;
+    
+    std::cout << "Checked Table" << std::endl;
+    std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
+    std::cout << m_checked_table <<std::endl;
 }
 
 Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
@@ -691,5 +696,6 @@ void DataClass::setHeader(const QStringList& strlist)
 void DataClass::OverrideSignalTable(DataTable *table)
 {
     d.detach();
+    table->setCheckedTable(d->m_signal_model->CheckedTable());
     d->m_signal_model = table;
 }
