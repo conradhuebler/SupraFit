@@ -223,10 +223,17 @@ qreal ChartWrapper::XValue(int i) const
 void ChartWrapper::showSeries(int i)
 {
     for(int j = 0; j < m_stored_series.size(); ++j)
-        if(i != -1)
-            m_stored_series[j]->setVisible(i == j);
-        else
+    {
+        if(i == -1)
+        {
             m_stored_series[j]->setVisible(true);
+            continue;
+        }
+        if(qobject_cast<ScatterSeries *>(m_stored_series[j]))
+            m_stored_series[j]->setVisible(i == j);
+        else if(i != -1 && m_stored_series[j]->isVisible())
+            m_stored_series[j]->setVisible(i == j); 
+    }
     emit ShowSeries(i);
 }
 #include "chartwrapper.moc"

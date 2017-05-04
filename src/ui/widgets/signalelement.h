@@ -60,6 +60,7 @@ private slots:
     void setMarkerSize(qreal value);
     void setMarkerShape(int shape);
     void togglePlot();
+    void UnCheckToggle(int i);
 };
 
 #endif

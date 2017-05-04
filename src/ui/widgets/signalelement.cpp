@@ -78,6 +78,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     m_toggle->setFlat(true);
     m_toggle->setCheckable(true);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
+    connect(m_wrapper.data(), SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
     
     layout->addWidget(m_name, 0, 0);
     layout->addWidget(m_show, 0, 1);
@@ -155,10 +156,16 @@ void SignalElement::setMarkerShape(int shape)
 
 void SignalElement::togglePlot()
 {
+    m_data_series->setVisible(true);
     if(m_toggle->isChecked())
         m_wrapper.data()->showSeries(m_no); 
     else
         m_wrapper.data()->showSeries(-1);
 }
 
+void SignalElement::UnCheckToggle(int i)
+{
+    if(i != m_no)
+       m_toggle->setChecked(false);
+}
 #include "signalelement.moc"
