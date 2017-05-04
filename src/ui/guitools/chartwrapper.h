@@ -91,6 +91,7 @@ public:
 public slots:
     void UpdateModel();
     void showSeries(int i);
+    void SetBlocked(int blocked);
     
 private:
     QColor ColorCode(int i) const;
@@ -101,6 +102,7 @@ private:
     QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
     PlotMode m_plotmode;
     QPointer< DataClass > m_model;
+    bool m_blocked;
     
 signals:
     void ModelChanged();
