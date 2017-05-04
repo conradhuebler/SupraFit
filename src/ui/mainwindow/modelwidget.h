@@ -89,6 +89,7 @@ public slots:
     void MCStatistic();
     void MoCoStatistic();
     void GlobalMinimize();
+    void GlobalMinimizeLoose();
     void LocalMinimize();
     void HideAllWindows();
     
@@ -112,6 +113,7 @@ private:
     void CollectParameters();
     void Data2Text();
     void Model2Text();
+    void MinimizeModel(const OptimizerConfig &config);
     
     QWidget *m_model_widget;
     QSplitter *m_splitter;

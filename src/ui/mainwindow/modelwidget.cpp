@@ -137,9 +137,21 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_bc_50 = new QLabel(tr("BC50_0"));
     const_layout->addWidget(m_bc_50);
     const_layout->addStretch(100);
+    
     m_minimize_all = new QPushButton(tr("Fit"));
     
-    connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
+    QAction *minimize_normal = new QAction(tr("Tight"));
+    connect(minimize_normal, SIGNAL(triggered()), this, SLOT(GlobalMinimize()));
+    
+    QAction *minimize_loose = new QAction(tr("Loose"));
+    connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
+    
+    QMenu *menu = new QMenu;
+    menu->addAction(minimize_normal);
+    menu->addAction(minimize_loose);
+    menu->setDefaultAction(minimize_normal);
+    m_minimize_all->setMenu(menu);
+    
     const_layout->addWidget(m_minimize_all);
     m_layout->addLayout(const_layout, 0, 0, 1, m_model->ConstantSize()+3);
     m_sign_layout = new QVBoxLayout;
@@ -328,18 +340,29 @@ void ModelWidget::CollectParameters()
     m_model->setPureSignals(pure_signals);
 }
 
+void ModelWidget::GlobalMinimizeLoose()
+{
+    OptimizerConfig config = m_model->getOptimizerConfig();
+    config.Constant_Convergence = 1E-1;
+    MinimizeModel(config);
+}
+
 
 void ModelWidget::GlobalMinimize()
 {
+    OptimizerConfig config = m_model->getOptimizerConfig();
+    MinimizeModel(config);
+} 
+void ModelWidget::MinimizeModel(const OptimizerConfig& config)
+{     
     Waiter wait;
     if(m_pending)
-        return;
-    
+        return; 
     m_pending = true;
+    
     CollectParameters();
     QJsonObject json = m_model->ExportModel();
     m_minimizer->setParameter(json);
-    OptimizerConfig config = m_model->getOptimizerConfig();
     
     m_model->setOptimizerConfig(config);
     int result;

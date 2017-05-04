@@ -96,17 +96,26 @@ QWidget * OptimizerWidget::GeneralWidget()
     m_maxiter->setMaximum(999999);
     m_maxiter->setValue(m_config.MaxIter);
     
+    m_constant_convergence = new ScientificBox;
+    m_constant_convergence->setRange(0, 1);
+    m_constant_convergence->setSingleStep(1E-3);
+    m_constant_convergence->setDecimals(3);
+    m_constant_convergence->setValue(m_config.Constant_Convergence);
+ 
     m_error_convergence = new ScientificBox;
     m_error_convergence->setRange(0, 1E-1);
     m_error_convergence->setSingleStep(1E-8);
     m_error_convergence->setDecimals(8);
     m_error_convergence->setValue(m_config.Error_Convergence);
+    
     layout->addWidget(new QLabel(tr("Maximal No. of Iterations")), 0, 0);
     layout->addWidget(m_maxiter, 0, 1);
     
+    layout->addWidget(new QLabel(tr("Tolerance Constants Convergence")), 1, 0);
+    layout->addWidget(m_constant_convergence, 1, 1);
        
-    layout->addWidget(new QLabel(tr("Tolerance Error Convergence")), 1, 0);
-    layout->addWidget(m_error_convergence, 1, 1);
+    layout->addWidget(new QLabel(tr("Tolerance Error Convergence")), 2, 0);
+    layout->addWidget(m_error_convergence, 2, 1);
     
     widget->setLayout(layout);
     return widget;
@@ -181,12 +190,6 @@ QWidget * OptimizerWidget::AdvancedWidget()
     m_shift_convergence->setSingleStep(1E-4);
     m_shift_convergence->setDecimals(5);
     m_shift_convergence->setValue(m_config.Shift_Convergence);
-  
-    m_constant_convergence = new ScientificBox;
-    m_constant_convergence->setRange(0, 1E-1);
-    m_constant_convergence->setSingleStep(1E-4);
-    m_constant_convergence->setDecimals(5);
-    m_constant_convergence->setValue(m_config.Constant_Convergence);
     
     m_levmar_constants_periter = new QSpinBox;
     m_levmar_constants_periter->setMaximum(999999);
@@ -199,11 +202,6 @@ QWidget * OptimizerWidget::AdvancedWidget()
     
     layout->addWidget(new QLabel(tr("No. Constraints for Convergence")), 1, 0);
     layout->addWidget(m_sum_convergence, 1, 1);
-  
-    
-    layout->addWidget(new QLabel(tr("Tolerance Constants Convergence")), 3, 0);
-    layout->addWidget(m_constant_convergence, 3, 1);
- 
     
     layout->addWidget(new QLabel(tr("Maximal Levenberg Marquadt Iterations for Constants")), 2, 0);
     layout->addWidget(m_levmar_constants_periter, 2, 1);
