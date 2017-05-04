@@ -22,7 +22,7 @@
 #include "abstractsearchclass.h"
 
 
-AbstractSearchClass::AbstractSearchClass(QObject *parent) : QObject(parent), m_interrupt(true)
+AbstractSearchClass::AbstractSearchClass(QObject *parent) : QObject(parent), m_interrupt(false)
 {
     m_threadpool = QThreadPool::globalInstance();
 }

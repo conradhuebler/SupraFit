@@ -84,7 +84,6 @@ public:
     inline bool CV() { return m_cv; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
-    bool FastConfidence();
     bool EllipsoideConfidence();
     void setParameter(const QJsonObject &json);
    
