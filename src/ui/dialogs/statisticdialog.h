@@ -31,6 +31,7 @@ class QCheckBox;
 class QProgressBar;
 class OptimizerFlagWidget;
 class QRadioButton;
+class QTabWidget;
 
 class CVConfig;
 class MCConfig;
@@ -51,9 +52,11 @@ public:
     inline void setRuns(int runs) { m_runs = runs; }
     virtual void setVisible(bool visible) override;
     void updateUI();
+    
 public slots:
     void IncrementProgress(int time);
-    
+    void HideWidget();
+    void ShowWidget();
     
 private:
     void setUi();
@@ -63,6 +66,8 @@ private:
     QWidget *ContinuousVariationWidget();
     QWidget *ModelComparison();
     
+    QWidget *m_hide_widget;
+    QTabWidget *m_tab_widget;
     QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_cv_f_value;
     QSpinBox *m_mc_steps, *m_cv_steps, *m_moco_mc_steps;
     QCheckBox *m_original, *m_bootstrap, *m_cv_f_test, *m_moco_f_test;
@@ -79,9 +84,9 @@ private:
     int m_time, m_runs;
     quint64 m_time_0;
     qreal m_f_value, m_moco_max, m_cv_max;
+    bool m_hidden;
     
 private slots:
-     void Pending();
      void Update();
      void EnableWidgets();
      void CalculateError();

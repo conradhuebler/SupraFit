@@ -31,7 +31,6 @@
 
 #include "modelcomparison.h"
 
-const int update_intervall = 100;
 
 void MCThread::run()
 {
@@ -52,6 +51,8 @@ void MCThread::run()
 
     for(int step = 0; step < m_maxsteps; ++step)
     {
+        if(m_interrupt)
+            return;
         QList<qreal > consts = m_model.data()->Constants();
         for(int i = 0; i < consts.size(); ++i)
         {

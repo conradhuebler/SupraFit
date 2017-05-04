@@ -60,9 +60,6 @@ public:
     inline QList<QPointF> Series() const { return m_series; }
     inline QJsonObject Model() const { return m_model->ExportModel(); }
     
-public slots:
-    void Interrupt();
-    
 private:
     qreal SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<Minimizer> m_minimizer;
@@ -74,7 +71,6 @@ private:
     QList<QPointF> m_series;
     CVConfig m_config;
     bool allow_break;
-
 };
 
 class ContinuousVariation : public AbstractSearchClass
@@ -93,7 +89,7 @@ public:
     void setParameter(const QJsonObject &json);
    
 public slots:
-    void Interrupt() override;
+    virtual void Interrupt() override;
     
 private:
     QSharedPointer<Minimizer> m_minimizer;

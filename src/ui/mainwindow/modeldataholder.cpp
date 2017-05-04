@@ -521,7 +521,8 @@ void ModelDataHolder::CloseAll()
 }
 
 void ModelDataHolder::CVStatistic()
-{
+{ 
+    m_statistic_dialog->setRuns(m_models.size());
     CVConfig config = m_statistic_dialog->getCVConfig();
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
@@ -531,6 +532,7 @@ void ModelDataHolder::CVStatistic()
             model->CVStatistic(config);
         }
     }
+    m_statistic_dialog->HideWidget();
 }
 
 void ModelDataHolder::MCStatistic()
@@ -549,6 +551,7 @@ void ModelDataHolder::MCStatistic()
         if(!m_allow_loop)
             break;
     }
+    m_statistic_dialog->HideWidget();
 }
 
 void ModelDataHolder::MoCoStatistic()
@@ -578,6 +581,7 @@ void ModelDataHolder::MoCoStatistic()
         if(!m_allow_loop)
             break;
     }
+    m_statistic_dialog->HideWidget();
 }
 
 

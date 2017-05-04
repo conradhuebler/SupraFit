@@ -26,6 +26,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 
+const int update_intervall = 100;
+
 
 class MoCoConfig : public AbstractConfig
 {

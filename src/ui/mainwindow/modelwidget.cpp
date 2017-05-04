@@ -411,6 +411,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     m_logging += "\n\n" +  doc.toPlainText();
     m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
     m_statistic_result->show();  
+    m_statistic_dialog->HideWidget();
 }
 
 void ModelWidget::FastConfidence()
@@ -457,7 +458,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-
+    
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->setParameter(json);
@@ -469,6 +470,8 @@ void ModelWidget::CVStatistic(CVConfig config)
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();  
+    emit IncrementProgress(1);
+    m_statistic_dialog->HideWidget();
 }
 
 void ModelWidget::MoCoStatistic()
@@ -502,6 +505,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
+    m_statistic_dialog->HideWidget();
 }
 
 
