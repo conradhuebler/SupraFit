@@ -31,7 +31,6 @@
 
 #include "modelcomparison.h"
 
-const int update_intervall = 100;
 
 void MCThread::run()
 {
@@ -49,10 +48,11 @@ void MCThread::run()
     rng.seed(seed);
     
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
     for(int step = 0; step < m_maxsteps; ++step)
     {
+        if(m_interrupt)
+            return;
         QList<qreal > consts = m_model.data()->Constants();
         for(int i = 0; i < consts.size(); ++i)
         {
@@ -61,17 +61,10 @@ void MCThread::run()
         m_model->setConstants(consts);
         m_model->Calculate();
         m_results << m_model->ExportModel();
-        if( step % update_intervall == 0 )
-        {
-
-
-        }
-
     }
-    t1 = QDateTime::currentMSecsSinceEpoch();
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
     t0 = QDateTime::currentMSecsSinceEpoch();
-     QCoreApplication::processEvents();
 }
 
 
@@ -99,11 +92,8 @@ bool ModelComparison::FastConfidence()
     for(int i = 0; i < parameter.size(); ++i)
     {
         m_model.data()->ImportModel(optimized);
-//         m_model.data()->Calculate();
         double upper = SingleLimit(i, +1);
-        
         m_model.data()->ImportModel(optimized);
-//         m_model.data()->Calculate();
         double lower = SingleLimit(i, -1);
         
         QJsonObject result;
@@ -197,54 +187,29 @@ QVector<QVector<qreal> > ModelComparison::MakeBox()
 
 bool ModelComparison::Confidence()
 {
-
     if(!m_model)
         return false;
     // We make an initial guess to estimate the dimension
     m_model.data()->Calculate();
-    CVConfig cv_config = m_config.cv_config;
-    cv_config.relax = false;
-    cv_config.increment = 10e-4; //qApp->instance()->property("fast_increment").toDouble();
     m_effective_error = m_config.maxerror;
-    cv_config.maxerror = m_effective_error;
-    cv_config.runtype = m_model.data()->LastOptimzationRun();
     
-
     FastConfidence();
+    
     if(m_model.data()->ConstantSize() != 2)
         return true;
+    
     QVector<QVector<qreal> > box = MakeBox();
-    
-    if(m_config.method == 1)
-        MCSearch(box);
-    else
-        Search(box);
-    
+    MCSearch(box);
     return true;
 }
 
-void ModelComparison::Search(const QVector<QVector<qreal> >& box)
-{
-    GSConfig config;
-    config.optimize = false;
-    config.initial_guess = false;
-    config.parameter = box;
-    GlobalSearch *globalsearch = new GlobalSearch(config, this);
-    globalsearch->setModel(m_model); 
-    connect(globalsearch, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-    connect(globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(setMaximumSteps(int)));
-    QList<QJsonObject > results = globalsearch->SearchGlobal();
-    StripResults(results);
-    delete globalsearch;
-}
 
 void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
 {
-    
     QVector<QPointer<MCThread> > threads;
     
     int maxsteps = m_config.mc_steps;
-    emit setMaximumSteps(maxsteps/update_intervall);
+    emit setMaximumSteps(1+maxsteps/update_intervall);
     int thread_count =  qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);
     for(int i = 0; i < maxsteps/update_intervall; ++i)
@@ -277,7 +242,6 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
 
 void ModelComparison::StripResults(const QList<QJsonObject>& results)
 { 
-    
     QVector<QPair<qreal, qreal> > confidence(m_model->ConstantSize(), QPair<qreal, qreal>(0,0));
     int inner = 0;
     int all = 0;
@@ -303,7 +267,9 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
                 confidence[i].second = qMax(max, constants[QString::number(i)].toString().toDouble());  
             }
         }
+        QCoreApplication::processEvents();
     }
+    emit IncrementProgress(1);
     m_ellipsoid_area = double(inner)/double(all)*m_box_area;
     m_results.clear();
     for(int i = 0; i < confidence.size(); ++i)
@@ -319,6 +285,8 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         controller["runtype"] = m_config.runtype;
         controller["steps"] = m_config.mc_steps;
         controller["fisher"] = m_config.fisher_statistic;
+        controller["maxerror"] = m_config.maxerror;
+        controller["f-value"] = m_config.f_value;
         result["controller"] = controller;
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];

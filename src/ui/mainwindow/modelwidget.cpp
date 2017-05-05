@@ -101,6 +101,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
+    
+    connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper, SLOT(SetBlocked(int)));
+    connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper, SLOT(SetBlocked(int)));
+    
     m_search_result = new ModalDialog;
     m_search_result->setWindowTitle("Charts for " + m_model->Name());
     
@@ -133,9 +137,21 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_bc_50 = new QLabel(tr("BC50_0"));
     const_layout->addWidget(m_bc_50);
     const_layout->addStretch(100);
+    
     m_minimize_all = new QPushButton(tr("Fit"));
     
-    connect(m_minimize_all, SIGNAL(clicked()), this, SLOT(GlobalMinimize()));
+    QAction *minimize_normal = new QAction(tr("Tight"));
+    connect(minimize_normal, SIGNAL(triggered()), this, SLOT(GlobalMinimize()));
+    
+    QAction *minimize_loose = new QAction(tr("Loose"));
+    connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
+    
+    QMenu *menu = new QMenu;
+    menu->addAction(minimize_normal);
+    menu->addAction(minimize_loose);
+    menu->setDefaultAction(minimize_normal);
+    m_minimize_all->setMenu(menu);
+    
     const_layout->addWidget(m_minimize_all);
     m_layout->addLayout(const_layout, 0, 0, 1, m_model->ConstantSize()+3);
     m_sign_layout = new QVBoxLayout;
@@ -324,18 +340,29 @@ void ModelWidget::CollectParameters()
     m_model->setPureSignals(pure_signals);
 }
 
+void ModelWidget::GlobalMinimizeLoose()
+{
+    OptimizerConfig config = m_model->getOptimizerConfig();
+    config.Constant_Convergence = 1E-1;
+    MinimizeModel(config);
+}
+
 
 void ModelWidget::GlobalMinimize()
 {
+    OptimizerConfig config = m_model->getOptimizerConfig();
+    MinimizeModel(config);
+} 
+void ModelWidget::MinimizeModel(const OptimizerConfig& config)
+{     
     Waiter wait;
     if(m_pending)
-        return;
-    
+        return; 
     m_pending = true;
+    
     CollectParameters();
     QJsonObject json = m_model->ExportModel();
     m_minimizer->setParameter(json);
-    OptimizerConfig config = m_model->getOptimizerConfig();
     
     m_model->setOptimizerConfig(config);
     int result;
@@ -391,7 +418,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model, m_statistic_result);
+    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model);
 
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
@@ -407,6 +434,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     m_logging += "\n\n" +  doc.toPlainText();
     m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
     m_statistic_result->show();  
+    m_statistic_dialog->HideWidget();
 }
 
 void ModelWidget::FastConfidence()
@@ -453,7 +481,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-
+    
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     statistic->setParameter(json);
@@ -465,6 +493,8 @@ void ModelWidget::CVStatistic(CVConfig config)
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();  
+    emit IncrementProgress(1);
+    m_statistic_dialog->HideWidget();
 }
 
 void ModelWidget::MoCoStatistic()
@@ -498,6 +528,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
+    m_statistic_dialog->HideWidget();
 }
 
 

@@ -72,7 +72,7 @@ public:
     void Evaluate();
     
 public slots:
-    void Interrupt();
+    void Interrupt() override;
     void AnalyseData(qreal error = 95);
     
 private:
@@ -89,10 +89,6 @@ private:
     QVector<QList<qreal > > m_constant_list, m_shift_list;
     bool m_generate;
     int m_steps;
-
-signals:
-    void IncrementProgress(int time);
-    void AnalyseFinished();
 };
 
 #endif // MONTECARLOSTATISTICS_H

@@ -22,6 +22,7 @@
 
 #include <QtCore/QMutex>
 
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
 
 class QPushButton;
@@ -31,6 +32,7 @@ class QCheckBox;
 class QProgressBar;
 class OptimizerFlagWidget;
 class QRadioButton;
+class QTabWidget;
 
 class CVConfig;
 class MCConfig;
@@ -50,10 +52,13 @@ public:
     
     inline void setRuns(int runs) { m_runs = runs; }
     virtual void setVisible(bool visible) override;
+    inline bool UseChecked() const { return m_use_checked->isChecked(); }
     void updateUI();
+    
 public slots:
     void IncrementProgress(int time);
-    
+    void HideWidget();
+    void ShowWidget();
     
 private:
     void setUi();
@@ -63,12 +68,13 @@ private:
     QWidget *ContinuousVariationWidget();
     QWidget *ModelComparison();
     
-    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_gs_increment, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_cv_f_value;
+    QWidget *m_hide_widget;
+    QTabWidget *m_tab_widget;
+    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_cv_f_value;
     QSpinBox *m_mc_steps, *m_cv_steps, *m_moco_mc_steps;
-    QCheckBox *m_original, *m_bootstrap, *m_cv_f_test, *m_moco_f_test;
-    QRadioButton *m_moco_mc, *m_moco_gs;
+    QCheckBox *m_original, *m_bootstrap, *m_cv_f_test, *m_moco_f_test, *m_use_checked;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco;
-    QGroupBox *m_moco_global, *m_moco_monte_carlo, *m_moco_global_search;
+    QGroupBox *m_moco_global, *m_moco_monte_carlo;
     QProgressBar *m_progress;
     QLabel *m_time_info, *m_cv_error_info, *m_moco_error_info;
     OptimizerFlagWidget *m_optim_flags;
@@ -80,9 +86,9 @@ private:
     int m_time, m_runs;
     quint64 m_time_0;
     qreal m_f_value, m_moco_max, m_cv_max;
+    bool m_hidden;
     
 private slots:
-     void Pending();
      void Update();
      void EnableWidgets();
      void CalculateError();

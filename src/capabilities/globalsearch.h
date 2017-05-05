@@ -71,7 +71,7 @@ public:
     void ExportResults(const QString &filename, double threshold, bool allow_invalid);
     
 public slots:
-    void Interrupt();
+    virtual void Interrupt() override;
     
 private:
     QVector<QVector<double> > ParamList();

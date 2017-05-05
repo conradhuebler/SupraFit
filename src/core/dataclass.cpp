@@ -94,8 +94,13 @@ Vector DataTable::lastRow()
 
 void DataTable::Debug() const
 {
+    std::cout << "Table Content" << std::endl;
     std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
     std::cout << m_table <<std::endl;
+    
+    std::cout << "Checked Table" << std::endl;
+    std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
+    std::cout << m_checked_table <<std::endl;
 }
 
 Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
@@ -357,24 +362,24 @@ void DataTable::setRow(const Vector &vector, int row)
 DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng)
 {
     DataTable *table = new DataTable(this);
-#ifdef _DEBUG
-    QVector<qreal > random;
-#endif    
+// #ifdef _DEBUG
+//     QVector<qreal > random;
+// #endif    
     for(int j = 0; j <  columnCount(); ++j)
         {
             for(int i = 0; i < rowCount(); ++i)
             {
                 double  randed = Phi(rng);
                 table->data(j,i) += randed;
-#ifdef _DEBUG
+/*#ifdef _DEBUG
                 if(random.size() < 10)
                     random << randed;
-#endif                   
+#endif   */                
             }
         }
-#ifdef _DEBUG
+/*#ifdef _DEBUG
     qDebug() << "truncated random numbers: " << random;
-#endif         
+#endif */        
     return table;
 }
 
@@ -691,5 +696,6 @@ void DataClass::setHeader(const QStringList& strlist)
 void DataClass::OverrideSignalTable(DataTable *table)
 {
     d.detach();
+    table->setCheckedTable(d->m_signal_model->CheckedTable());
     d->m_signal_model = table;
 }

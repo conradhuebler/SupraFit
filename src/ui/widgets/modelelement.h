@@ -53,14 +53,13 @@ private:
     int m_no;
     QColor m_color;
     Charts m_charts;
-
     void DisableSignal(int state);
     
 private slots:
-    
     void chooseColor();
     void togglePlot();
     void toggleActive();
+    void UnCheckToggle(int i);
     
 signals:
     void ValueChanged();

@@ -173,6 +173,7 @@ set(suprafit_SRCS
                 src/ui/widgets/results/searchresultwidget.cpp
                 src/ui/widgets/results/cvresultswidget.cpp
                 src/ui/widgets/results/mcresultswidget.cpp
+                src/ui/widgets/results/resultswidget.cpp
                 src/ui/widgets/modelactions.cpp
                 src/ui/widgets/modelelement.cpp
                 src/ui/widgets/signalelement.cpp

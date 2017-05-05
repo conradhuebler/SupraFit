@@ -32,6 +32,8 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QTimer>
 
+#include <QPropertyAnimation>
+
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QSpinBox>
@@ -43,18 +45,17 @@
 #include <QtWidgets/QRadioButton>
 
 #include "statisticdialog.h"
-StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QDialog(parent), m_model(model), m_runs(1)
+StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QDialog(parent), m_model(model), m_runs(1), m_hidden(false)
 {
     setUi();
-//     Pending();
-//     connect(this, SIGNAL(Interrupt()), this, SLOT(Pending()));
+    HideWidget();
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
 }
 
 StatisticDialog::StatisticDialog(QWidget *parent) : QDialog(parent)
 {
     setUi();
-
+    HideWidget();
 }
 
 StatisticDialog::~StatisticDialog()
@@ -89,27 +90,35 @@ void StatisticDialog::updateUI()
 void StatisticDialog::setUi()
 {
     QVBoxLayout *layout = new QVBoxLayout;
-    QTabWidget *widget = new QTabWidget;
-    widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
-    widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
+    m_tab_widget = new QTabWidget;
+    m_tab_widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
+    m_tab_widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
     m_moco_widget = ModelComparison();
-    widget->addTab(m_moco_widget, tr("Model Comparison"));
+    m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
     if(m_model)
         m_optim_flags = new OptimizerFlagWidget(m_model.data()->LastOptimzationRun()); 
     else
         m_optim_flags = new OptimizerFlagWidget;
-    layout->addWidget(widget);
+    layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
     m_progress = new QProgressBar;
     layout->addWidget(m_time_info);
     
+    m_use_checked = new QCheckBox(tr("Consider Only Checked Tabs."));
+    m_use_checked->setChecked(false);
+    
+    if(!m_model)
+        layout->addWidget(m_use_checked);
     
     m_hide = new QPushButton(tr("Hide"));
     m_interrupt = new QPushButton(tr("Interrupt"));
     QHBoxLayout *hLayout = new QHBoxLayout;
     hLayout->addWidget(m_progress);
     hLayout->addWidget(m_interrupt);
-    layout->addLayout(hLayout);
+    m_hide_widget = new QWidget;
+    m_hide_widget->setLayout(hLayout);
+    layout->addWidget(m_hide_widget);
+    m_hide_widget->setMaximumHeight(100);
     layout->addWidget(m_hide);
     connect(m_hide, SIGNAL(clicked()), this, SLOT(reject()));
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
@@ -143,8 +152,11 @@ QWidget *StatisticDialog::MonteCarloWidget()
         m_varianz_box->setDisabled(true);
         m_varianz_box->setToolTip(tr("Variance of each model will be set automatically."));
     }
-    layout->addWidget(new QLabel(tr("Varianz")), 1, 0);
-    layout->addWidget(m_varianz_box, 1, 1);
+    if(m_model)
+    {
+        layout->addWidget(new QLabel(tr("Varianz")), 1, 0);
+        layout->addWidget(m_varianz_box, 1, 1);
+    }
     
     m_original = new QCheckBox;
     m_original->setText(tr("Use Original Data"));
@@ -193,17 +205,19 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     
     connect(m_cv_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
     connect(m_cv_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
-
+    
     layout->addWidget(new QLabel(tr("Confidence Inerval")), 1, 0);
     layout->addWidget(m_cv_maxerror, 1, 1);
     layout->addWidget(m_cv_f_test, 1, 2);  
     
-    layout->addWidget(new QLabel(tr("F-Value:")), 2, 0);
-    layout->addWidget(m_cv_f_value, 2, 1);
-    
-    m_cv_error_info = new QLabel;
-    layout->addWidget(m_cv_error_info, 3, 0, 1, 3);
-    
+    if(m_model)
+    {
+        layout->addWidget(new QLabel(tr("F-Value:")), 2, 0);
+        layout->addWidget(m_cv_f_value, 2, 1);
+        
+        m_cv_error_info = new QLabel;
+        layout->addWidget(m_cv_error_info, 3, 0, 1, 3);
+    }
     m_cv_steps = new QSpinBox;
     m_cv_steps->setMaximum(1e7);
     m_cv_steps->setValue(1000);
@@ -237,7 +251,7 @@ QWidget * StatisticDialog::ModelComparison()
     m_moco_maxerror->setSuffix("%");
     m_moco_f_test = new QCheckBox(tr("Use F-Statistic"));
     m_moco_f_test->setChecked(true);
-        
+    
     m_moco_f_value = new QDoubleSpinBox;
     m_moco_f_value->setMaximum(1000);
     m_moco_f_value->setMinimum(0);
@@ -251,10 +265,14 @@ QWidget * StatisticDialog::ModelComparison()
     global_layout->addWidget(new QLabel(tr("Confidence Intervall")), 0, 0);
     global_layout->addWidget(m_moco_maxerror, 0, 1);
     global_layout->addWidget(m_moco_f_test, 0, 2);
-    global_layout->addWidget(new QLabel(tr("F-Value:")), 1, 0);
-    global_layout->addWidget(m_moco_f_value, 1, 1);
-    m_moco_error_info = new QLabel;
-    global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
+    
+    if(m_model)
+    {
+        global_layout->addWidget(new QLabel(tr("F-Value:")), 1, 0);
+        global_layout->addWidget(m_moco_f_value, 1, 1);
+        m_moco_error_info = new QLabel;
+        global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
+    }
     
     m_moco_box_multi = new QDoubleSpinBox;
     m_moco_box_multi->setMaximum(20);
@@ -264,11 +282,6 @@ QWidget * StatisticDialog::ModelComparison()
     global_layout->addWidget(new QLabel(tr("Box Scaling")), 3, 0);
     global_layout->addWidget(m_moco_box_multi, 3, 1);
     
-    m_moco_mc = new QRadioButton(tr("Monte Carlo Search"));
-    m_moco_mc->setChecked(true);
-    m_moco_gs = new QRadioButton(tr("Global Search Search"));;
-//     global_layout->addWidget(m_moco_mc, 4, 0);
-//     global_layout->addWidget(m_moco_gs, 4, 2);
     m_moco_global->setLayout(global_layout);
     layout->addWidget(m_moco_global, 0, 0, 1, 3);
     m_moco_monte_carlo = new QGroupBox(tr("Monte Carlo Settings"));
@@ -284,18 +297,6 @@ QWidget * StatisticDialog::ModelComparison()
     m_moco_monte_carlo->setLayout(monte_layout);
     layout->addWidget(m_moco_monte_carlo, 1, 0, 1, 3);
     
-    m_moco_global_search = new QGroupBox(tr("Global Search Settings"));
-    QGridLayout *gs_layout = new QGridLayout;
-    
-    m_moco_gs_increment = new QDoubleSpinBox;
-    m_moco_gs_increment->setSingleStep(1e-2);
-    m_moco_gs_increment->setValue(0.01);
-    m_moco_gs_increment->setDecimals(6);
-    gs_layout->addWidget(new QLabel(tr("Increment for Global Seach")), 0, 0);
-    gs_layout->addWidget(m_moco_gs_increment, 0, 1, 1, 2);
-    
-    m_moco_global_search->setLayout(gs_layout);
-//     layout->addWidget(m_moco_global_search, 4, 0, 1, 3);
     m_moco = new QPushButton(tr("Start ..."));
     layout->addWidget(m_moco, 5, 0, 1, 3);
     
@@ -314,11 +315,12 @@ CVConfig StatisticDialog::getCVConfig()
     config.relax = true;
     config.fisher_statistic = m_cv_f_test->isChecked();
     config.confidence = m_cv_maxerror->value();
+    config.f_value = m_cv_f_value->value();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(-1);
+    m_progress->setMaximum(m_runs);
     m_progress->setValue(0);
-//     Pending();
+    ShowWidget();
     return config;
 }
 
@@ -326,11 +328,6 @@ MoCoConfig StatisticDialog::getMoCoConfig()
 {
     MoCoConfig config;
     CVConfig cv_config;
-    if(m_moco_mc->isChecked())
-        config.method = 1;
-    else
-        config.method = 2;
-    cv_config.increment = m_moco_gs_increment->value();
     config.mc_steps = m_moco_mc_steps->value();
     config.box_multi = m_moco_box_multi->value();
     config.maxerror = m_moco_max;
@@ -338,11 +335,12 @@ MoCoConfig StatisticDialog::getMoCoConfig()
     cv_config.relax = true;
     config.cv_config = cv_config;
     config.fisher_statistic = m_moco_f_test->isChecked();
+    config.f_value = m_moco_f_value->value();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(m_runs*(m_moco_mc_steps->value())/10);
+    m_progress->setMaximum(m_runs*(1+m_moco_mc_steps->value()/update_intervall));
     m_progress->setValue(0);
-//     Pending();
+    ShowWidget();
     return config;
 }
 
@@ -357,7 +355,7 @@ MCConfig StatisticDialog::getMCConfig()
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_runs*(m_mc_steps->value() + m_mc_steps->value()/100));
     m_progress->setValue(0);
-//     Pending();
+    ShowWidget();
     return config;
 }
 void StatisticDialog::IncrementProgress(int time)
@@ -393,20 +391,30 @@ QString StatisticDialog::FOutput() const
     return string;
 }
 
-
-void StatisticDialog::Pending()
-{
-    bool ishidden = m_progress->isHidden();
-    if(ishidden)
-    {
-        m_interrupt->show();
-        m_progress->show();
-    }else
-    {
-        m_interrupt->hide();
-        m_progress->hide();
-    }
+void StatisticDialog::ShowWidget()
+{        
+    QPropertyAnimation *animation = new QPropertyAnimation(m_hide_widget, "maximumHeight");
+    animation->setEasingCurve(QEasingCurve::InOutCubic);
+    animation->setDuration(200);
+    animation->setStartValue(0);
+    animation->setEndValue(100);
+    animation->start();
+    m_tab_widget->setDisabled(true);
 }
+
+void StatisticDialog::HideWidget()
+{        
+    QPropertyAnimation *animation = new QPropertyAnimation(m_hide_widget, "maximumHeight");
+    animation->setEasingCurve(QEasingCurve::InOutCubic);
+    animation->setDuration(200);
+    animation->setStartValue(100);
+    animation->setEndValue(0);
+    animation->start();
+    m_progress->setMaximum(0);
+    m_progress->setMinimum(0);
+    m_tab_widget->setDisabled(false);
+}
+
 
 void StatisticDialog::Update()
 {
@@ -450,7 +458,7 @@ void StatisticDialog::CalculateError()
     m_moco_max = max_moco_error;
     m_cv_max = max_cv_error;
     
-//     qDebug() << m_model.data()->Error(m_moco_maxerror->value(), m_moco_f_test->isChecked()) << m_moco_max;
+    //     qDebug() << m_model.data()->Error(m_moco_maxerror->value(), m_moco_f_test->isChecked()) << m_moco_max;
     m_cv_error_info->setText(cv_message);
     m_moco_error_info->setText(moco_message);
 }

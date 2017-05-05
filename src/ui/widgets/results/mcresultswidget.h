@@ -26,6 +26,8 @@
 
 #include <QtCharts/QAreaSeries>
 
+#include "resultswidget.h"
+
 class MonteCarloStatistics;
 class AbstractTitrationModel;
 class QPushButton;
@@ -33,27 +35,23 @@ class QDoubleSpinBox;
 class QLabel;
 class ChartView;
 
-class MCResultsWidget : public QWidget
+class MCResultsWidget : public ResultsWidget
 {
     Q_OBJECT
     
 public:
-    MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent);
+    MCResultsWidget(QPointer< MonteCarloStatistics > statistics, QSharedPointer< AbstractTitrationModel > model);
     ~MCResultsWidget();
     
 private:
-    QPointer<MonteCarloStatistics> m_statistics;
-    QSharedPointer< AbstractTitrationModel > m_model;
-    
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox *m_error;
     QPointer<ChartView > m_histgram, m_contour;
-    QLabel *m_confidence_label;
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries * > m_area_series;
     
-    void setUi();
-    void WriteConfidence(const QList<QJsonObject > &constant_results);
+    virtual QWidget * ChartWidget() override;
+    void WriteConfidence(const QList<QJsonObject > &constant_results) override;
     void UpdateBoxes(const QList<QList<QPointF > > &series, const QList<QJsonObject > &constant_results);
     
     QtCharts::QAreaSeries *AreaSeries(const QColor &color) const;

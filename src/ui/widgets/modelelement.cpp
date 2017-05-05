@@ -126,7 +126,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
-    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));    
+    connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));  
+    connect(m_charts.data_wrapper, SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
     toggleActive();
     Update();
 }
@@ -225,10 +226,20 @@ void ModelElement::ToggleSeries(int i)
 
 void ModelElement::togglePlot()
 {
+    m_show->setChecked(true);
+    m_error_series->setVisible(true);
+    m_signal_series->setVisible(true);
     if(m_toggle->isChecked())
         m_charts.data_wrapper->showSeries(m_no); 
     else
         m_charts.data_wrapper->showSeries(-1);
 }
+
+void ModelElement::UnCheckToggle(int i)
+{
+    if(i != m_no)
+       m_toggle->setChecked(false);
+}
+
 
 #include "modelelement.moc"

@@ -83,7 +83,6 @@ MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *pare
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);
     Phi = std::normal_distribution<double>(0,m_config.variance);
-    m_threadpool = QThreadPool::globalInstance();
 }
 
 MonteCarloStatistics::~MonteCarloStatistics()
@@ -136,7 +135,6 @@ void MonteCarloStatistics::Evaluate()
 
 QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 {    
-    
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     m_model->Calculate();

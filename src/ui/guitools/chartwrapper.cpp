@@ -69,7 +69,7 @@ void ScatterSeries::ShowLine(int state)
 }
 
 
-ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent)
+ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent), m_blocked(false)
 {
 }
 
@@ -219,14 +219,25 @@ qreal ChartWrapper::XValue(int i) const
     return 0;
 }
 
+void ChartWrapper::SetBlocked(int blocked) 
+{        
+    m_blocked = !blocked; 
+}
 
 void ChartWrapper::showSeries(int i)
 {
     for(int j = 0; j < m_stored_series.size(); ++j)
-        if(i != -1)
-            m_stored_series[j]->setVisible(i == j);
-        else
+    {
+        if(i == -1 && !m_blocked)
+        {
             m_stored_series[j]->setVisible(true);
+            continue;
+        }
+        if(qobject_cast<ScatterSeries *>(m_stored_series[j]))
+            m_stored_series[j]->setVisible(i == j);
+        else if(i != -1 && m_stored_series[j]->isVisible())
+            m_stored_series[j]->setVisible(i == j); 
+    }
     emit ShowSeries(i);
 }
 #include "chartwrapper.moc"

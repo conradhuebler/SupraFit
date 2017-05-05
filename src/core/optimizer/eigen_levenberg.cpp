@@ -92,7 +92,16 @@ struct MyFunctor : Functor<double>
 
 struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
 
-
+qreal Norm(const QList<qreal> v1, const QList<qreal> v2)
+{
+    qDebug() << v1 << v2;
+    qreal norm = 0;
+    if(v1.size() != v2.size())
+        return norm;
+    for(int i = 0; i < v1.size(); ++i)
+        norm += qAbs(v1[i]-v2[i]);
+    return norm;
+}
 
 int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, QVector<qreal > &param)
 {
@@ -130,17 +139,25 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, QVector<qreal > &pa
     lm.parameters.epsfcn = config.LevMar_epsfcn; //error precision
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
     qreal error_0 = 0; 
-    qreal error_2 = 0;
-    do {
+    qreal error_2 = 1;
+    qreal norm = 1;
+    QList<qreal> globalConstants;
+    for (;iter < config.MaxIter && ((qAbs(error_0 -error_2) > config.Error_Convergence ) || norm > config.Constant_Convergence);++iter)
+    {
+        globalConstants.clear();
+        for(int i = 0; i < model.data()->Constants().size(); ++i)
+            globalConstants << model.data()->Constants()[i];
         error_0 = model.data()->SumofSquares();
+        
         status = lm.minimizeOneStep(parameter);
         error_2 = model.data()->SumofSquares();
-        iter++;
-        if(iter > config.MaxIter)
-            break;
-    } while (qAbs(error_0 -error_2) > config.Error_Convergence);
+        norm = 0;
+        for(int i = 0; i < globalConstants.size(); ++i)
+            norm += qAbs(globalConstants[i]-model.data()->Constants()[i]);
+    } 
     QString result;
     result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
+    result += "Last Sum of Changes in complexation constants was " + QString::number(norm) + "\n";
     result += "New vector:";    
     for(int i = 0; i < param.size(); ++i)
     {

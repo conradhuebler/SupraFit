@@ -33,6 +33,8 @@
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
+
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QDoubleSpinBox>
@@ -82,13 +84,15 @@ public:
     void CVStatistic(CVConfig config);
     void MoCoStatistic(MoCoConfig config);
     void MCStatistic(MCConfig config);
-    
+    inline void setCheckbox(const QPointer<QCheckBox> checkbox) { m_toggled_box = checkbox; }
+    inline bool isChecked() const { if(!m_toggled_box) return false; else return m_toggled_box->isChecked(); }
 public slots:
     void LoadJson(const QJsonObject &object);
     void CVStatistic();
     void MCStatistic();
     void MoCoStatistic();
     void GlobalMinimize();
+    void GlobalMinimizeLoose();
     void LocalMinimize();
     void HideAllWindows();
     
@@ -112,6 +116,7 @@ private:
     void CollectParameters();
     void Data2Text();
     void Model2Text();
+    void MinimizeModel(const OptimizerConfig &config);
     
     QWidget *m_model_widget;
     QSplitter *m_splitter;
@@ -123,6 +128,7 @@ private:
     Charts m_charts;
     QString m_logging;
     QList<QJsonObject> m_local_fits;
+    QPointer<QCheckBox> m_toggled_box;
     
 private slots:
     void Repaint();

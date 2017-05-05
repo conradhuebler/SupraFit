@@ -45,14 +45,18 @@ class AbstractSearchThread : public QObject, public QRunnable
   Q_OBJECT
   
 public:
-    inline AbstractSearchThread() { setAutoDelete(false); }
+    inline AbstractSearchThread() : m_interrupt(false) { setAutoDelete(false); }
     inline ~AbstractSearchThread() { }
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     
     
+public slots:
+    inline virtual void Interrupt() { m_interrupt = true; }
+    
 protected:
     QSharedPointer<AbstractModel> m_model;
-    
+    bool m_interrupt;
+
 signals:
     void IncrementProgress(int msecs);
 };
@@ -63,6 +67,7 @@ class AbstractSearchClass : public QObject
     
 public:
     AbstractSearchClass(QObject *parent = 0);
+//     AbstractSearchClass(AbstractSearchClass *other);
     ~AbstractSearchClass();
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     
@@ -75,14 +80,13 @@ public:
 public slots:
     virtual void Interrupt();
     
-private:
-    
 protected:
     QSharedPointer<AbstractModel> m_model;
     QThreadPool *m_threadpool;
     QList<QList<QPointF> > m_series;
     QList<QJsonObject > m_models;
     QList<QJsonObject > m_results;
+    bool m_interrupt;
     
 signals:
     void IncrementProgress(int msecs);

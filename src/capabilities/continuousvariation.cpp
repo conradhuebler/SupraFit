@@ -62,6 +62,7 @@ void ContinuousVariationThread::run()
     controller["increment"] = m_config.increment;
     controller["maxerror"] = m_config.maxerror;
     controller["fisher"] = m_config.fisher_statistic;
+    controller["f-value"] = m_config.f_value;
     m_result["controller"] = controller;
     m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
     m_result["value"] = parameter[m_parameter_id];
@@ -98,7 +99,6 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
     locked[m_parameter_id] = 0;
     QList<qreal > consts = m_model.data()->Constants();
     double constant_ = consts[m_parameter_id];
-    allow_break = false;
     double par = 0;
     for(int m = 0; m < m_config.maxsteps; ++m)
     {
@@ -150,16 +150,11 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         }
         
         QCoreApplication::processEvents();
-        if(allow_break)
+        if(m_interrupt)
             break;
         emit IncrementProgress(0);
     }
     return par;
-}
-
-void ContinuousVariationThread::Interrupt()
-{
-    allow_break = true;
 }
 
 
@@ -176,56 +171,6 @@ ContinuousVariation::~ContinuousVariation()
     
     
     
-}
-
-bool ContinuousVariation::FastConfidence()
-{
-    if(!m_model)
-        return false;
-    for(int i = 0; i < m_series.size(); ++i)
-        m_series[i].clear();
-    m_series.clear();
-    m_results.clear();
-    m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportModel();
-    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
-    
-    m_model.data()->Calculate();
-    QThreadPool *threadpool = QThreadPool::globalInstance();
-    QList<QPointer <ContinuousVariationThread > > threads;
-    int maxthreads =qApp->instance()->property("threads").toInt();
-    threadpool->setMaxThreadCount(maxthreads);
-    allow_break = false;
-    
-    for(int i = 0; i < parameter.size(); ++i)
-    {
-        QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config, false);
-        connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
-        //         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-        thread->setModel(m_model);
-        thread->SetParameterID(i);
-        thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
-        if(m_model.data()->SupportThreads())
-        {
-            thread->run();
-        }
-        else
-            threadpool->start(thread);
-        threads << thread;
-        if(allow_break)
-            break;
-    }
-    
-    if(!m_model.data()->SupportThreads())
-    {
-        while(threadpool->activeThreadCount())
-        {
-            QCoreApplication::processEvents();
-        }
-    }
-    ConstantsFromThreads(threads, true);
-    qDeleteAll(threads);
-    return true;
 }
 
 QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QPointer<ContinuousVariationThread> >& threads, bool store)
@@ -262,11 +207,9 @@ bool ContinuousVariation::ConfidenceAssesment()
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
-    QThreadPool *threadpool = QThreadPool::globalInstance();
     QList<QPointer <ContinuousVariationThread > > threads;
     int maxthreads =qApp->instance()->property("threads").toInt();
-    threadpool->setMaxThreadCount(maxthreads);
-    allow_break = false;
+    m_threadpool->setMaxThreadCount(maxthreads);
     for(int i = 0; i < parameter.size(); ++i)
     {
         QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config);
@@ -280,15 +223,15 @@ bool ContinuousVariation::ConfidenceAssesment()
             thread->run();
         }
         else
-            threadpool->start(thread);
+            m_threadpool->start(thread);
         threads << thread;
-        if(allow_break)
+        if(m_interrupt)
             break;
     }
     
     if(!m_model.data()->SupportThreads())
     {
-        while(threadpool->activeThreadCount())
+        while(m_threadpool->activeThreadCount())
         {
             QCoreApplication::processEvents();
         }
@@ -317,7 +260,8 @@ void ContinuousVariation::setParameter(const QJsonObject& json)
 void ContinuousVariation::Interrupt()
 {
     emit StopSubThreads();
-    allow_break = true;
+    m_interrupt = true;
+    m_threadpool->clear();
 }
 
 #include "continuousvariation.moc"

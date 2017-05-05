@@ -26,16 +26,18 @@
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 
+const int update_intervall = 100;
+
 
 class MoCoConfig : public AbstractConfig
 {
 public:
     CVConfig cv_config;  
-    int method = 1;
     int mc_steps = 10000;
     qreal box_multi = 1.5;
     qreal maxerror = 0; 
     qreal confidence = 95;
+    qreal f_value = 0;
     bool fisher_statistic = false;
 };
 
@@ -76,7 +78,6 @@ public:
 private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal> >& box);
-    void Search(const QVector<QVector<qreal> >& box);
     double SingleLimit(int parameter_id, int direction = 1);
     
     QVector<QVector<qreal> > MakeBox();

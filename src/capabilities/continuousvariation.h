@@ -40,6 +40,7 @@ public:
     int maxsteps = 1e4;
     qreal maxerror = 0;
     qreal confidence = 95;
+    qreal f_value = 0;
     bool relax = true;
     bool fisher_statistic = false;
 };
@@ -60,9 +61,6 @@ public:
     inline QList<QPointF> Series() const { return m_series; }
     inline QJsonObject Model() const { return m_model->ExportModel(); }
     
-public slots:
-    void Interrupt();
-    
 private:
     qreal SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
     QSharedPointer<Minimizer> m_minimizer;
@@ -74,7 +72,6 @@ private:
     QList<QPointF> m_series;
     CVConfig m_config;
     bool allow_break;
-
 };
 
 class ContinuousVariation : public AbstractSearchClass
@@ -88,12 +85,10 @@ public:
     inline bool CV() { return m_cv; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
-    bool FastConfidence();
-    bool EllipsoideConfidence();
     void setParameter(const QJsonObject &json);
    
 public slots:
-    void Interrupt();
+    virtual void Interrupt() override;
     
 private:
     QSharedPointer<Minimizer> m_minimizer;
@@ -105,11 +100,9 @@ private:
     void MCSearch(const QVector<QVector<qreal> > &box);
     void Search(const QVector<QVector<qreal> > &box);
     void StripResults(const QList<QJsonObject > &results);
+    
 signals:
     void StopSubThreads();
-    void IncrementProgress(int time);
-    void setMaximumSteps(int maxsteps);
-    void SingeStepFinished(int time);
 };
 
 #endif // STATISTIC_H
