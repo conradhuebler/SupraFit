@@ -117,6 +117,7 @@ private:
     QSharedPointer<DataClass> m_data;
     QVector<QWeakPointer< AbstractTitrationModel > > m_models;
     QPointer<StatisticDialog> m_statistic_dialog;
+    QVector<QPointer<ModelWidget > > m_model_widgets; 
     void AddModel(int model);
     void AddModel(const QJsonObject &json);
     void ParseScriptedModels();
@@ -130,6 +131,7 @@ private:
     
     void Json2Model(const QJsonObject &object, const QString &str);
     void ActiveModel(QSharedPointer<AbstractTitrationModel > t);
+    int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
     
 private slots:

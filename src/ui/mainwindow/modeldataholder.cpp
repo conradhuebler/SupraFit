@@ -346,7 +346,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
     m_modelsWidget->addModelsTab(modelwidget);
     m_last_tab = m_modelsWidget->currentIndex();
     m_models << t;
-
+    m_model_widgets << modelwidget;
     
     /*
      * Some models are loaded from history, this should no be added again
@@ -522,38 +522,52 @@ void ModelDataHolder::CloseAll()
     }
 }
 
+int ModelDataHolder::Runs(bool moco) const
+{
+    int run = 0;
+    for(int i = 0; i < m_model_widgets.size(); ++i)
+    {
+        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+            continue;
+        if(moco && m_model_widgets[i]->Model()->ConstantSize() != 2)
+            continue;
+        run++;
+    }
+    return run;
+}
+
 void ModelDataHolder::CVStatistic()
 { 
+    m_statistic_dialog->setRuns(Runs());
     m_statistic_dialog->setRuns(m_models.size());
     CVConfig config = m_statistic_dialog->getCVConfig();
-    for(int i = 1; i < m_modelsWidget->count(); i++)
+    for(int i = 0; i < m_model_widgets.size(); ++i)
     {
-        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-            if(m_statistic_dialog->UseChecked() && !model->isChecked())
-                continue;
-            model->CVStatistic(config);
-        }
+        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+            continue;
+        
+        m_model_widgets[i]->CVStatistic(config);
+
+        if(!m_allow_loop)
+            break;
     }
     m_statistic_dialog->HideWidget();
 }
 
 void ModelDataHolder::MCStatistic()
 {
-    m_statistic_dialog->setRuns(m_models.size());
+    m_statistic_dialog->setRuns(Runs());
     MCConfig config = m_statistic_dialog->getMCConfig();
     m_allow_loop = true;
-    for(int i = 1; i < m_modelsWidget->count(); i++)
+    
+    for(int i = 0; i < m_model_widgets.size(); ++i)
     {
-        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-            if(m_statistic_dialog->UseChecked() && !model->isChecked())
-                continue;
-            config.variance = model->Model()->StdDeviation();
-            model->MCStatistic(config);
-        }
+        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+            continue;
+        
+        config.variance = m_model_widgets[i]->Model()->StdDeviation();
+        m_model_widgets[i]->MCStatistic(config);
+        
         if(!m_allow_loop)
             break;
     }
@@ -563,29 +577,18 @@ void ModelDataHolder::MCStatistic()
 void ModelDataHolder::MoCoStatistic()
 {
     m_allow_loop = true;
-    int count = 0;
-    
-    for(int i = 1; i < m_modelsWidget->count(); i++)
-        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-            if(model->Model()->ConstantSize() == 2)
-                count++;
-        }
-    m_statistic_dialog->setRuns(count);
+    m_statistic_dialog->setRuns(Runs(true));
     
     MoCoConfig config = m_statistic_dialog->getMoCoConfig();
     config.maxerror = 0;
-    for(int i = 1; i < m_modelsWidget->count(); i++)
+     for(int i = 0; i < m_model_widgets.size(); ++i)
     {
-        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-            if(m_statistic_dialog->UseChecked() && !model->isChecked())
-                continue;
-            if(model->Model()->ConstantSize() == 2)
-                model->MoCoStatistic(config);
-        }
+        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+            continue;
+        
+        if(m_model_widgets[i]->Model()->ConstantSize() == 2)
+            m_model_widgets[i]->MoCoStatistic(config);
+        
         if(!m_allow_loop)
             break;
     }
