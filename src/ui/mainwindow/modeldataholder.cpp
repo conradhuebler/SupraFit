@@ -527,6 +527,8 @@ int ModelDataHolder::Runs(bool moco) const
     int run = 0;
     for(int i = 0; i < m_model_widgets.size(); ++i)
     {
+        if(!m_model_widgets[i])
+            continue;
         if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
         if(moco && m_model_widgets[i]->Model()->ConstantSize() != 2)
@@ -543,6 +545,9 @@ void ModelDataHolder::CVStatistic()
     CVConfig config = m_statistic_dialog->getCVConfig();
     for(int i = 0; i < m_model_widgets.size(); ++i)
     {
+        if(!m_model_widgets[i])
+            continue;
+            
         if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
         
@@ -562,6 +567,9 @@ void ModelDataHolder::MCStatistic()
     
     for(int i = 0; i < m_model_widgets.size(); ++i)
     {
+        if(!m_model_widgets[i])
+            continue;
+            
         if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
         
@@ -583,6 +591,9 @@ void ModelDataHolder::MoCoStatistic()
     config.maxerror = 0;
      for(int i = 0; i < m_model_widgets.size(); ++i)
     {
+        if(!m_model_widgets[i])
+            continue;
+        
         if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
         
