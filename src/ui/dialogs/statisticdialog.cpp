@@ -49,7 +49,6 @@ StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, Q
 {
     setUi();
     HideWidget();
-    connect(this, SIGNAL(Interrupt()), this, SLOT(HideWidget()));
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
 }
 
@@ -57,7 +56,6 @@ StatisticDialog::StatisticDialog(QWidget *parent) : QDialog(parent)
 {
     setUi();
     HideWidget();
-    connect(this, SIGNAL(Interrupt()), this, SLOT(HideWidget()));
 }
 
 StatisticDialog::~StatisticDialog()
@@ -106,6 +104,11 @@ void StatisticDialog::setUi()
     m_progress = new QProgressBar;
     layout->addWidget(m_time_info);
     
+    m_use_checked = new QCheckBox(tr("Consider Only Checked Tabs."));
+    m_use_checked->setChecked(false);
+    
+    if(!m_model)
+        layout->addWidget(m_use_checked);
     
     m_hide = new QPushButton(tr("Hide"));
     m_interrupt = new QPushButton(tr("Interrupt"));
@@ -149,8 +152,11 @@ QWidget *StatisticDialog::MonteCarloWidget()
         m_varianz_box->setDisabled(true);
         m_varianz_box->setToolTip(tr("Variance of each model will be set automatically."));
     }
-    layout->addWidget(new QLabel(tr("Varianz")), 1, 0);
-    layout->addWidget(m_varianz_box, 1, 1);
+    if(m_model)
+    {
+        layout->addWidget(new QLabel(tr("Varianz")), 1, 0);
+        layout->addWidget(m_varianz_box, 1, 1);
+    }
     
     m_original = new QCheckBox;
     m_original->setText(tr("Use Original Data"));
@@ -204,12 +210,14 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     layout->addWidget(m_cv_maxerror, 1, 1);
     layout->addWidget(m_cv_f_test, 1, 2);  
     
-    layout->addWidget(new QLabel(tr("F-Value:")), 2, 0);
-    layout->addWidget(m_cv_f_value, 2, 1);
-    
-    m_cv_error_info = new QLabel;
-    layout->addWidget(m_cv_error_info, 3, 0, 1, 3);
-    
+    if(m_model)
+    {
+        layout->addWidget(new QLabel(tr("F-Value:")), 2, 0);
+        layout->addWidget(m_cv_f_value, 2, 1);
+        
+        m_cv_error_info = new QLabel;
+        layout->addWidget(m_cv_error_info, 3, 0, 1, 3);
+    }
     m_cv_steps = new QSpinBox;
     m_cv_steps->setMaximum(1e7);
     m_cv_steps->setValue(1000);
@@ -257,10 +265,14 @@ QWidget * StatisticDialog::ModelComparison()
     global_layout->addWidget(new QLabel(tr("Confidence Intervall")), 0, 0);
     global_layout->addWidget(m_moco_maxerror, 0, 1);
     global_layout->addWidget(m_moco_f_test, 0, 2);
-    global_layout->addWidget(new QLabel(tr("F-Value:")), 1, 0);
-    global_layout->addWidget(m_moco_f_value, 1, 1);
-    m_moco_error_info = new QLabel;
-    global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
+    
+    if(m_model)
+    {
+        global_layout->addWidget(new QLabel(tr("F-Value:")), 1, 0);
+        global_layout->addWidget(m_moco_f_value, 1, 1);
+        m_moco_error_info = new QLabel;
+        global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
+    }
     
     m_moco_box_multi = new QDoubleSpinBox;
     m_moco_box_multi->setMaximum(20);

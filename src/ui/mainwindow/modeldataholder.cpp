@@ -66,6 +66,8 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     hide->setChecked(true);
     hide->setToolTip(tr("Toggle Series in Charts"));
     
+    modelwidget->setCheckbox(hide);
+    
     ToolButton *color = new ToolButton;
     color->setMaximumSize(15,15);
     QPalette palette = color->palette();
@@ -529,6 +531,8 @@ void ModelDataHolder::CVStatistic()
         if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
             ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+            if(m_statistic_dialog->UseChecked() && !model->isChecked())
+                continue;
             model->CVStatistic(config);
         }
     }
@@ -545,6 +549,8 @@ void ModelDataHolder::MCStatistic()
         if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
             ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+            if(m_statistic_dialog->UseChecked() && !model->isChecked())
+                continue;
             config.variance = model->Model()->StdDeviation();
             model->MCStatistic(config);
         }
@@ -575,6 +581,8 @@ void ModelDataHolder::MoCoStatistic()
         if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
             ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+            if(m_statistic_dialog->UseChecked() && !model->isChecked())
+                continue;
             if(model->Model()->ConstantSize() == 2)
                 model->MoCoStatistic(config);
         }
