@@ -37,17 +37,30 @@ public:
     Michaelis_Menten_Model(const DataClass *data);
     Michaelis_Menten_Model(const AbstractModel *model);
     ~Michaelis_Menten_Model();
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
+    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;} 
-    virtual void InitialGuess();
+    virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() const;
-    virtual bool SupportThreads() const { return false; }
+    virtual bool SupportThreads() const override { return false; }
     virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
+    
+    /*
+     * ! \brief Export model to json file
+     * 
+     */
+    QJsonObject ExportModel(bool statistics = true) const override;
+    /* ! \brief Import model from json
+     * 
+     */
+    void ImportModel(const QJsonObject &topjson, bool override = true) override;
+
+[[deprecated]]
+    inline virtual void MiniShifts() override { return; }
 private:
     
     
 protected:
-    virtual void CalculateVariables(const QList<qreal > &constants);
+    virtual void CalculateVariables(const QList<qreal > &constants) override;
     
     QList<qreal > m_ItoI_signals;
     qreal m_vmax, m_Km;

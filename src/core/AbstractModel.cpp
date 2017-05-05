@@ -192,4 +192,41 @@ void AbstractModel::SetSingleParameter(double value, int parameter)
         *m_opt_para[parameter] = value;
 }
 
+void AbstractModel::setParamter(const QVector<qreal>& parameter)
+{
+    if(parameter.size() != m_opt_para.size())
+        return;
+    for(int i = 0; i < parameter.size(); ++i)
+        if(m_locked_parameters[i])
+            *m_opt_para[i] = parameter[i];
+}
+
+void AbstractModel::setCVStatistic(const QJsonObject &result, int i)
+{
+    if(i < m_cv_statistics.size())
+        m_cv_statistics[i] = result;
+    else
+        m_cv_statistics << result; 
+    emit StatisticChanged();
+}
+
+void AbstractModel::setMCStatistic(const QJsonObject &result, int i)
+{
+    if(i < m_mc_statistics.size())
+        m_mc_statistics[i] = result;
+    else
+        m_mc_statistics << result; 
+    emit StatisticChanged();
+}
+
+void AbstractModel::setMoCoStatistic(const QJsonObject &result, int i)
+{
+    if(i < m_moco_statistics.size())
+        m_moco_statistics[i] = result;
+    else
+        m_moco_statistics << result; 
+    emit StatisticChanged();
+}
+
+
 #include "AbstractModel.moc"

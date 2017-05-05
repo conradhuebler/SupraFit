@@ -123,22 +123,65 @@ void AbstractTitrationModel::SetSignal(int i, int j, qreal value)
     }
 }
 
-void AbstractTitrationModel::setParamter(const QVector<qreal>& parameter)
+void AbstractTitrationModel::MiniShifts()
 {
-    if(parameter.size() != m_opt_para.size())
-        return;
-    for(int i = 0; i < parameter.size(); ++i)
-        if(m_locked_parameters[i])
-            *m_opt_para[i] = parameter[i];
+    double cut_error = 1;
+    for(int j = 0; j < m_lim_para.size(); ++j)
+    {
+        for(int i = 0; i < SignalCount(); ++i)    
+        {
+            if(ActiveSignals(i) == 1)
+            {
+                if(m_model_error->data(i, 0) < cut_error && j == 0)
+                    *m_lim_para[j][i] -= m_model_error->data(i,0);
+                if(m_model_error->data(i, m_model_error->rowCount() -1 ) < cut_error && j == 1)
+                    *m_lim_para[j][i] -= m_model_error->data(i, m_model_error->rowCount() -1 );   
+            }
+        }
+    }
 }
+
+qreal AbstractTitrationModel::BC50()
+{
+    return 0;
+}
+
+
+MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
+{
+    MassResults result;
+    Vector values(1) ;
+    values(0) = 0;
+    result.MassBalance = values;
+    return result;
+}
+
+void AbstractTitrationModel::setComplexSignals(const QList< qreal > &list, int i)
+{
+    if(!(i < m_complex_signal_parameter.cols()))
+        return;
+    for(int j = 0; j < list.size(); ++j)
+    {
+        if(j < m_complex_signal_parameter.rows())
+            m_complex_signal_parameter(j,i) = list[j];
+    }
+}
+
+
+void AbstractTitrationModel::setPureSignals(const QList<qreal>& list)
+{
+    for(int i = 0; i < list.size(); ++i)
+        m_pure_signals_parameter(i,0) = list[i];
+}
+
 
 QJsonObject AbstractTitrationModel::ExportModel(bool statistics) const
 {
     QJsonObject json, toplevel;
     QJsonObject constantObject;
-    for(int i = 0; i < Constants().size(); ++i)
+    for(int i = 0; i < GlobalParameter().size(); ++i)
     {
-        constantObject[QString::number(i)] = (QString::number(Constants()[i]));
+        constantObject[QString::number(i)] = (QString::number(GlobalParameter()[i]));
     }
     json["constants"] = constantObject;
     if(statistics)
@@ -166,7 +209,7 @@ QJsonObject AbstractTitrationModel::ExportModel(bool statistics) const
         json["pureShift"] = pureShiftObject;   
     
     
-    for(int i = 0; i < Constants().size(); ++i)
+    for(int i = 0; i < GlobalParameter().size(); ++i)
     {
         
         QJsonObject object;
@@ -206,11 +249,11 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
     QList<int > active_signals;
     QList<qreal> constants; 
     QJsonObject constantsObject = json["constants"].toObject();
-    for (int i = 0; i < Constants().size(); ++i) 
+    for (int i = 0; i < GlobalParameter().size(); ++i) 
     {
         constants << constantsObject[QString::number(i)].toString().toDouble();
     }
-    setConstants(constants);
+    setGlobalParameter(constants);
     QStringList keys = json["statistics"].toObject().keys();
     
     if(keys.size() > 9)
@@ -259,7 +302,7 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
     setPureSignals(pureShift);
     
     
-    for(int i = 0; i < Constants().size(); ++i)
+    for(int i = 0; i < GlobalParameter().size(); ++i)
     {
         QList<qreal> shifts;
         QJsonObject object = json["shift_" + QString::number(i)].toObject();
@@ -273,87 +316,9 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
     Calculate();
 }
 
-void AbstractTitrationModel::MiniShifts()
-{
-    double cut_error = 1;
-    for(int j = 0; j < m_lim_para.size(); ++j)
-    {
-        for(int i = 0; i < SignalCount(); ++i)    
-        {
-            if(ActiveSignals(i) == 1)
-            {
-                if(m_model_error->data(i, 0) < cut_error && j == 0)
-                    *m_lim_para[j][i] -= m_model_error->data(i,0);
-                if(m_model_error->data(i, m_model_error->rowCount() -1 ) < cut_error && j == 1)
-                    *m_lim_para[j][i] -= m_model_error->data(i, m_model_error->rowCount() -1 );   
-            }
-        }
-    }
-}
-
-void AbstractTitrationModel::setCVStatistic(const QJsonObject &result, int i)
-{
-    if(i < m_cv_statistics.size())
-        m_cv_statistics[i] = result;
-    else
-        m_cv_statistics << result; 
-    emit StatisticChanged();
-}
-
-void AbstractTitrationModel::setMCStatistic(const QJsonObject &result, int i)
-{
-    if(i < m_mc_statistics.size())
-        m_mc_statistics[i] = result;
-    else
-        m_mc_statistics << result; 
-    emit StatisticChanged();
-}
-
-void AbstractTitrationModel::setMoCoStatistic(const QJsonObject &result, int i)
-{
-    if(i < m_moco_statistics.size())
-        m_moco_statistics[i] = result;
-    else
-        m_moco_statistics << result; 
-    emit StatisticChanged();
-}
-
-qreal AbstractTitrationModel::BC50()
-{
-    return 0;
-}
-
-
-MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
-{
-    MassResults result;
-    Vector values(1) ;
-    values(0) = 0;
-    result.MassBalance = values;
-    return result;
-}
-
-void AbstractTitrationModel::setComplexSignals(const QList< qreal > &list, int i)
-{
-    if(!(i < m_complex_signal_parameter.cols()))
-        return;
-    for(int j = 0; j < list.size(); ++j)
-    {
-        if(j < m_complex_signal_parameter.rows())
-            m_complex_signal_parameter(j,i) = list[j];
-    }
-}
-
-
-void AbstractTitrationModel::setPureSignals(const QList<qreal>& list)
-{
-    for(int i = 0; i < list.size(); ++i)
-        m_pure_signals_parameter(i,0) = list[i];
-}
-
 QPair<qreal, qreal> AbstractTitrationModel::Pair(int i, int j) const
 {
-    return QPair<qreal, qreal>(Constant(i), m_complex_signal_parameter(j,i));
+    return QPair<qreal, qreal>(GlobalParameter(i), m_complex_signal_parameter(j,i));
 }
 
 

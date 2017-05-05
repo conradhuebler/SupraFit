@@ -25,6 +25,7 @@
 
 #include <QtMath>
 
+#include <QtCore/QCollator>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QDebug>
@@ -140,11 +141,153 @@ QSharedPointer<AbstractModel > Michaelis_Menten_Model::Clone() const
     
 }
 
+
+QJsonObject Michaelis_Menten_Model::ExportModel(bool statistics) const
+{
+    QJsonObject json, toplevel;
+    QJsonObject constantObject;
+    for(int i = 0; i < GlobalParameter().size(); ++i)
+    {
+        constantObject[QString::number(i)] = (QString::number(GlobalParameter()[i]));
+    }
+    json["constants"] = constantObject;
+    if(statistics)
+    {
+        QJsonObject statisticObject;
+        for(int i = 0; i < m_cv_statistics.size(); ++i)
+        {
+            statisticObject["CVResult_"+QString::number(i)] = m_cv_statistics[i];
+        }
+        for(int i = 0; i < m_mc_statistics.size(); ++i)
+        {
+            statisticObject["MCResult_"+QString::number(i)] = m_mc_statistics[i];
+        }
+        for(int i = 0; i < m_moco_statistics.size(); ++i)
+        {
+            statisticObject["MoCoResult_"+QString::number(i)] = m_moco_statistics[i];
+        }
+        json["statistics"] = statisticObject;
+    }
+    QJsonObject pureShiftObject;
+    for(int i = 0; i < m_pure_signals_parameter.rows(); ++i)
+        if(ActiveSignals(i))
+            pureShiftObject[QString::number(i)] = (QString::number(m_pure_signals_parameter(i)));
+        
+        json["pureShift"] = pureShiftObject;   
+    
+    
+    for(int i = 0; i < GlobalParameter().size(); ++i)
+    {
+        
+        QJsonObject object;
+        for(int j = 0; j < m_pure_signals_parameter.rows(); ++j)
+        {
+            if(ActiveSignals(j))
+            {
+                qreal value = Pair(i, j).second;
+                object[QString::number(j)] =  QString::number(value);
+            }
+            json["shift_" + QString::number(i)] = object;
+        }
+    }
+    
+    toplevel["data"] = json;
+    toplevel["model"] = m_name;  
+//     qDebug() << m_last_optimization;
+    toplevel["runtype"] = m_last_optimization;
+    toplevel["sum_of_squares"] = m_sum_squares;
+    toplevel["sum_of_absolute"] = m_sum_absolute;
+    toplevel["mean_error"] = m_mean;
+    toplevel["variance"] = m_variance;
+    toplevel["standard_error"] = m_stderror;
+    
+    return toplevel;
+}
+
+void Michaelis_Menten_Model::ImportModel(const QJsonObject &topjson, bool override)
+{
+    if(topjson[m_name].isNull())
+    {
+        qWarning() << "file doesn't contain any " + m_name;
+        return;
+    }
+    QJsonObject json = topjson["data"].toObject();
+    
+    QList<int > active_signals;
+    QList<qreal> constants; 
+    QJsonObject constantsObject = json["constants"].toObject();
+    for (int i = 0; i < GlobalParameter().size(); ++i) 
+    {
+        constants << constantsObject[QString::number(i)].toString().toDouble();
+    }
+    setGlobalParameter(constants);
+    QStringList keys = json["statistics"].toObject().keys();
+    
+    if(keys.size() > 9)
+    {
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+                  keys.end(),
+                  [&collator](const QString &key1, const QString &key2)
+                  {
+                      return collator.compare(key1, key2) < 0;
+                  });
+    }
+    if(override)
+    {
+        m_cv_statistics.clear();
+        m_moco_statistics.clear();
+        m_mc_statistics.clear();
+    }
+    for(const QString &str : qAsConst(keys))
+    {
+        if(str.contains("CV"))
+            m_cv_statistics << json["statistics"].toObject()[str].toObject();
+        else if(str.contains("MC"))
+            m_mc_statistics << json["statistics"].toObject()[str].toObject();
+        else if(str.contains("MoCo"))
+            m_moco_statistics << json["statistics"].toObject()[str].toObject();
+    }
+    
+    if(topjson["runtype"].toInt() != 0)
+        OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
+    
+    
+//     QList<qreal> pureShift;
+//     QJsonObject pureShiftObject = json["pureShift"].toObject();
+//     for (int i = 0; i < m_pure_signals_parameter.rows(); ++i) 
+//     {
+//         pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+//         if(!pureShiftObject[QString::number(i)].isNull())
+//             active_signals <<  1;
+//         else
+//             active_signals <<  0;
+//         
+//     }
+//     setPureSignals(pureShift);
+    
+    
+//     for(int i = 0; i < GlobalParameter().size(); ++i)
+//     {
+//         QList<qreal> shifts;
+//         QJsonObject object = json["shift_" + QString::number(i)].toObject();
+//         for(int j = 0; j < m_pure_signals_parameter.rows(); ++j)
+//         {
+//             shifts << object[QString::number(j)].toString().toDouble();
+//         }
+//         setComplexSignals(shifts, i);
+//     }
+    setActiveSignals(active_signals);
+    Calculate();
+}
+
 QPair<qreal, qreal> Michaelis_Menten_Model::Pair(int i, int j) const
 {
     if(i >= 1)
         return QPair<qreal, qreal>(0,0);
-    return QPair<qreal, qreal>(Constant(i), m_complex_signal_parameter(j,i));
+    return QPair<qreal, qreal>(GlobalParameter(i), m_complex_signal_parameter(j,i));
 }
 
 #include "mm_model.moc"

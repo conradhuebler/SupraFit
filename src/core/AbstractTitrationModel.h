@@ -74,7 +74,7 @@ public:
     QList<qreal >  getCalculatedSignals();
 
     inline QString Name() const { return m_name; }
-    void setParamter(const QVector<qreal> &parameter);
+//     void setParamter(const QVector<qreal> &parameter);
     inline int Size() const { return DataClass::Size(); }
 
     void adress() const;
@@ -90,18 +90,6 @@ public:
 
     void MiniShifts();
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
-    
-    
-    void setCVStatistic(const QJsonObject &result, int i);
-    void setMCStatistic(const QJsonObject &result, int i);
-    void setMoCoStatistic(const QJsonObject &result, int i);
-
-    QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
-    QJsonObject getCVStatisticResult(int i) const { return m_cv_statistics[i]; }
-    QJsonObject getMoCoStatisticResult(int i) const { return m_moco_statistics[i]; }
-    int getMCStatisticResult() const { return m_mc_statistics.size(); }
-    int getCVStatisticResult() const { return m_cv_statistics.size(); }
-    int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
     
     
     virtual qreal BC50();

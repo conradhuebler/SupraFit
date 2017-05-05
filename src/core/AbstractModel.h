@@ -116,6 +116,17 @@ public:
     void setOptParamater(QList< qreal >& parameter);
     void addOptParameter(QList <qreal > &vector);
     
+    void setCVStatistic(const QJsonObject &result, int i);
+    void setMCStatistic(const QJsonObject &result, int i);
+    void setMoCoStatistic(const QJsonObject &result, int i);
+
+    QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
+    QJsonObject getCVStatisticResult(int i) const { return m_cv_statistics[i]; }
+    QJsonObject getMoCoStatisticResult(int i) const { return m_moco_statistics[i]; }
+    int getMCStatisticResult() const { return m_mc_statistics.size(); }
+    int getCVStatisticResult() const { return m_cv_statistics.size(); }
+    int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
+    
 #warning maybe deprecated
     inline QList<int> ActiveSignals() const { return m_active_signals; }
 
@@ -136,7 +147,7 @@ public:
     }
     
 #warning fixme here
-    virtual void setParamter(const QVector<qreal> &parameter) = 0; //FIXME
+    void setParamter(const QVector<qreal> &parameter); //FIXME
     
     /*! \brief Returns if the current model parameter makes dont't sense
      * true - no sense

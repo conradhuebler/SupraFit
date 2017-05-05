@@ -39,7 +39,7 @@
 #include "cvresultswidget.h"
 
 
-CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
+CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
 {
     m_statistics = statistics;
     m_model = model;

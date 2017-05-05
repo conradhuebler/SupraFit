@@ -87,7 +87,7 @@ void ChartWrapper::setData(QPointer<DataClass> model)
 {
     m_model = model; 
     
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
+    if(qobject_cast<AbstractModel *>(m_model))
         connect(m_model, SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     
     if(m_stored_series.isEmpty())
@@ -95,7 +95,7 @@ void ChartWrapper::setData(QPointer<DataClass> model)
         for(int j = 0; j < m_model->SignalCount(); ++j)
         { 
             QPointer<QtCharts::QXYSeries > series;
-            if(qobject_cast<AbstractTitrationModel *>(m_model))
+            if(qobject_cast<AbstractModel *>(m_model))
                 series = new LineSeries;
             else
                 series = new ScatterSeries;
