@@ -27,6 +27,10 @@ AbstractSearchClass::AbstractSearchClass(QObject *parent) : QObject(parent), m_i
     m_threadpool = QThreadPool::globalInstance();
 }
 
+// AbstractSearchClass::AbstractSearchClass(AbstractSearchClass* other) : m_model(other->m_model), m_results(other->Results()), m_series(other->Series())
+// {
+// }
+
 
 AbstractSearchClass::~AbstractSearchClass()
 {

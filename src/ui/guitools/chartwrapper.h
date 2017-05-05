@@ -48,6 +48,7 @@ public slots:
     void ShowLine(int state);
     void ShowLine(bool state);
     virtual void setName(const QString &name);
+    
 };
 
 class ScatterSeries : public QtCharts::QScatterSeries

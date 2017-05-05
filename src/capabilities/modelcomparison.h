@@ -37,6 +37,7 @@ public:
     qreal box_multi = 1.5;
     qreal maxerror = 0; 
     qreal confidence = 95;
+    qreal f_value = 0;
     bool fisher_statistic = false;
 };
 

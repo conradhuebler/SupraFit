@@ -65,6 +65,7 @@ class AbstractSearchClass : public QObject
     
 public:
     AbstractSearchClass(QObject *parent = 0);
+//     AbstractSearchClass(AbstractSearchClass *other);
     ~AbstractSearchClass();
     inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); }
     
@@ -76,8 +77,6 @@ public:
     
 public slots:
     virtual void Interrupt();
-    
-private:
     
 protected:
     QSharedPointer<AbstractTitrationModel> m_model;

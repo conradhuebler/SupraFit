@@ -315,6 +315,7 @@ CVConfig StatisticDialog::getCVConfig()
     config.relax = true;
     config.fisher_statistic = m_cv_f_test->isChecked();
     config.confidence = m_cv_maxerror->value();
+    config.f_value = m_cv_f_value->value();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_runs);
@@ -334,6 +335,7 @@ MoCoConfig StatisticDialog::getMoCoConfig()
     cv_config.relax = true;
     config.cv_config = cv_config;
     config.fisher_statistic = m_moco_f_test->isChecked();
+    config.f_value = m_moco_f_value->value();
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_runs*(1+m_moco_mc_steps->value()/update_intervall));

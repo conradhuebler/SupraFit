@@ -62,6 +62,7 @@ void ContinuousVariationThread::run()
     controller["increment"] = m_config.increment;
     controller["maxerror"] = m_config.maxerror;
     controller["fisher"] = m_config.fisher_statistic;
+    controller["f-value"] = m_config.f_value;
     m_result["controller"] = controller;
     m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
     m_result["value"] = parameter[m_parameter_id];

@@ -39,8 +39,10 @@
 #include "cvresultswidget.h"
 
 
-CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent): QWidget(parent), m_model(model), m_statistics(statistics)
+CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
 {
+    m_statistics = statistics;
+    m_model = model;
     if(!m_statistics)
         throw 1;
     setUi();
@@ -48,38 +50,48 @@ CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QShar
 
 CVResultsWidget::~CVResultsWidget()
 {
-    m_statistics->Interrupt();
-    
-    if(m_statistics)
-        delete m_statistics;
+
 }
 
-void CVResultsWidget::setUi()
+QWidget * CVResultsWidget::ChartWidget()
 {
+    QWidget *widget = new QWidget;
     QGridLayout *layout = new QGridLayout;
 
-    m_confidence_label = new QLabel();
-    m_confidence_label->setTextFormat(Qt::RichText);
-    layout->addWidget(m_confidence_label, 1, 0);
-    
     if(qobject_cast<ContinuousVariation *>(m_statistics))
-        m_view = CVPlot();
+        layout->addWidget(CVPlot());
     else
-        m_view = EllipsoidalPlot();
+        layout->addWidget(MoCoPlot());
     
-    layout->addWidget(m_view, 0, 0);
-    setLayout(layout);
+    widget->setLayout(layout);
+    return widget;
 }
 
 void CVResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_results)
 {
     QString text;
-    
     QJsonObject controller = constant_results.first()["controller"].toObject();
-    text += "Maxsteps: " + QString::number(controller["steps"].toInt()) + "\t";
-    text += "Increment = " + QString::number(controller["increment"].toDouble()) + "\t";
-    text += "Max Error = " + QString::number(controller["maxerror"].toDouble()) + "\n";
-    
+    if(constant_results.first()["method"].toString() == "model comparison")
+    {
+        text += "<h3>Model Comparison</h3";
+        text += "<p><b>Monte Carlo Steps </b>: " + QString::number(controller["steps"].toInt()) + "</p>";
+        text += "<p><b>Area of the ellipse</b> is " + QString::number(constant_results.first()["moco_area"].toDouble()) + "</p>";
+    }
+    else
+    {
+        text += "<h3>Continuous Variation</h3>";
+        text += "<p>Maxsteps</b> : " + QString::number(controller["steps"].toInt()) + "</p>"; 
+        text += "<p>Increment for each step is " + QString::number(controller["increment"].toDouble()) + "</p>";
+    }
+            
+    text += "<p><b>Fisher Statistic</b> ";
+    if(controller["fisher"].toBool())
+        text += "was used. F-value is " + QString::number(controller["f-value"].toDouble());
+    else
+        text += "was not used";
+    text += "</p>";
+    text += "The maximal error is " + QString::number(controller["maxerror"].toDouble());
+        
     for(int i = 0; i < constant_results.size(); ++i)
     {
         if(constant_results[i].contains("moco_area"))
@@ -112,12 +124,13 @@ ChartView * CVResultsWidget::CVPlot()
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
-        view->addSeries(current_constant);
+        current_constant->setName("K" + m_model->ConstantNames()[i]);
+        view->addSeries(current_constant, true);
     }
     return view;
 }
 
-ChartView *  CVResultsWidget::EllipsoidalPlot()
+ChartView *  CVResultsWidget::MoCoPlot()
 {
     QList<QJsonObject > constant_results = m_statistics->Results();
     WriteConfidence(constant_results);
@@ -130,11 +143,16 @@ ChartView *  CVResultsWidget::EllipsoidalPlot()
     xy_series->append(ToolSet::fromModelsList(m_statistics->Models()));
     xy_series->setMarkerSize(7);
     view->addSeries(xy_series);
+    int i = 0;
     for(const QList<QPointF> &serie : qAsConst(series))
     {
         LineSeries *xy_serie = new LineSeries;
         xy_serie->append(serie);
-        view->addSeries(xy_serie);
+        xy_series->setName("K" + m_model->ConstantNames()[i]);
+        view->addSeries(xy_serie, true);
+        ++i;
     }
+    view->setXAxis("K" + m_model->ConstantNames()[0]);
+    view->setYAxis("K" + m_model->ConstantNames()[1]);
     return view;
 }

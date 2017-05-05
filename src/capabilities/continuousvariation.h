@@ -40,6 +40,7 @@ public:
     int maxsteps = 1e4;
     qreal maxerror = 0;
     qreal confidence = 95;
+    qreal f_value = 0;
     bool relax = true;
     bool fisher_statistic = false;
 };
@@ -84,7 +85,6 @@ public:
     inline bool CV() { return m_cv; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
-    bool EllipsoideConfidence();
     void setParameter(const QJsonObject &json);
    
 public slots:
@@ -100,6 +100,7 @@ private:
     void MCSearch(const QVector<QVector<qreal> > &box);
     void Search(const QVector<QVector<qreal> > &box);
     void StripResults(const QList<QJsonObject > &results);
+    
 signals:
     void StopSubThreads();
 };

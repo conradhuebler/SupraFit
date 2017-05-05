@@ -418,7 +418,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model, m_statistic_result);
+    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model);
 
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");

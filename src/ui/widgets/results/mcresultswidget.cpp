@@ -17,6 +17,7 @@
  * 
  */
 
+#include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
@@ -40,8 +41,10 @@
 
 #include "mcresultswidget.h"
 
-MCResultsWidget::MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent) : QWidget(parent), m_model(model), m_statistics(statistics)
+MCResultsWidget::MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractTitrationModel> model) //: ResultsWidget(statistics, model,  parent) 
 {
+    m_statistics = statistics;
+    m_model = model;
     if(m_statistics)
         setUi();
 }
@@ -49,20 +52,15 @@ MCResultsWidget::MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSh
 
 MCResultsWidget::~MCResultsWidget()
 {
-    m_statistics->Interrupt();
-    
-    if(m_statistics)
-        delete m_statistics;
+
 }
 
-void MCResultsWidget::setUi()
+QWidget * MCResultsWidget::ChartWidget()
 {
-    
+    QWidget *widget = new QWidget;
     QWidget *resultwidget = new QWidget;
     QGridLayout *layout = new QGridLayout;
     resultwidget->setLayout(layout);
-    m_confidence_label = new QLabel();
-    m_confidence_label->setTextFormat(Qt::RichText);
 
     m_histgram = MakeHistogram();
     layout->addWidget(m_histgram, 0, 0, 1, 7);
@@ -87,9 +85,9 @@ void MCResultsWidget::setUi()
     if(m_model->ConstantSize() == 2)
         layout->addWidget(m_switch, 1, 3);
     
-    layout->addWidget(m_confidence_label,2, 0, 1, 3);
-    setLayout(layout);
+    widget->setLayout(layout);
     UpdateConfidence();
+    return widget;
 }
 
 QPointer<ChartView> MCResultsWidget::MakeContour()
@@ -138,7 +136,8 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());
         current_constant->setColor(xy_series->color());
-        view->addSeries(current_constant);
+        current_constant->setName(m_model->ConstantNames()[i]);
+        view->addSeries(current_constant, true);
         
         QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
         if(view)
@@ -148,7 +147,7 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
             m_area_series << area_series;
         } 
         m_colors << xy_series->color();
-    }   
+    } 
     return view;
 }
 
@@ -215,6 +214,7 @@ void MCResultsWidget::UpdateBoxes(const QList<QList<QPointF > > &series, const Q
             
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
+            area_series->setName(m_model->ConstantNames()[i]);
         }
     }
 }
