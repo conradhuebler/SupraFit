@@ -132,7 +132,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
         }
         if(temporary)
             m_allow_break = true;
-        m_model->setConstants(parameter);
+        m_model->setGlobalParameter(parameter);
         m_full_list.append( parameter );
         QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_config.runtype, m_config.optimize);
         thread_rows << thread;
@@ -182,7 +182,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
         for(int j = 0; j < threads[i].size(); ++j)
         {
             QCoreApplication::processEvents();
-            QList< qreal > parameter = threads[i][j]->Model()->Constants();
+            QList< qreal > parameter = threads[i][j]->Model()->GlobalParameter();
             
             QJsonObject json = threads[i][j]->ConvergedParameter();
             m_model->ImportModel(json);
@@ -225,7 +225,7 @@ void GlobalSearch::Scan(const QVector< QVector<double > >& list)
         QList<QPointF> series;
         for(int i = 0; i < list[j].size(); ++i)
         {
-            m_model->setConstants(QList<qreal> () << list[j][i]);
+            m_model->setGlobalParameter(QList<qreal> () << list[j][i]);
             m_model->Calculate();
             error << m_model->ModelError();
             series.append(QPointF(list[j][i],m_model->ModelError( )));

@@ -43,10 +43,10 @@ public:
     ~IItoI_ItoI_ItoII_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 3;}
-    virtual void InitialGuess();
-    virtual QSharedPointer<AbstractModel > Clone() const;
-    virtual bool SupportThreads() const { return true; }
-    virtual MassResults MassBalance(qreal A, qreal B);
+    virtual void InitialGuess() override;
+    virtual QSharedPointer<AbstractModel > Clone() const override;
+    virtual bool SupportThreads() const override { return true; }
+    virtual MassResults MassBalance(qreal A, qreal B) override;
     
 private:
     qreal m_K21, m_K11, m_K12;
@@ -55,7 +55,7 @@ private:
     QList<qreal> m_constants_pow;
     
 protected:
-    virtual void CalculateVariables(const QList<qreal > &constants);
+    virtual void CalculateVariables(const QList<qreal > &constants) override;
 };
 
 #endif // 2_1_1_1_MODEL_H

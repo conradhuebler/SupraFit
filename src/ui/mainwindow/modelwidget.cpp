@@ -153,7 +153,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_minimize_all->setMenu(menu);
     
     const_layout->addWidget(m_minimize_all);
-    m_layout->addLayout(const_layout, 0, 0, 1, m_model->ConstantSize()+3);
+    m_layout->addLayout(const_layout, 0, 0, 1, m_model->GlobalParameterSize()+3);
     m_sign_layout = new QVBoxLayout;
     
     m_sign_layout->setAlignment(Qt::AlignTop);
@@ -176,7 +176,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     QScrollArea *area = new QScrollArea;
     area->setWidgetResizable(true);
     area->setWidget(scroll);
-    m_layout->addWidget(area, 2,0,1,m_model->ConstantSize()+3);
+    m_layout->addWidget(area, 2,0,1,m_model->GlobalParameterSize()+3);
     
     if(m_model->Type() == 1)
         DiscreteUI();
@@ -252,9 +252,9 @@ void ModelWidget::DiscreteUI()
     connect(actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
     connect(actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     
-    m_layout->addWidget(actions, 3, 0,1,m_model->ConstantSize()+3);  
+    m_layout->addWidget(actions, 3, 0,1,m_model->GlobalParameterSize()+3);  
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
-    m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->ConstantSize()+3);  
+    m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->GlobalParameterSize()+3);  
    
 }
 
@@ -273,7 +273,7 @@ void ModelWidget::EmptyUI()
 
 void ModelWidget::setParameter()
 {
-    QList<qreal > constants = m_model->Constants();
+    QList<qreal > constants = m_model->GlobalParameter();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();
@@ -326,7 +326,7 @@ void ModelWidget::CollectParameters()
 {
     QList<qreal > pure_signals, constants;
     QVector<QList <qreal > > complex_signals;
-    complex_signals.resize(m_model->ConstantSize());
+    complex_signals.resize(m_model->GlobalParameterSize());
     QList<int > active_signals;
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
@@ -339,13 +339,13 @@ void ModelWidget::CollectParameters()
     }
     if(qobject_cast<AbstractTitrationModel *>(m_model))
     {
-        for(int j = 0; j < m_model->ConstantSize(); ++j)
+        for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
             qobject_cast<AbstractTitrationModel *>(m_model)->setComplexSignals(complex_signals[j], j);
     }
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
         constants << m_constants[i]->value();
     m_model->setActiveSignals(active_signals);
-    m_model->setConstants(constants);
+    m_model->setGlobalParameter(constants);
     if(qobject_cast<AbstractTitrationModel *>(m_model))
         qobject_cast<AbstractTitrationModel *>(m_model)->setPureSignals(pure_signals);
 }
@@ -608,7 +608,7 @@ void ModelWidget::NewGuess()
     if (r == QMessageBox::No)
         return;
     m_model->InitialGuess();
-    QList<qreal > constants = m_model->Constants();
+    QList<qreal > constants = m_model->GlobalParameter();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     emit Update();
@@ -653,7 +653,7 @@ void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportModel(object);
 //     m_model->Calculate();
-    QList<qreal > constants = m_model->Constants();
+    QList<qreal > constants = m_model->GlobalParameter();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
     Repaint();
@@ -841,11 +841,11 @@ void ModelWidget::Model2Text()
     text += "******************************************************************************************************\n";
     text += "#### Current Model Results #####\n";
     text += "Equilibrium Model Calculation with complexation constants:\n";
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
-        text += m_model->ConstantNames()[i] + ":\t" + QString::number(m_model->Constant(i))+ "\n";
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
+        text += m_model->ConstantNames()[i] + ":\t" + QString::number(m_model->GlobalParameter(i))+ "\n";
     for(int i = 0; i < m_model->ConcentrationModel()->columnCount(); ++i)
         text += m_model->ConcentrationModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
         text += m_model->ConstantNames()[i] + "\t";
     text += "\n";
 #warning remove mie

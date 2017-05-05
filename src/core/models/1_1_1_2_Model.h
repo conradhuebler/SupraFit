@@ -37,15 +37,15 @@ public:
     ~ItoI_ItoII_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;}
-    virtual void InitialGuess();
-    virtual QSharedPointer<AbstractModel > Clone() const;
-    virtual bool SupportThreads() const { return false; }
-    virtual qreal BC50();
+    virtual void InitialGuess() override;
+    virtual QSharedPointer<AbstractModel > Clone() const override;
+    virtual bool SupportThreads() const override { return false; }
+    virtual qreal BC50() override;
     
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 
     {
-        return HostConcentration(host_0, guest_0, Constants());
+        return HostConcentration(host_0, guest_0, GlobalParameter());
     }
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
     qreal GuestConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
@@ -54,7 +54,7 @@ private:
     QList<qreal > m_ItoI_signals, m_ItoII_signals;
     static qreal Y(qreal x, const QVector<qreal > & parameter);
 protected:
-    virtual void CalculateVariables(const QList<qreal > &constants);
+    virtual void CalculateVariables(const QList<qreal > &constants) override;
 };
 
 #endif // 2_1_1_1_MODEL_H

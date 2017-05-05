@@ -541,7 +541,7 @@ int ModelDataHolder::Runs(bool moco) const
     {
         if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
-        if(moco && m_model_widgets[i]->Model()->ConstantSize() != 2)
+        if(moco && m_model_widgets[i]->Model()->GlobalParameterSize() != 2)
             continue;
         run++;
     }
@@ -598,7 +598,7 @@ void ModelDataHolder::MoCoStatistic()
         if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
         
-        if(m_model_widgets[i]->Model()->ConstantSize() == 2)
+        if(m_model_widgets[i]->Model()->GlobalParameterSize() == 2)
             m_model_widgets[i]->MoCoStatistic(config);
         
         if(!m_allow_loop)

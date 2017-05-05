@@ -120,7 +120,6 @@ protected:
     void SetConcentration(int i, const Vector &equlibrium);
 
     QString m_name;
-    QList<qreal > m_complex_constants;
     QVector< QVector < qreal > > m_difference; 
     
     QVector<QVector<qreal * > >m_lim_para;

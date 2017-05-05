@@ -82,7 +82,7 @@ QWidget * MCResultsWidget::ChartWidget()
     layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
     layout->addWidget(m_error, 1, 1);
     layout->addWidget(m_save, 1, 2);
-    if(m_model->ConstantSize() == 2)
+    if(m_model->GlobalParameterSize() == 2)
         layout->addWidget(m_switch, 1, 3);
     
     widget->setLayout(layout);
@@ -134,7 +134,7 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         formated = true;
 
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
-        *current_constant << QPointF(m_model->Constant(i), 0) << QPointF(m_model->Constant(i), view->YMax());
+        *current_constant << QPointF(m_model->GlobalParameter(i), 0) << QPointF(m_model->GlobalParameter(i), view->YMax());
         current_constant->setColor(xy_series->color());
         current_constant->setName(m_model->ConstantNames()[i]);
         view->addSeries(current_constant, true);
@@ -169,7 +169,7 @@ void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
     for(int i = 0; i < constant_results.size(); ++i)
     {
         m_model->setMCStatistic(constant_results[i], i);
-        if(i < m_model->ConstantSize())
+        if(i < m_model->GlobalParameterSize())
         {
             QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
             confidence  += StatisticWidget::TextFromConfidence(constant_results[i]) + "\n";

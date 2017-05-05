@@ -63,10 +63,10 @@ ItoI_Model::~ItoI_Model()
 void ItoI_Model::InitialGuess()
 {
     m_K11 = 4;
-    m_complex_constants = QList<qreal>() << m_K11;
+    m_global_parameter = QList<qreal>() << m_K11;
     m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
     m_pure_signals_parameter = SignalModel()->firstRow();
-    setOptParamater(m_complex_constants);
+    setOptParamater(m_global_parameter);
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
@@ -82,7 +82,7 @@ void ItoI_Model::InitialGuess()
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
-        setOptParamater(m_complex_constants);
+        setOptParamater(m_global_parameter);
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
@@ -156,7 +156,7 @@ QSharedPointer<AbstractModel > ItoI_Model::Clone() const
 
 qreal ItoI_Model::BC50()
 {
-    return 1/qPow(10,Constants()[0]); 
+    return 1/qPow(10,GlobalParameter()[0]); 
 }
 
 #include "1_1_Model.moc"

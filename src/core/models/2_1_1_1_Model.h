@@ -40,17 +40,17 @@ public:
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;}
     
-    virtual void InitialGuess();
-    virtual QSharedPointer<AbstractModel > Clone() const;
-    virtual bool SupportThreads() const { return false; }
-    virtual qreal BC50();
+    virtual void InitialGuess() override;
+    virtual QSharedPointer<AbstractModel > Clone() const override;
+    virtual bool SupportThreads() const override { return false; }
+    virtual qreal BC50() override;
     
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, Constants());}
+    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
     
 protected:
-    virtual void CalculateVariables(const QList<qreal > &constants);
+    virtual void CalculateVariables(const QList<qreal > &constants) override;
     
     qreal m_K21, m_K11;
     QList<qreal > m_ItoI_signals, m_IItoI_signals;

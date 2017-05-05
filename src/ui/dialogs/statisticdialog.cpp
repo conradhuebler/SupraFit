@@ -79,7 +79,7 @@ void StatisticDialog::updateUI()
     m_moco_f_value->setToolTip(FOutput());
     m_cv_f_value->setValue(m_model.data()->finv(m_cv_maxerror->value()/100)); 
     m_moco_f_value->setValue(m_model.data()->finv(m_moco_maxerror->value()/100));
-    if(m_model.data()->ConstantSize() != 2)
+    if(m_model.data()->GlobalParameterSize() != 2)
     {
         m_moco_widget->setDisabled(true);
         m_moco_widget->setToolTip("<p>Model Comparison is not enabled for 1:1 and 2:1/1:1/1:2 models.</p><p>For 1:1 models the result are equal to the automatic confidence calculation.</p><p>For more complicated models the confidence region becomes an ellipsoid, which is not supported yet.</br>This may come in later release of suprafit</p>");

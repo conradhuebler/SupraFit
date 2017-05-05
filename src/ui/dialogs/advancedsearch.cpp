@@ -98,28 +98,28 @@ AdvancedSearch::~AdvancedSearch()
 
 double AdvancedSearch::MaxX() const
 {
-    if(m_model->ConstantSize() >= 1)
+    if(m_model->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinX() const
 {
-    if(m_model->ConstantSize() >= 1)
+    if(m_model->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Min();
     return 0;
 }
 
 double AdvancedSearch::MaxY() const
 {
-    if(m_model->ConstantSize() >= 2)
+    if(m_model->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinY() const
 {
-    if(m_model->ConstantSize() >= 2)
+    if(m_model->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Min();
     return 0;
 }
@@ -134,7 +134,7 @@ void AdvancedSearch::SetUi()
     
     QVBoxLayout *layout = new QVBoxLayout;
     
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
         QPointer<ParameterWidget > widget = new ParameterWidget(m_model->ConstantNames()[i], this);
         layout->addWidget(widget);
@@ -177,11 +177,11 @@ void AdvancedSearch::SetUi()
     mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
     mlayout->addWidget(m_progress, 2, 0, 1, 2);
     mlayout->addWidget(m_optim, 3, 0);
-    if(m_model->ConstantSize() == 1)
+    if(m_model->GlobalParameterSize() == 1)
         mlayout->addWidget(m_1d_search,3, 1);
     mlayout->addWidget(m_scan, 3, 0);
     mlayout->addWidget(m_interrupt, 3, 0);
-    if(m_model->ConstantSize() == 2)
+    if(m_model->GlobalParameterSize() == 2)
     {
         mlayout->addWidget(m_2d_search,3, 1);
     }

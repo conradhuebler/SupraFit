@@ -50,12 +50,12 @@ ItoI_ItoII_Model::~ItoI_ItoII_Model()
 void ItoI_ItoII_Model::InitialGuess()
 {
     ItoI_Model *model = new ItoI_Model(m_data);
-    m_K12 = model->Constants()[model->ConstantSize() -1];
+    m_K12 = model->GlobalParameter()[model->GlobalParameterSize() -1];
     m_K11 = m_K12/2;
     delete model;
     
-    m_complex_constants = QList<qreal>() << m_K11 << m_K12;
-    setOptParamater(m_complex_constants);
+    m_global_parameter = QList<qreal>() << m_K11 << m_K12;
+    setOptParamater(m_global_parameter);
     
     m_complex_signal_parameter.col(0) = SignalModel()->firstRow();
     m_complex_signal_parameter.col(1) = SignalModel()->lastRow();
@@ -76,7 +76,7 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
 {
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        setOptParamater(m_complex_constants);
+        setOptParamater(m_global_parameter);
     }
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
@@ -194,8 +194,8 @@ qreal ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
 
 qreal ItoI_ItoII_Model::BC50()
 {
-    qreal b11 = qPow(10,Constant(0));
-    qreal b12 = qPow(10,Constant(0)+Constant(1));
+    qreal b11 = qPow(10,GlobalParameter(0));
+    qreal b12 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
     QVector<qreal> parameter;
     parameter << b11 << b12;
     std::function<qreal(qreal, const QVector<qreal> &)> function = Y;

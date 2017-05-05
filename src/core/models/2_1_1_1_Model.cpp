@@ -49,12 +49,12 @@ IItoI_ItoI_Model::~IItoI_ItoI_Model()
 void IItoI_ItoI_Model::InitialGuess()
 {
     ItoI_Model *model = new ItoI_Model(m_data);
-    m_K11 = model->Constants()[model->ConstantSize() -1];
+    m_K11 = model->GlobalParameter()[model->GlobalParameterSize() -1];
     m_K21 = m_K11/2;
     delete model;
     
-    m_complex_constants = QList<qreal>() << m_K21 << m_K11;
-    setOptParamater(m_complex_constants);
+    m_global_parameter = QList<qreal>() << m_K21 << m_K11;
+    setOptParamater(m_global_parameter);
         
     m_complex_signal_parameter.col(0) = SignalModel()->firstRow();
     m_complex_signal_parameter.col(1) = SignalModel()->lastRow();
@@ -142,7 +142,7 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        addOptParameter(m_complex_constants);
+        addOptParameter(m_global_parameter);
     }
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
@@ -177,8 +177,8 @@ QSharedPointer<AbstractModel > IItoI_ItoI_Model::Clone() const
 
 qreal IItoI_ItoI_Model::BC50()
 {
-    qreal b11 = qPow(10,Constants()[1]);
-    qreal b21 = qPow(10,(Constants()[0]+Constants()[1]));
+    qreal b11 = qPow(10,GlobalParameter()[1]);
+    qreal b21 = qPow(10,(GlobalParameter()[0]+GlobalParameter()[1]));
     qreal bc50 = -b11/b21/double(2) + sqrt(qPow(b11/double(2)/b21,2)+1/b21);
     return bc50;
 }

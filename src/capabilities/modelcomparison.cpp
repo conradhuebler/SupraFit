@@ -53,12 +53,12 @@ void MCThread::run()
     {
         if(m_interrupt)
             return;
-        QList<qreal > consts = m_model.data()->Constants();
+        QList<qreal > consts = m_model.data()->GlobalParameter();
         for(int i = 0; i < consts.size(); ++i)
         {
             consts[i] = dist[i](rng)/mult;
         }
-        m_model->setConstants(consts);
+        m_model->setGlobalParameter(consts);
         m_model->Calculate();
         m_results << m_model->ExportModel();
     }
@@ -129,7 +129,7 @@ double ModelComparison::SingleLimit(int parameter_id, int direction)
     while(qAbs(error-m_config.maxerror) > 1e-7)
     {
         parameter[parameter_id] = param;
-        m_model.data()->setConstants(parameter);
+        m_model.data()->setGlobalParameter(parameter);
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
         
@@ -145,7 +145,7 @@ double ModelComparison::SingleLimit(int parameter_id, int direction)
             old_param -= step*direction;
         }
         parameter[parameter_id] = param;
-        m_model.data()->setConstants(parameter);
+        m_model.data()->setGlobalParameter(parameter);
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
         iter++;
@@ -176,9 +176,9 @@ QVector<QVector<qreal> > ModelComparison::MakeBox()
         m_box_area *= double(m_config.box_multi*(upper-value)+m_config.box_multi*(value-lower));
         QList<QPointF> points;
         if(!i)
-            points << QPointF(lower, m_model->Constant(1)) << QPointF(upper, m_model->Constant(1));
+            points << QPointF(lower, m_model->GlobalParameter(1)) << QPointF(upper, m_model->GlobalParameter(1));
         else
-            points << QPointF(m_model->Constant(0), lower) << QPointF( m_model->Constant(0), upper);
+            points << QPointF(m_model->GlobalParameter(0), lower) << QPointF( m_model->GlobalParameter(0), upper);
         m_series.append( points );
         ++i;
     }
@@ -195,7 +195,7 @@ bool ModelComparison::Confidence()
     
     FastConfidence();
     
-    if(m_model.data()->ConstantSize() != 2)
+    if(m_model.data()->GlobalParameterSize() != 2)
         return true;
     
     QVector<QVector<qreal> > box = MakeBox();
@@ -242,7 +242,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
 
 void ModelComparison::StripResults(const QList<QJsonObject>& results)
 { 
-    QVector<QPair<qreal, qreal> > confidence(m_model->ConstantSize(), QPair<qreal, qreal>(0,0));
+    QVector<QPair<qreal, qreal> > confidence(m_model->GlobalParameterSize(), QPair<qreal, qreal>(0,0));
     int inner = 0;
     int all = 0;
     for(const QJsonObject &object : qAsConst(results))
@@ -254,7 +254,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
             m_models << object;
             QJsonObject constants = object["data"].toObject()["constants"].toObject();
 
-            for(int i = 0; i < m_model->ConstantSize(); ++i)
+            for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
             {
                 qreal min = confidence[i].first;
                 qreal max = confidence[i].second;
@@ -288,7 +288,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         controller["maxerror"] = m_config.maxerror;
         controller["f-value"] = m_config.f_value;
         result["controller"] = controller;
-        result["value"] = m_model->Constant(i);
+        result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
         result["method"] = "model comparison";

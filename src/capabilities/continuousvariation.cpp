@@ -97,7 +97,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
     for(int i = 0; i <  m_model.data()->OptimizeParameters(m_config.runtype).size(); ++i)
         locked << 1;
     locked[m_parameter_id] = 0;
-    QList<qreal > consts = m_model.data()->Constants();
+    QList<qreal > consts = m_model.data()->GlobalParameter();
     double constant_ = consts[m_parameter_id];
     double par = 0;
     for(int m = 0; m < m_config.maxsteps; ++m)
@@ -106,7 +106,7 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
         par = constant_ + double(m)*increment;
         
         consts[m_parameter_id] = par;
-        m_model.data()->setConstants(consts);
+        m_model.data()->setGlobalParameter(consts);
         
         if(m_config.relax)
         {

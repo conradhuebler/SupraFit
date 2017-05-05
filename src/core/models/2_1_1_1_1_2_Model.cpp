@@ -44,7 +44,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractT
         m_solvers << new ConcentrationSolver(this);
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 3);
     InitialGuess();
-    setOptParamater(m_complex_constants);
+    setOptParamater(m_global_parameter);
     AbstractTitrationModel::Calculate();
     m_constant_names = QStringList() << tr("2:1") << tr("1:1") << tr("1:2"); 
     
@@ -126,13 +126,13 @@ QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone() const
 void IItoI_ItoI_ItoII_Model::InitialGuess()
 {
     ItoI_Model *model = new ItoI_Model(m_data);
-    m_K12 = model->Constants()[model->ConstantSize() -1];
+    m_K12 = model->GlobalParameter()[model->GlobalParameterSize() -1];
     m_K21 = m_K12/2;
     m_K11 = m_K12/2;
     delete model;
     
-    m_complex_constants = QList<qreal>() << m_K21 << m_K11 << m_K12;
-    setOptParamater(m_complex_constants);
+    m_global_parameter = QList<qreal>() << m_K21 << m_K11 << m_K12;
+    setOptParamater(m_global_parameter);
     m_pure_signals_parameter = SignalModel()->firstRow();
     m_complex_signal_parameter.col(0) = SignalModel()->firstRow();
     m_complex_signal_parameter.col(2) = SignalModel()->lastRow();
@@ -154,7 +154,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
 {
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        addOptParameter(m_complex_constants);
+        addOptParameter(m_global_parameter);
     }
      if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {

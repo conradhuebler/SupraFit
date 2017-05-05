@@ -69,7 +69,7 @@ void MonteCarloThread::run()
     m_optimized = m_minimizer->Parameter();
     m_model->ImportModel(m_optimized);
 //     m_model->Calculate();
-    m_constants = m_model->Constants();
+    m_constants = m_model->GlobalParameter();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
 #ifdef _DEBUG
@@ -103,14 +103,14 @@ void MonteCarloStatistics::Evaluate()
     }
     Collect(threads);
     
-    m_constant_list.resize(m_model->ConstantSize());
-    m_shift_list.resize(m_model->ConstantSize()*m_model->SignalCount()+m_model->SignalCount());
+    m_constant_list.resize(m_model->GlobalParameterSize());
+    m_shift_list.resize(m_model->GlobalParameterSize()*m_model->SignalCount()+m_model->SignalCount());
     for(int i = 0; i < m_models.size(); ++i)
     {       
         ExtractFromJson(i, "constants");
         ExtractFromJson(i, "pureShift");
         
-        for(int k = 0; k < m_model->ConstantSize(); ++k)
+        for(int k = 0; k < m_model->GlobalParameterSize(); ++k)
         {
             ExtractFromJson(i, "shift_" + QString::number(k));
         }
@@ -178,7 +178,7 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& threads)
 { 
     m_steps = 0;
-    QVector<QVector<qreal > > m_constants_list(m_model->Constants().size());
+    QVector<QVector<qreal > > m_constants_list(m_model->GlobalParameterSize());
     for(int i = 0; i < threads.size(); ++i)
     {
         if(threads[i])
@@ -211,7 +211,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
     {
         QList<qreal > list = m_constant_list[i];
         QJsonObject result = MakeJson(list, 100-error);
-        result["value"] = m_model->Constant(i);
+        result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
         m_results << result;
