@@ -63,21 +63,6 @@ void AbstractTitrationModel::adress() const
     std::cout << std::endl;
 }
 
-
-QList<double>   AbstractTitrationModel::getCalculatedSignals()
-{
-    QList<double > x;
-    for(int j = 0; j < SignalCount(); ++j)
-    {
-        for(int i = 0; i < DataPoints(); ++i)
-        {
-            if(ActiveSignals(j) == 1)
-                x.append( m_model_signal->data(j,i)); 
-        }
-    }
-    return x;
-}
-
 void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 {
     if(!m_concentrations)

@@ -23,7 +23,7 @@
 #include <QtWidgets/QWidget>
 
 class AbstractSearchClass;
-class AbstractTitrationModel;
+class AbstractModel;
 
 class ResultsWidget : public QWidget
 {
@@ -42,7 +42,7 @@ protected:
     QWidget *m_chart_widget;
     QLabel *m_confidence_label;
     QPointer<AbstractSearchClass> m_statistics;
-    QSharedPointer< AbstractTitrationModel > m_model;
+    QSharedPointer< AbstractModel > m_model;
     
 };    
 

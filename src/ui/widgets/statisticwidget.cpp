@@ -27,7 +27,7 @@
 #include "statisticwidget.h"
 
 
-StatisticWidget::StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : m_model(model), QWidget(parent)
+StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget *parent) : m_model(model), QWidget(parent)
 {
     
     QVBoxLayout *m_layout = new QVBoxLayout;    

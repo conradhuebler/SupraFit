@@ -29,7 +29,7 @@
 #include "resultswidget.h"
 
 class MonteCarloStatistics;
-class AbstractTitrationModel;
+class AbstractModel;
 class QPushButton;
 class QDoubleSpinBox;
 class QLabel;
@@ -40,7 +40,7 @@ class MCResultsWidget : public ResultsWidget
     Q_OBJECT
     
 public:
-    MCResultsWidget(QPointer< MonteCarloStatistics > statistics, QSharedPointer< AbstractTitrationModel > model);
+    MCResultsWidget(QPointer< MonteCarloStatistics > statistics, QSharedPointer< AbstractModel > model);
     ~MCResultsWidget();
     
 private:

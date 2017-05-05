@@ -126,7 +126,9 @@ public:
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
     int getCVStatisticResult() const { return m_cv_statistics.size(); }
     int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
-    
+        
+    QList<qreal >  getCalculatedModel();
+        
 #warning maybe deprecated
     inline QList<int> ActiveSignals() const { return m_active_signals; }
 

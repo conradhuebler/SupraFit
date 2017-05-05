@@ -71,7 +71,7 @@ struct MyFunctor : Functor<double>
         
         model.data()->setParamter(param);
         model.data()->Calculate();
-        Variables CalculatedSignals = model.data()->getCalculatedSignals();
+        Variables CalculatedSignals = model.data()->getCalculatedModel();
         for( int i = 0; i < ModelSignals.size(); ++i)
         {
             if(m_potenz == 2)
@@ -85,7 +85,7 @@ struct MyFunctor : Functor<double>
     int no_points;
     int m_potenz;
     Variables ModelSignals;
-    QSharedPointer<AbstractTitrationModel> model;
+    QSharedPointer<AbstractModel> model;
     int inputs() const { return no_parameter; } // There are two parameters of the model
     int values() const { return no_points; } // The number of observations
 };
@@ -103,7 +103,7 @@ qreal Norm(const QList<qreal> v1, const QList<qreal> v2)
     return norm;
 }
 
-int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, QVector<qreal > &param)
+int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
 {
     
     

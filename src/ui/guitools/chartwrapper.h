@@ -32,7 +32,7 @@
 class DataClass;
 class DataTable;
 class QStandardItemModel;
-class AbstractTitrationModel;
+class AbstractModel;
 
 
 class LineSeries : public QtCharts::QLineSeries

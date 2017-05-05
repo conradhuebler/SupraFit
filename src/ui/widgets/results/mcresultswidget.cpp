@@ -41,7 +41,7 @@
 
 #include "mcresultswidget.h"
 
-MCResultsWidget::MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractTitrationModel> model) //: ResultsWidget(statistics, model,  parent) 
+MCResultsWidget::MCResultsWidget(QPointer<MonteCarloStatistics > statistics, QSharedPointer<AbstractModel> model) //: ResultsWidget(statistics, model,  parent) 
 {
     m_statistics = statistics;
     m_model = model;

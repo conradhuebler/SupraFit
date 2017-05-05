@@ -21,7 +21,7 @@
 
 #include "src/core/toolset.h"
 #include "src/core/dataclass.h"
-#include "src/core/AbstractModel.h"
+#include "src/core/AbstractTitrationModel.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"
 #include "src/ui/widgets/buttons/hovercheckbox.h"

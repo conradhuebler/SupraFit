@@ -45,7 +45,7 @@
 #include <QtWidgets/QRadioButton>
 
 #include "statisticdialog.h"
-StatisticDialog::StatisticDialog(QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QDialog(parent), m_model(model), m_runs(1), m_hidden(false)
+StatisticDialog::StatisticDialog(QSharedPointer<AbstractModel> model, QWidget *parent) : QDialog(parent), m_model(model), m_runs(1), m_hidden(false)
 {
     setUi();
     HideWidget();

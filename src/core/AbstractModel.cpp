@@ -122,6 +122,19 @@ qreal AbstractModel::CalculateVariance()
     return v/(count -1 );
 }
 
+QList<double>   AbstractModel::getCalculatedModel()
+{
+    QList<double > x;
+    for(int j = 0; j < SignalCount(); ++j)
+    {
+        for(int i = 0; i < DataPoints(); ++i)
+        {
+            if(ActiveSignals(j) == 1)
+                x.append( m_model_signal->data(j,i)); 
+        }
+    }
+    return x;
+}
 
 qreal AbstractModel::SumOfErrors(int i) const
 {

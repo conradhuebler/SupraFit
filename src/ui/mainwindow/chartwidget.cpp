@@ -112,7 +112,7 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
 
 
 
-Charts ChartWidget::addModel(QSharedPointer<AbstractTitrationModel > model)
+Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
 {
     m_models << model;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));

@@ -40,7 +40,7 @@ public:
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;} 
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() const;
+    virtual QSharedPointer<AbstractModel > Clone() const override;
     virtual bool SupportThreads() const override { return false; }
     virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
     

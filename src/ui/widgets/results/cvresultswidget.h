@@ -25,13 +25,13 @@
 #include <QtWidgets/QWidget>
 
 class AbstractSearchClass;
-class AbstractTitrationModel;
+class AbstractModel;
 
 class CVResultsWidget : public ResultsWidget
 {
     Q_OBJECT
 public:
-    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractTitrationModel> model, QWidget *parent);
+    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractModel> model, QWidget *parent);
     ~CVResultsWidget();
     
 private:

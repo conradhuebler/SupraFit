@@ -71,7 +71,7 @@ public:
      * defines the initial guess for the model
      */
     
-    QList<qreal >  getCalculatedSignals();
+
 
     inline QString Name() const { return m_name; }
 //     void setParamter(const QVector<qreal> &parameter);

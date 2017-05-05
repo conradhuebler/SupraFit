@@ -116,7 +116,7 @@ private:
     QPointer<QPushButton > m_add, m_optimize, m_statistics, m_close_all;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
-    QVector<QWeakPointer< AbstractTitrationModel > > m_models;
+    QVector<QWeakPointer< AbstractModel > > m_models;
     QPointer<StatisticDialog> m_statistic_dialog;
     QVector<QPointer<ModelWidget > > m_model_widgets; 
     void AddModel(int model);
@@ -131,7 +131,7 @@ private:
     int m_last_tab;
     
     void Json2Model(const QJsonObject &object, const QString &str);
-    void ActiveModel(QSharedPointer<AbstractTitrationModel > t);
+    void ActiveModel(QSharedPointer<AbstractModel > t);
     int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
     
@@ -155,7 +155,7 @@ private slots:
     inline void Interrupt() { m_allow_loop = false; }
     
 signals:
-    void ModelAdded(AbstractTitrationModel *model);
+    void ModelAdded(AbstractModel *model);
     void Message(const QString &str, int priority);
     void MessageBox(const QString &str, int priority);
     void InsertModel(const QJsonObject &model, int active);

@@ -76,7 +76,7 @@ public:
     ~AdvancedSearch();
     
     
-    inline void setModel(const QSharedPointer<AbstractTitrationModel> model) { m_model = model->Clone(); SetUi();}
+    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); SetUi();}
     inline GlobalSearchResult  LastResult() const { return last_result; }
     inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
     inline double MaxError() const { return m_error_max; }
@@ -95,7 +95,7 @@ private:
     
     QProgressBar *m_progress;
     
-    QSharedPointer<AbstractTitrationModel> m_model;
+    QSharedPointer<AbstractModel> m_model;
     QCheckBox  *m_optim, *m_initial_guess;
     QPointer<QPushButton > m_2d_search, m_1d_search, m_scan, m_interrupt;
     QLabel *m_max_steps;

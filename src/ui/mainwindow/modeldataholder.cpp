@@ -206,7 +206,7 @@ void ModelDataHolder::SetProjectTabName()
 
 void ModelDataHolder::AddModel(int model)
 {
-    QSharedPointer<AbstractTitrationModel > t;
+    QSharedPointer<AbstractModel > t;
     
     switch(model){
         case 1:
@@ -236,7 +236,7 @@ void ModelDataHolder::AddModel(int model)
 void ModelDataHolder::AddModel(const QJsonObject &json)
 {
 #ifdef experimental
-    QSharedPointer<AbstractTitrationModel > t =  QSharedPointer<ScriptModel>(new ScriptModel(m_data.data(), json), &QObject::deleteLater);
+    QSharedPointer<AbstractModel > t =  QSharedPointer<ScriptModel>(new ScriptModel(m_data.data(), json), &QObject::deleteLater);
     m_history = false;
     ActiveModel(t);
 #endif
@@ -308,7 +308,7 @@ void ModelDataHolder::ParseScriptedModels()
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 {
     
-    QSharedPointer<AbstractTitrationModel > t;
+    QSharedPointer<AbstractModel > t;
     
     /*
      * WARNING and FIXME I dont like this!
@@ -336,7 +336,7 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
     ActiveModel(t);
 }
 
-void ModelDataHolder::ActiveModel(QSharedPointer<AbstractTitrationModel> t)
+void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t)
 {
     Charts charts = m_charts->addModel(t);
     ModelWidget *modelwidget = new ModelWidget(t, charts);

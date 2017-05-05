@@ -86,7 +86,7 @@
 #include "modelwidget.h"
 
 
-ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(true, this), &QObject::deleteLater)), m_statistic(false)
+ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(true, this), &QObject::deleteLater)), m_statistic(false)
 {
     m_model_widget = new QWidget;
     Data2Text();
@@ -122,14 +122,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     QLabel *pure_shift = new QLabel(tr("Constants:"));
     QHBoxLayout *const_layout = new QHBoxLayout;
     const_layout->addWidget(pure_shift, 0, 0);
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
         QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
         constant->setPrefix(m_model->ConstantNames()[i] + "=10^");
-        constant->setValue(m_model->Constants()[i]);
+        constant->setValue(m_model->GlobalParameter()[i]);
         constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
         const_layout->addWidget(constant);
@@ -158,15 +158,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_sign_layout->setAlignment(Qt::AlignTop);
     
-    for(int i = 0; i < m_model->SignalCount(); ++i)
+    if(qobject_cast<AbstractTitrationModel *>(m_model))
     {
-        ModelElement *el = new ModelElement(m_model, m_charts, i);
-        connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
-        connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
-        connect(this, SIGNAL(Update()), el, SLOT(Update()));
-        connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
-        m_sign_layout->addWidget(el);
-        m_model_elements << el;
+        for(int i = 0; i < m_model->SignalCount(); ++i)
+        {
+            ModelElement *el = new ModelElement(qobject_cast<AbstractTitrationModel *>(m_model), m_charts, i);
+            connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
+            connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
+            connect(this, SIGNAL(Update()), el, SLOT(Update()));
+            connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
+            m_sign_layout->addWidget(el);
+            m_model_elements << el;
+        }
     }
     QWidget *scroll = new QWidget;
     scroll->setLayout(m_sign_layout);
@@ -291,8 +294,11 @@ void ModelWidget::Repaint()
     }
     m_pending = false;
     m_minimize_all->setEnabled(true);
-
-    qreal bc50 = m_model->BC50()*1E6;
+    
+    qreal bc50 = 0;
+    if(qobject_cast<AbstractTitrationModel *>(m_model))
+        bc50 = qobject_cast<AbstractTitrationModel *>(m_model)->BC50()*1E6;
+    
     QString format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
     QChar mu = QChar(956);
     format_text += QString(" [") + mu + QString("M]");
@@ -331,13 +337,17 @@ void ModelWidget::CollectParameters()
             complex_signals[j] << m_model_elements[i]->D()[j];
         }
     }
-    for(int j = 0; j < m_model->ConstantSize(); ++j)
-        m_model->setComplexSignals(complex_signals[j], j);
+    if(qobject_cast<AbstractTitrationModel *>(m_model))
+    {
+        for(int j = 0; j < m_model->ConstantSize(); ++j)
+            qobject_cast<AbstractTitrationModel *>(m_model)->setComplexSignals(complex_signals[j], j);
+    }
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         constants << m_constants[i]->value();
     m_model->setActiveSignals(active_signals);
     m_model->setConstants(constants);
-    m_model->setPureSignals(pure_signals);
+    if(qobject_cast<AbstractTitrationModel *>(m_model))
+        qobject_cast<AbstractTitrationModel *>(m_model)->setPureSignals(pure_signals);
 }
 
 void ModelWidget::GlobalMinimizeLoose()
@@ -544,7 +554,7 @@ void ModelWidget::LocalMinimize()
     {
         
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        QSharedPointer<AbstractTitrationModel > model = m_model->Clone();
+        QSharedPointer<AbstractModel > model = m_model->Clone();
         QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
         active_signals[i] = 1;
         model->setActiveSignals(active_signals);
@@ -779,10 +789,14 @@ void ModelWidget::MultiScanFinished()
 
 void ModelWidget::ToggleConcentrations()
 {
+#warning remove me 
+    if(qobject_cast<AbstractTitrationModel *>(m_model))
+    {
     QTableView *table = new QTableView;
-    table->setModel(m_model->getConcentrations());
+    table->setModel(qobject_cast<AbstractTitrationModel *>(m_model)->getConcentrations());
     m_concentrations_result->setWidget(table);
     m_concentrations_result->show();
+    }
 }
 
 void ModelWidget::HideAllWindows()
@@ -805,7 +819,9 @@ void ModelWidget::Data2Text()
     for(int i = 0; i < m_model->ConcentrationModel()->columnCount(); ++i)
         text += m_model->ConcentrationModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";
-    text += m_model->ConcentrationModel()->ExportAsString();
+#warning remove me
+    if(qobject_cast<AbstractTitrationModel *>(m_model))
+        text += qobject_cast<AbstractTitrationModel *>(m_model)->ConcentrationModel()->ExportAsString();
     text += "\n";
     text += "Signals :          " + QString::number(m_model->SignalCount()) + "\n";
     for(int i = 0; i < m_model->SignalModel()->columnCount(); ++i)
@@ -832,7 +848,9 @@ void ModelWidget::Model2Text()
     for(int i = 0; i < m_model->ConstantSize(); ++i)
         text += m_model->ConstantNames()[i] + "\t";
     text += "\n";
-    text += m_model->getConcentrations()->ExportAsString();
+#warning remove mie
+    if(qobject_cast<AbstractTitrationModel *>(m_model))
+        text += qobject_cast<AbstractTitrationModel *>(m_model)->getConcentrations()->ExportAsString();
     text += "\n";
     text += "\n";
     text += "Equilibrium Model Signal Calculation with complexation constants:\n";

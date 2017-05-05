@@ -44,7 +44,7 @@
 
 #include "searchresultwidget.h"
 
-SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractTitrationModel> model, QWidget *parent) : QWidget(parent), m_globalsearch(globalsearch), m_model(model)
+SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget *parent) : QWidget(parent), m_globalsearch(globalsearch), m_model(model)
 {    
     setInputList(m_globalsearch->InputList());
     setModelList(m_globalsearch->Models());

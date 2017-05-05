@@ -34,7 +34,7 @@
 #include <QtCore/QVector>
 #include "src/ui/widgets/chartview.h"
 
-class AbstractTitrationModel;
+class AbstractModel;
 class QComboBox;
 class QPushButton;
 class QChartView;
@@ -54,7 +54,7 @@ public:
     ChartWidget();
     ~ChartWidget();
     QSharedPointer<ChartWrapper > setRawData(QSharedPointer<DataClass> rawdata); 
-    Charts addModel(QSharedPointer< AbstractTitrationModel > model);
+    Charts addModel(QSharedPointer< AbstractModel > model);
     
 private:
     qreal max_shift, min_shift;
@@ -63,7 +63,7 @@ private:
     QPointer<ChartView > m_signalview, m_errorview;
     QPointer<QtCharts::QChart > m_signalchart, m_errorchart;
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
-    QVector< QWeakPointer<AbstractTitrationModel > > m_models;
+    QVector< QWeakPointer<AbstractModel > > m_models;
     QWeakPointer<DataClass > m_rawdata;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);

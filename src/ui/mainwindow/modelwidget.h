@@ -75,10 +75,10 @@ class ModelWidget : public QWidget
     Q_OBJECT
     
 public:
-    ModelWidget(QSharedPointer< AbstractTitrationModel > model, Charts charts, QWidget *parent = 0);
+    ModelWidget(QSharedPointer< AbstractModel > model, Charts charts, QWidget *parent = 0);
     ~ModelWidget();
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
-    QSharedPointer< AbstractTitrationModel > Model() const { return m_model; }
+    QSharedPointer< AbstractModel > Model() const { return m_model; }
     QSharedPointer< Minimizer > getMinimizer() const { return m_minimizer; }
     
     void CVStatistic(CVConfig config);
@@ -97,7 +97,7 @@ public slots:
     void HideAllWindows();
     
 private:
-    QSharedPointer< AbstractTitrationModel > m_model;
+    QSharedPointer< AbstractModel > m_model;
     QSharedPointer< Minimizer > m_minimizer;
     
     QVector<QPointer<SpinBox> > m_constants;

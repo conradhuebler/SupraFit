@@ -24,7 +24,7 @@
 
 #include <QtWidgets/QWidget>
 
-class AbstractTitrationModel;
+class AbstractModel;
 class QLabel;
 class QPushButton;
 class QTextEdit;
@@ -34,14 +34,14 @@ class StatisticWidget : public QWidget
 {
     Q_OBJECT
 public:
-    StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent);
+    StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget *parent);
     ~StatisticWidget();
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
     static QString TextFromConfidence(const QJsonObject &result);
     
 private:
-    QSharedPointer<AbstractTitrationModel > m_model;
+    QSharedPointer<AbstractModel > m_model;
     QPushButton *m_show;
     QWidget *m_subwidget;
     QTextEdit *m_overview;
