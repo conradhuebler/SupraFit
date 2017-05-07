@@ -75,10 +75,8 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper"].toDouble();
     qreal lower = confidence["lower"].toDouble();
-    text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " = "  +nr +  pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ")</b></td></tr> ";
+    text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " = " + nr + " -- " + pot + "(+ " + QString::number(upper-value) + "/" + QString::number(lower-value) + ") -- </b></td></tr> ";
     text += "<tr><td>95% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower) + " -" + pot + QString::number(upper) + "</b></td></tr></p>\n"; 
-//     if(result["method"].toString() == "model comparison")
-//         text += "<tr><td>Approximated area  <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n"; 
     text += "</table>";
     return text;    
 }
@@ -104,9 +102,12 @@ void StatisticWidget::Update()
     {
         QJsonObject result = m_model->getMoCoStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
-        if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
+        if(result["method"].toString() == "model comparison" && !i)
+            moco += "<tr><td>Approximated area of the confidence ellipse: <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n";
+        if(!result["controller"].toObject()["fisher"].toBool() && !i)
             moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
         moco += TextFromConfidence(result);
+ 
     }
     if(m_model->getMoCoStatisticResult())
         overview += moco;
