@@ -104,6 +104,7 @@ bool ModelComparison::FastConfidence()
         result["controller"] = controller;
         result["name"] = m_model.data()->ConstantNames()[i];
         result["value"] = parameter[i];
+        result["error"] = m_config.confidence;
         result["type"] = "Complexation Constant";
         QJsonObject confidence;
         confidence["upper"] = upper;
@@ -291,6 +292,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
+        result["error"] = m_config.confidence;
         result["method"] = "model comparison";
         result["moco_area"] = m_ellipsoid_area;
         m_results << result;

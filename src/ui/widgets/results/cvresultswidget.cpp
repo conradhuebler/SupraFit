@@ -114,17 +114,19 @@ ChartView * CVResultsWidget::CVPlot()
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart);
+    view->setXAxis("constant");
+    view->setYAxis("Sum of Squares");
     WriteConfidence(constant_results);
     for(int i = 0; i < constant_results.size(); ++i)
     {
-        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries;
         xy_series->append(series[i]);
         view->addSeries(xy_series);
         
-        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
+        LineSeries *current_constant= new LineSeries;
         *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
-        current_constant->setName("K" + m_model->ConstantNames()[i]);
+        current_constant->setName("K<sub>" + m_model->ConstantNames()[i].remove(":") + "</sub>");
         view->addSeries(current_constant, true);
     }
     return view;
@@ -139,20 +141,21 @@ ChartView *  CVResultsWidget::MoCoPlot()
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart);
-    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
     xy_series->append(ToolSet::fromModelsList(m_statistics->Models()));
-    xy_series->setMarkerSize(7);
-    view->addSeries(xy_series);
+    xy_series->setMarkerSize(6);
+    xy_series->setName("MC Results");
+    view->addSeries(xy_series, true);
     int i = 0;
     for(const QList<QPointF> &serie : qAsConst(series))
     {
         LineSeries *xy_serie = new LineSeries;
         xy_serie->append(serie);
-        xy_series->setName("K" + m_model->ConstantNames()[i]);
+        xy_serie->setName("K<sub>" + m_model->ConstantNames()[i].remove(":") + "</sub>");
         view->addSeries(xy_serie, true);
         ++i;
     }
-    view->setXAxis("K" + m_model->ConstantNames()[0]);
-    view->setYAxis("K" + m_model->ConstantNames()[1]);
+    view->setXAxis("K<sub>" + m_model->ConstantNames()[0].remove(":") + "</sub>");
+    view->setYAxis("K<sub>" + m_model->ConstantNames()[1].remove(":") + "</sub>");
     return view;
 }

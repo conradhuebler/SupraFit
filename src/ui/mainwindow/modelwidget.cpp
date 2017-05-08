@@ -447,6 +447,7 @@ void ModelWidget::FastConfidence()
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     config.fisher_statistic = true;
+    config.confidence = qApp->instance()->property("p_value").toDouble();
     ModelComparison *statistic = new ModelComparison(config, this);
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);    

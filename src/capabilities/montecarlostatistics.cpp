@@ -214,6 +214,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         result["value"] = m_model->Constant(i);
         result["name"] = m_model->ConstantNames()[i];
         result["type"] = "Complexation Constant";
+        result["error"] = error;
         m_results << result;
     }
 
@@ -239,6 +240,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
             result["name"] = m_model->ConstantNames()[nr-1] + " Component Shift: " + m_model->SignalModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
         }
         result["type"] = "Shift";
+        result["error"] = error;
         m_results << result;
     }
     emit AnalyseFinished();
@@ -294,7 +296,6 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
     QJsonObject confidence;
     confidence["lower"] = bar.lower;
     confidence["upper"] = bar.upper;
-    confidence["error"] = error;
     result["confidence"] = confidence;
     
     QJsonObject controller;
