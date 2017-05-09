@@ -85,6 +85,8 @@ QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
 void StatisticWidget::Update()
 {
     QString overview("<table style=\'width:100%\'>");
+    if(!m_model.data()->isConverged())
+        overview +=  "<font color =\'red\'>Fitting not convereged.</font>\n";
     overview +=  "<tr><td>Parameter fitted:</t><td><b>" + QString::number(m_model.data()->Parameter()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Number of used Points:</t><td><b>" + QString::number(m_model.data()->Points()) + "</b></td></tr>\n";
     overview +=  "<tr><td>Degrees of Freedom:</t><td><b>" + QString::number(m_model.data()->Points()-m_model.data()->Parameter()) + "</b></td></tr>\n";

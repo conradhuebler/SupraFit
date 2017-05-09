@@ -555,7 +555,9 @@ void ModelWidget::LocalMinimize()
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        QJsonObject parameter = m_model->ExportModel(false);
         QSharedPointer<AbstractTitrationModel > model = m_model->Clone();
+        model->ImportModel(parameter, false);
         QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
         active_signals[i] = 1;
         model->setActiveSignals(active_signals);

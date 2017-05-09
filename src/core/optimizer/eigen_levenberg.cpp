@@ -168,6 +168,7 @@ int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, QVector<qreal > &pa
     
     for(int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
+    model.data()->setConverged(iter < config.MaxIter);
     return iter;
 }
 

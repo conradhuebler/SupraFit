@@ -167,6 +167,8 @@ public:
     inline qreal StdError() const { return m_stderror; }
     inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
     inline Eigen::MatrixXd ComplexParameter() const { return m_complex_signal_parameter; }
+    inline bool isConverged() const { return m_converged; }
+    inline void setConverged(bool converged) { m_converged = converged; }
     /*! \brief Returns the f value for the given p value
      *  Degrees of freedom and number of parameters are taken in account
      */
@@ -225,7 +227,7 @@ protected:
     Eigen::MatrixXd m_complex_signal_parameter, m_pure_signals_parameter;
     const DataClass *m_data;
     OptimizerConfig m_opt_config;
-    bool m_corrupt;
+    bool m_corrupt, m_converged;
     QStringList m_constant_names;
     QList< QJsonObject> m_mc_statistics;
     QList< QJsonObject> m_cv_statistics;

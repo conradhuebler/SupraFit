@@ -37,7 +37,7 @@
 #include <iostream>
 #include "AbstractModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0)
+AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts);
     m_constant_names << tr("no constants");
@@ -287,7 +287,7 @@ QJsonObject AbstractTitrationModel::ExportModel(bool statistics) const
     toplevel["mean_error"] = m_mean;
     toplevel["variance"] = m_variance;
     toplevel["standard_error"] = m_stderror;
-    
+    toplevel["converged"] = m_converged;
     return toplevel;
 }
 
@@ -370,7 +370,7 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
     
     if(topjson["runtype"].toInt() != 0)
         OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
-    
+    m_converged = topjson["converged"].toBool();
     Calculate();
 }
 
