@@ -357,6 +357,7 @@ void ModelWidget::GlobalMinimize()
     OptimizerConfig config = m_model->getOptimizerConfig();
     MinimizeModel(config);
 } 
+
 void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 {     
     Waiter wait;
@@ -554,12 +555,10 @@ void ModelWidget::LocalMinimize()
         QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
         active_signals[i] = 1;
         model->setActiveSignals(active_signals);
-        QVector<int > v(10,0);
         OptimizerConfig config = model->getOptimizerConfig();
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
         
-        model->ActiveSignals();
         result += m_minimizer->Minimize(m_optim_flags->getFlags());
         
         QJsonObject json = m_minimizer->Parameter();
@@ -649,7 +648,6 @@ void ModelWidget::ImportConstants()
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportModel(object);
-//     m_model->Calculate();
     QList<qreal > constants = m_model->Constants();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);

@@ -268,7 +268,6 @@ int Minimizer::Minimize(OptimizationType runtype, const QList<int>& locked)
 
 int Minimizer::Minimize(OptimizationType runtype)
 {
-    
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;
