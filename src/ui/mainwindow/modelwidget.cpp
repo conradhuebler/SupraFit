@@ -293,10 +293,14 @@ void ModelWidget::Repaint()
     m_minimize_all->setEnabled(true);
 
     qreal bc50 = m_model->BC50()*1E6;
+    
     QString format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
     QChar mu = QChar(956);
     format_text += QString(" [") + mu + QString("M]");
-    m_bc_50->setText(format_text);
+    if(bc50 > 0)
+        m_bc_50->setText(format_text);
+    else
+        m_bc_50->clear();
     Model2Text();
     QTextDocument doc;
     doc.setHtml(m_statistic_widget->Overview());
