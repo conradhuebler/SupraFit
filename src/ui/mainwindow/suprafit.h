@@ -87,7 +87,7 @@ private:
     QFile m_file, m_stdout;
     bool m_ask_on_exit;
     virtual void closeEvent(QCloseEvent *event);
-    
+    const QStringList m_properties = QStringList() << "threads" << "chartanimation" << "workingdir" << "dirlevel" << "auto_confidence" << "lastdir" << "p_value" << "charttheme";
 private slots:
     void NewTable();
     void OpenFile();

@@ -425,16 +425,8 @@ void MainWindow::ReadSettings()
     _settings.beginGroup("main");
     m_logfile = _settings.value("logfile").toString();
     m_printlevel = _settings.value("printlevel", 3).toInt();
-    QStringList properties = _settings.value("properties").toStringList();
-    for(const QString &str : qAsConst(properties))
-        qApp->instance()->setProperty(qPrintable(str), _settings.value(str));//, QThread::idealThreadCount())); 
-    /*qApp->instance()->setProperty("threads", _settings.value("threads", QThread::idealThreadCount())); 
-    qApp->instance()->setProperty("charttheme", _settings.value("charttheme", QtCharts::QChart::ChartThemeBlueCerulean));
-    qApp->instance()->setProperty("chartanimation", _settings.value("chartanimation", true));
-    qApp->instance()->setProperty("workingdir", _settings.value("workingdir", "."));
-    qApp->instance()->setProperty("dirlevel", _settings.value("dirlevel", 0));
-    qApp->instance()->setProperty("lastdir", _settings.value("lastdir", "."));
-    qApp->instance()->setProperty("auto_confidence", _settings.value("auto_confidence", 1));*/
+    for(const QString &str : qAsConst(m_properties))
+        qApp->instance()->setProperty(qPrintable(str), _settings.value(str));
     _settings.endGroup();
 }
 
@@ -451,24 +443,14 @@ void MainWindow::ReadGeometry()
 void MainWindow::WriteSettings(bool ignore_window_state)
 {
     QSettings _settings;
-    _settings.beginGroup("main"); 
+    
+    _settings.beginGroup("main");
     _settings.setValue("logfile", m_logfile);
     _settings.setValue("printlevel", m_printlevel);
     
     QStringList properties;
-    for(const QByteArray &array : qApp->instance()->dynamicPropertyNames())
-    {
-        _settings.setValue(QString(array), qApp->instance()->property(array)); 
-        properties << QString(array);
-    }
-    _settings.setValue("properties", properties);
-    /*_settings.setValue("threads", qApp->instance()->property("threads")); 
-    _settings.setValue("charttheme", qApp->instance()->property("charttheme"));
-    _settings.setValue("chartanimation", qApp->instance()->property("chartanimation"));
-    _settings.setValue("workingdir", qApp->instance()->property("workingdir"));
-    _settings.setValue("dirlevel", qApp->instance()->property("dirlevel"));
-    _settings.setValue("lastdir", qApp->instance()->property("lastdir"));
-    _settings.setValue("auto_confidence", qApp->instance()->property("auto_confidence"));*/
+    for(const QString &str : qAsConst(m_properties))
+        _settings.setValue(str, qApp->instance()->property(qPrintable(str))); 
     _settings.endGroup();
      
     if(!ignore_window_state)

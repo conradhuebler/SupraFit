@@ -161,7 +161,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     m_sign_layout = new QVBoxLayout;
     
     m_sign_layout->setAlignment(Qt::AlignTop);
-    
+    m_converged_label = new QLabel;
+    m_sign_layout->addWidget(m_converged_label);
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
         ModelElement *el = new ModelElement(m_model, m_charts, i);
@@ -305,6 +306,14 @@ void ModelWidget::Repaint()
         m_bc_50->setText(format_text);
     else
         m_bc_50->clear();
+    
+    QString converged;
+    if(!m_model->isConverged())
+        converged = "<font color =\'red\'>Calculation did not converge.</font>\n";
+    else
+        converged = "Calculation converged";
+    m_converged_label->setText(converged);
+    
     Model2Text();
     QTextDocument doc;
     doc.setHtml(m_statistic_widget->Overview());
