@@ -212,8 +212,11 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
     }
     int iter = NonlinearFit(m_model, parameter);
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
-    m_converged = true;
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
+    if(iter < m_model.data()->getOptimizerConfig().MaxIter)
+        m_converged = true;
+    else
+        m_converged = false;
     return iter;
 }
 
@@ -265,7 +268,6 @@ int Minimizer::Minimize(OptimizationType runtype, const QList<int>& locked)
 
 int Minimizer::Minimize(OptimizationType runtype)
 {
-    
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;
@@ -281,19 +283,19 @@ int Minimizer::Minimize(OptimizationType runtype)
     connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
     thread->setOptimizationRun(runtype);
-    thread->run();
-    if(thread->Converged())
+    thread->run();  
+    bool converged = thread->Converged();
+    if(converged)
         m_last_parameter = thread->ConvergedParameter();
     else
         m_last_parameter = thread->BestIntermediateParameter();
     delete thread;
     m_model->ImportModel(m_last_parameter);
-//     m_model->Calculate();
     emit RequestRemoveCrashFile();
     addToHistory();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
-    return 1;
+    return converged;
 }
 
 QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start)

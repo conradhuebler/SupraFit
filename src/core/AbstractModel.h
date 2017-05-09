@@ -171,6 +171,8 @@ public:
     inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
 #warning must go away maybe
     inline Eigen::MatrixXd ComplexParameter() const { return m_complex_signal_parameter; }
+    inline bool isConverged() const { return m_converged; }
+    inline void setConverged(bool converged) { m_converged = converged; }
     /*! \brief Returns the f value for the given p value
      *  Degrees of freedom and number of parameters are taken in account
      */
@@ -266,7 +268,7 @@ protected:
     qreal CalculateVariance();
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
-    bool m_corrupt;
+    bool m_corrupt, m_converged;
     OptimizerConfig m_opt_config;
     QPointer<DataTable > m_model_signal, m_model_error;
     QString m_name;

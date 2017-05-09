@@ -37,7 +37,7 @@
 #include <iostream>
 #include "AbstractModel.h"
 
-AbstractModel::AbstractModel(const DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0)
+AbstractModel::AbstractModel(const DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false)
 {
     
     

@@ -62,6 +62,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     shifts->addWidget(m_d_0);
     m_d_0->setSingleStep(1e-2);
     m_d_0->setDecimals(4);
+    m_d_0->setMaximum(1000);
     m_d_0->setSuffix(" ppm");
     m_d_0->setValue(m_model->PureSignal(m_no));
     m_d_0->setToolTip(tr("Shift of the pure - non silent substrat"));
@@ -74,6 +75,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
         m_constants << constant;
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
+        constant->setMaximum(1000);
         constant->setSuffix("ppm");
         constant->setValue(m_model->Pair(i, m_no).second);
         constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->ConstantNames()[i]));

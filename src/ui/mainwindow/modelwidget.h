@@ -105,7 +105,7 @@ private:
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
     QPushButton *m_switch, *m_minimize_all;
-    QLabel *m_bc_50; 
+    QLabel *m_bc_50, *m_converged_label; 
     QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     bool m_pending;

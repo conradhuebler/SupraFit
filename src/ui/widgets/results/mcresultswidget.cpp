@@ -116,6 +116,8 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     QPointer<ChartView > view = new ChartView(chart);
+    view->setXAxis("constant");
+    view->setYAxis("rate");
     view->setMinimumSize(300,400);
     bool formated = false;
     
@@ -136,7 +138,7 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->GlobalParameter(i), 0) << QPointF(m_model->GlobalParameter(i), view->YMax());
         current_constant->setColor(xy_series->color());
-        current_constant->setName(m_model->ConstantNames()[i]);
+        current_constant->setName("K<sub>" + m_model->ConstantNames()[i].remove(":") + "</sub>");
         view->addSeries(current_constant, true);
         
         QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
@@ -214,7 +216,7 @@ void MCResultsWidget::UpdateBoxes(const QList<QList<QPointF > > &series, const Q
             
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
-            area_series->setName(m_model->ConstantNames()[i]);
+            area_series->setName("K<sub>" + m_model->ConstantNames()[i].remove(":") + "</sub>");
         }
     }
 }

@@ -17,6 +17,8 @@
  *
  */
 
+#include "src/core/toolset.h"
+
 #include <QtCore/QCollator>
 #include <QtCore/QMap>
 #include <QtCore/QPointer>
@@ -52,7 +54,7 @@ ModelHistoryWidget::ModelHistoryWidget(const QJsonObject *element, int active, i
                   });
     }
     
-    QString consts;
+    QString consts = "<p>";
     for(const QString &str : qAsConst(keys))
     {
         QString element = constants[str].toString();
@@ -63,7 +65,11 @@ ModelHistoryWidget::ModelHistoryWidget(const QJsonObject *element, int active, i
         }
     }
     consts.chop(2);
-    layout->addWidget(new QLabel(consts), 1, 0, 1, 2);
+    consts += "</p><font color =\'red\'>Converged: " + ToolSet::bool2YesNo((*m_json)["converged"].toBool()) + "</font>";
+    QLabel *constant_overview = new QLabel;
+    constant_overview->setText(consts);
+    constant_overview->setTextFormat(Qt::RichText);
+    layout->addWidget(constant_overview, 1, 0, 1, 2);
     
 
     layout->addWidget(new QLabel(QString::number(active) + " used signals"), 2, 0, 1, 2);
@@ -85,7 +91,7 @@ ModelHistoryWidget::ModelHistoryWidget(const QJsonObject *element, int active, i
     layout->addWidget(m_load, 4, 1);
     layout->addWidget(m_remove, 5, 0, 1, 2);
     setLayout(layout);
-    setFixedSize(200,180);
+    setFixedSize(200,250);
     setAlignment(Qt::AlignHCenter);
     setTitle(m_json->value("model").toString());
 }

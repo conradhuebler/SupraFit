@@ -146,9 +146,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     QAction *minimize_loose = new QAction(tr("Loose"));
     connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
     
+    QAction *fast_conf = new QAction(tr("Confidence"));
+    connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
+    
     QMenu *menu = new QMenu;
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
+    menu->addAction(fast_conf);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
     
@@ -156,7 +160,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_layout->addLayout(const_layout, 0, 0, 1, m_model->GlobalParameterSize()+3);
     m_sign_layout = new QVBoxLayout;
     
-    m_sign_layout->setAlignment(Qt::AlignTop);
+    m_sign_layout->setAlignment(Qt::AlignTop); 
+    m_converged_label = new QLabel;
+    m_sign_layout->addWidget(m_converged_label);
     
     if(qobject_cast<AbstractTitrationModel *>(m_model))
     {
@@ -294,7 +300,7 @@ void ModelWidget::Repaint()
     }
     m_pending = false;
     m_minimize_all->setEnabled(true);
-    
+
     qreal bc50 = 0;
     if(qobject_cast<AbstractTitrationModel *>(m_model))
         bc50 = qobject_cast<AbstractTitrationModel *>(m_model)->BC50()*1E6;
@@ -302,7 +308,18 @@ void ModelWidget::Repaint()
     QString format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
     QChar mu = QChar(956);
     format_text += QString(" [") + mu + QString("M]");
-    m_bc_50->setText(format_text);
+    if(bc50 > 0)
+        m_bc_50->setText(format_text);
+    else
+        m_bc_50->clear();
+    
+    QString converged;
+    if(!m_model->isConverged())
+        converged = "<font color =\'red\'>Calculation did not converge.</font>\n";
+    else
+        converged = "Calculation converged";
+    m_converged_label->setText(converged);
+    
     Model2Text();
     QTextDocument doc;
     doc.setHtml(m_statistic_widget->Overview());
@@ -363,6 +380,7 @@ void ModelWidget::GlobalMinimize()
     OptimizerConfig config = m_model->getOptimizerConfig();
     MinimizeModel(config);
 } 
+
 void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 {     
     Waiter wait;
@@ -377,21 +395,22 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     m_model->setOptimizerConfig(config);
     int result;
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
-    if(result == 1)
-    {
-        json = m_minimizer->Parameter();
-        m_model->ImportModel(json);
-        Repaint();
-        m_model->OptimizeParameters(m_optim_flags->getFlags());
-        if(qApp->instance()->property("auto_confidence").toBool())
-            FastConfidence();
-        
-        QSettings settings;
-        settings.beginGroup("minimizer");
-        settings.setValue("flags", m_optim_flags->getFlags());
-        settings.endGroup();
-    }
-
+    
+    json = m_minimizer->Parameter();
+    m_model->ImportModel(json);
+    Repaint();
+    m_model->OptimizeParameters(m_optim_flags->getFlags());
+    if(qApp->instance()->property("auto_confidence").toBool())
+        FastConfidence();
+    
+    QSettings settings;
+    settings.beginGroup("minimizer");
+    settings.setValue("flags", m_optim_flags->getFlags());
+    settings.endGroup();
+    
+    if(!result)
+        emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
+    
     m_statistic = false;
     m_pending = false; 
 }
@@ -457,6 +476,7 @@ void ModelWidget::FastConfidence()
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     config.fisher_statistic = true;
+    config.confidence = qApp->instance()->property("p_value").toDouble();
     ModelComparison *statistic = new ModelComparison(config, this);
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);    
@@ -550,33 +570,36 @@ void ModelWidget::LocalMinimize()
     Waiter wait;
     CollectParameters();
     m_local_fits.clear();
+    int result = 0;
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
-        
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        
         QSharedPointer<AbstractModel > model = m_model->Clone();
+        QJsonObject parameter = m_model->ExportModel(false);
+        model->ImportModel(parameter, false);
+
         QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
         active_signals[i] = 1;
         model->setActiveSignals(active_signals);
-        QVector<int > v(10,0);
         OptimizerConfig config = model->getOptimizerConfig();
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
-        int result;
-        model->ActiveSignals();
-        result = m_minimizer->Minimize(m_optim_flags->getFlags());
         
-        if(result == 1)
-        {
-            QJsonObject json = m_minimizer->Parameter();
-            m_local_fits << json;
-            
-            QSettings settings;
-            settings.beginGroup("minimizer");
-            settings.setValue("flags", m_optim_flags->getFlags());
-            settings.endGroup();
-        }
+        result += m_minimizer->Minimize(m_optim_flags->getFlags());
+        
+        QJsonObject json = m_minimizer->Parameter();
+        m_local_fits << json;
+        
+        QSettings settings;
+        settings.beginGroup("minimizer");
+        settings.setValue("flags", m_optim_flags->getFlags());
+        settings.endGroup();
     }  
+    
+    if(result < m_model->SignalCount())
+        emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
+    
     m_minimizer->setModel(m_model);
     m_statistic = false;
     m_pending = false; 
@@ -652,7 +675,7 @@ void ModelWidget::ImportConstants()
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
     m_model->ImportModel(object);
-//     m_model->Calculate();
+
     QList<qreal > constants = m_model->GlobalParameter();
     for(int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);

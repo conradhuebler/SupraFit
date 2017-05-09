@@ -218,7 +218,7 @@ QJsonObject AbstractTitrationModel::ExportModel(bool statistics) const
     toplevel["mean_error"] = m_mean;
     toplevel["variance"] = m_variance;
     toplevel["standard_error"] = m_stderror;
-    
+    toplevel["converged"] = m_converged;
     return toplevel;
 }
 
@@ -229,6 +229,11 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
         qWarning() << "file doesn't contain any " + m_name;
         return;
     }
+    if(topjson["model"] != Name())
+    {
+        qWarning() << "Models don't fit!";
+        return;
+    }  
     QJsonObject json = topjson["data"].toObject();
     
     QList<int > active_signals;
@@ -269,10 +274,6 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
             m_moco_statistics << json["statistics"].toObject()[str].toObject();
     }
     
-    if(topjson["runtype"].toInt() != 0)
-        OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
-    
-    
     QList<qreal> pureShift;
     QJsonObject pureShiftObject = json["pureShift"].toObject();
     for (int i = 0; i < m_pure_signals_parameter.rows(); ++i) 
@@ -298,6 +299,12 @@ void AbstractTitrationModel::ImportModel(const QJsonObject &topjson, bool overri
         setComplexSignals(shifts, i);
     }
     setActiveSignals(active_signals);
+    
+    if(topjson["runtype"].toInt() != 0)
+        OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
+    
+    m_converged = topjson["converged"].toBool();
+    
     Calculate();
 }
 

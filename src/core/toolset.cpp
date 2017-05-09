@@ -89,7 +89,7 @@ namespace ToolSet{
     QString bool2YesNo(bool var) 
     {
         if(var)
-            return QString("yes");
+            return QString("Yes");
         else
             return QString("No");
     }
