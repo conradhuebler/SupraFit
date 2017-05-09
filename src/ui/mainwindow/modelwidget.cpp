@@ -371,21 +371,22 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     m_model->setOptimizerConfig(config);
     int result;
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
-    if(result == 1)
-    {
-        json = m_minimizer->Parameter();
-        m_model->ImportModel(json);
-        Repaint();
-        m_model->OptimizeParameters(m_optim_flags->getFlags());
-        if(qApp->instance()->property("auto_confidence").toBool())
-            FastConfidence();
-        
-        QSettings settings;
-        settings.beginGroup("minimizer");
-        settings.setValue("flags", m_optim_flags->getFlags());
-        settings.endGroup();
-    }
-
+    
+    json = m_minimizer->Parameter();
+    m_model->ImportModel(json);
+    Repaint();
+    m_model->OptimizeParameters(m_optim_flags->getFlags());
+    if(qApp->instance()->property("auto_confidence").toBool())
+        FastConfidence();
+    
+    QSettings settings;
+    settings.beginGroup("minimizer");
+    settings.setValue("flags", m_optim_flags->getFlags());
+    settings.endGroup();
+    
+    if(!result)
+        emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
+    
     m_statistic = false;
     m_pending = false; 
 }
@@ -545,9 +546,9 @@ void ModelWidget::LocalMinimize()
     Waiter wait;
     CollectParameters();
     m_local_fits.clear();
+    int result = 0;
     for(int i = 0; i < m_model->SignalCount(); ++i)
     {
-        
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         QSharedPointer<AbstractTitrationModel > model = m_model->Clone();
         QList<int > active_signals = QVector<int>(m_model_elements.size(), 0).toList();
@@ -557,21 +558,22 @@ void ModelWidget::LocalMinimize()
         OptimizerConfig config = model->getOptimizerConfig();
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
-        int result;
-        model->ActiveSignals();
-        result = m_minimizer->Minimize(m_optim_flags->getFlags());
         
-        if(result == 1)
-        {
-            QJsonObject json = m_minimizer->Parameter();
-            m_local_fits << json;
-            
-            QSettings settings;
-            settings.beginGroup("minimizer");
-            settings.setValue("flags", m_optim_flags->getFlags());
-            settings.endGroup();
-        }
+        model->ActiveSignals();
+        result += m_minimizer->Minimize(m_optim_flags->getFlags());
+        
+        QJsonObject json = m_minimizer->Parameter();
+        m_local_fits << json;
+        
+        QSettings settings;
+        settings.beginGroup("minimizer");
+        settings.setValue("flags", m_optim_flags->getFlags());
+        settings.endGroup();
     }  
+    
+    if(result < m_model->SignalCount())
+        emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
+    
     m_minimizer->setModel(m_model);
     m_statistic = false;
     m_pending = false; 
