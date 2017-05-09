@@ -146,9 +146,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     QAction *minimize_loose = new QAction(tr("Loose"));
     connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
     
+    QAction *fast_conf = new QAction(tr("Confidence"));
+    connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
+    
     QMenu *menu = new QMenu;
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
+    menu->addAction(fast_conf);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
     
