@@ -17,7 +17,7 @@
  * 
  */
 #include "src/capabilities/abstractsearchclass.h"
-#include "src/capabilities/continuousvariation.h"
+#include "src/capabilities/weakenedgridsearch.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
 
@@ -36,10 +36,9 @@
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
-#include "cvresultswidget.h"
+#include "wgsresultswidget.h"
 
-
-CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
+WGSResultsWidget::WGSResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractTitrationModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
 {
     m_statistics = statistics;
     m_model = model;
@@ -48,17 +47,17 @@ CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QShar
     setUi();
 }
 
-CVResultsWidget::~CVResultsWidget()
+WGSResultsWidget::~WGSResultsWidget()
 {
 
 }
 
-QWidget * CVResultsWidget::ChartWidget()
+QWidget * WGSResultsWidget::ChartWidget()
 {
     QWidget *widget = new QWidget;
     QGridLayout *layout = new QGridLayout;
 
-    if(qobject_cast<ContinuousVariation *>(m_statistics))
+    if(qobject_cast<WeakenedGridSearch *>(m_statistics))
         layout->addWidget(CVPlot());
     else
         layout->addWidget(MoCoPlot());
@@ -67,7 +66,7 @@ QWidget * CVResultsWidget::ChartWidget()
     return widget;
 }
 
-void CVResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_results)
+void WGSResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_results)
 {
     QString text;
     QJsonObject controller = constant_results.first()["controller"].toObject();
@@ -79,7 +78,7 @@ void CVResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
     }
     else
     {
-        text += "<h3>Continuous Variation</h3>";
+        text += "<h3>Weakened Grid Search</h3>";
         text += "<p>Maxsteps</b> : " + QString::number(controller["steps"].toInt()) + "</p>"; 
         text += "<p>Increment for each step is " + QString::number(controller["increment"].toDouble()) + "</p>";
     }
@@ -107,7 +106,7 @@ void CVResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
     m_confidence_label->setText(text);
 }
 
-ChartView * CVResultsWidget::CVPlot()
+ChartView * WGSResultsWidget::CVPlot()
 {
     QList<QJsonObject > constant_results = m_statistics->Results();
     QList<QList<QPointF > >series = m_statistics->Series();
@@ -132,7 +131,7 @@ ChartView * CVResultsWidget::CVPlot()
     return view;
 }
 
-ChartView *  CVResultsWidget::MoCoPlot()
+ChartView *  WGSResultsWidget::MoCoPlot()
 {
     QList<QJsonObject > constant_results = m_statistics->Results();
     WriteConfidence(constant_results);

@@ -17,7 +17,7 @@
  * 
  */
 
-#include "src/capabilities/continuousvariation.h"
+#include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
 
@@ -92,7 +92,7 @@ void StatisticDialog::setUi()
     QVBoxLayout *layout = new QVBoxLayout;
     m_tab_widget = new QTabWidget;
     m_tab_widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
-    m_tab_widget->addTab(ContinuousVariationWidget(), tr("Continuous Variation"));
+    m_tab_widget->addTab(ContinuousVariationWidget(), tr("Weakened Grid Search"));
     m_moco_widget = ModelComparison();
     m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
     if(m_model)
@@ -229,7 +229,7 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     m_cv = new QPushButton(tr("Calculate"));
     layout->addWidget(m_cv, 5, 0, 1, 3);
     
-    connect(m_cv, SIGNAL(clicked()), this, SIGNAL(CVStatistic()));
+    connect(m_cv, SIGNAL(clicked()), this, SIGNAL(WGStatistic()));
     cv_widget->setLayout(layout);
     return cv_widget;
 }
@@ -306,9 +306,9 @@ QWidget * StatisticDialog::ModelComparison()
 }
 
 
-CVConfig StatisticDialog::getCVConfig()
+WGSConfig StatisticDialog::getWGSConfig()
 {
-    CVConfig config;
+    WGSConfig config;
     config.increment = m_cv_increment->value();
     config.maxsteps = m_cv_steps->value();
     config.maxerror = m_cv_max;
@@ -327,7 +327,7 @@ CVConfig StatisticDialog::getCVConfig()
 MoCoConfig StatisticDialog::getMoCoConfig()
 {
     MoCoConfig config;
-    CVConfig cv_config;
+    WGSConfig cv_config;
     config.mc_steps = m_moco_mc_steps->value();
     config.box_multi = m_moco_box_multi->value();
     config.maxerror = m_moco_max;

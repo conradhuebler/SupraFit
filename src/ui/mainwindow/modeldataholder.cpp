@@ -18,7 +18,7 @@
  * 
  */
 
-#include "src/capabilities/continuousvariation.h"
+#include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
 
@@ -116,7 +116,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
      
     m_statistic_dialog = new StatisticDialog(this);
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
-    connect(m_statistic_dialog, SIGNAL(CVStatistic()), this, SLOT(CVStatistic()));
+    connect(m_statistic_dialog, SIGNAL(WGSStatistic()), this, SLOT(WGStatistic()));
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
     m_add = new QPushButton(tr("Add Model"));
@@ -538,11 +538,11 @@ int ModelDataHolder::Runs(bool moco) const
     return run;
 }
 
-void ModelDataHolder::CVStatistic()
+void ModelDataHolder::WGStatistic()
 { 
     m_statistic_dialog->setRuns(Runs());
     m_statistic_dialog->setRuns(m_models.size());
-    CVConfig config = m_statistic_dialog->getCVConfig();
+    WGSConfig config = m_statistic_dialog->getWGSConfig();
     for(int i = 0; i < m_model_widgets.size(); ++i)
     {
         if(!m_model_widgets[i])
@@ -551,7 +551,7 @@ void ModelDataHolder::CVStatistic()
         if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
         
-        m_model_widgets[i]->CVStatistic(config);
+        m_model_widgets[i]->WGStatistic(config);
 
         if(!m_allow_loop)
             break;

@@ -152,7 +152,7 @@ set(utils_SRC
                 src/capabilities/modelcomparison.cpp
                 src/capabilities/montecarlostatistics.cpp
                 src/capabilities/globalsearch.cpp
-                src/capabilities/continuousvariation.cpp
+                src/capabilities/weakenedgridsearch.cpp
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp
                 src/core/toolset.cpp
@@ -169,7 +169,7 @@ qt5_use_modules(utils Core Gui)
 set(suprafit_SRCS
                 src/ui/guitools/chartwrapper.cpp
                 src/ui/widgets/results/searchresultwidget.cpp
-                src/ui/widgets/results/cvresultswidget.cpp
+                src/ui/widgets/results/wgsresultswidget.cpp
                 src/ui/widgets/results/mcresultswidget.cpp
                 src/ui/widgets/results/resultswidget.cpp
                 src/ui/widgets/modelactions.cpp

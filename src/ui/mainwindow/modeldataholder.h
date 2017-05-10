@@ -145,7 +145,7 @@ private slots:
     void RemoveCrashFile();
     void SetProjectTabName();
     void CloseAll();
-    void CVStatistic();
+    void WGStatistic();
     void MCStatistic();
     void MoCoStatistic();
     void OptimizeAll();

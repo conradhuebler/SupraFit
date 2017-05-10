@@ -34,7 +34,7 @@ class OptimizerFlagWidget;
 class QRadioButton;
 class QTabWidget;
 
-class CVConfig;
+class WGSConfig;
 class MCConfig;
 class MoCoConfig;
 
@@ -47,7 +47,7 @@ public:
     ~StatisticDialog();
     
     MCConfig getMCConfig();
-    CVConfig getCVConfig();
+    WGSConfig getWGSConfig();
     MoCoConfig getMoCoConfig();
     
     inline void setRuns(int runs) { m_runs = runs; }
@@ -94,7 +94,7 @@ private slots:
      void CalculateError();
      
 signals:
-    void CVStatistic();
+    void WGStatistic();
     void MCStatistic();
     void MoCoStatistic();
     void Interrupt();

@@ -20,7 +20,7 @@
 #include "src/global.h"
 #include "src/version.h"
 
-#include "src/capabilities/continuousvariation.h"
+#include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/modelcomparison.h"
 
@@ -42,7 +42,7 @@
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
-#include "src/ui/widgets/results/cvresultswidget.h"
+#include "src/ui/widgets/results/wgsresultswidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/mainwindow/chartwidget.h"
@@ -96,7 +96,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractTitrationModel > model,  Charts 
     
     m_statistic_dialog = new StatisticDialog(m_model, this);
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
-    connect(m_statistic_dialog, SIGNAL(CVStatistic()), this, SLOT(CVStatistic()));
+    connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
@@ -479,13 +479,13 @@ void ModelWidget::FastConfidence()
     delete statistic;
 }
 
-void ModelWidget::CVStatistic()
+void ModelWidget::WGStatistic()
 {
-    CVConfig config = m_statistic_dialog->getCVConfig();
-    CVStatistic(config);
+    WGSConfig config = m_statistic_dialog->getWGSConfig();
+    WGStatistic(config);
 }
 
-void ModelWidget::CVStatistic(CVConfig config)
+void ModelWidget::WGStatistic(WGSConfig config)
 {
     Waiter wait;
     
@@ -495,7 +495,7 @@ void ModelWidget::CVStatistic(CVConfig config)
      if(config.maxerror < 1E-8)
         config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
      
-    ContinuousVariation *statistic = new ContinuousVariation(config, this);
+    WeakenedGridSearch *statistic = new WeakenedGridSearch(config, this);
     
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
@@ -510,7 +510,7 @@ void ModelWidget::CVStatistic(CVConfig config)
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
-    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
+    WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();  
     emit IncrementProgress(1);
@@ -545,7 +545,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     statistic->setModel(m_model);
     statistic->Confidence();
      
-    CVResultsWidget *resultwidget = new CVResultsWidget(statistic, m_model, m_statistic_result);
+    WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
     m_statistic_result->show();
     m_statistic_dialog->HideWidget();
