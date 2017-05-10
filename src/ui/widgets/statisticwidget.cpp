@@ -117,7 +117,7 @@ void StatisticWidget::Update()
         overview += moco;
     
     QString cv;
-    cv += "<p><b>Continuouse Variation:</b></p>\n";    
+    cv += "<p><b>Weakened Grid Search:</b></p>\n";    
     for(int i = 0; i < m_model->getCVStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getCVStatisticResult(i);   

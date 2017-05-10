@@ -33,7 +33,7 @@
 class Minimizer;
 class QPointF;
 
-class CVConfig : public AbstractConfig
+class WGSConfig : public AbstractConfig
 {
 public:
     qreal increment = 1e-3;
@@ -45,13 +45,13 @@ public:
     bool fisher_statistic = false;
 };
 
-class ContinuousVariationThread : public AbstractSearchThread
+class WeakenedGridSearchThread : public AbstractSearchThread
 {
   Q_OBJECT
 public:
 
-    ContinuousVariationThread(const CVConfig &config, bool check_convergence = true);
-    ~ContinuousVariationThread();
+    WeakenedGridSearchThread(const WGSConfig &config, bool check_convergence = true);
+    ~WeakenedGridSearchThread();
     inline void SetParameterID( int id ) { m_parameter_id = id; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     void setParameter(const QJsonObject &json);
@@ -70,18 +70,18 @@ private:
     qreal m_error;
     bool m_converged, m_check_convergence;
     QList<QPointF> m_series;
-    CVConfig m_config;
+    WGSConfig m_config;
     bool allow_break;
 };
 
-class ContinuousVariation : public AbstractSearchClass
+class WeakenedGridSearch : public AbstractSearchClass
 {
     Q_OBJECT
     
 public:
-    ContinuousVariation(const CVConfig &config, QObject *parent = 0);
-    ~ContinuousVariation();
-    inline void setConfig(const CVConfig &config) { m_config = config;}
+    WeakenedGridSearch(const WGSConfig &config, QObject *parent = 0);
+    ~WeakenedGridSearch();
+    inline void setConfig(const WGSConfig &config) { m_config = config;}
     inline bool CV() { return m_cv; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
@@ -93,9 +93,9 @@ public slots:
 private:
     QSharedPointer<Minimizer> m_minimizer;
     OptimizationType m_type;
-    CVConfig m_config;
+    WGSConfig m_config;
     bool allow_break, m_cv;
-    QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< ContinuousVariationThread > > &threads, bool store = false);
+    QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< WeakenedGridSearchThread > > &threads, bool store = false);
     QVector<QVector <qreal > > MakeBox() const;
     void MCSearch(const QVector<QVector<qreal> > &box);
     void Search(const QVector<QVector<qreal> > &box);

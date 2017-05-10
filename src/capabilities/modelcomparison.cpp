@@ -19,7 +19,6 @@
 
 #include "abstractsearchclass.h"
 #include "globalsearch.h"
-#include "continuousvariation.h"
 
 #include "src/core/AbstractModel.h"
 

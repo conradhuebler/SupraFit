@@ -27,12 +27,12 @@
 class AbstractSearchClass;
 class AbstractModel;
 
-class CVResultsWidget : public ResultsWidget
+class WGSResultsWidget : public ResultsWidget
 {
     Q_OBJECT
 public:
-    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractModel> model, QWidget *parent);
-    ~CVResultsWidget();
+    WGSResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractModel> model, QWidget *parent);
+    ~WGSResultsWidget();
     
 private:
     void WriteConfidence(const QList<QJsonObject > &constant_results) override;

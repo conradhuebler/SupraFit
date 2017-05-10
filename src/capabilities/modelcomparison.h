@@ -21,7 +21,7 @@
 #define MODELCOMPARISON_H
 
 #include "abstractsearchclass.h"
-#include "continuousvariation.h"
+#include "weakenedgridsearch.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
@@ -32,7 +32,7 @@ const int update_intervall = 100;
 class MoCoConfig : public AbstractConfig
 {
 public:
-    CVConfig cv_config;  
+    WGSConfig cv_config;  
     int mc_steps = 10000;
     qreal box_multi = 1.5;
     qreal maxerror = 0; 

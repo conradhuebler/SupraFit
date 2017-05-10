@@ -34,18 +34,18 @@
 #include <random>
 #include <iostream>
 
-#include "continuousvariation.h"
+#include "weakenedgridsearch.h"
 
-ContinuousVariationThread::ContinuousVariationThread(const CVConfig &config, bool check_convergence) : m_config(config), m_check_convergence(check_convergence), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
+WeakenedGridSearchThread::WeakenedGridSearchThread(const WGSConfig &config, bool check_convergence) : m_config(config), m_check_convergence(check_convergence), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
 {
     
 }
 
-ContinuousVariationThread::~ContinuousVariationThread()
+WeakenedGridSearchThread::~WeakenedGridSearchThread()
 {
 }
 
-void ContinuousVariationThread::run()
+void WeakenedGridSearchThread::run()
 {
     m_minimizer->setModel(m_model);
     m_model.data()->Calculate();
@@ -81,13 +81,13 @@ void ContinuousVariationThread::run()
     m_result["integ_1"] = integ_1/m_error;
 }
 
-void ContinuousVariationThread::setParameter(const QJsonObject& json)
+void WeakenedGridSearchThread::setParameter(const QJsonObject& json)
 {
     m_model.data()->ImportModel(json);
 }
 
 
-qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
+qreal WeakenedGridSearchThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
 {
     double increment = m_config.increment;
     if(!direction)
@@ -160,21 +160,21 @@ qreal ContinuousVariationThread::SumErrors(bool direction, double& integ_5, doub
 
 
 
-ContinuousVariation::ContinuousVariation(const CVConfig &config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+WeakenedGridSearch::WeakenedGridSearch(const WGSConfig &config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
     
     
     
 }
 
-ContinuousVariation::~ContinuousVariation()
+WeakenedGridSearch::~WeakenedGridSearch()
 {
     
     
     
 }
 
-QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QPointer<ContinuousVariationThread> >& threads, bool store)
+QHash<QString, QList<qreal> > WeakenedGridSearch::ConstantsFromThreads(QList<QPointer<WeakenedGridSearchThread> >& threads, bool store)
 {
     QHash<QString, QList<qreal> > constants;
     for(int i = 0; i < threads.size(); ++i)
@@ -194,7 +194,7 @@ QHash<QString, QList<qreal> > ContinuousVariation::ConstantsFromThreads(QList<QP
 }
 
 
-bool ContinuousVariation::ConfidenceAssesment()
+bool WeakenedGridSearch::ConfidenceAssesment()
 {
     m_cv = true;
     if(!m_model)
@@ -208,12 +208,12 @@ bool ContinuousVariation::ConfidenceAssesment()
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     
     m_model.data()->Calculate();
-    QList<QPointer <ContinuousVariationThread > > threads;
+    QList<QPointer <WeakenedGridSearchThread > > threads;
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     for(int i = 0; i < parameter.size(); ++i)
     {
-        QPointer<ContinuousVariationThread >thread = new ContinuousVariationThread(m_config);
+        QPointer<WeakenedGridSearchThread >thread = new WeakenedGridSearchThread(m_config);
         connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
@@ -252,17 +252,17 @@ bool ContinuousVariation::ConfidenceAssesment()
 }
 
 
-void ContinuousVariation::setParameter(const QJsonObject& json)
+void WeakenedGridSearch::setParameter(const QJsonObject& json)
 {
     m_model.data()->ImportModel(json);
 }
 
 
-void ContinuousVariation::Interrupt()
+void WeakenedGridSearch::Interrupt()
 {
     emit StopSubThreads();
     m_interrupt = true;
     m_threadpool->clear();
 }
 
-#include "continuousvariation.moc"
+#include "weakenedgridsearch.moc"

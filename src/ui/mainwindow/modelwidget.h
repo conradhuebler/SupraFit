@@ -65,7 +65,7 @@ class ModelElement;
 struct ModelHistoryElement;
 struct Charts;
 
-class CVConfig;
+class WGSConfig;
 class MCConfig;
 class MoCoConfig;
 
@@ -81,14 +81,14 @@ public:
     QSharedPointer< AbstractModel > Model() const { return m_model; }
     QSharedPointer< Minimizer > getMinimizer() const { return m_minimizer; }
     
-    void CVStatistic(CVConfig config);
+    void WGStatistic(WGSConfig config);
     void MoCoStatistic(MoCoConfig config);
     void MCStatistic(MCConfig config);
     inline void setCheckbox(const QPointer<QCheckBox> checkbox) { m_toggled_box = checkbox; }
     inline bool isChecked() const { if(!m_toggled_box) return false; else return m_toggled_box->isChecked(); }
 public slots:
     void LoadJson(const QJsonObject &object);
-    void CVStatistic();
+    void WGStatistic();
     void MCStatistic();
     void MoCoStatistic();
     void GlobalMinimize();
