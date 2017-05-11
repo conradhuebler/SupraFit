@@ -84,6 +84,7 @@ ConfigDialog::ConfigDialog(OptimizerConfig config, int printlevel,const QString 
 {
     m_dirlevel = qApp->instance()->property("dirlevel").toInt();
     setUi();
+    setWindowTitle("Configure");
 }
 
 ConfigDialog::~ConfigDialog()

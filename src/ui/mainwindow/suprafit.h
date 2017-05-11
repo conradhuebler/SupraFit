@@ -91,7 +91,7 @@ private:
 private slots:
     void NewTable();
     void OpenFile();
-    
+    void setWindowTitle();
     void SaveProjectAction();
     void ImportModelAction();
     void ExportModelAction();

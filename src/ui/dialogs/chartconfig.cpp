@@ -90,7 +90,7 @@ ChartConfigDialog::ChartConfigDialog()
     layout->addWidget(m_scaleaxis, 5, 0, 1, 3);
     layout->addWidget(m_buttons, 6, 0, 1, 3);
     setLayout(layout);
-    
+    setWindowTitle("Configure charts ...");
 }
 
 

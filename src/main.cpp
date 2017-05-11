@@ -42,6 +42,7 @@ int main(int argc, char** argv)
     QApplication app(argc, argv);
     
     app.setApplicationName("SupraFit");
+    app.setApplicationDisplayName("SupraFit");
     app.setOrganizationName("Conrad Huebler");
     
     app.setApplicationVersion(version);

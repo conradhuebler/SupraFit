@@ -102,6 +102,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_history_dock->setMinimumWidth(240);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject, int)), this, SLOT(InsertHistoryElement(QJsonObject, int)), Qt::DirectConnection);
+    connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
     connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
@@ -271,6 +272,7 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str
                     m_model_dataholder->AddToWorkspace(toplevel);
             }
         }
+        setWindowTitle();
         return true;
     }
 }
@@ -355,11 +357,6 @@ void MainWindow::ExportModelAction()
     }   
 }
 
-// void MainWindow::EditTableAction(bool checked)
-// {
-//     m_model_dataholder->setEditable(checked);
-// }
-
 void MainWindow::SettingsDialog()
 {
     ConfigDialog dialog(m_opt_config, m_printlevel, m_logfile, this);
@@ -407,6 +404,10 @@ void MainWindow::WriteMessages(const QString &message, int priority)
     }
 }
 
+void MainWindow::setWindowTitle()
+{
+    QMainWindow::setWindowTitle(QString("*" + qApp->instance()->property("projectname").toString() + "*"));
+}
 
 void MainWindow::MessageBox(const QString& str, int priority)
 {
@@ -485,8 +486,7 @@ void MainWindow::about()
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
     info += "<p>SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + ".\n";
-    info += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + ".</p>";
-    QMessageBox::about(this, tr("SuprFit"), info);
+    QMessageBox::about(this, tr("About this application"), info);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
