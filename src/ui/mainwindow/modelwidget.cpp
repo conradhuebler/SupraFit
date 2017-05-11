@@ -511,7 +511,7 @@ void ModelWidget::WGStatistic(WGSConfig config)
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
     WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
-    m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
+    m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
     m_statistic_result->show();  
     emit IncrementProgress(1);
     m_statistic_dialog->HideWidget();
@@ -546,7 +546,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     statistic->Confidence();
      
     WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
-    m_statistic_result->setWidget(resultwidget, "Continuous Variation for " + m_model->Name());
+    m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
     m_statistic_result->show();
     m_statistic_dialog->HideWidget();
 }

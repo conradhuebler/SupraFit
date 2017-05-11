@@ -116,7 +116,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
      
     m_statistic_dialog = new StatisticDialog(this);
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
-    connect(m_statistic_dialog, SIGNAL(WGSStatistic()), this, SLOT(WGStatistic()));
+    connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
     m_add = new QPushButton(tr("Add Model"));
@@ -196,6 +196,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
 void ModelDataHolder::SetProjectTabName()
 {
     m_modelsWidget->setTabText(0, "Overview: " + qApp->instance()->property("projectname").toString());
+    emit nameChanged();
 }
 
 

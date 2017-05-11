@@ -89,6 +89,7 @@ AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent)
 {
     setModal(false);
     m_error_max = 0;
+    setWindowTitle("Global Search Dialog"); 
 }
 
 

@@ -127,6 +127,7 @@ void StatisticDialog::setUi()
     EnableWidgets();
     updateUI();
     CalculateError();
+    setWindowTitle("Statistic Tools");
 }
 
 QWidget *StatisticDialog::MonteCarloWidget()
