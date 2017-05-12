@@ -30,6 +30,8 @@
 #include <QtCore/QPointer>
 #include <QtCore/QAbstractTableModel>
 
+#include <random>
+
 typedef Eigen::VectorXd Vector;
 
 class DataTable : public QAbstractTableModel
