@@ -128,8 +128,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
         m_constants << constant;
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
-        constant->setPrefix(m_model->ConstantNames()[i] + "=10^");
+        if(qobject_cast<AbstractTitrationModel *>(m_model))
+        {
+            constant->setPrefix(m_model->ConstantNames()[i] + "=10^"); 
+            constant->setSingleStep(1e-2);
+        }
+        else
+        {
+            constant->setPrefix(m_model->ConstantNames()[i] + "= "); 
+            constant->setSingleStep(5);
+        }
         constant->setValue(m_model->GlobalParameter()[i]);
+        constant->setMaximum(1e4);
         constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
         const_layout->addWidget(constant);
@@ -702,7 +712,7 @@ void ModelWidget::ExportSimModel()
         std::normal_distribution<double> Phi = std::normal_distribution<double>(0,scatter);
         DataTable *model_table = m_model->ModelTable()->PrepareMC(Phi, rng);
         QStringList model = model_table->ExportAsStringList();
-        QStringList concentrations = m_model->ConcentrationModel()->ExportAsStringList();
+        QStringList concentrations = m_model->IndependentModel()->ExportAsStringList();
         
         QString first = concentrations.first();
         QStringList host = first.split("\t");
@@ -839,18 +849,18 @@ void ModelWidget::Data2Text()
     text += "\n";
     text += "#### Begin of Data Description ####\n";
     text += "Concentrations :   " + QString::number(m_model->DataPoints())  + "\n";
-    for(int i = 0; i < m_model->ConcentrationModel()->columnCount(); ++i)
-        text += m_model->ConcentrationModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    for(int i = 0; i < m_model->IndependentModel()->columnCount(); ++i)
+        text += m_model->IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";
 #warning remove me
     if(qobject_cast<AbstractTitrationModel *>(m_model))
-        text += qobject_cast<AbstractTitrationModel *>(m_model)->ConcentrationModel()->ExportAsString();
+        text += qobject_cast<AbstractTitrationModel *>(m_model)->IndependentModel()->ExportAsString();
     text += "\n";
     text += "Signals :          " + QString::number(m_model->SignalCount()) + "\n";
-    for(int i = 0; i < m_model->SignalModel()->columnCount(); ++i)
-        text += m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    for(int i = 0; i < m_model->DependentModel()->columnCount(); ++i)
+        text += m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";
-    text += m_model->SignalModel()->ExportAsString();
+    text += m_model->DependentModel()->ExportAsString();
     text += "\n";
     text += "#### End of Data Description #####\n";
     text += "******************************************************************************************************\n";
@@ -866,8 +876,8 @@ void ModelWidget::Model2Text()
     text += "Equilibrium Model Calculation with complexation constants:\n";
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
         text += m_model->ConstantNames()[i] + ":\t" + QString::number(m_model->GlobalParameter(i))+ "\n";
-    for(int i = 0; i < m_model->ConcentrationModel()->columnCount(); ++i)
-        text += m_model->ConcentrationModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    for(int i = 0; i < m_model->IndependentModel()->columnCount(); ++i)
+        text += m_model->IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
         text += m_model->ConstantNames()[i] + "\t";
     text += "\n";
@@ -877,14 +887,14 @@ void ModelWidget::Model2Text()
     text += "\n";
     text += "\n";
     text += "Equilibrium Model Signal Calculation with complexation constants:\n";
-    for(int i = 0; i < m_model->SignalModel()->columnCount(); ++i)
-        text += m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    for(int i = 0; i < m_model->DependentModel()->columnCount(); ++i)
+        text += m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";
     text += m_model->ModelTable()->ExportAsString();
     text += "\n";
     text += "Errors obtained from that calculcation:\n";
-    for(int i = 0; i < m_model->SignalModel()->columnCount(); ++i)
-        text += m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    for(int i = 0; i < m_model->DependentModel()->columnCount(); ++i)
+        text += m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";
     text += m_model->ErrorTable()->ExportAsString();
     text += "\n";

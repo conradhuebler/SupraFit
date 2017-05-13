@@ -66,7 +66,7 @@ public:
     
 private:
     void setUi();
-    void WriteData(const DataTable *model);
+    void WriteData(const DataTable *model, int independent = 2);
     QPointer<TableView > m_table;
     QPointer<QLineEdit > m_line;
     QPointer<QPushButton > m_select, m_export, m_file;

@@ -108,15 +108,15 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 {  
     m_data = dataclass;
     m_wrapper = wrapper; 
-    m_concentrations->setModel(m_data.data()->ConcentrationModel());
+    m_concentrations->setModel(m_data.data()->IndependentModel());
     
-    m_signals->setModel(m_data.data()->SignalModel());
-    connect(m_data.data()->SignalModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(HidePoint()));
+    m_signals->setModel(m_data.data()->DependentModel());
+    connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
     m_name->setText(qApp->instance()->property("projectname").toString());
-    m_substances->setText(tr("Substances: %1").arg(m_data.data()->ConcentrationModel()->columnCount()));
-    m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->SignalModel()->rowCount()));
+    m_substances->setText(tr("Substances: %1").arg(m_data.data()->IndependentModel()->columnCount()));
+    m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->DependentModel()->rowCount()));
     m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SignalCount()));
     
     QVBoxLayout *vlayout = new QVBoxLayout;
@@ -168,7 +168,7 @@ void DataWidget::SetProjectName()
 
 void DataWidget::setEditable(bool editable)
 {
-    m_data.data()->SignalModel()->setEditable(editable);
+    m_data.data()->DependentModel()->setEditable(editable);
 }
 
 
@@ -187,7 +187,7 @@ void DataWidget::ShowContextMenu(const QPoint& pos)
     Q_UNUSED(pos)
     QModelIndex index = m_signals->currentIndex();
     int row = index.row();
-    m_data.data()->SignalModel()->CheckRow(row);
+    m_data.data()->DependentModel()->CheckRow(row);
     HidePoint();
 }
 

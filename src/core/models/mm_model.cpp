@@ -66,8 +66,8 @@ void Michaelis_Menten_Model::InitialGuess()
     m_vmax = 4;
     m_Km = 2;
     m_global_parameter = QList<qreal>() << m_vmax << m_Km;
-    m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
-    m_pure_signals_parameter = SignalModel()->firstRow();
+    m_complex_signal_parameter.col(0) = DependentModel()->lastRow();
+    m_pure_signals_parameter = DependentModel()->firstRow();
     setOptParamater(m_global_parameter);
     
 //     QVector<qreal * > line1, line2;
@@ -108,24 +108,17 @@ void Michaelis_Menten_Model::CalculateVariables(const QList<qreal > &constants)
     
     m_sum_absolute = 0;
     m_sum_squares = 0;
-//     for(int i = 0; i < DataPoints(); ++i)
-//     {
-//         qreal host_0 = InitialHostConcentration(i);
-//         qreal guest_0 = InitialGuestConcentration(i);
-//         qreal host = HostConcentration(host_0, guest_0, constants);
-//         qreal complex = host_0 -host;
-//         Vector vector(4);
-//         vector(0) = i + 1;
-//         vector(1) = host;
-//         vector(2) = guest_0 - complex;
-//         vector(3) = complex;
-//         SetConcentration(i, vector);
-//         for(int j = 0; j < SignalCount(); ++j)
-//         {
-//             qreal value = host/host_0*m_pure_signals_parameter(j, 0)+ complex/host_0*m_complex_signal_parameter(j,0);
-//             SetSignal(i, j, value);    
-//         }
-//     }
+    for(int i = 0; i < DataPoints(); ++i)
+    {
+        qreal vmax = GlobalParameter(0);
+        qreal Km = GlobalParameter(1);
+        qreal S_0 = IndependentModel()->data(0,i);
+        for(int j = 0; j < SignalCount(); ++j)
+        {
+            qreal value = vmax*S_0/(Km+S_0);
+            SetValue(i, j, value);    
+        }
+    }
     emit Recalculated();
 }
 
@@ -138,7 +131,6 @@ QSharedPointer<AbstractModel > Michaelis_Menten_Model::Clone() const
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
-    
 }
 
 
@@ -253,32 +245,7 @@ void Michaelis_Menten_Model::ImportModel(const QJsonObject &topjson, bool overri
     
     if(topjson["runtype"].toInt() != 0)
         OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
-    
-    
-//     QList<qreal> pureShift;
-//     QJsonObject pureShiftObject = json["pureShift"].toObject();
-//     for (int i = 0; i < m_pure_signals_parameter.rows(); ++i) 
-//     {
-//         pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
-//         if(!pureShiftObject[QString::number(i)].isNull())
-//             active_signals <<  1;
-//         else
-//             active_signals <<  0;
-//         
-//     }
-//     setPureSignals(pureShift);
-    
-    
-//     for(int i = 0; i < GlobalParameter().size(); ++i)
-//     {
-//         QList<qreal> shifts;
-//         QJsonObject object = json["shift_" + QString::number(i)].toObject();
-//         for(int j = 0; j < m_pure_signals_parameter.rows(); ++j)
-//         {
-//             shifts << object[QString::number(j)].toString().toDouble();
-//         }
-//         setComplexSignals(shifts, i);
-//     }
+
     setActiveSignals(active_signals);
     Calculate();
 }

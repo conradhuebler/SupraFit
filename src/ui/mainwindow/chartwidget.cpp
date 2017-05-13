@@ -92,7 +92,7 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
     m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
     m_data_mapper->setPlotMode(j);
-    m_data_mapper->setDataTable(m_rawdata.data()->SignalModel());
+    m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
     m_data_mapper->setData(m_rawdata.data());
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));

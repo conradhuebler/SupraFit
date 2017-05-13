@@ -64,8 +64,8 @@ void ItoI_Model::InitialGuess()
 {
     m_K11 = 4;
     m_global_parameter = QList<qreal>() << m_K11;
-    m_complex_signal_parameter.col(0) = SignalModel()->lastRow();
-    m_pure_signals_parameter = SignalModel()->firstRow();
+    m_complex_signal_parameter.col(0) = DependentModel()->lastRow();
+    m_pure_signals_parameter = DependentModel()->firstRow();
     setOptParamater(m_global_parameter);
     
     QVector<qreal * > line1, line2;

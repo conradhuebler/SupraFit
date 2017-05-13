@@ -149,7 +149,7 @@ public:
     }
     
 #warning fixme here
-    void setParamter(const QVector<qreal> &parameter); //FIXME
+    void setParameter(const QVector<qreal> &parameter); //FIXME
     
     /*! \brief Returns if the current model parameter makes dont't sense
      * true - no sense

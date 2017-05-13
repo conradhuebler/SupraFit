@@ -87,8 +87,10 @@ void AbstractModel::setGlobalParameter(const QList<qreal> &list)
 
 void AbstractModel::SetValue(int i, int j, qreal value)
 {
-    if(!ActiveSignals(j) || !SignalModel()->isChecked(j,i))
-        return;
+#warning dont forget me
+    if(IndependentVariableSize() != 1) //FIXME just for now
+        if(!ActiveSignals(j) || !DependentModel()->isChecked(j,i))
+            return;
     if(std::isnan(value) || std::isinf(value))
     {
         value = 0;
@@ -97,10 +99,10 @@ void AbstractModel::SetValue(int i, int j, qreal value)
     if(Type() != 3)
     {
         m_model_signal->data(j,i) = value;
-        m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
-        m_sum_absolute += qAbs(m_model_signal->data(j,i) - SignalModel()->data(j,i));
-        m_sum_squares += qPow(m_model_signal->data(j,i) - SignalModel()->data(j,i), 2);
-        m_mean += m_model_signal->data(j,i) - SignalModel()->data(j,i);
+        m_model_error->data(j,i) = m_model_signal->data(j,i) - DependentModel()->data(j,i);
+        m_sum_absolute += qAbs(m_model_signal->data(j,i) - DependentModel()->data(j,i));
+        m_sum_squares += qPow(m_model_signal->data(j,i) - DependentModel()->data(j,i), 2);
+        m_mean += m_model_signal->data(j,i) - DependentModel()->data(j,i);
         m_used_variables++;
     }
 }
@@ -136,7 +138,7 @@ qreal AbstractModel::CalculateVariance()
     {
         for(int j = 0; j < SignalCount(); ++j)
         {
-            if(SignalModel()->isChecked(j,i))
+            if(DependentModel()->isChecked(j,i))
             {
                 v += qPow(m_model_error->data(j,i) - m_mean, 2);
                 count++;
@@ -153,7 +155,8 @@ QList<double>   AbstractModel::getCalculatedModel()
     {
         for(int i = 0; i < DataPoints(); ++i)
         {
-            if(ActiveSignals(j) == 1)
+            
+            if(ActiveSignals(j) == 1 || IndependentVariableSize() == 1) //FIXME just that it works now
                 x.append( m_model_signal->data(j,i)); 
         }
     }
@@ -229,7 +232,7 @@ void AbstractModel::SetSingleParameter(double value, int parameter)
         *m_opt_para[parameter] = value;
 }
 
-void AbstractModel::setParamter(const QVector<qreal>& parameter)
+void AbstractModel::setParameter(const QVector<qreal>& parameter)
 {
     if(parameter.size() != m_opt_para.size())
         return;

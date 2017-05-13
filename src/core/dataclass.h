@@ -112,7 +112,7 @@ public:
     int m_type, m_maxsize;
     int m_host_assignment;
     
-    DataTable *m_signal_model, *m_concentration_model, *m_raw_data;
+    DataTable *m_dependent_model, *m_independent_model, *m_raw_data;
     QList<qreal > m_scaling;
     
     void check();
@@ -142,33 +142,33 @@ public:
     
     inline void addPoint(QVector<qreal > conc, QVector<qreal > data)
     {
-        d->m_concentration_model->insertRow(conc);
-        d->m_signal_model->insertRow(data);
+        d->m_independent_model->insertRow(conc);
+        d->m_dependent_model->insertRow(data);
         if(conc.size() != d->m_scaling.size())
-            for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
+            for(int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
     
 
     inline int Size() const { return DataPoints(); } 
-    inline int Concentrations() const { return d->m_concentration_model->columnCount(); }
-    inline int DataPoints() const { return d->m_signal_model->rowCount(); }
-    inline int SignalCount() const {return d->m_signal_model->columnCount(); }
+    inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
+    inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
+    inline int SignalCount() const {return d->m_dependent_model->columnCount(); }
     inline int Type() const { return d->m_type;     }
     inline void setType(int type) { d->m_type = type; }
-    inline DataTable * ConcentrationModel() { return d->m_concentration_model; }
-    inline DataTable * SignalModel() { return d->m_signal_model; }
-    inline DataTable * ConcentrationModel() const { return d->m_concentration_model; }
-    inline DataTable * SignalModel() const { return d->m_signal_model; }
+    inline DataTable * IndependentModel() { return d->m_independent_model; }
+    inline DataTable * DependentModel() { return d->m_dependent_model; }
+    inline DataTable * IndependentModel() const { return d->m_independent_model; }
+    inline DataTable * DependentModel() const { return d->m_dependent_model; }
     inline void setConcentrationTable(DataTable *table) 
     { 
-        d->m_concentration_model = table;     
-        d->m_concentration_model->setCheckable(false);
-        if(d->m_concentration_model->columnCount() != d->m_scaling.size())
-            for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
+        d->m_independent_model = table;     
+        d->m_independent_model->setCheckable(false);
+        if(d->m_independent_model->columnCount() != d->m_scaling.size())
+            for(int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
-    inline void setSignalTable(DataTable *table) { d->m_signal_model = table; d->m_signal_model->setCheckable(true); }
+    inline void setSignalTable(DataTable *table) { d->m_dependent_model = table; d->m_dependent_model->setCheckable(true); }
     void SwitchConentrations();
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
     qreal InitialHostConcentration(int i);

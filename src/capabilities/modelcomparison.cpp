@@ -34,7 +34,8 @@
 void MCThread::run()
 {
     QVector<std::uniform_int_distribution<int> > dist;
-    double mult = 1e7;
+#warning depend directly on the size of each variable
+    double mult = 1e6;
     for(int i = 0; i < m_box.size(); ++i)
     {
         int lower = mult*m_box[i][0];

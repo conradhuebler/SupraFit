@@ -153,7 +153,7 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
         thread->setModel(m_model);
         DataTable *table;
         if(m_config.original)
-            table = m_model->SignalModel();
+            table = m_model->DependentModel();
         else
             table = m_model->ModelTable();
 
@@ -233,11 +233,11 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         if(nr == 0)
         {
             result["value"] = m_model->PureParameter()(i,0);
-            result["name"] = "Host Shift: " + m_model->SignalModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString();
+            result["name"] = "Host Shift: " + m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString();
         }else
         {
             result["value"] = m_model->ComplexParameter()(mod,nr-1);
-            result["name"] = m_model->ConstantNames()[nr-1] + " Component Shift: " + m_model->SignalModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
+            result["name"] = m_model->ConstantNames()[nr-1] + " Component Shift: " + m_model->DependentModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
         }
         result["type"] = "Shift";
         result["error"] = error;

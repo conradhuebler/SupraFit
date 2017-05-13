@@ -141,7 +141,7 @@ void ChartWrapper::UpdateModel()
         double x = XValue(i);
         for(int j = 0; j < m_model->SignalCount(); ++j)
         {
-            if(m_model->SignalModel()->isChecked(j,i))
+            if(m_model->DependentModel()->isChecked(j,i))
                 m_stored_series[j]->append(x, m_table->data(j,i));
         }
     }
@@ -197,25 +197,30 @@ QColor ChartWrapper::ColorCode(int i) const
 
 qreal ChartWrapper::XValue(int i) const
 {
-    
-    switch(m_plotmode){
-        case PlotMode::G:
-                return m_model->InitialGuestConcentration(i); 
-            break;
-            
-        case PlotMode::H:   
-                return m_model->InitialHostConcentration(i);
-            break;
-            
-        case PlotMode::HG:
-                return m_model->InitialHostConcentration(i)/m_model->InitialGuestConcentration(i);                
-            break;    
-            
-        case PlotMode::GH:
-        default:
-                return m_model->InitialGuestConcentration(i)/m_model->InitialHostConcentration(i);                   
-            break;    
-    };
+#warning dont forget me
+    if(m_model->IndependentVariableSize() == 2) //FIXME 
+    {
+        switch(m_plotmode){
+            case PlotMode::G:
+                    return m_model->InitialGuestConcentration(i); 
+                break;
+                
+            case PlotMode::H:   
+                    return m_model->InitialHostConcentration(i);
+                break;
+                
+            case PlotMode::HG:
+                    return m_model->InitialHostConcentration(i)/m_model->InitialGuestConcentration(i);                
+                break;    
+                
+            case PlotMode::GH:
+            default:
+                    return m_model->InitialGuestConcentration(i)/m_model->InitialHostConcentration(i);                   
+                break;    
+        };
+    }
+    else
+        return m_model->IndependentModel()->data(0,i);
     return 0;
 }
 

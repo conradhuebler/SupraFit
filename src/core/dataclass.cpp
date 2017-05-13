@@ -445,49 +445,49 @@ QVector<qreal> DataTable::toList() const
 
 DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
 {
-    m_concentration_model = new DataTable;
-    m_signal_model = new DataTable;
-    m_signal_model->setCheckable(true);
+    m_independent_model = new DataTable;
+    m_dependent_model = new DataTable;
+    m_dependent_model->setCheckable(true);
     m_raw_data = new DataTable;
-    if(m_concentration_model->columnCount() != m_scaling.size())
-        for(int i = 0; i < m_concentration_model->columnCount(); ++i)
+    if(m_independent_model->columnCount() != m_scaling.size())
+        for(int i = 0; i < m_independent_model->columnCount(); ++i)
             m_scaling << 1;
-    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
-    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+    m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+    m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
 
 DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_host_assignment(0)
 {
-    m_concentration_model = new DataTable;
-    m_signal_model = new DataTable;
-    m_signal_model->setCheckable(true);
+    m_independent_model = new DataTable;
+    m_dependent_model = new DataTable;
+    m_dependent_model->setCheckable(true);
     m_raw_data = new DataTable;    
-    if(m_concentration_model->columnCount() != m_scaling.size())
-        for(int i = 0; i < m_concentration_model->columnCount(); ++i)
+    if(m_independent_model->columnCount() != m_scaling.size())
+        for(int i = 0; i < m_independent_model->columnCount(); ++i)
             m_scaling << 1;
-    m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
-    m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+    m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+    m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
 
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(other)
 {
-    m_concentration_model = new DataTable(other.m_concentration_model);
+    m_independent_model = new DataTable(other.m_independent_model);
     
     m_scaling = other.m_scaling;
     m_host_assignment = other.m_host_assignment;
-    m_signal_model = new DataTable(other.m_signal_model);
+    m_dependent_model = new DataTable(other.m_dependent_model);
     m_raw_data = new DataTable(other.m_raw_data);
     m_type = other.m_type;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
 {
-    m_concentration_model = new DataTable(other->m_concentration_model);
+    m_independent_model = new DataTable(other->m_independent_model);
     
     m_scaling = other->m_scaling;
        m_host_assignment = other->m_host_assignment; 
-    m_signal_model = new DataTable(other->m_signal_model);
+    m_dependent_model = new DataTable(other->m_dependent_model);
     m_raw_data = new DataTable(other->m_raw_data);
     m_type = other->m_type;
 }
@@ -495,8 +495,8 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
 
 DataClassPrivate::~DataClassPrivate()
 {
-    delete m_concentration_model;
-    delete m_signal_model;
+    delete m_independent_model;
+    delete m_dependent_model;
     delete m_raw_data;
 }
 
@@ -504,8 +504,8 @@ DataClassPrivate::~DataClassPrivate()
 void DataClassPrivate::check()
 {
     std::cout << "Check of data " << std::endl;
-    std::cout << "Concentration Table ## Row:" << m_concentration_model->rowCount() << " Colums: " << m_concentration_model->columnCount()<< std::endl;
-    std::cout << "Signal Table ## Row:" << m_signal_model->rowCount() << " Colums: " << m_signal_model->columnCount()<< std::endl;
+    std::cout << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount()<< std::endl;
+    std::cout << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount()<< std::endl;
     std::cout << "Raw Table ## Row:" << m_raw_data->rowCount() << " Colums: " << m_raw_data->columnCount()<< std::endl;
     
 }
@@ -521,8 +521,8 @@ DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObje
     d = new DataClassPrivate();
     d->m_type = type;
     ImportData(json);
-    if(d->m_concentration_model->columnCount() != d->m_scaling.size())
-    for(int i = 0; i < d->m_concentration_model->columnCount(); ++i)
+    if(d->m_independent_model->columnCount() != d->m_scaling.size())
+    for(int i = 0; i < d->m_independent_model->columnCount(); ++i)
         d->m_scaling << 1;
 }
 
@@ -558,7 +558,7 @@ QList<double>   DataClass::getSignals(QList<int > active_signal)
         for(int i = 0; i < DataPoints(); ++i)
         {
             if(active_signal[j] == 1)
-                x.append(SignalModel()->data(j,i)); //[index] = SignalModel()->data(j,i); 
+                x.append(DependentModel()->data(j,i)); //[index] = SignalModel()->data(j,i); 
         }
     }
     return x;
@@ -569,23 +569,23 @@ void DataClass::SwitchConentrations()
     d->m_host_assignment = !HostAssignment();
     if(!d->m_host_assignment)
     {
-       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
-       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
     }else
     {
-       d->m_concentration_model->setHeaderData(0, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
-       d->m_concentration_model->setHeaderData(1, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     }
 }
 
 qreal DataClass::InitialGuestConcentration(int i)
 {
-    return d->m_concentration_model->data(!HostAssignment(),i)*d->m_scaling[!HostAssignment()];
+    return d->m_independent_model->data(!HostAssignment(),i)*d->m_scaling[!HostAssignment()];
 }
 
 qreal DataClass::InitialHostConcentration(int i)
 {
-    return d->m_concentration_model->data(HostAssignment(),i)*d->m_scaling[HostAssignment()];
+    return d->m_independent_model->data(HostAssignment(),i)*d->m_scaling[HostAssignment()];
 }
 
 
@@ -597,26 +597,26 @@ const QJsonObject DataClass::ExportData(const QList<int> &active) const
     
     for(int i = 0; i < DataPoints(); ++i)
     {
-        concentrationObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_concentration_model->Row(i));
+        concentrationObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_independent_model->Row(i));
         if(active.size())
-            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_signal_model->Row(i, active));
+            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i, active));
         else
-            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_signal_model->Row(i));
+            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i));
     }
     
     json["concentrations"] = concentrationObject;
     json["signals"] = signalObject;
     json["datatype"] = QString("discrete");
-    QStringList headers = QStringList() << d->m_concentration_model->header();
+    QStringList headers = QStringList() << d->m_independent_model->header();
     if(active.size())
     {
         for(int i = 0; i < active.size(); ++i)
             if(active[i])
-                headers << d->m_signal_model->header()[i];
+                headers << d->m_dependent_model->header()[i];
     }
     else
     {
-       headers  << d->m_signal_model->header();
+       headers  << d->m_dependent_model->header();
     }
     json["header"] = headers.join("|");
     return json;
@@ -650,8 +650,8 @@ bool DataClass::ImportData(const QJsonObject &topjson)
             QVector<qreal > concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
             signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
-            d->m_concentration_model->insertRow(concentrationsVector);
-            d->m_signal_model->insertRow(signalVector);
+            d->m_independent_model->insertRow(concentrationsVector);
+            d->m_dependent_model->insertRow(signalVector);
         }
             QStringList header = topjson["data"].toObject()["header"].toString().split("|");
             setHeader(header);
@@ -668,8 +668,8 @@ bool DataClass::ImportData(const QJsonObject &topjson)
         concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
         signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
         int row = str.toInt();
-        d->m_concentration_model->setRow(concentrationsVector, row);
-        d->m_signal_model->setRow(signalVector, row);
+        d->m_independent_model->setRow(concentrationsVector, row);
+        d->m_dependent_model->setRow(signalVector, row);
     }
     
     if("discrete" == topjson["data"].toObject()["datatype"].toString())
@@ -681,14 +681,14 @@ bool DataClass::ImportData(const QJsonObject &topjson)
 
 void DataClass::setHeader(const QStringList& strlist)
 {
-    if(strlist.size() == (d->m_concentration_model->columnCount() + d->m_signal_model->columnCount()))
+    if(strlist.size() == (d->m_independent_model->columnCount() + d->m_dependent_model->columnCount()))
     {
         for(int i = 0; i < strlist.size(); ++i)
         {
-            if(i < d->m_concentration_model->columnCount())
-                d->m_concentration_model->setHeaderData(i, Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
+            if(i < d->m_independent_model->columnCount())
+                d->m_independent_model->setHeaderData(i, Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
             else
-                d->m_signal_model->setHeaderData(i - d->m_concentration_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
+                d->m_dependent_model->setHeaderData(i - d->m_independent_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
         }
     }
 }
@@ -696,6 +696,6 @@ void DataClass::setHeader(const QStringList& strlist)
 void DataClass::OverrideSignalTable(DataTable *table)
 {
     d.detach();
-    table->setCheckedTable(d->m_signal_model->CheckedTable());
-    d->m_signal_model = table;
+    table->setCheckedTable(d->m_dependent_model->CheckedTable());
+    d->m_dependent_model = table;
 }

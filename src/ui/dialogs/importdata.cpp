@@ -95,9 +95,7 @@ void ImportData::setUi()
     
     m_conc = new QSpinBox;
     connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
-    m_conc->setMinimum(2);
     m_sign = new QSpinBox;
-    m_sign->setMinimum(1);
     connect(m_sign, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
     m_line = new QLineEdit;
     m_select = new QPushButton("Select file");
@@ -113,8 +111,8 @@ void ImportData::setUi()
 //     layout->addWidget(m_file, 0, 2);
     layout->addWidget(m_export, 0, 3);
 //     layout->addWidget(m_switch_concentration, 0, 4);
-//     layout->addWidget(new QLabel(tr("No. Conc:")), 1, 0);
-//     layout->addWidget(m_conc, 1, 1);
+    layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
+    layout->addWidget(m_conc, 1, 1);
 //     layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
 //     layout->addWidget(m_sign, 1, 3);
     layout->addWidget(m_table, 3, 0, 1, 4);
@@ -127,8 +125,11 @@ void ImportData::setUi()
 
 void ImportData::NoChanged()
 {
-    m_conc->setMaximum(2); //FIXME for now
+    m_conc->setMinimum(1);
+    m_conc->setMaximum(m_table->model()->columnCount()  - 1);
     m_sign->setMaximum(m_table->model()->columnCount()  - 2);
+    if(m_table->model()->columnCount()  > 2)
+        m_conc->setValue(2);
 }
 
 
@@ -145,7 +146,7 @@ void ImportData::LoadFile()
         QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
     
     delete filehandler;
-//     NoChanged();
+    NoChanged();
 }
 
 void ImportData::SelectFile()
@@ -172,11 +173,12 @@ void ImportData::ExportFile()
     stream << model->ExportAsString();
 }
 
-void ImportData::WriteData(const DataTable* model)
+void ImportData::WriteData(const DataTable* model, int independent)
 {
+    independent = m_conc->value();
     m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
-    DataTable *concentration_block = model->BlockColumns(0,2);
-    DataTable *signals_block = model->BlockColumns(2,model->columnCount() -2 );
+    DataTable *concentration_block = model->BlockColumns(0,independent);
+    DataTable *signals_block = model->BlockColumns(independent,model->columnCount() -independent );
     m_storeddata->setSignalTable( signals_block );
     m_storeddata->setConcentrationTable( concentration_block );
 }
