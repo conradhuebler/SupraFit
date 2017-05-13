@@ -30,6 +30,7 @@ class AbstractModel;
 class WGSResultsWidget : public ResultsWidget
 {
     Q_OBJECT
+    
 public:
     WGSResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractModel> model, QWidget *parent);
     ~WGSResultsWidget();
