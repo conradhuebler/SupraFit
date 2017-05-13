@@ -38,9 +38,13 @@
 #include "AbstractModel.h"
 
 AbstractModel::AbstractModel(const DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false)
-{
+{    
+    setActiveSignals(QVector<int>(SignalCount(), 1).toList());
     
+    m_model_signal = new DataTable(SignalCount(),DataPoints(), this);
+    m_model_error = new DataTable(SignalCount(),DataPoints(), this);
     
+    m_data = data; 
 }
 
 AbstractModel::~AbstractModel()
@@ -79,6 +83,26 @@ void AbstractModel::setGlobalParameter(const QList<qreal> &list)
         return;
     for(int i = 0; i < list.size(); ++i)
         m_global_parameter[i] = list[i];  
+}
+
+void AbstractModel::SetValue(int i, int j, qreal value)
+{
+    if(!ActiveSignals(j) || !SignalModel()->isChecked(j,i))
+        return;
+    if(std::isnan(value) || std::isinf(value))
+    {
+        value = 0;
+        m_corrupt = true;
+    }
+    if(Type() != 3)
+    {
+        m_model_signal->data(j,i) = value;
+        m_model_error->data(j,i) = m_model_signal->data(j,i) - SignalModel()->data(j,i);
+        m_sum_absolute += qAbs(m_model_signal->data(j,i) - SignalModel()->data(j,i));
+        m_sum_squares += qPow(m_model_signal->data(j,i) - SignalModel()->data(j,i), 2);
+        m_mean += m_model_signal->data(j,i) - SignalModel()->data(j,i);
+        m_used_variables++;
+    }
 }
 
 void AbstractModel::Calculate(const QList<qreal > &constants)

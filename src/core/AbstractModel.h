@@ -110,7 +110,7 @@ public:
      * 
      */
     virtual void CalculateVariables(const QList<qreal > &constants) = 0;
-    
+
     void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
     void setOptParamater(QList< qreal >& parameter);
@@ -231,10 +231,21 @@ public:
 [[deprecated]]
     virtual void MiniShifts() = 0;
     
+    /*! \brief set the values of the global parameter to const QList< qreal > &list
+     */
     virtual void setGlobalParameter(const QList< qreal > &list);
+    /*! \brief return the list of global parameter values
+     */
     inline QList<qreal > GlobalParameter() const { return m_global_parameter; }
+    /*! \brief return i global parameter
+     */
     inline qreal GlobalParameter(int i) const { return m_global_parameter[i]; }
+    /*! \brief returns size of global parameter
+     */
     virtual int GlobalParameterSize() const = 0;
+    /*! \brief return size of input parameter 
+     */
+    virtual int InputParameterSize() const = 0;
 public slots:
      inline  void Calculate() { Calculate(GlobalParameter());}
      void Calculate(const QList<qreal > &constants);
@@ -251,6 +262,12 @@ protected:
      * 
      */
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
+    
+    /* 
+     * @param int i, in j and qreal value
+     * of the model value - DataTable 
+     */
+    void SetValue(int i, int j, qreal value);
     
 #warning to do as well
     QStringList m_constant_names; //FIXME more must be

@@ -53,7 +53,11 @@ public:
      * 
      */
     void ImportModel(const QJsonObject &topjson, bool override = true) override;
-
+    
+    /*! \brief we have only the time as input parameter
+     */
+    virtual inline int InputParameterSize() const override { return 1; } 
+    
 [[deprecated]]
     inline virtual void MiniShifts() override { return; }
 private:

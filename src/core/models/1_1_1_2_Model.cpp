@@ -162,7 +162,7 @@ void ItoI_ItoII_Model::CalculateVariables(const QList<qreal > &constants)
         for(int j = 0; j < SignalCount(); ++j)
         {
             qreal value = host/host_0*m_pure_signals_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,0)+ complex_12/host_0*m_complex_signal_parameter(j,1);
-            SetSignal(i, j, value);
+            SetValue(i, j, value);
         }
         
     }

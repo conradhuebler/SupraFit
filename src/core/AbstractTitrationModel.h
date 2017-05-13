@@ -95,6 +95,11 @@ public:
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);
     inline QPointer<DataTable > getConcentrations() { return m_concentrations; }
+    
+    /*! \brief we have two concentrations for all titration models, host and guest
+     */
+    virtual inline int InputParameterSize() const override { return 2; }
+    
    /*  
 private:
     QList<int > m_active_signals;
@@ -104,13 +109,7 @@ private:
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;*/
    
-protected:
-    /* 
-     * @param int i, in j and qreal value
-     * of the model signal - DataTable 
-     */
-    void SetSignal(int i, int j, qreal value);
-    
+protected:    
     /*
      * set the concentration of the @param int i datapoint to
      * @param const Vector& equilibrium, 
