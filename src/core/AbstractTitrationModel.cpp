@@ -87,7 +87,7 @@ void AbstractTitrationModel::MiniShifts()
     double cut_error = 1;
     for(int j = 0; j < m_lim_para.size(); ++j)
     {
-        for(int i = 0; i < SignalCount(); ++i)    
+        for(int i = 0; i < SeriesCount(); ++i)    
         {
             if(ActiveSignals(i) == 1)
             {

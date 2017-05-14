@@ -49,7 +49,7 @@ MonteCarloThread::~MonteCarloThread()
 
 void MonteCarloThread::setDataTable(DataTable* table)
 {
-    m_model->OverrideSignalTable(table);
+    m_model->OverrideDependentTable(table);
 }
 
 void MonteCarloThread::run()
@@ -104,7 +104,7 @@ void MonteCarloStatistics::Evaluate()
     Collect(threads);
     
     m_constant_list.resize(m_model->GlobalParameterSize());
-    m_shift_list.resize(m_model->GlobalParameterSize()*m_model->SignalCount()+m_model->SignalCount());
+    m_shift_list.resize(m_model->GlobalParameterSize()*m_model->SeriesCount()+m_model->SeriesCount());
     for(int i = 0; i < m_models.size(); ++i)
     {       
         ExtractFromJson(i, "constants");
@@ -228,8 +228,8 @@ void MonteCarloStatistics::AnalyseData(qreal error)
          * Some fun goes here, since our data are one long vector
          * the 0 - SignalCount() Datas are one block
          */
-        int nr = ceil(i/m_model->SignalCount()); // nr = 0 -> pure shifts, after SignalCount() runs, it gets incremented
-        int mod = i%m_model->SignalCount(); // this is the modulo, which says what index the parameter is
+        int nr = ceil(i/m_model->SeriesCount()); // nr = 0 -> pure shifts, after SignalCount() runs, it gets incremented
+        int mod = i%m_model->SeriesCount(); // this is the modulo, which says what index the parameter is
         if(nr == 0)
         {
             result["value"] = m_model->PureParameter()(i,0);
@@ -281,7 +281,7 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
         else
         {
             int add = QString(string).remove("shift_").toInt() + 1;
-            m_shift_list[j + add*m_model->SignalCount()] << element.toDouble();
+            m_shift_list[j + add*m_model->SeriesCount()] << element.toDouble();
         }
         j++;
     }  

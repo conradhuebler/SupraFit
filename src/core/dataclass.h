@@ -153,14 +153,14 @@ public:
     inline int Size() const { return DataPoints(); } 
     inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
     inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
-    inline int SignalCount() const {return d->m_dependent_model->columnCount(); }
+    inline int SeriesCount() const {return d->m_dependent_model->columnCount(); }
     inline int Type() const { return d->m_type;     }
     inline void setType(int type) { d->m_type = type; }
     inline DataTable * IndependentModel() { return d->m_independent_model; }
     inline DataTable * DependentModel() { return d->m_dependent_model; }
     inline DataTable * IndependentModel() const { return d->m_independent_model; }
     inline DataTable * DependentModel() const { return d->m_dependent_model; }
-    inline void setConcentrationTable(DataTable *table) 
+    inline void setIndependentTable(DataTable *table) 
     { 
         d->m_independent_model = table;     
         d->m_independent_model->setCheckable(false);
@@ -168,7 +168,7 @@ public:
             for(int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
-    inline void setSignalTable(DataTable *table) { d->m_dependent_model = table; d->m_dependent_model->setCheckable(true); }
+    inline void setDependentTable(DataTable *table) { d->m_dependent_model = table; d->m_dependent_model->setCheckable(true); }
     void SwitchConentrations();
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
     qreal InitialHostConcentration(int i);
@@ -187,7 +187,7 @@ public:
     inline QList<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);
-    void OverrideSignalTable(DataTable *table);
+    void OverrideDependentTable(DataTable *table);
     
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;

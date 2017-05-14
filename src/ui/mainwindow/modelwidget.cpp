@@ -176,7 +176,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     
     if(qobject_cast<AbstractTitrationModel *>(m_model))
     {
-        for(int i = 0; i < m_model->SignalCount(); ++i)
+        for(int i = 0; i < m_model->SeriesCount(); ++i)
         {
             ModelElement *el = new ModelElement(qobject_cast<AbstractTitrationModel *>(m_model), m_charts, i);
             connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
@@ -581,7 +581,7 @@ void ModelWidget::LocalMinimize()
     CollectParameters();
     m_local_fits.clear();
     int result = 0;
-    for(int i = 0; i < m_model->SignalCount(); ++i)
+    for(int i = 0; i < m_model->SeriesCount(); ++i)
     {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         
@@ -607,7 +607,7 @@ void ModelWidget::LocalMinimize()
         settings.endGroup();
     }  
     
-    if(result < m_model->SignalCount())
+    if(result < m_model->SeriesCount())
         emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
     
     m_minimizer->setModel(m_model);
@@ -856,7 +856,7 @@ void ModelWidget::Data2Text()
     if(qobject_cast<AbstractTitrationModel *>(m_model))
         text += qobject_cast<AbstractTitrationModel *>(m_model)->IndependentModel()->ExportAsString();
     text += "\n";
-    text += "Signals :          " + QString::number(m_model->SignalCount()) + "\n";
+    text += "Signals :          " + QString::number(m_model->SeriesCount()) + "\n";
     for(int i = 0; i < m_model->DependentModel()->columnCount(); ++i)
         text += m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";

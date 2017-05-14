@@ -39,10 +39,10 @@
 
 AbstractModel::AbstractModel(const DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false)
 {    
-    setActiveSignals(QVector<int>(SignalCount(), 1).toList());
+    setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
     
-    m_model_signal = new DataTable(SignalCount(),DataPoints(), this);
-    m_model_error = new DataTable(SignalCount(),DataPoints(), this);
+    m_model_signal = new DataTable(SeriesCount(),DataPoints(), this);
+    m_model_error = new DataTable(SeriesCount(),DataPoints(), this);
     
     m_data = data; 
 }
@@ -125,7 +125,7 @@ void AbstractModel::Calculate(const QList<qreal > &constants)
 qreal AbstractModel::ModelError() const
 {
     qreal error = 0;
-    for(int z = 0; z < SignalCount(); ++z)
+    for(int z = 0; z < SeriesCount(); ++z)
         error += SumOfErrors(z);
     return error;
 }
@@ -136,7 +136,7 @@ qreal AbstractModel::CalculateVariance()
     int count = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
-        for(int j = 0; j < SignalCount(); ++j)
+        for(int j = 0; j < SeriesCount(); ++j)
         {
             if(DependentModel()->isChecked(j,i))
             {
@@ -151,7 +151,7 @@ qreal AbstractModel::CalculateVariance()
 QList<double>   AbstractModel::getCalculatedModel()
 {
     QList<double > x;
-    for(int j = 0; j < SignalCount(); ++j)
+    for(int j = 0; j < SeriesCount(); ++j)
     {
         for(int i = 0; i < DataPoints(); ++i)
         {

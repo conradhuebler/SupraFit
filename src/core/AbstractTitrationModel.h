@@ -82,13 +82,13 @@ public:
      * ! \brief Export model to json file
      * 
      */
-    QJsonObject ExportModel(bool statistics = true) const;
+    QJsonObject ExportModel(bool statistics = true) const override;
     /* ! \brief Import model from json
      * 
      */
-    void ImportModel(const QJsonObject &topjson, bool override = true);
+    void ImportModel(const QJsonObject &topjson, bool override = true) override;
 
-    void MiniShifts();
+    void MiniShifts() override;
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     
     virtual inline QString GlobalParameterSuffix() const override { return QString("10^"); }

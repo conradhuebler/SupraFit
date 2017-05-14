@@ -34,7 +34,7 @@
 IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
     setName(tr("2:1/1:1-Model"));
-    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 2);
+    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 2);
     InitialGuess();   
     
     AbstractTitrationModel::Calculate();
@@ -128,7 +128,7 @@ void IItoI_ItoI_Model::CalculateVariables(const QList<qreal > &constants)
         
         SetConcentration(i, vector);
         
-        for(int j = 0; j < SignalCount(); ++j)
+        for(int j = 0; j < SeriesCount(); ++j)
         {
             qreal value = host/host_0*m_pure_signals_parameter(j, 0) + 2*complex_21/host_0*m_complex_signal_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,1);
             SetValue(i, j, value);

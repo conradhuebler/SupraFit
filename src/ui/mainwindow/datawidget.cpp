@@ -117,10 +117,10 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_name->setText(qApp->instance()->property("projectname").toString());
     m_substances->setText(tr("Substances: %1").arg(m_data.data()->IndependentModel()->columnCount()));
     m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->DependentModel()->rowCount()));
-    m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SignalCount()));
+    m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SeriesCount()));
     
     QVBoxLayout *vlayout = new QVBoxLayout;
-    for(int i = 0; i < m_data.data()->SignalCount(); ++i)
+    for(int i = 0; i < m_data.data()->SeriesCount(); ++i)
     {
         QPointer<SignalElement > el = new SignalElement(m_data, m_wrapper, i, this);
         vlayout->addWidget(el);

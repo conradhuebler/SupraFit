@@ -179,8 +179,8 @@ void ImportData::WriteData(const DataTable* model, int independent)
     m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
     DataTable *concentration_block = model->BlockColumns(0,independent);
     DataTable *signals_block = model->BlockColumns(independent,model->columnCount() -independent );
-    m_storeddata->setSignalTable( signals_block );
-    m_storeddata->setConcentrationTable( concentration_block );
+    m_storeddata->setDependentTable( signals_block );
+    m_storeddata->setIndependentTable( concentration_block );
 }
 
 

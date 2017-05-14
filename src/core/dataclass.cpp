@@ -549,11 +549,11 @@ DataClass::~DataClass()
 
 QList<double>   DataClass::getSignals(QList<int > active_signal)
 {
-    if(active_signal.size() < SignalCount() )
-        active_signal = QVector<int>(SignalCount(), 1).toList();
+    if(active_signal.size() < SeriesCount() )
+        active_signal = QVector<int>(SeriesCount(), 1).toList();
     
     QList<double > x;
-    for(int j = 0; j < SignalCount(); ++j)
+    for(int j = 0; j < SeriesCount(); ++j)
     {
         for(int i = 0; i < DataPoints(); ++i)
         {
@@ -693,7 +693,7 @@ void DataClass::setHeader(const QStringList& strlist)
     }
 }
 
-void DataClass::OverrideSignalTable(DataTable *table)
+void DataClass::OverrideDependentTable(DataTable *table)
 {
     d.detach();
     table->setCheckedTable(d->m_dependent_model->CheckedTable());

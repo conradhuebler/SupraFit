@@ -39,7 +39,7 @@
 Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : AbstractModel(data)
 {
     setName(tr("Michaelis Menten"));
-    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
+    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     InitialGuess();
     
     
@@ -49,7 +49,7 @@ Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : Abstract
 Michaelis_Menten_Model::Michaelis_Menten_Model(const AbstractModel* model) : AbstractModel(model)
 {
     setName(tr("Michaelis Menten"));
-    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), 1);
+    m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     InitialGuess();
         
     m_constant_names = QStringList() << tr("vmax") << tr("Km");
@@ -113,7 +113,7 @@ void Michaelis_Menten_Model::CalculateVariables(const QList<qreal > &constants)
         qreal vmax = GlobalParameter(0);
         qreal Km = GlobalParameter(1);
         qreal S_0 = IndependentModel()->data(0,i);
-        for(int j = 0; j < SignalCount(); ++j)
+        for(int j = 0; j < SeriesCount(); ++j)
         {
             qreal value = vmax*S_0/(Km+S_0);
             SetValue(i, j, value);    

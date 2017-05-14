@@ -134,12 +134,12 @@ set(models_SRC
                 src/core/dataclass.cpp
                 src/core/AbstractModel.cpp
                 src/core/AbstractTitrationModel.cpp
-                src/core/models/1_1_Model.cpp
-                src/core/models/2_1_1_1_Model.cpp
-                src/core/models/1_1_1_2_Model.cpp
-                src/core/models/2_1_1_1_1_2_Model.cpp
-                src/core/models/ScriptModel.cpp
-                src/core/models/mm_model.cpp
+                src/core/models/titrations/1_1_Model.cpp
+                src/core/models/titrations/2_1_1_1_Model.cpp
+                src/core/models/titrations/1_1_1_2_Model.cpp
+                src/core/models/titrations/2_1_1_1_1_2_Model.cpp
+                src/core/models/titrations/ScriptModel.cpp
+                src/core/models/kinetics/mm_model.cpp
 )
 
 if(testing)

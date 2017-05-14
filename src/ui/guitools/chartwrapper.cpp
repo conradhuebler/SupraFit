@@ -92,7 +92,7 @@ void ChartWrapper::setData(QPointer<DataClass> model)
     
     if(m_stored_series.isEmpty())
     {
-        for(int j = 0; j < m_model->SignalCount(); ++j)
+        for(int j = 0; j < m_model->SeriesCount(); ++j)
         { 
             QPointer<QtCharts::QXYSeries > series;
             if(qobject_cast<AbstractModel *>(m_model))
@@ -111,7 +111,7 @@ void ChartWrapper::UpdateModel()
     for(int i = 0; i < m_model->DataPoints(); ++i)
     {
         double x = XValue(i);
-        for(int j = 0; j < m_model->SignalCount(); ++j)
+        for(int j = 0; j < m_model->SeriesCount(); ++j)
         {
             QPointF new_point = QPointF(x, m_table->data(j,i));
             if(m_model->SignalModel()->isChecked(j,i))
@@ -127,19 +127,19 @@ void ChartWrapper::UpdateModel()
             }
         }
     }
-    for(int j = 0; j < m_model->SignalCount(); ++j)
+    for(int j = 0; j < m_model->SeriesCount(); ++j)
     {
         for(int i = m_model->DataPoints(); i < m_stored_series[j]->count(); ++i)
             m_stored_series[j]->remove(i);
     }
     */
     
-    for(int j = 0; j < m_model->SignalCount(); ++j)
+    for(int j = 0; j < m_model->SeriesCount(); ++j)
         m_stored_series[j]->clear();
     for(int i = 0; i < m_model->DataPoints(); ++i)
     {
         double x = XValue(i);
-        for(int j = 0; j < m_model->SignalCount(); ++j)
+        for(int j = 0; j < m_model->SeriesCount(); ++j)
         {
             if(m_model->DependentModel()->isChecked(j,i))
                 m_stored_series[j]->append(x, m_table->data(j,i));

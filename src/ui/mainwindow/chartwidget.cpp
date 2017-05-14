@@ -96,7 +96,7 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
     m_data_mapper->setData(m_rawdata.data());
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
-    for(int i = 0; i < m_rawdata.data()->SignalCount(); ++i)
+    for(int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
     {
         ScatterSeries *signal_series = (qobject_cast<ScatterSeries *>(m_data_mapper->Series(i)));
         m_data_mapper->setSeries(signal_series, i);
@@ -131,7 +131,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model.data());
     
-    for(int i = 0; i < model->SignalCount(); ++i)
+    for(int i = 0; i < model->SeriesCount(); ++i)
     {
         if(model->Type() != 3)
         {
@@ -203,7 +203,7 @@ void ChartWidget::updateUI()
     m_signalchart->setTheme(theme);
     m_errorchart->setTheme(theme);
     
-     for(int i = 0; i < m_rawdata.data()->SignalCount(); ++i)
+     for(int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
          m_data_mapper->Series(i)->setColor(m_data_mapper->color(i));
 
 }
