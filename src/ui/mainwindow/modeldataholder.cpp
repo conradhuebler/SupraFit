@@ -137,40 +137,41 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     m_close_all->setFlat(true);
     m_close_all->setDisabled(true);
     connect(m_close_all, SIGNAL(clicked()), this, SLOT(CloseAll()));
-    
-    QMenu *menu = new QMenu;
+
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
     connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel11()));
-    menu->addAction(ItoI_action);
+    m_independet_2 << ItoI_action;
+    
     QAction *IItoI_ItoI_action = new QAction(this);
     IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
     connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel21()));
-    menu->addAction(IItoI_ItoI_action);
+    m_independet_2 << IItoI_ItoI_action;
     
     QAction *ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
     connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
-    menu->addAction(ItoI_ItoII_action);
+    m_independet_2 << ItoI_ItoII_action;
     
     QAction *II_I_ItoI_ItoII_action = new QAction(this);
     II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
     connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel2112()));
-    menu->addAction(II_I_ItoI_ItoII_action);
+    m_independet_2 << II_I_ItoI_ItoII_action;
     
     QAction *mm_action = new QAction(this);
     mm_action->setText(tr("Michaelis Menten"));
     connect(mm_action, SIGNAL(triggered()), this, SLOT(AddMMModel()));
-    menu->addAction(mm_action);
+    m_independet_1 << mm_action;
     
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
-    ParseScriptedModels();
+    
 #ifdef experimentel
-    menu->addAction(m_script_action);
+    ParseScriptedModels();
+    m_independet_2 << m_script_action;
 #endif
     
-    m_add->setMenu(menu);
+    
     
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_optimize, 0, 1);
@@ -196,7 +197,24 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
     m_datawidget->setData(m_data, wrapper);
     m_add->setEnabled(true);
     m_modelsWidget->setDataTab(m_datawidget); 
+    addToMenu(m_data->IndependentModel()->columnCount());
 }
+void ModelDataHolder::addToMenu(int IndependetCount)
+{
+    
+    auto addMenu = [](const QVector<QPointer<QAction > > &list, QMenu *menu){
+        for(const QPointer<QAction > & ptr : qAsConst(list))
+            menu->addAction(ptr); 
+    };
+    
+    QMenu *menu = new QMenu;
+    if(IndependetCount == 1)
+        addMenu(m_independet_1, menu);
+    else if(IndependetCount == 2)
+        addMenu(m_independet_2, menu);
+    m_add->setMenu(menu);
+}
+
 
 void ModelDataHolder::SetProjectTabName()
 {

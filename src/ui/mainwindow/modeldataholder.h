@@ -114,6 +114,7 @@ private:
     QPointer<DataWidget > m_datawidget;
     QPointer<TabWidget > m_modelsWidget;
     QPointer<QPushButton > m_add, m_optimize, m_statistics, m_close_all;
+    QVector<QPointer<QAction > > m_independet_1, m_independet_2;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
     QVector<QWeakPointer< AbstractModel > > m_models;
@@ -130,6 +131,7 @@ private:
 
     int m_last_tab;
     
+    void addToMenu(int IndependetCount);
     void Json2Model(const QJsonObject &object, const QString &str);
     void ActiveModel(QSharedPointer<AbstractModel > t);
     int Runs(bool moco = false) const;
