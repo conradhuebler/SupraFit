@@ -263,6 +263,11 @@ public:
     /*! \brief return size of input parameter 
      */
     virtual int InputParameterSize() const = 0;
+    
+     /*! \brief returns size of local parameter
+     */
+    virtual int LocalParameterSize() const = 0;
+    
 public slots:
      inline  void Calculate() { Calculate(GlobalParameter());}
      void Calculate(const QList<qreal > &constants);

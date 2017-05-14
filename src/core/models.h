@@ -6,3 +6,4 @@
 #include "models/titrations/2_1_1_1_1_2_Model.h"
 #include "models/titrations/ScriptModel.h"
 #include "models/kinetics/mm_model.h"
+#include "models/kinetics/first_order_model.h"

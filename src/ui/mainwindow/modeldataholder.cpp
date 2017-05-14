@@ -163,6 +163,11 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     connect(mm_action, SIGNAL(triggered()), this, SLOT(AddMMModel()));
     m_independet_1 << mm_action;
     
+    QAction *first_order_action = new QAction(this);
+    first_order_action->setText(tr("First Order Kinetics"));
+    connect(first_order_action, SIGNAL(triggered()), this, SLOT(AddFirstOder()));
+    m_independet_1 << first_order_action;
+    
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
     
@@ -243,6 +248,9 @@ void ModelDataHolder::AddModel(int model)
         case 5:
             t = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(m_data.data()),  &QObject::deleteLater);
             break;
+        case 6:
+            t = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(m_data.data()),  &QObject::deleteLater);
+            break;
         default:
             t.clear();
             return; 
@@ -284,6 +292,11 @@ void ModelDataHolder::AddModel2112()
 void ModelDataHolder::AddMMModel()
 {
     AddModel(ModelDataHolder::Michaelis_Menten);
+}
+
+void ModelDataHolder::AddFirstOder()
+{
+    AddModel(ModelDataHolder::First_Order_Kinetics);
 }
 
 void ModelDataHolder::AddModelScript()

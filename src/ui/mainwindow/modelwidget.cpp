@@ -168,7 +168,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_converged_label = new QLabel;
     m_sign_layout->addWidget(m_converged_label);
     
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
+    if(m_model->LocalParameterSize())
     {
         for(int i = 0; i < m_model->SeriesCount(); ++i)
         {

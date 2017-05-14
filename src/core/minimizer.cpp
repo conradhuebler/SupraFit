@@ -94,7 +94,7 @@ void NonLinearFitThread::ConstrainedFit()
             allow_loop = false;
         
         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
-        QList<qreal > old_constants =  m_model->Constants();
+        QList<qreal > old_constants =  m_model->GlobalParameter();
         qreal old_error;
         if(m_opt_config.error_potenz == 2)
             old_error = m_model->SumofSquares();
@@ -121,7 +121,7 @@ void NonLinearFitThread::ConstrainedFit()
         else
             error = m_model->SumofAbsolute();
         
-        QList<qreal> constants = m_model->Constants();
+        QList<qreal> constants = m_model->GlobalParameter();
         qreal constant_diff = 0;
         QString constant_string;
         for(int z = 0; z < constants.size(); ++z)
@@ -173,7 +173,7 @@ void NonLinearFitThread::ConstrainedFit()
         emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
     if(process_stopped)
     {
-        m_model->setConstants(old_para_constant);
+        m_model->setGlobalParameter(old_para_constant);
     }else{
         emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
         emit Message("*** Convergence reached  " + ToolSet::bool2YesNo(convergence) + "  ****\n", 3);
@@ -187,8 +187,8 @@ void NonLinearFitThread::ConstrainedFit()
                 error += m_model->SumOfErrors(i);
             }
             message += "got results: ";
-        for(int i = 0; i < m_model->Constants().size(); ++i)
-            message += "Constant "+ QString(i)+ " " +QString::number(m_model->Constants()[i]) +" ";
+        for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
+            message += "Constant "+ QString(i)+ " " +QString::number(m_model->GlobalParameter()[i]) +" ";
         message += "Sum of Error is " + QString::number(error);
         message += "\n";
         m_last_parameter = m_model->ExportModel(m_exc_statistics);

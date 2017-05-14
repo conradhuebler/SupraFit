@@ -29,7 +29,7 @@ class ModelElement : public QGroupBox
 {
     Q_OBJECT
 public:
-    ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget *parent = 0);
+    ModelElement(QSharedPointer<AbstractModel> model, Charts charts, int no, QWidget *parent = 0);
     ~ModelElement();
     double D0() const;
     QVector<double > D() const;
@@ -47,7 +47,7 @@ private:
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
     QCheckBox *m_include;
     HoverCheckBox *m_show;
-    QSharedPointer<AbstractTitrationModel > m_model;
+    QSharedPointer<AbstractModel > m_model;
     QPointer<LineSeries > m_error_series, m_signal_series;
     
     int m_no;

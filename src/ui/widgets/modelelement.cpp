@@ -21,7 +21,7 @@
 
 #include "src/core/toolset.h"
 #include "src/core/dataclass.h"
-#include "src/core/AbstractTitrationModel.h"
+#include "src/core/AbstractModel.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"
 #include "src/ui/widgets/buttons/hovercheckbox.h"
@@ -54,7 +54,7 @@
 #include "modelelement.h"
 
 
-ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts charts, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no), m_charts(charts)
+ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, int no, QWidget* parent) : QGroupBox(parent), m_model(model), m_no(no), m_charts(charts)
 {
     QVBoxLayout *layout = new QVBoxLayout;
     QHBoxLayout *shifts = new QHBoxLayout;
@@ -69,7 +69,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_d_0->setMaximumWidth(130);
     connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
     
-    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
+    for(int i = 0; i < m_model->LocalParameterSize(); ++i)
     {
         QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;

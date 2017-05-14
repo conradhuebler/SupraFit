@@ -101,7 +101,7 @@ public:
     /*! \brief we have two concentrations for all titration models, host and guest
      */
     virtual inline int InputParameterSize() const override { return 2; }
-    
+    virtual int LocalParameterSize() const override {return GlobalParameterSize(); }
    /*  
 private:
     QList<int > m_active_signals;

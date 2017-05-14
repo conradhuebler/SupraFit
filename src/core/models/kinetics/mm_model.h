@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ public:
     virtual inline int InputParameterSize() const override { return 1; } 
     virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("v<sub>max</sub>") << tr("K<sub>m</sub>"); }
     
-    
+    virtual int LocalParameterSize() const override {return 0; }
 [[deprecated]]
     inline virtual void MiniShifts() override { return; }
 private:
