@@ -287,5 +287,13 @@ QPair<qreal, qreal> AbstractTitrationModel::Pair(int i, int j) const
     return QPair<qreal, qreal>(GlobalParameter(i), m_complex_signal_parameter(j,i));
 }
 
+QString AbstractTitrationModel::formatedGlobalParameter(qreal value) const
+{
+    QString string;
+    string = QString::number(qPow(10,value));
+    return string;
+}
+
+
 
 #include "AbstractTitrationModel.moc"

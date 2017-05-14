@@ -91,6 +91,8 @@ public:
     void MiniShifts();
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     
+    virtual inline QString GlobalParameterSuffix() const override { return QString("10^"); }
+    virtual QString formatedGlobalParameter(qreal value) const override;
     
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);

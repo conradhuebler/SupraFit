@@ -105,7 +105,7 @@ bool ModelComparison::FastConfidence()
         result["name"] = m_model.data()->ConstantNames()[i];
         result["value"] = parameter[i];
         result["error"] = m_config.confidence;
-        result["type"] = "Complexation Constant";
+        result["type"] = "Global Parameter";
         QJsonObject confidence;
         confidence["upper"] = upper;
         m_model.data()->ImportModel(optimized);

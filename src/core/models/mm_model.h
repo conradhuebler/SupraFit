@@ -58,6 +58,8 @@ public:
      */
     virtual inline int InputParameterSize() const override { return 1; } 
     
+    
+    
 [[deprecated]]
     inline virtual void MiniShifts() override { return; }
 private:

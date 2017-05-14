@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/core/toolset.h"
+
 #include "src/core/models.h"
 
 #include <QtWidgets/QPushButton>
@@ -27,7 +29,7 @@
 #include "statisticwidget.h"
 
 
-StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget *parent) : m_model(model), QWidget(parent)
+StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget *parent) : QWidget(parent), m_model(model)
 {
     
     QVBoxLayout *m_layout = new QVBoxLayout;    
@@ -59,29 +61,6 @@ void StatisticWidget::toggleView()
     m_subwidget->setHidden(!hidden);
 }
 
-QString StatisticWidget::TextFromConfidence(const QJsonObject &result)
-{
-    QString text;
-    qreal value = result["value"].toDouble();
-    QString pot;
-    QString nr;
-    QString const_name;
-    if(result["type"] == "Complexation Constant")
-    {
-        nr = " = " + QString::number(qPow(10,value));
-        pot = " 10^";
-        const_name = " complexation constant ";
-    }
-    QJsonObject confidence = result["confidence"].toObject();
-    qreal upper = confidence["upper"].toDouble();
-    qreal lower = confidence["lower"].toDouble();
-    qreal conf = result["error"].toDouble();
-    text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr> ";
-    text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr></p>\n"; 
-    text += "</table>";
-    return text;    
-}
-
 void StatisticWidget::Update()
 {
     QString overview("<table style=\'width:100%\'>");
@@ -106,11 +85,11 @@ void StatisticWidget::Update()
         if(result["method"].toString() == "model comparison" && !i)
             moco += "<tr><td>Approximated area of the confidence ellipse: <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n";
         else
-            if(m_model->ConstantSize() > 1 && !i)
+            if(m_model->GlobalParameterSize() > 1 && !i)
                 moco += "*** Obtained from Automatic Confidence Calculation ***\n";
         if(!result["controller"].toObject()["fisher"].toBool() && !i)
             moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
-        moco += TextFromConfidence(result);
+        moco += Print::TextFromConfidence(result,m_model.data());
  
     }
     if(m_model->getMoCoStatisticResult())
@@ -124,7 +103,7 @@ void StatisticWidget::Update()
         QJsonObject confidence = result["confidence"].toObject();
         if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
             cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
-        cv += TextFromConfidence(result);
+        cv += Print::TextFromConfidence(result, m_model.data());
     }
     if(m_model->getCVStatisticResult())
         overview += cv;
@@ -137,7 +116,7 @@ void StatisticWidget::Update()
         QJsonObject result = m_model->getMCStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
         
-        mc += TextFromConfidence(result);
+        mc += Print::TextFromConfidence(result, m_model.data());
     }
     if(m_model->getMCStatisticResult())
         overview += mc;   

@@ -174,7 +174,7 @@ void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
         if(i < m_model->GlobalParameterSize())
         {
             QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
-            confidence  += StatisticWidget::TextFromConfidence(constant_results[i]) + "\n";
+            confidence  += Print::TextFromConfidence(constant_results[i], m_model.data()) + "\n";
         }
     }
     m_confidence_label->setText(confidence);

@@ -38,7 +38,7 @@ public:
     ~StatisticWidget();
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
-    static QString TextFromConfidence(const QJsonObject &result);
+    
     
 private:
     QSharedPointer<AbstractModel > m_model;

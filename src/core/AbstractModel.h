@@ -106,11 +106,28 @@ public:
     inline QString Name() const { return m_name; }
     
     /*
-     * This function defines the model 
+     * This function defines how the model values are to be calculated
      * 
      */
     virtual void CalculateVariables(const QList<qreal > &constants) = 0;
 
+    /*
+     * 
+     */
+    virtual inline QString GlobalParameterSuffix() const { return QString(); }
+    
+    virtual inline QString LocalParameterSuffix() const { return QString(); }
+    
+    /*
+     * 
+     */
+    virtual QString formatedGlobalParameter(qreal value) const { return QString::number(value); }
+    
+    /*
+     * 
+     */
+    virtual QString formatedLocalParameter(qreal value) const { return QString::number(value); };
+    
     void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
     void setOptParamater(QList< qreal >& parameter);

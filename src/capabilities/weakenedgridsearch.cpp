@@ -66,7 +66,7 @@ void WeakenedGridSearchThread::run()
     m_result["controller"] = controller;
     m_result["name"] = m_model.data()->ConstantNames()[m_parameter_id];
     m_result["value"] = parameter[m_parameter_id];
-    m_result["type"] = "Complexation Constant";
+    m_result["type"] = "Global Parameter";
     m_result["error"] = m_config.confidence;
     double integ_5 = 0;
     double integ_1 = 0;

@@ -98,10 +98,10 @@ void WGSResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_resul
             m_model->setMoCoStatistic(constant_results[i], i);
         else
             m_model->setCVStatistic(constant_results[i], i);
-        if(i < m_model->ConstantSize())
+        if(i < m_model->GlobalParameterSize())
         {
             QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
-            text  += StatisticWidget::TextFromConfidence(constant_results[i]) + "\n";
+            text  += Print::TextFromConfidence(constant_results[i], m_model.data()) + "\n";
         }
     }
     m_confidence_label->setText(text);
