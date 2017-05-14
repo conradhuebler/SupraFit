@@ -124,9 +124,9 @@ ChartView * WGSResultsWidget::CVPlot()
         view->addSeries(xy_series);
         
         LineSeries *current_constant= new LineSeries;
-        *current_constant << QPointF(m_model->Constant(i), m_model->SumofSquares()) << QPointF(m_model->Constant(i), m_model->SumofSquares()*1.1);
+        *current_constant << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()) << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
-        current_constant->setName("K<sub>" + m_model->ConstantNames()[i].remove(":") + "</sub>");
+        current_constant->setName(m_model->GlobalParameterNames()[i]);
         view->addSeries(current_constant, true);
     }
     return view;
@@ -151,11 +151,11 @@ ChartView *  WGSResultsWidget::MoCoPlot()
     {
         LineSeries *xy_serie = new LineSeries;
         xy_serie->append(serie);
-        xy_serie->setName("K<sub>" + m_model->ConstantNames()[i].remove(":") + "</sub>");
+        xy_serie->setName(m_model->GlobalParameterNames()[i]);
         view->addSeries(xy_serie, true);
         ++i;
     }
-    view->setXAxis("K<sub>" + m_model->ConstantNames()[0].remove(":") + "</sub>");
-    view->setYAxis("K<sub>" + m_model->ConstantNames()[1].remove(":") + "</sub>");
+    view->setXAxis(m_model->GlobalParameterNames()[0]);
+    view->setYAxis(m_model->GlobalParameterNames()[1]);
     return view;
 }

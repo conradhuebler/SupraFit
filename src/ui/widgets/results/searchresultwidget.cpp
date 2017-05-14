@@ -137,7 +137,7 @@ QTableView* SearchResultWidget::BuildList()
         }
     }
     QStringList head;
-    for(const QString &str : m_model.data()->ConstantNames())
+    for(const QString &str : m_model.data()->GlobalParameterNames())
         head << str;
     header << head << head;
     model->setHorizontalHeaderLabels(header);

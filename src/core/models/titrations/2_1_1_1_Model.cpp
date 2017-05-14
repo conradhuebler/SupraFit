@@ -38,9 +38,8 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationMod
     InitialGuess();   
     
     AbstractTitrationModel::Calculate();
-    
-    m_constant_names = QStringList() << tr("2:1") << tr("1:1");
 }
+    
 IItoI_ItoI_Model::~IItoI_ItoI_Model()
 {
     

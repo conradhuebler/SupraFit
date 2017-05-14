@@ -114,9 +114,9 @@ public:
     /*
      * 
      */
-    virtual inline QString GlobalParameterSuffix() const { return QString(); }
+    virtual inline QString GlobalParameterPrefix() const { return QString(); }
     
-    virtual inline QString LocalParameterSuffix() const { return QString(); }
+    virtual inline QString LocalParameterPrefix() const { return QString(); }
     
     /*
      * 
@@ -174,7 +174,7 @@ public:
      */
     inline bool isCorrupt() const { return m_corrupt; }
     
-    inline QStringList ConstantNames() const { return m_constant_names; }
+    inline virtual QStringList GlobalParameterNames() const = 0;
     
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
@@ -287,7 +287,7 @@ protected:
     void SetValue(int i, int j, qreal value);
     
 #warning to do as well
-    QStringList m_constant_names; //FIXME more must be
+    //FIXME more must be
     QVector<double * > m_opt_para;
     QList<qreal > m_global_parameter;
     QList< QJsonObject> m_mc_statistics;

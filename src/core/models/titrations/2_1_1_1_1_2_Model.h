@@ -47,7 +47,7 @@ public:
     virtual QSharedPointer<AbstractModel > Clone() const override;
     virtual bool SupportThreads() const override { return true; }
     virtual MassResults MassBalance(qreal A, qreal B) override;
-    
+    virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("K<sub>21</sub>") << tr("K<sub>11</sub>") << tr("K<sub>12</sub>"); }
 private:
     qreal m_K21, m_K11, m_K12;
     QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;

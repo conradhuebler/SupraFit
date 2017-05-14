@@ -45,9 +45,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(const DataClass* data): AbstractT
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 3);
     InitialGuess();
     setOptParamater(m_global_parameter);
-    AbstractTitrationModel::Calculate();
-    m_constant_names = QStringList() << tr("2:1") << tr("1:1") << tr("1:2"); 
-    
+    AbstractTitrationModel::Calculate();    
 }
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()

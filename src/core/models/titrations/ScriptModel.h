@@ -58,8 +58,10 @@ public:
     virtual bool SupportThreads() const { return false; }
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);
+    virtual inline QStringList GlobalParameterNames() const override { return m_complex_names; }
     
 private:
+    QStringList m_constant_names; 
     QVariantMap m_complex_map;
     QStringList m_component_list;
     QVariantHash m_complex_hashed;

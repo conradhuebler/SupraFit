@@ -59,7 +59,6 @@ ScriptModel::ScriptModel(const DataClass *data, const QJsonObject &json) : Abstr
     InitializeCupofTea();
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SignalCount(), m_complex_constants.size());
     InitialGuess();
-    
 }
 
 

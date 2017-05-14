@@ -42,7 +42,7 @@ public:
     virtual QSharedPointer<AbstractModel > Clone() const override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() override;
-    
+    virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("K<sub>11</sub>"); }
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);

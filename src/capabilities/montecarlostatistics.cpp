@@ -212,7 +212,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         QList<qreal > list = m_constant_list[i];
         QJsonObject result = MakeJson(list, 100-error);
         result["value"] = m_model->GlobalParameter(i);
-        result["name"] = m_model->ConstantNames()[i];
+        result["name"] = m_model->GlobalParameterNames()[i];
         result["type"] = "Global Parameter";
         result["error"] = error;
         m_results << result;
@@ -237,7 +237,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         }else
         {
             result["value"] = m_model->ComplexParameter()(mod,nr-1);
-            result["name"] = m_model->ConstantNames()[nr-1] + " Component Shift: " + m_model->DependentModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
+            result["name"] = m_model->GlobalParameterNames()[nr-1] + " Component Shift: " + m_model->DependentModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
         }
         result["type"] = "Local Parameter";
         result["error"] = error;

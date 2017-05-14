@@ -137,7 +137,7 @@ void AdvancedSearch::SetUi()
     
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
-        QPointer<ParameterWidget > widget = new ParameterWidget(m_model->ConstantNames()[i], this);
+        QPointer<ParameterWidget > widget = new ParameterWidget(m_model->GlobalParameterNames()[i], this);
         layout->addWidget(widget);
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
         m_parameter_list << widget;

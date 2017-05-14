@@ -91,7 +91,7 @@ public:
     void MiniShifts() override;
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     
-    virtual inline QString GlobalParameterSuffix() const override { return QString("10^"); }
+    virtual inline QString GlobalParameterPrefix() const override { return QString("10^"); }
     virtual QString formatedGlobalParameter(qreal value) const override;
     
     virtual qreal BC50();

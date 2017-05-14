@@ -41,9 +41,6 @@ Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : Abstract
     setName(tr("Michaelis Menten"));
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     InitialGuess();
-    
-    
-    m_constant_names = QStringList() << tr("vmax") << tr("Km");
 }
 
 Michaelis_Menten_Model::Michaelis_Menten_Model(const AbstractModel* model) : AbstractModel(model)
@@ -51,8 +48,6 @@ Michaelis_Menten_Model::Michaelis_Menten_Model(const AbstractModel* model) : Abs
     setName(tr("Michaelis Menten"));
     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     InitialGuess();
-        
-    m_constant_names = QStringList() << tr("vmax") << tr("Km");
 }
 
 
@@ -63,20 +58,12 @@ Michaelis_Menten_Model::~Michaelis_Menten_Model()
 
 void Michaelis_Menten_Model::InitialGuess()
 {
-    m_vmax = 4;
-    m_Km = 2;
+    m_vmax = 500;
+    m_Km = 5;
     m_global_parameter = QList<qreal>() << m_vmax << m_Km;
     m_complex_signal_parameter.col(0) = DependentModel()->lastRow();
     m_pure_signals_parameter = DependentModel()->firstRow();
     setOptParamater(m_global_parameter);
-    
-//     QVector<qreal * > line1, line2;
-//     for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
-//     {
-//         line1 << &m_pure_signals_parameter(i, 0);
-//         line2 << &m_complex_signal_parameter(i,0);
-//     }
-//     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
     AbstractModel::Calculate();
 }

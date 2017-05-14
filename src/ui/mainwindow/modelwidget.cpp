@@ -126,22 +126,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     {
         QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
-        constant->setSingleStep(1e-2);
         constant->setDecimals(4);
-        if(qobject_cast<AbstractTitrationModel *>(m_model))
-        {
-            constant->setPrefix(m_model->ConstantNames()[i] + "=10^"); 
-            constant->setSingleStep(1e-2);
-        }
-        else
-        {
-            constant->setPrefix(m_model->ConstantNames()[i] + "= "); 
-            constant->setSingleStep(5);
-        }
+
+        constant->setPrefix(m_model->GlobalParameterPrefix());
+        constant->setSingleStep(m_model->GlobalParameter(i)/100);
+
         constant->setValue(m_model->GlobalParameter()[i]);
         constant->setMaximum(1e4);
         constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
+        const_layout->addWidget(new QLabel(m_model->GlobalParameterNames()[i]));
         const_layout->addWidget(constant);
     }
     m_bc_50 = new QLabel(tr("BC50_0"));
@@ -875,11 +869,11 @@ void ModelWidget::Model2Text()
     text += "#### Current Model Results #####\n";
     text += "Equilibrium Model Calculation with complexation constants:\n";
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
-        text += m_model->ConstantNames()[i] + ":\t" + QString::number(m_model->GlobalParameter(i))+ "\n";
+        text += m_model->GlobalParameterNames()[i] + ":\t" + QString::number(m_model->GlobalParameter(i))+ "\n";
     for(int i = 0; i < m_model->IndependentModel()->columnCount(); ++i)
         text += m_model->IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
-        text += m_model->ConstantNames()[i] + "\t";
+        text += m_model->GlobalParameterNames()[i] + "\t";
     text += "\n";
 #warning remove mie
     if(qobject_cast<AbstractTitrationModel *>(m_model))

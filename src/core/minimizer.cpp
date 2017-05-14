@@ -73,7 +73,7 @@ void NonLinearFitThread::setParameter(const QJsonObject &json)
 
 void NonLinearFitThread::ConstrainedFit()
 {   
-    QList<qreal> old_para_constant = m_model->Constants();
+    QList<qreal> old_para_constant = m_model->GlobalParameter();
     
     bool convergence = false;
     bool constants_convergence = false;

@@ -69,7 +69,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
     m_d_0->setMaximumWidth(130);
     connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
     
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
         QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
@@ -78,7 +78,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractTitrationModel> model, Charts 
         constant->setMaximum(1000);
         constant->setSuffix("ppm");
         constant->setValue(m_model->Pair(i, m_no).second);
-        constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->ConstantNames()[i]));
+        constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->GlobalParameterNames()[i]));
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         shifts->addWidget(constant, 0);
@@ -152,7 +152,7 @@ void ModelElement::DisableSignal(int state)
     m_error_series->ShowLine(state);
     m_signal_series->ShowLine(state);
     m_d_0->setEnabled(m_include->isChecked());
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
         m_constants[i]->setEnabled(m_include->isChecked());
     }
@@ -186,7 +186,7 @@ void ModelElement::Update()
     if(!m_include->isChecked())
         return;
     m_d_0->setValue(m_model->PureSignal(m_no));
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
+    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
         m_constants[i]->setValue(m_model->Pair(i, m_no).second);
     }

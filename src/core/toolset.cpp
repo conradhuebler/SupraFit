@@ -270,11 +270,11 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
     if(result["type"] == "Global Parameter")
     {
         nr = " = " + model->formatedGlobalParameter(value);
-        pot = model->GlobalParameterSuffix();
+        pot = model->GlobalParameterPrefix();
     }else if(result["type"] == "Local Parameter")
     {
         nr = " = " + model->formatedLocalParameter(value);
-        pot = model->LocalParameterSuffix(); 
+        pot = model->LocalParameterPrefix(); 
     }
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper"].toDouble();
