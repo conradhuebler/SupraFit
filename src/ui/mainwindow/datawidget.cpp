@@ -151,6 +151,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     QSettings settings;
     settings.beginGroup("overview");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
+    m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
 }
 
 void DataWidget::switchHG()
