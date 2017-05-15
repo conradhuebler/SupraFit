@@ -241,6 +241,44 @@ void AbstractModel::setParameter(const QVector<qreal>& parameter)
             *m_opt_para[i] = parameter[i];
 }
 
+qreal AbstractModel::getLocalParameter(int parameter, int series) const
+{
+    if(series >= m_local_parameter->rowCount() || parameter >= m_local_parameter->columnCount())
+        return 0;
+    else
+        return m_local_parameter->data(parameter, series);
+}
+
+void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
+{
+    if(parameter < m_local_parameter->rowCount() && series < m_local_parameter->columnCount())
+        m_local_parameter->data(series, parameter) = value;
+}
+
+void AbstractModel::setLocalParameterColumn(const QVector<qreal> vector, int parameter)
+{
+    if(parameter < m_local_parameter->columnCount())
+        m_local_parameter->setColumn(vector, parameter);
+}
+
+void AbstractModel::setLocalParameterColumn(const Vector& vector, int parameter)
+{
+    if(parameter < m_local_parameter->columnCount())
+        m_local_parameter->setColumn(vector, parameter);
+}
+
+void AbstractModel::setLocalParameterSeries(const QVector<qreal>& vector, int series)
+{
+    if(series < m_local_parameter->rowCount())
+        m_local_parameter->setRow(vector, series);
+}
+
+void AbstractModel::setLocalParameterSeries(const Vector& vector, int series)
+{    
+    if(series < m_local_parameter->rowCount())
+        m_local_parameter->setRow(vector, series);
+}
+
 void AbstractModel::setCVStatistic(const QJsonObject &result, int i)
 {
     if(i < m_cv_statistics.size())

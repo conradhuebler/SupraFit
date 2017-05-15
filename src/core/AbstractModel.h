@@ -184,10 +184,10 @@ public:
     inline qreal Variance() const { return m_variance; }
     inline qreal StdDeviation() const { return qSqrt(m_variance); }
     inline qreal StdError() const { return m_stderror; }
-#warning must be changed
-    inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
-#warning must go away maybe
-    inline Eigen::MatrixXd ComplexParameter() const { return m_complex_signal_parameter; }
+// #warning must be changed
+//     inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
+// #warning must go away maybe
+//     inline Eigen::MatrixXd ComplexParameter() const { return m_complex_signal_parameter; }
     inline bool isConverged() const { return m_converged; }
     inline void setConverged(bool converged) { m_converged = converged; }
     /*! \brief Returns the f value for the given p value
@@ -268,6 +268,13 @@ public:
      */
     virtual int LocalParameterSize() const = 0;
     
+    qreal getLocalParameter(int parameter, int series) const;
+    void setLocalParameter(qreal value, int parameter, int series);
+    void setLocalParameterSeries(const QVector<qreal > &vector, int series);
+    void setLocalParameterSeries(const Vector &vector, int series);
+    void setLocalParameterColumn(const QVector<qreal> &vector, int parameter);
+    void setLocalParameterColumn(const Vector &vector, int parameter);
+    
 public slots:
      inline  void Calculate() { Calculate(GlobalParameter());}
      void Calculate(const QList<qreal > &constants);
@@ -300,7 +307,7 @@ protected:
     QList< QJsonObject> m_moco_statistics;
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror;
     int m_used_variables;
-    Eigen::MatrixXd m_complex_signal_parameter, m_pure_signals_parameter;
+//     Eigen::MatrixXd ; //m_complex_signal_parameter, m_pure_signals_parameter;
     QList<int > m_active_signals;
     QList<int > m_locked_parameters;
     OptimizationType m_last_optimization;
@@ -309,7 +316,7 @@ protected:
     int m_last_parameter, m_last_freedom;
     bool m_corrupt, m_converged;
     OptimizerConfig m_opt_config;
-    QPointer<DataTable > m_model_signal, m_model_error;
+    QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
     QString m_name;
         
     const DataClass *m_data;

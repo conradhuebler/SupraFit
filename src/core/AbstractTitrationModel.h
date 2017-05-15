@@ -53,15 +53,15 @@ public:
     void addOptParameterList_fromPure(int i);
     void addOptParameterList_fromConstant(int i);
     
-    inline int MaxVars() const { return (m_pure_signals_parameter.rows()); }
+//     inline int MaxVars() const { return (m_pure_signals_parameter.rows()); }
 
     virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
-    inline qreal PureSignal(int i) const 
-        { 
-            if(i >= MaxVars())
-                return 0;
-            return m_pure_signals_parameter(i,0); 
-        }
+//     inline qreal PureSignal(int i) const 
+//         { 
+//             if(i >= LocalParameterSize())
+//                 return 0;
+//             return m_local(i,0); 
+//         }
         
     
     virtual void setPureSignals(const QList< qreal > &list);
