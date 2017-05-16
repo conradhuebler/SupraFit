@@ -255,7 +255,7 @@ QVector<qreal > AbstractModel::getLocalParameterColumn(int parameter) const
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
     if(parameter < m_local_parameter->rowCount() && series < m_local_parameter->columnCount())
-        m_local_parameter->data(series, parameter) = value;
+        m_local_parameter->data(parameter, series) = value;
 }
 
 void AbstractModel::setLocalParameterColumn(const QVector<qreal> &vector, int parameter)
@@ -300,9 +300,7 @@ void AbstractModel::addGlobalParameter(int i)
 void AbstractModel::addLocalParameter(int i)
 {
     for(int j = 0; j < m_local_parameter->rowCount(); ++j)
-    {
         m_opt_para << &m_local_parameter->data(i, j);    
-    } 
 }
 
 
@@ -334,5 +332,173 @@ void AbstractModel::setMoCoStatistic(const QJsonObject &result, int i)
     emit StatisticChanged();
 }
 
+
+
+QJsonObject AbstractModel::ExportModel(bool statistics) const
+{
+    QJsonObject json, toplevel;
+    QJsonObject constantObject;
+    for(int i = 0; i < GlobalParameter().size(); ++i)
+    {
+        constantObject[QString::number(i)] = (QString::number(GlobalParameter()[i]));
+    }
+    json["globalParameter"] = constantObject;
+    
+    if(statistics)
+    {
+        QJsonObject statisticObject;
+        for(int i = 0; i < m_cv_statistics.size(); ++i)
+        {
+            statisticObject["CVResult_"+QString::number(i)] = m_cv_statistics[i];
+        }
+        for(int i = 0; i < m_mc_statistics.size(); ++i)
+        {
+            statisticObject["MCResult_"+QString::number(i)] = m_mc_statistics[i];
+        }
+        for(int i = 0; i < m_moco_statistics.size(); ++i)
+        {
+            statisticObject["MoCoResult_"+QString::number(i)] = m_moco_statistics[i];
+        }
+        json["statistics"] = statisticObject;
+    }
+
+    if(LocalParameterSize())
+    {
+        QJsonObject localParameter;
+        for(int i = 0; i < m_local_parameter->rowCount(); ++i)
+            if(ActiveSignals(i))
+                localParameter[QString::number(i)] = (ToolSet::DoubleList2String(m_local_parameter->Row(i)));
+
+        json["localParameter"] = localParameter;   
+    }
+    toplevel["data"] = json;
+    toplevel["model"] = m_name;  
+//     qDebug() << m_last_optimization;
+    toplevel["runtype"] = m_last_optimization;
+    toplevel["sum_of_squares"] = m_sum_squares;
+    toplevel["sum_of_absolute"] = m_sum_absolute;
+    toplevel["mean_error"] = m_mean;
+    toplevel["variance"] = m_variance;
+    toplevel["standard_error"] = m_stderror;
+    toplevel["converged"] = m_converged;
+    return toplevel;
+}
+
+void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
+{
+    if(topjson[m_name].isNull())
+    {
+        qWarning() << "file doesn't contain any " + m_name;
+        return;
+    }
+    if(topjson["model"] != Name())
+    {
+        qWarning() << "Models don't fit!";
+        return;
+    }  
+    QJsonObject json = topjson["data"].toObject();
+    
+    QList<int > active_signals;
+    QList<qreal> constants; 
+    QJsonObject constantsObject = json["globalParameter"].toObject();
+    for (int i = 0; i < GlobalParameter().size(); ++i) 
+    {
+        constants << constantsObject[QString::number(i)].toString().toDouble();
+    }
+    setGlobalParameter(constants);
+    QStringList keys = json["statistics"].toObject().keys();
+    
+    if(keys.size() > 9)
+    {
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+                  keys.end(),
+                  [&collator](const QString &key1, const QString &key2)
+                  {
+                      return collator.compare(key1, key2) < 0;
+                  });
+    }
+    if(override)
+    {
+        m_cv_statistics.clear();
+        m_moco_statistics.clear();
+        m_mc_statistics.clear();
+    }
+    for(const QString &str : qAsConst(keys))
+    {
+        if(str.contains("CV"))
+            m_cv_statistics << json["statistics"].toObject()[str].toObject();
+        else if(str.contains("MC"))
+            m_mc_statistics << json["statistics"].toObject()[str].toObject();
+        else if(str.contains("MoCo"))
+            m_moco_statistics << json["statistics"].toObject()[str].toObject();
+    }
+    
+    /*
+     * Here goes SupraFit 2 data handling
+     */
+    if(LocalParameterSize())
+    {
+        QJsonObject localParameter= json["localParameter"].toObject();
+        keys = localParameter.keys();
+        
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+                keys.end(),
+                [&collator](const QString &key1, const QString &key2)
+                {
+                    return collator.compare(key1, key2) < 0;
+                });
+        int i = 0;
+        for(const QString &str: qAsConst(keys))
+        {
+            QVector<qreal > localVector;
+            localVector = ToolSet::String2DoubleVec(localParameter[str].toString());
+            m_local_parameter->setRow(localVector, i);
+            ++i;
+        }
+    }
+    
+    /*
+     * This will be SupraFit 1 legacy data handling
+     */
+    
+//     QList<qreal> pureShift;
+//     QJsonObject pureShiftObject = json["pureShift"].toObject();
+//     for (int i = 0; i < m_pure_signals_parameter.rows(); ++i) 
+//     {
+//         pureShift << pureShiftObject[QString::number(i)].toString().toDouble();
+//         if(!pureShiftObject[QString::number(i)].isNull())
+//             active_signals <<  1;
+//         else
+//             active_signals <<  0;
+//         
+//     }
+//     setPureSignals(pureShift);
+//     
+//     
+//     for(int i = 0; i < GlobalParameter().size(); ++i)
+//     {
+//         QList<qreal> shifts;
+//         QJsonObject object = json["shift_" + QString::number(i)].toObject();
+//         for(int j = 0; j < m_pure_signals_parameter.rows(); ++j)
+//         {
+//             shifts << object[QString::number(j)].toString().toDouble();
+//         }
+//         setComplexSignals(shifts, i);
+//     }
+//     setActiveSignals(active_signals);
+    
+    if(topjson["runtype"].toInt() != 0)
+        OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
+    
+    m_converged = topjson["converged"].toBool();
+    
+    Calculate();
+}
 
 #include "AbstractModel.moc"

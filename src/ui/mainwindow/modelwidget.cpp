@@ -351,24 +351,16 @@ void ModelWidget::CollectParameters()
     QList<int > active_signals;
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
-//         pure_signals << m_model_elements[i]->D0();
         active_signals <<  m_model_elements[i]->Include();
         m_model->setLocalParameterSeries(m_model_elements[i]->D(), i);
-//         for(int j = 0; j < m_model_elements[i]->D().size(); ++j)
-//         {
-//             complex_signals[j] << m_model_elements[i]->D()[j];
-//         }
+
     }
-/*
-    for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
-        m_model->setLocalParameter(complex_signals[j], j);
-    */
+
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
         constants << m_constants[i]->value();
     m_model->setActiveSignals(active_signals);
     m_model->setGlobalParameter(constants);
-//     if(qobject_cast<AbstractTitrationModel *>(m_model))
-//         qobject_cast<AbstractTitrationModel *>(m_model)->setPureSignals(pure_signals);
+
 }
 
 void ModelWidget::GlobalMinimizeLoose()

@@ -76,15 +76,7 @@ public:
     inline int Size() const { return DataClass::Size(); }
 
     void adress() const;
-    /*
-     * ! \brief Export model to json file
-     * 
-     */
-    QJsonObject ExportModel(bool statistics = true) const override;
-    /* ! \brief Import model from json
-     * 
-     */
-    void ImportModel(const QJsonObject &topjson, bool override = true) override;
+
 
     void MiniShifts() override;
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }

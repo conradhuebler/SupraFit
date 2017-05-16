@@ -60,7 +60,7 @@ DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME wha
     m_editable = other.m_editable;
 }
 
-DataTable::DataTable(DataTable* other)//: QAbstractTableModel(other) FIXME whatever
+DataTable::DataTable(DataTable* other) //: QAbstractTableModel(other) FIXME whatever
 {
     m_table = other->m_table;
     m_header = other->m_header;
@@ -78,7 +78,6 @@ DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table) : m_t
 
 DataTable::~DataTable()
 {
-
 }
 
 Vector DataTable::firstRow()
@@ -253,7 +252,7 @@ qreal & DataTable::data(int column, int row)
     if(row < m_table.rows())
         if(column < m_table.cols())
         {
-            return m_table(row,column);
+            return m_table.operator()(row,column);
         }
         else
         {

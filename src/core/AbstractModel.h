@@ -88,12 +88,12 @@ public:
      * ! \brief Export model to json file
      * 
      */
-    virtual QJsonObject ExportModel(bool statistics = true) const = 0;
+    QJsonObject ExportModel(bool statistics = true) const;
     
     /* ! \brief Import model from json
      * 
      */
-    virtual void ImportModel(const QJsonObject &topjson, bool override = true) = 0;
+    void ImportModel(const QJsonObject &topjson, bool override = true);
     
     /*
      * Sets the name of the model, to be identifyed by 

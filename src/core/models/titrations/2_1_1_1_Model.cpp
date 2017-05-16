@@ -34,7 +34,7 @@
 IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationModel(data)
 {
     setName(tr("2:1/1:1-Model"));
-    m_local_parameter = new DataTable(SeriesCount(), 3, this);
+    m_local_parameter = new DataTable(3, SeriesCount(), this);
     InitialGuess();   
     
     AbstractTitrationModel::Calculate();
@@ -54,30 +54,18 @@ void IItoI_ItoI_Model::InitialGuess()
     
     m_global_parameter = QList<qreal>() << m_K21 << m_K11;
     setOptParamater(m_global_parameter);
-        
     
-    m_local_parameter->setRow(DependentModel()->firstRow(), 0);
-    m_local_parameter->setRow(DependentModel()->firstRow(), 1);
-    m_local_parameter->setRow(DependentModel()->lastRow(), 2);
+    m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow(), 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow(), 2);
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
     {
-        line1 << &m_local_parameter->data(0, i); //m_pure_signals_parameter(i);
-        line2 << &m_local_parameter->data(2, i); //&m_complex_signal_parameter(i,0);
+        line1 << &m_local_parameter->data(0, i);
+        line2 << &m_local_parameter->data(2, i); 
     }
-/*    
-    
-    m_complex_signal_parameter.col(0) = DependentModel()->firstRow();
-    m_complex_signal_parameter.col(1) = DependentModel()->lastRow();
-    m_pure_signals_parameter = DependentModel()->firstRow();
-    
-    QVector<qreal * > line1, line2;
-    for(int i = 0; i < m_pure_signals_parameter.size(); ++i)
-    {
-        line1 << &m_pure_signals_parameter(i);
-        line2 << &m_complex_signal_parameter(i,1);
-    }*/
+
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
     /*
     Minimizer *mini = new Minimizer;
@@ -142,8 +130,7 @@ void IItoI_ItoI_Model::CalculateVariables(const QList<qreal > &constants)
         
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            qreal value = host/host_0*m_local_parameter->data(j, 0) + 2*complex_21/host_0*m_local_parameter->data(j, 1) + complex_11/host_0*m_local_parameter->data(j, 2);
-//             qreal value = host/host_0*m_pure_signals_parameter(j, 0) + 2*complex_21/host_0*m_complex_signal_parameter(j, 0) + complex_11/host_0*m_complex_signal_parameter(j,1);
+            qreal value = host/host_0*m_local_parameter->data(0, j) + 2*complex_21/host_0*m_local_parameter->data(1, j) + complex_11/host_0*m_local_parameter->data(2, j);
             SetValue(i, j, value);
         }
         

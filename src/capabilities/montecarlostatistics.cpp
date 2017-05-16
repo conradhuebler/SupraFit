@@ -107,8 +107,8 @@ void MonteCarloStatistics::Evaluate()
     m_shift_list.resize(m_model->GlobalParameterSize()*m_model->SeriesCount()+m_model->SeriesCount());
     for(int i = 0; i < m_models.size(); ++i)
     {       
-        ExtractFromJson(i, "constants");
-        ExtractFromJson(i, "pureShift");
+        ExtractFromJson(i, "globalParameter");
+        ExtractFromJson(i, "localParameter");
         
         for(int k = 0; k < m_model->GlobalParameterSize(); ++k)
         {

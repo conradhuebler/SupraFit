@@ -42,18 +42,7 @@ public:
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() const override;
     virtual bool SupportThreads() const override { return false; }
-//     virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
-    
-    /*
-     * ! \brief Export model to json file
-     * 
-     */
-    QJsonObject ExportModel(bool statistics = true) const override;
-    /* ! \brief Import model from json
-     * 
-     */
-    void ImportModel(const QJsonObject &topjson, bool override = true) override;
-    
+
     /*! \brief we have only the time as input parameter
      */
     virtual inline int InputParameterSize() const override { return 1; } 
