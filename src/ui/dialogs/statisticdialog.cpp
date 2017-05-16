@@ -183,9 +183,9 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     QGridLayout *layout = new QGridLayout;   
     
     m_cv_increment = new QDoubleSpinBox;
-    m_cv_increment->setSingleStep(1e-3);
-    m_cv_increment->setValue(0.01);
     m_cv_increment->setDecimals(6);
+    m_cv_increment->setValue(0.001);
+    m_cv_increment->setSingleStep(1e-3);
     layout->addWidget(new QLabel(tr("Increment")), 0, 0);
     layout->addWidget(m_cv_increment, 0, 1, 1, 2);
     
@@ -221,7 +221,7 @@ QWidget * StatisticDialog::ContinuousVariationWidget()
     }
     m_cv_steps = new QSpinBox;
     m_cv_steps->setMaximum(1e7);
-    m_cv_steps->setValue(1000);
+    m_cv_steps->setValue(5000);
     m_cv_steps->setSingleStep(100);
     
     layout->addWidget(new QLabel(tr("Max. Steps")), 4, 0);
