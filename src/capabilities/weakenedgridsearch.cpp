@@ -143,17 +143,16 @@ qreal WeakenedGridSearchThread::SumErrors(bool direction, double& integ_5, doubl
         else
             series.prepend(QPointF(par,new_error));
         old_error = new_error;
-        if(counter > 50)
-        {
-            m_converged = false;
-            qDebug() << "not converged " << direction;
-            break;
-        }
         
         QCoreApplication::processEvents();
         if(m_interrupt)
             break;
         emit IncrementProgress(0);
+    }
+    if(counter > 50)
+    {
+            m_converged = false;
+            qDebug() << "not converged " << direction;
     }
     return par;
 }
