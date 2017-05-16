@@ -81,14 +81,14 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
     {
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
-            addOptParameterList_fromConstant(1);
-            addOptParameterList_fromConstant(0);
+            addLocalParameter(1);
+            addLocalParameter(2);
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addOptParameterList_fromPure(0);
+                addLocalParameter(1);
         }
         if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) && ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
         {
-            addOptParameterList_fromConstant(0);
+            addLocalParameter(1);
         }
         
     } 

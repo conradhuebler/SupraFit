@@ -131,8 +131,10 @@ public:
     void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
     void setOptParamater(QList< qreal >& parameter);
-    void addOptParameter(QList <qreal > &vector);
-    
+    void addGlobalParameter(QList <qreal > &vector);
+    void addGlobalParameter(int i);
+    void addLocalParameter(int i);
+   
     void setCVStatistic(const QJsonObject &result, int i);
     void setMCStatistic(const QJsonObject &result, int i);
     void setMoCoStatistic(const QJsonObject &result, int i);
@@ -269,6 +271,7 @@ public:
     virtual int LocalParameterSize() const = 0;
     
     qreal getLocalParameter(int parameter, int series) const;
+    QVector<qreal> getLocalParameterColumn(int parameter) const;
     void setLocalParameter(qreal value, int parameter, int series);
     void setLocalParameterSeries(const QVector<qreal > &vector, int series);
     void setLocalParameterSeries(const Vector &vector, int series);

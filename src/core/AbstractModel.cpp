@@ -216,16 +216,6 @@ void AbstractModel::setOptParamater(qreal& parameter)
     m_opt_para << &parameter;
 }
 
-
-void AbstractModel::addOptParameter(QList<qreal>& parameter)
-{
-    for(int i = 0; i < parameter.size(); ++i)
-    {
-        m_opt_para << &parameter[i];    
-    }
-}
-
-
 void AbstractModel::SetSingleParameter(double value, int parameter)
 {
     if(parameter < m_opt_para.size())
@@ -249,13 +239,26 @@ qreal AbstractModel::getLocalParameter(int parameter, int series) const
         return m_local_parameter->data(parameter, series);
 }
 
+QVector<qreal > AbstractModel::getLocalParameterColumn(int parameter) const
+{
+    QVector<qreal> column;
+    if(parameter >= m_local_parameter->columnCount())
+        return column;
+    else
+    {
+        for(int i = 0; i < m_local_parameter->rowCount(); ++i)
+            column << m_local_parameter->data(parameter, i); 
+    }
+    return column;
+}
+
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
     if(parameter < m_local_parameter->rowCount() && series < m_local_parameter->columnCount())
         m_local_parameter->data(series, parameter) = value;
 }
 
-void AbstractModel::setLocalParameterColumn(const QVector<qreal> vector, int parameter)
+void AbstractModel::setLocalParameterColumn(const QVector<qreal> &vector, int parameter)
 {
     if(parameter < m_local_parameter->columnCount())
         m_local_parameter->setColumn(vector, parameter);
@@ -278,6 +281,31 @@ void AbstractModel::setLocalParameterSeries(const Vector& vector, int series)
     if(series < m_local_parameter->rowCount())
         m_local_parameter->setRow(vector, series);
 }
+
+void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
+{
+    for(int i = 0; i < parameter.size(); ++i)
+    {
+        m_opt_para << &parameter[i];    
+    }
+}
+
+void AbstractModel::addGlobalParameter(int i)
+{
+    if(i < m_global_parameter.size())
+        m_opt_para << &m_global_parameter[i]; 
+ 
+}
+
+void AbstractModel::addLocalParameter(int i)
+{
+    for(int j = 0; j < m_local_parameter->rowCount(); ++j)
+    {
+        m_opt_para << &m_local_parameter->data(i, j);    
+    } 
+}
+
+
 
 void AbstractModel::setCVStatistic(const QJsonObject &result, int i)
 {

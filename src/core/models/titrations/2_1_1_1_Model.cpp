@@ -155,20 +155,20 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        addOptParameter(m_global_parameter);
+        addGlobalParameter(m_global_parameter);
     }
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
-            addOptParameterList_fromConstant(0);
-            addOptParameterList_fromConstant(1);
+            addLocalParameter(1);
+            addLocalParameter(2);
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addOptParameterList_fromPure(0);
+                addLocalParameter(0);
         }
         if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) && ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
         {
-            addOptParameterList_fromConstant(0);
+            addLocalParameter(1);
         }
     }
     QVector<qreal >parameter;

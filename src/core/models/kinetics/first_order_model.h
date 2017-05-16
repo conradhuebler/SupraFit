@@ -17,8 +17,8 @@
  * 
  */
 
-#ifndef MM_Model_H
-#define MM_Model_H
+#ifndef KINETIC_1_Model_H
+#define KINETIC_1_Model_H
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
@@ -29,16 +29,16 @@
 
 #include "src/core/dataclass.h"
 
-class Michaelis_Menten_Model : public AbstractModel 
+class Kinetic_First_Order_Model : public AbstractModel 
 {
     Q_OBJECT
     
 public:
-    Michaelis_Menten_Model(const DataClass *data);
-    Michaelis_Menten_Model(const AbstractModel *model);
-    ~Michaelis_Menten_Model();
+    Kinetic_First_Order_Model(const DataClass *data);
+    Kinetic_First_Order_Model(const AbstractModel *model);
+    ~Kinetic_First_Order_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 2;} 
+    inline int GlobalParameterSize() const override { return 1;} 
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() const override;
     virtual bool SupportThreads() const override { return false; }
@@ -57,9 +57,9 @@ public:
     /*! \brief we have only the time as input parameter
      */
     virtual inline int InputParameterSize() const override { return 1; } 
-    virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("v<sub>max</sub>") << tr("K<sub>m</sub>"); }
+    virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("k"); }
     
-    virtual int LocalParameterSize() const override {return 0; }
+    virtual int LocalParameterSize() const override {return 1; }
 [[deprecated]]
     inline virtual void MiniShifts() override { return; }
 private:

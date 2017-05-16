@@ -34,29 +34,29 @@
 #include <cfloat>
 #include <iostream>
 
-#include "mm_model.h"
+#include "first_order_model.h"
 
-Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : AbstractModel(data)
+Kinetic_First_Order_Model::Kinetic_First_Order_Model(const DataClass *data) : AbstractModel(data)
 {
-    setName(tr("Michaelis Menten"));
+    setName(tr("First Order Kinetics"));
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     InitialGuess();
 }
 
-Michaelis_Menten_Model::Michaelis_Menten_Model(const AbstractModel* model) : AbstractModel(model)
+Kinetic_First_Order_Model::Kinetic_First_Order_Model(const AbstractModel* model) : AbstractModel(model)
 {
-    setName(tr("Michaelis Menten"));
+    setName(tr("First Order Kinetics"));
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     InitialGuess();
 }
 
 
-Michaelis_Menten_Model::~Michaelis_Menten_Model() 
+Kinetic_First_Order_Model::~Kinetic_First_Order_Model() 
 {
     
 }
 
-void Michaelis_Menten_Model::InitialGuess()
+void Kinetic_First_Order_Model::InitialGuess()
 {
     m_vmax = 500;
     m_Km = 5;
@@ -68,18 +68,28 @@ void Michaelis_Menten_Model::InitialGuess()
     AbstractModel::Calculate();
 }
 
-QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> Kinetic_First_Order_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
         setOptParamater(m_global_parameter);
 
+    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+    {
+         
+        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
+        {
+//             addOptParameterList_fromConstant(0);
+//             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+//                 addOptParameterList_fromPure(0);
+        }
+    }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
 }
 
-void Michaelis_Menten_Model::CalculateVariables(const QList<qreal > &constants)
+void Kinetic_First_Order_Model::CalculateVariables(const QList<qreal > &constants)
 {  
     m_corrupt = false;
     
@@ -100,9 +110,9 @@ void Michaelis_Menten_Model::CalculateVariables(const QList<qreal > &constants)
 }
 
 
-QSharedPointer<AbstractModel > Michaelis_Menten_Model::Clone() const
+QSharedPointer<AbstractModel > Kinetic_First_Order_Model::Clone() const
 {
-    QSharedPointer<Michaelis_Menten_Model > model = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(this), &QObject::deleteLater);
+    QSharedPointer<Kinetic_First_Order_Model > model = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
@@ -111,9 +121,9 @@ QSharedPointer<AbstractModel > Michaelis_Menten_Model::Clone() const
 }
 
 
-QJsonObject Michaelis_Menten_Model::ExportModel(bool statistics) const
+QJsonObject Kinetic_First_Order_Model::ExportModel(bool statistics) const
 {
-//     QJsonObject json, toplevel;
+     QJsonObject json, toplevel;
 //     QJsonObject constantObject;
 //     for(int i = 0; i < GlobalParameter().size(); ++i)
 //     {
@@ -170,10 +180,10 @@ QJsonObject Michaelis_Menten_Model::ExportModel(bool statistics) const
 //     toplevel["variance"] = m_variance;
 //     toplevel["standard_error"] = m_stderror;
 //     
-//     return toplevel;
+    return toplevel;
 }
 
-void Michaelis_Menten_Model::ImportModel(const QJsonObject &topjson, bool override)
+void Kinetic_First_Order_Model::ImportModel(const QJsonObject &topjson, bool override)
 {
 //     if(topjson[m_name].isNull())
 //     {
@@ -227,11 +237,11 @@ void Michaelis_Menten_Model::ImportModel(const QJsonObject &topjson, bool overri
 //     Calculate();
 }
 
-// QPair<qreal, qreal> Michaelis_Menten_Model::Pair(int i, int j) const
+// QPair<qreal, qreal> Kinetic_First_Order_Model::Pair(int i, int j) const
 // {
 //     if(i >= 1)
 //         return QPair<qreal, qreal>(0,0);
 //     return QPair<qreal, qreal>(GlobalParameter(i), m_complex_signal_parameter(j,i));
 // }
 
-#include "mm_model.moc"
+#include "first_order_model.moc"

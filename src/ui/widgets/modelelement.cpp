@@ -64,7 +64,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_d_0->setDecimals(4);
     m_d_0->setMaximum(1000);
     m_d_0->setSuffix(" ppm");
-    m_d_0->setValue(m_model->PureSignal(m_no));
+    m_d_0->setValue(m_model->getLocalParameter(0, m_no));
     m_d_0->setToolTip(tr("Shift of the pure - non silent substrat"));
     m_d_0->setMaximumWidth(130);
     connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
@@ -77,7 +77,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setDecimals(4);
         constant->setMaximum(1000);
         constant->setSuffix("ppm");
-        constant->setValue(m_model->Pair(i, m_no).second);
+        constant->setValue(m_model->getLocalParameter(i + 1, m_no));
         constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->GlobalParameterNames()[i]));
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
@@ -174,6 +174,7 @@ double ModelElement::D0() const
 QVector<double > ModelElement::D() const
 {
     QVector<double > numbers;
+    numbers << m_d_0->value();
     for(int i = 0; i < m_constants.size(); ++i)
         numbers << m_constants[i]->value();
     return numbers;
@@ -185,10 +186,10 @@ void ModelElement::Update()
     DisableSignal(m_model->ActiveSignals()[m_no]);
     if(!m_include->isChecked())
         return;
-    m_d_0->setValue(m_model->PureSignal(m_no));
+    m_d_0->setValue(m_model->getLocalParameter(0, m_no));
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
-        m_constants[i]->setValue(m_model->Pair(i, m_no).second);
+        m_constants[i]->setValue(m_model->getLocalParameter(i + 1, m_no));
     }
     if(m_model->Type() != 3)
         m_error->setText("Sum of Squares: <b>" + QString::number(m_model->SumOfErrors(m_no), 'e', 2) + "</b>");

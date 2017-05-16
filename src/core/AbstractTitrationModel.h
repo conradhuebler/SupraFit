@@ -49,13 +49,11 @@ class AbstractTitrationModel : public AbstractModel
 public:
     AbstractTitrationModel(const DataClass *data);
     virtual ~AbstractTitrationModel();
-    
-    void addOptParameterList_fromPure(int i);
-    void addOptParameterList_fromConstant(int i);
+
     
 //     inline int MaxVars() const { return (m_pure_signals_parameter.rows()); }
 
-    virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
+//     virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
 //     inline qreal PureSignal(int i) const 
 //         { 
 //             if(i >= LocalParameterSize())
@@ -64,8 +62,8 @@ public:
 //         }
         
     
-    virtual void setPureSignals(const QList< qreal > &list);
-    virtual void setComplexSignals(const QList< qreal > &list, int i);
+//     virtual void setPureSignals(const QList< qreal > &list);
+//     virtual void setComplexSignals(const QList< qreal > &list, int i);
     
     /*
      * defines the initial guess for the model

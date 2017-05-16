@@ -159,7 +159,7 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
         line3 << &m_complex_signal_parameter(i,1);
         line4 << &m_complex_signal_parameter(i,2);
     }*/
-    m_lim_para = QVector<QVector<qreal * > >() << line1 << line4;
+    m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
     
     AbstractTitrationModel::Calculate();
 }
@@ -168,22 +168,22 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
 {
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        addOptParameter(m_global_parameter);
+        addGlobalParameter(m_global_parameter);
     }
      if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
-            addOptParameterList_fromConstant(0);
-            addOptParameterList_fromConstant(1);
-            addOptParameterList_fromConstant(2);
+            addLocalParameter(1);
+            addLocalParameter(2);
+            addLocalParameter(3);
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addOptParameterList_fromPure(0);
+                addLocalParameter(0);
         }
         if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) && ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
         {
-            addOptParameterList_fromConstant(0);
-            addOptParameterList_fromConstant(1);
+            addLocalParameter(1);
+            addLocalParameter(2);
         }
     }
     QVector<qreal >parameter;

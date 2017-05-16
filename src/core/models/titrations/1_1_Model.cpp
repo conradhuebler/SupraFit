@@ -96,9 +96,9 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
          
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
-            addOptParameterList_fromConstant(0);
+            addLocalParameter(1);
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addOptParameterList_fromPure(0);
+                addLocalParameter(0);
         }
     }
     QVector<qreal >parameter;

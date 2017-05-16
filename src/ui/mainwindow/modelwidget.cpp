@@ -351,24 +351,24 @@ void ModelWidget::CollectParameters()
     QList<int > active_signals;
     for(int i = 0; i < m_model_elements.size(); ++i)
     {
-        pure_signals << m_model_elements[i]->D0();
+//         pure_signals << m_model_elements[i]->D0();
         active_signals <<  m_model_elements[i]->Include();
-        for(int j = 0; j < m_model_elements[i]->D().size(); ++j)
-        {
-            complex_signals[j] << m_model_elements[i]->D()[j];
-        }
+        m_model->setLocalParameterSeries(m_model_elements[i]->D(), i);
+//         for(int j = 0; j < m_model_elements[i]->D().size(); ++j)
+//         {
+//             complex_signals[j] << m_model_elements[i]->D()[j];
+//         }
     }
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
-    {
-        for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
-            qobject_cast<AbstractTitrationModel *>(m_model)->setComplexSignals(complex_signals[j], j);
-    }
+/*
+    for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
+        m_model->setLocalParameter(complex_signals[j], j);
+    */
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
         constants << m_constants[i]->value();
     m_model->setActiveSignals(active_signals);
     m_model->setGlobalParameter(constants);
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
-        qobject_cast<AbstractTitrationModel *>(m_model)->setPureSignals(pure_signals);
+//     if(qobject_cast<AbstractTitrationModel *>(m_model))
+//         qobject_cast<AbstractTitrationModel *>(m_model)->setPureSignals(pure_signals);
 }
 
 void ModelWidget::GlobalMinimizeLoose()
@@ -715,7 +715,7 @@ void ModelWidget::ExportSimModel()
          */
         if(host[1].toDouble() != 0 )
         {
-            model.prepend(ToolSet::DoubleList2String(m_model->PureParameter(), QString("\t")));
+            model.prepend(ToolSet::DoubleList2String(m_model->getLocalParameterColumn(0).toList(), QString("\t")));
             concentrations.prepend(QString( host[0] + "\t" + QString("0")));
         }
                 
