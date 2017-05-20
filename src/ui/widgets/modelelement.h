@@ -31,7 +31,6 @@ class ModelElement : public QGroupBox
 public:
     ModelElement(QSharedPointer<AbstractModel> model, Charts charts, int no, QWidget *parent = 0);
     ~ModelElement();
-    double D0() const;
     QVector<double > D() const;
     bool Include() const;
     
@@ -41,7 +40,6 @@ public slots:
     void ChangeColor(const QColor &color);
     
 private:
-    SpinBox *m_d_0;
     QVector<SpinBox * > m_constants;
     QLabel *m_error;
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;

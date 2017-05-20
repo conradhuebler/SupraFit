@@ -81,7 +81,16 @@ public:
     void MiniShifts() override;
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     
-    virtual inline QString GlobalParameterPrefix() const override { return QString("10^"); }
+    virtual inline QString GlobalParameterPrefix(int i = 0) const override { return QString("10^"); }
+    virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" ppm"); }
+    virtual inline QString LocalParameterDescription(int i = 0) const override
+    {
+        if(i == 0)
+            return "Shift of the pure - non silent substrat";
+        else
+            return tr("Shift of the pure %1 complex").arg(GlobalParameterNames()[i-1]);
+    }
+    
     virtual QString formatedGlobalParameter(qreal value) const override;
     
     virtual qreal BC50();
@@ -91,7 +100,7 @@ public:
     /*! \brief we have two concentrations for all titration models, host and guest
      */
     virtual inline int InputParameterSize() const override { return 2; }
-    virtual int LocalParameterSize() const override {return GlobalParameterSize(); }
+    virtual int LocalParameterSize() const override {return GlobalParameterSize() + 1; }
    /*  
 private:
     QList<int > m_active_signals;

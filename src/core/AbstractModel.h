@@ -114,10 +114,11 @@ public:
     /*
      * 
      */
-    virtual inline QString GlobalParameterPrefix() const { return QString(); }
-    
-    virtual inline QString LocalParameterPrefix() const { return QString(); }
-    
+    virtual inline QString GlobalParameterPrefix(int i = 0) const { Q_UNUSED(i) return QString(); }
+    virtual inline QString GlobalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
+    virtual inline QString LocalParameterPrefix(int i = 0) const {Q_UNUSED(i) return QString(); }
+    virtual inline QString LocalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
+    virtual inline QString LocalParameterDescription(int i = 0) const { Q_UNUSED(i) return QString(); }
     /*
      * 
      */
@@ -270,7 +271,7 @@ public:
      */
     virtual int LocalParameterSize() const = 0;
     
-    qreal getLocalParameter(int parameter, int series) const;
+    qreal LocalParameter(int parameter, int series) const;
     QVector<qreal> getLocalParameterColumn(int parameter) const;
     void setLocalParameter(qreal value, int parameter, int series);
     void setLocalParameterSeries(const QVector<qreal > &vector, int series);

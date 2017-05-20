@@ -231,7 +231,7 @@ void AbstractModel::setParameter(const QVector<qreal>& parameter)
             *m_opt_para[i] = parameter[i];
 }
 
-qreal AbstractModel::getLocalParameter(int parameter, int series) const
+qreal AbstractModel::LocalParameter(int parameter, int series) const
 {
     if(series >= m_local_parameter->rowCount() || parameter >= m_local_parameter->columnCount())
         return 0;
