@@ -151,7 +151,7 @@ QTableView* SearchResultWidget::BuildList()
 
 ChartView * SearchResultWidget::BuildContour()
 {
-    QList<QPointF > data = ToolSet::fromModelsList(m_models);
+    QList<QPointF > data = ToolSet::fromModelsList(m_models, "globalParameter");
     QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
     chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart_ellipsoid);

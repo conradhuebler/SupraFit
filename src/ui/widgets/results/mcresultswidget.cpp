@@ -95,7 +95,7 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart; 
     QPointer<ChartView > view = new ChartView(chart_ellipsoid);
     
-    QList<QPointF > data = ToolSet::fromModelsList(m_statistics->Models());
+    QList<QPointF > data = ToolSet::fromModelsList(m_statistics->Models(), "globalParameter");
     QWidget *resultwidget_ellipsoid = new QWidget;
     QGridLayout *layout_ellipsoid = new QGridLayout;
     resultwidget_ellipsoid->setLayout(layout_ellipsoid);

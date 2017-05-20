@@ -142,7 +142,7 @@ ChartView *  WGSResultsWidget::MoCoPlot()
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
-    xy_series->append(ToolSet::fromModelsList(m_statistics->Models()));
+    xy_series->append(ToolSet::fromModelsList(m_statistics->Models(), "globalParameter"));
     xy_series->setMarkerSize(6);
     xy_series->setName("MC Results");
     view->addSeries(xy_series, true);

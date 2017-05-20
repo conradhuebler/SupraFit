@@ -276,9 +276,9 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
          * shift_0 are the next n +1 - 2n entries
          * and so on
          */
-        if(string == "constants")
+        if(string == "globalParameter")
             m_constant_list[j] << element.toDouble();
-        else if(string == "pureShift")
+        else if(string == "localParameter")
             m_shift_list[j] << element.toDouble();
         else
         {
