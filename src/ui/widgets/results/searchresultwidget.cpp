@@ -159,6 +159,8 @@ ChartView * SearchResultWidget::BuildContour()
     xy_series->append(data);
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
+    view->setXAxis(m_model->GlobalParameterNames()[0]);
+    view->setYAxis(m_model->GlobalParameterNames()[1]);
     return view;
 }
 
