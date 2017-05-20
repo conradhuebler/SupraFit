@@ -140,32 +140,38 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
 
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
-    connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel11()));
+    ItoI_action->setData(ItoI);
+    connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_independet_2 << ItoI_action;
     
     QAction *IItoI_ItoI_action = new QAction(this);
     IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
-    connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel21()));
+    IItoI_ItoI_action->setData(IItoI_ItoI);
+    connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_independet_2 << IItoI_ItoI_action;
     
     QAction *ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
-    connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel12()));
+    ItoI_ItoII_action->setData(ItoI_ItoII);
+    connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_independet_2 << ItoI_ItoII_action;
     
     QAction *II_I_ItoI_ItoII_action = new QAction(this);
     II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
-    connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel2112()));
+    II_I_ItoI_ItoII_action->setData(IItoI_ItoI_ItoII);
+    connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_independet_2 << II_I_ItoI_ItoII_action;
     
     QAction *mm_action = new QAction(this);
     mm_action->setText(tr("Michaelis Menten"));
-    connect(mm_action, SIGNAL(triggered()), this, SLOT(AddMMModel()));
+    mm_action->setData(Michaelis_Menten);
+    connect(mm_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_independet_1 << mm_action;
     
     QAction *first_order_action = new QAction(this);
     first_order_action->setText(tr("First Order Kinetics"));
-    connect(first_order_action, SIGNAL(triggered()), this, SLOT(AddFirstOder()));
+    first_order_action->setData(First_Order_Kinetics);
+    connect(first_order_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_independet_1 << first_order_action;
     
     m_script_action = new QAction(this);
@@ -175,9 +181,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     ParseScriptedModels();
     m_independet_2 << m_script_action;
 #endif
-    
-    
-    
+
     layout->addWidget(m_add, 0, 0);
     layout->addWidget(m_optimize, 0, 1);
     layout->addWidget(m_statistics, 0, 2);
@@ -227,6 +231,11 @@ void ModelDataHolder::SetProjectTabName()
     emit nameChanged();
 }
 
+void ModelDataHolder::AddModel()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    AddModel(action->data().toInt());
+}
 
 void ModelDataHolder::AddModel(int model)
 {
@@ -267,36 +276,6 @@ void ModelDataHolder::AddModel(const QJsonObject &json)
     m_history = false;
     ActiveModel(t);
 #endif
-}
-
-void ModelDataHolder::AddModel11()
-{
-    AddModel(ModelDataHolder::ItoI);
-}
-
-void ModelDataHolder::AddModel21()
-{
-    AddModel(ModelDataHolder::IItoI_ItoI);
-}
-
-void ModelDataHolder::AddModel12()
-{
-    AddModel(ModelDataHolder::ItoI_ItoII);
-}
-
-void ModelDataHolder::AddModel2112()
-{
-    AddModel(ModelDataHolder::IItoI_ItoI_ItoII);
-}
-
-void ModelDataHolder::AddMMModel()
-{
-    AddModel(ModelDataHolder::Michaelis_Menten);
-}
-
-void ModelDataHolder::AddFirstOder()
-{
-    AddModel(ModelDataHolder::First_Order_Kinetics);
 }
 
 void ModelDataHolder::AddModelScript()

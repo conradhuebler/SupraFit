@@ -139,13 +139,9 @@ private:
     bool m_history, m_allow_loop;
     
 private slots:
-    void AddModel11();
-    void AddModel21();
-    void AddModel12();
-    void AddModel2112();
-    void AddMMModel();
-    void AddFirstOder();
+    void AddModel();
     void AddModelScript();
+    
     void RemoveTab(int i);
     void CreateCrashFile();
     void RemoveCrashFile();
