@@ -110,10 +110,10 @@ void MonteCarloStatistics::Evaluate()
         ExtractFromJson(i, "globalParameter");
         ExtractFromJson(i, "localParameter");
         
-        for(int k = 0; k < m_model->GlobalParameterSize(); ++k)
-        {
-            ExtractFromJson(i, "shift_" + QString::number(k));
-        }
+//         for(int k = 0; k < m_model->GlobalParameterSize(); ++k)
+//         {
+//             ExtractFromJson(i, "shift_" + QString::number(k));
+//         }
     }
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
@@ -233,12 +233,12 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         if(nr == 0)
         {
 #warning fix me
-//             result["value"] = m_model->PureParameter()(i,0);
+            result["value"] = m_model->getLocalParameter(0,i);
             result["name"] = "Host Shift: " + m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString();
         }else
         {
 #warning fix me
-//             result["value"] = m_model->ComplexParameter()(mod,nr-1);
+//             result["value"] = m_model->ComplexParameter()(,nr-1);
             result["name"] = m_model->GlobalParameterNames()[nr-1] + " Component Shift: " + m_model->DependentModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
         }
         result["type"] = "Local Parameter";
@@ -276,9 +276,9 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
          * shift_0 are the next n +1 - 2n entries
          * and so on
          */
-        if(string == "constants")
+        if(string == "globalParameter")
             m_constant_list[j] << element.toDouble();
-        else if(string == "pureShift")
+        else if(string == "localParameter")
             m_shift_list[j] << element.toDouble();
         else
         {
