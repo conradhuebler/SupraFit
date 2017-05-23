@@ -64,12 +64,14 @@ QWidget * MCResultsWidget::ChartWidget()
 
     m_histgram = MakeHistogram();
     layout->addWidget(m_histgram, 0, 0, 1, 7);
-    m_contour = MakeContour();
-    layout->addWidget(m_contour, 0, 0, 1, 7);
-    m_contour->hide();
-    
-    m_switch = new QPushButton(tr("Switch Plots"));
-    connect(m_switch, SIGNAL(clicked()), this, SLOT(SwitchView()));
+    if(m_model->GlobalParameterSize() == 2)
+    {
+        m_contour = MakeContour();
+        layout->addWidget(m_contour, 0, 0, 1, 7);
+        m_contour->hide();
+        m_switch = new QPushButton(tr("Switch Plots"));
+        connect(m_switch, SIGNAL(clicked()), this, SLOT(SwitchView()));
+    }
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
     m_error = new QDoubleSpinBox;
