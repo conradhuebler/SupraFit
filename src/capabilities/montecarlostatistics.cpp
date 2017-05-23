@@ -233,7 +233,7 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         if(nr == 0)
         {
 #warning fix me
-            result["value"] = m_model->getLocalParameter(0,i);
+            result["value"] = m_model->LocalParameter(0,i);
             result["name"] = "Host Shift: " + m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString();
         }else
         {
@@ -276,6 +276,7 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
          * shift_0 are the next n +1 - 2n entries
          * and so on
          */
+#warning to be adopted ...
         if(string == "globalParameter")
             m_constant_list[j] << element.toDouble();
         else if(string == "localParameter")
