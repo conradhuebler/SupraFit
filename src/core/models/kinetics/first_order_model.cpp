@@ -39,14 +39,14 @@
 Kinetic_First_Order_Model::Kinetic_First_Order_Model(const DataClass *data) : AbstractModel(data)
 {
     setName(tr("First Order Kinetics"));
-//     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
+    m_local_parameter = new DataTable(1, SeriesCount(), this);
     InitialGuess();
 }
 
 Kinetic_First_Order_Model::Kinetic_First_Order_Model(const AbstractModel* model) : AbstractModel(model)
 {
     setName(tr("First Order Kinetics"));
-//     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
+    m_local_parameter = new DataTable(1, SeriesCount(), this);
     InitialGuess();
 }
 
@@ -58,11 +58,8 @@ Kinetic_First_Order_Model::~Kinetic_First_Order_Model()
 
 void Kinetic_First_Order_Model::InitialGuess()
 {
-    m_vmax = 500;
-    m_Km = 5;
-    m_global_parameter = QList<qreal>() << m_vmax << m_Km;
-//     m_complex_signal_parameter.col(0) = DependentModel()->lastRow();
-//     m_pure_signals_parameter = DependentModel()->firstRow();
+    m_k = 5;
+    m_global_parameter = QList<qreal>() << m_k;
     setOptParamater(m_global_parameter);
     
     AbstractModel::Calculate();
@@ -77,10 +74,9 @@ QVector<qreal> Kinetic_First_Order_Model::OptimizeParameters_Private(Optimizatio
     {
          
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
-        {
-//             addOptParameterList_fromConstant(0);
-//             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-//                 addOptParameterList_fromPure(0);
+        { 
+            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+                addLocalParameter(0);
         }
     }
     QVector<qreal >parameter;
@@ -97,12 +93,12 @@ void Kinetic_First_Order_Model::CalculateVariables(const QList<qreal > &constant
     m_sum_squares = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal vmax = GlobalParameter(0);
-        qreal Km = GlobalParameter(1);
-        qreal S_0 = IndependentModel()->data(0,i);
+        qreal k = GlobalParameter(0);
+        qreal t = IndependentModel()->data(0,i);
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            qreal value = vmax*S_0/(Km+S_0);
+            qreal A_0 = LocalParameter(0, j);
+            qreal value =A_0*qExp(-k*t);
             SetValue(i, j, value);    
         }
     }
@@ -119,4 +115,5 @@ QSharedPointer<AbstractModel > Kinetic_First_Order_Model::Clone() const
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
 }
+
 #include "first_order_model.moc"

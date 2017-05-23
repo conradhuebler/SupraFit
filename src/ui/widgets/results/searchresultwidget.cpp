@@ -151,7 +151,7 @@ QTableView* SearchResultWidget::BuildList()
 
 ChartView * SearchResultWidget::BuildContour()
 {
-    QList<QPointF > data = ToolSet::fromModelsList(m_models);
+    QList<QPointF > data = ToolSet::fromModelsList(m_models, "globalParameter");
     QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
     chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart_ellipsoid);
@@ -159,6 +159,8 @@ ChartView * SearchResultWidget::BuildContour()
     xy_series->append(data);
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
+    view->setXAxis(m_model->GlobalParameterNames()[0]);
+    view->setYAxis(m_model->GlobalParameterNames()[1]);
     return view;
 }
 

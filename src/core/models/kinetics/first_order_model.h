@@ -47,18 +47,18 @@ public:
      */
     virtual inline int InputParameterSize() const override { return 1; } 
     virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("k"); }
-    
+    virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" M"); }
     virtual int LocalParameterSize() const override {return 1; }
 [[deprecated]]
     inline virtual void MiniShifts() override { return; }
+    
 private:
     
     
 protected:
     virtual void CalculateVariables(const QList<qreal > &constants) override;
     
-    QList<qreal > m_ItoI_signals;
-    qreal m_vmax, m_Km;
+    qreal m_k;
 };
 
 #endif // MM_Model

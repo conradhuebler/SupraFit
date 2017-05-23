@@ -217,12 +217,12 @@ namespace ToolSet{
         return result;
     }
     
-    QList<QPointF> fromModelsList(const QList<QJsonObject> &models)
+    QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str)
     {
         QList<QPointF> series;
         for(const QJsonObject &obj : qAsConst(models))
         {
-            QJsonObject constants = obj["data"].toObject()["constants"].toObject();
+            QJsonObject constants = obj["data"].toObject()[str].toObject();
             series << QPointF(constants[QString::number(0)].toString().toDouble(), constants[QString::number(1)].toString().toDouble());
         }
         return series;

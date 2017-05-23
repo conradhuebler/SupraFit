@@ -172,7 +172,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     {
         for(int i = 0; i < m_model->SeriesCount(); ++i)
         {
-            ModelElement *el = new ModelElement(qobject_cast<AbstractTitrationModel *>(m_model), m_charts, i);
+            ModelElement *el = new ModelElement(m_model, m_charts, i);
             connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
             connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
             connect(this, SIGNAL(Update()), el, SLOT(Update()));

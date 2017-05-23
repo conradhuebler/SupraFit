@@ -58,17 +58,6 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
 {
     QVBoxLayout *layout = new QVBoxLayout;
     QHBoxLayout *shifts = new QHBoxLayout;
-    m_d_0 = new SpinBox;
-    shifts->addWidget(m_d_0);
-    m_d_0->setSingleStep(1e-2);
-    m_d_0->setDecimals(4);
-    m_d_0->setMaximum(1000);
-    m_d_0->setSuffix(" ppm");
-    m_d_0->setValue(m_model->getLocalParameter(0, m_no));
-    m_d_0->setToolTip(tr("Shift of the pure - non silent substrat"));
-    m_d_0->setMaximumWidth(130);
-    connect(m_d_0, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-    
     for(int i = 0; i < m_model->LocalParameterSize(); ++i)
     {
         QPointer<SpinBox >constant = new SpinBox;
@@ -76,9 +65,9 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
         constant->setMaximum(1000);
-        constant->setSuffix("ppm");
-        constant->setValue(m_model->getLocalParameter(i + 1, m_no));
-        constant->setToolTip(tr("Shift of the pure %1 complex").arg(m_model->GlobalParameterNames()[i]));
+        constant->setSuffix(m_model->LocalParameterSuffix(i));
+        constant->setValue(m_model->LocalParameter(i, m_no));
+        constant->setToolTip(m_model->LocalParameterDescription(i));
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         shifts->addWidget(constant, 0);
@@ -151,7 +140,6 @@ void ModelElement::DisableSignal(int state)
     m_show->setChecked(state);
     m_error_series->ShowLine(state);
     m_signal_series->ShowLine(state);
-    m_d_0->setEnabled(m_include->isChecked());
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
         m_constants[i]->setEnabled(m_include->isChecked());
@@ -164,17 +152,9 @@ bool ModelElement::Include() const
 }
 
 
-double ModelElement::D0() const
-{
-    
-    return m_d_0->value();
-}
-
-
 QVector<double > ModelElement::D() const
 {
     QVector<double > numbers;
-    numbers << m_d_0->value();
     for(int i = 0; i < m_constants.size(); ++i)
         numbers << m_constants[i]->value();
     return numbers;
@@ -186,10 +166,9 @@ void ModelElement::Update()
     DisableSignal(m_model->ActiveSignals()[m_no]);
     if(!m_include->isChecked())
         return;
-    m_d_0->setValue(m_model->getLocalParameter(0, m_no));
-    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
+    for(int i = 0; i < m_model->LocalParameterSize(); ++i)
     {
-        m_constants[i]->setValue(m_model->getLocalParameter(i + 1, m_no));
+        m_constants[i]->setValue(m_model->LocalParameter(i, m_no));
     }
     if(m_model->Type() != 3)
         m_error->setText("Sum of Squares: <b>" + QString::number(m_model->SumOfErrors(m_no), 'e', 2) + "</b>");

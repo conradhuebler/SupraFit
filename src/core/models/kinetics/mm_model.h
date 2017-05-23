@@ -51,13 +51,12 @@ public:
     virtual int LocalParameterSize() const override {return 0; }
 [[deprecated]]
     inline virtual void MiniShifts() override { return; }
+    
 private:
     
     
 protected:
     virtual void CalculateVariables(const QList<qreal > &constants) override;
-    
-    QList<qreal > m_ItoI_signals;
     qreal m_vmax, m_Km;
 };
 
