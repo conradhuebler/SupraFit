@@ -178,6 +178,7 @@ public:
     inline bool isCorrupt() const { return m_corrupt; }
     
     inline virtual QStringList GlobalParameterNames() const = 0;
+    inline virtual QString LocalParameterName(int i = 0) const {Q_UNUSED(i) return QString();} 
     
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }

@@ -109,11 +109,6 @@ void MonteCarloStatistics::Evaluate()
     {       
         ExtractFromJson(i, "globalParameter");
         ExtractFromJson(i, "localParameter");
-        
-//         for(int k = 0; k < m_model->GlobalParameterSize(); ++k)
-//         {
-//             ExtractFromJson(i, "shift_" + QString::number(k));
-//         }
     }
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
@@ -217,33 +212,21 @@ void MonteCarloStatistics::AnalyseData(qreal error)
         result["error"] = error;
         m_results << result;
     }
-
-    for(int i = 0; i < m_shift_list.size(); ++i)
+for(int parameter = 0; parameter < m_model->LocalParameterSize(); ++parameter)
+    
     {
-        QList<qreal > list = m_shift_list[i];
-        if(m_shift_list[i].size() == 0)
-            continue;
-        QJsonObject result = MakeJson(list, 100-error);
-        /*
-         * Some fun goes here, since our data are one long vector
-         * the 0 - SignalCount() Datas are one block
-         */
-        int nr = ceil(i/m_model->SeriesCount()); // nr = 0 -> pure shifts, after SignalCount() runs, it gets incremented
-        int mod = i%m_model->SeriesCount(); // this is the modulo, which says what index the parameter is
-        if(nr == 0)
+        for(int series = 0; series < m_model->SeriesCount(); ++series)
         {
-#warning fix me
-            result["value"] = m_model->LocalParameter(0,i);
-            result["name"] = "Host Shift: " + m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString();
-        }else
-        {
-#warning fix me
-//             result["value"] = m_model->ComplexParameter()(,nr-1);
-            result["name"] = m_model->GlobalParameterNames()[nr-1] + " Component Shift: " + m_model->DependentModel()->headerData(mod, Qt::Horizontal, Qt::DisplayRole).toString();
+            QList<qreal > list = m_shift_list[series*m_model->LocalParameterSize()+parameter];
+            QJsonObject result = MakeJson(list, 100-error);
+            result["value"] = m_model->LocalParameter(parameter, series);
+            result["name"] = m_model->LocalParameterName(parameter) + m_model->DependentModel()->headerData(parameter, Qt::Horizontal, Qt::DisplayRole).toString();
+
+            result["type"] = "Local Parameter";
+            result["error"] = error;
+            qDebug() << series << parameter << m_shift_list[series*m_model->LocalParameterSize()+parameter] << result;
+            m_results << result;
         }
-        result["type"] = "Local Parameter";
-        result["error"] = error;
-        m_results << result;
     }
     emit AnalyseFinished();
 }
@@ -269,26 +252,19 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
     for(const QString &str : qAsConst(keys))
     {
         QString element = object[str].toString();
-        /*
-         * Thank to json, we know what is to find where
-         * constants as constants
-         * pureShifts are the first n = SignalCount() Entries 
-         * shift_0 are the next n +1 - 2n entries
-         * and so on
-         */
-#warning to be adopted ...
         if(string == "globalParameter")
             m_constant_list[j] << element.toDouble();
         else if(string == "localParameter")
-            m_shift_list[j] << element.toDouble();
-        else
         {
-            int add = QString(string).remove("shift_").toInt() + 1;
-            m_shift_list[j + add*m_model->SeriesCount()] << element.toDouble();
+            /*
+             * We transform the tables of the local parameter to an array of vectors
+             */
+            QVector<double> vector = ToolSet::String2DoubleVec(element);
+            for(int i = 0; i < vector.size(); ++i)
+                m_shift_list[j*m_model->LocalParameterSize()+i] << vector[i];
         }
         j++;
     }  
-    
 }
 
 QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)

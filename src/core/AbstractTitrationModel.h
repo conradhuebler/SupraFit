@@ -90,6 +90,13 @@ public:
         else
             return tr("Shift of the pure %1 complex").arg(GlobalParameterNames()[i-1]);
     }
+    inline virtual QString LocalParameterName(int i = 0) const override
+    {
+        if(i == 0)
+            return "Pure Component Shift";
+        else
+            return tr("%1 Complex Shift").arg(GlobalParameterNames()[i-1]);
+    }
     
     virtual QString formatedGlobalParameter(qreal value) const override;
     
