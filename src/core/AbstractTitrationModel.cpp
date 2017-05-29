@@ -40,7 +40,6 @@
 AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : AbstractModel(data)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts);
-//     m_constant_names << tr("no constants");   
 }
 
 AbstractTitrationModel::~AbstractTitrationModel()
@@ -100,8 +99,9 @@ MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
     return result;
 }
 
-QString AbstractTitrationModel::formatedGlobalParameter(qreal value) const
+QString AbstractTitrationModel::formatedGlobalParameter(qreal value, int globalParameter) const
 {
+    Q_UNUSED(globalParameter)
     QString string;
     string = QString::number(qPow(10,value));
     return string;

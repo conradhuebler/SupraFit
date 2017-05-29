@@ -126,7 +126,7 @@ ChartView * WGSResultsWidget::CVPlot()
         LineSeries *current_constant= new LineSeries;
         *current_constant << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()) << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
-        current_constant->setName(m_model->GlobalParameterNames()[i]);
+        current_constant->setName(m_model->GlobalParameterName(i));
         view->addSeries(current_constant, true);
     }
     return view;
@@ -151,11 +151,11 @@ ChartView *  WGSResultsWidget::MoCoPlot()
     {
         LineSeries *xy_serie = new LineSeries;
         xy_serie->append(serie);
-        xy_serie->setName(m_model->GlobalParameterNames()[i]);
+        xy_serie->setName(m_model->GlobalParameterName(i));
         view->addSeries(xy_serie, true);
         ++i;
     }
-    view->setXAxis(m_model->GlobalParameterNames()[0]);
-    view->setYAxis(m_model->GlobalParameterNames()[1]);
+    view->setXAxis(m_model->GlobalParameterName(0));
+    view->setYAxis(m_model->GlobalParameterName(1));
     return view;
 }

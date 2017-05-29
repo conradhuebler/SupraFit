@@ -135,7 +135,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
         constant->setMaximum(1e4);
         constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
-        const_layout->addWidget(new QLabel(m_model->GlobalParameterNames()[i]));
+        const_layout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         const_layout->addWidget(constant);
     }
     m_bc_50 = new QLabel(tr("BC50_0"));
@@ -861,11 +861,11 @@ void ModelWidget::Model2Text()
     text += "#### Current Model Results #####\n";
     text += "Equilibrium Model Calculation with complexation constants:\n";
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
-        text += m_model->GlobalParameterNames()[i] + ":\t" + QString::number(m_model->GlobalParameter(i))+ "\n";
+        text += m_model->GlobalParameterName(i) + ":\t" + QString::number(m_model->GlobalParameter(i))+ "\n";
     for(int i = 0; i < m_model->IndependentModel()->columnCount(); ++i)
         text += m_model->IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
-        text += m_model->GlobalParameterNames()[i] + "\t";
+        text += m_model->GlobalParameterName(i) + "\t";
     text += "\n";
 #warning remove mie
     if(qobject_cast<AbstractTitrationModel *>(m_model))

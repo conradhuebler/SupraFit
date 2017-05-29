@@ -137,8 +137,9 @@ QTableView* SearchResultWidget::BuildList()
         }
     }
     QStringList head;
-    for(const QString &str : m_model.data()->GlobalParameterNames())
-        head << str;
+    for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
+//     for(const QString &str : m_model.data()->GlobalParameterNames())
+        head << m_model.data()->GlobalParameterName(i);
     header << head << head;
     model->setHorizontalHeaderLabels(header);
     QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
@@ -159,8 +160,8 @@ ChartView * SearchResultWidget::BuildContour()
     xy_series->append(data);
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
-    view->setXAxis(m_model->GlobalParameterNames()[0]);
-    view->setYAxis(m_model->GlobalParameterNames()[1]);
+    view->setXAxis(m_model->GlobalParameterName(0));
+    view->setYAxis(m_model->GlobalParameterName(1));
     return view;
 }
 

@@ -64,7 +64,7 @@ void WeakenedGridSearchThread::run()
     controller["fisher"] = m_config.fisher_statistic;
     controller["f-value"] = m_config.f_value;
     m_result["controller"] = controller;
-    m_result["name"] = m_model.data()->GlobalParameterNames()[m_parameter_id];
+    m_result["name"] = m_model.data()->GlobalParameterName(m_parameter_id);
     m_result["value"] = parameter[m_parameter_id];
     m_result["type"] = "Global Parameter";
     m_result["error"] = m_config.confidence;

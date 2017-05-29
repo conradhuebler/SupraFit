@@ -107,27 +107,48 @@ public:
     
     /*
      * This function defines how the model values are to be calculated
-     * 
      */
     virtual void CalculateVariables(const QList<qreal > &constants) = 0;
+        
+    /*! \brief get the Name of the ith GlobalParameter
+     */
+    inline virtual QString GlobalParameterName(int i = 0) const {Q_UNUSED(i) return QString();}
 
-    /*
-     * 
+    /*! \brief Prefix of the ith global parameter 
      */
     virtual inline QString GlobalParameterPrefix(int i = 0) const { Q_UNUSED(i) return QString(); }
-    virtual inline QString GlobalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
-    virtual inline QString LocalParameterPrefix(int i = 0) const {Q_UNUSED(i) return QString(); }
-    virtual inline QString LocalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
-    virtual inline QString LocalParameterDescription(int i = 0) const { Q_UNUSED(i) return QString(); }
-    /*
-     * 
-     */
-    virtual QString formatedGlobalParameter(qreal value) const { return QString::number(value); }
     
-    /*
-     * 
+    /*! \brief Suffix of the ith  global parameter 
      */
-    virtual QString formatedLocalParameter(qreal value) const { return QString::number(value); };
+    virtual inline QString GlobalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
+    
+    /*! \brief Description of the ith global parameter 
+     */   
+    virtual inline QString GlobalParameterDescription(int i = 0) const { Q_UNUSED(i) return QString(); }
+    
+    /*! \brief get the Name of the ith LocalParameter
+     */
+    inline virtual QString LocalParameterName(int i = 0) const {Q_UNUSED(i) return QString();} 
+    
+    /*! \brief Prefix of theith  local parameter 
+     */
+    virtual inline QString LocalParameterPrefix(int i = 0) const {Q_UNUSED(i) return QString(); }
+    
+    /*! \brief Suffix of the ith local parameter 
+     */
+    virtual inline QString LocalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
+    
+    /*! \brief Description of the ith local parameter 
+     */   
+    virtual inline QString LocalParameterDescription(int i = 0) const { Q_UNUSED(i) return QString(); }
+    
+    /*! \brief Return a formated value as string of the global parameter with the value
+     */
+    virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const { Q_UNUSED(globalParamater) return QString::number(value); }
+    
+    /*! \brief Return a formated value as string of the global parameter with the value
+     */
+    virtual QString formatedLocalParameter(qreal value, int localParamater = 0) const { Q_UNUSED(localParamater) return QString::number(value); };
     
     void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
@@ -149,10 +170,12 @@ public:
         
     QList<qreal >  getCalculatedModel();
         
-#warning maybe deprecated
+    /*! \brief returns a List of all Series, that are to be included in optimisation
+     */
     inline QList<int> ActiveSignals() const { return m_active_signals; }
 
-#warning maybe deprecated
+    /*! \brief return if the series i is active in optimisation
+     */
     inline int ActiveSignals(int i) const 
     { 
         if(i < m_active_signals.size())
@@ -161,24 +184,27 @@ public:
             return 0;
     }
     
-#warning maybe deprecated
+    /*! \brief set the series active / inactive according to the given list
+     * 0 - inactive
+     * 1 - active
+     */
     inline void setActiveSignals(const QList<int > &active_signals) 
     { 
         m_active_signals = active_signals; 
         emit ActiveSignalsChanged(m_active_signals);
     }
     
-#warning fixme here
-    void setParameter(const QVector<qreal> &parameter); //FIXME
+    /*! \brief Set the current active parameter (which are internally reference through a pointer)
+     * to the given vector
+     */
+    void setParameter(const QVector<qreal> &parameter);
     
     /*! \brief Returns if the current model parameter makes dont't sense
      * true - no sense
      * false - all fine
      */
     inline bool isCorrupt() const { return m_corrupt; }
-    
-    inline virtual QStringList GlobalParameterNames() const = 0;
-    inline virtual QString LocalParameterName(int i = 0) const {Q_UNUSED(i) return QString();} 
+
     
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
@@ -303,6 +329,10 @@ protected:
      */
     void SetValue(int i, int j, qreal value);
     
+    /*! \brief Calculated the variance of the estimated model variables
+     */
+    qreal CalculateVariance();
+    
 #warning to do as well
     //FIXME more must be
     QVector<double * > m_opt_para;
@@ -312,11 +342,9 @@ protected:
     QList< QJsonObject> m_moco_statistics;
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror;
     int m_used_variables;
-//     Eigen::MatrixXd ; //m_complex_signal_parameter, m_pure_signals_parameter;
     QList<int > m_active_signals;
     QList<int > m_locked_parameters;
     OptimizationType m_last_optimization;
-    qreal CalculateVariance();
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
     bool m_corrupt, m_converged;

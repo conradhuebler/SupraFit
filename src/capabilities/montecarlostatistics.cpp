@@ -202,18 +202,19 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
 void MonteCarloStatistics::AnalyseData(qreal error)
 {
     m_results.clear();
+    
     for(int i = 0; i < m_constant_list.size(); ++i)
     {
         QList<qreal > list = m_constant_list[i];
         QJsonObject result = MakeJson(list, 100-error);
         result["value"] = m_model->GlobalParameter(i);
-        result["name"] = m_model->GlobalParameterNames()[i];
+        result["name"] = m_model->GlobalParameterName(i);
         result["type"] = "Global Parameter";
         result["error"] = error;
         m_results << result;
     }
-for(int parameter = 0; parameter < m_model->LocalParameterSize(); ++parameter)
     
+    for(int parameter = 0; parameter < m_model->LocalParameterSize(); ++parameter)
     {
         for(int series = 0; series < m_model->SeriesCount(); ++series)
         {
@@ -221,10 +222,8 @@ for(int parameter = 0; parameter < m_model->LocalParameterSize(); ++parameter)
             QJsonObject result = MakeJson(list, 100-error);
             result["value"] = m_model->LocalParameter(parameter, series);
             result["name"] = m_model->LocalParameterName(parameter) + m_model->DependentModel()->headerData(parameter, Qt::Horizontal, Qt::DisplayRole).toString();
-
             result["type"] = "Local Parameter";
             result["error"] = error;
-            qDebug() << series << parameter << m_shift_list[series*m_model->LocalParameterSize()+parameter] << result;
             m_results << result;
         }
     }

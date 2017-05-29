@@ -50,29 +50,7 @@ public:
     AbstractTitrationModel(const DataClass *data);
     virtual ~AbstractTitrationModel();
 
-    
-//     inline int MaxVars() const { return (m_pure_signals_parameter.rows()); }
-
-//     virtual QPair<qreal, qreal> Pair(int i, int j = 0) const;
-//     inline qreal PureSignal(int i) const 
-//         { 
-//             if(i >= LocalParameterSize())
-//                 return 0;
-//             return m_local(i,0); 
-//         }
-        
-    
-//     virtual void setPureSignals(const QList< qreal > &list);
-//     virtual void setComplexSignals(const QList< qreal > &list, int i);
-    
-    /*
-     * defines the initial guess for the model
-     */
-    
-
-
     inline QString Name() const { return m_name; }
-//     void setParamter(const QVector<qreal> &parameter);
     inline int Size() const { return DataClass::Size(); }
 
     void adress() const;
@@ -88,17 +66,17 @@ public:
         if(i == 0)
             return "Shift of the pure - non silent substrat";
         else
-            return tr("Shift of the pure %1 complex").arg(GlobalParameterNames()[i-1]);
+            return tr("Shift of the pure %1 complex").arg(GlobalParameterName(i-1));
     }
     inline virtual QString LocalParameterName(int i = 0) const override
     {
         if(i == 0)
             return "Pure Component Shift";
         else
-            return tr("%1 Complex Shift").arg(GlobalParameterNames()[i-1]);
+            return tr("%1 Complex Shift").arg(GlobalParameterName(i-1));
     }
     
-    virtual QString formatedGlobalParameter(qreal value) const override;
+    virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
     
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);
@@ -108,14 +86,7 @@ public:
      */
     virtual inline int InputParameterSize() const override { return 2; }
     virtual int LocalParameterSize() const override {return GlobalParameterSize() + 1; }
-   /*  
-private:
-    QList<int > m_active_signals;
-    QList<int > m_locked_parameters;
-    OptimizationType m_last_optimization;
-    qreal CalculateVariance();
-    qreal m_last_p, m_f_value;
-    int m_last_parameter, m_last_freedom;*/
+
    
 protected:    
     /*

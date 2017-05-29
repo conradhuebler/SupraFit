@@ -102,7 +102,7 @@ bool ModelComparison::FastConfidence()
         controller["maxerror"] = m_config.maxerror;
         controller["fisher"] = m_config.fisher_statistic;
         result["controller"] = controller;
-        result["name"] = m_model.data()->GlobalParameterNames()[i];
+        result["name"] = m_model.data()->GlobalParameterName(i);
         result["value"] = parameter[i];
         result["error"] = m_config.confidence;
         result["type"] = "Global Parameter";
@@ -290,7 +290,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         controller["f-value"] = m_config.f_value;
         result["controller"] = controller;
         result["value"] = m_model->GlobalParameter(i);
-        result["name"] = m_model->GlobalParameterNames()[i];
+        result["name"] = m_model->GlobalParameterName(i);
         result["type"] = "Complexation Constant";
         result["error"] = m_config.confidence;
         result["method"] = "model comparison";

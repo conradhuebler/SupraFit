@@ -109,8 +109,8 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     xy_series->append(data);
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
-    view->setXAxis(m_model->GlobalParameterNames()[0]);
-    view->setYAxis(m_model->GlobalParameterNames()[1]);
+    view->setXAxis(m_model->GlobalParameterName(0));
+    view->setYAxis(m_model->GlobalParameterName(1));
     return view;
 }
 
@@ -142,7 +142,7 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
         *current_constant << QPointF(m_model->GlobalParameter(i), 0) << QPointF(m_model->GlobalParameter(i), view->YMax());
         current_constant->setColor(xy_series->color());
-        current_constant->setName( m_model->GlobalParameterNames()[i]);
+        current_constant->setName( m_model->GlobalParameterName(i));
         view->addSeries(current_constant, true);
         
         QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
@@ -220,7 +220,7 @@ void MCResultsWidget::UpdateBoxes(const QList<QList<QPointF > > &series, const Q
             
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
-            area_series->setName(m_model->GlobalParameterNames()[i]);
+            area_series->setName(m_model->GlobalParameterName(i));
         }
     }
 }

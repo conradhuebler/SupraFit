@@ -46,7 +46,15 @@ public:
     /*! \brief we have only the time as input parameter
      */
     virtual inline int InputParameterSize() const override { return 1; } 
-    virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("v<sub>max</sub>") << tr("K<sub>m</sub>"); }
+    virtual inline QString GlobalParameterName(int i = 0) const override 
+    { 
+        if( i== 0)
+            return tr("v<sub>max</sub>");
+        else if( i == 1)
+            return tr("K<sub>m</sub>");
+        else 
+            return QString();
+    }
     
     virtual int LocalParameterSize() const override {return 0; }
 [[deprecated]]

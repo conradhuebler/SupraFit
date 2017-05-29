@@ -41,7 +41,15 @@ public:
     virtual QSharedPointer<AbstractModel > Clone() const override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() override;
-    virtual inline QStringList GlobalParameterNames() const override { return QStringList() << tr("K<sub>11</sub>") << tr("K<sub>12</sub>"); }
+    virtual inline QString GlobalParameterName(int i = 0) const override 
+    { 
+        if(i == 0)
+            return  tr("K<sub>11</sub>");
+        else if( i == 1)
+            return tr("K<sub>12</sub>"); 
+        else
+            return QString();
+    }
 
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 
