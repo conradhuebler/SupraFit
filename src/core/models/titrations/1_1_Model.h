@@ -56,7 +56,7 @@ private:
     
     
 protected:
-    virtual void CalculateVariables(const QList<qreal > &constants) override;
+    virtual void CalculateVariables() override;
     
     QList<qreal > m_ItoI_signals;
     qreal m_K11;

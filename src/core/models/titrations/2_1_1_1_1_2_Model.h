@@ -66,7 +66,7 @@ private:
     QList<qreal> m_constants_pow;
     
 protected:
-    virtual void CalculateVariables(const QList<qreal > &constants) override;
+    virtual void CalculateVariables() override;
 };
 
 #endif // 2_1_1_1_MODEL_H

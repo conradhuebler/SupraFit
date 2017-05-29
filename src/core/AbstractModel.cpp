@@ -87,8 +87,8 @@ void AbstractModel::setGlobalParameter(const QList<qreal> &list)
 
 void AbstractModel::SetValue(int i, int j, qreal value)
 {
-#warning dont forget me
-    if(IndependentVariableSize() != 1) //FIXME just for now
+// #warning dont forget me
+    if(SeriesCount() != 1) 
         if(!ActiveSignals(j) || !DependentModel()->isChecked(j,i))
             return;
     if(std::isnan(value) || std::isinf(value))
@@ -107,14 +107,14 @@ void AbstractModel::SetValue(int i, int j, qreal value)
     }
 }
 
-void AbstractModel::Calculate(const QList<qreal > &constants)
+void AbstractModel::Calculate()
 {
     m_corrupt = false;
     m_mean = 0;
     m_variance = 0;
     m_used_variables = 0;
     m_stderror = 0;
-    CalculateVariables(constants);
+    CalculateVariables();
     
     m_mean /= qreal(m_used_variables);
     m_variance = CalculateVariance();

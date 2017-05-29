@@ -197,7 +197,7 @@ QColor ChartWrapper::ColorCode(int i) const
 
 qreal ChartWrapper::XValue(int i) const
 {
-#warning dont forget me
+#warning sometimes this will be made cool
     if(m_model->IndependentVariableSize() == 2) //FIXME 
     {
         switch(m_plotmode){

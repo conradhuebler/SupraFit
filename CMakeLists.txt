@@ -88,7 +88,7 @@ configure_file(
 )
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -pedantic-errors \
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -pedantic \
                                            -Wextra -Wcast-align -Wcast-qual  -Wchar-subscripts  \
                                            -Wcomment -Wdisabled-optimization \
                                            -Wformat  -Wformat=2 -Wformat-nonliteral -Wformat-security\

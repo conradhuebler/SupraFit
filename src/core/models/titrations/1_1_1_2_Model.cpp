@@ -128,25 +128,23 @@ qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, const QL
     return guest;
 }
 
-void ItoI_ItoII_Model::CalculateVariables(const QList<qreal > &constants)
+void ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
-    if(constants.size() == 0)
-        return;        
-    
+
     m_sum_absolute = 0;
     m_sum_squares = 0;
     
-    qreal K12= qPow(10, constants.last());
-    qreal K11 = qPow(10, constants.first());
+    qreal K12= qPow(10, GlobalParameter().last());
+    qreal K11 = qPow(10, GlobalParameter().first());
     
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         
-        qreal host = HostConcentration(host_0, guest_0, constants);
-        qreal guest = GuestConcentration(host_0, guest_0, constants);
+        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
+        qreal guest = GuestConcentration(host_0, guest_0, GlobalParameter());
         qreal complex_11 = K11*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;
                 

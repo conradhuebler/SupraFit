@@ -75,7 +75,7 @@ QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private(OptimizationTy
     return parameter;
 }
 
-void Michaelis_Menten_Model::CalculateVariables(const QList<qreal > &constants)
+void Michaelis_Menten_Model::CalculateVariables()
 {  
     m_corrupt = false;
     

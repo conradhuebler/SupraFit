@@ -53,18 +53,16 @@ IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
     qDeleteAll(m_solvers);
 }
 
-void IItoI_ItoI_ItoII_Model::CalculateVariables(const QList<qreal> &constants)
+void IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
-    if(constants.size() == 0)
-        return;
     
     m_sum_absolute = 0;
     m_sum_squares = 0;
     
-    qreal K21= qPow(10, constants.first());
-    qreal K11 =qPow(10, constants[1]);
-    qreal K12= qPow(10, constants.last());
+    qreal K21= qPow(10, GlobalParameter().first());
+    qreal K11 =qPow(10, GlobalParameter()[1]);
+    qreal K12= qPow(10, GlobalParameter().last());
     m_constants_pow = QList<qreal >() << K21 << K11 << K12;
     QThreadPool *threadpool = new QThreadPool;
     int maxthreads =qApp->instance()->property("threads").toInt();

@@ -85,7 +85,7 @@ QVector<qreal> Kinetic_First_Order_Model::OptimizeParameters_Private(Optimizatio
     return parameter;
 }
 
-void Kinetic_First_Order_Model::CalculateVariables(const QList<qreal > &constants)
+void Kinetic_First_Order_Model::CalculateVariables()
 {  
     m_corrupt = false;
     

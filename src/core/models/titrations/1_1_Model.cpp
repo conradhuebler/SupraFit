@@ -115,7 +115,7 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList< qr
     return host_0 - complex;
 }
 
-void ItoI_Model::CalculateVariables(const QList<qreal > &constants)
+void ItoI_Model::CalculateVariables()
 {  
     m_corrupt = false;
     
@@ -125,7 +125,7 @@ void ItoI_Model::CalculateVariables(const QList<qreal > &constants)
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = HostConcentration(host_0, guest_0, constants);
+        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
         qreal complex = host_0 -host;
         Vector vector(4);
         vector(0) = i + 1;

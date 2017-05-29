@@ -105,10 +105,6 @@ public:
      */
     inline QString Name() const { return m_name; }
     
-    /*
-     * This function defines how the model values are to be calculated
-     */
-    virtual void CalculateVariables(const QList<qreal > &constants) = 0;
         
     /*! \brief get the Name of the ith GlobalParameter
      */
@@ -307,8 +303,9 @@ public:
     void setLocalParameterColumn(const Vector &vector, int parameter);
     
 public slots:
-     inline  void Calculate() { Calculate(GlobalParameter());}
-     void Calculate(const QList<qreal > &constants);
+    /*! \brief Calculated the current model with all previously set and defined parameters
+     */
+     void Calculate();
      
 private:
 
@@ -329,11 +326,15 @@ protected:
      */
     void SetValue(int i, int j, qreal value);
     
+    /*! \brief This function defines how the model values are to be calculated
+     */
+    virtual void CalculateVariables() = 0;
+    
     /*! \brief Calculated the variance of the estimated model variables
      */
     qreal CalculateVariance();
     
-#warning to do as well
+// #warning to do as well
     //FIXME more must be
     QVector<double * > m_opt_para;
     QList<qreal > m_global_parameter;

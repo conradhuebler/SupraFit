@@ -58,7 +58,7 @@ private:
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
     
 protected:
-    virtual void CalculateVariables(const QList<qreal > &constants) override;
+    virtual void CalculateVariables() override;
     
     qreal m_K21, m_K11;
     QList<qreal > m_ItoI_signals, m_IItoI_signals;
