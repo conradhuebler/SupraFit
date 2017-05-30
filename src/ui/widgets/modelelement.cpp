@@ -62,6 +62,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     {
         QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
+        constant->setMinimum(-1000);
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
         constant->setMaximum(1000);

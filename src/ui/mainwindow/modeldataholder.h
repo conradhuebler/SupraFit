@@ -84,7 +84,8 @@ public:
         IItoI_ItoI_ItoII = 4,
         Michaelis_Menten = 5,
         First_Order_Kinetics = 6,
-        ScriptedModel = 10
+        ScriptedModel = 10,
+        itc_ItoI = 11
     };
     void setSettings(const OptimizerConfig &config);
     /*

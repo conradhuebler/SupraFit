@@ -1,5 +1,6 @@
 #include "AbstractModel.h"
 #include "AbstractTitrationModel.h"
+#include "models/itc/itc_1_1_Model.h"
 #include "models/titrations/1_1_Model.h"
 #include "models/titrations/2_1_1_1_Model.h"
 #include "models/titrations/1_1_1_2_Model.h"

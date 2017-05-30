@@ -174,6 +174,12 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     connect(first_order_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_independet_1 << first_order_action;
     
+    QAction *itc_ItoI_action = new QAction(this);
+    itc_ItoI_action->setText(tr("ITC: 1:1-Model"));
+    itc_ItoI_action->setData(itc_ItoI);
+    connect(itc_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    m_independet_2 << itc_ItoI_action;
+    
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
     
@@ -260,6 +266,9 @@ void ModelDataHolder::AddModel(int model)
         case 6:
             t = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(m_data.data()),  &QObject::deleteLater);
             break;
+        case itc_ItoI:
+            t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
+            break;
         default:
             t.clear();
             return; 
@@ -338,6 +347,8 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
     else if(str == "2:1/1:1/1:2-Model"){
         t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
     }
+    else if(str == "itc_1:1-Model")
+        t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
     else
     {
         t.clear();
