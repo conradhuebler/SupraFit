@@ -61,7 +61,7 @@ void itc_ItoI_Model::InitialGuess()
     m_global_parameter = QList<qreal>() << m_K11;
     
     
-    m_local_parameter->setColumn(DependentModel()->lastRow(), 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
@@ -114,12 +114,14 @@ void itc_ItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal V = 700;
+    qreal complex_old  = 0;
+    qreal correction = 1.75; // this is an empirical factor to make things fit better
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal V_1 = (V+((1+i)*8))/1E6;
+        qreal V_1 = (V+((1+i)*8));
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = HostConcentration(host_0/V_1, guest_0/V_1, GlobalParameter());
+        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
         qreal complex = host_0 -host;
         Vector vector(4);
         vector(0) = i + 1;
@@ -127,13 +129,9 @@ void itc_ItoI_Model::CalculateVariables()
         vector(2) = guest_0 - complex;
         vector(3) = complex;
         SetConcentration(i, vector);
-        qreal cum_heat = 0;
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
-            cum_heat += V_1*complex/host_0*m_local_parameter->data(0, j);
-            qreal value = cum_heat;
-            SetValue(i, j, value);    
-        }
+        qreal value = V_1*(complex-complex_old)*m_local_parameter->data(0, 0)*correction;
+        SetValue(i, 0, value);    
+        complex_old = complex;
     }
     emit Recalculated();
 }
