@@ -39,6 +39,8 @@
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/3dchartview.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
+#include "src/ui/widgets/systemparameterwidget.h"
+#include "src/ui/widgets/stackedwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
@@ -186,6 +188,21 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     QScrollArea *area = new QScrollArea;
     area->setWidgetResizable(true);
     area->setWidget(scroll);
+    
+    QWidget *systemwidget = new QWidget;
+    QHBoxLayout * sys_layout = new QHBoxLayout;
+    
+    sys_layout->setAlignment(Qt::AlignTop); 
+    qDebug() << m_model->getSystemParameterList();
+    for(const QString &str : m_model->getSystemParameterList())
+    {
+        SystemParameterWidget *widget = new SystemParameterWidget(m_model->getSystemParamater(str), this);
+        sys_layout->addWidget(widget);
+        m_system_parameter_widgets << widget;
+        connect(widget, SIGNAL(valueChanged()), this, SLOT(recalulate()));
+    }
+    systemwidget->setLayout(sys_layout);
+    
     m_layout->addWidget(area, 2,0,1,m_model->GlobalParameterSize()+3);
     
     if(m_model->Type() == 1)
@@ -198,6 +215,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_splitter = new QSplitter(this);
     m_splitter->setOrientation(Qt::Vertical);
     m_splitter->addWidget(m_model_widget);
+    if(m_model->getSystemParameterList().size())
+        m_splitter->addWidget(systemwidget);
     m_splitter->addWidget(m_statistic_widget);
     connect(m_splitter, SIGNAL(splitterMoved(int,int)), this, SLOT(SplitterResized()));
     QVBoxLayout *vlayout = new QVBoxLayout;
@@ -361,6 +380,10 @@ void ModelWidget::CollectParameters()
     m_model->setActiveSignals(active_signals);
     m_model->setGlobalParameter(constants);
 
+    for(int i = 0; i < m_system_parameter_widgets.size(); ++i)
+    {
+        m_model->setSystemParameter(m_system_parameter_widgets[i]->Value());
+    }
 }
 
 void ModelWidget::GlobalMinimizeLoose()

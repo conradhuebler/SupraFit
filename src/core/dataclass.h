@@ -34,6 +34,35 @@
 
 typedef Eigen::VectorXd Vector;
 
+
+class SystemParameter
+{
+public:
+    enum Type {
+        String = 0,
+        Scalar = 1,
+        Boolean = 2
+    };
+    
+    inline SystemParameter(const QString &name, const QString &description, Type type) : m_name(name), m_description(description), m_type(type) {}
+    inline SystemParameter() {}
+    inline ~SystemParameter() { };
+    
+    inline QString Name() const { return m_name;}
+    inline qreal Double() const { return m_value.toDouble(); }
+    inline bool Bool() const { return m_value.toBool(); }
+    inline QString Description() const { return m_description; }
+    inline void setValue(const QVariant &value) { m_value = value; }
+    inline bool isBool() const { return m_type == 2; }
+    inline bool isString() const { return m_type == 0; }
+    inline bool isScalar() const { return m_type == 1; }
+
+private:
+    Type m_type;
+    QString m_name, m_description;
+    QVariant m_value;
+};
+
 class DataTable : public QAbstractTableModel
 {
     Q_OBJECT
@@ -189,10 +218,9 @@ public:
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);
     void OverrideDependentTable(DataTable *table);
-    
+
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;
-     
 signals:
     void RowAdded();
     void ActiveSignalsChanged(QList<int > active_signals);

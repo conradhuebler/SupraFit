@@ -61,6 +61,7 @@ class StatisticWidget;
 class StatisticDialog;
 class SpinBox;
 class ModelElement;
+class SystemParameterWidget;
 
 struct ModelHistoryElement;
 struct Charts;
@@ -102,11 +103,11 @@ private:
     
     QVector<QPointer<SpinBox> > m_constants;
     QVector<QPointer<ModelElement > > m_model_elements;
+    QVector<QPointer<SystemParameterWidget > > m_system_parameter_widgets;
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
     QPushButton *m_switch, *m_minimize_all;
     QLabel *m_bc_50, *m_converged_label; 
-    QVBoxLayout *m_sign_layout;
     QGridLayout *m_layout;
     bool m_pending;
     QList<int > ActiveSignals();
@@ -117,6 +118,7 @@ private:
     void Data2Text();
     void Model2Text();
     void MinimizeModel(const OptimizerConfig &config);
+    QVBoxLayout *m_sign_layout;
     
     QWidget *m_model_widget;
     QSplitter *m_splitter;

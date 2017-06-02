@@ -506,4 +506,36 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     Calculate();
 }
 
+
+void AbstractModel::addSystemParameter(const QString& str, const QString& description, SystemParameter::Type type)
+{
+    SystemParameter parameter(str, description, type);
+    m_system_parameter.insert(str, parameter);
+}
+
+SystemParameter AbstractModel::getSystemParamater(const QString& name) const
+{
+    return m_system_parameter.value(name);
+}
+
+QStringList AbstractModel::getSystemParameterList() const
+{
+    return m_system_parameter.keys();
+}
+
+void AbstractModel::setSystemParameterValue(const QString& name, const QVariant& value)
+{
+    SystemParameter parameter = getSystemParamater(name);
+    parameter.setValue(value);
+    m_system_parameter[name] = parameter;
+}
+
+void AbstractModel::setSystemParameter(const SystemParameter& parameter)
+{
+    QString name = parameter.Name();
+    if(m_system_parameter.contains(name))
+        m_system_parameter[name] = parameter;
+}
+
+
 #include "AbstractModel.moc"

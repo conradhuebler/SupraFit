@@ -40,6 +40,7 @@ itc_ItoI_Model::itc_ItoI_Model(const DataClass *data) : AbstractTitrationModel(d
     setName(tr("itc_1:1-Model"));
     m_local_parameter = new DataTable(1, SeriesCount(), this);
     InitialGuess();
+    DeclearSystemParameter();
 }
 
 itc_ItoI_Model::itc_ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationModel(model)
@@ -47,6 +48,7 @@ itc_ItoI_Model::itc_ItoI_Model(const AbstractTitrationModel* model) : AbstractTi
     setName(tr("itc_1:1-Model"));
     m_local_parameter = new DataTable(1, SeriesCount(), this);
     InitialGuess();
+    DeclearSystemParameter();
 }
 
 
@@ -54,6 +56,13 @@ itc_ItoI_Model::~itc_ItoI_Model()
 {
     
 }
+
+void itc_ItoI_Model::DeclearSystemParameter()
+{
+    addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
+    addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
+}
+
 
 void itc_ItoI_Model::InitialGuess()
 {
@@ -113,8 +122,8 @@ void itc_ItoI_Model::CalculateVariables()
     
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    qreal V = 700;
-    qreal inject = 8;
+    qreal V = getSystemParamater("Cell Volume").Double();
+    qreal inject = getSystemParamater("Inject Volume").Double();
     qreal heat  = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
@@ -144,6 +153,7 @@ QSharedPointer<AbstractModel > itc_ItoI_Model::Clone() const
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
+    model.data()->OverrideSystemParameter( m_system_parameter );
     return model;
     
 }

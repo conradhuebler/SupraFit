@@ -302,6 +302,29 @@ public:
     void setLocalParameterColumn(const QVector<qreal> &vector, int parameter);
     void setLocalParameterColumn(const Vector &vector, int parameter);
     
+    /*! \brief Add a system parameter to the current model
+     */
+    void addSystemParameter(const QString &str, const QString &description, SystemParameter::Type type);
+    
+    /*! \brief Get the SystemParameter with the specified name 
+     */
+    SystemParameter getSystemParamater(const QString &name) const;
+    
+    /*! \brief get a list of system parameters
+     */
+    QStringList getSystemParameterList() const;
+    
+    /*! \brief Set the value of the system parameter
+     */
+    void setSystemParameterValue(const QString &name, const QVariant &value);
+    
+    /*! \brief set a systemparameter to the given one
+     */
+    void setSystemParameter(const SystemParameter &parameter);
+    
+    /*! \brief Overrides system parameter
+     */
+    void OverrideSystemParameter(const QHash<QString, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -354,6 +377,8 @@ protected:
     QString m_name;
         
     const DataClass *m_data;
+    QHash<QString, SystemParameter> m_system_parameter;
+        
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished
