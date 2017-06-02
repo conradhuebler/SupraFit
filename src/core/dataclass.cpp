@@ -533,11 +533,13 @@ DataClass::DataClass(int type, QObject *parent) :  QObject(parent)
 DataClass::DataClass(const DataClass& other): QObject()
 {
     d = other.d;
+    m_systemObject = other.m_systemObject;
 }
 
 DataClass::DataClass(const DataClass* other)
 {
     d = other->d;
+    m_systemObject = other->m_systemObject;
 }
 
 DataClass::~DataClass()
@@ -592,7 +594,7 @@ const QJsonObject DataClass::ExportData(const QList<int> &active) const
 {
     QJsonObject json;
     
-    QJsonObject concentrationObject, signalObject;
+    QJsonObject concentrationObject, signalObject, systemObject;
     
     for(int i = 0; i < DataPoints(); ++i)
     {
@@ -603,8 +605,14 @@ const QJsonObject DataClass::ExportData(const QList<int> &active) const
             signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i));
     }
     
+    for(const QString &str : getSystemParameterList())
+    {
+        systemObject[str] = getSystemParameter(str).value().toString();
+    }
+    
     json["concentrations"] = concentrationObject;
     json["signals"] = signalObject;
+    json["system"] = systemObject;
     json["datatype"] = QString("discrete");
     QStringList headers = QStringList() << d->m_independent_model->header();
     if(active.size())
@@ -627,7 +635,7 @@ bool DataClass::ImportData(const QJsonObject &topjson)
     QJsonObject concentrationObject, signalObject;
     concentrationObject = topjson["data"].toObject()["concentrations"].toObject();
     signalObject = topjson["data"].toObject()["signals"].toObject();
-    
+    m_systemObject = topjson["data"].toObject()["system"].toObject();
     if(concentrationObject.isEmpty() || signalObject.isEmpty())
         return false;
     
@@ -675,8 +683,18 @@ bool DataClass::ImportData(const QJsonObject &topjson)
         d->m_type = 1;
     QStringList header = topjson["data"].toObject()["header"].toString().split("|");
     setHeader(header);
+
     return true;
 }
+
+void DataClass::LoadSystemParameter()
+{    
+    for(const QString &str : getSystemParameterList())
+        setSystemParameterValue(str, m_systemObject[str].toVariant());
+    
+    emit SystemParameterLoaded();
+}
+
 
 void DataClass::setHeader(const QStringList& strlist)
 {
@@ -697,4 +715,36 @@ void DataClass::OverrideDependentTable(DataTable *table)
     d.detach();
     table->setCheckedTable(d->m_dependent_model->CheckedTable());
     d->m_dependent_model = table;
+}
+
+
+
+void DataClass::addSystemParameter(const QString& str, const QString& description, SystemParameter::Type type)
+{
+    SystemParameter parameter(str, description, type);
+    m_system_parameter.insert(str, parameter);
+}
+
+SystemParameter DataClass::getSystemParameter(const QString& name) const
+{
+    return m_system_parameter.value(name);
+}
+
+QStringList DataClass::getSystemParameterList() const
+{
+    return m_system_parameter.keys();
+}
+
+void DataClass::setSystemParameterValue(const QString& name, const QVariant& value)
+{
+    SystemParameter parameter = getSystemParameter(name);
+    parameter.setValue(value);
+    m_system_parameter[name] = parameter;
+}
+
+void DataClass::setSystemParameter(const SystemParameter& parameter)
+{
+    QString name = parameter.Name();
+    if(m_system_parameter.contains(name))
+        m_system_parameter[name] = parameter;
 }

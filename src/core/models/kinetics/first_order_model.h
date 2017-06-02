@@ -34,13 +34,13 @@ class Kinetic_First_Order_Model : public AbstractModel
     Q_OBJECT
     
 public:
-    Kinetic_First_Order_Model(const DataClass *data);
-    Kinetic_First_Order_Model(const AbstractModel *model);
+    Kinetic_First_Order_Model(DataClass *data);
+    Kinetic_First_Order_Model(AbstractModel *model);
     ~Kinetic_First_Order_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;} 
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() const override;
+    virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
     
     /*! \brief we have only the time as input parameter

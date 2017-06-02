@@ -36,13 +36,13 @@
 
 #include "mm_model.h"
 
-Michaelis_Menten_Model::Michaelis_Menten_Model(const DataClass *data) : AbstractModel(data)
+Michaelis_Menten_Model::Michaelis_Menten_Model(DataClass *data) : AbstractModel(data)
 {
     setName(tr("Michaelis Menten"));
     InitialGuess();
 }
 
-Michaelis_Menten_Model::Michaelis_Menten_Model(const AbstractModel* model) : AbstractModel(model)
+Michaelis_Menten_Model::Michaelis_Menten_Model(AbstractModel* model) : AbstractModel(model)
 {
     setName(tr("Michaelis Menten"));
     InitialGuess();
@@ -96,7 +96,7 @@ void Michaelis_Menten_Model::CalculateVariables()
 }
 
 
-QSharedPointer<AbstractModel > Michaelis_Menten_Model::Clone() const
+QSharedPointer<AbstractModel > Michaelis_Menten_Model::Clone()
 {
     QSharedPointer<Michaelis_Menten_Model > model = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());

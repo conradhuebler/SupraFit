@@ -37,7 +37,7 @@
 #include <iostream>
 #include "AbstractTitrationModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(const DataClass *data) : AbstractModel(data)
+AbstractTitrationModel::AbstractTitrationModel(DataClass *data) : AbstractModel(data)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts);
 }

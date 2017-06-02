@@ -44,6 +44,11 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter &parameter, Q
     else if(parameter.isBool())
         layout->addWidget(m_boolbox);
     
+    if(parameter.isBool())
+        m_boolbox->setChecked(parameter.Bool());
+    else
+        m_textfield->setText(parameter.value().toString());
+    qDebug() << parameter.value();
     setLayout(layout);
 }
 

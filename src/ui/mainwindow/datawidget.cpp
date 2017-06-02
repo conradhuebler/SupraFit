@@ -19,6 +19,7 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/widgets/signalelement.h"
+#include "src/ui/widgets/systemparameterwidget.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -42,7 +43,7 @@
 #include "datawidget.h"
 
 
-DataWidget::DataWidget() 
+DataWidget::DataWidget() : m_system_parameter_loaded(false)
 {
     m_widget = new QWidget;
     layout = new QGridLayout;
@@ -90,7 +91,7 @@ DataWidget::DataWidget()
     m_splitter = new QSplitter;
     m_splitter->setOrientation(Qt::Vertical);
     m_splitter->addWidget(area);
-    m_splitter->addWidget(m_tables);
+    
     
     hlayout = new QHBoxLayout;
     hlayout->addWidget(m_splitter);
@@ -148,10 +149,15 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     }
     layout->addLayout(scaling_layout,3,0,1,4);
     
+    m_systemwidget = new QWidget;
+    
+    m_splitter->addWidget(m_tables);
+    
     QSettings settings;
     settings.beginGroup("overview");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
+    connect(m_data.data(), SIGNAL(SystemParameterLoaded()), this, SLOT(MakeSystemParameter()));
 }
 
 void DataWidget::switchHG()
@@ -198,5 +204,36 @@ void DataWidget::HidePoint()
     m_wrapper.data()->UpdateModel();
     m_wrapper.data()->restartAnimation();
 }
+
+void DataWidget::UpdateSystemParameter()
+{
+    for(int i = 0; i < m_system_parameter_widgets.size(); ++i)
+        m_data.data()->setSystemParameter(m_system_parameter_widgets[i]->Value());
+    
+    emit recalculate();
+}
+
+void DataWidget::MakeSystemParameter()
+{
+    if(m_system_parameter_loaded)
+        return;
+    
+    QHBoxLayout * sys_layout = new QHBoxLayout;
+    
+    sys_layout->setAlignment(Qt::AlignTop); 
+    
+    for(const QString &str : m_data.data()->getSystemParameterList())
+    {
+        SystemParameterWidget *widget = new SystemParameterWidget(m_data.data()->getSystemParameter(str), this);
+        sys_layout->addWidget(widget);
+        m_system_parameter_widgets << widget;
+        connect(widget, SIGNAL(valueChanged()), this, SLOT(UpdateSystemParameter()));
+    }
+    
+    m_systemwidget->setLayout(sys_layout);
+    m_splitter->addWidget(m_systemwidget);
+    m_system_parameter_loaded = true;
+}
+
 
 #include "datawidget.moc"

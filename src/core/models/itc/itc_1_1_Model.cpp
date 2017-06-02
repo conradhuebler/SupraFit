@@ -35,7 +35,7 @@
 
 #include "itc_1_1_Model.h"
 
-itc_ItoI_Model::itc_ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
+itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     setName(tr("itc_1:1-Model"));
     m_local_parameter = new DataTable(1, SeriesCount(), this);
@@ -43,7 +43,7 @@ itc_ItoI_Model::itc_ItoI_Model(const DataClass *data) : AbstractTitrationModel(d
     DeclearSystemParameter();
 }
 
-itc_ItoI_Model::itc_ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationModel(model)
+itc_ItoI_Model::itc_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
 {
     setName(tr("itc_1:1-Model"));
     m_local_parameter = new DataTable(1, SeriesCount(), this);
@@ -59,8 +59,9 @@ itc_ItoI_Model::~itc_ItoI_Model()
 
 void itc_ItoI_Model::DeclearSystemParameter()
 {
-    addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
-    addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
+    m_data->addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
+    m_data->addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
+    m_data->LoadSystemParameter();
 }
 
 
@@ -122,8 +123,8 @@ void itc_ItoI_Model::CalculateVariables()
     
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    qreal V = getSystemParamater("Cell Volume").Double();
-    qreal inject = getSystemParamater("Inject Volume").Double();
+    qreal V = m_data->getSystemParameter("Cell Volume").Double();
+    qreal inject = m_data->getSystemParameter("Inject Volume").Double();
     qreal heat  = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
@@ -146,14 +147,13 @@ void itc_ItoI_Model::CalculateVariables()
 }
 
 
-QSharedPointer<AbstractModel > itc_ItoI_Model::Clone() const
+QSharedPointer<AbstractModel > itc_ItoI_Model::Clone()
 {
     QSharedPointer<AbstractModel > model = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
-    model.data()->OverrideSystemParameter( m_system_parameter );
     return model;
     
 }

@@ -103,7 +103,6 @@ private:
     
     QVector<QPointer<SpinBox> > m_constants;
     QVector<QPointer<ModelElement > > m_model_elements;
-    QVector<QPointer<SystemParameterWidget > > m_system_parameter_widgets;
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
     QPushButton *m_switch, *m_minimize_all;

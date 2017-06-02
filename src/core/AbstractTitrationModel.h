@@ -47,7 +47,7 @@ class AbstractTitrationModel : public AbstractModel
     Q_OBJECT
 
 public:
-    AbstractTitrationModel(const DataClass *data);
+    AbstractTitrationModel(DataClass *data);
     virtual ~AbstractTitrationModel();
 
     inline QString Name() const { return m_name; }

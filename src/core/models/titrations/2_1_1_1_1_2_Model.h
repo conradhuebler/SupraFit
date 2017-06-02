@@ -39,12 +39,12 @@ class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
      Q_OBJECT
     
 public:
-    IItoI_ItoI_ItoII_Model(const DataClass* data);
+    IItoI_ItoI_ItoII_Model(DataClass* data);
     ~IItoI_ItoI_ItoII_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 3;}
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() const override;
+    virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return true; }
     virtual MassResults MassBalance(qreal A, qreal B) override;
     virtual inline QString GlobalParameterName(int i = 0) const override 

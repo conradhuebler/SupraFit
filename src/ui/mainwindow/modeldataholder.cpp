@@ -108,6 +108,7 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     
     m_datawidget = new DataWidget;
     connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
+    connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     m_modelsWidget = new TabWidget(this);
     m_modelsWidget->setTabsClosable(true);
     m_modelsWidget->setMovable(true);
@@ -368,6 +369,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t)
     connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
+    connect(this, SIGNAL(recalculate()), modelwidget, SLOT(recalulate()));
     
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);

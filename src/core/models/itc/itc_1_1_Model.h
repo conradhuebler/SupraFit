@@ -33,13 +33,13 @@ class itc_ItoI_Model : public AbstractTitrationModel
     Q_OBJECT
     
 public:
-    itc_ItoI_Model(const DataClass *data);
-    itc_ItoI_Model(const AbstractTitrationModel *model);
+    itc_ItoI_Model(DataClass *data);
+    itc_ItoI_Model(AbstractTitrationModel *model);
     ~itc_ItoI_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;}
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() const override;
+    virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() override;
     virtual inline QString GlobalParameterName(int i = 0) const override 

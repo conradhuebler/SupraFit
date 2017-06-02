@@ -49,7 +49,7 @@ class AbstractModel : public DataClass
   Q_OBJECT  
   
 public:
-    AbstractModel(const DataClass *data);
+    AbstractModel(DataClass *data);
     ~AbstractModel();
     
     /*! \brief set the OptimizationType to type and returns the Parameters
@@ -82,7 +82,7 @@ public:
      * function to create a new instance of the model, this way was quite easier than
      * a copy constructor
      */
-    virtual QSharedPointer<AbstractModel > Clone() const = 0;
+    virtual QSharedPointer<AbstractModel > Clone() = 0;
     
     /*
      * ! \brief Export model to json file
@@ -302,29 +302,7 @@ public:
     void setLocalParameterColumn(const QVector<qreal> &vector, int parameter);
     void setLocalParameterColumn(const Vector &vector, int parameter);
     
-    /*! \brief Add a system parameter to the current model
-     */
-    void addSystemParameter(const QString &str, const QString &description, SystemParameter::Type type);
-    
-    /*! \brief Get the SystemParameter with the specified name 
-     */
-    SystemParameter getSystemParamater(const QString &name) const;
-    
-    /*! \brief get a list of system parameters
-     */
-    QStringList getSystemParameterList() const;
-    
-    /*! \brief Set the value of the system parameter
-     */
-    void setSystemParameterValue(const QString &name, const QVariant &value);
-    
-    /*! \brief set a systemparameter to the given one
-     */
-    void setSystemParameter(const SystemParameter &parameter);
-    
-    /*! \brief Overrides system parameter
-     */
-    void OverrideSystemParameter(const QHash<QString, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -376,8 +354,7 @@ protected:
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
     QString m_name;
         
-    const DataClass *m_data;
-    QHash<QString, SystemParameter> m_system_parameter;
+    DataClass *m_data;
         
 signals:
     /*

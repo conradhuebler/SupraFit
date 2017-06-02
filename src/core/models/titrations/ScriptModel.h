@@ -48,7 +48,7 @@ class ScriptModel : public AbstractTitrationModel
     Q_OBJECT
     
 public:
-    ScriptModel(const DataClass *data, const QJsonObject &json);
+    ScriptModel(DataClass *data, const QJsonObject &json);
     ~ScriptModel();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
     inline int ConstantSize() const { return Constants().size(); }

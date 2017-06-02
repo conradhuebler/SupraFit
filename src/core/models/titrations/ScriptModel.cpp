@@ -48,7 +48,7 @@
 
 #include "ScriptModel.h"
 
-ScriptModel::ScriptModel(const DataClass *data, const QJsonObject &json) : AbstractTitrationModel(data), m_json(json)
+ScriptModel::ScriptModel(DataClass *data, const QJsonObject &json) : AbstractTitrationModel(data), m_json(json)
 {
     chai = new chaiscript::ChaiScript;
     

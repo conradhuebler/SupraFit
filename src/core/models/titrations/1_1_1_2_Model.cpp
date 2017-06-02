@@ -33,7 +33,7 @@
 
 #include "1_1_1_2_Model.h"
 
-ItoI_ItoII_Model::ItoI_ItoII_Model(const DataClass* data) : AbstractTitrationModel(data)
+ItoI_ItoII_Model::ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     setName(tr("1:1/1:2-Model"));
     m_local_parameter = new DataTable(3, SeriesCount(), this);
@@ -167,7 +167,7 @@ void ItoI_ItoII_Model::CalculateVariables()
 
 }
 
-QSharedPointer<AbstractModel > ItoI_ItoII_Model::Clone() const
+QSharedPointer<AbstractModel > ItoI_ItoII_Model::Clone()
 {
     QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());

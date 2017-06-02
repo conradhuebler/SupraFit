@@ -162,6 +162,7 @@ signals:
     void InsertModel(const QJsonObject &model, int active);
     void InsertModel(const QJsonObject &model);
     void nameChanged();
+    void recalculate();
 };
 
 #endif // MODELDATAHOLDER_H

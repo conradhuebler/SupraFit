@@ -36,14 +36,14 @@
 
 #include "first_order_model.h"
 
-Kinetic_First_Order_Model::Kinetic_First_Order_Model(const DataClass *data) : AbstractModel(data)
+Kinetic_First_Order_Model::Kinetic_First_Order_Model(DataClass *data) : AbstractModel(data)
 {
     setName(tr("First Order Kinetics"));
     m_local_parameter = new DataTable(1, SeriesCount(), this);
     InitialGuess();
 }
 
-Kinetic_First_Order_Model::Kinetic_First_Order_Model(const AbstractModel* model) : AbstractModel(model)
+Kinetic_First_Order_Model::Kinetic_First_Order_Model(AbstractModel* model) : AbstractModel(model)
 {
     setName(tr("First Order Kinetics"));
     m_local_parameter = new DataTable(1, SeriesCount(), this);
@@ -106,7 +106,7 @@ void Kinetic_First_Order_Model::CalculateVariables()
 }
 
 
-QSharedPointer<AbstractModel > Kinetic_First_Order_Model::Clone() const
+QSharedPointer<AbstractModel > Kinetic_First_Order_Model::Clone()
 {
     QSharedPointer<Kinetic_First_Order_Model > model = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());

@@ -35,7 +35,7 @@
 
 #include "1_1_Model.h"
 
-ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
+ItoI_Model::ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     setName(tr("1:1-Model"));
     m_local_parameter = new DataTable(2, SeriesCount(), this);
@@ -43,7 +43,7 @@ ItoI_Model::ItoI_Model(const DataClass *data) : AbstractTitrationModel(data)
     InitialGuess();
 }
 
-ItoI_Model::ItoI_Model(const AbstractTitrationModel* model) : AbstractTitrationModel(model)
+ItoI_Model::ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
 {
     setName(tr("1:1-Model"));
     m_local_parameter = new DataTable(2, SeriesCount(), this);
@@ -143,7 +143,7 @@ void ItoI_Model::CalculateVariables()
 }
 
 
-QSharedPointer<AbstractModel > ItoI_Model::Clone() const
+QSharedPointer<AbstractModel > ItoI_Model::Clone()
 {
     QSharedPointer<AbstractModel > model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());

@@ -40,7 +40,7 @@ class QSplitter;
 class ScatterSeries;
 class QDoubleSpinBox;
 class SignalElement;
-
+class SystemParameterWidget;
 
 class DataWidget : public QWidget
 {
@@ -64,13 +64,17 @@ private:
     QVector<QPointer<SignalElement > > m_signal_elements;
     QGridLayout *layout;
     QList<QPointer<QDoubleSpinBox > > m_scaling_boxes;
-    
+    QVector<QPointer<SystemParameterWidget > > m_system_parameter_widgets;
+    QWidget *m_systemwidget;
+    bool m_system_parameter_loaded;
 private slots:
     void ShowContextMenu(const QPoint& pos);
     void switchHG();
     void SetProjectName();
     void setScaling();
     void HidePoint();
+    void UpdateSystemParameter();
+    void MakeSystemParameter();
     
 signals:
     void recalculate();

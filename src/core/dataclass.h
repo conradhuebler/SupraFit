@@ -29,6 +29,7 @@
 #include <QtCore/QMap>
 #include <QtCore/QPointer>
 #include <QtCore/QAbstractTableModel>
+#include <QtCore/QJsonObject>
 
 #include <random>
 
@@ -48,6 +49,7 @@ public:
     inline SystemParameter() {}
     inline ~SystemParameter() { };
     
+    inline QVariant value() const { return m_value; }
     inline QString Name() const { return m_name;}
     inline qreal Double() const { return m_value.toDouble(); }
     inline bool Bool() const { return m_value.toBool(); }
@@ -218,12 +220,44 @@ public:
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);
     void OverrideDependentTable(DataTable *table);
-
+    /*! \brief Add a system parameter to the current model
+     */
+    void addSystemParameter(const QString &str, const QString &description, SystemParameter::Type type);
+    
+    /*! \brief Get the SystemParameter with the specified name 
+     */
+    SystemParameter getSystemParameter(const QString &name) const;
+    
+    /*! \brief get a list of system parameters
+     */
+    QStringList getSystemParameterList() const;
+    
+    /*! \brief Set the value of the system parameter
+     */
+    void setSystemParameterValue(const QString &name, const QVariant &value);
+    
+    /*! \brief set a systemparameter to the given one
+     */
+    void setSystemParameter(const SystemParameter &parameter);
+    
+    /*! \brief Overrides system parameter
+     */
+    void OverrideSystemParameter(const QHash<QString, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
+    
+    /*! \brief load previously cached system parameter
+     */
+    void LoadSystemParameter();
+private:
+    QJsonObject m_systemObject;
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;
+    QHash<QString, SystemParameter> m_system_parameter;
+    
+        
 signals:
     void RowAdded();
     void ActiveSignalsChanged(QList<int > active_signals);
+    void SystemParameterLoaded();
 };
 
 #endif // DATACLASS_H

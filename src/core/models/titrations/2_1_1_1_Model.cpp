@@ -31,7 +31,7 @@
 #include <iostream>
 #include "2_1_1_1_Model.h"
 
-IItoI_ItoI_Model::IItoI_ItoI_Model(const DataClass* data) : AbstractTitrationModel(data)
+IItoI_ItoI_Model::IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     setName(tr("2:1/1:1-Model"));
     m_local_parameter = new DataTable(3, SeriesCount(), this);
@@ -162,7 +162,7 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
 }
 
 
-QSharedPointer<AbstractModel > IItoI_ItoI_Model::Clone() const
+QSharedPointer<AbstractModel > IItoI_ItoI_Model::Clone()
 {
     QSharedPointer<IItoI_ItoI_Model > model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
