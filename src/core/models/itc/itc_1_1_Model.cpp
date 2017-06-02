@@ -114,24 +114,24 @@ void itc_ItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal V = 700;
-    qreal complex_old  = 0;
-    qreal correction = 1.75; // this is an empirical factor to make things fit better
+    qreal inject = 8;
+    qreal heat  = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal V_1 = (V+((1+i)*8));
+        qreal V_1 = V+((1+i)*inject);
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
-        qreal complex = host_0 -host;
+        qreal complex = (host_0 -host);
         Vector vector(4);
         vector(0) = i + 1;
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
         SetConcentration(i, vector);
-        qreal value = V_1*(complex-complex_old)*m_local_parameter->data(0, 0)*correction;
-        SetValue(i, 0, value);    
-        complex_old = complex;
+        qreal value = V_1*complex*m_local_parameter->data(0, 0);
+        SetValue(i, 0, value-heat*(1-inject/V));    
+        heat = value;
     }
     emit Recalculated();
 }
