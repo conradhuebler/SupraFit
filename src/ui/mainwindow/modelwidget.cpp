@@ -834,59 +834,13 @@ void ModelWidget::Data2Text()
     text += "Git Branch used was " + git_branch+ " - Commit Hash: " + git_commit_hash + " at "+ git_date + ".\n";
     text += "******************************************************************************************************\n";
     text += "\n";
-    text += "#### Begin of Data Description ####\n";
-    text += "Concentrations :   " + QString::number(m_model->DataPoints())  + "\n";
-    for(int i = 0; i < m_model->IndependentModel()->columnCount(); ++i)
-        text += m_model->IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    text += "\n";
-#warning remove me
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
-        text += qobject_cast<AbstractTitrationModel *>(m_model)->IndependentModel()->ExportAsString();
-    text += "\n";
-    text += "Signals :          " + QString::number(m_model->SeriesCount()) + "\n";
-    for(int i = 0; i < m_model->DependentModel()->columnCount(); ++i)
-        text += m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    text += "\n";
-    text += m_model->DependentModel()->ExportAsString();
-    text += "\n";
-    text += "#### End of Data Description #####\n";
-    text += "******************************************************************************************************\n";
+    text += m_model->Data2Text();
     m_logging += text;
 }
 
 void ModelWidget::Model2Text()
 {
-    QString text;
-    text += "\n";
-    text += "******************************************************************************************************\n";
-    text += "#### Current Model Results #####\n";
-    text += "Equilibrium Model Calculation with complexation constants:\n";
-    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
-        text += m_model->GlobalParameterName(i) + ":\t" + QString::number(m_model->GlobalParameter(i))+ "\n";
-    for(int i = 0; i < m_model->IndependentModel()->columnCount(); ++i)
-        text += m_model->IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
-        text += m_model->GlobalParameterName(i) + "\t";
-    text += "\n";
-#warning remove mie
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
-        text += qobject_cast<AbstractTitrationModel *>(m_model)->getConcentrations()->ExportAsString();
-    text += "\n";
-    text += "\n";
-    text += "Equilibrium Model Signal Calculation with complexation constants:\n";
-    for(int i = 0; i < m_model->DependentModel()->columnCount(); ++i)
-        text += m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    text += "\n";
-    text += m_model->ModelTable()->ExportAsString();
-    text += "\n";
-    text += "Errors obtained from that calculcation:\n";
-    for(int i = 0; i < m_model->DependentModel()->columnCount(); ++i)
-        text += m_model->DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    text += "\n";
-    text += m_model->ErrorTable()->ExportAsString();
-    text += "\n";
-    text += "## Current Model Results Done ####\n";
-    m_logging += text;
+    m_logging += m_model->Model2Text();
 }
 
 void ModelWidget::Save2File()

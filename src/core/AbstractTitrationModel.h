@@ -80,13 +80,16 @@ public:
     
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);
+    inline QPointer<DataTable > getConcentrations() const { return m_concentrations; }
     inline QPointer<DataTable > getConcentrations() { return m_concentrations; }
-    
     /*! \brief we have two concentrations for all titration models, host and guest
      */
     virtual inline int InputParameterSize() const override { return 2; }
     virtual int LocalParameterSize() const override {return GlobalParameterSize() + 1; }
-
+    
+    /*! \brief reimplmented from AbstractModel
+     */
+    virtual QString Model2Text_Private() const override;
    
 protected:    
     /*
@@ -101,9 +104,7 @@ protected:
     QVector< QVector < qreal > > m_difference; 
     
     QVector<QVector<qreal * > >m_lim_para;
-    QPointer<DataTable > m_concentrations;
-    
-    
+    QPointer<DataTable > m_concentrations; 
 };
 
 #endif // ABSTRACTMODEL_H

@@ -107,6 +107,13 @@ QString AbstractTitrationModel::formatedGlobalParameter(qreal value, int globalP
     return string;
 }
 
-
+QString AbstractTitrationModel::Model2Text_Private() const
+{
+    QString text;
+    text += "Equilibrium Model Signal Calculation with complexation constants:\n";
+    for(int i = 0; i < DependentModel()->columnCount(); ++i)
+        text += DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    return text;
+}
 
 #include "AbstractTitrationModel.moc"

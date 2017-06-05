@@ -332,6 +332,55 @@ void AbstractModel::setMoCoStatistic(const QJsonObject &result, int i)
     emit StatisticChanged();
 }
 
+QString AbstractModel::Data2Text() const
+{
+    QString text;
+    text += "#### Begin of Data Description ####\n";
+    text += "Concentrations :   " + QString::number(DataPoints())  + "\n";
+    for(int i = 0; i < IndependentModel()->columnCount(); ++i)
+        text += IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";   
+    text += IndependentModel()->ExportAsString();
+    text += "\n";
+    text += "Signals :          " + QString::number(SeriesCount()) + "\n";
+    for(int i = 0; i < DependentModel()->columnCount(); ++i)
+        text += DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += DependentModel()->ExportAsString();
+    text += "\n";
+    text += Data2Text_Private();
+    text += "#### End of Data Description #####\n";
+    text += "******************************************************************************************************\n";
+    return text;
+}
+
+QString AbstractModel::Model2Text() const
+{
+    QString text;
+    text += "\n";
+    text += "******************************************************************************************************\n";
+    text += "#### Current Model Results #####\n";
+    text += "Equilibrium Model Calculation with complexation constants:\n";
+    for(int i = 0; i < GlobalParameterSize(); ++i)
+        text += GlobalParameterName(i) + ":\t" + QString::number(GlobalParameter(i))+ "\n";
+    for(int i = 0; i < IndependentModel()->columnCount(); ++i)
+        text += IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    for(int i = 0; i < GlobalParameterSize(); ++i)
+        text += GlobalParameterName(i) + "\t";
+    text += "\n";
+    text += Model2Text_Private();
+    text += "\n";
+    text += ModelTable()->ExportAsString();
+    text += "\n";
+    text += "Errors obtained from that calculcation:\n";
+    for(int i = 0; i < DependentModel()->columnCount(); ++i)
+        text += DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += ErrorTable()->ExportAsString();
+    text += "\n";
+    text += "## Current Model Results Done ####\n";
+    return text;
+}
 
 
 QJsonObject AbstractModel::ExportModel(bool statistics) const

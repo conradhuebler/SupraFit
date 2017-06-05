@@ -302,7 +302,21 @@ public:
     void setLocalParameterColumn(const QVector<qreal> &vector, int parameter);
     void setLocalParameterColumn(const Vector &vector, int parameter);
     
+    /*! \brief return text of stored data
+     */
+    QString Data2Text() const;
+    
+    /*! \brief reimplment, if more model specfic raw data information should be printed out
+     */
+    virtual QString Data2Text_Private() const { return QString(); }
+    
+    /*! \brief return text of calculated model
+     */
+    QString Model2Text() const;
 
+    /*! \brief reimplment, if more model specfic model information should be printed out
+     */
+    virtual QString Model2Text_Private() const { return QString(); }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
