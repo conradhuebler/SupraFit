@@ -247,6 +247,8 @@ public:
     /*! \brief load previously cached system parameter
      */
     void LoadSystemParameter();
+    
+    inline void detach() { d.detach(); }
 private:
     QJsonObject m_systemObject;
 protected:

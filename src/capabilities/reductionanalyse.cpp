@@ -16,15 +16,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-#include "src/core/AbstractModel.h"
 
+#include "src/core/AbstractModel.h"
+#include "src/core/minimizer.h"
+#include "src/capabilities/montecarlostatistics.h"
 
 #include "reductionanalyse.h"
 
-ReductionAnalyse::ReductionAnalyse()
+ReductionAnalyse::ReductionAnalyse(OptimizerConfig config, OptimizationType type): m_config(config, type)
 {
 }
 
 ReductionAnalyse::~ReductionAnalyse()
 {
+}
+
+void ReductionAnalyse::CrossValidation()
+{
+}
+
+void ReductionAnalyse::PlainReduction()
+{
+    MCConfig config;
+    config.runtype = m_config.runtype;
+    config.optimizer_config = m_config.optimizer_config;
+    m_model->detach();
+    for(int i = m_model->DataPoints() - 1; i >= 0; --i)
+    {
+        QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
+        m_model->DependentModel()->CheckRow(i);
+        thread->setModel(m_model);
+        thread->run();
+        qDebug() << thread->Constants() << i;
+        delete thread;
+    }
 }

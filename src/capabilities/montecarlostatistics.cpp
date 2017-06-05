@@ -38,9 +38,8 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(const MCConfig &config): m_config(config),  m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+MonteCarloThread::MonteCarloThread(const MCConfig &config): m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_config(config)
 {
-    setAutoDelete(false);
 }
 
 MonteCarloThread::~MonteCarloThread()

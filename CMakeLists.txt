@@ -160,6 +160,7 @@ endif(testing)
 
 qt5_use_modules(models Core)
 set(utils_SRC
+                src/capabilities/reductionanalyse.cpp
                 src/capabilities/abstractsearchclass.cpp
                 src/capabilities/modelcomparison.cpp
                 src/capabilities/montecarlostatistics.cpp

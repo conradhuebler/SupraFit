@@ -20,6 +20,7 @@
 #include "src/global.h"
 #include "src/version.h"
 
+#include "src/capabilities/reductionanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/modelcomparison.h"
@@ -484,6 +485,12 @@ void ModelWidget::FastConfidence()
         m_model->setMoCoStatistic(constant_results[i], i);
     }
     delete statistic;
+    
+    ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    analyse->setModel(m_model);
+    analyse->PlainReduction();
+    delete analyse;
+    
 }
 
 void ModelWidget::WGStatistic()

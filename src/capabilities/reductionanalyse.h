@@ -20,22 +20,29 @@
 #ifndef REDUCTIONANALYSE_H
 #define REDUCTIONANALYSE_H
 
+#include "src/capabilities/abstractsearchclass.h"
+#include "src/core/AbstractModel.h"
+
 #include <QtCore/QObject>
-#include <QtCore/QWeakPointer>
+#include <QtCore/QSharedPointer>
 
 class AbstractModel;
+class Minimizer;
 
 class ReductionAnalyse : public QObject
 {
     Q_OBJECT
     
 public:
-    ReductionAnalyse();
+    ReductionAnalyse(OptimizerConfig config, OptimizationType type);
     ~ReductionAnalyse();
     void setModel(const QSharedPointer<AbstractModel > model) { m_model = model->Clone(); }
+    void CrossValidation();
+    void PlainReduction();
     
 private:
     QSharedPointer<AbstractModel> m_model;
+    AbstractConfig m_config;
 };
 
 #endif // REDUCTIONANALYSE_H
