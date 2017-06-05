@@ -227,7 +227,6 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
     if(!connected)
         if(connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))
             connected = true;
-        
     forceformatAxis();
 }
 

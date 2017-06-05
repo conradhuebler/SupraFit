@@ -116,6 +116,7 @@ public:
     QString ExportAsString() const;
     QStringList ExportAsStringList() const;
     
+
 private:
     Eigen::MatrixXd m_table, m_checked_table;
     QStringList m_header;
@@ -203,8 +204,8 @@ public:
     inline void setDependentTable(DataTable *table) { d->m_dependent_model = table; d->m_dependent_model->setCheckable(true); }
     void SwitchConentrations();
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
-    qreal InitialHostConcentration(int i);
-    qreal InitialGuestConcentration(int i);
+    qreal InitialHostConcentration(int i) const;
+    qreal InitialGuestConcentration(int i) const;
     inline int HostAssignment() const { return d->m_host_assignment; }
  
     qreal XValue(int i) const;
@@ -249,6 +250,11 @@ public:
     void LoadSystemParameter();
     
     inline void detach() { d.detach(); }
+    
+    /*! \brief model dependented printout of the independant parameter
+     */
+    virtual qreal PrintOutIndependent(int i, int format = 0) const { Q_UNUSED(format) return i; }
+    
 private:
     QJsonObject m_systemObject;
 protected:

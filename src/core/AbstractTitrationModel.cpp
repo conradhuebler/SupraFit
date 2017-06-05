@@ -116,4 +116,25 @@ QString AbstractTitrationModel::Model2Text_Private() const
     return text;
 }
 
+qreal AbstractTitrationModel::PrintOutIndependent(int i, int format) const
+{
+    switch(format){
+            case PlotMode::G:
+                    return InitialGuestConcentration(i); 
+                break;
+                
+            case PlotMode::H:   
+                    return InitialHostConcentration(i);
+                break;
+                
+            case PlotMode::HG:
+                    return InitialHostConcentration(i)/InitialGuestConcentration(i);                
+                break;    
+                
+            case PlotMode::GH:
+            default:
+                    return InitialGuestConcentration(i)/InitialHostConcentration(i);                   
+                break;    
+        };
+}
 #include "AbstractTitrationModel.moc"

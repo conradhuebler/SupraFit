@@ -69,7 +69,7 @@ void ScatterSeries::ShowLine(int state)
 }
 
 
-ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent), m_blocked(false)
+ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent), m_blocked(false), m_transformed(false)
 {
 }
 
@@ -107,38 +107,11 @@ void ChartWrapper::setData(QPointer<DataClass> model)
 
 void ChartWrapper::UpdateModel()
 {
-    /* FIXME - this a not working solution, will be done later
-    for(int i = 0; i < m_model->DataPoints(); ++i)
-    {
-        double x = XValue(i);
-        for(int j = 0; j < m_model->SeriesCount(); ++j)
-        {
-            QPointF new_point = QPointF(x, m_table->data(j,i));
-            if(m_model->SignalModel()->isChecked(j,i))
-            {
-                if(i < m_stored_series[j]->count())
-                {
-                    QPointF old_point =  m_stored_series[j]->at(i);
-                
-                    m_stored_series[j]->replace(old_point,new_point);
-                }
-                else
-                    m_stored_series[j]->append(new_point);
-            }
-        }
-    }
-    for(int j = 0; j < m_model->SeriesCount(); ++j)
-    {
-        for(int i = m_model->DataPoints(); i < m_stored_series[j]->count(); ++i)
-            m_stored_series[j]->remove(i);
-    }
-    */
-    
     for(int j = 0; j < m_model->SeriesCount(); ++j)
         m_stored_series[j]->clear();
     for(int i = 0; i < m_model->DataPoints(); ++i)
     {
-        double x = XValue(i);
+        double x = m_model->PrintOutIndependent(i);
         for(int j = 0; j < m_model->SeriesCount(); ++j)
         {
             if(m_model->DependentModel()->isChecked(j,i))
@@ -193,35 +166,6 @@ QColor ChartWrapper::ColorCode(int i) const
         default:
             return Qt::darkGray;
     }
-}
-
-qreal ChartWrapper::XValue(int i) const
-{
-#warning sometimes this will be made cool
-    if(m_model->IndependentVariableSize() == 2) //FIXME 
-    {
-        switch(m_plotmode){
-            case PlotMode::G:
-                    return m_model->InitialGuestConcentration(i); 
-                break;
-                
-            case PlotMode::H:   
-                    return m_model->InitialHostConcentration(i);
-                break;
-                
-            case PlotMode::HG:
-                    return m_model->InitialHostConcentration(i)/m_model->InitialGuestConcentration(i);                
-                break;    
-                
-            case PlotMode::GH:
-            default:
-                    return m_model->InitialGuestConcentration(i)/m_model->InitialHostConcentration(i);                   
-                break;    
-        };
-    }
-    else
-        return m_model->IndependentModel()->data(0,i);
-    return 0;
 }
 
 void ChartWrapper::SetBlocked(int blocked) 

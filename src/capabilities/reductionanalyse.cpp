@@ -50,7 +50,7 @@ void ReductionAnalyse::PlainReduction()
         thread->run();
         QList<qreal > constants = thread->Constants();
         for(int j = 0; j < constants.size(); ++j)
-            m_series[j].append(QPointF(i, constants[j]));
+            m_series[j].append(QPointF(m_model->PrintOutIndependent(i), constants[j]));
         delete thread;
     }
 }

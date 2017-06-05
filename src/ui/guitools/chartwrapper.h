@@ -72,14 +72,8 @@ signals:
 class ChartWrapper : public QObject
 {
     Q_OBJECT
-public:
-    enum PlotMode { 
-        H = 1, 
-        G = 2, 
-        HG = 3, 
-        GH = 4
-    };
     
+public:
     ChartWrapper(QObject *parent = 0);
     ~ChartWrapper();
     void setData(QPointer< DataClass > model);
@@ -87,8 +81,7 @@ public:
     inline QPointer<QtCharts::QXYSeries > Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
-    inline void setPlotMode(PlotMode plotmode) { m_plotmode = plotmode; }
-    
+    void TransformModel(QPointer< DataClass > model) { if(!m_transformed) m_model = model; m_transformed = true; }
 public slots:
     void UpdateModel();
     void showSeries(int i);
@@ -96,14 +89,13 @@ public slots:
     
 private:
     QColor ColorCode(int i) const;
-    qreal XValue(int i) const;
     const DataTable *m_table;
     QList<QStandardItemModel *> m_plot_signal_list;
     QList<QPointer<QtCharts::QVXYModelMapper> > m_plot_mapper;
     QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
-    PlotMode m_plotmode;
+//     PlotMode m_plotmode;
     QPointer< DataClass > m_model;
-    bool m_blocked;
+    bool m_blocked, m_transformed;
     
 signals:
     void ModelChanged();

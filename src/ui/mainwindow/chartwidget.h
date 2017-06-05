@@ -68,7 +68,6 @@ private:
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
     void Paint();
-    ChartWrapper::PlotMode m_plot_mode;
     QSharedPointer<ChartWrapper > m_data_mapper;
     
 private slots:

@@ -70,7 +70,7 @@ ChartWidget::ChartWidget()
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(m_signalview,1, 0);
     layout->addWidget(m_errorview, 2, 0);
-    layout->addWidget(m_x_scale, 3, 0);
+//     layout->addWidget(m_x_scale, 3, 0);
     
     m_signalchart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     m_errorchart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
@@ -89,9 +89,9 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
 {
     m_rawdata = rawdata;
     
-    ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
+//     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
     m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-    m_data_mapper->setPlotMode(j);
+//     m_data_mapper->setPlotMode(j);
     m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
     m_data_mapper->setData(m_rawdata.data());
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
@@ -116,18 +116,19 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
 {
     m_models << model;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
+//     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
     ChartWrapper *signal_wrapper = new ChartWrapper(this);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper, SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper, SLOT(showSeries(int)));
-    signal_wrapper->setPlotMode(j);
+//     signal_wrapper->setPlotMode(j);
     signal_wrapper->setDataTable(model->ModelTable());
+    m_data_mapper->TransformModel(model.data());
     signal_wrapper->setData(model.data());
     
     ChartWrapper *error_wrapper = new ChartWrapper(this);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper, SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper, SLOT(showSeries(int)));
-    error_wrapper->setPlotMode(j);
+//     error_wrapper->setPlotMode(j);
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model.data());
     
@@ -167,12 +168,13 @@ void ChartWidget::Repaint()
 {         
     if(!m_data_mapper)
         return;
-    if(m_plot_mode != (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1))
+    /*if(m_plot_mode != (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1))
     {
         m_plot_mode = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1);
         m_data_mapper->setPlotMode(m_plot_mode);
-        m_data_mapper->UpdateModel();
-    }    
+        
+    } */  
+    m_data_mapper->UpdateModel();
     QVector<int > trash;
 //     for(int i= 0; i < m_models.size(); ++i)
 //     {

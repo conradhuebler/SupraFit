@@ -47,6 +47,14 @@ class AbstractTitrationModel : public AbstractModel
     Q_OBJECT
 
 public:
+    
+    enum PlotMode { 
+        H = 1, 
+        G = 2, 
+        HG = 3, 
+        GH = 4
+    };
+    
     AbstractTitrationModel(DataClass *data);
     virtual ~AbstractTitrationModel();
 
@@ -91,6 +99,9 @@ public:
      */
     virtual QString Model2Text_Private() const override;
    
+    /*! \brief reimplementantion model dependented printout of the independant parameter
+     */
+    virtual qreal PrintOutIndependent(int i, int format = 4) const override;
 protected:    
     /*
      * set the concentration of the @param int i datapoint to

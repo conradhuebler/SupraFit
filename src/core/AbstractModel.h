@@ -145,7 +145,7 @@ public:
     /*! \brief Return a formated value as string of the global parameter with the value
      */
     virtual QString formatedLocalParameter(qreal value, int localParamater = 0) const { Q_UNUSED(localParamater) return QString::number(value); };
-    
+        
     void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
     void setOptParamater(QList< qreal >& parameter);

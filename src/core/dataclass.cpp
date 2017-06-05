@@ -579,12 +579,12 @@ void DataClass::SwitchConentrations()
     }
 }
 
-qreal DataClass::InitialGuestConcentration(int i)
+qreal DataClass::InitialGuestConcentration(int i) const
 {
     return d->m_independent_model->data(!HostAssignment(),i)*d->m_scaling[!HostAssignment()];
 }
 
-qreal DataClass::InitialHostConcentration(int i)
+qreal DataClass::InitialHostConcentration(int i) const
 {
     return d->m_independent_model->data(HostAssignment(),i)*d->m_scaling[HostAssignment()];
 }
