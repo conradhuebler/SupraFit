@@ -1,4 +1,3 @@
-
 /*
  * <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
@@ -17,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
+#include "src/global_config.h"
 
 #include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/modelcomparison.h"
@@ -105,7 +106,8 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     QGridLayout *layout = new QGridLayout;
     
     setLayout(layout);
-    
+    m_buttons = new QWidget;
+    m_buttons->setEnabled(false);
     m_datawidget = new DataWidget;
     connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
     connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
@@ -120,66 +122,74 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
-    m_add = new QPushButton(tr("Add Model"));
-    m_add->setFlat(true);
-    m_add->setDisabled(true);
+    m_add_nmr = new QPushButton(tr("Add NMR Model"));
+    m_add_nmr->setFlat(true);
+    
+    m_add_kinetics = new QPushButton(tr("Add Kinetic Model"));
+    m_add_kinetics->setFlat(true);
+    
+    m_add_itc = new QPushButton(tr("Add ITC Model"));
+    m_add_itc->setFlat(true);
     
     m_optimize = new QPushButton(tr("Optimize All"));
     m_optimize->setFlat(true);
-    m_optimize->setDisabled(true);
     connect(m_optimize, SIGNAL(clicked()), this, SLOT(OptimizeAll()));
     
     m_statistics = new QPushButton(tr("Statistics"));
     m_statistics->setFlat(true);
-    m_statistics->setDisabled(true);
     connect(m_statistics, SIGNAL(clicked()), m_statistic_dialog, SLOT(show()));
     
     m_close_all = new QPushButton(tr("Close All"));
     m_close_all->setFlat(true);
     m_close_all->setDisabled(true);
     connect(m_close_all, SIGNAL(clicked()), this, SLOT(CloseAll()));
-
+#ifdef NMR_Models
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
     ItoI_action->setData(ItoI);
     connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_independet_2 << ItoI_action;
+    m_nmr_model << ItoI_action;
     
     QAction *IItoI_ItoI_action = new QAction(this);
     IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
     IItoI_ItoI_action->setData(IItoI_ItoI);
     connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_independet_2 << IItoI_ItoI_action;
+    m_nmr_model << IItoI_ItoI_action;
     
     QAction *ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
     ItoI_ItoII_action->setData(ItoI_ItoII);
     connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_independet_2 << ItoI_ItoII_action;
+    m_nmr_model << ItoI_ItoII_action;
     
     QAction *II_I_ItoI_ItoII_action = new QAction(this);
     II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
     II_I_ItoI_ItoII_action->setData(IItoI_ItoI_ItoII);
     connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_independet_2 << II_I_ItoI_ItoII_action;
+    m_nmr_model << II_I_ItoI_ItoII_action;
+#endif
     
+#ifdef Kinetic_Models
     QAction *mm_action = new QAction(this);
     mm_action->setText(tr("Michaelis Menten"));
     mm_action->setData(Michaelis_Menten);
     connect(mm_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_independet_1 << mm_action;
+    m_kinetcs_model << mm_action;
     
     QAction *first_order_action = new QAction(this);
     first_order_action->setText(tr("First Order Kinetics"));
     first_order_action->setData(First_Order_Kinetics);
     connect(first_order_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_independet_1 << first_order_action;
+    m_kinetcs_model << first_order_action;
+#endif
     
+#ifdef ITC_Models
     QAction *itc_ItoI_action = new QAction(this);
     itc_ItoI_action->setText(tr("ITC: 1:1-Model"));
     itc_ItoI_action->setData(itc_ItoI);
     connect(itc_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_independet_2 << itc_ItoI_action;
+    m_itc_model << itc_ItoI_action;
+#endif
     
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
@@ -188,12 +198,19 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     ParseScriptedModels();
     m_independet_2 << m_script_action;
 #endif
-
-    layout->addWidget(m_add, 0, 0);
-    layout->addWidget(m_optimize, 0, 1);
-    layout->addWidget(m_statistics, 0, 2);
-    layout->addWidget(m_close_all, 0, 3);
-    layout->addWidget(m_modelsWidget, 1, 0, 1, 4);
+    
+    QHBoxLayout *buttons = new QHBoxLayout;
+    buttons->addWidget(m_add_nmr);
+    buttons->addWidget(m_add_itc);
+    buttons->addWidget(m_add_kinetics);
+    buttons->addWidget(m_optimize);
+    buttons->addWidget(m_statistics);
+    buttons->addWidget(m_close_all);
+    
+    m_buttons->setLayout(buttons);
+    
+    layout->addWidget(m_buttons, 0, 0);
+    layout->addWidget(m_modelsWidget, 1, 0);
 }
 
 ModelDataHolder::~ModelDataHolder()
@@ -210,8 +227,8 @@ ModelDataHolder::~ModelDataHolder()
 void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
 {
     m_data = data;
+    m_buttons->setEnabled(true);
     m_datawidget->setData(m_data, wrapper);
-    m_add->setEnabled(true);
     m_modelsWidget->setDataTab(m_datawidget); 
     addToMenu(m_data->IndependentModel()->columnCount());
 }
@@ -225,10 +242,21 @@ void ModelDataHolder::addToMenu(int IndependetCount)
     
     QMenu *menu = new QMenu;
     if(IndependetCount == 1)
-        addMenu(m_independet_1, menu);
+    {
+        addMenu(m_kinetcs_model, menu);
+        m_add_kinetics->setMenu(menu);
+        m_add_nmr->hide();
+        m_add_itc->hide();
+    }
     else if(IndependetCount == 2)
-        addMenu(m_independet_2, menu);
-    m_add->setMenu(menu);
+    {
+        addMenu(m_nmr_model, menu);
+        m_add_nmr->setMenu(menu);
+        menu = new QMenu;
+        addMenu(m_itc_model, menu);
+        m_add_itc->setMenu(menu);
+        m_add_kinetics->hide();
+    }
 }
 
 

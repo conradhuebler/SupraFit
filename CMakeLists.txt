@@ -19,7 +19,15 @@ option (experimental
 option (testing
     "Enable unittests" OFF)
  
-
+option (NMR_Models
+    "Enable NMR Titration models" ON)
+    
+option (ITC_Models
+    "Enable ITC Titration models" ON)
+    
+option (Kinetic_Models
+    "Enable Kinetic Models" ON)
+ 
 # Get the current working branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD

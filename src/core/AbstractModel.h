@@ -50,7 +50,7 @@ class AbstractModel : public DataClass
   
 public:
     AbstractModel(DataClass *data);
-    ~AbstractModel();
+    virtual ~AbstractModel();
     
     /*! \brief set the OptimizationType to type and returns the Parameters
      * 

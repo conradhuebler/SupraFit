@@ -74,7 +74,7 @@ public:
     DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table);
     DataTable(DataTable *other);
     DataTable(DataTable &other);
-    ~DataTable();
+    virtual ~DataTable();
     int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     virtual Qt::ItemFlags flags(const QModelIndex& index) const Q_DECL_OVERRIDE;

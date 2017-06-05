@@ -115,8 +115,9 @@ public slots:
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<TabWidget > m_modelsWidget;
-    QPointer<QPushButton > m_add, m_optimize, m_statistics, m_close_all;
-    QVector<QPointer<QAction > > m_independet_1, m_independet_2;
+    QPointer<QPushButton > m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all;
+    QVector<QPointer<QAction > > m_nmr_model, m_kinetcs_model, m_itc_model;
+    QWidget *m_buttons;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
     QVector<QWeakPointer< AbstractModel > > m_models;
