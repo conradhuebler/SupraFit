@@ -493,6 +493,7 @@ void ModelWidget::FastConfidence()
 
 void ModelWidget::DoReductionAnalyse()
 {
+    Waiter wait;
     ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
     analyse->setModel(m_model);
     analyse->PlainReduction();
@@ -505,7 +506,8 @@ void ModelWidget::DoReductionAnalyse()
     {
         LineSeries *serie = new LineSeries;
         serie->append(series[i]);
-        view->addSeries(serie);
+        serie->setName( m_model->GlobalParameterName(i));
+        view->addSeries(serie, true);
     }
     m_statistic_result->setWidget(view, "Reduction Analyse");
     m_statistic_result->show();
