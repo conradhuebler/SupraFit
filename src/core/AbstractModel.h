@@ -317,6 +317,9 @@ public:
     /*! \brief reimplment, if more model specfic model information should be printed out
      */
     virtual QString Model2Text_Private() const { return QString(); }
+    
+    AbstractModel &operator=(const AbstractModel &other);
+    AbstractModel *operator=(const AbstractModel *other);
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

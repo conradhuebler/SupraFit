@@ -555,5 +555,21 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     Calculate();
 }
 
+AbstractModel & AbstractModel::operator=(const AbstractModel& other)
+{
+    ImportModel(other.ExportModel());
+    setActiveSignals(other.ActiveSignals());
+    setLockedParameter(other.LockedParamters());
+    setOptimizerConfig(other.getOptimizerConfig());
+    return *this;
+}
 
+AbstractModel * AbstractModel::operator=(const AbstractModel* other)
+{
+    ImportModel(other->ExportModel());
+    setActiveSignals(other->ActiveSignals());
+    setLockedParameter(other->LockedParamters());
+    setOptimizerConfig(other->getOptimizerConfig());
+    return this;
+}
 #include "AbstractModel.moc"
