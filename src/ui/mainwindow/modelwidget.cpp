@@ -155,10 +155,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     QAction *fast_conf = new QAction(tr("Confidence"));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
     
+    QAction *reduct = new QAction(tr("Reduction Analyse"));
+    connect(reduct, SIGNAL(triggered()), this, SLOT(DoReductionAnalyse()));
+    
     QMenu *menu = new QMenu;
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
+    menu->addAction(reduct);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
     
@@ -485,12 +489,27 @@ void ModelWidget::FastConfidence()
         m_model->setMoCoStatistic(constant_results[i], i);
     }
     delete statistic;
-    
+}
+
+void ModelWidget::DoReductionAnalyse()
+{
     ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
     analyse->setModel(m_model);
     analyse->PlainReduction();
-    delete analyse;
+    QtCharts::QChart *chart = new QtCharts::QChart;
     
+    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    QPointer<ChartView > view = new ChartView(chart);
+    QVector<QList< QPointF> > series = analyse->Series();
+    for(int i = 0; i < series.size(); ++i)
+    {
+        LineSeries *serie = new LineSeries;
+        serie->append(series[i]);
+        view->addSeries(serie);
+    }
+    m_statistic_result->setWidget(view, "Reduction Analyse");
+    m_statistic_result->show();
+    delete analyse;
 }
 
 void ModelWidget::WGStatistic()

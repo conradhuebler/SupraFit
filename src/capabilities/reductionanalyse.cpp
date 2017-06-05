@@ -41,13 +41,16 @@ void ReductionAnalyse::PlainReduction()
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
     m_model->detach();
+    m_series.resize(m_model->GlobalParameterSize());
     for(int i = m_model->DataPoints() - 1; i >= 0; --i)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
         m_model->DependentModel()->CheckRow(i);
         thread->setModel(m_model);
         thread->run();
-        qDebug() << thread->Constants() << i;
+        QList<qreal > constants = thread->Constants();
+        for(int j = 0; j < constants.size(); ++j)
+            m_series[j].append(QPointF(i, constants[j]));
         delete thread;
     }
 }

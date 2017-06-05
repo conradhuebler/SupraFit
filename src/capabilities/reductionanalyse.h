@@ -39,10 +39,11 @@ public:
     void setModel(const QSharedPointer<AbstractModel > model) { m_model = model->Clone(); }
     void CrossValidation();
     void PlainReduction();
-    
+    inline QVector<QList<QPointF >> Series() { return m_series; }
 private:
     QSharedPointer<AbstractModel> m_model;
     AbstractConfig m_config;
+    QVector<QList<QPointF >> m_series;
 };
 
 #endif // REDUCTIONANALYSE_H

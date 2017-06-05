@@ -149,6 +149,7 @@ private slots:
     void Save2File();
     void ExportSimModel();
     void FastConfidence();
+    void DoReductionAnalyse();
     void SplitterResized();
     
 public slots:
