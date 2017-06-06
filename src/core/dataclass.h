@@ -171,8 +171,6 @@ public:
         EmptyData = 3
     };
     
-
-    
     inline void addPoint(QVector<qreal > conc, QVector<qreal > data)
     {
         d->m_independent_model->insertRow(conc);
@@ -181,7 +179,6 @@ public:
             for(int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
-    
 
     inline int Size() const { return DataPoints(); } 
     inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
@@ -243,7 +240,7 @@ public:
     
     /*! \brief Overrides system parameter
      */
-    void OverrideSystemParameter(const QHash<QString, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
+    void OverrideSystemParameter(const QMap<QString, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
     
     /*! \brief load previously cached system parameter
      */
@@ -257,10 +254,10 @@ public:
     
 private:
     QJsonObject m_systemObject;
+    
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;
-    QHash<QString, SystemParameter> m_system_parameter;
-    
+    QMap<QString, SystemParameter> m_system_parameter;
         
 signals:
     void RowAdded();

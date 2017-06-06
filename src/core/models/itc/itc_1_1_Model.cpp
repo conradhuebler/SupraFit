@@ -43,15 +43,6 @@ itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
     DeclearSystemParameter();
 }
 
-itc_ItoI_Model::itc_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
-{
-    setName(tr("itc_1:1-Model"));
-    m_local_parameter = new DataTable(1, SeriesCount(), this);
-    InitialGuess();
-    DeclearSystemParameter();
-}
-
-
 itc_ItoI_Model::~itc_ItoI_Model() 
 {
     
@@ -150,12 +141,12 @@ void itc_ItoI_Model::CalculateVariables()
 QSharedPointer<AbstractModel > itc_ItoI_Model::Clone()
 {
     QSharedPointer<AbstractModel > model = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(this), &QObject::deleteLater);
+    model.data()->setData( m_data );
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
-    
 }
 
 qreal itc_ItoI_Model::BC50()

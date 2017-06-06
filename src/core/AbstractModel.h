@@ -320,6 +320,7 @@ public:
     
     AbstractModel &operator=(const AbstractModel &other);
     AbstractModel *operator=(const AbstractModel *other);
+    inline void setData(DataClass *data) { m_data = data;}
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
