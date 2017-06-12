@@ -43,6 +43,11 @@ struct ConfidenceBar
     qreal upper = 0;
 };
 
+struct ModelOption
+{
+    QStringList values;
+    QString value = "unset"; 
+};
 
 class AbstractModel : public DataClass
 {
@@ -321,6 +326,34 @@ public:
     AbstractModel &operator=(const AbstractModel &other);
     AbstractModel *operator=(const AbstractModel *other);
     inline void setData(DataClass *data) { m_data = data;}
+    
+    inline void addOption(const QString &name, const QStringList &values)
+    {
+        if(m_model_options.contains(name))
+            return;
+        ModelOption option;
+        option.values = values;
+        m_model_options[name] = option;
+    }
+    
+    void setOption(const QString &name, const QString &value);
+    
+    inline QString getOption(const QString &name)
+    {
+        if(!m_model_options.contains(name))
+            return QString("unset");
+        ModelOption option = m_model_options[name];
+        return option.value;
+    }
+    
+    inline const QStringList getAllOptions() const { return m_model_options.keys(); }
+    
+    inline const QStringList getSingleOptionValues(const QString &name) const { if(m_model_options.contains(name)) return m_model_options[name].values; else return QStringList(); }
+    
+    inline virtual void DeclareOptions() { }
+    
+    inline virtual void EvaluateOptions() { }
+    
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -373,7 +406,8 @@ protected:
     QString m_name;
         
     DataClass *m_data;
-        
+    QMap<QString, ModelOption > m_model_options;
+    
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

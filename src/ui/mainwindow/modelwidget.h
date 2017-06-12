@@ -62,6 +62,7 @@ class StatisticDialog;
 class SpinBox;
 class ModelElement;
 class SystemParameterWidget;
+class OptionsWidget;
 
 struct ModelHistoryElement;
 struct Charts;
@@ -107,6 +108,7 @@ private:
     QPointer<StatisticDialog> m_statistic_dialog;
     QPushButton *m_switch, *m_minimize_all;
     QLabel *m_bc_50, *m_converged_label; 
+    OptionsWidget *m_model_options_widget;
     QGridLayout *m_layout;
     bool m_pending;
     QList<int > ActiveSignals();

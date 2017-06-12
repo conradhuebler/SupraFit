@@ -36,13 +36,38 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(dat
     setName(tr("2:1/1:1-Model"));
     m_local_parameter = new DataTable(3, SeriesCount(), this);
     InitialGuess();   
-    
+    DeclareOptions();
     AbstractTitrationModel::Calculate();
 }
     
 IItoI_ItoI_Model::~IItoI_ItoI_Model()
 {
     
+}
+
+void IItoI_ItoI_Model::DeclareOptions()
+{
+    QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
+    addOption("Cooperativity", cooperativity);
+}
+
+void IItoI_ItoI_Model::EvaluateOptions()
+{
+    QString cooperativitiy = getOption("Cooperativity");
+    
+    if(cooperativitiy == "noncooperative")
+    {
+        m_global_parameter[0] = log10(4*qPow(10,m_global_parameter[1]));
+    }else if(cooperativitiy == "additive")
+    {
+        for(int i = 0; i < SeriesCount(); ++i)
+            m_local_parameter->data(1,i) = 2*m_local_parameter->data(2,i);
+    }else if(cooperativitiy == "statistical")
+    {
+        for(int i = 0; i < SeriesCount(); ++i)
+            m_local_parameter->data(1,i) = 2*m_local_parameter->data(2,i);
+        m_global_parameter[0] = 4*m_global_parameter[1];
+    }
 }
 
 void IItoI_ItoI_Model::InitialGuess()
@@ -137,15 +162,20 @@ void IItoI_ItoI_Model::CalculateVariables()
 
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
+    QString cooperativity = getOption("Cooperativity");
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        addGlobalParameter(m_global_parameter);
+        if(cooperativity == "full" || cooperativity == "additive")
+            addGlobalParameter(m_global_parameter);
+        else
+            addGlobalParameter(m_global_parameter[1]);
     }
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
-            addLocalParameter(1);
+            if(cooperativity == "full" || cooperativity == "noncooperative")
+                addLocalParameter(1);
             addLocalParameter(2);
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
                 addLocalParameter(0);

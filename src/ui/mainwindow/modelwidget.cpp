@@ -47,6 +47,7 @@
 #include "src/ui/widgets/results/wgsresultswidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
+#include "src/ui/widgets/optionswidget.h"
 #include "src/ui/mainwindow/chartwidget.h"
 
 #include <QtMath>
@@ -168,6 +169,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     
     const_layout->addWidget(m_minimize_all);
     m_layout->addLayout(const_layout, 0, 0, 1, m_model->GlobalParameterSize()+3);
+    
+    m_model_options_widget = new OptionsWidget(m_model);
+    if(m_model->getAllOptions().size())
+        m_layout->addWidget(m_model_options_widget, 1, 0, 1, m_model->GlobalParameterSize()+3);
+    
     m_sign_layout = new QVBoxLayout;
     
     m_sign_layout->setAlignment(Qt::AlignTop); 
@@ -193,7 +199,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     area->setWidgetResizable(true);
     area->setWidget(scroll);
     
-    m_layout->addWidget(area, 2,0,1,m_model->GlobalParameterSize()+3);
+    m_layout->addWidget(area, 3,0,1,m_model->GlobalParameterSize()+3);
     
     if(m_model->Type() == 1)
         DiscreteUI();
@@ -269,9 +275,9 @@ void ModelWidget::DiscreteUI()
     connect(actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
     connect(actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     
-    m_layout->addWidget(actions, 3, 0,1,m_model->GlobalParameterSize()+3);  
+    m_layout->addWidget(actions, 4, 0,1,m_model->GlobalParameterSize()+3);  
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
-    m_layout->addWidget(m_optim_flags, 4, 0,1,m_model->GlobalParameterSize()+3);  
+    m_layout->addWidget(m_optim_flags, 5, 0,1,m_model->GlobalParameterSize()+3);  
    
 }
 
