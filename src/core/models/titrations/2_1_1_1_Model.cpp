@@ -54,20 +54,29 @@ void IItoI_ItoI_Model::DeclareOptions()
 void IItoI_ItoI_Model::EvaluateOptions()
 {
     QString cooperativitiy = getOption("Cooperativity");
+
+    auto global_coop = [this](){
+        this->m_global_parameter[1] = log10(double(4)*qPow(10,this->m_global_parameter[0]));
+    };
+    
+    auto local_coop = [this]()
+    {
+        for(int i = 0; i < this->SeriesCount(); ++i)
+            this->m_local_parameter->data(1,i) = 2*this->m_local_parameter->data(2,i);
+    };
     
     if(cooperativitiy == "noncooperative")
     {
-        m_global_parameter[0] = log10(4*qPow(10,m_global_parameter[1]));
+        global_coop();
     }else if(cooperativitiy == "additive")
     {
-        for(int i = 0; i < SeriesCount(); ++i)
-            m_local_parameter->data(1,i) = 2*m_local_parameter->data(2,i);
+        local_coop();
     }else if(cooperativitiy == "statistical")
     {
-        for(int i = 0; i < SeriesCount(); ++i)
-            m_local_parameter->data(1,i) = 2*m_local_parameter->data(2,i);
-        m_global_parameter[0] = 4*m_global_parameter[1];
+        local_coop();
+        global_coop();
     }
+    
 }
 
 void IItoI_ItoI_Model::InitialGuess()
@@ -168,7 +177,7 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
         if(cooperativity == "full" || cooperativity == "additive")
             addGlobalParameter(m_global_parameter);
         else
-            addGlobalParameter(m_global_parameter[1]);
+            addGlobalParameter(1);
     }
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
@@ -188,6 +197,7 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
+
     return parameter;
 }
 

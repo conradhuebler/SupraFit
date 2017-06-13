@@ -333,6 +333,7 @@ public:
             return;
         ModelOption option;
         option.values = values;
+        option.value = values.first();
         m_model_options[name] = option;
     }
     

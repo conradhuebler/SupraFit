@@ -544,7 +544,7 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
-
+    
 }
 
 

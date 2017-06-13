@@ -50,22 +50,34 @@ ItoI_ItoII_Model::~ItoI_ItoII_Model()
 void ItoI_ItoII_Model::DeclareOptions()
 {
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    addOption("Cooperativtiy", cooperativity);
+    addOption("Cooperativity", cooperativity);
 }
 
 void ItoI_ItoII_Model::EvaluateOptions()
 {
     QString cooperativitiy = getOption("Cooperativity");
     
+    auto global_coop = [this]()
+    {
+        this->m_global_parameter[0] = log10(double(4)*qPow(10,this->m_global_parameter[1]));
+    };
+    
+    auto local_coop = [this]()
+    {
+        for(int i = 0; i < this->SeriesCount(); ++i)
+            this->m_local_parameter->data(2,i) = 2*(this->m_local_parameter->data(1,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
+    };
+    
     if(cooperativitiy == "noncooperative")
     {
-        
+        global_coop();
     }else if(cooperativitiy == "additive")
     {
-        
+        local_coop();
     }else if(cooperativitiy == "statistical")
     {
-        
+        local_coop();
+        global_coop();
     }
 }
 
@@ -96,16 +108,22 @@ void ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
+    QString cooperativity = getOption("Cooperativity");
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        setOptParamater(m_global_parameter);
+        if(cooperativity == "full" || cooperativity == "additive")
+            addGlobalParameter(m_global_parameter);
+        else
+            addGlobalParameter(1);
     }
+    
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
             addLocalParameter(1);
-            addLocalParameter(2);
+            if(cooperativity == "full" || cooperativity == "noncooperative")
+                addLocalParameter(2);
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
                 addLocalParameter(0);
         }
@@ -113,11 +131,12 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
         {
             addLocalParameter(1);
         }
-        
     } 
+    
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
+    qDebug() << parameter;
     return parameter;
 }
 

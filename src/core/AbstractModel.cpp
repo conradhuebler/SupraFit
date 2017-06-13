@@ -562,7 +562,7 @@ void AbstractModel::setOption(const QString& name, const QString& value)
     if(!m_model_options.contains(name))
         return; 
      m_model_options[name].value = value;
-    OptimizeParameters_Private(m_last_optimization);
+    OptimizeParameters(m_last_optimization);
 }
 
 

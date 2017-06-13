@@ -353,6 +353,7 @@ void ModelWidget::recalulate()
     CollectParameters();
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));
+    QTimer::singleShot(1, m_statistic_widget, SLOT(Update()));
     m_pending = false;
 }
 

@@ -39,6 +39,8 @@ public:
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
     
+public slots:
+     void Update();
     
 private:
     QSharedPointer<AbstractModel > m_model;
@@ -49,7 +51,7 @@ private:
     
 private slots:
     void toggleView();
-    void Update();
+   
 };
 
 #endif // STATISTICWIDGET_H
