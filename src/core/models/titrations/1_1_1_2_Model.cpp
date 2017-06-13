@@ -108,22 +108,27 @@ void ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
+    QList<int> locked; 
     QString cooperativity = getOption("Cooperativity");
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        if(cooperativity == "full" || cooperativity == "additive")
-            addGlobalParameter(m_global_parameter);
-        else
-            addGlobalParameter(1);
+        QList<int> lock = addGlobalParameter(m_global_parameter);
+        if(cooperativity == "statistical" || cooperativity == "noncooperative")
+            lock[0] = 0;
+        locked << lock;
     }
     
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         {
-            addLocalParameter(1);
-            if(cooperativity == "full" || cooperativity == "noncooperative")
-                addLocalParameter(2);
+            locked << addLocalParameter(1);
+            QList<int> lock = addLocalParameter(2);
+            
+            if(cooperativity == "additive" || cooperativity == "statistical")
+                 locked << ToolSet::InvertLockedList(lock);
+            else
+                locked << lock;
             if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
                 addLocalParameter(0);
         }
@@ -132,11 +137,13 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
             addLocalParameter(1);
         }
     } 
-    
+     
+    setLockedParameter(locked);
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     qDebug() << parameter;
+    qDebug() << locked;
     return parameter;
 }
 
@@ -178,7 +185,7 @@ void ItoI_ItoII_Model::CalculateVariables()
     
     qreal K12= qPow(10, GlobalParameter().last());
     qreal K11 = qPow(10, GlobalParameter().first());
-    
+    qDebug() << LockedParamters();
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);

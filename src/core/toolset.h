@@ -57,7 +57,7 @@ namespace ToolSet{
     qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter);
     
     qreal finv(qreal p, int m, int n);
-    
+    QList<int> InvertLockedList(const QList<int> &locked);
 }
 
 namespace Print{

@@ -284,25 +284,33 @@ void AbstractModel::setLocalParameterSeries(const Vector& vector, int series)
         m_local_parameter->setRow(vector, series);
 }
 
-void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
+QList<int> AbstractModel::addGlobalParameter(QList<qreal>& parameter)
 {
+    QList<int> locked;
     for(int i = 0; i < parameter.size(); ++i)
     {
         m_opt_para << &parameter[i];    
+        locked << 1;
     }
+    return locked;
 }
 
-void AbstractModel::addGlobalParameter(int i)
+int AbstractModel::addGlobalParameter(int i)
 {
     if(i < m_global_parameter.size())
         m_opt_para << &m_global_parameter[i]; 
- 
+    return 1;
 }
 
-void AbstractModel::addLocalParameter(int i)
+QList<int > AbstractModel::addLocalParameter(int i)
 {
+    QList<int> locked;
     for(int j = 0; j < m_local_parameter->rowCount(); ++j)
+    {
         m_opt_para << &m_local_parameter->data(i, j);    
+        locked << 1;
+    }
+    return locked;
 }
 
 

@@ -256,6 +256,14 @@ namespace ToolSet{
         }
         return f_value;
      }
+     
+     QList<int> InvertLockedList(const QList<int> &locked)
+     {
+         QList<int> lock;
+         for(int i = 0; i < locked.size(); ++i)
+             lock << !locked[i];
+         return lock;
+    }
 }
 
 namespace Print{
