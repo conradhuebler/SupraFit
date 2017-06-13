@@ -18,6 +18,7 @@
  */
 
 
+#include "src/core/toolset.h"
 
 #include "src/core/models.h"
 
@@ -56,13 +57,13 @@ void IItoI_ItoI_Model::EvaluateOptions()
     QString cooperativitiy = getOption("Cooperativity");
 
     auto global_coop = [this](){
-        this->m_global_parameter[1] = log10(double(4)*qPow(10,this->m_global_parameter[0]));
+        this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
     };
     
     auto local_coop = [this]()
     {
         for(int i = 0; i < this->SeriesCount(); ++i)
-            this->m_local_parameter->data(1,i) = 2*this->m_local_parameter->data(2,i);
+            this->m_local_parameter->data(1,i) = 2*(this->m_local_parameter->data(2,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
     };
     
     if(cooperativitiy == "noncooperative")
@@ -81,12 +82,7 @@ void IItoI_ItoI_Model::EvaluateOptions()
 
 void IItoI_ItoI_Model::InitialGuess()
 {
-    ItoI_Model *model = new ItoI_Model(m_data);
-    m_K11 = model->GlobalParameter()[model->GlobalParameterSize() -1];
-    m_K21 = m_K11/2;
-    delete model;
-    
-    m_global_parameter = QList<qreal>() << m_K21 << m_K11;
+    m_global_parameter = QList<qreal>() << 2 << 4;
     setOptParamater(m_global_parameter);
     
     m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
@@ -101,17 +97,6 @@ void IItoI_ItoI_Model::InitialGuess()
     }
 
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    /*
-    Minimizer *mini = new Minimizer;
-    QSharedPointer<AbstractTitrationModel > model = QSharedPointer<ItoI_Model>(this, &QObject::deleteLater);
-    model.data()->ImportJSON(ExportJSON());
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParamters());
-    mini->setModel(model);
-    mini->Minimize(OptimizationType::ComplexationConstants);
-    ImportJSON(mini->Parameter());
-    
-    delete mini;*/
     AbstractTitrationModel::Calculate();
 }
 
@@ -171,29 +156,29 @@ void IItoI_ItoI_Model::CalculateVariables()
 
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
+    QList<int> locked; 
     QString cooperativity = getOption("Cooperativity");
+   
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        if(cooperativity == "full" || cooperativity == "additive")
-            addGlobalParameter(m_global_parameter);
-        else
-            addGlobalParameter(1);
+        QList<int> lock = addGlobalParameter(m_global_parameter);
+        if(cooperativity == "statistical" || cooperativity == "noncooperative")
+            lock[0] = 0;
+        locked << lock;
     }
+    
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
-        {
-            if(cooperativity == "full" || cooperativity == "noncooperative")
-                addLocalParameter(1);
-            addLocalParameter(2);
-            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addLocalParameter(0);
-        }
-        if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) && ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
-        {
-            addLocalParameter(1);
-        }
-    }
+        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+            locked << addLocalParameter(0);
+        if(cooperativity == "additive" || cooperativity == "statistical")
+            locked << ToolSet::InvertLockedList(addLocalParameter(1));
+        else
+            locked << addLocalParameter(1);
+        locked << addLocalParameter(2);
+
+    } 
+    setLockedParameter(locked);
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

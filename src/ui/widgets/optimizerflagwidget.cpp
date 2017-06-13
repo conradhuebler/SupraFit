@@ -67,13 +67,13 @@ void OptimizerFlagWidget::setUi()
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(m_ComplexationConstants);
     layout->addWidget(m_OptimizeShifts);
-    layout->addStretch(width()/2);
-    layout->addWidget(m_more);
+//     layout->addStretch(width()/2);
+    layout->addWidget(m_IgnoreZeroConcentrations);
     m_main_layout->addLayout(layout);
     layout = new QHBoxLayout;
     layout->addWidget(m_ConstrainedShifts);
     layout->addWidget(m_IntermediateShifts);
-    layout->addWidget(m_IgnoreZeroConcentrations);
+//     layout->addWidget(m_IgnoreZeroConcentrations);
     m_first_row = new QWidget;
     m_first_row->setLayout(layout);
     m_main_layout->addWidget(m_first_row);

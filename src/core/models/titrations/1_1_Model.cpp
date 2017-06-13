@@ -47,7 +47,6 @@ ItoI_Model::ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(m
 {
     setName(tr("1:1-Model"));
     m_local_parameter = new DataTable(2, SeriesCount(), this);
-//     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     InitialGuess();
 }
 
@@ -62,15 +61,14 @@ void ItoI_Model::InitialGuess()
     m_K11 = 4;
     m_global_parameter = QList<qreal>() << m_K11;
     
-    
     m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
     m_local_parameter->setColumn(DependentModel()->lastRow(), 1);
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
     {
-        line1 << &m_local_parameter->data(0, i); //m_pure_signals_parameter(i);
-        line2 << &m_local_parameter->data(1, i); //&m_complex_signal_parameter(i,0);
+        line1 << &m_local_parameter->data(0, i); 
+        line2 << &m_local_parameter->data(1, i); 
     }
 
     setOptParamater(m_global_parameter);
@@ -86,13 +84,9 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-         
-        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
-        {
-            addLocalParameter(1);
-            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addLocalParameter(0);
-        }
+        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+            addLocalParameter(0);
+        addLocalParameter(1);
     }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
@@ -151,7 +145,6 @@ QSharedPointer<AbstractModel > ItoI_Model::Clone()
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
-    
 }
 
 qreal ItoI_Model::BC50()

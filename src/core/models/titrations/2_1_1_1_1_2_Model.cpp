@@ -121,13 +121,7 @@ QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone()
 
 void IItoI_ItoI_ItoII_Model::InitialGuess()
 {
-    ItoI_Model *model = new ItoI_Model(m_data);
-    m_K12 = model->GlobalParameter()[model->GlobalParameterSize() -1];
-    m_K21 = m_K12/2;
-    m_K11 = m_K12/2;
-    delete model;
-    
-    m_global_parameter = QList<qreal>() << m_K21 << m_K11 << m_K12;
+    m_global_parameter = QList<qreal>() << 2 << 4 << 2;
     setOptParamater(m_global_parameter);
     
     m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
@@ -153,22 +147,17 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
     {
         addGlobalParameter(m_global_parameter);
     }
+    
      if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
-        {
-            addLocalParameter(1);
-            addLocalParameter(2);
-            addLocalParameter(3);
-            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addLocalParameter(0);
-        }
-        if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) && ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
-        {
-            addLocalParameter(1);
-            addLocalParameter(2);
-        }
+        
+        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+            addLocalParameter(0);
+        addLocalParameter(1);
+        addLocalParameter(2);
+        addLocalParameter(3);
     }
+    
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

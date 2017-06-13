@@ -45,10 +45,10 @@ void NonLinearFitThread::run()
     m_steps = 0;
     m_converged = false;
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-     if((m_runtype & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
+//      if((m_runtype & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
         NonLinearFit();
-    else if((m_runtype & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts)
-        ConstrainedFit();
+//     else if((m_runtype & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts)
+//         ConstrainedFit();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit finished(t1-t0);
 }
@@ -200,7 +200,6 @@ void NonLinearFitThread::ConstrainedFit()
 
 int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {
-    
     QList<int >locked = m_model->LockedParamters();
     QVector<qreal > parameter = m_model->OptimizeParameters(runtype);
     if(parameter.isEmpty())

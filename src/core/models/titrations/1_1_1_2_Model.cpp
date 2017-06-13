@@ -59,7 +59,7 @@ void ItoI_ItoII_Model::EvaluateOptions()
     
     auto global_coop = [this]()
     {
-        this->m_global_parameter[0] = log10(double(4)*qPow(10,this->m_global_parameter[1]));
+        this->m_global_parameter[1] = log10(double(0.25)*qPow(10,this->m_global_parameter[0]));
     };
     
     auto local_coop = [this]()
@@ -82,13 +82,8 @@ void ItoI_ItoII_Model::EvaluateOptions()
 }
 
 void ItoI_ItoII_Model::InitialGuess()
-{
-    ItoI_Model *model = new ItoI_Model(m_data);
-    m_K12 = model->GlobalParameter()[model->GlobalParameterSize() -1];
-    m_K11 = m_K12/2;
-    delete model;
-    
-    m_global_parameter = QList<qreal>() << m_K11 << m_K12;
+{   
+    m_global_parameter = QList<qreal>() << 4 << 2;
     setOptParamater(m_global_parameter);
     
     m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
@@ -102,7 +97,6 @@ void ItoI_ItoII_Model::InitialGuess()
         line2 << &m_local_parameter->data(2, i); 
     }
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    
     AbstractTitrationModel::Calculate();
 }
 
@@ -114,36 +108,24 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
     {
         QList<int> lock = addGlobalParameter(m_global_parameter);
         if(cooperativity == "statistical" || cooperativity == "noncooperative")
-            lock[0] = 0;
+            lock[1] = 0;
         locked << lock;
     }
-    
+
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
-        {
-            locked << addLocalParameter(1);
-            QList<int> lock = addLocalParameter(2);
-            
-            if(cooperativity == "additive" || cooperativity == "statistical")
-                 locked << ToolSet::InvertLockedList(lock);
-            else
-                locked << lock;
-            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addLocalParameter(0);
-        }
-        if(((type & OptimizationType::ConstrainedShifts) == OptimizationType::ConstrainedShifts) && ((type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts))
-        {
-            addLocalParameter(1);
-        }
+        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+            locked << addLocalParameter(0);
+        locked << addLocalParameter(1);
+        if(cooperativity == "additive" || cooperativity == "statistical")
+            locked << ToolSet::InvertLockedList(addLocalParameter(2));
+        else
+            locked << addLocalParameter(2);
     } 
-     
     setLockedParameter(locked);
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
-    qDebug() << parameter;
-    qDebug() << locked;
     return parameter;
 }
 
@@ -185,7 +167,6 @@ void ItoI_ItoII_Model::CalculateVariables()
     
     qreal K12= qPow(10, GlobalParameter().last());
     qreal K11 = qPow(10, GlobalParameter().first());
-    qDebug() << LockedParamters();
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
@@ -209,10 +190,8 @@ void ItoI_ItoII_Model::CalculateVariables()
             qreal value = host/host_0*m_local_parameter->data(0, j) + complex_11/host_0*m_local_parameter->data(1, j)+ complex_12/host_0*m_local_parameter->data(2, j);
             SetValue(i, j, value);
         }
-        
     }
     emit Recalculated();
-
 }
 
 QSharedPointer<AbstractModel > ItoI_ItoII_Model::Clone()
