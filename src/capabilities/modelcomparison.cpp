@@ -129,6 +129,7 @@ double ModelComparison::SingleLimit(int parameter_id, int direction)
     double error = m_model.data()->SumofSquares();
     while(qAbs(error-m_config.maxerror) > 1e-7)
     {
+        qDebug() << iter;
         parameter[parameter_id] = param;
         m_model.data()->setGlobalParameter(parameter);
         m_model.data()->Calculate();
