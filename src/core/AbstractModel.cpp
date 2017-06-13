@@ -87,7 +87,7 @@ void AbstractModel::setGlobalParameter(const QList<qreal> &list)
 
 void AbstractModel::SetValue(int i, int j, qreal value)
 {
-// #warning dont forget me
+    /* if there are more than one series, we can active series, but with only one, these lines must be ignored*/
     if(SeriesCount() != 1) 
         if(!ActiveSignals(j) || !DependentModel()->isChecked(j,i))
             return;

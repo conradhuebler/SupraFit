@@ -76,12 +76,12 @@ class ChartWrapper : public QObject
 public:
     ChartWrapper(QObject *parent = 0);
     ~ChartWrapper();
-    void setData(QPointer< DataClass > model);
+    void setData(QSharedPointer< DataClass > model);
     inline void setDataTable(const DataTable *table) { m_table = table; }
     inline QPointer<QtCharts::QXYSeries > Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
-    void TransformModel(QPointer< DataClass > model) { if(!m_transformed) m_model = model; m_transformed = true; }
+    void TransformModel(QSharedPointer< DataClass > model) { if(!m_transformed) m_model = model; m_transformed = true; }
 public slots:
     void UpdateModel();
     void showSeries(int i);
@@ -94,7 +94,7 @@ private:
     QList<QPointer<QtCharts::QVXYModelMapper> > m_plot_mapper;
     QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
 //     PlotMode m_plotmode;
-    QPointer< DataClass > m_model;
+    QSharedPointer< DataClass > m_model;
     bool m_blocked, m_transformed;
     
 signals:

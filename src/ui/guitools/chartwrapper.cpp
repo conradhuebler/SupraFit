@@ -83,12 +83,12 @@ ChartWrapper::~ChartWrapper()
 }
 
 
-void ChartWrapper::setData(QPointer<DataClass> model)
+void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
     m_model = model; 
     
     if(qobject_cast<AbstractModel *>(m_model))
-        connect(m_model, SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
+        connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     
     if(m_stored_series.isEmpty())
     {

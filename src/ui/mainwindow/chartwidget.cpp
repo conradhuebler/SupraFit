@@ -93,7 +93,7 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
     m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
 //     m_data_mapper->setPlotMode(j);
     m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
-    m_data_mapper->setData(m_rawdata.data());
+    m_data_mapper->setData(m_rawdata);
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
     for(int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
@@ -122,15 +122,15 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper, SLOT(showSeries(int)));
 //     signal_wrapper->setPlotMode(j);
     signal_wrapper->setDataTable(model->ModelTable());
-    m_data_mapper->TransformModel(model.data());
-    signal_wrapper->setData(model.data());
+    m_data_mapper->TransformModel(model);
+    signal_wrapper->setData(model);
     
     ChartWrapper *error_wrapper = new ChartWrapper(this);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper, SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper, SLOT(showSeries(int)));
 //     error_wrapper->setPlotMode(j);
     error_wrapper->setDataTable(model->ErrorTable());
-    error_wrapper->setData(model.data());
+    error_wrapper->setData(model);
     
     for(int i = 0; i < model->SeriesCount(); ++i)
     {
