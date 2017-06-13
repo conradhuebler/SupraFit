@@ -38,12 +38,35 @@ ItoI_ItoII_Model::ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(dat
     setName(tr("1:1/1:2-Model"));
     m_local_parameter = new DataTable(3, SeriesCount(), this);
     InitialGuess();
+    DeclareOptions();
     AbstractTitrationModel::Calculate();
 }
 
 ItoI_ItoII_Model::~ItoI_ItoII_Model()
 {
     
+}
+
+void ItoI_ItoII_Model::DeclareOptions()
+{
+    QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
+    addOption("Cooperativtiy", cooperativity);
+}
+
+void ItoI_ItoII_Model::EvaluateOptions()
+{
+    QString cooperativitiy = getOption("Cooperativity");
+    
+    if(cooperativitiy == "noncooperative")
+    {
+        
+    }else if(cooperativitiy == "additive")
+    {
+        
+    }else if(cooperativitiy == "statistical")
+    {
+        
+    }
 }
 
 void ItoI_ItoII_Model::InitialGuess()
@@ -131,7 +154,6 @@ qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, const QL
 void ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
-
     m_sum_absolute = 0;
     m_sum_squares = 0;
     

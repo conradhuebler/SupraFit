@@ -114,6 +114,8 @@ void AbstractModel::Calculate()
     m_variance = 0;
     m_used_variables = 0;
     m_stderror = 0;
+    
+    EvaluateOptions();
     CalculateVariables();
     
     m_mean /= qreal(m_used_variables);
@@ -554,6 +556,15 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     
     Calculate();
 }
+
+void AbstractModel::setOption(const QString& name, const QString& value)
+{
+    if(!m_model_options.contains(name))
+        return; 
+     m_model_options[name].value = value;
+    OptimizeParameters_Private(m_last_optimization);
+}
+
 
 AbstractModel & AbstractModel::operator=(const AbstractModel& other)
 {

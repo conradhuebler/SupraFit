@@ -51,6 +51,10 @@ public:
             return QString();
     }
 
+    void DeclareOptions() override;
+        
+    void EvaluateOptions() override;
+
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 
     {

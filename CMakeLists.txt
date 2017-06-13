@@ -185,6 +185,7 @@ set(suprafit_SRCS
                 src/ui/widgets/results/wgsresultswidget.cpp
                 src/ui/widgets/results/mcresultswidget.cpp
                 src/ui/widgets/results/resultswidget.cpp
+                src/ui/widgets/optionswidget.cpp
                 src/ui/widgets/systemparameterwidget.cpp
                 src/ui/widgets/stackedwidget.cpp
                 src/ui/widgets/modelactions.cpp
