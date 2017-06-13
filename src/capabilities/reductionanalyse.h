@@ -29,21 +29,24 @@
 class AbstractModel;
 class Minimizer;
 
-class ReductionAnalyse : public QObject
+class ReductionAnalyse : public AbstractSearchClass
 {
     Q_OBJECT
     
 public:
     ReductionAnalyse(OptimizerConfig config, OptimizationType type);
     ~ReductionAnalyse();
-    void setModel(const QSharedPointer<AbstractModel > model) { m_model = model->Clone(); }
-    void CrossValidation();
+    
+    enum CVType{
+        LeaveOnOut = 1,
+        LeaveTwoOut = 2
+    };
+    
+    void CrossValidation(CVType type = CVType::LeaveOnOut);
     void PlainReduction();
-    inline QVector<QList<QPointF >> Series() { return m_series; }
+
 private:
-    QSharedPointer<AbstractModel> m_model;
     AbstractConfig m_config;
-    QVector<QList<QPointF >> m_series;
 };
 
 #endif // REDUCTIONANALYSE_H

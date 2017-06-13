@@ -31,8 +31,32 @@ ReductionAnalyse::~ReductionAnalyse()
 {
 }
 
-void ReductionAnalyse::CrossValidation()
+void ReductionAnalyse::CrossValidation(CVType type)
 {
+    MCConfig config;
+    config.runtype = m_config.runtype;
+    config.optimizer_config = m_config.optimizer_config;
+        
+    switch(type){
+        case CVType::LeaveOnOut:
+            
+            for(int i = m_model->DataPoints() - 1; i >= 0; --i)
+            {
+                QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
+                QSharedPointer<AbstractModel> model = m_model->Clone();
+                model->DependentModel()->CheckRow(i);
+                thread->setModel(model);
+                thread->run();
+
+                
+                delete thread;
+            }
+            break;
+        case CVType::LeaveTwoOut:
+            
+            break;
+    }
+    
 }
 
 void ReductionAnalyse::PlainReduction()
@@ -41,7 +65,9 @@ void ReductionAnalyse::PlainReduction()
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
     m_model->detach();
-    m_series.resize(m_model->GlobalParameterSize());
+    for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
+        m_series << QList<QPointF>();
+//     m_series.resize(m_model->GlobalParameterSize());
     for(int i = m_model->DataPoints() - 1; i >= 0; --i)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);

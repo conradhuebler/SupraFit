@@ -501,7 +501,7 @@ void ModelWidget::DoReductionAnalyse()
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     QPointer<ChartView > view = new ChartView(chart);
-    QVector<QList< QPointF> > series = analyse->Series();
+    QList<QList< QPointF> > series = analyse->Series();
     for(int i = 0; i < series.size(); ++i)
     {
         LineSeries *serie = new LineSeries;

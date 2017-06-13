@@ -117,9 +117,13 @@ void itc_ItoI_Model::CalculateVariables()
     qreal V = m_data->getSystemParameter("Cell Volume").Double();
     qreal inject = m_data->getSystemParameter("Inject Volume").Double();
     qreal heat  = 0;
+//     qreal R = 94.498978E-3;
+//     qreal M = 3.395108E-3;
+//     qreal Xt = R*inject*1E-6;
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal V_1 = V+((1+i)*inject);
+//         qreal Mt = M*V_1*1E-6;
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
@@ -132,6 +136,11 @@ void itc_ItoI_Model::CalculateVariables()
         SetConcentration(i, vector);
         qreal value = V_1*complex*m_local_parameter->data(0, 0);
         SetValue(i, 0, value-heat*(1-inject/V));    
+//         SetValue(i, 0, value-heat);    
+//         qreal Xr = Xt/Mt;
+//         qreal r = 1/Mt/GlobalParameter(0);
+//         qreal value = m_local_parameter->data(0, 0)*V*(0.5+(1-Xr-r)/(2*sqrt((1+Xr+r)*(1+Xr+r)-4*Xr)))*Xt*1E-6;
+//         SetValue(i,0,value);
         heat = value;
     }
     emit Recalculated();
