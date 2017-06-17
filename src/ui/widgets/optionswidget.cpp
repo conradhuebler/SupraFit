@@ -36,6 +36,7 @@ OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel > model) : m_model(mod
         hlayout->addWidget(new QLabel(str));
         QPointer<QComboBox > box = new QComboBox;
         box->addItems(m_model->getSingleOptionValues(str));
+        box->setCurrentText(m_model->getOption(str));
         hlayout->addWidget(box);
         m_options[str] = box;
         connect(box, SIGNAL(currentIndexChanged(QString)), this, SLOT(setOption()));

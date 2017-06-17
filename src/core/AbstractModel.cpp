@@ -57,6 +57,7 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
 {
     clearOptParameter();
     QVector<qreal > variables =  OptimizeParameters_Private(type);
+//     setEnabledParameter();
     for(int j = m_opt_para.size() - 1; j >= 0; --j)
     {
         if(variables[j] == 0)
@@ -70,6 +71,22 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
         m_locked_parameters << 1;
     m_last_optimization = type;
     return variables;
+}
+
+void AbstractModel::setEnabledParameter(const QList<int> &parameter)
+{
+     m_enabled_parameter = parameter; 
+     QVector<double * > temp;
+     for(int i = 0; i < m_enabled_parameter.size(); ++i)
+         if(m_enabled_parameter[i])
+             temp << m_opt_para[i];
+//     m_opt_para = temp;
+    qDebug() << m_opt_para.size();
+}
+
+void AbstractModel::setEnabledParameter()
+{
+     setEnabledParameter(m_enabled_parameter); 
 }
 
 void AbstractModel::clearOptParameter()
@@ -396,7 +413,7 @@ QString AbstractModel::Model2Text() const
 QJsonObject AbstractModel::ExportModel(bool statistics) const
 {
     QJsonObject json, toplevel;
-    QJsonObject constantObject;
+    QJsonObject constantObject, optionObject;
     for(int i = 0; i < GlobalParameter().size(); ++i)
     {
         constantObject[QString::number(i)] = (QString::number(GlobalParameter()[i]));
@@ -430,7 +447,14 @@ QJsonObject AbstractModel::ExportModel(bool statistics) const
 
         json["localParameter"] = localParameter;   
     }
+    
+    for(const QString &str : getAllOptions())
+    {
+        optionObject[str] = getOption(str);
+    }
+    
     toplevel["data"] = json;
+    toplevel["options"] = optionObject;
     toplevel["model"] = m_name;  
     toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
@@ -458,7 +482,7 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     
     QList<int > active_signals;
     QList<qreal> constants; 
-    QJsonObject globalParameter;
+    QJsonObject globalParameter, optionObject;
     
     if(json.contains("globalParameter"))
         globalParameter = json["globalParameter"].toObject();
@@ -473,6 +497,13 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
         constants << globalParameter[QString::number(i)].toString().toDouble();
     }
     setGlobalParameter(constants);
+    
+    optionObject = topjson["options"].toObject();
+    for(const QString &str : getAllOptions())
+    {
+        setOption(str, topjson["option"].toObject()[str].toString());
+    }
+    
     QStringList keys = json["statistics"].toObject().keys();
     
     if(keys.size() > 9)
@@ -567,9 +598,10 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
 
 void AbstractModel::setOption(const QString& name, const QString& value)
 {
-    if(!m_model_options.contains(name))
+    if(!m_model_options.contains(name) || name.isEmpty() || value.isEmpty() || name.isNull() || value.isNull())
         return; 
-     m_model_options[name].value = value;
+    qDebug() << name << value;
+    m_model_options[name].value = value;
     OptimizeParameters(m_last_optimization);
 }
 

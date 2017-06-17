@@ -206,6 +206,10 @@ public:
      */
     inline bool isCorrupt() const { return m_corrupt; }
 
+    void setEnabledParameter(const QList<int> &enabled);
+    void setEnabledParameter();
+    
+    inline QList<int> EnabledParameter() const { return m_enabled_parameter; }
     
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
@@ -339,7 +343,7 @@ public:
     
     void setOption(const QString &name, const QString &value);
     
-    inline QString getOption(const QString &name)
+    inline QString getOption(const QString &name) const
     {
         if(!m_model_options.contains(name))
             return QString("unset");
@@ -397,7 +401,7 @@ protected:
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror;
     int m_used_variables;
     QList<int > m_active_signals;
-    QList<int > m_locked_parameters;
+    QList<int > m_locked_parameters, m_enabled_parameter;
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
