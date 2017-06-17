@@ -486,16 +486,15 @@ void ModelDataHolder::RemoveCrashFile()
 void ModelDataHolder::SaveCurrentModels(const QString &file)
 {
     QJsonObject toplevel;
-    for(int i = 0; i < m_models.size(); ++i)
+    for(int i = 1; i < m_modelsWidget->count(); i++)
     {
-        
-        if(m_models[i].isNull())
+        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
-            QJsonObject obj = m_models[i].data()->ExportModel();
-            toplevel["model_" + QString::number(i)] = obj;
-            
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+            QJsonObject obj = model->Model()->ExportModel();
+            toplevel["model_" + QString::number(i)] = obj; 
         }
-    }   
+    }    
     JsonHandler::WriteJsonFile(toplevel, file);   
 }
 
@@ -503,15 +502,16 @@ void ModelDataHolder::SaveWorkspace(const QString &file)
 {
     QJsonObject toplevel;
     toplevel["data"] = m_data->ExportData();
-    
-    for(int i = 0; i < m_models.size(); ++i)
-    {    
-        if(!m_models[i].isNull())
+        
+    for(int i = 1; i < m_modelsWidget->count(); i++)
+    {
+        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
         {
-            QJsonObject obj = m_models[i].data()->ExportModel();
-            toplevel["model_" + QString::number(i)] = obj;       
+            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+            QJsonObject obj = model->Model()->ExportModel();
+            toplevel["model_" + QString::number(i)] = obj; 
         }
-    }   
+    } 
     JsonHandler::WriteJsonFile(toplevel, file);
 }
 

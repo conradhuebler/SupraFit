@@ -78,7 +78,7 @@ class ModelWidget : public QWidget
     
 public:
     ModelWidget(QSharedPointer< AbstractModel > model, Charts charts, QWidget *parent = 0);
-    ~ModelWidget();
+    virtual ~ModelWidget();
     virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
     QSharedPointer< AbstractModel > Model() const { return m_model; }
     QSharedPointer< Minimizer > getMinimizer() const { return m_minimizer; }
