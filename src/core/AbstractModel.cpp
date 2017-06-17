@@ -17,9 +17,6 @@
  * 
  */
 
-
-
-
 #include "libmath.h"
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
@@ -57,7 +54,6 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
 {
     clearOptParameter();
     QVector<qreal > variables =  OptimizeParameters_Private(type);
-//     setEnabledParameter();
     for(int j = m_opt_para.size() - 1; j >= 0; --j)
     {
         if(variables[j] == 0)
@@ -71,22 +67,6 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
         m_locked_parameters << 1;
     m_last_optimization = type;
     return variables;
-}
-
-void AbstractModel::setEnabledParameter(const QList<int> &parameter)
-{
-     m_enabled_parameter = parameter; 
-     QVector<double * > temp;
-     for(int i = 0; i < m_enabled_parameter.size(); ++i)
-         if(m_enabled_parameter[i])
-             temp << m_opt_para[i];
-//     m_opt_para = temp;
-    qDebug() << m_opt_para.size();
-}
-
-void AbstractModel::setEnabledParameter()
-{
-     setEnabledParameter(m_enabled_parameter); 
 }
 
 void AbstractModel::clearOptParameter()
@@ -449,9 +429,8 @@ QJsonObject AbstractModel::ExportModel(bool statistics) const
     }
     
     for(const QString &str : getAllOptions())
-    {
         optionObject[str] = getOption(str);
-    }
+    
     
     toplevel["data"] = json;
     toplevel["options"] = optionObject;
@@ -500,9 +479,7 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     
     optionObject = topjson["options"].toObject();
     for(const QString &str : getAllOptions())
-    {
-        setOption(str, topjson["option"].toObject()[str].toString());
-    }
+        setOption(str, topjson["options"].toObject()[str].toString());
     
     QStringList keys = json["statistics"].toObject().keys();
     
@@ -600,7 +577,6 @@ void AbstractModel::setOption(const QString& name, const QString& value)
 {
     if(!m_model_options.contains(name) || name.isEmpty() || value.isEmpty() || name.isNull() || value.isNull())
         return; 
-    qDebug() << name << value;
     m_model_options[name].value = value;
     OptimizeParameters(m_last_optimization);
 }

@@ -68,7 +68,6 @@ struct MyFunctor : Functor<double>
         QVector<qreal > param(inputs());
         for(int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
-        qDebug() << param.size();
         model.data()->setParameter(param);
         model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedModel();
@@ -92,21 +91,8 @@ struct MyFunctor : Functor<double>
 
 struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
 
-qreal Norm(const QList<qreal> v1, const QList<qreal> v2)
-{
-    qDebug() << v1 << v2;
-    qreal norm = 0;
-    if(v1.size() != v2.size())
-        return norm;
-    for(int i = 0; i < v1.size(); ++i)
-        norm += qAbs(v1[i]-v2[i]);
-    return norm;
-}
-
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
 {
-    
-    
     OptimizerConfig config = model.data()->getOptimizerConfig();
     Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
     if(ModelSignals.size() == 0)
@@ -126,7 +112,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
     model.data()->Message(message, 5);
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
-    functor.model->setEnabledParameter();
     functor.ModelSignals = ModelSignals;
     functor.m_potenz = config.error_potenz;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);

@@ -205,11 +205,6 @@ public:
      * false - all fine
      */
     inline bool isCorrupt() const { return m_corrupt; }
-
-    void setEnabledParameter(const QList<int> &enabled);
-    void setEnabledParameter();
-    
-    inline QList<int> EnabledParameter() const { return m_enabled_parameter; }
     
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }

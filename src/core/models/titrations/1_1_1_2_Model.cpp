@@ -67,7 +67,7 @@ void ItoI_ItoII_Model::EvaluateOptions()
         for(int i = 0; i < this->SeriesCount(); ++i)
             this->m_local_parameter->data(2,i) = 2*(this->m_local_parameter->data(1,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
     };
-//     qDebug() << GlobalParameter();
+
     if(cooperativitiy == "noncooperative")
     {
         global_coop();
@@ -79,7 +79,6 @@ void ItoI_ItoII_Model::EvaluateOptions()
         local_coop();
         global_coop();
     }
-//     qDebug() << GlobalParameter();
 }
 
 void ItoI_ItoII_Model::InitialGuess()
@@ -103,34 +102,22 @@ void ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    QList<int> locked; 
     QString cooperativity = getOption("Cooperativity");
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-//         QList<int> lock = addGlobalParameter(m_global_parameter);
-//         if(cooperativity == "statistical" || cooperativity == "noncooperative")
-//             lock[1] = 0;
-//         locked << lock;
-            if(cooperativity == "statistical" || cooperativity == "noncooperative")
-                addGlobalParameter(m_global_parameter[0]);
-            else
-                addGlobalParameter(m_global_parameter);
+        addGlobalParameter(m_global_parameter);
+        if(cooperativity == "statistical" || cooperativity == "noncooperative")
+            m_opt_para.removeLast();
     }
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
          if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-             locked << addLocalParameter(0);
-         locked << addLocalParameter(1);
+             addLocalParameter(0);
+         addLocalParameter(1);
          if(!(cooperativity == "additive" || cooperativity == "statistical"))
-         {
-//             locked << ToolSet::InvertLockedList(addLocalParameter(2));
-//         else
-             locked << addLocalParameter(2);
-             qDebug() << "added";
-         }
+             addLocalParameter(2);
     } 
-    setEnabledParameter(locked);
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
@@ -169,7 +156,6 @@ qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, const QL
 
 void ItoI_ItoII_Model::CalculateVariables()
 {
-//     qDebug() << GlobalParameter();
     m_corrupt = false;
     m_sum_absolute = 0;
     m_sum_squares = 0;
@@ -204,9 +190,7 @@ void ItoI_ItoII_Model::CalculateVariables()
 
 QSharedPointer<AbstractModel > ItoI_ItoII_Model::Clone()
 {
-    QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);
-    
-//     qDebug() << LockedParamters() << getOption("Cooperativity") << model.data()->getOption("Cooperativity");
+    QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);    
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->ImportModel(ExportModel());
     model.data()->setLockedParameter(LockedParamters());

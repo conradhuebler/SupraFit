@@ -201,7 +201,6 @@ void NonLinearFitThread::ConstrainedFit()
 int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {
     QList<int >locked = m_model->LockedParamters();
-    
     QVector<qreal > parameter = m_model->OptimizeParameters(runtype);
     if(parameter.isEmpty())
         return 0;
@@ -210,7 +209,6 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
         if(locked.size() == parameter.size())
             m_model->setLockedParameter(locked); 
     }
-//     m_model->setEnabledParameter();
     int iter = NonlinearFit(m_model, parameter);
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
