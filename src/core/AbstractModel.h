@@ -154,9 +154,9 @@ public:
     void SetSingleParameter(double value, int parameter);
     void setOptParamater(qreal & parameter);
     void setOptParamater(QList< qreal >& parameter);
-    QList<int> addGlobalParameter(QList <qreal > &vector);
-    int addGlobalParameter(int i);
-    QList<int> addLocalParameter(int i);
+    void addGlobalParameter(QList <qreal > &vector);
+    void addGlobalParameter(int i);
+    void addLocalParameter(int i);
    
     void setCVStatistic(const QJsonObject &result, int i);
     void setMCStatistic(const QJsonObject &result, int i);

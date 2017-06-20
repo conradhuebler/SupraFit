@@ -156,33 +156,26 @@ void IItoI_ItoI_Model::CalculateVariables()
 
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    QList<int> locked; 
     QString cooperativity = getOption("Cooperativity");
    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        QList<int> lock = addGlobalParameter(m_global_parameter);
+        addGlobalParameter(m_global_parameter);
         if(cooperativity == "statistical" || cooperativity == "noncooperative")
-            lock[0] = 0;
-        locked << lock;
+            m_opt_para.removeFirst();
     }
     
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-            locked << addLocalParameter(0);
-        if(cooperativity == "additive" || cooperativity == "statistical")
-            locked << ToolSet::InvertLockedList(addLocalParameter(1));
-        else
-            locked << addLocalParameter(1);
-        locked << addLocalParameter(2);
-
+            addLocalParameter(0);
+        if(cooperativity != "additive" && cooperativity != "statistical")
+            addLocalParameter(1);
+        addLocalParameter(2);
     } 
-    setLockedParameter(locked);
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
-
     return parameter;
 }
 
