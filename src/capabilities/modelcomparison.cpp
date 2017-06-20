@@ -54,7 +54,7 @@ void MCThread::run()
         if(m_interrupt)
             return;
         QList<qreal > consts = m_model.data()->GlobalParameter();
-        for(int i = 0; i < consts.size(); ++i)
+        for(int i = 0; i < dist.size(); ++i)
         {
             consts[i] = dist[i](rng)/mult;
         }
@@ -119,7 +119,7 @@ bool ModelComparison::FastConfidence()
 
 double ModelComparison::SingleLimit(int parameter_id, int direction)
 {
-    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
+    QVector<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts);
     double param = parameter[parameter_id];
     double old_param = param;
     int iter = 0;
@@ -129,12 +129,10 @@ double ModelComparison::SingleLimit(int parameter_id, int direction)
     double error = m_model.data()->SumofSquares();
     while(qAbs(error-m_config.maxerror) > 1e-7)
     {
-        qDebug() << iter;
         parameter[parameter_id] = param;
-        m_model.data()->setGlobalParameter(parameter);
+        m_model.data()->setParameter(parameter);
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
-        
         if( error < m_config.maxerror )
         {
             old_param = param;
@@ -147,7 +145,7 @@ double ModelComparison::SingleLimit(int parameter_id, int direction)
             old_param -= step*direction;
         }
         parameter[parameter_id] = param;
-        m_model.data()->setGlobalParameter(parameter);
+        m_model.data()->setParameter(parameter);
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
         iter++;
@@ -201,8 +199,12 @@ bool ModelComparison::Confidence()
         return true;
     
     QVector<QVector<qreal> > box = MakeBox();
-    MCSearch(box);
-    return true;
+    if(box.size() > 1)
+    {
+        MCSearch(box);
+        return true;
+    }else
+        return false;
 }
 
 

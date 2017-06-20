@@ -585,11 +585,14 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
-    statistic->Confidence();
-     
-    WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
-    m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
-    m_statistic_result->show();
+    bool result = statistic->Confidence();
+    if(result)
+    {
+        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
+        m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
+        m_statistic_result->show();
+    }else
+        QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
     m_statistic_dialog->HideWidget();
 }
 
