@@ -190,12 +190,16 @@ QSharedPointer<AbstractModel > IItoI_ItoI_Model::Clone()
     return model;    
 }
 
-qreal IItoI_ItoI_Model::BC50()
+QString IItoI_ItoI_Model::BC50()
 {
     qreal b11 = qPow(10,GlobalParameter()[1]);
     qreal b21 = qPow(10,(GlobalParameter()[0]+GlobalParameter()[1]));
     qreal bc50 = -b11/b21/double(2) + sqrt(qPow(b11/double(2)/b21,2)+1/b21);
-    return bc50;
+    
+    QString format_text = tr("BC50<sub>0</sub>: %1").arg(bc50*1E6);
+    QChar mu = QChar(956);
+    format_text += QString(" [") + mu + QString("M]");
+    return format_text;
 }
 
 

@@ -84,9 +84,9 @@ void AbstractTitrationModel::MiniShifts()
     }
 }
 
-qreal AbstractTitrationModel::BC50()
+QString AbstractTitrationModel::BC50()
 {
-    return 0;
+    return QString();
 }
 
 

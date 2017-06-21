@@ -147,9 +147,12 @@ QSharedPointer<AbstractModel > ItoI_Model::Clone()
     return model;
 }
 
-qreal ItoI_Model::BC50()
-{
-    return 1/qPow(10,GlobalParameter()[0]); 
+QString ItoI_Model::BC50()
+{   
+    QString format_text = tr("BC50<sub>0</sub>: %1").arg(double(1)/qPow(10,GlobalParameter()[0])*1E6);
+    QChar mu = QChar(956);
+    format_text += QString(" [") + mu + QString("M]");
+    return format_text;
 }
 
 #include "1_1_Model.moc"

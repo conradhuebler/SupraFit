@@ -209,16 +209,34 @@ qreal ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
     return 1./(A + b11*A*B+b12*A*qPow(B,2));
 }
 
+qreal ItoI_ItoII_Model::Y_0(qreal x, const QVector<qreal> &parameter)
+{
+    if(2 != parameter.size())
+        return 0;
+    qreal b11 = parameter[0];
+    qreal b12 = parameter[1];
+    qreal B = -b11/2/b12 + sqrt((qPow(b11,2))/(4*qPow(b12,2))+((x/(1-x))/b12));
+    qreal A = 1/(b11+2*b12*B);
+    return A;
+}
 
-qreal ItoI_ItoII_Model::BC50()
+QString ItoI_ItoII_Model::BC50()
 {
     qreal b11 = qPow(10,GlobalParameter(0));
     qreal b12 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
     QVector<qreal> parameter;
     parameter << b11 << b12;
     std::function<qreal(qreal, const QVector<qreal> &)> function = Y;
-    qreal integ = ToolSet::SimpsonIntegrate(0, 1, function, parameter);
-    return double(1)/double(2)/integ;
+        std::function<qreal(qreal, const QVector<qreal> &)> function_0 = Y_0;
+    QString format_text;
+    qreal integ = ToolSet::SimpsonIntegrate(0, 1, function_0, parameter);
+    format_text = tr("BC50<sub>0</sub> (SupraFit): %1").arg( integ*1E6);
+        QChar mu = QChar(956);
+    format_text += QString(" [") + mu + QString("M]<\ br>");
+    integ = ToolSet::SimpsonIntegrate(0, 1, function, parameter);
+    format_text += tr("BC50<sub>0</sub> (Roelens): %1").arg( double(1)/double(2)/integ*1E6);
+    format_text += QString(" [") + mu + QString("M]");
+    return format_text;
 }
 
 #include "1_1_1_2_Model.moc"
