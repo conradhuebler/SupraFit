@@ -21,6 +21,8 @@
 #include "src/core/minimizer.h"
 #include "src/capabilities/montecarlostatistics.h"
 
+#include <iostream>
+
 #include "reductionanalyse.h"
 
 ReductionAnalyse::ReductionAnalyse(OptimizerConfig config, OptimizationType type): m_config(config, type)
@@ -29,6 +31,8 @@ ReductionAnalyse::ReductionAnalyse(OptimizerConfig config, OptimizationType type
 
 ReductionAnalyse::~ReductionAnalyse()
 {
+    if(m_loo_table)
+        delete m_loo_table;
 }
 
 void ReductionAnalyse::CrossValidation(CVType type)
@@ -36,10 +40,10 @@ void ReductionAnalyse::CrossValidation(CVType type)
     MCConfig config;
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
-        
+
     switch(type){
         case CVType::LeaveOnOut:
-            
+            m_loo_table = new DataTable(m_model->DependentModel());
             for(int i = m_model->DataPoints() - 1; i >= 0; --i)
             {
                 QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
@@ -47,10 +51,18 @@ void ReductionAnalyse::CrossValidation(CVType type)
                 model->DependentModel()->CheckRow(i);
                 thread->setModel(model);
                 thread->run();
-
-                
+                model->ImportModel(thread->Model());
+//                 std::cout << model->ModelTable()->Row(i) << std::endl;
+                model->DependentModel()->CheckRow(i);
+                model->Calculate();
+//                 std::cout << model->ModelTable()->Row(i) << std::endl;
+                m_loo_table->setRow(model->ModelTable()->Row(i), i);
+                m_models << model->ExportModel();
                 delete thread;
             }
+            m_model->setDependentTable(m_loo_table);
+//             m_loo_table->Debug();
+            m_model_data = m_model->ExportModel(false, true);
             break;
         case CVType::LeaveTwoOut:
             
@@ -65,9 +77,10 @@ void ReductionAnalyse::PlainReduction()
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
     m_model->detach();
+
     for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
         m_series << QList<QPointF>();
-//     m_series.resize(m_model->GlobalParameterSize());
+
     for(int i = m_model->DataPoints() - 1; i >= 0; --i)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);

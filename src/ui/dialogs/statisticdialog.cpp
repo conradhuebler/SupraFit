@@ -92,9 +92,11 @@ void StatisticDialog::setUi()
     QVBoxLayout *layout = new QVBoxLayout;
     m_tab_widget = new QTabWidget;
     m_tab_widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
-    m_tab_widget->addTab(ContinuousVariationWidget(), tr("Weakened Grid Search"));
+    m_tab_widget->addTab(GridSearchWidget(), tr("Weakened Grid Search"));
     m_moco_widget = ModelComparison();
     m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
+    m_tab_widget->addTab(CVWidget(), tr("Cross Validation"));
+    
     if(m_model)
         m_optim_flags = new OptimizerFlagWidget(m_model.data()->LastOptimzationRun()); 
     else
@@ -128,6 +130,7 @@ void StatisticDialog::setUi()
     updateUI();
     CalculateError();
     setWindowTitle("Statistic Tools");
+    setMinimumWidth(1.5*m_tab_widget->sizeHint().width());
 }
 
 QWidget *StatisticDialog::MonteCarloWidget()
@@ -177,7 +180,7 @@ QWidget *StatisticDialog::MonteCarloWidget()
 }
 
 
-QWidget * StatisticDialog::ContinuousVariationWidget()
+QWidget * StatisticDialog::GridSearchWidget()
 {
     QWidget *cv_widget = new QWidget;
     QGridLayout *layout = new QGridLayout;   
@@ -304,6 +307,23 @@ QWidget * StatisticDialog::ModelComparison()
     connect(m_moco, SIGNAL(clicked()), this, SIGNAL(MoCoStatistic()));
     mo_widget->setLayout(layout);
     return mo_widget;
+}
+
+
+QWidget * StatisticDialog::CVWidget()
+{
+    QWidget *widget = new QWidget;
+    QGridLayout *layout = new QGridLayout;   
+    m_cv_loo = new QRadioButton(tr("Leave-One-Out"));
+    m_cv_l2o = new QRadioButton(tr("Leave-Two-Out"));
+    layout->addWidget(m_cv_loo, 0, 0);
+    layout->addWidget(m_cv_l2o, 1, 0);
+    m_cross_validate = new QPushButton(tr("Cross Validation"));
+    
+    layout->addWidget(m_cross_validate, 2,0);
+    connect(m_cross_validate, SIGNAL(clicked()), this, SIGNAL(CrossValidation()));
+    widget->setLayout(layout);
+    return widget;
 }
 
 

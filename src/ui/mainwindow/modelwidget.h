@@ -93,6 +93,7 @@ public slots:
     void WGStatistic();
     void MCStatistic();
     void MoCoStatistic();
+    void CVAnalyse();
     void GlobalMinimize();
     void GlobalMinimizeLoose();
     void LocalMinimize();

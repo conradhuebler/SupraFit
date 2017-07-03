@@ -17,8 +17,8 @@
  * 
  */
 
-#ifndef CVRESULTSWIDGET_H
-#define CVRESULTSWIDGET_H
+#ifndef WGSRESULTSWIDGET_H
+#define WGSRESULTSWIDGET_H
 
 #include "src/ui/widgets/results/resultswidget.h"
 
@@ -43,4 +43,4 @@ private:
     ChartView * CVPlot();
 };
 
-#endif // CVRESULTSWIDGET_H
+#endif // WGSRESULTSWIDGET_H

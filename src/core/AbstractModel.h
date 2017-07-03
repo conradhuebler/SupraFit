@@ -93,7 +93,7 @@ public:
      * ! \brief Export model to json file
      * 
      */
-    QJsonObject ExportModel(bool statistics = true) const;
+    QJsonObject ExportModel(bool statistics = true, bool locked = false) const;
     
     /* ! \brief Import model from json
      * 
@@ -354,6 +354,7 @@ public:
     
     inline virtual void EvaluateOptions() { }
     
+    inline bool isLocked() const { return m_locked_model; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -400,7 +401,7 @@ protected:
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
-    bool m_corrupt, m_converged;
+    bool m_corrupt, m_converged, m_locked_model;
     OptimizerConfig m_opt_config;
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
     QString m_name;

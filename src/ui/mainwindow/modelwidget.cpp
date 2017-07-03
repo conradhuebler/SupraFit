@@ -44,6 +44,7 @@
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
+#include "src/ui/widgets/results/cvresultwidget.h"
 #include "src/ui/widgets/results/wgsresultswidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
@@ -101,6 +102,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
     connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
+    connect(m_statistic_dialog, SIGNAL(CrossValidation()), this, SLOT(CVAnalyse()));
     
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
@@ -496,6 +498,19 @@ void ModelWidget::FastConfidence()
         m_model->setMoCoStatistic(constant_results[i], i);
     }
     delete statistic;
+}
+
+void ModelWidget::CVAnalyse()
+{
+    Waiter wait;
+    ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    analyse->setModel(m_model);
+    analyse->CrossValidation(ReductionAnalyse::LeaveOnOut);
+    CVResultsWidget *cvresults = new CVResultsWidget(analyse, m_model, m_statistic_result);
+    m_statistic_result->setWidget(cvresults, "Cross Validation Analyse" + m_model->Name());
+    m_statistic_result->show();
+//     qDebug() << analyse->ModelData();
+    emit AddModel(analyse->ModelData());
 }
 
 void ModelWidget::DoReductionAnalyse()

@@ -17,33 +17,28 @@
  * 
  */
 
-#ifndef RESULTSWIDGET_H
-#define RESULTSWIDGET_H
+#ifndef CVRESULTSWIDGET_H
+#define CVRESULTSWIDGET_H
+
+#include "src/ui/widgets/results/resultswidget.h"
 
 #include <QtWidgets/QWidget>
 
 class AbstractSearchClass;
 class AbstractModel;
 
-class ResultsWidget : public QWidget
+class CVResultsWidget : public ResultsWidget
 {
     Q_OBJECT
+    
 public:
-    ResultsWidget();
-    ~ResultsWidget();
+    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractModel> model, QWidget *parent);
+    ~CVResultsWidget();
     
-   
-protected:
-    void setUi();
-    virtual QWidget * ChartWidget() = 0;
-    inline QSize ChartSize() const { return QSize(400,300); }
-    virtual void WriteConfidence(const QList<QJsonObject > &constant_results) { };
+private:
+    virtual QWidget * ChartWidget() override;
     
-    QWidget *m_chart_widget;
-    QLabel *m_confidence_label;
-    QPointer<AbstractSearchClass> m_statistics;
-    QSharedPointer< AbstractModel > m_model;
-    
-};    
 
-#endif // RESULTSWIDGET_H
+};
+
+#endif // CVRESULTSWIDGET_H

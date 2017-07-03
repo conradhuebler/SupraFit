@@ -34,7 +34,7 @@
 #include <iostream>
 #include "AbstractModel.h"
 
-AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false)
+AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false)
 {    
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
     
@@ -95,7 +95,8 @@ void AbstractModel::SetValue(int i, int j, qreal value)
     }
     if(Type() != 3)
     {
-        m_model_signal->data(j,i) = value;
+        if(!m_locked_model)
+            m_model_signal->data(j,i) = value;
         m_model_error->data(j,i) = m_model_signal->data(j,i) - DependentModel()->data(j,i);
         m_sum_absolute += qAbs(m_model_signal->data(j,i) - DependentModel()->data(j,i));
         m_sum_squares += qPow(m_model_signal->data(j,i) - DependentModel()->data(j,i), 2);
@@ -113,7 +114,7 @@ void AbstractModel::Calculate()
     m_stderror = 0;
     
     EvaluateOptions();
-    CalculateVariables();
+   CalculateVariables();
     
     m_mean /= qreal(m_used_variables);
     m_variance = CalculateVariance();
@@ -380,7 +381,7 @@ QString AbstractModel::Model2Text() const
 }
 
 
-QJsonObject AbstractModel::ExportModel(bool statistics) const
+QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
 {
     QJsonObject json, toplevel;
     QJsonObject constantObject, optionObject;
@@ -422,6 +423,15 @@ QJsonObject AbstractModel::ExportModel(bool statistics) const
         optionObject[str] = getOption(str);
     
     
+    QJsonObject resultObject;
+    if(m_locked_model || locked)
+    {
+        for(int i = 0; i < DataPoints(); ++i)
+        {
+            resultObject[QString::number(i)] = ToolSet::DoubleList2String(ModelTable()->Row(i));
+        }
+    }
+    
     toplevel["data"] = json;
     toplevel["options"] = optionObject;
     toplevel["model"] = m_name;  
@@ -432,6 +442,14 @@ QJsonObject AbstractModel::ExportModel(bool statistics) const
     toplevel["variance"] = m_variance;
     toplevel["standard_error"] = m_stderror;
     toplevel["converged"] = m_converged;
+    if(m_locked_model || locked)
+    {
+#ifdef _DEBUG
+        qDebug() << "Writing calculated data to json file";
+#endif
+        toplevel["locked_model"] = true;
+        toplevel["result"] = resultObject;
+    }
     return toplevel;
 }
 
@@ -559,6 +577,33 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
         OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
     
     m_converged = topjson["converged"].toBool();
+    
+    if(topjson.contains("locked_model"))
+    {
+#ifdef _DEBUG
+        qDebug() << "Loaded calculated data from json file";
+#endif
+        m_locked_model = true;
+        QJsonObject resultObject = topjson["result"].toObject();
+        QStringList keys = resultObject.keys();
+        
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+                  keys.end(),
+                  [&collator](const QString &key1, const QString &key2)
+                  {
+                      return collator.compare(key1, key2) < 0;
+                  });
+        for(const QString &str: qAsConst(keys))
+        {
+            QVector<qreal > concentrationsVector, signalVector;
+            concentrationsVector = ToolSet::String2DoubleVec(resultObject[str].toString());
+            int row = str.toInt();
+            ModelTable()->setRow(concentrationsVector, row);
+        }
+    }
     
     Calculate();
 }

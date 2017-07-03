@@ -181,6 +181,7 @@ qt5_use_modules(utils Core Gui)
 
 set(suprafit_SRCS
                 src/ui/guitools/chartwrapper.cpp
+                src/ui/widgets/results/cvresultwidget.cpp
                 src/ui/widgets/results/searchresultwidget.cpp
                 src/ui/widgets/results/wgsresultswidget.cpp
                 src/ui/widgets/results/mcresultswidget.cpp

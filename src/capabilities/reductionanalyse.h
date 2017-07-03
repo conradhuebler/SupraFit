@@ -44,9 +44,12 @@ public:
     
     void CrossValidation(CVType type = CVType::LeaveOnOut);
     void PlainReduction();
-
+    QJsonObject ModelData() const { return m_model_data; }
+    
 private:
     AbstractConfig m_config;
+    QPointer<DataTable > m_loo_table;
+    QJsonObject m_model_data;
 };
 
 #endif // REDUCTIONANALYSE_H
