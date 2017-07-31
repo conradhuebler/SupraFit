@@ -196,6 +196,7 @@ void DataWidget::ShowContextMenu(const QPoint& pos)
     int row = index.row();
     m_data.data()->DependentModel()->CheckRow(row);
     HidePoint();
+    emit recalculate();
 }
 
 void DataWidget::HidePoint()

@@ -71,131 +71,131 @@ void NonLinearFitThread::setParameter(const QJsonObject &json)
 }
 
 
-void NonLinearFitThread::ConstrainedFit()
-{   
-    QList<qreal> old_para_constant = m_model->GlobalParameter();
-    
-    bool convergence = false;
-    bool constants_convergence = false;
-    bool error_convergence = false;
-    int iter = 0;
-    bool allow_loop = true;
-    bool process_stopped = false;
-
-    QList<int >locked = m_model->LockedParamters();
-    QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
-    if(locked.size() == parameter.size())
-        m_model->setLockedParameter(locked); 
-    
-    while((allow_loop && !convergence))
-    {
-        iter++;   
-        if(iter > m_opt_config.MaxIter - 1)
-            allow_loop = false;
-        
-        emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
-        QList<qreal > old_constants =  m_model->GlobalParameter();
-        qreal old_error;
-        if(m_opt_config.error_potenz == 2)
-            old_error = m_model->SumofSquares();
-        else
-            old_error = m_model->SumofAbsolute();
-        if(m_runtype & OptimizationType::ComplexationConstants)
-        {
-            if(NonLinearFit(OptimizationType::ComplexationConstants) == 1)
-                m_model->ImportModel(m_last_parameter);
-        }
-       
-        m_model->MiniShifts(); 
-        
-        if(m_runtype & OptimizationType::IntermediateShifts)
-        {
-             if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
-                 m_model->ImportModel(m_last_parameter);
-        }
-        m_last_parameter = m_model->ExportModel(m_exc_statistics);
-        qreal error;
-        
-        if(m_opt_config.error_potenz == 2)
-            error = m_model->SumofSquares();
-        else
-            error = m_model->SumofAbsolute();
-        
-        QList<qreal> constants = m_model->GlobalParameter();
-        qreal constant_diff = 0;
-        QString constant_string;
-        for(int z = 0; z < constants.size(); ++z)
-        {
-            if(constants[z] < 0)
-            {
-                emit Message("*** Something quite seriosly happend to the complexation constant. ***\n", 4);
-                emit Message("*** At least one fall below zero, will stop optimization now and give the best intermediate result. ***\n", 4);
-                if(m_model->isCorrupt())
-                    emit Message("*** Calculated signals seems corrupt (infinity or not even a number (nan)). ***\n", 4);
-                emit Warning("Something quite seriosly happend to the complexation constant.\nAt least one fall below zero, will stop optimization now and restore old values.", 0);
-                allow_loop = false;
-                process_stopped = true;
-                break;
-            }
-            constant_diff += qAbs(old_constants[z] - constants[z]);
-            constant_string += QString::number(constants[z]) + " ** ";
-        }
-        
-        if(constant_diff < m_opt_config.Constant_Convergence)
-        {
-            if(!constants_convergence)
-                emit Message("*** Change in complexation constants signaling convergence! ***", 3);
-            constants_convergence = true;
-        }
-        else
-            constants_convergence = false;
-        if(error < old_error)
-            m_best_intermediate = m_model->ExportModel(m_exc_statistics);
-        if(qAbs(error - old_error) < m_opt_config.Error_Convergence)
-        {
-            if(!error_convergence)
-                emit Message("*** Change in sum of error signaling convergence! ***", 3);
-            error_convergence = true;
-        }
-        else
-            error_convergence = false;
-        emit Message("*** Change in complexation constant " + QString::number(constant_diff) + " | Convergence at "+ QString::number(m_opt_config.Constant_Convergence)+ " ***\n", 4);
-        emit Message("*** New resulting contants " + constant_string + "\n", 5);
-        emit Message("*** Change in error for model " + QString::number(qAbs(error - old_error)) + " | Convergence at "+ QString::number(m_opt_config.Error_Convergence)+"***\n", 4);
-        emit Message("*** New resulting error " + QString::number(error) + "\n", 5);
-        emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
-       
-       convergence = error_convergence & constants_convergence;
-    } 
-
-    
-    if(!convergence && !process_stopped)
-        emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
-    if(process_stopped)
-    {
-        m_model->setGlobalParameter(old_para_constant);
-    }else{
-        emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
-        emit Message("*** Convergence reached  " + ToolSet::bool2YesNo(convergence) + "  ****\n", 3);
-        
-        QString message = "Using Signals";
-        qreal error = 0;
-        for(int i = 0; i < m_model->ActiveSignals().size(); ++i)
-            if(m_model->ActiveSignals()[i])
-            {
-                message += " " + QString::number(i + 1) + " ";
-                error += m_model->SumOfErrors(i);
-            }
-            message += "got results: ";
-        for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
-            message += "Constant "+ QString(i)+ " " +QString::number(m_model->GlobalParameter()[i]) +" ";
-        message += "Sum of Error is " + QString::number(error);
-        message += "\n";
-        m_last_parameter = m_model->ExportModel(m_exc_statistics);
-        m_converged = true;
-        Message(message, 2);        
-    }
-}
+// void NonLinearFitThread::ConstrainedFit()
+// {   
+//     QList<qreal> old_para_constant = m_model->GlobalParameter();
+//     
+//     bool convergence = false;
+//     bool constants_convergence = false;
+//     bool error_convergence = false;
+//     int iter = 0;
+//     bool allow_loop = true;
+//     bool process_stopped = false;
+// 
+//     QList<int >locked = m_model->LockedParamters();
+//     QVector<qreal > parameter = m_model->OptimizeParameters(m_runtype);
+//     if(locked.size() == parameter.size())
+//         m_model->setLockedParameter(locked); 
+//     
+//     while((allow_loop && !convergence))
+//     {
+//         iter++;   
+//         if(iter > m_opt_config.MaxIter - 1)
+//             allow_loop = false;
+//         
+//         emit Message("***** Begin iteration " + QString::number(iter) + "\n", 4);
+//         QList<qreal > old_constants =  m_model->GlobalParameter();
+//         qreal old_error;
+//         if(m_opt_config.error_potenz == 2)
+//             old_error = m_model->SumofSquares();
+//         else
+//             old_error = m_model->SumofAbsolute();
+//         if(m_runtype & OptimizationType::ComplexationConstants)
+//         {
+//             if(NonLinearFit(OptimizationType::ComplexationConstants) == 1)
+//                 m_model->ImportModel(m_last_parameter);
+//         }
+//        
+//         m_model->MiniShifts(); 
+//         
+//         if(m_runtype & OptimizationType::IntermediateShifts)
+//         {
+//              if(NonLinearFit(OptimizationType::IntermediateShifts) == 1)
+//                  m_model->ImportModel(m_last_parameter);
+//         }
+//         m_last_parameter = m_model->ExportModel(m_exc_statistics);
+//         qreal error;
+//         
+//         if(m_opt_config.error_potenz == 2)
+//             error = m_model->SumofSquares();
+//         else
+//             error = m_model->SumofAbsolute();
+//         
+//         QList<qreal> constants = m_model->GlobalParameter();
+//         qreal constant_diff = 0;
+//         QString constant_string;
+//         for(int z = 0; z < constants.size(); ++z)
+//         {
+//             if(constants[z] < 0)
+//             {
+//                 emit Message("*** Something quite seriosly happend to the complexation constant. ***\n", 4);
+//                 emit Message("*** At least one fall below zero, will stop optimization now and give the best intermediate result. ***\n", 4);
+//                 if(m_model->isCorrupt())
+//                     emit Message("*** Calculated signals seems corrupt (infinity or not even a number (nan)). ***\n", 4);
+//                 emit Warning("Something quite seriosly happend to the complexation constant.\nAt least one fall below zero, will stop optimization now and restore old values.", 0);
+//                 allow_loop = false;
+//                 process_stopped = true;
+//                 break;
+//             }
+//             constant_diff += qAbs(old_constants[z] - constants[z]);
+//             constant_string += QString::number(constants[z]) + " ** ";
+//         }
+//         
+//         if(constant_diff < m_opt_config.Constant_Convergence)
+//         {
+//             if(!constants_convergence)
+//                 emit Message("*** Change in complexation constants signaling convergence! ***", 3);
+//             constants_convergence = true;
+//         }
+//         else
+//             constants_convergence = false;
+//         if(error < old_error)
+//             m_best_intermediate = m_model->ExportModel(m_exc_statistics);
+//         if(qAbs(error - old_error) < m_opt_config.Error_Convergence)
+//         {
+//             if(!error_convergence)
+//                 emit Message("*** Change in sum of error signaling convergence! ***", 3);
+//             error_convergence = true;
+//         }
+//         else
+//             error_convergence = false;
+//         emit Message("*** Change in complexation constant " + QString::number(constant_diff) + " | Convergence at "+ QString::number(m_opt_config.Constant_Convergence)+ " ***\n", 4);
+//         emit Message("*** New resulting contants " + constant_string + "\n", 5);
+//         emit Message("*** Change in error for model " + QString::number(qAbs(error - old_error)) + " | Convergence at "+ QString::number(m_opt_config.Error_Convergence)+"***\n", 4);
+//         emit Message("*** New resulting error " + QString::number(error) + "\n", 5);
+//         emit Message("***** End iteration " + QString::number(iter) + "\n", 6);
+//        
+//        convergence = error_convergence & constants_convergence;
+//     } 
+// 
+//     
+//     if(!convergence && !process_stopped)
+//         emit Warning("Optimization did not convergence within " + QString::number(iter) + " cycles, sorry", 1);
+//     if(process_stopped)
+//     {
+//         m_model->setGlobalParameter(old_para_constant);
+//     }else{
+//         emit Message("*** Finished after " + QString::number(iter) + " cycles.***", 2);
+//         emit Message("*** Convergence reached  " + ToolSet::bool2YesNo(convergence) + "  ****\n", 3);
+//         
+//         QString message = "Using Signals";
+//         qreal error = 0;
+//         for(int i = 0; i < m_model->ActiveSignals().size(); ++i)
+//             if(m_model->ActiveSignals()[i])
+//             {
+//                 message += " " + QString::number(i + 1) + " ";
+//                 error += m_model->SumOfErrors(i);
+//             }
+//             message += "got results: ";
+//         for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
+//             message += "Constant "+ QString(i)+ " " +QString::number(m_model->GlobalParameter()[i]) +" ";
+//         message += "Sum of Error is " + QString::number(error);
+//         message += "\n";
+//         m_last_parameter = m_model->ExportModel(m_exc_statistics);
+//         m_converged = true;
+//         Message(message, 2);        
+//     }
+// }
 
 
 int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
