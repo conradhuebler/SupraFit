@@ -56,16 +56,16 @@
 #include <stdio.h>
 
 #include "suprafit.h"
-MainWindow::MainWindow() : m_ask_on_exit(true)
+MainWindow::MainWindow()
 {
     ReadSettings();
     
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Workspace"), this);
     m_modeldock->setObjectName(tr("data_and_models"));
+    m_modeldock->setToolTip(tr("This <strong>workspace widget</strong> contains all open models and allows them to be manipulated!"));
     m_modeldock->setWidget(m_model_dataholder);
     m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
-    addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
     
     connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)), Qt::DirectConnection);
     connect(m_model_dataholder, SIGNAL(MessageBox(QString, int)), this, SLOT(MessageBox(QString, int)), Qt::DirectConnection);
@@ -77,7 +77,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_chartdock->setObjectName(tr("charts"));
     m_chartdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     m_chartdock->setWidget(m_charts);
-    addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
+    m_chartdock->setToolTip(tr("This <strong>chart widget</strong> contains the charts for the calculated models and the model errors!"));
     
     m_logdock = new QDockWidget(tr("Logging output"), this);
     m_logdock->setObjectName(tr("logging"));
@@ -85,7 +85,9 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_logdock->setWidget(m_logWidget);
     connect(this, SIGNAL(AppendPlainText(QString)), m_logWidget, SLOT(appendPlainText(QString)));
     m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
-    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
+    m_logdock->setToolTip(tr("The <strong>log widget</strong> contains the log output of SupraFit!"));
+
+    m_logdock->hide();
     
     m_stdout.open(stdout, QIODevice::WriteOnly);
     
@@ -100,7 +102,13 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
     m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     m_history_dock->setMaximumWidth(240);
     m_history_dock->setMinimumWidth(240);
+    m_history_dock->setToolTip(tr("This widget contains the <strong>stack</strong>, where <strong>models</strong> appear!"));
+    
+    addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
+    addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
     addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
+    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
+    
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject, int)), this, SLOT(InsertHistoryElement(QJsonObject, int)), Qt::DirectConnection);
     connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
@@ -196,6 +204,7 @@ MainWindow::MainWindow() : m_ask_on_exit(true)
                     "margin-bottom: 2px;"
                     "border-radius: 4px;"
                     "}");
+    qApp->installEventFilter(this);
 }
 
 MainWindow::~MainWindow()
@@ -429,6 +438,31 @@ void MainWindow::ReadSettings()
     for(const QString &str : qAsConst(m_properties))
         qApp->instance()->setProperty(qPrintable(str), _settings.value(str));
     _settings.endGroup();
+    
+    /* We start with the default values, which should replace all invalid QVariants eg. no yet set properties */
+    if(qApp->instance()->property("ask_on_exit") == QVariant())
+        qApp->instance()->setProperty("ask_on_exit", true);
+   
+    if(qApp->instance()->property("tooltips") == QVariant())
+    {
+        qApp->instance()->setProperty("tooltips", true);
+        QTimer::singleShot(10, this, SLOT(FirstStart()));
+    }
+    
+    if(qApp->instance()->property("chartanimation") == QVariant())
+        qApp->instance()->setProperty("chartanimation", true);
+    
+    if(qApp->instance()->property("auto_confidence") == QVariant())
+        qApp->instance()->setProperty("auto_confidence", true);
+    
+    if(qApp->instance()->property("charttheme") == QVariant())
+        qApp->instance()->setProperty("charttheme", 1);
+    
+    if(qApp->instance()->property("dirlevel") == QVariant())
+        qApp->instance()->setProperty("dirlevel", 1);
+    
+    if(qApp->instance()->property("p_value") == QVariant())
+        qApp->instance()->setProperty("p_value", 0.95);
 }
 
 void MainWindow::ReadGeometry()
@@ -437,7 +471,6 @@ void MainWindow::ReadGeometry()
     _settings.beginGroup("window");
     restoreGeometry(_settings.value("geometry").toByteArray());
     restoreState(_settings.value("state").toByteArray());
-    m_ask_on_exit = _settings.value("Ask_on_exit", true).toBool();
     _settings.endGroup();
 }
 
@@ -459,7 +492,6 @@ void MainWindow::WriteSettings(bool ignore_window_state)
         _settings.beginGroup("window");
         _settings.setValue("geometry", saveGeometry());
         _settings.setValue("state", saveState());
-        _settings.setValue("Ask_on_exit", m_ask_on_exit);
         _settings.endGroup();
     }
 }
@@ -481,17 +513,31 @@ void MainWindow::about()
     info  = "<h4>" + version + "</h4>";
     info += "<p>This is all about SupraFit, nothing else matters< /p>";
     info += "<p>Created by Conrad Hübler</p>";
-    info += "<p>Special thanks to <b>Prof. M. Mazik</b>, TU Bergakademie Freiberg for her support.</p>";
-    info += "<p>Special thanks to <b>Stefan Kaiser</b> for finding bugs and constructive feedback.</p>";
+    info += "<p>Special thanks to <strong>Prof. M. Mazik</strong>, TU Bergakademie Freiberg for her support.</p>";
+    info += "<p>Special thanks to <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
+    info += "<p>SupraFit website on GitHub: <a href='https://github.com/contra98/SupraFit'>https://github.com/contra98/SupraFit</a></p>";
     info += "<p>SupraFit has been compilied on " +  QString::fromStdString(__DATE__) + " at " +QString::fromStdString( __TIME__) + ".\n";
     QMessageBox::about(this, tr("About this application"), info);
 }
 
+void MainWindow::FirstStart()
+{
+    QString info;
+    info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramoleculare NMR titration experiments.< /p>";
+    info += "<p>The main window of SupraFit is arranged via dock widgets:";
+    info += "<ul><li>Workspace Widget</li><li>Chart Dock</li><li>Models Stack</li><li>Log Dock</li></ul></p>";
+    info += "<p>Short information about them can be found as tooltips by hovering over the widget.</p>";
+    info += "<p>All dock widgets can be dragged around using the mouse, hidden via toolbar or by clicking the <em>close button</em> on the dock widget.</p>";
+    info += "<p>The log widget is hidden on first startup.</p>";
+    info += "<p><strong>All</strong> tooltips can globally disabled in the config dialog.</p>";
+    QMessageBox::about(this, tr("First Start Information"), info);
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if(m_ask_on_exit)
+    if(qApp->instance()->property("ask_on_exit").toBool())
     {
         QCheckBox *checkbox = new QCheckBox;
         checkbox->setText(tr("Don't ask this again!"));
@@ -499,11 +545,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
         question.setCheckBox(checkbox);
         if(question.exec() == QMessageBox::No)
         {
-            m_ask_on_exit = !question.checkBox()->isChecked();
+            qApp->instance()->setProperty("ask_on_exit", !question.checkBox()->isChecked());
             event->ignore();
             return;
         }
-        m_ask_on_exit = !question.checkBox()->isChecked();
+        qApp->instance()->setProperty("ask_on_exit", !question.checkBox()->isChecked());
     }
         
     m_stdout.close();
@@ -518,6 +564,16 @@ void MainWindow::closeEvent(QCloseEvent *event)
         delete m_historywidget;
     
     QMainWindow::closeEvent(event);
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::ToolTip)
+    {
+        return !qApp->instance()->property("tooltips").toBool();
+    }
+    else
+        return QMainWindow::eventFilter(obj, event);
 }
 
 #include "suprafit.moc"
