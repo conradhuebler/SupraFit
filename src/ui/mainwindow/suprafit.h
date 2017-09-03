@@ -85,9 +85,9 @@ private:
     int m_printlevel;
     void LogFile();
     QFile m_file, m_stdout;
-    bool m_ask_on_exit;
     virtual void closeEvent(QCloseEvent *event);
-    const QStringList m_properties = QStringList() << "threads" << "chartanimation" << "workingdir" << "dirlevel" << "auto_confidence" << "lastdir" << "p_value" << "charttheme";
+    const QStringList m_properties = QStringList() << "threads" << "chartanimation" << "workingdir" << "dirlevel" << "auto_confidence" << "lastdir" << "p_value" << "charttheme" << "ask_on_exit" << "tooltips";
+    
 private slots:
     void NewTable();
     void OpenFile();
@@ -101,10 +101,13 @@ private slots:
     void MessageBox(const QString &str, int priority);
     void InsertHistoryElement(const QJsonObject &model);
     void InsertHistoryElement(const QJsonObject &model, int active);
+    void FirstStart();
     
 signals:
     void AppendPlainText(const QString &str);
-   
+    
+   protected:
+       bool eventFilter(QObject *obj, QEvent *ev);
 };
 
 #endif // nmr2fit_H

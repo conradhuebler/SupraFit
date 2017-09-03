@@ -95,6 +95,7 @@ public:
     void SaveWorkspace(const QString &file);
     
     bool CheckCrashFile();
+    virtual QSize sizeHint() const { return QSize(800,600); }
     
 public slots:
     /*

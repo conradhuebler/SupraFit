@@ -176,6 +176,14 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(m_select_working);
     layout->addLayout(h_layout);
     
+    m_tooltips = new QCheckBox(tr("Show Tooltips as quick help on selected widgets."));
+    m_tooltips->setChecked(qApp->instance()->property("tooltips").toBool());
+    layout->addWidget(m_tooltips);
+    
+    m_ask_on_exit = new QCheckBox(tr("Confirm quit of SupraFit"));
+    m_ask_on_exit->setChecked(qApp->instance()->property("ask_on_exit").toBool());
+    layout->addWidget(m_ask_on_exit);
+    
     layout->addWidget(new QLabel(tr("All changes below will only take effect after restarting the application\nor creating a new instance of anything being affected by that change.")));
     h_layout = new QHBoxLayout;
     h_layout->addWidget(new QLabel(tr("Chart Theme")));
@@ -188,38 +196,7 @@ void ConfigDialog::createGeneralTab()
     m_animated_charts = new QCheckBox(tr("Animated Charts"));
     layout->addWidget(m_animated_charts);
     m_animated_charts->setChecked(qApp->instance()->property("chartanimation").toBool());
-    /*QLabel *printlevel = new QLabel(tr("Set Printlevel"));
-    layout->addWidget(printlevel);
     
-    m_printlevel_0 = new QRadioButton(tr("No Console Output (Printlevel 0)"), generalTab);
-    if(m_printlevel == 0)
-        m_printlevel_0->setChecked(true);
-    layout->addWidget(m_printlevel_0);
-    
-    m_printlevel_1 = new QRadioButton(tr("Only Results (Printlevel 1)"), generalTab);
-    if(m_printlevel == 1)
-        m_printlevel_1->setChecked(true);
-    layout->addWidget(m_printlevel_1);
-    
-    m_printlevel_2 = new QRadioButton(tr("Add Timing (Printlevel 2)"), generalTab);
-    if(m_printlevel == 2)
-        m_printlevel_2->setChecked(true);
-    layout->addWidget(m_printlevel_2);
-    
-    m_printlevel_3 = new QRadioButton(tr("Add important intermediate Results (Printlevel 3)"), generalTab);    
-    if(m_printlevel == 3)
-        m_printlevel_3->setChecked(true);
-    layout->addWidget(m_printlevel_3);
-    
-    m_printlevel_4 = new QRadioButton(tr("Add all intermediate Results (Printlevel 4)"), generalTab);
-    if(m_printlevel == 4)
-        m_printlevel_4->setChecked(true);
-    layout->addWidget(m_printlevel_4);
-    
-    m_printlevel_5 = new QRadioButton(tr("Include debug information (Printlevel 5)"), generalTab);
-    if(m_printlevel == 5)
-        m_printlevel_5->setChecked(true);
-    layout->addWidget(m_printlevel_5);*/
     m_mainwidget->addTab(generalTab, tr("General Settings"));
 }
 
@@ -310,6 +287,8 @@ void ConfigDialog::accept()
    qApp->instance()->setProperty("dirlevel", m_dirlevel);
    qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
    qApp->instance()->setProperty("p_value", m_p_value->value());
+   qApp->instance()->setProperty("ask_on_exit", m_ask_on_exit->isChecked());
+   qApp->instance()->setProperty("tooltips", m_tooltips->isChecked());
    QDialog::accept(); 
 }
 

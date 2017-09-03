@@ -70,7 +70,7 @@ public:
     ~ModelHistory();
     void InsertElement(const QJsonObject &model, int active);
     void InsertElement(const QJsonObject &model);
-    
+    virtual QSize sizeHint() const { return QSize(210,600); }
 private:
     QMap<int, QJsonObject*> m_history;
     QWidget *m_mainwidget;
