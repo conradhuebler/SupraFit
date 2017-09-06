@@ -55,7 +55,8 @@ void LineSeries::setName(const QString &str)
      QPen pen = QtCharts::QScatterSeries::pen();
 //      pen.setStyle(Qt::DashDotLine);
      pen.setWidth(2);
-     pen.setColor(color);
+//      pen.setColor(color);
+     QScatterSeries::setColor(color);
      setPen(pen);     
 }
 
@@ -132,6 +133,26 @@ QColor ChartWrapper::color(int i) const
             return ColorCode(i);
         return m_stored_series[i]->color();
     }
+}
+
+QString ChartWrapper::ColorList() const
+{
+    QString list;
+    for(int i = 0; i < m_stored_series.size(); ++i)
+        list += color(i).name() + "|";
+    list.chop(1);
+    return list;
+}
+
+bool ChartWrapper::setColorList(const QString &str)
+{
+    QStringList colors = str.split("|");
+    if(colors.size() != m_stored_series.size())
+        return false;
+    for(int i = 0; i < m_stored_series.size(); ++i)
+        m_stored_series[i]->setColor(QColor(colors[i]));
+
+    return true;
 }
 
 QColor ChartWrapper::ColorCode(int i) const

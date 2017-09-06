@@ -82,6 +82,9 @@ public:
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
     void TransformModel(QSharedPointer< DataClass > model) { if(!m_transformed) m_model = model; m_transformed = true; }
+    QString ColorList() const;
+    bool setColorList(const QString &str);
+    
 public slots:
     void UpdateModel();
     void showSeries(int i);

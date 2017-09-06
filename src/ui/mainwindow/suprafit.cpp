@@ -245,7 +245,7 @@ void MainWindow::setActionEnabled(bool enabled)
     m_importmodel->setEnabled(enabled);
 }
 
-bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str)
+bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str, const QString &colors)
 {
     if(!m_titration_data.isNull())
     {
@@ -260,7 +260,10 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str
         qApp->instance()->setProperty("projectname", info.baseName());
         m_titration_data = QSharedPointer<DataClass>(new DataClass((dataclass))); 
         QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(m_titration_data);
+        if(!colors.isEmpty() && !colors.isNull())
+            wrapper->setColorList(colors);
         m_model_dataholder->setData(m_titration_data, wrapper);
+
         setActionEnabled(true);
         
         QJsonObject toplevel;
@@ -321,7 +324,7 @@ bool MainWindow::LoadProject(const QString& filename)
         QPointer<const DataClass > data = new DataClass(toplevel);
         if(data->DataPoints() != 0)
         {
-            SetData(data, filename);
+            SetData(data, filename, toplevel["data"].toObject()["colors"].toString());
             return true;
         }
         else

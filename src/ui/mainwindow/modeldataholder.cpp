@@ -71,13 +71,19 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     
     ToolButton *color = new ToolButton;
     color->setMaximumSize(15,15);
-    QPalette palette = color->palette();
-    QLinearGradient gradient(color->rect().topLeft(),color->rect().bottomLeft());
-    gradient.setColorAt(0.0, QColor(255, 0, 0, 127));
-    gradient.setColorAt(1.0, QColor(0, 0, 255, 127));
-    gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
-    palette.setBrush(QPalette::Button, QBrush(gradient));
-    color->setPalette(palette);
+    QStringList colors = modelwidget->Chart().signal_wrapper->ColorList().split("|");
+    colors.removeDuplicates();
+    if(colors.size() > 1)
+    {
+        QPalette palette = color->palette();
+        QLinearGradient gradient(color->rect().topLeft(),color->rect().bottomLeft());
+        gradient.setColorAt(0.0, QColor(255, 0, 0, 127));
+        gradient.setColorAt(1.0, QColor(0, 0, 255, 127));
+        gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+        palette.setBrush(QPalette::Button, QBrush(gradient));
+        color->setPalette(palette);
+    }else
+        color->ChangeColor(QColor(colors.first()));
     
     QWidget *tools = new QWidget;
     QHBoxLayout *layout = new QHBoxLayout;
@@ -384,13 +390,20 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         return; 
     }
     t->ImportModel(object);
-    ActiveModel(t);
+    ActiveModel(t, object);
 }
 
-void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t)
+void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject &object)
 {
-    Charts charts = m_charts->addModel(t);
+    Charts charts = m_charts->addModel(t); 
     ModelWidget *modelwidget = new ModelWidget(t, charts);
+    
+    if(!object.isEmpty())
+    {
+        charts.signal_wrapper->setColorList(object["colors"].toString());
+        charts.error_wrapper->setColorList(object["colors"].toString());
+        charts.data_wrapper->setColorList(object["colors"].toString());
+    }
     
     t->setOptimizerConfig(m_config);
     connect(modelwidget, SIGNAL(AddModel(const QJsonObject)), this, SLOT(AddToWorkspace(const QJsonObject)));
@@ -492,6 +505,7 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
         {
             ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
             QJsonObject obj = model->Model()->ExportModel();
+            obj["colors"] = model->Chart().signal_wrapper->ColorList();
             toplevel["model_" + QString::number(i)] = obj; 
         }
     }    
@@ -500,8 +514,8 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
 
 void ModelDataHolder::SaveWorkspace(const QString &file)
 {
-    QJsonObject toplevel;
-    toplevel["data"] = m_data->ExportData();
+    QJsonObject toplevel, data;
+    data = m_data->ExportData();
         
     for(int i = 1; i < m_modelsWidget->count(); i++)
     {
@@ -509,9 +523,12 @@ void ModelDataHolder::SaveWorkspace(const QString &file)
         {
             ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
             QJsonObject obj = model->Model()->ExportModel();
+            obj["colors"] = model->Chart().signal_wrapper->ColorList();
+            data["colors"] = model->Chart().data_wrapper->ColorList();
             toplevel["model_" + QString::number(i)] = obj; 
         }
     } 
+    toplevel["data"] = data;
     JsonHandler::WriteJsonFile(toplevel, file);
 }
 
