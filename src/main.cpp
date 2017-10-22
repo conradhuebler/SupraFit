@@ -62,7 +62,7 @@ int main(int argc, char** argv)
     
     
     MainWindow mainwindow;
-    mainwindow.show();
+    mainwindow.showMaximized();
     for(const QString &str : qAsConst(args))
         mainwindow.LoadFile(str);
     return app.exec();

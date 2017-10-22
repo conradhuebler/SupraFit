@@ -104,9 +104,9 @@ MainWindow::MainWindow()
     m_history_dock->setMinimumWidth(240);
     m_history_dock->setToolTip(tr("This widget contains the <strong>stack</strong>, where <strong>models</strong> appear!"));
     
-    addDockWidget(Qt::LeftDockWidgetArea, m_modeldock);
+    addDockWidget(Qt::LeftDockWidgetArea, m_history_dock, Qt::Horizontal);
+    addDockWidget(Qt::LeftDockWidgetArea, m_modeldock, Qt::Horizontal);
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
-    addDockWidget(Qt::LeftDockWidgetArea, m_history_dock);
     addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
     
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject, int)), this, SLOT(InsertHistoryElement(QJsonObject, int)), Qt::DirectConnection);
