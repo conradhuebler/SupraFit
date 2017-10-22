@@ -52,7 +52,7 @@ public:
     virtual ~MainWindow();
     
     
-    bool SetData(QPointer<const DataClass > dataclass, const QString &str = QString("new table"));
+    bool SetData(QPointer<const DataClass > dataclass, const QString &str = QString("new table"), const QString &colors = QString());
     
     
 public slots:

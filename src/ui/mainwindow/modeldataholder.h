@@ -48,7 +48,7 @@ class ToolButton : public QToolButton
 {
     Q_OBJECT
     
-private slots:
+public slots:
     void ChangeColor(const QColor &color);
 };
 
@@ -113,6 +113,7 @@ public slots:
      * Make Datatable editable 
      */
     inline void EditTableAction(bool checked) {m_datawidget->setEditable(checked) ; }
+    
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<TabWidget > m_modelsWidget;
@@ -137,7 +138,7 @@ private:
     
     void addToMenu(int IndependetCount);
     void Json2Model(const QJsonObject &object, const QString &str);
-    void ActiveModel(QSharedPointer<AbstractModel > t);
+    void ActiveModel(QSharedPointer<AbstractModel > t, const QJsonObject &object = QJsonObject());
     int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
     

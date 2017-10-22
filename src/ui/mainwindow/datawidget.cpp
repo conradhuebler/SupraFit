@@ -110,7 +110,6 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_data = dataclass;
     m_wrapper = wrapper; 
     m_concentrations->setModel(m_data.data()->IndependentModel());
-    
     m_signals->setModel(m_data.data()->DependentModel());
     connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
