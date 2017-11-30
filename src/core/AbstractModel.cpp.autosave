@@ -153,36 +153,6 @@ qreal AbstractModel::CalculateVariance()
     }
     return v/(count -1 );
 }
-/*
-qreal AbstractModel::CalculateVarianceData()
-{
-    qreal v = 0;
-    int count = 0;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
-            if(DependentModel()->isChecked(j,i))
-            {
-                v += m_model_signal->data(j,i);
-                count++;
-            }
-        }
-    }
-    double mean = v/double(v);
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
-            if(DependentModel()->isChecked(j,i))
-            {
-                v += qPow(m_model_signal->data(j,i) - mean, 2);
-                count++;
-            }
-        }
-    }
-    return v/(count -1 );
-}*/
 
 qreal AbstractModel::CalculateCovarianceFit()
 {

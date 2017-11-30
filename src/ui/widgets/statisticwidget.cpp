@@ -72,6 +72,10 @@ void StatisticWidget::Update()
     overview +=  "<tr><td>Variance of Error:</td><td><b>" + QString::number(m_model.data()->Variance())  +"</b></td></tr>\n";
     overview +=  "<tr><td>Standard deviation:</td><td><b>"+  QString::number(m_model.data()->StdDeviation()) +"</b></td></tr>\n";
     overview +=  "<tr><td>Standard Error:</td><td><b>"  + QString::number(m_model.data()->StdError()) + "</b></td></tr>\n";
+    overview += "<tr><td>SE<sub>y</sub>:</td><td><b>"  + QString::number(m_model.data()->SEy()) + "</b></td></tr>\n";
+    overview += "<tr><td>&chi;:</td><td><b>"  + QString::number(m_model.data()->ChiSquared()) + "</b></td></tr>\n";
+    overview += "<tr><td>cov<sub>fit</sub>:</td><td><b>"  + QString::number(m_model.data()->CovFit()) + "</b></td></tr>\n";
+
     overview += "</table>";
     
     m_short = overview;

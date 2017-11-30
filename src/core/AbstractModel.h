@@ -214,6 +214,10 @@ public:
     inline qreal Variance() const { return m_variance; }
     inline qreal StdDeviation() const { return qSqrt(m_variance); }
     inline qreal StdError() const { return m_stderror; }
+    inline qreal SEy() const { return m_SEy; }
+    inline qreal ChiSquared() const { return m_chisquared; }
+    inline qreal CovFit() const { return m_covfit; }
+
 // #warning must be changed
 //     inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
 // #warning must go away maybe
@@ -386,6 +390,10 @@ protected:
     /*! \brief Calculated the variance of the estimated model variables
      */
     qreal CalculateVariance();
+
+    /*! \brief Calculated the variance of the raw data
+     */
+    qreal CalculateCovarianceFit();
     
 // #warning to do as well
     //FIXME more must be
@@ -394,7 +402,7 @@ protected:
     QList< QJsonObject> m_mc_statistics;
     QList< QJsonObject> m_cv_statistics;
     QList< QJsonObject> m_moco_statistics;
-    qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror;
+    qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
     QList<int > m_active_signals;
     QList<int > m_locked_parameters, m_enabled_parameter;
