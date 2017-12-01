@@ -48,6 +48,8 @@ IItoI_ItoI_Model::~IItoI_ItoI_Model()
 
 void IItoI_ItoI_Model::DeclareOptions()
 {
+    QStringList method = QStringList() << "NMR" << "UV/VIS";
+    addOption("Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     addOption("Cooperativity", cooperativity);
 }
@@ -84,10 +86,16 @@ void IItoI_ItoI_Model::InitialGuess()
 {
     m_global_parameter = QList<qreal>() << 2 << 4;
     setOptParamater(m_global_parameter);
-    
-    m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow(), 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow(), 2);
+
+    qreal factor = 1;
+    if(getOption("Method") == "UV/VIS")
+    {
+        factor = 1/InitialHostConcentration(0);
+    }
+
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
@@ -119,7 +127,7 @@ qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QLi
 void IItoI_ItoI_Model::CalculateVariables()
 {
     m_corrupt = false;
-   
+    QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;
     
@@ -143,10 +151,13 @@ void IItoI_ItoI_Model::CalculateVariables()
         vector(4) = complex_11;
         
         SetConcentration(i, vector);
-        
+        qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            qreal value = host/host_0*m_local_parameter->data(0, j) + 2*complex_21/host_0*m_local_parameter->data(1, j) + complex_11/host_0*m_local_parameter->data(2, j);
+            if(method == "NMR")
+                value = host/host_0*m_local_parameter->data(0, j) + 2*complex_21/host_0*m_local_parameter->data(1, j) + complex_11/host_0*m_local_parameter->data(2, j);
+            else if(method == "UV/VIS")
+                value = host*m_local_parameter->data(0, j) + 2*complex_21*m_local_parameter->data(1, j) + complex_11*m_local_parameter->data(2, j);
             SetValue(i, j, value);
         }
         

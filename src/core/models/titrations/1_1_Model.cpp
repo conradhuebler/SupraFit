@@ -40,6 +40,7 @@ ItoI_Model::ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
     setName(tr("1:1-Model"));
     m_local_parameter = new DataTable(2, SeriesCount(), this);
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
+    DeclareOptions();
     InitialGuess();
 }
 
@@ -47,6 +48,7 @@ ItoI_Model::ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(m
 {
     setName(tr("1:1-Model"));
     m_local_parameter = new DataTable(2, SeriesCount(), this);
+    DeclareOptions();
     InitialGuess();
 }
 
@@ -60,21 +62,39 @@ void ItoI_Model::InitialGuess()
 {
     m_K11 = 4;
     m_global_parameter = QList<qreal>() << m_K11;
-    
-    m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
-    m_local_parameter->setColumn(DependentModel()->lastRow(), 1);
+
+    qreal factor = 1;
+    if(getOption("Method") == "UV/VIS")
+    {
+        factor = 1/InitialHostConcentration(0);
+    }
+
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 1);
     
     QVector<qreal * > line1, line2;
+
     for(int i = 0; i < SeriesCount(); ++i)
     {
-        line1 << &m_local_parameter->data(0, i); 
-        line2 << &m_local_parameter->data(1, i); 
+        line1 << &m_local_parameter->data(0, i);
+        line2 << &m_local_parameter->data(1, i);
     }
 
     setOptParamater(m_global_parameter);
     m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
     AbstractTitrationModel::Calculate();
+}
+
+void ItoI_Model::DeclareOptions()
+{
+    QStringList method = QStringList() << "NMR" << "UV/VIS";
+    addOption("Method", method);
+}
+
+void ItoI_Model::EvaluateOptions()
+{
+
 }
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
@@ -112,9 +132,10 @@ qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList< qr
 void ItoI_Model::CalculateVariables()
 {  
     m_corrupt = false;
-    
+    QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;
+    qreal value;
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
@@ -127,9 +148,13 @@ void ItoI_Model::CalculateVariables()
         vector(2) = guest_0 - complex;
         vector(3) = complex;
         SetConcentration(i, vector);
+
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            qreal value = host/host_0*m_local_parameter->data(0, j) + complex/host_0*m_local_parameter->data(1, j);
+            if(method == "NMR")
+                value = host/host_0*m_local_parameter->data(0, j) + complex/host_0*m_local_parameter->data(1, j);
+            else if(method == "UV/VIS")
+                value = host*m_local_parameter->data(0, j) + complex*m_local_parameter->data(1, j);
             SetValue(i, j, value);    
         }
     }

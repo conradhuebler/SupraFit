@@ -51,9 +51,9 @@ public:
             return QString();
     }
 
-    void DeclareOptions() override;
+    virtual void DeclareOptions() override;
         
-    void EvaluateOptions() override;
+    virtual void EvaluateOptions() override;
 
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 

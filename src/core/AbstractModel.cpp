@@ -40,7 +40,7 @@ AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false
     
     m_model_signal = new DataTable(SeriesCount(),DataPoints(), this);
     m_model_error = new DataTable(SeriesCount(),DataPoints(), this);
-    
+
     m_data = data; 
 }
 
@@ -214,7 +214,6 @@ qreal AbstractModel::CalculateCovarianceFit()
             }
         }
     }
-    qDebug() << cov_model << cov_data << model << data;
     return cov_model/cov_data;
 }
 

@@ -49,6 +49,8 @@ ItoI_ItoII_Model::~ItoI_ItoII_Model()
 
 void ItoI_ItoII_Model::DeclareOptions()
 {
+    QStringList method = QStringList() << "NMR" << "UV/VIS";
+    addOption("Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     addOption("Cooperativity", cooperativity);
 }
@@ -85,11 +87,17 @@ void ItoI_ItoII_Model::InitialGuess()
 {   
     m_global_parameter = QList<qreal>() << 4 << 2;
     setOptParamater(m_global_parameter);
-    
-    m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow(), 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow(), 2);
-    
+
+    qreal factor = 1;
+    if(getOption("Method") == "UV/VIS")
+    {
+        factor = 1/InitialHostConcentration(0);
+    }
+
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
+
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
     {
@@ -157,20 +165,30 @@ qreal ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, const QL
 void ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
+    QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal K12= qPow(10, GlobalParameter().last());
     qreal K11 = qPow(10, GlobalParameter().first());
+
+    qreal host_zero, guest_zero;
+
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        
+
         qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
         qreal guest = GuestConcentration(host_0, guest_0, GlobalParameter());
         qreal complex_11 = K11*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;
-                
+
+        if(i == 0)
+        {
+            host_zero = host;
+            guest_zero = guest;
+        }
+
         Vector vector(5);
         vector(0) = i + 1;
         vector(1) = host;
@@ -178,10 +196,15 @@ void ItoI_ItoII_Model::CalculateVariables()
         vector(3) = complex_11;
         vector(4) = complex_12;
         SetConcentration(i, vector);
-        
+
+        qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            qreal value = host/host_0*m_local_parameter->data(0, j) + complex_11/host_0*m_local_parameter->data(1, j)+ complex_12/host_0*m_local_parameter->data(2, j);
+            if(method == "NMR")
+                value = host/host_0*m_local_parameter->data(0, j) + complex_11/host_0*m_local_parameter->data(1, j)+ complex_12/host_0*m_local_parameter->data(2, j);
+            else if(method == "UV/VIS")
+                value = host*m_local_parameter->data(0, j) + complex_11*m_local_parameter->data(1, j)+ complex_12*m_local_parameter->data(2, j);
+
             SetValue(i, j, value);
         }
     }

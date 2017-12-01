@@ -58,6 +58,7 @@ public:
         else 
             return QString();
     }
+    virtual void DeclareOptions() override;
 
 private:
     qreal m_K21, m_K11, m_K12;

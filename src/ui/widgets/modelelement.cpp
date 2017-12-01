@@ -65,7 +65,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setMinimum(-1000);
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
-        constant->setMaximum(1000);
+        constant->setMaximum(1e10);
         constant->setSuffix(m_model->LocalParameterSuffix(i));
         constant->setValue(m_model->LocalParameter(i, m_no));
         constant->setToolTip(m_model->LocalParameterDescription(i));

@@ -53,10 +53,18 @@ IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
     qDeleteAll(m_solvers);
 }
 
+void IItoI_ItoI_ItoII_Model::DeclareOptions()
+{
+    QStringList method = QStringList() << "NMR" << "UV/VIS";
+    addOption("Method", method);
+    //QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
+    //addOption("Cooperativity", cooperativity);
+}
+
 void IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
-    
+    QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;
     
@@ -98,10 +106,14 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
         SetConcentration(i, vector);
-        
+        qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            qreal value = host/host_0*m_local_parameter->data(0, j) + 2*complex_21/host_0*m_local_parameter->data(1, j) + complex_11/host_0*m_local_parameter->data(2, j) + complex_12/host_0*m_local_parameter->data(3, j);
+            if(method == "NMR")
+                value = host/host_0*m_local_parameter->data(0, j) + 2*complex_21/host_0*m_local_parameter->data(1, j) + complex_11/host_0*m_local_parameter->data(2, j) + complex_12/host_0*m_local_parameter->data(3, j);
+            else if(method == "UV/VIS")
+                value = host*m_local_parameter->data(0, j) + 2*complex_21*m_local_parameter->data(1, j) + complex_11*m_local_parameter->data(2, j) + complex_12*m_local_parameter->data(3, j);
+
             SetValue(i, j, value);
         }
     }
@@ -123,11 +135,17 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
 {
     m_global_parameter = QList<qreal>() << 2 << 4 << 2;
     setOptParamater(m_global_parameter);
-    
-    m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow(), 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow(), 2);
-    m_local_parameter->setColumn(DependentModel()->lastRow(), 3);
+
+    qreal factor = 1;
+    if(getOption("Method") == "UV/VIS")
+    {
+        factor = 1/InitialHostConcentration(0);
+    }
+
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 3);
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
