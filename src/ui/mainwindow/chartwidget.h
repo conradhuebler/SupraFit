@@ -35,7 +35,10 @@
 #include "src/ui/widgets/chartview.h"
 
 class AbstractModel;
+
+class QAction;
 class QComboBox;
+class QMenu;
 class QPushButton;
 class QChartView;
 class ChartWrapper;
@@ -44,6 +47,36 @@ struct Charts{
     ChartWrapper *error_wrapper;
     ChartWrapper *signal_wrapper;
     ChartWrapper *data_wrapper;
+};
+
+
+
+class ChartDockTitle : public QWidget
+{
+    Q_OBJECT
+public:
+    inline ChartDockTitle();
+//    inline ~ChartDockTitle() { };
+    
+protected:
+    inline void mouseDoubleClickEvent(QMouseEvent * event) override { event->ignore(); };
+    inline void mousePressEvent(QMouseEvent * event) override { event->ignore(); };
+    inline void mouseReleaseEvent(QMouseEvent * event) override { event->ignore(); };
+    inline void mouseMoveEvent(QMouseEvent * event) override { event->ignore(); };
+
+signals:
+    void close();
+    void ThemeChanged(QtCharts::QChart::ChartTheme theme);
+    void AnimationChanged(bool animation);
+    void ChartFlip(bool transpose);
+    
+private:
+    QPushButton *m_hide, *m_tools;
+    QMenu *m_theme;
+    QAction *m_flip, *m_animation;
+    
+private slots:
+    void ThemeChange(QAction *action);
 };
 
 class ChartWidget : public QWidget
@@ -55,25 +88,29 @@ public:
     ~ChartWidget();
     QSharedPointer<ChartWrapper > setRawData(QSharedPointer<DataClass> rawdata); 
     Charts addModel(QSharedPointer< AbstractModel > model);
+    inline ChartDockTitle *TitleBarWidget() const { return m_TitleBarWidget; }
     
 private:
     qreal max_shift, min_shift;
        
-    QPointer<QComboBox > m_x_scale, m_themebox;
     QPointer<ChartView > m_signalview, m_errorview;
     QPointer<QtCharts::QChart > m_signalchart, m_errorchart;
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
     QVector< QWeakPointer<AbstractModel > > m_models;
     QWeakPointer<DataClass > m_rawdata;
+    ChartDockTitle *m_TitleBarWidget;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
-    QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
-    void Paint();
+//     QPair<qreal, qreal > Series2MinMax(const QtCharts::QXYSeries *series);
     QSharedPointer<ChartWrapper > m_data_mapper;
+    
+    void createTitleBarWidget();
     
 private slots:
     void formatAxis();
     void Repaint();
     void updateUI();
+    void updateTheme(QtCharts::QChart::ChartTheme  theme);
+    void setAnimation(bool animation);
     void stopAnimiation();
     void restartAnimation();
 };

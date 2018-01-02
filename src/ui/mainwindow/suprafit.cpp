@@ -77,7 +77,9 @@ MainWindow::MainWindow()
     m_chartdock->setObjectName(tr("charts"));
     m_chartdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     m_chartdock->setWidget(m_charts);
+    m_chartdock->setTitleBarWidget(m_charts->TitleBarWidget());
     m_chartdock->setToolTip(tr("This <strong>chart widget</strong> contains the charts for the calculated models and the model errors!"));
+    connect(m_charts->TitleBarWidget(), &ChartDockTitle::close, m_chartdock, &QDockWidget::close);
     
     m_logdock = new QDockWidget(tr("Logging output"), this);
     m_logdock->setObjectName(tr("logging"));

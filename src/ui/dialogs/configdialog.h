@@ -80,7 +80,6 @@ private:
     void createGeneralTab();
     void createStandardCalTab();
     void createOptimTab();
-    QComboBox *createThemeBox() const;
     OptimizerConfig m_opt_config;
     OptimizerWidget *m_opt_widget;
     int m_printlevel, m_dirlevel;

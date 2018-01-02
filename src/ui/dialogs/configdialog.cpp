@@ -183,20 +183,7 @@ void ConfigDialog::createGeneralTab()
     m_ask_on_exit = new QCheckBox(tr("Confirm quit of SupraFit"));
     m_ask_on_exit->setChecked(qApp->instance()->property("ask_on_exit").toBool());
     layout->addWidget(m_ask_on_exit);
-    
-    layout->addWidget(new QLabel(tr("All changes below will only take effect after restarting the application\nor creating a new instance of anything being affected by that change.")));
-    h_layout = new QHBoxLayout;
-    h_layout->addWidget(new QLabel(tr("Chart Theme")));
-    m_charttheme = createThemeBox();
-    h_layout->addWidget(m_charttheme);
-    m_charttheme->setCurrentIndex(qApp->instance()->property("charttheme").toInt());
-    layout->addLayout(h_layout);
-    
-    
-    m_animated_charts = new QCheckBox(tr("Animated Charts"));
-    layout->addWidget(m_animated_charts);
-    m_animated_charts->setChecked(qApp->instance()->property("chartanimation").toBool());
-    
+        
     m_mainwidget->addTab(generalTab, tr("General Settings"));
 }
 
@@ -280,9 +267,7 @@ void ConfigDialog::accept()
         m_printlevel = 4;  
     else
         m_printlevel = 5;  */
-   qApp->instance()->setProperty("charttheme", m_charttheme->itemData(m_charttheme->currentIndex()).toInt()); 
    qApp->instance()->setProperty("threads", m_threads->value()); 
-   qApp->instance()->setProperty("chartanimation", m_animated_charts->isChecked());
    qApp->instance()->setProperty("workingdir", m_working->text());
    qApp->instance()->setProperty("dirlevel", m_dirlevel);
    qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
@@ -292,18 +277,6 @@ void ConfigDialog::accept()
    QDialog::accept(); 
 }
 
-QComboBox *ConfigDialog::createThemeBox() const
-{
-    QComboBox * themeComboBox = new QComboBox();
-    themeComboBox->addItem("Light", QtCharts::QChart::ChartThemeLight);
-    themeComboBox->addItem("Blue Cerulean", QtCharts::QChart::ChartThemeBlueCerulean);
-    themeComboBox->addItem("Dark", QtCharts::QChart::ChartThemeDark);
-    themeComboBox->addItem("Brown Sand", QtCharts::QChart::ChartThemeBrownSand);
-    themeComboBox->addItem("Blue NCS", QtCharts::QChart::ChartThemeBlueNcs);
-    themeComboBox->addItem("High Contrast", QtCharts::QChart::ChartThemeHighContrast);
-    themeComboBox->addItem("Blue Icy", QtCharts::QChart::ChartThemeBlueIcy);
-    themeComboBox->addItem("Qt", QtCharts::QChart::ChartThemeQt);
-    return themeComboBox;
-}
+
 
 #include "configdialog.moc"

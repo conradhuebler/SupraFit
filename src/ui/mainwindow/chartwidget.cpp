@@ -29,8 +29,12 @@
 #include <QtCore/QBuffer>
 #include <QtCore/QVector>
 
+#include <QtWidgets/QAction>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QDockWidget>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableView>
 
@@ -49,7 +53,89 @@
 #include "chartwidget.h"
 
 
-ChartWidget::ChartWidget() 
+ChartDockTitle::ChartDockTitle()
+{    
+    m_tools = new QPushButton(tr("Tools and Chart Settings"));
+    m_tools->setFlat(true);
+    m_tools->setIcon(QIcon::fromTheme("applications-system"));
+    QMenu *toolsmenu = new QMenu;
+
+    m_flip = new QAction(tr("Flip View"));
+    
+    toolsmenu->addAction(m_flip);
+
+    toolsmenu->addSeparator();
+    
+    m_animation = new QAction(tr("Animation"));
+    m_animation->setCheckable(true);
+    m_animation->setChecked(qApp->instance()->property("chartanimation").toBool());
+    
+    connect(m_animation, &QAction::toggled, this, &ChartDockTitle::AnimationChanged);
+    toolsmenu->addAction(m_animation);
+    
+    m_theme = new QMenu("Chart Theme");
+    
+    QAction *light = new QAction(tr("Light"));
+    light->setData(QtCharts::QChart::ChartThemeLight);
+    m_theme->addAction(light);
+    
+    QAction *blue = new QAction(tr("Blue Cerulean"));
+    blue->setData( QtCharts::QChart::ChartThemeBlueCerulean);
+    m_theme->addAction(blue);
+    
+    QAction *dark = new QAction(tr("Dark"));
+    dark->setData( QtCharts::QChart::ChartThemeDark);
+    m_theme->addAction(dark);
+    
+    QAction *brown = new QAction(tr("Brown Sand"));
+    brown->setData( QtCharts::QChart::ChartThemeBrownSand);
+    m_theme->addAction(brown);
+    
+    QAction *bluencs = new QAction(tr("Blue NCS"));
+    bluencs->setData( QtCharts::QChart::ChartThemeBlueNcs);
+    m_theme->addAction(bluencs);
+        
+    QAction *high = new QAction(tr("High Contrast"));
+    high->setData( QtCharts::QChart::ChartThemeHighContrast);
+    m_theme->addAction(high);
+    
+    QAction *icy = new QAction(tr("Blue Icy"));
+    icy->setData( QtCharts::QChart::ChartThemeBlueIcy);
+    m_theme->addAction(icy);
+    
+    QAction *qt = new QAction(tr("Qt"));
+    qt->setData( QtCharts::QChart::ChartThemeQt);
+    m_theme->addAction(qt);
+
+    toolsmenu->addMenu(m_theme);
+    
+    m_tools->setMenu(toolsmenu);
+    
+    m_hide = new QPushButton;
+    m_hide->setFlat(true);
+    m_hide->setIcon(QIcon::fromTheme("tab-close"));
+    
+    
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->addWidget(new QLabel("Charts"));
+    layout->addStretch();
+    layout->addWidget(m_tools);
+    layout->addWidget(m_hide);
+    setLayout(layout);
+    
+    connect(m_hide, &QPushButton::clicked, this, &ChartDockTitle::close);
+    connect(m_theme, &QMenu::triggered, this, &ChartDockTitle::ThemeChange);
+}
+
+
+void ChartDockTitle::ThemeChange(QAction *action)
+{
+    QtCharts::QChart::ChartTheme  theme = QtCharts::QChart::ChartTheme (action->data().toInt());
+    emit ThemeChanged(theme);
+}
+
+
+ChartWidget::ChartWidget() : m_TitleBarWidget(new ChartDockTitle)
 {
     
     m_signalchart = new QtCharts::QChart;
@@ -60,12 +146,12 @@ ChartWidget::ChartWidget()
     m_signalview->setYAxis("Shift [ppm]");
     m_errorview = new ChartView(m_errorchart, true);
     m_errorview->setYAxis("Error [ppm]");
-    m_x_scale = new QComboBox;
-    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_signalview, SLOT(setXAxis(QString)));
-    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_errorview, SLOT(setXAxis(QString)));    
-    connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
-    m_x_scale->addItems(QStringList()  << tr("c(Host)") << tr("c(Guest)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
-    m_x_scale->setCurrentIndex(3);
+//     m_x_scale = new QComboBox;
+//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_signalview, SLOT(setXAxis(QString)));
+//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_errorview, SLOT(setXAxis(QString)));    
+//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
+//     m_x_scale->addItems(QStringList()  << tr("c(Host)") << tr("c(Guest)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
+//     m_x_scale->setCurrentIndex(3);
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(m_signalview,1, 0);
@@ -78,6 +164,10 @@ ChartWidget::ChartWidget()
     setLayout(layout);
     max_shift = 0;
     min_shift = 0;
+    
+    connect(m_TitleBarWidget, &ChartDockTitle::ThemeChanged, this, &ChartWidget::updateTheme);
+    connect(m_TitleBarWidget, &ChartDockTitle::AnimationChanged, this, &ChartWidget::setAnimation);
+
 }
 
 ChartWidget::~ChartWidget()
@@ -101,9 +191,9 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
         ScatterSeries *signal_series = (qobject_cast<ScatterSeries *>(m_data_mapper->Series(i)));
         m_data_mapper->setSeries(signal_series, i);
         m_signalview->addSeries(signal_series, true);
-        QPair<qreal, qreal > minmax = Series2MinMax(signal_series);
-        min_shift = minmax.first;
-        max_shift = minmax.second;
+//         QPair<qreal, qreal > minmax = Series2MinMax(signal_series);
+//         min_shift = minmax.first;
+//         max_shift = minmax.second;
     }
     
     m_signalview->formatAxis();
@@ -198,32 +288,47 @@ void ChartWidget::formatAxis()
 }
 
 
+void ChartWidget::updateTheme(QtCharts::QChart::ChartTheme  theme)
+{  
+     m_signalchart->setTheme(theme);
+     m_errorchart->setTheme(theme);
+     qApp->instance()->setProperty("charttheme", theme); 
+}
+
+void ChartWidget::setAnimation(bool animation)
+{
+    if(animation)
+    {
+        m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    }else
+    {
+        m_signalchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+        m_errorchart->setAnimationOptions(QtCharts::QChart::NoAnimation);  
+    }
+    qApp->instance()->setProperty("chartanimation", animation); 
+}
+
 void ChartWidget::updateUI()
 {
-    QtCharts::QChart::ChartTheme theme = (QtCharts::QChart::ChartTheme) m_themebox->itemData(m_themebox->currentIndex()).toInt();
-        
-    m_signalchart->setTheme(theme);
-    m_errorchart->setTheme(theme);
-    
      for(int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
          m_data_mapper->Series(i)->setColor(m_data_mapper->color(i));
-
 }
 
-QPair<qreal, qreal > ChartWidget::Series2MinMax(const QtCharts::QXYSeries *series)
-{
-    QPair<qreal, qreal > values(0,0);
-    QVector<QPointF> points = series->pointsVector();
-    if(points.isEmpty())
-        return values;
-    for(int i = 0; i < points.size(); ++i)
-    {
-        values.first = qMin(values.first, points[i].ry());
-        values.second = qMax(values.second, points[i].ry());
-    }
-    
-    return values;
-}
+// QPair<qreal, qreal > ChartWidget::Series2MinMax(const QtCharts::QXYSeries *series)
+// {
+//     QPair<qreal, qreal > values(0,0);
+//     QVector<QPointF> points = series->pointsVector();
+//     if(points.isEmpty())
+//         return values;
+//     for(int i = 0; i < points.size(); ++i)
+//     {
+//         values.first = qMin(values.first, points[i].ry());
+//         values.second = qMax(values.second, points[i].ry());
+//     }
+//     
+//     return values;
+// }
 
 void ChartWidget::stopAnimiation()
 {
@@ -239,4 +344,11 @@ void ChartWidget::restartAnimation()
         m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     }
 }
+
+void ChartWidget::createTitleBarWidget()
+{
+    
+}
+
+
 #include "chartwidget.moc"

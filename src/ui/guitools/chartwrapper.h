@@ -89,6 +89,7 @@ public slots:
     void UpdateModel();
     void showSeries(int i);
     void SetBlocked(int blocked);
+    void TransposeModels();
     
 private:
     QColor ColorCode(int i) const;
@@ -98,7 +99,7 @@ private:
     QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
 //     PlotMode m_plotmode;
     QSharedPointer< DataClass > m_model;
-    bool m_blocked, m_transformed;
+    bool m_blocked, m_transformed, m_transpose;
     
 signals:
     void ModelChanged();

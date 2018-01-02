@@ -70,7 +70,7 @@ void ScatterSeries::ShowLine(int state)
 }
 
 
-ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent), m_blocked(false), m_transformed(false)
+ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent), m_blocked(false), m_transformed(false), m_transpose(false)
 {
 }
 
@@ -81,6 +81,12 @@ ChartWrapper::~ChartWrapper()
           m_stored_series[i]->clear();
           delete m_stored_series[i];
      }
+}
+
+
+void ChartWrapper::TransposeModels()
+{
+    m_transpose = !m_transpose;
 }
 
 
