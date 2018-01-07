@@ -184,7 +184,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     
     if(m_model->LocalParameterSize())
     {
-        for(int i = 0; i < m_model->SeriesCount(); ++i)
+        for(int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i)
         {
             ModelElement *el = new ModelElement(m_model, m_charts, i);
             connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));

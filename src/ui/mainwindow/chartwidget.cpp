@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,7 @@ ChartDockTitle::ChartDockTitle()
     QMenu *toolsmenu = new QMenu;
 
     m_flip = new QAction(tr("Flip View"));
+    connect(m_flip, &QAction::toggled, this, &ChartDockTitle::ChartFlip);
     
     toolsmenu->addAction(m_flip);
 
@@ -139,27 +140,20 @@ ChartWidget::ChartWidget() : m_TitleBarWidget(new ChartDockTitle)
 {
     
     m_signalchart = new QtCharts::QChart;
-    
     m_errorchart = new QtCharts::QChart;
         
     m_signalview = new ChartView(m_signalchart, true);
     m_signalview->setYAxis("Shift [ppm]");
     m_errorview = new ChartView(m_errorchart, true);
     m_errorview->setYAxis("Error [ppm]");
-//     m_x_scale = new QComboBox;
-//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_signalview, SLOT(setXAxis(QString)));
-//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), m_errorview, SLOT(setXAxis(QString)));    
-//     connect(m_x_scale, SIGNAL(currentIndexChanged(QString)), this, SLOT(Repaint()));
-//     m_x_scale->addItems(QStringList()  << tr("c(Host)") << tr("c(Guest)") << tr("Ratio c(Host/Guest)")<< tr("Ratio c(Guest/Host)"));
-//     m_x_scale->setCurrentIndex(3);
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(m_signalview,1, 0);
     layout->addWidget(m_errorview, 2, 0);
-//     layout->addWidget(m_x_scale, 3, 0);
     
     m_signalchart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     m_errorchart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
+    
     restartAnimation();
     setLayout(layout);
     max_shift = 0;
@@ -179,21 +173,16 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
 {
     m_rawdata = rawdata;
     
-//     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
-    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-//     m_data_mapper->setPlotMode(j);
+    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
     m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
     m_data_mapper->setData(m_rawdata);
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
-    for(int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
+    for(int i = 0; i < m_data_mapper->SeriesSize(); ++i)
     {
         ScatterSeries *signal_series = (qobject_cast<ScatterSeries *>(m_data_mapper->Series(i)));
         m_data_mapper->setSeries(signal_series, i);
         m_signalview->addSeries(signal_series, true);
-//         QPair<qreal, qreal > minmax = Series2MinMax(signal_series);
-//         min_shift = minmax.first;
-//         max_shift = minmax.second;
     }
     
     m_signalview->formatAxis();
@@ -206,23 +195,20 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
 {
     m_models << model;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-//     ChartWrapper::PlotMode j = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1) ;
-    ChartWrapper *signal_wrapper = new ChartWrapper(this);
+    ChartWrapper *signal_wrapper = new ChartWrapper(false, this);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper, SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper, SLOT(showSeries(int)));
-//     signal_wrapper->setPlotMode(j);
     signal_wrapper->setDataTable(model->ModelTable());
     m_data_mapper->TransformModel(model);
     signal_wrapper->setData(model);
     
-    ChartWrapper *error_wrapper = new ChartWrapper(this);
+    ChartWrapper *error_wrapper = new ChartWrapper(false, this);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper, SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper, SLOT(showSeries(int)));
-//     error_wrapper->setPlotMode(j);
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model);
     
-    for(int i = 0; i < model->SeriesCount(); ++i)
+    for(int i = 0; i <m_data_mapper->SeriesSize(); ++i)
     {
         if(model->Type() != 3)
         {
@@ -258,25 +244,8 @@ void ChartWidget::Repaint()
 {         
     if(!m_data_mapper)
         return;
-    /*if(m_plot_mode != (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1))
-    {
-        m_plot_mode = (ChartWrapper::PlotMode)(m_x_scale->currentIndex() + 1);
-        m_data_mapper->setPlotMode(m_plot_mode);
-        
-    } */  
+
     m_data_mapper->UpdateModel();
-    QVector<int > trash;
-//     for(int i= 0; i < m_models.size(); ++i)
-//     {
-//         if(!m_models[i].isNull())
-//         {
-//             m_models[i].data()->setPlotMode(m_plot_mode);
-//             m_models[i].data()->UpdatePlotModels();
-//         }else
-//             trash << i;
-//     }
-//     for(int i = 0; i < trash.size(); ++i)
-//         m_models.remove(trash[i]);
 
     formatAxis();
 }
@@ -315,21 +284,6 @@ void ChartWidget::updateUI()
          m_data_mapper->Series(i)->setColor(m_data_mapper->color(i));
 }
 
-// QPair<qreal, qreal > ChartWidget::Series2MinMax(const QtCharts::QXYSeries *series)
-// {
-//     QPair<qreal, qreal > values(0,0);
-//     QVector<QPointF> points = series->pointsVector();
-//     if(points.isEmpty())
-//         return values;
-//     for(int i = 0; i < points.size(); ++i)
-//     {
-//         values.first = qMin(values.first, points[i].ry());
-//         values.second = qMax(values.second, points[i].ry());
-//     }
-//     
-//     return values;
-// }
-
 void ChartWidget::stopAnimiation()
 {
     m_signalchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
@@ -344,11 +298,5 @@ void ChartWidget::restartAnimation()
         m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     }
 }
-
-void ChartWidget::createTitleBarWidget()
-{
-    
-}
-
 
 #include "chartwidget.moc"

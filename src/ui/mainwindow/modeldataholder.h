@@ -85,7 +85,10 @@ public:
         Michaelis_Menten = 5,
         First_Order_Kinetics = 6,
         ScriptedModel = 10,
-        itc_ItoI = 11
+        itc_ItoI = 11,
+        fl_ItoI = 12,
+        fl_IItoI_ItoI = 13,
+        fl_ItoI_ItoII = 14
     };
     void setSettings(const OptimizerConfig &config);
     /*

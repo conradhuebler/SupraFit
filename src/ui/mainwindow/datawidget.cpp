@@ -120,7 +120,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SeriesCount()));
     
     QVBoxLayout *vlayout = new QVBoxLayout;
-    for(int i = 0; i < m_data.data()->SeriesCount(); ++i)
+    for(int i = 0; i < m_wrapper.data()->SeriesSize(); ++i)
     {
         QPointer<SignalElement > el = new SignalElement(m_data, m_wrapper, i, this);
         vlayout->addWidget(el);

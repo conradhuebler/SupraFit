@@ -143,6 +143,9 @@ set(models_SRC
                 src/core/AbstractModel.cpp
                 src/core/AbstractTitrationModel.cpp
                 src/core/models/itc/itc_1_1_Model.cpp
+                src/core/models/fluorescence/fl_1_1_Model.cpp
+                src/core/models/fluorescence/fl_1_1_1_2_Model.cpp
+                src/core/models/fluorescence/fl_2_1_1_1_Model.cpp
                 src/core/models/titrations/1_1_Model.cpp
                 src/core/models/titrations/2_1_1_1_Model.cpp
                 src/core/models/titrations/1_1_1_2_Model.cpp

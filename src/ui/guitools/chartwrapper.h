@@ -74,10 +74,12 @@ class ChartWrapper : public QObject
     Q_OBJECT
     
 public:
-    ChartWrapper(QObject *parent = 0);
+    ChartWrapper(bool flipable, QObject *parent = 0);
     ~ChartWrapper();
     void setData(QSharedPointer< DataClass > model);
     inline void setDataTable(const DataTable *table) { m_table = table; }
+    inline int SeriesSize() const { return m_stored_series.size(); }
+    inline bool ChartFliped() const { return m_flip; }
     inline QPointer<QtCharts::QXYSeries > Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
@@ -89,17 +91,15 @@ public slots:
     void UpdateModel();
     void showSeries(int i);
     void SetBlocked(int blocked);
-    void TransposeModels();
+    void FlipChart(bool flip);
     
 private:
     QColor ColorCode(int i) const;
     const DataTable *m_table;
-    QList<QStandardItemModel *> m_plot_signal_list;
-    QList<QPointer<QtCharts::QVXYModelMapper> > m_plot_mapper;
     QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
-//     PlotMode m_plotmode;
     QSharedPointer< DataClass > m_model;
-    bool m_blocked, m_transformed, m_transpose;
+    bool m_blocked, m_transformed, m_flipable, m_flip;
+    void InitaliseSeries();
     
 signals:
     void ModelChanged();

@@ -173,6 +173,26 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     II_I_ItoI_ItoII_action->setData(IItoI_ItoI_ItoII);
     connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
     m_nmr_model << II_I_ItoI_ItoII_action;
+    
+    
+    QAction *fl_ItoI_action = new QAction(this);
+    fl_ItoI_action->setText(tr("Fl_1:1-Model"));
+    fl_ItoI_action->setData(fl_ItoI);
+    connect(fl_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    m_nmr_model << fl_ItoI_action;
+    
+     QAction *fl_IItoI_ItoI_action = new QAction(this);
+    fl_IItoI_ItoI_action->setText(tr("Fl_2:1/1:1-Model"));
+    fl_IItoI_ItoI_action->setData(fl_IItoI_ItoI);
+    connect(fl_IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    m_nmr_model << fl_IItoI_ItoI_action;
+    
+    QAction *fl_ItoI_ItoII_action = new QAction(this);
+    fl_ItoI_ItoII_action->setText(tr("Fl_1:1/1:2-Model"));
+    fl_ItoI_ItoII_action->setData(fl_ItoI_ItoII);
+    connect(fl_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    m_nmr_model << fl_ItoI_ItoII_action;
+    
 #endif
     
 #ifdef Kinetic_Models
@@ -304,6 +324,15 @@ void ModelDataHolder::AddModel(int model)
         case itc_ItoI:
             t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
             break;
+        case fl_ItoI:
+            t =  QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(m_data.data()), &QObject::deleteLater);
+            break;
+        case fl_ItoI_ItoII:
+            t =  QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
+            break;
+        case fl_IItoI_ItoI:
+             t = QSharedPointer<fl_IItoI_ItoI_Model>(new fl_IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
+            break;
         default:
             t.clear();
             return; 
@@ -384,6 +413,8 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
     }
     else if(str == "itc_1:1-Model")
         t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
+    else if(str == "fl_1:1-Model")   
+        t =  QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(m_data.data()), &QObject::deleteLater);
     else
     {
         t.clear();

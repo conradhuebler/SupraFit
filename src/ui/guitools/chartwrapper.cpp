@@ -70,7 +70,7 @@ void ScatterSeries::ShowLine(int state)
 }
 
 
-ChartWrapper::ChartWrapper(QObject* parent) : QObject(parent), m_blocked(false), m_transformed(false), m_transpose(false)
+ChartWrapper::ChartWrapper(bool flipable, QObject* parent) : m_flipable(flipable), QObject(parent), m_blocked(false), m_transformed(false), m_flip(false)
 {
 }
 
@@ -84,22 +84,43 @@ ChartWrapper::~ChartWrapper()
 }
 
 
-void ChartWrapper::TransposeModels()
+void ChartWrapper::FlipChart(bool flip)
 {
-    m_transpose = !m_transpose;
+    if(m_flipable)
+        m_flip = flip;
 }
 
 
 void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
     m_model = model; 
-    
+    if(m_flipable)
+    {
+        if(m_model->DataPoints() > m_model->SeriesCount())
+            m_flip = false;
+        else
+            m_flip = true;
+    }
+    else
+        m_flip = false;
     if(qobject_cast<AbstractModel *>(m_model))
         connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     
+    InitaliseSeries();
+    UpdateModel();
+}
+
+void ChartWrapper::InitaliseSeries()
+{
     if(m_stored_series.isEmpty())
     {
-        for(int j = 0; j < m_model->SeriesCount(); ++j)
+        int serie = 0;
+        if(m_flip)
+            serie = m_model->DataPoints();
+        else
+            serie = m_model->SeriesCount();
+        
+        for(int j = 0; j < serie; ++j)
         { 
             QPointer<QtCharts::QXYSeries > series;
             if(qobject_cast<AbstractModel *>(m_model))
@@ -109,20 +130,41 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
             m_stored_series << series;
         }
     }
-    UpdateModel();
+    qDebug() << "resulting series size " << m_stored_series.size();
 }
+
 
 void ChartWrapper::UpdateModel()
 {
-    for(int j = 0; j < m_model->SeriesCount(); ++j)
+    for(int j = 0; j < m_stored_series.size(); ++j)
         m_stored_series[j]->clear();
-    for(int i = 0; i < m_model->DataPoints(); ++i)
+    
+    int rows = 0;
+    int cols = 0;
+    if(m_flip)
+    {
+        cols = m_model->DataPoints();
+        rows = m_model->SeriesCount();
+    }
+    else
+    {
+        rows = m_model->DataPoints();
+        cols = m_model->SeriesCount();
+    }
+    for(int i = 0; i < rows; ++i)
     {
         double x = m_model->PrintOutIndependent(i);
-        for(int j = 0; j < m_model->SeriesCount(); ++j)
+//         qDebug() << x;
+        for(int j = 0; j < cols; ++j)
         {
+//             qDebug() << j << m_table->data(j,i);
             if(m_model->DependentModel()->isChecked(j,i))
-                m_stored_series[j]->append(x, m_table->data(j,i));
+            {
+                if(m_flip)
+                    m_stored_series[j]->append(m_table->data(j,i), x);
+                else
+                    m_stored_series[j]->append(x, m_table->data(j,i));
+            }
         }
     }
     emit ModelChanged();
