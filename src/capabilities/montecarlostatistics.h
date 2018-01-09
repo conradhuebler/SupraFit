@@ -72,6 +72,9 @@ public:
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
     
+    QVector<QList<qreal > > GlobalParameterList() const { return m_global_list; }
+    QVector<QList<qreal > > LocalParameterList() const { return m_local_list; }
+    
 public slots:
     void Interrupt() override;
     void AnalyseData(qreal error = 95);
@@ -87,7 +90,7 @@ private:
     std::uniform_int_distribution<int> Uni;
     DataTable *m_table;
     MCConfig m_config;
-    QVector<QList<qreal > > m_constant_list, m_shift_list;
+    QVector<QList<qreal > > m_global_list, m_local_list;
     bool m_generate;
     int m_steps;
 };

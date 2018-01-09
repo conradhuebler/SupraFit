@@ -217,6 +217,86 @@ namespace ToolSet{
         return result;
     }
     
+    BoxWhisker BoxWhiskerPlot(const QList<qreal>& list)
+    {
+        BoxWhisker bw;
+        int count = list.size();
+        
+        /* inspired by qt docs: Box and Whiskers Example
+         * https://doc.qt.io/qt-5.10/qtcharts-boxplotchart-example.html
+         */
+        auto Median = [](const QList<qreal>& list, int begin, int end){
+            int count = end - begin;
+            if (count % 2) {
+                return list.at(count / 2 + begin);
+            } else {
+                qreal right = list.at(count / 2 + begin);
+                qreal left = list.at(count / 2 - 1 + begin);
+                return (right + left) / 2.0;
+            }
+        };
+
+        bw.median = Median(list, 0, count);
+        bw.lower_quantile = Median(list, 0, count / 2);
+        bw.upper_quantile = Median(list, count / 2 + (count % 2), count);
+        bw.lower_whisker = bw.lower_quantile;
+        bw.upper_whisker = bw.upper_quantile;
+        /*
+         * plagiate stopped
+         */
+        bw.count = count;
+        qreal iqd = bw.upper_quantile - bw.lower_quantile;
+        
+        for(int i = 0; i < count; ++i)
+        {
+            bw.mean += list[i];
+            if(list[i] < bw.median-3*iqd || list[i] > bw.median+3*iqd)
+                bw.extreme_outliers << list[i];
+            else if(list[i] < bw.median-1.5*iqd || list[i] > bw.median+1.5*iqd)
+                bw.mild_outliers << list[i];
+            else
+            {
+                bw.lower_whisker = qMin(list[i], bw.lower_whisker);
+                bw.upper_whisker = qMax(list[i], bw.upper_whisker);
+            }
+        }
+        bw.mean /= double(count);
+        
+        return bw;
+    }
+
+    QJsonObject Box2Object(const BoxWhisker& box)
+    {
+        QJsonObject object;
+        object["lower_whisker"] = box.lower_whisker;
+        object["upper_whisker"] = box.upper_whisker;
+        object["lower_quantile"] = box.lower_quantile;
+        object["upper_whisker"] = box.upper_whisker;
+        object["notch"] = box.notch;
+        object["median"] = box.median;
+        object["mean"] = box.mean;
+        object["count"] = box.count;
+        object["extreme_outliers"] = DoubleList2String(box.extreme_outliers);
+        object["mild_outliers"] = DoubleList2String(box.mild_outliers);
+        return object;
+    }
+
+    BoxWhisker Object2Whisker(const QJsonObject& object)
+    {
+        BoxWhisker box;
+        box.lower_whisker = object["lower_whisker"].toDouble();
+        box.upper_whisker = object["upper_whisker"].toDouble();
+        box.lower_quantile = object["lower_quantile"].toDouble();
+        box.upper_whisker = object["upper_whisker"].toDouble();
+        box.notch = object["notch"].toDouble();
+        box.median = object["median"].toDouble();
+        box.mean = object["mean"].toDouble();
+        box.count = object["count"].toDouble();
+        box.extreme_outliers = String2DoubleList(object["extreme_outliers"].toString());
+        box.mild_outliers = String2DoubleList(object["mild_outliers"].toString());
+        return box;
+    }
+    
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str)
     {
         QList<QPointF> series;

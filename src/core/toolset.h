@@ -22,9 +22,9 @@
 
 #include "src/core/AbstractModel.h"
 
+#include <QtCore/QJsonObject>
 #include <QtCore/QString>
 #include <QtCore/QVector>
-
 #include <Eigen/Dense>
 
 #include <fisher/fisher_dist.h>
@@ -51,6 +51,9 @@ namespace ToolSet{
     
     QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
     ConfidenceBar Confidence(const QList<qreal > &list, qreal error);
+    BoxWhisker BoxWhiskerPlot(const QList<qreal> &list);
+    QJsonObject Box2Object(const BoxWhisker &box);
+    BoxWhisker Object2Whisker(const QJsonObject& object);
 //     ConfidenceBar Confidence(QList<qreal > &list);
     
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str);

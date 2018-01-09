@@ -32,9 +32,13 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QWidget>
 
 #include <QtCharts/QAreaSeries>
+#include <QtCharts/QBarCategoryAxis>
+#include <QtCharts/QBoxPlotSeries>
+#include <QtCharts/QBoxSet>
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
@@ -58,19 +62,19 @@ MCResultsWidget::~MCResultsWidget()
 QWidget * MCResultsWidget::ChartWidget()
 {
     QWidget *widget = new QWidget;
-    QWidget *resultwidget = new QWidget;
+    QTabWidget *tabs = new QTabWidget;
+    tabs->setTabPosition(QTabWidget::South);
     QGridLayout *layout = new QGridLayout;
-    resultwidget->setLayout(layout);
+    layout->addWidget(tabs, 0, 0, 1, 7);
 
     m_histgram = MakeHistogram();
-    layout->addWidget(m_histgram, 0, 0, 1, 7);
+    m_box = MakeBoxPlot();
+    tabs->addTab(m_histgram, tr("Histogram"));
+    tabs->addTab(m_box, tr("Boxplot"));
     if(m_model->GlobalParameterSize() == 2)
     {
         m_contour = MakeContour();
-        layout->addWidget(m_contour, 0, 0, 1, 7);
-        m_contour->hide();
-        m_switch = new QPushButton(tr("Switch Plots"));
-        connect(m_switch, SIGNAL(clicked()), this, SLOT(SwitchView()));
+        tabs->addTab(m_contour, tr("Contour Plot"));
     }
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
@@ -84,8 +88,6 @@ QWidget * MCResultsWidget::ChartWidget()
     layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
     layout->addWidget(m_error, 1, 1);
     layout->addWidget(m_save, 1, 2);
-    if(m_model->GlobalParameterSize() == 2)
-        layout->addWidget(m_switch, 1, 3);
     
     widget->setLayout(layout);
     UpdateConfidence();
@@ -111,6 +113,54 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     view->addSeries(xy_series);
     view->setXAxis(m_model->GlobalParameterName(0));
     view->setYAxis(m_model->GlobalParameterName(1));
+    return view;
+}
+
+ QPointer<QtCharts::QChartView > MCResultsWidget::MakeBoxPlot()
+{
+    QWidget *widget = new QWidget;
+    QtCharts::QChart *chart_box = new QtCharts::QChart; 
+    chart_box->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    
+    QtCharts::QChartView *view = new QtCharts::QChartView(chart_box);
+    QPointer<MonteCarloStatistics > statistics = qobject_cast<MonteCarloStatistics * >(m_statistics);
+    QVector<QList<qreal > > global = statistics->GlobalParameterList();
+    QVector<QList<qreal > > local = statistics->LocalParameterList();
+    
+    for(int i = 0; i < global.size(); ++i)
+    {
+        QtCharts::QBoxPlotSeries *series = new QtCharts::QBoxPlotSeries();
+        series->setName(m_model->GlobalParameterName(i));
+        BoxWhisker bw = ToolSet::BoxWhiskerPlot(global[i]);
+        QtCharts::QBoxSet *box = new QtCharts::QBoxSet;
+        box->setValue(QtCharts::QBoxSet::LowerExtreme, bw.lower_whisker);
+        box->setValue(QtCharts::QBoxSet::UpperExtreme, bw.upper_whisker);
+        box->setValue(QtCharts::QBoxSet::Median, bw.median);
+        box->setValue(QtCharts::QBoxSet::LowerQuartile, bw.lower_quantile);
+        box->setValue(QtCharts::QBoxSet::UpperQuartile, bw.upper_quantile);
+        series->append(box);       
+        chart_box->addSeries(series);  
+        m_box_object << ToolSet::Box2Object(bw);
+    }
+    
+    for(int i = 0; i < local.size(); ++i)
+    {
+        BoxWhisker bw = ToolSet::BoxWhiskerPlot(local[i]);
+        /*
+        QtCharts::QBoxPlotSeries *series = new QtCharts::QBoxPlotSeries();
+        series->setName(m_model->LocalParameterName(i));
+        QtCharts::QBoxSet *box = new QtCharts::QBoxSet;
+        box->setValue(QtCharts::QBoxSet::LowerExtreme, bw.lower_whisker);
+        box->setValue(QtCharts::QBoxSet::UpperExtreme, bw.upper_whisker);
+        box->setValue(QtCharts::QBoxSet::Median, bw.median);
+        box->setValue(QtCharts::QBoxSet::LowerQuartile, bw.lower_quantile);
+        box->setValue(QtCharts::QBoxSet::UpperQuartile, bw.upper_quantile);
+        series->append(box);       
+        chart_box->addSeries(series);  */
+        m_box_object << ToolSet::Box2Object(bw);
+    }
+    chart_box->createDefaultAxes();
+    view->setRubberBand(QtCharts::QChartView::RectangleRubberBand);
     return view;
 }
 
@@ -192,6 +242,7 @@ void MCResultsWidget::UpdateConfidence()
     
     for(int i = 0; i < constant_results.size(); ++i)
     {
+        constant_results[i]["boxplot"] = m_box_object[i];
         m_model->setMCStatistic(constant_results[i], i);
     }
 

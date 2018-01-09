@@ -47,6 +47,7 @@ private:
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox *m_error;
     QPointer<ChartView > m_histgram, m_contour;
+    QPointer<QtCharts::QChartView > m_box;
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries * > m_area_series;
     
@@ -57,7 +58,8 @@ private:
     QtCharts::QAreaSeries *AreaSeries(const QColor &color) const;
     QPointer<ChartView > MakeHistogram();
     QPointer<ChartView > MakeContour();
-    
+    QPointer<QtCharts::QChartView > MakeBoxPlot();
+    QList<QJsonObject> m_box_object;
 private slots:
     void UpdateConfidence();
     void ExportResults();
