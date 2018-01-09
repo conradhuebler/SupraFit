@@ -20,6 +20,7 @@
 #ifndef MODELDATAHOLDER_H
 #define MODELDATAHOLDER_H
 #include "src/core/dataclass.h"
+#include "src/core/models.h"
 
 #include <QtCore/QPointer>
 
@@ -67,6 +68,40 @@ private:
     QPointer<DataWidget > m_datawidget;
 };
 
+class MDHDockTitleBar : public QWidget
+{
+    Q_OBJECT
+    
+public:
+    MDHDockTitleBar();
+    // ~MDHDockTitleBar();
+    
+    inline void setEnabled(bool enabled) { m_buttons->setEnabled(enabled); }
+    void EnableBatch( bool enabled);
+    void addToMenu(int IndependetCount);
+    const QAction *lastAction() const { return m_last_action; }
+private:
+
+    QWidget *m_buttons;
+    QPointer<QPushButton > m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all, m_hide;
+    QVector<QPointer<QAction > > m_nmr_model, m_fl_model, m_kinetcs_model, m_itc_model;
+    
+    QAction *m_script_action, *m_last_action;
+
+private slots:
+    void PrepareAddModel();
+    
+signals:
+    void AddModel();
+    void CloseAll();
+    void WGStatistic();
+    void MCStatistic();
+    void MoCoStatistic();
+    void ShowStatistics();
+    void OptimizeAll();
+};
+
+
 class ModelDataHolder : public QWidget
 {
     Q_OBJECT
@@ -77,19 +112,7 @@ public:
     
     void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper > wrapper);
     inline void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
-    enum {
-        ItoI = 1,
-        IItoI_ItoI = 2,
-        ItoI_ItoII = 3,
-        IItoI_ItoI_ItoII = 4,
-        Michaelis_Menten = 5,
-        First_Order_Kinetics = 6,
-        ScriptedModel = 10,
-        itc_ItoI = 11,
-        fl_ItoI = 12,
-        fl_IItoI_ItoI = 13,
-        fl_ItoI_ItoII = 14
-    };
+
     void setSettings(const OptimizerConfig &config);
     /*
      * Export currently open models to file
@@ -102,7 +125,7 @@ public:
     
     bool CheckCrashFile();
     virtual QSize sizeHint() const { return QSize(800,600); }
-    
+    MDHDockTitleBar *TitleBarWidget() const { return m_TitleBarWidget; }
 public slots:
     /*
      * Add a new model to the workspace
@@ -120,9 +143,8 @@ public slots:
 private:
     QPointer<DataWidget > m_datawidget;
     QPointer<TabWidget > m_modelsWidget;
-    QPointer<QPushButton > m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all;
-    QVector<QPointer<QAction > > m_nmr_model, m_kinetcs_model, m_itc_model;
-    QWidget *m_buttons;
+
+    QPointer<MDHDockTitleBar> m_TitleBarWidget;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
     QVector<QWeakPointer< AbstractModel > > m_models;
@@ -133,13 +155,12 @@ private:
     void ParseScriptedModels();
     void ActiveBatch();
     
-    QAction *m_script_action;
     
     OptimizerConfig m_config;
 
     int m_last_tab;
     
-    void addToMenu(int IndependetCount);
+    
     void Json2Model(const QJsonObject &object, const QString &str);
     void ActiveModel(QSharedPointer<AbstractModel > t, const QJsonObject &object = QJsonObject());
     int Runs(bool moco = false) const;

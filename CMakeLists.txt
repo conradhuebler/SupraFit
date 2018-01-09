@@ -27,6 +27,9 @@ option (ITC_Models
     
 option (Kinetic_Models
     "Enable Kinetic Models" ON)
+    
+option (Fluorescence_Models
+    "Enable Fluorescence Models" ON)
  
 # Get the current working branch
 execute_process(

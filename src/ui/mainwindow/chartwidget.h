@@ -51,12 +51,12 @@ struct Charts{
 
 
 
-class ChartDockTitle : public QWidget
+class ChartDockTitleBar : public QWidget
 {
     Q_OBJECT
 public:
-    inline ChartDockTitle();
-//    inline ~ChartDockTitle() { };
+    inline ChartDockTitleBar();
+//    inline ~ChartDockTitleBar() { };
     
 protected:
     inline void mouseDoubleClickEvent(QMouseEvent * event) override { event->ignore(); };
@@ -88,7 +88,7 @@ public:
     ~ChartWidget();
     QSharedPointer<ChartWrapper > setRawData(QSharedPointer<DataClass> rawdata); 
     Charts addModel(QSharedPointer< AbstractModel > model);
-    inline ChartDockTitle *TitleBarWidget() const { return m_TitleBarWidget; }
+    inline ChartDockTitleBar *TitleBarWidget() const { return m_TitleBarWidget; }
     
 private:
     qreal max_shift, min_shift;
@@ -98,7 +98,7 @@ private:
     QPointer<QtCharts::QValueAxis > m_x_chart, m_y_chart, m_x_error, m_y_error;
     QVector< QWeakPointer<AbstractModel > > m_models;
     QWeakPointer<DataClass > m_rawdata;
-    ChartDockTitle *m_TitleBarWidget;
+    ChartDockTitleBar *m_TitleBarWidget;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QSharedPointer<ChartWrapper > m_data_mapper;
     

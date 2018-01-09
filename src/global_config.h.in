@@ -8,4 +8,6 @@
 #cmakedefine NMR_Models
 #cmakedefine ITC_Models
 #cmakedefine Kinetic_Models
+#cmakedefine Fluorescence_Models
+
 #endif

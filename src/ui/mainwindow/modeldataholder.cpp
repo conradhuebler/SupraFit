@@ -107,113 +107,109 @@ void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
 }
 
 
-ModelDataHolder::ModelDataHolder() : m_history(true)
+MDHDockTitleBar::MDHDockTitleBar()
 {
-    QGridLayout *layout = new QGridLayout;
     
-    setLayout(layout);
     m_buttons = new QWidget;
     m_buttons->setEnabled(false);
-    m_datawidget = new DataWidget;
-    connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
-    connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
-    m_modelsWidget = new TabWidget(this);
-    m_modelsWidget->setTabsClosable(true);
-    m_modelsWidget->setMovable(true);
-    connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
-    connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
-     
-    m_statistic_dialog = new StatisticDialog(this);
-    connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
-    connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
-    connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
     
-    m_add_nmr = new QPushButton(tr("Add NMR Model"));
+    m_hide = new QPushButton;
+    m_hide->setFlat(true);
+    m_hide->setIcon(QIcon::fromTheme("tab-close"));
+    
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->addWidget(new QLabel("Workspace"));
+    layout->addWidget(m_buttons);
+    
+    
+    m_add_nmr = new QPushButton(tr("Titratrion"));
     m_add_nmr->setFlat(true);
     
-    m_add_kinetics = new QPushButton(tr("Add Kinetic Model"));
-    m_add_kinetics->setFlat(true);
-    
-    m_add_itc = new QPushButton(tr("Add ITC Model"));
+    m_add_itc = new QPushButton(tr("Calorimetry"));
     m_add_itc->setFlat(true);
+    
+    m_add_kinetics = new QPushButton(tr("Kinetics"));
+    m_add_kinetics->setFlat(true);
     
     m_optimize = new QPushButton(tr("Optimize All"));
     m_optimize->setFlat(true);
-    connect(m_optimize, SIGNAL(clicked()), this, SLOT(OptimizeAll()));
+    connect(m_optimize, &QPushButton::clicked, this, &MDHDockTitleBar::OptimizeAll);
     
     m_statistics = new QPushButton(tr("Statistics"));
     m_statistics->setFlat(true);
-    connect(m_statistics, SIGNAL(clicked()), m_statistic_dialog, SLOT(show()));
+    connect(m_statistics, &QPushButton::clicked, this, &MDHDockTitleBar::ShowStatistics);
     
     m_close_all = new QPushButton(tr("Close All"));
     m_close_all->setFlat(true);
     m_close_all->setDisabled(true);
-    connect(m_close_all, SIGNAL(clicked()), this, SLOT(CloseAll()));
+    connect(m_close_all, &QPushButton::clicked, this, &MDHDockTitleBar::CloseAll);
+
 #ifdef NMR_Models
     QAction *ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
-    ItoI_action->setData(ItoI);
-    connect(ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    ItoI_action->setData(SupraFit::ItoI);
+    connect(ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << ItoI_action;
     
     QAction *IItoI_ItoI_action = new QAction(this);
     IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
-    IItoI_ItoI_action->setData(IItoI_ItoI);
-    connect(IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    IItoI_ItoI_action->setData(SupraFit::IItoI_ItoI);
+    connect(IItoI_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << IItoI_ItoI_action;
     
     QAction *ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
-    ItoI_ItoII_action->setData(ItoI_ItoII);
-    connect(ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    ItoI_ItoII_action->setData(SupraFit::ItoI_ItoII);
+    connect(ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << ItoI_ItoII_action;
     
     QAction *II_I_ItoI_ItoII_action = new QAction(this);
     II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
-    II_I_ItoI_ItoII_action->setData(IItoI_ItoI_ItoII);
-    connect(II_I_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    II_I_ItoI_ItoII_action->setData(SupraFit::IItoI_ItoI_ItoII);
+    connect(II_I_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << II_I_ItoI_ItoII_action;
+#endif
     
-    
+#ifdef Fluorescence_Models
     QAction *fl_ItoI_action = new QAction(this);
-    fl_ItoI_action->setText(tr("Fl_1:1-Model"));
-    fl_ItoI_action->setData(fl_ItoI);
-    connect(fl_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_nmr_model << fl_ItoI_action;
+    fl_ItoI_action->setText(tr("1:1-Model"));
+    fl_ItoI_action->setData(SupraFit::fl_ItoI);
+    connect(fl_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_fl_model << fl_ItoI_action;
     
      QAction *fl_IItoI_ItoI_action = new QAction(this);
-    fl_IItoI_ItoI_action->setText(tr("Fl_2:1/1:1-Model"));
-    fl_IItoI_ItoI_action->setData(fl_IItoI_ItoI);
-    connect(fl_IItoI_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_nmr_model << fl_IItoI_ItoI_action;
+    fl_IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
+    fl_IItoI_ItoI_action->setData(SupraFit::fl_IItoI_ItoI);
+    connect(fl_IItoI_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_fl_model << fl_IItoI_ItoI_action;
     
     QAction *fl_ItoI_ItoII_action = new QAction(this);
-    fl_ItoI_ItoII_action->setText(tr("Fl_1:1/1:2-Model"));
-    fl_ItoI_ItoII_action->setData(fl_ItoI_ItoII);
-    connect(fl_ItoI_ItoII_action, SIGNAL(triggered()), this, SLOT(AddModel()));
-    m_nmr_model << fl_ItoI_ItoII_action;
+    fl_ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
+    fl_ItoI_ItoII_action->setData(SupraFit::fl_ItoI_ItoII);
+    connect(fl_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_fl_model << fl_ItoI_ItoII_action;
     
 #endif
     
 #ifdef Kinetic_Models
     QAction *mm_action = new QAction(this);
     mm_action->setText(tr("Michaelis Menten"));
-    mm_action->setData(Michaelis_Menten);
-    connect(mm_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    mm_action->setData(SupraFit::Michaelis_Menten);
+    connect(mm_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_kinetcs_model << mm_action;
     
     QAction *first_order_action = new QAction(this);
     first_order_action->setText(tr("First Order Kinetics"));
-    first_order_action->setData(First_Order_Kinetics);
-    connect(first_order_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    first_order_action->setData(SupraFit::First_Order_Kinetics);
+    connect(first_order_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_kinetcs_model << first_order_action;
 #endif
     
 #ifdef ITC_Models
     QAction *itc_ItoI_action = new QAction(this);
-    itc_ItoI_action->setText(tr("ITC: 1:1-Model"));
-    itc_ItoI_action->setData(itc_ItoI);
-    connect(itc_ItoI_action, SIGNAL(triggered()), this, SLOT(AddModel()));
+    itc_ItoI_action->setText(tr("1:1-Model"));
+    itc_ItoI_action->setData(SupraFit::itc_ItoI);
+    connect(itc_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_itc_model << itc_ItoI_action;
 #endif
     
@@ -234,31 +230,12 @@ ModelDataHolder::ModelDataHolder() : m_history(true)
     buttons->addWidget(m_close_all);
     
     m_buttons->setLayout(buttons);
-    
-    layout->addWidget(m_buttons, 0, 0);
-    layout->addWidget(m_modelsWidget, 1, 0);
+    layout->addStretch();
+    layout->addWidget(m_hide);
+    setLayout(layout);
 }
 
-ModelDataHolder::~ModelDataHolder()
-{
-    for(int i = 0; i < m_modelsWidget->count(); ++i)
-    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-    {
-        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-        m_modelsWidget->removeTab(i);
-        delete model;
-    }
-}
-
-void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
-{
-    m_data = data;
-    m_buttons->setEnabled(true);
-    m_datawidget->setData(m_data, wrapper);
-    m_modelsWidget->setDataTab(m_datawidget); 
-    addToMenu(m_data->IndependentModel()->columnCount());
-}
-void ModelDataHolder::addToMenu(int IndependetCount)
+void MDHDockTitleBar::addToMenu(int IndependetCount)
 {
     
     auto addMenu = [](const QVector<QPointer<QAction > > &list, QMenu *menu){
@@ -276,13 +253,82 @@ void ModelDataHolder::addToMenu(int IndependetCount)
     }
     else if(IndependetCount == 2)
     {
+        QAction *action = menu->addSection(tr("NMR/UV VIS"));
         addMenu(m_nmr_model, menu);
+        action = menu->addSection(tr("Fluorescence"));
+        addMenu(m_fl_model, menu);
         m_add_nmr->setMenu(menu);
         menu = new QMenu;
         addMenu(m_itc_model, menu);
         m_add_itc->setMenu(menu);
         m_add_kinetics->hide();
     }
+}
+
+void MDHDockTitleBar::EnableBatch( bool enabled)
+{
+    m_close_all->setEnabled(enabled);
+    m_statistics->setEnabled(enabled);
+    m_optimize->setEnabled(enabled);
+}
+
+void MDHDockTitleBar::PrepareAddModel()
+{
+    m_last_action =  qobject_cast<QAction *>(sender());
+    emit AddModel();
+}
+
+
+
+ModelDataHolder::ModelDataHolder() : m_TitleBarWidget(new MDHDockTitleBar), m_history(true)
+{
+    QGridLayout *layout = new QGridLayout;
+    
+    setLayout(layout);
+    
+    m_datawidget = new DataWidget;
+    connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
+    connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
+    m_modelsWidget = new TabWidget(this);
+    m_modelsWidget->setTabsClosable(true);
+    m_modelsWidget->setMovable(true);
+    connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
+    connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
+     
+    m_statistic_dialog = new StatisticDialog(this);
+    connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
+    connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
+    connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
+    
+    connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void(ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
+    connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::WGStatistic, this, &ModelDataHolder::WGStatistic);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::MCStatistic, this, &ModelDataHolder::MCStatistic);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::MoCoStatistic, this, &ModelDataHolder::MoCoStatistic);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
+    
+    layout->addWidget(m_modelsWidget, 1, 0);
+}
+
+ModelDataHolder::~ModelDataHolder()
+{
+    for(int i = 0; i < m_modelsWidget->count(); ++i)
+    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
+    {
+        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+        m_modelsWidget->removeTab(i);
+        delete model;
+    }
+}
+
+void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
+{
+    m_data = data;
+    m_TitleBarWidget->setEnabled(true);
+    m_datawidget->setData(m_data, wrapper);
+    m_modelsWidget->setDataTab(m_datawidget); 
+    m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
 }
 
 
@@ -294,7 +340,7 @@ void ModelDataHolder::SetProjectTabName()
 
 void ModelDataHolder::AddModel()
 {
-    QAction *action = qobject_cast<QAction *>(sender());
+    const QAction *action = qobject_cast<MDHDockTitleBar*>(sender())->lastAction();
     AddModel(action->data().toInt());
 }
 
@@ -321,16 +367,16 @@ void ModelDataHolder::AddModel(int model)
         case 6:
             t = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(m_data.data()),  &QObject::deleteLater);
             break;
-        case itc_ItoI:
+        case SupraFit::itc_ItoI:
             t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
             break;
-        case fl_ItoI:
+        case SupraFit::fl_ItoI:
             t =  QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(m_data.data()), &QObject::deleteLater);
             break;
-        case fl_ItoI_ItoII:
+        case SupraFit::fl_ItoI_ItoII:
             t =  QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
             break;
-        case fl_IItoI_ItoI:
+        case SupraFit::fl_IItoI_ItoI:
              t = QSharedPointer<fl_IItoI_ItoI_Model>(new fl_IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
             break;
         default:
@@ -374,6 +420,8 @@ void ModelDataHolder::AddModelScript()
 
 void ModelDataHolder::ParseScriptedModels()
 {
+#warning reintroduce sometimes
+    /*
     QMenu *menu = new QMenu;
     QDirIterator it(":/data/models/", QDirIterator::Subdirectories);
     while (it.hasNext()) {
@@ -386,7 +434,7 @@ void ModelDataHolder::ParseScriptedModels()
         menu->addAction(sub_model);
     }
     m_script_action->setMenu(menu);
-    
+    */
 }
 
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
@@ -469,9 +517,8 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
 
 void ModelDataHolder::ActiveBatch()
 {
-    m_close_all->setEnabled(m_modelsWidget->count() > 2);
-    m_statistics->setEnabled(m_modelsWidget->count() > 2);
-    m_optimize->setEnabled(m_modelsWidget->count() > 2);
+    m_TitleBarWidget->EnableBatch(m_modelsWidget->count() > 2);
+
 }
 
 void ModelDataHolder::RemoveTab(int i)

@@ -53,7 +53,7 @@
 #include "chartwidget.h"
 
 
-ChartDockTitle::ChartDockTitle()
+ChartDockTitleBar::ChartDockTitleBar()
 {    
     m_tools = new QPushButton(tr("Tools and Chart Settings"));
     m_tools->setFlat(true);
@@ -61,7 +61,7 @@ ChartDockTitle::ChartDockTitle()
     QMenu *toolsmenu = new QMenu;
 
     m_flip = new QAction(tr("Flip View"));
-    connect(m_flip, &QAction::toggled, this, &ChartDockTitle::ChartFlip);
+    connect(m_flip, &QAction::toggled, this, &ChartDockTitleBar::ChartFlip);
     
     toolsmenu->addAction(m_flip);
 
@@ -71,7 +71,7 @@ ChartDockTitle::ChartDockTitle()
     m_animation->setCheckable(true);
     m_animation->setChecked(qApp->instance()->property("chartanimation").toBool());
     
-    connect(m_animation, &QAction::toggled, this, &ChartDockTitle::AnimationChanged);
+    connect(m_animation, &QAction::toggled, this, &ChartDockTitleBar::AnimationChanged);
     toolsmenu->addAction(m_animation);
     
     m_theme = new QMenu("Chart Theme");
@@ -124,19 +124,19 @@ ChartDockTitle::ChartDockTitle()
     layout->addWidget(m_hide);
     setLayout(layout);
     
-    connect(m_hide, &QPushButton::clicked, this, &ChartDockTitle::close);
-    connect(m_theme, &QMenu::triggered, this, &ChartDockTitle::ThemeChange);
+    connect(m_hide, &QPushButton::clicked, this, &ChartDockTitleBar::close);
+    connect(m_theme, &QMenu::triggered, this, &ChartDockTitleBar::ThemeChange);
 }
 
 
-void ChartDockTitle::ThemeChange(QAction *action)
+void ChartDockTitleBar::ThemeChange(QAction *action)
 {
     QtCharts::QChart::ChartTheme  theme = QtCharts::QChart::ChartTheme (action->data().toInt());
     emit ThemeChanged(theme);
 }
 
 
-ChartWidget::ChartWidget() : m_TitleBarWidget(new ChartDockTitle)
+ChartWidget::ChartWidget() : m_TitleBarWidget(new ChartDockTitleBar)
 {
     
     m_signalchart = new QtCharts::QChart;
@@ -159,8 +159,8 @@ ChartWidget::ChartWidget() : m_TitleBarWidget(new ChartDockTitle)
     max_shift = 0;
     min_shift = 0;
     
-    connect(m_TitleBarWidget, &ChartDockTitle::ThemeChanged, this, &ChartWidget::updateTheme);
-    connect(m_TitleBarWidget, &ChartDockTitle::AnimationChanged, this, &ChartWidget::setAnimation);
+    connect(m_TitleBarWidget, &ChartDockTitleBar::ThemeChanged, this, &ChartWidget::updateTheme);
+    connect(m_TitleBarWidget, &ChartDockTitleBar::AnimationChanged, this, &ChartWidget::setAnimation);
 
 }
 

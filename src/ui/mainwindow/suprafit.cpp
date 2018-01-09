@@ -65,6 +65,7 @@ MainWindow::MainWindow()
     m_modeldock->setObjectName(tr("data_and_models"));
     m_modeldock->setToolTip(tr("This <strong>workspace widget</strong> contains all open models and allows them to be manipulated!"));
     m_modeldock->setWidget(m_model_dataholder);
+    m_modeldock->setTitleBarWidget(m_model_dataholder->TitleBarWidget());
     m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
     
     connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)), Qt::DirectConnection);
@@ -79,7 +80,7 @@ MainWindow::MainWindow()
     m_chartdock->setWidget(m_charts);
     m_chartdock->setTitleBarWidget(m_charts->TitleBarWidget());
     m_chartdock->setToolTip(tr("This <strong>chart widget</strong> contains the charts for the calculated models and the model errors!"));
-    connect(m_charts->TitleBarWidget(), &ChartDockTitle::close, m_chartdock, &QDockWidget::close);
+    connect(m_charts->TitleBarWidget(), &ChartDockTitleBar::close, m_chartdock, &QDockWidget::close);
     
     m_logdock = new QDockWidget(tr("Logging output"), this);
     m_logdock->setObjectName(tr("logging"));
