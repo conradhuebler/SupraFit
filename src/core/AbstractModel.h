@@ -33,28 +33,6 @@
 
 #include "dataclass.h"
 
-struct ConfidenceBar
-{
-    qreal lower = 0;
-    qreal upper = 0;
-};
-
-struct BoxWhisker
-{
-    QList<qreal> mild_outliers, extreme_outliers;
-    qreal lower_whisker = 0;
-    qreal upper_whisker = 0;
-    qreal lower_quantile = 0;
-    qreal upper_quantile = 0;
-    qreal notch = 0;
-    qreal median = 0;
-    qreal mean = 0;
-    int count = 0;
-    
-    inline qreal UpperNotch() { return median+(1.58*(upper_quantile-lower_quantile)/sqrt(count)); }
-    inline qreal LowerNotch() { return median-(1.58*(upper_quantile-lower_quantile)/sqrt(count)); }
-};
-
 struct ModelOption
 {
     QStringList values;

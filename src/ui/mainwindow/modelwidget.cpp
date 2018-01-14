@@ -226,6 +226,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_optim_flags->setFlags(settings.value("flags", 11).toInt());
     settings.endGroup();
     m_model->Calculate();
+    LoadStatistics();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
 
@@ -458,8 +459,14 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo, m_model);
-
+    QList<QJsonObject> result = monte_carlo->Results();
+    QList<QJsonObject > models = monte_carlo->Models(); 
+    
+    delete monte_carlo;
+    
+    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model);
+    mcsresult->setModels(models);
+   
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
     buff.remove("<table>");
@@ -609,6 +616,26 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     }else
         QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
     m_statistic_dialog->HideWidget();
+}
+
+void ModelWidget::LoadStatistics()
+{
+    /* We load the MC statistcs from model
+     */
+    
+    QList<QJsonObject> result;
+
+    for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
+    {
+         result << m_model->getMCStatisticResult(i);
+         QApplication::processEvents();
+    }
+    
+    if(result.size())
+    {
+        MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model);
+        m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
+    }
 }
 
 

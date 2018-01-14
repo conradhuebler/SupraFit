@@ -20,7 +20,7 @@
 #ifndef TOOLSET_H
 #define TOOLSET_H
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models.h"
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
@@ -50,10 +50,10 @@ namespace ToolSet{
     qreal scale(qreal value);
     
     QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
-    ConfidenceBar Confidence(const QList<qreal > &list, qreal error);
-    BoxWhisker BoxWhiskerPlot(const QList<qreal> &list);
-    QJsonObject Box2Object(const BoxWhisker &box);
-    BoxWhisker Object2Whisker(const QJsonObject& object);
+    SupraFit::ConfidenceBar Confidence(const QList<qreal > &list, qreal error);
+    SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal> &list);
+    QJsonObject Box2Object(const SupraFit::BoxWhisker &box);
+    SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object);
 //     ConfidenceBar Confidence(QList<qreal > &list);
     
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str);
@@ -61,6 +61,7 @@ namespace ToolSet{
     
     qreal finv(qreal p, int m, int n);
     QList<int> InvertLockedList(const QList<int> &locked);
+    void ExportResults(const QString& filename, const QList<QJsonObject> &models);
 }
 
 namespace Print{

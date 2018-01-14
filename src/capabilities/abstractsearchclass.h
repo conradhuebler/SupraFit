@@ -67,8 +67,8 @@ class AbstractSearchClass : public QObject
     
 public:
     AbstractSearchClass(QObject *parent = 0);
-//     AbstractSearchClass(AbstractSearchClass *other);
     ~AbstractSearchClass();
+    
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     
     inline QList<QList<QPointF> > Series() const { return m_series; }

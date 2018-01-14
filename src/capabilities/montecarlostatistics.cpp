@@ -38,7 +38,7 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(const MCConfig &config): m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_config(config)
+MonteCarloThread::MonteCarloThread(const MCConfig &config): m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_config(config), m_finished(false)
 {
 }
 
@@ -63,7 +63,7 @@ void MonteCarloThread::run()
         qDebug() << this << "started!";
 #endif
     m_minimizer->setModel(m_model);
-    m_minimizer->Minimize(m_config.runtype);
+    m_finished = m_minimizer->Minimize(m_config.runtype);
     
     m_optimized = m_minimizer->Parameter();
     m_model->ImportModel(m_optimized);
@@ -103,7 +103,7 @@ void MonteCarloStatistics::Evaluate()
     Collect(threads);
     
     m_global_list.resize(m_model->GlobalParameterSize());
-    m_local_list.resize(m_model->GlobalParameterSize()*m_model->SeriesCount()+m_model->SeriesCount());
+    m_local_list.resize(m_model->GlobalParameterSize()*m_model->SeriesCount()+m_model->SeriesCount()); //Check this 
     for(int i = 0; i < m_models.size(); ++i)
     {       
         ExtractFromJson(i, "globalParameter");
@@ -177,6 +177,11 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
     {
         if(threads[i])
         {
+            if(!threads[i]->Finished())
+            {
+                delete threads[i];
+                continue;
+            }
             QList<qreal > constants = threads[i]->Constants();
             for(int j = 0; j < constants.size(); ++j)
                 m_constants_list[j] << constants[j];
@@ -267,13 +272,13 @@ void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
 
 QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
 {
-    ConfidenceBar bar = ToolSet::Confidence(list, error);
     QJsonObject result;
+
+    QJsonObject data;
+    data["raw"] = ToolSet::DoubleList2String(list);
+    result["data"] = data;
     
-    QJsonObject confidence;
-    confidence["lower"] = bar.lower;
-    confidence["upper"] = bar.upper;
-    result["confidence"] = confidence;
+    result["boxplot"] = ToolSet::Box2Object(ToolSet::BoxWhiskerPlot(list));
     
     QJsonObject controller;
     controller["runtype"] = m_config.runtype;
@@ -282,6 +287,7 @@ QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
     controller["original"] = m_config.original;
     controller["bootstrap"] = m_config.bootstrap;
     result["controller"] = controller;
+    
     return result;
 }
 

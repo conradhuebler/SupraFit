@@ -28,6 +28,7 @@
 
 
 #include <functional>
+#include "jsonhandler.h"
 
 #include "toolset.h"
 typedef Eigen::VectorXd Vector;
@@ -187,9 +188,9 @@ namespace ToolSet{
         return histogram;
     }
 
-    ConfidenceBar Confidence(const QList<qreal > &list, qreal error)
+    SupraFit::ConfidenceBar Confidence(const QList<qreal > &list, qreal error)
     {   
-        ConfidenceBar result;
+        SupraFit::ConfidenceBar result;
         error /= 2;
         if(error == 0)
         {
@@ -217,9 +218,9 @@ namespace ToolSet{
         return result;
     }
     
-    BoxWhisker BoxWhiskerPlot(const QList<qreal>& list)
+    SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal>& list)
     {
-        BoxWhisker bw;
+        SupraFit::BoxWhisker bw;
         int count = list.size();
         
         /* inspired by qt docs: Box and Whiskers Example
@@ -261,18 +262,16 @@ namespace ToolSet{
             }
         }
         bw.mean /= double(count);
-        
         return bw;
     }
 
-    QJsonObject Box2Object(const BoxWhisker& box)
+    QJsonObject Box2Object(const SupraFit::BoxWhisker& box)
     {
         QJsonObject object;
         object["lower_whisker"] = box.lower_whisker;
         object["upper_whisker"] = box.upper_whisker;
         object["lower_quantile"] = box.lower_quantile;
         object["upper_whisker"] = box.upper_whisker;
-        object["notch"] = box.notch;
         object["median"] = box.median;
         object["mean"] = box.mean;
         object["count"] = box.count;
@@ -281,14 +280,13 @@ namespace ToolSet{
         return object;
     }
 
-    BoxWhisker Object2Whisker(const QJsonObject& object)
+    SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object)
     {
-        BoxWhisker box;
+        SupraFit::BoxWhisker box;
         box.lower_whisker = object["lower_whisker"].toDouble();
         box.upper_whisker = object["upper_whisker"].toDouble();
         box.lower_quantile = object["lower_quantile"].toDouble();
         box.upper_whisker = object["upper_whisker"].toDouble();
-        box.notch = object["notch"].toDouble();
         box.median = object["median"].toDouble();
         box.mean = object["mean"].toDouble();
         box.count = object["count"].toDouble();
@@ -344,6 +342,25 @@ namespace ToolSet{
              lock << !locked[i];
          return lock;
     }
+    void ExportResults(const QString& filename, const QList<QJsonObject> &models)
+    {
+        QJsonObject toplevel;
+        int i = 0;
+        for(const QJsonObject &obj: qAsConst(models))
+        {
+            QJsonObject constants = obj["data"].toObject()["constants"].toObject();
+            QStringList keys = constants.keys();
+            bool valid = true;
+            for(const QString &str : qAsConst(keys))
+            {
+                double var = constants[str].toString().toDouble();
+                valid = valid && (var > 0);
+            }
+            toplevel["model_" + QString::number(i++)] = obj;       
+        }
+        JsonHandler::WriteJsonFile(toplevel, filename);
+    }
+
 }
 
 namespace Print{

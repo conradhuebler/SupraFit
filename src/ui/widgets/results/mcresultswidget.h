@@ -40,8 +40,10 @@ class MCResultsWidget : public ResultsWidget
     Q_OBJECT
     
 public:
-    MCResultsWidget(QPointer< MonteCarloStatistics > statistics, QSharedPointer< AbstractModel > model);
+    MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, const QList<QJsonObject > &models = QList<QJsonObject>());
     ~MCResultsWidget();
+    
+    void setModels(const QList<QJsonObject > &models) { m_models = models; }
     
 private:
     QPushButton *m_switch, *m_save;
@@ -53,18 +55,18 @@ private:
     
     virtual QWidget * ChartWidget() override;
     void WriteConfidence(const QList<QJsonObject > &constant_results) override;
-    void UpdateBoxes(const QList<QList<QPointF > > &series, const QList<QJsonObject > &constant_results);
+    void UpdateBoxes();
     
     QtCharts::QAreaSeries *AreaSeries(const QColor &color) const;
     QPointer<ChartView > MakeHistogram();
     QPointer<ChartView > MakeContour();
     QPointer<QtCharts::QChartView > MakeBoxPlot();
     QList<QJsonObject> m_box_object;
-private slots:
-    void UpdateConfidence();
-    void ExportResults();
-    void SwitchView();
+    QList<QJsonObject > m_data, m_models;
     
+private slots:
+    void ExportResults();
+    void GenerateConfidence(double error);
     
 };
 

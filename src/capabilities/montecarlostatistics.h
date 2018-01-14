@@ -53,13 +53,14 @@ public:
     inline QList<qreal > Constants() const { return m_constants; }
     void setDataTable(DataTable *table);
     inline QJsonObject Model() const { return m_model->ExportModel(); }
+    inline bool Finished() const { return m_finished; }
     
 private:
     QSharedPointer<Minimizer> m_minimizer;
     QJsonObject m_optimized;
     MCConfig m_config;
     QList<qreal > m_constants;
-
+    bool m_finished;
 };
 
 class MonteCarloStatistics : public AbstractSearchClass

@@ -40,10 +40,10 @@ ResultsWidget::ResultsWidget()
 
 ResultsWidget::~ResultsWidget()
 {
-    m_statistics->Interrupt();
-    
-    if(m_statistics)
-        delete m_statistics;
+//     m_statistics->Interrupt();
+//     
+//     if(m_statistics)
+//         delete m_statistics;
 }
 
 void ResultsWidget::setUi()

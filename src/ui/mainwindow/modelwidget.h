@@ -122,6 +122,8 @@ private:
     void Data2Text();
     void Model2Text();
     void MinimizeModel(const OptimizerConfig &config);
+    void LoadStatistics();
+    
     QVBoxLayout *m_sign_layout;
     
     QWidget *m_model_widget;
