@@ -574,7 +574,8 @@ void ModelWidget::WGStatistic(WGSConfig config)
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
-    WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
+    QList<QJsonObject> data = statistic->Results();
+    WGSResultsWidget *resultwidget = new WGSResultsWidget(data, m_model, false, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
     m_statistic_result->show();  
     emit IncrementProgress(1);
@@ -608,9 +609,10 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     bool result = statistic->Confidence();
+    QList<QJsonObject> data = statistic->Results();
     if(result)
     {
-        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
+        WGSResultsWidget *resultwidget = new WGSResultsWidget(data, m_model, true, m_statistic_result);
         m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
         m_statistic_result->show();
     }else
@@ -635,6 +637,33 @@ void ModelWidget::LoadStatistics()
     {
         MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model);
         m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
+    }
+    result.clear();
+    
+    for(int i = 0; i < m_model->getWGStatisticResult(); ++i)
+    {
+         result << m_model->getWGStatisticResult(i);
+         QApplication::processEvents();
+    }
+    
+    if(result.size())
+    {
+        WGSResultsWidget *mcsresult = new WGSResultsWidget(result, m_model, false, m_statistic_result);
+        m_statistic_result->setWidget(mcsresult, "Weakend Grid Search " + m_model->Name());
+    }
+    result.clear();
+    
+    for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
+    {
+         if(m_model->getMoCoStatisticResult(i)["method"] == "model comparison")
+            result << m_model->getMoCoStatisticResult(i);
+         QApplication::processEvents();
+    }
+
+    if(result.size())
+    {
+        WGSResultsWidget *mcsresult = new WGSResultsWidget(result, m_model, true, m_statistic_result);
+        m_statistic_result->setWidget(mcsresult, "Model Comparison " + m_model->Name());
     }
 }
 

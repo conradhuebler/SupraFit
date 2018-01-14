@@ -370,14 +370,12 @@ void AbstractModel::addLocalParameter(int i)
     
 }
 
-
-
-void AbstractModel::setCVStatistic(const QJsonObject &result, int i)
+void AbstractModel::setWGStatistic(const QJsonObject &result, int i)
 {
-    if(i < m_cv_statistics.size())
-        m_cv_statistics[i] = result;
+    if(i < m_wg_statistics.size())
+        m_wg_statistics[i] = result;
     else
-        m_cv_statistics << result; 
+        m_wg_statistics << result; 
     emit StatisticChanged();
 }
 
@@ -463,9 +461,9 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     if(statistics)
     {
         QJsonObject statisticObject;
-        for(int i = 0; i < m_cv_statistics.size(); ++i)
+        for(int i = 0; i < m_wg_statistics.size(); ++i)
         {
-            statisticObject["CVResult_"+QString::number(i)] = m_cv_statistics[i];
+            statisticObject["WGResult_"+QString::number(i)] = m_wg_statistics[i];
         }
         for(int i = 0; i < m_mc_statistics.size(); ++i)
         {
@@ -574,14 +572,14 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     }
     if(override)
     {
-        m_cv_statistics.clear();
+        m_wg_statistics.clear();
         m_moco_statistics.clear();
         m_mc_statistics.clear();
     }
     for(const QString &str : qAsConst(keys))
     {
-        if(str.contains("CV"))
-            m_cv_statistics << json["statistics"].toObject()[str].toObject();
+        if(str.contains("WG"))
+            m_wg_statistics << json["statistics"].toObject()[str].toObject();
         else if(str.contains("MC"))
             m_mc_statistics << json["statistics"].toObject()[str].toObject();
         else if(str.contains("MoCo"))

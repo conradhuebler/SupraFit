@@ -101,15 +101,15 @@ void StatisticWidget::Update()
     
     QString cv;
     cv += "<p><b>Weakened Grid Search:</b></p>\n";    
-    for(int i = 0; i < m_model->getCVStatisticResult(); ++i)
+    for(int i = 0; i < m_model->getWGStatisticResult(); ++i)
     {
-        QJsonObject result = m_model->getCVStatisticResult(i);   
+        QJsonObject result = m_model->getWGStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
         if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
             cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
         cv += Print::TextFromConfidence(result, m_model.data());
     }
-    if(m_model->getCVStatisticResult())
+    if(m_model->getWGStatisticResult())
         overview += cv;
     
     

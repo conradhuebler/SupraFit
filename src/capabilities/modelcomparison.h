@@ -82,7 +82,7 @@ private:
     
     QVector<QVector<qreal> > MakeBox();
     MoCoConfig m_config;
-    
+    QJsonObject m_box;
     double m_effective_error, m_box_area, m_ellipsoid_area;
 };
 

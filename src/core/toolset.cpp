@@ -87,6 +87,30 @@ namespace ToolSet{
         return vector;
     }
     
+    QList<QPointF> String2Points(const QString &str)
+    {
+        QList<QPointF> points;
+        QStringList list = str.split(" ");
+        for(const QString &point : qAsConst(list))
+        {
+                double x = 0, y = 0;
+                QStringList l = point.split(",");
+                if(l.size() != 2)
+                    continue;
+                x = l[0].remove("(").toDouble();
+                y = l[1].remove(")").toDouble();
+                points << QPointF(x,y);
+        }
+        return points;
+    }
+    QString Points2String(const QList<QPointF> &points)
+    {
+            QString string;
+            for(int i = 0; i < points.size(); ++i)
+                string += "(" + QString::number(points[i].x())+ "," + QString::number(points[i].y()) + ") ";
+            return string;
+    }
+    
     QString bool2YesNo(bool var) 
     {
         if(var)

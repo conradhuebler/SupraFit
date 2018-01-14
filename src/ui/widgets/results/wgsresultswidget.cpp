@@ -39,12 +39,9 @@
 #include "wgsresultswidget.h"
 
 
-WGSResultsWidget::WGSResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
+WGSResultsWidget::WGSResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, bool modelcomparison, QWidget* parent) : m_data(data), m_modelcomparison(modelcomparison)
 {
-    m_statistics = statistics;
     m_model = model;
-    if(!m_statistics)
-        throw 1;
     setUi();
 }
 
@@ -58,8 +55,8 @@ QWidget * WGSResultsWidget::ChartWidget()
     QWidget *widget = new QWidget;
     QGridLayout *layout = new QGridLayout;
 
-    if(qobject_cast<WeakenedGridSearch *>(m_statistics))
-        layout->addWidget(CVPlot());
+    if(!m_modelcomparison)
+        layout->addWidget(WGPlot());
     else
         layout->addWidget(MoCoPlot());
     
@@ -94,10 +91,10 @@ void WGSResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_resul
         
     for(int i = 0; i < constant_results.size(); ++i)
     {
-        if(constant_results[i].contains("moco_area"))
+        if(m_modelcomparison)
             m_model->setMoCoStatistic(constant_results[i], i);
         else
-            m_model->setCVStatistic(constant_results[i], i);
+            m_model->setWGStatistic(constant_results[i], i);
         if(i < m_model->GlobalParameterSize())
         {
             QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
@@ -107,20 +104,22 @@ void WGSResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_resul
     m_confidence_label->setText(text);
 }
 
-ChartView * WGSResultsWidget::CVPlot()
+ChartView * WGSResultsWidget::WGPlot()
 {
-    QList<QJsonObject > constant_results = m_statistics->Results();
-    QList<QList<QPointF > >series = m_statistics->Series();
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart);
     view->setXAxis("constant");
     view->setYAxis("Sum of Squares");
-    WriteConfidence(constant_results);
-    for(int i = 0; i < constant_results.size(); ++i)
+    WriteConfidence(m_data);
+    for(int i = 0; i < m_data.size(); ++i)
     {
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries;
-        xy_series->append(series[i]);
+        QList<qreal > x = ToolSet::String2DoubleList( m_data[i]["data"].toObject()["x"].toString() );
+        QList<qreal > y = ToolSet::String2DoubleList( m_data[i]["data"].toObject()["y"].toString() );
+        for(int j = 0; j < x.size(); ++j)
+            xy_series->append(QPointF(x[j], y[j]));
+        
         view->addSeries(xy_series);
         
         LineSeries *current_constant= new LineSeries;
@@ -134,19 +133,30 @@ ChartView * WGSResultsWidget::CVPlot()
 
 ChartView *  WGSResultsWidget::MoCoPlot()
 {
-    QList<QJsonObject > constant_results = m_statistics->Results();
-    WriteConfidence(constant_results);
-    QList<QList<QPointF > >series = m_statistics->Series();
+    WriteConfidence(m_data);
     
     QtCharts::QChart *chart = new QtCharts::QChart;
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     ChartView *view = new ChartView(chart);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
-    xy_series->append(ToolSet::fromModelsList(m_statistics->Models(), "globalParameter"));
+    QList<qreal > x = ToolSet::String2DoubleList( m_data[0]["data"].toObject()["global_0"].toString() );
+    QList<qreal > y = ToolSet::String2DoubleList( m_data[0]["data"].toObject()["global_1"].toString() );
+    qDebug() << m_data[0];
+    
+    for(int j = 0; j < x.size(); ++j)
+            xy_series->append(QPointF(x[j], y[j]));
+    
     xy_series->setMarkerSize(6);
     xy_series->setName("MC Results");
     view->addSeries(xy_series, true);
+    
+    QList<QList<QPointF > >series;
+    
+    QJsonObject box = m_data[0]["box"].toObject();
+        series << ToolSet::String2Points( box["0"].toString() );
+        series << ToolSet::String2Points( box["1"].toString() );
     int i = 0;
+    
     for(const QList<QPointF> &serie : qAsConst(series))
     {
         LineSeries *xy_serie = new LineSeries;
@@ -155,6 +165,7 @@ ChartView *  WGSResultsWidget::MoCoPlot()
         view->addSeries(xy_serie, true);
         ++i;
     }
+    
     view->setXAxis(m_model->GlobalParameterName(0));
     view->setYAxis(m_model->GlobalParameterName(1));
     return view;

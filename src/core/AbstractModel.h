@@ -148,15 +148,15 @@ public:
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
    
-    void setCVStatistic(const QJsonObject &result, int i);
+    void setWGStatistic(const QJsonObject &result, int i);
     void setMCStatistic(const QJsonObject &result, int i);
     void setMoCoStatistic(const QJsonObject &result, int i);
 
     QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
-    QJsonObject getCVStatisticResult(int i) const { return m_cv_statistics[i]; }
+    QJsonObject getWGStatisticResult(int i) const { return m_wg_statistics[i]; }
     QJsonObject getMoCoStatisticResult(int i) const { return m_moco_statistics[i]; }
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
-    int getCVStatisticResult() const { return m_cv_statistics.size(); }
+    int getWGStatisticResult() const { return m_wg_statistics.size(); }
     int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
         
     QList<qreal >  getCalculatedModel();
@@ -390,7 +390,7 @@ protected:
     QVector<double * > m_opt_para;
     QList<qreal > m_global_parameter;
     QList< QJsonObject> m_mc_statistics;
-    QList< QJsonObject> m_cv_statistics;
+    QList< QJsonObject> m_wg_statistics;
     QList< QJsonObject> m_moco_statistics;
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;

@@ -58,8 +58,10 @@ public:
     virtual void run();
     inline QJsonObject Result() const { return m_result; }
     inline bool Converged() const { return m_converged; }
-    inline QList<QPointF> Series() const { return m_series; }
     inline QJsonObject Model() const { return m_model->ExportModel(); }
+    
+    inline QList<qreal> XSeries() const { return m_x; }
+    inline QList<qreal> YSeries() const { return m_y; }
     
 private:
     qreal SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
@@ -69,9 +71,9 @@ private:
     QJsonObject m_result;
     qreal m_error;
     bool m_converged, m_check_convergence;
-    QList<QPointF> m_series;
     WGSConfig m_config;
     bool allow_break;
+    QList<qreal > m_x, m_y;
 };
 
 class WeakenedGridSearch : public AbstractSearchClass

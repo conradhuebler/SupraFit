@@ -21,6 +21,7 @@
 
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
+#include "src/core/toolset.h"
 
 #include <QCoreApplication>
 
@@ -76,7 +77,11 @@ void WeakenedGridSearchThread::run()
     confidence["lower"] = SumErrors(0, integ_5, integ_1, series);
     m_result["confidence"] = confidence;
     
-    m_series = series;
+    QJsonObject data;
+    data["x"] = ToolSet::DoubleList2String(m_x);
+    data["y"] = ToolSet::DoubleList2String(m_y);
+    m_result["data"] = data;
+    
     m_result["integ_5"] = integ_5/m_error;
     m_result["integ_1"] = integ_1/m_error;
 }
@@ -139,9 +144,17 @@ qreal WeakenedGridSearchThread::SumErrors(bool direction, double& integ_5, doubl
             break;
         }
         if(direction)
-            series.append(QPointF(par,new_error));
+        {
+//             series.append(QPointF(par,new_error));
+            m_x.append(par);
+            m_y.append(new_error);
+        }
         else
-            series.prepend(QPointF(par,new_error));
+        {
+//             series.prepend(QPointF(par,new_error));
+            m_x.prepend(par);
+            m_y.prepend(new_error);
+        }
         old_error = new_error;
         
         QCoreApplication::processEvents();
@@ -242,7 +255,6 @@ bool WeakenedGridSearch::ConfidenceAssesment()
     {
         m_models << threads[i]->Model();
         m_results << threads[i]->Result();
-        m_series << threads[i]->Series();
         converged = converged && threads[i]->Converged();
         delete threads[i];
     }

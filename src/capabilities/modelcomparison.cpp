@@ -21,6 +21,7 @@
 #include "globalsearch.h"
 
 #include "src/core/AbstractModel.h"
+#include "src/core/toolset.h"
 
 #include <QtCore/QCoreApplication>
 
@@ -182,6 +183,8 @@ QVector<QVector<qreal> > ModelComparison::MakeBox()
         m_series.append( points );
         ++i;
     }
+    m_box["0"] = ToolSet::Points2String(m_series[0]);
+    m_box["1"] = ToolSet::Points2String(m_series[1]);
     return parameter;
 }
 
@@ -249,6 +252,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     QVector<QPair<qreal, qreal> > confidence(m_model->GlobalParameterSize(), QPair<qreal, qreal>(0,0));
     int inner = 0;
     int all = 0;
+    QVector<QList<qreal > >data_vec(m_model->GlobalParameterSize());
     for(const QJsonObject &object : qAsConst(results))
     {
         all++;
@@ -256,8 +260,9 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         {
             inner++;
             m_models << object;
-            QJsonObject constants = object["data"].toObject()["constants"].toObject();
-
+            QJsonObject constants = object["data"].toObject()["globalParameter"].toObject();
+            data_vec[0] << constants[QString::number(0)].toString().toDouble();
+            data_vec[1] << constants[QString::number(1)].toString().toDouble();
             for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
             {
                 qreal min = confidence[i].first;
@@ -276,6 +281,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     emit IncrementProgress(1);
     m_ellipsoid_area = double(inner)/double(all)*m_box_area;
     m_results.clear();
+    
     for(int i = 0; i < confidence.size(); ++i)
     { 
         QJsonObject result;
@@ -284,20 +290,31 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         conf["lower"] = confidence[i].first;
         conf["upper"] = confidence[i].second;
         result["confidence"] = conf;
-
-        QJsonObject controller;
-        controller["runtype"] = m_config.runtype;
-        controller["steps"] = m_config.mc_steps;
-        controller["fisher"] = m_config.fisher_statistic;
-        controller["maxerror"] = m_config.maxerror;
-        controller["f-value"] = m_config.f_value;
-        result["controller"] = controller;
         result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->GlobalParameterName(i);
-        result["type"] = "Complexation Constant";
         result["error"] = m_config.confidence;
         result["method"] = "model comparison";
-        result["moco_area"] = m_ellipsoid_area;
+        if(i == 0)
+        {
+            QJsonObject controller;
+            controller["runtype"] = m_config.runtype;
+            controller["steps"] = m_config.mc_steps;
+            controller["fisher"] = m_config.fisher_statistic;
+            controller["maxerror"] = m_config.maxerror;
+            controller["f-value"] = m_config.f_value;
+            result["controller"] = controller;
+
+            result["type"] = "Global Parameter";
+            result["error"] = m_config.confidence;
+            result["method"] = "model comparison";
+            result["moco_area"] = m_ellipsoid_area;
+            
+            QJsonObject data;
+            data["global_0"] = ToolSet::DoubleList2String(data_vec[0]);
+            data["global_1"] = ToolSet::DoubleList2String(data_vec[1]);
+            result["data"] = data;
+            result["box"] = m_box;
+        }
         m_results << result;
     }
 }

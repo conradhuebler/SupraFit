@@ -32,7 +32,7 @@ class WGSResultsWidget : public ResultsWidget
     Q_OBJECT
     
 public:
-    WGSResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractModel> model, QWidget *parent);
+    WGSResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, bool modelcomparison, QWidget *parent);
     ~WGSResultsWidget();
     
 private:
@@ -40,7 +40,9 @@ private:
     virtual QWidget * ChartWidget() override;
     
     ChartView * MoCoPlot();
-    ChartView * CVPlot();
+    ChartView * WGPlot();
+    QList<QJsonObject > m_data;
+    bool m_modelcomparison;
 };
 
 #endif // WGSRESULTSWIDGET_H
