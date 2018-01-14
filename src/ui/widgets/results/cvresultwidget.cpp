@@ -41,10 +41,7 @@
 
 CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
 {
-    m_statistics = statistics;
     m_model = model;
-    if(!m_statistics)
-        throw 1;
     setUi();
 }
 
@@ -58,8 +55,6 @@ QWidget * CVResultsWidget::ChartWidget()
     QWidget *widget = new QWidget;
     QGridLayout *layout = new QGridLayout;
 
-
-    
     widget->setLayout(layout);
     return widget;
 }

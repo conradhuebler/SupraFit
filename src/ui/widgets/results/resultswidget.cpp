@@ -40,10 +40,7 @@ ResultsWidget::ResultsWidget()
 
 ResultsWidget::~ResultsWidget()
 {
-//     m_statistics->Interrupt();
-//     
-//     if(m_statistics)
-//         delete m_statistics;
+
 }
 
 void ResultsWidget::setUi()
@@ -62,7 +59,6 @@ void ResultsWidget::setUi()
     
     splitter->addWidget(m_chart_widget);
     splitter->addWidget(scroll);
-    
     layout->addWidget(splitter, 0, 0);
     setLayout(layout);
 }

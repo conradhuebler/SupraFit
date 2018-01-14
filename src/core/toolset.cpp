@@ -391,7 +391,7 @@ namespace Print{
     
 QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractModel> model)
 {
-    QString text;
+    QString text, box_message("");
     qreal value = result["value"].toDouble();
     QString pot;
     QString nr;
@@ -409,9 +409,20 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
     qreal upper = confidence["upper"].toDouble();
     qreal lower = confidence["lower"].toDouble();
     qreal conf = result["error"].toDouble();
-    text = "<p><table> <tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr> ";
-    text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr></p>\n"; 
-    text += "</table>";
-    return text;    
+    text = "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr>\n";
+    text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr>\n"; 
+    if(result.contains("boxplot"))
+    {
+        SupraFit::BoxWhisker box = ToolSet::Object2Whisker(result["boxplot"].toObject());
+        text += "<tr><td>Median: </td><td> <b>" +QString::number(box.median, 'f', 4) + "</b></td></tr>\n"; 
+        text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) +"-" + QString::number(box.UpperNotch(), 'f', 4) +"</b></td></tr>\n"; 
+        if(value > box.UpperNotch() || value < box.LowerNotch())
+        {
+            box_message = "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>\n"; 
+        }
+    }
+    text += "\n";
+    text += "<tr><td></td></tr>\n";
+    return box_message+text;    
 }
 }

@@ -41,7 +41,6 @@ protected:
     
     QWidget *m_chart_widget;
     QLabel *m_confidence_label;
-    QPointer<AbstractSearchClass> m_statistics;
     QSharedPointer< AbstractModel > m_model;
     
 };    

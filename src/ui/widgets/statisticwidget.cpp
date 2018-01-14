@@ -82,6 +82,7 @@ void StatisticWidget::Update()
     overview.clear();
     QString moco;
     moco += "<p><b>Model Comparison Results:</b></p>\n";
+    moco+= "<table>\n";
     for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getMoCoStatisticResult(i);   
@@ -96,25 +97,29 @@ void StatisticWidget::Update()
         moco += Print::TextFromConfidence(result,m_model.data());
  
     }
+    moco += "</table>\n";
     if(m_model->getMoCoStatisticResult())
         overview += moco;
     
     QString cv;
-    cv += "<p><b>Weakened Grid Search:</b></p>\n";    
+    cv += "<p><b>Weakened Grid Search:</b></p>\n";  
+    cv += "<table>\n"; 
     for(int i = 0; i < m_model->getWGStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getWGStatisticResult(i);   
         QJsonObject confidence = result["confidence"].toObject();
         if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
-            cv += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
+            cv += "<tr><th colspan=2><font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font></th></tr>\n";
         cv += Print::TextFromConfidence(result, m_model.data());
     }
+    cv += "</table>\n"; 
     if(m_model->getWGStatisticResult())
         overview += cv;
     
     
     QString mc;
     mc += "<p><b>Monte Carlo Simulation Results:</b></p>\n";
+    mc += "<table>\n";
     for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getMCStatisticResult(i);   
@@ -122,6 +127,7 @@ void StatisticWidget::Update()
         
         mc += Print::TextFromConfidence(result, m_model.data());
     }
+    mc += "</table>\n";
     if(m_model->getMCStatisticResult())
         overview += mc;   
     m_overview->setText(m_short + overview);

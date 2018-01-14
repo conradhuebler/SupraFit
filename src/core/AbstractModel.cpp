@@ -578,14 +578,13 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     }
     for(const QString &str : qAsConst(keys))
     {
-        if(str.contains("WG"))
+         if(str.contains("WG"))
             m_wg_statistics << json["statistics"].toObject()[str].toObject();
-        else if(str.contains("MC"))
+         if(str.contains("MC"))
             m_mc_statistics << json["statistics"].toObject()[str].toObject();
-        else if(str.contains("MoCo"))
+          if(str.contains("MoCo"))
             m_moco_statistics << json["statistics"].toObject()[str].toObject();
     }
-    
 
     if(json.contains("localParameter"))
     {
