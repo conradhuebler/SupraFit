@@ -464,7 +464,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     
     delete monte_carlo;
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model);
+    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, models);
     mcsresult->setModels(models);
    
     QString buff = m_statistic_widget->Statistic();

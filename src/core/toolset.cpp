@@ -271,7 +271,7 @@ namespace ToolSet{
         object["lower_whisker"] = box.lower_whisker;
         object["upper_whisker"] = box.upper_whisker;
         object["lower_quantile"] = box.lower_quantile;
-        object["upper_whisker"] = box.upper_whisker;
+        object["upper_quantile"] = box.upper_quantile;
         object["median"] = box.median;
         object["mean"] = box.mean;
         object["count"] = box.count;
@@ -286,7 +286,7 @@ namespace ToolSet{
         box.lower_whisker = object["lower_whisker"].toDouble();
         box.upper_whisker = object["upper_whisker"].toDouble();
         box.lower_quantile = object["lower_quantile"].toDouble();
-        box.upper_whisker = object["upper_whisker"].toDouble();
+        box.upper_quantile = object["upper_quantile"].toDouble();
         box.median = object["median"].toDouble();
         box.mean = object["mean"].toDouble();
         box.count = object["count"].toDouble();

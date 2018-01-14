@@ -50,7 +50,7 @@ MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer
     m_model = model;
     m_models = models;
     setUi();
-    GenerateConfidence(0.05);
+    GenerateConfidence(95);
 }
 
 
@@ -72,7 +72,7 @@ QWidget * MCResultsWidget::ChartWidget()
     tabs->addTab(m_histgram, tr("Histogram"));
     tabs->addTab(m_box, tr("Boxplot"));
     
-    if(m_model->GlobalParameterSize() == 2)
+    if(m_model->GlobalParameterSize() == 2 && m_models.size())
     {
         m_contour = MakeContour();
         tabs->addTab(m_contour, tr("Contour Plot"));
@@ -191,6 +191,7 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     QPointer<ChartView > view = new ChartView(chart_ellipsoid);
     
     QList<QPointF > data = ToolSet::fromModelsList(m_models, "globalParameter");
+    qDebug() << data;
     QWidget *resultwidget_ellipsoid = new QWidget;
     QGridLayout *layout_ellipsoid = new QGridLayout;
     resultwidget_ellipsoid->setLayout(layout_ellipsoid);
