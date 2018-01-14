@@ -227,7 +227,7 @@ QIcon MainWindow::Icon(const QString &str)
 void MainWindow::LoadFile(const QString &file)
 {
     bool invalid_json = false;
-    if(file.contains("json"))
+    if(file.contains("json") || file.contains("jdat"))
     {
         invalid_json = !LoadProject(file);
         if(!invalid_json)

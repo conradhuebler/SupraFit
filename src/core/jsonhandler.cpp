@@ -34,7 +34,12 @@ bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 
     QByteArray saveData = loadFile.readAll();
 
-    QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
+    QJsonDocument loadDoc;
+    if(file.contains("json"))
+        loadDoc = QJsonDocument::fromJson(saveData);
+    else if(file.contains("jdat"))
+        loadDoc = QJsonDocument::fromBinaryData(saveData);
+    
     json = loadDoc.object();
     return true;
 }
@@ -50,7 +55,10 @@ bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file, bo
     }
 
     QJsonDocument saveDoc(json);
-    saveFile.write( saveDoc.toJson()        );
+      if(file.contains("json"))
+        saveFile.write( saveDoc.toJson() );
+    else if(file.contains("jdat"))
+        saveFile.write( saveDoc.toBinaryData() );
     return true;
 }
 
@@ -65,7 +73,11 @@ bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file, b
     }
 
     QJsonDocument saveDoc(json);
-    saveFile.write( saveDoc.toJson()        );
+    if(file.contains("json"))
+        saveFile.write( saveDoc.toJson()        );
+    else if(file.contains("jdat"))
+        saveFile.write( saveDoc.toBinaryData()        );
+    
     return true;
 }
 

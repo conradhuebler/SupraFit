@@ -141,7 +141,6 @@ ChartView *  WGSResultsWidget::MoCoPlot()
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
     QList<qreal > x = ToolSet::String2DoubleList( m_data[0]["data"].toObject()["global_0"].toString() );
     QList<qreal > y = ToolSet::String2DoubleList( m_data[0]["data"].toObject()["global_1"].toString() );
-    qDebug() << m_data[0];
     
     for(int j = 0; j < x.size(); ++j)
             xy_series->append(QPointF(x[j], y[j]));
