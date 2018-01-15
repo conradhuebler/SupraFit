@@ -34,7 +34,7 @@ class WGSResultsWidget : public ResultsWidget
 public:
     WGSResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, bool modelcomparison, QWidget *parent);
     ~WGSResultsWidget();
-    
+    inline bool hasData() const { return has_data; }
 private:
     void WriteConfidence(const QList<QJsonObject > &constant_results) override;
     virtual QWidget * ChartWidget() override;
@@ -42,7 +42,7 @@ private:
     ChartView * MoCoPlot();
     ChartView * WGPlot();
     QList<QJsonObject > m_data;
-    bool m_modelcomparison;
+    bool m_modelcomparison, has_data;
 };
 
 #endif // WGSRESULTSWIDGET_H

@@ -49,6 +49,9 @@ MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer
 {
     m_model = model;
     m_models = models;
+    has_boxplot = false;
+    has_histogram = false;
+    has_contour = false;
     setUi();
     GenerateConfidence(95);
 }
@@ -69,10 +72,13 @@ QWidget * MCResultsWidget::ChartWidget()
 
     m_histgram = MakeHistogram();
     m_box = MakeBoxPlot();
-    tabs->addTab(m_histgram, tr("Histogram"));
-    tabs->addTab(m_box, tr("Boxplot"));
+    if(has_histogram)
+        tabs->addTab(m_histgram, tr("Histogram"));
     
-    if(m_model->GlobalParameterSize() == 2 && m_models.size())
+    if(has_boxplot)
+        tabs->addTab(m_box, tr("Boxplot"));
+    
+    if(m_model->GlobalParameterSize() == 2 && m_models.size() && has_contour)
     {
         m_contour = MakeContour();
         tabs->addTab(m_contour, tr("Contour Plot"));
@@ -114,7 +120,6 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
     {
         if(m_data[i]["type"].toString() != "Global Parameter")
             continue;
-        
         QVector<qreal> list = ToolSet::String2DoubleVec(m_data[i]["data"].toObject()["raw"].toString());
         QVector<QPair<qreal, int> > histogram = ToolSet::List2Histogram(list,500);
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
@@ -122,6 +127,8 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         {
             xy_series->append(QPointF(histogram[j].first, histogram[j].second));       
         }
+        if(histogram.size())
+             has_histogram = true;
         view->addSeries(xy_series);
         if(!formated)
             view->formatAxis();
@@ -155,11 +162,13 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
     
     QtCharts::QChartView *view = new QtCharts::QChartView(chart_box);
     double min = 10, max = 0;
+
     for(int i = 0; i < m_data.size(); ++i)
     {
         QJsonObject data = m_data[i];
         if(data["type"].toString() != "Global Parameter")
             continue;
+        has_boxplot = true;
         QtCharts::QBoxPlotSeries *series = new QtCharts::QBoxPlotSeries();
         series->setName(m_model->GlobalParameterName(i));
         SupraFit::BoxWhisker bw = ToolSet::Object2Whisker( data["boxplot"].toObject() );
@@ -177,9 +186,12 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
     }
 
     chart_box->createDefaultAxes();
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( chart_box->axisY());
-    y_axis->setMin(min*0.99);
-    y_axis->setMax(max*1.01);
+    if(has_boxplot)
+    {
+        QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( chart_box->axisY());
+        y_axis->setMin(min*0.99);
+        y_axis->setMax(max*1.01);
+    }
     view->setRubberBand(QtCharts::QChartView::RectangleRubberBand);
     return view;
 }
@@ -191,7 +203,8 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     QPointer<ChartView > view = new ChartView(chart_ellipsoid);
     
     QList<QPointF > data = ToolSet::fromModelsList(m_models, "globalParameter");
-    qDebug() << data;
+    if(data.size())
+        has_contour = true;
     QWidget *resultwidget_ellipsoid = new QWidget;
     QGridLayout *layout_ellipsoid = new QGridLayout;
     resultwidget_ellipsoid->setLayout(layout_ellipsoid);

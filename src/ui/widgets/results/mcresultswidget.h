@@ -44,6 +44,7 @@ public:
     ~MCResultsWidget();
     
     void setModels(const QList<QJsonObject > &models) { m_models = models; }
+    inline bool hasData() const { return has_boxplot || has_contour || has_histogram; }
     
 private:
     QPushButton *m_switch, *m_save;
@@ -63,6 +64,7 @@ private:
     QPointer<QtCharts::QChartView > MakeBoxPlot();
     QList<QJsonObject> m_box_object;
     QList<QJsonObject > m_data, m_models;
+    bool has_histogram, has_contour, has_boxplot;
     
 private slots:
     void ExportResults();

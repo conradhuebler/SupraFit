@@ -262,23 +262,23 @@ void ModelWidget::SplitterResized()
 
 void ModelWidget::DiscreteUI()
 {
-    ModelActions *actions = new ModelActions;
+    m_actions = new ModelActions;
     
-    connect(actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
-    connect(actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
-    connect(actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
-    connect(actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
-    connect(actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
-    connect(actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
-    connect(actions, SIGNAL(TogglePlot3D()), this, SLOT(TogglePlot3D()));
-    connect(actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
-    connect(actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
-    connect(actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
-    connect(actions, SIGNAL(ToggleConcentrations()), this, SLOT(ToggleConcentrations()));
-    connect(actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
-    connect(actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
+    connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
+    connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
+    connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
+    connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
+    connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
+    connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
+    connect(m_actions, SIGNAL(TogglePlot3D()), this, SLOT(TogglePlot3D()));
+    connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
+    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
+    connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
+    connect(m_actions, SIGNAL(ToggleConcentrations()), this, SLOT(ToggleConcentrations()));
+    connect(m_actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
+    connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     
-    m_layout->addWidget(actions, 4, 0,1,m_model->GlobalParameterSize()+3);  
+    m_layout->addWidget(m_actions, 4, 0,1,m_model->GlobalParameterSize()+3);  
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
     m_layout->addWidget(m_optim_flags, 5, 0,1,m_model->GlobalParameterSize()+3);  
    
@@ -466,7 +466,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     
     MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, models);
     mcsresult->setModels(models);
-   
+    
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
     buff.remove("<table>");
@@ -480,6 +480,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     
     m_logging += "\n\n" +  doc.toPlainText();
     m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
+    m_actions->EnableCharts(true);
     m_statistic_result->show();  
     m_statistic_dialog->HideWidget();
 }
@@ -577,6 +578,7 @@ void ModelWidget::WGStatistic(WGSConfig config)
     QList<QJsonObject> data = statistic->Results();
     WGSResultsWidget *resultwidget = new WGSResultsWidget(data, m_model, false, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
+    m_actions->EnableCharts(true);
     m_statistic_result->show();  
     emit IncrementProgress(1);
     m_statistic_dialog->HideWidget();
@@ -613,6 +615,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     if(result)
     {
         WGSResultsWidget *resultwidget = new WGSResultsWidget(data, m_model, true, m_statistic_result);
+        m_actions->EnableCharts(true);
         m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
         m_statistic_result->show();
     }else
@@ -636,7 +639,10 @@ void ModelWidget::LoadStatistics()
     if(result.size())
     {
         MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model);
-        m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
+        if(mcsresult->hasData())
+            m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
+        else
+            delete mcsresult;
     }
     result.clear();
     
@@ -649,7 +655,10 @@ void ModelWidget::LoadStatistics()
     if(result.size())
     {
         WGSResultsWidget *mcsresult = new WGSResultsWidget(result, m_model, false, m_statistic_result);
-        m_statistic_result->setWidget(mcsresult, "Weakend Grid Search " + m_model->Name());
+        if(mcsresult->hasData())
+            m_statistic_result->setWidget(mcsresult, "Weakend Grid Search " + m_model->Name());
+        else
+            delete mcsresult;
     }
     result.clear();
     
@@ -663,8 +672,13 @@ void ModelWidget::LoadStatistics()
     if(result.size())
     {
         WGSResultsWidget *mcsresult = new WGSResultsWidget(result, m_model, true, m_statistic_result);
-        m_statistic_result->setWidget(mcsresult, "Model Comparison " + m_model->Name());
+        if(mcsresult->hasData())
+            m_statistic_result->setWidget(mcsresult, "Model Comparison " + m_model->Name());
+        else
+            delete mcsresult;
     }
+    if(m_statistic_result->Count())
+        m_actions->EnableCharts(true);
 }
 
 

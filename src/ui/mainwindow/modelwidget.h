@@ -63,6 +63,7 @@ class SpinBox;
 class ModelElement;
 class SystemParameterWidget;
 class OptionsWidget;
+class ModelActions;
 
 struct ModelHistoryElement;
 struct Charts;
@@ -109,6 +110,7 @@ private:
     QVector<QPointer<ModelElement > > m_model_elements;
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
+    ModelActions *m_actions;
     QPushButton *m_switch, *m_minimize_all;
     QLabel *m_bc_50, *m_converged_label; 
     OptionsWidget *m_model_options_widget;

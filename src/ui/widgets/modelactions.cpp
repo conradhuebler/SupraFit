@@ -53,6 +53,7 @@ void ModelActions::setUi()
     m_new_guess = new PushButton(tr("New Guess"));
     m_simulate = new PushButton(tr("Export Simulated"));
     m_plots = new PushButton(tr("Toggle Charts"));
+    m_plots->setEnabled(false);
     m_search = new PushButton(tr("Search Table"));
     m_toggle = new QPushButton(tr("..more.."));
     m_toggle->setFlat(true);
@@ -102,6 +103,12 @@ void ModelActions::setUi()
     m_second->setMaximumHeight(0);
     setLayout(layout);
 }
+
+void ModelActions::EnableCharts(bool enable)
+{
+    m_plots->setEnabled(enable);
+}
+
 
 void ModelActions::resizeButtons()
 {

@@ -19,8 +19,10 @@
 
 #ifndef MODELDIALOG_H
 #define MODELDIALOG_H
+
 #include <QtCore/QPointer>
 #include <QtWidgets/QDialog>
+#include <QtWidgets/QTabWidget>
 
 class QTabWidget;
 class QGridLayout;
@@ -33,7 +35,7 @@ public:
     ~ModalDialog();
     void setWidget(QWidget *widget, const QString &str = QString(tr("no name")));
     QWidget * Widget() { return m_widget; }
-    
+    inline int Count() const { return m_tab->count(); }
 private:
     QGridLayout *layout;
     QPointer<QWidget > m_widget;

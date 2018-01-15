@@ -42,6 +42,7 @@
 WGSResultsWidget::WGSResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, bool modelcomparison, QWidget* parent) : m_data(data), m_modelcomparison(modelcomparison)
 {
     m_model = model;
+    has_data = false;
     setUi();
 }
 
@@ -119,7 +120,8 @@ ChartView * WGSResultsWidget::WGPlot()
         QList<qreal > y = ToolSet::String2DoubleList( m_data[i]["data"].toObject()["y"].toString() );
         for(int j = 0; j < x.size(); ++j)
             xy_series->append(QPointF(x[j], y[j]));
-        
+        if(x.size())
+            has_data = true;
         view->addSeries(xy_series);
         
         LineSeries *current_constant= new LineSeries;
@@ -144,6 +146,9 @@ ChartView *  WGSResultsWidget::MoCoPlot()
     
     for(int j = 0; j < x.size(); ++j)
             xy_series->append(QPointF(x[j], y[j]));
+    
+    if(x.size())
+            has_data = true;
     
     xy_series->setMarkerSize(6);
     xy_series->setName("MC Results");
