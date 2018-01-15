@@ -42,6 +42,8 @@ public:
     ModelActions(QWidget *parent = 0);
     ~ModelActions();
     
+    void EnableCharts(bool enable);
+    
 private:
     void setUi();
     void resizeButtons();
