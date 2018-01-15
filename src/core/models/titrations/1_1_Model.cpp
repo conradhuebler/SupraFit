@@ -60,7 +60,24 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess()
 {
-    m_K11 = 4;
+    
+    QVector<qreal> x;
+    QVector< QVector<qreal> > y(SeriesCount());
+    for(int i = 1; i < DataPoints(); ++i)
+    {
+        x << (1/InitialHostConcentration(i)/InitialGuestConcentration(i));
+        for(int j = 0; j < SeriesCount(); ++j)
+        {
+            y[j] << 1/(DependentModel()->data(j,i)-DependentModel()->data(j,0));
+        }
+    }
+    for(int i = 0; i < SeriesCount(); ++i)
+    {
+        LinearRegression regress = LeastSquares(x, y[i]);
+        m_K11 += qLn(qAbs(1/regress.m))/2.3;
+    }
+//     m_K11 = 4;
+    m_K11 /= double(SeriesCount());
     m_global_parameter = QList<qreal>() << m_K11;
 
     qreal factor = 1;

@@ -19,13 +19,19 @@
  
 #include "src/global_config.h"
 
+
 #include <QtGlobal>
 #include <QtMath>
 #include <QDebug>
-#include <cmath>
 #include <QPair>
-#include "src/core/AbstractModel.h"
+
 #include <iostream>
+#include <cmath>
+
+#include "src/core/AbstractModel.h"
+
+#include "libmath.h"
+
 namespace Cubic{
     qreal f(qreal x, qreal a, qreal b, qreal c, qreal d)
     {
@@ -39,6 +45,45 @@ namespace Cubic{
 }
 
 
+LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y)
+{
+    LinearRegression regression;
+    
+    if(x.size() != y.size())
+        return regression;
+    
+    // http://www.bragitoff.com/2015/09/c-program-to-linear-fit-the-data-using-least-squares-method/ //
+    qreal xsum = 0, x2sum = 0, ysum = 0, xysum = 0;                //variables for sums/sigma of xi,yi,xi^2,xiyi etc
+    int n = x.size();
+    for (int i = 0; i < n; ++i)
+    {
+        xsum=xsum+x[i];                        //calculate sigma(xi)
+        ysum=ysum+y[i];                        //calculate sigma(yi)
+        x2sum=x2sum+(x[i]*x[i]);                //calculate sigma(x^2i)
+        xysum=xysum+x[i]*y[i];                    //calculate sigma(xi*yi)
+    }
+    regression.m = (n*xysum-xsum*ysum)/(n*x2sum-xsum*xsum);            //calculate slope
+    regression.n = (x2sum*ysum-xsum*xysum)/(x2sum*n-xsum*xsum);            //calculate intercept
+    qreal mean_x = xsum/double(n);
+    qreal mean_y = ysum/double(n);
+    qreal x_ = 0;
+    qreal y_ = 0;
+    qreal xy_ = 0;
+    for (int i = 0 ; i<n; ++i)
+    {
+        qreal y_head = regression.m*x[i]+regression.n;  
+        regression.y_head << y_head;
+        regression.sum_err += (y_head)*(y_head);
+        x_ = (x[i]-mean_x)*(x[i]-mean_x);
+        y_ = (y[i]-mean_y)*(y[i]-mean_y);
+        xy_ = (x[i]-mean_x)*(y[i]-mean_y);
+    }
+    regression.R = xy_/qSqrt(x_)/qSqrt(y_);
+#ifdef _DEBUG
+    qDebug() << QString("y = " + QString::number(regression.m) +"x+"+ QString::number(regression.n));
+#endif
+    return regression;
+}
 
 
 qreal MinQuadraticRoot(qreal a, qreal b, qreal c)

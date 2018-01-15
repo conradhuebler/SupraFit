@@ -56,8 +56,18 @@ Michaelis_Menten_Model::~Michaelis_Menten_Model()
 
 void Michaelis_Menten_Model::InitialGuess()
 {
-    m_vmax = 500;
-    m_Km = 5;
+    QVector<qreal> x, y;
+    
+    for(int i = 1; i < DataPoints(); ++i)
+    {
+        x << 1/IndependentModel()->data(0,i);
+        y << 1/DependentModel()->data(0,i);
+    }
+    
+    LinearRegression regress = LeastSquares(x, y);
+    m_vmax = 1/regress.n;
+    m_Km = regress.m*m_vmax;
+    
     m_global_parameter = QList<qreal>() << m_vmax << m_Km;
     setOptParamater(m_global_parameter);
     
