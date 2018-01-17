@@ -51,7 +51,7 @@ public:
 
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
-    virtual int LocalParameterSize() const override {return GlobalParameterSize() + 1; }
+    virtual int LocalParameterSize() const override {return 3; }
  
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}

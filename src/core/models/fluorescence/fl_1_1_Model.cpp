@@ -38,7 +38,7 @@
 fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     setName(tr("fl_1:1-Model"));
-    m_local_parameter = new DataTable(2, SeriesCount(), this);
+    m_local_parameter = new DataTable(3, SeriesCount(), this);
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     DeclareOptions();
     InitialGuess();
@@ -47,7 +47,7 @@ fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
 {
     setName(tr("fl_1:1-Model"));
-    m_local_parameter = new DataTable(2, SeriesCount(), this);
+    m_local_parameter = new DataTable(3, SeriesCount(), this);
     DeclareOptions();
     InitialGuess();
 }
@@ -63,18 +63,19 @@ void fl_ItoI_Model::InitialGuess()
     m_K11 = 4;
     m_global_parameter = QList<qreal>() << m_K11;
 
-    qreal factor = 1/InitialHostConcentration(0);
+    qreal factor = 1; ///InitialHostConcentration(0);
     
 
     m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
     m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 1);
-    
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
     QVector<qreal * > line1, line2;
 
     for(int i = 0; i < SeriesCount(); ++i)
     {
         line1 << &m_local_parameter->data(0, i);
         line2 << &m_local_parameter->data(1, i);
+        line2 << &m_local_parameter->data(2, i);
     }
 
     setOptParamater(m_global_parameter);
@@ -85,13 +86,45 @@ void fl_ItoI_Model::InitialGuess()
 
 void fl_ItoI_Model::DeclareOptions()
 {
-//     QStringList method = QStringList() << "NMR" << "UV/VIS";
-//     addOption("Method", method);
+     QStringList method = QStringList() << "Host" << "no Host";
+     addOption("Host", method);
 }
 
 void fl_ItoI_Model::EvaluateOptions()
 {
+    /*
+    QString cooperativitiy = getOption("Cooperativity");
 
+    auto global_coop = [this](){
+        this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
+    };
+    
+    auto local_coop = [this]()
+    {
+        for(int i = 0; i < this->SeriesCount(); ++i)
+            this->m_local_parameter->data(1,i) = 2*(this->m_local_parameter->data(2,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
+    };
+    
+    if(cooperativitiy == "noncooperative")
+    {
+        global_coop();
+    }else if(cooperativitiy == "additive")
+    {
+        local_coop();
+    }else if(cooperativitiy == "statistical")
+    {
+        local_coop();
+        global_coop();
+    }*/
+    QString host = getOption("Host");
+    if(host != "Host")
+    {
+         for(int i = 0; i < SeriesCount(); ++i)
+         {
+            this->m_local_parameter->data(0,i) = 0;
+            this->m_local_parameter->data(1,i) = 0;
+         }
+    }
 }
 
 QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
@@ -138,7 +171,7 @@ void fl_ItoI_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
-        qreal complex = host_0 -host;
+        qreal complex = host_0 - host;
         Vector vector(4);
         vector(0) = i + 1;
         vector(1) = host;
@@ -151,10 +184,11 @@ void fl_ItoI_Model::CalculateVariables()
             if(i == 0)
             {
                 F0[j] = host_0*m_local_parameter->data(0, j);
-            }
-            value = (host*m_local_parameter->data(0, j) + complex*m_local_parameter->data(1, j)); //*F0[j];
+                value = F0[j];
+            }else
+                value = (host*m_local_parameter->data(1, j) + complex*m_local_parameter->data(2, j)); 
             
-            SetValue(i, j, value);    
+            SetValue(i, j, value*1e5);    
         }
     }
     emit Recalculated();

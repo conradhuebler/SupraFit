@@ -463,6 +463,10 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
     else if(str == "fl_1:1-Model")   
         t =  QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(m_data.data()), &QObject::deleteLater);
+    else if(str == "fl_2:1/1:1-Model")   
+        t =  QSharedPointer<fl_IItoI_ItoI_Model>(new fl_IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
+    else if(str == "fl_1:1/1:2-Model")   
+        t =  QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
     else
     {
         t.clear();

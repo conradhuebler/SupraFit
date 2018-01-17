@@ -51,7 +51,7 @@ public:
     }
 
     virtual void DeclareOptions() override;
-    virtual int LocalParameterSize() const override {return GlobalParameterSize(); }
+    virtual int LocalParameterSize() const override {return 4; }
 
     virtual void EvaluateOptions() override;
 

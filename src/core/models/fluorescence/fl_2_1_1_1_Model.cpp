@@ -35,9 +35,9 @@
 fl_IItoI_ItoI_Model::fl_IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     setName(tr("fl_2:1/1:1-Model"));
-    m_local_parameter = new DataTable(2, SeriesCount(), this);
-    InitialGuess();   
+    m_local_parameter = new DataTable(4, SeriesCount(), this); 
     DeclareOptions();
+    InitialGuess();   
     AbstractTitrationModel::Calculate();
 }
     
@@ -52,6 +52,11 @@ void fl_IItoI_ItoI_Model::DeclareOptions()
 //     addOption("Method", method);
 //     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
 //     addOption("Cooperativity", cooperativity);
+    
+     QStringList method = QStringList() << "Host" << "no Host";
+     addOption("Host", method);
+     //setOption("Host", "Host");
+     
 }
 
 void fl_IItoI_ItoI_Model::EvaluateOptions()
@@ -81,6 +86,18 @@ void fl_IItoI_ItoI_Model::EvaluateOptions()
         global_coop();
     }*/
     
+    QString host = getOption("Host");
+    qDebug() << host;
+    if(host != "Host")
+    {
+         for(int i = 0; i < SeriesCount(); ++i)
+         {
+             qDebug() << "bang";
+            this->m_local_parameter->data(0,i) = 0;
+            this->m_local_parameter->data(1,i) = 0;
+         }
+    }
+    
 }
 
 void fl_IItoI_ItoI_Model::InitialGuess()
@@ -91,15 +108,18 @@ void fl_IItoI_ItoI_Model::InitialGuess()
     qreal factor = 1/InitialHostConcentration(0);
     
 
-    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
-//     m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
+    m_local_parameter->setColumn(DependentModel()->firstRow()/factor*1e2, 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor/1e6, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor/1e6, 2);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor/1e6, 3);
     
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
     {
         line1 << &m_local_parameter->data(0, i);
-//         line2 << &m_local_parameter->data(2, i); 
+        line1 << &m_local_parameter->data(1, i);
+        line2 << &m_local_parameter->data(2, i);
+        line1 << &m_local_parameter->data(3, i);
     }
 
     m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
@@ -131,7 +151,9 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
     
     qreal K21 = qPow(10, GlobalParameter().first());
     qreal K11 = qPow(10, GlobalParameter().last());
-    
+
+    QVector<qreal > F0(SeriesCount());
+
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
@@ -152,9 +174,14 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
         qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {
-
-            value =+ 2*complex_21*m_local_parameter->data(0, j) + complex_11*m_local_parameter->data(1, j);
-            SetValue(i, j, value);
+           if(i == 0)
+            {
+                F0[j] = host_0*m_local_parameter->data(0, j);
+                value = F0[j];
+            }else
+                value = (host*m_local_parameter->data(1, j) + 2*complex_21*m_local_parameter->data(2, j) + complex_11*m_local_parameter->data(3, j)); 
+            
+            SetValue(i, j, value*1e6);
         }
         
     }
