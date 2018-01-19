@@ -49,9 +49,7 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override { Q_UNUSED(i) return tr("k"); }
     virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" M"); }
     virtual int LocalParameterSize() const override {return 1; }
-[[deprecated]]
-    inline virtual void MiniShifts() override { return; }
-    
+
 private:
     
     

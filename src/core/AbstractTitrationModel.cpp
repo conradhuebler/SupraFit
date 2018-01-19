@@ -66,24 +66,6 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 }
 
 
-void AbstractTitrationModel::MiniShifts()
-{
-    double cut_error = 1;
-    for(int j = 0; j < m_lim_para.size(); ++j)
-    {
-        for(int i = 0; i < SeriesCount(); ++i)    
-        {
-            if(ActiveSignals(i) == 1)
-            {
-                if(m_model_error->data(i, 0) < cut_error && j == 0)
-                    *m_lim_para[j][i] -= m_model_error->data(i,0);
-                if(m_model_error->data(i, m_model_error->rowCount() -1 ) < cut_error && j == 1)
-                    *m_lim_para[j][i] -= m_model_error->data(i, m_model_error->rowCount() -1 );   
-            }
-        }
-    }
-}
-
 qreal AbstractTitrationModel::BC50()
 {
     return 0;

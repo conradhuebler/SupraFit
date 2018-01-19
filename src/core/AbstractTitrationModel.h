@@ -64,7 +64,6 @@ public:
     void adress() const;
 
 
-    void MiniShifts() override;
     inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
     
     virtual inline QString GlobalParameterPrefix(int i = 0) const override {Q_UNUSED(i)  return QString("10^"); }

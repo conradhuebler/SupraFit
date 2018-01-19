@@ -257,20 +257,6 @@ public:
     qreal SumOfErrors(int i) const;
     
     qreal ModelError() const;
-[[deprecated("Use AbstractModel::GlobalParameter() instead")]]
-    inline QList<qreal > Constants() const { return m_global_parameter; }
-    
-[[deprecated("Use AbstractModel::setGlobalParameter() instead")]]
-    inline virtual void setConstants(const QList< qreal > &list) { setGlobalParameter(list); }
-    
-[[deprecated("Use AbstractModel::GlobalParameter(int i) instead")]]
-    inline qreal Constant(int i) const { return GlobalParameter(i); }
-    
-[[deprecated("Use AbstractModel::GlobalParameterSize instead")]]
-    virtual int ConstantSize() const { return GlobalParameterSize(); }
-    
-[[deprecated]]
-    virtual void MiniShifts() = 0;
     
     /*! \brief set the values of the global parameter to const QList< qreal > &list
      */

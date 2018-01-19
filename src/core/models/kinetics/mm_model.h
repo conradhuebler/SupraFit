@@ -57,8 +57,9 @@ public:
     }
     
     virtual int LocalParameterSize() const override {return 0; }
-[[deprecated]]
-    inline virtual void MiniShifts() override { return; }
+
+    virtual qreal PrintOutIndependent(int i, int format = 0) const override { Q_UNUSED(format) return IndependentModel()->data(0,i); }
+
     
 private:
     
