@@ -250,7 +250,7 @@ public:
     
     /*! \brief model dependented printout of the independant parameter
      */
-    virtual qreal PrintOutIndependent(int i, int format = 0) const { Q_UNUSED(format) return i; }
+    virtual qreal PrintOutIndependent(int i, int format = 0) const { Q_UNUSED(format) return i+1; }
     
 private:
     QJsonObject m_systemObject;

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -136,6 +136,12 @@ void ChartWrapper::InitaliseSeries()
 
 void ChartWrapper::UpdateModel()
 {
+    MakeSeries();
+    emit ModelChanged();
+}
+
+void ChartWrapper::MakeSeries()
+{
     for(int j = 0; j < m_stored_series.size(); ++j)
         m_stored_series[j]->clear();
     
@@ -167,8 +173,22 @@ void ChartWrapper::UpdateModel()
             }
         }
     }
-    emit ModelChanged();
 }
+
+
+QList<QPointer<QtCharts::QScatterSeries > >  ChartWrapper::CloneSeries() const
+{
+    QList<QPointer<QtCharts::QScatterSeries > > series;
+    for(int i = 0; i < m_stored_series.size(); ++i)
+    {
+            QtCharts::QScatterSeries *serie = new QtCharts::QScatterSeries(  );
+            serie->append(m_stored_series[i]->points());
+            serie->setColor(m_stored_series[i]->color());
+            series << serie;
+    }
+    return series;
+}
+
 
 QColor ChartWrapper::color(int i) const
 {

@@ -17,6 +17,7 @@
  * 
  */
 
+#include "src/ui/dialogs/regressionanalysisdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/widgets/signalelement.h"
 #include "src/ui/widgets/systemparameterwidget.h"
@@ -52,6 +53,12 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
     m_switch->setStyleSheet("background-color: #77d740;");
     m_switch->setMaximumSize(100, 30);
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
+    
+    m_linear = new QPushButton(tr("Regression"));
+    m_linear->setToolTip(tr("Perform advanced linear regression"));
+    m_linear->setStyleSheet("background-color: #77d740;");
+    connect(m_linear, &QPushButton::clicked, this, &DataWidget::LinearAnalysis);
+    
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
     m_concentrations = new QTableView;
@@ -67,7 +74,9 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
     hlayout->addWidget(new QLabel(tr("Project Name")), 0, Qt::AlignLeft);
     hlayout->addWidget(m_name, 0, Qt::AlignLeft);
     hlayout->addSpacerItem(new QSpacerItem(100,1));
+    hlayout->addWidget(m_linear, 0, Qt::AlignLeft);
     hlayout->addWidget(m_switch, 0, Qt::AlignRight);
+    
     m_datapoints = new QLabel;
     m_substances = new QLabel;
     m_const_subs = new QLabel;
@@ -151,6 +160,8 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_systemwidget = new QWidget;
     
     m_splitter->addWidget(m_tables);
+    dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+    dialog->UpdatePlots();
     
     QSettings settings;
     settings.beginGroup("overview");
@@ -233,6 +244,11 @@ void DataWidget::MakeSystemParameter()
     m_systemwidget->setLayout(sys_layout);
     m_splitter->addWidget(m_systemwidget);
     m_system_parameter_loaded = true;
+}
+
+void DataWidget::LinearAnalysis()
+{
+    dialog->show();
 }
 
 

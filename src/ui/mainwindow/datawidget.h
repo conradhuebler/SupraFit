@@ -41,6 +41,7 @@ class ScatterSeries;
 class QDoubleSpinBox;
 class SignalElement;
 class SystemParameterWidget;
+class RegressionAnalysisDialog;
 
 class DataWidget : public QWidget
 {
@@ -54,7 +55,7 @@ public:
     
 private:
     QTableView  *m_concentrations, *m_signals;
-    QPushButton  *m_switch;
+    QPushButton  *m_switch, *m_linear;
     QWeakPointer<DataClass > m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
     QLineEdit *m_name;
@@ -67,6 +68,8 @@ private:
     QVector<QPointer<SystemParameterWidget > > m_system_parameter_widgets;
     QWidget *m_systemwidget;
     bool m_system_parameter_loaded;
+    RegressionAnalysisDialog *dialog;
+    
 private slots:
     void ShowContextMenu(const QPoint& pos);
     void switchHG();
@@ -75,6 +78,7 @@ private slots:
     void HidePoint();
     void UpdateSystemParameter();
     void MakeSystemParameter();
+    void LinearAnalysis();
     
 signals:
     void recalculate();

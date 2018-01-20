@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,10 @@
 
 #include "src/ui/dialogs/chartconfig.h"
 
-#include <QtCharts/QValueAxis>
 #include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
+
 #include <QtCore/QPointer>
 class QPushButton;
 class QChart;
@@ -67,6 +69,8 @@ public:
     inline void removeSeries(QtCharts::QAbstractSeries *series) { m_chart->removeSeries(series); }
     inline QList<QtCharts::QAbstractSeries *> series() const { return m_chart->series(); }
     
+    QtCharts::QLineSeries *addLinearSeries(qreal m, qreal n, qreal min, qreal max);
+    void ClearChart();
 public slots:
     void formatAxis();
     
@@ -87,7 +91,7 @@ private:
     void WriteTable(const QString &str) const;
     ChartConfigDialog m_chartconfigdialog;
     bool m_pending, m_lock_scaling, m_latex_supported;   
-    qreal m_ymax;
+    qreal m_ymax, m_ymin, m_xmin, m_xmax;
 
 private slots:
     void PlotSettings();
@@ -100,6 +104,7 @@ private slots:
     
 signals:
     void AxisChanged();
+    void ChartCleared();
 };
 
 #endif // CHARTVIEW_H

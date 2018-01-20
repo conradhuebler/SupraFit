@@ -189,8 +189,6 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
     return m_data_mapper;
 }
 
-
-
 Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
 {
     m_models << model;

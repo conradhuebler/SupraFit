@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,16 +51,18 @@ LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y)
     
     if(x.size() != y.size())
         return regression;
-    
+#ifdef _DEBUG
+    qDebug() << x << y;
+#endif
     // http://www.bragitoff.com/2015/09/c-program-to-linear-fit-the-data-using-least-squares-method/ //
     qreal xsum = 0, x2sum = 0, ysum = 0, xysum = 0;                //variables for sums/sigma of xi,yi,xi^2,xiyi etc
     int n = x.size();
     for (int i = 0; i < n; ++i)
     {
-        xsum=xsum+x[i];                        //calculate sigma(xi)
-        ysum=ysum+y[i];                        //calculate sigma(yi)
-        x2sum=x2sum+(x[i]*x[i]);                //calculate sigma(x^2i)
-        xysum=xysum+x[i]*y[i];                    //calculate sigma(xi*yi)
+        xsum += x[i];                        //calculate sigma(xi)
+        ysum +=y[i];                        //calculate sigma(yi)
+        x2sum += (x[i]*x[i]);                //calculate sigma(x^2i)
+        xysum += x[i]*y[i];                    //calculate sigma(xi*yi)
     }
     regression.m = (n*xysum-xsum*ysum)/(n*x2sum-xsum*xsum);            //calculate slope
     regression.n = (x2sum*ysum-xsum*xysum)/(x2sum*n-xsum*xsum);            //calculate intercept
@@ -69,20 +71,63 @@ LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y)
     qreal x_ = 0;
     qreal y_ = 0;
     qreal xy_ = 0;
-    for (int i = 0 ; i<n; ++i)
+    regression.x = x;
+    regression.y = y;
+    for (int i = 0 ; i < n; ++i)
     {
         qreal y_head = regression.m*x[i]+regression.n;  
         regression.y_head << y_head;
-        regression.sum_err += (y_head)*(y_head);
-        x_ = (x[i]-mean_x)*(x[i]-mean_x);
-        y_ = (y[i]-mean_y)*(y[i]-mean_y);
-        xy_ = (x[i]-mean_x)*(y[i]-mean_y);
+        regression.sum_err += (y_head-y[i])*(y_head-y[i]);
+        x_ += (x[i]-mean_x)*(x[i]-mean_x);
+        y_ += (y[i]-mean_y)*(y[i]-mean_y);
+        xy_ += (x[i]-mean_x)*(y[i]-mean_y);
     }
-    regression.R = xy_/qSqrt(x_)/qSqrt(y_);
+    regression.R = (xy_/qSqrt(x_*y_))*(xy_/qSqrt(x_*y_));
+    
 #ifdef _DEBUG
-    qDebug() << QString("y = " + QString::number(regression.m) +"x+"+ QString::number(regression.n));
+    qDebug() << QString(" -- y = " + QString::number(regression.m) +"x+"+ QString::number(regression.n) + " -- R2 = " + QString::number(regression.R) + " Sum Error: " + QString::number(regression.sum_err));
 #endif
     return regression;
+}
+
+QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y, int functions)
+{
+    QMap<qreal, MultiRegression> regressions;
+    if(functions == 1)
+    {
+        LinearRegression regression = LeastSquares(x,y);
+        MultiRegression reg;
+        reg.regressions << regression;
+        reg.sum_err = regression.sum_err;
+        regressions.insert(reg.sum_err, reg);
+    }
+    else if(functions == 2)
+    {
+        for(int i = 2; i < x.size() - 1; ++i)
+        {
+            QVector<qreal> x_i, x_j, y_i, y_j;
+            for(int i_i = 0; i_i < i; ++i_i)
+            {
+                x_i << x[i_i];
+                y_i << y[i_i];
+            } 
+            for(int j_j = i; j_j < x.size(); ++j_j)
+            {
+                x_j << x[j_j];
+                y_j << y[j_j];
+            }
+            
+            LinearRegression reg_i = LeastSquares(x_i,y_i);
+            LinearRegression reg_j = LeastSquares(x_j,y_j);
+            MultiRegression reg;
+            reg.regressions << reg_i;
+            reg.regressions << reg_j;
+            reg.start << 0 << i << i - 1 << x.size() - 1 ;
+            reg.sum_err = reg_i.sum_err + reg_j.sum_err;
+            regressions.insert(reg.sum_err, reg);
+        }
+    }
+    return regressions;
 }
 
 

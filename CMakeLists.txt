@@ -186,6 +186,7 @@ endif(testing)
 qt5_use_modules(utils Core Gui)
 
 set(suprafit_SRCS
+                src/ui/dialogs/regressionanalysisdialog.cpp
                 src/ui/guitools/chartwrapper.cpp
                 src/ui/widgets/results/cvresultwidget.cpp
                 src/ui/widgets/results/searchresultwidget.cpp

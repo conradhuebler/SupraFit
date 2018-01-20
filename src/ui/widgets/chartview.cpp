@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -214,6 +214,16 @@ void ChartView::setUi()
     connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
 }
 
+QtCharts::QLineSeries * ChartView::addLinearSeries(qreal m, qreal n, qreal min, qreal max)
+{
+    qreal y_min = m*min+n;
+    qreal y_max = m*max+n;
+    QtCharts::QLineSeries *series = new QtCharts::QLineSeries(this);
+    series->append(min, y_min);
+    series->append(max, y_max);
+    addSeries(series);
+    return series;
+}
 
 void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
 {    
@@ -228,6 +238,12 @@ void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
         if(connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))
             connected = true;
     forceformatAxis();
+}
+
+void ChartView::ClearChart()
+{
+    m_chart->removeAllSeries();
+    emit ChartCleared();
 }
 
 
@@ -296,6 +312,9 @@ void ChartView::forceformatAxis()
     x_axis->setTitleText(m_x_axis);
     m_pending = false;
     m_ymax = y_max;
+    m_ymin = y_min;
+    m_xmin = x_min;
+    m_xmax = x_max;
 }
 
 void ChartView::PlotSettings()

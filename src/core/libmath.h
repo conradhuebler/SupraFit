@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,11 +38,19 @@ struct LinearRegression
     qreal sum_err = 0;
 };
 
+struct MultiRegression
+{
+    QVector<LinearRegression> regressions;
+    qreal sum_err = 0;
+    QVector<int> start;
+};
+
 qreal MinQuadraticRoot(qreal a, qreal b, qreal c);
 QPair<qreal, qreal> QuadraticRoots(qreal a, qreal b, qreal c);
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
 
 LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y);
+QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y, int functions);
 
 namespace Cubic{
     qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);

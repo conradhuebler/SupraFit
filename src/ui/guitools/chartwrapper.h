@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,12 +83,15 @@ public:
     inline QPointer<QtCharts::QXYSeries > Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
-    void TransformModel(QSharedPointer< DataClass > model) { if(!m_transformed) m_model = model; m_transformed = true; }
+    void TransformModel(QSharedPointer< DataClass > model) { if(!m_transformed) m_model = model; m_transformed = true; MakeSeries(); emit ModelTransformed(); }
     QString ColorList() const;
     bool setColorList(const QString &str);
     
+    QList<QPointer<QtCharts::QScatterSeries > > CloneSeries() const;
+    
 public slots:
     void UpdateModel();
+    void MakeSeries();
     void showSeries(int i);
     void SetBlocked(int blocked);
     void FlipChart(bool flip);
@@ -106,6 +109,7 @@ signals:
     void stopAnimiation();
     void restartAnimation();
     void ShowSeries(int i);
+    void ModelTransformed();
 };
 
 #endif // CHARTWRAPPER_H
