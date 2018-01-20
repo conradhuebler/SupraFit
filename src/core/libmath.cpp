@@ -99,6 +99,7 @@ QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal> &x, const QVector
         MultiRegression reg;
         reg.regressions << regression;
         reg.sum_err = regression.sum_err;
+        reg.start << 0 <<  x.size() - 1;
         regressions.insert(reg.sum_err, reg);
     }
     else if(functions == 2)
