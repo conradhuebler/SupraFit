@@ -87,6 +87,7 @@ void ReductionAnalyse::PlainReduction()
         m_model->DependentModel()->CheckRow(i);
         thread->setModel(m_model);
         thread->run();
+        m_models << thread->Model();
         QList<qreal > constants = thread->Constants();
         for(int j = 0; j < constants.size(); ++j)
             m_series[j].append(QPointF(m_model->PrintOutIndependent(i), constants[j]));

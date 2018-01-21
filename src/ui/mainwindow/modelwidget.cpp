@@ -38,6 +38,7 @@
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/widgets/chartview.h"
+#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/3dchartview.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/widgets/stackedwidget.h"
@@ -530,14 +531,16 @@ void ModelWidget::DoReductionAnalyse()
     QtCharts::QChart *chart = new QtCharts::QChart;
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    QPointer<ChartView > view = new ChartView(chart);
+//     QPointer<ChartView > view = new ChartView(chart);
+    QPointer<ListChart> view = new ListChart;
     QList<QList< QPointF> > series = analyse->Series();
     for(int i = 0; i < series.size(); ++i)
     {
         LineSeries *serie = new LineSeries;
         serie->append(series[i]);
         serie->setName( m_model->GlobalParameterName(i));
-        view->addSeries(serie, true);
+        view->addSeries(serie, i, serie->color(), QString::number(i + 1));
+        view->setColor(i, serie->color());
     }
     m_statistic_result->setWidget(view, "Reduction Analyse");
     m_statistic_result->show();

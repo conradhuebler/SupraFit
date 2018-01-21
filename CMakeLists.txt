@@ -186,8 +186,15 @@ endif(testing)
 qt5_use_modules(utils Core Gui)
 
 set(suprafit_SRCS
-                src/ui/dialogs/regressionanalysisdialog.cpp
                 src/ui/guitools/chartwrapper.cpp
+                src/ui/dialogs/regressionanalysisdialog.cpp
+                src/ui/dialogs/statisticdialog.cpp
+                src/ui/dialogs/modeldialog.cpp
+                src/ui/dialogs/advancedsearch.cpp
+                src/ui/dialogs/importdata.cpp
+                src/ui/dialogs/configdialog.cpp
+                src/ui/dialogs/chartconfig.cpp
+                src/ui/widgets/optimizerwidget.cpp
                 src/ui/widgets/results/cvresultwidget.cpp
                 src/ui/widgets/results/searchresultwidget.cpp
                 src/ui/widgets/results/wgsresultswidget.cpp
@@ -203,16 +210,10 @@ set(suprafit_SRCS
                 src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/chartview.cpp
+                src/ui/widgets/listchart.cpp
                 src/ui/widgets/buttons/spinbox.h
                 src/ui/widgets/buttons/scientificbox.h
                 src/ui/widgets/buttons/hovercheckbox.h
-                src/ui/dialogs/statisticdialog.cpp
-                src/ui/dialogs/modeldialog.cpp
-                src/ui/dialogs/advancedsearch.cpp
-                src/ui/dialogs/importdata.cpp
-                src/ui/dialogs/configdialog.cpp
-                src/ui/dialogs/chartconfig.cpp
-                src/ui/widgets/optimizerwidget.cpp
                 src/ui/mainwindow/modelhistorywidget.cpp
                 src/ui/mainwindow/chartwidget.cpp
                 src/ui/mainwindow/modeldataholder.cpp

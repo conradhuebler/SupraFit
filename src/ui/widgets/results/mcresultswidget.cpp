@@ -23,6 +23,7 @@
 #include "src/core/toolset.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/chartview.h"
+#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/statisticwidget.h"
 
 #include <QtCore/QPointer>
@@ -104,22 +105,18 @@ QWidget * MCResultsWidget::ChartWidget()
     return widget;
 }
 
-QPointer<ChartView> MCResultsWidget::MakeHistogram()
+QPointer<ListChart> MCResultsWidget::MakeHistogram()
 {
-    QtCharts::QChart *chart = new QtCharts::QChart;
-    
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    QPointer<ChartView > view = new ChartView(chart);
+    QPointer<ListChart> view = new ListChart;
     view->setXAxis("constant");
     view->setYAxis("rate");
     view->setMinimumSize(300,400);
     bool formated = false;
-   
-
+    
     for(int i = 0; i < m_data.size(); ++i)
     {
-        if(m_data[i]["type"].toString() != "Global Parameter")
-            continue;
+        QString name = m_data[i]["name"].toString();
+        qreal x_0 = m_data[i]["value"].toDouble();
         QVector<qreal> list = ToolSet::String2DoubleVec(m_data[i]["data"].toObject()["raw"].toString());
         QVector<QPair<qreal, int> > histogram = ToolSet::List2Histogram(list,500);
         QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
@@ -129,22 +126,23 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         }
         if(histogram.size())
              has_histogram = true;
-        view->addSeries(xy_series);
+        view->addSeries(xy_series, i, xy_series->color(), name);
+        view->setColor(i, xy_series->color());
         if(!formated)
             view->formatAxis();
         formated = true;
-
-        QtCharts::QLineSeries *current_constant= new QtCharts::QLineSeries();
-        *current_constant << QPointF(m_model->GlobalParameter(i), 0) << QPointF(m_model->GlobalParameter(i), view->YMax());
+        
+        QtCharts::QLineSeries *current_constant = new QtCharts::QLineSeries();
+        *current_constant << QPointF(x_0, 0) << QPointF(x_0, view->YMax());
         current_constant->setColor(xy_series->color());
-        current_constant->setName( m_model->GlobalParameterName(i));
-        view->addSeries(current_constant, true);
+        current_constant->setName( name);
+        view->addSeries(current_constant, i, xy_series->color(), name);
         
         QJsonObject confidenceObject = m_data[i]["confidence"].toObject();
         if(view)
         {
             QtCharts::QAreaSeries *area_series = AreaSeries(xy_series->color());
-            view->addSeries(area_series);
+            view->addSeries(area_series, i, area_series->color(), name);
             m_area_series << area_series;
         } 
         m_colors << xy_series->color();
@@ -154,23 +152,19 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
     return view;
 }
 
- QPointer<QtCharts::QChartView > MCResultsWidget::MakeBoxPlot()
+ QPointer<ListChart > MCResultsWidget::MakeBoxPlot()
 {
     QWidget *widget = new QWidget;
-    QtCharts::QChart *chart_box = new QtCharts::QChart; 
-    chart_box->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    
-    QtCharts::QChartView *view = new QtCharts::QChartView(chart_box);
+    ListChart *boxplot = new ListChart;
     double min = 10, max = 0;
 
     for(int i = 0; i < m_data.size(); ++i)
     {
         QJsonObject data = m_data[i];
-        if(data["type"].toString() != "Global Parameter")
-            continue;
+
         has_boxplot = true;
         QtCharts::QBoxPlotSeries *series = new QtCharts::QBoxPlotSeries();
-        series->setName(m_model->GlobalParameterName(i));
+        series->setName(m_data[i]["name"].toString());
         SupraFit::BoxWhisker bw = ToolSet::Object2Whisker( data["boxplot"].toObject() );
         min = qMin(bw.lower_whisker, min);
         max = qMax(bw.upper_whisker, max);
@@ -180,20 +174,19 @@ QPointer<ChartView> MCResultsWidget::MakeHistogram()
         box->setValue(QtCharts::QBoxSet::Median, bw.median);
         box->setValue(QtCharts::QBoxSet::LowerQuartile, bw.lower_quantile);
         box->setValue(QtCharts::QBoxSet::UpperQuartile, bw.upper_quantile);
-        series->append(box);       
-        chart_box->addSeries(series);  
+        series->append(box);      
+        boxplot->addSeries(series, i, Qt::green, m_data[i]["name"].toString());  
+        boxplot->setColor(i, series->brush().color());
         m_box_object << ToolSet::Box2Object(bw);
     }
 
-    chart_box->createDefaultAxes();
     if(has_boxplot)
     {
-        QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( chart_box->axisY());
+        QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( boxplot->Chart()->axisY());
         y_axis->setMin(min*0.99);
         y_axis->setMax(max*1.01);
     }
-    view->setRubberBand(QtCharts::QChartView::RectangleRubberBand);
-    return view;
+    return boxplot;
 }
 
 
@@ -208,14 +201,12 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     QWidget *resultwidget_ellipsoid = new QWidget;
     QGridLayout *layout_ellipsoid = new QGridLayout;
     resultwidget_ellipsoid->setLayout(layout_ellipsoid);
-    
-    chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    
+
     layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
     xy_series->append(data);
     xy_series->setMarkerSize(8);
-    view->addSeries(xy_series);
+    view->addSeries(xy_series, false);
     view->setXAxis(m_model->GlobalParameterName(0));
     view->setYAxis(m_model->GlobalParameterName(1));
     return view;
@@ -253,9 +244,7 @@ void MCResultsWidget::UpdateBoxes()
      for(int i = 0; i < m_data.size(); ++i)
     {
         QJsonObject data = m_data[i];
-        if(data["type"].toString() != "Global Parameter")
-            continue;
-        
+
         double max = m_histgram->YMax()/2;
         QJsonObject confidenceObject = data["confidence"].toObject();
 

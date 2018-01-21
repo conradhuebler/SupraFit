@@ -71,6 +71,7 @@ public:
     
     QtCharts::QLineSeries *addLinearSeries(qreal m, qreal n, qreal min, qreal max);
     void ClearChart();
+    
 public slots:
     void formatAxis();
     

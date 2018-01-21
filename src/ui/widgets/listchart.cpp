@@ -1,0 +1,109 @@
+/*
+ * <one line to give the program's name and a brief idea of what it does.>
+ * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <QtCharts/QBoxPlotSeries>
+
+#include <QtWidgets/QLayout>
+#include <QtWidgets/QListWidget>
+#include <QtWidgets/QWidget>
+
+#include "src/ui/widgets/chartview.h"
+
+#include "listchart.h"
+
+ListChart::ListChart()
+{
+    m_chart = new QtCharts::QChart;
+        
+    m_chartview = new ChartView(m_chart, true);
+    m_chartview->setYAxis("Y");
+    m_chartview->setXAxis("X");
+    
+    m_list = new QListWidget;
+    m_list->setMaximumWidth(150);
+    
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->addWidget(m_chartview);
+    layout->addWidget(m_list);
+    setLayout(layout);
+    
+    connect(m_list, &QListWidget::itemDoubleClicked, this, &ListChart::ListClicked);
+}
+
+ListChart::~ListChart()
+{
+    
+}
+
+void ListChart::setXAxis(const QString& str)
+{
+      m_chartview->setXAxis(str);  
+}
+
+void ListChart::setYAxis(const QString& str)
+{
+    m_chartview->setYAxis(str);
+}
+
+void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QColor &color, const QString& name)
+{
+    if(index >= m_list->count())
+    {
+        QListWidgetItem *item = new QListWidgetItem(name);
+        item->setData(Qt::UserRole, index);
+        item->setBackgroundColor(color);
+        m_list->addItem(item);
+    }
+    m_chartview->addSeries(series, true);
+    m_hidden[index] = true;
+    m_series.insert(index, series);
+    m_chartview->formatAxis();
+}
+
+QtCharts::QLineSeries * ListChart::addLinearSeries(qreal m, qreal n, qreal min, qreal max, int index)
+{
+    QtCharts::QLineSeries *serie = m_chartview->addLinearSeries(m,n,min,max);
+    m_series.insert(index, serie);
+    return serie;
+}
+
+void ListChart::setColor(int index, const QColor& color)
+{
+    if(index < m_list->count())
+        m_list->item(index)->setBackgroundColor(color);
+}
+
+void ListChart::Clear()
+{
+    m_chartview->ClearChart();
+    m_series.clear();
+    m_list->clear();  
+}
+
+void ListChart::ListClicked(QListWidgetItem *item)
+{
+    int index = item->data(Qt::UserRole).toInt();
+    m_hidden[index] = !m_hidden[index];
+    QList<QtCharts::QAbstractSeries *> series = m_series.values(index);
+    for(int j = 0; j < series.size(); ++j)
+    {
+        if(qobject_cast<QtCharts::QBoxPlotSeries *>(series[j])) // visibility doesnt work for boxplots ??
+            continue;
+        series[j]->setVisible(m_hidden[index]);
+    }
+}

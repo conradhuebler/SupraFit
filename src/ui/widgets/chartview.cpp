@@ -145,7 +145,8 @@ void ChartViewPrivate::keyPressEvent(QKeyEvent *event)
 ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false), m_latex_supported(latex_supported), m_ymax(0)
 {
     setUi();
-    m_chart->legend()->setAlignment(Qt::AlignRight);
+//     m_chart->legend()->setAlignment(Qt::AlignRight);
+    m_chart->legend()->setVisible(false);
     if(qApp->instance()->property("chartanimation").toBool())
         m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     else
@@ -158,7 +159,8 @@ ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()
     m_chart = new QtCharts::QChart(); 
     m_chart_private = new ChartViewPrivate(new ChartViewPrivate(m_chart, this));
     setUi();
-    m_chart->legend()->setAlignment(Qt::AlignRight);
+    m_chart->legend()->setVisible(false);
+//     m_chart->legend()->setAlignment(Qt::AlignRight);
 }
 
 void ChartView::setUi()
@@ -296,17 +298,26 @@ void ChartView::forceformatAxis()
     int x_ticks = ToolSet::scale(x_max-x_min)/int(ToolSet::scale(x_max-x_min)/ 5) + 1;
     int y_ticks = 6; //scale(y_max-y_min)/int(scale(y_max-y_min)/ 5) + 1;
     
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
-    
+    QPointer<QtCharts::QValueAxis> y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    if(!y_axis)
+    {
+         m_chart->createDefaultAxes();
+         y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    }
     y_axis->setMax(y_max);
-    y_axis->setMin((y_min));
+    y_axis->setMin(y_min);
     y_axis->setTickCount(y_ticks);
     y_axis->setTitleText(m_y_axis);
     
     
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-    x_axis->setMax((x_max));
-    x_axis->setMin((x_min));
+    QPointer<QtCharts::QValueAxis>  x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
+    if(!x_axis)
+    {
+         m_chart->createDefaultAxes();
+         x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    }
+    x_axis->setMax(x_max);
+    x_axis->setMin(x_min);
     x_axis->setTickCount(x_ticks);
     
     x_axis->setTitleText(m_x_axis);

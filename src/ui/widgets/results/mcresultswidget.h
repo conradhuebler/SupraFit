@@ -34,6 +34,7 @@ class QPushButton;
 class QDoubleSpinBox;
 class QLabel;
 class ChartView;
+class ListChart;
 
 class MCResultsWidget : public ResultsWidget
 {
@@ -49,8 +50,9 @@ public:
 private:
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox *m_error;
-    QPointer<ChartView > m_histgram, m_contour;
-    QPointer<QtCharts::QChartView > m_box;
+    QPointer<ListChart > m_histgram, m_box;
+    QPointer<ChartView> m_contour;
+//     QPointer<QtCharts::QChartView > m_box;
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries * > m_area_series;
     
@@ -59,9 +61,9 @@ private:
     void UpdateBoxes();
     
     QtCharts::QAreaSeries *AreaSeries(const QColor &color) const;
-    QPointer<ChartView > MakeHistogram();
+    QPointer<ListChart > MakeHistogram();
     QPointer<ChartView > MakeContour();
-    QPointer<QtCharts::QChartView > MakeBoxPlot();
+    QPointer<ListChart > MakeBoxPlot();
     QList<QJsonObject> m_box_object;
     QList<QJsonObject > m_data, m_models;
     bool has_histogram, has_contour, has_boxplot;
