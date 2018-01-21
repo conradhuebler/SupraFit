@@ -20,6 +20,7 @@
 
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QWidget>
 
 #include "src/ui/widgets/chartview.h"
@@ -35,14 +36,23 @@ ListChart::ListChart()
     m_chartview->setXAxis("X");
     
     m_list = new QListWidget;
-    m_list->setMaximumWidth(150);
+    m_list->setMaximumWidth(200);
     
+    m_names_list = new QListWidget;
+    m_names_list->setMaximumWidth(200);
+    
+    QSplitter *list_splitter = new QSplitter(Qt::Vertical);
+    list_splitter->addWidget(m_list);
+    list_splitter->addWidget(m_names_list);
+    QSplitter *splitter = new QSplitter(Qt::Horizontal);
+    splitter->addWidget(m_chartview);
+    splitter->addWidget(list_splitter);
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->addWidget(m_chartview);
-    layout->addWidget(m_list);
+    layout->addWidget(splitter);
     setLayout(layout);
     
-    connect(m_list, &QListWidget::itemDoubleClicked, this, &ListChart::ListClicked);
+    connect(m_list, &QListWidget::itemDoubleClicked, this, &ListChart::SeriesListClicked);
+    connect(m_names_list, &QListWidget::itemDoubleClicked, this, &ListChart::NamesListClicked);
 }
 
 ListChart::~ListChart()
@@ -69,10 +79,23 @@ void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QC
         item->setBackgroundColor(color);
         m_list->addItem(item);
     }
+    
+    if(!m_names_list->findItems(name,Qt::MatchExactly).size())
+    {
+        QListWidgetItem *item = new QListWidgetItem(name);
+        item->setData(Qt::UserRole, name);
+        m_names_list->addItem(item);
+    }
+    m_list->setItemDelegate(new HTMLListItem(m_list));
+    m_names_list->setItemDelegate(new HTMLListItem(m_names_list));
     m_chartview->addSeries(series, true);
     m_hidden[index] = true;
     m_series.insert(index, series);
     m_chartview->formatAxis();
+    if(m_list->count() == m_names_list->count())
+        m_names_list->hide();
+    else
+        m_names_list->show();
 }
 
 QtCharts::QLineSeries * ListChart::addLinearSeries(qreal m, qreal n, qreal min, qreal max, int index)
@@ -95,7 +118,7 @@ void ListChart::Clear()
     m_list->clear();  
 }
 
-void ListChart::ListClicked(QListWidgetItem *item)
+void ListChart::SeriesListClicked(QListWidgetItem *item)
 {
     int index = item->data(Qt::UserRole).toInt();
     m_hidden[index] = !m_hidden[index];
@@ -107,3 +130,12 @@ void ListChart::ListClicked(QListWidgetItem *item)
         series[j]->setVisible(m_hidden[index]);
     }
 }
+
+void ListChart::NamesListClicked(QListWidgetItem* item)
+{
+    QString str = item->data(Qt::UserRole).toString();
+    QList<QListWidgetItem*> list = m_list->findItems(str, Qt::MatchExactly);
+    for(int i = 0; i < list.size(); ++i)
+        SeriesListClicked(list[i]);
+}
+
