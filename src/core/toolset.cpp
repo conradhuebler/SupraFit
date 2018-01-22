@@ -319,6 +319,86 @@ namespace ToolSet{
         return box;
     }
     
+    QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
+    {
+        
+        int globalcount, localcount, each_local;
+        QJsonObject model = models.first()["data"].toObject();
+        globalcount = model["globalParameter"].toObject().size() - 1;
+        localcount  = model["localParameter"].toObject().size() - 1;
+        QStringList local_names, global_names;
+        local_names = model["localParameter"].toObject()["names"].toString().split("|");
+        each_local  = local_names.count();
+        global_names = model["globalParameter"].toObject()["names"].toString().split("|");
+        QVector<QVector<qreal> >global(globalcount);
+        QVector<QVector<qreal> >local(localcount*each_local);
+        for(int i = 0; i < models.size(); ++i)
+        {
+            QJsonObject model = models[i]["data"].toObject();
+            
+            QJsonObject globalObject = model["globalParameter"].toObject();
+            QJsonObject localObject = model["localParameter"].toObject();
+            for(int j = 0; j < globalcount; ++j)
+                global[j] << globalObject[QString::number(j)].toString().toDouble();
+            
+            
+            for(int j = 0; j < localcount; ++j)
+            {
+                QList<qreal> values = String2DoubleList(localObject[QString::number(j)].toString());
+                for(int k = 0; k < each_local; ++k)
+                {
+                    local[each_local*j+k] << values[k];
+                }
+            }
+        }
+        
+        if(sort)
+        {
+            for(int i = 0; i < global.size(); ++i)
+            {
+                QVector<double > vector = global[i];
+                std::sort(vector.begin(), vector.end());
+                global[i] = vector;
+            }
+            for(int i = 0; i < local.size(); ++i)
+            {
+                QVector<double > vector = local[i];
+                std::sort(vector.begin(), vector.end());
+                local[i] = vector;
+            }
+        }
+        
+        QList<QJsonObject> parameter;
+        
+        for(int i = 0; i < globalcount; ++i)
+        {
+            QJsonObject object;
+            QJsonObject data;
+            data["raw"]= DoubleVec2String(global[i]);
+            object["data"] = data;
+            object["name"] = global_names[i];
+            object["type"] = "Global Parameter";
+            object["index"] = QString::number(i);
+            parameter << object;
+        }
+        
+        for(int i = 0; i < localcount; ++i)
+        {
+            for(int j = 0; j < each_local; ++j)
+            {
+                QJsonObject object;
+                QJsonObject data;
+                data["raw"] = DoubleVec2String(local[each_local*i+j]);
+                object["data"] = data;  
+                object["name"] = local_names[j];
+                object["type"] = "Local Parameter";
+                object["index"] = QString::number(j) + "|" + QString::number(i);
+                parameter << object;
+            }
+        }
+        return parameter;
+    }
+    
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str)
     {
         QList<QPointF> series;

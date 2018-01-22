@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,7 +67,6 @@ void MonteCarloThread::run()
     
     m_optimized = m_minimizer->Parameter();
     m_model->ImportModel(m_optimized);
-//     m_model->Calculate();
     m_constants = m_model->GlobalParameter();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
@@ -91,38 +90,13 @@ MonteCarloStatistics::~MonteCarloStatistics()
 
 void MonteCarloStatistics::Evaluate()
 {
-    m_global_list.clear();
-    m_local_list.clear();
-    
     m_models.clear();
     QVector<QPointer <MonteCarloThread > > threads = GenerateData();
     while(m_threadpool->activeThreadCount())
-    {
         QCoreApplication::processEvents();
-    }
+    
     Collect(threads);
-    
-    m_global_list.resize(m_model->GlobalParameterSize());
-    m_local_list.resize(m_model->GlobalParameterSize()*m_model->SeriesCount()+m_model->SeriesCount()); //Check this 
-    for(int i = 0; i < m_models.size(); ++i)
-    {       
-        ExtractFromJson(i, "globalParameter");
-        ExtractFromJson(i, "localParameter");
-    }
-    for(int i = 0; i < m_global_list.size(); ++i)
-    {
-        QList<double > vector = m_global_list[i];
-        std::sort(vector.begin(), vector.end());
-        m_global_list[i] = vector;
-    }
-    
-    for(int i = 0; i < m_local_list.size(); ++i)
-    {
-        QList<double > vector = m_local_list[i];
-        std::sort(vector.begin(), vector.end());
-        m_local_list[i] = vector;
-    }
-    
+    m_results = ToolSet::Model2Parameter(m_models);
     AnalyseData();
 }
 
@@ -172,7 +146,6 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& threads)
 { 
     m_steps = 0;
-    QVector<QVector<qreal > > m_constants_list(m_model->GlobalParameterSize());
     for(int i = 0; i < threads.size(); ++i)
     {
         if(threads[i])
@@ -182,113 +155,38 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
                 delete threads[i];
                 continue;
             }
-            QList<qreal > constants = threads[i]->Constants();
-            for(int j = 0; j < constants.size(); ++j)
-                m_constants_list[j] << constants[j];
             m_models << threads[i]->Model();
             m_steps++;
             delete threads[i];
         }
     }
-    
-    for(int i = 0; i < m_constants_list.size(); ++i)
-    {
-        QVector<QPair<qreal, int> > histogram = ToolSet::List2Histogram(m_constants_list[i], 500);
-        QList<QPointF> series;
-        for(int j = 0; j < histogram.size(); ++j)
-        {
-            series.append(QPointF(histogram[j].first, histogram[j].second));       
-        }
-        m_series << series;
-    }
 }
 
 void MonteCarloStatistics::AnalyseData(qreal error)
 {
-    m_results.clear();
-    
-    for(int i = 0; i < m_global_list.size(); ++i)
+   
+    for(int i = 0; i < m_results.size(); ++i)
     {
-        QList<qreal > list = m_global_list[i];
-        QJsonObject result = MakeJson(list, 100-error);
-        result["value"] = m_model->GlobalParameter(i);
-        result["name"] = m_model->GlobalParameterName(i);
-        result["type"] = "Global Parameter";
-        result["error"] = error;
-        m_results << result;
-    }
-    
-    for(int parameter = 0; parameter < m_model->LocalParameterSize(); ++parameter)
-    {
-        for(int series = 0; series < m_model->SeriesCount(); ++series)
+        QList<qreal > list = ToolSet::String2DoubleList( m_results[i]["data"].toObject()["raw"].toString());
+        if(m_results[i]["type"].toString() == "Global Parameter")
+            m_results[i]["value"] = m_model->GlobalParameter(m_results[i]["index"].toString().toInt());
+        else
         {
-            QList<qreal > list = m_local_list[series*m_model->LocalParameterSize()+parameter];
-            QJsonObject result = MakeJson(list, 100-error);
-            result["value"] = m_model->LocalParameter(parameter, series);
-            result["name"] = m_model->LocalParameterName(parameter) + m_model->DependentModel()->headerData(parameter, Qt::Horizontal, Qt::DisplayRole).toString();
-            result["type"] = "Local Parameter";
-            result["error"] = error;
-            m_results << result;
+            QStringList index = m_results[i]["index"].toString().split("|");
+            m_results[i]["value"] = m_model->LocalParameter(index[0].toInt(),index[1].toInt());
         }
+        m_results[i]["error"] = error;
+        m_results[i]["boxplot"] = ToolSet::Box2Object(ToolSet::BoxWhiskerPlot(list));
+        QJsonObject controller;
+        controller["runtype"] = m_config.runtype;
+        controller["steps"] = m_steps;
+        controller["variance"] = m_config.variance;
+        controller["original"] = m_config.original;
+        controller["bootstrap"] = m_config.bootstrap;
+        m_results[i]["controller"] = controller;
     }
+
     emit AnalyseFinished();
-}
-
-void MonteCarloStatistics::ExtractFromJson(int i, const QString &string)
-{
-    QJsonObject object =  m_models[i]["data"].toObject()[string].toObject();
-    QStringList keys = object.keys();
-    if(keys.size() > 10)
-    {
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(
-            keys.begin(),
-                  keys.end(),
-                  [&collator](const QString &key1, const QString &key2)
-                  {
-                      return collator.compare(key1, key2) < 0;
-                  });
-    }
-    
-    int j = 0;
-    for(const QString &str : qAsConst(keys))
-    {
-        QString element = object[str].toString();
-        if(string == "globalParameter")
-            m_global_list[j] << element.toDouble();
-        else if(string == "localParameter")
-        {
-            /*
-             * We transform the tables of the local parameter to an array of vectors
-             */
-            QVector<double> vector = ToolSet::String2DoubleVec(element);
-            for(int i = 0; i < vector.size(); ++i)
-                m_local_list[j*m_model->LocalParameterSize()+i] << vector[i];
-        }
-        j++;
-    }  
-}
-
-QJsonObject MonteCarloStatistics::MakeJson(QList<qreal>& list, qreal error)
-{
-    QJsonObject result;
-
-    QJsonObject data;
-    data["raw"] = ToolSet::DoubleList2String(list);
-    result["data"] = data;
-    
-    result["boxplot"] = ToolSet::Box2Object(ToolSet::BoxWhiskerPlot(list));
-    
-    QJsonObject controller;
-    controller["runtype"] = m_config.runtype;
-    controller["steps"] = m_steps;
-    controller["variance"] = m_config.variance;
-    controller["original"] = m_config.original;
-    controller["bootstrap"] = m_config.bootstrap;
-    result["controller"] = controller;
-    
-    return result;
 }
 
 void MonteCarloStatistics::Interrupt()

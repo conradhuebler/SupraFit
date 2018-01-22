@@ -452,10 +452,14 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
 {
     QJsonObject json, toplevel;
     QJsonObject constantObject, optionObject;
+    QString names;
     for(int i = 0; i < GlobalParameter().size(); ++i)
     {
         constantObject[QString::number(i)] = (QString::number(GlobalParameter()[i]));
+        names += GlobalParameterName(i) + "|";
     }
+    names.chop(1);
+    constantObject["names"] = names;
     json["globalParameter"] = constantObject;
     
     if(statistics)
@@ -482,7 +486,13 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
         for(int i = 0; i < m_local_parameter->rowCount(); ++i)
             if(ActiveSignals(i))
                 localParameter[QString::number(i)] = (ToolSet::DoubleList2String(m_local_parameter->Row(i)));
-
+            
+        names = QString();
+        for(int i = 0; i < LocalParameterSize(); ++i)
+            names += LocalParameterName(i) + "|";
+    
+        names.chop(1);
+        localParameter["names"] = names;
         json["localParameter"] = localParameter;   
     }
     
