@@ -448,6 +448,9 @@ void MainWindow::ReadSettings()
     /* We start with the default values, which should replace all invalid QVariants eg. no yet set properties */
     if(qApp->instance()->property("ask_on_exit") == QVariant())
         qApp->instance()->setProperty("ask_on_exit", true);
+    
+    if(qApp->instance()->property("save_on_exit") == QVariant())
+        qApp->instance()->setProperty("save_on_exit", true);
    
     if(qApp->instance()->property("tooltips") == QVariant())
     {
@@ -557,6 +560,25 @@ void MainWindow::closeEvent(QCloseEvent *event)
         }
         qApp->instance()->setProperty("ask_on_exit", !question.checkBox()->isChecked());
     }
+        
+    if(qApp->instance()->property("save_on_exit").toBool())
+    {
+        QString filename = qApp->instance()->property("projectpath").toString();        
+        QFileInfo info (filename+ ".autosave.json");
+        if(info.exists())
+        {
+            int i = 1;
+            QFileInfo info (filename+ ".autosave_" + QString::number(i) + ".json");
+            while(info.exists())
+            {
+                ++i;
+                info = QFileInfo(filename + ".autosave" + QString::number(i) + ".json");
+            }
+            filename = filename + ".autosave_" + QString::number(i) + ".json";
+        }else
+            filename = filename+ ".autosave.json";
+        m_model_dataholder->SaveWorkspace(filename);
+    } 
         
     m_stdout.close();
 

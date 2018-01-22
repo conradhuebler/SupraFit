@@ -180,7 +180,13 @@ void ConfigDialog::createGeneralTab()
     m_tooltips->setChecked(qApp->instance()->property("tooltips").toBool());
     layout->addWidget(m_tooltips);
     
+    m_save_on_exit = new QCheckBox(tr("Automatic save data on exit"));
+    m_save_on_exit->setToolTip(tr("Save data automatically on exit. The file will be called 'projectname'.autosave#.json, where # is a natural number. No older files will be overwritten."));
+    m_save_on_exit->setChecked(qApp->instance()->property("save_on_exit").toBool());
+    layout->addWidget(m_save_on_exit);
+    
     m_ask_on_exit = new QCheckBox(tr("Confirm quit of SupraFit"));
+    m_ask_on_exit->setToolTip(tr("Confirm quit of SupraFit"));
     m_ask_on_exit->setChecked(qApp->instance()->property("ask_on_exit").toBool());
     layout->addWidget(m_ask_on_exit);
         
@@ -254,25 +260,13 @@ void ConfigDialog::accept()
     else if(m_working_dir->isChecked())
         m_dirlevel = 2;
     
-    /*
-    if(m_printlevel_0->isChecked())
-        m_printlevel = 0;    
-    else if(m_printlevel_1->isChecked())
-        m_printlevel = 1;    
-    else if(m_printlevel_2->isChecked())
-        m_printlevel = 2;       
-    else if(m_printlevel_3->isChecked())
-        m_printlevel = 3;  
-    else if(m_printlevel_4->isChecked())
-        m_printlevel = 4;  
-    else
-        m_printlevel = 5;  */
    qApp->instance()->setProperty("threads", m_threads->value()); 
    qApp->instance()->setProperty("workingdir", m_working->text());
    qApp->instance()->setProperty("dirlevel", m_dirlevel);
    qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
    qApp->instance()->setProperty("p_value", m_p_value->value());
    qApp->instance()->setProperty("ask_on_exit", m_ask_on_exit->isChecked());
+   qApp->instance()->setProperty("save_on_exit", m_ask_on_exit->isChecked());
    qApp->instance()->setProperty("tooltips", m_tooltips->isChecked());
    QDialog::accept(); 
 }
