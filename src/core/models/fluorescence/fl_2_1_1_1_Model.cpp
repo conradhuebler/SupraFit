@@ -224,7 +224,7 @@ QSharedPointer<AbstractModel > fl_IItoI_ItoI_Model::Clone()
     return model;    
 }
 
-qreal fl_IItoI_ItoI_Model::BC50()
+qreal fl_IItoI_ItoI_Model::BC50() const
 {
     qreal b11 = qPow(10,GlobalParameter()[1]);
     qreal b21 = qPow(10,(GlobalParameter()[0]+GlobalParameter()[1]));

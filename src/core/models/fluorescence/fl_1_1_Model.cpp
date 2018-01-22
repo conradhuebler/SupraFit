@@ -205,7 +205,7 @@ QSharedPointer<AbstractModel > fl_ItoI_Model::Clone()
     return model;
 }
 
-qreal fl_ItoI_Model::BC50()
+qreal fl_ItoI_Model::BC50() const
 {
     return 1/qPow(10,GlobalParameter()[0]); 
 }

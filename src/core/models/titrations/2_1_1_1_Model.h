@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef II_ItoI_ItoI_Model_H
-#define II_ItoI_ItoI_Model_H
+#pragma once
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
@@ -43,7 +42,7 @@ public:
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone()  override;
     virtual bool SupportThreads() const override { return false; }
-    virtual qreal BC50() override;
+    virtual qreal BC50() const override;
     virtual inline QString GlobalParameterName(int i = 0) const override 
     { 
         if(i == 0)
@@ -68,5 +67,3 @@ protected:
     QList<qreal > m_ItoI_signals, m_IItoI_signals;
 };
 
-
-#endif // 1-1_1-2-MODEL_H

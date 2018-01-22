@@ -158,7 +158,7 @@ QSharedPointer<AbstractModel > itc_ItoI_Model::Clone()
     return model;
 }
 
-qreal itc_ItoI_Model::BC50()
+qreal itc_ItoI_Model::BC50() const
 {
     return 1/qPow(10,GlobalParameter()[0]); 
 }

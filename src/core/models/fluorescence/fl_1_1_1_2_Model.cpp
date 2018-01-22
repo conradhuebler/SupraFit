@@ -253,7 +253,7 @@ qreal fl_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
 }
 
 
-qreal fl_ItoI_ItoII_Model::BC50()
+qreal fl_ItoI_ItoII_Model::BC50() const
 {
     qreal b11 = qPow(10,GlobalParameter(0));
     qreal b12 = qPow(10,GlobalParameter(0)+GlobalParameter(1));

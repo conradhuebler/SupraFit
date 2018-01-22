@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -201,7 +201,7 @@ QSharedPointer<AbstractModel > IItoI_ItoI_Model::Clone()
     return model;    
 }
 
-qreal IItoI_ItoI_Model::BC50()
+qreal IItoI_ItoI_Model::BC50() const
 {
     qreal b11 = qPow(10,GlobalParameter()[1]);
     qreal b21 = qPow(10,(GlobalParameter()[0]+GlobalParameter()[1]));

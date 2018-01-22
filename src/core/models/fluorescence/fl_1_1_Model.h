@@ -40,7 +40,7 @@ public:
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
-    virtual qreal BC50() override;
+    virtual qreal BC50() const override;
     virtual inline QString GlobalParameterName(int i = 0) const override 
     { 
         if( i == 0)

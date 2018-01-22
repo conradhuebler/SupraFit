@@ -391,7 +391,7 @@ ReductionAnalyse::CVType StatisticDialog::CrossValidationType()
     
     if(m_cv_loo->isChecked())
         return ReductionAnalyse::LeaveOneOut;
-    else if(m_cv_l2o->isChecked())
+    else //if (m_cv_l2o->isChecked())
         return ReductionAnalyse::LeaveTwoOut;
 }
 

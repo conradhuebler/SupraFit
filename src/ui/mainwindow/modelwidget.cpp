@@ -333,18 +333,8 @@ void ModelWidget::Repaint()
     m_pending = false;
     m_minimize_all->setEnabled(true);
 
-    qreal bc50 = 0;
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
-        bc50 = qobject_cast<AbstractTitrationModel *>(m_model)->BC50()*1E6;
-    
-    QString format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
-    QChar mu = QChar(956);
-    format_text += QString(" [") + mu + QString("M]");
-    if(bc50 > 0)
-        m_bc_50->setText(format_text);
-    else
-        m_bc_50->clear();
-    
+    m_bc_50->setText(m_model->ModelInfo());
+
     QString converged;
     if(!m_model->isConverged())
         converged = "<font color =\'red\'>Calculation did not converge.</font>\n";

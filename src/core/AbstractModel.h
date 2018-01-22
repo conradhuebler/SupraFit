@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,7 @@
  */
 
 
-#ifndef ABSTRACTMODEL_H
-#define ABSTRACTMODEL_H
+#pragma once
 
 #include "src/global.h"
 
@@ -334,6 +333,8 @@ public:
     
     inline virtual void EvaluateOptions() { }
     
+    inline virtual QString ModelInfo() const { return QString(); }
+    
     inline bool isLocked() const { return m_locked_model; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
@@ -402,6 +403,3 @@ signals:
     void Warning(const QString &str, int priority = 1);
     void StatisticChanged();
 };
-
-
-#endif

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,7 @@
  */
 
 
-#ifndef ABSTRACTTITRATIONMODEL_H
-#define ABSTRACTTITRATIONMODEL_H
+#pragma once
 
 #include "src/global.h"
 
@@ -85,7 +84,7 @@ public:
     
     virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
     
-    virtual qreal BC50();
+    virtual qreal BC50() const;
     virtual MassResults MassBalance(qreal A, qreal B);
     inline QPointer<DataTable > getConcentrations() const { return m_concentrations; }
     inline QPointer<DataTable > getConcentrations() { return m_concentrations; }
@@ -101,6 +100,8 @@ public:
     /*! \brief reimplementantion model dependented printout of the independant parameter
      */
     virtual qreal PrintOutIndependent(int i, int format = 4) const override;
+    
+    virtual QString ModelInfo() const override;
 protected:    
     /*
      * set the concentration of the @param int i datapoint to
@@ -116,5 +117,3 @@ protected:
     QVector<QVector<qreal * > >m_lim_para;
     QPointer<DataTable > m_concentrations; 
 };
-
-#endif // ABSTRACTMODEL_H

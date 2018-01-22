@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef ItoI_Model_H
-#define ItoI_Model_H
+#pragma once
 
 #include "src/global.h"
 #include "src/core/AbstractTitrationModel.h"
@@ -41,7 +40,7 @@ public:
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
-    virtual qreal BC50() override;
+    virtual qreal BC50() const override;
     virtual inline QString GlobalParameterName(int i = 0) const override 
     { 
         if( i == 0)
@@ -52,7 +51,7 @@ public:
 
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
-
+    
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
@@ -64,5 +63,3 @@ protected:
     QList<qreal > m_ItoI_signals;
     qreal m_K11;
 };
-
-#endif // 1_1_Model

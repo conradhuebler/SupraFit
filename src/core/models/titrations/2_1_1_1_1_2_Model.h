@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef IItoI_ItoI_ItoII_Model_H
-#define IItoI_ItoI_ItoII_Model_H
+#pragma once
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
@@ -69,5 +68,3 @@ private:
 protected:
     virtual void CalculateVariables() override;
 };
-
-#endif // 2_1_1_1_MODEL_H

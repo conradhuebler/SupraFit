@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 }
 
 
-qreal AbstractTitrationModel::BC50()
+qreal AbstractTitrationModel::BC50() const
 {
     return 0;
 }
@@ -119,4 +119,19 @@ qreal AbstractTitrationModel::PrintOutIndependent(int i, int format) const
                 break;    
         };
 }
+
+QString AbstractTitrationModel::ModelInfo() const 
+{
+    qreal bc50 = BC50()*1E6;
+    QString format_text;
+    if(bc50 > 0)
+    {
+        format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
+        QChar mu = QChar(956);
+        format_text += QString(" [") + mu + QString("M]");
+        return format_text;
+    }else
+        return QString();
+}
+
 #include "AbstractTitrationModel.moc"
