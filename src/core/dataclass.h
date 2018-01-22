@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef DATACLASS_H
-#define DATACLASS_H
+#pragma once
 
 #include <Eigen/Dense>
 
@@ -86,6 +85,7 @@ public:
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
     void CheckRow(int row);
+    void EnableAllRows();
     inline void setCheckedTable(Eigen::MatrixXd checked) { m_checked_table = checked; }
     inline Eigen::MatrixXd CheckedTable() const { return m_checked_table; }
     inline DataTable *BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() -1); } 
@@ -264,5 +264,3 @@ signals:
     void ActiveSignalsChanged(QList<int > active_signals);
     void SystemParameterLoaded();
 };
-
-#endif // DATACLASS_H

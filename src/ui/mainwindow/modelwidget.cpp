@@ -461,7 +461,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->Evaluate();
     
     QList<QJsonObject> result = monte_carlo->Results();
-    QList<QJsonObject > models = monte_carlo->Models(); 
+    QList<QJsonObject> models = monte_carlo->Models(); 
     
     delete monte_carlo;
     
@@ -514,12 +514,34 @@ void ModelWidget::CVAnalyse()
     Waiter wait;
     ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
     analyse->setModel(m_model);
-    analyse->CrossValidation(ReductionAnalyse::LeaveOnOut);
-    CVResultsWidget *cvresults = new CVResultsWidget(analyse, m_model, m_statistic_result);
-    m_statistic_result->setWidget(cvresults, "Cross Validation Analyse" + m_model->Name());
-    m_statistic_result->show();
-//     qDebug() << analyse->ModelData();
-    emit AddModel(analyse->ModelData());
+    analyse->CrossValidation(m_statistic_dialog->CrossValidationType());
+    
+    QList<QJsonObject> models = analyse->Models(); 
+    QList<QJsonObject> result = ToolSet::Model2Parameter(models);
+    QJsonObject controller;
+    controller["type "] = m_statistic_dialog->CrossValidationType();
+    ToolSet::Parameter2Statistic(result, m_model.data(), controller);
+    
+    delete analyse;
+    
+    
+    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, models, MCResultsWidget::CrossValidation);
+    mcsresult->setModels(models);
+    
+    /*
+    m_logging += "\n\n" +  doc.toPlainText();
+    */
+    m_statistic_result->setWidget(mcsresult, "Cross Validation for " + m_model->Name());
+    m_actions->EnableCharts(true);
+    m_statistic_result->show();  
+    m_statistic_dialog->HideWidget();
+    
+    
+//     CVResultsWidget *cvresults = new CVResultsWidget(analyse, m_model, m_statistic_result);
+//     m_statistic_result->setWidget(cvresults, "Cross Validation Analyse" + m_model->Name());
+//     m_statistic_result->show();
+// //     qDebug() << analyse->ModelData();
+//     emit AddModel(analyse->ModelData());
 }
 
 void ModelWidget::DoReductionAnalyse()

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 20118 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef REDUCTIONANALYSE_H
-#define REDUCTIONANALYSE_H
+#pragma once
 
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/core/AbstractModel.h"
@@ -27,6 +26,7 @@
 #include <QtCore/QSharedPointer>
 
 class AbstractModel;
+class MonteCarloThread;
 class Minimizer;
 
 class ReductionAnalyse : public AbstractSearchClass
@@ -38,18 +38,20 @@ public:
     ~ReductionAnalyse();
     
     enum CVType{
-        LeaveOnOut = 1,
+        LeaveOneOut = 1,
         LeaveTwoOut = 2
     };
     
-    void CrossValidation(CVType type = CVType::LeaveOnOut);
+    void CrossValidation(CVType type = CVType::LeaveOneOut);
     void PlainReduction();
     QJsonObject ModelData() const { return m_model_data; }
     
 private:
+    void addThread(QPointer<MonteCarloThread> thread);
+    bool Pending() const;
+    
+    QVector<QPointer<MonteCarloThread> > m_threads;
     AbstractConfig m_config;
     QPointer<DataTable > m_loo_table;
     QJsonObject m_model_data;
 };
-
-#endif // REDUCTIONANALYSE_H

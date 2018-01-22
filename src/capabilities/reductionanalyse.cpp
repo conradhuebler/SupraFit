@@ -35,6 +35,20 @@ ReductionAnalyse::~ReductionAnalyse()
         delete m_loo_table;
 }
 
+
+void ReductionAnalyse::addThread(QPointer<MonteCarloThread> thread)
+{
+    m_threads << thread;
+    m_threadpool->start(thread);
+}
+
+bool ReductionAnalyse::Pending() const
+{
+    return m_threadpool->activeThreadCount();
+}
+
+
+
 void ReductionAnalyse::CrossValidation(CVType type)
 {
     MCConfig config;
@@ -42,7 +56,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
     config.optimizer_config = m_config.optimizer_config;
 
     switch(type){
-        case CVType::LeaveOnOut:
+        case CVType::LeaveOneOut:
             m_loo_table = new DataTable(m_model->DependentModel());
             for(int i = m_model->DataPoints() - 1; i >= 0; --i)
             {
@@ -50,7 +64,11 @@ void ReductionAnalyse::CrossValidation(CVType type)
                 QSharedPointer<AbstractModel> model = m_model->Clone();
                 model->DependentModel()->CheckRow(i);
                 thread->setModel(model);
-                thread->run();
+                addThread(thread);
+//                 thread->run();
+//                 m_threads << thread;
+                /*
+//                 thread->run();
                 model->ImportModel(thread->Model());
 //                 std::cout << model->ModelTable()->Row(i) << std::endl;
                 model->DependentModel()->CheckRow(i);
@@ -58,17 +76,38 @@ void ReductionAnalyse::CrossValidation(CVType type)
 //                 std::cout << model->ModelTable()->Row(i) << std::endl;
                 m_loo_table->setRow(model->ModelTable()->Row(i), i);
                 m_models << model->ExportModel();
-                delete thread;
+                delete thread;*/
             }
+            /*
             m_model->setDependentTable(m_loo_table);
 //             m_loo_table->Debug();
             m_model_data = m_model->ExportModel(false, true);
+            */
             break;
         case CVType::LeaveTwoOut:
-            
+            for(int i = 0; i < m_model->DataPoints(); ++i)
+                for(int j = i + 1; j < m_model->DataPoints(); ++j)
+                {
+                    qDebug() << i << j;
+                    QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
+                    QSharedPointer<AbstractModel> model = m_model->Clone();
+                    model->DependentModel()->CheckRow(i);
+                    model->DependentModel()->CheckRow(j);
+                    thread->setModel(model);
+                    addThread(thread);
+                }
             break;
     }
-    
+    while(Pending()) { }
+    for(int i = 0; i < m_threads.size(); ++i)
+    {
+        if(m_threads[i])
+        {
+            m_models << m_threads[i]->Model();
+            delete m_threads[i];
+        }
+    }
+    m_model->DependentModel()->EnableAllRows();
 }
 
 void ReductionAnalyse::PlainReduction()
@@ -86,11 +125,21 @@ void ReductionAnalyse::PlainReduction()
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
         m_model->DependentModel()->CheckRow(i);
         thread->setModel(m_model);
-        thread->run();
-        m_models << thread->Model();
-        QList<qreal > constants = thread->Constants();
-        for(int j = 0; j < constants.size(); ++j)
-            m_series[j].append(QPointF(m_model->PrintOutIndependent(i), constants[j]));
-        delete thread;
+        addThread(thread);
     }
+    
+    while(Pending()) { }
+    
+    for(int i = 0; i < m_threads.size(); ++i)
+    {
+        if(m_threads[i])
+        {
+            m_models << m_threads[i]->Model();
+            QList<qreal > constants = m_threads[i]->Constants();
+            for(int j = 0; j < constants.size(); ++j)
+                m_series[j].append(QPointF(m_model->PrintOutIndependent(i), constants[j]));
+            delete m_threads[i];
+        }
+    }
+    m_model->DependentModel()->EnableAllRows();
 }

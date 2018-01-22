@@ -46,7 +46,7 @@
 
 #include "mcresultswidget.h"
 
-MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, const QList<QJsonObject > &models) : m_data(data)
+MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, const QList<QJsonObject > &models, Type type) : m_data(data), m_type(type)
 {
     m_model = model;
     m_models = models;
@@ -54,7 +54,8 @@ MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer
     has_histogram = false;
     has_contour = false;
     setUi();
-    GenerateConfidence(95);
+    if(m_type == MonteCarlo)
+        GenerateConfidence(95);
 }
 
 
@@ -229,14 +230,20 @@ void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
     
     for(int i = 0; i < constant_results.size(); ++i)
     {
-        m_model->setMCStatistic(constant_results[i], i);
-        if(i < m_model->GlobalParameterSize())
-        {
+        if(m_type == MonteCarlo)
+            m_model->setMCStatistic(constant_results[i], i);
+        /*
+        else if(m_type == CrossValidation)
+            m_model->setMCStatistic(constant_results[i], i);
+        */
+//         if(i < m_model->GlobalParameterSize())
+//         {
             QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
             confidence  += Print::TextFromConfidence(constant_results[i], m_model.data()) + "\n";
-        }
+//         }
     }
-    m_confidence_label->setText(confidence);
+    if(m_type == MonteCarlo)
+        m_confidence_label->setText(confidence);
 }
 
 void MCResultsWidget::UpdateBoxes()
@@ -307,6 +314,7 @@ void MCResultsWidget::GenerateConfidence(double error)
         confidence["lower"] = bar.lower;
         confidence["upper"] = bar.upper;
         m_data[i]["confidence"] = confidence;
+        m_data[i]["error"] = error;
     }
     UpdateBoxes();
     WriteConfidence(m_data);

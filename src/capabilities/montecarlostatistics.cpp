@@ -60,7 +60,7 @@ void MonteCarloThread::run()
     }
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #ifdef _DEBUG
-        qDebug() << this << "started!";
+        qDebug() <<  "started!";
 #endif
     m_minimizer->setModel(m_model);
     m_finished = m_minimizer->Minimize(m_config.runtype);
@@ -71,7 +71,7 @@ void MonteCarloThread::run()
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
 #ifdef _DEBUG
-        qDebug() <<  this << "finished after " << t1-t0 << "msecs!";
+        qDebug() <<  "finished after " << t1-t0 << "msecs!";
 #endif
 }
 
@@ -97,7 +97,13 @@ void MonteCarloStatistics::Evaluate()
     
     Collect(threads);
     m_results = ToolSet::Model2Parameter(m_models);
-    AnalyseData();
+    QJsonObject controller;
+    controller["runtype"] = m_config.runtype;
+    controller["steps"] = m_steps;
+    controller["variance"] = m_config.variance;
+    controller["original"] = m_config.original;
+    controller["bootstrap"] = m_config.bootstrap;
+    ToolSet::Parameter2Statistic(m_results, m_model.data(), controller);
 }
 
 
@@ -162,32 +168,6 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
     }
 }
 
-void MonteCarloStatistics::AnalyseData(qreal error)
-{
-   
-    for(int i = 0; i < m_results.size(); ++i)
-    {
-        QList<qreal > list = ToolSet::String2DoubleList( m_results[i]["data"].toObject()["raw"].toString());
-        if(m_results[i]["type"].toString() == "Global Parameter")
-            m_results[i]["value"] = m_model->GlobalParameter(m_results[i]["index"].toString().toInt());
-        else
-        {
-            QStringList index = m_results[i]["index"].toString().split("|");
-            m_results[i]["value"] = m_model->LocalParameter(index[0].toInt(),index[1].toInt());
-        }
-        m_results[i]["error"] = error;
-        m_results[i]["boxplot"] = ToolSet::Box2Object(ToolSet::BoxWhiskerPlot(list));
-        QJsonObject controller;
-        controller["runtype"] = m_config.runtype;
-        controller["steps"] = m_steps;
-        controller["variance"] = m_config.variance;
-        controller["original"] = m_config.original;
-        controller["bootstrap"] = m_config.bootstrap;
-        m_results[i]["controller"] = controller;
-    }
-
-    emit AnalyseFinished();
-}
 
 void MonteCarloStatistics::Interrupt()
 {

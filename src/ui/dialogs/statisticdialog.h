@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +17,14 @@
  * 
  */
 
-#ifndef STATISTICDIALOG_H
-#define STATISTICDIALOG_H
+#pragma once
 
 #include <QtCore/QMutex>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
+
+#include "src/capabilities/reductionanalyse.h"
 
 class QPushButton;
 class QDoubleSpinBox;
@@ -49,6 +50,7 @@ public:
     MCConfig getMCConfig();
     WGSConfig getWGSConfig();
     MoCoConfig getMoCoConfig();
+    ReductionAnalyse::CVType CrossValidationType() const;
     
     inline void setRuns(int runs) { m_runs = runs; }
     virtual void setVisible(bool visible) override;
@@ -102,5 +104,3 @@ signals:
     void Interrupt();
     void setMaximumSteps(int steps);
 };
-
-#endif // STATISTICDIALOG_H

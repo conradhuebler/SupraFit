@@ -41,18 +41,25 @@ class MCResultsWidget : public ResultsWidget
     Q_OBJECT
     
 public:
-    MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, const QList<QJsonObject > &models = QList<QJsonObject>());
+    
+    enum Type {
+        MonteCarlo = 1,
+        CrossValidation = 2
+    };
+    
+    MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, const QList<QJsonObject > &models = QList<QJsonObject>(), Type type = MonteCarlo);
     ~MCResultsWidget();
     
     void setModels(const QList<QJsonObject > &models) { m_models = models; }
     inline bool hasData() const { return has_boxplot || has_contour || has_histogram; }
+    
+
     
 private:
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox *m_error;
     QPointer<ListChart > m_histgram, m_box;
     QPointer<ChartView> m_contour;
-//     QPointer<QtCharts::QChartView > m_box;
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries * > m_area_series;
     
@@ -67,6 +74,7 @@ private:
     QList<QJsonObject> m_box_object;
     QList<QJsonObject > m_data, m_models;
     bool has_histogram, has_contour, has_boxplot;
+    Type m_type;
     
 private slots:
     void ExportResults();

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef MONTECARLOSTATISTICS_H
-#define MONTECARLOSTATISTICS_H
+#pragma once
 
 #include "abstractsearchclass.h"
 
@@ -73,10 +72,8 @@ public:
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
 
-    
 public slots:
     void Interrupt() override;
-    void AnalyseData(qreal error = 95);
     
 private:
     QVector<QPointer <MonteCarloThread > > GenerateData();
@@ -90,5 +87,3 @@ private:
     bool m_generate;
     int m_steps;
 };
-
-#endif // MONTECARLOSTATISTICS_H

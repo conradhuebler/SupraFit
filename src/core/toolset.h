@@ -57,6 +57,7 @@ namespace ToolSet{
     QJsonObject Box2Object(const SupraFit::BoxWhisker &box);
     SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object);
     QList<QJsonObject> Model2Parameter(const QList<QJsonObject> &models, bool sort = true);
+    void Parameter2Statistic(QList<QJsonObject> &parameter, const QPointer<AbstractModel> model, const QJsonObject &controller);
     
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str);
     qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter);

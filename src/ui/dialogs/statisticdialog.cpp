@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/reductionanalyse.h"
 
 #include "src/core/models.h"
 #include "src/core/toolset.h"
@@ -379,6 +380,16 @@ MCConfig StatisticDialog::getMCConfig()
     ShowWidget();
     return config;
 }
+
+ReductionAnalyse::CVType StatisticDialog::CrossValidationType() const
+{
+    if(m_cv_loo->isChecked())
+        return ReductionAnalyse::LeaveOneOut;
+    else if(m_cv_l2o->isChecked())
+        return ReductionAnalyse::LeaveTwoOut;
+}
+
+
 void StatisticDialog::IncrementProgress(int time)
 {
     QMutexLocker locker(&mutex);

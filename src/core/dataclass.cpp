@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -205,6 +205,16 @@ void DataTable::CheckRow(int row)
         m_checked_table(row, i) = checked;
     emit layoutChanged();
 }
+
+void DataTable::EnableAllRows()
+{
+    int check = 0;
+    for(int j = 0; j < rowCount(); ++j)
+        for(int i = 0; i < columnCount(); ++i)
+            m_checked_table(j, i) = 1;
+    emit layoutChanged();
+}
+
 
 bool DataTable::isChecked(int column, int row) const
 {

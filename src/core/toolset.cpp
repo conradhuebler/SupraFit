@@ -399,6 +399,23 @@ namespace ToolSet{
         return parameter;
     }
     
+    void Parameter2Statistic(QList<QJsonObject>& parameter, const QPointer<AbstractModel> model, const QJsonObject &controller)
+    {
+        for(int i = 0; i < parameter.size(); ++i)
+        {
+            QList<qreal > list = ToolSet::String2DoubleList( parameter[i]["data"].toObject()["raw"].toString());
+            if(parameter[i]["type"].toString() == "Global Parameter")
+                parameter[i]["value"] = model->GlobalParameter(parameter[i]["index"].toString().toInt());
+            else
+            {
+                QStringList index = parameter[i]["index"].toString().split("|");
+                parameter[i]["value"] = model->LocalParameter(index[0].toInt(),index[1].toInt());
+            }
+            parameter[i]["boxplot"] = ToolSet::Box2Object(ToolSet::BoxWhiskerPlot(list));
+            parameter[i]["controller"] = controller;
+        }
+    }
+    
     QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str)
     {
         QList<QPointF> series;
