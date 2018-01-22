@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/contra98/SupraFit.svg?token=kbszubggsBRpbhwmvtTL&branch=master)](https://travis-ci.com/contra98/SupraFit)
+
 # SupraFit 
 
 A Open Source Qt5 based fitting tool for supramolecular titration experiments and Michaelis Menten Kinetics (current development in master)
