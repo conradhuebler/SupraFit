@@ -51,9 +51,6 @@ LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y)
     
     if(x.size() != y.size())
         return regression;
-#ifdef _DEBUG
-    qDebug() << x << y;
-#endif
     // http://www.bragitoff.com/2015/09/c-program-to-linear-fit-the-data-using-least-squares-method/ //
     qreal xsum = 0, x2sum = 0, ysum = 0, xysum = 0;                //variables for sums/sigma of xi,yi,xi^2,xiyi etc
     int n = x.size();
@@ -84,9 +81,6 @@ LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y)
     }
     regression.R = (xy_/qSqrt(x_*y_))*(xy_/qSqrt(x_*y_));
     
-#ifdef _DEBUG
-    qDebug() << QString(" -- y = " + QString::number(regression.m) +"x+"+ QString::number(regression.n) + " -- R2 = " + QString::number(regression.R) + " Sum Error: " + QString::number(regression.sum_err));
-#endif
     return regression;
 }
 

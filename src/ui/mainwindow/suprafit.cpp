@@ -561,9 +561,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
         qApp->instance()->setProperty("ask_on_exit", !question.checkBox()->isChecked());
     }
         
-    if(qApp->instance()->property("save_on_exit").toBool())
+    if(qApp->instance()->property("save_on_exit").toBool() && !qApp->instance()->property("projectpath").toString().isEmpty())
     {
-        QString filename = qApp->instance()->property("projectpath").toString();        
+        QString filename = qApp->instance()->property("projectpath").toString();       
         QFileInfo info (filename+ ".autosave.json");
         if(info.exists())
         {

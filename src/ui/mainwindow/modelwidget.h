@@ -89,6 +89,7 @@ public:
     inline void setCheckbox(const QPointer<QCheckBox> checkbox) { m_toggled_box = checkbox; }
     inline bool isChecked() const { if(!m_toggled_box) return false; else return m_toggled_box->isChecked(); }
     inline Charts Chart() const { return m_charts; }
+    void setColorList(const QString &str);
     
 public slots:
     void LoadJson(const QJsonObject &object);

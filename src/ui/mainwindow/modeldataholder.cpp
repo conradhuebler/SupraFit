@@ -480,13 +480,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
 {
     Charts charts = m_charts->addModel(t); 
     ModelWidget *modelwidget = new ModelWidget(t, charts);
-    
-    if(!object.isEmpty())
-    {
-        charts.signal_wrapper->setColorList(object["colors"].toString());
-        charts.error_wrapper->setColorList(object["colors"].toString());
-        charts.data_wrapper->setColorList(object["colors"].toString());
-    }
+    modelwidget->setColorList(object["colors"].toString()); 
     
     t->setOptimizerConfig(m_config);
     connect(modelwidget, SIGNAL(AddModel(const QJsonObject)), this, SLOT(AddToWorkspace(const QJsonObject)));
@@ -643,7 +637,7 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
                 Json2Model(model, model["model"].toString());
             else
                 emit InsertModel(model);
-            QApplication::processEvents();
+//             QApplication::processEvents();
         }
     }
 }

@@ -252,6 +252,17 @@ ModelWidget::~ModelWidget()
     delete m_statistic_dialog;
 }
 
+void ModelWidget::setColorList(const QString& str)
+{
+    QStringList colors = str.split("|");
+    if(colors.size() == m_model_elements.size())
+    {
+        for(int i = 0; i < m_model_elements.size(); ++i)
+            m_model_elements[i]->ChangeColor(QColor(colors[i]));
+    }
+}
+
+
 void ModelWidget::SplitterResized()
 {
     QSettings settings;

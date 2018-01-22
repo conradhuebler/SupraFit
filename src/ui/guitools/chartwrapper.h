@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef CHARTWRAPPER_H
-#define CHARTWRAPPER_H
+#pragma once
 
 #include <QtCore/QPointer>
 #include <QtCore/QList>
@@ -111,5 +110,3 @@ signals:
     void ShowSeries(int i);
     void ModelTransformed();
 };
-
-#endif // CHARTWRAPPER_H
