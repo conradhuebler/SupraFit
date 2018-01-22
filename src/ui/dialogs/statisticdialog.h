@@ -50,7 +50,7 @@ public:
     MCConfig getMCConfig();
     WGSConfig getWGSConfig();
     MoCoConfig getMoCoConfig();
-    ReductionAnalyse::CVType CrossValidationType() const;
+    ReductionAnalyse::CVType CrossValidationType();
     
     inline void setRuns(int runs) { m_runs = runs; }
     virtual void setVisible(bool visible) override;
@@ -58,6 +58,7 @@ public:
     void updateUI();
     
 public slots:
+    void MaximumSteps(int steps);
     void IncrementProgress(int time);
     void HideWidget();
     void ShowWidget();

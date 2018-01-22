@@ -54,4 +54,7 @@ private:
     AbstractConfig m_config;
     QPointer<DataTable > m_loo_table;
     QJsonObject m_model_data;
+    
+signals:
+    void MaximumSteps(int steps);
 };

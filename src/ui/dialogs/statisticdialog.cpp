@@ -381,12 +381,25 @@ MCConfig StatisticDialog::getMCConfig()
     return config;
 }
 
-ReductionAnalyse::CVType StatisticDialog::CrossValidationType() const
+ReductionAnalyse::CVType StatisticDialog::CrossValidationType()
 {
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setMaximum(0);
+    m_progress->setValue(0);
+    ShowWidget();
+    
     if(m_cv_loo->isChecked())
         return ReductionAnalyse::LeaveOneOut;
     else if(m_cv_l2o->isChecked())
         return ReductionAnalyse::LeaveTwoOut;
+}
+
+void StatisticDialog::MaximumSteps(int steps)
+{
+    if(m_hidden)
+        ShowWidget();
+    m_progress->setMaximum(steps);
 }
 
 
@@ -432,6 +445,7 @@ void StatisticDialog::ShowWidget()
     animation->setEndValue(100);
     animation->start();
     m_tab_widget->setDisabled(true);
+    m_hidden = false;
 }
 
 void StatisticDialog::HideWidget()
@@ -445,6 +459,7 @@ void StatisticDialog::HideWidget()
     m_progress->setMaximum(0);
     m_progress->setMinimum(0);
     m_tab_widget->setDisabled(false);
+    m_hidden = true;
 }
 
 

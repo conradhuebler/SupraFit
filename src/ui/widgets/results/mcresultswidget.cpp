@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,8 +54,7 @@ MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer
     has_histogram = false;
     has_contour = false;
     setUi();
-    if(m_type == MonteCarlo)
-        GenerateConfidence(95);
+    GenerateConfidence(95);
 }
 
 
@@ -232,18 +231,11 @@ void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
     {
         if(m_type == MonteCarlo)
             m_model->setMCStatistic(constant_results[i], i);
-        /*
-        else if(m_type == CrossValidation)
-            m_model->setMCStatistic(constant_results[i], i);
-        */
-//         if(i < m_model->GlobalParameterSize())
-//         {
-            QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
-            confidence  += Print::TextFromConfidence(constant_results[i], m_model.data()) + "\n";
-//         }
+
+        QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
+        confidence  += Print::TextFromConfidence(constant_results[i], m_model.data()) + "\n";
     }
-    if(m_type == MonteCarlo)
-        m_confidence_label->setText(confidence);
+    m_confidence_label->setText(confidence);
 }
 
 void MCResultsWidget::UpdateBoxes()
@@ -306,6 +298,8 @@ QtCharts::QAreaSeries * MCResultsWidget::AreaSeries(const QColor &color) const
 
 void MCResultsWidget::GenerateConfidence(double error)
 {    
+    if(m_type == CrossValidation)
+        error = 0;
     for(int i = 0; i < m_data.size(); ++i)
     {
         QList<qreal> list = ToolSet::String2DoubleList( m_data[i]["data"].toObject()["raw"].toString() );

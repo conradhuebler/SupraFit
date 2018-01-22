@@ -112,17 +112,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper, SLOT(SetBlocked(int)));
     
     m_search_result = new ModalDialog;
-    m_search_result->setWindowTitle("Charts for " + m_model->Name());
+    m_search_result->setWindowTitle("Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
     
     m_statistic_result = new ModalDialog;
-    m_statistic_result->setWindowTitle("Statistics for " + m_model->Name());
+    m_statistic_result->setWindowTitle("Statistics for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
     
     m_statistic_widget = new StatisticWidget(m_model, this),
     m_table_result= new ModalDialog;
-    m_table_result->setWindowTitle("Search Results " + m_model->Name());
+    m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
     
     m_concentrations_result = new ModalDialog;
-    m_concentrations_result->setWindowTitle("Concentration Table for " + m_model->Name());
+    m_concentrations_result->setWindowTitle("Concentration Table for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
     
     m_layout = new QGridLayout;
     QLabel *pure_shift = new QLabel(tr("Constants:"));
@@ -513,6 +513,11 @@ void ModelWidget::CVAnalyse()
 {
     Waiter wait;
     ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(analyse, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
+    connect(analyse, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(analyse, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     analyse->setModel(m_model);
     analyse->CrossValidation(m_statistic_dialog->CrossValidationType());
     
@@ -524,24 +529,13 @@ void ModelWidget::CVAnalyse()
     
     delete analyse;
     
-    
     MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, models, MCResultsWidget::CrossValidation);
     mcsresult->setModels(models);
-    
-    /*
-    m_logging += "\n\n" +  doc.toPlainText();
-    */
+
     m_statistic_result->setWidget(mcsresult, "Cross Validation for " + m_model->Name());
     m_actions->EnableCharts(true);
     m_statistic_result->show();  
     m_statistic_dialog->HideWidget();
-    
-    
-//     CVResultsWidget *cvresults = new CVResultsWidget(analyse, m_model, m_statistic_result);
-//     m_statistic_result->setWidget(cvresults, "Cross Validation Analyse" + m_model->Name());
-//     m_statistic_result->show();
-// //     qDebug() << analyse->ModelData();
-//     emit AddModel(analyse->ModelData());
 }
 
 void ModelWidget::DoReductionAnalyse()

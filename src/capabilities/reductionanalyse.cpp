@@ -17,6 +17,8 @@
  * 
  */
 
+#include <QtWidgets/QApplication>
+
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
 #include "src/capabilities/montecarlostatistics.h"
@@ -57,39 +59,27 @@ void ReductionAnalyse::CrossValidation(CVType type)
 
     switch(type){
         case CVType::LeaveOneOut:
+            emit MaximumSteps(m_model->DataPoints());
             m_loo_table = new DataTable(m_model->DependentModel());
             for(int i = m_model->DataPoints() - 1; i >= 0; --i)
             {
                 QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
+                connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
                 QSharedPointer<AbstractModel> model = m_model->Clone();
                 model->DependentModel()->CheckRow(i);
                 thread->setModel(model);
                 addThread(thread);
-//                 thread->run();
-//                 m_threads << thread;
-                /*
-//                 thread->run();
-                model->ImportModel(thread->Model());
-//                 std::cout << model->ModelTable()->Row(i) << std::endl;
-                model->DependentModel()->CheckRow(i);
-                model->Calculate();
-//                 std::cout << model->ModelTable()->Row(i) << std::endl;
-                m_loo_table->setRow(model->ModelTable()->Row(i), i);
-                m_models << model->ExportModel();
-                delete thread;*/
+                QApplication::processEvents();
             }
-            /*
-            m_model->setDependentTable(m_loo_table);
-//             m_loo_table->Debug();
-            m_model_data = m_model->ExportModel(false, true);
-            */
             break;
         case CVType::LeaveTwoOut:
+            emit MaximumSteps(m_model->DataPoints()*(m_model->DataPoints() - 1)/2);
             for(int i = 0; i < m_model->DataPoints(); ++i)
                 for(int j = i + 1; j < m_model->DataPoints(); ++j)
                 {
-                    qDebug() << i << j;
+                    QApplication::processEvents();
                     QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
+                    connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
                     QSharedPointer<AbstractModel> model = m_model->Clone();
                     model->DependentModel()->CheckRow(i);
                     model->DependentModel()->CheckRow(j);
@@ -98,7 +88,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
                 }
             break;
     }
-    while(Pending()) { }
+    while(Pending()) { QApplication::processEvents(); }
     for(int i = 0; i < m_threads.size(); ++i)
     {
         if(m_threads[i])

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef MCRESULTSWIDGET_H
-#define MCRESULTSWIDGET_H
+#pragma once
 
 #include <QtCore/QPointer>
 
@@ -81,5 +80,3 @@ private slots:
     void GenerateConfidence(double error);
     
 };
-
-#endif // MCRESULTSWIDGET_H
