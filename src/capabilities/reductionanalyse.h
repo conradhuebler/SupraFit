@@ -45,6 +45,8 @@ public:
     void CrossValidation(CVType type = CVType::LeaveOneOut);
     void PlainReduction();
     QJsonObject ModelData() const { return m_model_data; }
+    /* Since we change the checked rows of the model, we have to detach the data table from the global model */
+    virtual inline void setModel(const QSharedPointer<AbstractModel> model) override { m_model = model->Clone(); m_model->detach(); }
     
 private:
     void addThread(QPointer<MonteCarloThread> thread);

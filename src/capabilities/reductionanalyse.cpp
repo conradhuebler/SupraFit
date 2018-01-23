@@ -66,6 +66,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
                 QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
                 connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
                 QSharedPointer<AbstractModel> model = m_model->Clone();
+                model->detach();
                 model->DependentModel()->CheckRow(i);
                 thread->setModel(model);
                 addThread(thread);
@@ -81,10 +82,12 @@ void ReductionAnalyse::CrossValidation(CVType type)
                     QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
                     connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
                     QSharedPointer<AbstractModel> model = m_model->Clone();
+                    model->detach();
                     model->DependentModel()->CheckRow(i);
                     model->DependentModel()->CheckRow(j);
                     thread->setModel(model);
                     addThread(thread);
+                    QApplication::processEvents();
                 }
             break;
     }
@@ -105,20 +108,25 @@ void ReductionAnalyse::PlainReduction()
     MCConfig config;
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
-    m_model->detach();
 
     for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
         m_series << QList<QPointF>();
 
-    for(int i = m_model->DataPoints() - 1; i >= 0; --i)
+    DataTable *table = m_model->DependentModel();
+    for(int i = m_model->DataPoints() - 1; i > 0; --i)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
-        m_model->DependentModel()->CheckRow(i);
-        thread->setModel(m_model);
+        thread->setIndex(i);
+        QSharedPointer<AbstractModel> model = m_model->Clone();
+        table->CheckRow(i); // we will keep this for now, maybe it is usefull
+        table->PrintCheckedRows();
+        model->setDependentTable(table);
+        model->detach();
+        thread->setModel(model);
         addThread(thread);
     }
     
-    while(Pending()) { }
+    while(Pending()) { QApplication::processEvents(); }
     
     for(int i = 0; i < m_threads.size(); ++i)
     {
@@ -131,5 +139,4 @@ void ReductionAnalyse::PlainReduction()
             delete m_threads[i];
         }
     }
-    m_model->DependentModel()->EnableAllRows();
 }

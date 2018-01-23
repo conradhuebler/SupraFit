@@ -33,7 +33,7 @@ class ItoI_Model : public AbstractTitrationModel
     
 public:
     ItoI_Model(DataClass *data);
-    ItoI_Model(AbstractTitrationModel *model);
+//     ItoI_Model(AbstractTitrationModel *model);
     ~ItoI_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;}

@@ -181,7 +181,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     
     m_sign_layout->setAlignment(Qt::AlignTop); 
     m_converged_label = new QLabel;
-    m_sign_layout->addWidget(m_converged_label);
+    
+    m_readonly = new QCheckBox(tr("Read Only"));
+    QHBoxLayout *head = new QHBoxLayout;
+    head->addWidget(m_converged_label);
+    head->addWidget(m_readonly);
+    m_sign_layout->addLayout(head);
     
     if(m_model->LocalParameterSize())
     {
@@ -192,10 +197,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
             connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
             connect(this, SIGNAL(Update()), el, SLOT(Update()));
             connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
+            connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
             m_sign_layout->addWidget(el);
             m_model_elements << el;
         }
     }
+    
     QWidget *scroll = new QWidget;
     scroll->setLayout(m_sign_layout);
     QScrollArea *area = new QScrollArea;

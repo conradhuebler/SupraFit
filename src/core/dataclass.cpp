@@ -215,6 +215,18 @@ void DataTable::EnableAllRows()
     emit layoutChanged();
 }
 
+void DataTable::PrintCheckedRows() const
+{
+    for(int i = 0; i < rowCount(); ++i )
+    {
+        int check = 0;
+        for(int j = 0; j < columnCount(); ++j)
+            check += m_checked_table(i,j);
+        std::cout << "Row " << i << " checked: " << check << std::endl;
+    }
+    
+}
+
 
 bool DataTable::isChecked(int column, int row) const
 {
@@ -504,9 +516,12 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
 
 DataClassPrivate::~DataClassPrivate()
 {
-    delete m_independent_model;
-    delete m_dependent_model;
-    delete m_raw_data;
+    if(m_independent_model)
+        delete m_independent_model;
+    if(m_dependent_model)
+        delete m_dependent_model;
+    if(m_raw_data)
+        delete m_raw_data;
 }
 
 

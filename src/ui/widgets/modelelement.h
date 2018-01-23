@@ -38,6 +38,7 @@ public slots:
     void Update();
     void ToggleSeries(int);
     void ChangeColor(const QColor &color);
+    void setReadOnly(bool readonly);
     
 private:
     QVector<SpinBox * > m_constants;
