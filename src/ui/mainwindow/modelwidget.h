@@ -111,7 +111,8 @@ private:
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
     ModelActions *m_actions;
-    QPushButton *m_switch, *m_minimize_all;
+    QPushButton *m_minimize_all;
+    QCheckBox *m_readonly;
     QLabel *m_bc_50, *m_converged_label; 
     OptionsWidget *m_model_options_widget;
     QGridLayout *m_layout;

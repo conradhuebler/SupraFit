@@ -129,6 +129,12 @@ ModelElement::~ModelElement()
     
 }
 
+void ModelElement::setReadOnly(bool readonly)
+{
+    for(int i = 0; i < m_constants.size(); ++i)
+        m_constants[i]->setReadOnly(readonly);
+}
+
 void ModelElement::toggleActive()
 {
     int state = m_include->isChecked();
