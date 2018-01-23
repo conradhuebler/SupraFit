@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,12 +72,9 @@ QVector<qreal> Kinetic_First_Order_Model::OptimizeParameters_Private(Optimizatio
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-         
-        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
-        { 
-            if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-                addLocalParameter(0);
-        }
+        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+            addLocalParameter(0);
+        
     }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)

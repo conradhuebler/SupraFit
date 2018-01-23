@@ -33,7 +33,7 @@ class AbstractConfig
 {
     
 public:
-    inline AbstractConfig(OptimizerConfig config = OptimizerConfig(), OptimizationType type = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts)) : optimizer_config(config), runtype(type){ }
+    inline AbstractConfig(OptimizerConfig config = OptimizerConfig(), OptimizationType type = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts)) : optimizer_config(config), runtype(type){ }
     inline ~AbstractConfig() {}
     OptimizerConfig optimizer_config;
     OptimizationType runtype;

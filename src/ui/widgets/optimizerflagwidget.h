@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef OPTIMIZERFLAGWIDGET_H
-#define OPTIMIZERFLAGWIDGET_H
+#pragma once
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QGroupBox>
@@ -45,16 +44,8 @@ public:
 private:
     OptimizationType m_type;
     void setUi();
-    QPointer<QCheckBox > m_ComplexationConstants, m_OptimizeShifts, m_ConstrainedShifts, m_IntermediateShifts, m_IgnoreZeroConcentrations;
-    QPushButton *m_more;
+    QPointer<QCheckBox > m_ComplexationConstants, m_OptimizeShifts,  m_IgnoreZeroConcentrations;
     QVBoxLayout *m_main_layout;
-    QWidget *m_first_row;
     bool m_hidden;
-     
-private slots:
-    void EnableShiftSelection();
-    void ConstrainedChanged();
-    void ShowFirst();
-};
 
-#endif // OPTIMIZERFLAGWIDGET_H
+};

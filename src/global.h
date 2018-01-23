@@ -1,7 +1,6 @@
-
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,19 +17,14 @@
  * 
  */
 
-
-#ifndef global_H
-#define global_H
+#pragma once
 
 #include <QtGlobal>
 
 enum OptimizationType{
         ComplexationConstants = 0x01,
         OptimizeShifts = 0x02,
-        ConstrainedShifts = 0x04,
-        UnconstrainedShifts = 0x08,
-        IntermediateShifts = 0x16,
-        IgnoreZeroConcentrations = 0x32
+        IgnoreZeroConcentrations = 0x04
     };
     
 inline OptimizationType operator~ (OptimizationType a) { return (OptimizationType)~(int)a; }
@@ -71,4 +65,3 @@ extern int printLevel;
 void PrintMessage(const QString &str, int Level);
 QString getDir();
 void setLastDir(const QString &str);
-#endif // global_H

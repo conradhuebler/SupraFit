@@ -81,11 +81,8 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
-         
-        if((type & OptimizationType::UnconstrainedShifts) == OptimizationType::UnconstrainedShifts)
-        {
-            addLocalParameter(0);
-        }
+#warning todo - adopt to correctness
+        addLocalParameter(0);
     }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)

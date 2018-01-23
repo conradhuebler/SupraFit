@@ -39,7 +39,12 @@
 
 AbstractTitrationModel::AbstractTitrationModel(DataClass *data) : AbstractModel(data)
 {
-    m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts);
+    m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
+}
+
+AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel *other) : AbstractModel(other)
+{
+    m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
 }
 
 AbstractTitrationModel::~AbstractTitrationModel()

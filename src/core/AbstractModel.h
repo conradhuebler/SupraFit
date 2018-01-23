@@ -44,6 +44,8 @@ class AbstractModel : public DataClass
   
 public:
     AbstractModel(DataClass *data);
+    AbstractModel(AbstractModel *other);
+    
     virtual ~AbstractModel();
     
     /*! \brief set the OptimizationType to type and returns the Parameters
@@ -207,10 +209,6 @@ public:
     inline qreal ChiSquared() const { return m_chisquared; }
     inline qreal CovFit() const { return m_covfit; }
 
-// #warning must be changed
-//     inline Eigen::MatrixXd PureParameter() const { return m_pure_signals_parameter; }
-// #warning must go away maybe
-//     inline Eigen::MatrixXd ComplexParameter() const { return m_complex_signal_parameter; }
     inline bool isConverged() const { return m_converged; }
     inline void setConverged(bool converged) { m_converged = converged; }
     /*! \brief Returns the f value for the given p value
@@ -262,7 +260,8 @@ public:
     virtual void setGlobalParameter(const QList< qreal > &list);
     /*! \brief return the list of global parameter values
      */
-    inline QList<qreal > GlobalParameter() const { return m_global_parameter; }
+    inline QList<qreal > GlobalParam    ImportModel(other->ExportModel());
+eter() const { return m_global_parameter; }
     /*! \brief return i global parameter
      */
     inline qreal GlobalParameter(int i) const { return m_global_parameter[i]; }

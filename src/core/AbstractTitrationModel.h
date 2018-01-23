@@ -55,6 +55,7 @@ public:
     };
     
     AbstractTitrationModel(DataClass *data);
+    AbstractTitrationModel(AbstractTitrationModel *other);
     virtual ~AbstractTitrationModel();
 
     inline QString Name() const { return m_name; }

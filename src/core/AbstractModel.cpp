@@ -44,6 +44,20 @@ AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false
     m_data = data; 
 }
 
+AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false)
+{
+    setActiveSignals(other->m_active_signals);
+    setLockedParameter(other->LockedParamters());
+    setOptimizerConfig(other->getOptimizerConfig());
+    
+    m_model_signal = other->m_model_signal;
+    m_model_error = other->m_model_error;
+
+    m_data = other->m_data; 
+    ImportModel(other->ExportModel());
+}
+
+
 AbstractModel::~AbstractModel()
 {
     

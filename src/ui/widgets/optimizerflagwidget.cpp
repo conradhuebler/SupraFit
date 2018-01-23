@@ -31,7 +31,7 @@
 
 #include "optimizerflagwidget.h"
 
-OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts | OptimizationType::UnconstrainedShifts), m_hidden(true)
+OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts), m_hidden(true)
 {
      setUi();
      setFlags(m_type);
@@ -55,34 +55,16 @@ void OptimizerFlagWidget::setUi()
     m_main_layout = new QVBoxLayout;
     m_main_layout->setAlignment(Qt::AlignTop);
     m_ComplexationConstants = new QCheckBox(tr("Complexation Constants"));
-    
     m_OptimizeShifts = new QCheckBox(tr("Shifts"));
-    m_ConstrainedShifts = new QCheckBox(tr("Optimise Shift Constrained"));
-    m_IntermediateShifts = new QCheckBox(tr("Fit remaining Shifts"));
     m_IgnoreZeroConcentrations = new QCheckBox(tr("Skip Host Shift"));
     
-    m_more = new QPushButton(tr("..more.."));
-    m_more->setMaximumSize(50,30);
-    connect(m_more, SIGNAL(clicked()), this, SLOT(ShowFirst()));
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(m_ComplexationConstants);
     layout->addWidget(m_OptimizeShifts);
-//     layout->addStretch(width()/2);
     layout->addWidget(m_IgnoreZeroConcentrations);
     m_main_layout->addLayout(layout);
-    layout = new QHBoxLayout;
-    layout->addWidget(m_ConstrainedShifts);
-    layout->addWidget(m_IntermediateShifts);
-//     layout->addWidget(m_IgnoreZeroConcentrations);
-    m_first_row = new QWidget;
-    m_first_row->setLayout(layout);
-    m_main_layout->addWidget(m_first_row);
     setLayout(m_main_layout);
-    connect(m_OptimizeShifts, SIGNAL(stateChanged(int)), this, SLOT(EnableShiftSelection()));
-    connect(m_ConstrainedShifts, SIGNAL(stateChanged(int)), this, SLOT(ConstrainedChanged()));
 
-    m_more->setFlat(true);
-    m_first_row->setMaximumHeight(0);
 }
 
 void OptimizerFlagWidget::setFlags(OptimizationType type)
@@ -90,10 +72,7 @@ void OptimizerFlagWidget::setFlags(OptimizationType type)
     m_type = type;
     m_ComplexationConstants->setChecked((m_type & OptimizationType::ComplexationConstants) == OptimizationType::ComplexationConstants);
     m_OptimizeShifts->setChecked(((m_type & OptimizationType::OptimizeShifts) == OptimizationType::OptimizeShifts));
-    m_ConstrainedShifts->setChecked((m_type & OptimizationType::UnconstrainedShifts) != OptimizationType::UnconstrainedShifts);
-    m_IntermediateShifts->setChecked((m_type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts);
     m_IgnoreZeroConcentrations->setChecked((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations);
-    EnableShiftSelection();
 }
 
 
@@ -109,77 +88,24 @@ void OptimizerFlagWidget::DisableOptions(OptimizationType type)
 
 OptimizationType OptimizerFlagWidget::getFlags() const
 {
-    OptimizationType type = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::UnconstrainedShifts | OptimizationType::OptimizeShifts);
+    OptimizationType type = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
     
     if(m_ComplexationConstants->isChecked() && m_ComplexationConstants->isEnabled())
         type = type | OptimizationType::ComplexationConstants;
     else 
         type &= ~OptimizationType::ComplexationConstants;
+    
     if(m_OptimizeShifts->isChecked())
-    {
-         if(!m_ConstrainedShifts->isChecked())
-         {
-            type = type | OptimizationType::UnconstrainedShifts;  
-            type = type & ~OptimizationType::ConstrainedShifts;  
-             if(m_IgnoreZeroConcentrations->isChecked())
-                 type = type | OptimizationType::IgnoreZeroConcentrations;
-         }
-         else
-         {
-             if(m_IntermediateShifts->isChecked())
-                 type = type | OptimizationType::IntermediateShifts; 
-            type = type &  ~OptimizationType::UnconstrainedShifts;  
-            type = type | OptimizationType::ConstrainedShifts;
-         }
-    }else
-    {
-        type &= ~OptimizationType::OptimizeShifts;  
-    }
-    return type;
-}
+        type = type | OptimizationType::OptimizeShifts;
+    else
+        type &= ~OptimizationType::OptimizeShifts;
 
-void OptimizerFlagWidget::EnableShiftSelection()
-{
-    m_ConstrainedShifts->setEnabled(m_OptimizeShifts->isChecked());
-    m_IntermediateShifts->setEnabled(m_OptimizeShifts->isChecked());
-    m_IgnoreZeroConcentrations->setEnabled(m_OptimizeShifts->isChecked());
-    ConstrainedChanged();
-}
-
-void OptimizerFlagWidget::ConstrainedChanged()
-{
-    m_IntermediateShifts->setEnabled(m_ConstrainedShifts->isChecked());
-    m_IntermediateShifts->setChecked(m_ConstrainedShifts->isChecked() && (m_type & OptimizationType::IntermediateShifts) == OptimizationType::IntermediateShifts);
-    
-    m_IgnoreZeroConcentrations->setEnabled(!m_ConstrainedShifts->isChecked() && m_OptimizeShifts->isChecked());
-    m_IgnoreZeroConcentrations->setChecked(!m_ConstrainedShifts->isChecked() && ((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations));
-}
-
-
-void OptimizerFlagWidget::ShowFirst()
-{
-    
-    if(!m_hidden)
-    {
-        QPropertyAnimation *animation = new QPropertyAnimation(m_first_row, "maximumHeight");
-        animation->setEasingCurve(QEasingCurve::InOutCubic);
-        animation->setDuration(200);
-        animation->setStartValue(100);
-        animation->setEndValue(0);
-        animation->start();
-        m_more->setText(tr("..more.."));
-        m_hidden = true;
-    }else{
-        QPropertyAnimation *animation = new QPropertyAnimation(m_first_row, "maximumHeight");
+    if(m_IgnoreZeroConcentrations->isChecked())
+        type = type | OptimizationType::IgnoreZeroConcentrations;
+    else
+        type &= ~OptimizationType::IgnoreZeroConcentrations;
         
-        animation->setEasingCurve(QEasingCurve::InOutCubic);
-        animation->setDuration(200);         
-        animation->setStartValue(0);
-        animation->setEndValue(100);
-        animation->start();
-        m_more->setText(tr("..less.."));
-        m_hidden = false;
-    }
+    return type;
 }
 
 #include "optimizerflagwidget.moc"
