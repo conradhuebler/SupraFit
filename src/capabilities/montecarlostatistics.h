@@ -53,6 +53,8 @@ public:
     void setDataTable(DataTable *table);
     inline QJsonObject Model() const { return m_model->ExportModel(); }
     inline bool Finished() const { return m_finished; }
+    inline void setIndex(int index) { m_index = index; }
+    inline int Index() const { return m_index; }
     
 private:
     QSharedPointer<Minimizer> m_minimizer;
@@ -60,6 +62,7 @@ private:
     MCConfig m_config;
     QList<qreal > m_constants;
     bool m_finished;
+    int m_index;
 };
 
 class MonteCarloStatistics : public AbstractSearchClass

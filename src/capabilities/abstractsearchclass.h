@@ -48,7 +48,6 @@ public:
     inline ~AbstractSearchThread() { }
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     
-    
 public slots:
     inline virtual void Interrupt() { m_interrupt = true; }
     
@@ -68,7 +67,7 @@ public:
     AbstractSearchClass(QObject *parent = 0);
     ~AbstractSearchClass();
     
-    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    virtual inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     
     inline QList<QList<QPointF> > Series() const { return m_series; }
     inline QList<QJsonObject > Models() const { return m_models; }

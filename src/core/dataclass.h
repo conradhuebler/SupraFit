@@ -85,6 +85,7 @@ public:
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
     void CheckRow(int row);
+    void PrintCheckedRows() const;
     void EnableAllRows();
     inline void setCheckedTable(Eigen::MatrixXd checked) { m_checked_table = checked; }
     inline Eigen::MatrixXd CheckedTable() const { return m_checked_table; }
@@ -145,7 +146,7 @@ public:
     int m_type, m_maxsize;
     int m_host_assignment;
     
-    DataTable *m_dependent_model, *m_independent_model, *m_raw_data;
+    QPointer<DataTable > m_dependent_model, m_independent_model, m_raw_data;
     QList<qreal > m_scaling;
     
     void check();
