@@ -37,7 +37,6 @@
 
 itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
-    setName(tr("itc_1:1-Model"));
     m_local_parameter = new DataTable(1, SeriesCount(), this);
     InitialGuess();
     DeclearSystemParameter();

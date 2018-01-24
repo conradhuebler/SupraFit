@@ -50,6 +50,8 @@ public:
     virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" M"); }
     virtual int LocalParameterSize() const override {return 1; }
 
+    virtual inline QString Name() const override { return tr("First Order Kinetics"); }
+    
 private:
     
     

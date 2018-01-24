@@ -44,17 +44,36 @@ AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false
     m_data = data; 
 }
 
-AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false)
+AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(other->m_corrupt), m_last_p(other->m_last_p), m_f_value(other->m_f_value), m_last_parameter(other->m_last_parameter), m_last_freedom(other->m_last_freedom), m_converged(other->m_converged), m_locked_model(other->m_locked_model)
 {
-    setActiveSignals(other->m_active_signals);
-    setLockedParameter(other->LockedParamters());
     setOptimizerConfig(other->getOptimizerConfig());
     
     m_model_signal = other->m_model_signal;
     m_model_error = other->m_model_error;
 
     m_data = other->m_data; 
-    ImportModel(other->ExportModel());
+    
+    m_local_parameter = other->m_local_parameter;
+    m_active_signals = other->m_active_signals;
+    m_locked_parameters = other->m_locked_parameters;
+    m_model_options = other->m_model_options;
+    m_enabled_parameter = other->m_enabled_parameter;
+    m_global_parameter = other->m_global_parameter;
+    
+    m_mc_statistics = other->m_mc_statistics;
+    m_wg_statistics = other->m_wg_statistics;
+    m_moco_statistics = other->m_moco_statistics;
+    
+    m_sum_absolute = other->m_sum_absolute;
+    m_sum_squares = other->m_sum_squares;
+    m_variance = other->m_variance;
+    m_mean = other->m_mean;
+    m_stderror = other->m_stderror;
+    m_SEy = other->m_SEy;
+    m_chisquared = other->m_chisquared;
+    m_covfit = other->m_covfit;
+    m_used_variables = other->m_used_variables;
+    
 }
 
 
@@ -525,7 +544,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     
     toplevel["data"] = json;
     toplevel["options"] = optionObject;
-    toplevel["model"] = m_name;  
+    toplevel["model"] = Name();  
     toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
     toplevel["sum_of_absolute"] = m_sum_absolute;
@@ -546,9 +565,9 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
 
 void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
 {
-    if(topjson[m_name].isNull())
+    if(topjson[Name()].isNull())
     {
-        qWarning() << "file doesn't contain any " + m_name;
+        qWarning() << "file doesn't contain any " + Name();
         return;
     }
     if(topjson["model"] != Name())
@@ -709,19 +728,67 @@ void AbstractModel::setOption(const QString& name, const QString& value)
 
 AbstractModel & AbstractModel::operator=(const AbstractModel& other)
 {
-    ImportModel(other.ExportModel());
-    setActiveSignals(other.ActiveSignals());
-    setLockedParameter(other.LockedParamters());
     setOptimizerConfig(other.getOptimizerConfig());
+    
+    m_model_signal = other.m_model_signal;
+    m_model_error = other.m_model_error;
+
+    m_data = other.m_data; 
+    
+    m_local_parameter = other.m_local_parameter;
+    m_active_signals = other.m_active_signals;
+    m_locked_parameters = other.m_locked_parameters;
+    m_model_options = other.m_model_options;
+    m_enabled_parameter = other.m_enabled_parameter;
+    m_global_parameter = other.m_global_parameter;
+    
+    m_mc_statistics = other.m_mc_statistics;
+    m_wg_statistics = other.m_wg_statistics;
+    m_moco_statistics = other.m_moco_statistics;
+    
+    m_sum_absolute = other.m_sum_absolute;
+    m_sum_squares = other.m_sum_squares;
+    m_variance = other.m_variance;
+    m_mean = other.m_mean;
+    m_stderror = other.m_stderror;
+    m_SEy = other.m_SEy;
+    m_chisquared = other.m_chisquared;
+    m_covfit = other.m_covfit;
+    m_used_variables = other.m_used_variables;
+    
     return *this;
 }
 
 AbstractModel * AbstractModel::operator=(const AbstractModel* other)
 {
-    ImportModel(other->ExportModel());
-    setActiveSignals(other->ActiveSignals());
-    setLockedParameter(other->LockedParamters());
     setOptimizerConfig(other->getOptimizerConfig());
+    
+    m_model_signal = other->m_model_signal;
+    m_model_error = other->m_model_error;
+
+    m_data = other->m_data; 
+    
+    m_local_parameter = other->m_local_parameter;
+    m_active_signals = other->m_active_signals;
+    m_locked_parameters = other->m_locked_parameters;
+    m_model_options = other->m_model_options;
+    m_enabled_parameter = other->m_enabled_parameter;
+    m_global_parameter = other->m_global_parameter;
+    
+    m_mc_statistics = other->m_mc_statistics;
+    m_wg_statistics = other->m_wg_statistics;
+    m_moco_statistics = other->m_moco_statistics;
+    
+    m_sum_absolute = other->m_sum_absolute;
+    m_sum_squares = other->m_sum_squares;
+    m_variance = other->m_variance;
+    m_mean = other->m_mean;
+    m_stderror = other->m_stderror;
+    m_SEy = other->m_SEy;
+    m_chisquared = other->m_chisquared;
+    m_covfit = other->m_covfit;
+    m_used_variables = other->m_used_variables;
+    
     return this;
 }
 #include "AbstractModel.moc"

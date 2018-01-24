@@ -37,19 +37,16 @@
 
 ItoI_Model::ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
-    setName(tr("1:1-Model"));
     m_local_parameter = new DataTable(2, SeriesCount(), this);
-//     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     DeclareOptions();
     InitialGuess();
 }
 
 // ItoI_Model::ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
 // {
-//     setName(tr("1:1-Model"));
 //     m_local_parameter = new DataTable(2, SeriesCount(), this);
 //     DeclareOptions();
-//     InitialGuess();
+// //     InitialGuess();
 // }
 
 
@@ -60,7 +57,7 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess()
 {
-    
+    qDebug() << "guess";
     QVector<qreal> x;
     QVector< QVector<qreal> > y(SeriesCount());
     for(int i = 1; i < DataPoints(); ++i)
@@ -76,7 +73,6 @@ void ItoI_Model::InitialGuess()
         LinearRegression regress = LeastSquares(x, y[i]);
         m_K11 += qLn(qAbs(1/regress.m))/2.3;
     }
-//     m_K11 = 4;
     m_K11 /= double(SeriesCount());
     m_global_parameter = QList<qreal>() << m_K11;
 

@@ -60,6 +60,7 @@ public:
 
     virtual qreal PrintOutIndependent(int i, int format = 0) const override { Q_UNUSED(format) return IndependentModel()->data(0,i); }
 
+    virtual inline QString Name() const override { return tr("Michaelis Menten"); }
     
 private:
     

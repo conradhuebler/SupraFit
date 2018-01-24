@@ -208,7 +208,6 @@ void DataTable::CheckRow(int row)
 
 void DataTable::EnableAllRows()
 {
-    int check = 0;
     for(int j = 0; j < rowCount(); ++j)
         for(int i = 0; i < columnCount(); ++i)
             m_checked_table(j, i) = 1;

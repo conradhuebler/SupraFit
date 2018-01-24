@@ -91,15 +91,15 @@ public:
      */
     void ImportModel(const QJsonObject &topjson, bool override = true);
     
-    /*
-     * Sets the name of the model, to be identifyed by 
-     * the user
-     */
-    inline void setName(const QString &str) { m_name = str; }
+//     /*
+//      * Sets the name of the model, to be identifyed by 
+//      * the user
+//      */
+//     inline void setName(const QString &str) { m_name = str; }
  
     /*! \brief Returns the name of the model
      */
-    inline QString Name() const { return m_name; }
+    virtual inline QString Name() const = 0; /*{ return m_name; }*/
     
         
     /*! \brief get the Name of the ith GlobalParameter
@@ -260,8 +260,7 @@ public:
     virtual void setGlobalParameter(const QList< qreal > &list);
     /*! \brief return the list of global parameter values
      */
-    inline QList<qreal > GlobalParam    ImportModel(other->ExportModel());
-eter() const { return m_global_parameter; }
+    inline QList<qreal > GlobalParameter() const { return m_global_parameter; }
     /*! \brief return i global parameter
      */
     inline qreal GlobalParameter(int i) const { return m_global_parameter[i]; }
@@ -388,7 +387,7 @@ protected:
     bool m_corrupt, m_converged, m_locked_model;
     OptimizerConfig m_opt_config;
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
-    QString m_name;
+//     QString m_name;
         
     DataClass *m_data;
     QMap<QString, ModelOption > m_model_options;

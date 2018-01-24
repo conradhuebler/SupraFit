@@ -51,6 +51,7 @@ public:
 
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
+    virtual inline QString Name() const override { return tr("1:1-Model"); }
     
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}

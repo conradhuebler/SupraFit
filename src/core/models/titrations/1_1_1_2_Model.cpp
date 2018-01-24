@@ -35,7 +35,6 @@
 
 ItoI_ItoII_Model::ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(data)
 {
-    setName(tr("1:1/1:2-Model"));
     m_local_parameter = new DataTable(3, SeriesCount(), this);
     InitialGuess();
     DeclareOptions();

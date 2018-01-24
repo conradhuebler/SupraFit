@@ -53,7 +53,7 @@ public:
     virtual void DeclareOptions() override;
         
     virtual void EvaluateOptions() override;
-
+    virtual inline QString Name() const override { return tr("1:1/1:2-Model"); }
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 
     {

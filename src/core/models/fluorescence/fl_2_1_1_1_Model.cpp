@@ -34,7 +34,6 @@
 
 fl_IItoI_ItoI_Model::fl_IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
-    setName(tr("fl_2:1/1:1-Model"));
     m_local_parameter = new DataTable(4, SeriesCount(), this); 
     DeclareOptions();
     InitialGuess();   

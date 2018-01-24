@@ -49,7 +49,9 @@ public:
             return QString();
     }
     virtual int LocalParameterSize() const override {return GlobalParameterSize(); }
-    
+
+    virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
+
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);

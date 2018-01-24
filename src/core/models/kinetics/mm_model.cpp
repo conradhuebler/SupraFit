@@ -38,14 +38,12 @@
 
 Michaelis_Menten_Model::Michaelis_Menten_Model(DataClass *data) : AbstractModel(data)
 {
-    setName(tr("Michaelis Menten"));
     InitialGuess();
 }
 
 Michaelis_Menten_Model::Michaelis_Menten_Model(AbstractModel* model) : AbstractModel(model)
 {
-    setName(tr("Michaelis Menten"));
-    InitialGuess();
+//     InitialGuess();
 }
 
 

@@ -37,7 +37,6 @@
 
 fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
-    setName(tr("fl_1:1-Model"));
     m_local_parameter = new DataTable(3, SeriesCount(), this);
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
     DeclareOptions();
@@ -46,7 +45,6 @@ fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 
 fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
 {
-    setName(tr("fl_1:1-Model"));
     m_local_parameter = new DataTable(3, SeriesCount(), this);
     DeclareOptions();
     InitialGuess();

@@ -58,7 +58,7 @@ public:
             return QString();
     }
     virtual void DeclareOptions() override;
-
+    virtual inline QString Name() const override { return tr("2:1/1:1/1:2-Model"); }
 private:
     qreal m_K21, m_K11, m_K12;
     QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;
