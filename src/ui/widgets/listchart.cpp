@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QDebug>
+
 #include <QtCharts/QBoxPlotSeries>
 
 #include <QtWidgets/QLayout>
@@ -23,6 +25,7 @@
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QWidget>
 
+#include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/widgets/chartview.h"
 
 #include "listchart.h"
@@ -125,9 +128,10 @@ void ListChart::SeriesListClicked(QListWidgetItem *item)
     QList<QtCharts::QAbstractSeries *> series = m_series.values(index);
     for(int j = 0; j < series.size(); ++j)
     {
-        if(qobject_cast<QtCharts::QBoxPlotSeries *>(series[j])) // visibility doesnt work for boxplots ??
-            continue;
-        series[j]->setVisible(m_hidden[index]);
+        if(qobject_cast<BoxPlotSeries *>(series[j])) // visibility doesnt work for boxplots ??
+            qobject_cast<BoxPlotSeries *>(series[j])->setVisible(m_hidden[index]);
+        else
+            series[j]->setVisible(m_hidden[index]);
     }
 }
 

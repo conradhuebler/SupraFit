@@ -554,7 +554,6 @@ void ModelWidget::DoReductionAnalyse()
     QtCharts::QChart *chart = new QtCharts::QChart;
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-//     QPointer<ChartView > view = new ChartView(chart);
     QPointer<ListChart> view = new ListChart;
     QList<QList< QPointF> > series = analyse->Series();
     for(int i = 0; i < series.size(); ++i)
@@ -562,10 +561,18 @@ void ModelWidget::DoReductionAnalyse()
         LineSeries *serie = new LineSeries;
         serie->append(series[i]);
         serie->setName( m_model->GlobalParameterName(i));
-        view->addSeries(serie, i, serie->color(), QString::number(i + 1));
-        view->setColor(i, serie->color());
+        serie->setColor(ChartWrapper::ColorCode(i));
+        view->addSeries(serie, i, ChartWrapper::ColorCode(i), m_model->GlobalParameterName(i));
+        view->setColor(i,  ChartWrapper::ColorCode(i));
+        
+        serie = new LineSeries;
+        serie->append(QPointF(series[i].last().x(), m_model->GlobalParameter(i)));
+        serie->append(QPointF(series[i].first().x(), m_model->GlobalParameter(i)));
+        serie->setColor(ChartWrapper::ColorCode(i));
+        view->addSeries(serie, i, ChartWrapper::ColorCode(i), m_model->GlobalParameterName(i));
+        view->setColor(i,  ChartWrapper::ColorCode(i));
     }
-    m_statistic_result->setWidget(view, "Reduction Analyse");
+    m_statistic_result->setWidget(view, "Reduction Analyse for " + m_model->Name());
     m_statistic_result->show();
     delete analyse;
 }

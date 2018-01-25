@@ -18,8 +18,10 @@
  */
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
+#include "src/core/toolset.h"
 
 #include <QtCharts/QAbstractSeries>
+#include <QtCharts/QBoxPlotSeries>
 #include <QStandardItemModel>
 
 #include "chartwrapper.h"
@@ -67,6 +69,42 @@ void ScatterSeries::ShowLine(int state)
     else if(state == Qt::Checked)
         setVisible(true);   
     emit visibleChanged(state);
+}
+
+BoxPlotSeries::BoxPlotSeries(const SupraFit::BoxWhisker & boxwhisker) : m_boxwhisker(boxwhisker)
+{
+     LoadBoxWhisker();
+     m_visible = true;
+}
+
+void BoxPlotSeries::LoadBoxWhisker()
+{
+    QtCharts::QBoxSet *box = new QtCharts::QBoxSet;
+    box->setValue(QtCharts::QBoxSet::LowerExtreme, m_boxwhisker.lower_whisker);
+    box->setValue(QtCharts::QBoxSet::UpperExtreme, m_boxwhisker.upper_whisker);
+    box->setValue(QtCharts::QBoxSet::Median, m_boxwhisker.median);
+    box->setValue(QtCharts::QBoxSet::LowerQuartile, m_boxwhisker.lower_quantile);
+    box->setValue(QtCharts::QBoxSet::UpperQuartile, m_boxwhisker.upper_quantile);
+    append(box); 
+}
+
+void BoxPlotSeries::setVisible(bool visible)
+{
+    if(m_visible == visible)
+        return;
+    if(visible)
+        LoadBoxWhisker();
+    else
+        clear();
+    m_visible = visible;
+}
+
+
+void BoxPlotSeries::setColor(const QColor& color)
+{
+    QBrush brush;
+    brush.setColor(color);
+    setBrush(brush);
 }
 
 
@@ -223,13 +261,13 @@ bool ChartWrapper::setColorList(const QString &str)
     return true;
 }
 
-QColor ChartWrapper::ColorCode(int i) const
+QColor ChartWrapper::ColorCode(int i)
 {
     switch(i){
         case 0:
-            return Qt::red;
+            return QColor(Qt::magenta).lighter();
         case 1:
-            return Qt::blue;
+            return QColor(Qt::darkCyan).lighter();
         case 2:
             return Qt::green;
         case 3:
@@ -241,15 +279,15 @@ QColor ChartWrapper::ColorCode(int i) const
         case 6:
             return Qt::darkGreen;
         case 7:
-            return Qt::magenta;
-        case 8:
             return Qt::cyan;
+        case 8:
+            return Qt::red;
         case 9:
-            return Qt::darkYellow;
+            return Qt::blue;
         case 10:
             return Qt::darkMagenta;
         case 11:
-            return Qt::darkCyan;
+            return Qt::darkYellow;
         case 12:
             return Qt::gray;
         default:

@@ -28,6 +28,7 @@
 
 #include <QtCore/QPointer>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QWidget>
@@ -108,7 +109,9 @@ void WGSResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_resul
 ChartView * WGSResultsWidget::WGPlot()
 {
     QtCharts::QChart *chart = new QtCharts::QChart;
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    if(qApp->instance()->property("chartanimation").toBool())
+        chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    chart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     ChartView *view = new ChartView(chart);
     view->setXAxis("constant");
     view->setYAxis("Sum of Squares");
@@ -138,7 +141,9 @@ ChartView *  WGSResultsWidget::MoCoPlot()
     WriteConfidence(m_data);
     
     QtCharts::QChart *chart = new QtCharts::QChart;
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    if(qApp->instance()->property("chartanimation").toBool())
+        chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    chart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     ChartView *view = new ChartView(chart);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
     QList<qreal > x = ToolSet::String2DoubleList( m_data[0]["data"].toObject()["global_0"].toString() );

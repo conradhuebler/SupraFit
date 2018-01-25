@@ -110,8 +110,11 @@ QWidget * MCResultsWidget::ChartWidget()
 QPointer<ListChart> MCResultsWidget::MakeHistogram()
 {
     QPointer<ListChart> view = new ListChart;
-    view->setXAxis("constant");
-    view->setYAxis("rate");
+    view->setXAxis("parameter");
+    view->setYAxis("relative rate");
+    if(qApp->instance()->property("chartanimation").toBool())
+        view->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    view->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     view->setMinimumSize(300,400);
     bool formated = false;
     
@@ -129,8 +132,11 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             int index =  m_data[i]["index"].toString().split("|")[1].toInt();
             xy_series->setColor(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); });
-        }
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); }); 
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });
+        }else
+            xy_series->setColor(ChartWrapper::ColorCode(i));
+        
         for(int j = 0; j < histogram.size(); ++j)
         {
             xy_series->append(QPointF(histogram[j].first, histogram[j].second));       
@@ -144,7 +150,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         formated = true;
         
         LineSeries *current_constant = new LineSeries;
-        connect(xy_series, &QtCharts::QXYSeries::colorChanged, current_constant, &LineSeries::colorChanged);
+        connect(xy_series, &QtCharts::QXYSeries::colorChanged, current_constant, &LineSeries::setColor);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
         current_constant->setName( name);
@@ -168,26 +174,32 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 {
     ListChart *boxplot = new ListChart;
     double min = 10, max = 0;
-
+    if(qApp->instance()->property("chartanimation").toBool())
+        boxplot->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    boxplot->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     for(int i = 0; i < m_data.size(); ++i)
     {
         QJsonObject data = m_data[i];
 
         has_boxplot = true;
-        QtCharts::QBoxPlotSeries *series = new QtCharts::QBoxPlotSeries();
-        series->setName(m_data[i]["name"].toString());
+        
         SupraFit::BoxWhisker bw = ToolSet::Object2Whisker( data["boxplot"].toObject() );
         min = qMin(bw.lower_whisker, min);
         max = qMax(bw.upper_whisker, max);
-        QtCharts::QBoxSet *box = new QtCharts::QBoxSet;
-        box->setValue(QtCharts::QBoxSet::LowerExtreme, bw.lower_whisker);
-        box->setValue(QtCharts::QBoxSet::UpperExtreme, bw.upper_whisker);
-        box->setValue(QtCharts::QBoxSet::Median, bw.median);
-        box->setValue(QtCharts::QBoxSet::LowerQuartile, bw.lower_quantile);
-        box->setValue(QtCharts::QBoxSet::UpperQuartile, bw.upper_quantile);
-        series->append(box);      
-        boxplot->addSeries(series, i, Qt::green, m_data[i]["name"].toString());  
-        boxplot->setColor(i, series->brush().color());
+        BoxPlotSeries *series = new BoxPlotSeries(bw);
+        series->setName(m_data[i]["name"].toString());
+ 
+        if(m_data[i]["type"] == "Local Parameter")
+        {
+            if(!m_data[i].contains("index"))
+                continue;
+            int index =  m_data[i]["index"].toString().split("|")[1].toInt();
+            series->setBrush(m_wrapper->Series(index)->color());
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, boxplot]( const QColor &color ) { boxplot->setColor(i, color); }); 
+        }
+        boxplot->addSeries(series, i, series->color(), m_data[i]["name"].toString());  
+        boxplot->setColor(i, series->color());
         m_box_object << ToolSet::Box2Object(bw);
     }
 
@@ -205,7 +217,9 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
 {
     QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart; 
     QPointer<ChartView > view = new ChartView(chart_ellipsoid);
-    
+    if(qApp->instance()->property("chartanimation").toBool())
+        chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    chart_ellipsoid->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     QList<QPointF > data = ToolSet::fromModelsList(m_models, "globalParameter");
     if(data.size())
         has_contour = true;
@@ -303,6 +317,25 @@ QtCharts::QAreaSeries * MCResultsWidget::AreaSeries(const QColor &color) const
     area_series->setOpacity(0.4);
     return area_series;
 }
+
+void MCResultsWidget::setAreaColor(int index, const QColor &color)
+{
+    if(index >= m_area_series.size())
+        return;
+    QtCharts::QAreaSeries *area_series = m_area_series[index];
+    
+    QPen pen(0x059605);
+    pen.setWidth(3);
+    area_series->setPen(pen);
+    
+    QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
+    gradient.setColorAt(0.0, color);
+    gradient.setColorAt(1.0, 0x26f626);
+    gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+    area_series->setBrush(gradient);
+    area_series->setOpacity(0.4);
+}
+
 
 void MCResultsWidget::GenerateConfidence(double error)
 {    

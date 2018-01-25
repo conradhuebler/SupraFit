@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <QChart>
 #include <QtCharts/QAbstractSeries>
 #include <QtCharts/QChartView>
 
@@ -82,6 +83,9 @@ public:
     void Clear();
     QtCharts::QLineSeries *addLinearSeries(qreal m, qreal n, qreal min, qreal max, int index);
     QtCharts::QChart* Chart() { return m_chart; }
+    
+    inline void setAnimationOptions(QtCharts::QChart::AnimationOption option) { m_chart->setAnimationOptions(option); }
+    inline void setTheme(QtCharts::QChart::ChartTheme theme) { m_chart->setTheme(theme); }
     
 public slots:
     inline void formatAxis() { m_chartview->formatAxis(); }

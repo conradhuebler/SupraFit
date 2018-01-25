@@ -19,10 +19,13 @@
 
 #pragma once
 
+#include "src/core/toolset.h"
+
 #include <QtCore/QPointer>
 #include <QtCore/QList>
 #include <QtCore/QObject>
 
+#include <QtCharts/QBoxPlotSeries>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
 #include <QtCharts/QXYSeries>
@@ -67,6 +70,23 @@ signals:
     void visibleChanged(int state);
 };
 
+class BoxPlotSeries : public QtCharts::QBoxPlotSeries
+{
+    Q_OBJECT
+    
+public:
+    BoxPlotSeries(const SupraFit::BoxWhisker &boxwhisker );
+    inline QColor color() const { return brush().color(); };
+        
+public slots:
+    void setColor(const QColor &color);
+    virtual void setVisible(bool visible);
+    
+private:
+    void LoadBoxWhisker();
+    SupraFit::BoxWhisker m_boxwhisker;
+    bool m_visible;
+};
 
 class ChartWrapper : public QObject
 {
@@ -88,6 +108,8 @@ public:
     
     QList<QPointer<QtCharts::QScatterSeries > > CloneSeries() const;
     
+    static QColor ColorCode(int i);
+
 public slots:
     void UpdateModel();
     void MakeSeries();
@@ -96,7 +118,6 @@ public slots:
     void FlipChart(bool flip);
     
 private:
-    QColor ColorCode(int i) const;
     const DataTable *m_table;
     QList<QPointer<QtCharts::QXYSeries > > m_stored_series;
     QSharedPointer< DataClass > m_model;

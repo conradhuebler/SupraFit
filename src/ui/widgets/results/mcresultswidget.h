@@ -66,7 +66,8 @@ private:
     virtual QWidget * ChartWidget() override;
     void WriteConfidence(const QList<QJsonObject > &constant_results) override;
     void UpdateBoxes();
-    
+    void setAreaColor(int index, const QColor &color);
+
     QtCharts::QAreaSeries *AreaSeries(const QColor &color) const;
     QPointer<ListChart > MakeHistogram();
     QPointer<ChartView > MakeContour();
@@ -77,9 +78,9 @@ private:
     Type m_type;
     
     ChartWrapper *m_wrapper;
-
 private slots:
     void ExportResults();
     void GenerateConfidence(double error);
+    
     
 };

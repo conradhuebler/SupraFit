@@ -135,7 +135,7 @@ void ReductionAnalyse::PlainReduction()
             m_models << m_threads[i]->Model();
             QList<qreal > constants = m_threads[i]->Constants();
             for(int j = 0; j < constants.size(); ++j)
-                m_series[j].append(QPointF(m_model->PrintOutIndependent(i), constants[j]));
+                m_series[j].append(QPointF(m_model->PrintOutIndependent(m_threads.size() - i), constants[j]));
             delete m_threads[i];
         }
     }
