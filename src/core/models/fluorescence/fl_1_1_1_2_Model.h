@@ -68,8 +68,8 @@ private:
     qreal m_K11, m_K12;
     QList<qreal > m_ItoI_signals, m_ItoII_signals;
     static qreal Y(qreal x, const QVector<qreal > & parameter);
+    
 protected:
     virtual void CalculateVariables() override;
-//     virtual void DeclareParameter() override ;
 };
 

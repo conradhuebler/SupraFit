@@ -42,14 +42,6 @@ ItoI_Model::ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
     DeclareOptions();
 }
 
-// ItoI_Model::ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
-// {
-//     m_local_parameter = new DataTable(2, SeriesCount(), this);
-//     DeclareOptions();
-// //     InitialGuess();
-// }
-
-
 ItoI_Model::~ItoI_Model() 
 {
     

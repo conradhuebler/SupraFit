@@ -67,5 +67,4 @@ private:
     static qreal Y(qreal x, const QVector<qreal > & parameter);
 protected:
     virtual void CalculateVariables() override;
-//     virtual void DeclareParameter() override ;
 };

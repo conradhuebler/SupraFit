@@ -92,7 +92,7 @@ public:
  
     /*! \brief Returns the name of the model
      */
-    virtual inline QString Name() const = 0; 
+    virtual QString Name() const = 0; 
     
         
     /*! \brief get the Name of the ith GlobalParameter

@@ -67,5 +67,4 @@ private:
     
 protected:
     virtual void CalculateVariables() override;
-//     virtual void DeclareParameter() override ;
 };
