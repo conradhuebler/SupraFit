@@ -42,15 +42,30 @@ class LineSeries : public QtCharts::QLineSeries
   Q_OBJECT
   
 public:
-    inline LineSeries() {}
+    inline LineSeries()  : m_dashdot(false), m_size(2){}
     inline ~LineSeries() {}
     
 public slots:
-    virtual void setColor(const QColor &color); 
+    virtual void setColor(const QColor &color) { m_color = color; Update();  }
+    inline void setDashDotLine(bool dashdot) { m_dashdot = dashdot; Update(); }
+    inline void setSize(int size) { m_size = size; Update(); }
     void ShowLine(int state);
     void ShowLine(bool state);
     virtual void setName(const QString &name);
     
+private:
+   inline void Update()
+   {
+       QPen pen = QtCharts::QLineSeries::pen();
+       if(m_dashdot)
+           pen.setStyle(Qt::DashDotLine);
+       pen.setWidth(m_size);
+       pen.setColor(m_color);
+       setPen(pen);
+   }
+    bool m_dashdot;
+    int m_size;
+    QColor m_color;
 };
 
 class ScatterSeries : public QtCharts::QScatterSeries

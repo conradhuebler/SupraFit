@@ -100,10 +100,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_advancedsearch->setModel(m_model);
     
     m_statistic_dialog = new StatisticDialog(m_model, this);
-    connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
-    connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
-    connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
-    connect(m_statistic_dialog, SIGNAL(CrossValidation()), this, SLOT(CVAnalyse()));
+    connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::MCStatistic));
+    connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::WGStatistic));
+    connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::MoCoStatistic));
+    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelWidget::CVAnalyse);
+    connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelWidget::DoReductionAnalyse);
     
     connect(m_advancedsearch, SIGNAL(PlotFinished(int)), this, SLOT(PlotFinished(int)));
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
@@ -159,14 +160,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     QAction *fast_conf = new QAction(tr("Confidence"));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
     
-    QAction *reduct = new QAction(tr("Reduction Analyse"));
-    connect(reduct, SIGNAL(triggered()), this, SLOT(DoReductionAnalyse()));
-    
     QMenu *menu = new QMenu;
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
-    menu->addAction(reduct);
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
     
@@ -549,31 +546,71 @@ void ModelWidget::DoReductionAnalyse()
 {
     Waiter wait;
     ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(analyse, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
+    connect(analyse, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(analyse, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    
     analyse->setModel(m_model);
     analyse->PlainReduction();
     QtCharts::QChart *chart = new QtCharts::QChart;
     
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     QPointer<ListChart> view = new ListChart;
+    
+    QList<QJsonObject> models = analyse->Models(); 
+    QList<QJsonObject> result = ToolSet::Model2Parameter(models, false);
+    
     QList<QList< QPointF> > series = analyse->Series();
-    for(int i = 0; i < series.size(); ++i)
+    for(int i = 0; i < result.size(); ++i)
     {
+        QString name = result[i]["name"].toString();
         LineSeries *serie = new LineSeries;
-        serie->append(series[i]);
-        serie->setName( m_model->GlobalParameterName(i));
-        serie->setColor(ChartWrapper::ColorCode(i));
-        view->addSeries(serie, i, ChartWrapper::ColorCode(i), m_model->GlobalParameterName(i));
-        view->setColor(i,  ChartWrapper::ColorCode(i));
+        serie->setSize(4);
+        QList< QPointF > series;
+        QVector<qreal> list = ToolSet::String2DoubleVec(result[i]["data"].toObject()["raw"].toString());
+        for(int i = 0; i < list.size(); ++i)
+            series << QPointF(m_model->PrintOutIndependent(list.size() - i), list[i]);
+
+        QColor color;
+        int index = 0, jndex = 0;
+        if(result[i]["type"].toString() == "Global Parameter")
+            color = ChartWrapper::ColorCode(i);
+        else
+        {
+            if(result[i].contains("index"))
+            {   
+                QStringList lindex = result[i]["index"].toString().split("|");
+                index =  lindex[1].toInt();
+                jndex = lindex[0].toInt();
+                color = m_charts.signal_wrapper->Series(index)->color();
+            }
+        }
+        serie->append(series);
+        serie->setName( result[i]["name"].toString());
+        serie->setColor(color);
+        view->addSeries(serie, i, color, name);
+        view->setColor(i,  color);
         
-        serie = new LineSeries;
-        serie->append(QPointF(series[i].last().x(), m_model->GlobalParameter(i)));
-        serie->append(QPointF(series[i].first().x(), m_model->GlobalParameter(i)));
-        serie->setColor(ChartWrapper::ColorCode(i));
-        view->addSeries(serie, i, ChartWrapper::ColorCode(i), m_model->GlobalParameterName(i));
-        view->setColor(i,  ChartWrapper::ColorCode(i));
+         serie = new LineSeries;
+         serie->setDashDotLine(true);
+         qreal value = 0;
+         if(result[i]["type"].toString() == "Global Parameter")
+            value = m_model->GlobalParameter(i);
+         else
+             value = m_model->LocalParameter(jndex,index);
+         
+         serie->append(QPointF(series.last().x(), value));
+         serie->append(QPointF(series.first().x(), value));
+         serie->setColor(color);
+         view->addSeries(serie, i, color, name);
+         view->setColor(i,  color);
     }
     m_statistic_result->setWidget(view, "Reduction Analyse for " + m_model->Name());
     m_statistic_result->show();
+    m_statistic_dialog->HideWidget();
     delete analyse;
 }
 

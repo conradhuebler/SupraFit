@@ -101,6 +101,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
         }
     }
     m_model->DependentModel()->EnableAllRows();
+    emit AnalyseFinished();
 }
 
 void ReductionAnalyse::PlainReduction()
@@ -108,7 +109,7 @@ void ReductionAnalyse::PlainReduction()
     MCConfig config;
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
-
+    emit MaximumSteps(m_model->DataPoints());
     for(int j = 0; j < m_model->GlobalParameterSize(); ++j)
         m_series << QList<QPointF>();
 
@@ -116,10 +117,10 @@ void ReductionAnalyse::PlainReduction()
     for(int i = m_model->DataPoints() - 1; i > 0; --i)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setIndex(i);
         QSharedPointer<AbstractModel> model = m_model->Clone();
         table->CheckRow(i); // we will keep this for now, maybe it is usefull
-        table->PrintCheckedRows();
         model->setDependentTable(table);
         model->detach();
         thread->setModel(model);
@@ -139,4 +140,5 @@ void ReductionAnalyse::PlainReduction()
             delete m_threads[i];
         }
     }
+    emit AnalyseFinished();
 }

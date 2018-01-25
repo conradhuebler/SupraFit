@@ -269,7 +269,7 @@ void MCResultsWidget::UpdateBoxes()
     {
         QJsonObject data = m_data[i];
         QJsonObject confidenceObject = data["confidence"].toObject();
-        if(m_histgram)
+        if(m_histgram && i < m_area_series.size())
         {
             QtCharts::QAreaSeries *area_series = m_area_series[i];
             QtCharts::QLineSeries *series1 = area_series->lowerSeries();

@@ -26,14 +26,6 @@
 
 #include "chartwrapper.h"
 
- void LineSeries::setColor(const QColor &color) 
- { 
-     QPen pen = QtCharts::QLineSeries::pen();
-//      pen.setStyle(Qt::DashDotLine);
-     pen.setWidth(2);
-     pen.setColor(color);
-     setPen(pen);     
-}
 void LineSeries::ShowLine(bool state)
 {
     setVisible(state);

@@ -333,12 +333,13 @@ namespace ToolSet{
     QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
     {
         
-        int globalcount, localcount, each_local;
+        int globalcount = 0, localcount = 0, each_local = 0;
         QJsonObject model = models.first()["data"].toObject();
-        globalcount = model["globalParameter"].toObject().size() - 1;
-        localcount  = model["localParameter"].toObject().size() - 1;
+        globalcount = qMax(0,model["globalParameter"].toObject().size() - 1);
+        localcount  = qMax(0,model["localParameter"].toObject().size() - 1);
         QStringList local_names, global_names;
         local_names = model["localParameter"].toObject()["names"].toString().split("|");
+        qDebug() << local_names;
         each_local  = local_names.count();
         global_names = model["globalParameter"].toObject()["names"].toString().split("|");
         QVector<QVector<qreal> >global(globalcount);

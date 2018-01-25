@@ -266,7 +266,7 @@ void ConfigDialog::accept()
    qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
    qApp->instance()->setProperty("p_value", m_p_value->value());
    qApp->instance()->setProperty("ask_on_exit", m_ask_on_exit->isChecked());
-   qApp->instance()->setProperty("save_on_exit", m_ask_on_exit->isChecked());
+   qApp->instance()->setProperty("save_on_exit", m_save_on_exit->isChecked());
    qApp->instance()->setProperty("tooltips", m_tooltips->isChecked());
    QDialog::accept(); 
 }

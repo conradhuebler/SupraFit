@@ -82,8 +82,8 @@ void StatisticDialog::updateUI()
     m_moco_f_value->setValue(m_model.data()->finv(m_moco_maxerror->value()/100));
     if(m_model.data()->GlobalParameterSize() != 2)
     {
-        m_moco_widget->setDisabled(true);
-        m_moco_widget->setToolTip("<p>Model Comparison is not enabled for 1:1 and 2:1/1:1/1:2 models.</p><p>For 1:1 models the result are equal to the automatic confidence calculation.</p><p>For more complicated models the confidence region becomes an ellipsoid, which is not supported yet.</br>This may come in later release of suprafit</p>");
+         m_moco_widget->setDisabled(true);
+         m_moco_widget->setToolTip("<p>Model Comparison is not enabled for 1:1 and 2:1/1:1/1:2 models.</p><p>For 1:1 models the result are equal to the automatic confidence calculation.</p><p>For more complicated models the confidence region becomes an ellipsoid, which is not supported yet.</br>This may come in later release of suprafit</p>");
     }
 }
 
@@ -92,16 +92,17 @@ void StatisticDialog::setUi()
 {
     QVBoxLayout *layout = new QVBoxLayout;
     m_tab_widget = new QTabWidget;
+    m_tab_widget->addTab(CVWidget(), tr("Cross Validation/Reduction"));
     m_tab_widget->addTab(MonteCarloWidget(), tr("Monte Carlo"));
     m_tab_widget->addTab(GridSearchWidget(), tr("Weakened Grid Search"));
     m_moco_widget = ModelComparison();
     m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
-    m_tab_widget->addTab(CVWidget(), tr("Cross Validation"));
-    
+
     if(m_model)
         m_optim_flags = new OptimizerFlagWidget(m_model.data()->LastOptimzationRun()); 
     else
         m_optim_flags = new OptimizerFlagWidget;
+    
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
     m_progress = new QProgressBar;
@@ -317,12 +318,17 @@ QWidget * StatisticDialog::CVWidget()
     QGridLayout *layout = new QGridLayout;   
     m_cv_loo = new QRadioButton(tr("Leave-One-Out"));
     m_cv_l2o = new QRadioButton(tr("Leave-Two-Out"));
+    m_cv_loo->setChecked(true);
     layout->addWidget(m_cv_loo, 0, 0);
     layout->addWidget(m_cv_l2o, 1, 0);
     m_cross_validate = new QPushButton(tr("Cross Validation"));
+    m_reduction = new QPushButton(tr("Reduction Analysis"));
     
     layout->addWidget(m_cross_validate, 2,0);
-    connect(m_cross_validate, SIGNAL(clicked()), this, SIGNAL(CrossValidation()));
+    layout->addWidget(m_reduction, 3, 0);
+    connect(m_cross_validate, &QPushButton::clicked, this, &StatisticDialog::CrossValidation);
+    connect(m_reduction, &QPushButton::clicked, this, &StatisticDialog::Reduction);
+
     widget->setLayout(layout);
     return widget;
 }
@@ -399,6 +405,9 @@ void StatisticDialog::MaximumSteps(int steps)
 {
     if(m_hidden)
         ShowWidget();
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setValue(0);
     m_progress->setMaximum(steps);
 }
 
@@ -505,7 +514,6 @@ void StatisticDialog::CalculateError()
     m_moco_max = max_moco_error;
     m_cv_max = max_cv_error;
     
-    //     qDebug() << m_model.data()->Error(m_moco_maxerror->value(), m_moco_f_test->isChecked()) << m_moco_max;
     m_cv_error_info->setText(cv_message);
     m_moco_error_info->setText(moco_message);
 }
