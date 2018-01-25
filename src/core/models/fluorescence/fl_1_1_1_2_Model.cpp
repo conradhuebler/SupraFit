@@ -36,9 +36,8 @@
 fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     m_local_parameter = new DataTable(4, SeriesCount(), this);
-    InitialGuess();
-    DeclareOptions();
-    AbstractTitrationModel::Calculate();
+    m_global_parameter << 1 << 1;
+    
 }
 
 fl_ItoI_ItoII_Model::~fl_ItoI_ItoII_Model()
@@ -48,19 +47,19 @@ fl_ItoI_ItoII_Model::~fl_ItoI_ItoII_Model()
 
 void fl_ItoI_ItoII_Model::DeclareOptions()
 {
-//     QStringList method = QStringList() << "NMR" << "UV/VIS";
-//     addOption("Method", method);
-//     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-//     addOption("Cooperativity", cooperativity);
+     QStringList method = QStringList() << "NMR" << "UV/VIS";
+     addOption("Method", method);
+     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
+     addOption("Cooperativity", cooperativity);
     
-     QStringList method = QStringList() << "Host" << "no Host";
-     addOption("Host", method);
+     QStringList host = QStringList() << "Host" << "no Host";
+     addOption("Host", host);
      
 }
 
 void fl_ItoI_ItoII_Model::EvaluateOptions()
 {
-    /*
+    
     QString cooperativitiy = getOption("Cooperativity");
     
     auto global_coop = [this]()
@@ -84,7 +83,7 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
     {
         local_coop();
         global_coop();
-    }*/
+    }
     
     QString host = getOption("Host");
     if(host != "Host")
@@ -119,7 +118,6 @@ void fl_ItoI_ItoII_Model::InitialGuess()
         line2 << &m_local_parameter->data(2, i); 
         line2 << &m_local_parameter->data(3, i);
     }
-    m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
     AbstractTitrationModel::Calculate();
 }
 

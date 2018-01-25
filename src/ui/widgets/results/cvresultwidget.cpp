@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 #include "cvresultwidget.h"
 
 
-CVResultsWidget::CVResultsWidget(QPointer<AbstractSearchClass> statistics, QSharedPointer<AbstractModel> model, QWidget* parent)//: QWidget(parent), m_model(model), m_statistics(statistics)
+CVResultsWidget::CVResultsWidget(QSharedPointer<AbstractModel> model) //: m_model(model)
 {
     m_model = model;
     setUi();

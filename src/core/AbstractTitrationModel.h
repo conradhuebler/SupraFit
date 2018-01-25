@@ -58,7 +58,6 @@ public:
     AbstractTitrationModel(AbstractTitrationModel *other);
     virtual ~AbstractTitrationModel();
 
-    inline QString Name() const { return m_name; }
     inline int Size() const { return DataClass::Size(); }
 
     void adress() const;
@@ -112,9 +111,10 @@ protected:
      */
     void SetConcentration(int i, const Vector &equlibrium);
 
-    QString m_name;
+    qreal Guess_1_1() const;
+    
+    
     QVector< QVector < qreal > > m_difference; 
     
-    QVector<QVector<qreal * > >m_lim_para;
     QPointer<DataTable > m_concentrations; 
 };

@@ -38,7 +38,7 @@
 
 Michaelis_Menten_Model::Michaelis_Menten_Model(DataClass *data) : AbstractModel(data)
 {
-    InitialGuess();
+//     InitialGuess();
 }
 
 Michaelis_Menten_Model::Michaelis_Menten_Model(AbstractModel* model) : AbstractModel(model)
@@ -65,10 +65,7 @@ void Michaelis_Menten_Model::InitialGuess()
     LinearRegression regress = LeastSquares(x, y);
     m_vmax = 1/regress.n;
     m_Km = regress.m*m_vmax;
-    
-    m_global_parameter = QList<qreal>() << m_vmax << m_Km;
-    setOptParamater(m_global_parameter);
-    
+        
     AbstractModel::Calculate();
 }
 

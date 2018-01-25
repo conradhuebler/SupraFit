@@ -154,7 +154,6 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 
  QPointer<ListChart > MCResultsWidget::MakeBoxPlot()
 {
-    QWidget *widget = new QWidget;
     ListChart *boxplot = new ListChart;
     double min = 10, max = 0;
 

@@ -384,6 +384,7 @@ void ModelDataHolder::AddModel(int model)
             return; 
             
     };
+    t->InitialGuess();
     m_history = false;
     ActiveModel(t);
 }

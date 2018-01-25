@@ -139,4 +139,29 @@ QString AbstractTitrationModel::ModelInfo() const
         return QString();
 }
 
+qreal AbstractTitrationModel::Guess_1_1() const
+{
+    qreal K11 = 0;
+    QVector<qreal> x;
+    QVector< QVector<qreal> > y(SeriesCount());
+    for(int i = 1; i < DataPoints(); ++i)
+    {
+        if(!(InitialHostConcentration(i)*InitialGuestConcentration(i)))
+            continue;
+        x << (1/InitialHostConcentration(i)/InitialGuestConcentration(i));
+        for(int j = 0; j < SeriesCount(); ++j)
+        {
+            y[j] << 1/(DependentModel()->data(j,i)-DependentModel()->data(j,0));
+        }
+    }
+    for(int i = 0; i < SeriesCount(); ++i)
+    {
+        LinearRegression regress = LeastSquares(x, y[i]);
+        K11 += qLn(qAbs(1/regress.m))/2.3;
+    }
+    K11 /= double(SeriesCount());
+    return K11;
+}
+
+
 #include "AbstractTitrationModel.moc"

@@ -38,8 +38,8 @@
 ItoI_Model::ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     m_local_parameter = new DataTable(2, SeriesCount(), this);
+    m_global_parameter << 0;
     DeclareOptions();
-    InitialGuess();
 }
 
 // ItoI_Model::ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
@@ -57,24 +57,8 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess()
 {
-    qDebug() << "guess";
-    QVector<qreal> x;
-    QVector< QVector<qreal> > y(SeriesCount());
-    for(int i = 1; i < DataPoints(); ++i)
-    {
-        x << (1/InitialHostConcentration(i)/InitialGuestConcentration(i));
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
-            y[j] << 1/(DependentModel()->data(j,i)-DependentModel()->data(j,0));
-        }
-    }
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
-        LinearRegression regress = LeastSquares(x, y[i]);
-        m_K11 += qLn(qAbs(1/regress.m))/2.3;
-    }
-    m_K11 /= double(SeriesCount());
-    m_global_parameter = QList<qreal>() << m_K11;
+    m_K11 = Guess_1_1();
+    m_global_parameter[0] = m_K11;
 
     qreal factor = 1;
     if(getOption("Method") == "UV/VIS")
@@ -85,18 +69,7 @@ void ItoI_Model::InitialGuess()
     m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
     m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 1);
     
-    QVector<qreal * > line1, line2;
-
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
-        line1 << &m_local_parameter->data(0, i);
-        line2 << &m_local_parameter->data(1, i);
-    }
-
-    setOptParamater(m_global_parameter);
-    m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
-    
-    AbstractTitrationModel::Calculate();
+    Calculate();
 }
 
 void ItoI_Model::DeclareOptions()

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef RESULTSWIDGET_H
-#define RESULTSWIDGET_H
+#pragma once
 
 #include <QtWidgets/QWidget>
 
@@ -28,21 +27,18 @@ class AbstractModel;
 class ResultsWidget : public QWidget
 {
     Q_OBJECT
+    
 public:
     ResultsWidget();
     ~ResultsWidget();
     
-   
 protected:
     void setUi();
     virtual QWidget * ChartWidget() = 0;
     inline QSize ChartSize() const { return QSize(400,300); }
-    virtual void WriteConfidence(const QList<QJsonObject > &constant_results) { };
+    virtual void WriteConfidence(const QList<QJsonObject > &constant_results) { Q_UNUSED(constant_results) };
     
     QWidget *m_chart_widget;
     QLabel *m_confidence_label;
     QSharedPointer< AbstractModel > m_model;
-    
 };    
-
-#endif // RESULTSWIDGET_H

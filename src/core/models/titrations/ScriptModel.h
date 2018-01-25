@@ -87,6 +87,7 @@ private:
 protected:
     QList<qreal > m_signals;
     virtual void CalculateVariables(const QList<qreal > &constants);
+    virtual void DeclareParameter() override ;
 };
 
 #endif // 1_1_Model

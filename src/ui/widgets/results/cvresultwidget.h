@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef CVRESULTSWIDGET_H
-#define CVRESULTSWIDGET_H
+#pragma once
 
 #include "src/ui/widgets/results/resultswidget.h"
 
@@ -32,7 +31,7 @@ class CVResultsWidget : public ResultsWidget
     Q_OBJECT
     
 public:
-    CVResultsWidget(QPointer<AbstractSearchClass > statistics, QSharedPointer<AbstractModel> model, QWidget *parent);
+    CVResultsWidget(QSharedPointer<AbstractModel> model);
     ~CVResultsWidget();
     
 private:
@@ -40,5 +39,3 @@ private:
     
 
 };
-
-#endif // CVRESULTSWIDGET_H

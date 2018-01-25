@@ -35,9 +35,10 @@
 fl_IItoI_ItoI_Model::fl_IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     m_local_parameter = new DataTable(4, SeriesCount(), this); 
-    DeclareOptions();
-    InitialGuess();   
-    AbstractTitrationModel::Calculate();
+    m_global_parameter << 1 << 1;
+//     DeclareOptions();
+//     InitialGuess();   
+//     AbstractTitrationModel::Calculate();
 }
     
 fl_IItoI_ItoI_Model::~fl_IItoI_ItoI_Model()
@@ -47,21 +48,21 @@ fl_IItoI_ItoI_Model::~fl_IItoI_ItoI_Model()
 
 void fl_IItoI_ItoI_Model::DeclareOptions()
 {
-//     QStringList method = QStringList() << "NMR" << "UV/VIS";
-//     addOption("Method", method);
-//     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-//     addOption("Cooperativity", cooperativity);
+     QStringList method = QStringList() << "NMR" << "UV/VIS";
+     addOption("Method", method);
+     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
+     addOption("Cooperativity", cooperativity);
     
-     QStringList method = QStringList() << "Host" << "no Host";
-     addOption("Host", method);
+     QStringList host = QStringList() << "Host" << "no Host";
+     addOption("Host", host);
      //setOption("Host", "Host");
      
 }
 
 void fl_IItoI_ItoI_Model::EvaluateOptions()
 {
-    /*
-     * QString cooperativitiy = getOption("Cooperativity");
+    
+     QString cooperativitiy = getOption("Cooperativity");
 
     auto global_coop = [this](){
         this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
@@ -83,7 +84,7 @@ void fl_IItoI_ItoI_Model::EvaluateOptions()
     {
         local_coop();
         global_coop();
-    }*/
+    }
     
     QString host = getOption("Host");
     qDebug() << host;
@@ -101,7 +102,6 @@ void fl_IItoI_ItoI_Model::EvaluateOptions()
 
 void fl_IItoI_ItoI_Model::InitialGuess()
 {
-    m_global_parameter = QList<qreal>() << 2 << 4;
     setOptParamater(m_global_parameter);
 
     qreal factor = 1/InitialHostConcentration(0);
@@ -121,8 +121,7 @@ void fl_IItoI_ItoI_Model::InitialGuess()
         line1 << &m_local_parameter->data(3, i);
     }
 
-    m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    AbstractTitrationModel::Calculate();
+    Calculate();
 }
 
 qreal fl_IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)

@@ -61,7 +61,6 @@ public:
      */
     void clearOptParameter();
     
-    
     /*! \brief returns the locked Parameters
      */
     inline QList<int> LockedParamters() const { return m_locked_parameters; }
@@ -90,16 +89,10 @@ public:
      * 
      */
     void ImportModel(const QJsonObject &topjson, bool override = true);
-    
-//     /*
-//      * Sets the name of the model, to be identifyed by 
-//      * the user
-//      */
-//     inline void setName(const QString &str) { m_name = str; }
  
     /*! \brief Returns the name of the model
      */
-    virtual inline QString Name() const = 0; /*{ return m_name; }*/
+    virtual inline QString Name() const = 0; 
     
         
     /*! \brief get the Name of the ith GlobalParameter
@@ -369,7 +362,7 @@ protected:
     /*! \brief Calculated the variance of the raw data
      */
     qreal CalculateCovarianceFit();
-    
+        
 // #warning to do as well
     //FIXME more must be
     QVector<double * > m_opt_para;

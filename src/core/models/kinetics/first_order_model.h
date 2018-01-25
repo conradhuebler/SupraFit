@@ -35,7 +35,7 @@ class Kinetic_First_Order_Model : public AbstractModel
     
 public:
     Kinetic_First_Order_Model(DataClass *data);
-    Kinetic_First_Order_Model(AbstractModel *model);
+//     Kinetic_First_Order_Model(AbstractModel *model);
     ~Kinetic_First_Order_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;} 

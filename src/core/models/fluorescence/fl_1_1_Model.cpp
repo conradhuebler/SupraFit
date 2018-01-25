@@ -38,17 +38,18 @@
 fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     m_local_parameter = new DataTable(3, SeriesCount(), this);
+    m_global_parameter << 1;
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
-    DeclareOptions();
-    InitialGuess();
+//     DeclareOptions();
+//     InitialGuess();
 }
 
-fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
-{
-    m_local_parameter = new DataTable(3, SeriesCount(), this);
-    DeclareOptions();
-    InitialGuess();
-}
+// fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
+// {
+//     m_local_parameter = new DataTable(3, SeriesCount(), this);
+// //     DeclareOptions();
+// //     InitialGuess();
+// }
 
 
 fl_ItoI_Model::~fl_ItoI_Model() 
@@ -58,8 +59,8 @@ fl_ItoI_Model::~fl_ItoI_Model()
 
 void fl_ItoI_Model::InitialGuess()
 {
-    m_K11 = 4;
-    m_global_parameter = QList<qreal>() << m_K11;
+//     m_K11 = 4;
+    m_global_parameter[0] = Guess_1_1();
 
     qreal factor = 1; ///InitialHostConcentration(0);
     
@@ -75,11 +76,8 @@ void fl_ItoI_Model::InitialGuess()
         line2 << &m_local_parameter->data(1, i);
         line2 << &m_local_parameter->data(2, i);
     }
-
-    setOptParamater(m_global_parameter);
-    m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
-    AbstractTitrationModel::Calculate();
+    Calculate();
 }
 
 void fl_ItoI_Model::DeclareOptions()
@@ -90,30 +88,7 @@ void fl_ItoI_Model::DeclareOptions()
 
 void fl_ItoI_Model::EvaluateOptions()
 {
-    /*
-    QString cooperativitiy = getOption("Cooperativity");
-
-    auto global_coop = [this](){
-        this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
-    };
     
-    auto local_coop = [this]()
-    {
-        for(int i = 0; i < this->SeriesCount(); ++i)
-            this->m_local_parameter->data(1,i) = 2*(this->m_local_parameter->data(2,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
-    };
-    
-    if(cooperativitiy == "noncooperative")
-    {
-        global_coop();
-    }else if(cooperativitiy == "additive")
-    {
-        local_coop();
-    }else if(cooperativitiy == "statistical")
-    {
-        local_coop();
-        global_coop();
-    }*/
     QString host = getOption("Host");
     if(host != "Host")
     {

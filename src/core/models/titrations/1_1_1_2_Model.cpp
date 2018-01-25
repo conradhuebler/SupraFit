@@ -36,9 +36,8 @@
 ItoI_ItoII_Model::ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     m_local_parameter = new DataTable(3, SeriesCount(), this);
-    InitialGuess();
+    m_global_parameter << 1 << 1;
     DeclareOptions();
-    AbstractTitrationModel::Calculate();
 }
 
 ItoI_ItoII_Model::~ItoI_ItoII_Model()
@@ -84,8 +83,9 @@ void ItoI_ItoII_Model::EvaluateOptions()
 
 void ItoI_ItoII_Model::InitialGuess()
 {   
-    m_global_parameter = QList<qreal>() << 4 << 2;
-    setOptParamater(m_global_parameter);
+    m_K11 = Guess_1_1();
+    m_K12 = m_K11 / 2;
+    m_global_parameter = QList<qreal>() << m_K11 << m_K12;
 
     qreal factor = 1;
     if(getOption("Method") == "UV/VIS")
@@ -97,14 +97,7 @@ void ItoI_ItoII_Model::InitialGuess()
     m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
     m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
 
-    QVector<qreal * > line1, line2;
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
-        line1 << &m_local_parameter->data(0, i); 
-        line2 << &m_local_parameter->data(2, i); 
-    }
-    m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    AbstractTitrationModel::Calculate();
+    Calculate();
 }
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)

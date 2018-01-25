@@ -33,7 +33,7 @@ class fl_ItoI_Model : public AbstractTitrationModel
     
 public:
     fl_ItoI_Model(DataClass *data);
-    fl_ItoI_Model(AbstractTitrationModel *model);
+//     fl_ItoI_Model(AbstractTitrationModel *model);
     ~fl_ItoI_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;}
@@ -63,6 +63,7 @@ private:
     
 protected:
     virtual void CalculateVariables() override;
+//     virtual void DeclareParameter() override ;
     
     QList<qreal > m_ItoI_signals;
     qreal m_K11;

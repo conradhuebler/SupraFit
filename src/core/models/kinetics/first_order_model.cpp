@@ -39,14 +39,14 @@
 Kinetic_First_Order_Model::Kinetic_First_Order_Model(DataClass *data) : AbstractModel(data)
 {
     m_local_parameter = new DataTable(1, SeriesCount(), this);
-    InitialGuess();
+//     InitialGuess();
 }
 
-Kinetic_First_Order_Model::Kinetic_First_Order_Model(AbstractModel* model) : AbstractModel(model)
-{
-    m_local_parameter = new DataTable(1, SeriesCount(), this);
-    InitialGuess();
-}
+// Kinetic_First_Order_Model::Kinetic_First_Order_Model(AbstractModel* model) : AbstractModel(model)
+// {
+//     m_local_parameter = new DataTable(1, SeriesCount(), this);
+//     InitialGuess();
+// }
 
 
 Kinetic_First_Order_Model::~Kinetic_First_Order_Model() 

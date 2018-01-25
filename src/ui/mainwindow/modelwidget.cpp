@@ -233,7 +233,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     settings.beginGroup("minimizer");
     m_optim_flags->setFlags(settings.value("flags", 11).toInt());
     settings.endGroup();
-    m_model->Calculate();
     LoadStatistics();
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }

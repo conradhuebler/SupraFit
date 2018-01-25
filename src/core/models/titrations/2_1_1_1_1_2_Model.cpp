@@ -42,9 +42,8 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrati
     for(int i = 0; i < DataPoints(); ++i)
         m_solvers << new ConcentrationSolver(this);
     m_local_parameter = new DataTable(4, SeriesCount(), this);
-    InitialGuess();
-    setOptParamater(m_global_parameter);
-    AbstractTitrationModel::Calculate();    
+    m_global_parameter << 1 << 1 << 1;
+    addGlobalParameter(m_global_parameter);
 }
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
@@ -58,6 +57,26 @@ void IItoI_ItoI_ItoII_Model::DeclareOptions()
     addOption("Method", method);
     //QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     //addOption("Cooperativity", cooperativity);
+}
+
+void IItoI_ItoI_ItoII_Model::InitialGuess()
+{
+    m_K11 = Guess_1_1();
+    m_global_parameter = QList<qreal>() << m_K11/4 << m_K11 << m_K11/4;
+
+    qreal factor = 1;
+    
+    if(getOption("Method") == "UV/VIS")
+    {
+        factor = 1/InitialHostConcentration(0);
+    }
+
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 3);
+    
+    Calculate();
 }
 
 void IItoI_ItoI_ItoII_Model::CalculateVariables()
@@ -93,7 +112,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         qreal host = concentration[0];
         qreal guest = concentration[1]; 
         
-        qreal complex_11 = K11*host*guest;
+        qreal complex_11 = K11*host*guest;addGlobalParameter(m_global_parameter);
         qreal complex_21 = K11*K21*host*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;       
         
@@ -128,34 +147,6 @@ QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone()
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
-}
-
-void IItoI_ItoI_ItoII_Model::InitialGuess()
-{
-    m_global_parameter = QList<qreal>() << 2 << 4 << 2;
-    setOptParamater(m_global_parameter);
-
-    qreal factor = 1;
-    if(getOption("Method") == "UV/VIS")
-    {
-        factor = 1/InitialHostConcentration(0);
-    }
-
-    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
-    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 3);
-    
-    QVector<qreal * > line1, line2;
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
-        line1 << &m_local_parameter->data(0, i); 
-        line2 << &m_local_parameter->data(3, i); 
-    }
-
-    m_lim_para = QVector<QVector<qreal * > >() << line1 << line2;
-    
-    AbstractTitrationModel::Calculate();
 }
 
 QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)

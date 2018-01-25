@@ -38,7 +38,7 @@
 itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     m_local_parameter = new DataTable(1, SeriesCount(), this);
-    InitialGuess();
+//     InitialGuess();
     DeclearSystemParameter();
 }
 
@@ -60,7 +60,6 @@ void itc_ItoI_Model::InitialGuess()
     m_K11 = 4;
     m_global_parameter = QList<qreal>() << m_K11;
     
-    
     m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
     
     QVector<qreal * > line1, line2;
@@ -68,7 +67,6 @@ void itc_ItoI_Model::InitialGuess()
         line1 << &m_local_parameter->data(0, i); 
 
     setOptParamater(m_global_parameter);
-    m_lim_para = QVector<QVector<qreal * > >()  << line1 << line2;
     
     AbstractTitrationModel::Calculate();
 }

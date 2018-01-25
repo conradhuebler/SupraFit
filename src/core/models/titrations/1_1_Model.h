@@ -60,6 +60,7 @@ private:
     
 protected:
     virtual void CalculateVariables() override;
+//     virtual void DeclareParameter() override ;
     
     QList<qreal > m_ItoI_signals;
     qreal m_K11;
