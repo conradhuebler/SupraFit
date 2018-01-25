@@ -50,7 +50,8 @@ namespace ToolSet{
     qreal scale(qreal value, qreal &pow);
     qreal scale(qreal value);
     
-    QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
+    void Normalise(const QVector<QPair<qreal, qreal > > &hist);
+    QVector<QPair<qreal, qreal > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
     SupraFit::ConfidenceBar Confidence(const QList<qreal > &list, qreal error);
     SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal> &list);
     QJsonObject Box2Object(const SupraFit::BoxWhisker &box);

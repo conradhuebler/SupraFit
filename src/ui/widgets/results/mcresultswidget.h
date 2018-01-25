@@ -27,6 +27,7 @@
 
 #include "resultswidget.h"
 
+class ChartWrapper;
 class MonteCarloStatistics;
 class AbstractModel;
 class QPushButton;
@@ -46,7 +47,7 @@ public:
         CrossValidation = 2
     };
     
-    MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, const QList<QJsonObject > &models = QList<QJsonObject>(), Type type = MonteCarlo);
+    MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>(), Type type = MonteCarlo);
     ~MCResultsWidget();
     
     void setModels(const QList<QJsonObject > &models) { m_models = models; }
@@ -75,6 +76,8 @@ private:
     bool has_histogram, has_contour, has_boxplot;
     Type m_type;
     
+    ChartWrapper *m_wrapper;
+
 private slots:
     void ExportResults();
     void GenerateConfidence(double error);

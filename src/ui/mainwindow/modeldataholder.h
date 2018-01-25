@@ -147,6 +147,7 @@ private:
     QPointer<MDHDockTitleBar> m_TitleBarWidget;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
+    QWeakPointer<ChartWrapper > m_wrapper;
     QVector<QWeakPointer< AbstractModel > > m_models;
     QPointer<StatisticDialog> m_statistic_dialog;
     QVector<QPointer<ModelWidget > > m_model_widgets; 

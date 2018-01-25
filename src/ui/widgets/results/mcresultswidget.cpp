@@ -21,6 +21,7 @@
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
+#include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/listchart.h"
@@ -46,10 +47,11 @@
 
 #include "mcresultswidget.h"
 
-MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, const QList<QJsonObject > &models, Type type) : m_data(data), m_type(type)
+MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models, Type type) : m_data(data), m_type(type)
 {
     m_model = model;
     m_models = models;
+    m_wrapper = wrapper;
     has_boxplot = false;
     has_histogram = false;
     has_contour = false;
@@ -118,8 +120,17 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         QString name = m_data[i]["name"].toString();
         qreal x_0 = m_data[i]["value"].toDouble();
         QVector<qreal> list = ToolSet::String2DoubleVec(m_data[i]["data"].toObject()["raw"].toString());
-        QVector<QPair<qreal, int> > histogram = ToolSet::List2Histogram(list,500);
-        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries(this);
+        QVector<QPair<qreal, qreal> > histogram = ToolSet::List2Histogram(list,500);
+        LineSeries *xy_series = new LineSeries;
+        if(m_data[i]["type"] == "Local Parameter")
+        {
+            if(!m_data[i].contains("index"))
+                continue;
+            int index =  m_data[i]["index"].toString().split("|")[1].toInt();
+            xy_series->setColor(m_wrapper->Series(index)->color());
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); });
+        }
         for(int j = 0; j < histogram.size(); ++j)
         {
             xy_series->append(QPointF(histogram[j].first, histogram[j].second));       
@@ -132,8 +143,9 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             view->formatAxis();
         formated = true;
         
-        QtCharts::QLineSeries *current_constant = new QtCharts::QLineSeries();
-        *current_constant << QPointF(x_0, 0) << QPointF(x_0, view->YMax());
+        LineSeries *current_constant = new LineSeries;
+        connect(xy_series, &QtCharts::QXYSeries::colorChanged, current_constant, &LineSeries::colorChanged);
+        *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
         current_constant->setName( name);
         view->addSeries(current_constant, i, xy_series->color(), name);
@@ -242,10 +254,7 @@ void MCResultsWidget::UpdateBoxes()
      for(int i = 0; i < m_data.size(); ++i)
     {
         QJsonObject data = m_data[i];
-
-        double max = m_histgram->YMax()/2;
         QJsonObject confidenceObject = data["confidence"].toObject();
-
         if(m_histgram)
         {
             QtCharts::QAreaSeries *area_series = m_area_series[i];
@@ -255,8 +264,8 @@ void MCResultsWidget::UpdateBoxes()
             series1->clear();
             series2->clear();
             
-            *series1 << QPointF(confidenceObject["lower"].toVariant().toDouble(), 0) << QPointF(confidenceObject["lower"].toVariant().toDouble(), max);
-            *series2 << QPointF(confidenceObject["upper"].toVariant().toDouble(), 0) << QPointF(confidenceObject["upper"].toVariant().toDouble(), max);
+            *series1 << QPointF(confidenceObject["lower"].toVariant().toDouble(), 0) << QPointF(confidenceObject["lower"].toVariant().toDouble(), 0.66);
+            *series2 << QPointF(confidenceObject["upper"].toVariant().toDouble(), 0) << QPointF(confidenceObject["upper"].toVariant().toDouble(), 0.66);
             
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
@@ -312,3 +321,5 @@ void MCResultsWidget::GenerateConfidence(double error)
     UpdateBoxes();
     WriteConfidence(m_data);
 }
+
+#include "mcresultswidget.moc"

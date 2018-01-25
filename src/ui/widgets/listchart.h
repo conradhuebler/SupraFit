@@ -79,13 +79,13 @@ public:
     inline qreal YMax() const { return m_chartview->YMax(); }
     
     void addSeries(QtCharts::QAbstractSeries *series, int index, const QColor &color, const QString &name = QString());
-    void setColor(int index, const QColor &color);
     void Clear();
     QtCharts::QLineSeries *addLinearSeries(qreal m, qreal n, qreal min, qreal max, int index);
     QtCharts::QChart* Chart() { return m_chart; }
     
 public slots:
     inline void formatAxis() { m_chartview->formatAxis(); }
+    void setColor(int index, const QColor &color);
     
 private:
     QListWidget *m_list, *m_names_list;

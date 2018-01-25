@@ -565,6 +565,9 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
 
 void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
 {
+#ifdef _DEBUG
+            quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+#endif
     if(topjson[Name()].isNull())
     {
         qWarning() << "file doesn't contain any " + Name();
@@ -713,8 +716,16 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
             ModelTable()->setRow(concentrationsVector, row);
         }
     }
-    
+#ifdef _DEBUG
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    qDebug() << "model importet within" << t1-t0 << " msecs";
+#endif
     Calculate();
+    
+#ifdef _DEBUG
+    quint64 t2 = QDateTime::currentMSecsSinceEpoch();
+    qDebug() << "calculation took " << t2-t1 << " msecs";
+#endif
 }
 
 void AbstractModel::setOption(const QString& name, const QString& value)

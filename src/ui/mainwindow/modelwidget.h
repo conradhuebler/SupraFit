@@ -140,7 +140,7 @@ private:
     QString m_logging;
     QList<QJsonObject> m_local_fits;
     QPointer<QCheckBox> m_toggled_box;
-    
+
 private slots:
     void Repaint();
     void CollectActiveSignals();

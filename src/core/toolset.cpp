@@ -167,7 +167,17 @@ namespace ToolSet{
         return qreal(integer)*pot;
     }
     
-    QVector<QPair<qreal, int > > List2Histogram(const QVector<qreal> &vector, int bins, qreal min, qreal max)
+    void  Normalise(QVector<QPair<qreal, qreal> > &hist)
+    {
+        qreal max = 0;
+        for(int i = 0; i < hist.size(); ++i)
+            max = qMax(max, double(hist[i].second));
+        
+        for(int i = 0; i < hist.size(); ++i)
+            hist[i].second = hist[i].second/max;
+    }
+    
+    QVector<QPair<qreal, qreal > > List2Histogram(const QVector<qreal> &vector, int bins, qreal min, qreal max)
     {
         if(min == max)
         {
@@ -189,7 +199,7 @@ namespace ToolSet{
                 bins = 10;
         }
         
-        QVector<QPair<qreal, int > > histogram;
+        QVector<QPair<qreal, qreal > > histogram;
         double h=(max-min)/bins;
         QVector<double > x(bins,0);
         QVector<int> counter(bins, 0);
@@ -209,6 +219,7 @@ namespace ToolSet{
                 counter[jStar]++;
                 histogram[jStar].second++;
         }
+        Normalise(histogram);
         return histogram;
     }
 

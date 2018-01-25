@@ -472,7 +472,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     
     delete monte_carlo;
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, models);
+    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, m_charts.signal_wrapper, models);
     mcsresult->setModels(models);
     
     QString buff = m_statistic_widget->Statistic();
@@ -536,7 +536,7 @@ void ModelWidget::CVAnalyse()
     
     delete analyse;
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, models, MCResultsWidget::CrossValidation);
+    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, m_charts.signal_wrapper, models, MCResultsWidget::CrossValidation);
     mcsresult->setModels(models);
 
     m_statistic_result->setWidget(mcsresult, "Cross Validation for " + m_model->Name());
@@ -664,7 +664,7 @@ void ModelWidget::LoadStatistics()
     
     if(result.size())
     {
-        MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model);
+        MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, m_charts.signal_wrapper);
         if(mcsresult->hasData())
             m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
         else

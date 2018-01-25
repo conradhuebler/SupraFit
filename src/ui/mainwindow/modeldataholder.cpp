@@ -327,6 +327,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
     m_data = data;
     m_TitleBarWidget->setEnabled(true);
     m_datawidget->setData(m_data, wrapper);
+    m_wrapper = wrapper;
     m_modelsWidget->setDataTab(m_datawidget); 
     m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
 }
@@ -440,7 +441,9 @@ void ModelDataHolder::ParseScriptedModels()
 
 void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 {
-    
+#ifdef _DEBUG
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+#endif
     QSharedPointer<AbstractModel > t;
     
     /*
@@ -475,6 +478,10 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
     }
     t->ImportModel(object);
     ActiveModel(t, object);
+#ifdef _DEBUG
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    qDebug() << "model loaded within" << t1-t0 << " msecs";
+#endif
 }
 
 void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject &object)
@@ -613,7 +620,8 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
 {
     Waiter wait;
     QStringList keys = object.keys();
-    
+    setEnabled(false);
+    m_wrapper.data()->stopAnimiation();
     /*
      * If the json contains only one model, then we have probely only "data" and "model" as keys
      * and we can load them directly
@@ -641,6 +649,8 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
 //             QApplication::processEvents();
         }
     }
+    setEnabled(true);
+    m_wrapper.data()->restartAnimation();
 }
 
 void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
