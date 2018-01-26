@@ -56,7 +56,6 @@ private:
     
     QVector<QPointer<MonteCarloThread> > m_threads;
     AbstractConfig m_config;
-    QPointer<DataTable > m_loo_table;
     QJsonObject m_model_data;
     QJsonObject m_controller;
 signals:

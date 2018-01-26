@@ -148,6 +148,7 @@ public:
     QJsonObject getWGStatisticResult() const { return m_wg_statistics; }
     QJsonObject getMoCoStatisticResult() const { return m_moco_statistics; }
     QJsonObject getReduction() const { return m_reduction; }
+    QJsonObject getFastConfidence() const { return m_fast_confidence; }
     
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
         

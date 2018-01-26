@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,57 +81,94 @@ void StatisticWidget::Update()
     m_short = overview;
     overview.clear();
     QString moco;
-    moco += "<p><b>Model Comparison Results:</b></p>\n";
-    moco+= "<table>\n";
-    /*
-    for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
+    
+   
+    QJsonObject result = m_model->getFastConfidence();  
+    if(!m_model->getFastConfidence().isEmpty() && m_model->getMoCoStatisticResult().isEmpty())
     {
-        QJsonObject result = m_model->getMoCoStatisticResult(i);   
-        QJsonObject confidence = result["confidence"].toObject();
-        if(result["method"].toString() == "model comparison" && !i)
-            moco += "<tr><td>Approximated area of the confidence ellipse: <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n";
-        else
-            if(m_model->GlobalParameterSize() > 1 && !i)
-                moco += "*** Obtained from Automatic Confidence Calculation ***\n";
-        if(!result["controller"].toObject()["fisher"].toBool() && !i)
+        moco += "<p><b>Fast Confidence Results:</b></p>\n";
+        moco+= "<table>\n";
+    
+        if(!result["controller"].toObject()["fisher"].toBool())
             moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
-        moco += Print::TextFromConfidence(result,m_model.data());
- 
-    }
-    moco += "</table>\n";
-    if(m_model->getMoCoStatisticResult())
+
+        for(int i = 0; i < result.count() - 1; ++i)
+        {
+            QJsonObject data = result.value(QString::number(i)).toObject();
+            if(data.isEmpty())
+                continue;
+            moco += Print::TextFromConfidence(data,m_model.data());
+        }
+        moco += "</table>\n";
         overview += moco;
-    
-    QString cv;
-    cv += "<p><b>Weakened Grid Search:</b></p>\n";  
-    cv += "<table>\n"; 
-    for(int i = 0; i < m_model->getWGStatisticResult(); ++i)
-    {
-        QJsonObject result = m_model->getWGStatisticResult(i);   
-        QJsonObject confidence = result["confidence"].toObject();
-        if(!result["controller"].toObject()["fisher"].toBool() && i == 0)
-            cv += "<tr><th colspan=2><font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font></th></tr>\n";
-        cv += Print::TextFromConfidence(result, m_model.data());
     }
-    cv += "</table>\n"; 
-    if(m_model->getWGStatisticResult())
-        overview += cv;
+    moco = QString();
     
+    if(!m_model->getMoCoStatisticResult().isEmpty())
+    {
+        moco += "<p><b>Model Comparison Results:</b></p>\n";
+        moco+= "<table>\n";
+    
+        result = m_model->getMoCoStatisticResult();  
+        moco += "<tr><td>Approximated area of the confidence ellipse: <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n";
+            
+        if(!result["controller"].toObject()["fisher"].toBool())
+            moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
+        
+        for(int i = 0; i < result.count() - 1; ++i)
+        {
+            QJsonObject data = result.value(QString::number(i)).toObject();
+            if(data.isEmpty())
+                continue;
+            moco += Print::TextFromConfidence(data,m_model.data());
+        }
+        moco += "</table>\n";
+        overview += moco;
+    }        
+    
+    if(!m_model->getWGStatisticResult().isEmpty())
+    {
+        QString cv;
+        
+        cv += "<p><b>Weakened Grid Search:</b></p>\n";  
+        cv += "<table>\n"; 
+        
+        result = m_model->getWGStatisticResult();   
+        if(!result["controller"].toObject()["fisher"].toBool())
+            cv += "<tr><th colspan=2><font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font></th></tr>\n";
+
+        for(int i = 0; i < result.count() - 1; ++i)
+        {
+            QJsonObject data = result.value(QString::number(i)).toObject();
+            if(data.isEmpty())
+                continue;
+            cv += Print::TextFromConfidence(data, m_model.data());
+        }
+        cv += "</table>\n"; 
+        overview += cv;
+    }
     
     QString mc;
-    mc += "<p><b>Monte Carlo Simulation Results:</b></p>\n";
-    mc += "<table>\n";
-    for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
-    {
-        QJsonObject result = m_model->getMCStatisticResult(i);   
-        QJsonObject confidence = result["confidence"].toObject();
-        
-        mc += Print::TextFromConfidence(result, m_model.data());
-    }
-    mc += "</table>\n";
     if(m_model->getMCStatisticResult())
+    {
+        mc += "<p><b>Monte Carlo Simulation Results:</b></p>\n";
+        mc += "<table>\n";
+        for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
+        {
+            QJsonObject result = m_model->getMCStatisticResult(i);  
+
+            for(int i = 0; i < result.count() - 1; ++i)
+            {
+                QJsonObject data = result.value(QString::number(i)).toObject();
+                if(data.isEmpty())
+                    continue;
+                mc += Print::TextFromConfidence(data, m_model.data());
+            }
+        }
+        
+        mc += "</table>\n";
         overview += mc;   
-    */
+    }
     m_overview->setText(m_short + overview);
     m_statistics = overview;
 }

@@ -504,11 +504,7 @@ void ModelWidget::FastConfidence()
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);    
     statistic->FastConfidence();
-//     QList<QJsonObject > constant_results = statistic->Results();
-//     for(int i = 0; i < constant_results.size(); ++i)
-//     {
-//         m_model->UpdateStatistic(m_data);
-//     }
+    m_model->UpdateStatistic(statistic->Result());
     delete statistic;
 }
 
@@ -529,8 +525,6 @@ void ModelWidget::CVAnalyse()
     QJsonObject controller;
     controller["type"] = m_statistic_dialog->CrossValidationType();
     ToolSet::Parameter2Statistic(result, m_model.data());
-    
-    
     
     MCResultsWidget *mcsresult = new MCResultsWidget(analyse->Result(), m_model, m_charts.signal_wrapper, models);
     mcsresult->setModels(models);
@@ -649,6 +643,7 @@ void ModelWidget::WGStatistic(WGSConfig config)
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
 
+    m_model->UpdateStatistic(statistic->Result());
     WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
     m_actions->EnableCharts(true);
@@ -685,7 +680,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     bool result = statistic->Confidence();
-    QList<QJsonObject> data = statistic->Results();
+    m_model->UpdateStatistic(statistic->Result());
     if(result)
     {
         WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);

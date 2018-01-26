@@ -35,8 +35,7 @@ ReductionAnalyse::ReductionAnalyse(OptimizerConfig config, OptimizationType type
 
 ReductionAnalyse::~ReductionAnalyse()
 {
-    if(m_loo_table)
-        delete m_loo_table;
+
 }
 
 
@@ -66,7 +65,6 @@ void ReductionAnalyse::CrossValidation(CVType type)
     switch(type){
         case CVType::LeaveOneOut:
             emit MaximumSteps(m_model->DataPoints());
-            m_loo_table = new DataTable(m_model->DependentModel());
             for(int i = m_model->DataPoints() - 1; i >= 0; --i)
             {
                 QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
@@ -111,7 +109,9 @@ void ReductionAnalyse::CrossValidation(CVType type)
             delete m_threads[i];
         }
     }
-    m_model->DependentModel()->EnableAllRows();
+//     m_model->DependentModel()->EnableAllRows();
+    m_results = ToolSet::Model2Parameter(m_models);
+    ToolSet::Parameter2Statistic(m_results, m_model.data());
     emit AnalyseFinished();
 }
 

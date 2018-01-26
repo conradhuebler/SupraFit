@@ -441,6 +441,7 @@ void AbstractModel::UpdateStatistic(const QJsonObject& object)
                 m_mc_statistics << object;
         break;
     }
+    emit StatisticChanged();
 }
 
 

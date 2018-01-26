@@ -47,18 +47,6 @@
 
 #include "mcresultswidget.h"
 
-// MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models, Type type) : m_data(data), m_type(type)
-// {
-//     m_model = model;
-//     m_models = models;
-//     m_wrapper = wrapper;
-//     has_boxplot = false;
-//     has_histogram = false;
-//     has_contour = false;
-//     setUi();
-//     GenerateConfidence(95);
-// }
-
 MCResultsWidget::MCResultsWidget(const QJsonObject &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models) 
 {
     m_data = data;
@@ -276,12 +264,11 @@ void MCResultsWidget::WriteConfidence(const QJsonObject  &constant_results)
         QJsonObject data = m_data[QString::number(i)].toObject();
         if(data.isEmpty())
             continue;
-        if(m_type == MonteCarlo)
-            m_model->UpdateStatistic(m_data);
 
         QJsonObject confidenceObject = data["confidence"].toObject();
         confidence  += Print::TextFromConfidence(data, m_model.data()) + "\n";
     }
+    m_model->UpdateStatistic(m_data);
     m_confidence_label->setText(confidence);
     
 }

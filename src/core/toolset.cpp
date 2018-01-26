@@ -515,7 +515,7 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper"].toDouble();
     qreal lower = confidence["lower"].toDouble();
-    qreal conf = result["error"].toDouble();
+    qreal conf = confidence["error"].toDouble();
     text = "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr>\n";
     text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr>\n"; 
     if(result.contains("boxplot"))

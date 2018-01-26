@@ -58,25 +58,26 @@ QWidget * WGSResultsWidget::ChartWidget()
     QWidget *widget = new QWidget;
     QGridLayout *layout = new QGridLayout;
 
-     if(m_data["controller"].toObject()["method"].toInt() == SupraFit::Statistic::WeakenedGridSearch)
+    if(m_data["controller"].toObject()["method"].toInt() == SupraFit::Statistic::WeakenedGridSearch)
          layout->addWidget(WGPlot());
      else
         layout->addWidget(MoCoPlot());
     
     widget->setLayout(layout);
+    WriteConfidence(m_data);
     return widget;
 }
 
 void WGSResultsWidget::WriteConfidence(const QJsonObject  &result)
 {
-    /*
+    
     QString text;
-    QJsonObject controller = constant_results.first()["controller"].toObject();
-    if(constant_results.first()["method"].toString() == "model comparison")
+    QJsonObject controller = result["controller"].toObject();
+    if(controller["method"].toInt() == SupraFit::Statistic::ModelComparison)
     {
         text += "<h3>Model Comparison</h3";
         text += "<p><b>Monte Carlo Steps </b>: " + QString::number(controller["steps"].toInt()) + "</p>";
-        text += "<p><b>Area of the ellipse</b> is " + QString::number(constant_results.first()["moco_area"].toDouble()) + "</p>";
+        text += "<p><b>Area of the ellipse</b> is " + QString::number(controller["moco_area"].toDouble()) + "</p>";
     }
     else
     {
@@ -93,16 +94,15 @@ void WGSResultsWidget::WriteConfidence(const QJsonObject  &result)
     text += "</p>";
     text += "The maximal error is " + QString::number(controller["maxerror"].toDouble());
         
-    for(int i = 0; i < constant_results.size(); ++i)
+    for(int i = 0; i < m_data.count() - 1; ++i)
     {
-        m_model->UpdateStatistic(result);
-        if(i < m_model->GlobalParameterSize())
-        {
-            QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
-            text  += Print::TextFromConfidence(constant_results[i], m_model.data()) + "\n";
-        }
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        qDebug() << data;
+        if(data.isEmpty())
+            continue;
+        text  += Print::TextFromConfidence(data, m_model.data()) + "\n";
     }
-    m_confidence_label->setText(text);*/
+    m_confidence_label->setText(text);
 }
 
 ChartView * WGSResultsWidget::WGPlot()
@@ -114,7 +114,7 @@ ChartView * WGSResultsWidget::WGPlot()
     ChartView *view = new ChartView(chart);
     view->setXAxis("constant");
     view->setYAxis("Sum of Squares");
-    WriteConfidence(m_data);
+
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
         QJsonObject data = m_data[QString::number(i)].toObject();
@@ -141,17 +141,18 @@ ChartView * WGSResultsWidget::WGPlot()
 
 ChartView *  WGSResultsWidget::MoCoPlot()
 {
-    WriteConfidence(m_data);
-    
+
+    QJsonObject controller = m_data["controller"].toObject();
     QtCharts::QChart *chart = new QtCharts::QChart;
     if(qApp->instance()->property("chartanimation").toBool())
         chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     chart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     ChartView *view = new ChartView(chart);
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
-    QList<qreal > x = ToolSet::String2DoubleList( m_data["data"].toObject()["global_0"].toString() );
-    QList<qreal > y = ToolSet::String2DoubleList( m_data["data"].toObject()["global_1"].toString() );
     
+    QList<qreal > x = ToolSet::String2DoubleList( controller["data"].toObject()["global_0"].toString() );
+    QList<qreal > y = ToolSet::String2DoubleList( controller["data"].toObject()["global_1"].toString() );
+
     for(int j = 0; j < x.size(); ++j)
             xy_series->append(QPointF(x[j], y[j]));
     
@@ -164,7 +165,7 @@ ChartView *  WGSResultsWidget::MoCoPlot()
     
     QList<QList<QPointF > >series;
     
-    QJsonObject box = m_data["box"].toObject();
+    QJsonObject box = controller["box"].toObject();
         series << ToolSet::String2Points( box["0"].toString() );
         series << ToolSet::String2Points( box["1"].toString() );
     int i = 0;

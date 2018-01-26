@@ -88,6 +88,13 @@ bool ModelComparison::FastConfidence()
         m_series[i].clear();
     m_series.clear();
     m_results.clear();
+    
+    
+    m_controller["method"] = SupraFit::Statistic::FastConfidence;
+    m_controller["fisher"] = m_config.fisher_statistic;
+    m_controller["maxerror"] = m_config.maxerror;
+    m_controller["f-value"] = m_config.f_value;
+    
     QJsonObject optimized = m_model.data()->ExportModel();
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     for(int i = 0; i < parameter.size(); ++i)
@@ -98,19 +105,15 @@ bool ModelComparison::FastConfidence()
         double lower = SingleLimit(i, -1);
         
         QJsonObject result;
-        QJsonObject controller = Controller();
-        controller["method"] = SupraFit::Statistic::FastConfidence;
-        result["controller"] = controller;
         result["name"] = m_model.data()->GlobalParameterName(i);
         result["value"] = parameter[i];
-        result["error"] = m_config.confidence;
         result["type"] = "Global Parameter";
         QJsonObject confidence;
         confidence["upper"] = upper;
         m_model.data()->ImportModel(optimized);
         confidence["lower"] = lower;
+        confidence["error"] = m_config.confidence;
         result["confidence"] = confidence;
-        
         m_results << result;
     }
     return true;
@@ -250,7 +253,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     QVector<QPair<qreal, qreal> > confidence(m_model->GlobalParameterSize(), QPair<qreal, qreal>(0,0));
     int inner = 0;
     int all = 0;
-    QVector<QList<qreal > >data_vec(m_model->GlobalParameterSize());
+    m_data_vec = QVector<QList<qreal > >(m_model->GlobalParameterSize());
     for(const QJsonObject &object : qAsConst(results))
     {
         all++;
@@ -259,8 +262,8 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
             inner++;
             m_models << object;
             QJsonObject constants = object["data"].toObject()["globalParameter"].toObject();
-            data_vec[0] << constants[QString::number(0)].toString().toDouble();
-            data_vec[1] << constants[QString::number(1)].toString().toDouble();
+            m_data_vec[0] << constants[QString::number(0)].toString().toDouble();
+            m_data_vec[1] << constants[QString::number(1)].toString().toDouble();
             for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
             {
                 qreal min = confidence[i].first;
@@ -291,31 +294,25 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["confidence"] = conf;
         result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->GlobalParameterName(i);
-        if(i == 0)
-        {
-            result["type"] = "Global Parameter";
-            result["method"] = "model comparison";
-            result["moco_area"] = m_ellipsoid_area;
-            
-            QJsonObject data;
-            data["global_0"] = ToolSet::DoubleList2String(data_vec[0]);
-            data["global_1"] = ToolSet::DoubleList2String(data_vec[1]);
-            result["data"] = data;
-            result["box"] = m_box;
-        }
+        
         m_results << result;
     }
+
+    m_controller["runtype"] = m_config.runtype;
+    m_controller["steps"] = m_config.mc_steps;
+    m_controller["fisher"] = m_config.fisher_statistic;
+    m_controller["maxerror"] = m_config.maxerror;
+    m_controller["f-value"] = m_config.f_value;
+    m_controller["method"] = SupraFit::Statistic::ModelComparison;
+    m_controller["moco_area"] = m_ellipsoid_area;
+    QJsonObject data;
+        data["global_0"] = ToolSet::DoubleList2String(m_data_vec[0]);
+        data["global_1"] = ToolSet::DoubleList2String(m_data_vec[1]);
+    m_controller["data"] = data;
+    m_controller["box"] = m_box;
 }
 
 QJsonObject ModelComparison::Controller() const
 {
-    QJsonObject controller;
-    controller["runtype"] = m_config.runtype;
-    controller["steps"] = m_config.mc_steps;
-    controller["fisher"] = m_config.fisher_statistic;
-    controller["maxerror"] = m_config.maxerror;
-    controller["f-value"] = m_config.f_value;
-    controller["method"] = SupraFit::Statistic::ModelComparison;
-    
-    return controller;
+    return m_controller;
 }

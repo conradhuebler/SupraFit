@@ -48,8 +48,7 @@ public:
         MonteCarlo = 1,
         CrossValidation = 2
     };
-    
-//     MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>(), Type type = MonteCarlo);
+
     MCResultsWidget(const QJsonObject &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>());
     ~MCResultsWidget();
     
