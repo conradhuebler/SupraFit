@@ -36,6 +36,8 @@ class QLabel;
 class ChartView;
 class ListChart;
 
+class QJsonObject;
+
 class MCResultsWidget : public ResultsWidget
 {
     Q_OBJECT
@@ -47,7 +49,8 @@ public:
         CrossValidation = 2
     };
     
-    MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>(), Type type = MonteCarlo);
+//     MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>(), Type type = MonteCarlo);
+    MCResultsWidget(const QJsonObject &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>());
     ~MCResultsWidget();
     
     void setModels(const QList<QJsonObject > &models) { m_models = models; }
@@ -64,7 +67,7 @@ private:
     QVector<QtCharts::QAreaSeries * > m_area_series;
     
     virtual QWidget * ChartWidget() override;
-    void WriteConfidence(const QList<QJsonObject > &constant_results) override;
+    void WriteConfidence(const QJsonObject  &constant_results);
     void UpdateBoxes();
     void setAreaColor(int index, const QColor &color);
 
@@ -73,7 +76,7 @@ private:
     QPointer<ChartView > MakeContour();
     QPointer<ListChart > MakeBoxPlot();
     QList<QJsonObject> m_box_object;
-    QList<QJsonObject > m_data, m_models;
+    QList<QJsonObject > m_models;
     bool has_histogram, has_contour, has_boxplot;
     Type m_type;
     

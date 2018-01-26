@@ -98,10 +98,8 @@ bool ModelComparison::FastConfidence()
         double lower = SingleLimit(i, -1);
         
         QJsonObject result;
-        QJsonObject controller;
-        controller["runtype"] = m_config.runtype;
-        controller["maxerror"] = m_config.maxerror;
-        controller["fisher"] = m_config.fisher_statistic;
+        QJsonObject controller = Controller();
+        controller["method"] = SupraFit::Statistic::FastConfidence;
         result["controller"] = controller;
         result["name"] = m_model.data()->GlobalParameterName(i);
         result["value"] = parameter[i];
@@ -284,28 +282,18 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     
     for(int i = 0; i < confidence.size(); ++i)
     { 
-        QJsonObject result;
-        
         QJsonObject conf;
         conf["lower"] = confidence[i].first;
         conf["upper"] = confidence[i].second;
+        conf["error"] = m_config.confidence;
+        
+        QJsonObject result;
         result["confidence"] = conf;
         result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->GlobalParameterName(i);
-        result["error"] = m_config.confidence;
-        result["method"] = "model comparison";
         if(i == 0)
         {
-            QJsonObject controller;
-            controller["runtype"] = m_config.runtype;
-            controller["steps"] = m_config.mc_steps;
-            controller["fisher"] = m_config.fisher_statistic;
-            controller["maxerror"] = m_config.maxerror;
-            controller["f-value"] = m_config.f_value;
-            result["controller"] = controller;
-
             result["type"] = "Global Parameter";
-            result["error"] = m_config.confidence;
             result["method"] = "model comparison";
             result["moco_area"] = m_ellipsoid_area;
             
@@ -317,4 +305,17 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         }
         m_results << result;
     }
+}
+
+QJsonObject ModelComparison::Controller() const
+{
+    QJsonObject controller;
+    controller["runtype"] = m_config.runtype;
+    controller["steps"] = m_config.mc_steps;
+    controller["fisher"] = m_config.fisher_statistic;
+    controller["maxerror"] = m_config.maxerror;
+    controller["f-value"] = m_config.f_value;
+    controller["method"] = SupraFit::Statistic::ModelComparison;
+    
+    return controller;
 }

@@ -81,7 +81,7 @@ public slots:
 private:
     QVector<QPointer <MonteCarloThread > > GenerateData();
     void Collect(const QVector<QPointer <MonteCarloThread > > &threads);
-    
+    virtual QJsonObject Controller() const override;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;
     std::uniform_int_distribution<int> Uni;

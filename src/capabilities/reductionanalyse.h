@@ -52,12 +52,13 @@ public:
 private:
     void addThread(QPointer<MonteCarloThread> thread);
     bool Pending() const;
+    inline virtual QJsonObject Controller() const {return m_controller; }
     
     QVector<QPointer<MonteCarloThread> > m_threads;
     AbstractConfig m_config;
     QPointer<DataTable > m_loo_table;
     QJsonObject m_model_data;
-    
+    QJsonObject m_controller;
 signals:
     void MaximumSteps(int steps);
 };

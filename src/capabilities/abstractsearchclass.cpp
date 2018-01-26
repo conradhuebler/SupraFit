@@ -58,3 +58,14 @@ void AbstractSearchClass::ExportResults(const QString& filename)
     }
     JsonHandler::WriteJsonFile(toplevel, filename);
 }
+
+QJsonObject AbstractSearchClass::Result() const
+{
+    QJsonObject result;
+    for(int i = 0; i < m_results.size(); ++i)
+        result[QString::number(i)] = m_results[i];
+    
+    result["controller"] = Controller();
+    return result;
+}
+

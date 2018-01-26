@@ -83,6 +83,7 @@ void StatisticWidget::Update()
     QString moco;
     moco += "<p><b>Model Comparison Results:</b></p>\n";
     moco+= "<table>\n";
+    /*
     for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
     {
         QJsonObject result = m_model->getMoCoStatisticResult(i);   
@@ -130,6 +131,7 @@ void StatisticWidget::Update()
     mc += "</table>\n";
     if(m_model->getMCStatisticResult())
         overview += mc;   
+    */
     m_overview->setText(m_short + overview);
     m_statistics = overview;
 }

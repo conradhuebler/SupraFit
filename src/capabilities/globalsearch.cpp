@@ -255,4 +255,15 @@ void GlobalSearch::ExportResults(const QString& filename, double threshold, bool
     JsonHandler::WriteJsonFile(toplevel, filename);
 }
 
+QJsonObject GlobalSearch::Controller() const
+{
+#warning adopt and complete
+    
+    QJsonObject controller;
+    controller["runtype"] = m_config.runtype;
+    controller["method"] = "Global Search";
+    
+    return controller;
+}
+
 #include "globalsearch.moc"

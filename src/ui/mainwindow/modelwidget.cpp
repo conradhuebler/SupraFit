@@ -466,10 +466,9 @@ void ModelWidget::MCStatistic(MCConfig config)
     
     QList<QJsonObject> result = monte_carlo->Results();
     QList<QJsonObject> models = monte_carlo->Models(); 
-    
+
+    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo->Result(), m_model, m_charts.signal_wrapper, models); 
     delete monte_carlo;
-    
-    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, m_charts.signal_wrapper, models);
     mcsresult->setModels(models);
     
     QString buff = m_statistic_widget->Statistic();
@@ -505,11 +504,11 @@ void ModelWidget::FastConfidence()
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);    
     statistic->FastConfidence();
-    QList<QJsonObject > constant_results = statistic->Results();
-    for(int i = 0; i < constant_results.size(); ++i)
-    {
-        m_model->setMoCoStatistic(constant_results[i], i);
-    }
+//     QList<QJsonObject > constant_results = statistic->Results();
+//     for(int i = 0; i < constant_results.size(); ++i)
+//     {
+//         m_model->UpdateStatistic(m_data);
+//     }
     delete statistic;
 }
 
@@ -528,18 +527,21 @@ void ModelWidget::CVAnalyse()
     QList<QJsonObject> models = analyse->Models(); 
     QList<QJsonObject> result = ToolSet::Model2Parameter(models);
     QJsonObject controller;
-    controller["type "] = m_statistic_dialog->CrossValidationType();
-    ToolSet::Parameter2Statistic(result, m_model.data(), controller);
+    controller["type"] = m_statistic_dialog->CrossValidationType();
+    ToolSet::Parameter2Statistic(result, m_model.data());
     
-    delete analyse;
     
-    MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, m_charts.signal_wrapper, models, MCResultsWidget::CrossValidation);
+    
+    MCResultsWidget *mcsresult = new MCResultsWidget(analyse->Result(), m_model, m_charts.signal_wrapper, models);
     mcsresult->setModels(models);
 
     m_statistic_result->setWidget(mcsresult, "Cross Validation for " + m_model->Name());
+    
     m_actions->EnableCharts(true);
     m_statistic_result->show();  
     m_statistic_dialog->HideWidget();
+    
+    delete analyse;
 }
 
 void ModelWidget::DoReductionAnalyse()
@@ -646,13 +648,14 @@ void ModelWidget::WGStatistic(WGSConfig config)
     {
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
-    QList<QJsonObject> data = statistic->Results();
-    WGSResultsWidget *resultwidget = new WGSResultsWidget(data, m_model, false, m_statistic_result);
+
+    WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
     m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
     m_actions->EnableCharts(true);
     m_statistic_result->show();  
     emit IncrementProgress(1);
     m_statistic_dialog->HideWidget();
+    delete statistic;
 }
 
 void ModelWidget::MoCoStatistic()
@@ -685,13 +688,14 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     QList<QJsonObject> data = statistic->Results();
     if(result)
     {
-        WGSResultsWidget *resultwidget = new WGSResultsWidget(data, m_model, true, m_statistic_result);
+        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
         m_actions->EnableCharts(true);
         m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
         m_statistic_result->show();
     }else
         QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
     m_statistic_dialog->HideWidget();
+    delete statistic;
 }
 
 void ModelWidget::LoadStatistics()
@@ -699,55 +703,49 @@ void ModelWidget::LoadStatistics()
     /* We load the MC statistcs from model
      */
     
-    QList<QJsonObject> result;
-
     for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
     {
-         result << m_model->getMCStatisticResult(i);
-         QApplication::processEvents();
-    }
-    
-    if(result.size())
-    {
-        MCResultsWidget *mcsresult = new MCResultsWidget(result, m_model, m_charts.signal_wrapper);
-        if(mcsresult->hasData())
-            m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
-        else
-            delete mcsresult;
-    }
-    result.clear();
-    
-    for(int i = 0; i < m_model->getWGStatisticResult(); ++i)
-    {
-         result << m_model->getWGStatisticResult(i);
-         QApplication::processEvents();
-    }
-    
-    if(result.size())
-    {
-        WGSResultsWidget *mcsresult = new WGSResultsWidget(result, m_model, false, m_statistic_result);
-        if(mcsresult->hasData())
-            m_statistic_result->setWidget(mcsresult, "Weakend Grid Search " + m_model->Name());
-        else
-            delete mcsresult;
-    }
-    result.clear();
-    
-    for(int i = 0; i < m_model->getMoCoStatisticResult(); ++i)
-    {
-         if(m_model->getMoCoStatisticResult(i)["method"] == "model comparison")
-            result << m_model->getMoCoStatisticResult(i);
-         QApplication::processEvents();
+        if(!m_model->getMCStatisticResult(i).isEmpty())
+        {
+            MCResultsWidget *mcsresult = new MCResultsWidget(m_model->getMCStatisticResult(i), m_model, m_charts.signal_wrapper);
+            if(mcsresult->hasData())
+                m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
+            else
+                delete mcsresult;
+        }
+        QApplication::processEvents();
     }
 
-    if(result.size())
+    QJsonObject statistic = m_model->getWGStatisticResult();
+    if(!statistic.isEmpty())
     {
-        WGSResultsWidget *mcsresult = new WGSResultsWidget(result, m_model, true, m_statistic_result);
-        if(mcsresult->hasData())
-            m_statistic_result->setWidget(mcsresult, "Model Comparison " + m_model->Name());
+        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
+        if(resultwidget->hasData())
+            m_statistic_result->setWidget(resultwidget, "Weakend Grid Search " + m_model->Name());
         else
-            delete mcsresult;
+            delete resultwidget;
     }
+
+    statistic = m_model->getMoCoStatisticResult();
+    if(!statistic.isEmpty())
+    {
+        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
+        if(resultwidget->hasData())
+            m_statistic_result->setWidget(resultwidget, "Weakend Grid Search " + m_model->Name());
+        else
+            delete resultwidget;
+    }
+    
+    statistic = m_model->getReduction();
+    if(!statistic.isEmpty())
+    {
+        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
+        if(resultwidget->hasData())
+            m_statistic_result->setWidget(resultwidget, "Weakend Grid Search " + m_model->Name());
+        else
+            delete resultwidget;
+    }
+    
     if(m_statistic_result->Count())
         m_actions->EnableCharts(true);
 }

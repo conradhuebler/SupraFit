@@ -97,15 +97,22 @@ void MonteCarloStatistics::Evaluate()
     
     Collect(threads);
     m_results = ToolSet::Model2Parameter(m_models);
+
+    ToolSet::Parameter2Statistic(m_results, m_model.data());
+}
+
+QJsonObject MonteCarloStatistics::Controller() const
+{
     QJsonObject controller;
     controller["runtype"] = m_config.runtype;
     controller["steps"] = m_steps;
     controller["variance"] = m_config.variance;
     controller["original"] = m_config.original;
     controller["bootstrap"] = m_config.bootstrap;
-    ToolSet::Parameter2Statistic(m_results, m_model.data(), controller);
+    controller["method"] = SupraFit::Statistic::MonteCarlo;
+    
+    return controller;
 }
-
 
 QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 {    

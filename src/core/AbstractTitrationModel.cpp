@@ -17,9 +17,6 @@
  * 
  */
 
-
-
-
 #include "libmath.h"
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
@@ -133,7 +130,10 @@ QString AbstractTitrationModel::ModelInfo() const
     {
         format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
         QChar mu = QChar(956);
-        format_text += QString(" [") + mu + QString("M]");
+        format_text += QString(" [") + mu + 
+
+
+QString("M]");
         return format_text;
     }else
         return QString();

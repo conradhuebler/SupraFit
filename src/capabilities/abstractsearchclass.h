@@ -72,7 +72,7 @@ public:
     inline QList<QList<QPointF> > Series() const { return m_series; }
     inline QList<QJsonObject > Models() const { return m_models; }
     inline QList<QJsonObject > Results() const { return m_results; }
-    
+    QJsonObject Result() const;
     void ExportResults(const QString& filename);
     
 public slots:
@@ -86,6 +86,7 @@ protected:
     QList<QJsonObject > m_results;
     bool m_interrupt;
     
+    virtual QJsonObject Controller() const = 0;
 signals:
     void IncrementProgress(int msecs);
     void AnalyseFinished();

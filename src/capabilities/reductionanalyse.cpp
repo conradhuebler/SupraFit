@@ -21,6 +21,8 @@
 
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
+#include "src/core/toolset.h"
+
 #include "src/capabilities/montecarlostatistics.h"
 
 #include <iostream>
@@ -56,7 +58,11 @@ void ReductionAnalyse::CrossValidation(CVType type)
     MCConfig config;
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
-
+    
+    m_controller["runtype"] = m_config.runtype;
+    m_controller["method"] = SupraFit::Statistic::CrossValidation;
+    m_controller["CVType"] = type;
+    
     switch(type){
         case CVType::LeaveOneOut:
             emit MaximumSteps(m_model->DataPoints());
@@ -114,6 +120,10 @@ void ReductionAnalyse::PlainReduction()
     MCConfig config;
     config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
+    
+    m_controller["runtype"] = m_config.runtype;
+    m_controller["method"] = SupraFit::Statistic::Reduction;
+    
     emit MaximumSteps(m_model->DataPoints());
     DataTable *table = m_model->DependentModel();
     for(int i = m_model->DataPoints() - 1; i > 3; --i)
@@ -139,5 +149,8 @@ void ReductionAnalyse::PlainReduction()
             delete m_threads[i];
         }
     }
+    m_results = ToolSet::Model2Parameter(m_models);
+    ToolSet::Parameter2Statistic(m_results, m_model.data());
     emit AnalyseFinished();
 }
+

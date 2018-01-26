@@ -76,6 +76,8 @@ private:
     QVector<QVector<double> > ParamList();
     void ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error);
     void Scan(const QVector< QVector<double > >& list);
+    virtual QJsonObject Controller() const override;
+    
     quint64 m_time_0;
     int m_time, m_max_count;
     QVector<QList<double> > m_full_list;

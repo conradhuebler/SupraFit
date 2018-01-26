@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  * 
  */
 
+#include "src/global.h"
 #include "libmath.h"
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
@@ -403,32 +404,45 @@ void AbstractModel::addLocalParameter(int i)
     
 }
 
-void AbstractModel::setWGStatistic(const QJsonObject &result, int i)
+void AbstractModel::UpdateStatistic(const QJsonObject& object)
 {
-    if(i < m_wg_statistics.size())
-        m_wg_statistics[i] = result;
-    else
-        m_wg_statistics << result; 
-    emit StatisticChanged();
+    QJsonObject controller = object["controller"].toObject();
+    switch(controller["method"].toInt())
+    {
+        case  SupraFit::Statistic::WeakenedGridSearch:
+            m_wg_statistics = object;
+        break;
+        
+        case SupraFit::Statistic::ModelComparison:
+            m_moco_statistics = object;
+        break;
+        
+        case SupraFit::Statistic::FastConfidence:
+                m_fast_confidence = object;
+        break;
+        
+        case  SupraFit::Statistic::Reduction:
+            m_reduction = object;
+        break;
+        
+        case  SupraFit::Statistic::MonteCarlo:
+        case  SupraFit::Statistic::CrossValidation:
+            bool duplicate = false;
+            for(int i = 0; i < m_mc_statistics.size(); ++i)
+            {
+                QJsonObject control = m_mc_statistics[i]["controller"].toObject();
+                if(controller == control)
+                {
+                    duplicate = true;
+                     m_mc_statistics[i] = object;
+                }
+            }
+            if(!duplicate)
+                m_mc_statistics << object;
+        break;
+    }
 }
 
-void AbstractModel::setMCStatistic(const QJsonObject &result, int i)
-{
-    if(i < m_mc_statistics.size())
-        m_mc_statistics[i] = result;
-    else
-        m_mc_statistics << result; 
-    emit StatisticChanged();
-}
-
-void AbstractModel::setMoCoStatistic(const QJsonObject &result, int i)
-{
-    if(i < m_moco_statistics.size())
-        m_moco_statistics[i] = result;
-    else
-        m_moco_statistics << result; 
-    emit StatisticChanged();
-}
 
 QString AbstractModel::Data2Text() const
 {
@@ -498,18 +512,14 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     if(statistics)
     {
         QJsonObject statisticObject;
-        for(int i = 0; i < m_wg_statistics.size(); ++i)
-        {
-            statisticObject["WGResult_"+QString::number(i)] = m_wg_statistics[i];
-        }
         for(int i = 0; i < m_mc_statistics.size(); ++i)
         {
-            statisticObject["MCResult_"+QString::number(i)] = m_mc_statistics[i];
+            statisticObject[QString::number(SupraFit::Statistic::MonteCarlo) + ":"+QString::number(i)] = m_mc_statistics[i];
         }
-        for(int i = 0; i < m_moco_statistics.size(); ++i)
-        {
-            statisticObject["MoCoResult_"+QString::number(i)] = m_moco_statistics[i];
-        }
+        statisticObject[QString::number(SupraFit::Statistic::ModelComparison)] = m_moco_statistics;
+        statisticObject[QString::number(SupraFit::Statistic::WeakenedGridSearch)] = m_wg_statistics;
+        statisticObject[QString::number(SupraFit::Statistic::Reduction)] = m_reduction;
+        statisticObject[QString::number(SupraFit::Statistic::FastConfidence)] = m_fast_confidence;
         json["statistics"] = statisticObject;
     }
 
@@ -603,7 +613,7 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
         setOption(str, topjson["options"].toObject()[str].toString());
     
     QStringList keys = json["statistics"].toObject().keys();
-    
+    QJsonObject statisticObject = json["statistics"].toObject();
     if(keys.size() > 9)
     {
         QCollator collator;
@@ -618,18 +628,18 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     }
     if(override)
     {
-        m_wg_statistics.clear();
-        m_moco_statistics.clear();
         m_mc_statistics.clear();
     }
+    
+    m_moco_statistics = statisticObject[QString::number(SupraFit::Statistic::ModelComparison)].toObject();
+    m_wg_statistics =  statisticObject[QString::number(SupraFit::Statistic::WeakenedGridSearch)].toObject();
+    m_reduction = statisticObject[QString::number(SupraFit::Statistic::Reduction)].toObject();
+    m_fast_confidence = statisticObject[QString::number(SupraFit::Statistic::FastConfidence)].toObject();
+    
     for(const QString &str : qAsConst(keys))
     {
-         if(str.contains("WG"))
-            m_wg_statistics << json["statistics"].toObject()[str].toObject();
-         if(str.contains("MC"))
-            m_mc_statistics << json["statistics"].toObject()[str].toObject();
-          if(str.contains("MoCo"))
-            m_moco_statistics << json["statistics"].toObject()[str].toObject();
+        if(str.contains(":"))
+            m_mc_statistics << statisticObject[str].toObject();
     }
 
     if(json.contains("localParameter"))

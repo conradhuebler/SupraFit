@@ -24,6 +24,8 @@
 class AbstractSearchClass;
 class AbstractModel;
 
+class QJsonObject;
+
 class ResultsWidget : public QWidget
 {
     Q_OBJECT
@@ -36,8 +38,10 @@ protected:
     void setUi();
     virtual QWidget * ChartWidget() = 0;
     inline QSize ChartSize() const { return QSize(400,300); }
-    virtual void WriteConfidence(const QList<QJsonObject > &constant_results) { Q_UNUSED(constant_results) };
-    
+    virtual void WriteConfidence(const QList<QJsonObject > &data) { Q_UNUSED(data) };
+        
+    QJsonObject m_data;
+
     QWidget *m_chart_widget;
     QLabel *m_confidence_label;
     QSharedPointer< AbstractModel > m_model;

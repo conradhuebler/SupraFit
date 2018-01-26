@@ -21,6 +21,59 @@
 
 #include <QtGlobal>
 
+#include <QtCore/QVector>
+
+#include <cmath>
+namespace SupraFit{
+    
+    enum Statistic{
+        MonteCarlo = 1,
+        WeakenedGridSearch = 2,
+        ModelComparison = 3,
+        CrossValidation = 4,
+        Reduction = 5,
+        FastConfidence = 6
+    };
+    
+    
+    
+    enum {
+        ItoI = 1,
+        IItoI_ItoI = 2,
+        ItoI_ItoII = 3,
+        IItoI_ItoI_ItoII = 4,
+        Michaelis_Menten = 5,
+        First_Order_Kinetics = 6,
+        ScriptedModel = 10,
+        itc_ItoI = 11,
+        fl_ItoI = 12,
+        fl_IItoI_ItoI = 13,
+        fl_ItoI_ItoII = 14
+    };
+    
+    struct ConfidenceBar
+    {
+        qreal lower = 0;
+        qreal upper = 0;
+    };
+
+    struct BoxWhisker
+    {
+        QList<qreal> mild_outliers, extreme_outliers;
+        qreal lower_whisker = 0;
+        qreal upper_whisker = 0;
+        qreal lower_quantile = 0;
+        qreal upper_quantile = 0;
+        qreal median = 0;
+        qreal mean = 0;
+        int count = 0;
+        
+        inline qreal UpperNotch() const { return median+(1.58*(upper_quantile-lower_quantile)/sqrt(count)); }
+        inline qreal LowerNotch() const { return median-(1.58*(upper_quantile-lower_quantile)/sqrt(count)); }
+    };
+
+}
+
 enum OptimizationType{
         ComplexationConstants = 0x01,
         OptimizeShifts = 0x02,

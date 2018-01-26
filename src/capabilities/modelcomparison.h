@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef MODELCOMPARISON_H
-#define MODELCOMPARISON_H
+#pragma once
 
 #include "abstractsearchclass.h"
 #include "weakenedgridsearch.h"
@@ -79,11 +78,10 @@ private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal> >& box);
     double SingleLimit(int parameter_id, int direction = 1);
-    
+    virtual QJsonObject Controller() const override;
+
     QVector<QVector<qreal> > MakeBox();
     MoCoConfig m_config;
     QJsonObject m_box;
     double m_effective_error, m_box_area, m_ellipsoid_area;
 };
-
-#endif // MODELCOMPARISON_H

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef WGSRESULTSWIDGET_H
-#define WGSRESULTSWIDGET_H
+#pragma once
 
 #include "src/ui/widgets/results/resultswidget.h"
 
@@ -26,23 +25,22 @@
 
 class AbstractSearchClass;
 class AbstractModel;
+class QJsonObject;
 
 class WGSResultsWidget : public ResultsWidget
 {
     Q_OBJECT
     
 public:
-    WGSResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, bool modelcomparison, QWidget *parent);
+    WGSResultsWidget(const QJsonObject &data, QSharedPointer<AbstractModel> model, QWidget *parent);
     ~WGSResultsWidget();
     inline bool hasData() const { return has_data; }
+    
 private:
-    void WriteConfidence(const QList<QJsonObject > &constant_results) override;
+    void WriteConfidence(const QJsonObject &result);
     virtual QWidget * ChartWidget() override;
     
     ChartView * MoCoPlot();
     ChartView * WGPlot();
-    QList<QJsonObject > m_data;
-    bool m_modelcomparison, has_data;
+    bool  has_data;
 };
-
-#endif // WGSRESULTSWIDGET_H

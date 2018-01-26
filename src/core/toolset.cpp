@@ -410,7 +410,7 @@ namespace ToolSet{
         return parameter;
     }
     
-    void Parameter2Statistic(QList<QJsonObject>& parameter, const QPointer<AbstractModel> model, const QJsonObject &controller)
+    void Parameter2Statistic(QList<QJsonObject>& parameter, const QPointer<AbstractModel> model)
     {
         for(int i = 0; i < parameter.size(); ++i)
         {
@@ -423,7 +423,6 @@ namespace ToolSet{
                 parameter[i]["value"] = model->LocalParameter(index[0].toInt(),index[1].toInt());
             }
             parameter[i]["boxplot"] = ToolSet::Box2Object(ToolSet::BoxWhiskerPlot(list));
-            parameter[i]["controller"] = controller;
         }
     }
     

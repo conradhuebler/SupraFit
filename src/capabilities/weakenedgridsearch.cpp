@@ -57,26 +57,19 @@ void WeakenedGridSearchThread::run()
     QList<QPointF> series;
     QJsonObject optimized = m_model.data()->ExportModel(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
-    QJsonObject controller;
-    controller["runtype"] = m_config.runtype;
-    controller["steps"] = m_config.maxsteps;
-    controller["increment"] = m_config.increment;
-    controller["maxerror"] = m_config.maxerror;
-    controller["fisher"] = m_config.fisher_statistic;
-    controller["f-value"] = m_config.f_value;
-    m_result["controller"] = controller;
     m_result["name"] = m_model.data()->GlobalParameterName(m_parameter_id);
     m_result["value"] = parameter[m_parameter_id];
     m_result["type"] = "Global Parameter";
-    m_result["error"] = m_config.confidence;
+    
     double integ_5 = 0;
     double integ_1 = 0;
     QJsonObject confidence;
     confidence["upper"] = SumErrors(1, integ_5, integ_1, series);
     m_model.data()->ImportModel(optimized);
     confidence["lower"] = SumErrors(0, integ_5, integ_1, series);
+    confidence["error"] = m_config.confidence;
+
     m_result["confidence"] = confidence;
-    
     QJsonObject data;
     data["x"] = ToolSet::DoubleList2String(m_x);
     data["y"] = ToolSet::DoubleList2String(m_y);
@@ -268,6 +261,19 @@ void WeakenedGridSearch::setParameter(const QJsonObject& json)
     m_model.data()->ImportModel(json);
 }
 
+QJsonObject WeakenedGridSearch::Controller() const
+{
+    QJsonObject controller;
+    controller["runtype"] = m_config.runtype;
+    controller["steps"] = m_config.maxsteps;
+    controller["increment"] = m_config.increment;
+    controller["maxerror"] = m_config.maxerror;
+    controller["fisher"] = m_config.fisher_statistic;
+    controller["f-value"] = m_config.f_value;
+    controller["method"] = SupraFit::Statistic::WeakenedGridSearch;
+    
+    return controller;
+}
 
 void WeakenedGridSearch::Interrupt()
 {

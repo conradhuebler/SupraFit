@@ -47,8 +47,21 @@
 
 #include "mcresultswidget.h"
 
-MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models, Type type) : m_data(data), m_type(type)
+// MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models, Type type) : m_data(data), m_type(type)
+// {
+//     m_model = model;
+//     m_models = models;
+//     m_wrapper = wrapper;
+//     has_boxplot = false;
+//     has_histogram = false;
+//     has_contour = false;
+//     setUi();
+//     GenerateConfidence(95);
+// }
+
+MCResultsWidget::MCResultsWidget(const QJsonObject &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models) 
 {
+    m_data = data;
     m_model = model;
     m_models = models;
     m_wrapper = wrapper;
@@ -58,7 +71,6 @@ MCResultsWidget::MCResultsWidget(const QList<QJsonObject > &data, QSharedPointer
     setUi();
     GenerateConfidence(95);
 }
-
 
 MCResultsWidget::~MCResultsWidget()
 {
@@ -117,19 +129,22 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     view->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     view->setMinimumSize(300,400);
     bool formated = false;
-    
-    for(int i = 0; i < m_data.size(); ++i)
+
+    for(int i = 0; i < m_data.count() - 1; ++i)
     {
-        QString name = m_data[i]["name"].toString();
-        qreal x_0 = m_data[i]["value"].toDouble();
-        QVector<qreal> list = ToolSet::String2DoubleVec(m_data[i]["data"].toObject()["raw"].toString());
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
+        QString name = data["name"].toString();
+        qreal x_0 = data["value"].toDouble();
+        QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
         QVector<QPair<qreal, qreal> > histogram = ToolSet::List2Histogram(list,500);
         LineSeries *xy_series = new LineSeries;
-        if(m_data[i]["type"] == "Local Parameter")
+        if(data["type"] == "Local Parameter")
         {
-            if(!m_data[i].contains("index"))
+            if(!data.contains("index"))
                 continue;
-            int index =  m_data[i]["index"].toString().split("|")[1].toInt();
+            int index =  data["index"].toString().split("|")[1].toInt();
             xy_series->setColor(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); }); 
@@ -156,7 +171,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         current_constant->setName( name);
         view->addSeries(current_constant, i, xy_series->color(), name);
         
-        QJsonObject confidenceObject = m_data[i]["confidence"].toObject();
+        QJsonObject confidenceObject = data["confidence"].toObject();
         if(view)
         {
             QtCharts::QAreaSeries *area_series = AreaSeries(xy_series->color());
@@ -177,9 +192,12 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     if(qApp->instance()->property("chartanimation").toBool())
         boxplot->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     boxplot->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
-    for(int i = 0; i < m_data.size(); ++i)
+    
+    for(int i = 0; i < m_data.count() - 1; ++i)
     {
-        QJsonObject data = m_data[i];
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
 
         has_boxplot = true;
         
@@ -187,18 +205,18 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         min = qMin(bw.lower_whisker, min);
         max = qMax(bw.upper_whisker, max);
         BoxPlotSeries *series = new BoxPlotSeries(bw);
-        series->setName(m_data[i]["name"].toString());
+        series->setName(data["name"].toString());
  
-        if(m_data[i]["type"] == "Local Parameter")
+        if(data["type"] == "Local Parameter")
         {
-            if(!m_data[i].contains("index"))
+            if(!m_data.contains("index"))
                 continue;
-            int index =  m_data[i]["index"].toString().split("|")[1].toInt();
+            int index =  data["index"].toString().split("|")[1].toInt();
             series->setBrush(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, boxplot]( const QColor &color ) { boxplot->setColor(i, color); }); 
         }
-        boxplot->addSeries(series, i, series->color(), m_data[i]["name"].toString());  
+        boxplot->addSeries(series, i, series->color(), data["name"].toString());  
         boxplot->setColor(i, series->color());
         m_box_object << ToolSet::Box2Object(bw);
     }
@@ -237,10 +255,11 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     return view;
 }
 
-void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_results)
+void MCResultsWidget::WriteConfidence(const QJsonObject  &constant_results)
 { 
+    
     QString confidence;
-    QJsonObject controller = constant_results.first()["controller"].toObject();
+    QJsonObject controller = constant_results["controller"].toObject();
     confidence += "MC Steps: " + QString::number(controller["steps"].toInt()) + "\t";
     if(controller["bootstrap"].toBool())
         confidence += "Bootstrapped ";
@@ -252,22 +271,29 @@ void MCResultsWidget::WriteConfidence(const QList<QJsonObject > &constant_result
     else
         confidence += "operated on modelled data\n";
     
-    for(int i = 0; i < constant_results.size(); ++i)
+    for(int i = 0; i < m_data.count() - 1; ++i)
     {
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
         if(m_type == MonteCarlo)
-            m_model->setMCStatistic(constant_results[i], i);
+            m_model->UpdateStatistic(m_data);
 
-        QJsonObject confidenceObject = constant_results[i]["confidence"].toObject();
-        confidence  += Print::TextFromConfidence(constant_results[i], m_model.data()) + "\n";
+        QJsonObject confidenceObject = data["confidence"].toObject();
+        confidence  += Print::TextFromConfidence(data, m_model.data()) + "\n";
     }
     m_confidence_label->setText(confidence);
+    
 }
 
 void MCResultsWidget::UpdateBoxes()
 {    
-     for(int i = 0; i < m_data.size(); ++i)
+    int elements = m_data.count() - 1;
+    for(int i = 0; i < elements; ++i)
     {
-        QJsonObject data = m_data[i];
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
         QJsonObject confidenceObject = data["confidence"].toObject();
         if(m_histgram && i < m_area_series.size())
         {
@@ -341,15 +367,20 @@ void MCResultsWidget::GenerateConfidence(double error)
 {    
     if(m_type == CrossValidation)
         error = 0;
-    for(int i = 0; i < m_data.size(); ++i)
+
+    for(int i = 0; i < m_data.count() - 1; ++i)
     {
-        QList<qreal> list = ToolSet::String2DoubleList( m_data[i]["data"].toObject()["raw"].toString() );
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
+        QList<qreal> list = ToolSet::String2DoubleList(data["data"].toObject()["raw"].toString() );
         SupraFit::ConfidenceBar bar = ToolSet::Confidence(list, 100-error);
         QJsonObject confidence;
         confidence["lower"] = bar.lower;
         confidence["upper"] = bar.upper;
-        m_data[i]["confidence"] = confidence;
-        m_data[i]["error"] = error;
+        confidence["error"] = error;
+        data["confidence"] = confidence;
+        m_data[QString::number(i)] = data;
     }
     UpdateBoxes();
     WriteConfidence(m_data);
