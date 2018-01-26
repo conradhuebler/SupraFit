@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,15 +38,14 @@ bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
     if(file.contains("json"))
         loadDoc = QJsonDocument::fromJson(saveData);
     else if(file.contains("jdat"))
-        loadDoc = QJsonDocument::fromBinaryData(saveData);
+        loadDoc = QJsonDocument::fromJson(qUncompress(saveData));
     
     json = loadDoc.object();
     return true;
 }
 
-bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file, bool binary)
+bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file)
 {
-    Q_UNUSED(binary)
     QFile saveFile(file);
 
     if (!saveFile.open(QIODevice::WriteOnly)) {
@@ -58,13 +57,12 @@ bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file, bo
       if(file.contains("json"))
         saveFile.write( saveDoc.toJson() );
     else if(file.contains("jdat"))
-        saveFile.write( saveDoc.toBinaryData() );
+        saveFile.write( qCompress(saveDoc.toJson(QJsonDocument::Compact),9) );
     return true;
 }
 
-bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file, bool binary)
+bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file)
 {
-    Q_UNUSED(binary)
     QFile saveFile(file);
 
     if (!saveFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
@@ -76,8 +74,7 @@ bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file, b
     if(file.contains("json"))
         saveFile.write( saveDoc.toJson()        );
     else if(file.contains("jdat"))
-        saveFile.write( saveDoc.toBinaryData()        );
-    
+        saveFile.write( qCompress(saveDoc.toJson(QJsonDocument::Compact), 9) );
     return true;
 }
 

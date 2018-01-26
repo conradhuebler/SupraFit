@@ -339,7 +339,6 @@ namespace ToolSet{
         localcount  = qMax(0,model["localParameter"].toObject().size() - 1);
         QStringList local_names, global_names;
         local_names = model["localParameter"].toObject()["names"].toString().split("|");
-        qDebug() << local_names;
         each_local  = local_names.count();
         global_names = model["globalParameter"].toObject()["names"].toString().split("|");
         QVector<QVector<qreal> >global(globalcount);
