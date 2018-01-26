@@ -39,7 +39,8 @@ public:
     
     enum CVType{
         LeaveOneOut = 1,
-        LeaveTwoOut = 2
+        LeaveTwoOut = 2,
+        LeaveManyOut = 3
     };
     
     void CrossValidation(CVType type = CVType::LeaveOneOut);

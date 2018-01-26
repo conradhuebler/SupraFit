@@ -121,9 +121,16 @@ void ListChart::Clear()
     m_list->clear();  
 }
 
-void ListChart::SeriesListClicked(QListWidgetItem *item)
+void ListChart::NamesListClicked(QListWidgetItem* item)
 {
-    int index = item->data(Qt::UserRole).toInt();
+    QString str = item->data(Qt::UserRole).toString();
+    QList<QListWidgetItem*> list = m_list->findItems(str, Qt::MatchExactly);
+    for(int i = 0; i < list.size(); ++i)
+        SeriesListClicked(list[i]);
+}
+
+void ListChart::HideSeries(int index)
+{
     m_hidden[index] = !m_hidden[index];
     QList<QtCharts::QAbstractSeries *> series = m_series.values(index);
     for(int j = 0; j < series.size(); ++j)
@@ -134,12 +141,3 @@ void ListChart::SeriesListClicked(QListWidgetItem *item)
             series[j]->setVisible(m_hidden[index]);
     }
 }
-
-void ListChart::NamesListClicked(QListWidgetItem* item)
-{
-    QString str = item->data(Qt::UserRole).toString();
-    QList<QListWidgetItem*> list = m_list->findItems(str, Qt::MatchExactly);
-    for(int i = 0; i < list.size(); ++i)
-        SeriesListClicked(list[i]);
-}
-

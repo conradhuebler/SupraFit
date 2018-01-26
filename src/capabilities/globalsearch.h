@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef GLOBALSEARCH_H
-#define GLOBALSEARCH_H
+#pragma once
 
 #include "abstractsearchclass.h"
 
@@ -77,9 +76,7 @@ private:
     QVector<QVector<double> > ParamList();
     void ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error);
     void Scan(const QVector< QVector<double > >& list);
-//     QVector<QVector < qreal > > m_parameter;
     quint64 m_time_0;
-//     OptimizationType m_type;
     int m_time, m_max_count;
     QVector<QList<double> > m_full_list;
     GlobalSearchResult last_result;
@@ -89,5 +86,3 @@ private:
     QVector<VisualData> m_3d_data;
     GSConfig m_config;
 };
-
-#endif // GLOBALSEARCH_H

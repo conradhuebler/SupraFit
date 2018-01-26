@@ -25,6 +25,7 @@
 #include <QtCore/QModelIndex>
 #include <QTextDocument>
 
+#include <QtWidgets/QListWidgetItem>
 #include <QtWidgets/QStyledItemDelegate>
 #include <QtWidgets/QStyleOptionViewItem>
 #include <QtWidgets/QWidget>
@@ -90,6 +91,7 @@ public:
 public slots:
     inline void formatAxis() { m_chartview->formatAxis(); }
     void setColor(int index, const QColor &color);
+    void HideSeries(int index);
     
 private:
     QListWidget *m_list, *m_names_list;
@@ -99,7 +101,7 @@ private:
     QHash<int, bool > m_hidden;
     
 private slots:
-    void SeriesListClicked(QListWidgetItem *item);
+    inline void SeriesListClicked(QListWidgetItem *item) { HideSeries(item->data(Qt::UserRole).toInt()); };
     void NamesListClicked(QListWidgetItem *item);
     
 signals:

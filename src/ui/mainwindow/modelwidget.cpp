@@ -563,7 +563,6 @@ void ModelWidget::DoReductionAnalyse()
     QList<QJsonObject> models = analyse->Models(); 
     QList<QJsonObject> result = ToolSet::Model2Parameter(models, false);
     
-    QList<QList< QPointF> > series = analyse->Series();
     for(int i = 0; i < result.size(); ++i)
     {
         QString name = result[i]["name"].toString();
@@ -593,20 +592,22 @@ void ModelWidget::DoReductionAnalyse()
         serie->setColor(color);
         view->addSeries(serie, i, color, name);
         view->setColor(i,  color);
+            
+        serie = new LineSeries;
+        serie->setDashDotLine(true);
+        qreal value = 0;
+        if(result[i]["type"].toString() == "Global Parameter")
+           value = m_model->GlobalParameter(i);
+        else
+           value = m_model->LocalParameter(jndex,index);
         
-         serie = new LineSeries;
-         serie->setDashDotLine(true);
-         qreal value = 0;
-         if(result[i]["type"].toString() == "Global Parameter")
-            value = m_model->GlobalParameter(i);
-         else
-             value = m_model->LocalParameter(jndex,index);
-         
-         serie->append(QPointF(series.last().x(), value));
-         serie->append(QPointF(series.first().x(), value));
-         serie->setColor(color);
-         view->addSeries(serie, i, color, name);
-         view->setColor(i,  color);
+        serie->append(QPointF(series.last().x(), value));
+        serie->append(QPointF(series.first().x(), value));
+        serie->setColor(color);
+        view->addSeries(serie, i, color, name);
+        view->setColor(i,  color);
+        if(result[i]["type"].toString() != "Global Parameter")
+            view->HideSeries(i);
     }
     m_statistic_result->setWidget(view, "Reduction Analyse for " + m_model->Name());
     m_statistic_result->show();

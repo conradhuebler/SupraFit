@@ -105,9 +105,9 @@ QTableView* SearchResultWidget::BuildList()
             j++;
         }
         
-        QJsonObject constants = m_models[i]["data"].toObject()["constants"].toObject();
+        QJsonObject constants = m_models[i]["data"].toObject()["globalParameter"].toObject();
         QStringList keys = constants.keys();
-        
+                
         if(keys.size() > 10)
         {
             QCollator collator;
@@ -122,9 +122,10 @@ QTableView* SearchResultWidget::BuildList()
         }
         
         QString consts;
-        
         for(const QString &str : qAsConst(keys))
         {
+            if(str == "names")
+                continue;
             QString element = constants[str].toString();
             if(!element.isNull() && !element.isEmpty())
             {
