@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef MM_Model_H
-#define MM_Model_H
+#pragma once
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
@@ -35,7 +34,6 @@ class Michaelis_Menten_Model : public AbstractModel
     
 public:
     Michaelis_Menten_Model(DataClass *data);
-    Michaelis_Menten_Model(AbstractModel *model);
     ~Michaelis_Menten_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;} 
@@ -69,5 +67,3 @@ protected:
     virtual void CalculateVariables() override;
     qreal m_vmax, m_Km;
 };
-
-#endif // MM_Model

@@ -119,9 +119,10 @@ void AbstractModel::setGlobalParameter(const QList<qreal> &list)
 void AbstractModel::SetValue(int i, int j, qreal value)
 {
     /* if there are more than one series, we can active series, but with only one, these lines must be ignored*/
-    if(SeriesCount() != 1) 
-        if(!ActiveSignals(j) || !DependentModel()->isChecked(j,i))
-            return;
+//     if(SeriesCount() != 1) 
+    if(!ActiveSignals(j) || !DependentModel()->isChecked(j,i))
+        return;
+    
     if(std::isnan(value) || std::isinf(value))
     {
         value = 0;
@@ -767,6 +768,8 @@ AbstractModel & AbstractModel::operator=(const AbstractModel& other)
     m_mc_statistics = other.m_mc_statistics;
     m_wg_statistics = other.m_wg_statistics;
     m_moco_statistics = other.m_moco_statistics;
+    m_reduction = other.m_reduction;
+    m_fast_confidence = other.m_fast_confidence;
     
     m_sum_absolute = other.m_sum_absolute;
     m_sum_squares = other.m_sum_squares;
@@ -800,6 +803,8 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     m_mc_statistics = other->m_mc_statistics;
     m_wg_statistics = other->m_wg_statistics;
     m_moco_statistics = other->m_moco_statistics;
+    m_reduction = other->m_reduction;
+    m_fast_confidence = other->m_fast_confidence;
     
     m_sum_absolute = other->m_sum_absolute;
     m_sum_squares = other->m_sum_squares;

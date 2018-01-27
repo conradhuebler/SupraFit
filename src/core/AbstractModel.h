@@ -165,7 +165,7 @@ public:
         if(i < m_active_signals.size())
             return m_active_signals.at(i);
         else
-            return 0;
+            return 1;
     }
     
     /*! \brief set the series active / inactive according to the given list

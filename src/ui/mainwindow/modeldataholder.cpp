@@ -553,14 +553,14 @@ void ModelDataHolder::setSettings(const OptimizerConfig &config)
 
 bool ModelDataHolder::CheckCrashFile()
 {
-    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.json";
+    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
     return QFile::exists(filename);
 }
 
 void ModelDataHolder::CreateCrashFile()
 {
     RemoveCrashFile();
-    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.json";
+    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
     for(int i = 0; i < m_models.size(); ++i)
     {
         if(!m_models[i].isNull())
@@ -575,7 +575,7 @@ void ModelDataHolder::RemoveCrashFile()
 {
     if(CheckCrashFile())
     {
-        QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.json";
+        QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
         QFile::remove(filename);
     }
 }

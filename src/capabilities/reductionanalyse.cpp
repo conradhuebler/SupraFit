@@ -73,6 +73,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
                 model->detach();
                 model->DependentModel()->CheckRow(i);
                 thread->setModel(model);
+                model->DependentModel()->PrintCheckedRows();
                 addThread(thread);
                 QApplication::processEvents();
             }
@@ -109,7 +110,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
             delete m_threads[i];
         }
     }
-//     m_model->DependentModel()->EnableAllRows();
+
     m_results = ToolSet::Model2Parameter(m_models);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
     emit AnalyseFinished();

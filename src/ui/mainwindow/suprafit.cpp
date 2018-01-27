@@ -227,7 +227,7 @@ QIcon MainWindow::Icon(const QString &str)
 void MainWindow::LoadFile(const QString &file)
 {
     bool invalid_json = false;
-    if(file.contains("json") || file.contains("jdat"))
+    if(file.contains("json") || file.contains("jdat") || file.contains("suprafit"))
     {
         invalid_json = !LoadProject(file);
         if(!invalid_json)
@@ -283,7 +283,7 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString &str
             if(replay == QMessageBox::Yes) 
             {
                 QJsonObject toplevel;
-                if(JsonHandler::ReadJsonFile(toplevel, qApp->instance()->property("projectpath").toString() + ".crashsave.json"))
+                if(JsonHandler::ReadJsonFile(toplevel, qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit"))
                     m_model_dataholder->AddToWorkspace(toplevel);
             }
         }
@@ -303,7 +303,7 @@ void MainWindow::NewTable()
 
 void MainWindow::OpenFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(),  tr("Supported files (*.json *.jdat *.txt *.dat);;Json File (*.json);;Binary (*.jdat);;Table Files (*.dat *.txt);;All files (*.*)" ));
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(),  tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat);;Json File (*.json);;SupraFit Project File  (*suprafit *.jdat);;Table Files (*.dat *.txt);;All files (*.*)" ));
     if(filename.isEmpty())
         return;
     setLastDir(filename);
@@ -339,7 +339,7 @@ bool MainWindow::LoadProject(const QString& filename)
 
 void MainWindow::SaveProjectAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.suprafit.json);;All files (*.*)" ));
     if(!str.isEmpty())
     { 
         setLastDir(str);
@@ -349,7 +349,7 @@ void MainWindow::SaveProjectAction()
 
 void MainWindow::ImportModelAction()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("SupraFit Project File  (*.suprafit *.jdat);;Json File (*.suprafit.json);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         setLastDir(str);
@@ -364,7 +364,7 @@ void MainWindow::ImportModelAction()
 
 void MainWindow::ExportModelAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File (*.suprafit);;Json File (*.suprafit.json);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         setLastDir(str);
@@ -523,7 +523,7 @@ void MainWindow::about()
     info += "<p>This is all about SupraFit, nothing else matters< /p>";
     info += "<p>Created by Conrad Hübler</p>";
     info += "<p>Special thanks to <strong>Prof. M. Mazik</strong>, TU Bergakademie Freiberg for her support.</p>";
-    info += "<p>Special thanks to <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
+    info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;ster</strong> and <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
     info += "<p>SupraFit website on GitHub: <a href='https://github.com/contra98/SupraFit'>https://github.com/contra98/SupraFit</a></p>";
@@ -564,19 +564,19 @@ void MainWindow::closeEvent(QCloseEvent *event)
     if(qApp->instance()->property("save_on_exit").toBool() && !qApp->instance()->property("projectpath").toString().isEmpty())
     {
         QString filename = qApp->instance()->property("projectpath").toString();       
-        QFileInfo info (filename+ ".autosave.json");
+        QFileInfo info (filename+ ".autosave.suprafit");
         if(info.exists())
         {
             int i = 1;
-            QFileInfo info (filename+ ".autosave_" + QString::number(i) + ".json");
+            QFileInfo info (filename+ ".autosave_" + QString::number(i) + ".suprafit");
             while(info.exists())
             {
                 ++i;
-                info = QFileInfo(filename + ".autosave" + QString::number(i) + ".json");
+                info = QFileInfo(filename + ".autosave" + QString::number(i) + ".suprafit");
             }
-            filename = filename + ".autosave_" + QString::number(i) + ".json";
+            filename = filename + ".autosave_" + QString::number(i) + ".suprafit";
         }else
-            filename = filename+ ".autosave.json";
+            filename = filename+ ".autosave.suprafit";
         m_model_dataholder->SaveWorkspace(filename);
     } 
         

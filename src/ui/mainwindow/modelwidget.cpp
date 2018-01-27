@@ -525,7 +525,7 @@ void ModelWidget::CVAnalyse()
     QJsonObject controller;
     controller["type"] = m_statistic_dialog->CrossValidationType();
     ToolSet::Parameter2Statistic(result, m_model.data());
-    
+    m_model->UpdateStatistic(analyse->Result());
     MCResultsWidget *mcsresult = new MCResultsWidget(analyse->Result(), m_model, m_charts.signal_wrapper, models);
     mcsresult->setModels(models);
 
@@ -558,7 +558,7 @@ void ModelWidget::DoReductionAnalyse()
     
     QList<QJsonObject> models = analyse->Models(); 
     QList<QJsonObject> result = ToolSet::Model2Parameter(models, false);
-    
+    m_model->UpdateStatistic(analyse->Result());
     for(int i = 0; i < result.size(); ++i)
     {
         QString name = result[i]["name"].toString();
@@ -726,7 +726,7 @@ void ModelWidget::LoadStatistics()
     {
         WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
         if(resultwidget->hasData())
-            m_statistic_result->setWidget(resultwidget, "Weakend Grid Search " + m_model->Name());
+            m_statistic_result->setWidget(resultwidget, "Model Comparison " + m_model->Name());
         else
             delete resultwidget;
     }
@@ -736,7 +736,7 @@ void ModelWidget::LoadStatistics()
     {
         WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
         if(resultwidget->hasData())
-            m_statistic_result->setWidget(resultwidget, "Weakend Grid Search " + m_model->Name());
+            m_statistic_result->setWidget(resultwidget, "Reduction Analysis " + m_model->Name());
         else
             delete resultwidget;
     }

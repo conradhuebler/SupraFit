@@ -37,7 +37,7 @@ bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
     QJsonDocument loadDoc;
     if(file.contains("json"))
         loadDoc = QJsonDocument::fromJson(saveData);
-    else if(file.contains("jdat"))
+    else if(file.contains("jdat") || file.contains("suprafit"))
         loadDoc = QJsonDocument::fromJson(qUncompress(saveData));
     
     json = loadDoc.object();
@@ -56,7 +56,7 @@ bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file)
     QJsonDocument saveDoc(json);
       if(file.contains("json"))
         saveFile.write( saveDoc.toJson() );
-    else if(file.contains("jdat"))
+    else if(file.contains("jdat") || file.contains("suprafit"))
         saveFile.write( qCompress(saveDoc.toJson(QJsonDocument::Compact),9) );
     return true;
 }
@@ -73,7 +73,7 @@ bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file)
     QJsonDocument saveDoc(json);
     if(file.contains("json"))
         saveFile.write( saveDoc.toJson()        );
-    else if(file.contains("jdat"))
+    else if(file.contains("jdat") || file.contains("suprafit"))
         saveFile.write( qCompress(saveDoc.toJson(QJsonDocument::Compact), 9) );
     return true;
 }
