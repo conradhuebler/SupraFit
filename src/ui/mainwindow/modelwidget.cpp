@@ -571,6 +571,8 @@ void ModelWidget::DoReductionAnalyse()
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
         for(int i = 0; i < list.size(); ++i)
             series << QPointF(x[i], list[i]);
+        if(series.isEmpty())
+            continue;
         
         QColor color;
         int index = 0, jndex = 0;

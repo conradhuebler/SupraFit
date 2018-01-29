@@ -72,6 +72,8 @@ namespace ToolSet{
     QVector<qreal > String2DoubleVec(const QString &str)
     {
         QVector<qreal > vector;
+        if(str.isEmpty())
+            return vector;
         QStringList nums = str.split(" ");
         for(const QString &string: qAsConst(nums))
             vector << string.toDouble();
@@ -81,6 +83,8 @@ namespace ToolSet{
     QList<qreal > String2DoubleList(const QString &str)
     {
         QList<qreal > vector;
+        if(str.isEmpty())
+            return vector;
         QStringList nums = str.split(" ");
         for(const QString &string: qAsConst(nums))
             vector << string.toDouble();
@@ -226,6 +230,8 @@ namespace ToolSet{
     SupraFit::ConfidenceBar Confidence(const QList<qreal > &list, qreal error)
     {   
         SupraFit::ConfidenceBar result;
+        if(list.isEmpty())
+            return result;
         error /= 2;
         if(error == 0)
         {
@@ -257,7 +263,8 @@ namespace ToolSet{
     {
         SupraFit::BoxWhisker bw;
         int count = list.size();
-        
+        if(count == 0)
+            return bw;
         /* inspired by qt docs: Box and Whiskers Example
          * https://doc.qt.io/qt-5.10/qtcharts-boxplotchart-example.html
          */
@@ -341,8 +348,11 @@ namespace ToolSet{
         local_names = model["localParameter"].toObject()["names"].toString().split("|");
         each_local  = local_names.count();
         global_names = model["globalParameter"].toObject()["names"].toString().split("|");
+        
         QVector<QVector<qreal> >global(globalcount);
         QVector<QVector<qreal> >local(localcount*each_local);
+        QVector<int > int_keys; // We need this keys as int, since single "signals" could have been omitted and therefore there can be gaps in the list
+        
         for(int i = 0; i < models.size(); ++i)
         {
             QJsonObject model = models[i]["data"].toObject();
@@ -352,14 +362,20 @@ namespace ToolSet{
             for(int j = 0; j < globalcount; ++j)
                 global[j] << globalObject[QString::number(j)].toString().toDouble();
             
-            
-            for(int j = 0; j < localcount; ++j)
+            QStringList keys = localObject.keys();
+            int j = 0;
+            for(const QString &key : qAsConst(keys))
             {
-                QList<qreal> values = String2DoubleList(localObject[QString::number(j)].toString());
+                QList<qreal> values = String2DoubleList(localObject[key].toString());
+                if(values.size() == 0 || key == "names")
+                    continue;
                 for(int k = 0; k < each_local; ++k)
                 {
                     local[each_local*j+k] << values[k];
                 }
+                if(i == 0)
+                    int_keys << key.toInt();
+                j++;
             }
         }
         
@@ -393,7 +409,7 @@ namespace ToolSet{
             parameter << object;
         }
         
-        for(int i = 0; i < localcount; ++i)
+        for(int i = 0; i < int_keys.size(); ++i)
         {
             for(int j = 0; j < each_local; ++j)
             {
@@ -403,7 +419,7 @@ namespace ToolSet{
                 object["data"] = data;  
                 object["name"] = local_names[j];
                 object["type"] = "Local Parameter";
-                object["index"] = QString::number(j) + "|" + QString::number(i);
+                object["index"] = QString::number(j) + "|" + QString::number(int_keys[i]);
                 parameter << object;
             }
         }
