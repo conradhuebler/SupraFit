@@ -45,7 +45,6 @@ WGSResultsWidget::WGSResultsWidget(const QJsonObject &data, QSharedPointer<Abstr
     m_data = data;
     m_model = model;
     has_data = false;
-    setUi();
 }
 
 WGSResultsWidget::~WGSResultsWidget()
@@ -64,13 +63,13 @@ QWidget * WGSResultsWidget::ChartWidget()
         layout->addWidget(MoCoPlot());
     
     widget->setLayout(layout);
-    WriteConfidence(m_data);
+//     WriteConfidence(m_data);
     return widget;
 }
 
-void WGSResultsWidget::WriteConfidence(const QJsonObject  &result)
-{
-    
+// void WGSResultsWidget::WriteConfidence(const QJsonObject  &result)
+// {
+   /* 
     QString text;
     QJsonObject controller = result["controller"].toObject();
     if(controller["method"].toInt() == SupraFit::Statistic::ModelComparison)
@@ -97,13 +96,13 @@ void WGSResultsWidget::WriteConfidence(const QJsonObject  &result)
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
         QJsonObject data = m_data[QString::number(i)].toObject();
-        qDebug() << data;
         if(data.isEmpty())
             continue;
         text  += Print::TextFromConfidence(data, m_model.data()) + "\n";
     }
     m_confidence_label->setText(text);
-}
+    */
+// }
 
 ChartView * WGSResultsWidget::WGPlot()
 {

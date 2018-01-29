@@ -26,7 +26,7 @@
 class AbstractSearchClass;
 class AbstractModel;
 
-class CVResultsWidget : public ResultsWidget
+class CVResultsWidget : public QWidget
 {
     Q_OBJECT
     
@@ -35,7 +35,7 @@ public:
     ~CVResultsWidget();
     
 private:
-    virtual QWidget * ChartWidget() override;
+    virtual QWidget * ChartWidget();
     
 
 };

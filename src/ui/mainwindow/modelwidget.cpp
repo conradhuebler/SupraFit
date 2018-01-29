@@ -45,7 +45,7 @@
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
-#include "src/ui/widgets/results/cvresultwidget.h"
+#include "src/ui/widgets/results/resultswidget.h"
 #include "src/ui/widgets/results/wgsresultswidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
@@ -464,12 +464,13 @@ void ModelWidget::MCStatistic(MCConfig config)
     monte_carlo->setModel(m_model);
     monte_carlo->Evaluate();
     
-    QList<QJsonObject> result = monte_carlo->Results();
+    QJsonObject result = monte_carlo->Result();
     QList<QJsonObject> models = monte_carlo->Models(); 
 
-    MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo->Result(), m_model, m_charts.signal_wrapper, models); 
+     m_statistic_result->setWidget(new ResultsWidget(result, m_model, m_charts.signal_wrapper, models));
+//     MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo->Result(), m_model, m_charts.signal_wrapper, models); 
     delete monte_carlo;
-    mcsresult->setModels(models);
+//     mcsresult->setModels(models);
     
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
@@ -483,7 +484,7 @@ void ModelWidget::MCStatistic(MCConfig config)
     doc.setHtml(buff);
     
     m_logging += "\n\n" +  doc.toPlainText();
-    m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
+//     m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
     m_actions->EnableCharts(true);
     m_statistic_result->show();  
     m_statistic_dialog->HideWidget();
@@ -551,68 +552,13 @@ void ModelWidget::DoReductionAnalyse()
     
     analyse->setModel(m_model);
     analyse->PlainReduction();
-    QtCharts::QChart *chart = new QtCharts::QChart;
-    
-    chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    QPointer<ListChart> view = new ListChart;
-    
     QJsonObject result = analyse->Result();
+    
     m_model->UpdateStatistic(result);
-    QVector<qreal> x = ToolSet::String2DoubleVec(result["controller"].toObject()["x"].toString());
-    for(int i = 0; i < result.count() - 1; ++i)
-    {
-        QJsonObject data = result[QString::number(i)].toObject();
-        if(data.isEmpty())
-            continue;
-        QString name = data["name"].toString();
-        LineSeries *serie = new LineSeries;
-        serie->setSize(4);
-        QList< QPointF > series;
-        QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
-        for(int i = 0; i < list.size(); ++i)
-            series << QPointF(x[i], list[i]);
-        if(series.isEmpty())
-            continue;
-        
-        QColor color;
-        int index = 0, jndex = 0;
-        if(data["type"].toString() == "Global Parameter")
-            color = ChartWrapper::ColorCode(i);
-        else
-        {
-            if(data.contains("index"))
-            {   
-                QStringList lindex = data["index"].toString().split("|");
-                index =  lindex[1].toInt();
-                jndex = lindex[0].toInt();
-                color = m_charts.signal_wrapper->Series(index)->color();
-            }
-        }
-        serie->append(series);
-        serie->setName( name );
-        serie->setColor(color);
-        view->addSeries(serie, i, color, name);
-        view->setColor(i,  color);
-            
-        serie = new LineSeries;
-        serie->setDashDotLine(true);
-        qreal value = 0;
-        if(data["type"].toString() == "Global Parameter")
-           value = m_model->GlobalParameter(i);
-        else
-           value = m_model->LocalParameter(jndex,index);
-        
-        serie->append(QPointF(series.last().x(), value));
-        serie->append(QPointF(series.first().x(), value));
-        serie->setColor(color);
-        view->addSeries(serie, i, color, name);
-        view->setColor(i,  color);
-        if(data["type"].toString() != "Global Parameter")
-            view->HideSeries(i);
-    }
-    m_statistic_result->setWidget(view, "Reduction Analyse for " + m_model->Name());
+    m_statistic_result->setWidget(new ResultsWidget(result, m_model, m_charts.signal_wrapper));
     m_statistic_result->show();
     m_statistic_dialog->HideWidget();
+    m_actions->EnableCharts(true);
     delete analyse;
 }
 
@@ -649,8 +595,9 @@ void ModelWidget::WGStatistic(WGSConfig config)
     }
 
     m_model->UpdateStatistic(statistic->Result());
-    WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
-    m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
+    m_statistic_result->setWidget(new ResultsWidget(statistic->Result(), m_model, m_charts.signal_wrapper));
+//     WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
+//     m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
     m_actions->EnableCharts(true);
     m_statistic_result->show();  
     emit IncrementProgress(1);
@@ -688,9 +635,10 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     m_model->UpdateStatistic(statistic->Result());
     if(result)
     {
-        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
+        m_statistic_result->setWidget(new ResultsWidget(statistic->Result(), m_model, m_charts.signal_wrapper));
+//         WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
         m_actions->EnableCharts(true);
-        m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
+//         m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
         m_statistic_result->show();
     }else
         QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
@@ -707,11 +655,13 @@ void ModelWidget::LoadStatistics()
     {
         if(!m_model->getMCStatisticResult(i).isEmpty())
         {
+            /*
             MCResultsWidget *mcsresult = new MCResultsWidget(m_model->getMCStatisticResult(i), m_model, m_charts.signal_wrapper);
             if(mcsresult->hasData())
                 m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
             else
                 delete mcsresult;
+            */
         }
         QApplication::processEvents();
     }
@@ -719,31 +669,31 @@ void ModelWidget::LoadStatistics()
     QJsonObject statistic = m_model->getWGStatisticResult();
     if(!statistic.isEmpty())
     {
+        /*
         WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
         if(resultwidget->hasData())
             m_statistic_result->setWidget(resultwidget, "Weakend Grid Search " + m_model->Name());
         else
             delete resultwidget;
+        */
     }
 
     statistic = m_model->getMoCoStatisticResult();
     if(!statistic.isEmpty())
     {
+        /*
         WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
         if(resultwidget->hasData())
             m_statistic_result->setWidget(resultwidget, "Model Comparison " + m_model->Name());
         else
             delete resultwidget;
+        */
     }
     
     statistic = m_model->getReduction();
     if(!statistic.isEmpty())
     {
-        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
-        if(resultwidget->hasData())
-            m_statistic_result->setWidget(resultwidget, "Reduction Analysis " + m_model->Name());
-        else
-            delete resultwidget;
+        
     }
     
     if(m_statistic_result->Count())

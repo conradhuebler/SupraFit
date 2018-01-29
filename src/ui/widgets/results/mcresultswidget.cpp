@@ -65,7 +65,7 @@ MCResultsWidget::~MCResultsWidget()
 
 }
 
-QWidget * MCResultsWidget::ChartWidget()
+void MCResultsWidget::setUi()
 {
     QWidget *widget = new QWidget;
     QTabWidget *tabs = new QTabWidget;
@@ -104,7 +104,7 @@ QWidget * MCResultsWidget::ChartWidget()
     
     widget->setLayout(layout);
     
-    return widget;
+    setLayout(layout);
 }
 
 QPointer<ListChart> MCResultsWidget::MakeHistogram()
@@ -112,9 +112,6 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     QPointer<ListChart> view = new ListChart;
     view->setXAxis("parameter");
     view->setYAxis("relative rate");
-    if(qApp->instance()->property("chartanimation").toBool())
-        view->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    view->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     view->setMinimumSize(300,400);
     bool formated = false;
 
@@ -177,9 +174,6 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 {
     ListChart *boxplot = new ListChart;
     double min = 10, max = 0;
-    if(qApp->instance()->property("chartanimation").toBool())
-        boxplot->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    boxplot->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
@@ -243,9 +237,9 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     return view;
 }
 
-void MCResultsWidget::WriteConfidence(const QJsonObject  &constant_results)
-{ 
-    
+// void MCResultsWidget::WriteConfidence(const QJsonObject  &constant_results)
+// { 
+    /*
     QString confidence;
     QJsonObject controller = constant_results["controller"].toObject();
     confidence += "MC Steps: " + QString::number(controller["steps"].toInt()) + "\t";
@@ -270,8 +264,9 @@ void MCResultsWidget::WriteConfidence(const QJsonObject  &constant_results)
     }
     m_model->UpdateStatistic(m_data);
     m_confidence_label->setText(confidence);
+    */
     
-}
+// }
 
 void MCResultsWidget::UpdateBoxes()
 {    
@@ -370,7 +365,8 @@ void MCResultsWidget::GenerateConfidence(double error)
         m_data[QString::number(i)] = data;
     }
     UpdateBoxes();
-    WriteConfidence(m_data);
+    m_model->UpdateStatistic(m_data);
+//     WriteConfidence(m_data);
 }
 
 #include "mcresultswidget.moc"

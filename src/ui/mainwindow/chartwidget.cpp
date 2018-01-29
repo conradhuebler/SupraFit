@@ -21,6 +21,7 @@
 #include "src/core/AbstractModel.h"
 
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/instance.h"
 #include "src/ui/widgets/chartview.h"
 
 #include <QtCore/QTimer>
@@ -257,23 +258,25 @@ void ChartWidget::formatAxis()
 
 void ChartWidget::updateTheme(QtCharts::QChart::ChartTheme  theme)
 {  
-     m_signalchart->setTheme(theme);
-     m_errorchart->setTheme(theme);
+//      m_signalchart->setTheme(theme);
+//      m_errorchart->setTheme(theme);
      qApp->instance()->setProperty("charttheme", theme); 
+     emit Instance::GlobalInstance()->ConfigurationChanged();
 }
 
 void ChartWidget::setAnimation(bool animation)
 {
-    if(animation)
-    {
-        m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    }else
-    {
-        m_signalchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
-        m_errorchart->setAnimationOptions(QtCharts::QChart::NoAnimation);  
-    }
+//     if(animation)
+//     {
+//         m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//         m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//     }else
+//     {
+//         m_signalchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+//         m_errorchart->setAnimationOptions(QtCharts::QChart::NoAnimation);  
+//     }
     qApp->instance()->setProperty("chartanimation", animation); 
+    emit Instance::GlobalInstance()->ConfigurationChanged();
 }
 
 void ChartWidget::updateUI()

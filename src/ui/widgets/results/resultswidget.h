@@ -23,6 +23,7 @@
 
 class AbstractSearchClass;
 class AbstractModel;
+class ChartWrapper;
 
 class QJsonObject;
 
@@ -31,18 +32,24 @@ class ResultsWidget : public QWidget
     Q_OBJECT
     
 public:
-    ResultsWidget();
+    ResultsWidget(const QJsonObject &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject >() );
     ~ResultsWidget();
     
-protected:
+private:
+    QWidget *MonteCarloWidget();
+    QWidget *ReductionWidget();
+    QWidget *ModelComparisonWidget();
+    QWidget *GridSearchWidget();
+    QWidget *SearchWidget();
     void setUi();
-    virtual QWidget * ChartWidget() = 0;
     inline QSize ChartSize() const { return QSize(400,300); }
-    virtual void WriteConfidence(const QList<QJsonObject > &data) { Q_UNUSED(data) };
+    void WriteConfidence();
         
     QJsonObject m_data;
-
-    QWidget *m_chart_widget;
+    
+    ChartWrapper *m_wrapper;
+    QList<QJsonObject > m_models ;
+    QWidget *m_widget;
     QLabel *m_confidence_label;
     QSharedPointer< AbstractModel > m_model;
 };    

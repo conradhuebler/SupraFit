@@ -38,7 +38,7 @@ class ListChart;
 
 class QJsonObject;
 
-class MCResultsWidget : public ResultsWidget
+class MCResultsWidget : public QWidget
 {
     Q_OBJECT
     
@@ -58,6 +58,8 @@ public:
 
     
 private:
+    void setUi();
+    
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox *m_error;
     QPointer<ListChart > m_histgram, m_box;
@@ -65,8 +67,7 @@ private:
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries * > m_area_series;
     
-    virtual QWidget * ChartWidget() override;
-    void WriteConfidence(const QJsonObject  &constant_results);
+//     void WriteConfidence(const QJsonObject  &constant_results);
     void UpdateBoxes();
     void setAreaColor(int index, const QColor &color);
 
@@ -80,6 +81,9 @@ private:
     Type m_type;
     
     ChartWrapper *m_wrapper;
+    QSharedPointer< AbstractModel > m_model;
+    QJsonObject m_data;
+    
 private slots:
     void ExportResults();
     void GenerateConfidence(double error);

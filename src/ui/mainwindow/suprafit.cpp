@@ -26,6 +26,8 @@
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
 
+#include "src/ui/guitools/instance.h"
+
 #include "src/ui/mainwindow/chartwidget.h"
 #include "src/ui/mainwindow/datawidget.h"
 #include "src/ui/mainwindow/modeldataholder.h"
@@ -58,6 +60,9 @@
 #include "suprafit.h"
 MainWindow::MainWindow()
 {
+    m_instance = new Instance;
+    Instance::setInstance(m_instance);
+    
     ReadSettings();
     
     m_model_dataholder = new ModelDataHolder;
@@ -212,7 +217,8 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
-    
+    if(m_instance)
+        delete m_instance;
 }
 
 QIcon MainWindow::Icon(const QString &str)

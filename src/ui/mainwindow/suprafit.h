@@ -17,9 +17,7 @@
  * 
  */
 
-
-#ifndef nmr2fit_H
-#define nmr2fit_H
+#pragma once
 
 #include "src/ui/widgets/optimizerwidget.h"
 #include "src/ui/mainwindow/modelhistorywidget.h"
@@ -34,6 +32,7 @@
 
 struct OptimizerConfig;
 
+class Instance;
 class ModelDataHolder;
 class ChartWidget;
 class QResizeEvent;
@@ -88,6 +87,8 @@ private:
     virtual void closeEvent(QCloseEvent *event);
     const QStringList m_properties = QStringList() << "threads" << "chartanimation" << "workingdir" << "dirlevel" << "auto_confidence" << "lastdir" << "p_value" << "charttheme" << "ask_on_exit" << "tooltips";
     
+    QPointer<Instance > m_instance;
+    
 private slots:
     void NewTable();
     void OpenFile();
@@ -109,5 +110,3 @@ signals:
    protected:
        bool eventFilter(QObject *obj, QEvent *ev);
 };
-
-#endif // nmr2fit_H

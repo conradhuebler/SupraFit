@@ -27,7 +27,7 @@ class AbstractSearchClass;
 class AbstractModel;
 class QJsonObject;
 
-class WGSResultsWidget : public ResultsWidget
+class WGSResultsWidget : public QWidget
 {
     Q_OBJECT
     
@@ -37,9 +37,16 @@ public:
     inline bool hasData() const { return has_data; }
     
 private:
-    void WriteConfidence(const QJsonObject &result);
-    virtual QWidget * ChartWidget() override;
+//     void WriteConfidence(const QJsonObject &result);
+    virtual QWidget * ChartWidget();
     
+            
+    QJsonObject m_data;
+    
+    ChartWrapper *m_wrapper;
+    QList<QJsonObject > m_models ;
+        QSharedPointer<AbstractModel > m_model;
+
     ChartView * MoCoPlot();
     ChartView * WGPlot();
     bool  has_data;

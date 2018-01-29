@@ -102,6 +102,7 @@ private slots:
     void ExportPNG();
     void setChartConfig(const ChartConfig &chartconfig);
     void forceformatAxis();
+    void ConfigurationChanged();
     
 signals:
     void AxisChanged();

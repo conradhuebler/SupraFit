@@ -19,8 +19,13 @@
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
+#include "src/ui/guitools/chartwrapper.h"
 
+#include "src/ui/widgets/chartview.h"
+
+#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/statisticwidget.h"
+#include "src/ui/widgets/results/mcresultswidget.h"
 
 #include <QtCore/QPointer>
 
@@ -33,9 +38,15 @@
 #include "resultswidget.h"
 
 
-ResultsWidget::ResultsWidget()
+ResultsWidget::ResultsWidget(const QJsonObject &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models)
 {
-
+    m_data = data;
+    m_model = model;
+    m_models = models;
+    m_wrapper = wrapper;
+    
+    setUi();
+    resize(1024,600);
 }
 
 ResultsWidget::~ResultsWidget()
@@ -51,16 +62,207 @@ void ResultsWidget::setUi()
 
     m_confidence_label = new QLabel();
     m_confidence_label->setTextFormat(Qt::RichText);
+    m_confidence_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    
+    switch(m_data["controller"].toObject()["method"].toInt()){
+        case  SupraFit::Statistic::MonteCarlo:
+             m_widget = MonteCarloWidget();
+        break;
+        
+        case  SupraFit::Statistic::ModelComparison:
+            m_widget = ModelComparisonWidget();
+        break;
+        
+        case  SupraFit::Statistic::WeakenedGridSearch:
+            m_widget = GridSearchWidget();
+        break;
+        
+        case  SupraFit::Statistic::Reduction:
+            m_widget = ReductionWidget();
+        break;
+        
+        case  SupraFit::Statistic::CrossValidation:
+            m_widget = MonteCarloWidget();
+        break;
+        
+        default:
+            m_widget = new QWidget;
+        break;
+    }
+    
     QScrollArea *scroll = new QScrollArea;
     scroll->setWidget(m_confidence_label);
     scroll->setWidgetResizable(true);
     
-    m_chart_widget = ChartWidget();
-    
-    splitter->addWidget(m_chart_widget);
+    splitter->addWidget(m_widget);
     splitter->addWidget(scroll);
     layout->addWidget(splitter, 0, 0);
     setLayout(layout);
+    WriteConfidence();
 }
+
+QWidget * ResultsWidget::MonteCarloWidget()
+{
+    MCResultsWidget *widget = new MCResultsWidget(m_data, m_model, m_wrapper, m_models);
+    return widget;
+}
+
+
+QWidget * ResultsWidget::ReductionWidget()
+{
+    QPointer<ListChart> view = new ListChart;
+    
+    QVector<qreal> x = ToolSet::String2DoubleVec(m_data["controller"].toObject()["x"].toString());
+    for(int i = 0; i < m_data.count() - 1; ++i)
+    {
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
+        
+        QString name = data["name"].toString();
+        LineSeries *serie = new LineSeries;
+        serie->setSize(4);
+        QList< QPointF > series;
+        QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
+        for(int i = 0; i < list.size(); ++i)
+            series << QPointF(x[i], list[i]);
+        if(series.isEmpty())
+            continue;
+        
+        QColor color;
+        int index = 0, jndex = 0;
+        if(data["type"].toString() == "Global Parameter")
+            color = ChartWrapper::ColorCode(i);
+        else
+        {
+            if(data.contains("index"))
+            {   
+                QStringList lindex = data["index"].toString().split("|");
+                index =  lindex[1].toInt();
+                jndex = lindex[0].toInt();
+                color = m_wrapper->Series(index)->color();
+            }
+        }
+        serie->append(series);
+        serie->setName( name );
+        serie->setColor(color);
+        view->addSeries(serie, i, color, name);
+        view->setColor(i,  color);
+            
+        serie = new LineSeries;
+        serie->setDashDotLine(true);
+        qreal value = 0;
+        if(data["type"].toString() == "Global Parameter")
+           value = m_model->GlobalParameter(i);
+        else
+           value = m_model->LocalParameter(jndex,index);
+        
+        serie->append(QPointF(series.last().x(), value));
+        serie->append(QPointF(series.first().x(), value));
+        serie->setColor(color);
+        view->addSeries(serie, i, color, name);
+        view->setColor(i,  color);
+        if(data["type"].toString() != "Global Parameter")
+            view->HideSeries(i);
+    }
+    return view;
+}
+
+QWidget * ResultsWidget::ModelComparisonWidget()
+{
+//     QWidget *widget = new QWidget;
+    
+    QJsonObject controller = m_data["controller"].toObject();
+//     QtCharts::QChart *chart = new QtCharts::QChart;
+//     if(qApp->instance()->property("chartanimation").toBool())
+//         chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+//     chart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
+    ChartView *view = new ChartView;
+    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
+    
+    QList<qreal > x = ToolSet::String2DoubleList( controller["data"].toObject()["global_0"].toString() );
+    QList<qreal > y = ToolSet::String2DoubleList( controller["data"].toObject()["global_1"].toString() );
+
+    for(int j = 0; j < x.size(); ++j)
+            xy_series->append(QPointF(x[j], y[j]));
+    
+//     if(x.size())
+//             has_data = true;
+    
+    xy_series->setMarkerSize(6);
+    xy_series->setName("MC Results");
+    view->addSeries(xy_series, true);
+    
+    QList<QList<QPointF > >series;
+    
+    QJsonObject box = controller["box"].toObject();
+        series << ToolSet::String2Points( box["0"].toString() );
+        series << ToolSet::String2Points( box["1"].toString() );
+    int i = 0;
+    
+    for(const QList<QPointF> &serie : qAsConst(series))
+    {
+        LineSeries *xy_serie = new LineSeries;
+        xy_serie->append(serie);
+        xy_serie->setName(m_model->GlobalParameterName(i));
+        view->addSeries(xy_serie, true);
+        ++i;
+    }
+    
+    view->setXAxis(m_model->GlobalParameterName(0));
+    view->setYAxis(m_model->GlobalParameterName(1));
+    
+    return view;
+}
+
+QWidget * ResultsWidget::GridSearchWidget()
+{
+    ChartView *view = new ChartView;
+    view->setXAxis("constant");
+    view->setYAxis("Sum of Squares");
+
+    for(int i = 0; i < m_data.count() - 1; ++i)
+    {
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
+        
+        QtCharts::QLineSeries *xy_series = new QtCharts::QLineSeries;
+        QList<qreal > x = ToolSet::String2DoubleList( data["data"].toObject()["x"].toString() );
+        QList<qreal > y = ToolSet::String2DoubleList( data["data"].toObject()["y"].toString() );
+        for(int j = 0; j < x.size(); ++j)
+            xy_series->append(QPointF(x[j], y[j]));
+        view->addSeries(xy_series);
+        
+        LineSeries *current_constant= new LineSeries;
+        *current_constant << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()) << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()*1.1);
+        current_constant->setColor(xy_series->color());
+        current_constant->setName(m_model->GlobalParameterName(i));
+        view->addSeries(current_constant, true);
+    }
+    
+    
+    return view;
+}
+
+QWidget * ResultsWidget::SearchWidget()
+{
+    QWidget *widget = new QWidget;
+    return widget;
+}
+
+void ResultsWidget::WriteConfidence()
+{
+    QString text;
+    for(int i = 0; i < m_data.count() - 1; ++i)
+    {
+        QJsonObject data = m_data[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
+        text += Print::TextFromConfidence(data, m_model.data());
+        }
+    m_confidence_label->setText(Print::TextFromConfidence(m_data, m_model.data()));
+}
+
 
 #include "resultswidget.moc"

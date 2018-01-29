@@ -19,6 +19,8 @@
 
 #include "src/core/toolset.h"
 
+#include "src/ui/guitools/instance.h"
+
 #include "src/ui/dialogs/chartconfig.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
@@ -145,22 +147,16 @@ void ChartViewPrivate::keyPressEvent(QKeyEvent *event)
 ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false), m_latex_supported(latex_supported), m_ymax(0)
 {
     setUi();
-//     m_chart->legend()->setAlignment(Qt::AlignRight);
     m_chart->legend()->setVisible(false);
-    if(qApp->instance()->property("chartanimation").toBool())
-        m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    else
-        m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
-    
 }
 
-ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false)
+ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_latex_supported(false)
 {
     m_chart = new QtCharts::QChart(); 
     m_chart_private = new ChartViewPrivate(new ChartViewPrivate(m_chart, this));
     setUi();
     m_chart->legend()->setVisible(false);
-//     m_chart->legend()->setAlignment(Qt::AlignRight);
+
 }
 
 void ChartView::setUi()
@@ -214,6 +210,8 @@ void ChartView::setUi()
     
     connect(&m_chartconfigdialog, SIGNAL(ConfigChanged(ChartConfig)), this, SLOT(setChartConfig(ChartConfig)));
     connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
+    ConfigurationChanged();
 }
 
 QtCharts::QLineSeries * ChartView::addLinearSeries(qreal m, qreal n, qreal min, qreal max)
@@ -539,4 +537,17 @@ void ChartView::ExportPNG()
     file.open(QIODevice::WriteOnly);
     pixmap.save(&file, "PNG");
 }
+
+void ChartView::ConfigurationChanged()
+{
+    bool animation = qApp->instance()->property("chartanimation").toBool(); 
+    if(animation)
+        m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+    else
+        m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+    
+    m_chart->setTheme(QtCharts::QChart::ChartTheme( qApp->instance()->property("charttheme").toInt()) );
+}
+
+
 #include "chartview.moc"

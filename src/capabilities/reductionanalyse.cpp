@@ -38,7 +38,6 @@ ReductionAnalyse::~ReductionAnalyse()
 
 }
 
-
 void ReductionAnalyse::addThread(QPointer<MonteCarloThread> thread)
 {
     m_threads << thread;
@@ -49,8 +48,6 @@ bool ReductionAnalyse::Pending() const
 {
     return m_threadpool->activeThreadCount();
 }
-
-
 
 void ReductionAnalyse::CrossValidation(CVType type)
 {
@@ -126,6 +123,9 @@ void ReductionAnalyse::PlainReduction()
     m_controller["method"] = SupraFit::Statistic::Reduction;
     
     emit MaximumSteps(m_model->DataPoints());
+    
+//     m_models << m_model.data()->ExportData();
+    
     DataTable *table = m_model->DependentModel();
     for(int i = m_model->DataPoints() - 1; i > 3; --i)
     {
@@ -147,7 +147,7 @@ void ReductionAnalyse::PlainReduction()
         if(m_threads[i])
         {
             m_models << m_threads[i]->Model();
-            x << m_model->PrintOutIndependent(m_threads[i]->Index()); 
+            x << m_model->PrintOutIndependent(m_threads[i]->Index() - 1); 
             delete m_threads[i];
         }
     }
