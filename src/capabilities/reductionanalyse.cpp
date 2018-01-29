@@ -141,17 +141,19 @@ void ReductionAnalyse::PlainReduction()
     }
     
     while(Pending()) { QApplication::processEvents(); }
-    
+    QList<qreal> x;
     for(int i = 0; i < m_threads.size(); ++i)
     {
         if(m_threads[i])
         {
             m_models << m_threads[i]->Model();
+            x << m_model->PrintOutIndependent(m_threads[i]->Index()); 
             delete m_threads[i];
         }
     }
-    m_results = ToolSet::Model2Parameter(m_models);
+    m_results = ToolSet::Model2Parameter(m_models, false);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
+    m_controller["x"] = ToolSet::DoubleList2String(x);
     emit AnalyseFinished();
 }
 

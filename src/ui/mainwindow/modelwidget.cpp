@@ -556,35 +556,38 @@ void ModelWidget::DoReductionAnalyse()
     chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     QPointer<ListChart> view = new ListChart;
     
-    QList<QJsonObject> models = analyse->Models(); 
-    QList<QJsonObject> result = ToolSet::Model2Parameter(models, false);
-    m_model->UpdateStatistic(analyse->Result());
-    for(int i = 0; i < result.size(); ++i)
+    QJsonObject result = analyse->Result();
+    m_model->UpdateStatistic(result);
+    QVector<qreal> x = ToolSet::String2DoubleVec(result["controller"].toObject()["x"].toString());
+    for(int i = 0; i < result.count() - 1; ++i)
     {
-        QString name = result[i]["name"].toString();
+        QJsonObject data = result[QString::number(i)].toObject();
+        if(data.isEmpty())
+            continue;
+        QString name = data["name"].toString();
         LineSeries *serie = new LineSeries;
         serie->setSize(4);
         QList< QPointF > series;
-        QVector<qreal> list = ToolSet::String2DoubleVec(result[i]["data"].toObject()["raw"].toString());
+        QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
         for(int i = 0; i < list.size(); ++i)
-            series << QPointF(m_model->PrintOutIndependent(list.size() - i), list[i]);
-
+            series << QPointF(x[i], list[i]);
+        
         QColor color;
         int index = 0, jndex = 0;
-        if(result[i]["type"].toString() == "Global Parameter")
+        if(data["type"].toString() == "Global Parameter")
             color = ChartWrapper::ColorCode(i);
         else
         {
-            if(result[i].contains("index"))
+            if(data.contains("index"))
             {   
-                QStringList lindex = result[i]["index"].toString().split("|");
+                QStringList lindex = data["index"].toString().split("|");
                 index =  lindex[1].toInt();
                 jndex = lindex[0].toInt();
                 color = m_charts.signal_wrapper->Series(index)->color();
             }
         }
         serie->append(series);
-        serie->setName( result[i]["name"].toString());
+        serie->setName( name );
         serie->setColor(color);
         view->addSeries(serie, i, color, name);
         view->setColor(i,  color);
@@ -592,7 +595,7 @@ void ModelWidget::DoReductionAnalyse()
         serie = new LineSeries;
         serie->setDashDotLine(true);
         qreal value = 0;
-        if(result[i]["type"].toString() == "Global Parameter")
+        if(data["type"].toString() == "Global Parameter")
            value = m_model->GlobalParameter(i);
         else
            value = m_model->LocalParameter(jndex,index);
@@ -602,7 +605,7 @@ void ModelWidget::DoReductionAnalyse()
         serie->setColor(color);
         view->addSeries(serie, i, color, name);
         view->setColor(i,  color);
-        if(result[i]["type"].toString() != "Global Parameter")
+        if(data["type"].toString() != "Global Parameter")
             view->HideSeries(i);
     }
     m_statistic_result->setWidget(view, "Reduction Analyse for " + m_model->Name());
