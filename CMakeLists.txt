@@ -196,9 +196,7 @@ set(suprafit_SRCS
                 src/ui/dialogs/configdialog.cpp
                 src/ui/dialogs/chartconfig.cpp
                 src/ui/widgets/optimizerwidget.cpp
-                #src/ui/widgets/results/cvresultwidget.cpp
                 src/ui/widgets/results/searchresultwidget.cpp
-                src/ui/widgets/results/wgsresultswidget.cpp
                 src/ui/widgets/results/mcresultswidget.cpp
                 src/ui/widgets/results/resultswidget.cpp
                 src/ui/widgets/optionswidget.cpp

@@ -47,7 +47,6 @@
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/results/resultswidget.h"
-#include "src/ui/widgets/results/wgsresultswidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/widgets/optionswidget.h"
