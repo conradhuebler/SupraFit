@@ -20,10 +20,11 @@
 #include "src/global.h"
 #include "src/version.h"
 
-#include "src/capabilities/reductionanalyse.h"
-#include "src/capabilities/weakenedgridsearch.h"
+#include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/modelcomparison.h"
+#include "src/capabilities/reductionanalyse.h"
+#include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/toolset.h"
 #include "src/core/dataclass.h"
@@ -456,21 +457,19 @@ void ModelWidget::MCStatistic(MCConfig config)
     config.optimizer_config = m_model->getOptimizerConfig();
     config.runtype = m_optim_flags->getFlags();
     
-    QPointer<MonteCarloStatistics > monte_carlo = new MonteCarloStatistics(config, this);
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), monte_carlo, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), monte_carlo, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(monte_carlo, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(monte_carlo, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    monte_carlo->setModel(m_model);
-    monte_carlo->Evaluate();
+    QPointer<MonteCarloStatistics > statistic = new MonteCarloStatistics(config, this);
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    statistic->setModel(m_model);
+    statistic->Evaluate();
     
-    QJsonObject result = monte_carlo->Result();
-    QList<QJsonObject> models = monte_carlo->Models(); 
+    QJsonObject result = statistic->Result();
+    QList<QJsonObject> models = statistic->Models(); 
 
-     m_statistic_result->setWidget(new ResultsWidget(result, m_model, m_charts.signal_wrapper, models));
-//     MCResultsWidget *mcsresult = new MCResultsWidget(monte_carlo->Result(), m_model, m_charts.signal_wrapper, models); 
-    delete monte_carlo;
-//     mcsresult->setModels(models);
+    LoadStatistic(statistic->Result(), statistic->Models());
+    delete statistic;
     
     QString buff = m_statistic_widget->Statistic();
     buff.remove("<tr>");
@@ -484,10 +483,6 @@ void ModelWidget::MCStatistic(MCConfig config)
     doc.setHtml(buff);
     
     m_logging += "\n\n" +  doc.toPlainText();
-//     m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
-    m_actions->EnableCharts(true);
-    m_statistic_result->show();  
-    m_statistic_dialog->HideWidget();
 }
 
 void ModelWidget::FastConfidence()
@@ -512,54 +507,35 @@ void ModelWidget::FastConfidence()
 void ModelWidget::CVAnalyse()
 {
     Waiter wait;
-    ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(analyse, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
-    connect(analyse, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(analyse, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    analyse->setModel(m_model);
-    analyse->CrossValidation(m_statistic_dialog->CrossValidationType());
-    
-    QList<QJsonObject> models = analyse->Models(); 
-    QList<QJsonObject> result = ToolSet::Model2Parameter(models);
-    QJsonObject controller;
-    controller["type"] = m_statistic_dialog->CrossValidationType();
-    ToolSet::Parameter2Statistic(result, m_model.data());
-    m_model->UpdateStatistic(analyse->Result());
-    MCResultsWidget *mcsresult = new MCResultsWidget(analyse->Result(), m_model, m_charts.signal_wrapper, models);
-    mcsresult->setModels(models);
-
-    m_statistic_result->setWidget(mcsresult, "Cross Validation for " + m_model->Name());
-    
-    m_actions->EnableCharts(true);
-    m_statistic_result->show();  
-    m_statistic_dialog->HideWidget();
-    
-    delete analyse;
+    ReductionAnalyse *statistic = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(statistic, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    statistic->setModel(m_model);
+    statistic->CrossValidation(m_statistic_dialog->CrossValidationType());
+    LoadStatistic(statistic->Result(), statistic->Models());
+    emit IncrementProgress(1);
+    delete statistic;
 }
 
 void ModelWidget::DoReductionAnalyse()
 {
     Waiter wait;
-    ReductionAnalyse *analyse = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    ReductionAnalyse *statistic = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
     
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), analyse, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(analyse, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
-    connect(analyse, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(analyse, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(statistic, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     
-    analyse->setModel(m_model);
-    analyse->PlainReduction();
-    QJsonObject result = analyse->Result();
-    
-    m_model->UpdateStatistic(result);
-    m_statistic_result->setWidget(new ResultsWidget(result, m_model, m_charts.signal_wrapper));
-    m_statistic_result->show();
-    m_statistic_dialog->HideWidget();
-    m_actions->EnableCharts(true);
-    delete analyse;
+    statistic->setModel(m_model);
+    statistic->PlainReduction();
+    LoadStatistic(statistic->Result(), statistic->Models());
+    emit IncrementProgress(1);
+    delete statistic;
 }
 
 void ModelWidget::WGStatistic()
@@ -594,14 +570,8 @@ void ModelWidget::WGStatistic(WGSConfig config)
         emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
 
-    m_model->UpdateStatistic(statistic->Result());
-    m_statistic_result->setWidget(new ResultsWidget(statistic->Result(), m_model, m_charts.signal_wrapper));
-//     WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
-//     m_statistic_result->setWidget(resultwidget, "Weakened Grid Search for " + m_model->Name());
-    m_actions->EnableCharts(true);
-    m_statistic_result->show();  
+    LoadStatistic(statistic->Result(), statistic->Models()); 
     emit IncrementProgress(1);
-    m_statistic_dialog->HideWidget();
     delete statistic;
 }
 
@@ -632,19 +602,23 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);
     bool result = statistic->Confidence();
-    m_model->UpdateStatistic(statistic->Result());
     if(result)
-    {
-        m_statistic_result->setWidget(new ResultsWidget(statistic->Result(), m_model, m_charts.signal_wrapper));
-//         WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic->Result(), m_model, m_statistic_result);
-        m_actions->EnableCharts(true);
-//         m_statistic_result->setWidget(resultwidget, "Model Comparison for " + m_model->Name());
-        m_statistic_result->show();
-    }else
+        LoadStatistic(statistic->Result(), statistic->Models());
+    else
         QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
     m_statistic_dialog->HideWidget();
     delete statistic;
 }
+
+void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject> &models)
+{
+    m_model->UpdateStatistic(data);
+    m_statistic_result->setWidget(new ResultsWidget(data, m_model, m_charts.signal_wrapper, models));
+    m_statistic_result->show();
+    m_statistic_dialog->HideWidget();
+    m_actions->EnableCharts(true);
+}
+
 
 void ModelWidget::LoadStatistics()
 {
@@ -654,47 +628,25 @@ void ModelWidget::LoadStatistics()
     for(int i = 0; i < m_model->getMCStatisticResult(); ++i)
     {
         if(!m_model->getMCStatisticResult(i).isEmpty())
-        {
-            /*
-            MCResultsWidget *mcsresult = new MCResultsWidget(m_model->getMCStatisticResult(i), m_model, m_charts.signal_wrapper);
-            if(mcsresult->hasData())
-                m_statistic_result->setWidget(mcsresult, "Monte Carlo Simulation for " + m_model->Name());
-            else
-                delete mcsresult;
-            */
-        }
+            m_statistic_result->setWidget(new ResultsWidget(m_model->getMCStatisticResult(i), m_model, m_charts.signal_wrapper));
+        
         QApplication::processEvents();
     }
 
     QJsonObject statistic = m_model->getWGStatisticResult();
     if(!statistic.isEmpty())
-    {
-        /*
-        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
-        if(resultwidget->hasData())
-            m_statistic_result->setWidget(resultwidget, "Weakend Grid Search " + m_model->Name());
-        else
-            delete resultwidget;
-        */
-    }
+        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
+    
 
     statistic = m_model->getMoCoStatisticResult();
     if(!statistic.isEmpty())
-    {
-        /*
-        WGSResultsWidget *resultwidget = new WGSResultsWidget(statistic, m_model, m_statistic_result);
-        if(resultwidget->hasData())
-            m_statistic_result->setWidget(resultwidget, "Model Comparison " + m_model->Name());
-        else
-            delete resultwidget;
-        */
-    }
+        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
+    
     
     statistic = m_model->getReduction();
     if(!statistic.isEmpty())
-    {
-        
-    }
+        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
+    
     
     if(m_statistic_result->Count())
         m_actions->EnableCharts(true);

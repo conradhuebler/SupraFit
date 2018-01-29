@@ -67,22 +67,27 @@ void ResultsWidget::setUi()
     switch(m_data["controller"].toObject()["method"].toInt()){
         case  SupraFit::Statistic::MonteCarlo:
              m_widget = MonteCarloWidget();
+             setObjectName("Monte Carlo Simulation for " + m_model->Name());
         break;
         
         case  SupraFit::Statistic::ModelComparison:
             m_widget = ModelComparisonWidget();
+            setObjectName("Model Comparison Confidence for " + m_model->Name());
         break;
         
         case  SupraFit::Statistic::WeakenedGridSearch:
             m_widget = GridSearchWidget();
+            setObjectName("Weakend Grid Search Confidence for " + m_model->Name());
         break;
         
         case  SupraFit::Statistic::Reduction:
             m_widget = ReductionWidget();
+            setObjectName("Reduction Analysis for " + m_model->Name());
         break;
         
         case  SupraFit::Statistic::CrossValidation:
             m_widget = MonteCarloWidget();
+            setObjectName("Cross Validation Estimation for " + m_model->Name());
         break;
         
         default:
@@ -169,14 +174,8 @@ QWidget * ResultsWidget::ReductionWidget()
 }
 
 QWidget * ResultsWidget::ModelComparisonWidget()
-{
-//     QWidget *widget = new QWidget;
-    
+{    
     QJsonObject controller = m_data["controller"].toObject();
-//     QtCharts::QChart *chart = new QtCharts::QChart;
-//     if(qApp->instance()->property("chartanimation").toBool())
-//         chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-//     chart->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
     ChartView *view = new ChartView;
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
     
@@ -185,9 +184,6 @@ QWidget * ResultsWidget::ModelComparisonWidget()
 
     for(int j = 0; j < x.size(); ++j)
             xy_series->append(QPointF(x[j], y[j]));
-    
-//     if(x.size())
-//             has_data = true;
     
     xy_series->setMarkerSize(6);
     xy_series->setName("MC Results");
@@ -240,8 +236,6 @@ QWidget * ResultsWidget::GridSearchWidget()
         current_constant->setName(m_model->GlobalParameterName(i));
         view->addSeries(current_constant, true);
     }
-    
-    
     return view;
 }
 
@@ -254,14 +248,15 @@ QWidget * ResultsWidget::SearchWidget()
 void ResultsWidget::WriteConfidence()
 {
     QString text;
+    QJsonObject controller = m_data["controller"].toObject();
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if(data.isEmpty())
             continue;
-        text += Print::TextFromConfidence(data, m_model.data());
-        }
-    m_confidence_label->setText(Print::TextFromConfidence(m_data, m_model.data()));
+        text += Print::TextFromConfidence(data, m_model.data(), controller);
+    }
+    m_confidence_label->setText(text);
 }
 
 

@@ -153,7 +153,7 @@ ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_pr
 ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_latex_supported(false)
 {
     m_chart = new QtCharts::QChart(); 
-    m_chart_private = new ChartViewPrivate(new ChartViewPrivate(m_chart, this));
+    m_chart_private = new ChartViewPrivate(m_chart, this);
     setUi();
     m_chart->legend()->setVisible(false);
 

@@ -68,5 +68,5 @@ namespace ToolSet{
 }
 
 namespace Print{
-    QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractModel> model);
+    QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractModel> model, const QJsonObject &controller);
 }

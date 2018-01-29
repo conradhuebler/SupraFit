@@ -512,8 +512,9 @@ namespace ToolSet{
 
 namespace Print{
     
-QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractModel> model)
+QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractModel> model, const QJsonObject &controller)
 {
+    int type = controller["method"].toInt(); 
     QString text, box_message("");
     qreal value = result["value"].toDouble();
     QString pot;
@@ -528,13 +529,16 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
         nr = " = " + model->formatedLocalParameter(value);
         pot = model->LocalParameterPrefix(); 
     }
-    QJsonObject confidence = result["confidence"].toObject();
-    qreal upper = confidence["upper"].toDouble();
-    qreal lower = confidence["lower"].toDouble();
-    qreal conf = confidence["error"].toDouble();
-    text = "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr>\n";
-    text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr>\n"; 
-    if(result.contains("boxplot"))
+    if(type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch)
+    {
+        QJsonObject confidence = result["confidence"].toObject();
+        qreal upper = confidence["upper"].toDouble();
+        qreal lower = confidence["lower"].toDouble();
+        qreal conf = confidence["error"].toDouble();
+        text = "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr>\n";
+        text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr>\n"; 
+    }
+    if(type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation)
     {
         SupraFit::BoxWhisker box = ToolSet::Object2Whisker(result["boxplot"].toObject());
         text += "<tr><td>Median: </td><td> <b>" +QString::number(box.median, 'f', 4) + "</b></td></tr>\n"; 

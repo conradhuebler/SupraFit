@@ -52,7 +52,7 @@ public:
 private:
     void addThread(QPointer<MonteCarloThread> thread);
     bool Pending() const;
-    inline virtual QJsonObject Controller() const {return m_controller; }
+    inline virtual QJsonObject Controller() const override {return m_controller; } 
     
     QVector<QPointer<MonteCarloThread> > m_threads;
     AbstractConfig m_config;

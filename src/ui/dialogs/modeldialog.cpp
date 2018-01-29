@@ -17,10 +17,11 @@
  *
  */
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTabWidget>
-#include "modeldialog.h"
 
+#include "modeldialog.h"
 
 ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
 {
@@ -40,11 +41,13 @@ ModalDialog::~ModalDialog()
 {
 }
 
-void ModalDialog::setWidget(QWidget* widget, const QString &str)
-{
+void ModalDialog::setWidget(QWidget* widget, QString str)
+{  
+    m_widget = widget;
+    if(!m_widget->objectName().isEmpty() && !m_widget->objectName().isNull())
+        str = m_widget->objectName();
     if(windowTitle().isEmpty() || windowTitle().isNull())
         setWindowTitle(str);
-    m_widget = widget;
     int i = m_tab->addTab(m_widget, str);
     m_tab->setCurrentIndex(i);
 }
