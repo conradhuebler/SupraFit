@@ -103,8 +103,7 @@ bool Console::FullTest()
         QSharedPointer<AbstractModel> model_2to1 = Test2111Model(data);
         Test(model_2to1);
         
-        QSharedPointer<Abstr<tr><td></td></tr>
-actModel> model_1to2 = Test1112Model(data);
+        QSharedPointer<AbstractModel> model_1to2 = Test1112Model(data);
         Test(model_1to2);
         
         QJsonObject toplevel, dataObject;
@@ -213,7 +212,6 @@ void Console::Reduction(QSharedPointer<AbstractModel> model)
     statistic->setModel(model);
     statistic->PlainReduction();
     model->UpdateStatistic(statistic->Result());
-        <tr><td></td></tr>
 
     QJsonObject result = statistic->Result();
     
