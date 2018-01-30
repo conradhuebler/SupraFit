@@ -175,12 +175,6 @@ void ItoI_ItoII_Model::CalculateVariables()
         qreal complex_11 = K11*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;
 
-        if(i == 0)
-        {
-            host_zero = host;
-            guest_zero = guest;
-        }
-
         Vector vector(5);
         vector(0) = i + 1;
         vector(1) = host;

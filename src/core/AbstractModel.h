@@ -286,6 +286,10 @@ public:
     /*! \brief return text of calculated model
      */
     QString Model2Text() const;
+    
+    QString Global2Text() const;
+    
+    QString Local2Text() const;
 
     /*! \brief reimplment, if more model specfic model information should be printed out
      */

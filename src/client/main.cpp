@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,37 +17,57 @@
  * 
  */
 
-#include "ui/mainwindow/suprafit.h"
+#include "src/client/console.h"
 
 #include "src/global.h"
 #include "src/global_config.h"
 #include "src/version.h"
 
+#include <QDebug>
+
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCommandLineOption>
 
-#include <QtWidgets/QApplication>
+#include <QCoreApplication>
+
+#include <iostream>
 
 int main(int argc, char** argv)
 {
-    
     qInstallMessageHandler(myMessageOutput);
     
-    QApplication app(argc, argv);
+    
+    QCoreApplication app(argc, argv);
     QCommandLineParser parser;
-
     Version(&app, &parser);
     parser.process(app);
-
+    
     const QStringList args = parser.positionalArguments();
-
+    
+    std::cout << SupraFit::about().toStdString() << std::endl;
+    
 #ifdef _DEBUG
-        qDebug() << "Debug output enabled, good fun!";
+    qDebug() << "Debug output enabled, good fun!";
 #endif
     
-    MainWindow mainwindow;
-    mainwindow.showMaximized();
-    for(const QString &str : qAsConst(args))
-        mainwindow.LoadFile(str);
-    return app.exec();
+    int count = 0;        
+    for(const QString &file : args)
+    {
+        if(!file.isEmpty() && !file.isNull())
+        {
+            Console console;
+            if(console.LoadFile(file))
+            {
+                ++count;
+                console.FullTest();
+            }
+        }
+    }
+    
+    if(!count)
+    {
+        std::cout << "Nothing found to be done" << std::endl;
+        return 0;
+    }else
+        return app.exec();
 }
