@@ -53,9 +53,11 @@ private:
     
     QPointer<const DataClass > m_data;
     
-    void MonteCarlo(QSharedPointer<AbstractModel> model);
-    void MoCoAnalyse(QSharedPointer<AbstractModel> model);
-    void Reduction(QSharedPointer<AbstractModel> model);
-    void CrossValidation(QSharedPointer<AbstractModel> model);
-    void GridSearch(QSharedPointer<AbstractModel> model);
+    QJsonObject MonteCarlo(QSharedPointer<AbstractModel> model);
+    QJsonObject MoCoAnalyse(QSharedPointer<AbstractModel> model);
+    QJsonObject Reduction(QSharedPointer<AbstractModel> model);
+    QJsonObject CrossValidation(QSharedPointer<AbstractModel> model);
+    QJsonObject GridSearch(QSharedPointer<AbstractModel> model);
+    
+    void PrintStatistic(const QJsonObject &object, QSharedPointer<AbstractModel> model);
 };

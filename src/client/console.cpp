@@ -36,7 +36,7 @@
 
 #include "console.h"
 
-Console::Console() : m_std(0.001), m_runs(100)
+Console::Console() : m_std(0.001), m_runs(1000)
 {
         
 }
@@ -151,22 +151,36 @@ void Console::Test(QSharedPointer<AbstractModel> model)
      */
     
     std::cout << "Reduction Analysis" << std::endl;
-    Reduction(model);
+    QJsonObject statistic = Reduction(model);
+    PrintStatistic(statistic, model);
     
     std::cout << "Cross Validation" << std::endl;
-    CrossValidation(model);
+    statistic = CrossValidation(model);
+    PrintStatistic(statistic, model);
     
     std::cout << "Monte Carlo Simulation" << std::endl;
-    MonteCarlo(model);
+    statistic = MonteCarlo(model);
+    PrintStatistic(statistic, model);
     
     std::cout << "Model Comparison" << std::endl;
-    MoCoAnalyse(model);
+    statistic = MoCoAnalyse(model);
+    PrintStatistic(statistic, model);
     
-    
-    
+    std::cout << "Weakend Grid Search" << std::endl;
+    statistic = GridSearch(model);
+    PrintStatistic(statistic, model);
 }
 
-void Console::MonteCarlo(QSharedPointer<AbstractModel> model)
+void Console::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model)
+{
+    if(object.isEmpty())
+        return;
+    
+    model->UpdateStatistic(object);
+//     qDebug() << object;
+}
+
+QJsonObject Console::MonteCarlo(QSharedPointer<AbstractModel> model)
 {
     MCConfig config;
     config.maxsteps = 1000;
@@ -177,36 +191,33 @@ void Console::MonteCarlo(QSharedPointer<AbstractModel> model)
     model->UpdateStatistic(statistic->Result());
     
     QJsonObject result = statistic->Result();
-    
-    for(int i = 0; i < result.count() - 1; ++i)
-    {
-        QJsonObject data = result.value(QString::number(i)).toObject();
-        if(data.isEmpty())
-            continue;
-        std::cout <<  Print::TextFromConfidence(data, model.data(),data["controller"].toObject()).toStdString() << std::endl;
-    }
-    
-    
     delete statistic;
+    return result;
 }
 
-void Console::MoCoAnalyse(QSharedPointer<AbstractModel> model)
+QJsonObject Console::MoCoAnalyse(QSharedPointer<AbstractModel> model)
 {
-//     MoCoConfig config;
-//     config.mc_steps = 1000;
-//     config.f_value = model->finv(0.95);
-//     config.fisher_statistic = true;
-//     
-//     ModelComparison *statistic = new ModelComparison(config, this);
-//     statistic->setModel(model);
-//     bool result = statistic->Confidence();
-//     if(result)
-//         model->UpdateStatistic(statistic->Result());
-//     
-//     delete statistic;
+     MoCoConfig config;
+     config.mc_steps = 1000;
+     config.f_value = model->finv(0.95);
+     config.fisher_statistic = true;
+     
+     qreal error = model.data()->SumofSquares();
+     
+     config. maxerror = error*(config.f_value*model.data()->Parameter()/(model.data()->Points()-model.data()->Parameter()) +1);; 
+     
+     ModelComparison *statistic = new ModelComparison(config, this);
+     statistic->setModel(model);
+     bool result = statistic->Confidence();
+     QJsonObject res = statistic->Result();
+     if(!result)
+         res = QJsonObject();
+     
+     delete statistic;
+     return res;
 }
 
-void Console::Reduction(QSharedPointer<AbstractModel> model)
+QJsonObject Console::Reduction(QSharedPointer<AbstractModel> model)
 {
     ReductionAnalyse *statistic = new ReductionAnalyse(model->getOptimizerConfig(), OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
     statistic->setModel(model);
@@ -215,18 +226,11 @@ void Console::Reduction(QSharedPointer<AbstractModel> model)
 
     QJsonObject result = statistic->Result();
     
-    for(int i = 0; i < result.count() - 1; ++i)
-    {
-        QJsonObject data = result.value(QString::number(i)).toObject();
-        if(data.isEmpty())
-            continue;
-        std::cout <<  Print::TextFromConfidence(data, model.data(),data["controller"].toObject()).toStdString() << std::endl;
-    }
-    
     delete statistic;
+    return result;
 }
 
-void Console::CrossValidation(QSharedPointer<AbstractModel> model)
+QJsonObject Console::CrossValidation(QSharedPointer<AbstractModel> model)
 {
     ReductionAnalyse *statistic = new ReductionAnalyse(model->getOptimizerConfig(), OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
     statistic->setModel(model);
@@ -238,13 +242,29 @@ void Console::CrossValidation(QSharedPointer<AbstractModel> model)
        
     QJsonObject result = statistic->Result();
     
-    for(int i = 0; i < result.count() - 1; ++i)
-    {
-        QJsonObject data = result.value(QString::number(i)).toObject();
-        if(data.isEmpty())
-            continue;
-        std::cout <<  Print::TextFromConfidence(data, model.data(),data["controller"].toObject()).toStdString() << std::endl;
-    }
-    
     delete statistic;
+    return result;
+}
+
+
+QJsonObject Console::GridSearch(QSharedPointer<AbstractModel> model)
+{
+     WGSConfig config;
+     config.f_value = model->finv(0.95);
+     config.fisher_statistic = true;
+     
+     qreal error = model.data()->SumofSquares();
+     
+     config. maxerror = error*(config.f_value*model.data()->Parameter()/(model.data()->Points()-model.data()->Parameter()) +1);; 
+     
+     WeakenedGridSearch *statistic = new WeakenedGridSearch(config, this);
+     statistic->setModel(model);
+     statistic->setParameter(model->ExportModel(false));
+    
+     statistic->ConfidenceAssesment();
+     
+     QJsonObject result = statistic->Result();
+
+     delete statistic;
+     return result;
 }
