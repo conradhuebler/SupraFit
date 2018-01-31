@@ -87,11 +87,11 @@ bool Console::FullTest()
         std::cout << "#####################  Starting run number "<< i + 1<< " #######################################################" << std::endl << std::endl;
         std::cout << "Generating new Data Table for Monte Carlo Simulation" << std::endl;
         std::normal_distribution<double> Phi = std::normal_distribution<double>(0,m_std);
-        DataTable *model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
+        QPointer<DataTable > model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
 #ifdef _DEBUG
         model_table->Debug();
 #endif
-        DataClass *data = new DataClass(m_data);
+        QPointer<DataClass > data = new DataClass(m_data);
         data->setDependentTable(model_table);
 #ifdef _DEBUG
         data->IndependentModel()->Debug();
@@ -115,6 +115,9 @@ bool Console::FullTest()
         toplevel["data"] = dataObject;
         if(        JsonHandler::WriteJsonFile(toplevel, m_file+"_"+QString::number(i) + ".suprafit") )
             std::cout << QString(m_file+"_"+QString::number(i) + ".suprafit").toStdString() << " successfully written to disk" <<std::endl;
+        
+        if(model_table)
+            delete model_table;
     }
     QTimer::singleShot(100, qApp, SLOT(quit()));
     
