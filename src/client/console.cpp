@@ -36,7 +36,7 @@
 
 #include "console.h"
 
-Console::Console() : m_std(0.001), m_runs(100)
+Console::Console(int runs, double std) : m_runs(runs), m_std(std)
 {
         
 }
@@ -154,27 +154,40 @@ void Console::Test(QSharedPointer<AbstractModel> model)
      */
     QJsonObject statistic;
     
-    std::cout << "Reduction Analysis" << std::endl;
-    statistic = Reduction(model);
-    PrintStatistic(statistic, model);
+    if(m_reduction)
+    {
+        std::cout << "Reduction Analysis" << std::endl;
+        statistic = Reduction(model);
+        PrintStatistic(statistic, model);
+    }
     
-    std::cout << "Cross Validation" << std::endl;
-    statistic = CrossValidation(model);
-    PrintStatistic(statistic, model);
+    if(m_crossvalidation)
+    {
+        std::cout << "Cross Validation" << std::endl;
+        statistic = CrossValidation(model);
+        PrintStatistic(statistic, model);
+    }
     
-    std::cout << "Monte Carlo Simulation" << std::endl;
-    statistic = MonteCarlo(model);
-    PrintStatistic(statistic, model);
+    if(m_montecarlo)
+    {
+        std::cout << "Monte Carlo Simulation" << std::endl;
+        statistic = MonteCarlo(model);
+        PrintStatistic(statistic, model);
+    }
     
-    std::cout << "Model Comparison" << std::endl;
-    statistic = MoCoAnalyse(model);
-    PrintStatistic(statistic, model);
+    if(m_modelcomparison)
+    {
+        std::cout << "Model Comparison" << std::endl;
+        statistic = MoCoAnalyse(model);
+        PrintStatistic(statistic, model);
+    }
     
-    
-    std::cout << "Weakend Grid Search" << std::endl;
-    statistic = GridSearch(model);
-    PrintStatistic(statistic, model);
-    
+    if(m_weakendgrid)
+    {
+        std::cout << "Weakend Grid Search" << std::endl;
+        statistic = GridSearch(model);
+        PrintStatistic(statistic, model);
+    }
 }
 
 void Console::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model)
