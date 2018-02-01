@@ -50,7 +50,8 @@ int main(int argc, char** argv)
     qDebug() << "Debug output enabled, good fun!";
 #endif
     
-    int count = 0;        
+    int count = 0;  
+    
     for(const QString &file : args)
     {
         if(!file.isEmpty() && !file.isNull())
@@ -64,6 +65,16 @@ int main(int argc, char** argv)
         }
     }
     
+    
+    // Debug mode stuff
+    /*
+    Console console;
+    if(console.LoadFile("1to1.suprafit"))
+        {
+                ++count;
+                console.FullTest();
+        }
+      */  
     if(!count)
     {
         std::cout << "Nothing found to be done" << std::endl;

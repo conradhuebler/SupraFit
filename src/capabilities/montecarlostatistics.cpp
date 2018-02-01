@@ -60,7 +60,7 @@ void MonteCarloThread::run()
     }
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #ifdef _DEBUG
-        qDebug() <<  "started!";
+//         qDebug() <<  "started!";
 #endif
     m_minimizer->setModel(m_model);
     m_finished = m_minimizer->Minimize(m_config.runtype);
@@ -71,7 +71,7 @@ void MonteCarloThread::run()
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
 #ifdef _DEBUG
-        qDebug() <<  "finished after " << t1-t0 << "msecs!";
+//         qDebug() <<  "finished after " << t1-t0 << "msecs!";
 #endif
 }
 

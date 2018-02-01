@@ -53,18 +53,18 @@ DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableMod
 
 DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME whatever
 {
-    m_table = other.m_table;
+    m_table =  Eigen::MatrixXd(other.m_table);
     m_header = other.m_header;
-    m_checked_table = other.m_checked_table;
+    m_checked_table =  Eigen::MatrixXd(other.m_checked_table);
     m_checkable = other.m_checkable;
     m_editable = other.m_editable;
 }
 
 DataTable::DataTable(DataTable* other) //: QAbstractTableModel(other) FIXME whatever
 {
-    m_table = other->m_table;
+    m_table = Eigen::MatrixXd(other->m_table);
     m_header = other->m_header;
-    m_checked_table = other->m_checked_table;
+    m_checked_table =  Eigen::MatrixXd(other->m_checked_table);
     m_checkable = other->m_checkable;
     m_editable = other->m_editable;
 }
@@ -560,7 +560,7 @@ DataClass::DataClass(const DataClass& other): QObject()
     m_systemObject = other.m_systemObject;
 }
 
-DataClass::DataClass(const DataClass* other)
+DataClass::DataClass(const DataClass* other): QObject()
 {
     d = other->d;
     m_systemObject = other->m_systemObject;

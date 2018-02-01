@@ -36,7 +36,7 @@
 
 #include "console.h"
 
-Console::Console() : m_std(0.001), m_runs(1000)
+Console::Console() : m_std(0.001), m_runs(100)
 {
         
 }
@@ -116,8 +116,8 @@ bool Console::FullTest()
         if(        JsonHandler::WriteJsonFile(toplevel, m_file+"_"+QString::number(i) + ".suprafit") )
             std::cout << QString(m_file+"_"+QString::number(i) + ".suprafit").toStdString() << " successfully written to disk" <<std::endl;
         
-        if(model_table)
-            delete model_table;
+//         if(model_table)
+//             delete model_table;
     }
     QTimer::singleShot(100, qApp, SLOT(quit()));
     
@@ -128,7 +128,7 @@ void Console::Test(QSharedPointer<AbstractModel> model)
 {
     
     std::cout << "********************************************************************************************************" << std::endl;
-    std::cout << "************************    Model analysis starts right now       *************************************" << std::endl;
+    std::cout << "************************    Model analysis starts right now       **************************************" << std::endl;
     std::cout << "********************************************************************************************************" << std::endl << std::endl;
     std::cout << "                         " << model->Name().toStdString() << std::endl;
     model->InitialGuess();
@@ -152,9 +152,10 @@ void Console::Test(QSharedPointer<AbstractModel> model)
     /*
      * We start with statistics
      */
+    QJsonObject statistic;
     
     std::cout << "Reduction Analysis" << std::endl;
-    QJsonObject statistic = Reduction(model);
+    statistic = Reduction(model);
     PrintStatistic(statistic, model);
     
     std::cout << "Cross Validation" << std::endl;
@@ -169,9 +170,11 @@ void Console::Test(QSharedPointer<AbstractModel> model)
     statistic = MoCoAnalyse(model);
     PrintStatistic(statistic, model);
     
+    
     std::cout << "Weakend Grid Search" << std::endl;
     statistic = GridSearch(model);
     PrintStatistic(statistic, model);
+    
 }
 
 void Console::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model)
