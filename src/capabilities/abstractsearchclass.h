@@ -46,7 +46,7 @@ class AbstractSearchThread : public QObject, public QRunnable
 public:
     inline AbstractSearchThread() : m_interrupt(false) { setAutoDelete(false); }
     inline ~AbstractSearchThread() { }
-    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); m_model->detach(); }
     
 public slots:
     inline virtual void Interrupt() { m_interrupt = true; }

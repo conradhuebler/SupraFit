@@ -131,9 +131,8 @@ void ReductionAnalyse::PlainReduction()
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setIndex(i);
         QSharedPointer<AbstractModel> model = m_model->Clone();
-        table->CheckRow(i); 
+        table->CheckRow(i);
         model->setDependentTable(table);
-        model->detach();
         thread->setModel(model);
         addThread(thread);
     }

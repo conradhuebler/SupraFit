@@ -183,10 +183,7 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
 QSharedPointer<AbstractModel > IItoI_ItoI_Model::Clone()
 {
     QSharedPointer<IItoI_ItoI_Model > model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel());
-    model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParamters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    model.data()->ImportModel(this);
     return model;    
 }
 

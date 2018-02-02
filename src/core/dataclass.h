@@ -199,7 +199,7 @@ public:
             for(int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
-    inline void setDependentTable(DataTable *table) { d->m_dependent_model = table; d->m_dependent_model->setCheckable(true); }
+    inline void setDependentTable(DataTable *table) { d->m_dependent_model = table; d->m_dependent_model->setCheckable(true);}
     void SwitchConentrations();
     QList<qreal >  getSignals(QList<int > dealing_signals = QVector<int >(1,0).toList());
     qreal InitialHostConcentration(int i) const;

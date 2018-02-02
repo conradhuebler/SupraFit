@@ -51,13 +51,12 @@ public:
     inline QJsonObject OptimizedParameter() const { return m_optimized; }
     inline QList<qreal > Constants() const { return m_constants; }
     void setDataTable(DataTable *table);
-    inline QJsonObject Model() const { return m_model->ExportModel(); }
+    inline QJsonObject Model() const { return m_optimized; }
     inline bool Finished() const { return m_finished; }
     inline void setIndex(int index) { m_index = index; }
     inline int Index() const { return m_index; }
     
 private:
-    QSharedPointer<Minimizer> m_minimizer;
     QJsonObject m_optimized;
     MCConfig m_config;
     QList<qreal > m_constants;

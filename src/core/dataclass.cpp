@@ -221,7 +221,7 @@ void DataTable::PrintCheckedRows() const
         int check = 0;
         for(int j = 0; j < columnCount(); ++j)
             check += m_checked_table(i,j);
-        std::cout << "Row " << i << " checked: " << check << std::endl;
+       qDebug() << "Row " << i << " checked: " << check;
     }
     
 }
@@ -716,7 +716,7 @@ void DataClass::LoadSystemParameter()
 
 void DataClass::ImportData(const DataClass* other)
 {
-    d = new DataClassPrivate(other->d.data());
+    d = other->d.data();
     m_systemObject = other->m_systemObject;
 }
 

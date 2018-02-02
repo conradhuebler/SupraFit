@@ -18,6 +18,8 @@
  */
 #include "src/global_config.h"
 
+#include "src/core/libmath.h"
+
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
@@ -38,7 +40,7 @@
 
 #include "montecarlostatistics.h"
 
-MonteCarloThread::MonteCarloThread(const MCConfig &config): m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_config(config), m_finished(false)
+MonteCarloThread::MonteCarloThread(const MCConfig &config): m_config(config), m_finished(false)
 {
 }
 
@@ -62,12 +64,22 @@ void MonteCarloThread::run()
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
-    m_minimizer->setModel(m_model);
-    m_finished = m_minimizer->Minimize(m_config.runtype);
-    
-    m_optimized = m_minimizer->Parameter();
-    m_model->ImportModel(m_optimized);
-    m_constants = m_model->GlobalParameter();
+    m_model->DependentModel()->PrintCheckedRows();
+
+    QVector<qreal > parameter = m_model->OptimizeParameters(m_config.runtype);
+   // m_model->DependentModel()->PrintCheckedRows();
+
+    m_finished = NonlinearFit(m_model, parameter);
+    m_optimized = m_model->ExportModel();
+    /*NonLinearFitThread *thread = new NonLinearFitThread(false);
+    thread->setModel(m_model);
+    thread->setOptimizationRun(m_config.runtype);
+    //m_model->DependentModel()->PrintCheckedRows();
+    thread->run();
+    m_optimized = thread->ConvergedParameter();
+    m_finished = thread->Converged();*/
+
+    // delete thread;
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1-t0);
 #ifdef _DEBUG

@@ -47,6 +47,7 @@ AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false
 
 AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(other->m_corrupt), m_last_p(other->m_last_p), m_f_value(other->m_f_value), m_last_parameter(other->m_last_parameter), m_last_freedom(other->m_last_freedom), m_converged(other->m_converged), m_locked_model(other->m_locked_model)
 {
+    qDebug() << "model constr";
     setOptimizerConfig(other->getOptimizerConfig());
     
     m_model_signal = other->m_model_signal;
@@ -788,7 +789,7 @@ void AbstractModel::ImportModel(const AbstractModel* other)
     m_model_signal = new DataTable(other->m_model_signal);
     m_model_error = new DataTable(other->m_model_error);
 
-    m_data->ImportData(other->m_data); 
+    // m_data->ImportData(other->m_data);
     
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;

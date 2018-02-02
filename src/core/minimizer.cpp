@@ -53,6 +53,7 @@ void NonLinearFitThread::run()
 
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model)
 {
+   // model->DependentModel()->PrintCheckedRows();
     m_model = model->Clone();
     m_model->Calculate();
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
@@ -71,6 +72,7 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {
     QList<int >locked = m_model->LockedParamters();
     QVector<qreal > parameter = m_model->OptimizeParameters(runtype);
+   // m_model->DependentModel()->PrintCheckedRows();
     if(parameter.isEmpty())
         return 0;
     if(runtype == m_runtype)
