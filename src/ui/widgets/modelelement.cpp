@@ -169,6 +169,8 @@ QVector<double > ModelElement::D() const
 
 void ModelElement::Update()
 {
+    qDebug() << m_model.data();
+    qDebug() << m_model->ActiveSignals();
     m_include->setChecked(m_model->ActiveSignals()[m_no]);
     DisableSignal(m_model->ActiveSignals()[m_no]);
     if(!m_include->isChecked())

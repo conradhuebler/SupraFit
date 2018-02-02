@@ -90,6 +90,12 @@ public:
      */
     void ImportModel(const QJsonObject &topjson, bool override = true);
  
+    /* ! \brief Import model from other model
+     * 
+     */
+    void ImportModel(const AbstractModel *other);
+    
+    
     /*! \brief Returns the name of the model
      */
     virtual QString Name() const = 0; 

@@ -331,6 +331,7 @@ void ModelWidget::Repaint()
     for(int j = 0; j < m_model_elements.size(); ++j)
     {
         error += m_model->SumOfErrors(j);
+        qDebug() << m_model;
         m_model_elements[j]->Update();
     }
     m_pending = false;
@@ -415,6 +416,7 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     
     json = m_minimizer->Parameter();
     m_model->ImportModel(json);
+    qDebug() << m_model;
     Repaint();
     m_model->OptimizeParameters(m_optim_flags->getFlags());
     if(qApp->instance()->property("auto_confidence").toBool())

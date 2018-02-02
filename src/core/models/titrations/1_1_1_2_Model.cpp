@@ -199,11 +199,13 @@ void ItoI_ItoII_Model::CalculateVariables()
 
 QSharedPointer<AbstractModel > ItoI_ItoII_Model::Clone()
 {
-    QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);    
+    QSharedPointer<ItoI_ItoII_Model > model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(this), &QObject::deleteLater);
+    model->ImportModel(this);
+/*
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->ImportModel(ExportModel());
     model.data()->setLockedParameter(LockedParamters());
-    model.data()->setOptimizerConfig(getOptimizerConfig());
+    model.data()->setOptimizerConfig(getOptimizerConfig());*/
     return model;
 }
 

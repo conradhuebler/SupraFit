@@ -781,6 +781,39 @@ void AbstractModel::setOption(const QString& name, const QString& value)
     OptimizeParameters(m_last_optimization);
 }
 
+void AbstractModel::ImportModel(const AbstractModel* other)
+{
+    setOptimizerConfig(other->getOptimizerConfig());
+    
+    m_model_signal = new DataTable(other->m_model_signal);
+    m_model_error = new DataTable(other->m_model_error);
+
+    m_data->ImportData(other->m_data); 
+    
+    m_local_parameter = other->m_local_parameter;
+    m_active_signals = other->m_active_signals;
+    m_locked_parameters = other->m_locked_parameters;
+    m_model_options = other->m_model_options;
+    m_enabled_parameter = other->m_enabled_parameter;
+    m_global_parameter = other->m_global_parameter;
+    
+    m_mc_statistics = other->m_mc_statistics;
+    m_wg_statistics = other->m_wg_statistics;
+    m_moco_statistics = other->m_moco_statistics;
+    m_reduction = other->m_reduction;
+    m_fast_confidence = other->m_fast_confidence;
+    
+    m_sum_absolute = other->m_sum_absolute;
+    m_sum_squares = other->m_sum_squares;
+    m_variance = other->m_variance;
+    m_mean = other->m_mean;
+    m_stderror = other->m_stderror;
+    m_SEy = other->m_SEy;
+    m_chisquared = other->m_chisquared;
+    m_covfit = other->m_covfit;
+    m_used_variables = other->m_used_variables;
+}
+
 
 AbstractModel & AbstractModel::operator=(const AbstractModel& other)
 {

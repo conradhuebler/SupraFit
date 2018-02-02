@@ -51,20 +51,20 @@ DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableMod
         m_header << QString::number(i + 1);
 }
 
-DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME whatever
+DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other)
 {
-    m_table =  Eigen::MatrixXd(other.m_table);
+    m_table =  other.m_table;
     m_header = other.m_header;
-    m_checked_table =  Eigen::MatrixXd(other.m_checked_table);
+    m_checked_table =  other.m_checked_table;
     m_checkable = other.m_checkable;
     m_editable = other.m_editable;
 }
 
-DataTable::DataTable(DataTable* other) //: QAbstractTableModel(other) FIXME whatever
+DataTable::DataTable(DataTable* other)
 {
-    m_table = Eigen::MatrixXd(other->m_table);
+    m_table = other->m_table;
     m_header = other->m_header;
-    m_checked_table =  Eigen::MatrixXd(other->m_checked_table);
+    m_checked_table =  other->m_checked_table;
     m_checkable = other->m_checkable;
     m_editable = other->m_editable;
 }
@@ -297,9 +297,6 @@ DataTable * DataTable::Block(int row_begin,  int column_begin, int row_end, int 
     return new DataTable(table, checked_table);
 }
 
-
-
-
 Vector DataTable::Row(int row)
 {
     return m_table.row(row);
@@ -493,7 +490,6 @@ DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_ho
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(other)
 {
     m_independent_model = new DataTable(other.m_independent_model);
-    
     m_scaling = other.m_scaling;
     m_host_assignment = other.m_host_assignment;
     m_dependent_model = new DataTable(other.m_dependent_model);
@@ -504,7 +500,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
 {
     m_independent_model = new DataTable(other->m_independent_model);
-    
     m_scaling = other->m_scaling;
        m_host_assignment = other->m_host_assignment; 
     m_dependent_model = new DataTable(other->m_dependent_model);
@@ -717,6 +712,12 @@ void DataClass::LoadSystemParameter()
         setSystemParameterValue(str, m_systemObject[str].toVariant());
     
     emit SystemParameterLoaded();
+}
+
+void DataClass::ImportData(const DataClass* other)
+{
+    d = new DataClassPrivate(other->d.data());
+    m_systemObject = other->m_systemObject;
 }
 
 
