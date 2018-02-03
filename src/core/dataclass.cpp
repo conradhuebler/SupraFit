@@ -39,11 +39,11 @@
 #include <random>
 #include <iostream>
 
-DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent), m_checkable(false), m_editable(false)
+DataTable::DataTable(QObject* parent) :  m_checkable(false), m_editable(false)
 {
 }
 
-DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent), m_checkable(false), m_editable(false)
+DataTable::DataTable(int columns, int rows, QObject* parent) :  m_checkable(false), m_editable(false)
 {
     m_table = Eigen::MatrixXd::Zero(rows, columns);
     m_checked_table = Eigen::MatrixXd::Ones(rows, columns);
@@ -529,12 +529,12 @@ void DataClassPrivate::check()
 }
 
 
-DataClass::DataClass(QObject *parent) : QObject(parent)
+DataClass::DataClass(QObject *parent)
 {
     d = new DataClassPrivate;
 }
 
-DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObject(parent)
+DataClass::DataClass(const QJsonObject &json, int type, QObject *parent)
 {
     d = new DataClassPrivate();
     d->m_type = type;
@@ -544,20 +544,20 @@ DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObje
         d->m_scaling << 1;
 }
 
-DataClass::DataClass(int type, QObject *parent) :  QObject(parent)
+DataClass::DataClass(int type, QObject *parent)
 {
     d = new DataClassPrivate(type);
 }
 
-DataClass::DataClass(const DataClass& other): QObject()
+DataClass::DataClass(const DataClass& other): QObject(), d(other.d)
 {
-    d = other.d;
+    // d = other.d;
     m_systemObject = other.m_systemObject;
 }
 
-DataClass::DataClass(const DataClass* other): QObject()
+DataClass::DataClass(const DataClass* other): QObject(), d(other->d)
 {
-    d = other->d;
+    // d = other->d;
     m_systemObject = other->m_systemObject;
 }
 

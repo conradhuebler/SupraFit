@@ -121,9 +121,7 @@ void ReductionAnalyse::PlainReduction()
     m_controller["method"] = SupraFit::Statistic::Reduction;
     
     emit MaximumSteps(m_model->DataPoints());
-    
-//     m_models << m_model.data()->ExportData();
-    
+
     QPointer<DataTable > table = m_model->DependentModel();
     for(int i = m_model->DataPoints() - 1; i > 3; --i)
     {
@@ -136,8 +134,9 @@ void ReductionAnalyse::PlainReduction()
         model->detach();
         thread->setModel(model);
         addThread(thread);
+
     }
-    while(Pending()) { QApplication::processEvents(); }
+while(Pending()) { QApplication::processEvents(); }
     QList<qreal> x;
     for(int i = 0; i < m_threads.size(); ++i)
     {

@@ -301,9 +301,9 @@ public:
      */
     virtual QString Model2Text_Private() const { return QString(); }
     
-    AbstractModel &operator=(const AbstractModel &other);
-    AbstractModel *operator=(const AbstractModel *other);
-    inline void setData(DataClass *data) { m_data = data;}
+    // AbstractModel &operator=(const AbstractModel &other);
+   // AbstractModel *operator=(const AbstractModel *other);
+    // inline void setData(DataClass *data) { m_data = data;}
     
     inline void addOption(const QString &name, const QStringList &values)
     {
@@ -395,7 +395,7 @@ protected:
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
 //     QString m_name;
         
-    DataClass *m_data;
+    // DataClass *m_data;
     QMap<QString, ModelOption > m_model_options;
     
 signals:

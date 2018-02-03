@@ -62,7 +62,7 @@ void MonteCarloThread::run()
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
-    m_minimizer->setModel(m_model);
+    m_minimizer->setModel(m_model->Clone());
     m_finished = m_minimizer->Minimize(m_config.runtype);
     
     m_optimized = m_minimizer->Parameter();

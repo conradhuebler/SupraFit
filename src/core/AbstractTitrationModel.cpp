@@ -41,6 +41,7 @@ AbstractTitrationModel::AbstractTitrationModel(DataClass *data) : AbstractModel(
 
 AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel *other) : AbstractModel(other)
 {
+    qDebug() << "titration constr";
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
 }
 
@@ -52,7 +53,7 @@ AbstractTitrationModel::~AbstractTitrationModel()
 void AbstractTitrationModel::adress() const
 {
     std::cout << "We are at " << this;
-    std::cout << "\t" << m_data;
+   // std::cout << "\t" << m_data;
     for(int i = 0; i < m_opt_para.size(); ++i)
         std::cout << m_opt_para[i] << " ";
     std::cout << std::endl;

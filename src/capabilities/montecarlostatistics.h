@@ -55,7 +55,7 @@ public:
     inline bool Finished() const { return m_finished; }
     inline void setIndex(int index) { m_index = index; }
     inline int Index() const { return m_index; }
-    
+    inline void ModelPrint() { qDebug() << m_model; }
 private:
     QSharedPointer<Minimizer> m_minimizer;
     QJsonObject m_optimized;

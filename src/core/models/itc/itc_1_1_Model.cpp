@@ -49,9 +49,9 @@ itc_ItoI_Model::~itc_ItoI_Model()
 
 void itc_ItoI_Model::DeclearSystemParameter()
 {
-    m_data->addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
-    m_data->addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
-    m_data->LoadSystemParameter();
+    addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
+    addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
+    LoadSystemParameter();
 }
 
 
@@ -108,8 +108,8 @@ void itc_ItoI_Model::CalculateVariables()
     
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    qreal V = m_data->getSystemParameter("Cell Volume").Double();
-    qreal inject = m_data->getSystemParameter("Inject Volume").Double();
+    qreal V = getSystemParameter("Cell Volume").Double();
+    qreal inject = getSystemParameter("Inject Volume").Double();
     qreal heat  = 0;
 //     qreal R = 94.498978E-3;
 //     qreal M = 3.395108E-3;
@@ -144,7 +144,7 @@ void itc_ItoI_Model::CalculateVariables()
 QSharedPointer<AbstractModel > itc_ItoI_Model::Clone()
 {
     QSharedPointer<AbstractModel > model = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->setData( m_data );
+    //model.data()->setData( m_data );
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());

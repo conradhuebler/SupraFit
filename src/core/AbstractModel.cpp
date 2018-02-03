@@ -37,12 +37,13 @@
 
 AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false)
 {    
+    // qDebug() << "model constructor";
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
     
     m_model_signal = new DataTable(SeriesCount(),DataPoints(), this);
     m_model_error = new DataTable(SeriesCount(),DataPoints(), this);
 
-    m_data = data; 
+  //  m_data = data;
 }
 
 AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(other->m_corrupt), m_last_p(other->m_last_p), m_f_value(other->m_f_value), m_last_parameter(other->m_last_parameter), m_last_freedom(other->m_last_freedom), m_converged(other->m_converged), m_locked_model(other->m_locked_model)
@@ -52,7 +53,7 @@ AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt
     m_model_signal = other->m_model_signal;
     m_model_error = other->m_model_error;
 
-    m_data = other->m_data; 
+  //  m_data = other->m_data;
     
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;
@@ -785,10 +786,12 @@ void AbstractModel::ImportModel(const AbstractModel* other)
 {
     setOptimizerConfig(other->getOptimizerConfig());
     
-    m_model_signal = new DataTable(other->m_model_signal);
-    m_model_error = new DataTable(other->m_model_error);
-
-    m_data->ImportData(other->m_data); 
+    // m_model_signal = new DataTable(other->m_model_signal);
+    // m_model_error = new DataTable(other->m_model_error);
+    // detach();
+    // setDependentTable(other->DependentModel());
+    // DependentModel()->Debug();
+   // m_data->ImportData(other->m_data);
     
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;
@@ -813,7 +816,7 @@ void AbstractModel::ImportModel(const AbstractModel* other)
     m_covfit = other->m_covfit;
     m_used_variables = other->m_used_variables;
 }
-
+/*
 
 AbstractModel & AbstractModel::operator=(const AbstractModel& other)
 {
@@ -822,7 +825,7 @@ AbstractModel & AbstractModel::operator=(const AbstractModel& other)
     m_model_signal = other.m_model_signal;
     m_model_error = other.m_model_error;
 
-    m_data = other.m_data; 
+    // m_data = other.m_data;
     
     m_local_parameter = other.m_local_parameter;
     m_active_signals = other.m_active_signals;
@@ -857,7 +860,7 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     m_model_signal = other->m_model_signal;
     m_model_error = other->m_model_error;
 
-    m_data = other->m_data; 
+   // m_data = other->m_data;
     
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;
@@ -883,5 +886,5 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     m_used_variables = other->m_used_variables;
     
     return this;
-}
+}*/
 #include "AbstractModel.moc"
