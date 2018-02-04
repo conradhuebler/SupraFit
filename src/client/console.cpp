@@ -36,7 +36,7 @@
 
 #include "console.h"
 
-Console::Console() : m_std(0.001), m_runs(1000)
+Console::Console(int runs, double std) : m_runs(runs), m_std(std)
 {
         
 }
@@ -87,11 +87,11 @@ bool Console::FullTest()
         std::cout << "#####################  Starting run number "<< i + 1<< " #######################################################" << std::endl << std::endl;
         std::cout << "Generating new Data Table for Monte Carlo Simulation" << std::endl;
         std::normal_distribution<double> Phi = std::normal_distribution<double>(0,m_std);
-        DataTable *model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
+        QPointer<DataTable > model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
 #ifdef _DEBUG
         model_table->Debug();
 #endif
-        DataClass *data = new DataClass(m_data);
+        QPointer<DataClass > data = new DataClass(m_data);
         data->setDependentTable(model_table);
 #ifdef _DEBUG
         data->IndependentModel()->Debug();
@@ -115,6 +115,9 @@ bool Console::FullTest()
         toplevel["data"] = dataObject;
         if(        JsonHandler::WriteJsonFile(toplevel, m_file+"_"+QString::number(i) + ".suprafit") )
             std::cout << QString(m_file+"_"+QString::number(i) + ".suprafit").toStdString() << " successfully written to disk" <<std::endl;
+        
+//         if(model_table)
+//             delete model_table;
     }
     QTimer::singleShot(100, qApp, SLOT(quit()));
     
@@ -125,7 +128,7 @@ void Console::Test(QSharedPointer<AbstractModel> model)
 {
     
     std::cout << "********************************************************************************************************" << std::endl;
-    std::cout << "************************    Model analysis starts right now       *************************************" << std::endl;
+    std::cout << "************************    Model analysis starts right now       **************************************" << std::endl;
     std::cout << "********************************************************************************************************" << std::endl << std::endl;
     std::cout << "                         " << model->Name().toStdString() << std::endl;
     model->InitialGuess();
@@ -149,26 +152,42 @@ void Console::Test(QSharedPointer<AbstractModel> model)
     /*
      * We start with statistics
      */
+    QJsonObject statistic;
     
-    std::cout << "Reduction Analysis" << std::endl;
-    QJsonObject statistic = Reduction(model);
-    PrintStatistic(statistic, model);
+    if(m_reduction)
+    {
+        std::cout << "Reduction Analysis" << std::endl;
+        statistic = Reduction(model);
+        PrintStatistic(statistic, model);
+    }
     
-    std::cout << "Cross Validation" << std::endl;
-    statistic = CrossValidation(model);
-    PrintStatistic(statistic, model);
+    if(m_crossvalidation)
+    {
+        std::cout << "Cross Validation" << std::endl;
+        statistic = CrossValidation(model);
+        PrintStatistic(statistic, model);
+    }
     
-    std::cout << "Monte Carlo Simulation" << std::endl;
-    statistic = MonteCarlo(model);
-    PrintStatistic(statistic, model);
+    if(m_montecarlo)
+    {
+        std::cout << "Monte Carlo Simulation" << std::endl;
+        statistic = MonteCarlo(model);
+        PrintStatistic(statistic, model);
+    }
     
-    std::cout << "Model Comparison" << std::endl;
-    statistic = MoCoAnalyse(model);
-    PrintStatistic(statistic, model);
+    if(m_modelcomparison)
+    {
+        std::cout << "Model Comparison" << std::endl;
+        statistic = MoCoAnalyse(model);
+        PrintStatistic(statistic, model);
+    }
     
-    std::cout << "Weakend Grid Search" << std::endl;
-    statistic = GridSearch(model);
-    PrintStatistic(statistic, model);
+    if(m_weakendgrid)
+    {
+        std::cout << "Weakend Grid Search" << std::endl;
+        statistic = GridSearch(model);
+        PrintStatistic(statistic, model);
+    }
 }
 
 void Console::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model)

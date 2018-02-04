@@ -40,22 +40,63 @@ int main(int argc, char** argv)
     QCoreApplication app(argc, argv);
     QCommandLineParser parser;
     Version(&app, &parser);
+    
+    QCommandLineOption experiments(QStringList() << "e" << "experiments",
+                                   QCoreApplication::translate("main", "Number of experiments"),
+                                   QCoreApplication::translate("main", "number"),
+                                   QCoreApplication::translate("main", "1000"));
+    parser.addOption(experiments);
+    
+    QCommandLineOption _std(QStringList() << "s" << "std",
+                            QCoreApplication::translate("main", "Standard deviation for the data generation"),
+                            QCoreApplication::translate("main", "standard deviation"),
+                            QCoreApplication::translate("main", "0.001"));
+    parser.addOption(_std);
+    parser.addOption({{"u", "reduction"}, "Enable Reduction analysis."});
+    parser.addOption({{"c", "crossvalidation"}, "Enable Cross Validation analysis."});
+    parser.addOption({{"m", "montecarlo"}, "Enable Monte Carlo analysis."});
+    parser.addOption({{"o", "modelcomparison"}, "Enable Model Comparison analysis."});
+    parser.addOption({{"w", "weakendgrid"}, "Enable Weakend Grid Search analysis."});
+    
     parser.process(app);
     
     const QStringList args = parser.positionalArguments();
     
+    int exp = parser.value("e").toInt();
+    qreal std = parser.value("s").toDouble();
+    bool reduction = parser.isSet("u");
+    bool crossvalidation = parser.isSet("c");
+    bool montecarlo = parser.isSet("m");
+    bool modelcomparison = parser.isSet("o");
+    bool weakendgrid = parser.isSet("w");
+    
     std::cout << SupraFit::about().toStdString() << std::endl;
+    std::cout << "No. Experiments to be simulated " << exp << std::endl;
+    std::cout << "Standard Deviation to be used " << std << std::endl;
+    std::cout << "Reduction Analysis is turn on: " << reduction << std::endl;
+    std::cout << "Cross Validation is turn on: " << crossvalidation << std::endl;
+    std::cout << "Monte Carlo Simulation is turn on: " << montecarlo << std::endl;
+    std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
+    std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
     
-#ifdef _DEBUG
+    #ifdef _DEBUG
     qDebug() << "Debug output enabled, good fun!";
-#endif
+    #endif
     
-    int count = 0;        
+    int count = 0;  
+    
     for(const QString &file : args)
     {
         if(!file.isEmpty() && !file.isNull())
         {
-            Console console;
+            Console console(exp, std);
+            
+            console.setReduction(reduction);
+            console.setCrossValidation(crossvalidation);
+            console.setModelComparison(modelcomparison);
+            console.setWeakendGridSearch(weakendgrid);
+            console.setMonteCarlo(montecarlo);
+            
             if(console.LoadFile(file))
             {
                 ++count;
@@ -64,6 +105,16 @@ int main(int argc, char** argv)
         }
     }
     
+    
+    // Debug mode stuff
+    /*
+     *    Console console;
+     *    if(console.LoadFile("1to1.suprafit"))
+     *        {
+     *                ++count;
+     *                console.FullTest();
+}
+*/  
     if(!count)
     {
         std::cout << "Nothing found to be done" << std::endl;

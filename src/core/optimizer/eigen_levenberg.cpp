@@ -150,7 +150,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
         result +=  QString::number(param[i]) + " ";
     }
     result += "\n";
-    model.data()->Message(result, 4);
+//     model.data()->Message(result, 4);
     
     for(int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);

@@ -106,7 +106,6 @@ void ReductionAnalyse::CrossValidation(CVType type)
             delete m_threads[i];
         }
     }
-
     m_results = ToolSet::Model2Parameter(m_models);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
     emit AnalyseFinished();
@@ -125,7 +124,7 @@ void ReductionAnalyse::PlainReduction()
     
 //     m_models << m_model.data()->ExportData();
     
-    DataTable *table = m_model->DependentModel();
+    QPointer<DataTable > table = m_model->DependentModel();
     for(int i = m_model->DataPoints() - 1; i > 3; --i)
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
@@ -138,7 +137,6 @@ void ReductionAnalyse::PlainReduction()
         thread->setModel(model);
         addThread(thread);
     }
-    
     while(Pending()) { QApplication::processEvents(); }
     QList<qreal> x;
     for(int i = 0; i < m_threads.size(); ++i)
@@ -150,6 +148,8 @@ void ReductionAnalyse::PlainReduction()
             delete m_threads[i];
         }
     }
+    if(table)
+        delete table;
     m_results = ToolSet::Model2Parameter(m_models, false);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
     m_controller["x"] = ToolSet::DoubleList2String(x);

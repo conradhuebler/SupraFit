@@ -80,8 +80,11 @@ AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt
 
 AbstractModel::~AbstractModel()
 {
+    if(m_model_signal)
+        delete m_model_signal;
     
-    
+    if(m_model_error)
+        delete m_model_error;
 }
 
 QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
@@ -597,7 +600,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     if(m_locked_model || locked)
     {
 #ifdef _DEBUG
-        qDebug() << "Writing calculated data to json file";
+//         qDebug() << "Writing calculated data to json file";
 #endif
         toplevel["locked_model"] = true;
         toplevel["result"] = resultObject;
@@ -735,7 +738,7 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     if(topjson.contains("locked_model"))
     {
 #ifdef _DEBUG
-        qDebug() << "Loaded calculated data from json file";
+//         qDebug() << "Loaded calculated data from json file";
 #endif
         m_locked_model = true;
         QJsonObject resultObject = topjson["result"].toObject();
@@ -760,13 +763,13 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     }
 #ifdef _DEBUG
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "model importet within" << t1-t0 << " msecs";
+//     qDebug() << "model importet within" << t1-t0 << " msecs";
 #endif
     Calculate();
     
 #ifdef _DEBUG
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "calculation took " << t2-t1 << " msecs";
+//     qDebug() << "calculation took " << t2-t1 << " msecs";
 #endif
 }
 
