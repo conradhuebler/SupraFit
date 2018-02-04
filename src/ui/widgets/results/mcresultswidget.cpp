@@ -53,11 +53,13 @@ MCResultsWidget::MCResultsWidget(const QJsonObject &data, QSharedPointer<Abstrac
     m_model = model;
     m_models = models;
     m_wrapper = wrapper;
+
+    QJsonObject controller = m_data["controller"].toObject();
+    m_type = SupraFit::Statistic (controller["method"].toInt());
     has_boxplot = false;
     has_histogram = false;
     has_contour = false;
-    setUi();
-    GenerateConfidence(95);
+
 }
 
 MCResultsWidget::~MCResultsWidget()
@@ -95,16 +97,18 @@ void MCResultsWidget::setUi()
     m_error->setSuffix(tr("%"));
     m_error->setMaximum(100);
     connect(m_error, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &MCResultsWidget::GenerateConfidence);
-    
-    layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
-    layout->addWidget(m_error, 1, 1);
-    
+    if(m_type == SupraFit::Statistic::MonteCarlo)
+    {
+        layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
+        layout->addWidget(m_error, 1, 1);
+    }
     if(m_models.size())
         layout->addWidget(m_save, 1, 2);
     
     widget->setLayout(layout);
     
     setLayout(layout);
+    GenerateConfidence(95);
 }
 
 QPointer<ListChart> MCResultsWidget::MakeHistogram()
@@ -237,37 +241,6 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     return view;
 }
 
-// void MCResultsWidget::WriteConfidence(const QJsonObject  &constant_results)
-// { 
-    /*
-    QString confidence;
-    QJsonObject controller = constant_results["controller"].toObject();
-    confidence += "MC Steps: " + QString::number(controller["steps"].toInt()) + "\t";
-    if(controller["bootstrap"].toBool())
-        confidence += "Bootstrapped ";
-    else
-        confidence += "Variance = " + QString::number(controller["variance"].toDouble()) + " ";
-    
-    if(controller["original"].toBool())
-        confidence += "operated on original data\n";
-    else
-        confidence += "operated on modelled data\n";
-    
-    for(int i = 0; i < m_data.count() - 1; ++i)
-    {
-        QJsonObject data = m_data[QString::number(i)].toObject();
-        if(data.isEmpty())
-            continue;
-
-        QJsonObject confidenceObject = data["confidence"].toObject();
-        confidence  += Print::TextFromConfidence(data, m_model.data()) + "\n";
-    }
-    m_model->UpdateStatistic(m_data);
-    m_confidence_label->setText(confidence);
-    */
-    
-// }
-
 void MCResultsWidget::UpdateBoxes()
 {    
     int elements = m_data.count() - 1;
@@ -347,8 +320,8 @@ void MCResultsWidget::setAreaColor(int index, const QColor &color)
 
 void MCResultsWidget::GenerateConfidence(double error)
 {    
-    if(m_type == CrossValidation)
-        error = 0;
+    if(m_type == SupraFit::Statistic::CrossValidation)
+        return;
 
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
@@ -366,7 +339,7 @@ void MCResultsWidget::GenerateConfidence(double error)
     }
     UpdateBoxes();
     m_model->UpdateStatistic(m_data);
-//     WriteConfidence(m_data);
+    emit ConfidenceUpdated(m_data);
 }
 
 #include "mcresultswidget.moc"

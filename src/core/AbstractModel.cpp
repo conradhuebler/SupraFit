@@ -435,7 +435,7 @@ void AbstractModel::UpdateStatistic(const QJsonObject& object)
                 if(controller == control)
                 {
                     duplicate = true;
-                     m_mc_statistics[i] = object;
+                    m_mc_statistics[i] = object;
                 }
             }
             if(!duplicate)

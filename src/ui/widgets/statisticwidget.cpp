@@ -120,7 +120,7 @@ void StatisticWidget::Update()
             QJsonObject data = result.value(QString::number(i)).toObject();
             if(data.isEmpty())
                 continue;
-            moco += Print::TextFromConfidence(data,m_model.data(),data["controller"].toObject());
+            moco += Print::TextFromConfidence(data,m_model.data(),result["controller"].toObject());
         }
         moco += "</table>\n";
         overview += moco;
@@ -142,7 +142,7 @@ void StatisticWidget::Update()
             QJsonObject data = result.value(QString::number(i)).toObject();
             if(data.isEmpty())
                 continue;
-            cv += Print::TextFromConfidence(data, m_model.data(),data["controller"].toObject());
+            cv += Print::TextFromConfidence(data, m_model.data(),result["controller"].toObject());
         }
         cv += "</table>\n"; 
         overview += cv;
@@ -162,7 +162,7 @@ void StatisticWidget::Update()
                 QJsonObject data = result.value(QString::number(i)).toObject();
                 if(data.isEmpty())
                     continue;
-                mc += Print::TextFromConfidence(data, m_model.data(),data["controller"].toObject());
+                mc += Print::TextFromConfidence(data, m_model.data(),result["controller"].toObject());
             }
         }
         

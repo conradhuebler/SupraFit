@@ -43,7 +43,6 @@ private:
     QWidget *SearchWidget();
     void setUi();
     inline QSize ChartSize() const { return QSize(400,300); }
-    void WriteConfidence();
         
     QJsonObject m_data;
     
@@ -52,4 +51,7 @@ private:
     QWidget *m_widget;
     QLabel *m_confidence_label;
     QSharedPointer< AbstractModel > m_model;
+
+private slots:
+    void WriteConfidence(const QJsonObject &data);
 };    

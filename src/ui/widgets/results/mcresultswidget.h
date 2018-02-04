@@ -43,23 +43,14 @@ class MCResultsWidget : public QWidget
     Q_OBJECT
     
 public:
-    
-    enum Type {
-        MonteCarlo = 1,
-        CrossValidation = 2
-    };
-
     MCResultsWidget(const QJsonObject &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>());
     ~MCResultsWidget();
     
     void setModels(const QList<QJsonObject > &models) { m_models = models; }
     inline bool hasData() const { return has_boxplot || has_contour || has_histogram; }
-    
-
-    
-private:
     void setUi();
-    
+
+private:
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox *m_error;
     QPointer<ListChart > m_histgram, m_box;
@@ -67,7 +58,6 @@ private:
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries * > m_area_series;
     
-//     void WriteConfidence(const QJsonObject  &constant_results);
     void UpdateBoxes();
     void setAreaColor(int index, const QColor &color);
 
@@ -78,7 +68,7 @@ private:
     QList<QJsonObject> m_box_object;
     QList<QJsonObject > m_models;
     bool has_histogram, has_contour, has_boxplot;
-    Type m_type;
+    SupraFit::Statistic m_type;
     
     ChartWrapper *m_wrapper;
     QSharedPointer< AbstractModel > m_model;
@@ -87,6 +77,8 @@ private:
 private slots:
     void ExportResults();
     void GenerateConfidence(double error);
-    
+
+signals:
+    void ConfidenceUpdated(QJsonObject data);
     
 };

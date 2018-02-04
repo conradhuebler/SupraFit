@@ -103,12 +103,14 @@ void ResultsWidget::setUi()
     splitter->addWidget(scroll);
     layout->addWidget(splitter, 0, 0);
     setLayout(layout);
-    WriteConfidence();
+    WriteConfidence(m_data);
 }
 
 QWidget * ResultsWidget::MonteCarloWidget()
 {
     MCResultsWidget *widget = new MCResultsWidget(m_data, m_model, m_wrapper, m_models);
+    connect(widget, &MCResultsWidget::ConfidenceUpdated, this, &ResultsWidget::WriteConfidence);
+    widget->setUi();
     return widget;
 }
 
@@ -245,9 +247,10 @@ QWidget * ResultsWidget::SearchWidget()
     return widget;
 }
 
-void ResultsWidget::WriteConfidence()
+void ResultsWidget::WriteConfidence(const QJsonObject &data)
 {
     QString text;
+    m_data = data;
     QJsonObject controller = m_data["controller"].toObject();
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
