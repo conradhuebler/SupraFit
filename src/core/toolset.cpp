@@ -529,24 +529,41 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
         nr = " = " + model->formatedLocalParameter(value);
         pot = model->LocalParameterPrefix(); 
     }
-    if(type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch)
+
+
+    text += "<tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " +  QString::number(value, 'f', 4) + "</th></tr>";
+    if(type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch || type == SupraFit::Statistic::FastConfidence)
     {
         QJsonObject confidence = result["confidence"].toObject();
         qreal upper = confidence["upper"].toDouble();
         qreal lower = confidence["lower"].toDouble();
         qreal conf = confidence["error"].toDouble();
-        text = "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr>\n";
-        text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall=</td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr>\n"; 
+        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr>\n";
+        text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr>\n";
     }
     if(type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation)
     {
         SupraFit::BoxWhisker box = ToolSet::Object2Whisker(result["boxplot"].toObject());
-        text += "<tr><td>Median: </td><td> <b>" +QString::number(box.median, 'f', 4) + "</b></td></tr>\n"; 
+        text += "<tr><td>Median: </td><td> <b>" +QString::number(box.median, 'f', 4) + "</b></td></tr>\n";
         text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) +"-" + QString::number(box.UpperNotch(), 'f', 4) +"</b></td></tr>\n"; 
         if(value > box.UpperNotch() || value < box.LowerNotch())
         {
             box_message = "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>\n"; 
         }
+    }
+    if(type == SupraFit::Statistic::Reduction)
+    {
+        qreal value = 0, sum_err = 0, max_err = 0, aver_err = 0;
+        value = result["value"].toDouble();
+        QVector<qreal> vector = ToolSet::String2DoubleVec( result["data"].toObject()["raw"].toString() );
+        for(int i = 0; i < vector.size(); ++i)
+        {
+            sum_err += (value-vector[i])*(value-vector[i]);
+            max_err = qMax(qAbs(value-vector[i]), max_err);
+        }
+        aver_err = sqrt(sum_err)/double(vector.size());
+
+        text += "<tr><td> Sum of Errors: " + QString::number(sum_err) + "  </td><td>  Max Error = " + QString::number(max_err) + " </td><td>   Average Error = " +  QString::number(aver_err) +  "</td></tr>";
     }
     text += "\n";
     text += "<tr><td></td></tr>\n";

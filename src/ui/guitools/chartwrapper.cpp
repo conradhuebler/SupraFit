@@ -257,13 +257,13 @@ QColor ChartWrapper::ColorCode(int i)
 {
     switch(i){
         case 0:
-            return QColor(Qt::magenta).lighter();
+            return Qt::darkCyan;
         case 1:
-            return QColor(Qt::darkCyan).lighter();
+            return QColor(Qt::blue).lighter();
         case 2:
-            return Qt::green;
+            return QColor(Qt::darkCyan).lighter();
         case 3:
-            return Qt::yellow;
+            return QColor(Qt::darkGreen).lighter();
         case 4:
             return Qt::darkRed;
         case 5:

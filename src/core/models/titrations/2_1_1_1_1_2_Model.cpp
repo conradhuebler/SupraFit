@@ -44,6 +44,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrati
     m_local_parameter = new DataTable(4, SeriesCount(), this);
     m_global_parameter << 1 << 1 << 1;
     addGlobalParameter(m_global_parameter);
+    DeclareOptions();
 }
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
@@ -85,12 +86,12 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    
+
     qreal K21= qPow(10, GlobalParameter().first());
     qreal K11 =qPow(10, GlobalParameter()[1]);
     qreal K12= qPow(10, GlobalParameter().last());
     m_constants_pow = QList<qreal >() << K21 << K11 << K12;
-    QThreadPool *threadpool = new QThreadPool;
+    QThreadPool *threadpool = QThreadPool::globalInstance();
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
     for(int i = 0; i < DataPoints(); ++i)
@@ -106,13 +107,12 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
-        
-        
+
         QList<double > concentration = m_solvers[i]->Concentrations();
         qreal host = concentration[0];
         qreal guest = concentration[1]; 
         
-        qreal complex_11 = K11*host*guest;addGlobalParameter(m_global_parameter);
+        qreal complex_11 = K11*host*guest;
         qreal complex_21 = K11*K21*host*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;       
         

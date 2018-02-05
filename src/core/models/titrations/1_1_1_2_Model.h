@@ -54,6 +54,9 @@ public:
         
     virtual void EvaluateOptions() override;
     virtual inline QString Name() const override { return tr("1:1/1:2-Model"); }
+
+    virtual inline int Color(int i) const override { if(i == 0) return 1; else if(i == 1) return 2; else return i + 2; }
+
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) 
     {

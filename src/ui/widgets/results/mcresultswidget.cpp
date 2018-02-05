@@ -97,11 +97,10 @@ void MCResultsWidget::setUi()
     m_error->setSuffix(tr("%"));
     m_error->setMaximum(100);
     connect(m_error, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &MCResultsWidget::GenerateConfidence);
-    if(m_type == SupraFit::Statistic::MonteCarlo)
-    {
-        layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
-        layout->addWidget(m_error, 1, 1);
-    }
+
+     layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
+     layout->addWidget(m_error, 1, 1);
+
     if(m_models.size())
         layout->addWidget(m_save, 1, 2);
     
@@ -139,7 +138,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); }); 
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });
         }else
-            xy_series->setColor(ChartWrapper::ColorCode(i));
+            xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
         
         for(int j = 0; j < histogram.size(); ++j)
         {
@@ -195,13 +194,15 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
  
         if(data["type"] == "Local Parameter")
         {
-            if(!m_data.contains("index"))
+            if(!data.contains("index"))
                 continue;
             int index =  data["index"].toString().split("|")[1].toInt();
             series->setBrush(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, boxplot]( const QColor &color ) { boxplot->setColor(i, color); }); 
-        }
+        }else
+            series->setBrush(ChartWrapper::ColorCode(m_model->Color(i)));
+
         boxplot->addSeries(series, i, series->color(), data["name"].toString());  
         boxplot->setColor(i, series->color());
         m_box_object << ToolSet::Box2Object(bw);
@@ -320,9 +321,6 @@ void MCResultsWidget::setAreaColor(int index, const QColor &color)
 
 void MCResultsWidget::GenerateConfidence(double error)
 {    
-    if(m_type == SupraFit::Statistic::CrossValidation)
-        return;
-
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
         QJsonObject data = m_data[QString::number(i)].toObject();

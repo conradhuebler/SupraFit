@@ -139,7 +139,7 @@ QWidget * ResultsWidget::ReductionWidget()
         QColor color;
         int index = 0, jndex = 0;
         if(data["type"].toString() == "Global Parameter")
-            color = ChartWrapper::ColorCode(i);
+            color = ChartWrapper::ColorCode(m_model->Color(i));
         else
         {
             if(data.contains("index"))

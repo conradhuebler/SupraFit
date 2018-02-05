@@ -147,6 +147,25 @@ void StatisticWidget::Update()
         cv += "</table>\n"; 
         overview += cv;
     }
+
+    if(!m_model->getReduction().isEmpty())
+    {
+        QString cv;
+
+        cv += "<p><b>Reduction Analysis:</b></p>\n";
+        cv += "<table>\n";
+
+        result = m_model->getReduction();
+        for(int i = 0; i < result.count() - 1; ++i)
+        {
+            QJsonObject data = result.value(QString::number(i)).toObject();
+            if(data.isEmpty())
+                continue;
+            cv += Print::TextFromConfidence(data, m_model.data(),result["controller"].toObject());
+        }
+        cv += "</table>\n";
+        overview += cv;
+    }
     
     QString mc;
     if(m_model->getMCStatisticResult())
