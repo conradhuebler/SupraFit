@@ -160,18 +160,39 @@ QWidget *StatisticDialog::MonteCarloWidget()
     }
     if(m_model)
     {
-        layout->addWidget(new QLabel(tr("Varianz")), 1, 0);
+        layout->addWidget(new QLabel(tr("Variance")), 1, 0);
         layout->addWidget(m_varianz_box, 1, 1);
     }
     
     m_original = new QCheckBox;
     m_original->setText(tr("Use Original Data"));
-    layout->addWidget(m_original, 2, 0, 1, 2);
+    layout->addWidget(m_original, 2, 0);
     
     m_bootstrap = new QCheckBox;
     m_bootstrap->setText(tr("Bootstrap"));
-    layout->addWidget(m_bootstrap, 3, 0, 1, 2);
+    layout->addWidget(m_bootstrap, 2, 1);
     
+    QVBoxLayout *indep_layout = new QVBoxLayout;
+    if(m_model.data())
+    {
+        indep_layout->addWidget(new QLabel(tr("Create random scatter of independent\nvariables, eg. input concentrations etc!")));
+        for(int i = 0; i < m_model.data()->IndependentVariableSize(); ++i)
+        {
+            QCheckBox *checkbox = new QCheckBox("Independet Variable "+  QString::number(i + 1));
+            QDoubleSpinBox *var = new QDoubleSpinBox;
+            var->setDecimals(5);
+            var->setSingleStep(1e-4);
+            var->setDisabled(true);
+            connect(checkbox, &QCheckBox::stateChanged, var, &QDoubleSpinBox::setEnabled);
+            QHBoxLayout *layout = new QHBoxLayout;
+            layout->addWidget(checkbox);
+            layout->addWidget(var);
+            m_indepdent_checkboxes << checkbox;
+            m_indepdent_variance << var;
+            indep_layout->addLayout(layout);
+        }
+    }
+    layout->addLayout(indep_layout, 3, 0, 1, 2);
     m_mc = new QPushButton(tr("Simulate"));
     layout->addWidget(m_mc, 4, 0, 1, 2);
     
@@ -379,6 +400,15 @@ MCConfig StatisticDialog::getMCConfig()
     config.maxsteps = m_mc_steps->value();
     config.original = m_original->isChecked();
     config.bootstrap = m_bootstrap->isChecked();
+    QVector<qreal> indep_variance;
+    for(int i = 0; i < m_indepdent_checkboxes.size(); ++i)
+    {
+        if(m_indepdent_checkboxes[i]->isChecked())
+            indep_variance << m_indepdent_variance[i]->value();
+        else
+            indep_variance << 0;
+    }
+    config.indep_variance = indep_variance;
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_runs*(m_mc_steps->value() + m_mc_steps->value()/100));

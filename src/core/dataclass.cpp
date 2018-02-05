@@ -379,27 +379,23 @@ void DataTable::setRow(const Vector &vector, int row)
     return;
 }
 
-DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng)
+DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng, QVector<int> cols)
 {
-    DataTable *table = new DataTable(this);
-// #ifdef _DEBUG
-//     QVector<qreal > random;
-// #endif    
+    if(cols.size() < columnCount())
+    {
+        cols = QVector<int>(columnCount(), 1);
+    }
+    DataTable *table = new DataTable(this);   
     for(int j = 0; j <  columnCount(); ++j)
         {
+            if(!cols[j])
+                continue;
             for(int i = 0; i < rowCount(); ++i)
             {
                 double  randed = Phi(rng);
-                table->data(j,i) += randed;
-/*#ifdef _DEBUG
-                if(random.size() < 10)
-                    random << randed;
-#endif   */                
+                table->data(j,i) += randed;                
             }
-        }
-/*#ifdef _DEBUG
-    qDebug() << "truncated random numbers: " << random;
-#endif */        
+        }      
     return table;
 }
 

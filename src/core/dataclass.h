@@ -112,7 +112,7 @@ public:
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
     inline void setEditable(bool editable) { m_editable = editable; }
     inline bool Checkable() const { return m_checkable; }
-    DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng);
+    DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng, QVector<int> cols = QVector<int>());
     DataTable *PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector);
     QString ExportAsString() const;
     QStringList ExportAsStringList() const;

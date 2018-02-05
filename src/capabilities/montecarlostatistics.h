@@ -37,6 +37,7 @@ public:
     double variance = 1e-2;
     bool original = false;
     bool bootstrap = false;
+    QVector<qreal > indep_variance;
 };
 
 class MonteCarloThread : public AbstractSearchThread
