@@ -141,7 +141,7 @@ QWidget *StatisticDialog::MonteCarloWidget()
     QGridLayout *layout = new QGridLayout;
     
     m_mc_steps = new QSpinBox;
-    m_mc_steps->setMinimum(1);
+    m_mc_steps->setMinimum(2);
     m_mc_steps->setMaximum(1e9);
     m_mc_steps->setValue(1000);
     m_mc_steps->setSingleStep(1e2);
@@ -178,7 +178,7 @@ QWidget *StatisticDialog::MonteCarloWidget()
         indep_layout->addWidget(new QLabel(tr("Create random scatter of independent\nvariables, eg. input concentrations etc!")));
         for(int i = 0; i < m_model.data()->IndependentVariableSize(); ++i)
         {
-            QCheckBox *checkbox = new QCheckBox("Independet Variable "+  QString::number(i + 1));
+            QCheckBox *checkbox = new QCheckBox("Independent Variable "+  QString::number(i + 1));
             QDoubleSpinBox *var = new QDoubleSpinBox;
             var->setDecimals(5);
             var->setSingleStep(1e-4);

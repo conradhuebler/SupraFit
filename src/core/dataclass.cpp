@@ -287,7 +287,7 @@ qreal & DataTable::data(int column, int row)
         }
 }
 
-DataTable * DataTable::Block(int row_begin,  int column_begin, int row_end, int column_end) const
+QPointer<DataTable> DataTable::Block(int row_begin,  int column_begin, int row_end, int column_end) const
 {
     if(row_begin < 0 || column_begin < 0 || row_begin >= rowCount() || column_begin >= columnCount() || row_end < 0 || column_end < 0 || row_end > rowCount() || column_end > columnCount())
         return new DataTable;
@@ -379,29 +379,29 @@ void DataTable::setRow(const Vector &vector, int row)
     return;
 }
 
-DataTable* DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng, QVector<int> cols)
+QPointer<DataTable> DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng, QVector<int> cols)
 {
     if(cols.size() < columnCount())
     {
         cols = QVector<int>(columnCount(), 1);
     }
-    DataTable *table = new DataTable(this);   
+    QPointer<DataTable > table = new DataTable(this);
     for(int j = 0; j <  columnCount(); ++j)
         {
             if(!cols[j])
                 continue;
             for(int i = 0; i < rowCount(); ++i)
             {
-                double  randed = Phi(rng);
+                double randed = Phi(rng);
                 table->data(j,i) += randed;                
             }
         }      
     return table;
 }
 
-DataTable * DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector)
+QPointer<DataTable>  DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector)
 {
-    DataTable *table = new DataTable(this);
+    QPointer<DataTable> table = new DataTable(this);
     for(int j = 0; j <  columnCount(); ++j)
         {
             for(int i = 0; i < rowCount(); ++i)
@@ -728,6 +728,12 @@ void DataClass::setHeader(const QStringList& strlist)
                 d->m_dependent_model->setHeaderData(i - d->m_independent_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
         }
     }
+}
+
+void DataClass::OverrideInDependentTable(DataTable *table)
+{
+    d.detach();
+    d->m_independent_model = table;
 }
 
 void DataClass::OverrideDependentTable(DataTable *table)

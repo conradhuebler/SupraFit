@@ -51,7 +51,8 @@ public:
     virtual void run();
     inline QJsonObject OptimizedParameter() const { return m_optimized; }
     inline QList<qreal > Constants() const { return m_constants; }
-    void setDataTable(DataTable *table);
+    void setDataTable(QPointer<DataTable> table);
+    void setIndepTable(QPointer<DataTable> table);
     inline QJsonObject Model() const { return m_model->ExportModel(); }
     inline bool Finished() const { return m_finished; }
     inline void setIndex(int index) { m_index = index; }
@@ -81,6 +82,7 @@ public slots:
     
 private:
     QVector<QPointer <MonteCarloThread > > GenerateData();
+    QVector<QPointer<DataTable> > m_ptr_table;
     void Collect(const QVector<QPointer <MonteCarloThread > > &threads);
     virtual QJsonObject Controller() const override;
     std::mt19937 rng;
@@ -90,4 +92,6 @@ private:
     MCConfig m_config;
     bool m_generate;
     int m_steps;
+signals:
+    void InterruptAll();
 };

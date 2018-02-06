@@ -91,7 +91,7 @@ public:
     inline Eigen::MatrixXd CheckedTable() const { return m_checked_table; }
     inline DataTable *BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() -1); } 
     inline DataTable *BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount(), column_end); } 
-    DataTable *Block(int row_begin, int column_begin, int row_end, int column_end) const;
+    QPointer<DataTable>  Block(int row_begin, int column_begin, int row_end, int column_end) const;
     
     bool isChecked(int i, int j) const;
     void insertRow(const QVector<qreal> &row);
@@ -112,8 +112,8 @@ public:
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
     inline void setEditable(bool editable) { m_editable = editable; }
     inline bool Checkable() const { return m_checkable; }
-    DataTable *PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng, QVector<int> cols = QVector<int>());
-    DataTable *PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector);
+    QPointer<DataTable> PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng, QVector<int> cols = QVector<int>());
+    QPointer<DataTable> PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector);
     QString ExportAsString() const;
     QStringList ExportAsStringList() const;
     
@@ -218,6 +218,7 @@ public:
     inline QList<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QList<qreal> &scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList &strlist);
+    void OverrideInDependentTable(DataTable *table);
     void OverrideDependentTable(DataTable *table);
     /*! \brief Add a system parameter to the current model
      */

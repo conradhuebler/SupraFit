@@ -197,6 +197,7 @@ void Minimizer::setParameter(const QJsonObject& json, const QList<int> &locked)
 
 void Minimizer::setParameter(const QJsonObject& json)
 {
+    qDebug() << m_model << m_model.data() << " pointer to model";
     m_model->ImportModel(json);
 }
 

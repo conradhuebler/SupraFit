@@ -46,14 +46,19 @@ MonteCarloThread::~MonteCarloThread()
 {
 }
 
-void MonteCarloThread::setDataTable(DataTable* table)
+void MonteCarloThread::setDataTable(QPointer<DataTable> table)
 {
     m_model->OverrideDependentTable(table);
 }
 
+void MonteCarloThread::setIndepTable(QPointer<DataTable> table)
+{
+    m_model->OverrideInDependentTable(table);
+}
+
 void MonteCarloThread::run()
 {
-    if(!m_model)
+    if(!m_model || m_interrupt)
     {
         qDebug() << "no model set";
         return;
@@ -85,7 +90,7 @@ MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *pare
 
 MonteCarloStatistics::~MonteCarloStatistics()
 {
-    
+
 }
 
 void MonteCarloStatistics::Evaluate()
@@ -110,7 +115,7 @@ QJsonObject MonteCarloStatistics::Controller() const
     controller["original"] = m_config.original;
     controller["bootstrap"] = m_config.bootstrap;
     controller["method"] = SupraFit::Statistic::MonteCarlo;
-    
+    controller["indep_variance"] = ToolSet::DoubleVec2String(m_config.indep_variance);
     return controller;
 }
 
@@ -124,6 +129,12 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     m_generate = true;
     QVector<qreal> vector = m_model->ErrorTable()->toList();
     Uni = std::uniform_int_distribution<int>(0,vector.size()-1);
+    QVector<std::normal_distribution<double> > indep_phi;
+    for(int i = 0; i < m_config.indep_variance.size(); ++i)
+    {
+        std::normal_distribution<double> phi = std::normal_distribution<double>(0,m_config.indep_variance[i]);
+        indep_phi << phi;
+    }
 #ifdef _DEBUG
     qDebug() << "Starting MC Simulation with" << m_config.maxsteps << "steps";
 #endif
@@ -131,17 +142,34 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
     {
         QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        connect(this, &MonteCarloStatistics::InterruptAll, thread, &MonteCarloThread::Interrupt);
         thread->setModel(m_model);
-        DataTable *table;
+        QPointer<DataTable> dep_table;
         if(m_config.original)
-            table = m_model->DependentModel();
+            dep_table = m_model->DependentModel();
         else
-            table = m_model->ModelTable();
-
+            dep_table = m_model->ModelTable();
+        m_ptr_table << dep_table;
         if(m_config.bootstrap)
-            thread->setDataTable(table->PrepareBootStrap(Uni, rng, vector));
+            thread->setDataTable(dep_table->PrepareBootStrap(Uni, rng, vector));
         else
-            thread->setDataTable(table->PrepareMC(Phi, rng));
+            thread->setDataTable(dep_table->PrepareMC(Phi, rng));
+
+        QPointer<DataTable>  indep_table = new DataTable(m_model->IndependentModel());
+        m_ptr_table << indep_table;
+        for(int i = 0; i <  m_config.indep_variance.size(); ++i)
+        {
+            QVector<int> cols(m_config.indep_variance.size() , 0);
+            if( m_config.indep_variance[i] > 0)
+            {
+                cols[i] = 1;
+                QPointer<DataTable> tmp = indep_table->PrepareMC(indep_phi[i], rng, cols);
+                m_ptr_table << tmp;
+                indep_table = tmp;
+            }
+        }
+        thread->setIndepTable(indep_table);
+
         m_threadpool->start(thread);
 #ifdef _DEBUG
         qDebug() << "Thread added to queue!" << thread;
@@ -173,13 +201,17 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
             delete threads[i];
         }
     }
+
+    for(int i = 0; i < m_ptr_table.size(); ++i)
+        if(m_ptr_table[i])
+            delete m_ptr_table[i];
 }
 
 
 void MonteCarloStatistics::Interrupt()
 {
     m_generate = false;
-    m_threadpool->clear();
+    emit InterruptAll();
 }
 
 #include "montecarlostatistics.moc"
