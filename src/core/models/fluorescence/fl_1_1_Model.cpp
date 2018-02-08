@@ -41,7 +41,7 @@ fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
     m_global_parameter << 1;
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
 //     DeclareOptions();
-//     InitialGuess();
+//    InitialGuess();
 }
 
 // fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
@@ -62,12 +62,12 @@ void fl_ItoI_Model::InitialGuess()
 //     m_K11 = 4;
     m_global_parameter[0] = Guess_1_1();
 
-    qreal factor = 1; ///InitialHostConcentration(0);
+    qreal factor = InitialHostConcentration(0);
     
 
-    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
-    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
+    m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e3, 0);
+    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e3, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e3, 2);
     QVector<qreal * > line1, line2;
 
     for(int i = 0; i < SeriesCount(); ++i)
@@ -82,13 +82,13 @@ void fl_ItoI_Model::InitialGuess()
 
 void fl_ItoI_Model::DeclareOptions()
 {
-     QStringList method = QStringList() << "Host" << "no Host";
-     addOption("Host", method);
+     //QStringList method = QStringList() << "Host" << "no Host";
+     //addOption("Host", method);
 }
 
 void fl_ItoI_Model::EvaluateOptions()
 {
-    
+    /*
     QString host = getOption("Host");
     if(host != "Host")
     {
@@ -97,7 +97,7 @@ void fl_ItoI_Model::EvaluateOptions()
             this->m_local_parameter->data(0,i) = 0;
             this->m_local_parameter->data(1,i) = 0;
          }
-    }
+    }*/
 }
 
 QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
@@ -161,7 +161,7 @@ void fl_ItoI_Model::CalculateVariables()
             }else
                 value = (host*m_local_parameter->data(1, j) + complex*m_local_parameter->data(2, j)); 
             
-            SetValue(i, j, value*1e5);    
+            SetValue(i, j, value*1e3);
         }
     }
     emit Recalculated();

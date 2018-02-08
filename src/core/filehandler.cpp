@@ -63,7 +63,7 @@ void FileHandler::Read()
         semi+= str.count(";");
     }
     if(tab > semi)
-        sep = "\t";
+        sep = " ";
     else
         sep = ";";
     m_lines = m_filecontent.size();
@@ -105,7 +105,7 @@ QPointer<DataTable> FileHandler::getData() const
         {
             QVector<qreal> row;
             QStringList header;
-            QStringList items = line.split(sep);
+            QStringList items = line.simplified().split(sep);
             double sum = 0;
             for(const QString &item: qAsConst(items))
             {

@@ -226,7 +226,7 @@ QtCharts::QLineSeries * ChartView::addLinearSeries(qreal m, qreal n, qreal min, 
 }
 
 void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
-{    
+{
     if(!m_chart->series().contains(series))
     {
         m_chart->addSeries(series);

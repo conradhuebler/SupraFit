@@ -37,6 +37,7 @@ fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(DataClass* data) : AbstractTitrationMod
 {
     m_local_parameter = new DataTable(4, SeriesCount(), this);
     m_global_parameter << 1 << 1;
+    DeclareOptions();
     
 }
 
@@ -47,13 +48,11 @@ fl_ItoI_ItoII_Model::~fl_ItoI_ItoII_Model()
 
 void fl_ItoI_ItoII_Model::DeclareOptions()
 {
-     QStringList method = QStringList() << "NMR" << "UV/VIS";
-     addOption("Method", method);
      QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
      addOption("Cooperativity", cooperativity);
     
-     QStringList host = QStringList() << "Host" << "no Host";
-     addOption("Host", host);
+    // QStringList host = QStringList() << "Host" << "no Host";
+    // addOption("Host", host);
      
 }
 
@@ -84,7 +83,7 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
         local_coop();
         global_coop();
     }
-    
+    /*
     QString host = getOption("Host");
     if(host != "Host")
     {
@@ -94,7 +93,7 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
             this->m_local_parameter->data(1,i) = 0;
          }
     }
-    
+    */
 }
 
 void fl_ItoI_ItoII_Model::InitialGuess()
@@ -102,13 +101,13 @@ void fl_ItoI_ItoII_Model::InitialGuess()
     m_global_parameter = QList<qreal>() << 4 << 2;
     setOptParamater(m_global_parameter);
 
-    qreal factor = 1; ///InitialHostConcentration(0);
+    qreal factor = InitialHostConcentration(0);
     
 
-    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
-    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 3);
+    m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e3, 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e4, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 2);
+    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 3);
 
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
@@ -222,7 +221,7 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
                 value = (host*m_local_parameter->data(1, j) + complex_11*m_local_parameter->data(2, j) + complex_12*m_local_parameter->data(3, j));
             
 
-            SetValue(i, j, value);
+            SetValue(i, j, value*1e3);
         }
     }
     emit Recalculated();

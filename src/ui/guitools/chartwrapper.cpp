@@ -124,14 +124,14 @@ void ChartWrapper::FlipChart(bool flip)
 void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
     m_model = model; 
-    if(m_flipable)
+    /*if(m_flipable)
     {
         if(m_model->DataPoints() > m_model->SeriesCount())
             m_flip = false;
         else
             m_flip = true;
     }
-    else
+    else*/
         m_flip = false;
     if(qobject_cast<AbstractModel *>(m_model))
         connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
