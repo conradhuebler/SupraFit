@@ -62,6 +62,8 @@ public:
 
     virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
 
+    QPair<double, double> HostConcentration(double a0, double b0);
+
 private:
     qreal m_K21, m_K11, m_K12;
     QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;

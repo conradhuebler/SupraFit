@@ -39,8 +39,8 @@
 
 IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrationModel(data)
 {
-    for(int i = 0; i < DataPoints(); ++i)
-        m_solvers << new ConcentrationSolver(this);
+    //for(int i = 0; i < DataPoints(); ++i)
+        //m_solvers << new ConcentrationSolver(this);
     m_local_parameter = new DataTable(4, SeriesCount(), this);
     m_global_parameter << 1 << 1 << 1;
     addGlobalParameter(m_global_parameter);
@@ -49,7 +49,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrati
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
 {
-    qDeleteAll(m_solvers);
+    //qDeleteAll(m_solvers);
 }
 
 void IItoI_ItoI_ItoII_Model::DeclareOptions()
@@ -80,6 +80,34 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     Calculate();
 }
 
+QPair<double, double> IItoI_ItoI_ItoII_Model::HostConcentration(double a0, double b0)
+{
+    qreal K21= qPow(10, GlobalParameter().first());
+    qreal K11 =qPow(10, GlobalParameter()[1]);
+    qreal K12= qPow(10, GlobalParameter().last());
+    qreal b12 = K11*K12;
+    qreal b21 = K11*K21;
+
+    auto calc_a = [this](double a0, double b0, double b, double K11, double b21, double b12){
+        return -0.25*1/(b*b21)*( b*b*b12 + b*K11 - sqrt( b*b*b*b*b12*b12 + 2*b*b*b*K11*b12 + b*b*K11*K11 + 8*a0*b*b21 + 2*b*b*b12 + 2*b*K11 + 1 ) + 1);
+    };
+
+    auto calc_b = [this](double a0, double b0, double a, double K11, double b21, double b12){
+        return -0.25*1/(a*b12)*( a*a*b21 + a*K11 - sqrt( a*a*a*a*b21*b21 + 2*a*a*a*K11*b21 + a*a*K11*K11 + 2*a*a*b12 + 8*a*b0*b12 + 2*a*K11 + 1 ) + 1);
+    };
+
+    qreal a = a0/2;
+    qreal b = 0;
+
+    for(int i = 0; i < 10; ++i)
+    {
+        b = calc_b(a0, b0, a, K11, b21, b12);
+        a = calc_a(a0, b0, b, K11, b21, b12);
+        qDebug() << a << b << i;
+    }
+    return QPair<double, double>(a,b);
+}
+
 void IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
@@ -91,6 +119,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     qreal K11 =qPow(10, GlobalParameter()[1]);
     qreal K12= qPow(10, GlobalParameter().last());
     m_constants_pow = QList<qreal >() << K21 << K11 << K12;
+    /*
     QThreadPool *threadpool = QThreadPool::globalInstance();
     int maxthreads =qApp->instance()->property("threads").toInt();
     threadpool->setMaxThreadCount(maxthreads);
@@ -103,14 +132,15 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         threadpool->start(m_solvers[i]);
     }
     
-    threadpool->waitForDone();
+    threadpool->waitForDone(); */
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
 
-        QList<double > concentration = m_solvers[i]->Concentrations();
-        qreal host = concentration[0];
-        qreal guest = concentration[1]; 
+        //QList<double > concentration = m_solvers[i]->Concentrations();
+        QPair<double, double> concentration = HostConcentration(InitialHostConcentration(i), InitialGuestConcentration(i));
+        qreal host = concentration.first;
+        qreal guest = concentration.second;
         
         qreal complex_11 = K11*host*guest;
         qreal complex_21 = K11*K21*host*host*guest;
