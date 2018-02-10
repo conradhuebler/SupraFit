@@ -92,7 +92,7 @@ QPair<double, double> ConSolver::HostConcentration(double a0, double b0)
     qreal b = 0;
     qreal a_1 = 0, b_1 = 0;
     //qDebug() << "guess " << a << b;
-    for(int i = 0; i < 20; ++i)
+    for(int i = 0; i < 50; ++i)
     {
         a_1 = a;
         b_1 = b;
@@ -108,8 +108,8 @@ QPair<double, double> ConSolver::HostConcentration(double a0, double b0)
         //    qDebug() << 0;
             a *= -1;
         }
-        //qDebug() << a << a0 << b << b0 << i;
-        if(qAbs(a_1-a) < 1e-9 || qAbs(b_1-b) < 1e-9)
+        // qDebug() << a << a_1-a<< a0 << b << b_1-b<< b0 << i;
+        if(qAbs(a_1-a) < 1e-10 || qAbs(b_1-b) < 1e-10)
             break;
     }
     return QPair<double, double>(a,b);
@@ -196,8 +196,8 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         qreal complex_11 = K11*host*guest;
         qreal complex_21 = K11*K21*host*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;
-        /*
-        qDebug() << "host" << InitialHostConcentration(i) <<host + complex_11 + 2*complex_21 + complex_12;
+
+        /*qDebug() << "host" << InitialHostConcentration(i) <<host + complex_11 + 2*complex_21 + complex_12;
         qDebug() << "guest" << InitialGuestConcentration(i) << guest + complex_11 + complex_21 + 2*complex_12;
         qDebug() << "K12" << log10(complex_12/complex_11/guest);
         qDebug() << "K21" << log10(complex_21/complex_11/host);
