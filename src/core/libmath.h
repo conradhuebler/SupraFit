@@ -46,6 +46,8 @@ struct MultiRegression
 };
 
 qreal MinQuadraticRoot(qreal a, qreal b, qreal c);
+qreal MaxQuadraticRoot(qreal a, qreal b, qreal c);
+
 QPair<qreal, qreal> QuadraticRoots(qreal a, qreal b, qreal c);
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
 

@@ -25,13 +25,32 @@
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 #include <QtCore/QVector>
-
+#include <QtCore/QThreadPool>
 #include "src/core/dataclass.h"
 
 typedef Eigen::VectorXd Vector;
 
-class ConcentrationSolver;
 struct MassResults;
+
+
+class ConSolver : public QObject,  public QRunnable
+{
+
+public:
+    ConSolver(QPointer<AbstractTitrationModel> model);
+    ~ConSolver();
+    virtual void run();
+    void setInput(double A_0, double B_0);
+    inline QPair<double, double> Concentrations() const { return  m_concentration; }
+
+private:
+    qreal m_A_0, m_B_0;
+    QPair<double, double> HostConcentration(double a0, double b0);
+//     qreal complex_21, complex_11, complex_12;
+    QPointer<AbstractTitrationModel> m_model;
+    QPair<double, double> m_concentration;
+    int SolveEqualSystem(double A_0, double B_0);
+};
 
 class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
 {
@@ -62,11 +81,14 @@ public:
 
     virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
 
+
+
 private:
     qreal m_K21, m_K11, m_K12;
     QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;
-    QList<QPointer<ConcentrationSolver > > m_solvers;
+    QList<QPointer<ConSolver > > m_solvers;
     QList<qreal> m_constants_pow;
+    QThreadPool *m_threadpool;
     
 protected:
     virtual void CalculateVariables() override;

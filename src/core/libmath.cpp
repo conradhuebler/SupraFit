@@ -131,6 +131,11 @@ qreal MinQuadraticRoot(qreal a, qreal b, qreal c)
     return (-b- qSqrt(qPow(b,2)-4*a*c))/(2*a);
 }
 
+qreal MaxQuadraticRoot(qreal a, qreal b, qreal c)
+{
+    return (-b + qSqrt(qPow(b,2)-4*a*c))/(2*a);
+}
+
 QPair<qreal, qreal> QuadraticRoot(qreal a, qreal b, qreal c)
 {
     QPair<qreal, qreal> pair(0,0);
