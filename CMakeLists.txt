@@ -229,17 +229,18 @@ set(suprafit_cli_SRCS
                 src/client/main.cpp
           )
           
-add_executable(suprafit_cli ${suprafit_cli_SRCS})
+#add_executable(suprafit_cli ${suprafit_cli_SRCS})
 
 
-set_property(TARGET suprafit_cli utils math models suprafit PROPERTY CXX_STANDARD 14)
+set_property(TARGET  utils math models suprafit PROPERTY CXX_STANDARD 14)
+#set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
 
 qt5_use_modules(suprafit Widgets Charts PrintSupport DataVisualization)
-qt5_use_modules(suprafit_cli Core)
+#qt5_use_modules(suprafit_cli Core)
 
 target_link_libraries(suprafit  models math  utils ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
 
-target_link_libraries(suprafit_cli  models math  utils ${QT_QTCORE_LIBRARY} )
+#target_link_libraries(suprafit_cli  models math  utils ${QT_QTCORE_LIBRARY} )
 
 if(testing)
     enable_testing()
@@ -248,7 +249,7 @@ if(testing)
     )
     add_test( basic_test supratest )
     add_executable(supratest  ${basic_test})
-    set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
+    #set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
     set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
     qt5_use_modules(supratest Core Test)
     target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
@@ -257,8 +258,8 @@ endif(testing)
 
 if(UNIX)
     target_link_libraries(suprafit pthread dl)
-    target_link_libraries(suprafit_cli pthread dl)
+#    target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
 install(TARGETS suprafit RUNTIME DESTINATION bin)
-install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
+#install(TARGETS suprafit_cli RUNTIME DESTINATION bin)

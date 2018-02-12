@@ -1,6 +1,6 @@
 /*
  * This file handles all optimization functions
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef MINIMIZER_H
-#define MINIMIZER_H
+#pragma once
 
 #include "src/global.h"
 
@@ -54,7 +53,6 @@ public:
 private:
     QSharedPointer<AbstractModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
-//     void ConstrainedFit();
     int NonLinearFit(OptimizationType runtype);
     inline int NonLinearFit() { return NonLinearFit(m_runtype); }
     OptimizerConfig m_opt_config;
@@ -92,7 +90,7 @@ public:
     }
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     void addToHistory();
-    QJsonObject Parameter() const{ return m_last_parameter; };
+    inline QJsonObject Parameter() const{ return m_last_parameter; }
     void setParameter(const QJsonObject &json, const QList<int> &locked);
     void setParameter(const QJsonObject &json);
     QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start = true);
@@ -110,5 +108,3 @@ signals:
     void RequestRemoveCrashFile();
     void InsertModel(const QJsonObject &model, int active);
 };
-
-#endif // MINIMIZER_H
