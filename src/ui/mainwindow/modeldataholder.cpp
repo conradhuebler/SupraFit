@@ -450,19 +450,17 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
      * WARNING and FIXME I dont like this!
      */
     if(str == "1:1-Model")
-    {
         t = QSharedPointer<ItoI_Model>(new ItoI_Model(m_data.data()), &QObject::deleteLater);
-    }
+
     else if(str == "2:1/1:1-Model")
-    {
         t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
-    }
-    else if(str == "1:1/1:2-Model"){
+
+    else if(str == "1:1/1:2-Model")
         t =  QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
-    }
-    else if(str == "2:1/1:1/1:2-Model"){
+
+    else if(str == "2:1/1:1/1:2-Model")
         t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
-    }
+
     else if(str == "itc_1:1-Model")
         t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
     else if(str == "fl_1:1-Model")   
@@ -473,6 +471,7 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         t =  QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
     else
     {
+        qDebug() << str;
         t.clear();
         return; 
     }

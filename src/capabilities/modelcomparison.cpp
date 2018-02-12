@@ -177,15 +177,13 @@ QVector<QVector<qreal> > ModelComparison::MakeBox()
         parameter << constant;
         m_box_area *= double(m_config.box_multi*(upper-value)+m_config.box_multi*(value-lower));
         QList<QPointF> points;
-        if(!i)
-            points << QPointF(lower, m_model->GlobalParameter(1)) << QPointF(upper, m_model->GlobalParameter(1));
-        else
-            points << QPointF(m_model->GlobalParameter(0), lower) << QPointF( m_model->GlobalParameter(0), upper);
+        points << QPointF(lower, upper);
         m_series.append( points );
-        ++i;
     }
-    m_box["0"] = ToolSet::Points2String(m_series[0]);
-    m_box["1"] = ToolSet::Points2String(m_series[1]);
+
+    for(int i = 0; i < m_series.size(); ++i)
+        m_box[QString::number(i)] = ToolSet::Points2String(m_series[i]);
+
     return parameter;
 }
 
@@ -199,7 +197,7 @@ bool ModelComparison::Confidence()
     
     FastConfidence();
     
-    if(m_model.data()->GlobalParameterSize() != 2)
+    if(m_model.data()->GlobalParameterSize() == 1)
         return true;
     
     QVector<QVector<qreal> > box = MakeBox();
@@ -262,10 +260,9 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
             inner++;
             m_models << object;
             QJsonObject constants = object["data"].toObject()["globalParameter"].toObject();
-            m_data_vec[0] << constants[QString::number(0)].toString().toDouble();
-            m_data_vec[1] << constants[QString::number(1)].toString().toDouble();
             for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
             {
+                m_data_vec[i] << constants[QString::number(i)].toString().toDouble();
                 qreal min = confidence[i].first;
                 qreal max = confidence[i].second;
                 
@@ -294,7 +291,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["confidence"] = conf;
         result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->GlobalParameterName(i);
-        
+        result["type"] = "Global Parameter";
         m_results << result;
     }
 
@@ -306,8 +303,10 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     m_controller["method"] = SupraFit::Statistic::ModelComparison;
     m_controller["moco_area"] = m_ellipsoid_area;
     QJsonObject data;
-        data["global_0"] = ToolSet::DoubleList2String(m_data_vec[0]);
-        data["global_1"] = ToolSet::DoubleList2String(m_data_vec[1]);
+
+    for(int i = 0; i < m_data_vec.size(); ++i)
+        data["global_" + QString::number(i)] = ToolSet::DoubleList2String(m_data_vec[i]);
+
     m_controller["data"] = data;
     m_controller["box"] = m_box;
 }

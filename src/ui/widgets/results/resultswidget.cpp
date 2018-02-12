@@ -178,37 +178,61 @@ QWidget * ResultsWidget::ReductionWidget()
 QWidget * ResultsWidget::ModelComparisonWidget()
 {    
     QJsonObject controller = m_data["controller"].toObject();
-    ChartView *view = new ChartView;
-    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
-    
-    QList<qreal > x = ToolSet::String2DoubleList( controller["data"].toObject()["global_0"].toString() );
-    QList<qreal > y = ToolSet::String2DoubleList( controller["data"].toObject()["global_1"].toString() );
+    ListChart *view = new ListChart;
 
-    for(int j = 0; j < x.size(); ++j)
-            xy_series->append(QPointF(x[j], y[j]));
-    
-    xy_series->setMarkerSize(6);
-    xy_series->setName("MC Results");
-    view->addSeries(xy_series, true);
-    
-    QList<QList<QPointF > >series;
-    
-    QJsonObject box = controller["box"].toObject();
-        series << ToolSet::String2Points( box["0"].toString() );
-        series << ToolSet::String2Points( box["1"].toString() );
-    int i = 0;
-    
-    for(const QList<QPointF> &serie : qAsConst(series))
+    for(int a = 0; a < m_model->GlobalParameterSize(); ++a)
     {
-        LineSeries *xy_serie = new LineSeries;
-        xy_serie->append(serie);
-        xy_serie->setName(m_model->GlobalParameterName(i));
-        view->addSeries(xy_serie, true);
-        ++i;
+        for(int b = a + 1; b < m_model->GlobalParameterSize(); ++b)
+        {
+            QColor color = ChartWrapper::ColorCode(m_model->Color(a + b - 1));
+            int index = a + b - 1;
+
+            QString name = m_data[QString::number(a)].toObject()["name"].toString() + " vs. " + m_data[QString::number(b)].toObject()["name"].toString();
+            QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
+            // xy_series->setUseOpenGL(true);
+            QList<qreal > x = ToolSet::String2DoubleList( controller["data"].toObject()["global_" + QString::number(a)].toString() );
+            QList<qreal > y = ToolSet::String2DoubleList( controller["data"].toObject()["global_" + QString::number(b)].toString() );
+
+            for(int j = 0; j < x.size(); ++j)
+                    xy_series->append(QPointF(x[j], y[j]));
+
+            xy_series->setMarkerSize(5);
+            xy_series->setName(name);
+            view->addSeries(xy_series, index, color, name);
+            xy_series->setColor(color);
+
+            QList<QList<QPointF > >series;
+
+            QJsonObject box = controller["box"].toObject();
+            QList<QPointF> val1 = ToolSet::String2Points( box[QString::number(a)].toString() );
+            QList<QPointF> val2 = ToolSet::String2Points( box[QString::number(b)].toString() );
+
+            if(!val1.isEmpty() && !val2.isEmpty())
+            {
+                QPointF range1 = val1[0];
+                QPointF range2 = val2[0];
+                QList<QPointF> serie;
+                serie << QPointF(m_model->GlobalParameter(a), range2.x()) << QPointF(m_model->GlobalParameter(a), range2.y());
+                series << serie;
+                serie.clear();
+                serie << QPointF(range1.x(), m_model->GlobalParameter(b)) << QPointF(range1.y(), m_model->GlobalParameter(b));
+                series << serie;
+            }
+
+            for(const QList<QPointF> &serie : qAsConst(series))
+            {
+                LineSeries *xy_serie = new LineSeries;
+                // xy_serie->setUseOpenGL(true);
+                xy_serie->append(serie);
+                xy_serie->setName(name);
+                view->addSeries(xy_serie, index, color, name);
+                xy_serie->setColor(color);
+            }
+        }
     }
-    
-    view->setXAxis(m_model->GlobalParameterName(0));
-    view->setYAxis(m_model->GlobalParameterName(1));
+
+    view->setXAxis("Parameter 1");
+    view->setYAxis("Parameter 2");
     
     return view;
 }
