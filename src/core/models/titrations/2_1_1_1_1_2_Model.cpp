@@ -17,13 +17,10 @@
  * 
  */
 
-#include "src/core/equal_system.h"
 #include "src/core/models.h"
 #include "src/core/libmath.h"
 
 #include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <unsupported/Eigen/NonLinearOptimization>
 
 #include <QtCore/QDateTime>
 #include <QtCore/QCoreApplication>
@@ -33,14 +30,83 @@
 #include <QtCore/QJsonObject>
 #include <QDebug>
 #include <cmath>
-#include <cfloat>
-#include <iostream>
+
 #include "2_1_1_1_1_2_Model.h"
+
+ConSolver::ConSolver(QPointer<AbstractTitrationModel> model) :m_model(model)
+{
+    setAutoDelete(false);
+}
+
+ConSolver::~ConSolver()
+{
+
+}
+
+void ConSolver::setInput(double A_0, double B_0)
+{
+    m_A_0 = A_0;
+    m_B_0 = B_0;
+}
+
+void ConSolver::run()
+{
+    m_concentration = HostConcentration(m_A_0, m_B_0);
+}
+
+
+QPair<double, double> ConSolver::HostConcentration(double a0, double b0)
+{
+    if(!a0 || !b0)
+        return QPair<double, double>(a0,b0);
+
+    qreal K21 = qPow(10, m_model.data()->GlobalParameter().first());
+    qreal K11 = qPow(10, m_model.data()->GlobalParameter()[1]);
+    qreal K12 = qPow(10, m_model.data()->GlobalParameter().last());
+    qreal b12 = K11*K12;
+    qreal b21 = K11*K21;
+
+    auto calc_a = [](double a0, double b, double K11, double b21, double b12){
+        double x1 = 2*b21*b;
+        double x2 = b12*b*b+K11*b+1;
+        double x3 = -a0;
+        return MaxQuadraticRoot(x1,x2,x3);
+    };
+
+    auto calc_b = [](double b0, double a, double K11, double b21, double b12){
+        double x1 = 2*b12*a;
+        double x2 = b21*a*a+K11*a+1;
+        double x3 = -b0;
+        return MaxQuadraticRoot(x1,x2,x3);
+    };
+
+    qreal a = qMin(a0,b0)/2;
+    qreal b = 0;
+    qreal a_1 = 0, b_1 = 0;
+    for(int i = 0; i < 50; ++i)
+    {
+        a_1 = a;
+        b_1 = b;
+        b = calc_b(b0, a, K11, b21, b12);
+        if(b < 0)
+            b *= -1;
+
+        a = calc_a(a0, b, K11, b21, b12);
+        if(a < 0)
+            a *= -1;
+
+        if(qAbs(a_1-a) < 1e-10 || qAbs(b_1-b) < 1e-10)
+            break;
+    }
+    return QPair<double, double>(a,b);
+}
 
 IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrationModel(data)
 {
-    //for(int i = 0; i < DataPoints(); ++i)
-        //m_solvers << new ConcentrationSolver(this);
+    m_threadpool = new QThreadPool(this);
+    for(int i = 0; i < DataPoints(); ++i)
+        m_solvers << new ConSolver(this);
+
     m_local_parameter = new DataTable(4, SeriesCount(), this);
     m_global_parameter << 1 << 1 << 1;
     addGlobalParameter(m_global_parameter);
@@ -49,7 +115,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrati
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
 {
-    //qDeleteAll(m_solvers);
+    qDeleteAll(m_solvers);
 }
 
 void IItoI_ItoI_ItoII_Model::DeclareOptions()
@@ -80,34 +146,6 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     Calculate();
 }
 
-QPair<double, double> IItoI_ItoI_ItoII_Model::HostConcentration(double a0, double b0)
-{
-    qreal K21= qPow(10, GlobalParameter().first());
-    qreal K11 =qPow(10, GlobalParameter()[1]);
-    qreal K12= qPow(10, GlobalParameter().last());
-    qreal b12 = K11*K12;
-    qreal b21 = K11*K21;
-
-    auto calc_a = [this](double a0, double b0, double b, double K11, double b21, double b12){
-        return -0.25*1/(b*b21)*( b*b*b12 + b*K11 - sqrt( b*b*b*b*b12*b12 + 2*b*b*b*K11*b12 + b*b*K11*K11 + 8*a0*b*b21 + 2*b*b*b12 + 2*b*K11 + 1 ) + 1);
-    };
-
-    auto calc_b = [this](double a0, double b0, double a, double K11, double b21, double b12){
-        return -0.25*1/(a*b12)*( a*a*b21 + a*K11 - sqrt( a*a*a*a*b21*b21 + 2*a*a*a*K11*b21 + a*a*K11*K11 + 2*a*a*b12 + 8*a*b0*b12 + 2*a*K11 + 1 ) + 1);
-    };
-
-    qreal a = a0/2;
-    qreal b = 0;
-
-    for(int i = 0; i < 10; ++i)
-    {
-        b = calc_b(a0, b0, a, K11, b21, b12);
-        a = calc_a(a0, b0, b, K11, b21, b12);
-        qDebug() << a << b << i;
-    }
-    return QPair<double, double>(a,b);
-}
-
 void IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
@@ -119,33 +157,34 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     qreal K11 =qPow(10, GlobalParameter()[1]);
     qreal K12= qPow(10, GlobalParameter().last());
     m_constants_pow = QList<qreal >() << K21 << K11 << K12;
-    /*
-    QThreadPool *threadpool = QThreadPool::globalInstance();
+
+
     int maxthreads =qApp->instance()->property("threads").toInt();
-    threadpool->setMaxThreadCount(maxthreads);
+    m_threadpool->setMaxThreadCount(maxthreads);
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         
         m_solvers[i]->setInput(host_0, guest_0);
-        threadpool->start(m_solvers[i]);
+        m_threadpool->start(m_solvers[i]);
     }
-    
-    threadpool->waitForDone(); */
+
+    m_threadpool->waitForDone();
+
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
 
-        //QList<double > concentration = m_solvers[i]->Concentrations();
-        QPair<double, double> concentration = HostConcentration(InitialHostConcentration(i), InitialGuestConcentration(i));
+        QPair<double, double > concentration = m_solvers[i]->Concentrations();
+
         qreal host = concentration.first;
         qreal guest = concentration.second;
         
         qreal complex_11 = K11*host*guest;
         qreal complex_21 = K11*K21*host*host*guest;
-        qreal complex_12 = K11*K12*host*guest*guest;       
-        
+        qreal complex_12 = K11*K12*host*guest*guest;
+
         Vector vector(6);
         vector(0) = i + 1;
         vector(1) = host;

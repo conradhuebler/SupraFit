@@ -134,11 +134,11 @@ set(libmath_SRC
                 src/core/libmath.cpp
                 src/core/minimizer.cpp
 )
-if(testing)
+#if(testing)
     add_library(math ${libmath_SRC})
-else()
-    add_library(math STATIC ${libmath_SRC})
-endif(testing)
+#else()
+#    add_library(math STATIC ${libmath_SRC})
+#endif(testing)
 qt5_use_modules(math Core)
 
 set(models_SRC
@@ -158,11 +158,11 @@ set(models_SRC
                 src/core/models/kinetics/first_order_model.cpp
 )
 
-if(testing)
+#if(testing)
     add_library(models ${models_SRC})
-else()
-    add_library(models STATIC ${models_SRC})
-endif(testing)
+#else()
+#    add_library(models STATIC ${models_SRC})
+#endif(testing)
 
 qt5_use_modules(models Core)
 set(utils_SRC
@@ -177,11 +177,11 @@ set(utils_SRC
                 src/core/toolset.cpp
                 src/global.cpp
 )
-if(testing)
+#if(testing)
     add_library(utils ${utils_SRC})
-else()
-    add_library(utils STATIC ${utils_SRC})
-endif(testing)
+#else()
+#    add_library(utils STATIC ${utils_SRC})
+#endif(testing)
 
 qt5_use_modules(utils Core Gui)
 

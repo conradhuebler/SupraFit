@@ -147,7 +147,7 @@ void ModelElement::DisableSignal(int state)
     m_show->setChecked(state);
     m_error_series->ShowLine(state);
     m_signal_series->ShowLine(state);
-    for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
+    for(int i = 0; i < m_constants.size(); ++i)
     {
         m_constants[i]->setEnabled(m_include->isChecked());
     }
