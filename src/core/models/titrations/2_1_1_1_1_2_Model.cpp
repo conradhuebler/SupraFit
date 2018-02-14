@@ -17,8 +17,9 @@
  * 
  */
 
-#include "src/core/models.h"
 #include "src/core/libmath.h"
+#include "src/core/models.h"
+#include "src/core/toolset.h"
 
 #include <Eigen/Dense>
 
@@ -29,7 +30,9 @@
 #include <QtMath>
 #include <QtCore/QJsonObject>
 #include <QDebug>
+
 #include <cmath>
+#include <functional>
 
 #include "2_1_1_1_1_2_Model.h"
 
@@ -122,8 +125,64 @@ void IItoI_ItoI_ItoII_Model::DeclareOptions()
 {
     QStringList method = QStringList() << "NMR" << "UV/VIS";
     addOption("Method", method);
-    //QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    //addOption("Cooperativity", cooperativity);
+    QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
+    addOption("Cooperativity 2:1", cooperativity);
+    cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
+    addOption("Cooperativity 1:2", cooperativity);
+}
+
+void IItoI_ItoI_ItoII_Model::EvaluateOptions()
+{
+    QString cooperativitiy = getOption("Cooperativity 2:1");
+    {
+        auto global_coop = [this](){
+            this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
+        };
+
+        auto local_coop = [this]()
+        {
+            for(int i = 0; i < this->SeriesCount(); ++i)
+                this->m_local_parameter->data(1,i) = 2*(this->m_local_parameter->data(2,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
+        };
+
+        if(cooperativitiy == "noncooperative")
+        {
+            global_coop();
+        }else if(cooperativitiy == "additive")
+        {
+            local_coop();
+        }else if(cooperativitiy == "statistical")
+        {
+            local_coop();
+            global_coop();
+        }
+    }
+
+    cooperativitiy = getOption("Cooperativity 1:2");
+    {
+         auto global_coop = [this](){
+                this->m_global_parameter[2] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
+         };
+
+         auto local_coop = [this]()
+         {
+                for(int i = 0; i < this->SeriesCount(); ++i)
+                    this->m_local_parameter->data(3,i) = 2*(this->m_local_parameter->data(2,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
+         };
+
+        if(cooperativitiy == "noncooperative")
+        {
+            global_coop();
+        }else if(cooperativitiy == "additive")
+        {
+            local_coop();
+        }else if(cooperativitiy == "statistical")
+        {
+            local_coop();
+            global_coop();
+        }
+    }
+
 }
 
 void IItoI_ItoI_ItoII_Model::InitialGuess()
@@ -262,3 +321,61 @@ MassResults IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
     return result;
 }
 
+qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
+{
+    if(3 != parameter.size())
+        return 0;
+    qreal b21 = parameter[0];
+    qreal b11 = parameter[1];
+    qreal b12 = parameter[2];
+
+    auto calc_a = [](double b, double b11, double b21, double b12){
+        double x1 = b21;
+        double x2 = 2*b12*b+b11;
+        double x3 = -1;
+        return MaxQuadraticRoot(x1,x2,x3);
+    };
+
+    auto calc_b = [](double a, double b11, double b21, double b12, double x){
+        double x1 = b12;
+        double x2 = 2*b21*a+b11;
+        double x3 = -x;
+        return MaxQuadraticRoot(x1,x2,x3);
+    };
+
+    qreal A = x/2;
+    qreal B = 0;
+    qreal a_1 = 0, b_1 = 0;
+    for(int i = 0; i < 50; ++i)
+    {
+        a_1 = A;
+        b_1 = B;
+        B = calc_b(A, b11, b21, b12, x);
+        if(B < 0)
+            B *= -1;
+
+        A = calc_a(B, b11, b21, b12);
+        if(A < 0)
+            A *= -1;
+
+        if(qAbs(a_1-A) < 1e-12 || qAbs(b_1-B) < 1e-12)
+            break;
+        qDebug() << A << B << i;
+    }
+    return A ;
+    // return 1./(A + b11*A*B + b12*A*B*B + 2*b21*A*A*B);
+}
+
+
+qreal IItoI_ItoI_ItoII_Model::BC50() const
+{
+    qreal b21 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
+    qreal b11 = qPow(10,GlobalParameter(1));
+    qreal b12 = qPow(10,GlobalParameter(1)+GlobalParameter(2));
+    QVector<qreal> parameter;
+    parameter << b21 << b11 << b12;
+    std::function<qreal(qreal, const QVector<qreal> &)> function = Y;
+    qreal integ = ToolSet::SimpsonIntegrate(0, 1, function, parameter);
+    return integ;
+    //return double(1)/double(2)/integ;
+}

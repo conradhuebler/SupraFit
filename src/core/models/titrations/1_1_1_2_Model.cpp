@@ -18,9 +18,10 @@
  */
 
 
-#include "src/core/toolset.h"
-#include "src/core/models.h"
 #include "src/core/libmath.h"
+#include "src/core/models.h"
+#include "src/core/toolset.h"
+
 #include <QtMath>
 #include <QtCore/QJsonObject>
 #include <QDebug>

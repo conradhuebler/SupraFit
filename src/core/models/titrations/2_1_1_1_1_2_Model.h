@@ -75,8 +75,10 @@ public:
             return QString();
     }
     virtual void DeclareOptions() override;
+    virtual void EvaluateOptions() override;
     virtual inline QString Name() const override { return tr("2:1/1:1/1:2-Model"); }
     virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
+    virtual qreal BC50() const override;
 
 private:
     qreal m_K21, m_K11, m_K12;
@@ -84,7 +86,8 @@ private:
     QList<QPointer<ConSolver > > m_solvers;
     QList<qreal> m_constants_pow;
     QThreadPool *m_threadpool;
-    
+    static qreal Y(qreal x, const QVector<qreal > & parameter);
+
 protected:
     virtual void CalculateVariables() override;
 };
