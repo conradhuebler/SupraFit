@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 -2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,17 +55,21 @@ void ModelActions::setUi()
     m_plots = new PushButton(tr("Toggle Charts"));
     m_plots->setEnabled(false);
     m_search = new PushButton(tr("Search Table"));
+    m_detailed = new PushButton(tr("Detailed"));
+    m_restore = new PushButton(tr("Restore"));
+
     m_toggle = new QPushButton(tr("..more.."));
     m_toggle->setFlat(true);
-    
-    
+
     QHBoxLayout *h_layout = new QHBoxLayout;
     h_layout->addWidget(m_advanced);
     h_layout->addWidget(m_statistics); 
     h_layout->addWidget(m_plots);
-    h_layout->addWidget(m_import);
-    h_layout->addWidget(m_export);
+    h_layout->addWidget(m_detailed);
+    h_layout->addWidget(m_new_guess);
+    h_layout->addWidget(m_restore);
     h_layout->addWidget(m_optim_config);
+    h_layout->addWidget(m_search);
     h_layout->addStretch();
     h_layout->addWidget(m_toggle);
     h_layout->setAlignment(Qt::AlignLeft);
@@ -75,13 +79,13 @@ void ModelActions::setUi()
     layout->addWidget(m_second);
     
     h_layout = new QHBoxLayout;
-    h_layout->addWidget(m_new_guess);
     h_layout->addWidget(m_minimize_single);
     h_layout->addWidget(m_plot_3d);
     h_layout->addWidget(m_concentration);
-    h_layout->addWidget(m_save); 
+    h_layout->addWidget(m_save);
+    h_layout->addWidget(m_import);
+    h_layout->addWidget(m_export);
     h_layout->addWidget(m_simulate);
-    h_layout->addWidget(m_search);
     h_layout->addStretch();
     h_layout->setAlignment(Qt::AlignLeft);
     m_second->setLayout(h_layout);
@@ -100,6 +104,9 @@ void ModelActions::setUi()
     connect(m_simulate, SIGNAL(clicked()), this, SIGNAL(ExportSimModel()));
     connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
     connect(m_search, SIGNAL(clicked()), this, SIGNAL(ToggleSearch()));
+    connect(m_restore, &PushButton::clicked, this, &ModelActions::Restore);
+    connect(m_detailed, &PushButton::clicked, this, &ModelActions::Detailed);
+
     m_second->setMaximumHeight(0);
     setLayout(layout);
 }

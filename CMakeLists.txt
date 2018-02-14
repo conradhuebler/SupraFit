@@ -63,7 +63,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 endif(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 
 
-
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
 # generate proper GUI program on specified platform
 if(WIN32) # Check if we are on Windows

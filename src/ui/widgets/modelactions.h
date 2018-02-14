@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 -2018  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef MODELACTIONS_H
-#define MODELACTIONS_H
+#pragma once
 
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QPushButton>
@@ -47,7 +46,8 @@ public:
 private:
     void setUi();
     void resizeButtons();
-    PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced, *m_plot_3d, *m_statistics, *m_concentration, *m_save, *m_simulate, *m_plots, *m_search;
+    PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced;
+    PushButton *m_plot_3d, *m_statistics, *m_concentration, *m_save, *m_simulate, *m_plots, *m_search, *m_restore, *m_detailed;
     QPushButton *m_toggle;
     QWidget *m_second;
     bool m_hidden;
@@ -69,6 +69,6 @@ signals:
     void ToggleSearch();
     void NewGuess();
     void ExportSimModel();
+    void Restore();
+    void Detailed();
 };
-
-#endif // MODELACTIONS_H

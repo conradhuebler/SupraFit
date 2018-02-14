@@ -420,7 +420,7 @@ QString DataTable::ExportAsString() const
     {
         for(int i = 0; i< columnCount(); ++i)
         {
-            str += QString::number(data(i,j));
+            str += QString::number(data(i,j), 'f', 7);
             if(i < columnCount() - 1)
                 str += "\t";
         }
@@ -437,7 +437,7 @@ QStringList DataTable::ExportAsStringList() const
         QString str;
         for(int i = 0; i< columnCount(); ++i)
         {
-            str += QString::number(data(i,j)) ;
+            str += QString::number(data(i,j), 'f', 7) ;
             if(i < columnCount() - 1)
                 str += "\t";
         }

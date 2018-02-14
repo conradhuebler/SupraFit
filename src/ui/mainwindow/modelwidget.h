@@ -143,6 +143,7 @@ private:
     QString m_logging;
     QList<QJsonObject> m_local_fits;
     QPointer<QCheckBox> m_toggled_box;
+    QJsonObject m_last_model;
 
 private slots:
     void Repaint();
@@ -164,7 +165,9 @@ private slots:
     void FastConfidence();
     void DoReductionAnalyse();
     void SplitterResized();
-    
+    void Restore();
+    void Detailed();
+
 public slots:
     void recalulate();
     void OptimizerSettings();

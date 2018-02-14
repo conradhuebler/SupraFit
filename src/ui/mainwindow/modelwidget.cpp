@@ -75,6 +75,7 @@
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableView>
+#include <QtWidgets/QTextEdit>
 
 #include <QtCharts/QAreaSeries>
 #include <QtCharts/QChart>
@@ -231,6 +232,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_optim_flags->setFlags(settings.value("flags", 11).toInt());
     settings.endGroup();
     LoadStatistics();
+    m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));;
 }
 
@@ -292,7 +294,9 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, SIGNAL(ToggleConcentrations()), this, SLOT(ToggleConcentrations()));
     connect(m_actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
     connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
-    
+    connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
+    connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
+
     m_layout->addWidget(m_actions, 4, 0,1,m_model->GlobalParameterSize()+3);  
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
     m_layout->addWidget(m_optim_flags, 5, 0,1,m_model->GlobalParameterSize()+3);  
@@ -414,6 +418,7 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
     
     json = m_minimizer->Parameter();
+    m_last_model = json;
     m_model->ImportModel(json);
     Repaint();
     m_model->OptimizeParameters(m_optim_flags->getFlags());
@@ -963,4 +968,24 @@ void ModelWidget::ChangeColor()
     }
     emit ColorChanged(color);
 }
+
+void ModelWidget::Restore()
+{
+    m_model->ImportModel(m_last_model);
+    Repaint();
+}
+
+void ModelWidget::Detailed()
+{
+    QHBoxLayout *layout = new QHBoxLayout;
+    QTextEdit *text = new QTextEdit;
+    text->insertPlainText( m_model->Data2Text() + "\n" + m_model->Model2Text());
+    layout->addWidget(text);
+    text->resize(800,600);
+    QDialog dialog(this);
+    dialog.setLayout(layout);
+    dialog.exec();
+
+}
+
 #include "modelwidget.moc"
