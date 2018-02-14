@@ -329,6 +329,8 @@ qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
     qreal b11 = parameter[1];
     qreal b12 = parameter[2];
 
+    qreal epsilon = 1e-9;
+
     auto calc_a = [](double b, double b11, double b21, double b12){
         double x1 = b21;
         double x2 = 2*b12*b+b11;
@@ -358,9 +360,8 @@ qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
         if(A < 0)
             A *= -1;
 
-        if(qAbs(a_1-A) < 1e-12 || qAbs(b_1-B) < 1e-12)
+        if(qAbs(a_1-A) < epsilon || qAbs(b_1-B) < epsilon)
             break;
-        qDebug() << A << B << i;
     }
     return A ;
     // return 1./(A + b11*A*B + b12*A*B*B + 2*b21*A*A*B);

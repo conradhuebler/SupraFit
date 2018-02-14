@@ -216,7 +216,7 @@ qreal ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
     qreal b12 = parameter[1];
     qreal B = -b11/2/b12 + sqrt((qPow(b11,2))/(4*qPow(b12,2))+((x/(1-x))/b12));
     qreal A = 1/(b11+2*b12*B);
-    return 1./(A + b11*A*B+b12*A*qPow(B,2));
+    return 1./(A + b11*A*B+b12*A*B*B);
 }
 
 
