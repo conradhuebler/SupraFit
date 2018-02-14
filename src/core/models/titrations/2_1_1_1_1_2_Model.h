@@ -74,6 +74,19 @@ public:
         else 
             return QString();
     }
+
+    virtual QString SpeciesName(int i) const override
+    {
+        if(i == 0)
+            return tr("A2B");
+        else if(i == 1)
+            return tr("AB");
+        else if(i == 2)
+            return tr("AB2");
+        else
+            return QString();
+    }
+
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
     virtual inline QString Name() const override { return tr("2:1/1:1/1:2-Model"); }

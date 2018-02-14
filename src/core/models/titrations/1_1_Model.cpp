@@ -38,6 +38,7 @@
 ItoI_Model::ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     m_local_parameter = new DataTable(2, SeriesCount(), this);
+
     m_global_parameter << 0;
     DeclareOptions();
 }

@@ -69,4 +69,5 @@ namespace ToolSet{
 
 namespace Print{
     QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractModel> model, const QJsonObject &controller);
+    QString printDouble(double number);
 }

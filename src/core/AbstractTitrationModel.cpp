@@ -37,6 +37,10 @@
 AbstractTitrationModel::AbstractTitrationModel(DataClass *data) : AbstractModel(data)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
+
+    IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
+    IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+
 }
 
 AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel *other) : AbstractModel(other)
@@ -63,6 +67,11 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
     if(!m_concentrations)
     {
         m_concentrations = new DataTable( equilibrium.rows(), DataPoints(), this);
+        m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
+        m_concentrations->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
+        m_concentrations->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+        for(int i = 0; i < GlobalParameterSize(); ++i)
+            m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
     }
     m_concentrations->setRow(equilibrium, i);
 }
@@ -76,6 +85,8 @@ qreal AbstractTitrationModel::BC50() const
 
 MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
 {
+    Q_UNUSED(A)
+    Q_UNUSED(B)
     MassResults result;
     Vector values(1) ;
     values(0) = 0;
@@ -98,14 +109,14 @@ QString AbstractTitrationModel::Model2Text_Private() const
     text += "Equilibrium concentration calculated with complexation constants:\n";
     for(int i = 0; i < getConcentrations()->columnCount(); ++i)
     {
-        text += getConcentrations()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+        text += " " + getConcentrations()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     }
     text += "\n";
     text += getConcentrations()->ExportAsString();
     text += "\n\n";
     text += "Equilibrium Model Signal calculated with complexation constants:\n";
     for(int i = 0; i < DependentModel()->columnCount(); ++i)
-        text += DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+        text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     return text;
 }
 
@@ -141,8 +152,7 @@ QString AbstractTitrationModel::ModelInfo() const
         QChar mu = QChar(956);
         format_text += QString(" [") + mu + 
 
-
-QString("M]");
+        QString("M]");
         return format_text;
     }else
         return QString();

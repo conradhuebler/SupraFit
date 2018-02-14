@@ -48,6 +48,14 @@ public:
             return QString();
     }
 
+    virtual QString SpeciesName(int i) const override
+    {
+        if(i == 1)
+            return tr("AB");
+        else
+            return QString();
+    }
+
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
     virtual inline QString Name() const override { return tr("1:1-Model"); }

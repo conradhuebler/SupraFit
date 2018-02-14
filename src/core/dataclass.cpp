@@ -143,7 +143,7 @@ QVariant DataTable::headerData(int section, Qt::Orientation orientation, int rol
 
 bool DataTable::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role)
 {
-    if(section < m_header.size() && role == Qt::EditRole && orientation == Qt::Orientation::Horizontal)
+    if(section < m_header.size() && (role == Qt::DisplayRole || role == Qt::EditRole) && orientation == Qt::Orientation::Horizontal)
     {
         m_header[section] = value.toString();
         return true;
@@ -420,7 +420,14 @@ QString DataTable::ExportAsString() const
     {
         for(int i = 0; i< columnCount(); ++i)
         {
-            str += QString::number(data(i,j), 'f', 7);
+            str += Print::printDouble(data(i,j));
+            /*
+            if(data(i,j) >= 0)
+                str += " ";
+            if(qAbs(data(i,j) - int(data(i,j))) > 1E-6) // lets check if the number is an integer
+                str += QString::number(data(i,j), 'e', 6);
+            else //and
+                str += QString::number(data(i,j)); // return no digits*/
             if(i < columnCount() - 1)
                 str += "\t";
         }
@@ -437,7 +444,14 @@ QStringList DataTable::ExportAsStringList() const
         QString str;
         for(int i = 0; i< columnCount(); ++i)
         {
-            str += QString::number(data(i,j), 'f', 7) ;
+            str += Print::printDouble(data(i,j));
+            /*
+            if(data(i,j) >= 0)
+                str += " ";
+            if(qAbs(data(i,j) - int(data(i,j))) > 1E-6) // lets check if the number is an integer
+                str += Print::printDouble(data(i,j));
+            else //and
+                str += QString::number(data(i,j)); // return no digits*/
             if(i < columnCount() - 1)
                 str += "\t";
         }
@@ -590,12 +604,12 @@ void DataClass::SwitchConentrations()
     d->m_host_assignment = !HostAssignment();
     if(!d->m_host_assignment)
     {
-       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
-       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host (A)"), Qt::DisplayRole);
+       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest (B)"), Qt::DisplayRole);
     }else
     {
-       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
-       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
+       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Guest (A)"), Qt::DisplayRole);
+       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Host (B)"), Qt::DisplayRole);
     }
 }
 

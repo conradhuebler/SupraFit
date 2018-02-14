@@ -52,6 +52,18 @@ public:
         else
             return QString();
     }
+
+    virtual QString SpeciesName(int i) const override
+    {
+        if(i == 0)
+            return tr("A2B");
+        else if(i == 1)
+            return tr("AB");
+        else
+            return QString();
+    }
+
+
     void DeclareOptions() override;
     
     

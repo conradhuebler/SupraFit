@@ -979,11 +979,11 @@ void ModelWidget::Detailed()
 {
     QHBoxLayout *layout = new QHBoxLayout;
     QTextEdit *text = new QTextEdit;
-    text->insertPlainText( m_model->Data2Text() + "\n" + m_model->Model2Text());
+    text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
     layout->addWidget(text);
-    text->resize(800,600);
     QDialog dialog(this);
     dialog.setLayout(layout);
+    dialog.resize(1024,800);
     dialog.exec();
 
 }

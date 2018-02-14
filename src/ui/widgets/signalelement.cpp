@@ -138,6 +138,7 @@ void SignalElement::ShowLine(int i)
 void SignalElement::setName(const QString &str)
 {
     m_data_series->setName(str);
+    m_data.data()->DependentModel()->setHeaderData(m_no, Qt::Horizontal, str, Qt::DisplayRole);
     emit m_data_series->NameChanged(str);
 }
 

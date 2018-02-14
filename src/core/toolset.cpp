@@ -541,14 +541,14 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
         qreal upper = confidence["upper"].toDouble();
         qreal lower = confidence["lower"].toDouble();
         qreal conf = confidence["error"].toDouble();
-        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "(+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + ") * </b></td></tr>\n";
-        text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b>" +pot + QString::number(lower, 'f', 4) + " -" + pot + QString::number(upper, 'f', 4) + "</b></td></tr>\n";
+        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "[+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + "] * </b></td></tr>\n";
+        text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + QString::number(lower, 'f', 4) + " - " + QString::number(upper, 'f', 4) + "] </b></td></tr>\n";
     }
     if(type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation)
     {
         SupraFit::BoxWhisker box = ToolSet::Object2Whisker(result["boxplot"].toObject());
         text += "<tr><td>Median: </td><td> <b>" +QString::number(box.median, 'f', 4) + "</b></td></tr>\n";
-        text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) +"-" + QString::number(box.UpperNotch(), 'f', 4) +"</b></td></tr>\n"; 
+        text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) +" - " + QString::number(box.UpperNotch(), 'f', 4) +"</b></td></tr>\n";
         if(value > box.UpperNotch() || value < box.LowerNotch())
         {
             box_message = "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>\n"; 
@@ -571,5 +571,21 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
     text += "\n";
     text += "<tr><td></td></tr>\n";
     return box_message+text;    
-}
+    }
+
+    QString printDouble(double number)
+    {
+        QString string;
+        if(number >= 0)
+            string += " ";
+
+        if(qAbs(number-int(number)) < 1e-9 )
+            string += QString::number(number);
+        else if(qAbs(number) < 1e-4)
+            string += QString::number(number, 'e', 3);
+        else
+            string += QString::number(number, 'f', 6);
+
+        return string;
+    }
 }

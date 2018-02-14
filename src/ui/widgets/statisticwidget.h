@@ -21,6 +21,7 @@
 
 #include <QtCore/QSharedPointer>
 
+#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
 
 class AbstractModel;
@@ -37,7 +38,7 @@ public:
     ~StatisticWidget();
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
-    
+    inline QString Text() const { return m_overview->toPlainText(); }
 public slots:
      void Update();
     
