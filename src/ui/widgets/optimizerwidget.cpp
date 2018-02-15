@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ void OptimizerWidget::setUi()
     
     m_tabwidget->addTab(GeneralWidget(), tr("General Settings"));
     m_tabwidget->addTab(LevmarWidget(), tr("Levmar Settings"));
-    m_tabwidget->addTab(AdvancedWidget(), tr("More Settings"));
+    m_tabwidget->addTab(AdvancedWidget(), tr("Advanced Settings"));
 
 }
 
@@ -67,14 +67,11 @@ OptimizerConfig OptimizerWidget::Config() const
     OptimizerConfig config;
     
     config.MaxIter = m_maxiter->value();
-    config.LevMar_Constants_PerIter = m_levmar_constants_periter->value();
-    config.LevMar_Shifts_PerIter = m_levmar_shifts_periter->value();
-    config.Sum_Convergence = m_sum_convergence->value();
-    config.Shift_Convergence = m_shift_convergence->value();
     config.Constant_Convergence = m_constant_convergence->value();
     config.Error_Convergence = m_error_convergence->value();
-    config.error_potenz = m_error_potenz->value();
-    
+    config.single_iter = m_single_iter->value();
+    config.skip_not_converged_concentrations = m_skip_corrupt_concentrations->isChecked();
+
 
     config.LevMar_Factor = m_levmar_factor->value();
     config.LevMar_Xtol = m_levmar_eps1->value();
@@ -93,7 +90,7 @@ QWidget * OptimizerWidget::GeneralWidget()
 
     
     m_maxiter = new QSpinBox;
-    m_maxiter->setMaximum(999999);
+    m_maxiter->setMaximum(9999999);
     m_maxiter->setValue(m_config.MaxIter);
     
     m_constant_convergence = new ScientificBox;
@@ -173,55 +170,23 @@ QWidget * OptimizerWidget::LevmarWidget()
 QWidget * OptimizerWidget::AdvancedWidget()
 {    
     QWidget *widget = new QWidget;
-     QGridLayout *layout = new QGridLayout;
-     
-    m_error_potenz = new QSpinBox();
-    m_error_potenz->setValue(m_config.error_potenz);
-    m_error_potenz->setMaximum(10);
-    m_error_potenz->setMinimum(1);
-    
-    m_sum_convergence = new QSpinBox;
-    m_sum_convergence->setMaximum(3);
-    m_sum_convergence->setMinimum(1);
-    m_sum_convergence->setValue(m_config.Sum_Convergence);
-    
-    m_shift_convergence = new ScientificBox;
-    m_shift_convergence->setRange(0, 1E-1);
-    m_shift_convergence->setSingleStep(1E-4);
-    m_shift_convergence->setDecimals(5);
-    m_shift_convergence->setValue(m_config.Shift_Convergence);
-    
-    m_levmar_constants_periter = new QSpinBox;
-    m_levmar_constants_periter->setMaximum(999999);
-    m_levmar_constants_periter->setValue(m_config.LevMar_Constants_PerIter);
-    
-    m_levmar_shifts_periter = new QSpinBox;
-    m_levmar_shifts_periter->setMaximum(999999);
-    m_levmar_shifts_periter->setValue(m_config.LevMar_Shifts_PerIter);
+    QGridLayout *layout = new QGridLayout;
 
-    
-    layout->addWidget(new QLabel(tr("No. Constraints for Convergence")), 1, 0);
-    layout->addWidget(m_sum_convergence, 1, 1);
-    
-    layout->addWidget(new QLabel(tr("Maximal Levenberg Marquadt Iterations for Constants")), 2, 0);
-    layout->addWidget(m_levmar_constants_periter, 2, 1);
-    
-    layout->addWidget(new QLabel(tr("Maximal Levenberg Marquadt Iterations for Shifts")), 6, 0);
-    layout->addWidget(m_levmar_shifts_periter, 6, 1);    
-    
-    layout->addWidget(new QLabel(tr("Tolerance Shift Convergence")), 7, 0);
-    layout->addWidget(m_shift_convergence, 7, 1);
-    
-    layout->addWidget(new QLabel(tr("Potenz of Error")), 8, 0);
-    layout->addWidget(m_error_potenz, 8, 1);
+    m_single_iter = new QSpinBox();
+    m_single_iter->setMaximum(1e9);
+    m_single_iter->setMinimum(30);
+    m_single_iter->setValue(m_config.single_iter);
+
+    m_skip_corrupt_concentrations = new QCheckBox(tr("Skip invalid points"));
+    m_skip_corrupt_concentrations->setChecked(m_config.skip_not_converged_concentrations);
+
+    layout->addWidget(new QLabel(tr("Number of internal iterations")), 1, 0);
+    layout->addWidget(m_single_iter, 1, 1);
+
+    layout->addWidget(m_skip_corrupt_concentrations, 2, 0, 1, 2);
+
     widget->setLayout(layout);
     return widget;
 }
-
-
-
-
-
-
 
 #include "optimizerwidget.moc"

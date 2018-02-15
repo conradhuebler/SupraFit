@@ -195,7 +195,6 @@ void ItoI_ItoII_Model::CalculateVariables()
             SetValue(i, j, value);
         }
     }
-    emit Recalculated();
 }
 
 QSharedPointer<AbstractModel > ItoI_ItoII_Model::Clone()

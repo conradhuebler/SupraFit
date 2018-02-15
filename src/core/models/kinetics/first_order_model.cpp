@@ -97,7 +97,6 @@ void Kinetic_First_Order_Model::CalculateVariables()
             SetValue(i, j, value);    
         }
     }
-    emit Recalculated();
 }
 
 

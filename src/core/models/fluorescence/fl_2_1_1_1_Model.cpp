@@ -180,7 +180,6 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
         }
         
     }
-    emit Recalculated();
 }
 
 QVector<qreal> fl_IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)

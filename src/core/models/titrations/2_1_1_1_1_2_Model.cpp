@@ -36,7 +36,7 @@
 
 #include "2_1_1_1_1_2_Model.h"
 
-ConSolver::ConSolver(QPointer<AbstractTitrationModel> model) :m_model(model)
+ConSolver::ConSolver(QPointer<AbstractTitrationModel> model) :m_model(model), m_ok(false)
 {
     setAutoDelete(false);
 }
@@ -50,11 +50,15 @@ void ConSolver::setInput(double A_0, double B_0)
 {
     m_A_0 = A_0;
     m_B_0 = B_0;
+    m_concentration = QPair<double, double>(A_0,B_0);
 }
 
 void ConSolver::run()
 {
-    m_concentration = HostConcentration(m_A_0, m_B_0);
+    if(m_A_0 && m_B_0)
+        m_concentration = HostConcentration(m_A_0, m_B_0);
+    else
+        m_ok = true;
 }
 
 
@@ -69,24 +73,43 @@ QPair<double, double> ConSolver::HostConcentration(double a0, double b0)
     qreal b12 = K11*K12;
     qreal b21 = K11*K21;
 
-    auto calc_a = [](double a0, double b, double K11, double b21, double b12){
-        double x1 = 2*b21*b;
-        double x2 = b12*b*b+K11*b+1;
-        double x3 = -a0;
-        return MaxQuadraticRoot(x1,x2,x3);
+    auto calc_a = [](double a0, long double b, double K11, double b21, double b12){
+        long double x1 = 2*b21*b;
+        long double x2 = b12*b*b+K11*b+1;
+        long double x3 = -a0;
+        long double a = MaxQuadraticRoot(x1,x2,x3);
+        if(a < a0)
+            return a;
+        else
+        {
+#ifdef _DEBUG
+            std::cout << "a: " << a << " a0 " << a0 << " b0: " << b0 << std::endl;
+#endif
+            return MinQuadraticRoot(x1,x2,x3);
+        }
     };
 
-    auto calc_b = [](double b0, double a, double K11, double b21, double b12){
-        double x1 = 2*b12*a;
-        double x2 = b21*a*a+K11*a+1;
-        double x3 = -b0;
-        return MaxQuadraticRoot(x1,x2,x3);
+    auto calc_b = [](double b0, long double a, double K11, double b21, double b12){
+        long double x1 = 2*b12*a;
+        long double x2 = b21*a*a+K11*a+1;
+        long double x3 = -b0;
+        long double b = MaxQuadraticRoot(x1,x2,x3);
+        if(b < b0 )
+            return b;
+        else
+        {
+#ifdef _DEBUG
+            std::cout << "b: " << b << " a0 " << a0 << " b0: " << b0 << std::endl;
+#endif
+            return MinQuadraticRoot(x1,x2,x3);
+        }
     };
-
-    qreal a = qMin(a0,b0)/2;
-    qreal b = 0;
-    qreal a_1 = 0, b_1 = 0;
-    for(int i = 0; i < 50; ++i)
+    long double epsilon = 1e-10;
+    long double a = qMin(a0,b0)/K11*10;
+    long double b = 0;
+    long double a_1 = 0, b_1 = 0;
+    int i = 0;
+    for(i = 0; i < m_opt_config.single_iter; ++i)
     {
         a_1 = a;
         b_1 = b;
@@ -97,10 +120,19 @@ QPair<double, double> ConSolver::HostConcentration(double a0, double b0)
         a = calc_a(a0, b, K11, b21, b12);
         if(a < 0)
             a *= -1;
-
-        if(qAbs(a_1-a) < 1e-10 || qAbs(b_1-b) < 1e-10)
+        if(qAbs(b21*a_1*a_1*b_1-b21*a*a*b) < epsilon && qAbs(b12*a_1*b_1*b_1-b12*a*b*b) < epsilon && qAbs(K11*a_1*b_1 - K11 * a*b) < epsilon)
             break;
     }
+#ifdef _DEBUG
+    std::cout << a_1 << " "<< b_1 << " " << K11*a_1*b_1 << " " << b21*a_1*a_1*b_1 << " " << b12*a_1*b_1*b_1 << std::endl;
+    std::cout << a << " "<< b << " " << K11*a*b << " " << b21*a*a*b << " " << b12*a*b*b << std::endl;
+    std::cout << "Guess A: " << qMin(a0,b0)/K11*100 << " .. Final A: " << a << " .. Iterations:" << i<< std::endl;
+#endif
+    m_ok =  (a < m_A_0) &&
+            (b < m_B_0) &&
+            (a > 0) &&
+            (b > 0) &&
+            i < m_opt_config.single_iter;
     return QPair<double, double>(a,b);
 }
 
@@ -226,6 +258,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         qreal guest_0 = InitialGuestConcentration(i);
         
         m_solvers[i]->setInput(host_0, guest_0);
+        m_solvers[i]->setConfig(m_opt_config);
         m_threadpool->start(m_solvers[i]);
     }
 
@@ -234,7 +267,14 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
-
+        if(!m_solvers[i]->Ok())
+        {
+            qDebug() << "Numeric didn't work, mark model as corrupt";
+            qDebug() << m_solvers[i]->Ok() << InitialHostConcentration(i) << InitialGuestConcentration(i);
+            m_corrupt = true;
+            if(m_opt_config.skip_not_converged_concentrations)
+                continue;
+        }
         QPair<double, double > concentration = m_solvers[i]->Concentrations();
 
         qreal host = concentration.first;
@@ -263,8 +303,6 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
             SetValue(i, j, value);
         }
     }
-    
-    emit Recalculated();
 }
 
 QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone()
@@ -360,7 +398,8 @@ qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
         if(A < 0)
             A *= -1;
 
-        if(qAbs(a_1-A) < epsilon || qAbs(b_1-B) < epsilon)
+        if(qAbs(b21*a_1*a_1*b_1-b21*A*A*B) < epsilon && qAbs(b12*a_1*b_1*b_1-b12*A*B*B) < epsilon && qAbs(b11*a_1*b_1 * b11 * A*B) < epsilon)
+//        if(qAbs(a_1-A) < epsilon || qAbs(b_1-B) < epsilon)
             break;
     }
     return A ;

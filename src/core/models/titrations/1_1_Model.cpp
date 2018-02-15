@@ -137,7 +137,6 @@ void ItoI_Model::CalculateVariables()
             SetValue(i, j, value);    
         }
     }
-    emit Recalculated();
 }
 
 

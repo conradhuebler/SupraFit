@@ -126,23 +126,23 @@ QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal> &x, const QVector
 }
 
 
-qreal MinQuadraticRoot(qreal a, qreal b, qreal c)
+long double MinQuadraticRoot(long double a, long double b, long double c)
 {
-    return (-b- qSqrt(qPow(b,2)-4*a*c))/(2*a);
+    return (-b- sqrt(b*b-4*a*c))/(2*a);
 }
 
-qreal MaxQuadraticRoot(qreal a, qreal b, qreal c)
+long double MaxQuadraticRoot(long double a, long double b, long double c)
 {
-    return (-b + qSqrt(qPow(b,2)-4*a*c))/(2*a);
+    return (-b + sqrt(b*b-4*a*c))/(2*a);
 }
 
-QPair<qreal, qreal> QuadraticRoot(qreal a, qreal b, qreal c)
+QPair<long double, long double> QuadraticRoot(long double a, long double b, long double c)
 {
-    QPair<qreal, qreal> pair(0,0);
+    QPair<long double, long double> pair(0,0);
     if((qPow(b,2)-4*a*c) < 0)
         return pair;
-    pair.first = (-b- qSqrt(qPow(b,2)-4*a*c))/(2*a);
-    pair.second = (-b+ qSqrt(qPow(b,2)-4*a*c))/(2*a);
+    pair.first = (-b- sqrt(b*b-4*a*c))/(2*a);
+    pair.second = (-b+ sqrt(b*b-4*a*c))/(2*a);
     return pair;
 }
 

@@ -50,10 +50,8 @@ void WeakenedGridSearchThread::run()
 {
     m_minimizer->setModel(m_model);
     m_model.data()->Calculate();
-    if(m_config.optimizer_config.error_potenz == 2)
-        m_error = m_model.data()->SumofSquares();
-    else
-        m_error = m_model.data()->SumofAbsolute();
+    m_error = m_model.data()->SumofSquares();
+
     QList<QPointF> series;
     QJsonObject optimized = m_model.data()->ExportModel(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
@@ -116,12 +114,8 @@ qreal WeakenedGridSearchThread::SumErrors(bool direction, double& integ_5, doubl
         
         m_model.data()->Calculate();
         
-        qreal new_error;
-        
-        if(m_config.optimizer_config.error_potenz == 2)
-            new_error = m_model.data()->SumofSquares();
-        else
-            new_error = m_model.data()->SumofAbsolute();
+        qreal new_error = m_model.data()->SumofSquares();
+
         if(new_error < m_error && m_check_convergence)
             counter++;
         qreal rect = qMin(new_error,old_error)*qAbs(increment);

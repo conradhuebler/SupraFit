@@ -128,12 +128,8 @@ inline OptimizationType& operator^= (OptimizationType& a, OptimizationType b) { 
 
 
 struct OptimizerConfig
-{
-    int error_potenz = 2;
-    
+{    
     int MaxIter = 75;
-    int Sum_Convergence = 2;
-    qreal Shift_Convergence = 1E-3;
     qreal Constant_Convergence = 1E-3;
     qreal Error_Convergence = 5E-7;
     
@@ -145,6 +141,10 @@ struct OptimizerConfig
     qreal LevMar_Gtol = 1E-10;
     qreal LevMar_Ftol = 1E-10;
     qreal LevMar_epsfcn = 1E-8;
+
+    bool skip_not_converged_concentrations = false;
+    int single_iter = 150;
+
 };
 
 

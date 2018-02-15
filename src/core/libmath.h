@@ -45,10 +45,10 @@ struct MultiRegression
     QVector<int> start;
 };
 
-qreal MinQuadraticRoot(qreal a, qreal b, qreal c);
-qreal MaxQuadraticRoot(qreal a, qreal b, qreal c);
+long double MinQuadraticRoot(long double a, long double b, long double c);
+long double MaxQuadraticRoot(long double a, long double b, long double c);
 
-QPair<qreal, qreal> QuadraticRoots(qreal a, qreal b, qreal c);
+QPair<long double, long double> QuadraticRoots(long double a, long double b, long double c);
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
 
 LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y);

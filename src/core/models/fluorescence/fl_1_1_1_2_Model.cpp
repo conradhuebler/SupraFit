@@ -224,7 +224,6 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
             SetValue(i, j, value*1e3);
         }
     }
-    emit Recalculated();
 }
 
 QSharedPointer<AbstractModel > fl_ItoI_ItoII_Model::Clone()

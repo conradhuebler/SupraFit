@@ -151,7 +151,6 @@ void IItoI_ItoI_Model::CalculateVariables()
         }
         
     }
-    emit Recalculated();
 }
 
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)

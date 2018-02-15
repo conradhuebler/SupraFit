@@ -164,7 +164,6 @@ void fl_ItoI_Model::CalculateVariables()
             SetValue(i, j, value*1e3);
         }
     }
-    emit Recalculated();
 }
 
 

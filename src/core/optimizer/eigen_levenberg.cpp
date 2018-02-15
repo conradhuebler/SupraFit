@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,12 +72,8 @@ struct MyFunctor : Functor<double>
         model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedModel();
         for( int i = 0; i < ModelSignals.size(); ++i)
-        {
-            if(m_potenz == 2)
-                fvec(i) = CalculatedSignals[i] - ModelSignals[i];
-            else if(m_potenz == 1)
-                fvec(i) = qSqrt(qAbs((CalculatedSignals[i] - ModelSignals[i])));
-        }
+            fvec(i) = CalculatedSignals[i] - ModelSignals[i];
+
         return 0;
     }
     int no_parameter;
@@ -85,8 +81,8 @@ struct MyFunctor : Functor<double>
     int m_potenz;
     Variables ModelSignals;
     QSharedPointer<AbstractModel> model;
-    int inputs() const { return no_parameter; } // There are two parameters of the model
-    int values() const { return no_points; } // The number of observations
+    int inputs() const { return no_parameter; }
+    int values() const { return no_points; }
 };
 
 struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
@@ -113,7 +109,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
-    functor.m_potenz = config.error_potenz;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
     int iter = 0;

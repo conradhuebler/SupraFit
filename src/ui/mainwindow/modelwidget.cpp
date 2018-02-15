@@ -347,7 +347,12 @@ void ModelWidget::Repaint()
         converged = "<font color =\'red\'>Calculation did not converge.</font>\n";
     else
         converged = "Calculation converged";
-    m_converged_label->setText(converged);
+
+    QString corrupt;
+    if(m_model->isCorrupt())
+        corrupt = "<font color =\'red\'><strong>Model is corrupt, probably numerical errors in concentration calculation. Please don't relay on this results.</strong></font>\n";
+
+    m_converged_label->setText("<html>" + converged + "</br>" + corrupt + "</html>");
     
     Model2Text();
     QTextDocument doc;

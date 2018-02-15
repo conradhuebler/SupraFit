@@ -163,6 +163,10 @@ void AbstractModel::Calculate()
     m_SEy = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize()));
     m_chisquared = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize() - 1));
     m_covfit = CalculateCovarianceFit();
+    if(isCorrupt())
+    {
+        qDebug() << "Something went wrong during model calculation, most probably some numeric stuff";
+    }
     emit Recalculated();
 }
 
@@ -477,15 +481,17 @@ QString AbstractModel::Model2Text() const
     text += "\n";
     text += "******************************************************************************************************\n";
     text += "#### Current Model Results #####\n";
-    text += "Equilibrium Model Calculation with complexation constants:\n";
+    text += "Global parameter for model:\n";
     for(int i = 0; i < GlobalParameterSize(); ++i)
         text += GlobalParameterName(i) + ":\t" + formatedGlobalParameter(GlobalParameter(i), i)+ "\n";
     text += "\n";
+    text += "Local parameter for model\n";
+    text += m_local_parameter->ExportAsString();
     text += Model2Text_Private();
     text += "\n";
     text += ModelTable()->ExportAsString();
     text += "\n";
-    text += "Errors obtained from that calculcation:\n";
+    text += "Errors obtained from currrent calculcation:\n";
     for(int i = 0; i < DependentModel()->columnCount(); ++i)
         text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";

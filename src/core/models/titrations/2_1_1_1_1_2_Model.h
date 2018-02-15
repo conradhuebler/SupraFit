@@ -41,13 +41,16 @@ public:
     ~ConSolver();
     virtual void run();
     void setInput(double A_0, double B_0);
+    inline void setConfig(OptimizerConfig opt_config) { m_opt_config = opt_config; }
     inline QPair<double, double> Concentrations() const { return  m_concentration; }
-
+    bool Ok() const { return m_ok; }
 private:
     qreal m_A_0, m_B_0;
     QPair<double, double> HostConcentration(double a0, double b0);
     QPointer<AbstractTitrationModel> m_model;
     QPair<double, double> m_concentration;
+    bool m_ok;
+    OptimizerConfig m_opt_config;
 };
 
 class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel

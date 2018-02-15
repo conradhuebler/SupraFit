@@ -579,8 +579,12 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
         if(number >= 0)
             string += " ";
 
-        if(qAbs(number-int(number)) < 1e-9 )
+        if(qAbs(number-int(number)) < 1e-30 )
             string += QString::number(number);
+        else if(qAbs(number) < 1e-17)
+            string += "0";
+        else if(qAbs(number) < 1e-9)
+            string += QString::number(number, 'e', 2);
         else if(qAbs(number) < 1e-4)
             string += QString::number(number, 'e', 3);
         else

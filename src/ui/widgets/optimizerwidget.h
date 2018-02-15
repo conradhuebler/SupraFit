@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,7 @@
  * ScientificBox thanks to:
  * https://bugreports.qt.io/browse/QTBUG-7521
  */
-
-#ifndef OPTIMIZERWIDGET_H
-#define OPTIMIZERWIDGET_H
+#pragma once
 
 #include "src/global_config.h"
 
@@ -31,12 +29,12 @@
 #include "src/core/AbstractModel.h"
 
 struct OptimizerConfig;
+
 class QValidator;
 class QSpinBox;
 class QCheckBox;
 class QTabWidget;
 class ScientificBox;
-
 
 class OptimizerWidget : public QWidget
 {
@@ -54,12 +52,11 @@ private:
     
     OptimizerConfig m_config;
     QTabWidget *m_tabwidget;
-    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence, *m_error_potenz, *m_levmar_factor;
+    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_sum_convergence, *m_levmar_factor, *m_single_iter;
+    QCheckBox *m_skip_corrupt_concentrations;
     ScientificBox *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
     ScientificBox *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
 
 
     void setUi();
 };
-
-#endif // OPTIMIZERWIDGET_H
