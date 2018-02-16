@@ -71,7 +71,7 @@ OptimizerConfig OptimizerWidget::Config() const
     config.Error_Convergence = m_error_convergence->value();
     config.single_iter = m_single_iter->value();
     config.skip_not_converged_concentrations = m_skip_corrupt_concentrations->isChecked();
-
+    config.concen_convergency = m_concen_convergency->value();
 
     config.LevMar_Factor = m_levmar_factor->value();
     config.LevMar_Xtol = m_levmar_eps1->value();
@@ -180,10 +180,18 @@ QWidget * OptimizerWidget::AdvancedWidget()
     m_skip_corrupt_concentrations = new QCheckBox(tr("Skip invalid points"));
     m_skip_corrupt_concentrations->setChecked(m_config.skip_not_converged_concentrations);
 
+    m_concen_convergency = new ScientificBox;
+    m_concen_convergency->setRange(1E-12, 1E-6);
+    m_concen_convergency->setDecimals(13);
+    m_concen_convergency->setSingleStep(1E-12);
+    m_concen_convergency->setValue(m_config.concen_convergency);
+
     layout->addWidget(new QLabel(tr("Number of internal iterations")), 1, 0);
     layout->addWidget(m_single_iter, 1, 1);
 
     layout->addWidget(m_skip_corrupt_concentrations, 2, 0, 1, 2);
+    layout->addWidget(new QLabel("Concentration Convergency Threshold"), 3, 0);
+    layout->addWidget(m_concen_convergency, 3, 1);
 
     widget->setLayout(layout);
     return widget;

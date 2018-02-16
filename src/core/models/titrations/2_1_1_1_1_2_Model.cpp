@@ -104,7 +104,7 @@ QPair<double, double> ConSolver::HostConcentration(double a0, double b0)
             return MinQuadraticRoot(x1,x2,x3);
         }
     };
-    long double epsilon = 1e-10;
+    long double epsilon = m_opt_config.concen_convergency;
     long double a = qMin(a0,b0)/K11*10;
     long double b = 0;
     long double a_1 = 0, b_1 = 0;
@@ -269,11 +269,18 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i);
         if(!m_solvers[i]->Ok())
         {
-            qDebug() << "Numeric didn't work, mark model as corrupt";
+#ifdef _DEBUG
+            qDebug() << "Numeric didn't work out well, mark model as corrupt! - Dont panic. Not everything is lost ...";
             qDebug() << m_solvers[i]->Ok() << InitialHostConcentration(i) << InitialGuestConcentration(i);
+#endif
             m_corrupt = true;
             if(m_opt_config.skip_not_converged_concentrations)
+            {
+#ifdef _DEBUG
+            qDebug() << "Ok, I skip the current result ...";
+#endif
                 continue;
+            }
         }
         QPair<double, double > concentration = m_solvers[i]->Concentrations();
 

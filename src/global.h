@@ -144,6 +144,7 @@ struct OptimizerConfig
 
     bool skip_not_converged_concentrations = false;
     int single_iter = 150;
+    double concen_convergency = 1e-10;
 
 };
 

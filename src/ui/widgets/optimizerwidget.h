@@ -54,7 +54,7 @@ private:
     QTabWidget *m_tabwidget;
     QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_sum_convergence, *m_levmar_factor, *m_single_iter;
     QCheckBox *m_skip_corrupt_concentrations;
-    ScientificBox *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
+    ScientificBox *m_concen_convergency, *m_constant_convergence, *m_error_convergence;
     ScientificBox *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
 
 
