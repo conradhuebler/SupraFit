@@ -27,6 +27,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
+#include <QtCore/QMutexLocker>
 #include <QtCore/QPointF>
 #include <QtCore/QThreadPool>
 #include <QtCore/QTimer>
@@ -80,6 +81,62 @@ void MonteCarloThread::run()
 #endif
 }
 
+MonteCarloBatch::MonteCarloBatch(const MCConfig &config, QPointer<MonteCarloStatistics> parent) : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_config(config), m_finished(false), m_parent(parent)
+{
+
+}
+
+MonteCarloBatch::~MonteCarloBatch()
+{
+
+}
+
+void MonteCarloBatch::run()
+{
+    int i = 0;
+    while(true)
+    {
+        qDebug() << this << i++ << m_interrupt;
+        if(m_interrupt)
+            break;
+        QPair<QPointer<DataTable >, QPointer<DataTable> > table = m_parent->DemandCalc();
+        if(table.first && table.second)
+        {
+            m_model->OverrideInDependentTable(table.first);
+            m_model->OverrideDependentTable(table.second);
+            optimise();
+        }
+        else
+            break;
+    }
+}
+
+
+void MonteCarloBatch::optimise()
+{
+    if(!m_model || m_interrupt)
+    {
+        qDebug() << "no model set";
+        return;
+    }
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+#ifdef _DEBUG
+//         qDebug() <<  "started!";
+#endif
+    m_minimizer->setModel(m_model);
+    m_finished = m_minimizer->Minimize(m_config.runtype);
+
+    if(m_finished)
+    {
+        m_models << m_minimizer->Parameter();
+        //m_optimized = m_minimizer->Parameter();
+    }
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit IncrementProgress(t1-t0);
+#ifdef _DEBUG
+//         qDebug() <<  "finished after " << t1-t0 << "msecs!";
+#endif
+}
 
 MonteCarloStatistics::MonteCarloStatistics(const MCConfig &config, QObject *parent): AbstractSearchClass(parent), m_config(config)
 {
@@ -96,7 +153,7 @@ MonteCarloStatistics::~MonteCarloStatistics()
 void MonteCarloStatistics::Evaluate()
 {
     m_models.clear();
-    QVector<QPointer <MonteCarloThread > > threads = GenerateData();
+    QVector<QPointer <MonteCarloBatch > > threads = GenerateData();
     while(m_threadpool->activeThreadCount())
         QCoreApplication::processEvents();
     
@@ -119,13 +176,13 @@ QJsonObject MonteCarloStatistics::Controller() const
     return controller;
 }
 
-QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
+QVector<QPointer <MonteCarloBatch > > MonteCarloStatistics::GenerateData()
 {    
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     m_model->Calculate();
     m_table = new DataTable(m_model->ModelTable());
-    QVector<QPointer <MonteCarloThread > > threads;
+    QVector<QPointer <MonteCarloBatch > > threads;
     m_generate = true;
     QVector<qreal> vector = m_model->ErrorTable()->toList();
     Uni = std::uniform_int_distribution<int>(0,vector.size()-1);
@@ -140,10 +197,10 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
 #endif
     for(int step = 0; step < m_config.maxsteps; ++step)
     {
-        QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config);
-        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-        connect(this, &MonteCarloStatistics::InterruptAll, thread, &MonteCarloThread::Interrupt);
-        thread->setModel(m_model);
+        //QPointer<MonteCarloThread > thread = new MonteCarloThread(m_config);
+        //connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        //connect(this, &MonteCarloStatistics::InterruptAll, thread, &MonteCarloThread::Interrupt);
+        //thread->setModel(m_model);
         QPointer<DataTable> dep_table;
         if(m_config.original)
             dep_table = m_model->DependentModel();
@@ -151,9 +208,17 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
             dep_table = m_model->ModelTable();
         m_ptr_table << dep_table;
         if(m_config.bootstrap)
-            thread->setDataTable(dep_table->PrepareBootStrap(Uni, rng, vector));
+        {
+            QPointer<DataTable> tmp = dep_table->PrepareBootStrap(Uni, rng, vector);
+            m_ptr_table << tmp;
+            dep_table = tmp;
+        }
         else
-            thread->setDataTable(dep_table->PrepareMC(Phi, rng));
+        {
+            QPointer<DataTable> tmp = dep_table->PrepareMC(Phi, rng);
+            m_ptr_table << tmp;
+            dep_table = tmp;
+        }
 
         QPointer<DataTable>  indep_table = new DataTable(m_model->IndependentModel());
         m_ptr_table << indep_table;
@@ -168,23 +233,47 @@ QVector<QPointer <MonteCarloThread > > MonteCarloStatistics::GenerateData()
                 indep_table = tmp;
             }
         }
-        thread->setIndepTable(indep_table);
+        m_batch.enqueue( Pair(indep_table, dep_table) );
+        //thread->setIndepTable(indep_table);
 
-        m_threadpool->start(thread);
+        //m_threadpool->start(thread);
 #ifdef _DEBUG
         qDebug() << "Thread added to queue!" << thread;
 #endif
-        threads << thread; 
+        // threads << thread;
         QCoreApplication::processEvents();
+        /*
         if(step % 100 == 0)
             emit IncrementProgress(0);
         if(!m_generate)
-            break;
+            break;*/
     }
+    qDebug() << m_batch.size();
+    for(int i = 0; i < maxthreads; ++i)
+    {
+        QPointer<MonteCarloBatch > thread = new MonteCarloBatch(m_config, this);
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        connect(this, &MonteCarloStatistics::InterruptAll, thread, &MonteCarloBatch::Interrupt);
+        thread->setModel(m_model);
+        threads << thread;
+        m_threadpool->start(thread);
+    }
+
     return threads;
 }
 
-void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& threads)
+Pair MonteCarloStatistics::DemandCalc()
+{
+    QMutexLocker lock(&mutex);
+
+    if(m_batch.isEmpty())
+        return Pair(); // QPointer<DataTable>, QPointer< DataTable >);
+    else
+        return m_batch.dequeue();
+}
+
+
+void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch> >& threads)
 { 
     m_steps = 0;
     for(int i = 0; i < threads.size(); ++i)
@@ -196,7 +285,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloThread> >& t
                 delete threads[i];
                 continue;
             }
-            m_models << threads[i]->Model();
+            m_models << threads[i]->Models();
             m_steps++;
             delete threads[i];
         }

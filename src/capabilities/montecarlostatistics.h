@@ -25,10 +25,15 @@
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
+#include <QtCore/QMutex>
 #include <QtCore/QSharedPointer>
+#include <QtCore/QQueue>
 
 class Minimizer;
 class QThreadPool;
+class MonteCarloStatistics;
+
+typedef QPair<QPointer<DataTable >, QPointer<DataTable> >  Pair;
 
 class MCConfig : public AbstractConfig
 {
@@ -67,6 +72,27 @@ private:
     int m_index;
 };
 
+class MonteCarloBatch : public AbstractSearchThread
+{
+    Q_OBJECT
+
+public:
+    MonteCarloBatch(const MCConfig &config, QPointer<MonteCarloStatistics> parent);
+    ~MonteCarloBatch();
+    virtual void run() override;
+    void optimise();
+    inline QList<QJsonObject> Models() const { return m_models; }
+    inline bool Finished() const { return m_finished; }
+
+private:
+    QPointer<MonteCarloStatistics> m_parent;
+    bool m_finished;
+    QSharedPointer<Minimizer> m_minimizer;
+    MCConfig m_config;
+    QList<QJsonObject > m_models;
+
+};
+
 class MonteCarloStatistics : public AbstractSearchClass
 {
     Q_OBJECT
@@ -77,13 +103,16 @@ public:
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
 
+    Pair DemandCalc();
+
+
 public slots:
     void Interrupt() override;
     
 private:
-    QVector<QPointer <MonteCarloThread > > GenerateData();
+    QVector<QPointer <MonteCarloBatch > > GenerateData();
     QVector<QPointer<DataTable> > m_ptr_table;
-    void Collect(const QVector<QPointer <MonteCarloThread > > &threads);
+    void Collect(const QVector<QPointer <MonteCarloBatch > > &threads);
     virtual QJsonObject Controller() const override;
     std::mt19937 rng;
     std::normal_distribution<double> Phi;
@@ -92,6 +121,8 @@ private:
     MCConfig m_config;
     bool m_generate;
     int m_steps;
+    QQueue< Pair > m_batch;
+    QMutex mutex;
 signals:
     void InterruptAll();
 };
