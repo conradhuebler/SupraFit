@@ -103,7 +103,7 @@ public:
     inline void setConfig(const MCConfig &config) { m_config = config; }
     void Evaluate();
 
-    Pair DemandCalc();
+    QVector<Pair > DemandCalc();
 
 
 public slots:
@@ -121,7 +121,7 @@ private:
     MCConfig m_config;
     bool m_generate;
     int m_steps;
-    QQueue< Pair > m_batch;
+    QQueue< QVector<Pair >> m_batch;
     QMutex mutex;
 signals:
     void InterruptAll();
