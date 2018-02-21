@@ -765,13 +765,13 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     }
 #ifdef _DEBUG
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-//     qDebug() << "model importet within" << t1-t0 << " msecs";
+    qDebug() << "model importet within" << t1-t0 << " msecs";
 #endif
     Calculate();
     
 #ifdef _DEBUG
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();
-//     qDebug() << "calculation took " << t2-t1 << " msecs";
+    qDebug() << "calculation took " << t2-t1 << " msecs";
 #endif
 }
 
