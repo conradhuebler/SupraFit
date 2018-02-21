@@ -85,6 +85,7 @@ public:
     virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
     virtual QString SpeciesName(int i) const { return QString(); }
     virtual qreal BC50() const;
+    virtual qreal BC50SF() const;
     virtual MassResults MassBalance(qreal A, qreal B);
     inline QPointer<DataTable > getConcentrations() const { return m_concentrations; }
     inline QPointer<DataTable > getConcentrations() { return m_concentrations; }

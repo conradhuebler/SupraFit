@@ -40,6 +40,7 @@ public:
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override;
+    virtual inline qreal BC50SF() const override { return BC50(); }
     virtual inline QString GlobalParameterName(int i = 0) const override 
     { 
         if( i == 0)

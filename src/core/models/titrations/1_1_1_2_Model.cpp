@@ -161,10 +161,8 @@ void ItoI_ItoII_Model::CalculateVariables()
     QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    qreal K12= qPow(10, GlobalParameter().last());
+    qreal K12 = qPow(10, GlobalParameter().last());
     qreal K11 = qPow(10, GlobalParameter().first());
-
-    qreal host_zero, guest_zero;
 
     for(int i = 0; i < DataPoints(); ++i)
     {
@@ -211,11 +209,10 @@ qreal ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
 {
     if(2 != parameter.size())
         return 0;
+    qreal alpha = x/(1-x);
     qreal b11 = parameter[0];
     qreal b12 = parameter[1];
-    qreal B = -b11/2/b12 + sqrt((qPow(b11,2))/(4*qPow(b12,2))+((x/(1-x))/b12));
-    qreal A = 1/(b11+2*b12*B);
-    return 1./(A + b11*A*B+b12*A*B*B);
+    return sqrt(b11*b11+4*b12*alpha)/(1+alpha);
 }
 
 
@@ -223,11 +220,34 @@ qreal ItoI_ItoII_Model::BC50() const
 {
     qreal b11 = qPow(10,GlobalParameter(0));
     qreal b12 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
+
     QVector<qreal> parameter;
     parameter << b11 << b12;
     std::function<qreal(qreal, const QVector<qreal> &)> function = Y;
     qreal integ = ToolSet::SimpsonIntegrate(0, 1, function, parameter);
     return double(1)/double(2)/integ;
+}
+
+qreal ItoI_ItoII_Model::Y_0(qreal x, const QVector<qreal> &parameter)
+{
+    if(2 != parameter.size())
+        return 0;
+    qreal b11 = parameter[0];
+    qreal b12 = parameter[1];
+    qreal A = 1/(sqrt(b11*b11+4*b12*(x/(1-x))));
+    return A;
+}
+
+qreal ItoI_ItoII_Model::BC50SF() const
+{
+    qreal b11 = qPow(10,GlobalParameter(0));
+    qreal b12 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
+
+    QVector<qreal> parameter;
+    parameter << b11 << b12;
+    std::function<qreal(qreal, const QVector<qreal> &)> function = Y_0;
+    qreal integ = ToolSet::SimpsonIntegrate(0, 1, function, parameter);
+    return integ;
 }
 
 #include "1_1_1_2_Model.moc"

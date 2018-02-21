@@ -40,6 +40,8 @@ public:
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override;
+    virtual qreal BC50SF() const override;
+
     virtual inline QString GlobalParameterName(int i = 0) const override 
     { 
         if(i == 0)
@@ -78,6 +80,7 @@ private:
     qreal m_K11, m_K12;
     QList<qreal > m_ItoI_signals, m_ItoII_signals;
     static qreal Y(qreal x, const QVector<qreal > & parameter);
+    static qreal Y_0(qreal x, const QVector<qreal > & parameter);
 protected:
     virtual void CalculateVariables() override;
 };

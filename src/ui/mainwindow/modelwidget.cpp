@@ -141,6 +141,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
 
         constant->setValue(m_model->GlobalParameter()[i]);
         constant->setMaximum(1e4);
+        constant->setMinimum(-1e4);
         constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
         const_layout->addWidget(new QLabel(m_model->GlobalParameterName(i)));

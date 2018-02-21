@@ -95,6 +95,7 @@ public:
     virtual inline QString Name() const override { return tr("2:1/1:1/1:2-Model"); }
     virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
     virtual qreal BC50() const override;
+    virtual qreal BC50SF() const override;
 
 private:
     qreal m_K21, m_K11, m_K12;
@@ -103,6 +104,7 @@ private:
     QList<qreal> m_constants_pow;
     QThreadPool *m_threadpool;
     static qreal Y(qreal x, const QVector<qreal > & parameter);
+    static qreal Y_0(qreal x, const QVector<qreal > & parameter);
 
 protected:
     virtual void CalculateVariables() override;
