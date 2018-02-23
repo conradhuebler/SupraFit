@@ -249,7 +249,10 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         addMenu(m_kinetcs_model, menu);
         m_add_kinetics->setMenu(menu);
         m_add_nmr->hide();
-        m_add_itc->hide();
+        menu = new QMenu;
+        addMenu(m_itc_model, menu);
+        m_add_itc->setMenu(menu);
+       // m_add_itc->hide();
     }
     else if(IndependetCount == 2)
     {
@@ -258,9 +261,6 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         action = menu->addSection(tr("Fluorescence"));
         addMenu(m_fl_model, menu);
         m_add_nmr->setMenu(menu);
-        menu = new QMenu;
-        addMenu(m_itc_model, menu);
-        m_add_itc->setMenu(menu);
         m_add_kinetics->hide();
     }
 }

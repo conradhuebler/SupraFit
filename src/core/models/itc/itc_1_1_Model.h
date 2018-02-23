@@ -36,21 +36,37 @@ public:
 
     ~itc_ItoI_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 1;}
+    inline int GlobalParameterSize() const override { return 2;}
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override;
+    virtual inline qreal BC50SF() const override { return BC50(); }
     virtual inline QString GlobalParameterName(int i = 0) const override 
     { 
         if( i == 0)
             return tr("K<sub>11</sub>");
+        else if( i == 1)
+            return tr("dH");
+        else
+            return QString();
+
+    }
+    virtual int LocalParameterSize() const override {return 2; }
+    virtual inline int InputParameterSize() const override { return 1; }
+
+    virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
+    virtual qreal PrintOutIndependent(int i, int format) const override { return i; }
+
+    virtual inline QString GlobalParameterPrefix(int i = 0) const override
+    {
+        if(i == 0)
+            return QString("10^");
         else
             return QString();
     }
-    virtual int LocalParameterSize() const override {return GlobalParameterSize(); }
 
-    virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
+
 
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}

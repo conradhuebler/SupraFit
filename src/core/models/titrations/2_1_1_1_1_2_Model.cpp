@@ -374,7 +374,7 @@ qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
     qreal b11 = parameter[1];
     qreal b12 = parameter[2];
 
-    qreal epsilon = 1e-9;
+    qreal epsilon = 1e-12;
 
     auto calc_a = [](double b, double b11, double b21, double b12){
         double x1 = b21;
@@ -406,7 +406,7 @@ qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
         if(A < 0)
             A *= -1;
 
-        if(qAbs(b21*a_1*a_1*b_1-b21*A*A*B) < epsilon && qAbs(b12*a_1*b_1*b_1-b12*A*B*B) < epsilon && qAbs(b11*a_1*b_1 * b11 * A*B) < epsilon)
+        if(qAbs(b21*a_1*a_1*b_1-b21*A*A*B) < epsilon && qAbs(b12*a_1*b_1*b_1-b12*A*B*B) < epsilon && qAbs(b11*a_1*b_1 - b11 * A*B) < epsilon)
             break;
     }
 #ifdef _DEBUG
@@ -440,7 +440,7 @@ qreal IItoI_ItoI_ItoII_Model::Y_0(qreal x, const QVector<qreal> &parameter)
     qreal b11 = parameter[1];
     qreal b12 = parameter[2];
 
-    qreal epsilon = 1e-9;
+    qreal epsilon = 1e-12;
 
     auto calc_a = [](double b, double b11, double b21, double b12){
         double x1 = b21;
@@ -472,13 +472,13 @@ qreal IItoI_ItoI_ItoII_Model::Y_0(qreal x, const QVector<qreal> &parameter)
         if(A < 0)
             A *= -1;
 
-        if(qAbs(b21*a_1*a_1*b_1-b21*A*A*B) < epsilon && qAbs(b12*a_1*b_1*b_1-b12*A*B*B) < epsilon && qAbs(b11*a_1*b_1 * b11 * A*B) < epsilon)
+        if(qAbs(b21*a_1*a_1*b_1-b21*A*A*B) < epsilon && qAbs(b12*a_1*b_1*b_1-b12*A*B*B) < epsilon && qAbs(b11*a_1*b_1 - b11 * A*B) < epsilon)
             break;
     }
 #ifdef _DEBUG
     std::cout << a_1 << " "<< b_1 << " " << b11*a_1*b_1 << " " << b21*a_1*a_1*b_1 << " " << b12*a_1*b_1*b_1 << std::endl;
     std::cout << A << " "<< B << " " << b11*A*B << " " << b21*A*A*B << " " << b12*A*B*B << std::endl;
-    std::cout << "last Change: " << qAbs(b21*a_1*a_1*b_1-b21*A*A*B) << " " << qAbs(b12*a_1*b_1*b_1-b12*A*B*B) << " " << qAbs(b11*a_1*b_1 * b11 * A*B)  << std::endl;
+    std::cout << "last Change: " << qAbs(b21*a_1*a_1*b_1-b21*A*A*B) << " " << qAbs(b12*a_1*b_1*b_1-b12*A*B*B) << " " << qAbs(b11*a_1*b_1 - b11 * A*B)  << std::endl;
     std::cout << "Guess A: " << x/2 << " .. Final A: " << A << " .. Iterations:" << i<< std::endl;
 #endif
     return A;

@@ -37,8 +37,9 @@
 
 itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
-    m_local_parameter = new DataTable(1, SeriesCount(), this);
-//     InitialGuess();
+    m_local_parameter = new DataTable(2, 1, this);
+    m_global_parameter << 2 << -1000;
+//    InitialGuess();
     DeclearSystemParameter();
 }
 
@@ -51,17 +52,21 @@ void itc_ItoI_Model::DeclearSystemParameter()
 {
     m_data->addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
     m_data->addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
+    m_data->addSystemParameter("Temperature", "Temperature", SystemParameter::Scalar);
+    m_data->addSystemParameter("Cell concentration", "Concentration in cell", SystemParameter::Scalar);
+    m_data->addSystemParameter("Syringe concentration", "Concentration in syringe", SystemParameter::Scalar);
     m_data->LoadSystemParameter();
 }
 
 
 void itc_ItoI_Model::InitialGuess()
 {
-    m_K11 = 4;
-    m_global_parameter = QList<qreal>() << m_K11;
+    m_K11 = 7;
+    m_global_parameter = QList<qreal>() << m_K11 << -40000;
     
     m_local_parameter->setColumn(DependentModel()->firstRow(), 0);
-    
+    m_local_parameter->data(0, 0) = -1000;
+    m_local_parameter->data(1, 0) = 1;
     QVector<qreal * > line1, line2;
     for(int i = 0; i < SeriesCount(); ++i)
         line1 << &m_local_parameter->data(0, i); 
@@ -76,11 +81,9 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
         setOptParamater(m_global_parameter);
 
-    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
-    {
-#warning todo - adopt to correctness
-        addLocalParameter(0);
-    }
+    addLocalParameter(0);
+    addLocalParameter(1);
+
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
@@ -110,32 +113,53 @@ void itc_ItoI_Model::CalculateVariables()
     m_sum_squares = 0;
     qreal V = m_data->getSystemParameter("Cell Volume").Double();
     qreal inject = m_data->getSystemParameter("Inject Volume").Double();
-    qreal heat  = 0;
-//     qreal R = 94.498978E-3;
-//     qreal M = 3.395108E-3;
-//     qreal Xt = R*inject*1E-6;
+    qreal initial_cell = m_data->getSystemParameter("Cell concentration").Double();
+    qreal initial_syringe = m_data->getSystemParameter("Syringe concentration").Double();
+    qreal n_cell = initial_cell * V;
+#ifdef _DEBUG
+    qDebug() << "Concentration in cell" << n_cell;
+#endif
+    qreal V_cell = V;
+    qreal cum_shot = 0;
+    qreal emp_exp = 1e-3;
+    qreal fx = 1.1392083811262292;
+    /*
+    qreal dil_heat = -10375.798901966295;
+    qreal dil_inter = 1.4228377122782208;
+    */
+    qreal dil_heat = m_local_parameter->data(0, 0);
+    qreal dil_inter = m_local_parameter->data(1, 0);
+
+    qreal dH = GlobalParameter()[1];
+    qreal complex_prev = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal V_1 = V+((1+i)*inject);
-//         qreal Mt = M*V_1*1E-6;
-        qreal host_0 = InitialHostConcentration(i);
-        qreal guest_0 = InitialGuestConcentration(i);
+        //qreal host_0 = InitialHostConcentration(i)/V_1;
+        qreal shot_vol = IndependentModel()->data(0,i);
+        cum_shot += shot_vol;
+        V_cell += shot_vol;
+        qreal host_0 = n_cell/V_cell*emp_exp; ///fx;
+        qreal guest_0 = (cum_shot*initial_syringe)/(V_cell)*emp_exp;
+#ifdef _DEBUG
+        qDebug() << "Cell/Host concentration" << host_0;
+     //   qDebug() << "Guest concentration " << guest_0;
+#endif
+        qreal dilution = ((shot_vol*initial_syringe)/V_cell*dil_heat+dil_inter)*emp_exp;
+       // qDebug() << dilution;
         qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
-        qreal complex = (host_0 -host);
+        qreal complex = (host_0 - host);
         Vector vector(4);
         vector(0) = i + 1;
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
+#ifdef _DEBUG
+        qDebug() << guest_0/host_0;
+#endif
         SetConcentration(i, vector);
-        qreal value = V_1*complex*m_local_parameter->data(0, 0);
-        SetValue(i, 0, value-heat*(1-inject/V));    
-//         SetValue(i, 0, value-heat);    
-//         qreal Xr = Xt/Mt;
-//         qreal r = 1/Mt/GlobalParameter(0);
-//         qreal value = m_local_parameter->data(0, 0)*V*(0.5+(1-Xr-r)/(2*sqrt((1+Xr+r)*(1+Xr+r)-4*Xr)))*Xt*1E-6;
-//         SetValue(i,0,value);
-        heat = value;
+        qreal value = V*(complex-complex_prev)*dH;
+        SetValue(i, 0, value+dilution);
+        complex_prev = complex;
     }
     emit Recalculated();
 }
