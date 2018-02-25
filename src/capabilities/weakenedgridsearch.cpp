@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,96 @@
 
 #include "weakenedgridsearch.h"
 
+
+WGSearchThread::WGSearchThread(const WGSConfig &config) : m_config(config),
+    m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)),
+    m_stationary(false),
+    m_finished(false),
+    m_converged(false)
+{
+
+}
+
+WGSearchThread::~WGSearchThread()
+{
+
+}
+
+void WGSearchThread::run()
+{
+    m_minimizer->setModel(m_model);
+    m_model.data()->Calculate();
+    m_error = m_model.data()->SumofSquares();
+
+    QList<QPointF> series;
+    QJsonObject optimized = m_model.data()->ExportModel(false);
+    QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
+    m_result["value"] = parameter[m_index];
+    Calculate();
+}
+
+
+void WGSearchThread::Calculate()
+{
+    double increment = m_config.increment;
+    QList<int >locked = m_model->LockedParamters();
+    QVector<qreal > param = m_model->OptimizeParameters(m_config.runtype);
+
+    locked[m_index] = 0;
+
+    qreal error = 0;
+    m_steps = 0;
+    int counter = 0;
+    double value = m_start;
+    bool converged = false;
+    while(!converged)
+    {
+        if(m_start < m_end)
+        {
+            converged = value > m_end;
+            value += increment;
+        }else
+        {
+            converged = value < m_end;
+            value -= increment;
+        }
+        param[m_index] = value;
+        m_steps++;
+        m_model.data()->setParameter(param);
+
+        m_minimizer->Minimize(m_config.runtype, locked);
+        QJsonObject model = m_minimizer->Parameter();
+        m_model.data()->ImportModel(model);
+
+
+        m_model.data()->Calculate();
+
+        qreal new_error = m_model.data()->SumofSquares();
+        m_models[new_error] = model;
+
+        if(new_error > m_config.maxerror || qAbs(new_error - error) < m_config.error_conv)
+        {
+            m_finished = new_error > m_config.maxerror;
+            m_stationary = qAbs(new_error - error) < m_config.error_conv;
+            break;
+        }
+
+
+        error = new_error;
+
+        m_x.append(value);
+        m_y.append(new_error);
+        if(new_error < m_error)
+            counter++;
+        // QCoreApplication::processEvents();
+        if(m_interrupt)
+            break;
+        emit IncrementProgress(0);
+    }
+    m_converged = counter > 50;
+
+}
+
 WeakenedGridSearchThread::WeakenedGridSearchThread(const WGSConfig &config, bool check_convergence) : m_config(config), m_check_convergence(check_convergence), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
 {
     
@@ -44,6 +134,7 @@ WeakenedGridSearchThread::WeakenedGridSearchThread(const WGSConfig &config, bool
 
 WeakenedGridSearchThread::~WeakenedGridSearchThread()
 {
+
 }
 
 void WeakenedGridSearchThread::run()

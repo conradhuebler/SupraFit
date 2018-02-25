@@ -35,8 +35,7 @@
 
 fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(data)
 {
-    m_local_parameter = new DataTable(4, SeriesCount(), this);
-    m_global_parameter << 1 << 1;
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
     
 }

@@ -37,8 +37,7 @@
 
 fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
-    m_local_parameter = new DataTable(3, SeriesCount(), this);
-    m_global_parameter << 1;
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 //     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
 //     DeclareOptions();
 //    InitialGuess();

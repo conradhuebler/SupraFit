@@ -368,6 +368,8 @@ protected:
      */
     qreal CalculateCovarianceFit();
         
+    void PrepareParameter(int global, int local);
+
 // #warning to do as well
     //FIXME more must be
     QVector<double * > m_opt_para;
@@ -382,7 +384,7 @@ protected:
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
     QList<int > m_active_signals;
-    QList<int > m_locked_parameters, m_enabled_parameter;
+    QList<int > m_locked_parameters, m_enabled_parameter, m_enabled_local, m_enabled_global;
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;

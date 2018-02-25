@@ -49,7 +49,8 @@ public:
     void setParameter(const QJsonObject &json);
     inline void setOptimizerConfig(const OptimizerConfig &config) { m_opt_config = config; }
     inline bool Converged() const { return m_converged; }
-    
+    inline qreal SumOfError() const { return m_sum_error; }
+
 private:
     QSharedPointer<AbstractModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
@@ -60,7 +61,8 @@ private:
     int m_steps;
     OptimizationType m_runtype;
     bool m_exc_statistics;
-    
+    qreal m_sum_error;
+
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);
@@ -94,6 +96,7 @@ public:
     void setParameter(const QJsonObject &json, const QList<int> &locked);
     void setParameter(const QJsonObject &json);
     QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start = true);
+
 private:
     QSharedPointer<AbstractModel> m_model;
     OptimizerConfig m_opt_config;
@@ -101,6 +104,8 @@ private:
     QString OptPara2String() const;
     QJsonObject m_last_parameter;
     bool m_exc_statistics;
+    qreal m_sum_error;
+
 signals:
     void Message(const QString &str, int priority);
     void Warning(const QString &str, int priority);

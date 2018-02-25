@@ -38,7 +38,7 @@
 
 Kinetic_First_Order_Model::Kinetic_First_Order_Model(DataClass *data) : AbstractModel(data)
 {
-    m_local_parameter = new DataTable(1, SeriesCount(), this);
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 //     InitialGuess();
 }
 

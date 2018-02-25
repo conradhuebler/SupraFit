@@ -34,8 +34,7 @@
 
 IItoI_ItoI_Model::IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
-    m_local_parameter = new DataTable(3, SeriesCount(), this);
-    m_global_parameter = QList<qreal>() << 1 << 1;   
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     DeclareOptions();
 }
     
