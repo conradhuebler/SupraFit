@@ -106,11 +106,10 @@ void itc_ItoI_Model::CalculateVariables()
     
     m_sum_absolute = 0;
     m_sum_squares = 0;
+
     qreal V = m_data->getSystemParameter("Cell Volume").Double();
-    qreal inject = m_data->getSystemParameter("Inject Volume").Double();
     qreal initial_cell = m_data->getSystemParameter("Cell concentration").Double();
     qreal initial_syringe = m_data->getSystemParameter("Syringe concentration").Double();
-    qreal n_cell = initial_cell * V;
 
 #ifdef _DEBUG
     qDebug() << "Concentration in cell" << n_cell;

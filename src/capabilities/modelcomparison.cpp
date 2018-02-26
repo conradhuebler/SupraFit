@@ -47,25 +47,27 @@ void MCThread::run()
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
     rng.seed(seed);
-    
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-
     for(int step = 0; step < m_maxsteps; ++step)
     {
         if(m_interrupt)
             return;
+
         QList<qreal > consts = m_model.data()->GlobalParameter();
-        for(int i = 0; i < dist.size(); ++i)
+        for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) // FIXME dont want that really, but it should work for now
         {
             consts[i] = dist[i](rng)/mult;
         }
         m_model->setGlobalParameter(consts);
         m_model->Calculate();
-        m_results << m_model->ExportModel();
+        m_results << m_model->ExportModel(false);
+
+        if(step%update_intervall == 0)
+        {
+            emit IncrementProgress(QDateTime::currentMSecsSinceEpoch()-t0);
+            t0 = QDateTime::currentMSecsSinceEpoch();
+        }
     }
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    emit IncrementProgress(t1-t0);
-    t0 = QDateTime::currentMSecsSinceEpoch();
 }
 
 
@@ -95,7 +97,7 @@ bool ModelComparison::FastConfidence()
     m_controller["maxerror"] = m_config.maxerror;
     m_controller["f-value"] = m_config.f_value;
     
-    QJsonObject optimized = m_model.data()->ExportModel();
+    QJsonObject optimized = m_model.data()->ExportModel(false);
     QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
     for(int i = 0; i < parameter.size(); ++i)
     {
@@ -218,16 +220,15 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal> >& box)
     emit setMaximumSteps(1+maxsteps/update_intervall);
     int thread_count =  qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);
-    for(int i = 0; i < maxsteps/update_intervall; ++i)
+    for(int i = 0; i < thread_count; ++i)
     {
         MCThread *thread = new MCThread;
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
-        thread->setMaxSteps(update_intervall);
+        thread->setMaxSteps(maxsteps/thread_count);
         thread->setBox(box);
         threads << thread;
         m_threadpool->start(thread);
-        QCoreApplication::processEvents();
     }
     while(m_threadpool->activeThreadCount())
     {
