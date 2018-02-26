@@ -35,15 +35,14 @@
 void MCThread::run()
 {
     QVector<std::uniform_int_distribution<int> > dist;
-#warning depend directly on the size of each variable
-    double mult = 1e6;
-    for(int i = 0; i < m_box.size(); ++i)
+    QVector<double > factors(m_model.data()->GlobalParameterSize(), 1);
+    for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
     {
-        int lower = mult*m_box[i][0];
-        int upper = mult*m_box[i][1];
+        factors[i] = qPow(10,log10(qAbs(1e7/m_model.data()->GlobalParameter(i))));
+        int lower = factors[i]*m_box[i][0];
+        int upper = factors[i]*m_box[i][1];
         dist << std::uniform_int_distribution<int>(lower, upper);
     }
-    
     quint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
     rng.seed(seed);
@@ -56,7 +55,7 @@ void MCThread::run()
         QList<qreal > consts = m_model.data()->GlobalParameter();
         for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) // FIXME dont want that really, but it should work for now
         {
-            consts[i] = dist[i](rng)/mult;
+            consts[i] = dist[i](rng)/factors[i];
         }
         m_model->setGlobalParameter(consts);
         m_model->Calculate();
@@ -271,8 +270,11 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
                     confidence[i].first = qMin(min, constants[QString::number(i)].toString().toDouble());
                 else
                     confidence[i].first = constants[QString::number(i)].toString().toDouble();
-                
-                confidence[i].second = qMax(max, constants[QString::number(i)].toString().toDouble());  
+
+                if(max != 0)
+                    confidence[i].second = qMax(max, constants[QString::number(i)].toString().toDouble());
+                else
+                    confidence[i].second = constants[QString::number(i)].toString().toDouble();
             }
         }
         QCoreApplication::processEvents();
