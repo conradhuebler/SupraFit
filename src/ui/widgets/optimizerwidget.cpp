@@ -181,7 +181,7 @@ QWidget * OptimizerWidget::AdvancedWidget()
     m_skip_corrupt_concentrations->setChecked(m_config.skip_not_converged_concentrations);
 
     m_concen_convergency = new ScientificBox;
-    m_concen_convergency->setRange(1E-12, 1E-6);
+    m_concen_convergency->setRange(1E-18, 1E-6);
     m_concen_convergency->setDecimals(13);
     m_concen_convergency->setSingleStep(1E-12);
     m_concen_convergency->setValue(m_config.concen_convergency);

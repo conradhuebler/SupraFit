@@ -77,6 +77,21 @@ AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt
     
 }
 
+void AbstractModel::PrepareParameter(int global, int local)
+{
+    m_local_parameter = new DataTable(local, SeriesCount(), this);
+
+    for(int i = 0; i < local; ++i)
+        m_enabled_local << 0;
+
+    for(int i = 0; i < global; ++i)
+    {
+        m_global_parameter << 0;
+        m_enabled_global << 0;
+    }
+
+    addGlobalParameter(m_global_parameter);
+}
 
 AbstractModel::~AbstractModel()
 {
@@ -396,20 +411,24 @@ void AbstractModel::setLocalParameterSeries(const Vector& vector, int series)
 void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
 {
     for(int i = 0; i < parameter.size(); ++i)
+    {
         m_opt_para << &parameter[i];    
+        m_enabled_global[i] = 1;
+    }
 }
 
 void AbstractModel::addGlobalParameter(int i)
 {
     if(i < m_global_parameter.size())
         m_opt_para << &m_global_parameter[i]; 
+    m_enabled_global[i] = 1;
 }
 
 void AbstractModel::addLocalParameter(int i)
 {
     for(int j = 0; j < m_local_parameter->rowCount(); ++j)
         m_opt_para << &m_local_parameter->data(i, j);    
-    
+    m_enabled_local[i] = 1;
 }
 
 void AbstractModel::UpdateStatistic(const QJsonObject& object)
@@ -765,13 +784,13 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     }
 #ifdef _DEBUG
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-//     qDebug() << "model importet within" << t1-t0 << " msecs";
+    qDebug() << "model importet within" << t1-t0 << " msecs";
 #endif
     Calculate();
     
 #ifdef _DEBUG
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();
-//     qDebug() << "calculation took " << t2-t1 << " msecs";
+    qDebug() << "calculation took " << t2-t1 << " msecs";
 #endif
 }
 

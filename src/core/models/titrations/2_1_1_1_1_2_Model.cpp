@@ -142,9 +142,8 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrati
     for(int i = 0; i < DataPoints(); ++i)
         m_solvers << new ConSolver(this);
 
-    m_local_parameter = new DataTable(4, SeriesCount(), this);
-    m_global_parameter << 1 << 1 << 1;
-    addGlobalParameter(m_global_parameter);
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+
     DeclareOptions();
 }
 

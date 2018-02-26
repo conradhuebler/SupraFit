@@ -26,6 +26,7 @@
 #include "src/core/toolset.h"
 
 #include "src/ui/widgets/optimizerflagwidget.h"
+#include "src/ui/widgets/buttons/scientificbox.h"
 #include "src/ui/guitools/waiter.h"
 
 #include <QtCore/QDateTime>
@@ -206,15 +207,40 @@ QWidget *StatisticDialog::MonteCarloWidget()
 QWidget * StatisticDialog::GridSearchWidget()
 {
     QWidget *cv_widget = new QWidget;
-    QGridLayout *layout = new QGridLayout;   
+    QVBoxLayout *layout = new QVBoxLayout;
     
-    m_cv_increment = new QDoubleSpinBox;
-    m_cv_increment->setDecimals(6);
-    m_cv_increment->setValue(0.001);
-    m_cv_increment->setSingleStep(1e-3);
-    layout->addWidget(new QLabel(tr("Increment")), 0, 0);
-    layout->addWidget(m_cv_increment, 0, 1, 1, 2);
-    
+    QWidget *parameter = new QWidget(this);
+    if(m_model)
+    {
+        layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
+        QVBoxLayout *layout = new QVBoxLayout;
+        for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
+        {
+            QCheckBox *checkbox = new QCheckBox;
+            checkbox->setChecked(true);
+            m_grid_glob << checkbox;
+            QHBoxLayout *hlayout = new QHBoxLayout;
+            hlayout->addWidget(checkbox);
+            hlayout->addWidget(new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>"));
+            hlayout->addStretch(100);
+            layout->addLayout(hlayout);
+        }
+
+
+        for(int i = 0; i < m_model.data()->LocalParameterSize(); ++i)
+        {
+            QCheckBox *checkbox = new QCheckBox;
+            m_grid_local << checkbox;
+            QHBoxLayout *hlayout = new QHBoxLayout;
+            hlayout->addWidget(checkbox);
+            hlayout->addWidget(new QLabel("<html>" +  m_model.data()->LocalParameterName(i) + "</html>"));
+            hlayout->addStretch(100);
+            layout->addLayout(hlayout);
+        }
+        parameter->setLayout(layout);
+    }
+    layout->addWidget(parameter);
+
     m_cv_maxerror = new QDoubleSpinBox;
     m_cv_maxerror->setMaximum(100);
     m_cv_maxerror->setSingleStep(0.5);
@@ -233,28 +259,58 @@ QWidget * StatisticDialog::GridSearchWidget()
     connect(m_cv_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
     connect(m_cv_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
     
-    layout->addWidget(new QLabel(tr("Confidence Inerval")), 1, 0);
-    layout->addWidget(m_cv_maxerror, 1, 1);
-    layout->addWidget(m_cv_f_test, 1, 2);  
-    
+    QHBoxLayout *hlayout = new QHBoxLayout;
+
+    hlayout->addWidget(new QLabel(tr("Define Confidence Interval")));
+    hlayout->addWidget(m_cv_maxerror);
+    hlayout->addWidget(m_cv_f_test);
+
+    layout->addLayout(hlayout);
     if(m_model)
     {
-        layout->addWidget(new QLabel(tr("F-Value:")), 2, 0);
-        layout->addWidget(m_cv_f_value, 2, 1);
-        
+        hlayout = new QHBoxLayout;
+        hlayout->addWidget(new QLabel(tr("F-Value:")));
+        hlayout->addWidget(m_cv_f_value);
+        layout->addLayout(hlayout);
+
         m_cv_error_info = new QLabel;
-        layout->addWidget(m_cv_error_info, 3, 0, 1, 3);
+        layout->addWidget(m_cv_error_info);
     }
+
+    m_cv_increment = new QDoubleSpinBox;
+    m_cv_increment->setDecimals(6);
+    m_cv_increment->setValue(0.001);
+    m_cv_increment->setSingleStep(1e-3);
+
+    hlayout = new QHBoxLayout;
+    hlayout->addWidget(new QLabel(tr("Increment per Step:")));
+    hlayout->addWidget(m_cv_increment);
+
+    layout->addLayout(hlayout);
+
     m_cv_steps = new QSpinBox;
     m_cv_steps->setMaximum(1e7);
     m_cv_steps->setValue(5000);
     m_cv_steps->setSingleStep(100);
     
-    layout->addWidget(new QLabel(tr("Max. Steps")), 4, 0);
-    layout->addWidget(m_cv_steps, 4, 1, 1, 2);
-    
+    hlayout = new QHBoxLayout;
+
+    hlayout->addWidget(new QLabel(tr("Maximal steps:")));
+    hlayout->addWidget(m_cv_steps);
+
+    m_cv_err_conv = new ScientificBox;
+    m_cv_err_conv->setDecimals(6);
+    m_cv_err_conv->setValue(1E-6);
+    m_cv_err_conv->setSingleStep(1e-7);
+
+    hlayout->addWidget(new QLabel(tr("Error Convergence:")));
+    hlayout->addWidget(m_cv_err_conv);
+
+
+    layout->addLayout(hlayout);
+
     m_cv = new QPushButton(tr("Calculate"));
-    layout->addWidget(m_cv, 5, 0, 1, 3);
+    layout->addWidget(m_cv);
     
     connect(m_cv, SIGNAL(clicked()), this, SIGNAL(WGStatistic()));
     cv_widget->setLayout(layout);
@@ -365,6 +421,18 @@ WGSConfig StatisticDialog::getWGSConfig()
     config.fisher_statistic = m_cv_f_test->isChecked();
     config.confidence = m_cv_maxerror->value();
     config.f_value = m_cv_f_value->value();
+    config.error_conv = m_cv_err_conv->value();
+
+    QList<int> glob_param, local_param;
+    for(int i = 0; i < m_grid_glob.size(); ++i)
+        glob_param << m_grid_glob[i]->isChecked();
+
+    for(int i = 0; i < m_grid_local.size(); ++i)
+        local_param << m_grid_local[i]->isChecked();
+
+    config.global_param = glob_param;
+    config.local_param = local_param;
+
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_runs);

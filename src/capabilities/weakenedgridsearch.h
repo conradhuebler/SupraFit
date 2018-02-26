@@ -40,8 +40,41 @@ public:
     qreal maxerror = 0;
     qreal confidence = 95;
     qreal f_value = 0;
+    qreal error_conv = 1e-6;
     bool relax = true;
     bool fisher_statistic = false;
+    QList<int> global_param, local_param;
+};
+
+
+class WGSearchThread : public AbstractSearchThread
+{
+ Q_OBJECT
+
+  public:
+    WGSearchThread(const WGSConfig &config);
+    ~WGSearchThread();
+
+    void setRange(double start, double end) { m_start = start; m_end = end; }
+    inline void setParameterId(int index) { m_index = index; }
+
+    virtual void run() override;
+
+    inline QList<qreal> XSeries() const { return m_x; }
+    inline QList<qreal> YSeries() const { return m_y; }
+    inline QHash<qreal, QJsonObject> IntermediateResults() const { return m_models; }
+private:
+    void Calculate();
+
+    double m_start, m_end;
+    int m_index, m_steps;
+    QHash<double, QJsonObject> m_models;
+    QList<qreal > m_x, m_y;
+    WGSConfig m_config;
+    QJsonObject m_result;
+    qreal m_error;
+    QSharedPointer<Minimizer> m_minimizer;
+    bool m_stationary, m_finished, m_converged;
 };
 
 class WeakenedGridSearchThread : public AbstractSearchThread

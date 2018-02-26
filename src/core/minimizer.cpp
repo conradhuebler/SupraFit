@@ -79,6 +79,7 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
             m_model->setLockedParameter(locked); 
     }
     int iter = NonlinearFit(m_model, parameter);
+    m_sum_error = m_model->SumofSquares();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     if(iter < m_model.data()->getOptimizerConfig().MaxIter)
@@ -157,6 +158,7 @@ int Minimizer::Minimize(OptimizationType runtype)
         m_last_parameter = thread->ConvergedParameter();
     else
         m_last_parameter = thread->BestIntermediateParameter();
+    m_sum_error = thread->SumOfError();
     delete thread;
     m_model->ImportModel(m_last_parameter);
     emit RequestRemoveCrashFile();

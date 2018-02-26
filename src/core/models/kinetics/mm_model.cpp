@@ -30,15 +30,15 @@
 #include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
+
 #include <cmath>
-#include <cfloat>
 #include <iostream>
 
 #include "mm_model.h"
 
 Michaelis_Menten_Model::Michaelis_Menten_Model(DataClass *data) : AbstractModel(data)
 {
-    m_global_parameter << 1 << 1;
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "S0", Qt::DisplayRole);
     DependentModel()->setHeaderData(0, Qt::Horizontal, "v", Qt::DisplayRole);
 }
