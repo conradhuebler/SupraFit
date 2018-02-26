@@ -52,7 +52,7 @@ public:
             return QString();
 
     }
-    virtual int LocalParameterSize() const override {return 2; }
+    virtual int LocalParameterSize() const override {return 3; }
     virtual inline int InputParameterSize() const override { return 1; }
 
     virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
