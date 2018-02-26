@@ -229,7 +229,7 @@ void DataWidget::MakeSystemParameter()
     if(m_system_parameter_loaded)
         return;
     
-    QHBoxLayout * sys_layout = new QHBoxLayout;
+    QVBoxLayout * sys_layout = new QVBoxLayout;
     
     sys_layout->setAlignment(Qt::AlignTop); 
     

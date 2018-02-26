@@ -38,7 +38,8 @@
 itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-   DeclearSystemParameter();
+   DeclareSystemParameter();
+   DeclareOptions();
 }
 
 itc_ItoI_Model::~itc_ItoI_Model() 
@@ -46,7 +47,7 @@ itc_ItoI_Model::~itc_ItoI_Model()
     
 }
 
-void itc_ItoI_Model::DeclearSystemParameter()
+void itc_ItoI_Model::DeclareSystemParameter()
 {
     m_data->addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
     m_data->addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
@@ -56,12 +57,19 @@ void itc_ItoI_Model::DeclearSystemParameter()
     m_data->LoadSystemParameter();
 }
 
+void itc_ItoI_Model::DeclareOptions()
+{
+    QStringList method = QStringList() << "auto" << "none";
+    addOption("Dilution", method);
+    QStringList cooperativity = QStringList() << "pytc" /*<< "multiple"*/ << "single";
+    addOption("Binding", cooperativity);
+}
 
 void itc_ItoI_Model::InitialGuess()
 {
     m_K11 = 7;
     m_global_parameter = QList<qreal>() << m_K11 << -40000;
-    
+
     m_local_parameter->data(0, 0) = -1000;
     m_local_parameter->data(1, 0) = 1;
     m_local_parameter->data(2, 0) = 1;
@@ -76,9 +84,20 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
         setOptParamater(m_global_parameter);
 
-    addLocalParameter(0);
-    addLocalParameter(1);
-    addLocalParameter(2);
+    QString binding = getOption("Binding");
+    QString dilution = getOption("Dilution");
+    if(dilution == "auto")
+    {
+        addLocalParameter(0);
+        addLocalParameter(1);
+    }
+    if(binding == "pytc" || binding == "multiple")
+    {
+            addLocalParameter(2);
+    }
+
+
+;
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
@@ -114,6 +133,10 @@ void itc_ItoI_Model::CalculateVariables()
 #ifdef _DEBUG
     qDebug() << "Concentration in cell" << n_cell;
 #endif
+
+    QString binding = getOption("Binding");
+    QString dil = getOption("Dilution");
+
     qreal V_cell = V;
     qreal cum_shot = 0;
     qreal emp_exp = 1e-3;
@@ -132,14 +155,23 @@ void itc_ItoI_Model::CalculateVariables()
         V_cell += shot_vol;
         prod *= (1-shot_vol/V);
         cell *= (1-shot_vol/V);
-        qreal host_0 = cell*fx; //n_cell/V_cell*emp_exp; ///fx;
+        qreal host_0 = cell;
+
+        if(binding == "pytc")
+        {
+            host_0 *= fx;
+        }
         qreal guest_0 = gun*(1-prod);
 
 #ifdef _DEBUG
         qDebug() << "Cell/Host concentration" << host_0;
      //   qDebug() << "Guest concentration " << guest_0;
 #endif
-        qreal dilution = (guest_0*dil_heat+dil_inter);
+        qreal dilution = 0;
+        if(dil == "auto")
+        {
+            dilution= (guest_0*dil_heat+dil_inter);
+        }
         qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
         qreal complex = (host_0 - host);
         Vector vector(4);
@@ -152,6 +184,8 @@ void itc_ItoI_Model::CalculateVariables()
 #endif
         SetConcentration(i, vector);
         qreal value = V*(complex-complex_prev)*dH;
+        if(binding == "multiple")
+            value *= fx;
         SetValue(i, 0, value+dilution);
         complex_prev = complex;
     }
