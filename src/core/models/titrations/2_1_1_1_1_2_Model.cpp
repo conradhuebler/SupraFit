@@ -144,7 +144,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrati
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 
-    DeclareOptions();
+   // DeclareOptions();
 }
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()

@@ -35,7 +35,7 @@
 IItoI_ItoI_Model::IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-    DeclareOptions();
+    // DeclareOptions();
 }
     
 IItoI_ItoI_Model::~IItoI_ItoI_Model()

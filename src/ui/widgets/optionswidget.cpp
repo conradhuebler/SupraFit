@@ -58,4 +58,5 @@ void OptionsWidget::setOption()
             QString value = m_options[str]->currentText();
             m_model->setOption(str, value);
     }
+    m_model->Calculate();
 }

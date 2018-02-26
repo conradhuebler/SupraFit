@@ -38,8 +38,6 @@
 itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-   DeclareSystemParameter();
-   DeclareOptions();
 }
 
 itc_ItoI_Model::~itc_ItoI_Model() 
@@ -54,7 +52,7 @@ void itc_ItoI_Model::DeclareSystemParameter()
     m_data->addSystemParameter("Temperature", "Temperature", SystemParameter::Scalar);
     m_data->addSystemParameter("Cell concentration", "Concentration in cell", SystemParameter::Scalar);
     m_data->addSystemParameter("Syringe concentration", "Concentration in syringe", SystemParameter::Scalar);
-    m_data->LoadSystemParameter();
+
 }
 
 void itc_ItoI_Model::DeclareOptions()

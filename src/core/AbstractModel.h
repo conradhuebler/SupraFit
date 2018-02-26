@@ -327,11 +327,18 @@ public:
     
     inline virtual void DeclareOptions() { }
     
+    inline virtual void DeclareSystemParameter() { }
+
     inline virtual void EvaluateOptions() { }
     
     inline virtual QString ModelInfo() const { return QString(); }
     
     inline bool isLocked() const { return m_locked_model; }
+
+    inline bool LocalEnabled(int i) const { return m_enabled_local[i]; }
+
+    inline bool GlobalEnabled(int i) const { return m_enabled_global[i]; }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

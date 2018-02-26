@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,11 +52,11 @@ public:
         else
             return QString();
     }
-    void DeclareOptions() override;
+    void virtual DeclareOptions() override;
     
     virtual int LocalParameterSize() const override {return 4; }
 
-    void EvaluateOptions() override;
+    void virtual EvaluateOptions() override;
     
 
     virtual inline QString Name() const override { return tr("fl_2:1/1:1-Model"); }

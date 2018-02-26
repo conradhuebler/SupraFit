@@ -91,6 +91,8 @@ void AbstractModel::PrepareParameter(int global, int local)
     }
 
     addGlobalParameter(m_global_parameter);
+    DeclareSystemParameter();
+    DeclareOptions();
 }
 
 AbstractModel::~AbstractModel()
@@ -124,6 +126,11 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
 void AbstractModel::clearOptParameter()
 {
     m_opt_para.clear();
+    for(int i = 0; i < m_enabled_local.size(); ++i)
+        m_enabled_local[i] = 0;
+
+    for(int i = 0; i < m_enabled_global.size(); ++i)
+        m_enabled_global[i] = 0;
 }
 
 void AbstractModel::setGlobalParameter(const QList<qreal> &list)
@@ -170,6 +177,7 @@ void AbstractModel::Calculate()
     m_covfit = 0;
 
     EvaluateOptions();
+    m_data->LoadSystemParameter();
     CalculateVariables();
     
     m_mean /= qreal(m_used_variables);

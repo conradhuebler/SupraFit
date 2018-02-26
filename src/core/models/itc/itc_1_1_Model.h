@@ -71,7 +71,7 @@ public:
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
-    void DeclareSystemParameter();
+    void DeclareSystemParameter() override;
     void DeclareOptions() override;
 protected:
     virtual void CalculateVariables() override;
