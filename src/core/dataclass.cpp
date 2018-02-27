@@ -639,9 +639,9 @@ const QJsonObject DataClass::ExportData(const QList<int> &active) const
             signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i));
     }
     
-    for(const QString &str : getSystemParameterList())
+    for(const int index : getSystemParameterList())
     {
-        systemObject[str] = getSystemParameter(str).value().toString();
+        systemObject[QString::number(index)] = getSystemParameter(index).value().toString();
     }
     
     json["concentrations"] = concentrationObject;
@@ -723,9 +723,13 @@ bool DataClass::ImportData(const QJsonObject &topjson)
 
 void DataClass::LoadSystemParameter()
 {    
-    for(const QString &str : getSystemParameterList())
-        setSystemParameterValue(str, m_systemObject[str].toVariant());
-    
+    for(int index : getSystemParameterList())
+    {
+        if(m_systemObject[QString::number(index)].toString().isEmpty())
+            continue;
+        setSystemParameterValue(index, m_systemObject[QString::number(index)].toVariant());
+    }
+
     emit SystemParameterLoaded();
 }
 
@@ -759,32 +763,38 @@ void DataClass::OverrideDependentTable(DataTable *table)
 
 
 
-void DataClass::addSystemParameter(const QString& str, const QString& description, SystemParameter::Type type)
+void DataClass::addSystemParameter(int index, const QString& str, const QString& description, SystemParameter::Type type)
 {
-    SystemParameter parameter(str, description, type);
-    m_system_parameter.insert(str, parameter);
+    if(m_system_parameter.contains(index))
+        return;
+    SystemParameter parameter(index, str, description, type);
+    m_system_parameter.insert(index, parameter);
 }
 
-SystemParameter DataClass::getSystemParameter(const QString& name) const
+SystemParameter DataClass::getSystemParameter(int index) const
 {
-    return m_system_parameter.value(name);
+    return m_system_parameter.value(index);
 }
 
-QStringList DataClass::getSystemParameterList() const
+QList<int> DataClass::getSystemParameterList() const
 {
     return m_system_parameter.keys();
 }
 
-void DataClass::setSystemParameterValue(const QString& name, const QVariant& value)
+void DataClass::setSystemParameterValue(int index, const QVariant& value)
 {
-    SystemParameter parameter = getSystemParameter(name);
+    if(!value.isValid())
+        return;
+
+    SystemParameter parameter = getSystemParameter(index);
     parameter.setValue(value);
-    m_system_parameter[name] = parameter;
+    m_system_parameter[index] = parameter;
 }
 
 void DataClass::setSystemParameter(const SystemParameter& parameter)
 {
-    QString name = parameter.Name();
-    if(m_system_parameter.contains(name))
-        m_system_parameter[name] = parameter;
+    int index = parameter.Index();
+    if(m_system_parameter.contains(index))
+        m_system_parameter[index] = parameter;
+
 }

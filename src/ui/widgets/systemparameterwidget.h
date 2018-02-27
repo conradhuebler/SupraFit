@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef SYSTEMPARAMETERWIDGET_H
-#define SYSTEMPARAMETERWIDGET_H
+#pragma once
 
 #include "src/core/AbstractModel.h"
 
@@ -45,5 +44,3 @@ private:
 signals:
     void valueChanged();
 };
-
-#endif // SYSTEMPARAMETERWIDGET_H

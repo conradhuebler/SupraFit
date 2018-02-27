@@ -93,6 +93,7 @@ void AbstractModel::PrepareParameter(int global, int local)
     addGlobalParameter(m_global_parameter);
     DeclareSystemParameter();
     DeclareOptions();
+    m_data->LoadSystemParameter();
 }
 
 AbstractModel::~AbstractModel()
@@ -177,7 +178,6 @@ void AbstractModel::Calculate()
     m_covfit = 0;
 
     EvaluateOptions();
-    m_data->LoadSystemParameter();
     CalculateVariables();
     
     m_mean /= qreal(m_used_variables);

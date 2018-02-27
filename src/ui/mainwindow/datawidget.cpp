@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -233,9 +233,9 @@ void DataWidget::MakeSystemParameter()
     
     sys_layout->setAlignment(Qt::AlignTop); 
     
-    for(const QString &str : m_data.data()->getSystemParameterList())
+    for(int index : m_data.data()->getSystemParameterList())
     {
-        SystemParameterWidget *widget = new SystemParameterWidget(m_data.data()->getSystemParameter(str), this);
+        SystemParameterWidget *widget = new SystemParameterWidget(m_data.data()->getSystemParameter(index), this);
         sys_layout->addWidget(widget);
         m_system_parameter_widgets << widget;
         connect(widget, SIGNAL(valueChanged()), this, SLOT(UpdateSystemParameter()));

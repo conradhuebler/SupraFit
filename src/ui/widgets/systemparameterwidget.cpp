@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,6 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter &parameter, Q
         m_boolbox->setChecked(parameter.Bool());
     else
         m_textfield->setText(parameter.value().toString());
-    qDebug() << parameter.value();
     setLayout(layout);
 }
 

@@ -32,6 +32,18 @@ class itc_ItoI_Model : public AbstractTitrationModel
     Q_OBJECT
     
 public:
+    enum {
+        CellVolume = 1,
+        CellConcentration = 2,
+        SyringeConcentration = 3,
+        Temperature = 4
+    };
+
+    enum Option {
+        Binding = 1,
+        Dilution = 2
+    };
+
     itc_ItoI_Model(DataClass *data);
 
     ~itc_ItoI_Model();

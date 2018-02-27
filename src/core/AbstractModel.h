@@ -345,7 +345,6 @@ public slots:
      void Calculate();
      
 private:
-
     
 protected:
     /*
@@ -398,7 +397,6 @@ protected:
     bool m_corrupt, m_converged, m_locked_model;
     OptimizerConfig m_opt_config;
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
-//     QString m_name;
         
     DataClass *m_data;
     QMap<QString, ModelOption > m_model_options;

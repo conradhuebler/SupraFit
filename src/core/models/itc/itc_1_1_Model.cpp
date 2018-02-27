@@ -47,11 +47,10 @@ itc_ItoI_Model::~itc_ItoI_Model()
 
 void itc_ItoI_Model::DeclareSystemParameter()
 {
-    m_data->addSystemParameter("Cell Volume", "Volume of the cell", SystemParameter::Scalar);
-    m_data->addSystemParameter("Inject Volume", "Inject Volume per step", SystemParameter::Scalar);
-    m_data->addSystemParameter("Temperature", "Temperature", SystemParameter::Scalar);
-    m_data->addSystemParameter("Cell concentration", "Concentration in cell", SystemParameter::Scalar);
-    m_data->addSystemParameter("Syringe concentration", "Concentration in syringe", SystemParameter::Scalar);
+    m_data->addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell", SystemParameter::Scalar);
+    m_data->addSystemParameter(Temperature, "Temperature", "Temperature", SystemParameter::Scalar);
+    m_data->addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell", SystemParameter::Scalar);
+    m_data->addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe", SystemParameter::Scalar);
 
 }
 
@@ -94,8 +93,6 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
             addLocalParameter(2);
     }
 
-
-;
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
@@ -124,14 +121,9 @@ void itc_ItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    qreal V = m_data->getSystemParameter("Cell Volume").Double();
-    qreal initial_cell = m_data->getSystemParameter("Cell concentration").Double();
-    qreal initial_syringe = m_data->getSystemParameter("Syringe concentration").Double();
-
-#ifdef _DEBUG
-    qDebug() << "Concentration in cell" << n_cell;
-#endif
-
+    qreal V = m_data->getSystemParameter(CellVolume).Double();
+    qreal initial_cell = m_data->getSystemParameter(CellConcentration).Double();
+    qreal initial_syringe = m_data->getSystemParameter(SyringeConcentration).Double();
     QString binding = getOption("Binding");
     QString dil = getOption("Dilution");
 

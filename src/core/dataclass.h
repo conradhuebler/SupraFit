@@ -44,9 +44,9 @@ public:
         Boolean = 2
     };
     
-    inline SystemParameter(const QString &name, const QString &description, Type type) : m_name(name), m_description(description), m_type(type) {}
+    inline SystemParameter(int index, const QString &name, const QString &description, Type type) : m_index(index), m_name(name), m_description(description), m_type(type) {}
     inline SystemParameter() {}
-    inline ~SystemParameter() { };
+    inline ~SystemParameter() { }
     
     inline QVariant value() const { return m_value; }
     inline QString Name() const { return m_name;}
@@ -57,11 +57,13 @@ public:
     inline bool isBool() const { return m_type == 2; }
     inline bool isString() const { return m_type == 0; }
     inline bool isScalar() const { return m_type == 1; }
+    inline int Index() const { return m_index; }
 
 private:
     Type m_type;
     QString m_name, m_description;
     QVariant m_value;
+    int m_index;
 };
 
 class DataTable : public QAbstractTableModel
@@ -222,19 +224,19 @@ public:
     void OverrideDependentTable(DataTable *table);
     /*! \brief Add a system parameter to the current model
      */
-    void addSystemParameter(const QString &str, const QString &description, SystemParameter::Type type);
+    void addSystemParameter(int index, const QString &str, const QString &description, SystemParameter::Type type);
     
-    /*! \brief Get the SystemParameter with the specified name 
+    /*! \brief Get the SystemParameter with the specified index
      */
-    SystemParameter getSystemParameter(const QString &name) const;
-    
+    SystemParameter getSystemParameter(int index) const;
+
     /*! \brief get a list of system parameters
      */
-    QStringList getSystemParameterList() const;
-    
+    QList<int> getSystemParameterList() const;
+
     /*! \brief Set the value of the system parameter
      */
-    void setSystemParameterValue(const QString &name, const QVariant &value);
+    void setSystemParameterValue(int index, const QVariant &value);
     
     /*! \brief set a systemparameter to the given one
      */
@@ -242,12 +244,15 @@ public:
     
     /*! \brief Overrides system parameter
      */
-    void OverrideSystemParameter(const QMap<QString, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
+    void OverrideSystemParameter(const QMap<int, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
     
     /*! \brief load previously cached system parameter
      */
     void LoadSystemParameter();
     
+    inline QMap<int, SystemParameter> SysPar() const { return m_system_parameter; }
+
+
     inline void detach() { d.detach(); }
     
     /*! \brief model dependented printout of the independant parameter
@@ -259,7 +264,7 @@ private:
     
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;
-    QMap<QString, SystemParameter> m_system_parameter;
+    QMap<int, SystemParameter> m_system_parameter;
         
 signals:
     void RowAdded();
