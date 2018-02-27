@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 
 
-#include "src/core/AbstractTitrationModel.h"
+#include "src/core/AbstractItcModel.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 
@@ -35,7 +35,7 @@
 
 #include "itc_1_1_Model.h"
 
-itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
+itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractItcModel(data)
 {
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
@@ -45,27 +45,9 @@ itc_ItoI_Model::~itc_ItoI_Model()
     
 }
 
-void itc_ItoI_Model::DeclareSystemParameter()
-{
-    m_data->addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell", SystemParameter::Scalar);
-    m_data->addSystemParameter(Temperature, "Temperature", "Temperature", SystemParameter::Scalar);
-    m_data->addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell", SystemParameter::Scalar);
-    m_data->addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe", SystemParameter::Scalar);
-
-}
-
-void itc_ItoI_Model::DeclareOptions()
-{
-    QStringList method = QStringList() << "auto" << "none";
-    addOption("Dilution", method);
-    QStringList cooperativity = QStringList() << "pytc" /*<< "multiple"*/ << "single";
-    addOption("Binding", cooperativity);
-}
-
 void itc_ItoI_Model::InitialGuess()
 {
-    m_K11 = 7;
-    m_global_parameter = QList<qreal>() << m_K11 << -40000;
+    m_global_parameter = QList<qreal>() << 7 << -40000;
 
     m_local_parameter->data(0, 0) = -1000;
     m_local_parameter->data(1, 0) = 1;
@@ -73,7 +55,7 @@ void itc_ItoI_Model::InitialGuess()
 
     setOptParamater(m_global_parameter);
     
-    AbstractTitrationModel::Calculate();
+    AbstractModel::Calculate();
 }
 
 QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
@@ -116,47 +98,36 @@ qreal itc_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList
 
 void itc_ItoI_Model::CalculateVariables()
 {  
+    /*
+     * It seems, we have to recalculate the concentrations from within the child class
+     * and not from the parent ??
+     */
+    Concentration();
+
+
     m_corrupt = false;
-    
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
     qreal V = m_data->getSystemParameter(CellVolume).Double();
-    qreal initial_cell = m_data->getSystemParameter(CellConcentration).Double();
-    qreal initial_syringe = m_data->getSystemParameter(SyringeConcentration).Double();
+
     QString binding = getOption("Binding");
     QString dil = getOption("Dilution");
 
-    qreal V_cell = V;
-    qreal cum_shot = 0;
-    qreal emp_exp = 1e-3;
-    qreal cell = initial_cell*emp_exp;
-    qreal gun = initial_syringe*emp_exp;
     qreal dil_heat = m_local_parameter->data(0, 0);
     qreal dil_inter = m_local_parameter->data(1, 0);
     qreal fx = m_local_parameter->data(2, 0);
     qreal dH = GlobalParameter()[1];
     qreal complex_prev = 0;
-    qreal prod = 1;
     for(int i = 0; i < DataPoints(); ++i)
     {
-        qreal shot_vol = IndependentModel()->data(0,i);
-        cum_shot += shot_vol;
-        V_cell += shot_vol;
-        prod *= (1-shot_vol/V);
-        cell *= (1-shot_vol/V);
-        qreal host_0 = cell;
+        qreal host_0 = InitialHostConcentration(i);
 
         if(binding == "pytc")
         {
             host_0 *= fx;
         }
-        qreal guest_0 = gun*(1-prod);
-
-#ifdef _DEBUG
-        qDebug() << "Cell/Host concentration" << host_0;
-     //   qDebug() << "Guest concentration " << guest_0;
-#endif
+        qreal guest_0 = InitialGuestConcentration(i);
         qreal dilution = 0;
         if(dil == "auto")
         {
@@ -169,9 +140,7 @@ void itc_ItoI_Model::CalculateVariables()
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
-#ifdef _DEBUG
-        qDebug() << host/host_0;
-#endif
+
         SetConcentration(i, vector);
         qreal value = V*(complex-complex_prev)*dH;
         if(binding == "multiple")
@@ -179,7 +148,6 @@ void itc_ItoI_Model::CalculateVariables()
         SetValue(i, 0, value+dilution);
         complex_prev = complex;
     }
-    emit Recalculated();
 }
 
 

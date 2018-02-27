@@ -270,4 +270,5 @@ signals:
     void RowAdded();
     void ActiveSignalsChanged(QList<int > active_signals);
     void SystemParameterLoaded();
+    void SystemParameterChanged();
 };

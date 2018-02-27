@@ -43,6 +43,7 @@ AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false
     m_model_error = new DataTable(SeriesCount(),DataPoints(), this);
 
     m_data = data; 
+    connect(m_data, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
 }
 
 AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(other->m_corrupt), m_last_p(other->m_last_p), m_f_value(other->m_f_value), m_last_parameter(other->m_last_parameter), m_last_freedom(other->m_last_freedom), m_converged(other->m_converged), m_locked_model(other->m_locked_model)

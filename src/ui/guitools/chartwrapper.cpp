@@ -253,6 +253,18 @@ bool ChartWrapper::setColorList(const QString &str)
     return true;
 }
 
+void ChartWrapper::TransformModel(QSharedPointer< DataClass > model)
+{
+    if(!m_transformed)
+        m_model = model;
+    else
+        return;
+    connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
+    m_transformed = true;
+    MakeSeries();
+    emit ModelTransformed();
+}
+
 QColor ChartWrapper::ColorCode(int i)
 {
     switch(i){

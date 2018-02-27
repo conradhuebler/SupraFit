@@ -148,6 +148,7 @@ qt5_use_modules(math Core)
 set(models_SRC
                 src/core/dataclass.cpp
                 src/core/AbstractModel.cpp
+                src/core/AbstractItcModel.cpp
                 src/core/AbstractTitrationModel.cpp
                 src/core/models/itc/itc_1_1_Model.cpp
                 src/core/models/fluorescence/fl_1_1_Model.cpp

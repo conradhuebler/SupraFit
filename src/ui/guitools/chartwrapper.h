@@ -117,7 +117,7 @@ public:
     inline QPointer<QtCharts::QXYSeries > Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const; 
-    void TransformModel(QSharedPointer< DataClass > model) { if(!m_transformed) m_model = model; m_transformed = true; MakeSeries(); emit ModelTransformed(); }
+    void TransformModel(QSharedPointer< DataClass > model);
     QString ColorList() const;
     bool setColorList(const QString &str);
     

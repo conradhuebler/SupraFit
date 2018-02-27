@@ -169,7 +169,7 @@ private slots:
     void Detailed();
 
 public slots:
-    void recalulate();
+    void recalculate();
     void OptimizerSettings();
     void ChangeColor();
     

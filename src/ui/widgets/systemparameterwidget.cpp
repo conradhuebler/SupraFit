@@ -59,7 +59,7 @@ SystemParameterWidget::~SystemParameterWidget()
 SystemParameter SystemParameterWidget::Value()
 {
     if(m_parameter.isScalar() || m_parameter.isString())
-         m_parameter.setValue(m_textfield->text() );
+         m_parameter.setValue(m_textfield->text().replace(",", ".") );
     else if(m_parameter.isBool())
          m_parameter.setValue(m_boolbox->isChecked() );
     

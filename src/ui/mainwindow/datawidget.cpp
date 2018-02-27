@@ -26,6 +26,8 @@
 #include <QDebug>
 #include <QSettings>
 
+#include <QtCore/QTimer>
+
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>
@@ -220,8 +222,9 @@ void DataWidget::UpdateSystemParameter()
 {
     for(int i = 0; i < m_system_parameter_widgets.size(); ++i)
         m_data.data()->setSystemParameter(m_system_parameter_widgets[i]->Value());
-    
+
     emit recalculate();
+    QTimer::singleShot(10, this, SLOT(HidePoint())); //Lets see this as a hackish solutation to an not yet understood problem ...
 }
 
 void DataWidget::MakeSystemParameter()

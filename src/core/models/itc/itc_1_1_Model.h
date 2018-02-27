@@ -20,33 +20,21 @@
 #pragma once
 
 #include "src/global.h"
-#include "src/core/AbstractTitrationModel.h"
+#include "src/core/AbstractItcModel.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
 #include "src/core/dataclass.h"
 
-class itc_ItoI_Model : public AbstractTitrationModel 
+class itc_ItoI_Model : public AbstractItcModel
 {
     Q_OBJECT
     
 public:
-    enum {
-        CellVolume = 1,
-        CellConcentration = 2,
-        SyringeConcentration = 3,
-        Temperature = 4
-    };
-
-    enum Option {
-        Binding = 1,
-        Dilution = 2
-    };
-
     itc_ItoI_Model(DataClass *data);
-
     ~itc_ItoI_Model();
+
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;}
     virtual void InitialGuess() override;
@@ -62,13 +50,12 @@ public:
             return tr("dH");
         else
             return QString();
-
     }
+
     virtual int LocalParameterSize() const override {return 3; }
     virtual inline int InputParameterSize() const override { return 1; }
 
     virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
-    virtual qreal PrintOutIndependent(int i, int format) const override { return i; }
 
     virtual inline QString GlobalParameterPrefix(int i = 0) const override
     {
@@ -78,17 +65,11 @@ public:
             return QString();
     }
 
-
-
 private:
     inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
     qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
-    void DeclareSystemParameter() override;
-    void DeclareOptions() override;
+
 protected:
     virtual void CalculateVariables() override;
-    
-    QList<qreal > m_ItoI_signals;
-    qreal m_K11;
 };
 

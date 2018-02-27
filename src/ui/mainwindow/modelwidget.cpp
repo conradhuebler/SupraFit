@@ -136,12 +136,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
         m_constants << constant;
         constant->setDecimals(4);
 
-        constant->setPrefix(m_model->GlobalParameterPrefix());
+        constant->setPrefix(m_model->GlobalParameterPrefix(i));
         constant->setSingleStep(m_model->GlobalParameter(i)/100);
 
         constant->setValue(m_model->GlobalParameter()[i]);
-        constant->setMaximum(1e8);
-        constant->setMinimum(-1e8);
+        constant->setMaximum(1e9);
+        constant->setMinimum(-1e9);
         constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalulate()));
         const_layout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
@@ -192,7 +192,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
         for(int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i)
         {
             ModelElement *el = new ModelElement(m_model, m_charts, i);
-            connect(el, SIGNAL(ValueChanged()), this, SLOT(recalulate()));
+            connect(el, SIGNAL(ValueChanged()), this, SLOT(recalculate()));
             connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
             connect(this, SIGNAL(Update()), el, SLOT(Update()));
             connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
@@ -363,7 +363,7 @@ void ModelWidget::Repaint()
 
 
 
-void ModelWidget::recalulate()
+void ModelWidget::recalculate()
 {
     if(m_pending)
         return;

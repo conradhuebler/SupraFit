@@ -789,6 +789,8 @@ void DataClass::setSystemParameterValue(int index, const QVariant& value)
     SystemParameter parameter = getSystemParameter(index);
     parameter.setValue(value);
     m_system_parameter[index] = parameter;
+
+    emit SystemParameterChanged();
 }
 
 void DataClass::setSystemParameter(const SystemParameter& parameter)
@@ -796,5 +798,5 @@ void DataClass::setSystemParameter(const SystemParameter& parameter)
     int index = parameter.Index();
     if(m_system_parameter.contains(index))
         m_system_parameter[index] = parameter;
-
+    emit SystemParameterChanged();
 }
