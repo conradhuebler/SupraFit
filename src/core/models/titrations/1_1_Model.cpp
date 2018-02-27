@@ -18,9 +18,9 @@
  */
 
 
-
-#include "src/core/AbstractTitrationModel.h"
+#include "src/core/equil.h"
 #include "src/core/libmath.h"
+#include "src/core/models.h"
 #include "src/core/minimizer.h"
 
 #include <QtMath>
@@ -92,20 +92,6 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 }
 
 
-qreal ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList< qreal > &constants)
-{
-    if(constants.size() == 0)
-        return host_0;
-    qreal K11 = qPow(10, constants.first());
-    qreal a, b, c;
-    qreal complex;
-    a = K11;
-    b = -1*(K11*host_0+K11*guest_0+1);
-    c = K11*guest_0*host_0;
-    complex = MinQuadraticRoot(a,b,c);
-    return host_0 - complex;
-}
-
 void ItoI_Model::CalculateVariables()
 {  
     m_corrupt = false;
@@ -117,7 +103,7 @@ void ItoI_Model::CalculateVariables()
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
+        qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
         qreal complex = host_0 -host;
         Vector vector(4);
         vector(0) = i + 1;

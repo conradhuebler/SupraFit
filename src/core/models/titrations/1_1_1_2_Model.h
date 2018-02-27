@@ -70,17 +70,9 @@ public:
     virtual inline int Color(int i) const override { if(i == 0) return 1; else if(i == 1) return 2; else return i + 2; }
 
 private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) 
-    {
-        return HostConcentration(host_0, guest_0, GlobalParameter());
-    }
-    qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
-    qreal GuestConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
-    
-    qreal m_K11, m_K12;
-    QList<qreal > m_ItoI_signals, m_ItoII_signals;
     static qreal Y(qreal x, const QVector<qreal > & parameter);
     static qreal Y_0(qreal x, const QVector<qreal > & parameter);
+
 protected:
     virtual void CalculateVariables() override;
 };

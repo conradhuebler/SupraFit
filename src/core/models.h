@@ -3,8 +3,13 @@
 #include "AbstractModel.h"
 #include "AbstractItcModel.h"
 #include "AbstractTitrationModel.h"
+
 /* ITC Models */
 #include "models/itc/itc_1_1_Model.h"
+#include "models/itc/itc_2_1_Model.h"
+#include "models/itc/itc_1_2_Model.h"
+#include "models/itc/itc_2_2_Model.h"
+
 /* Fluorescence Models */
 #include "models/fluorescence/fl_1_1_Model.h"
 #include "models/fluorescence/fl_2_1_1_1_Model.h"

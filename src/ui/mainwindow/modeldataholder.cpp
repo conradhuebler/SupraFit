@@ -211,6 +211,24 @@ MDHDockTitleBar::MDHDockTitleBar()
     itc_ItoI_action->setData(SupraFit::itc_ItoI);
     connect(itc_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_itc_model << itc_ItoI_action;
+
+    QAction *itc_IItoI_action = new QAction(this);
+    itc_IItoI_action->setText(tr("2:1-Model"));
+    itc_IItoI_action->setData(SupraFit::itc_IItoI);
+    connect(itc_IItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_itc_model << itc_IItoI_action;
+
+    QAction *itc_ItoII_action = new QAction(this);
+    itc_ItoII_action->setText(tr("1:2-Model"));
+    itc_ItoII_action->setData(SupraFit::itc_ItoII);
+    connect(itc_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_itc_model << itc_ItoII_action;
+
+    QAction *itc_IItoII_action = new QAction(this);
+    itc_IItoII_action->setText(tr("2:2-Model"));
+    itc_IItoII_action->setData(SupraFit::itc_IItoII);
+    connect(itc_IItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_itc_model << itc_IItoII_action;
 #endif
     
     m_script_action = new QAction(this);
@@ -350,26 +368,35 @@ void ModelDataHolder::AddModel(int model)
     QSharedPointer<AbstractModel > t;
     
     switch(model){
-        case 1:
+        case SupraFit::ItoI:
             t =  QSharedPointer<ItoI_Model>(new ItoI_Model(m_data.data()), &QObject::deleteLater);
             break;
-        case 2:
+        case SupraFit::IItoI_ItoI:
             t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
             break;
-        case 3:
+        case SupraFit::ItoI_ItoII:
             t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
-        case 4:
+        case SupraFit::IItoI_ItoI_ItoII:
             t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
-        case 5:
+        case SupraFit::Michaelis_Menten:
             t = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(m_data.data()),  &QObject::deleteLater);
             break;
-        case 6:
+        case SupraFit::First_Order_Kinetics:
             t = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(m_data.data()),  &QObject::deleteLater);
             break;
         case SupraFit::itc_ItoI:
             t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
+            break;
+        case SupraFit::itc_IItoI:
+            t = QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(m_data.data()),  &QObject::deleteLater);
+            break;
+        case SupraFit::itc_ItoII:
+            t = QSharedPointer<itc_ItoII_Model>(new itc_ItoII_Model(m_data.data()),  &QObject::deleteLater);
+            break;
+        case SupraFit::itc_IItoII:
+            t = QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(m_data.data()),  &QObject::deleteLater);
             break;
         case SupraFit::fl_ItoI:
             t =  QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(m_data.data()), &QObject::deleteLater);
@@ -460,9 +487,14 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
 
     else if(str == "2:1/1:1/1:2-Model")
         t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
-
     else if(str == "itc_1:1-Model")
         t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
+    else if(str == "itc_2:1-Model")
+        t = QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(m_data.data()),  &QObject::deleteLater);
+    else if(str == "itc_1:2-Model")
+        t = QSharedPointer<itc_ItoII_Model>(new itc_ItoII_Model(m_data.data()),  &QObject::deleteLater);
+    else if(str == "itc_2:2-Model")
+        t = QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(m_data.data()),  &QObject::deleteLater);
     else if(str == "fl_1:1-Model")   
         t =  QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(m_data.data()), &QObject::deleteLater);
     else if(str == "fl_2:1/1:1-Model")   

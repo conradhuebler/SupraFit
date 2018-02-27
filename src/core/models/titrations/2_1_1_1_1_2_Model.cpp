@@ -17,6 +17,7 @@
  * 
  */
 
+#include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/models.h"
 #include "src/core/toolset.h"
@@ -36,115 +37,13 @@
 
 #include "2_1_1_1_1_2_Model.h"
 
-ConSolver::ConSolver(QPointer<AbstractTitrationModel> model) :m_model(model), m_ok(false)
-{
-    setAutoDelete(false);
-}
-
-ConSolver::~ConSolver()
-{
-
-}
-
-void ConSolver::setInput(double A_0, double B_0)
-{
-    m_A_0 = A_0;
-    m_B_0 = B_0;
-    m_concentration = QPair<double, double>(A_0,B_0);
-}
-
-void ConSolver::run()
-{
-    if(m_A_0 && m_B_0)
-        m_concentration = HostConcentration(m_A_0, m_B_0);
-    else
-        m_ok = true;
-}
-
-
-QPair<double, double> ConSolver::HostConcentration(double a0, double b0)
-{
-    if(!a0 || !b0)
-        return QPair<double, double>(a0,b0);
-
-    qreal K21 = qPow(10, m_model.data()->GlobalParameter().first());
-    qreal K11 = qPow(10, m_model.data()->GlobalParameter()[1]);
-    qreal K12 = qPow(10, m_model.data()->GlobalParameter().last());
-    qreal b12 = K11*K12;
-    qreal b21 = K11*K21;
-
-    auto calc_a = [](double a0, long double b, double K11, double b21, double b12){
-        long double x1 = 2*b21*b;
-        long double x2 = b12*b*b+K11*b+1;
-        long double x3 = -a0;
-        long double a = MaxQuadraticRoot(x1,x2,x3);
-        if(a < a0)
-            return a;
-        else
-        {
-#ifdef _DEBUG
-            std::cout << "a: " << a << " a0 " << a0 << " b0: " << b0 << std::endl;
-#endif
-            return MinQuadraticRoot(x1,x2,x3);
-        }
-    };
-
-    auto calc_b = [](double b0, long double a, double K11, double b21, double b12){
-        long double x1 = 2*b12*a;
-        long double x2 = b21*a*a+K11*a+1;
-        long double x3 = -b0;
-        long double b = MaxQuadraticRoot(x1,x2,x3);
-        if(b < b0 )
-            return b;
-        else
-        {
-#ifdef _DEBUG
-            std::cout << "b: " << b << " a0 " << a0 << " b0: " << b0 << std::endl;
-#endif
-            return MinQuadraticRoot(x1,x2,x3);
-        }
-    };
-    long double epsilon = m_opt_config.concen_convergency;
-    long double a = qMin(a0,b0)/K11*10;
-    long double b = 0;
-    long double a_1 = 0, b_1 = 0;
-    int i = 0;
-    for(i = 0; i < m_opt_config.single_iter; ++i)
-    {
-        a_1 = a;
-        b_1 = b;
-        b = calc_b(b0, a, K11, b21, b12);
-        if(b < 0)
-            b *= -1;
-
-        a = calc_a(a0, b, K11, b21, b12);
-        if(a < 0)
-            a *= -1;
-        if(qAbs(b21*a_1*a_1*b_1-b21*a*a*b) < epsilon && qAbs(b12*a_1*b_1*b_1-b12*a*b*b) < epsilon && qAbs(K11*a_1*b_1 - K11 * a*b) < epsilon)
-            break;
-    }
-#ifdef _DEBUG
-    std::cout << a_1 << " "<< b_1 << " " << K11*a_1*b_1 << " " << b21*a_1*a_1*b_1 << " " << b12*a_1*b_1*b_1 << std::endl;
-    std::cout << a << " "<< b << " " << K11*a*b << " " << b21*a*a*b << " " << b12*a*b*b << std::endl;
-    std::cout << "Guess A: " << qMin(a0,b0)/K11*100 << " .. Final A: " << a << " .. Iterations:" << i<< std::endl;
-#endif
-    m_ok =  (a < m_A_0) &&
-            (b < m_B_0) &&
-            (a > 0) &&
-            (b > 0) &&
-            i < m_opt_config.single_iter;
-    return QPair<double, double>(a,b);
-}
-
 IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrationModel(data)
 {
     m_threadpool = new QThreadPool(this);
     for(int i = 0; i < DataPoints(); ++i)
-        m_solvers << new ConSolver(this);
+        m_solvers << new IItoI_ItoI_ItoII_Solver();
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-
-   // DeclareOptions();
 }
 
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
@@ -258,6 +157,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
+        m_solvers[i]->setConstants(m_constants_pow);
         m_threadpool->start(m_solvers[i]);
     }
 

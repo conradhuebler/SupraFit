@@ -34,21 +34,21 @@
 #include <cfloat>
 #include <iostream>
 
-#include "itc_1_1_Model.h"
+#include "itc_2_1_Model.h"
 
-itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractItcModel(data)
+itc_IItoI_Model::itc_IItoI_Model(DataClass *data) : AbstractItcModel(data)
 {
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
-itc_ItoI_Model::~itc_ItoI_Model() 
+itc_IItoI_Model::~itc_IItoI_Model()
 {
     
 }
 
-void itc_ItoI_Model::InitialGuess()
+void itc_IItoI_Model::InitialGuess()
 {
-    m_global_parameter = QList<qreal>() << 7 << -40000;
+    m_global_parameter = QList<qreal>() << 3 << -40000 << 3 << -40000;
 
     m_local_parameter->data(0, 0) = -1000;
     m_local_parameter->data(1, 0) = 1;
@@ -59,7 +59,7 @@ void itc_ItoI_Model::InitialGuess()
     AbstractModel::Calculate();
 }
 
-QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
         setOptParamater(m_global_parameter);
@@ -82,8 +82,7 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
     return parameter;
 }
 
-
-void itc_ItoI_Model::CalculateVariables()
+void itc_IItoI_Model::CalculateVariables()
 {  
     /*
      * It seems, we have to recalculate the concentrations from within the child class
@@ -104,43 +103,53 @@ void itc_ItoI_Model::CalculateVariables()
     qreal dil_heat = m_local_parameter->data(0, 0);
     qreal dil_inter = m_local_parameter->data(1, 0);
     qreal fx = m_local_parameter->data(2, 0);
-    qreal dH = GlobalParameter()[1];
-    qreal complex_prev = 0;
+    qreal K21 = qPow(10, GlobalParameter()[0]);
+    qreal dH2 = GlobalParameter()[1];
+    qreal K11 = qPow(10, GlobalParameter()[2]);
+    qreal dH1 = GlobalParameter()[3];
+    qreal complex_21_prev = 0, complex_11_prev = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal host_0 = InitialHostConcentration(i);
+        qreal guest_0 = InitialGuestConcentration(i);
 
         if(binding == "pytc")
         {
             host_0 *= fx;
         }
-        qreal guest_0 = InitialGuestConcentration(i);
         qreal dilution = 0;
         if(dil == "auto")
         {
             dilution= (guest_0*dil_heat+dil_inter);
         }
-        qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
-        qreal complex = (host_0 - host);
-        Vector vector(4);
+
+        qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);
+        qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
+        qreal complex_11 = K11*host*guest;
+        qreal complex_21 = K11*K21*host*host*guest;
+
+        Vector vector(5);
         vector(0) = i + 1;
         vector(1) = host;
-        vector(2) = guest_0 - complex;
-        vector(3) = complex;
+        vector(2) = guest;
+        vector(3) = complex_21;
+        vector(4) = complex_11;
 
         SetConcentration(i, vector);
-        qreal value = V*(complex-complex_prev)*dH;
+
+        qreal value = V*(complex_11-complex_11_prev)*dH1*(complex_21-complex_21_prev)*dH2;
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);
-        complex_prev = complex;
+        complex_11_prev = complex_11;
+        complex_21_prev = complex_21;
     }
 }
 
 
-QSharedPointer<AbstractModel > itc_ItoI_Model::Clone()
+QSharedPointer<AbstractModel > itc_IItoI_Model::Clone()
 {
-    QSharedPointer<AbstractModel > model = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractModel > model = QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(this), &QObject::deleteLater);
     model.data()->setData( m_data );
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
@@ -149,9 +158,9 @@ QSharedPointer<AbstractModel > itc_ItoI_Model::Clone()
     return model;
 }
 
-qreal itc_ItoI_Model::BC50() const
+qreal itc_IItoI_Model::BC50() const
 {
     return 1/qPow(10,GlobalParameter()[0]); 
 }
 
-#include "itc_1_1_Model.moc"
+#include "itc_2_1_Model.moc"

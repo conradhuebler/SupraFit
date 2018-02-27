@@ -32,26 +32,7 @@ typedef Eigen::VectorXd Vector;
 
 struct MassResults;
 
-
-class ConSolver : public QObject,  public QRunnable
-{
-
-public:
-    ConSolver(QPointer<AbstractTitrationModel> model);
-    ~ConSolver();
-    virtual void run();
-    void setInput(double A_0, double B_0);
-    inline void setConfig(OptimizerConfig opt_config) { m_opt_config = opt_config; }
-    inline QPair<double, double> Concentrations() const { return  m_concentration; }
-    bool Ok() const { return m_ok; }
-private:
-    qreal m_A_0, m_B_0;
-    QPair<double, double> HostConcentration(double a0, double b0);
-    QPointer<AbstractTitrationModel> m_model;
-    QPair<double, double> m_concentration;
-    bool m_ok;
-    OptimizerConfig m_opt_config;
-};
+class IItoI_ItoI_ItoII_Solver;
 
 class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
 {
@@ -99,8 +80,7 @@ public:
 
 private:
     qreal m_K21, m_K11, m_K12;
-    QList<qreal > m_IItoI_signals, m_ItoI_signals, m_ItoII_signals;
-    QList<QPointer<ConSolver > > m_solvers;
+    QList<QPointer<IItoI_ItoI_ItoII_Solver > > m_solvers;
     QList<qreal> m_constants_pow;
     QThreadPool *m_threadpool;
     static qreal Y(qreal x, const QVector<qreal > & parameter);

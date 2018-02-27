@@ -134,6 +134,7 @@ endif(experimental)
 
 set(libmath_SRC
                 src/core/equal_system.cpp
+                src/core/equil.cpp
                 src/core/optimizer/eigen_levenberg.cpp
                 src/core/libmath.cpp
                 src/core/minimizer.cpp
@@ -151,6 +152,9 @@ set(models_SRC
                 src/core/AbstractItcModel.cpp
                 src/core/AbstractTitrationModel.cpp
                 src/core/models/itc/itc_1_1_Model.cpp
+                src/core/models/itc/itc_2_1_Model.cpp
+                src/core/models/itc/itc_1_2_Model.cpp
+                src/core/models/itc/itc_2_2_Model.cpp
                 src/core/models/fluorescence/fl_1_1_Model.cpp
                 src/core/models/fluorescence/fl_1_1_1_2_Model.cpp
                 src/core/models/fluorescence/fl_2_1_1_1_Model.cpp

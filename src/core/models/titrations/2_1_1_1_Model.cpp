@@ -17,10 +17,10 @@
  * 
  */
 
-
+#include "src/core/equil.h"
+#include "src/core/models.h"
 #include "src/core/toolset.h"
 
-#include "src/core/models.h"
 
 #include "src/core/libmath.h"
 #include <QtMath>
@@ -35,7 +35,6 @@
 IItoI_ItoI_Model::IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-    // DeclareOptions();
 }
     
 IItoI_ItoI_Model::~IItoI_ItoI_Model()
@@ -96,22 +95,6 @@ void IItoI_ItoI_Model::InitialGuess()
     Calculate();
 }
 
-qreal IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
-{
-    
-    if(constants.size() < 2)
-        return host_0;
-    qreal K21= qPow(10, constants.first());
-    qreal K11 = qPow(10, constants.last());
-    qreal host;
-    qreal a, b, c;
-    a = K11*K21;
-    b = K11*(2*K21*guest_0-K21*host_0+1);
-    c = K11*(guest_0-host_0)+1;
-    host = MinCubicRoot(a,b,c, -host_0);
-    return host;
-}
-
 void IItoI_ItoI_Model::CalculateVariables()
 {
     m_corrupt = false;
@@ -126,7 +109,7 @@ void IItoI_ItoI_Model::CalculateVariables()
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
+        qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, GlobalParameter());
         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
         qreal complex_11 = K11*host*guest;
         qreal complex_21 = K11*K21*host*host*guest;

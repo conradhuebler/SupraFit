@@ -49,11 +49,14 @@ namespace SupraFit{
         IItoI_ItoI_ItoII = 4,
         Michaelis_Menten = 5,
         First_Order_Kinetics = 6,
-        ScriptedModel = 10,
-        itc_ItoI = 11,
-        fl_ItoI = 12,
-        fl_IItoI_ItoI = 13,
-        fl_ItoI_ItoII = 14
+        itc_ItoI = 10,
+        itc_IItoI = 11,
+        itc_ItoII = 12,
+        itc_IItoII = 13,
+        fl_ItoI = 20,
+        fl_IItoI_ItoI = 21,
+        fl_ItoI_ItoII = 22,
+        ScriptedModel = 100
     };
     
     struct ConfidenceBar
