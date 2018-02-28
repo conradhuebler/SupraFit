@@ -48,11 +48,13 @@ itc_IItoI_Model::~itc_IItoI_Model()
 
 void itc_IItoI_Model::InitialGuess()
 {
-    m_global_parameter = QList<qreal>() << 3 << -40000 << 3 << -40000;
+    m_global_parameter = QList<qreal>() << 3 << 3;
 
-    m_local_parameter->data(0, 0) = -1000;
-    m_local_parameter->data(1, 0) = 1;
-    m_local_parameter->data(2, 0) = 1;
+    m_local_parameter->data(0, 0) = -4000;
+    m_local_parameter->data(1, 0) = -4000;
+    m_local_parameter->data(2, 0) = -1000;
+    m_local_parameter->data(3, 0) = 1;
+    m_local_parameter->data(4, 0) = 1;
 
     setOptParamater(m_global_parameter);
     
@@ -63,17 +65,19 @@ QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private(OptimizationType type
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
         setOptParamater(m_global_parameter);
+    addLocalParameter(0);
+    addLocalParameter(1);
 
     QString binding = getOption("Binding");
     QString dilution = getOption("Dilution");
     if(dilution == "auto")
     {
-        addLocalParameter(0);
-        addLocalParameter(1);
+        addLocalParameter(2);
+        addLocalParameter(3);
     }
     if(binding == "pytc" || binding == "multiple")
     {
-            addLocalParameter(2);
+            addLocalParameter(4);
     }
 
     QVector<qreal >parameter;
@@ -100,13 +104,16 @@ void itc_IItoI_Model::CalculateVariables()
     QString binding = getOption("Binding");
     QString dil = getOption("Dilution");
 
-    qreal dil_heat = m_local_parameter->data(0, 0);
-    qreal dil_inter = m_local_parameter->data(1, 0);
-    qreal fx = m_local_parameter->data(2, 0);
+    qreal dH2 =  m_local_parameter->data(0, 0);
+    qreal dH1 =  m_local_parameter->data(1, 0);
+    qreal dil_heat = m_local_parameter->data(2, 0);
+    qreal dil_inter = m_local_parameter->data(3, 0);
+    qreal fx = m_local_parameter->data(4, 0);
+
     qreal K21 = qPow(10, GlobalParameter()[0]);
-    qreal dH2 = GlobalParameter()[1];
-    qreal K11 = qPow(10, GlobalParameter()[2]);
-    qreal dH1 = GlobalParameter()[3];
+    qreal K11 = qPow(10, GlobalParameter()[1]);
+
+
     qreal complex_21_prev = 0, complex_11_prev = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {

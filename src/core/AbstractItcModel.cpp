@@ -28,9 +28,9 @@
 
 #include "AbstractItcModel.h"
 
-AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data)
+AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_dirty(true)
 {
-    connect(m_data, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+    connect(m_data, &DataClass::SystemParameterChanged, [=]() { m_dirty = true; });
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
@@ -65,6 +65,8 @@ void AbstractItcModel::DeclareOptions()
 
 void AbstractItcModel::CalculateConcentrations()
 {
+    if(!m_dirty)
+        return;
     qreal emp_exp = 1e-3;
 
     qreal V = m_data->getSystemParameter(CellVolume).Double();
@@ -92,6 +94,7 @@ void AbstractItcModel::CalculateConcentrations()
         vector(1) = guest_0;
         m_c0->setRow(vector, i);
     }
+    m_dirty = false;
 }
 
 void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
@@ -102,8 +105,8 @@ void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
         m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
         m_concentrations->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
         m_concentrations->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
-        //for(int i = 0; i < GlobalParameterSize(); ++i)
-            //m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
+        for(int i = 0; i < GlobalParameterSize(); ++i)
+            m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
     }
     m_concentrations->setRow(equilibrium, i);
 }
@@ -113,25 +116,25 @@ QString AbstractItcModel::Model2Text_Private() const
     QString text;
     if(m_c0)
     {
-    text += "Initial concentration calculated from ITC Experiment:\n";
-    for(int i = 0; i < m_c0->columnCount(); ++i)
-    {
-        text += " " + m_c0->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    }
-    text += "\n";
-    text += m_c0->ExportAsString();
-    text += "\n";
+        text += "Initial concentration calculated from ITC Experiment:\n";
+        for(int i = 0; i < m_c0->columnCount(); ++i)
+        {
+            text += " " + m_c0->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+        }
+        text += "\n";
+        text += m_c0->ExportAsString();
+        text += "\n";
     }
     if(m_concentrations)
     {
-    text += "Equilibrium concentration calculated with complexation constants:\n";
-    for(int i = 0; i < m_concentrations->columnCount(); ++i)
-    {
-        text += " " + m_concentrations->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
-    }
-    text += "\n";
-    text += m_concentrations->ExportAsString();
-    text += "\n\n";
+        text += "Equilibrium concentration calculated with complexation constants:\n";
+        for(int i = 0; i < m_concentrations->columnCount(); ++i)
+        {
+            text += " " + m_concentrations->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+        }
+        text += "\n";
+        text += m_concentrations->ExportAsString();
+        text += "\n\n";
     }
     text += "Equilibrium Model Signal calculated with complexation constants:\n";
     for(int i = 0; i < DependentModel()->columnCount(); ++i)

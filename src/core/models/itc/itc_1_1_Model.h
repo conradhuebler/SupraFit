@@ -36,7 +36,7 @@ public:
     ~itc_ItoI_Model();
 
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 2;}
+    inline int GlobalParameterSize() const override { return 1;}
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
@@ -46,13 +46,19 @@ public:
     { 
         if( i == 0)
             return tr("K<sub>11</sub>");
-        else if( i == 1)
-            return tr("dH");
         else
             return QString();
     }
 
-    virtual int LocalParameterSize() const override {return 3; }
+    virtual inline QString SpeciesName(int i) const override
+    {
+        if(i == 1)
+            return tr("AB");
+        else
+            return QString();
+    }
+
+    virtual int LocalParameterSize() const override {return 4; }
     virtual inline int InputParameterSize() const override { return 1; }
 
     virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
@@ -64,6 +70,8 @@ public:
         else
             return QString();
     }
+
+    virtual inline int Color(int i) const override { if(i == 0) return 1; else return i + 3; }
 
 protected:
     virtual void CalculateVariables() override;

@@ -39,38 +39,44 @@ public:
     ~itc_IItoII_Model();
 
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 6;}
+    inline int GlobalParameterSize() const override { return 3;}
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override;
     virtual inline qreal BC50SF() const override { return BC50(); }
-    virtual inline QString GlobalParameterName(int i = 0) const override 
-    { 
-        if( i == 0)
+    virtual inline QString GlobalParameterName(int i = 0) const override
+    {
+        if(i == 0)
             return tr("K<sub>21</sub>");
-        else if( i == 1 || i == 3 || i == 5)
-            return tr("dH");
-        else if( i == 2)
-                return tr("K<sub>11</sub>");
-        else if( i == 4)
-                return tr("K<sub>12</sub>");
+        else if( i == 1)
+            return  tr("K<sub>11</sub>");
+        else if( i == 2 )
+            return  tr("K<sub>12</sub>");
         else
             return QString();
     }
 
-    virtual int LocalParameterSize() const override {return 3; }
+    virtual inline QString SpeciesName(int i) const override
+    {
+        if(i == 0)
+            return tr("A2B");
+        else if(i == 1)
+            return tr("AB");
+        else if(i == 2)
+            return tr("AB2");
+        else
+            return QString();
+    }
+
+    virtual int LocalParameterSize() const override {return 6; }
     virtual inline int InputParameterSize() const override { return 1; }
 
     virtual inline QString Name() const override { return tr("itc_2:1/1:1/1:2-Model"); }
 
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override
-    {
-        if(i == 0 || i == 3 || i == 5)
-            return QString("10^");
-        else
-            return QString();
-    }
+    virtual inline QString GlobalParameterPrefix(int i = 0) const override  {  return QString("10^");  }
+    virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
+
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver > > m_solvers;
     QList<qreal> m_constants_pow;

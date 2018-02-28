@@ -54,7 +54,7 @@ public:
             return QString();
     }
 
-    virtual QString SpeciesName(int i) const override
+    virtual inline QString SpeciesName(int i) const override
     {
         if(i == 0)
             return tr("A2B");

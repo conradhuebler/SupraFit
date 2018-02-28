@@ -56,10 +56,11 @@ public:
     inline qreal InitialGuestConcentration(int i) const  { return m_c0->data(1,i);  }
     QString Model2Text_Private() const;
 
+    virtual QString SpeciesName(int i) const = 0;
 private:
     void virtual DeclareSystemParameter() override;
     void virtual DeclareOptions() override;
-
+    bool m_dirty;
 private slots:
     void CalculateConcentrations();
 
