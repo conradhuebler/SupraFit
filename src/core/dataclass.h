@@ -222,6 +222,8 @@ public:
     void setHeader(const QStringList &strlist);
     void OverrideInDependentTable(DataTable *table);
     void OverrideDependentTable(DataTable *table);
+
+    void OverrideCheckedTable(DataTable *table);
     /*! \brief Add a system parameter to the current model
      */
     void addSystemParameter(int index, const QString &str, const QString &description, SystemParameter::Type type);

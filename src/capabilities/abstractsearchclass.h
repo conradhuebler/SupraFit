@@ -25,7 +25,12 @@
 #include <QtCore/QRunnable>
 #include <QtCore/QPointF>
 #include <QtCore/QSharedPointer>
+#include <QtCore/QQueue>
+
 #include <QtCore/QThreadPool>
+
+typedef QPair<QPointer<DataTable >, QPointer<DataTable> >  Pair;
+
 
 class AbstractModel;
 
@@ -74,7 +79,12 @@ public:
     inline QList<QJsonObject > Results() const { return m_results; }
     QJsonObject Result() const;
     void ExportResults(const QString& filename);
-    
+
+    QVector<Pair > DemandCalc();
+
+private:
+    QMutex mutex;
+
 public slots:
     virtual void Interrupt();
     
@@ -85,7 +95,8 @@ protected:
     QList<QJsonObject > m_models;
     QList<QJsonObject > m_results;
     bool m_interrupt;
-    
+    QQueue< QVector<Pair >> m_batch;
+
     virtual QJsonObject Controller() const = 0;
 signals:
     void IncrementProgress(int msecs);

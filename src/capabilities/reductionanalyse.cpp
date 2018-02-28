@@ -17,6 +17,8 @@
  * 
  */
 
+#include <QtCore/QMutexLocker>
+
 #include <QtWidgets/QApplication>
 
 #include "src/core/AbstractModel.h"
@@ -59,36 +61,45 @@ void ReductionAnalyse::CrossValidation(CVType type)
     m_controller["method"] = SupraFit::Statistic::CrossValidation;
     m_controller["CVType"] = type;
 
+    QVector<Pair> block;
+    int blocksize;
+    int maxthreads =qApp->instance()->property("threads").toInt();
+    QPointer<DataTable > table = new DataTable(m_model->DependentModel());
+    QVector<QPointer <MonteCarloBatch > > threads;
+
     switch(type){
         case CVType::LeaveOneOut:
             emit MaximumSteps(m_model->DataPoints());
+            blocksize = 1;
             for(int i = m_model->DataPoints() - 1; i >= 0; --i)
             {
-                QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
-                connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-                QSharedPointer<AbstractModel> model = m_model->Clone();
-                model->detach();
-                model->DependentModel()->CheckRow(i);
-                thread->setModel(model);
-                addThread(thread);
-                QApplication::processEvents();
+                QPointer<DataTable > dep_table = new DataTable(table);
+                dep_table->CheckRow(i);
+
+                block << Pair(m_model->IndependentModel(), dep_table);
+                if(block.size() == blocksize)
+                {
+                    m_batch.enqueue( block );
+                    block.clear();
+                }
             }
             break;
         case CVType::LeaveTwoOut:
             emit MaximumSteps(m_model->DataPoints()*(m_model->DataPoints() - 1)/2);
+            blocksize = 25;
             for(int i = 0; i < m_model->DataPoints(); ++i)
                 for(int j = i + 1; j < m_model->DataPoints(); ++j)
                 {
-                    QApplication::processEvents();
-                    QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
-                    connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-                    QSharedPointer<AbstractModel> model = m_model->Clone();
-                    model->detach();
-                    model->DependentModel()->CheckRow(i);
-                    model->DependentModel()->CheckRow(j);
-                    thread->setModel(model);
-                    addThread(thread);
-                    QApplication::processEvents();
+                    QPointer<DataTable > dep_table = new DataTable(table);
+                    dep_table->CheckRow(i);
+                    dep_table->CheckRow(j);
+                    block << Pair(m_model->IndependentModel(), dep_table);
+                    if(block.size() == blocksize)
+                    {
+                        m_batch.enqueue( block );
+                        block.clear();
+                    }
+
                 }
             break;
             
@@ -97,17 +108,32 @@ void ReductionAnalyse::CrossValidation(CVType type)
             
             break;
     }
-    while(Pending()) { QApplication::processEvents(); }
-    for(int i = 0; i < m_threads.size(); ++i)
+
+    for(int i = 0; i < maxthreads; ++i)
     {
-        if(m_threads[i])
+        QPointer<MonteCarloBatch > thread = new MonteCarloBatch(config, this);
+        thread->setChecked(true);
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        connect(this, &ReductionAnalyse::Interrupt, thread, &MonteCarloBatch::Interrupt);
+        thread->setModel(m_model);
+        threads << thread;
+        m_threadpool->start(thread);
+    }
+
+
+    while(Pending()) { QApplication::processEvents(); }
+    for(int i = 0; i < threads.size(); ++i)
+    {
+        if(threads[i])
         {
-            m_models << m_threads[i]->Model();
-            delete m_threads[i];
+            m_models << threads[i]->Models();
+            delete threads[i];
         }
     }
     m_results = ToolSet::Model2Parameter(m_models);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
+    if(table)
+        delete table;
     emit AnalyseFinished();
 }
 
@@ -121,6 +147,7 @@ void ReductionAnalyse::PlainReduction()
     m_controller["method"] = SupraFit::Statistic::Reduction;
     
     emit MaximumSteps(m_model->DataPoints());
+    int maxthreads =qApp->instance()->property("threads").toInt();
 
     QPointer<DataTable > table = m_model->DependentModel();
     for(int i = m_model->DataPoints() - 1; i > 3; --i)

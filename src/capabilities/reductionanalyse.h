@@ -23,6 +23,7 @@
 #include "src/core/AbstractModel.h"
 
 #include <QtCore/QObject>
+#include <QtCore/QMutex>
 #include <QtCore/QSharedPointer>
 
 class AbstractModel;
@@ -48,7 +49,7 @@ public:
     QJsonObject ModelData() const { return m_model_data; }
     /* Since we change the checked rows of the model, we have to detach the data table from the global model */
     virtual inline void setModel(const QSharedPointer<AbstractModel> model) override { m_model = model->Clone(); m_model->detach(); }
-    
+
 private:
     void addThread(QPointer<MonteCarloThread> thread);
     bool Pending() const;
@@ -58,6 +59,7 @@ private:
     AbstractConfig m_config;
     QJsonObject m_model_data;
     QJsonObject m_controller;
+
 signals:
     void MaximumSteps(int steps);
 };

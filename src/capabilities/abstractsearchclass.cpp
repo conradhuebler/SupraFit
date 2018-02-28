@@ -69,3 +69,12 @@ QJsonObject AbstractSearchClass::Result() const
     return result;
 }
 
+QVector<Pair >AbstractSearchClass::DemandCalc()
+{
+    QMutexLocker lock(&mutex);
+
+    if(m_batch.isEmpty())
+        return QVector<Pair>();
+    else
+        return m_batch.dequeue();
+}
