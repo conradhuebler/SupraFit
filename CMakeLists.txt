@@ -130,7 +130,7 @@ include_directories(SYSTEM ${QT_INCLUDES} eigen/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} fisher_dist/)
 
 if(experimental)
-    include_directories(ChaiScript/include)
+    include_directories(SYSTEM ChaiScript/include)
 endif(experimental)
 
 set(libmath_SRC

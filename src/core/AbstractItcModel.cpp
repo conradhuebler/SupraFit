@@ -71,8 +71,8 @@ void AbstractItcModel::CalculateConcentrations()
         qDebug() << "no need for concentration";
         return;
     }
-    qDebug() << "recalc concentrations";
-    QMutexLocker lock(&m_lock);
+    //qDebug() << "recalc concentrations";
+
     qreal emp_exp = 1e-3;
 
     qreal V = m_data->getSystemParameter(CellVolume).Double();
@@ -105,7 +105,6 @@ void AbstractItcModel::CalculateConcentrations()
 
 void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
 {
-    QMutexLocker lock(&m_lock);
     if(!m_concentrations)
     {
         m_concentrations = new DataTable( equilibrium.rows(), DataPoints(), this);
