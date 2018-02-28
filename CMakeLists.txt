@@ -126,7 +126,8 @@ find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 find_package(Qt5DataVisualization REQUIRED)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} eigen/ fisher_dist/)
+include_directories(SYSTEM ${QT_INCLUDES} eigen/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} fisher_dist/)
 
 if(experimental)
     include_directories(ChaiScript/include)
