@@ -422,7 +422,7 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     m_model->setOptimizerConfig(config);
     int result;
     result = m_minimizer->Minimize(m_optim_flags->getFlags());
-    
+
     json = m_minimizer->Parameter();
     m_last_model = json;
     m_model->ImportModel(json);
@@ -430,12 +430,12 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     m_model->OptimizeParameters(m_optim_flags->getFlags());
     if(qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
-    
+
     QSettings settings;
     settings.beginGroup("minimizer");
     settings.setValue("flags", m_optim_flags->getFlags());
     settings.endGroup();
-    
+
     if(!result)
         emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
     

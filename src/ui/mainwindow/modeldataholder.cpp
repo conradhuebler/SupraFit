@@ -189,6 +189,11 @@ MDHDockTitleBar::MDHDockTitleBar()
     connect(fl_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_fl_model << fl_ItoI_ItoII_action;
     
+    QAction *fl_IItoI_ItoI_ItoII_action = new QAction(this);
+    fl_IItoI_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
+    fl_IItoI_ItoI_ItoII_action->setData(SupraFit::fl_IItoI_ItoI_ItoII);
+    connect(fl_IItoI_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_fl_model << fl_IItoI_ItoI_ItoII_action;
 #endif
     
 #ifdef Kinetic_Models

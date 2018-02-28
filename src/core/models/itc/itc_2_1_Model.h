@@ -68,14 +68,6 @@ public:
 
     virtual inline QString Name() const override { return tr("itc_2:1/1:1-Model"); }
 
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override
-    {
-        if(i == 0 || i == 1)
-            return QString("10^");
-        else
-            return QString();
-    }
-
     virtual inline int Color(int i) const override { if(i > 1) return i + 2; return i; }
 
 protected:

@@ -73,13 +73,10 @@ public:
     virtual inline int InputParameterSize() const override { return 1; }
 
     virtual inline QString Name() const override { return tr("itc_2:1/1:1/1:2-Model"); }
-
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override  {  return QString("10^");  }
     virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver > > m_solvers;
-    QList<qreal> m_constants_pow;
     QPointer<QThreadPool > m_threadpool;
 
 protected:

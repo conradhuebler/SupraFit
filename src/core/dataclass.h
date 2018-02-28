@@ -261,7 +261,8 @@ public:
     
 private:
     QJsonObject m_systemObject;
-    
+    QMutex m_lock;
+
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;
     QMap<int, SystemParameter> m_system_parameter;

@@ -17,7 +17,9 @@
   *
   */
  
- #include "equil.h"
+#include <iostream>
+
+#include "equil.h"
  
  IItoI_ItoI_ItoII_Solver::IItoI_ItoI_ItoII_Solver() : m_ok(false)
  {
@@ -66,7 +68,7 @@
          else
          {
              #ifdef _DEBUG
-             std::cout << "a: " << a << " a0 " << a0 << " b0: " << b0 << std::endl;
+             std::cout << "a: " << a << " a0 " << a0  << std::endl;
              #endif
              return MinQuadraticRoot(x1,x2,x3);
          }
@@ -82,7 +84,7 @@
          else
          {
              #ifdef _DEBUG
-             std::cout << "b: " << b << " a0 " << a0 << " b0: " << b0 << std::endl;
+             std::cout << "b: " << b << " b0: " << b0 << std::endl;
              #endif
              return MinQuadraticRoot(x1,x2,x3);
          }

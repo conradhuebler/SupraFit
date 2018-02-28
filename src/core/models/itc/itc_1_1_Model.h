@@ -60,16 +60,7 @@ public:
 
     virtual int LocalParameterSize() const override {return 4; }
     virtual inline int InputParameterSize() const override { return 1; }
-
     virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
-
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override
-    {
-        if(i == 0)
-            return QString("10^");
-        else
-            return QString();
-    }
 
     virtual inline int Color(int i) const override { if(i == 0) return 1; else return i + 3; }
 

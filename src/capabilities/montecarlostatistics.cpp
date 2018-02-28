@@ -93,7 +93,6 @@ MonteCarloBatch::~MonteCarloBatch()
 
 void MonteCarloBatch::run()
 {
-    int i = 0;
     while(true)
     {
         if(m_interrupt)
@@ -244,10 +243,6 @@ QVector<QPointer <MonteCarloBatch > > MonteCarloStatistics::GenerateData()
             m_batch.enqueue( block );
             block.clear();
         }
-
-#ifdef _DEBUG
-        qDebug() << "Thread added to queue!" << thread;
-#endif
     }
     for(int i = 0; i < maxthreads; ++i)
     {

@@ -164,7 +164,6 @@ QVector<QVector<qreal> > ModelComparison::MakeBox()
 {    
     QList<QJsonObject > constant_results = Results();
     QVector<QVector< qreal > > parameter;
-    int i = 0;
     m_box_area = 1.0;
     for(const QJsonObject &object : qAsConst(constant_results))
     {

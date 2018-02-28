@@ -329,6 +329,7 @@ Vector DataTable::Row(int row, const QList<int> &active)
 
 void DataTable::insertRow(const QVector<qreal> &row)
 {
+    QReadLocker locker(&mutex);
     while(m_header.size() < row.size())
         m_header << QString::number(m_header.size() + 1);
     
@@ -366,6 +367,7 @@ void DataTable::setColumn(const Vector &vector, int column)
 
 void DataTable::setRow(const QVector<qreal> &vector, int row)
 {
+    QReadLocker locker(&mutex);
     if(m_table.rows() >= row)
         for(int i = 0; i < vector.size(); ++i)
             m_table(row, i) = vector[i];   
@@ -374,6 +376,7 @@ void DataTable::setRow(const QVector<qreal> &vector, int row)
 
 void DataTable::setRow(const Vector &vector, int row)
 {
+    QReadLocker locker(&mutex);
     if(m_table.rows() >= row)
         m_table.row(row) = vector;   
     return;
@@ -786,6 +789,7 @@ void DataClass::setSystemParameterValue(int index, const QVariant& value)
     if(!value.isValid())
         return;
 
+    QMutexLocker lock(&m_lock);
     SystemParameter parameter = getSystemParameter(index);
     parameter.setValue(value);
     m_system_parameter[index] = parameter;

@@ -25,6 +25,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
+#include <QtCore/QMutexLocker>
 
 #include "AbstractItcModel.h"
 
@@ -34,8 +35,6 @@ AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_dir
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
-
-    CalculateConcentrations();
 }
 
 AbstractItcModel::~AbstractItcModel()
@@ -66,7 +65,12 @@ void AbstractItcModel::DeclareOptions()
 void AbstractItcModel::CalculateConcentrations()
 {
     if(!m_dirty)
+    {
+        qDebug() << "no need for concentration";
         return;
+    }
+    qDebug() << "recalc concentrations";
+    QMutexLocker lock(&m_lock);
     qreal emp_exp = 1e-3;
 
     qreal V = m_data->getSystemParameter(CellVolume).Double();
@@ -99,6 +103,7 @@ void AbstractItcModel::CalculateConcentrations()
 
 void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
 {
+    QMutexLocker lock(&m_lock);
     if(!m_concentrations)
     {
         m_concentrations = new DataTable( equilibrium.rows(), DataPoints(), this);

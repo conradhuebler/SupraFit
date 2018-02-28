@@ -83,7 +83,7 @@ public:
     }
     
     virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
-    virtual QString SpeciesName(int i) const { return QString(); }
+    virtual QString SpeciesName(int i) const { Q_UNUSED(i) return QString(); }
     virtual qreal BC50() const;
     virtual qreal BC50SF() const;
     virtual MassResults MassBalance(qreal A, qreal B);

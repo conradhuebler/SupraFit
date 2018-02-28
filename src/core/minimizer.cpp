@@ -92,7 +92,9 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 void NonLinearFitThread::Print(const QString& message)
 {
 #ifdef _DEBUG
-//     qDebug() << message;
+     qDebug() << message;
+#else
+    Q_UNUSED(message)
 #endif
 }
 

@@ -50,7 +50,9 @@ itc_IItoII_Model::itc_IItoII_Model(DataClass *data) : AbstractItcModel(data)
 
 itc_IItoII_Model::~itc_IItoII_Model()
 {
-    
+    for(int i = 0; i < DataPoints(); ++i)
+        if(m_solvers[i])
+            delete m_solvers[i];
 }
 
 void itc_IItoII_Model::InitialGuess()
@@ -125,12 +127,13 @@ void itc_IItoII_Model::CalculateVariables()
     qreal fx = m_local_parameter->data(5, 0);
 
     qreal K21 = qPow(10, GlobalParameter()[0]);
-    qreal K11 = qPow(10,GlobalParameter()[1]);
-    qreal K12 = qPow(10,GlobalParameter()[2]);
+    qreal K11 = qPow(10, GlobalParameter()[1]);
+    qreal K12 = qPow(10, GlobalParameter()[2]);
 
     qreal complex_21_prev = 0, complex_11_prev = 0, complex_12_prev = 0;
 
-    m_constants_pow = QList<qreal >() << K21 << K11 << K12;
+    QList<qreal > constants_pow;
+    constants_pow << K21 << K11 << K12;
 
 
     int maxthreads =qApp->instance()->property("threads").toInt();
@@ -143,17 +146,19 @@ void itc_IItoII_Model::CalculateVariables()
             host_0 *= fx;
         }
         qreal guest_0 = InitialGuestConcentration(i);
-
+      //  qDebug() << i << "starting threads";
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
-        m_solvers[i]->setConstants(QList<qreal >() << K21 << K11 << K12);
-        m_threadpool->start(m_solvers[i]);
+        m_solvers[i]->setConstants(constants_pow);
+        // m_threadpool->start(m_solvers[i]);
+        m_solvers[i]->run();
     }
 
     m_threadpool->waitForDone();
 
     for(int i = 0; i < DataPoints(); ++i)
     {
+        // qDebug() << i << "collecting";
         if(!m_solvers[i]->Ok())
         {
 #ifdef _DEBUG
@@ -176,7 +181,6 @@ void itc_IItoII_Model::CalculateVariables()
         {
             dilution= (guest_0*dil_heat+dil_inter);
         }
-
 
         QPair<double, double > concentration = m_solvers[i]->Concentrations();
 
@@ -203,17 +207,19 @@ void itc_IItoII_Model::CalculateVariables()
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;
     }
+//    qDebug() << "finishing";
 }
 
 
 QSharedPointer<AbstractModel > itc_IItoII_Model::Clone()
 {
-    QSharedPointer<AbstractModel > model = QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractItcModel > model = QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(this), &QObject::deleteLater);
     model.data()->setData( m_data );
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
+    model.data()->setConcentrations(ConcentrationTable());
     return model;
 }
 
