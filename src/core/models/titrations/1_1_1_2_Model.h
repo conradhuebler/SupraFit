@@ -20,7 +20,7 @@
 #pragma once
 
 #include "src/global.h"
-#include "src/core/AbstractModel.h"
+#include "src/core/AbstractTitrationModel.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>

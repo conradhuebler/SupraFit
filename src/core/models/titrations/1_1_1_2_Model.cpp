@@ -136,8 +136,8 @@ void ItoI_ItoII_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
-        qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, GlobalParameter());
-        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, GlobalParameter());
+        qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
+        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal complex_11 = K11*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;
 

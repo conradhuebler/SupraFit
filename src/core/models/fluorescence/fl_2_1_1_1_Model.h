@@ -20,14 +20,12 @@
 #pragma once
 
 #include "src/global.h"
-#include "src/core/AbstractModel.h"
+#include "src/core/AbstractTitrationModel.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-
 #include "src/core/dataclass.h"
-
 
 class fl_IItoI_ItoI_Model : public AbstractTitrationModel
 {
@@ -57,17 +55,9 @@ public:
     virtual int LocalParameterSize() const override {return 4; }
 
     void virtual EvaluateOptions() override;
-    
-
     virtual inline QString Name() const override { return tr("fl_2:1/1:1-Model"); }
 
-private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
-    qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
-    
 protected:
     virtual void CalculateVariables() override;
-    
-    qreal m_K21, m_K11;
-    QList<qreal > m_ItoI_signals, m_IItoI_signals;
+
 };

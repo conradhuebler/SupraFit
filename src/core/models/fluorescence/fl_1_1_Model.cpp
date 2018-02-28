@@ -17,38 +17,25 @@
  * 
  */
 
-
-
 #include "src/core/AbstractTitrationModel.h"
+#include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 
 #include <QtMath>
+#include <QDebug>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
-#include <QDebug>
-#include <QtCore/QDateTime>
-#include <cmath>
-#include <cfloat>
-#include <iostream>
 
 #include "fl_1_1_Model.h"
 
 fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-//     m_complex_signal_parameter = Eigen::MatrixXd::Zero(SeriesCount(), 1);
-//     DeclareOptions();
-//    InitialGuess();
 }
 
-// fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* model) : AbstractTitrationModel(model)
-// {
-//     m_local_parameter = new DataTable(3, SeriesCount(), this);
-// //     DeclareOptions();
-// //     InitialGuess();
-// }
 
 
 fl_ItoI_Model::~fl_ItoI_Model() 
@@ -58,7 +45,6 @@ fl_ItoI_Model::~fl_ItoI_Model()
 
 void fl_ItoI_Model::InitialGuess()
 {
-//     m_K11 = 4;
     m_global_parameter[0] = Guess_1_1();
 
     qreal factor = InitialHostConcentration(0);
@@ -67,15 +53,7 @@ void fl_ItoI_Model::InitialGuess()
     m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e3, 0);
     m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e3, 1);
     m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e3, 2);
-    QVector<qreal * > line1, line2;
 
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
-        line1 << &m_local_parameter->data(0, i);
-        line2 << &m_local_parameter->data(1, i);
-        line2 << &m_local_parameter->data(2, i);
-    }
-    
     Calculate();
 }
 
@@ -116,21 +94,6 @@ QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
     return parameter;
 }
 
-
-qreal fl_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList< qreal > &constants)
-{
-    if(constants.size() == 0)
-        return host_0;
-    qreal K11 = qPow(10, constants.first());
-    qreal a, b, c;
-    qreal complex;
-    a = K11;
-    b = -1*(K11*host_0+K11*guest_0+1);
-    c = K11*guest_0*host_0;
-    complex = MinQuadraticRoot(a,b,c);
-    return host_0 - complex;
-}
-
 void fl_ItoI_Model::CalculateVariables()
 {  
     m_corrupt = false;
@@ -142,7 +105,7 @@ void fl_ItoI_Model::CalculateVariables()
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
+        qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
         qreal complex = host_0 - host;
         Vector vector(4);
         vector(0) = i + 1;

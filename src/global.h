@@ -56,6 +56,7 @@ namespace SupraFit{
         fl_ItoI = 20,
         fl_IItoI_ItoI = 21,
         fl_ItoI_ItoII = 22,
+        fl_IItoI_ItoI_ItoII = 23,
         ScriptedModel = 100
     };
     

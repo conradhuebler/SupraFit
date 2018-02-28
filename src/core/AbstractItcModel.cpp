@@ -48,10 +48,11 @@ AbstractItcModel::~AbstractItcModel()
 
 void AbstractItcModel::DeclareSystemParameter()
 {
-    m_data->addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell", SystemParameter::Scalar);
-    m_data->addSystemParameter(Temperature, "Temperature", "Temperature", SystemParameter::Scalar);
-    m_data->addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell", SystemParameter::Scalar);
-    m_data->addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe", SystemParameter::Scalar);
+    QChar mu = QChar(956);
+    m_data->addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
+    m_data->addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
+    m_data->addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mol/L", SystemParameter::Scalar);
+    m_data->addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mol/L", SystemParameter::Scalar);
 }
 
 void AbstractItcModel::DeclareOptions()
@@ -64,6 +65,8 @@ void AbstractItcModel::DeclareOptions()
 
 void AbstractItcModel::CalculateConcentrations()
 {
+    qreal emp_exp = 1e-3;
+
     qreal V = m_data->getSystemParameter(CellVolume).Double();
     qreal initial_cell = m_data->getSystemParameter(CellConcentration).Double();
     qreal initial_syringe = m_data->getSystemParameter(SyringeConcentration).Double();
@@ -72,7 +75,7 @@ void AbstractItcModel::CalculateConcentrations()
         return;
 
     qreal V_cell = V;
-    qreal emp_exp = 1e-3;
+
     qreal cell = initial_cell*emp_exp;
     qreal gun = initial_syringe*emp_exp;
     qreal prod = 1;

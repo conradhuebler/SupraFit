@@ -407,6 +407,9 @@ void ModelDataHolder::AddModel(int model)
         case SupraFit::fl_IItoI_ItoI:
              t = QSharedPointer<fl_IItoI_ItoI_Model>(new fl_IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
             break;
+         case SupraFit::fl_IItoI_ItoI_ItoII:
+            t = QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
+        break;
         default:
             t.clear();
             return; 
@@ -489,11 +492,11 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(m_data.data()),  &QObject::deleteLater);
     else if(str == "itc_1:1-Model")
         t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
-    else if(str == "itc_2:1-Model")
+    else if(str == "itc_2:1/1:1-Model")
         t = QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(m_data.data()),  &QObject::deleteLater);
-    else if(str == "itc_1:2-Model")
+    else if(str == "itc_1:1/1:2-Model")
         t = QSharedPointer<itc_ItoII_Model>(new itc_ItoII_Model(m_data.data()),  &QObject::deleteLater);
-    else if(str == "itc_2:2-Model")
+    else if(str == "itc_2:1/1:1/1:2-Model")
         t = QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(m_data.data()),  &QObject::deleteLater);
     else if(str == "fl_1:1-Model")   
         t =  QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(m_data.data()), &QObject::deleteLater);
@@ -501,6 +504,8 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         t =  QSharedPointer<fl_IItoI_ItoI_Model>(new fl_IItoI_ItoI_Model(m_data.data()), &QObject::deleteLater);
     else if(str == "fl_1:1/1:2-Model")   
         t =  QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
+    else if(str == "fl_2:1/1:1/1:2-Model")
+        t =  QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
     else
     {
         qDebug() << str;

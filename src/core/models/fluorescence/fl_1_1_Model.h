@@ -33,8 +33,8 @@ class fl_ItoI_Model : public AbstractTitrationModel
     
 public:
     fl_ItoI_Model(DataClass *data);
-//     fl_ItoI_Model(AbstractTitrationModel *model);
     ~fl_ItoI_Model();
+
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;}
     virtual void InitialGuess() override;
@@ -54,17 +54,9 @@ public:
     virtual int LocalParameterSize() const override {return 3; }
 
     virtual inline QString Name() const override { return tr("fl_1:1-Model"); }
-
- 
-private:
-    inline qreal HostConcentration(qreal host_0, qreal guest_0) {return HostConcentration(host_0, guest_0, GlobalParameter());}
-    qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants);
-    
     
 protected:
     virtual void CalculateVariables() override;
-    
-    QList<qreal > m_ItoI_signals;
-    qreal m_K11;
+
 };
 

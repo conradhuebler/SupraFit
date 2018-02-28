@@ -17,27 +17,22 @@
  * 
  */
 
-
+#include "src/core/equil.h"
+#include "src/core/libmath.h"
+#include "src/core/models.h"
 #include "src/core/toolset.h"
 
-#include "src/core/models.h"
-
-#include "src/core/libmath.h"
-#include <QtMath>
-#include <QtCore/QJsonObject>
 #include <QDebug>
+#include <QtMath>
+
 #include <QtCore/QDateTime>
-#include <cmath>
-#include <cfloat>
-#include <iostream>
+#include <QtCore/QJsonObject>
+
 #include "fl_2_1_1_1_Model.h"
 
 fl_IItoI_ItoI_Model::fl_IItoI_ItoI_Model(DataClass* data) : AbstractTitrationModel(data)
 {
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-//    DeclareOptions();
-//     InitialGuess();   
-//     AbstractTitrationModel::Calculate();
 }
     
 fl_IItoI_ItoI_Model::~fl_IItoI_ItoI_Model()
@@ -103,38 +98,12 @@ void fl_IItoI_ItoI_Model::InitialGuess()
 
     qreal factor = InitialHostConcentration(0);
     
-
     m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e3, 0);
     m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e3, 1);
     m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 2);
     m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 3);
-    
-    QVector<qreal * > line1, line2;
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
-        line1 << &m_local_parameter->data(0, i);
-        line1 << &m_local_parameter->data(1, i);
-        line2 << &m_local_parameter->data(2, i);
-        line1 << &m_local_parameter->data(3, i);
-    }
 
     Calculate();
-}
-
-qreal fl_IItoI_ItoI_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
-{
-    
-    if(constants.size() < 2)
-        return host_0;
-    qreal K21= qPow(10, constants.first());
-    qreal K11 = qPow(10, constants.last());
-    qreal host;
-    qreal a, b, c;
-    a = K11*K21;
-    b = K11*(2*K21*guest_0-K21*host_0+1);
-    c = K11*(guest_0-host_0)+1;
-    host = MinCubicRoot(a,b,c, -host_0);
-    return host;
 }
 
 void fl_IItoI_ItoI_Model::CalculateVariables()
@@ -152,7 +121,7 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
     {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
-        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
+        qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);
         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
         qreal complex_11 = K11*host*guest;
         qreal complex_21 = K11*K21*host*host*guest;
@@ -177,7 +146,6 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
             
             SetValue(i, j, value*1e3);
         }
-        
     }
 }
 

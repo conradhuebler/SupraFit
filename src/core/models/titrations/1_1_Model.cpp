@@ -24,14 +24,11 @@
 #include "src/core/minimizer.h"
 
 #include <QtMath>
+#include <QDebug>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
-#include <QDebug>
-#include <QtCore/QDateTime>
-#include <cmath>
-#include <cfloat>
-#include <iostream>
 
 #include "1_1_Model.h"
 

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,9 +36,9 @@
 #include <cmath>
 #include <functional>
 
-#include "2_1_1_1_1_2_Model.h"
+#include "fl_2_1_1_1_1_2_Model.h"
 
-IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrationModel(data)
+fl_IItoI_ItoI_ItoII_Model::fl_IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrationModel(data)
 {
     m_threadpool = new QThreadPool(this);
     for(int i = 0; i < DataPoints(); ++i)
@@ -47,22 +47,20 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data): AbstractTitrati
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
-IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
+fl_IItoI_ItoI_ItoII_Model::~fl_IItoI_ItoI_ItoII_Model()
 {
     qDeleteAll(m_solvers);
 }
 
-void IItoI_ItoI_ItoII_Model::DeclareOptions()
+void fl_IItoI_ItoI_ItoII_Model::DeclareOptions()
 {
-    QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption("Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     addOption("Cooperativity 2:1", cooperativity);
     cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     addOption("Cooperativity 1:2", cooperativity);
 }
 
-void IItoI_ItoI_ItoII_Model::EvaluateOptions()
+void fl_IItoI_ItoI_ItoII_Model::EvaluateOptions()
 {
     QString cooperativitiy = getOption("Cooperativity 2:1");
     {
@@ -116,30 +114,25 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
 
 }
 
-void IItoI_ItoI_ItoII_Model::InitialGuess()
+void fl_IItoI_ItoI_ItoII_Model::InitialGuess()
 {
     qreal K11 = Guess_1_1();
-    m_global_parameter = QList<qreal>() << 1 << K11 << 1;
+    m_global_parameter = QList<qreal>() << 2 << K11 << 2;
 
     qreal factor = 1;
-    
-    if(getOption("Method") == "UV/VIS")
-    {
-        factor = 1/InitialHostConcentration(0);
-    }
 
     m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 0);
     m_local_parameter->setColumn(DependentModel()->firstRow()*factor, 1);
     m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 2);
     m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 3);
-    
+    m_local_parameter->setColumn(DependentModel()->lastRow()*factor, 4);
+
     Calculate();
 }
 
-void IItoI_ItoI_ItoII_Model::CalculateVariables()
+void fl_IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
     m_corrupt = false;
-    QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
@@ -148,6 +141,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     qreal K12= qPow(10, GlobalParameter().last());
     m_constants_pow = QList<qreal >() << K21 << K11 << K12;
 
+    QVector<qreal > F0(SeriesCount());
 
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
@@ -202,19 +196,21 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            if(method == "NMR")
-                value = host/host_0*m_local_parameter->data(0, j) + 2*complex_21/host_0*m_local_parameter->data(1, j) + complex_11/host_0*m_local_parameter->data(2, j) + complex_12/host_0*m_local_parameter->data(3, j);
-            else if(method == "UV/VIS")
+            if(i == 0)
+            {
+                F0[j] = host_0*m_local_parameter->data(0, j);
+                value = F0[j];
+            }else
                 value = host*m_local_parameter->data(0, j) + 2*complex_21*m_local_parameter->data(1, j) + complex_11*m_local_parameter->data(2, j) + complex_12*m_local_parameter->data(3, j);
 
-            SetValue(i, j, value);
+            SetValue(i, j, value*1e3);
         }
     }
 }
 
-QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone()
+QSharedPointer<AbstractModel> fl_IItoI_ItoI_ItoII_Model::Clone()
 {
-    QSharedPointer<IItoI_ItoI_ItoII_Model > model = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(this), &QObject::deleteLater);
+    QSharedPointer<fl_IItoI_ItoI_ItoII_Model > model = QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
@@ -222,7 +218,7 @@ QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone()
     return model;
 }
 
-QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> fl_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
@@ -246,7 +242,7 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
 }
 
 
-MassResults IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
+MassResults fl_IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
 {
     //     QMutexLocker (&mutex);
     MassResults result;
@@ -266,7 +262,7 @@ MassResults IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
     return result;
 }
 
-qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
+qreal fl_IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
 {
     if(3 != parameter.size())
         return 0;
@@ -319,7 +315,7 @@ qreal IItoI_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
 }
 
 
-qreal IItoI_ItoI_ItoII_Model::BC50() const
+qreal fl_IItoI_ItoI_ItoII_Model::BC50() const
 {
     qreal b21 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
     qreal b11 = qPow(10,GlobalParameter(1));
@@ -332,7 +328,7 @@ qreal IItoI_ItoI_ItoII_Model::BC50() const
     return double(1)/double(2)/integ;
 }
 
-qreal IItoI_ItoI_ItoII_Model::Y_0(qreal x, const QVector<qreal> &parameter)
+qreal fl_IItoI_ItoI_ItoII_Model::Y_0(qreal x, const QVector<qreal> &parameter)
 {
     if(3 != parameter.size())
         return 0;
@@ -385,7 +381,7 @@ qreal IItoI_ItoI_ItoII_Model::Y_0(qreal x, const QVector<qreal> &parameter)
 }
 
 
-qreal IItoI_ItoI_ItoII_Model::BC50SF() const
+qreal fl_IItoI_ItoI_ItoII_Model::BC50SF() const
 {
     qreal b21 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
     qreal b11 = qPow(10,GlobalParameter(1));

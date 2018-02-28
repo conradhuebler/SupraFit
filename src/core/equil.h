@@ -43,9 +43,9 @@ namespace IItoI_ItoI{
     
     inline qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
     {
-        
         if(constants.size() < 2)
             return host_0;
+
         qreal K21= constants.first();
         qreal K11 = constants.last();
         qreal host;
@@ -62,7 +62,6 @@ namespace ItoI_ItoII{
     
     inline qreal GuestConcentration(qreal host_0, qreal guest_0, const QList< qreal > &constants)
     {
-        
         if(constants.size() < 2)
             return guest_0;
         

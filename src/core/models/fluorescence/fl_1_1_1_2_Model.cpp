@@ -17,27 +17,25 @@
  * 
  */
 
-
-#include "src/core/toolset.h"
+#include "src/core/equil.h"
 #include "src/core/models.h"
 #include "src/core/libmath.h"
-#include <QtMath>
-#include <QtCore/QJsonObject>
-#include <QDebug>
-#include <QtCore/QDateTime>
+#include "src/core/toolset.h"
 
-#include <cmath>
-#include <cfloat>
-#include <iostream>
+#include <QtMath>
+#include <QDebug>
+
+#include <QtCore/QDateTime>
+#include <QtCore/QJsonObject>
+
+
 #include <functional>
 
 #include "fl_1_1_1_2_Model.h"
 
 fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(data)
 {
-    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-//    DeclareOptions();
-    
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());    
 }
 
 fl_ItoI_ItoII_Model::~fl_ItoI_ItoII_Model()
@@ -108,14 +106,6 @@ void fl_ItoI_ItoII_Model::InitialGuess()
     m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 2);
     m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 3);
 
-    QVector<qreal * > line1, line2;
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
-        line1 << &m_local_parameter->data(0, i); 
-        line1 << &m_local_parameter->data(1, i); 
-        line2 << &m_local_parameter->data(2, i); 
-        line2 << &m_local_parameter->data(3, i);
-    }
     AbstractTitrationModel::Calculate();
 }
 
@@ -144,34 +134,6 @@ QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType 
 }
 
 
-qreal fl_ItoI_ItoII_Model::HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
-{
-    
-    if(constants.size() < 2)
-        return host_0;
-    
-    qreal K12 = qPow(10, constants.last());
-    qreal K11 = qPow(10, constants.first());    
-    qreal guest = GuestConcentration(host_0, guest_0, constants);
-    qreal host;
-    host = host_0/(K11*guest+K11*K12*guest*guest+1);
-    return host;
-}
-
-qreal fl_ItoI_ItoII_Model::GuestConcentration(qreal host_0, qreal guest_0, const QList< qreal > &constants)
-{
-    
-    if(constants.size() < 2)
-        return guest_0;
-    
-    qreal K12 = qPow(10, constants.last());
-    qreal K11 = qPow(10, constants.first());
-    qreal a = K11*K12;
-    qreal b = K11*(2*K12*host_0-K12*guest_0+1);
-    qreal c = K11*(host_0-guest_0)+1;
-    qreal guest = MinCubicRoot(a,b,c, -guest_0);
-    return guest;
-}
 
 void fl_ItoI_ItoII_Model::CalculateVariables()
 {
@@ -190,8 +152,8 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
-        qreal host = HostConcentration(host_0, guest_0, GlobalParameter());
-        qreal guest = GuestConcentration(host_0, guest_0, GlobalParameter());
+        qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
+        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal complex_11 = K11*host*guest;
         qreal complex_12 = K11*K12*host*guest*guest;
 

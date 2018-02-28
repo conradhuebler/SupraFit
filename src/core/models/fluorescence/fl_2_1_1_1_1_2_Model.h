@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,13 +32,13 @@ typedef Eigen::VectorXd Vector;
 
 class IItoI_ItoI_ItoII_Solver;
 
-class fl_IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
+class IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
 {
      Q_OBJECT
     
 public:
-    fl_IItoI_ItoI_ItoII_Model(DataClass* data);
-    ~fl_IItoI_ItoI_ItoII_Model();
+    IItoI_ItoI_ItoII_Model(DataClass* data);
+    ~IItoI_ItoI_ItoII_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 3;}
     virtual void InitialGuess() override;
@@ -71,10 +71,11 @@ public:
 
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
-    virtual inline QString Name() const override { return tr("2:1/1:1/1:2-Model"); }
+    virtual inline QString Name() const override { return tr("fl_2:1/1:1/1:2-Model"); }
     virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
     virtual qreal BC50() const override;
     virtual qreal BC50SF() const override;
+    virtual int LocalParameterSize() const override {return 5; }
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver > > m_solvers;

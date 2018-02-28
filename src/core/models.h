@@ -14,6 +14,7 @@
 #include "models/fluorescence/fl_1_1_Model.h"
 #include "models/fluorescence/fl_2_1_1_1_Model.h"
 #include "models/fluorescence/fl_1_1_1_2_Model.h"
+#include "models/fluorescence/fl_2_1_1_1_1_2_Model.h"
 
 /* NMR and UV/VIS titration */
 #include "models/titrations/1_1_Model.h"
