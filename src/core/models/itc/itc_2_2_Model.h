@@ -74,7 +74,7 @@ public:
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver > > m_solvers;
     QList<qreal> m_constants_pow;
-    QThreadPool *m_threadpool;
+    QPointer<QThreadPool > m_threadpool;
 
 protected:
     virtual void CalculateVariables() override;

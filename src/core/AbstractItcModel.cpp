@@ -34,6 +34,7 @@ AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data)
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+
     CalculateConcentrations();
 }
 
@@ -107,7 +108,8 @@ void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
 QString AbstractItcModel::Model2Text_Private() const
 {
     QString text;
-
+    if(m_c0)
+    {
     text += "Initial concentration calculated from ITC Experiment:\n";
     for(int i = 0; i < m_c0->columnCount(); ++i)
     {
@@ -116,6 +118,9 @@ QString AbstractItcModel::Model2Text_Private() const
     text += "\n";
     text += m_c0->ExportAsString();
     text += "\n";
+    }
+    if(m_concentrations)
+    {
     text += "Equilibrium concentration calculated with complexation constants:\n";
     for(int i = 0; i < m_concentrations->columnCount(); ++i)
     {
@@ -124,6 +129,7 @@ QString AbstractItcModel::Model2Text_Private() const
     text += "\n";
     text += m_concentrations->ExportAsString();
     text += "\n\n";
+    }
     text += "Equilibrium Model Signal calculated with complexation constants:\n";
     for(int i = 0; i < DependentModel()->columnCount(); ++i)
         text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";

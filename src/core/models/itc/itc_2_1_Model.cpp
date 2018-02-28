@@ -137,7 +137,7 @@ void itc_IItoI_Model::CalculateVariables()
 
         SetConcentration(i, vector);
 
-        qreal value = V*(complex_11-complex_11_prev)*dH1*(complex_21-complex_21_prev)*dH2;
+        qreal value = V*((complex_11-complex_11_prev)*dH1+(complex_21-complex_21_prev)*dH2);
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);
