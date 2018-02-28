@@ -29,7 +29,7 @@
 
 #include "AbstractItcModel.h"
 
-AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_dirty(true)
+AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_dirty(true), m_lock_concentrations(false)
 {
     connect(m_data, &DataClass::SystemParameterChanged, [=]() { m_dirty = true; });
     m_c0 = new DataTable( 2, DataPoints(), this);
@@ -64,6 +64,8 @@ void AbstractItcModel::DeclareOptions()
 
 void AbstractItcModel::CalculateConcentrations()
 {
+    if(m_lock_concentrations)
+        return;
     if(!m_dirty)
     {
         qDebug() << "no need for concentration";

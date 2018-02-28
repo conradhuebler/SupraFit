@@ -58,7 +58,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
     m_controller["runtype"] = m_config.runtype;
     m_controller["method"] = SupraFit::Statistic::CrossValidation;
     m_controller["CVType"] = type;
-    
+
     switch(type){
         case CVType::LeaveOneOut:
             emit MaximumSteps(m_model->DataPoints());
@@ -121,9 +121,7 @@ void ReductionAnalyse::PlainReduction()
     m_controller["method"] = SupraFit::Statistic::Reduction;
     
     emit MaximumSteps(m_model->DataPoints());
-    
-//     m_models << m_model.data()->ExportData();
-    
+
     QPointer<DataTable > table = m_model->DependentModel();
     for(int i = m_model->DataPoints() - 1; i > 3; --i)
     {

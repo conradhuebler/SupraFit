@@ -59,13 +59,13 @@ public:
 
     virtual QString SpeciesName(int i) const = 0;
     virtual inline QString GlobalParameterPrefix(int i = 0) const override  { Q_UNUSED(i) return QString("10^");  }
-    inline void setConcentrations(const QPointer<DataTable> table) { m_c0 = new DataTable(table); m_dirty = false; }
+    inline void setConcentrations(const QPointer<DataTable> table) { m_c0 = new DataTable(table); m_lock_concentrations = true; }
     inline QPointer<DataTable> ConcentrationTable() const { return m_c0; }
 
 private:
     void virtual DeclareSystemParameter() override;
     void virtual DeclareOptions() override;
-    bool m_dirty;
+    bool m_dirty, m_lock_concentrations;
     QMutex m_lock;
 private slots:
     void CalculateConcentrations();
