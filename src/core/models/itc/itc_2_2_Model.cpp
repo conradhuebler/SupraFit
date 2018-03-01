@@ -114,8 +114,6 @@ void itc_IItoII_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    qreal V = m_data->getSystemParameter(CellVolume).Double();
-
     QString binding = getOption("Binding");
     QString dil = getOption("Dilution");
 
@@ -146,11 +144,9 @@ void itc_IItoII_Model::CalculateVariables()
             host_0 *= fx;
         }
         qreal guest_0 = InitialGuestConcentration(i);
-      //  qDebug() << i << "starting threads";
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
         m_solvers[i]->setConstants(constants_pow);
-        // m_threadpool->start(m_solvers[i]);
         m_solvers[i]->run();
     }
 
@@ -158,7 +154,6 @@ void itc_IItoII_Model::CalculateVariables()
 
     for(int i = 0; i < DataPoints(); ++i)
     {
-        // qDebug() << i << "collecting";
         if(!m_solvers[i]->Ok())
         {
 #ifdef _DEBUG
@@ -199,7 +194,7 @@ void itc_IItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
 
-        qreal value = V*((complex_21-complex_21_prev)*dH21+((complex_11-complex_11_prev)*dH11)+((complex_12-complex_12_prev)*dH12));
+        qreal value = m_V*((complex_21-complex_21_prev)*dH21+((complex_11-complex_11_prev)*dH11)+((complex_12-complex_12_prev)*dH12));
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);
@@ -207,7 +202,6 @@ void itc_IItoII_Model::CalculateVariables()
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;
     }
-//    qDebug() << "finishing";
 }
 
 

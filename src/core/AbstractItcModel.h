@@ -69,10 +69,13 @@ private:
     QMutex m_lock;
 private slots:
     void CalculateConcentrations();
+    void UpdateParameter();
 
 protected:
     void SetConcentration(int i, const Vector& equilibrium);
     QPointer<DataTable > m_c0, m_concentrations;
     void Concentration() { CalculateConcentrations(); }
+    double m_V, m_cell_concentration, m_syringe_concentration;
+
 };
 

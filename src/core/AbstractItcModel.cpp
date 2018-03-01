@@ -31,7 +31,7 @@
 
 AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_dirty(true), m_lock_concentrations(false)
 {
-    connect(m_data, &DataClass::SystemParameterChanged, [=]() { m_dirty = true; });
+    connect(m_data, &DataClass::SystemParameterChanged, this, &AbstractItcModel::UpdateParameter);
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
@@ -75,24 +75,20 @@ void AbstractItcModel::CalculateConcentrations()
 
     qreal emp_exp = 1e-3;
 
-    qreal V = m_data->getSystemParameter(CellVolume).Double();
-    qreal initial_cell = m_data->getSystemParameter(CellConcentration).Double();
-    qreal initial_syringe = m_data->getSystemParameter(SyringeConcentration).Double();
-
-    if(!V || !initial_cell || !initial_syringe)
+    if(!m_V || !m_cell_concentration || !m_syringe_concentration)
         return;
 
-    qreal V_cell = V;
+    qreal V_cell = m_V;
 
-    qreal cell = initial_cell*emp_exp;
-    qreal gun = initial_syringe*emp_exp;
+    qreal cell = m_cell_concentration*emp_exp;
+    qreal gun = m_syringe_concentration*emp_exp;
     qreal prod = 1;
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal shot_vol = IndependentModel()->data(0,i);
         V_cell += shot_vol;
-        prod *= (1-shot_vol/V);
-        cell *= (1-shot_vol/V);
+        prod *= (1-shot_vol/m_V);
+        cell *= (1-shot_vol/m_V);
         qreal host_0 = cell;
         qreal guest_0 = gun*(1-prod);
         Vector vector(2);
@@ -158,4 +154,12 @@ qreal AbstractItcModel::PrintOutIndependent(int i, int format) const
         return i;
 }
 
+
+void AbstractItcModel::UpdateParameter()
+{
+    m_V = m_data->getSystemParameter(CellVolume).Double();
+    m_cell_concentration = m_data->getSystemParameter(CellConcentration).Double();
+    m_syringe_concentration = m_data->getSystemParameter(SyringeConcentration).Double();
+    m_dirty = true;
+}
 #include "AbstractItcModel.moc"

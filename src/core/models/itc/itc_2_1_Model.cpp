@@ -99,8 +99,6 @@ void itc_IItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    qreal V = m_data->getSystemParameter(CellVolume).Double();
-
     QString binding = getOption("Binding");
     QString dil = getOption("Dilution");
 
@@ -144,7 +142,7 @@ void itc_IItoI_Model::CalculateVariables()
 
         SetConcentration(i, vector);
 
-        qreal value = V*((complex_11-complex_11_prev)*dH1+(complex_21-complex_21_prev)*dH2);
+        qreal value = m_V*((complex_11-complex_11_prev)*dH1+(complex_21-complex_21_prev)*dH2);
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);
