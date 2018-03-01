@@ -50,7 +50,7 @@ itc_IItoII_Model::itc_IItoII_Model(DataClass *data) : AbstractItcModel(data)
 
 itc_IItoII_Model::~itc_IItoII_Model()
 {
-    for(int i = 0; i < DataPoints(); ++i)
+    for(int i = 0; i < m_solvers.size(); ++i)
         if(m_solvers[i])
             delete m_solvers[i];
 }

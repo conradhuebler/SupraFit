@@ -114,7 +114,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
         QPointer<MonteCarloBatch > thread = new MonteCarloBatch(config, this);
         thread->setChecked(true);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-        connect(this, &ReductionAnalyse::Interrupt, thread, &MonteCarloBatch::Interrupt);
+        connect(this, &ReductionAnalyse::InterruptAll, thread, &MonteCarloBatch::Interrupt);
         thread->setModel(m_model);
         threads << thread;
         m_threadpool->start(thread);
@@ -148,10 +148,13 @@ void ReductionAnalyse::PlainReduction()
     
     emit MaximumSteps(m_model->DataPoints());
     int maxthreads =qApp->instance()->property("threads").toInt();
-
+    m_threadpool->setMaxThreadCount(maxthreads);
     QPointer<DataTable > table = m_model->DependentModel();
+
     for(int i = m_model->DataPoints() - 1; i > 3; --i)
-    {
+    {/*
+    for(int i = 1; i <m_model->DataPoints() - 3; ++i)
+    {*/
         QPointer<MonteCarloThread > thread = new MonteCarloThread(config);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setIndex(i);
@@ -179,5 +182,10 @@ void ReductionAnalyse::PlainReduction()
     ToolSet::Parameter2Statistic(m_results, m_model.data());
     m_controller["x"] = ToolSet::DoubleList2String(x);
     emit AnalyseFinished();
+}
+
+void ReductionAnalyse::Interrupt()
+{
+    emit InterruptAll();
 }
 

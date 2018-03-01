@@ -50,6 +50,9 @@ public:
     /* Since we change the checked rows of the model, we have to detach the data table from the global model */
     virtual inline void setModel(const QSharedPointer<AbstractModel> model) override { m_model = model->Clone(); m_model->detach(); }
 
+public slots:
+    void Interrupt() override;
+
 private:
     void addThread(QPointer<MonteCarloThread> thread);
     bool Pending() const;
@@ -62,4 +65,5 @@ private:
 
 signals:
     void MaximumSteps(int steps);
+    void InterruptAll();
 };
