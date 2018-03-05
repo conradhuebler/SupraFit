@@ -361,11 +361,10 @@ void AbstractModel::SetSingleParameter(double value, int parameter)
 
 void AbstractModel::setParameter(const QVector<qreal>& parameter)
 {
-    //qDebug() << parameter;
     if(parameter.size() != m_opt_para.size())
         return;
     for(int i = 0; i < parameter.size(); ++i)
-       // if(m_locked_parameters[i])
+        if(m_locked_parameters[i])
             *m_opt_para[i] = parameter[i];
 }
 

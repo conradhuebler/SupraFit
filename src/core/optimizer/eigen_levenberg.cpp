@@ -70,7 +70,6 @@ struct MyFunctor : Functor<double>
         QVector<qreal > param(inputs());
         for(int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
-        //qDebug() << param;
         model.data()->setParameter(param);
         model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedModel();
@@ -109,7 +108,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
     }
     message += "\n";
     model.data()->Message(message, 5);
-    //qDebug() << message;
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
@@ -149,7 +147,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
         result +=  QString::number(param[i]) + " ";
     }
     result += "\n";
-    //qDebug() << result;
 //     model.data()->Message(result, 4);
     
     for(int i = 0; i < functor.inputs(); ++i)

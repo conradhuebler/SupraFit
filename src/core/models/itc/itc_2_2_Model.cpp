@@ -188,7 +188,7 @@ void itc_IItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
 
-        qreal value = m_V*((complex_21-complex_21_prev)*dH21+((complex_11-complex_11_prev)*dH11)+((complex_12-complex_12_prev)*dH12));
+        qreal value = getV()*((complex_21-complex_21_prev)*dH21+((complex_11-complex_11_prev)*dH11)+((complex_12-complex_12_prev)*dH12));
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

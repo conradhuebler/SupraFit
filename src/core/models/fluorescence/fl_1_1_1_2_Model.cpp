@@ -28,7 +28,6 @@
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
 
-
 #include <functional>
 
 #include "fl_1_1_1_2_Model.h"

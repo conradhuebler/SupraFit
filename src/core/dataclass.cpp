@@ -819,9 +819,3 @@ void DataClass::WriteSystemParameter()
     }
     m_systemObject = systemObject;
 }
-
-void DataClass::DebugParameter() const
-{
-    for(int i : getSystemParameterList())
-        qDebug() << i << getSystemParameter(i).Description() << getSystemParameter(i).value();
-}

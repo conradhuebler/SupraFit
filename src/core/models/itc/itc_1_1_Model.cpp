@@ -17,8 +17,6 @@
  * 
  */
 
-
-
 #include "src/core/AbstractItcModel.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
