@@ -512,6 +512,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
     m_dependent_model = new DataTable(other.m_dependent_model);
     m_raw_data = new DataTable(other.m_raw_data);
     m_type = other.m_type;
+    m_system_parameter = other.m_system_parameter;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
@@ -523,6 +524,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_dependent_model = new DataTable(other->m_dependent_model);
     m_raw_data = new DataTable(other->m_raw_data);
     m_type = other->m_type;
+    m_system_parameter = other->m_system_parameter;
 }
 
 
@@ -543,7 +545,6 @@ void DataClassPrivate::check()
     std::cout << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount()<< std::endl;
     std::cout << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount()<< std::endl;
     std::cout << "Raw Table ## Row:" << m_raw_data->rowCount() << " Colums: " << m_raw_data->columnCount()<< std::endl;
-    
 }
 
 
@@ -772,20 +773,20 @@ void DataClass::OverrideCheckedTable(DataTable *table)
 
 void DataClass::addSystemParameter(int index, const QString& str, const QString& description, SystemParameter::Type type)
 {
-    if(m_system_parameter.contains(index))
+    if(d->m_system_parameter.contains(index))
         return;
     SystemParameter parameter(index, str, description, type);
-    m_system_parameter.insert(index, parameter);
+    d->m_system_parameter.insert(index, parameter);
 }
 
 SystemParameter DataClass::getSystemParameter(int index) const
 {
-    return m_system_parameter.value(index);
+    return d->m_system_parameter.value(index);
 }
 
 QList<int> DataClass::getSystemParameterList() const
 {
-    return m_system_parameter.keys();
+    return d->m_system_parameter.keys();
 }
 
 void DataClass::setSystemParameterValue(int index, const QVariant& value)
@@ -793,18 +794,34 @@ void DataClass::setSystemParameterValue(int index, const QVariant& value)
     if(!value.isValid())
         return;
 
-    QMutexLocker lock(&m_lock);
     SystemParameter parameter = getSystemParameter(index);
     parameter.setValue(value);
-    m_system_parameter[index] = parameter;
-
+    d->m_system_parameter[index] = parameter;
+    WriteSystemParameter();
     emit SystemParameterChanged();
 }
 
 void DataClass::setSystemParameter(const SystemParameter& parameter)
 {
     int index = parameter.Index();
-    if(m_system_parameter.contains(index))
-        m_system_parameter[index] = parameter;
+    if(d->m_system_parameter.contains(index))
+        d->m_system_parameter[index] = parameter;
+    WriteSystemParameter();
     emit SystemParameterChanged();
+}
+
+void DataClass::WriteSystemParameter()
+{
+    QJsonObject systemObject;
+    for(const int index : getSystemParameterList())
+    {
+        systemObject[QString::number(index)] = getSystemParameter(index).value().toString();
+    }
+    m_systemObject = systemObject;
+}
+
+void DataClass::DebugParameter() const
+{
+    for(int i : getSystemParameterList())
+        qDebug() << i << getSystemParameter(i).Description() << getSystemParameter(i).value();
 }

@@ -150,7 +150,8 @@ public:
     
     QPointer<DataTable > m_dependent_model, m_independent_model, m_raw_data;
     QList<qreal > m_scaling;
-    
+    QMap<int, SystemParameter> m_system_parameter;
+
     void check();
 };
 
@@ -246,13 +247,17 @@ public:
     
     /*! \brief Overrides system parameter
      */
-    void OverrideSystemParameter(const QMap<int, SystemParameter> &system_parameter) { m_system_parameter = system_parameter; }
+    void OverrideSystemParameter(const QMap<int, SystemParameter> &system_parameter) { d->m_system_parameter = system_parameter; }
     
     /*! \brief load previously cached system parameter
      */
     void LoadSystemParameter();
-    
-    inline QMap<int, SystemParameter> SysPar() const { return m_system_parameter; }
+
+    /*! \brief write system parameterto json internal
+     */
+    void WriteSystemParameter();
+
+    inline QMap<int, SystemParameter> SysPar() const { return d->m_system_parameter; }
 
 
     inline void detach() { d.detach(); }
@@ -261,13 +266,14 @@ public:
      */
     virtual qreal PrintOutIndependent(int i, int format = 0) const { Q_UNUSED(format) return i+1; }
     
+
+    void DebugParameter() const;
 private:
     QJsonObject m_systemObject;
     QMutex m_lock;
 
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate > d;
-    QMap<int, SystemParameter> m_system_parameter;
         
 signals:
     void RowAdded();

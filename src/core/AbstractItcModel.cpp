@@ -29,7 +29,9 @@
 
 #include "AbstractItcModel.h"
 
-AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_dirty(true), m_lock_concentrations(false)
+#include <iostream>
+
+AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_lock_concentrations(false)
 {
     connect(m_data, &DataClass::SystemParameterChanged, this, &AbstractItcModel::UpdateParameter);
     m_c0 = new DataTable( 2, DataPoints(), this);
@@ -66,12 +68,6 @@ void AbstractItcModel::CalculateConcentrations()
 {
     if(m_lock_concentrations)
         return;
-    if(!m_dirty)
-    {
-        qDebug() << "no need for concentration";
-        return;
-    }
-    //qDebug() << "recalc concentrations";
 
     qreal emp_exp = 1e-3;
 
@@ -96,7 +92,6 @@ void AbstractItcModel::CalculateConcentrations()
         vector(1) = guest_0;
         m_c0->setRow(vector, i);
     }
-    m_dirty = false;
 }
 
 void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
@@ -157,9 +152,9 @@ qreal AbstractItcModel::PrintOutIndependent(int i, int format) const
 
 void AbstractItcModel::UpdateParameter()
 {
-    m_V = m_data->getSystemParameter(CellVolume).Double();
-    m_cell_concentration = m_data->getSystemParameter(CellConcentration).Double();
-    m_syringe_concentration = m_data->getSystemParameter(SyringeConcentration).Double();
-    m_dirty = true;
+    m_V = getSystemParameter(CellVolume).Double();
+    m_cell_concentration =getSystemParameter(CellConcentration).Double();
+    m_syringe_concentration = getSystemParameter(SyringeConcentration).Double();
+    Concentration();
 }
 #include "AbstractItcModel.moc"

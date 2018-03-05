@@ -94,6 +94,7 @@
 
 ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, QWidget *parent ) : QWidget(parent), m_model(model), m_charts(charts), m_pending(false), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(true, this), &QObject::deleteLater)), m_statistic(false)
 {
+    m_model->SystemParameterChanged();
     m_model_widget = new QWidget;
     Data2Text();
     m_minimizer->setModel(m_model);
@@ -430,6 +431,8 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     m_model->OptimizeParameters(m_optim_flags->getFlags());
     if(qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
+    else
+        m_statistic_widget->Update();
 
     QSettings settings;
     settings.beginGroup("minimizer");
@@ -438,7 +441,6 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 
     if(!result)
         emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
-    
     m_statistic = false;
     m_pending = false; 
 }

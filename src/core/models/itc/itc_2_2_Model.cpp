@@ -101,12 +101,6 @@ QVector<qreal> itc_IItoII_Model::OptimizeParameters_Private(OptimizationType typ
 
 void itc_IItoII_Model::CalculateVariables()
 {  
-    /*
-     * It seems, we have to recalculate the concentrations from within the child class
-     * and not from the parent ??
-     */
-    Concentration();
-
     if(!m_threadpool)
         return;
 

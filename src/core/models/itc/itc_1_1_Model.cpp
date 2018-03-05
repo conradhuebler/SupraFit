@@ -50,7 +50,7 @@ void itc_ItoI_Model::InitialGuess()
 {
     m_global_parameter = QList<qreal>() << 3;
 
-    m_local_parameter->data(0, 0) = -4000;
+    m_local_parameter->data(0, 0) = -1000;
     m_local_parameter->data(1, 0) = -1000;
     m_local_parameter->data(2, 0) = 1;
     m_local_parameter->data(3, 0) = 1;
@@ -66,6 +66,7 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
         setOptParamater(m_global_parameter);
 
     addLocalParameter(0);
+
     QString binding = getOption("Binding");
     QString dilution = getOption("Dilution");
     if(dilution == "auto")
@@ -87,13 +88,8 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 
 void itc_ItoI_Model::CalculateVariables()
 {  
-    /*
-     * It seems, we have to recalculate the concentrations from within the child class
-     * and not from the parent ??
-     */
-    Concentration();
-
     m_corrupt = false;
+
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
@@ -126,9 +122,8 @@ void itc_ItoI_Model::CalculateVariables()
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
-
         SetConcentration(i, vector);
-        qreal value = m_V*(complex-complex_prev)*dH;
+        qreal value = getV()*(complex-complex_prev)*dH;
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

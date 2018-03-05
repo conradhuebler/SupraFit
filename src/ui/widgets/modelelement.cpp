@@ -71,7 +71,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setToolTip(m_model->LocalParameterDescription(i));
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-        connect(m_model.data(), &AbstractModel::Recalculated, [i, constant, this](  ) { constant->setVisible(this->m_model->LocalEnabled(i )); });
+        connect(m_model.data(), &AbstractModel::Recalculated, [i, constant, this](  ) { if(this->m_model && constant)constant->setVisible(this->m_model->LocalEnabled(i )); });
         shifts->addWidget(constant, 0);
     }
     

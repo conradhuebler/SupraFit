@@ -88,12 +88,6 @@ QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private(OptimizationType type
 
 void itc_ItoII_Model::CalculateVariables()
 {  
-    /*
-     * It seems, we have to recalculate the concentrations from within the child class
-     * and not from the parent ??
-     */
-    Concentration();
-
     m_corrupt = false;
     m_sum_absolute = 0;
     m_sum_squares = 0;

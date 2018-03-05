@@ -30,9 +30,10 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QDateTime>
 #include <QtCore/QCollator>
-#include <cmath>
-#include <cfloat>
+
 #include <iostream>
+#include <typeinfo>
+
 #include "AbstractModel.h"
 
 AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false)
@@ -178,6 +179,7 @@ void AbstractModel::Calculate()
     m_chisquared = 0;
     m_covfit = 0;
 
+    LoadSystemParameter();
     EvaluateOptions();
     CalculateVariables();
     
@@ -359,10 +361,11 @@ void AbstractModel::SetSingleParameter(double value, int parameter)
 
 void AbstractModel::setParameter(const QVector<qreal>& parameter)
 {
+    //qDebug() << parameter;
     if(parameter.size() != m_opt_para.size())
         return;
     for(int i = 0; i < parameter.size(); ++i)
-        if(m_locked_parameters[i])
+       // if(m_locked_parameters[i])
             *m_opt_para[i] = parameter[i];
 }
 
@@ -436,7 +439,11 @@ void AbstractModel::addGlobalParameter(int i)
 void AbstractModel::addLocalParameter(int i)
 {
     for(int j = 0; j < m_local_parameter->rowCount(); ++j)
+    {
+      //  qDebug() << i << j << m_local_parameter->data(i, j);
         m_opt_para << &m_local_parameter->data(i, j);    
+    }
+    //qDebug() << m_opt_para.size();
     m_enabled_local[i] = 1;
 }
 

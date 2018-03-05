@@ -61,12 +61,16 @@ public:
     virtual inline QString GlobalParameterPrefix(int i = 0) const override  { Q_UNUSED(i) return QString("10^");  }
     inline void setConcentrations(const QPointer<DataTable> table) { m_c0 = new DataTable(table); m_lock_concentrations = true; }
     inline QPointer<DataTable> ConcentrationTable() const { return m_c0; }
+    inline double getV() const { return m_V; }
+    inline double getCellConcentration() const { return m_cell_concentration; }
+    inline double getSyringeConcentration() const { return m_syringe_concentration; }
 
 private:
     void virtual DeclareSystemParameter() override;
     void virtual DeclareOptions() override;
-    bool m_dirty, m_lock_concentrations;
+    bool m_lock_concentrations;
     QMutex m_lock;
+
 private slots:
     void CalculateConcentrations();
     void UpdateParameter();
