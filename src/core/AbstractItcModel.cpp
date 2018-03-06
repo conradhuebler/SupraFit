@@ -90,6 +90,10 @@ void AbstractItcModel::CalculateConcentrations()
         Vector vector(2);
         vector(0) = host_0;
         vector(1) = guest_0;
+
+        if(std::isnan(host_0) || std::isinf(host_0) || std::isnan(guest_0) || std::isinf(guest_0))
+            m_corrupt = true;
+
         m_c0->setRow(vector, i);
     }
 }
@@ -143,10 +147,14 @@ QString AbstractItcModel::Model2Text_Private() const
 qreal AbstractItcModel::PrintOutIndependent(int i, int format) const
 {
     Q_UNUSED(format)
+    qreal val = i;
     if(m_c0)
-        return InitialGuestConcentration(i)/InitialHostConcentration(i);
-    else
-        return i;
+    {
+        val = InitialGuestConcentration(i)/InitialHostConcentration(i);
+        if(std::isnan(val))
+            val = i;
+    }
+    return val;
 }
 
 

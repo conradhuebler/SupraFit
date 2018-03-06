@@ -97,7 +97,6 @@ void IItoI_ItoI_Model::InitialGuess()
 
 void IItoI_ItoI_Model::CalculateVariables()
 {
-    m_corrupt = false;
     QString method = getOption("Method");
     m_sum_absolute = 0;
     m_sum_squares = 0;

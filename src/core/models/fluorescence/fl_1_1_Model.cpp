@@ -96,7 +96,6 @@ QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 
 void fl_ItoI_Model::CalculateVariables()
 {  
-    m_corrupt = false;
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal value;

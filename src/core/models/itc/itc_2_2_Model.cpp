@@ -104,7 +104,6 @@ void itc_IItoII_Model::CalculateVariables()
     if(!m_threadpool)
         return;
 
-    m_corrupt = false;
     m_sum_absolute = 0;
     m_sum_squares = 0;
 

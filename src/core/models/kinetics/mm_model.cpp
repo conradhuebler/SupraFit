@@ -78,9 +78,7 @@ QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private(OptimizationTy
 }
 
 void Michaelis_Menten_Model::CalculateVariables()
-{  
-    m_corrupt = false;
-    
+{      
     m_sum_absolute = 0;
     m_sum_squares = 0;
     for(int i = 0; i < DataPoints(); ++i)

@@ -86,8 +86,6 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 
 void itc_ItoI_Model::CalculateVariables()
 {  
-    m_corrupt = false;
-
     m_sum_absolute = 0;
     m_sum_squares = 0;
 

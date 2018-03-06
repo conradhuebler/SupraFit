@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
@@ -160,7 +161,6 @@ void ChartWrapper::InitaliseSeries()
             m_stored_series << series;
         }
     }
-    qDebug() << "resulting series size " << m_stored_series.size();
 }
 
 
@@ -187,13 +187,12 @@ void ChartWrapper::MakeSeries()
         rows = m_model->DataPoints();
         cols = m_model->SeriesCount();
     }
+
     for(int i = 0; i < rows; ++i)
     {
         double x = m_model->PrintOutIndependent(i);
-//         qDebug() << x;
         for(int j = 0; j < cols; ++j)
         {
-//             qDebug() << j << m_table->data(j,i);
             if(m_model->DependentModel()->isChecked(j,i))
             {
                 if(m_flip)
