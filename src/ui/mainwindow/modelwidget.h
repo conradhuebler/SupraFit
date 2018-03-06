@@ -65,6 +65,7 @@ class ModelElement;
 class SystemParameterWidget;
 class OptionsWidget;
 class ModelActions;
+class LocalParameterWidget;
 
 struct ModelHistoryElement;
 struct Charts;
@@ -143,6 +144,7 @@ private:
     QString m_logging;
     QList<QJsonObject> m_local_fits;
     QPointer<QCheckBox> m_toggled_box;
+    QPointer<LocalParameterWidget> m_local_parameter;
     QJsonObject m_last_model;
 
 private slots:

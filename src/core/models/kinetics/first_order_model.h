@@ -51,7 +51,8 @@ public:
     virtual int LocalParameterSize() const override {return 1; }
 
     virtual inline QString Name() const override { return tr("First Order Kinetics"); }
-    
+    virtual inline bool SupportSeries() const override { return false; }
+
 private:
     
     

@@ -391,8 +391,10 @@ QVector<qreal > AbstractModel::getLocalParameterColumn(int parameter) const
 
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
-    if(parameter < m_local_parameter->rowCount() && series < m_local_parameter->columnCount())
+    //if(parameter < m_local_parameter->rowCount() && series < m_local_parameter->columnCount())
+    {
         m_local_parameter->data(parameter, series) = value;
+    }
 }
 
 void AbstractModel::setLocalParameterColumn(const QVector<qreal> &vector, int parameter)

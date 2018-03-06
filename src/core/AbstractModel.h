@@ -339,6 +339,8 @@ public:
 
     inline bool GlobalEnabled(int i) const { return m_enabled_global[i]; }
 
+    virtual inline bool SupportSeries() const = 0;
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

@@ -103,6 +103,8 @@ public:
     virtual qreal PrintOutIndependent(int i, int format = 4) const override;
     
     virtual QString ModelInfo() const override;
+
+    virtual inline bool SupportSeries() const override { return true; }
 protected:    
     /*
      * set the concentration of the @param int i datapoint to

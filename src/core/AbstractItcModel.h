@@ -64,6 +64,7 @@ public:
     inline double getV() const { return getSystemParameter(CellVolume).Double(); }
     inline double getCellConcentration() const { return m_cell_concentration; }
     inline double getSyringeConcentration() const { return m_syringe_concentration; }
+    virtual inline bool SupportSeries() const override { return false; }
 
 private:
     void virtual DeclareSystemParameter() override;

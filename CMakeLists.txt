@@ -206,6 +206,7 @@ set(suprafit_SRCS
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp
                 src/ui/dialogs/chartconfig.cpp
+                src/ui/widgets/parameterwidget.cpp
                 src/ui/widgets/optimizerwidget.cpp
                 src/ui/widgets/results/searchresultwidget.cpp
                 src/ui/widgets/results/mcresultswidget.cpp

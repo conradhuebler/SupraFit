@@ -58,6 +58,20 @@ public:
             return QString();
     }
 
+    virtual inline QString LocalParameterName(int i = 0) const override
+    {
+        if( i == 0)
+            return tr("dH (AB)");
+        else if(i == 1)
+            return tr("m (solv H)");
+        else if(i == 2)
+            return tr("n (solv H)");
+        else if(i == 3)
+            return tr("fx");
+        else
+            return QString();
+    }
+
     virtual int LocalParameterSize() const override {return 4; }
     virtual inline int InputParameterSize() const override { return 1; }
     virtual inline QString Name() const override { return tr("itc_1:1-Model"); }

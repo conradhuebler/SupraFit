@@ -42,7 +42,9 @@
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/3dchartview.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
+#include "src/ui/widgets/parameterwidget.h"
 #include "src/ui/widgets/stackedwidget.h"
+#include "src/ui/widgets/systemparameterwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
@@ -187,20 +189,50 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     head->addWidget(m_converged_label);
     head->addWidget(m_readonly);
     m_sign_layout->addLayout(head);
-    
-    if(m_model->LocalParameterSize())
+    if(m_model->SupportSeries())
     {
-        for(int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i)
+        if(m_model->LocalParameterSize())
         {
-            ModelElement *el = new ModelElement(m_model, m_charts, i);
-            connect(el, SIGNAL(ValueChanged()), this, SLOT(recalculate()));
-            connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
-            connect(this, SIGNAL(Update()), el, SLOT(Update()));
-            connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
-            connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
-            m_sign_layout->addWidget(el);
-            m_model_elements << el;
+            for(int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i)
+            {
+                ModelElement *el = new ModelElement(m_model, m_charts, i);
+                connect(el, SIGNAL(ValueChanged()), this, SLOT(recalculate()));
+                connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
+                connect(this, SIGNAL(Update()), el, SLOT(Update()));
+                connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
+                connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
+                m_sign_layout->addWidget(el);
+                m_model_elements << el;
+            }
         }
+    }else{
+        m_local_parameter = new LocalParameterWidget(m_model);
+        m_sign_layout->addWidget(m_local_parameter);
+        if(m_model->getSystemParameterList().size())
+        {
+            QVBoxLayout * sys_layout = new QVBoxLayout;
+
+            sys_layout->setAlignment(Qt::AlignTop);
+
+            for(int index : m_model->getSystemParameterList())
+            {
+                QPointer<SystemParameterWidget >widget = new SystemParameterWidget(m_model->getSystemParameter(index), this);
+                sys_layout->addWidget(widget);
+                connect(widget, &SystemParameterWidget::valueChanged,
+                        [index, widget, this](  )
+                {
+                    if(this->m_model && widget)
+                    {
+                        m_model->setSystemParameter(widget->Value());
+                        m_model->Calculate();
+                    }
+
+                });
+             }
+
+            m_sign_layout->addLayout(sys_layout);
+        }
+
     }
     
     QWidget *scroll = new QWidget;

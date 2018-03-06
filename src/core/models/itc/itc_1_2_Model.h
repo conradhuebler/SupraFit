@@ -52,6 +52,22 @@ public:
             return QString();
     }
 
+    virtual inline QString LocalParameterName(int i = 0) const override
+    {
+        if( i == 0)
+            return tr("dH (AB)");
+        else if( i == 1)
+            return tr("dH (AB2)");
+        else if(i == 2)
+            return tr("m (solv H)");
+        else if(i == 3)
+            return tr("n (solv H)");
+        else if(i == 4)
+            return tr("fx");
+        else
+            return QString();
+    }
+
     virtual inline QString SpeciesName(int i) const override
     {
         if(i == 0)
