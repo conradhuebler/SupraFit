@@ -46,9 +46,9 @@ itc_ItoI_Model::~itc_ItoI_Model()
 
 void itc_ItoI_Model::InitialGuess()
 {
-    m_global_parameter = QList<qreal>() << 3;
+    m_global_parameter = QList<qreal>() << 6;
 
-    m_local_parameter->data(0, 0) = -1000;
+    m_local_parameter->data(0, 0) = -4000;
     m_local_parameter->data(1, 0) = -1000;
     m_local_parameter->data(2, 0) = 1;
     m_local_parameter->data(3, 0) = 1;

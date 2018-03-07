@@ -66,6 +66,10 @@ public:
     inline double getSyringeConcentration() const { return m_syringe_concentration; }
     virtual inline bool SupportSeries() const override { return false; }
 
+    /*! \brief Return a formated value as string of the global parameter with the value
+     */
+    virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const { Q_UNUSED(globalParamater) return QString::number(qPow(10,value)); }
+
 private:
     void virtual DeclareSystemParameter() override;
     void virtual DeclareOptions() override;

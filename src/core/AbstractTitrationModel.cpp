@@ -53,15 +53,6 @@ AbstractTitrationModel::~AbstractTitrationModel()
 
 }
 
-void AbstractTitrationModel::adress() const
-{
-    std::cout << "We are at " << this;
-    std::cout << "\t" << m_data;
-    for(int i = 0; i < m_opt_para.size(); ++i)
-        std::cout << m_opt_para[i] << " ";
-    std::cout << std::endl;
-}
-
 void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 {
     if(!m_concentrations)

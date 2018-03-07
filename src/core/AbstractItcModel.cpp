@@ -37,6 +37,7 @@ AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_loc
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+    UpdateParameter();
 }
 
 AbstractItcModel::~AbstractItcModel()

@@ -212,6 +212,8 @@ qreal AbstractModel::CalculateVariance()
     {
         for(int j = 0; j < SeriesCount(); ++j)
         {
+            if(!ActiveSignals(j))
+                 continue;
             if(DependentModel()->isChecked(j,i))
             {
                 v += qPow(m_model_error->data(j,i) - m_mean, 2);
@@ -275,6 +277,8 @@ qreal AbstractModel::CalculateCovarianceFit()
     {
         for(int j = 0; j < SeriesCount(); ++j)
         {
+            if(!ActiveSignals(j))
+                 continue;
             if(DependentModel()->isChecked(j,i))
             {
                 cov_data += qPow(m_model_signal->data(j,i) - mean_model, 2);
@@ -441,10 +445,10 @@ void AbstractModel::addLocalParameter(int i)
 {
     for(int j = 0; j < m_local_parameter->rowCount(); ++j)
     {
-      //  qDebug() << i << j << m_local_parameter->data(i, j);
+        if(!ActiveSignals(j))
+             continue;
         m_opt_para << &m_local_parameter->data(i, j);    
     }
-    //qDebug() << m_opt_para.size();
     m_enabled_local[i] = 1;
 }
 
