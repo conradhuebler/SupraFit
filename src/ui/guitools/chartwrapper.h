@@ -91,7 +91,7 @@ class BoxPlotSeries : public QtCharts::QBoxPlotSeries
     
 public:
     BoxPlotSeries(const SupraFit::BoxWhisker &boxwhisker );
-    inline QColor color() const { return brush().color(); };
+    inline QColor color() const { return brush().color(); }
         
 public slots:
     void setColor(const QColor &color);

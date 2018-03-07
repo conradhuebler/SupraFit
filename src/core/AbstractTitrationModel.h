@@ -102,6 +102,15 @@ public:
     virtual QString ModelInfo() const override;
 
     virtual inline bool SupportSeries() const override { return true; }
+
+    /*! \brief Define the x axis label for charts
+     */
+    virtual QString XLabel() const override { return "G/H"; }
+
+    /*! \brief Define the y axis for charts
+     */
+    virtual QString YLabel() const override { return m_ylabel; }
+
 protected:    
     /*
      * set the concentration of the @param int i datapoint to
@@ -113,7 +122,8 @@ protected:
 
     qreal Guess_1_1() const;
     
-    
+    QString m_ylabel;
+
     QVector< QVector < qreal > > m_difference; 
     
     QPointer<DataTable > m_concentrations; 

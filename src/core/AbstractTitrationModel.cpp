@@ -40,7 +40,7 @@ AbstractTitrationModel::AbstractTitrationModel(DataClass *data) : AbstractModel(
 
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
-
+    m_ylabel = "&delta; [ppm]";
 }
 
 AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel *other) : AbstractModel(other)

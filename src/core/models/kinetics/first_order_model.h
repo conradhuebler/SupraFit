@@ -53,6 +53,14 @@ public:
     virtual inline QString Name() const override { return tr("First Order Kinetics"); }
     virtual inline bool SupportSeries() const override { return false; }
 
+    /*! \brief Define the x axis label for charts
+     */
+    virtual QString XLabel() const override { return "S<sub>0</sub>"; }
+
+    /*! \brief Define the y axis for charts
+     */
+    virtual QString YLabel() const override { return "v"; }
+
 private:
     
     

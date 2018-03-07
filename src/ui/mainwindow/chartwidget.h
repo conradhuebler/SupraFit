@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef CHARTWIDGET_H
-#define CHARTWIDGET_H
+#pragma once
 
 #include "src/ui/guitools/chartwrapper.h"
 
@@ -55,14 +54,13 @@ class ChartDockTitleBar : public QWidget
 {
     Q_OBJECT
 public:
-    inline ChartDockTitleBar();
-//    inline ~ChartDockTitleBar() { };
+    ChartDockTitleBar();
     
 protected:
-    inline void mouseDoubleClickEvent(QMouseEvent * event) override { event->ignore(); };
-    inline void mousePressEvent(QMouseEvent * event) override { event->ignore(); };
-    inline void mouseReleaseEvent(QMouseEvent * event) override { event->ignore(); };
-    inline void mouseMoveEvent(QMouseEvent * event) override { event->ignore(); };
+    inline void mouseDoubleClickEvent(QMouseEvent * event) override { event->ignore(); }
+    inline void mousePressEvent(QMouseEvent * event) override { event->ignore(); }
+    inline void mouseReleaseEvent(QMouseEvent * event) override { event->ignore(); }
+    inline void mouseMoveEvent(QMouseEvent * event) override { event->ignore(); }
 
 signals:
     void close();
@@ -113,4 +111,3 @@ private slots:
     void restartAnimation();
 };
 
-#endif // CHARTWIDGET_H

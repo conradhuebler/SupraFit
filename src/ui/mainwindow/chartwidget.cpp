@@ -144,9 +144,7 @@ ChartWidget::ChartWidget() : m_TitleBarWidget(new ChartDockTitleBar)
     m_errorchart = new QtCharts::QChart;
         
     m_signalview = new ChartView(m_signalchart, true);
-    m_signalview->setYAxis("Shift [ppm]");
     m_errorview = new ChartView(m_errorchart, true);
-    m_errorview->setYAxis("Error [ppm]");
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(m_signalview,1, 0);
@@ -244,6 +242,14 @@ void ChartWidget::Repaint()
     if(!m_data_mapper)
         return;
 
+    if(m_models.size())
+    {
+        m_signalview->setXAxis(m_models.last().data()->XLabel());
+        m_errorview->setXAxis(m_models.last().data()->XLabel());
+
+        m_signalview->setYAxis(m_models.last().data()->YLabel());
+        m_errorview->setYAxis("Error " + m_models.last().data()->YLabel());
+    }
     m_data_mapper->UpdateModel();
 
     formatAxis();
@@ -258,23 +264,12 @@ void ChartWidget::formatAxis()
 
 void ChartWidget::updateTheme(QtCharts::QChart::ChartTheme  theme)
 {  
-//      m_signalchart->setTheme(theme);
-//      m_errorchart->setTheme(theme);
      qApp->instance()->setProperty("charttheme", theme); 
      emit Instance::GlobalInstance()->ConfigurationChanged();
 }
 
 void ChartWidget::setAnimation(bool animation)
 {
-//     if(animation)
-//     {
-//         m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-//         m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-//     }else
-//     {
-//         m_signalchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
-//         m_errorchart->setAnimationOptions(QtCharts::QChart::NoAnimation);  
-//     }
     qApp->instance()->setProperty("chartanimation", animation); 
     emit Instance::GlobalInstance()->ConfigurationChanged();
 }

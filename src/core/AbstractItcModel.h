@@ -70,6 +70,14 @@ public:
      */
     virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const { Q_UNUSED(globalParamater) return QString::number(qPow(10,value)); }
 
+    /*! \brief Define the x axis label for charts
+     */
+    virtual QString XLabel() const override { return "G/H"; }
+
+    /*! \brief Define the y axis for charts
+     */
+    virtual QString YLabel() const override { return "q"; }
+
 private:
     void virtual DeclareSystemParameter() override;
     void virtual DeclareOptions() override;

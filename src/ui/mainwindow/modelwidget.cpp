@@ -208,6 +208,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     }else{
         m_local_parameter = new LocalParameterWidget(m_model);
         m_sign_layout->addWidget(m_local_parameter);
+        //connect(m_charts.signal_wrapper->Series(0), &LineSeries::colorChanged, this, &ModelWidget::ColorChanged);
         connect(this, &ModelWidget::ToggleSeries,
                 [this](  )
         {
