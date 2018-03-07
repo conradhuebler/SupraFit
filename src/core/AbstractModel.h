@@ -341,6 +341,7 @@ public:
 
     virtual inline bool SupportSeries() const = 0;
 
+    inline DataClass *Data() const { return m_data; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

@@ -24,6 +24,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
+#include <QtWidgets/QLayout>
 #include <QtWidgets/QLineEdit>
 
 class SystemParameterWidget : public QGroupBox
@@ -35,12 +36,57 @@ public:
     ~SystemParameterWidget();
     
     SystemParameter Value();
-    
+    void setValue(const SystemParameter &variant);
+
 private:
     QLineEdit *m_textfield;
     QCheckBox *m_boolbox;
     SystemParameter m_parameter;
-    
+    bool m_change;
+
+private slots:
+    void PrepareChanged();
+
 signals:
     void valueChanged();
+};
+
+class SPOverview : public QWidget
+{
+    Q_OBJECT
+public:
+    inline SPOverview(DataClass *data) : m_data(data)
+    {
+        QVBoxLayout * layout = new QVBoxLayout;
+
+        layout->setAlignment(Qt::AlignTop);
+
+        for(int index : m_data->getSystemParameterList())
+        {
+            QPointer<SystemParameterWidget > widget = new SystemParameterWidget(m_data->getSystemParameter(index), this);
+            layout->addWidget(widget);
+            connect(widget, &SystemParameterWidget::valueChanged,
+                    [index, widget, this](  )
+            {
+                if(widget)
+                {
+                    m_data->setSystemParameter(widget->Value());
+                }
+            });
+
+            connect(m_data, &DataClass::SystemParameterChanged,
+                    [index, widget, this](  )
+            {
+                if(widget)
+                {
+                    widget->setValue(m_data->getSystemParameter(index));
+                }
+            });
+        }
+
+        setLayout(layout);
+    }
+
+private:
+    DataClass *m_data;
 };

@@ -208,31 +208,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     }else{
         m_local_parameter = new LocalParameterWidget(m_model);
         m_sign_layout->addWidget(m_local_parameter);
+
         if(m_model->getSystemParameterList().size())
-        {
-            QVBoxLayout * sys_layout = new QVBoxLayout;
-
-            sys_layout->setAlignment(Qt::AlignTop);
-
-            for(int index : m_model->getSystemParameterList())
-            {
-                QPointer<SystemParameterWidget >widget = new SystemParameterWidget(m_model->getSystemParameter(index), this);
-                sys_layout->addWidget(widget);
-                connect(widget, &SystemParameterWidget::valueChanged,
-                        [index, widget, this](  )
-                {
-                    if(this->m_model && widget)
-                    {
-                        m_model->setSystemParameter(widget->Value());
-                        m_model->Calculate();
-                    }
-
-                });
-             }
-
-            m_sign_layout->addLayout(sys_layout);
-        }
-
+            m_sign_layout->addWidget(new SPOverview(m_model->Data()));
     }
     
     QWidget *scroll = new QWidget;

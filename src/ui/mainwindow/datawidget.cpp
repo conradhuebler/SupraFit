@@ -218,34 +218,11 @@ void DataWidget::HidePoint()
     m_wrapper.data()->restartAnimation();
 }
 
-void DataWidget::UpdateSystemParameter()
-{
-    for(int i = 0; i < m_system_parameter_widgets.size(); ++i)
-        m_data.data()->setSystemParameter(m_system_parameter_widgets[i]->Value());
-
-    emit recalculate();
-    QTimer::singleShot(10, this, SLOT(HidePoint())); //Lets see this as a hackish solutation to an not yet understood problem ...
-}
-
 void DataWidget::MakeSystemParameter()
 {
     if(m_system_parameter_loaded)
         return;
-    
-    QVBoxLayout * sys_layout = new QVBoxLayout;
-    
-    sys_layout->setAlignment(Qt::AlignTop); 
-    
-    for(int index : m_data.data()->getSystemParameterList())
-    {
-        SystemParameterWidget *widget = new SystemParameterWidget(m_data.data()->getSystemParameter(index), this);
-        sys_layout->addWidget(widget);
-        m_system_parameter_widgets << widget;
-        connect(widget, SIGNAL(valueChanged()), this, SLOT(UpdateSystemParameter()));
-    }
-    
-    m_systemwidget->setLayout(sys_layout);
-    m_splitter->addWidget(m_systemwidget);
+    m_splitter->addWidget(new SPOverview(m_data.data()));
     m_system_parameter_loaded = true;
 }
 

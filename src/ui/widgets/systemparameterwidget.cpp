@@ -27,18 +27,19 @@
 
 #include "systemparameterwidget.h"
 
-SystemParameterWidget::SystemParameterWidget(const SystemParameter &parameter, QWidget *parent) : m_parameter(parameter), QGroupBox(parent)
+SystemParameterWidget::SystemParameterWidget(const SystemParameter &parameter, QWidget *parent) : m_parameter(parameter), QGroupBox(parent), m_change(false)
 {
     m_textfield = new QLineEdit;
     m_boolbox = new QCheckBox;
-    
-    connect(m_textfield, SIGNAL(textChanged(QString)), this, SIGNAL(valueChanged()));
-    connect(m_boolbox, SIGNAL(stateChanged(int)), this, SIGNAL(valueChanged()));
+    QLabel *label = new QLabel(parameter.Description());
+    label->setFixedWidth(250);
+    connect(m_textfield, SIGNAL(textChanged(QString)), this, SLOT(PrepareChanged()));
+    connect(m_boolbox, SIGNAL(stateChanged(int)), this, SLOT(PrepareChanged()));
     
     setTitle(parameter.Name());
     
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->addWidget(new QLabel(parameter.Description()));
+    layout->addWidget(label);
     if(parameter.isScalar() || parameter.isString())
         layout->addWidget(m_textfield);
     else if(parameter.isBool())
@@ -64,4 +65,21 @@ SystemParameter SystemParameterWidget::Value()
          m_parameter.setValue(m_boolbox->isChecked() );
     
     return m_parameter;
+}
+
+void SystemParameterWidget::setValue(const SystemParameter &parameter)
+{
+    m_change = true;
+    QVariant variant = parameter.value();
+    if(m_parameter.isScalar() || m_parameter.isString())
+        m_textfield->setText(variant.toString());
+    else
+        m_boolbox->setChecked(variant.toBool());
+    m_change = false;
+}
+
+void SystemParameterWidget::PrepareChanged()
+{
+    if(!m_change)
+        emit valueChanged();
 }

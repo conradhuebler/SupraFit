@@ -64,7 +64,6 @@ private:
     QVector<QPointer<SignalElement > > m_signal_elements;
     QGridLayout *layout;
     QList<QPointer<QDoubleSpinBox > > m_scaling_boxes;
-    QVector<QPointer<SystemParameterWidget > > m_system_parameter_widgets;
     QWidget *m_systemwidget;
     bool m_system_parameter_loaded;
     RegressionAnalysisDialog *dialog;
@@ -75,7 +74,6 @@ private slots:
     void SetProjectName();
     void setScaling();
     void HidePoint();
-    void UpdateSystemParameter();
     void MakeSystemParameter();
     void LinearAnalysis();
     
