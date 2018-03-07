@@ -174,7 +174,8 @@ public slots:
     void recalculate();
     void OptimizerSettings();
     void ChangeColor();
-    
+    void setColor(const QColor &color);
+
 signals:
     void Update();
     void Warning(const QString &str, int i);

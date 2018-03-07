@@ -97,6 +97,12 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     
     setCurrentWidget(modelwidget);
     tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, tools);
+
+    if(!modelwidget->Model()->SupportSeries())
+    {
+        modelwidget->setColor(ChartWrapper::ColorCode(currentIndex()));
+    }
+
 }
 
 void TabWidget::setDataTab(QPointer<DataWidget> datawidget)

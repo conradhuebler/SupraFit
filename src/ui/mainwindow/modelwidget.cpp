@@ -208,7 +208,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     }else{
         m_local_parameter = new LocalParameterWidget(m_model);
         m_sign_layout->addWidget(m_local_parameter);
-
+        connect(this, &ModelWidget::ToggleSeries,
+                [this](  )
+        {
+            m_charts.signal_wrapper->Series(0)->setVisible(!m_charts.signal_wrapper->Series(0)->isVisible());
+            m_charts.error_wrapper->Series(0)->setVisible(!m_charts.error_wrapper->Series(0)->isVisible());
+        });
         if(m_model->getSystemParameterList().size())
             m_sign_layout->addWidget(new SPOverview(m_model->Data()));
     }
@@ -278,7 +283,6 @@ void ModelWidget::setColorList(const QString& str)
             m_model_elements[i]->ChangeColor(QColor(colors[i]));
     }
 }
-
 
 void ModelWidget::SplitterResized()
 {
@@ -977,12 +981,24 @@ void ModelWidget::Save2File()
 void ModelWidget::ChangeColor()
 {
     QColor color = QColorDialog::getColor(tr("Choose Color for Series"));
+    setColor(color);
+}
+
+
+void ModelWidget::setColor(const QColor &color)
+{
     if(!color.isValid())
         return;
-    
-    for(int i = 0; i < m_model_elements.size(); ++i)
+    if(m_model->SupportSeries())
     {
-        m_model_elements[i]->ChangeColor(color);
+        for(int i = 0; i < m_model_elements.size(); ++i)
+        {
+            m_model_elements[i]->ChangeColor(color);
+        }
+    }else
+    {
+        m_charts.signal_wrapper->Series(0)->setColor(color);
+        m_charts.error_wrapper->Series(0)->setColor(color);
     }
     emit ColorChanged(color);
 }
