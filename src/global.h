@@ -88,7 +88,7 @@ namespace SupraFit{
         info += "<p>This is all about SupraFit, nothing else matters< /p>";
         info += "<p>Created by Conrad Hübler</p>";
         info += "<p>Special thanks to <strong>Prof. M. Mazik</strong>, TU Bergakademie Freiberg for her support.</p>";
-        info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;ster</strong> and <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
+        info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;rster</strong> and <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
         info += "<p>Thanks to all encouraged me writing the application.</p>";
         info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
         info += "<p>SupraFit website on GitHub: <a href='https://github.com/contra98/SupraFit'>https://github.com/contra98/SupraFit</a></p>";

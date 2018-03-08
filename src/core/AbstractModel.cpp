@@ -528,10 +528,17 @@ QString AbstractModel::Model2Text() const
     text += "#### Current Model Results #####\n";
     text += "Global parameter for model:\n";
     for(int i = 0; i < GlobalParameterSize(); ++i)
-        text += GlobalParameterName(i) + ":\t" + formatedGlobalParameter(GlobalParameter(i), i)+ "\n";
+        text += GlobalParameterName(i) + "\t\t: " + formatedGlobalParameter(GlobalParameter(i), i)+ "\n";
+    if(SupportSeries())
+    {
+        text += "Local parameter for model\n";
+        text += m_local_parameter->ExportAsString();
+    }else
+    {
+        for(int i = 0; i < LocalParameterSize(); ++i)
+            text += LocalParameterName(i) + "\t\t: " + QString::number(LocalParameter(i, 0)) + "\n";
+    }
     text += "\n";
-    text += "Local parameter for model\n";
-    text += m_local_parameter->ExportAsString();
     text += Model2Text_Private();
     text += "\n";
     text += ModelTable()->ExportAsString();
@@ -568,11 +575,15 @@ QString AbstractModel::Local2Text() const
     text += "\n";
     text += "******************************************************************************************************\n";
     text += "#### Current Model Results #####\n";
-    text += "Equilibrium Model Calculation with complexation constants:\n";
-#warning to be done
-//     for(int i = 0; i < GlobalParameterSize(); ++i)
-//         for(int j = 0; j< LocalParameterSize())
-//             text += LocalParameter(i) + ":\t" + QString::number(GlobalParameter(i))+ "";
+    if(SupportSeries())
+    {
+        text += "Local parameter for model\n";
+        text += m_local_parameter->ExportAsString();
+    }else
+    {
+        for(int i = 0; i < LocalParameterSize(); ++i)
+            text += LocalParameterName(i) + "\t\t: " + QString::number(LocalParameter(i, 0)) + "\n";
+    }
     return text;
 }
 
