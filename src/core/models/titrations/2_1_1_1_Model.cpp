@@ -53,11 +53,20 @@ void IItoI_ItoI_Model::DeclareOptions()
 void IItoI_ItoI_Model::EvaluateOptions()
 {
     QString cooperativitiy = getOption("Cooperativity");
-
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * K11 = 4*K21 | K21 = 0.25 K11
+     * valid for statistical and noncooperative systems
+     */
     auto global_coop = [this](){
         this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
     };
-    
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * Y(A2B) = 2Y(AB)
+     * valid for statistical and additive systems
+     * We first have to subtract the Host_0 Shift and afterwards calculate the new Signal
+     */
     auto local_coop = [this]()
     {
         for(int i = 0; i < this->SeriesCount(); ++i)
@@ -136,20 +145,20 @@ void IItoI_ItoI_Model::CalculateVariables()
 
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    QString cooperativity = getOption("Cooperativity");
+    QString coop21 = getOption("Cooperativity");
    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        addGlobalParameter(m_global_parameter);
-        if(cooperativity == "statistical" || cooperativity == "noncooperative")
-            m_opt_para.removeFirst();
+        addGlobalParameter(1);
+        if(coop21 == "additive" || coop21 == "full")
+            addGlobalParameter(0);
     }
     
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {
         if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
             addLocalParameter(0);
-        if(cooperativity != "additive" && cooperativity != "statistical")
+        if(coop21 != "additive" && coop21 != "statistical")
             addLocalParameter(1);
         addLocalParameter(2);
     } 

@@ -594,9 +594,11 @@ QList<double>   DataClass::getSignals(QList<int > active_signal)
     QList<double > x;
     for(int j = 0; j < SeriesCount(); ++j)
     {
+        if(active_signal[j] != 1)
+            continue;
         for(int i = 0; i < DataPoints(); ++i)
         {
-            if(active_signal[j] == 1)
+            if(DependentModel()->isChecked(j,i))
                 x.append(DependentModel()->data(j,i)); //[index] = SignalModel()->data(j,i); 
         }
     }

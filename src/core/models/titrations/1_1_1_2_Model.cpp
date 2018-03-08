@@ -55,12 +55,22 @@ void ItoI_ItoII_Model::DeclareOptions()
 void ItoI_ItoII_Model::EvaluateOptions()
 {
     QString cooperativitiy = getOption("Cooperativity");
-    
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * K11 = 4*K12 | K12 = 0.25 K11
+     * valid for statistical and noncooperative systems
+     */
     auto global_coop = [this]()
     {
         this->m_global_parameter[1] = log10(double(0.25)*qPow(10,this->m_global_parameter[0]));
     };
-    
+
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * Y(AB2) = 2Y(AB)
+     * valid for statistical and additive systems
+     * We first have to subtract the Host_0 Shift and afterwards calculate the new Signal
+     */
     auto local_coop = [this]()
     {
         for(int i = 0; i < this->SeriesCount(); ++i)
@@ -100,12 +110,13 @@ void ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    QString cooperativity = getOption("Cooperativity");
+    QString coop12 = getOption("Cooperativity");
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
-        addGlobalParameter(m_global_parameter);
-        if(cooperativity == "statistical" || cooperativity == "noncooperative")
-            m_opt_para.removeLast();
+        addGlobalParameter(0);
+
+        if(coop12 == "additive" || coop12 == "full")
+            addGlobalParameter(1);
     }
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
@@ -113,7 +124,7 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
          if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
              addLocalParameter(0);
          addLocalParameter(1);
-         if(!(cooperativity == "additive" || cooperativity == "statistical"))
+         if(!(coop12 == "additive" || coop12 == "statistical"))
              addLocalParameter(2);
     } 
     QVector<qreal >parameter;

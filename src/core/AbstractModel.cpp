@@ -32,7 +32,6 @@
 #include <QtCore/QCollator>
 
 #include <iostream>
-#include <typeinfo>
 
 #include "AbstractModel.h"
 
@@ -146,8 +145,6 @@ void AbstractModel::setGlobalParameter(const QList<qreal> &list)
 
 void AbstractModel::SetValue(int i, int j, qreal value)
 {
-    /* if there are more than one series, we can active series, but with only one, these lines must be ignored*/
-//     if(SeriesCount() != 1) 
     if(!ActiveSignals(j) || !DependentModel()->isChecked(j,i))
         return;
     
@@ -200,7 +197,11 @@ qreal AbstractModel::ModelError() const
 {
     qreal error = 0;
     for(int z = 0; z < SeriesCount(); ++z)
+    {
+        if(!ActiveSignals(z))
+             continue;
         error += SumOfErrors(z);
+    }
     return error;
 }
 
@@ -263,6 +264,9 @@ qreal AbstractModel::CalculateCovarianceFit()
     {
         for(int j = 0; j < SeriesCount(); ++j)
         {
+            if(!ActiveSignals(j))
+                 continue;
+
             if(DependentModel()->isChecked(j,i))
             {
                 model += m_model_signal->data(j,i);
@@ -294,13 +298,14 @@ QList<double>   AbstractModel::getCalculatedModel()
     QList<double > x;
     for(int j = 0; j < SeriesCount(); ++j)
     {
+        if(!ActiveSignals(j))
+             continue;
         for(int i = 0; i < DataPoints(); ++i)
-        {
-            
-            if(ActiveSignals(j) == 1 || IndependentVariableSize() == 1) //FIXME just that it works now
-                x.append( m_model_signal->data(j,i)); 
-        }
+            if(DependentModel()->isChecked(j,i))
+                x.append( m_model_signal->data(j,i));
+
     }
+#warning will this break everything ?
     return x;
 }
 

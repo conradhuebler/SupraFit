@@ -60,6 +60,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     QHBoxLayout *shifts = new QHBoxLayout;
     for(int i = 0; i < m_model->LocalParameterSize(); ++i)
     {
+        QPointer<QWidget > widget = new QWidget;
+
         QPointer<SpinBox >constant = new SpinBox;
         m_constants << constant;
         constant->setMinimum(-1e9);
@@ -71,12 +73,16 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setToolTip(m_model->LocalParameterDescription(i));
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-        connect(m_model.data(), &AbstractModel::Recalculated, [i, constant, this](  )
+        connect(m_model.data(), &AbstractModel::Recalculated, [i, widget, this](  )
         {
-            if(this->m_model && constant)
-                constant->setVisible(this->m_model->LocalEnabled(i ));
+            if(this->m_model && widget)
+                widget->setEnabled(this->m_model->LocalEnabled(i ));
         });
-        shifts->addWidget(constant, 0);
+        QVBoxLayout *vlayout = new QVBoxLayout;
+        widget->setLayout(vlayout);
+        vlayout->addWidget(constant);
+        vlayout->addWidget(new QLabel(m_model.data()->LocalParameterName(i)));
+        shifts->addWidget(widget, 0);
     }
     
     if(m_model->Type() != 3)
@@ -117,8 +123,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     tools->addWidget(m_toggle);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
     layout->addLayout(tools);
-    setMaximumHeight(75);
-    setMinimumHeight(75); 
+    setMaximumHeight(110);
+    setMinimumHeight(110);
     ChangeColor(m_charts.data_wrapper->color(m_no));
     connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
