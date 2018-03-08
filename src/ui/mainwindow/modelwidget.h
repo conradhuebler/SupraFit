@@ -159,7 +159,6 @@ private slots:
     void MultiScanFinished();
     void TogglePlot3D();
     void TogglePlot();
-    void ToggleConcentrations();
     void ToggleStatisticDialog();
     void ToggleSearchTable();
     void Save2File();

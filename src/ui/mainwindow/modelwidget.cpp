@@ -21,42 +21,44 @@
 #include "src/version.h"
 
 #include "src/capabilities/abstractsearchclass.h"
-#include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/modelcomparison.h"
+#include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/reductionanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
 
-#include "src/core/toolset.h"
+#include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
-#include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
+#include "src/core/toolset.h"
 
-#include "src/ui/widgets/buttons/spinbox.h"
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/modeldialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
+
 #include "src/ui/guitools/chartwrapper.h"
+
+#include "src/ui/mainwindow/chartwidget.h"
+
+#include "src/ui/widgets/buttons/spinbox.h"
 #include "src/ui/widgets/chartview.h"
-#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/3dchartview.h"
+#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
-#include "src/ui/widgets/parameterwidget.h"
-#include "src/ui/widgets/stackedwidget.h"
-#include "src/ui/widgets/systemparameterwidget.h"
-#include "src/ui/widgets/statisticwidget.h"
-#include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/modelactions.h"
+#include "src/ui/widgets/modelelement.h"
+#include "src/ui/widgets/optionswidget.h"
+#include "src/ui/widgets/parameterwidget.h"
 #include "src/ui/widgets/results/resultswidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
-#include "src/ui/widgets/optionswidget.h"
-#include "src/ui/mainwindow/chartwidget.h"
+#include "src/ui/widgets/statisticwidget.h"
+#include "src/ui/widgets/systemparameterwidget.h"
 
-#include <QtMath>
-#include "cmath"
 #include <QApplication>
+#include <QDebug>
+#include <QtMath>
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonDocument>
@@ -85,8 +87,6 @@
 #include <QtCharts/QXYSeries>
 
 #include <QtDataVisualization>
-
-#include <QDebug>
 
 #include <iostream>
 #include <random>
@@ -308,7 +308,6 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
     connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
     connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
-    connect(m_actions, SIGNAL(ToggleConcentrations()), this, SLOT(ToggleConcentrations()));
     connect(m_actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
     connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
@@ -925,18 +924,6 @@ void ModelWidget::MultiScanFinished()
     {
         if(val == 1)
             qDebug() << "model empty, should not happen at all.";
-    }
-}
-
-void ModelWidget::ToggleConcentrations()
-{
-#warning remove me 
-    if(qobject_cast<AbstractTitrationModel *>(m_model))
-    {
-    QTableView *table = new QTableView;
-    table->setModel(qobject_cast<AbstractTitrationModel *>(m_model)->getConcentrations());
-    m_concentrations_result->setWidget(table);
-    m_concentrations_result->show();
     }
 }
 

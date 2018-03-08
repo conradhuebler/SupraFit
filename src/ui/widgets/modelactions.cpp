@@ -48,7 +48,6 @@ void ModelActions::setUi()
     m_plot_3d = new PushButton(tr("3D Plot"));
     m_plot_3d->setEnabled(false);
     m_statistics = new PushButton(tr("Statistic"));
-    m_concentration = new PushButton(tr("Concentration"));
     m_save = new PushButton(tr("Save"));
     m_new_guess = new PushButton(tr("New Guess"));
     m_simulate = new PushButton(tr("Export Simulated"));
@@ -81,7 +80,6 @@ void ModelActions::setUi()
     h_layout = new QHBoxLayout;
     h_layout->addWidget(m_minimize_single);
     h_layout->addWidget(m_plot_3d);
-    h_layout->addWidget(m_concentration);
     h_layout->addWidget(m_save);
     h_layout->addWidget(m_import);
     h_layout->addWidget(m_export);
@@ -100,7 +98,6 @@ void ModelActions::setUi()
     connect(m_plot_3d, SIGNAL(clicked()), this, SIGNAL(TogglePlot3D()));
     connect(m_statistics, SIGNAL(clicked()), this, SIGNAL(ToggleStatisticDialog()));
     connect(m_save, SIGNAL(clicked()), this, SIGNAL(Save2File()));
-    connect(m_concentration, SIGNAL(clicked()), this, SIGNAL(ToggleConcentrations()));
     connect(m_simulate, SIGNAL(clicked()), this, SIGNAL(ExportSimModel()));
     connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
     connect(m_search, SIGNAL(clicked()), this, SIGNAL(ToggleSearch()));
@@ -129,7 +126,6 @@ void ModelActions::resizeButtons()
     m_plots->setMaximumSize(110, 30);
     m_plot_3d->setMaximumSize(70, 30);
     m_statistics->setMaximumSize(70, 30);
-    m_concentration->setMaximumSize(100, 30);
     m_save->setMaximumSize(70, 30);
     m_new_guess->setMaximumSize(80, 30);
     m_simulate->setMaximumSize(120, 30);
