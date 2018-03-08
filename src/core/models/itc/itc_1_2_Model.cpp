@@ -55,8 +55,6 @@ void itc_ItoII_Model::InitialGuess()
     m_local_parameter->data(2, 0) = -1000;
     m_local_parameter->data(3, 0) = 1;
     m_local_parameter->data(4, 0) = 1;
-
-    setOptParamater(m_global_parameter);
     
     AbstractModel::Calculate();
 }

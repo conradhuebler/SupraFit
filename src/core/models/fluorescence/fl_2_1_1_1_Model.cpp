@@ -94,7 +94,8 @@ void fl_IItoI_ItoI_Model::EvaluateOptions()
 
 void fl_IItoI_ItoI_Model::InitialGuess()
 {
-    setOptParamater(m_global_parameter);
+    m_global_parameter[1] = Guess_1_1();
+    m_global_parameter[0] = m_global_parameter[1]/2;
 
     qreal factor = InitialHostConcentration(0);
     

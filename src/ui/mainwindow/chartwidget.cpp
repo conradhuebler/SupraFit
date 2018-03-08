@@ -234,6 +234,10 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
     charts.error_wrapper = error_wrapper;
     charts.signal_wrapper = signal_wrapper;
     charts.data_wrapper = m_data_mapper.data();
+    m_signal_x = model->XLabel();
+    m_signal_y = model->YLabel();
+    m_error_x = model->XLabel();
+    m_error_y ="Error " +  model->YLabel();
     return charts;
 }
 
@@ -244,11 +248,11 @@ void ChartWidget::Repaint()
 
     if(m_models.size())
     {
-        m_signalview->setXAxis(m_models.last().data()->XLabel());
-        m_errorview->setXAxis(m_models.last().data()->XLabel());
+        m_signalview->setXAxis(m_signal_x);
+        m_errorview->setXAxis(m_error_x);
 
-        m_signalview->setYAxis(m_models.last().data()->YLabel());
-        m_errorview->setYAxis("Error " + m_models.last().data()->YLabel());
+        m_signalview->setYAxis(m_signal_y);
+        m_errorview->setYAxis(m_error_y);
     }
     m_data_mapper->UpdateModel();
 

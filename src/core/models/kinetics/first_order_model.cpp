@@ -58,7 +58,6 @@ void Kinetic_First_Order_Model::InitialGuess()
 {
     m_k = 5;
     m_global_parameter = QList<qreal>() << m_k;
-    setOptParamater(m_global_parameter);
     
     AbstractModel::Calculate();
 }
@@ -66,7 +65,7 @@ void Kinetic_First_Order_Model::InitialGuess()
 QVector<qreal> Kinetic_First_Order_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
-        setOptParamater(m_global_parameter);
+        addGlobalParameter(0);
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {

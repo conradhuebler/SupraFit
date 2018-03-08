@@ -99,7 +99,7 @@ private:
     ChartDockTitleBar *m_TitleBarWidget;
     QVector< QVector <int > > m_titration_curve, m_model_curve, m_error_curve;
     QSharedPointer<ChartWrapper > m_data_mapper;
-    
+    QString m_signal_x, m_signal_y, m_error_x, m_error_y;
     
 private slots:
     void formatAxis();

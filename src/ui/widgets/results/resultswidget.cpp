@@ -257,7 +257,7 @@ QWidget * ResultsWidget::GridSearchWidget()
         view->addSeries(xy_series);
         
         LineSeries *current_constant= new LineSeries;
-        *current_constant << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()) << QPointF(m_model->GlobalParameter(i), m_model->SumofSquares()*1.1);
+        *current_constant << QPointF(m_model->OptimizeParameters()[i], m_model->SumofSquares()) << QPointF(m_model->OptimizeParameters()[i], m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
         current_constant->setName(m_model->GlobalParameterName(i));
         view->addSeries(current_constant, true);

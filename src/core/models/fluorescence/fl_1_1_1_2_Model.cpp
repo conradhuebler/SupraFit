@@ -95,7 +95,7 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
 void fl_ItoI_ItoII_Model::InitialGuess()
 {   
     m_global_parameter = QList<qreal>() << 4 << 2;
-    setOptParamater(m_global_parameter);
+    // setOptParamater(m_global_parameter);
 
     qreal factor = InitialHostConcentration(0);
     

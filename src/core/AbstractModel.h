@@ -52,6 +52,17 @@ public:
      * 
      */
     QVector<qreal > OptimizeParameters(OptimizationType type);
+
+    /*! \brief returns the Parameters used in optimisation
+     *
+     */
+    inline QVector<qreal > OptimizeParameters() { return m_parameter; }
+
+    /*! \brief returns a pair of int
+     *  first - index of parameter
+     *  second define if global or local
+     */
+    inline QVector<QPair<int, int> > IndexParameters() { return m_opt_index; }
     
     /*! \brief Locks Parameter not to be optimised during Levenberg-Marquadt
      */
@@ -138,8 +149,6 @@ public:
     virtual inline int Color(int i) const { return i; }
         
     void SetSingleParameter(double value, int parameter);
-    void setOptParamater(qreal & parameter);
-    void setOptParamater(QList< qreal >& parameter);
     void addGlobalParameter(QList <qreal > &vector);
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
@@ -391,6 +400,8 @@ protected:
 // #warning to do as well
     //FIXME more must be
     QVector<double * > m_opt_para;
+    QVector< QPair<int, int> > m_opt_index;
+    QVector<qreal > m_parameter;
     QList<qreal > m_global_parameter;
     QList< QJsonObject> m_mc_statistics;
     
@@ -402,7 +413,7 @@ protected:
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
     QList<int > m_active_signals;
-    QList<int > m_locked_parameters, m_enabled_parameter, m_enabled_local, m_enabled_global;
+    QList<int > m_locked_parameters, m_enabled_local, m_enabled_global;
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;

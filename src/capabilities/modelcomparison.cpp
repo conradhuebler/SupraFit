@@ -97,7 +97,7 @@ bool ModelComparison::FastConfidence()
     m_controller["f-value"] = m_config.f_value;
     
     QJsonObject optimized = m_model.data()->ExportModel(false);
-    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
+    QVector<double > parameter = m_model.data()->OptimizeParameters();
     for(int i = 0; i < parameter.size(); ++i)
     {
         m_model.data()->ImportModel(optimized);
@@ -106,9 +106,17 @@ bool ModelComparison::FastConfidence()
         double lower = SingleLimit(i, -1);
         
         QJsonObject result;
-        result["name"] = m_model.data()->GlobalParameterName(i);
+        QPair<int, int > pair = m_model.data()->IndexParameters()[i];
+        if(pair.second == 0)
+        {
+            result["name"] = m_model.data()->GlobalParameterName(pair.first);
+            result["type"] = "Global Parameter";
+        }else if(pair.second == 1)
+        {
+            result["name"] = m_model.data()->LocalParameterName(pair.first);
+            result["type"] = "Local Parameter";
+        }
         result["value"] = parameter[i];
-        result["type"] = "Global Parameter";
         QJsonObject confidence;
         confidence["upper"] = upper;
         m_model.data()->ImportModel(optimized);
@@ -122,12 +130,12 @@ bool ModelComparison::FastConfidence()
 
 double ModelComparison::SingleLimit(int parameter_id, int direction)
 {
-    QVector<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts);
+    QVector<double > parameter = m_model.data()->OptimizeParameters();
     double param = parameter[parameter_id];
     double old_param = param;
     int iter = 0;
-    int maxiter = 100;
-    double step = 0.5;
+    int maxiter = 1000;
+    double step = param*1e-1;
     param += direction*step;
     double error = m_model.data()->SumofSquares();
     while(qAbs(error-m_config.maxerror) > 1e-7)
@@ -154,7 +162,10 @@ double ModelComparison::SingleLimit(int parameter_id, int direction)
         iter++;
         
         if(iter >= maxiter)
+        {
+            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id];
             break;
+        }
     }
     return param;
 }

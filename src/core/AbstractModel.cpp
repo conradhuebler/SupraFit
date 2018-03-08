@@ -59,7 +59,6 @@ AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt
     m_active_signals = other->m_active_signals;
     m_locked_parameters = other->m_locked_parameters;
     m_model_options = other->m_model_options;
-    m_enabled_parameter = other->m_enabled_parameter;
     m_global_parameter = other->m_global_parameter;
     
     m_mc_statistics = other->m_mc_statistics;
@@ -116,18 +115,21 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
         {
             variables.removeAt(j);
             m_opt_para.removeAt(j);
+            m_opt_index.removeAt(j);
         }
     }
     m_locked_parameters.clear();
     for(int i = 0; i < variables.size(); ++i)
         m_locked_parameters << 1;
     m_last_optimization = type;
+    m_parameter = variables;
     return variables;
 }
 
 void AbstractModel::clearOptParameter()
 {
     m_opt_para.clear();
+    m_opt_index.clear();
     for(int i = 0; i < m_enabled_local.size(); ++i)
         m_enabled_local[i] = 0;
 
@@ -349,19 +351,6 @@ qreal AbstractModel::Error(qreal confidence, bool f)
     }
 }
 
-void AbstractModel::setOptParamater(QList<qreal> &parameter)
-{
-    clearOptParameter();
-    for(int i = 0; i < parameter.size(); ++i)
-        m_opt_para << &parameter[i];
-}
-
-void AbstractModel::setOptParamater(qreal& parameter)
-{   
-    clearOptParameter();
-    m_opt_para << &parameter;
-}
-
 void AbstractModel::SetSingleParameter(double value, int parameter)
 {
     if(parameter < m_opt_para.size())
@@ -434,7 +423,8 @@ void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
 {
     for(int i = 0; i < parameter.size(); ++i)
     {
-        m_opt_para << &parameter[i];    
+        m_opt_para << &parameter[i];
+        m_opt_index << QPair<int, int>(i, 0);
         m_enabled_global[i] = 1;
     }
 }
@@ -442,8 +432,11 @@ void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
 void AbstractModel::addGlobalParameter(int i)
 {
     if(i < m_global_parameter.size())
+    {
         m_opt_para << &m_global_parameter[i]; 
-    m_enabled_global[i] = 1;
+        m_enabled_global[i] = 1;
+        m_opt_index << QPair<int, int>(i, 0);
+    }
 }
 
 void AbstractModel::addLocalParameter(int i)
@@ -452,7 +445,8 @@ void AbstractModel::addLocalParameter(int i)
     {
         if(!ActiveSignals(j))
              continue;
-        m_opt_para << &m_local_parameter->data(i, j);    
+        m_opt_para << &m_local_parameter->data(i, j);
+        m_opt_index << QPair<int, int>(i, 1);
     }
     m_enabled_local[i] = 1;
 }
@@ -853,7 +847,6 @@ AbstractModel & AbstractModel::operator=(const AbstractModel& other)
     m_active_signals = other.m_active_signals;
     m_locked_parameters = other.m_locked_parameters;
     m_model_options = other.m_model_options;
-    m_enabled_parameter = other.m_enabled_parameter;
     m_global_parameter = other.m_global_parameter;
     
     m_mc_statistics = other.m_mc_statistics;
@@ -888,7 +881,6 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     m_active_signals = other->m_active_signals;
     m_locked_parameters = other->m_locked_parameters;
     m_model_options = other->m_model_options;
-    m_enabled_parameter = other->m_enabled_parameter;
     m_global_parameter = other->m_global_parameter;
     
     m_mc_statistics = other->m_mc_statistics;

@@ -80,7 +80,7 @@ void fl_ItoI_Model::EvaluateOptions()
 QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
-        setOptParamater(m_global_parameter);
+        addGlobalParameter(0);
 
     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
     {

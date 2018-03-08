@@ -60,7 +60,7 @@ void WGSearchThread::run()
 
     QList<QPointF> series;
     QJsonObject optimized = m_model.data()->ExportModel(false);
-    QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
+    QVector<double > parameter = m_model.data()->OptimizeParameters();
     m_result["value"] = parameter[m_index];
     Calculate();
 }
@@ -70,7 +70,7 @@ void WGSearchThread::Calculate()
 {
     double increment = m_config.increment;
     QList<int >locked = m_model->LockedParamters();
-    QVector<qreal > param = m_model->OptimizeParameters(m_config.runtype);
+    QVector<qreal > param = m_model->OptimizeParameters();
 
     locked[m_index] = 0;
 
@@ -145,7 +145,7 @@ void WeakenedGridSearchThread::run()
 
     QList<QPointF> series;
     QJsonObject optimized = m_model.data()->ExportModel(false);
-    QVector<double > parameter = m_model.data()->OptimizeParameters(m_config.runtype);
+    QVector<double > parameter = m_model.data()->OptimizeParameters();
     m_result["name"] = m_model.data()->GlobalParameterName(m_parameter_id);
     m_result["value"] = parameter[m_parameter_id];
     m_result["type"] = "Global Parameter";
@@ -182,10 +182,10 @@ qreal WeakenedGridSearchThread::SumErrors(bool direction, double& integ_5, doubl
     qreal old_error = m_error;
     int counter = 0;
     QList<int> locked; 
-    for(int i = 0; i <  m_model.data()->OptimizeParameters(m_config.runtype).size(); ++i)
+    for(int i = 0; i <  m_model.data()->OptimizeParameters().size(); ++i)
         locked << 1;
     locked[m_parameter_id] = 0;
-    QList<qreal > consts = m_model.data()->GlobalParameter();
+    QVector<qreal > consts = m_model.data()->OptimizeParameters();
     double constant_ = consts[m_parameter_id];
     double par = 0;
     for(int m = 0; m < m_config.maxsteps; ++m)
@@ -194,7 +194,7 @@ qreal WeakenedGridSearchThread::SumErrors(bool direction, double& integ_5, doubl
         par = constant_ + double(m)*increment;
         
         consts[m_parameter_id] = par;
-        m_model.data()->setGlobalParameter(consts);
+        m_model.data()->setParameter(consts);
         
         if(m_config.relax)
         {
@@ -295,7 +295,7 @@ bool WeakenedGridSearch::ConfidenceAssesment()
     
     m_minimizer->setModel(m_model);
     QJsonObject optimized = m_model.data()->ExportModel(false);
-    QList<double > parameter = m_model.data()->OptimizeParameters(OptimizationType::ComplexationConstants | ~OptimizationType::OptimizeShifts).toList();
+    QVector<double > parameter = m_model.data()->OptimizeParameters();
     
     m_model.data()->Calculate();
     QList<QPointer <WeakenedGridSearchThread > > threads;
@@ -308,7 +308,6 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->SetParameterID(i);
-        thread->setOptimizationRun(OptimizationType::ComplexationConstants| ~OptimizationType::OptimizeShifts);
         if(m_model.data()->SupportThreads())
         {
             thread->run();
