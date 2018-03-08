@@ -156,7 +156,7 @@ MonteCarloStatistics::~MonteCarloStatistics()
 
 }
 
-void MonteCarloStatistics::Evaluate()
+bool MonteCarloStatistics::Evaluate()
 {
     m_models.clear();
     QVector<QPointer <MonteCarloBatch > > threads = GenerateData();
@@ -164,9 +164,12 @@ void MonteCarloStatistics::Evaluate()
         QCoreApplication::processEvents();
     
     Collect(threads);
+    if(m_models.size() == 0)
+        return false;
     m_results = ToolSet::Model2Parameter(m_models);
 
     ToolSet::Parameter2Statistic(m_results, m_model.data());
+    return true;
 }
 
 QJsonObject MonteCarloStatistics::Controller() const
@@ -185,7 +188,7 @@ QJsonObject MonteCarloStatistics::Controller() const
 QVector<QPointer <MonteCarloBatch > > MonteCarloStatistics::GenerateData()
 {    
     int blocksize = 25;
-    int maxthreads =qApp->instance()->property("threads").toInt();
+    int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     m_model->Calculate();
     m_table = new DataTable(m_model->ModelTable());

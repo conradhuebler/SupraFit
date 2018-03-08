@@ -47,6 +47,12 @@ int main(int argc, char** argv)
                                    QCoreApplication::translate("main", "1000"));
     parser.addOption(experiments);
     
+    QCommandLineOption threads(QStringList() << "t" << "threads",
+                                   QCoreApplication::translate("main", "Number of threads"),
+                                   QCoreApplication::translate("main", "threads"),
+                                   QCoreApplication::translate("main", "4"));
+    parser.addOption(threads);
+
     QCommandLineOption _std(QStringList() << "s" << "std",
                             QCoreApplication::translate("main", "Standard deviation for the data generation"),
                             QCoreApplication::translate("main", "standard deviation"),
@@ -69,7 +75,7 @@ int main(int argc, char** argv)
     bool montecarlo = parser.isSet("m");
     bool modelcomparison = parser.isSet("o");
     bool weakendgrid = parser.isSet("w");
-    
+    qApp->instance()->setProperty("threads", parser.value("t").toInt());
     std::cout << SupraFit::about().toStdString() << std::endl;
     std::cout << "No. Experiments to be simulated " << exp << std::endl;
     std::cout << "Standard Deviation to be used " << std << std::endl;
@@ -78,7 +84,8 @@ int main(int argc, char** argv)
     std::cout << "Monte Carlo Simulation is turn on: " << montecarlo << std::endl;
     std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
     std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
-    
+    std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
+
     #ifdef _DEBUG
     qDebug() << "Debug output enabled, good fun!";
     #endif

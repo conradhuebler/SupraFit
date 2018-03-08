@@ -97,7 +97,7 @@ public:
     ~MonteCarloStatistics();
     
     inline void setConfig(const MCConfig &config) { m_config = config; }
-    void Evaluate();
+    bool Evaluate();
 
 public slots:
     void Interrupt() override;

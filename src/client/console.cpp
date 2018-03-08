@@ -207,12 +207,14 @@ QJsonObject Console::MonteCarlo(QSharedPointer<AbstractModel> model)
     MCConfig config;
     config.maxsteps = 1000;
     QPointer<MonteCarloStatistics > statistic = new MonteCarloStatistics(config, this);
-
+    QJsonObject result;
     statistic->setModel(model);
-    statistic->Evaluate();
-    model->UpdateStatistic(statistic->Result());
-    
-    QJsonObject result = statistic->Result();
+    if(statistic->Evaluate())
+    {
+        model->UpdateStatistic(statistic->Result());
+        result = statistic->Result();
+    }else
+        std::cout << "MonteCarlo Simulation failed, sorry ..." << std::endl;
     delete statistic;
     return result;
 }

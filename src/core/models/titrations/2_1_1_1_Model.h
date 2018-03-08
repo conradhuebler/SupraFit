@@ -76,8 +76,5 @@ public:
     
 protected:
     virtual void CalculateVariables() override;
-    
-    qreal m_K21, m_K11;
-    QList<qreal > m_ItoI_signals, m_IItoI_signals;
 };
 

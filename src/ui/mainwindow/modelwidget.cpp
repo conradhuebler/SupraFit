@@ -496,9 +496,6 @@ void ModelWidget::MCStatistic(MCConfig config)
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     statistic->setModel(m_model);
     statistic->Evaluate();
-    
-    QJsonObject result = statistic->Result();
-    QList<QJsonObject> models = statistic->Models(); 
 
     LoadStatistic(statistic->Result(), statistic->Models());
     delete statistic;

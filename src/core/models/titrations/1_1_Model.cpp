@@ -45,8 +45,7 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess()
 {
-    m_K11 = Guess_1_1();
-    m_global_parameter[0] = m_K11;
+    m_global_parameter[0] = Guess_1_1();
 
     qreal factor = 1;
     if(getOption("Method") == "UV/VIS")
