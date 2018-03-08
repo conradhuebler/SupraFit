@@ -24,13 +24,16 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QTimer>
 
+#include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/reductionanalyse.h"
 #include "src/capabilities/modelcomparison.h"
 
+
 #include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/minimizer.h"
 #include "src/core/models.h"
 #include "src/core/toolset.h"
 
