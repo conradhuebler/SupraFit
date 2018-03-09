@@ -25,6 +25,7 @@
 AbstractSearchClass::AbstractSearchClass(QObject *parent) : QObject(parent), m_interrupt(false)
 {
     m_threadpool = QThreadPool::globalInstance();
+    m_threadpool->setMaxThreadCount(qApp->instance()->property("threads").toInt());
 }
 
 

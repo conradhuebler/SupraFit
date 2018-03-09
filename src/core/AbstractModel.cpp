@@ -178,7 +178,7 @@ void AbstractModel::Calculate()
     m_chisquared = 0;
     m_covfit = 0;
 
-    LoadSystemParameter();
+    //LoadSystemParameter();
     EvaluateOptions();
     CalculateVariables();
     

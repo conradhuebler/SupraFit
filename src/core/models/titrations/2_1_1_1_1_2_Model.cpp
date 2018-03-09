@@ -179,7 +179,10 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
         m_solvers[i]->setConstants(m_constants_pow);
-        m_threadpool->start(m_solvers[i]);
+        if(QThreadPool::globalInstance()->activeThreadCount())
+            m_solvers[i]->run();
+        else
+            m_threadpool->start(m_solvers[i]);
     }
     
     m_threadpool->waitForDone();

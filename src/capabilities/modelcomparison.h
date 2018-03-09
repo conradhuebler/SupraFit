@@ -62,6 +62,27 @@ private:
     QVector<QVector<qreal> > m_box;
 };
 
+class FCThread : public AbstractSearchThread
+{
+  Q_OBJECT
+
+public:
+    FCThread(MoCoConfig config, int parameter) : AbstractSearchThread(), m_config(config), m_parameter(parameter) { }
+    ~FCThread() { }
+
+    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    void run();
+    inline qreal Lower() const { return m_lower; }
+    inline qreal Upper() const { return m_upper; }
+
+private:
+    qreal m_lower, m_upper;
+    int m_parameter;
+    qreal SingleLimit(int parameter_id, int direction);
+    MoCoConfig m_config;
+
+};
+
 
 class ModelComparison : public AbstractSearchClass
 {

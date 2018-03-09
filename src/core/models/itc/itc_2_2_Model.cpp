@@ -142,9 +142,12 @@ void itc_IItoII_Model::CalculateVariables()
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
         m_solvers[i]->setConstants(constants_pow);
-        m_solvers[i]->run();
+      //  if(QThreadPool::globalInstance()->activeThreadCount())
+            m_solvers[i]->run();
+       // else
+      //      m_threadpool->start(m_solvers[i]);
     }
-
+    qDebug() << this;
     m_threadpool->waitForDone();
 
     for(int i = 0; i < DataPoints(); ++i)

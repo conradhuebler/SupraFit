@@ -69,7 +69,56 @@ void MCThread::run()
     }
 }
 
+qreal FCThread::SingleLimit(int parameter_id, int direction)
+{
+    QVector<double > parameter = m_model.data()->OptimizeParameters();
+    double param = parameter[parameter_id];
+    double old_param = param;
+    int iter = 0;
+    int maxiter = 1000;
+    double step = param*1e-1;
+    param += direction*step;
+    double error = m_model.data()->SumofSquares();
+    while(qAbs(error-m_config.maxerror) > 1e-7)
+    {
+        parameter[parameter_id] = param;
+        m_model.data()->setParameter(parameter);
+        m_model.data()->Calculate();
+        error = m_model.data()->SumofSquares();
+        if( error < m_config.maxerror )
+        {
+            old_param = param;
+            param += step*direction;
 
+        }else
+        {
+            step = qAbs(param - old_param)*0.5;
+            param = old_param + step*direction;
+            old_param -= step*direction;
+        }
+        parameter[parameter_id] = param;
+        m_model.data()->setParameter(parameter);
+        m_model.data()->Calculate();
+        error = m_model.data()->SumofSquares();
+        iter++;
+
+        if(iter >= maxiter)
+        {
+            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id];
+            break;
+        }
+    }
+    return param;
+}
+
+void FCThread::run()
+{
+    QVector<double > parameter = m_model.data()->OptimizeParameters();
+    m_upper = SingleLimit(m_parameter, +1);
+    m_model.data()->setParameter(parameter);
+    m_model.data()->Calculate();
+    m_lower = SingleLimit(m_parameter, -1);
+}
 
 ModelComparison::ModelComparison(MoCoConfig config, QObject *parent) : AbstractSearchClass(parent), m_config(config)
 {
@@ -96,15 +145,25 @@ bool ModelComparison::FastConfidence()
     m_controller["maxerror"] = m_config.maxerror;
     m_controller["f-value"] = m_config.f_value;
     
-    QJsonObject optimized = m_model.data()->ExportModel(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters();
+    QVector<QPointer<FCThread > > threads;
     for(int i = 0; i < parameter.size(); ++i)
     {
-        m_model.data()->ImportModel(optimized);
-        double upper = SingleLimit(i, +1);
-        m_model.data()->ImportModel(optimized);
-        double lower = SingleLimit(i, -1);
-        
+        QPointer<FCThread> thread = new FCThread(m_config, i);
+        thread->setModel(m_model);
+       // if(!m_model.data()->SupportThreads())
+            m_threadpool->start(thread);
+       // else
+       //     thread->run();
+        threads << thread;
+    }
+    if(!m_model.data()->SupportThreads())
+    {
+        while(m_threadpool->activeThreadCount())
+            QCoreApplication::processEvents();
+    }
+    for(int i = 0; i < parameter.size(); ++i)
+    {
         QJsonObject result;
         QPair<int, int > pair = m_model.data()->IndexParameters()[i];
         if(pair.second == 0)
@@ -118,57 +177,17 @@ bool ModelComparison::FastConfidence()
         }
         result["value"] = parameter[i];
         QJsonObject confidence;
-        confidence["upper"] = upper;
-        m_model.data()->ImportModel(optimized);
-        confidence["lower"] = lower;
+        confidence["upper"] = threads[i]->Upper();
+        confidence["lower"] = threads[i]->Lower();
         confidence["error"] = m_config.confidence;
         result["confidence"] = confidence;
+        delete threads[i];
         m_results << result;
     }
     return true;
 }
 
-double ModelComparison::SingleLimit(int parameter_id, int direction)
-{
-    QVector<double > parameter = m_model.data()->OptimizeParameters();
-    double param = parameter[parameter_id];
-    double old_param = param;
-    int iter = 0;
-    int maxiter = 1000;
-    double step = param*1e-1;
-    param += direction*step;
-    double error = m_model.data()->SumofSquares();
-    while(qAbs(error-m_config.maxerror) > 1e-7)
-    {
-        parameter[parameter_id] = param;
-        m_model.data()->setParameter(parameter);
-        m_model.data()->Calculate();
-        error = m_model.data()->SumofSquares();
-        if( error < m_config.maxerror )
-        {
-            old_param = param;
-            param += step*direction;
-            
-        }else
-        {
-            step = qAbs(param - old_param)*0.5;
-            param = old_param + step*direction;
-            old_param -= step*direction;
-        }
-        parameter[parameter_id] = param;
-        m_model.data()->setParameter(parameter);
-        m_model.data()->Calculate();
-        error = m_model.data()->SumofSquares();
-        iter++;
-        
-        if(iter >= maxiter)
-        {
-            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id];
-            break;
-        }
-    }
-    return param;
-}
+
 
 
 QVector<QVector<qreal> > ModelComparison::MakeBox()
