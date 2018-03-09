@@ -189,10 +189,11 @@ QWidget * ResultsWidget::ModelComparisonWidget()
 
             QString name = m_data[QString::number(a)].toObject()["name"].toString() + " vs. " + m_data[QString::number(b)].toObject()["name"].toString();
             QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries;
-            // xy_series->setUseOpenGL(true);
+
             QList<qreal > x = ToolSet::String2DoubleList( controller["data"].toObject()["global_" + QString::number(a)].toString() );
             QList<qreal > y = ToolSet::String2DoubleList( controller["data"].toObject()["global_" + QString::number(b)].toString() );
-
+            if(x.size() > 1e4)
+                xy_series->setUseOpenGL(true);
             for(int j = 0; j < x.size(); ++j)
                     xy_series->append(QPointF(x[j], y[j]));
 

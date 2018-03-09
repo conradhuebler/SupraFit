@@ -48,6 +48,21 @@ itc_IItoII_Model::itc_IItoII_Model(DataClass *data) : AbstractItcModel(data)
 
 }
 
+itc_IItoII_Model::itc_IItoII_Model(AbstractItcModel *model) : AbstractItcModel(model)
+{
+   PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+
+  /* m_V = model->getV();
+   m_cell_concentration = model->getCellConcentration();
+   m_syringe_concentration = model->getSyringeConcentration();
+   m_T = model->getT();*/
+
+   m_threadpool = new QThreadPool(this);
+   for(int i = 0; i < DataPoints(); ++i)
+       m_solvers << new IItoI_ItoI_ItoII_Solver();
+
+}
+
 itc_IItoII_Model::~itc_IItoII_Model()
 {
     for(int i = 0; i < m_solvers.size(); ++i)
@@ -143,11 +158,10 @@ void itc_IItoII_Model::CalculateVariables()
         m_solvers[i]->setConfig(m_opt_config);
         m_solvers[i]->setConstants(constants_pow);
       //  if(QThreadPool::globalInstance()->activeThreadCount())
-            m_solvers[i]->run();
+      //      m_solvers[i]->run();
        // else
-      //      m_threadpool->start(m_solvers[i]);
+            m_threadpool->start(m_solvers[i]);
     }
-    qDebug() << this;
     m_threadpool->waitForDone();
 
     for(int i = 0; i < DataPoints(); ++i)
@@ -206,7 +220,7 @@ void itc_IItoII_Model::CalculateVariables()
 QSharedPointer<AbstractModel > itc_IItoII_Model::Clone()
 {
     QSharedPointer<AbstractItcModel > model = QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(this), &QObject::deleteLater);
-    model.data()->setData( m_data );
+    //model.data()->setData( m_data );
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());

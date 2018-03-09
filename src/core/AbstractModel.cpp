@@ -42,10 +42,10 @@ AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false
     m_model_signal = new DataTable(SeriesCount(),DataPoints(), this);
     m_model_error = new DataTable(SeriesCount(),DataPoints(), this);
 
-    m_data = data; 
-    connect(m_data, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+//    m_data = data;
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
 }
-
+/*
 AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(other->m_corrupt), m_last_p(other->m_last_p), m_f_value(other->m_f_value), m_last_parameter(other->m_last_parameter), m_last_freedom(other->m_last_freedom), m_converged(other->m_converged), m_locked_model(other->m_locked_model)
 {
     setOptimizerConfig(other->getOptimizerConfig());
@@ -75,25 +75,20 @@ AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt
     m_covfit = other->m_covfit;
     m_used_variables = other->m_used_variables;
     
-}
+}*/
 
 void AbstractModel::PrepareParameter(int global, int local)
 {
     m_local_parameter = new DataTable(local, SeriesCount(), this);
 
-    for(int i = 0; i < local; ++i)
-        m_enabled_local << 0;
-
-    for(int i = 0; i < global; ++i)
-    {
-        m_global_parameter << 0;
-        m_enabled_global << 0;
-    }
+    m_global_parameter = QVector<qreal>(global, 0).toList();
+    m_enabled_global = QVector<int>(global, 0);
+    m_enabled_local = QVector<int>(local, 0);
 
     addGlobalParameter(m_global_parameter);
     DeclareSystemParameter();
     DeclareOptions();
-    m_data->LoadSystemParameter();
+    /*m_data->*/LoadSystemParameter();
 }
 
 AbstractModel::~AbstractModel()
@@ -841,7 +836,7 @@ AbstractModel & AbstractModel::operator=(const AbstractModel& other)
     m_model_signal = other.m_model_signal;
     m_model_error = other.m_model_error;
 
-    m_data = other.m_data; 
+ //   m_data = other.m_data;
     
     m_local_parameter = other.m_local_parameter;
     m_active_signals = other.m_active_signals;
@@ -875,7 +870,7 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     m_model_signal = other->m_model_signal;
     m_model_error = other->m_model_error;
 
-    m_data = other->m_data; 
+ //   m_data = other->m_data;
     
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;

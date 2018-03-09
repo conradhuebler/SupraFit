@@ -222,7 +222,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
             m_charts.error_wrapper->Series(0)->setVisible(!m_charts.error_wrapper->Series(0)->isVisible());
         });
         if(m_model->getSystemParameterList().size())
-            m_sign_layout->addWidget(new SPOverview(m_model->Data()));
+            m_sign_layout->addWidget(new SPOverview(m_model.data()));
     }
     
     QWidget *scroll = new QWidget;
@@ -526,10 +526,10 @@ void ModelWidget::FastConfidence()
     config.fisher_statistic = true;
     config.confidence = qApp->instance()->property("p_value").toDouble();
     ModelComparison *statistic = new ModelComparison(config, this);
-    QJsonObject json = m_model->ExportModel(false);
     statistic->setModel(m_model);    
     statistic->FastConfidence();
     m_model->UpdateStatistic(statistic->Result());
+    m_fast_confidence = statistic->Results();
     delete statistic;
 }
 
@@ -621,7 +621,8 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
         config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
 
     ModelComparison *statistic = new ModelComparison(config, this);
-    
+    if(m_fast_confidence.size())
+        statistic->setResults(m_fast_confidence);
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);

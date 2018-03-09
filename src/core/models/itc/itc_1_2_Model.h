@@ -33,6 +33,7 @@ class itc_ItoII_Model : public AbstractItcModel
     
 public:
     itc_ItoII_Model(DataClass *data);
+    itc_ItoII_Model(AbstractItcModel *data);
     ~itc_ItoII_Model();
 
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;

@@ -44,7 +44,7 @@ class AbstractModel : public DataClass
   
 public:
     AbstractModel(DataClass *data);
-    AbstractModel(AbstractModel *other);
+    //AbstractModel(AbstractModel *other);
     
     virtual ~AbstractModel();
     
@@ -308,7 +308,7 @@ public:
     
     AbstractModel &operator=(const AbstractModel &other);
     AbstractModel *operator=(const AbstractModel *other);
-    inline void setData(DataClass *data) { m_data = data;}
+   // inline void setData(DataClass *data) { m_data = data;}
     
     inline void addOption(const QString &name, const QStringList &values)
     {
@@ -350,7 +350,7 @@ public:
 
     virtual inline bool SupportSeries() const = 0;
 
-    inline DataClass *Data() const { return m_data; }
+  //  inline DataClass *Data() const { return m_data; }
 
     /*! \brief Define the x axis label for charts
      */
@@ -413,7 +413,8 @@ protected:
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
     QList<int > m_active_signals;
-    QList<int > m_locked_parameters, m_enabled_local, m_enabled_global;
+    QList<int > m_locked_parameters;
+    QVector<int > m_enabled_local, m_enabled_global;
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
@@ -421,7 +422,7 @@ protected:
     OptimizerConfig m_opt_config;
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
         
-    DataClass *m_data;
+//    DataClass *m_data;
     QMap<QString, ModelOption > m_model_options;
     
 signals:

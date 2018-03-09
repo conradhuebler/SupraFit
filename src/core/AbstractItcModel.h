@@ -46,6 +46,8 @@ public:
     };
 
     AbstractItcModel(DataClass *data);
+    AbstractItcModel(AbstractItcModel *data);
+
     ~AbstractItcModel();
 
     virtual qreal BC50() const = 0;
@@ -64,6 +66,7 @@ public:
     inline double getV() const { return getSystemParameter(CellVolume).Double(); }
     inline double getCellConcentration() const { return m_cell_concentration; }
     inline double getSyringeConcentration() const { return m_syringe_concentration; }
+    inline double getT() const { return m_T; }
     virtual inline bool SupportSeries() const override { return false; }
 
     /*! \brief Return a formated value as string of the global parameter with the value
@@ -86,13 +89,14 @@ private:
 
 private slots:
     void CalculateConcentrations();
-    void UpdateParameter();
 
 protected:
     void SetConcentration(int i, const Vector& equilibrium);
     QPointer<DataTable > m_c0, m_concentrations;
     void Concentration() { CalculateConcentrations(); }
-    double m_V, m_cell_concentration, m_syringe_concentration;
+    double m_V, m_cell_concentration, m_syringe_concentration, m_T;
 
+public slots:
+    void UpdateParameter();
 };
 

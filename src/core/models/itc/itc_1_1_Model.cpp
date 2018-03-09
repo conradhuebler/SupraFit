@@ -39,6 +39,15 @@ itc_ItoI_Model::itc_ItoI_Model(DataClass *data) : AbstractItcModel(data)
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
+itc_ItoI_Model::itc_ItoI_Model(AbstractItcModel *model) : AbstractItcModel(model)
+{
+   PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+   /*m_V = model->getV();
+   m_cell_concentration = model->getCellConcentration();
+   m_syringe_concentration = model->getSyringeConcentration();
+   m_T = model->getT();*/
+}
+
 itc_ItoI_Model::~itc_ItoI_Model() 
 {
     
@@ -129,7 +138,7 @@ void itc_ItoI_Model::CalculateVariables()
 QSharedPointer<AbstractModel > itc_ItoI_Model::Clone()
 {
     QSharedPointer<AbstractItcModel > model = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->setData( m_data );
+    //model.data()->setData( m_data );
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());

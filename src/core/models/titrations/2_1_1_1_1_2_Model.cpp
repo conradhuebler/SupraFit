@@ -169,7 +169,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     m_constants_pow = QList<qreal >() << K21 << K11 << K12;
     
     
-    int maxthreads =qApp->instance()->property("threads").toInt();
+    int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     for(int i = 0; i < DataPoints(); ++i)
     {
@@ -179,9 +179,9 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
         m_solvers[i]->setConstants(m_constants_pow);
-        if(QThreadPool::globalInstance()->activeThreadCount())
-            m_solvers[i]->run();
-        else
+        //if(QThreadPool::globalInstance()->activeThreadCount())
+        //    m_solvers[i]->run();
+        //else
             m_threadpool->start(m_solvers[i]);
     }
     

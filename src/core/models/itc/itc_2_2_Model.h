@@ -36,13 +36,14 @@ class itc_IItoII_Model : public AbstractItcModel
     
 public:
     itc_IItoII_Model(DataClass *data);
+    itc_IItoII_Model(AbstractItcModel *data);
     ~itc_IItoII_Model();
 
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 3;}
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() override;
-    virtual bool SupportThreads() const override { return false; }
+    virtual bool SupportThreads() const override { return true; }
     virtual qreal BC50() const override;
     virtual inline qreal BC50SF() const override { return BC50(); }
     virtual inline QString GlobalParameterName(int i = 0) const override

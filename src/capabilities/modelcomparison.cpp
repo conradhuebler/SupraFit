@@ -76,9 +76,10 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
     double old_param = param;
     int iter = 0;
     int maxiter = 1000;
-    double step = param*1e-1;
+    double step = param/2.0;
     param += direction*step;
     double error = m_model.data()->SumofSquares();
+    int shrink = 0;
     while(qAbs(error-m_config.maxerror) > 1e-7)
     {
         parameter[parameter_id] = param;
@@ -89,10 +90,20 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
         {
             old_param = param;
             param += step*direction;
+            shrink = 0;
 
         }else
         {
-            step = qAbs(param - old_param)*0.5;
+            if(shrink == 10)
+            {
+                step = qAbs(param - old_param)*0.0005;
+                shrink = 0;
+            }
+            else
+            {
+                step = qAbs(param - old_param)*0.5;
+                shrink++;
+            }
             param = old_param + step*direction;
             old_param -= step*direction;
         }
@@ -104,10 +115,15 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
 
         if(iter >= maxiter)
         {
-            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id];
+#ifdef _DEBUG
+            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id] << qAbs(error-m_config.maxerror);
+#endif
             break;
         }
     }
+#ifdef _DEBUG
+    qDebug() << "Final Error " << error << " after " << iter << " steps, value:" << parameter[parameter_id];
+#endif
     return param;
 }
 
@@ -120,7 +136,7 @@ void FCThread::run()
     m_lower = SingleLimit(m_parameter, -1);
 }
 
-ModelComparison::ModelComparison(MoCoConfig config, QObject *parent) : AbstractSearchClass(parent), m_config(config)
+ModelComparison::ModelComparison(MoCoConfig config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_fast_finished(false)
 {
     
 }
@@ -151,10 +167,10 @@ bool ModelComparison::FastConfidence()
     {
         QPointer<FCThread> thread = new FCThread(m_config, i);
         thread->setModel(m_model);
-       // if(!m_model.data()->SupportThreads())
+        if(!m_model.data()->SupportThreads())
             m_threadpool->start(thread);
-       // else
-       //     thread->run();
+        else
+            thread->run();
         threads << thread;
     }
     if(!m_model.data()->SupportThreads())
@@ -224,9 +240,11 @@ bool ModelComparison::Confidence()
     // We make an initial guess to estimate the dimension
     m_model.data()->Calculate();
     m_effective_error = m_config.maxerror;
-    
-    FastConfidence();
-    
+    //if(!m_fast_finished)
+    //{
+     //   qDebug() << "automatic perform guess";
+        FastConfidence();
+    //}
     if(m_model.data()->GlobalParameterSize() == 1)
         return true;
     
@@ -308,7 +326,6 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         }
         QCoreApplication::processEvents();
     }
-    emit IncrementProgress(1);
     m_ellipsoid_area = double(inner)/double(all)*m_box_area;
     m_results.clear();
     

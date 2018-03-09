@@ -94,7 +94,8 @@ public:
     bool Confidence();
     bool FastConfidence();
     inline qreal Area() const { return m_ellipsoid_area; }
-     
+    inline void setResults(const QList<QJsonObject > results) { m_results = results; m_fast_finished = true; }
+
 private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal> >& box);
@@ -106,4 +107,5 @@ private:
     QJsonObject m_box, m_controller;
     double m_effective_error, m_box_area, m_ellipsoid_area;
     QVector<QList<qreal > > m_data_vec;
+    bool m_fast_finished;
 };

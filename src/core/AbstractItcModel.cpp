@@ -33,12 +33,27 @@
 
 AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_lock_concentrations(false)
 {
-    connect(m_data, &DataClass::SystemParameterChanged, this, &AbstractItcModel::UpdateParameter);
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractItcModel::UpdateParameter);
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
-    UpdateParameter();
-    connect(m_data, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+    LoadSystemParameter();
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+}
+
+AbstractItcModel::AbstractItcModel(AbstractItcModel *data) : AbstractModel(data), m_lock_concentrations(false)
+{
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractItcModel::UpdateParameter);
+    m_c0 = new DataTable( 2, DataPoints(), this);
+    m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
+    m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+
+    m_V = data->m_V;
+    m_cell_concentration = data->m_cell_concentration;
+    m_syringe_concentration = data->m_syringe_concentration;
+    m_T = data->m_T;
+
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
 }
 
 AbstractItcModel::~AbstractItcModel()
@@ -52,10 +67,10 @@ AbstractItcModel::~AbstractItcModel()
 void AbstractItcModel::DeclareSystemParameter()
 {
     QChar mu = QChar(956);
-    m_data->addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
-    m_data->addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
-    m_data->addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mol/L", SystemParameter::Scalar);
-    m_data->addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mol/L", SystemParameter::Scalar);
+    addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
+    addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
+    addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mol/L", SystemParameter::Scalar);
+    addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mol/L", SystemParameter::Scalar);
 }
 
 void AbstractItcModel::DeclareOptions()
@@ -165,6 +180,7 @@ void AbstractItcModel::UpdateParameter()
     m_V = getSystemParameter(CellVolume).Double();
     m_cell_concentration =getSystemParameter(CellConcentration).Double();
     m_syringe_concentration = getSystemParameter(SyringeConcentration).Double();
+    m_T = getSystemParameter(Temperature).Double();
     Concentration();
 }
 #include "AbstractItcModel.moc"

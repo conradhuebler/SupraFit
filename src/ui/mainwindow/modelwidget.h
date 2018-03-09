@@ -146,6 +146,7 @@ private:
     QPointer<QCheckBox> m_toggled_box;
     QPointer<LocalParameterWidget> m_local_parameter;
     QJsonObject m_last_model;
+    QList<QJsonObject > m_fast_confidence;
 
 private slots:
     void Repaint();
