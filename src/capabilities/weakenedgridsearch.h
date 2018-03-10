@@ -40,7 +40,7 @@ public:
     qreal maxerror = 0;
     qreal confidence = 95;
     qreal f_value = 0;
-    qreal error_conv = 1e-6;
+    qreal error_conv = 1e-10;
     bool relax = true;
     bool fisher_statistic = false;
     QList<int> global_param, local_param;
@@ -59,15 +59,22 @@ class WGSearchThread : public AbstractSearchThread
     inline void setParameterId(int index) { m_index = index; }
 
     virtual void run() override;
-
+    inline void setUp() { m_direction = +1.0; }
+    inline void setDown() { m_direction = -1.0; }
+    inline float Direction() const { return m_direction; }
+    inline int ParameterId() const { return m_index; }
     inline QList<qreal> XSeries() const { return m_x; }
     inline QList<qreal> YSeries() const { return m_y; }
     inline QHash<qreal, QJsonObject> IntermediateResults() const { return m_models; }
+    inline QJsonObject Result() const { return m_result; }
+    inline bool Converged() const { return m_converged; }
+    inline qreal Last() const { return m_last; }
 private:
     void Calculate();
-
     double m_start, m_end;
+    double m_last;
     int m_index, m_steps;
+    float m_direction;
     QHash<double, QJsonObject> m_models;
     QList<qreal > m_x, m_y;
     WGSConfig m_config;
@@ -75,37 +82,6 @@ private:
     qreal m_error;
     QSharedPointer<Minimizer> m_minimizer;
     bool m_stationary, m_finished, m_converged;
-};
-
-class WeakenedGridSearchThread : public AbstractSearchThread
-{
-  Q_OBJECT
-public:
-
-    WeakenedGridSearchThread(const WGSConfig &config, bool check_convergence = true);
-    ~WeakenedGridSearchThread();
-    inline void SetParameterID( int id ) { m_parameter_id = id; }
-    inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
-    void setParameter(const QJsonObject &json);
-    virtual void run();
-    inline QJsonObject Result() const { return m_result; }
-    inline bool Converged() const { return m_converged; }
-    inline QJsonObject Model() const { return m_model->ExportModel(); }
-    
-    inline QList<qreal> XSeries() const { return m_x; }
-    inline QList<qreal> YSeries() const { return m_y; }
-    
-private:
-    qreal SumErrors(bool direction, double &integ_5, double &integ_1, QList<QPointF> &series);
-    QSharedPointer<Minimizer> m_minimizer;
-    OptimizationType m_type;
-    int m_parameter_id;
-    QJsonObject m_result;
-    qreal m_error;
-    bool m_converged, m_check_convergence;
-    WGSConfig m_config;
-    bool allow_break;
-    QList<qreal > m_x, m_y;
 };
 
 class WeakenedGridSearch : public AbstractSearchClass
@@ -125,11 +101,10 @@ public slots:
     virtual void Interrupt() override;
     
 private:
-    QSharedPointer<Minimizer> m_minimizer;
+    QPointer<WGSearchThread > CreateThread(int index, bool direction);
     OptimizationType m_type;
     WGSConfig m_config;
     bool allow_break, m_cv;
-    QHash<QString, QList<qreal> > ConstantsFromThreads(QList< QPointer< WeakenedGridSearchThread > > &threads, bool store = false);
     QVector<QVector <qreal > > MakeBox() const;
     void MCSearch(const QVector<QVector<qreal> > &box);
     void Search(const QVector<QVector<qreal> > &box);

@@ -299,9 +299,9 @@ QWidget * StatisticDialog::GridSearchWidget()
     hlayout->addWidget(m_cv_steps);
 
     m_cv_err_conv = new ScientificBox;
-    m_cv_err_conv->setDecimals(6);
-    m_cv_err_conv->setValue(1E-6);
-    m_cv_err_conv->setSingleStep(1e-7);
+    m_cv_err_conv->setDecimals(14);
+    m_cv_err_conv->setValue(1E-10);
+    m_cv_err_conv->setSingleStep(1e-10);
 
     hlayout->addWidget(new QLabel(tr("Error Convergence:")));
     hlayout->addWidget(m_cv_err_conv);
@@ -424,18 +424,25 @@ WGSConfig StatisticDialog::getWGSConfig()
     config.error_conv = m_cv_err_conv->value();
 
     QList<int> glob_param, local_param;
+    int max = 0;
     for(int i = 0; i < m_grid_glob.size(); ++i)
+    {
         glob_param << m_grid_glob[i]->isChecked();
+        max +=  m_grid_glob[i]->isChecked();
+    }
 
     for(int i = 0; i < m_grid_local.size(); ++i)
+    {
         local_param << m_grid_local[i]->isChecked();
+        max += m_model.data()->SeriesCount()*m_grid_local[i]->isChecked();
+    }
 
     config.global_param = glob_param;
     config.local_param = local_param;
 
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(m_runs);
+    m_progress->setMaximum(2*max);
     m_progress->setValue(0);
     ShowWidget();
     return config;

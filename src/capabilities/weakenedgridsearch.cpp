@@ -32,7 +32,6 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QWeakPointer>
 
-#include <random>
 #include <iostream>
 
 #include "weakenedgridsearch.h"
@@ -44,7 +43,7 @@ WGSearchThread::WGSearchThread(const WGSConfig &config) : m_config(config),
     m_finished(false),
     m_converged(false)
 {
-
+    setUp();
 }
 
 WGSearchThread::~WGSearchThread()
@@ -54,6 +53,7 @@ WGSearchThread::~WGSearchThread()
 
 void WGSearchThread::run()
 {
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     m_minimizer->setModel(m_model);
     m_model.data()->Calculate();
     m_error = m_model.data()->SumofSquares();
@@ -63,6 +63,8 @@ void WGSearchThread::run()
     QVector<double > parameter = m_model.data()->OptimizeParameters();
     m_result["value"] = parameter[m_index];
     Calculate();
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit IncrementProgress(t1-t0);
 }
 
 
@@ -74,14 +76,16 @@ void WGSearchThread::Calculate()
 
     locked[m_index] = 0;
 
-    qreal error = 0;
+    qreal error = m_error;
     m_steps = 0;
-    int counter = 0;
-    double value = m_start;
+    int lowcount = 0, upcount = 0;
+    double value = param[m_index];
+    m_last = value;
     bool converged = false;
-    while(!converged)
+    bool infinity = true;
+    while(m_steps < m_config.maxsteps && lowcount < 50 && upcount < 5)
     {
-        if(m_start < m_end)
+        /*if(m_start < m_end)
         {
             converged = value > m_end;
             value += increment;
@@ -89,168 +93,50 @@ void WGSearchThread::Calculate()
         {
             converged = value < m_end;
             value -= increment;
-        }
+        }*/
+        value += (increment*m_direction);
         param[m_index] = value;
         m_steps++;
         m_model.data()->setParameter(param);
 
         m_minimizer->Minimize(m_config.runtype, locked);
         QJsonObject model = m_minimizer->Parameter();
-        m_model.data()->ImportModel(model);
 
+        if(!upcount)
+            m_last = value;
+        qreal new_error = m_minimizer->SumOfError();
 
-        m_model.data()->Calculate();
-
-        qreal new_error = m_model.data()->SumofSquares();
         m_models[new_error] = model;
-
-        if(new_error > m_config.maxerror || qAbs(new_error - error) < m_config.error_conv)
+        if(new_error > m_config.maxerror)
         {
             m_finished = new_error > m_config.maxerror;
             m_stationary = qAbs(new_error - error) < m_config.error_conv;
-            break;
+            upcount++;
         }
 
-
-        error = new_error;
-
-        m_x.append(value);
-        m_y.append(new_error);
-        if(new_error < m_error)
-            counter++;
-        // QCoreApplication::processEvents();
-        if(m_interrupt)
-            break;
-        emit IncrementProgress(0);
-    }
-    m_converged = counter > 50;
-
-}
-
-WeakenedGridSearchThread::WeakenedGridSearchThread(const WGSConfig &config, bool check_convergence) : m_config(config), m_check_convergence(check_convergence), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_converged(true)
-{
-    
-}
-
-WeakenedGridSearchThread::~WeakenedGridSearchThread()
-{
-
-}
-
-void WeakenedGridSearchThread::run()
-{
-    m_minimizer->setModel(m_model);
-    m_model.data()->Calculate();
-    m_error = m_model.data()->SumofSquares();
-
-    QList<QPointF> series;
-    QJsonObject optimized = m_model.data()->ExportModel(false);
-    QVector<double > parameter = m_model.data()->OptimizeParameters();
-    m_result["name"] = m_model.data()->GlobalParameterName(m_parameter_id);
-    m_result["value"] = parameter[m_parameter_id];
-    m_result["type"] = "Global Parameter";
-    
-    double integ_5 = 0;
-    double integ_1 = 0;
-    QJsonObject confidence;
-    confidence["upper"] = SumErrors(1, integ_5, integ_1, series);
-    m_model.data()->ImportModel(optimized);
-    confidence["lower"] = SumErrors(0, integ_5, integ_1, series);
-    confidence["error"] = m_config.confidence;
-
-    m_result["confidence"] = confidence;
-    QJsonObject data;
-    data["x"] = ToolSet::DoubleList2String(m_x);
-    data["y"] = ToolSet::DoubleList2String(m_y);
-    m_result["data"] = data;
-    
-    m_result["integ_5"] = integ_5/m_error;
-    m_result["integ_1"] = integ_1/m_error;
-}
-
-void WeakenedGridSearchThread::setParameter(const QJsonObject& json)
-{
-    m_model.data()->ImportModel(json);
-}
-
-
-qreal WeakenedGridSearchThread::SumErrors(bool direction, double& integ_5, double& integ_1, QList<QPointF> &series)
-{
-    double increment = m_config.increment;
-    if(!direction)
-        increment *= -1;
-    qreal old_error = m_error;
-    int counter = 0;
-    QList<int> locked; 
-    for(int i = 0; i <  m_model.data()->OptimizeParameters().size(); ++i)
-        locked << 1;
-    locked[m_parameter_id] = 0;
-    QVector<qreal > consts = m_model.data()->OptimizeParameters();
-    double constant_ = consts[m_parameter_id];
-    double par = 0;
-    for(int m = 0; m < m_config.maxsteps; ++m)
-    {
-        
-        par = constant_ + double(m)*increment;
-        
-        consts[m_parameter_id] = par;
-        m_model.data()->setParameter(consts);
-        
-        if(m_config.relax)
+        if(m_direction == 1)
         {
-            m_minimizer->Minimize(m_config.runtype, locked);
-            QJsonObject json_exp = m_minimizer->Parameter();
-            m_model.data()->ImportModel(json_exp);
-        }
-        
-        m_model.data()->Calculate();
-        
-        qreal new_error = m_model.data()->SumofSquares();
-
-        if(new_error < m_error && m_check_convergence)
-            counter++;
-        qreal rect = qMin(new_error,old_error)*qAbs(increment);
-        qreal triangle = 0.5*increment*qAbs(new_error-old_error);
-        qreal integ = rect+triangle; 
-        integ_5 += integ;
-        
-        if(new_error/m_error <= double(1.005) && new_error > m_error)
-            integ_1 += integ;
-        
-        if(new_error > m_config.maxerror)
-        {
-            break;
-        }
-        if(direction)
-        {
-//             series.append(QPointF(par,new_error));
-            m_x.append(par);
+            m_x.append(value);
             m_y.append(new_error);
-        }
-        else
+        }else
         {
-//             series.prepend(QPointF(par,new_error));
-            m_x.prepend(par);
+            m_x.prepend(value);
             m_y.prepend(new_error);
         }
-        old_error = new_error;
-        
+
+        if(new_error < m_error || qAbs(new_error - error) < m_config.error_conv || qAbs(new_error - m_error) < m_config.error_conv)
+            lowcount++;
+
+        error = new_error;
         QCoreApplication::processEvents();
         if(m_interrupt)
             break;
-        emit IncrementProgress(0);
     }
-    if(counter > 50)
-    {
-            m_converged = false;
-            qDebug() << "not converged " << direction;
-    }
-    return par;
+    m_converged = lowcount > 50;
 }
 
 
-
-WeakenedGridSearch::WeakenedGridSearch(const WGSConfig &config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+WeakenedGridSearch::WeakenedGridSearch(const WGSConfig &config, QObject *parent) : AbstractSearchClass(parent), m_config(config) /* , m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))*/
 {
     
     
@@ -264,25 +150,25 @@ WeakenedGridSearch::~WeakenedGridSearch()
     
 }
 
-QHash<QString, QList<qreal> > WeakenedGridSearch::ConstantsFromThreads(QList<QPointer<WeakenedGridSearchThread> >& threads, bool store)
+QPointer<WGSearchThread > WeakenedGridSearch::CreateThread(int index, bool direction)
 {
-    QHash<QString, QList<qreal> > constants;
-    for(int i = 0; i < threads.size(); ++i)
-    {
-        if(store)
-            m_results << threads[i]->Result();
-        
-        QList<qreal > vars;
-        if(!threads[i])
-            continue;
-        m_models << threads[i]->Model();
-        vars << threads[i]->Result()["confidence"].toObject()["lower"].toDouble() << threads[i]->Result()["confidence"].toObject()["upper"].toDouble();
-        constants[threads[i]->Result()["name"].toString()].append( vars );
-        delete threads[i];
-    }
-    return constants;
-}
+    QPointer<WGSearchThread >thread = new WGSearchThread(m_config);
+    connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+    thread->setModel(m_model);
+    thread->setParameterId(index);
 
+    if(!direction)
+        thread->setDown();
+
+    if(m_model.data()->SupportThreads())
+    {
+        thread->run();
+    }
+    else
+        m_threadpool->start(thread);
+    return thread;
+}
 
 bool WeakenedGridSearch::ConfidenceAssesment()
 {
@@ -292,29 +178,32 @@ bool WeakenedGridSearch::ConfidenceAssesment()
     for(int i = 0; i < m_series.size(); ++i)
         m_series[i].clear();
     m_series.clear();
-    
-    m_minimizer->setModel(m_model);
-    QJsonObject optimized = m_model.data()->ExportModel(false);
+
     QVector<double > parameter = m_model.data()->OptimizeParameters();
     
     m_model.data()->Calculate();
-    QList<QPointer <WeakenedGridSearchThread > > threads;
+    QList<QPair<QPointer <WGSearchThread >, QPointer <WGSearchThread > > > threads;
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
+
     for(int i = 0; i < parameter.size(); ++i)
     {
-        QPointer<WeakenedGridSearchThread >thread = new WeakenedGridSearchThread(m_config);
-        connect(this, SIGNAL(StopSubThreads()), thread, SLOT(Interrupt()), Qt::DirectConnection);
-        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-        thread->setModel(m_model);
-        thread->SetParameterID(i);
-        if(m_model.data()->SupportThreads())
+        bool step = true;
+        QPair<int, int > index_pair = m_model.data()->IndexParameters()[i];
+        if(index_pair.second == 0)
         {
-            thread->run();
+            step = m_config.global_param[index_pair.first];
         }
-        else
-            m_threadpool->start(thread);
-        threads << thread;
+        else if(index_pair.second == 1)
+        {
+            step = m_config.local_param[index_pair.first];
+        }
+        if(!step)
+            continue;
+        QPair<QPointer <WGSearchThread >, QPointer <WGSearchThread > > pair;
+        pair.first = CreateThread(i, 1);
+        pair.second = CreateThread(i, 0);
+        threads << pair;
         if(m_interrupt)
             break;
     }
@@ -330,12 +219,48 @@ bool WeakenedGridSearch::ConfidenceAssesment()
     bool converged = true;
     for(int i = 0; i < threads.size(); ++i)
     {
-        m_models << threads[i]->Model();
-        m_results << threads[i]->Result();
-        converged = converged && threads[i]->Converged();
-        delete threads[i];
+        QPair<QPointer <WGSearchThread >, QPointer <WGSearchThread > > pair = threads[i];
+        int index = pair.first->ParameterId();
+
+        QList<qreal > x, y;
+        x << pair.second->XSeries() << pair.first->XSeries();
+        y << pair.second->YSeries() << pair.first->YSeries();
+
+        qreal upper = pair.first->Last();
+        qreal lower = pair.second->Last();
+
+        QJsonObject result;
+        QPair<int, int > index_pair = m_model.data()->IndexParameters()[index];
+        if(index_pair.second == 0)
+        {
+            result["name"] = m_model.data()->GlobalParameterName(index_pair.first);
+            result["type"] = "Global Parameter";
+        }else if(index_pair.second == 1)
+        {
+            result["name"] = m_model.data()->LocalParameterName(index_pair.first);
+            result["type"] = "Local Parameter";
+            result["index"] = QString::number(0) + "|" + QString::number(index_pair.first);
+        }
+        result["value"] = parameter[index];
+
+
+        QJsonObject confidence;
+        confidence["upper"] = upper;
+        confidence["lower"] = lower;
+        confidence["error"] = m_config.confidence;
+
+        result["confidence"] = confidence;
+        QJsonObject data;
+        data["x"] = ToolSet::DoubleList2String(x);
+        data["y"] = ToolSet::DoubleList2String(y);
+        result["data"] = data;
+
+
+        m_results << result;
+        // converged = converged && threads[i]->Converged();
+        delete pair.first;
+        delete pair.second;
     }
-    qDeleteAll(threads);
     return converged;
 }
 

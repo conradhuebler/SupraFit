@@ -180,12 +180,12 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         m_solvers[i]->setConfig(m_opt_config);
         m_solvers[i]->setConstants(m_constants_pow);
         //if(QThreadPool::globalInstance()->activeThreadCount())
-        //    m_solvers[i]->run();
+            m_solvers[i]->run();
         //else
-            m_threadpool->start(m_solvers[i]);
+        //    m_threadpool->start(m_solvers[i]);
     }
     
-    m_threadpool->waitForDone();
+    while(m_threadpool->activeThreadCount()) { /*QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);*/ }
     
     for(int i = 0; i < DataPoints(); ++i)
     {

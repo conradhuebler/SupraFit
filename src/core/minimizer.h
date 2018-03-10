@@ -96,6 +96,7 @@ public:
     void setParameter(const QJsonObject &json, const QList<int> &locked);
     void setParameter(const QJsonObject &json);
     QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start = true);
+    inline qreal SumOfError() const { return m_sum_error; }
 
 private:
     QSharedPointer<AbstractModel> m_model;
