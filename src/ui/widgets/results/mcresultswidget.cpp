@@ -83,7 +83,7 @@ void MCResultsWidget::setUi()
     if(has_boxplot)
         tabs->addTab(m_box, tr("Boxplot"));
     
-    if(m_model->GlobalParameterSize() == 2 && m_models.size() && has_contour)
+    if(m_model->GlobalParameterSize() == 2 && m_models.size())
     {
         m_contour = MakeContour();
         tabs->addTab(m_contour, tr("Contour Plot"));

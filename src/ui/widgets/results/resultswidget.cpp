@@ -264,7 +264,10 @@ QWidget * ResultsWidget::GridSearchWidget()
             if(!data.contains("index"))
                 continue;
             int index =  data["index"].toString().split("|")[1].toInt();
-            xy_series->setColor(m_wrapper->Series(index)->color());
+            if(m_model.data()->SupportSeries())
+                xy_series->setColor(m_wrapper->Series(index)->color());
+            else
+                xy_series->setColor(m_wrapper->ColorCode(i));
             /*connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); });
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });*/

@@ -42,40 +42,9 @@ AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false
     m_model_signal = new DataTable(SeriesCount(),DataPoints(), this);
     m_model_error = new DataTable(SeriesCount(),DataPoints(), this);
 
-//    m_data = data;
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
 }
-/*
-AbstractModel::AbstractModel(AbstractModel* other) :DataClass(other) , m_corrupt(other->m_corrupt), m_last_p(other->m_last_p), m_f_value(other->m_f_value), m_last_parameter(other->m_last_parameter), m_last_freedom(other->m_last_freedom), m_converged(other->m_converged), m_locked_model(other->m_locked_model)
-{
-    setOptimizerConfig(other->getOptimizerConfig());
-    
-    m_model_signal = other->m_model_signal;
-    m_model_error = other->m_model_error;
 
-    m_data = other->m_data; 
-    
-    m_local_parameter = other->m_local_parameter;
-    m_active_signals = other->m_active_signals;
-    m_locked_parameters = other->m_locked_parameters;
-    m_model_options = other->m_model_options;
-    m_global_parameter = other->m_global_parameter;
-    
-    m_mc_statistics = other->m_mc_statistics;
-    m_wg_statistics = other->m_wg_statistics;
-    m_moco_statistics = other->m_moco_statistics;
-    
-    m_sum_absolute = other->m_sum_absolute;
-    m_sum_squares = other->m_sum_squares;
-    m_variance = other->m_variance;
-    m_mean = other->m_mean;
-    m_stderror = other->m_stderror;
-    m_SEy = other->m_SEy;
-    m_chisquared = other->m_chisquared;
-    m_covfit = other->m_covfit;
-    m_used_variables = other->m_used_variables;
-    
-}*/
 
 void AbstractModel::PrepareParameter(int global, int local)
 {
@@ -164,6 +133,8 @@ void AbstractModel::SetValue(int i, int j, qreal value)
 
 void AbstractModel::Calculate()
 {
+    if(!m_local_parameter)
+        return; // make sure, that PrepareParameter() has been called from subclass
     m_corrupt = false;
     m_mean = 0;
     m_variance = 0;
@@ -173,7 +144,6 @@ void AbstractModel::Calculate()
     m_chisquared = 0;
     m_covfit = 0;
 
-    //LoadSystemParameter();
     EvaluateOptions();
     CalculateVariables();
     
@@ -835,8 +805,6 @@ AbstractModel & AbstractModel::operator=(const AbstractModel& other)
     
     m_model_signal = other.m_model_signal;
     m_model_error = other.m_model_error;
-
- //   m_data = other.m_data;
     
     m_local_parameter = other.m_local_parameter;
     m_active_signals = other.m_active_signals;
@@ -869,8 +837,6 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     
     m_model_signal = other->m_model_signal;
     m_model_error = other->m_model_error;
-
- //   m_data = other->m_data;
     
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;

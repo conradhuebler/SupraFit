@@ -38,7 +38,6 @@ AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_loc
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     LoadSystemParameter();
-    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
 }
 
 AbstractItcModel::AbstractItcModel(AbstractItcModel *data) : AbstractModel(data), m_lock_concentrations(false)
@@ -52,8 +51,6 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel *data) : AbstractModel(data)
     m_cell_concentration = data->m_cell_concentration;
     m_syringe_concentration = data->m_syringe_concentration;
     m_T = data->m_T;
-
-    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
 }
 
 AbstractItcModel::~AbstractItcModel()

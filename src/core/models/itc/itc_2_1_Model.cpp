@@ -44,10 +44,6 @@ itc_IItoI_Model::itc_IItoI_Model(DataClass *data) : AbstractItcModel(data)
 itc_IItoI_Model::itc_IItoI_Model(AbstractItcModel *model) : AbstractItcModel(model)
 {
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-  /* m_V = model->getV();
-   m_cell_concentration = model->getCellConcentration();
-   m_syringe_concentration = model->getSyringeConcentration();
-   m_T = model->getT();*/
 }
 
 itc_IItoI_Model::~itc_IItoI_Model()
