@@ -176,7 +176,7 @@ bool ModelComparison::FastConfidence()
     if(!m_model.data()->SupportThreads())
     {
         while(m_threadpool->activeThreadCount())
-            QCoreApplication::processEvents();
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
     for(int i = 0; i < parameter.size(); ++i)
     {

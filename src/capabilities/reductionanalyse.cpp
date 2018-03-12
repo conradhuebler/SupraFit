@@ -165,7 +165,7 @@ void ReductionAnalyse::PlainReduction()
         thread->setModel(model);
         addThread(thread);
     }
-    while(Pending()) { QApplication::processEvents(); }
+    while(Pending()) { QApplication::processEvents(QEventLoop::ExcludeUserInputEvents); }
     QList<qreal> x;
     for(int i = 0; i < m_threads.size(); ++i)
     {

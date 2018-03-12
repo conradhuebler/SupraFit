@@ -93,7 +93,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
 {
     OptimizerConfig config = model.data()->getOptimizerConfig();
     Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
-    if(ModelSignals.size() == 0)
+    if(ModelSignals.size() == 0 || ModelSignals.size() < param.size())
         return -1;
     Eigen::VectorXd parameter(param.size());
     for(int i = 0; i < param.size(); ++i)

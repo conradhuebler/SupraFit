@@ -153,7 +153,6 @@ void itc_IItoI_Model::CalculateVariables()
 QSharedPointer<AbstractModel > itc_IItoI_Model::Clone()
 {
     QSharedPointer<AbstractItcModel > model = QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(this), &QObject::deleteLater);
-    //model.data()->setData( m_data );
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
