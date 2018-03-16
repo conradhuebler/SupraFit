@@ -52,7 +52,7 @@ public slots:
     void ShowLine(int state);
     void ShowLine(bool state);
     virtual void setName(const QString &name);
-    
+
 private:
    inline void Update()
    {

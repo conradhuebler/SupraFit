@@ -91,7 +91,7 @@ void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QC
     }
     m_list->setItemDelegate(new HTMLListItem(m_list));
     m_names_list->setItemDelegate(new HTMLListItem(m_names_list));
-    m_chartview->addSeries(series, true);
+    m_chartview->addSeries(series);
     m_hidden[index] = true;
     m_series.insert(index, series);
     m_chartview->formatAxis();

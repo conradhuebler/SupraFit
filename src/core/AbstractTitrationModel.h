@@ -105,7 +105,7 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const override { return "G/H"; }
+    virtual QString XLabel() const override { return "G<sub>0</sub>/H<sub>0</sub>"; }
 
     /*! \brief Define the y axis for charts
      */

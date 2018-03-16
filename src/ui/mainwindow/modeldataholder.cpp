@@ -536,7 +536,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     Charts charts = m_charts->addModel(t); 
     ModelWidget *modelwidget = new ModelWidget(t, charts);
     modelwidget->setColorList(object["colors"].toString()); 
-    
+    modelwidget->setKeys(object["keys"].toString());
     t->setOptimizerConfig(m_config);
     connect(modelwidget, SIGNAL(AddModel(const QJsonObject)), this, SLOT(AddToWorkspace(const QJsonObject)));
     connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
@@ -637,6 +637,7 @@ void ModelDataHolder::SaveCurrentModels(const QString &file)
             ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
             QJsonObject obj = model->Model()->ExportModel();
             obj["colors"] = model->Chart().signal_wrapper->ColorList();
+            obj["keys"] = model->Keys();
             toplevel["model_" + QString::number(i)] = obj; 
         }
     }    
@@ -655,6 +656,7 @@ void ModelDataHolder::SaveWorkspace(const QString &file)
             ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
             QJsonObject obj = model->Model()->ExportModel();
             obj["colors"] = model->Chart().signal_wrapper->ColorList();
+            obj["keys"] = model->Keys();
             data["colors"] = model->Chart().data_wrapper->ColorList();
             toplevel["model_" + QString::number(i)] = obj; 
         }

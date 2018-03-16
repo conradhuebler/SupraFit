@@ -93,7 +93,9 @@ public:
     inline bool isChecked() const { if(!m_toggled_box) return false; else return m_toggled_box->isChecked(); }
     inline Charts Chart() const { return m_charts; }
     void setColorList(const QString &str);
-    
+    QString Keys() const;
+    void setKeys(const QString &str);
+
 public slots:
     void LoadJson(const QJsonObject &object);
     void WGStatistic();

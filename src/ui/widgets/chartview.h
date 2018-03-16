@@ -44,7 +44,7 @@ class ChartViewPrivate : public QtCharts::QChartView
 public:
     inline ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {setRubberBand(QChartView::RectangleRubberBand);}
     inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); setRenderHint(QPainter::Antialiasing, true);setRubberBand(QChartView::RectangleRubberBand);}
-    inline ~ChartViewPrivate(){ };
+    inline ~ChartViewPrivate(){ }
     
 protected:
     virtual void mousePressEvent(QMouseEvent *event) override;
@@ -64,7 +64,7 @@ public:
     ChartView(QtCharts::QChart *chart, bool latex_supported = false);
     ChartView();
     inline ~ChartView() { }
-    void addSeries( QtCharts::QAbstractSeries* series, bool legend = false );
+    void addSeries( QPointer<QtCharts::QAbstractSeries>);
     qreal YMax() const { return m_ymax; }
     inline void removeSeries(QtCharts::QAbstractSeries *series) { m_chart->removeSeries(series); }
     inline QList<QtCharts::QAbstractSeries *> series() const { return m_chart->series(); }
@@ -76,7 +76,7 @@ public slots:
     void formatAxis();
     
     void setXAxis(const QString &str) { m_x_axis = str; emit AxisChanged(); }
-    void setYAxis(const QString &str) { m_y_axis = str; emit AxisChanged(); };
+    void setYAxis(const QString &str) { m_y_axis = str; emit AxisChanged(); }
     
 private:
     ChartViewPrivate *m_chart_private;
@@ -89,7 +89,7 @@ private:
     PgfPlotConfig getScatterTable() const;
     PgfPlotConfig getLineTable() const;
     QString Color2RGB(const QColor &color) const;
-    void WriteTable(const QString &str) const;
+    void WriteTable(const QString &str);
     ChartConfigDialog m_chartconfigdialog;
     bool m_pending, m_lock_scaling, m_latex_supported;   
     qreal m_ymax, m_ymin, m_xmin, m_xmax;

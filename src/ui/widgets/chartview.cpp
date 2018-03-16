@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/core/toolset.h"
@@ -100,7 +100,7 @@ void ChartViewPrivate::dragEnterEvent(QDragEnterEvent *event)
         }
     } else {
         event->ignore();
-    }   
+    }
 }
 
 void ChartViewPrivate::dragMoveEvent(QDragMoveEvent *event)
@@ -114,49 +114,52 @@ void ChartViewPrivate::dragMoveEvent(QDragMoveEvent *event)
         }
     } else {
         event->ignore();
-    }    
+    }
 }
 
 void ChartViewPrivate::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key()) {
-        case Qt::Key_Plus:
-            chart()->zoomIn();
-            break;
-        case Qt::Key_Minus:
-            chart()->zoomOut();
-            break;
-        case Qt::Key_Left:
-            chart()->scroll(-10, 0);
-            break;
-        case Qt::Key_Right:
-            chart()->scroll(10, 0);
-            break;
-        case Qt::Key_Up:
-            chart()->scroll(0, 10);
-            break;
-        case Qt::Key_Down:
-            chart()->scroll(0, -10);
-            break;
-        default:
-            QGraphicsView::keyPressEvent(event);
-            break;
+    case Qt::Key_Plus:
+        chart()->zoomIn();
+        break;
+    case Qt::Key_Minus:
+        chart()->zoomOut();
+        break;
+    case Qt::Key_Left:
+        chart()->scroll(-10, 0);
+        break;
+    case Qt::Key_Right:
+        chart()->scroll(10, 0);
+        break;
+    case Qt::Key_Up:
+        chart()->scroll(0, 10);
+        break;
+    case Qt::Key_Down:
+        chart()->scroll(0, -10);
+        break;
+    default:
+        QGraphicsView::keyPressEvent(event);
+        break;
     }
 }
 
 ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_private(new ChartViewPrivate(chart, this)), m_chart(chart), has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_lock_scaling(false), m_latex_supported(latex_supported), m_ymax(0)
 {
-    setUi();
     m_chart->legend()->setVisible(false);
+    m_chart->legend()->setAlignment(Qt::AlignRight);
+    // m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeFromSeries);
+    setUi();
 }
 
-ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_latex_supported(false)
+ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()), m_y_axis(QString()), m_pending(false), m_latex_supported(false), m_lock_scaling(false)
 {
-    m_chart = new QtCharts::QChart(); 
+    m_chart = new QtCharts::QChart();
     m_chart_private = new ChartViewPrivate(m_chart, this);
-    setUi();
     m_chart->legend()->setVisible(false);
-
+    m_chart->legend()->setAlignment(Qt::AlignRight);
+    //  m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeFromSeries);
+    setUi();
 }
 
 void ChartView::setUi()
@@ -172,7 +175,7 @@ void ChartView::setUi()
     QAction *scaleAction = new QAction(this);
     scaleAction->setText(tr("Rescale Axis"));
     connect(scaleAction, SIGNAL(triggered()), this, SLOT(forceformatAxis()));
-    menu->addAction(scaleAction);    
+    menu->addAction(scaleAction);
 
     QAction *exportpng = new QAction(this);
     exportpng->setText(tr("Export Diagram (PNG)"));
@@ -191,12 +194,12 @@ void ChartView::setUi()
         connect(exportlatex, SIGNAL(triggered()), this, SLOT(ExportLatex()));
         menu->addAction(exportlatex);
     }
-/*
+    /*
     QAction *exportgnuplot = new QAction(this);
     exportgnuplot->setText(tr("Export to Latex (tikz)"));
     connect(exportgnuplot, SIGNAL(triggered()), this, SLOT(ExportGnuplot()));
     menu->addAction(exportgnuplot);
-  */  
+  */
     m_config = new QPushButton(tr("Tools"));
     m_config->setFlat(true);
     m_config->setIcon(QIcon::fromTheme("applications-system"));
@@ -225,14 +228,23 @@ QtCharts::QLineSeries * ChartView::addLinearSeries(qreal m, qreal n, qreal min, 
     return series;
 }
 
-void ChartView::addSeries(  QtCharts::QAbstractSeries* series , bool legend)
+void ChartView::addSeries(  QPointer<QtCharts::QAbstractSeries> series)
 {
-    if(!m_chart->series().contains(series))
+    if(!m_chart->series().contains(series) || !series)
     {
+        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
         m_chart->addSeries(series);
         m_chart->createDefaultAxes();
+        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
     }
-    m_chart->legend()->markers(series).first()->setVisible(legend);
+    connect(series, &QtCharts::QAbstractSeries::nameChanged, [this, series] (  )
+    {
+        if(series)
+        {
+            this->m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty());
+        }
+    });
+    m_chart->legend()->markers(series).first()->setVisible(true);
     connect(series, SIGNAL(visibleChanged()), this, SLOT(forceformatAxis()));
     if(!connected)
         if(connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))
@@ -249,14 +261,15 @@ void ChartView::ClearChart()
 
 void ChartView::formatAxis()
 {
-    if(m_pending || m_chart->series().isEmpty() || m_lock_scaling)
+    if(m_pending || m_chart->series().isEmpty())
         return;
     forceformatAxis();
 }
 
 void ChartView::forceformatAxis()
 {
-    m_lock_scaling = false;   
+    if(m_lock_scaling)
+        return;
     m_pending = true;
     qreal x_min = 1000;
     qreal x_max = 0;
@@ -299,8 +312,8 @@ void ChartView::forceformatAxis()
     QPointer<QtCharts::QValueAxis> y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     if(!y_axis)
     {
-         m_chart->createDefaultAxes();
-         y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+        m_chart->createDefaultAxes();
+        y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     }
     y_axis->setMax(y_max);
     y_axis->setMin(y_min);
@@ -311,8 +324,8 @@ void ChartView::forceformatAxis()
     QPointer<QtCharts::QValueAxis>  x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
     if(!x_axis)
     {
-         m_chart->createDefaultAxes();
-         x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+        m_chart->createDefaultAxes();
+        x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     }
     x_axis->setMax(x_max);
     x_axis->setMin(x_min);
@@ -336,17 +349,42 @@ void ChartView::PlotSettings()
 
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
 {
+    m_lock_scaling = chartconfig.m_lock_scaling;
+
     QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-    m_lock_scaling = true;
     x_axis->setTitleText(chartconfig.x_axis);
     x_axis->setTickCount(chartconfig.x_step);
     x_axis->setMin(chartconfig.x_min);
     x_axis->setMax(chartconfig.x_max);
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY()); 
+    x_axis->setTitleFont(chartconfig.m_label);
+    x_axis->setLabelsFont(chartconfig.m_ticks);
+
+    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     y_axis->setTitleText(chartconfig.y_axis);
     y_axis->setTickCount(chartconfig.y_step);
     y_axis->setMin(chartconfig.y_min);
     y_axis->setMax(chartconfig.y_max);
+    y_axis->setTitleFont(chartconfig.m_label);
+    y_axis->setLabelsFont(chartconfig.m_ticks);
+
+    if(chartconfig.m_legend)
+    {
+        m_chart->legend()->setVisible(true);
+        if(chartconfig.align == Qt::AlignTop
+                || chartconfig.align == Qt::AlignBottom
+                || chartconfig.align == Qt::AlignLeft
+                || chartconfig.align == Qt::AlignRight)
+            m_chart->legend()->setAlignment(chartconfig.align);
+        else
+            m_chart->legend()->setAlignment(Qt::AlignRight);
+        m_chart->legend()->setFont(chartconfig.m_keys);
+        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
+    }
+    else
+    {
+        m_chart->legend()->setVisible(false);
+        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
+    }
 }
 
 ChartConfig ChartView::getChartConfig() const
@@ -359,11 +397,21 @@ ChartConfig ChartView::getChartConfig() const
     chartconfig.x_min = x_axis->min();
     chartconfig.x_max = x_axis->max();
     chartconfig.x_step = x_axis->tickCount();
+
+    chartconfig.m_label = x_axis->titleFont();
+    chartconfig.m_ticks = x_axis->labelsFont();
+
     chartconfig.y_axis = y_axis->titleText();
     chartconfig.y_min = y_axis->min();
     chartconfig.y_max = y_axis->max();
     chartconfig.y_step = y_axis->tickCount();
-   
+
+    chartconfig.m_legend = m_chart->legend()->isVisible();
+    chartconfig.m_lock_scaling = m_lock_scaling;
+
+    chartconfig.m_keys = m_chart->legend()->font();
+    chartconfig.align = m_chart->legend()->alignment();
+
     return chartconfig;
 }
 
@@ -376,7 +424,7 @@ void ChartView::PrintPlot()
 QString ChartView::Color2RGB(const QColor &color) const
 {
     QString result;
-    result = QString::number(color.toRgb().red()) + "," + QString::number(color.toRgb().green()) + ","+ QString::number(color.toRgb().blue()); 
+    result = QString::number(color.toRgb().red()) + "," + QString::number(color.toRgb().green()) + ","+ QString::number(color.toRgb().blue());
     return result;
 }
 
@@ -409,7 +457,7 @@ PgfPlotConfig ChartView::getScatterTable() const
             config.plots += defineplot + "\n";
             ++i;
         }
-    } 
+    }
     config.table = table;
     return config;
 }
@@ -443,34 +491,41 @@ PgfPlotConfig ChartView::getLineTable() const
             config.plots += defineplot + "\n";
             ++i;
         }
-    } 
+    }
     config.table = table;
     return config;
 }
 
-void ChartView::WriteTable(const QString &str) const
+void ChartView::WriteTable(const QString &str)
 {
-    QFile data(str + "_scatter.dat");
+    const QString dir = QFileDialog::getExistingDirectory(this, tr("Save File"),
+                                                          getDir());
+    if(dir.isEmpty() || dir.isNull())
+        return;
+    setLastDir(dir);
+
+
+    QFile data(dir + "/" + str + "_scatter.dat");
 
     PgfPlotConfig scatter_table = getScatterTable();
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) 
+    if (data.open(QFile::WriteOnly | QFile::Truncate))
     {
         QTextStream out(&data);
         for(const QString &str : qAsConst(scatter_table.table))
             out << str << "\n";
     }
     
-    data.setFileName(str + "_line.dat");
+    data.setFileName(dir + "/" +str + "_line.dat");
     PgfPlotConfig line_table = getLineTable();
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) 
+    if (data.open(QFile::WriteOnly | QFile::Truncate))
     {
         QTextStream out(&data);
         for(const QString &str : qAsConst(line_table.table))
             out << str << "\n";
     }
     
-    data.setFileName(str + ".tex");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) 
+    data.setFileName(dir + "/" +str + ".tex");
+    if (data.open(QFile::WriteOnly | QFile::Truncate))
     {
         QTextStream out(&data);
         out << "\\documentclass{standalone}" << "\n";
@@ -502,8 +557,9 @@ void ChartView::ExportLatex()
 {
     bool ok;
     QString str = QInputDialog::getText(this, tr("Select output file"),
-                                         tr("Please specify the base name of the files.\nA tex file, file for scatter and line table data will be created."), QLineEdit::Normal,
-                                         qApp->instance()->property("projectname").toString(), &ok);
+                                        tr("Please specify the base name of the files.\nA tex file, file for scatter and line table data will be created."), QLineEdit::Normal,
+                                        qApp->instance()->property("projectname").toString(), &ok);
+
     if(ok)
         WriteTable(str);
 }
@@ -516,8 +572,8 @@ void ChartView::ExportGnuplot()
 void ChartView::ExportPNG()
 {
     const QString str = QFileDialog::getSaveFileName(this, tr("Save File"),
-                           getDir(),
-                           tr("Images (*.png)"));
+                                                     getDir(),
+                                                     tr("Images (*.png)"));
     if(str.isEmpty() || str.isNull())
         return;
     setLastDir(str);
@@ -540,7 +596,7 @@ void ChartView::ExportPNG()
 
 void ChartView::ConfigurationChanged()
 {
-    bool animation = qApp->instance()->property("chartanimation").toBool(); 
+    bool animation = qApp->instance()->property("chartanimation").toBool();
     if(animation)
         m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     else

@@ -236,7 +236,7 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
     xy_series->append(data);
     xy_series->setMarkerSize(8);
-    view->addSeries(xy_series, false);
+    view->addSeries(xy_series);
     view->setXAxis(m_model->GlobalParameterName(0));
     view->setYAxis(m_model->GlobalParameterName(1));
     return view;

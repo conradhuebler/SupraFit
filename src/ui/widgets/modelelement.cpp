@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@
 
 
 #include <QtMath>
-#include "cmath"
 #include <QApplication>
 
 #include <QtCore/QJsonObject>
@@ -99,8 +98,42 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_include->setChecked(m_model->ActiveSignals()[m_no]);
     connect(m_include, SIGNAL(clicked()), this, SLOT(toggleActive()));
     tools->addWidget(m_include);
-    m_error_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no));
-    m_signal_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
+
+    m_signal_series = qobject_cast<LineSeries *>(m_charts.signal_wrapper->Series(m_no));
+    m_error_series = qobject_cast<LineSeries *>(m_charts.error_wrapper->Series(m_no));
+    m_name = new QLineEdit;
+    m_name->setPlaceholderText( m_signal_series->name());
+    m_name->setClearButtonEnabled(true);
+    tools->addWidget(m_name);
+    connect(m_name, &QLineEdit::textChanged, [this](  )
+    {
+        if(this->m_name && this->m_signal_series)
+        {
+            if(this->m_name->text() != this->m_signal_series->name())
+            {
+                this->m_signal_series->setName(this->m_name->text());
+                this->m_error_series->setName(this->m_name->text());
+            }
+        }
+    });
+
+    connect(m_signal_series, &LineSeries::nameChanged, [this](  )
+    {
+        if(this->m_name && this->m_signal_series)
+        {
+            if(this->m_name->isModified())
+            {
+                this->m_signal_series->setName(this->m_name->text());
+                this->m_error_series->setName(this->m_name->text());
+            }
+            else
+            {
+                if(this->m_name->text() != this->m_signal_series->name())
+                    this->m_name->setText(this->m_signal_series->name());
+            }
+        }
+    });
+
     m_error_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_signal_series->setVisible(m_model->ActiveSignals()[m_no]);
     m_show = new HoverCheckBox;
@@ -207,6 +240,13 @@ void ModelElement::ChangeColor(const QColor &color)
     m_color = color;
 }
 
+void ModelElement::setLabel(const QString &str)
+{
+    if(str.isEmpty() || str.isNull())
+        return;
+    m_name->setText(str);
+    m_name->setModified(true);
+}
 
 void ModelElement::chooseColor()
 {

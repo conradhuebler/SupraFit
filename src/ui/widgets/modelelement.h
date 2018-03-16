@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +17,13 @@
  * 
  */
 
-#ifndef MODELELEMENT_H
-#define MODELELEMENT_H
+#pragma once
 
 #include "src/ui/mainwindow/chartwidget.h"
 
 class SpinBox;
 class HoverCheckBox;
+class QLineEdit;
 
 class ModelElement : public QGroupBox
 {
@@ -39,7 +39,8 @@ public slots:
     void ToggleSeries(int);
     void ChangeColor(const QColor &color);
     void setReadOnly(bool readonly);
-    
+    void setLabel(const QString &str);
+
 private:
     QVector<SpinBox * > m_constants;
     QLabel *m_error;
@@ -48,7 +49,8 @@ private:
     HoverCheckBox *m_show;
     QSharedPointer<AbstractModel > m_model;
     QPointer<LineSeries > m_error_series, m_signal_series;
-    
+    QPointer<QLineEdit > m_name;
+
     int m_no;
     QColor m_color;
     Charts m_charts;
@@ -66,5 +68,3 @@ signals:
     void SetColor();
     void ActiveSignalChanged();
 };
-
-#endif

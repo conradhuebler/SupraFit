@@ -291,6 +291,17 @@ void ModelWidget::setColorList(const QString& str)
     }
 }
 
+
+void ModelWidget::setKeys(const QString &str)
+{
+    QStringList labels = str.split("|");
+    if(labels.size() == m_charts.signal_wrapper->SeriesSize())
+    {
+        for(int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i)
+            m_model_elements[i]->setLabel(labels[i]);
+    }
+}
+
 void ModelWidget::SplitterResized()
 {
     QSettings settings;
@@ -1013,6 +1024,17 @@ void ModelWidget::Detailed()
     dialog.resize(1024,800);
     dialog.exec();
 
+}
+
+QString ModelWidget::Keys() const
+{
+    QString label("");
+    for(int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i)
+    {
+        label += m_charts.signal_wrapper->Series(i)->name() + "|";
+    }
+    label.chop(1);
+    return label;
 }
 
 #include "modelwidget.moc"

@@ -67,10 +67,11 @@ signals:
     void ThemeChanged(QtCharts::QChart::ChartTheme theme);
     void AnimationChanged(bool animation);
     void ChartFlip(bool flip);
-    
+    void setSize(int size);
+
 private:
     QPushButton *m_hide, *m_tools;
-    QMenu *m_theme;
+    QMenu *m_theme, *m_size;
     QAction *m_flip, *m_animation;
     
 private slots:
@@ -87,7 +88,7 @@ public:
     QSharedPointer<ChartWrapper > setRawData(QSharedPointer<DataClass> rawdata); 
     Charts addModel(QSharedPointer< AbstractModel > model);
     inline ChartDockTitleBar *TitleBarWidget() const { return m_TitleBarWidget; }
-    
+
 private:
     qreal max_shift, min_shift;
        
