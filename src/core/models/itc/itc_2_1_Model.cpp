@@ -106,6 +106,8 @@ void itc_IItoI_Model::CalculateVariables()
     qreal dil_inter = m_local_parameter->data(3, 0);
     qreal fx = m_local_parameter->data(4, 0);
 
+    qreal V = m_V;
+
     qreal K21 = qPow(10, GlobalParameter()[0]);
     qreal K11 = qPow(10, GlobalParameter()[1]);
 
@@ -140,7 +142,7 @@ void itc_IItoI_Model::CalculateVariables()
 
         SetConcentration(i, vector);
 
-        qreal value = getV()*((complex_11-complex_11_prev)*dH1+(complex_21-complex_21_prev)*dH2);
+        qreal value = V*((complex_11-complex_11_prev)*dH1+(complex_21-complex_21_prev)*dH2);
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

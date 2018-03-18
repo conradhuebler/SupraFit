@@ -37,6 +37,7 @@
 
 AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false)
 {    
+    d = new AbstractModelPrivate;
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
     
     m_model_signal = new DataTable(SeriesCount(),DataPoints(), this);
@@ -792,9 +793,9 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
 
 void AbstractModel::setOption(const QString& name, const QString& value)
 {
-    if(!m_model_options.contains(name) || name.isEmpty() || value.isEmpty() || name.isNull() || value.isNull())
+    if(!d->m_model_options.contains(name) || name.isEmpty() || value.isEmpty() || name.isNull() || value.isNull())
         return; 
-    m_model_options[name].value = value;
+    d->m_model_options[name].value = value;
     OptimizeParameters(m_last_optimization);
 }
 
@@ -809,7 +810,8 @@ AbstractModel & AbstractModel::operator=(const AbstractModel& other)
     m_local_parameter = other.m_local_parameter;
     m_active_signals = other.m_active_signals;
     m_locked_parameters = other.m_locked_parameters;
-    m_model_options = other.m_model_options;
+    //m_model_options = other.m_model_options;
+    d = other.d;
     m_global_parameter = other.m_global_parameter;
     
     m_mc_statistics = other.m_mc_statistics;
@@ -841,7 +843,8 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;
     m_locked_parameters = other->m_locked_parameters;
-    m_model_options = other->m_model_options;
+    //m_model_options = other->m_model_options;
+    d = other->d;
     m_global_parameter = other->m_global_parameter;
     
     m_mc_statistics = other->m_mc_statistics;

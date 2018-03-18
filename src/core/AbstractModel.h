@@ -38,6 +38,19 @@ struct ModelOption
     QString value = "unset"; 
 };
 
+
+class AbstractModelPrivate : public QSharedData
+{
+public:
+    AbstractModelPrivate() { }
+    AbstractModelPrivate(const AbstractModelPrivate& other) : QSharedData(other), m_model_options(other.m_model_options) { }
+    ~AbstractModelPrivate() { }
+
+    QMap<QString, ModelOption > m_model_options;
+
+};
+
+
 class AbstractModel : public DataClass
 {
   Q_OBJECT  
@@ -312,27 +325,27 @@ public:
     
     inline void addOption(const QString &name, const QStringList &values)
     {
-        if(m_model_options.contains(name))
+        if(d->m_model_options.contains(name))
             return;
         ModelOption option;
         option.values = values;
         option.value = values.first();
-        m_model_options[name] = option;
+        d->m_model_options[name] = option;
     }
     
     void setOption(const QString &name, const QString &value);
     
     inline QString getOption(const QString &name) const
     {
-        if(!m_model_options.contains(name))
+        if(!d->m_model_options.contains(name))
             return QString("unset");
-        ModelOption option = m_model_options[name];
+        ModelOption option = d->m_model_options[name];
         return option.value;
     }
     
-    inline const QStringList getAllOptions() const { return m_model_options.keys(); }
+    inline const QStringList getAllOptions() const { return d->m_model_options.keys(); }
     
-    inline const QStringList getSingleOptionValues(const QString &name) const { if(m_model_options.contains(name)) return m_model_options[name].values; else return QStringList(); }
+    inline const QStringList getSingleOptionValues(const QString &name) const { if(d->m_model_options.contains(name)) return d->m_model_options[name].values; else return QStringList(); }
     
     inline virtual void DeclareOptions() { }
     
@@ -366,7 +379,7 @@ public slots:
      void Calculate();
      
 private:
-    
+    QSharedDataPointer<AbstractModelPrivate> d;
 protected:
     /*
      * This function handles the optimization flags, which get passed by
@@ -422,8 +435,6 @@ protected:
     OptimizerConfig m_opt_config;
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
         
-//    DataClass *m_data;
-    QMap<QString, ModelOption > m_model_options;
     
 signals:
     /*

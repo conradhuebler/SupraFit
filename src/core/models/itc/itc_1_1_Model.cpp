@@ -103,6 +103,8 @@ void itc_ItoI_Model::CalculateVariables()
     qreal dil_heat = m_local_parameter->data(1, 0);
     qreal dil_inter = m_local_parameter->data(2, 0);
     qreal fx = m_local_parameter->data(3, 0);
+    qreal V = m_V;
+
     qreal complex_prev = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
@@ -126,7 +128,7 @@ void itc_ItoI_Model::CalculateVariables()
         vector(2) = guest_0 - complex;
         vector(3) = complex;
         SetConcentration(i, vector);
-        qreal value = getV()*(complex-complex_prev)*dH;
+        qreal value = V*(complex-complex_prev)*dH;
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

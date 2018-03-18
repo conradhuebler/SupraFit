@@ -44,10 +44,6 @@ itc_ItoII_Model::itc_ItoII_Model(DataClass *data) : AbstractItcModel(data)
 itc_ItoII_Model::itc_ItoII_Model(AbstractItcModel *model) : AbstractItcModel(model)
 {
    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-   /*m_V = model->getV();
-   m_cell_concentration = model->getCellConcentration();
-   m_syringe_concentration = model->getSyringeConcentration();
-   m_T = model->getT();*/
 }
 
 itc_ItoII_Model::~itc_ItoII_Model()
@@ -107,6 +103,7 @@ void itc_ItoII_Model::CalculateVariables()
     qreal dil_heat = m_local_parameter->data(2, 0);
     qreal dil_inter = m_local_parameter->data(3, 0);
     qreal fx = m_local_parameter->data(4, 0);
+    qreal V = m_V;
 
     qreal K11 = qPow(10, GlobalParameter()[0]);
     qreal K12 = qPow(10, GlobalParameter()[1]);
@@ -143,7 +140,7 @@ void itc_ItoII_Model::CalculateVariables()
         vector(4) = complex_12;
         SetConcentration(i, vector);
 
-        qreal value = getV()*((complex_11-complex_11_prev)*dH1+(complex_12-complex_12_prev)*dH2);
+        qreal value = V*((complex_11-complex_11_prev)*dH1+(complex_12-complex_12_prev)*dH2);
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

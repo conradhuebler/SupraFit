@@ -133,6 +133,7 @@ void itc_IItoII_Model::CalculateVariables()
     qreal dil_heat = m_local_parameter->data(3, 0);
     qreal dil_inter = m_local_parameter->data(4, 0);
     qreal fx = m_local_parameter->data(5, 0);
+    qreal V = m_V;
 
     qreal K21 = qPow(10, GlobalParameter()[0]);
     qreal K11 = qPow(10, GlobalParameter()[1]);
@@ -206,7 +207,7 @@ void itc_IItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
 
-        qreal value = getV()*((complex_21-complex_21_prev)*dH21+((complex_11-complex_11_prev)*dH11)+((complex_12-complex_12_prev)*dH12));
+        qreal value = V*((complex_21-complex_21_prev)*dH21+((complex_11-complex_11_prev)*dH11)+((complex_12-complex_12_prev)*dH12));
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);
