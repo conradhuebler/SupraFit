@@ -294,6 +294,8 @@ void ModelWidget::setColorList(const QString& str)
 
 void ModelWidget::setKeys(const QString &str)
 {
+    if(str.isEmpty() || str.isNull())
+        return;
     QStringList labels = str.split("|");
     if(labels.size() == m_charts.signal_wrapper->SeriesSize())
     {
