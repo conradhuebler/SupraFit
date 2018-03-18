@@ -310,7 +310,7 @@ void MainWindow::NewTable()
 
 void MainWindow::OpenFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(),  tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat);;Json File (*.json);;SupraFit Project File  (*suprafit *.jdat);;Table Files (*.dat *.txt);;All files (*.*)" ));
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(),  tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt);;All files (*.*)" ));
     if(filename.isEmpty())
         return;
     setLastDir(filename);
@@ -346,7 +346,7 @@ bool MainWindow::LoadProject(const QString& filename)
 
 void MainWindow::SaveProjectAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.suprafit.json);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json);;All files (*.*)" ));
     if(!str.isEmpty())
     { 
         setLastDir(str);
@@ -356,7 +356,7 @@ void MainWindow::SaveProjectAction()
 
 void MainWindow::ImportModelAction()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("SupraFit Project File  (*.suprafit *.jdat);;Json File (*.suprafit.json);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("SupraFit Project File  (*.suprafit *.jdat);;Json File (*.json);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         setLastDir(str);
@@ -371,7 +371,7 @@ void MainWindow::ImportModelAction()
 
 void MainWindow::ExportModelAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File (*.suprafit);;Json File (*.suprafit.json);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File (*.suprafit);;Json File (*.json);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         setLastDir(str);

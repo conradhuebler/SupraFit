@@ -351,21 +351,26 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
 {
     m_lock_scaling = chartconfig.m_lock_scaling;
 
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-    x_axis->setTitleText(chartconfig.x_axis);
-    x_axis->setTickCount(chartconfig.x_step);
-    x_axis->setMin(chartconfig.x_min);
-    x_axis->setMax(chartconfig.x_max);
-    x_axis->setTitleFont(chartconfig.m_label);
-    x_axis->setLabelsFont(chartconfig.m_ticks);
-
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
-    y_axis->setTitleText(chartconfig.y_axis);
-    y_axis->setTickCount(chartconfig.y_step);
-    y_axis->setMin(chartconfig.y_min);
-    y_axis->setMax(chartconfig.y_max);
-    y_axis->setTitleFont(chartconfig.m_label);
-    y_axis->setLabelsFont(chartconfig.m_ticks);
+    QPointer<QtCharts::QValueAxis > x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
+    if(x_axis)
+    {
+        x_axis->setTitleText(chartconfig.x_axis);
+        x_axis->setTickCount(chartconfig.x_step);
+        x_axis->setMin(chartconfig.x_min);
+        x_axis->setMax(chartconfig.x_max);
+        x_axis->setTitleFont(chartconfig.m_label);
+        x_axis->setLabelsFont(chartconfig.m_ticks);
+    }
+    QPointer<QtCharts::QValueAxis > y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    if(y_axis)
+    {
+        y_axis->setTitleText(chartconfig.y_axis);
+        y_axis->setTickCount(chartconfig.y_step);
+        y_axis->setMin(chartconfig.y_min);
+        y_axis->setMax(chartconfig.y_max);
+        y_axis->setTitleFont(chartconfig.m_label);
+        y_axis->setLabelsFont(chartconfig.m_ticks);
+    }
 
     if(chartconfig.m_legend)
     {
@@ -389,17 +394,20 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
 
 ChartConfig ChartView::getChartConfig() const
 {
-    QtCharts::QValueAxis *x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
-    QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
+    QPointer<QtCharts::QValueAxis > x_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisX());
+    QPointer<QtCharts::QValueAxis > y_axis = qobject_cast<QtCharts::QValueAxis *>( m_chart->axisY());
     
     ChartConfig chartconfig;
-    chartconfig.x_axis = x_axis->titleText();
-    chartconfig.x_min = x_axis->min();
-    chartconfig.x_max = x_axis->max();
-    chartconfig.x_step = x_axis->tickCount();
+    if(x_axis)
+    {
+        chartconfig.x_axis = x_axis->titleText();
+        chartconfig.x_min = x_axis->min();
+        chartconfig.x_max = x_axis->max();
+        chartconfig.x_step = x_axis->tickCount();
+        chartconfig.m_label = x_axis->titleFont();
+        chartconfig.m_ticks = x_axis->labelsFont();
+    }
 
-    chartconfig.m_label = x_axis->titleFont();
-    chartconfig.m_ticks = x_axis->labelsFont();
 
     chartconfig.y_axis = y_axis->titleText();
     chartconfig.y_min = y_axis->min();

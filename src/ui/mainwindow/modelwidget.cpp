@@ -782,7 +782,7 @@ void ModelWidget::OptimizerSettings()
 }
 void ModelWidget::ExportConstants()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         setLastDir(str);
@@ -794,7 +794,7 @@ void ModelWidget::ExportConstants()
 
 void ModelWidget::ImportConstants()
 {
-    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)" ));
     if(!str.isEmpty())
     {
         setLastDir(str);
