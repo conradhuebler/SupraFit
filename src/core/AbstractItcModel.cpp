@@ -73,9 +73,9 @@ void AbstractItcModel::DeclareSystemParameter()
 void AbstractItcModel::DeclareOptions()
 {
     QStringList method = QStringList() << "auto" << "none";
-    addOption("Dilution", method);
+    addOption(Dilution, "Dilution", method);
     QStringList cooperativity = QStringList() << "pytc" /*<< "multiple"*/ << "single";
-    addOption("Binding", cooperativity);
+    addOption(Binding, "Binding", cooperativity);
 }
 
 void AbstractItcModel::CalculateConcentrations()

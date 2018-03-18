@@ -37,6 +37,13 @@ class fl_IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
      Q_OBJECT
     
 public:
+
+    enum {
+        Method = 1,
+        Cooperativity2_1 = 2,
+        Cooperativity1_2 = 2
+    };
+
     fl_IItoI_ItoI_ItoII_Model(DataClass* data);
     ~fl_IItoI_ItoI_ItoII_Model();
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;

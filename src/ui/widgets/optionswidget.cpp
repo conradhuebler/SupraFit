@@ -30,15 +30,16 @@
 OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel > model) : m_model(model)
 {
     QVBoxLayout *layout = new QVBoxLayout;
-    for(const QString &str : m_model->getAllOptions())
+    for(int index : m_model->getAllOptions())
     {
+        QString str = m_model->getOptionName(index);
         QHBoxLayout *hlayout = new QHBoxLayout;
         hlayout->addWidget(new QLabel(str));
         QPointer<QComboBox > box = new QComboBox;
-        box->addItems(m_model->getSingleOptionValues(str));
-        box->setCurrentText(m_model->getOption(str));
+        box->addItems(m_model->getSingleOptionValues(index));
+        box->setCurrentText(m_model->getOption(index));
         hlayout->addWidget(box);
-        m_options[str] = box;
+        m_options[index] = box;
         connect(box, SIGNAL(currentIndexChanged(QString)), this, SLOT(setOption()));
         layout->addLayout(hlayout);
     }
@@ -53,10 +54,10 @@ OptionsWidget::~OptionsWidget()
 
 void OptionsWidget::setOption()
 {
-    for(const QString &str : m_model->getAllOptions())
+    for(int index : m_model->getAllOptions())
     {
-            QString value = m_options[str]->currentText();
-            m_model->setOption(str, value);
+            QString value = m_options[index]->currentText();
+            m_model->setOption(index, value);
     }
     m_model->Calculate();
 }

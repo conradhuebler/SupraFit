@@ -45,14 +45,14 @@ IItoI_ItoI_Model::~IItoI_ItoI_Model()
 void IItoI_ItoI_Model::DeclareOptions()
 {
     QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption("Method", method);
+    addOption(Method, "Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    addOption("Cooperativity", cooperativity);
+    addOption(Cooperativity, "Cooperativity", cooperativity);
 }
 
 void IItoI_ItoI_Model::EvaluateOptions()
 {
-    QString cooperativitiy = getOption("Cooperativity");
+    QString cooperativitiy = getOption(Cooperativity);
     /*
      * Chem. Soc. Rev., 2017, 46, 2622--2637
      * K11 = 4*K21 | K21 = 0.25 K11
@@ -93,7 +93,7 @@ void IItoI_ItoI_Model::InitialGuess()
     m_global_parameter[0] = m_global_parameter[1]/2;
 
     qreal factor = 1;
-    if(getOption("Method") == "UV/VIS")
+    if(getOption(Method) == "UV/VIS")
     {
         factor = 1/InitialHostConcentration(0);
     }
@@ -106,7 +106,7 @@ void IItoI_ItoI_Model::InitialGuess()
 
 void IItoI_ItoI_Model::CalculateVariables()
 {
-    QString method = getOption("Method");
+    QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
     
@@ -129,7 +129,9 @@ void IItoI_ItoI_Model::CalculateVariables()
         vector(3) = complex_21;
         vector(4) = complex_11;
         
-        SetConcentration(i, vector);
+        if(!m_fast)
+            SetConcentration(i, vector);
+
         qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {
@@ -145,7 +147,7 @@ void IItoI_ItoI_Model::CalculateVariables()
 
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    QString coop21 = getOption("Cooperativity");
+    QString coop21 = getOption(Cooperativity);
    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {

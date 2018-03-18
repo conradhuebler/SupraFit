@@ -39,7 +39,7 @@ public:
     
 private:
     QSharedPointer<AbstractModel > m_model;
-    QHash<QString, QPointer<QComboBox> > m_options;
+    QHash<int, QPointer<QComboBox> > m_options;
     
 private slots:
     void setOption();

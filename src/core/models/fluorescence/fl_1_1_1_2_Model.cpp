@@ -45,7 +45,7 @@ fl_ItoI_ItoII_Model::~fl_ItoI_ItoII_Model()
 void fl_ItoI_ItoII_Model::DeclareOptions()
 {
      QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-     addOption("Cooperativity", cooperativity);
+     addOption(Cooperativity, "Cooperativity", cooperativity);
     
     // QStringList host = QStringList() << "Host" << "no Host";
     // addOption("Host", host);
@@ -55,7 +55,7 @@ void fl_ItoI_ItoII_Model::DeclareOptions()
 void fl_ItoI_ItoII_Model::EvaluateOptions()
 {
     
-    QString cooperativitiy = getOption("Cooperativity");
+    QString cooperativitiy = getOption(Cooperativity);
     
     auto global_coop = [this]()
     {
@@ -109,7 +109,7 @@ void fl_ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    QString cooperativity = getOption("Cooperativity");
+    QString cooperativity = getOption(Cooperativity);
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
         addGlobalParameter(m_global_parameter);
@@ -135,7 +135,7 @@ QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType 
 
 void fl_ItoI_ItoII_Model::CalculateVariables()
 {
-    QString method = getOption("Method");
+    QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal K12= qPow(10, GlobalParameter().last());

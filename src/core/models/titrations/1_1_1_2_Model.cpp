@@ -47,14 +47,14 @@ ItoI_ItoII_Model::~ItoI_ItoII_Model()
 void ItoI_ItoII_Model::DeclareOptions()
 {
     QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption("Method", method);
+    addOption(Method, "Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    addOption("Cooperativity", cooperativity);
+    addOption(Cooperativity, "Cooperativity", cooperativity);
 }
 
 void ItoI_ItoII_Model::EvaluateOptions()
 {
-    QString cooperativitiy = getOption("Cooperativity");
+    QString cooperativitiy = getOption(Cooperativity);
     /*
      * Chem. Soc. Rev., 2017, 46, 2622--2637
      * K11 = 4*K12 | K12 = 0.25 K11
@@ -96,7 +96,7 @@ void ItoI_ItoII_Model::InitialGuess()
     m_global_parameter = QList<qreal>() << Guess_1_1() << K11 / 2;
 
     qreal factor = 1;
-    if(getOption("Method") == "UV/VIS")
+    if(getOption(Method) == "UV/VIS")
     {
         factor = 1/InitialHostConcentration(0);
     }
@@ -110,7 +110,7 @@ void ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    QString coop12 = getOption("Cooperativity");
+    QString coop12 = getOption(Cooperativity);
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {
         addGlobalParameter(0);
@@ -135,7 +135,7 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType typ
 
 void ItoI_ItoII_Model::CalculateVariables()
 {
-    QString method = getOption("Method");
+    QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal K12 = qPow(10, GlobalParameter().last());
@@ -157,7 +157,9 @@ void ItoI_ItoII_Model::CalculateVariables()
         vector(2) = guest;
         vector(3) = complex_11;
         vector(4) = complex_12;
-        SetConcentration(i, vector);
+
+        if(!m_fast)
+            SetConcentration(i, vector);
 
         qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)

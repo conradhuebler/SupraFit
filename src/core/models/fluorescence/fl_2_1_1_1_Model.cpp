@@ -43,7 +43,7 @@ fl_IItoI_ItoI_Model::~fl_IItoI_ItoI_Model()
 void fl_IItoI_ItoI_Model::DeclareOptions()
 {
      QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-     addOption("Cooperativity", cooperativity);
+     addOption(Cooperativity, "Cooperativity", cooperativity);
     
      // QStringList host = QStringList() << "Host" << "no Host";
      // addOption("Host", host);
@@ -54,7 +54,7 @@ void fl_IItoI_ItoI_Model::DeclareOptions()
 void fl_IItoI_ItoI_Model::EvaluateOptions()
 {
     
-     QString cooperativitiy = getOption("Cooperativity");
+     QString cooperativitiy = getOption(Cooperativity);
 
     auto global_coop = [this](){
         this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
@@ -78,7 +78,7 @@ void fl_IItoI_ItoI_Model::EvaluateOptions()
         global_coop();
     }
     
-    QString host = getOption("Host");
+    // QString host = getOption("Host");
     /*qDebug() << host;
     if(host != "Host")
     {
@@ -151,7 +151,7 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
 
 QVector<qreal> fl_IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    QString cooperativity = getOption("Cooperativity");
+    QString cooperativity = getOption(Cooperativity);
    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {

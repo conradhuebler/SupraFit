@@ -55,16 +55,16 @@ IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
 void IItoI_ItoI_ItoII_Model::DeclareOptions()
 {
     QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption("Method", method);
+    addOption(Method, "Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    addOption("Cooperativity 2:1", cooperativity);
+    addOption(Cooperativity2_1, "Cooperativity 2:1", cooperativity);
     cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    addOption("Cooperativity 1:2", cooperativity);
+    addOption(Cooperativity1_2, "Cooperativity 1:2", cooperativity);
 }
 
 void IItoI_ItoI_ItoII_Model::EvaluateOptions()
 {
-    QString coop21 = getOption("Cooperativity 2:1");
+    QString coop21 = getOption(Cooperativity2_1);
     
     /*
      * Chem. Soc. Rev., 2017, 46, 2622--2637
@@ -100,7 +100,7 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
     }
     
     
-    QString coop12 = getOption("Cooperativity 1:2");
+    QString coop12 = getOption(Cooperativity1_2);
     
     /*
      * Chem. Soc. Rev., 2017, 46, 2622--2637
@@ -144,7 +144,7 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
     
     qreal factor = 1;
     
-    if(getOption("Method") == "UV/VIS")
+    if(getOption(Method) == "UV/VIS")
     {
         factor = 1/InitialHostConcentration(0);
     }
@@ -159,7 +159,7 @@ void IItoI_ItoI_ItoII_Model::InitialGuess()
 
 void IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
-    QString method = getOption("Method");
+    QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
     
@@ -221,7 +221,10 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         vector(3) = complex_21;
         vector(4) = complex_11;
         vector(5) = complex_12;
-        SetConcentration(i, vector);
+
+        if(!m_fast)
+            SetConcentration(i, vector);
+
         qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {
@@ -247,8 +250,8 @@ QSharedPointer<AbstractModel> IItoI_ItoI_ItoII_Model::Clone()
 
 QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    QString coop21 = getOption("Cooperativity 2:1");
-    QString coop12 = getOption("Cooperativity 1:2");
+    QString coop21 = getOption(Cooperativity2_1);
+    QString coop12 = getOption(Cooperativity1_2);
     
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
     {

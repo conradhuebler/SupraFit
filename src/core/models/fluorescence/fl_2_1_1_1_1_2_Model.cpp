@@ -55,14 +55,14 @@ fl_IItoI_ItoI_ItoII_Model::~fl_IItoI_ItoI_ItoII_Model()
 void fl_IItoI_ItoI_ItoII_Model::DeclareOptions()
 {
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    addOption("Cooperativity 2:1", cooperativity);
+    addOption(Cooperativity2_1, "Cooperativity 2:1", cooperativity);
     cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-    addOption("Cooperativity 1:2", cooperativity);
+    addOption(Cooperativity1_2, "Cooperativity 1:2", cooperativity);
 }
 
 void fl_IItoI_ItoI_ItoII_Model::EvaluateOptions()
 {
-    QString cooperativitiy = getOption("Cooperativity 2:1");
+    QString cooperativitiy = getOption(Cooperativity2_1);
     {
         auto global_coop = [this](){
             this->m_global_parameter[0] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));
@@ -87,7 +87,7 @@ void fl_IItoI_ItoI_ItoII_Model::EvaluateOptions()
         }
     }
 
-    cooperativitiy = getOption("Cooperativity 1:2");
+    cooperativitiy = getOption(Cooperativity1_2);
     {
          auto global_coop = [this](){
                 this->m_global_parameter[2] = log10(double(0.25)*qPow(10,this->m_global_parameter[1]));

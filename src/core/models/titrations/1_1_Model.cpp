@@ -48,7 +48,7 @@ void ItoI_Model::InitialGuess()
     m_global_parameter[0] = Guess_1_1();
 
     qreal factor = 1;
-    if(getOption("Method") == "UV/VIS")
+    if(getOption(Method) == "UV/VIS")
     {
         factor = 1/InitialHostConcentration(0);
     }
@@ -62,7 +62,7 @@ void ItoI_Model::InitialGuess()
 void ItoI_Model::DeclareOptions()
 {
     QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption("Method", method);
+    addOption(Method, "Method", method);
 }
 
 void ItoI_Model::EvaluateOptions()
@@ -90,7 +90,7 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 
 void ItoI_Model::CalculateVariables()
 {  
-    QString method = getOption("Method");
+    QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal value;
@@ -105,7 +105,9 @@ void ItoI_Model::CalculateVariables()
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
-        SetConcentration(i, vector);
+
+        if(!m_fast)
+            SetConcentration(i, vector);
 
         for(int j = 0; j < SeriesCount(); ++j)
         {

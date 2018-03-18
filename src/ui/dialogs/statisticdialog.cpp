@@ -279,7 +279,7 @@ QWidget * StatisticDialog::GridSearchWidget()
 
     m_cv_increment = new QDoubleSpinBox;
     m_cv_increment->setDecimals(6);
-    m_cv_increment->setValue(0.001);
+    m_cv_increment->setValue(0);
     m_cv_increment->setSingleStep(1e-3);
 
     hlayout = new QHBoxLayout;

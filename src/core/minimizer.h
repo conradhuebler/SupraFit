@@ -39,7 +39,7 @@ public:
     
     NonLinearFitThread(bool exchange_statistics = true);
     ~NonLinearFitThread();
-    void setModel(const QSharedPointer< AbstractModel > model);
+    void setModel(const QSharedPointer< AbstractModel > model, bool clone = true);
    
     QSharedPointer<AbstractModel> Model() const { return m_model; }
     inline void setOptimizationRun(OptimizationType runtype) { m_runtype = runtype; }

@@ -51,9 +51,13 @@ void NonLinearFitThread::run()
 }
 
 
-void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model)
+void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, bool clone)
 {
-    m_model = model->Clone();
+    if(clone)
+        m_model = model->Clone();
+    else
+        m_model = model;
+
     m_model->Calculate();
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     m_last_parameter = m_model->ExportModel(m_exc_statistics);

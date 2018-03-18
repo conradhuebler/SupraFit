@@ -36,6 +36,7 @@ struct ModelOption
 {
     QStringList values;
     QString value = "unset"; 
+    QString name;
 };
 
 
@@ -46,7 +47,8 @@ public:
     AbstractModelPrivate(const AbstractModelPrivate& other) : QSharedData(other), m_model_options(other.m_model_options) { }
     ~AbstractModelPrivate() { }
 
-    QMap<QString, ModelOption > m_model_options;
+    QMap<int, ModelOption > m_model_options;
+    QList<int > m_locked_parameters;
 
 };
 
@@ -79,7 +81,7 @@ public:
     
     /*! \brief Locks Parameter not to be optimised during Levenberg-Marquadt
      */
-    inline void setLockedParameter(const QList<int> &lock){ m_locked_parameters = lock; }
+    inline void setLockedParameter(const QList<int> &lock){ d->m_locked_parameters = lock; }
     
     /*! \brief Clear the list of to be optimised Parameters
      */
@@ -87,7 +89,7 @@ public:
     
     /*! \brief returns the locked Parameters
      */
-    inline QList<int> LockedParamters() const { return m_locked_parameters; }
+    inline QList<int> LockedParamters() const { return d->m_locked_parameters; }
     
     /*! \brief Set the last OptimizationType to runtype
      */
@@ -321,31 +323,47 @@ public:
     
     AbstractModel &operator=(const AbstractModel &other);
     AbstractModel *operator=(const AbstractModel *other);
-   // inline void setData(DataClass *data) { m_data = data;}
     
-    inline void addOption(const QString &name, const QStringList &values)
+    inline void addOption(int index, const QString &name, const QStringList &values)
     {
-        if(d->m_model_options.contains(name))
+        if(d->m_model_options.contains(index))
             return;
         ModelOption option;
         option.values = values;
         option.value = values.first();
-        d->m_model_options[name] = option;
+        option.name = name;
+        d->m_model_options[index] = option;
     }
     
-    void setOption(const QString &name, const QString &value);
+    void setOption(int index, const QString &value);
     
-    inline QString getOption(const QString &name) const
+    inline QString getOption(int index) const
     {
-        if(!d->m_model_options.contains(name))
+        if(!d->m_model_options.contains(index))
             return QString("unset");
-        ModelOption option = d->m_model_options[name];
+        ModelOption option = d->m_model_options[index];
         return option.value;
     }
     
-    inline const QStringList getAllOptions() const { return d->m_model_options.keys(); }
+    inline QString getOptionName(int index) const
+    {
+        if(!d->m_model_options.contains(index))
+            return QString("unset");
+        ModelOption option = d->m_model_options[index];
+        return option.name;
+    }
+
+    /*inline const QStringList getAllOptions() const
+    {
+        QStringList list;
+        for(int index : d->m_model_options.keys())
+            list << d->m_model_options[index].name;
+        return list;
+    }*/
     
-    inline const QStringList getSingleOptionValues(const QString &name) const { if(d->m_model_options.contains(name)) return d->m_model_options[name].values; else return QStringList(); }
+    inline QList<int> getAllOptions() const { return d->m_model_options.keys(); }
+
+    inline const QStringList getSingleOptionValues(int index) const { if(d->m_model_options.contains(index)) return d->m_model_options[index].values; else return QStringList(); }
     
     inline virtual void DeclareOptions() { }
     
@@ -373,6 +391,7 @@ public:
      */
     virtual QString YLabel() const = 0;
 
+    //inline void Calculate(bool fast);
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -426,12 +445,11 @@ protected:
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
     QList<int > m_active_signals;
-    QList<int > m_locked_parameters;
     QVector<int > m_enabled_local, m_enabled_global;
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
-    bool m_corrupt, m_converged, m_locked_model;
+    bool m_corrupt, m_converged, m_locked_model, m_fast;
     OptimizerConfig m_opt_config;
     QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
         

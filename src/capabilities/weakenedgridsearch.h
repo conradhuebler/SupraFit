@@ -35,7 +35,7 @@ class QPointF;
 class WGSConfig : public AbstractConfig
 {
 public:
-    qreal increment = 1e-3;
+    qreal increment = 0;
     int maxsteps = 1e4;
     qreal maxerror = 0;
     qreal confidence = 95;
@@ -55,7 +55,6 @@ class WGSearchThread : public AbstractSearchThread
     WGSearchThread(const WGSConfig &config);
     ~WGSearchThread();
 
-    void setRange(double start, double end) { m_start = start; m_end = end; }
     inline void setParameterId(int index) { m_index = index; }
 
     virtual void run() override;
@@ -69,9 +68,11 @@ class WGSearchThread : public AbstractSearchThread
     inline QJsonObject Result() const { return m_result; }
     inline bool Converged() const { return m_converged; }
     inline qreal Last() const { return m_last; }
+    inline void setIncrement(qreal increment) { m_increment = increment; }
+    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+
 private:
     void Calculate();
-    double m_start, m_end;
     double m_last;
     int m_index, m_steps;
     float m_direction;
@@ -79,8 +80,7 @@ private:
     QList<qreal > m_x, m_y;
     WGSConfig m_config;
     QJsonObject m_result;
-    qreal m_error;
-    QSharedPointer<Minimizer> m_minimizer;
+    qreal m_error, m_increment;
     bool m_stationary, m_finished, m_converged;
 };
 

@@ -74,8 +74,9 @@ QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private(OptimizationType type
     addLocalParameter(0);
     addLocalParameter(1);
 
-    QString binding = getOption("Binding");
-    QString dilution = getOption("Dilution");
+    QString binding = getOption(Binding);
+    QString dilution = getOption(Dilution);
+
     if(dilution == "auto")
     {
         addLocalParameter(2);
@@ -97,8 +98,8 @@ void itc_IItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    QString binding = getOption("Binding");
-    QString dil = getOption("Dilution");
+    QString binding = getOption(Binding);
+    QString dil = getOption(Dilution);
 
     qreal dH2 =  m_local_parameter->data(0, 0);
     qreal dH1 =  m_local_parameter->data(1, 0);
@@ -139,8 +140,8 @@ void itc_IItoI_Model::CalculateVariables()
         vector(2) = guest;
         vector(3) = complex_21;
         vector(4) = complex_11;
-
-        SetConcentration(i, vector);
+        if(!m_fast)
+            SetConcentration(i, vector);
 
         qreal value = V*((complex_11-complex_11_prev)*dH1+(complex_21-complex_21_prev)*dH2);
         if(binding == "multiple")

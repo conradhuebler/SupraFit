@@ -40,7 +40,7 @@ public:
         Temperature = 4
     };
 
-    enum Option {
+    enum {
         Binding = 1,
         Dilution = 2
     };

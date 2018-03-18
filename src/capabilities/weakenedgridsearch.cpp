@@ -38,7 +38,6 @@
 
 
 WGSearchThread::WGSearchThread(const WGSConfig &config) : m_config(config),
-    m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)),
     m_stationary(false),
     m_finished(false),
     m_converged(false)
@@ -54,12 +53,10 @@ WGSearchThread::~WGSearchThread()
 void WGSearchThread::run()
 {
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    m_minimizer->setModel(m_model);
     m_model.data()->Calculate();
     m_error = m_model.data()->SumofSquares();
 
     QList<QPointF> series;
-    QJsonObject optimized = m_model.data()->ExportModel(false);
     QVector<double > parameter = m_model.data()->OptimizeParameters();
     m_result["value"] = parameter[m_index];
     Calculate();
@@ -70,7 +67,12 @@ void WGSearchThread::run()
 
 void WGSearchThread::Calculate()
 {
-    double increment = m_config.increment;
+    double increment;
+    if(m_config.increment == 0)
+        increment = m_increment;
+    else
+        increment = m_config.increment;
+
     QList<int >locked = m_model->LockedParamters();
     QVector<qreal > param = m_model->OptimizeParameters();
 
@@ -83,30 +85,30 @@ void WGSearchThread::Calculate()
     m_last = value;
     bool converged = false;
     bool infinity = true;
+    NonLinearFitThread *thread = new NonLinearFitThread(false);
     while(m_steps < m_config.maxsteps && lowcount < 50 && upcount < 5)
     {
-        /*if(m_start < m_end)
-        {
-            converged = value > m_end;
-            value += increment;
-        }else
-        {
-            converged = value < m_end;
-            value -= increment;
-        }*/
         value += (increment*m_direction);
         param[m_index] = value;
-        m_steps++;
-        m_model.data()->setParameter(param);
 
-        m_minimizer->Minimize(m_config.runtype, locked);
-        QJsonObject model = m_minimizer->Parameter();
+        m_model.data()->SetSingleParameter(value, m_index);
+        m_model->setLockedParameter(locked);
+        thread->setModel(m_model, false);
+        thread->setOptimizationRun(m_config.runtype);
+        thread->run();
+        bool converged = thread->Converged();
+        QJsonObject model;
+        if(converged)
+            model = thread->ConvergedParameter();
+        else
+            model = thread->BestIntermediateParameter();
+        qreal new_error = thread->SumOfError();
+
 
         if(!upcount)
             m_last = value;
-        qreal new_error = m_minimizer->SumOfError();
 
-        m_models[new_error] = model;
+        // m_models[new_error] = model;
         if(new_error > m_config.maxerror)
         {
             m_finished = new_error > m_config.maxerror;
@@ -128,15 +130,15 @@ void WGSearchThread::Calculate()
             lowcount++;
 
         error = new_error;
-        QCoreApplication::processEvents();
         if(m_interrupt)
             break;
     }
     m_converged = lowcount > 50;
+    delete thread;
 }
 
 
-WeakenedGridSearch::WeakenedGridSearch(const WGSConfig &config, QObject *parent) : AbstractSearchClass(parent), m_config(config) /* , m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))*/
+WeakenedGridSearch::WeakenedGridSearch(const WGSConfig &config, QObject *parent) : AbstractSearchClass(parent), m_config(config)
 {
     
     
@@ -157,7 +159,7 @@ QPointer<WGSearchThread > WeakenedGridSearch::CreateThread(int index, bool direc
     connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
     thread->setModel(m_model);
     thread->setParameterId(index);
-
+    thread->setIncrement(qAbs(m_model->OptimizeParameters()[index]*1e-4));
     if(!direction)
         thread->setDown();
 

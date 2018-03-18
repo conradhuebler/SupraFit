@@ -58,7 +58,7 @@ void AbstractModel::PrepareParameter(int global, int local)
     addGlobalParameter(m_global_parameter);
     DeclareSystemParameter();
     DeclareOptions();
-    /*m_data->*/LoadSystemParameter();
+    LoadSystemParameter();
 }
 
 AbstractModel::~AbstractModel()
@@ -83,9 +83,9 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
             m_opt_index.removeAt(j);
         }
     }
-    m_locked_parameters.clear();
+    d->m_locked_parameters.clear();
     for(int i = 0; i < variables.size(); ++i)
-        m_locked_parameters << 1;
+        d->m_locked_parameters << 1;
     m_last_optimization = type;
     m_parameter = variables;
     return variables;
@@ -136,6 +136,7 @@ void AbstractModel::Calculate()
 {
     if(!m_local_parameter)
         return; // make sure, that PrepareParameter() has been called from subclass
+    m_fast = false;
     m_corrupt = false;
     m_mean = 0;
     m_variance = 0;
@@ -153,7 +154,8 @@ void AbstractModel::Calculate()
     m_stderror = qSqrt(m_variance)/qSqrt(m_used_variables);
     m_SEy = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize()));
     m_chisquared = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize() - 1));
-    m_covfit = CalculateCovarianceFit();
+    if(!m_fast)
+        m_covfit = CalculateCovarianceFit();
     if(isCorrupt())
     {
         qDebug() << "Something went wrong during model calculation, most probably some numeric stuff";
@@ -328,7 +330,7 @@ void AbstractModel::setParameter(const QVector<qreal>& parameter)
     if(parameter.size() != m_opt_para.size())
         return;
     for(int i = 0; i < parameter.size(); ++i)
-        if(m_locked_parameters[i])
+        if(d->m_locked_parameters[i])
             *m_opt_para[i] = parameter[i];
 }
 
@@ -592,8 +594,8 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
         json["localParameter"] = localParameter;   
     }
     
-    for(const QString &str : getAllOptions())
-        optionObject[str] = getOption(str);
+    for(int index : getAllOptions())
+        optionObject[QString::number(index)] = getOption(index);
     
     
     QJsonObject resultObject;
@@ -662,8 +664,8 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     setGlobalParameter(constants);
     
     optionObject = topjson["options"].toObject();
-    for(const QString &str : getAllOptions())
-        setOption(str, topjson["options"].toObject()[str].toString());
+    for(int index : getAllOptions())
+        setOption(index, topjson["options"].toObject()[QString::number(index)].toString());
     
     QStringList keys = json["statistics"].toObject().keys();
     QJsonObject statisticObject = json["statistics"].toObject();
@@ -791,11 +793,11 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
 #endif
 }
 
-void AbstractModel::setOption(const QString& name, const QString& value)
+void AbstractModel::setOption(int index, const QString& value)
 {
-    if(!d->m_model_options.contains(name) || name.isEmpty() || value.isEmpty() || name.isNull() || value.isNull())
+    if(!d->m_model_options.contains(index) || value.isEmpty() || value.isNull())
         return; 
-    d->m_model_options[name].value = value;
+    d->m_model_options[index].value = value;
     OptimizeParameters(m_last_optimization);
 }
 
@@ -809,8 +811,6 @@ AbstractModel & AbstractModel::operator=(const AbstractModel& other)
     
     m_local_parameter = other.m_local_parameter;
     m_active_signals = other.m_active_signals;
-    m_locked_parameters = other.m_locked_parameters;
-    //m_model_options = other.m_model_options;
     d = other.d;
     m_global_parameter = other.m_global_parameter;
     
@@ -842,8 +842,6 @@ AbstractModel * AbstractModel::operator=(const AbstractModel* other)
     
     m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;
-    m_locked_parameters = other->m_locked_parameters;
-    //m_model_options = other->m_model_options;
     d = other->d;
     m_global_parameter = other->m_global_parameter;
     
