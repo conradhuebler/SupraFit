@@ -232,10 +232,10 @@ void ChartView::addSeries(  QPointer<QtCharts::QAbstractSeries> series)
 {
     if(!m_chart->series().contains(series) || !series)
     {
-        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
+        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
         m_chart->addSeries(series);
         m_chart->createDefaultAxes();
-        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
+        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
     }
     connect(series, &QtCharts::QAbstractSeries::nameChanged, [this, series] (  )
     {
@@ -383,12 +383,12 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
         else
             m_chart->legend()->setAlignment(Qt::AlignRight);
         m_chart->legend()->setFont(chartconfig.m_keys);
-        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
+        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
     }
     else
     {
         m_chart->legend()->setVisible(false);
-        m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
+        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
     }
 }
 

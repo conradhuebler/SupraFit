@@ -189,7 +189,7 @@ ChartWidget::ChartWidget() : m_TitleBarWidget(new ChartDockTitleBar)
     
     connect(m_TitleBarWidget, &ChartDockTitleBar::ThemeChanged, this, &ChartWidget::updateTheme);
     connect(m_TitleBarWidget, &ChartDockTitleBar::AnimationChanged, this, &ChartWidget::setAnimation);
-    connect(m_TitleBarWidget, &ChartDockTitleBar::setSize, [this](int size)
+    connect(m_TitleBarWidget, &ChartDockTitleBar::setSize, this, [this](int size)
     {
         setMinimumWidth(size);
         setMaximumWidth(size);

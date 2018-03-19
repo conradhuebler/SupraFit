@@ -72,7 +72,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setToolTip(m_model->LocalParameterDescription(i));
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-        connect(m_model.data(), &AbstractModel::Recalculated, [i, widget, this](  )
+        connect(m_model.data(), &AbstractModel::Recalculated, this, [i, widget, this](  )
         {
             if(this->m_model && widget)
                 widget->setEnabled(this->m_model->LocalEnabled(i ));
@@ -105,7 +105,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_name->setPlaceholderText( m_signal_series->name());
     m_name->setClearButtonEnabled(true);
     tools->addWidget(m_name);
-    connect(m_name, &QLineEdit::textChanged, [this](  )
+    connect(m_name, &QLineEdit::textChanged, this, [this](  )
     {
         if(this->m_name && this->m_signal_series)
         {
@@ -117,7 +117,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         }
     });
 
-    connect(m_signal_series, &LineSeries::nameChanged, [this](  )
+    connect(m_signal_series, &LineSeries::nameChanged, this,  [this](  )
     {
         if(this->m_name && this->m_signal_series)
         {

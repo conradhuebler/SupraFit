@@ -6,4 +6,4 @@
 	url = https://github.com/RLovelett/eigen
 [submodule "fisher_dist"]
 	path = fisher_dist
-	url = git@github.com:contra98/fisher_dist.git
+	url = git@github.com:conradhuebler/fisher_dist.git

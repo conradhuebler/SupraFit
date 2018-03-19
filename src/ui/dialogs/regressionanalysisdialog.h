@@ -42,6 +42,8 @@ class RegressionAnalysisDialog : public QDialog
 public:
     RegressionAnalysisDialog(QWeakPointer<DataClass > data,  QWeakPointer<ChartWrapper> wrapper, QWidget *parent = 0);
     ~RegressionAnalysisDialog();
+
+public slots:
     void UpdatePlots();
     
 private:

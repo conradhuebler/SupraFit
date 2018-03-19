@@ -269,8 +269,8 @@ QWidget * ResultsWidget::GridSearchWidget()
             else
                 xy_series->setColor(m_wrapper->ColorCode(i));
             /*connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); });
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });*/
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view]( const QColor &color ) { view->setColor(i, color); });
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });*/
         }else
             xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
 

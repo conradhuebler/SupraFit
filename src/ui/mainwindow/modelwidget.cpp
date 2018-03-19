@@ -147,7 +147,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
         constant->setMinimum(-1e9);
         constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
-        connect(m_model.data(), &AbstractModel::Recalculated,
+        connect(m_model.data(), &AbstractModel::Recalculated, this,
                 [i, constant, this](  )
                 {
                     if(this->m_model && constant)

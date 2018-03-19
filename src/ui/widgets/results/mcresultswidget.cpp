@@ -117,7 +117,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     view->setYAxis("relative rate");
     view->setMinimumSize(300,400);
     bool formated = false;
-
+    //QObject *obj = new QObject(this);
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
         QJsonObject data = m_data[QString::number(i)].toObject();
@@ -135,8 +135,8 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             int index =  data["index"].toString().split("|")[1].toInt();
             xy_series->setColor(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, view]( const QColor &color ) { view->setColor(i, color); }); 
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view]( const QColor &color ) {  view->setColor(i, color); });
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });
         }else
             xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
         
@@ -175,7 +175,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 
  QPointer<ListChart > MCResultsWidget::MakeBoxPlot()
 {
-    ListChart *boxplot = new ListChart;
+    QPointer<ListChart > boxplot = new ListChart;
     double min = 10, max = 0;
     
     for(int i = 0; i < m_data.count() - 1; ++i)
@@ -199,7 +199,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             int index =  data["index"].toString().split("|")[1].toInt();
             series->setBrush(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, [i, boxplot]( const QColor &color ) { boxplot->setColor(i, color); }); 
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, boxplot]( const QColor &color ) {if(boxplot) boxplot->setColor(i, color); });
         }else
             series->setBrush(ChartWrapper::ColorCode(m_model->Color(i)));
 
