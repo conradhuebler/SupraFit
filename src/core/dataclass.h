@@ -87,6 +87,7 @@ public:
     qreal data(int column, int row) const;
     qreal & data(int column, int row);
     void CheckRow(int row);
+    void DisableRow(int row);
     void PrintCheckedRows() const;
     void EnableAllRows();
     inline void setCheckedTable(Eigen::MatrixXd checked) { m_checked_table = checked; }

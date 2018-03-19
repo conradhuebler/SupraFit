@@ -74,7 +74,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
             for(int i = m_model->DataPoints() - 1; i >= 0; --i)
             {
                 QPointer<DataTable > dep_table = new DataTable(table);
-                dep_table->CheckRow(i);
+                dep_table->DisableRow(i);
 
                 block << Pair(m_model->IndependentModel(), dep_table);
                 if(block.size() == blocksize)
@@ -91,8 +91,8 @@ void ReductionAnalyse::CrossValidation(CVType type)
                 for(int j = i + 1; j < m_model->DataPoints(); ++j)
                 {
                     QPointer<DataTable > dep_table = new DataTable(table);
-                    dep_table->CheckRow(i);
-                    dep_table->CheckRow(j);
+                    dep_table->DisableRow(i);
+                    dep_table->DisableRow(j);
                     block << Pair(m_model->IndependentModel(), dep_table);
                     if(block.size() == blocksize)
                     {
@@ -159,7 +159,7 @@ void ReductionAnalyse::PlainReduction()
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setIndex(i);
         QSharedPointer<AbstractModel> model = m_model->Clone();
-        table->CheckRow(i); 
+        table->DisableRow(i);
         model->setDependentTable(table);
         model->detach();
         thread->setModel(model);

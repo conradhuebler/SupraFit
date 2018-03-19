@@ -206,6 +206,13 @@ void DataTable::CheckRow(int row)
     emit layoutChanged();
 }
 
+void DataTable::DisableRow(int row)
+{
+    for(int i = 0; i < columnCount(); ++i)
+        m_checked_table(row, i) = 0;
+    emit layoutChanged();
+}
+
 void DataTable::EnableAllRows()
 {
     for(int j = 0; j < rowCount(); ++j)
@@ -599,7 +606,7 @@ QList<double>   DataClass::getSignals(QList<int > active_signal)
         for(int i = 0; i < DataPoints(); ++i)
         {
             if(DependentModel()->isChecked(j,i))
-                x.append(DependentModel()->data(j,i)); //[index] = SignalModel()->data(j,i); 
+                x.append(DependentModel()->data(j,i));
         }
     }
     return x;

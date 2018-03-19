@@ -113,8 +113,11 @@ void AbstractModel::setGlobalParameter(const QList<qreal> &list)
 void AbstractModel::SetValue(int i, int j, qreal value)
 {
     if(!ActiveSignals(j) || !DependentModel()->isChecked(j,i))
+    {
+        m_model_error->data(j,i) = 0;
+        m_model_signal->data(j,i) = DependentModel()->data(j,i);
         return;
-    
+    }
     if(std::isnan(value) || std::isinf(value))
     {
         value = 0;
