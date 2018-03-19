@@ -63,7 +63,7 @@ void Michaelis_Menten_Model::InitialGuess()
     m_Km = regress.m*m_vmax;
     m_global_parameter[0] = m_vmax;
     m_global_parameter[1] = m_Km;
-    AbstractModel::Calculate();
+    Calculate();
 }
 
 QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private(OptimizationType type)

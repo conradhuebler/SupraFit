@@ -68,6 +68,7 @@ void AbstractItcModel::DeclareSystemParameter()
     addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
     addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mol/L", SystemParameter::Scalar);
     addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mol/L", SystemParameter::Scalar);
+    setSystemParameterValue(Temperature, 298);
 }
 
 void AbstractItcModel::DeclareOptions()

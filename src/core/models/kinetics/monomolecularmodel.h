@@ -35,18 +35,20 @@ class MonoMolecularModel : public AbstractModel
 public:
 
     enum {
-        Concentration = 1
+        ConcentrationA = 1,
+        ConcentrationB = 2
     };
 
     enum {
-        Order = 1
+        Order = 1,
+        Component = 2
     };
 
     MonoMolecularModel(DataClass *data);
     ~MonoMolecularModel();
 
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 1;} 
+    inline int GlobalParameterSize() const override { return 2;}
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel > Clone() override;
     virtual bool SupportThreads() const override { return false; }
@@ -79,5 +81,5 @@ private:
     
 protected:
     virtual void CalculateVariables() override;
-    qreal m_C0;
+    qreal m_A0, m_B0;
 };

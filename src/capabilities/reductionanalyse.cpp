@@ -130,8 +130,11 @@ void ReductionAnalyse::CrossValidation(CVType type)
             delete threads[i];
         }
     }
-    m_results = ToolSet::Model2Parameter(m_models);
-    ToolSet::Parameter2Statistic(m_results, m_model.data());
+    if(m_models.size())
+    {
+        m_results = ToolSet::Model2Parameter(m_models);
+        ToolSet::Parameter2Statistic(m_results, m_model.data());
+    }
     if(table)
         delete table;
     emit AnalyseFinished();
