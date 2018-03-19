@@ -25,5 +25,5 @@
 #include "models/titrations/ScriptModel.h"
 /* Kinetic Models */
 #include "models/kinetics/mm_model.h"
-#include "models/kinetics/first_order_model.h"
+#include "models/kinetics/monomolecularmodel.h"
 

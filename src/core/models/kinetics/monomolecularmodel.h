@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef KINETIC_1_Model_H
-#define KINETIC_1_Model_H
+#pragma once
 
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
@@ -29,14 +28,23 @@
 
 #include "src/core/dataclass.h"
 
-class Kinetic_First_Order_Model : public AbstractModel 
+class MonoMolecularModel : public AbstractModel
 {
     Q_OBJECT
     
 public:
-    Kinetic_First_Order_Model(DataClass *data);
-//     Kinetic_First_Order_Model(AbstractModel *model);
-    ~Kinetic_First_Order_Model();
+
+    enum {
+        Concentration = 1
+    };
+
+    enum {
+        Order = 1
+    };
+
+    MonoMolecularModel(DataClass *data);
+    ~MonoMolecularModel();
+
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;} 
     virtual void InitialGuess() override;
@@ -47,27 +55,29 @@ public:
      */
     virtual inline int InputParameterSize() const override { return 1; } 
     virtual inline QString GlobalParameterName(int i = 0) const override { Q_UNUSED(i) return tr("k"); }
-    virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" M"); }
-    virtual int LocalParameterSize() const override {return 1; }
+    // virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" M"); }
+    virtual int LocalParameterSize() const override {return 0; }
 
-    virtual inline QString Name() const override { return tr("First Order Kinetics"); }
+    virtual inline QString Name() const override { return tr("Monomolecular Kinetics"); }
     virtual inline bool SupportSeries() const override { return false; }
+    virtual void DeclareOptions() override;
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const override { return "S<sub>0</sub>"; }
+    virtual QString XLabel() const override { return "t"; }
 
     /*! \brief Define the y axis for charts
      */
-    virtual QString YLabel() const override { return "v"; }
+    virtual QString YLabel() const override { return "c"; }
+
+public slots:
+    void UpdateParameter();
 
 private:
-    
+    void virtual DeclareSystemParameter() override;
+
     
 protected:
     virtual void CalculateVariables() override;
-    
-    qreal m_k;
+    qreal m_C0;
 };
-
-#endif // MM_Model

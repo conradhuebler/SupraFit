@@ -34,72 +34,79 @@
 #include <cfloat>
 #include <iostream>
 
-#include "first_order_model.h"
+#include "monomolecularmodel.h"
 
-Kinetic_First_Order_Model::Kinetic_First_Order_Model(DataClass *data) : AbstractModel(data)
+MonoMolecularModel::MonoMolecularModel(DataClass *data) : AbstractModel(data)
 {
+    connect(this, &DataClass::SystemParameterChanged, this, &MonoMolecularModel::UpdateParameter);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-//     InitialGuess();
 }
 
-// Kinetic_First_Order_Model::Kinetic_First_Order_Model(AbstractModel* model) : AbstractModel(model)
-// {
-//     m_local_parameter = new DataTable(1, SeriesCount(), this);
-//     InitialGuess();
-// }
-
-
-Kinetic_First_Order_Model::~Kinetic_First_Order_Model() 
+MonoMolecularModel::~MonoMolecularModel()
 {
     
 }
 
-void Kinetic_First_Order_Model::InitialGuess()
+void MonoMolecularModel::DeclareOptions()
 {
-    m_k = 5;
-    m_global_parameter = QList<qreal>() << m_k;
-    
+    QStringList order = QStringList() << "First" << "Second";
+    addOption(Order, "Order", order);
+}
+
+void MonoMolecularModel::DeclareSystemParameter()
+{
+    addSystemParameter(Concentration, "Initial Concentration", "Initial concentration of component A", SystemParameter::Scalar);
+}
+
+
+void MonoMolecularModel::InitialGuess()
+{
+    m_global_parameter[0] = 1;
     AbstractModel::Calculate();
 }
 
-QVector<qreal> Kinetic_First_Order_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> MonoMolecularModel::OptimizeParameters_Private(OptimizationType type)
 {    
     if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
         addGlobalParameter(0);
 
-    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
-    {
-        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-            addLocalParameter(0);
-        
-    }
     QVector<qreal >parameter;
     for(int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
 }
 
-void Kinetic_First_Order_Model::CalculateVariables()
+void MonoMolecularModel::CalculateVariables()
 {      
     m_sum_absolute = 0;
     m_sum_squares = 0;
+    qreal C0 = m_C0;
+
+    QString order = getOption(Order);
+
     for(int i = 0; i < DataPoints(); ++i)
     {
         qreal k = GlobalParameter(0);
         qreal t = IndependentModel()->data(0,i);
         for(int j = 0; j < SeriesCount(); ++j)
         {
-            qreal A_0 = LocalParameter(0, j);
-            qreal value =A_0*qExp(-k*t);
-            SetValue(i, j, value);    
+            qreal value;
+
+            if(order == "First")
+                value = C0 * qExp(-k*t);
+            else if(order == "Second")
+                value = 1/(2*k*t + (1/C0) );
+            else
+                value = 0;
+            SetValue(i, j, value);
         }
     }
 }
 
 
-QSharedPointer<AbstractModel > Kinetic_First_Order_Model::Clone()
+QSharedPointer<AbstractModel > MonoMolecularModel::Clone()
 {
-    QSharedPointer<Kinetic_First_Order_Model > model = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(this), &QObject::deleteLater);
+    QSharedPointer<MonoMolecularModel > model = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
@@ -107,4 +114,9 @@ QSharedPointer<AbstractModel > Kinetic_First_Order_Model::Clone()
     return model;
 }
 
-#include "first_order_model.moc"
+void MonoMolecularModel::UpdateParameter()
+{
+    m_C0 = getSystemParameter(Concentration).Double();
+}
+
+#include "monomolecularmodel.moc"

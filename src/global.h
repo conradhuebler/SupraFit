@@ -48,7 +48,7 @@ namespace SupraFit{
         ItoI_ItoII = 3,
         IItoI_ItoI_ItoII = 4,
         Michaelis_Menten = 5,
-        First_Order_Kinetics = 6,
+        MonoMolecularModel = 6,
         itc_ItoI = 10,
         itc_IItoI = 11,
         itc_ItoII = 12,

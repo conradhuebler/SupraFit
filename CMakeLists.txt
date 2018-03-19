@@ -165,7 +165,7 @@ set(models_SRC
                 src/core/models/titrations/2_1_1_1_1_2_Model.cpp
                 src/core/models/titrations/ScriptModel.cpp
                 src/core/models/kinetics/mm_model.cpp
-                src/core/models/kinetics/first_order_model.cpp
+                src/core/models/kinetics/monomolecularmodel.cpp
 )
 
 add_library(models ${models_SRC})

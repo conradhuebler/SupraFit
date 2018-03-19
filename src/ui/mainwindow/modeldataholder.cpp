@@ -209,11 +209,11 @@ MDHDockTitleBar::MDHDockTitleBar()
     connect(mm_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_kinetcs_model << mm_action;
     
-    QAction *first_order_action = new QAction(this);
-    first_order_action->setText(tr("First Order Kinetics"));
-    first_order_action->setData(SupraFit::First_Order_Kinetics);
-    connect(first_order_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_kinetcs_model << first_order_action;
+    QAction *mono_kinetics = new QAction(this);
+    mono_kinetics->setText(tr("Monomolecuar Kinetics"));
+    mono_kinetics->setData(SupraFit::MonoMolecularModel);
+    connect(mono_kinetics, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+    m_kinetcs_model << mono_kinetics;
 #endif
     
 #ifdef ITC_Models
@@ -394,8 +394,8 @@ void ModelDataHolder::AddModel(int model)
         case SupraFit::Michaelis_Menten:
             t = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(m_data.data()),  &QObject::deleteLater);
             break;
-        case SupraFit::First_Order_Kinetics:
-            t = QSharedPointer<Kinetic_First_Order_Model>(new Kinetic_First_Order_Model(m_data.data()),  &QObject::deleteLater);
+        case SupraFit::MonoMolecularModel:
+            t = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(m_data.data()),  &QObject::deleteLater);
             break;
         case SupraFit::itc_ItoI:
             t = QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(m_data.data()),  &QObject::deleteLater);
@@ -517,6 +517,8 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, const QString &str)
         t =  QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
     else if(str == "fl_2:1/1:1/1:2-Model")
         t =  QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(m_data.data()), &QObject::deleteLater);
+    else if(str == "Monomolecular Kinetics")
+         t = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(m_data.data()),  &QObject::deleteLater);
     else
     {
         qDebug() << str;
