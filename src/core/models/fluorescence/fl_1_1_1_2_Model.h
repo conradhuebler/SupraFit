@@ -40,6 +40,9 @@ public:
 
     fl_ItoI_ItoII_Model(DataClass* data);
     ~fl_ItoI_ItoII_Model();
+
+    virtual inline SupraFit::Model SFModel() const { return SupraFit::fl_ItoI_ItoII; }
+
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;}
     virtual void InitialGuess() override;

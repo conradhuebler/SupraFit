@@ -23,7 +23,6 @@
 #include <QtCore/QVariant>
 #include <QtCore/QString>
 
-
 #include <iostream>
 
 #include "src/global_config.h"

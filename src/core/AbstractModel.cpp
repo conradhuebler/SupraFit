@@ -17,14 +17,15 @@
  * 
  */
 
-#include "src/global.h"
-#include "libmath.h"
 #include "src/core/dataclass.h"
+#include "src/core/libmath.h"
 #include "src/core/toolset.h"
-
-#include <QtMath>
+#include "src/global.h"
+#include "src/version.h"
 
 #include <QDebug>
+#include <QtMath>
+
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
@@ -612,7 +613,8 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     
     toplevel["data"] = json;
     toplevel["options"] = optionObject;
-    toplevel["model"] = Name();  
+    toplevel["model"] = SFModel();
+    toplevel["SupraFit"] = floating_version;
     toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
     toplevel["sum_of_absolute"] = m_sum_absolute;
@@ -641,10 +643,10 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
         qWarning() << "file doesn't contain any " + Name();
         return;
     }
-    if(topjson["model"] != Name())
+    if((SupraFit::Model)topjson["model"].toInt() != SFModel())
     {
         qWarning() << "Models don't fit!";
-        return;
+        // return;
     }  
     QJsonObject json = topjson["data"].toObject();
     

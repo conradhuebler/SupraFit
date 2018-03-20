@@ -37,6 +37,8 @@ public:
 
     ~itc_ItoI_Model();
 
+    virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_ItoI; }
+
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 1;}
     virtual void InitialGuess() override;

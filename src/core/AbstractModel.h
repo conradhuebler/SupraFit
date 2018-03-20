@@ -63,6 +63,8 @@ public:
     
     virtual ~AbstractModel();
     
+    virtual SupraFit::Model SFModel() const = 0;
+
     /*! \brief set the OptimizationType to type and returns the Parameters
      * 
      */
@@ -379,7 +381,7 @@ public:
 
     inline bool GlobalEnabled(int i) const { return m_enabled_global[i]; }
 
-    virtual inline bool SupportSeries() const = 0;
+    virtual bool SupportSeries() const = 0;
 
   //  inline DataClass *Data() const { return m_data; }
 

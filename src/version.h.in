@@ -1,5 +1,4 @@
-#ifndef VERSION_H
-#define VERSION_H
+#pragma once
 
 #include <QtCore/QString>
     
@@ -13,6 +12,6 @@ const QString conf_mode = "DEBUG Mode"; /*! Last compilation mode used */
 const QString conf_mode = "RELEASE Mode"; /*! Last compilation mode used */
 #endif
 
-const QString version = "Suprafit 2 v-1.5 Pre-Alpha \n\t Git Branch: @GIT_BRANCH@ -- Commit: @GIT_COMMIT_HASH@  -- Commit Date : @GIT_COMMIT_DATE@ - " + conf_mode; /*! Version name */
+const QString version = "Suprafit 2 v-1.6 Alpha \n\t Git Branch: @GIT_BRANCH@ -- Commit: @GIT_COMMIT_HASH@  -- Commit Date : @GIT_COMMIT_DATE@ - " + conf_mode; /*! Version name */
 
-#endif
+const float floating_version = 1.599;

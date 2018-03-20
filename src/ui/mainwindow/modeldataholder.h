@@ -161,7 +161,8 @@ private:
     int m_last_tab;
     
     
-    void Json2Model(const QJsonObject &object, const QString &str);
+    void Json2Model(const QJsonObject &object); //, const QString &str);
+    void Json2Model(const QJsonObject &object, SupraFit::Model model);
     void ActiveModel(QSharedPointer<AbstractModel > t, const QJsonObject &object = QJsonObject());
     int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;

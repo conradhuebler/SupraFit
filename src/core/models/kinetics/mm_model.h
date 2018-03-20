@@ -35,6 +35,10 @@ class Michaelis_Menten_Model : public AbstractModel
 public:
     Michaelis_Menten_Model(DataClass *data);
     ~Michaelis_Menten_Model();
+
+    virtual inline SupraFit::Model SFModel() const { return SupraFit::Michaelis_Menten; }
+
+
     virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
     inline int GlobalParameterSize() const override { return 2;} 
     virtual void InitialGuess() override;

@@ -39,10 +39,8 @@ namespace SupraFit{
         Reduction = 5,
         FastConfidence = 6
     };
-    
-    
-    
-    enum {
+
+    enum Model {
         ItoI = 1,
         IItoI_ItoI = 2,
         ItoI_ItoII = 3,
@@ -57,7 +55,8 @@ namespace SupraFit{
         fl_IItoI_ItoI = 21,
         fl_ItoI_ItoII = 22,
         fl_IItoI_ItoI_ItoII = 23,
-        ScriptedModel = 100
+        ScriptedModel = 100,
+        Unknown = 404
     };
     
     struct ConfidenceBar
@@ -161,6 +160,9 @@ extern int printLevel;
 void PrintMessage(const QString &str, int Level);
 QString getDir();
 void setLastDir(const QString &str);
+
+// SupraFit::Model   Name2Model(const QString &str);
+// QSharedPointer<AbstractModel > CreateModel(int model, QWeakPointer<DataClass> data);
 
 inline void Version(QCoreApplication *app, QCommandLineParser *parser)
 {
