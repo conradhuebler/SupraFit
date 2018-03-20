@@ -141,16 +141,17 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     layout->addLayout(vlayout, 2,0, 1, 4);
     
     QHBoxLayout *scaling_layout = new QHBoxLayout;
-    scaling_layout->addWidget(new QLabel(tr("Scaling factors for concentration:")));
+    scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
     
     for(int i = 0; i < m_data.data()->getScaling().size(); ++i)
     {
         
         QDoubleSpinBox *spin_box = new QDoubleSpinBox;
-        spin_box->setMaximum(1.2);
+        spin_box->setMaximum(1e8);
+        spin_box->setMinimum(-1e8);
         spin_box->setValue(m_data.data()->getScaling()[i]);
         spin_box->setSingleStep(1e-2);
-        
+        spin_box->setDecimals(7);
         connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
         m_scaling_boxes << spin_box;
         QHBoxLayout *lay = new QHBoxLayout;
