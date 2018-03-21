@@ -81,6 +81,9 @@ public:
      */
     virtual QString YLabel() const override { return "q"; }
 
+public slots:
+    virtual void UpdateParameter();
+
 private:
     void virtual DeclareSystemParameter() override;
     void virtual DeclareOptions() override;
@@ -96,7 +99,6 @@ protected:
     void Concentration() { CalculateConcentrations(); }
     double m_V, m_cell_concentration, m_syringe_concentration, m_T;
 
-public slots:
-    void UpdateParameter();
+
 };
 

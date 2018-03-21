@@ -84,7 +84,7 @@ QList<QJsonObject > GlobalSearch::SearchGlobal()
     QVector< QVector<double > > full_list = ParamList();
     m_models.clear();
     QVector<double > error; 
-    m_config.runtype |= OptimizationType::ComplexationConstants;
+    m_config.runtype |= OptimizationType::GlobalParameter;
     std::cout << "starting the scanning ..." << m_max_count << " steps approx."<< std::endl;
     int t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list, error);
@@ -193,13 +193,13 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
                 error_max = current_error;
             last_result.m_error = error;
             last_result.m_input = full_list;
-            if(m_config.runtype & OptimizationType::ComplexationConstants)
+            if(m_config.runtype & OptimizationType::GlobalParameter)
                 m_models << json;
             else
                 dataRow1.data.append(QVector<qreal >() << parameter[0] << m_model->SumofSquares() << parameter[1]);
             delete threads[i][j];
         }
-        if(!(m_config.runtype & OptimizationType::ComplexationConstants))
+        if(!(m_config.runtype & OptimizationType::GlobalParameter))
             m_3d_data << dataRow1;
     }
     

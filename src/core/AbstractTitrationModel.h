@@ -54,6 +54,11 @@ public:
         GH = 4
     };
     
+    enum {
+        Host = 1,
+        Method = 2
+    };
+
     AbstractTitrationModel(DataClass *data);
     AbstractTitrationModel(AbstractTitrationModel *other);
     virtual ~AbstractTitrationModel();
@@ -111,6 +116,10 @@ public:
      */
     virtual QString YLabel() const override { return m_ylabel; }
 
+
+    virtual void DeclareOptions() override;
+
+    virtual void EvaluateOptions() override;
 protected:    
     /*
      * set the concentration of the @param int i datapoint to

@@ -233,6 +233,12 @@ void ChartView::addSeries(  QPointer<QtCharts::QAbstractSeries> series)
     if(!m_chart->series().contains(series) || !series)
     {
         //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
+        QPointer<QtCharts::QXYSeries > serie = qobject_cast<QtCharts::QXYSeries * >(series);
+           if(serie)
+            {
+                if(serie->points().size() > 1e3)
+                    serie->setUseOpenGL(true);
+            }
         m_chart->addSeries(series);
         m_chart->createDefaultAxes();
         //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);

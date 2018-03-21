@@ -36,8 +36,7 @@ class IItoI_ItoI_Model : public AbstractTitrationModel
 public:
 
     enum {
-        Method = 1,
-        Cooperativity = 2
+        Cooperativity = 3
     };
 
     IItoI_ItoI_Model(DataClass* data);

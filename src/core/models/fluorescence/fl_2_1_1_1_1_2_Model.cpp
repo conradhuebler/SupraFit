@@ -219,15 +219,15 @@ QSharedPointer<AbstractModel> fl_IItoI_ItoI_ItoII_Model::Clone()
 
 QVector<qreal> fl_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
         addGlobalParameter(m_global_parameter);
     }
     
-     if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+     if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
     {
         
-        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+        //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
             addLocalParameter(0);
         addLocalParameter(1);
         addLocalParameter(2);

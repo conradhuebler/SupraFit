@@ -44,7 +44,7 @@ public:
 private:
     OptimizationType m_type;
     void setUi();
-    QPointer<QCheckBox > m_ComplexationConstants, m_OptimizeShifts,  m_IgnoreZeroConcentrations;
+    QPointer<QCheckBox > m_globalparameter, m_localparameter;
     QVBoxLayout *m_main_layout;
     bool m_hidden;
 

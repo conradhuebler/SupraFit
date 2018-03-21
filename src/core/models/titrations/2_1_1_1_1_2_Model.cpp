@@ -54,12 +54,12 @@ IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
 
 void IItoI_ItoI_ItoII_Model::DeclareOptions()
 {
-    QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption(Method, "Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     addOption(Cooperativity2_1, "Cooperativity 2:1", cooperativity);
     cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     addOption(Cooperativity1_2, "Cooperativity 1:2", cooperativity);
+
+    AbstractTitrationModel::DeclareOptions();
 }
 
 void IItoI_ItoI_ItoII_Model::EvaluateOptions()
@@ -133,8 +133,7 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
         local_coop12();
         global_coop12();
     }
-    
-    
+    AbstractTitrationModel::EvaluateOptions();
 }
 
 void IItoI_ItoI_ItoII_Model::InitialGuess()
@@ -252,8 +251,9 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
 {
     QString coop21 = getOption(Cooperativity2_1);
     QString coop12 = getOption(Cooperativity1_2);
-    
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    QString host = getOption(Host);
+
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
         addGlobalParameter(1);
         if(coop21 == "additive" || coop21 == "full")
@@ -263,10 +263,10 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
             addGlobalParameter(2);
     }
     
-    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+    if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
     {
         
-        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+        if(host == "no")
             addLocalParameter(0);
         if(coop21 == "noncooperative" || coop21 == "full")
             addLocalParameter(1);

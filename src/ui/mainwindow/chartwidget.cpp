@@ -265,15 +265,26 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel > model)
             m_errorview->addSeries(error_series);
         }
     }
-    Repaint();
+
     Charts charts;
     charts.error_wrapper = error_wrapper;
     charts.signal_wrapper = signal_wrapper;
     charts.data_wrapper = m_data_mapper.data();
+    connect(model.data(), &AbstractModel::Recalculated, model.data(), [model, this] ()
+    {
+        m_signal_x = model->XLabel();
+        m_signal_y = model->YLabel();
+        m_error_x = model->XLabel();
+        m_error_y ="Error " +  model->YLabel();
+    });
+
     m_signal_x = model->XLabel();
     m_signal_y = model->YLabel();
     m_error_x = model->XLabel();
     m_error_y ="Error " +  model->YLabel();
+
+    Repaint();
+
     return charts;
 }
 

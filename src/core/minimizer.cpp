@@ -28,7 +28,7 @@
 #include <QtCore/QDateTime>
 
 #include "minimizer.h"
-NonLinearFitThread::NonLinearFitThread(bool exchange_statistics): m_exc_statistics(exchange_statistics), m_runtype(OptimizationType::ComplexationConstants)
+NonLinearFitThread::NonLinearFitThread(bool exchange_statistics): m_exc_statistics(exchange_statistics), m_runtype(OptimizationType::GlobalParameter)
 {
   setAutoDelete(false);  
   connect(this, SIGNAL(Message(QString, int)), this, SLOT(Print(QString)));

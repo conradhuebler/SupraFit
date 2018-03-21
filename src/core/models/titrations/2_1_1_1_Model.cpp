@@ -44,10 +44,10 @@ IItoI_ItoI_Model::~IItoI_ItoI_Model()
 
 void IItoI_ItoI_Model::DeclareOptions()
 {
-    QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption(Method, "Method", method);
     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
     addOption(Cooperativity, "Cooperativity", cooperativity);
+
+    AbstractTitrationModel::DeclareOptions();
 }
 
 void IItoI_ItoI_Model::EvaluateOptions()
@@ -84,7 +84,7 @@ void IItoI_ItoI_Model::EvaluateOptions()
         local_coop();
         global_coop();
     }
-    
+    AbstractTitrationModel::EvaluateOptions();
 }
 
 void IItoI_ItoI_Model::InitialGuess()
@@ -148,17 +148,17 @@ void IItoI_ItoI_Model::CalculateVariables()
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
     QString coop21 = getOption(Cooperativity);
-   
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    QString host = getOption(Host);
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
         addGlobalParameter(1);
         if(coop21 == "additive" || coop21 == "full")
             addGlobalParameter(0);
     }
     
-    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+    if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
     {
-        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+        if(host == "no")
             addLocalParameter(0);
         if(coop21 != "additive" && coop21 != "statistical")
             addLocalParameter(1);
