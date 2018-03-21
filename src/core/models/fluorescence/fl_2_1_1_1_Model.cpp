@@ -153,16 +153,16 @@ QVector<qreal> fl_IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType 
 {    
     QString cooperativity = getOption(Cooperativity);
    
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
         addGlobalParameter(m_global_parameter);
         if(cooperativity == "statistical" || cooperativity == "noncooperative")
             m_opt_para.removeFirst();
     }
     
-    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+    if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
     {
-        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+        //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
             addLocalParameter(0);
         if(cooperativity != "additive" && cooperativity != "statistical")
             addLocalParameter(1);

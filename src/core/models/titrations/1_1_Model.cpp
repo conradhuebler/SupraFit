@@ -58,26 +58,30 @@ void ItoI_Model::InitialGuess()
     
     Calculate();
 }
-
+/*
 void ItoI_Model::DeclareOptions()
 {
     QStringList method = QStringList() << "NMR" << "UV/VIS";
     addOption(Method, "Method", method);
-}
 
+    AbstractTitrationModel::DeclareOptions();
+}*/
+/*
 void ItoI_Model::EvaluateOptions()
 {
 
-}
+}*/
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    QString host = getOption(Host);
+
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
         addGlobalParameter(0);
 
-    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+    if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
     {
-        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+        if(host == "no")
             addLocalParameter(0);
         addLocalParameter(1);
     }

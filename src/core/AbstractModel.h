@@ -396,7 +396,8 @@ public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
      void Calculate();
-     
+     virtual inline void UpdateParameter() { }
+
 private:
     QSharedDataPointer<AbstractModelPrivate> d;
 protected:

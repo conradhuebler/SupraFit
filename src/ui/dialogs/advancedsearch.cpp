@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -156,7 +156,7 @@ void AdvancedSearch::SetUi()
     
     m_optim_flags = new OptimizerFlagWidget;
     OptimizationType type = static_cast<OptimizationType>(0);
-    type = OptimizationType::ComplexationConstants;
+    type = OptimizationType::GlobalParameter;
     m_optim_flags->DisableOptions(type);
     layout->addWidget(m_optim_flags);
     

@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 #include <QtCore/QTimer>
 
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -31,7 +32,7 @@
 
 #include "optimizerflagwidget.h"
 
-OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts), m_hidden(true)
+OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::GlobalParameter | OptimizationType::LocalParameter), m_hidden(true)
 {
      setUi();
      setFlags(m_type);
@@ -54,14 +55,13 @@ void OptimizerFlagWidget::setUi()
 {
     m_main_layout = new QVBoxLayout;
     m_main_layout->setAlignment(Qt::AlignTop);
-    m_ComplexationConstants = new QCheckBox(tr("Complexation Constants"));
-    m_OptimizeShifts = new QCheckBox(tr("Shifts"));
-    m_IgnoreZeroConcentrations = new QCheckBox(tr("Skip Host Shift"));
+    m_globalparameter = new QCheckBox(tr("Global Parameter"));
+    m_localparameter = new QCheckBox(tr("Local Parameter"));
     
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->addWidget(m_ComplexationConstants);
-    layout->addWidget(m_OptimizeShifts);
-    layout->addWidget(m_IgnoreZeroConcentrations);
+    layout->addWidget(new QLabel(tr("Define Parameter to be optimised:")));
+    layout->addWidget(m_globalparameter);
+    layout->addWidget(m_localparameter);
     m_main_layout->addLayout(layout);
     setLayout(m_main_layout);
 
@@ -70,41 +70,36 @@ void OptimizerFlagWidget::setUi()
 void OptimizerFlagWidget::setFlags(OptimizationType type)
 {
     m_type = type;
-    m_ComplexationConstants->setChecked((m_type & OptimizationType::ComplexationConstants) == OptimizationType::ComplexationConstants);
-    m_OptimizeShifts->setChecked(((m_type & OptimizationType::OptimizeShifts) == OptimizationType::OptimizeShifts));
-    m_IgnoreZeroConcentrations->setChecked((m_type & OptimizationType::IgnoreZeroConcentrations) == OptimizationType::IgnoreZeroConcentrations);
+    m_globalparameter->setChecked((m_type & OptimizationType::GlobalParameter) == OptimizationType::GlobalParameter);
+    m_localparameter->setChecked(((m_type & OptimizationType::LocalParameter) == OptimizationType::LocalParameter));
 }
 
 
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
 {
-    if(type & OptimizationType::ComplexationConstants)
+    if(type & OptimizationType::GlobalParameter)
     {
-        m_ComplexationConstants->setChecked(false);
-        m_ComplexationConstants->setEnabled(false);
+        m_globalparameter->setChecked(false);
+        m_globalparameter->setEnabled(false);
     }
 }
 
 
 OptimizationType OptimizerFlagWidget::getFlags() const
 {
-    OptimizationType type = static_cast<OptimizationType>(OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
+    OptimizationType type = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter);
     
-    if(m_ComplexationConstants->isChecked() && m_ComplexationConstants->isEnabled())
-        type = type | OptimizationType::ComplexationConstants;
+    if(m_globalparameter->isChecked() && m_globalparameter->isEnabled())
+        type = type | OptimizationType::GlobalParameter;
     else 
-        type &= ~OptimizationType::ComplexationConstants;
+        type &= ~OptimizationType::GlobalParameter;
     
-    if(m_OptimizeShifts->isChecked())
-        type = type | OptimizationType::OptimizeShifts;
+    if(m_localparameter->isChecked())
+        type = type | OptimizationType::LocalParameter;
     else
-        type &= ~OptimizationType::OptimizeShifts;
+        type &= ~OptimizationType::LocalParameter;
 
-    if(m_IgnoreZeroConcentrations->isChecked())
-        type = type | OptimizationType::IgnoreZeroConcentrations;
-    else
-        type &= ~OptimizationType::IgnoreZeroConcentrations;
-        
+
     return type;
 }
 

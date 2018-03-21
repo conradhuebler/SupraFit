@@ -117,9 +117,8 @@ namespace SupraFit{
 }
 
 enum OptimizationType{
-        ComplexationConstants = 0x01,
-        OptimizeShifts = 0x02,
-        IgnoreZeroConcentrations = 0x04
+        GlobalParameter = 0x01,
+        LocalParameter = 0x02
     };
     
 inline OptimizationType operator~ (OptimizationType a) { return (OptimizationType)~(int)a; }

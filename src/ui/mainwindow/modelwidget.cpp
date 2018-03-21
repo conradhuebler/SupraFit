@@ -180,10 +180,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     
     const_layout->addWidget(m_minimize_all);
     m_layout->addLayout(const_layout, 0, 0, 1, m_model->GlobalParameterSize()+3);
-    
+
+    m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
+    m_layout->addWidget(m_optim_flags, 1, 0,1,m_model->GlobalParameterSize()+3);
     m_model_options_widget = new OptionsWidget(m_model);
     if(m_model->getAllOptions().size())
-        m_layout->addWidget(m_model_options_widget, 1, 0, 1, m_model->GlobalParameterSize()+3);
+        m_layout->addWidget(m_model_options_widget, 2, 0, 1, m_model->GlobalParameterSize()+3);
     
     m_sign_layout = new QVBoxLayout;
     
@@ -215,7 +217,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
         m_local_parameter = new LocalParameterWidget(m_model);
         m_sign_layout->addWidget(m_local_parameter);
         //connect(m_charts.signal_wrapper->Series(0), &LineSeries::colorChanged, this, &ModelWidget::ColorChanged);
-        connect(this, &ModelWidget::ToggleSeries,
+        connect(this, &ModelWidget::ToggleSeries, this,
                 [this](  )
         {
             m_charts.signal_wrapper->Series(0)->setVisible(!m_charts.signal_wrapper->Series(0)->isVisible());
@@ -253,7 +255,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     settings.endGroup();
     settings.beginGroup("minimizer");
-    m_optim_flags->setFlags(settings.value("flags", 11).toInt());
+    m_optim_flags->setFlags(settings.value("flags", OptimizationType::GlobalParameter | OptimizationType::LocalParameter).toInt());
     settings.endGroup();
     LoadStatistics();
     m_last_model = m_model->ExportModel(true, true);
@@ -332,10 +334,7 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
 
-    m_layout->addWidget(m_actions, 4, 0,1,m_model->GlobalParameterSize()+3);  
-    m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
-    m_layout->addWidget(m_optim_flags, 5, 0,1,m_model->GlobalParameterSize()+3);  
-   
+    m_layout->addWidget(m_actions, 4, 0,1,m_model->GlobalParameterSize()+3);
 }
 
  void ModelWidget::resizeButtons()

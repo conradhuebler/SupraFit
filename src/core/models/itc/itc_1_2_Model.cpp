@@ -66,7 +66,7 @@ void itc_ItoII_Model::InitialGuess()
 
 QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
         addGlobalParameter(0);
         addGlobalParameter(1);

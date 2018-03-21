@@ -33,7 +33,6 @@
 
 AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_lock_concentrations(false)
 {
-    connect(this, &DataClass::SystemParameterChanged, this, &AbstractItcModel::UpdateParameter);
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
@@ -42,7 +41,6 @@ AbstractItcModel::AbstractItcModel(DataClass *data) : AbstractModel(data), m_loc
 
 AbstractItcModel::AbstractItcModel(AbstractItcModel *data) : AbstractModel(data), m_lock_concentrations(false)
 {
-    connect(this, &DataClass::SystemParameterChanged, this, &AbstractItcModel::UpdateParameter);
     m_c0 = new DataTable( 2, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);

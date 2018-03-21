@@ -79,12 +79,12 @@ void fl_ItoI_Model::EvaluateOptions()
 
 QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
         addGlobalParameter(0);
 
-    if((type & OptimizationType::OptimizeShifts) == (OptimizationType::OptimizeShifts))
+    if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
     {
-        if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+        //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
             addLocalParameter(0);
         addLocalParameter(1);
     }

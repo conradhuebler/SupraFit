@@ -36,7 +36,6 @@
 
 MonoMolecularModel::MonoMolecularModel(DataClass *data) : AbstractModel(data)
 {
-    connect(this, &DataClass::SystemParameterChanged, this, &MonoMolecularModel::UpdateParameter);
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "t", Qt::DisplayRole);
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
@@ -73,7 +72,7 @@ void MonoMolecularModel::InitialGuess()
 QVector<qreal> MonoMolecularModel::OptimizeParameters_Private(OptimizationType type)
 {    
     QString order = getOption(Order);
-    if((OptimizationType::ComplexationConstants & type) == OptimizationType::ComplexationConstants)
+    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
         if(order == "First")// || order == "Mixed")
             addGlobalParameter(0);

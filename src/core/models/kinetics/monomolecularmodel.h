@@ -73,7 +73,7 @@ public:
     virtual QString YLabel() const override { return "c"; }
 
 public slots:
-    void UpdateParameter();
+    virtual void UpdateParameter();
 
 private:
     void virtual DeclareSystemParameter() override;

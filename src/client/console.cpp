@@ -243,7 +243,7 @@ QJsonObject Console::MoCoAnalyse(QSharedPointer<AbstractModel> model)
 
 QJsonObject Console::Reduction(QSharedPointer<AbstractModel> model)
 {
-    ReductionAnalyse *statistic = new ReductionAnalyse(model->getOptimizerConfig(), OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
+    ReductionAnalyse *statistic = new ReductionAnalyse(model->getOptimizerConfig(), OptimizationType::GlobalParameter | OptimizationType::LocalParameter);
     statistic->setModel(model);
     statistic->PlainReduction();
     model->UpdateStatistic(statistic->Result());
@@ -256,7 +256,7 @@ QJsonObject Console::Reduction(QSharedPointer<AbstractModel> model)
 
 QJsonObject Console::CrossValidation(QSharedPointer<AbstractModel> model)
 {
-    ReductionAnalyse *statistic = new ReductionAnalyse(model->getOptimizerConfig(), OptimizationType::ComplexationConstants | OptimizationType::OptimizeShifts);
+    ReductionAnalyse *statistic = new ReductionAnalyse(model->getOptimizerConfig(), OptimizationType::GlobalParameter | OptimizationType::GlobalParameter);
     statistic->setModel(model);
     statistic->CrossValidation(ReductionAnalyse::CVType::LeaveOneOut);
     model->UpdateStatistic(statistic->Result());
