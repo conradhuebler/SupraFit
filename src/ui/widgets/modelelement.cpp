@@ -222,7 +222,7 @@ void ModelElement::Update()
         m_constants[i]->setValue(m_model->LocalParameter(i, m_no));
     }
     if(m_model->Type() != 3)
-        m_error->setText("Sum of Squares: <b>" + QString::number(m_model->SumOfErrors(m_no), 'e', 2) + "</b>");
+        m_error->setText("Sum of Squares: <b>" + Print::printDouble(m_model->SumOfErrors(m_no)) + "</b>");
     
 }
 

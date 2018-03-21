@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef IMPORTDATA_H
-#define IMPORTDATA_H
+#pragma once
 
 #include "src/core/dataclass.h"
 
@@ -49,6 +48,8 @@ public:
 protected:
   virtual void keyPressEvent(QKeyEvent *event);
     
+signals:
+    void Edited();
 };
 
 
@@ -70,7 +71,7 @@ private:
     QPointer<TableView > m_table;
     QPointer<QLineEdit > m_line;
     QPointer<QPushButton > m_select, m_export, m_file;
-    QPointer<QSpinBox > m_conc, m_sign;
+    QPointer<QSpinBox > m_conc;
     QPointer<QDialogButtonBox > m_buttonbox;
     QPointer<DataClass > m_storeddata;
     QPointer<QCheckBox > m_switch_concentration;
@@ -84,4 +85,3 @@ private slots:
     void NoChanged();
 };
 
-#endif // IMPORTDATA_H

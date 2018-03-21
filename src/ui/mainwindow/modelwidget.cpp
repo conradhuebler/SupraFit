@@ -214,9 +214,43 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel > model,  Charts charts, Q
             }
         }
     }else{
+        QLineEdit *name = new QLineEdit(m_model->Name());
+        name->setPlaceholderText( m_model->Name() );
+        name->setClearButtonEnabled(true);
+        m_sign_layout->addWidget(name);
+        connect(name, &QLineEdit::textChanged, m_charts.signal_wrapper->Series(0), [this, name](  )
+        {
+            if(name)
+            {
+                if(name->text() != this->m_charts.signal_wrapper->Series(0)->name())
+                {
+                    this->m_charts.signal_wrapper->Series(0)->setName(name->text());
+                    this->m_charts.error_wrapper->Series(0)->setName(name->text());
+                }
+            }
+        });
+
+        connect(m_charts.signal_wrapper->Series(0), &LineSeries::nameChanged, m_charts.signal_wrapper->Series(0),  [this, name](  )
+        {
+            /*if(name)
+            {
+                if(name->isModified())
+                {*/
+                    this->m_charts.signal_wrapper->Series(0)->setName(name->text());
+                    this->m_charts.error_wrapper->Series(0)->setName(name->text());
+                /*}
+                else
+                {
+                    if(name->text() != this->m_charts.signal_wrapper->Series(0)->name())
+                        name->setText(this->m_charts.signal_wrapper->Series(0)->name());
+                }
+            }*/
+        });
+        m_charts.signal_wrapper->Series(0)->setName(m_model->Name());
+
         m_local_parameter = new LocalParameterWidget(m_model);
         m_sign_layout->addWidget(m_local_parameter);
-        //connect(m_charts.signal_wrapper->Series(0), &LineSeries::colorChanged, this, &ModelWidget::ColorChanged);
+
         connect(this, &ModelWidget::ToggleSeries, this,
                 [this](  )
         {
@@ -378,9 +412,9 @@ void ModelWidget::Repaint()
 
     QString converged;
     if(!m_model->isConverged())
-        converged = "<font color =\'red\'>Calculation did not converge.</font>\n";
+        converged = "<font color =\'red\'>Optimisation did not converge.</font>\n";
     else
-        converged = "Calculation converged";
+        converged = "Optimisation converged!";
 
     QString corrupt;
     if(m_model->isCorrupt())

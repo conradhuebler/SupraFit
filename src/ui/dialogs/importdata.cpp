@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
 #include "src/core/dataclass.h"
 #include "src/core/filehandler.h"
 #include "src/global.h"
@@ -53,6 +54,7 @@ void TableView::keyPressEvent(QKeyEvent *event)
         handler->setFileContent(paste);
         DataTable *model = handler->getData();
         setModel(model);
+        emit Edited();
         delete handler;
     } else {
         
@@ -95,8 +97,6 @@ void ImportData::setUi()
     
     m_conc = new QSpinBox;
     connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
-    m_sign = new QSpinBox;
-    connect(m_sign, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
     m_line = new QLineEdit;
     m_select = new QPushButton("Select file");
     connect(m_select, SIGNAL(clicked()), this, SLOT(SelectFile()));
@@ -110,14 +110,12 @@ void ImportData::setUi()
     layout->addWidget(m_line, 0, 1);
 //     layout->addWidget(m_file, 0, 2);
     layout->addWidget(m_export, 0, 3);
-//     layout->addWidget(m_switch_concentration, 0, 4);
     layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
     layout->addWidget(m_conc, 1, 1);
-//     layout->addWidget(new QLabel(tr("No. Signals:")), 1, 2);
-//     layout->addWidget(m_sign, 1, 3);
     layout->addWidget(m_table, 3, 0, 1, 4);
     layout->addWidget(m_buttonbox, 4, 1, 1, 4);
-    
+    connect(m_table, &TableView::Edited, this, &ImportData::NoChanged);
+
     setLayout(layout);
     setWindowTitle(tr("Import Table"));
     resize(800,600);
@@ -127,9 +125,10 @@ void ImportData::NoChanged()
 {
     m_conc->setMinimum(1);
     m_conc->setMaximum(m_table->model()->columnCount()  - 1);
-    m_sign->setMaximum(m_table->model()->columnCount()  - 2);
     if(m_table->model()->columnCount()  > 2)
         m_conc->setValue(2);
+    else
+        m_conc->setValue(1);
 }
 
 

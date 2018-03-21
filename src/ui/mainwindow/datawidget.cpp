@@ -50,8 +50,8 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
 {
     m_widget = new QWidget;
     layout = new QGridLayout;
-    m_switch = new QPushButton(tr("Switch H/G"));
-    m_switch->setToolTip(tr("Switch Host/Guest\nAssignment"));
+    m_switch = new QPushButton(tr("1<=>2"));
+    m_switch->setToolTip(tr("<html>Swap the independent variables, 1	&harr;2</html>"));
     m_switch->setStyleSheet("background-color: #77d740;");
     m_switch->setMaximumSize(100, 30);
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
@@ -63,6 +63,7 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
     
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
+    m_name->setMinimumWidth(450);
     m_concentrations = new QTableView;
     m_concentrations->setMaximumWidth(230);
     m_signals = new QTableView;
@@ -73,12 +74,11 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
     connect(m_concentrations->verticalScrollBar(), SIGNAL(valueChanged(int)), m_signals->verticalScrollBar(), SLOT(setValue(int)));
     QHBoxLayout *hlayout = new QHBoxLayout;
     
-    hlayout->addWidget(new QLabel(tr("Project Name")), 0, Qt::AlignLeft);
+    hlayout->addWidget(new QLabel(tr("<html><h3>Project Name</h3></html>")), 0, Qt::AlignLeft);
     hlayout->addWidget(m_name, 0, Qt::AlignLeft);
-    hlayout->addSpacerItem(new QSpacerItem(100,1));
-    hlayout->addWidget(m_linear, 0, Qt::AlignLeft);
     hlayout->addWidget(m_switch, 0, Qt::AlignRight);
-    
+    hlayout->addWidget(m_linear, 0, Qt::AlignRight);
+
     m_datapoints = new QLabel;
     m_substances = new QLabel;
     m_const_subs = new QLabel;
@@ -127,9 +127,9 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
     m_name->setText(qApp->instance()->property("projectname").toString());
-    m_substances->setText(tr("Substances: %1").arg(m_data.data()->IndependentModel()->columnCount()));
-    m_datapoints->setText(tr("Data Points: %1").arg(m_data.data()->DependentModel()->rowCount()));
-    m_signals_count->setText(tr("Signals: %1").arg(m_data.data()->SeriesCount()));
+    m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.data()->IndependentModel()->columnCount()));
+    m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));
+    m_signals_count->setText(tr("<html><h4>Columns of dependent variables: %1</h4><html>").arg(m_data.data()->SeriesCount()));
     
     QVBoxLayout *vlayout = new QVBoxLayout;
     for(int i = 0; i < m_wrapper.data()->SeriesSize(); ++i)
@@ -160,7 +160,10 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         scaling_layout->addLayout(lay);
     }
     layout->addLayout(scaling_layout,3,0,1,4);
-    
+
+    if(m_data.data()->IndependentVariableSize() == 1)
+        m_switch->hide();
+
     m_systemwidget = new QWidget;
     
     m_splitter->addWidget(m_tables);
