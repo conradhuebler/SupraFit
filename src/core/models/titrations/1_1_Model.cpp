@@ -58,19 +58,7 @@ void ItoI_Model::InitialGuess()
     
     Calculate();
 }
-/*
-void ItoI_Model::DeclareOptions()
-{
-    QStringList method = QStringList() << "NMR" << "UV/VIS";
-    addOption(Method, "Method", method);
 
-    AbstractTitrationModel::DeclareOptions();
-}*/
-/*
-void ItoI_Model::EvaluateOptions()
-{
-
-}*/
 
 QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
 {    

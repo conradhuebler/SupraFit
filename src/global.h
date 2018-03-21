@@ -160,13 +160,10 @@ void PrintMessage(const QString &str, int Level);
 QString getDir();
 void setLastDir(const QString &str);
 
-// SupraFit::Model   Name2Model(const QString &str);
-// QSharedPointer<AbstractModel > CreateModel(int model, QWeakPointer<DataClass> data);
 
 inline void Version(QCoreApplication *app, QCommandLineParser *parser)
 {
     app->setApplicationName("SupraFit");
-//     app->setApplicationDisplayName("SupraFit");
     app->setOrganizationName("Conrad Huebler");
     
     app->setApplicationVersion(version);

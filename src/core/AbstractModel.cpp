@@ -615,7 +615,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     toplevel["data"] = json;
     toplevel["options"] = optionObject;
     toplevel["model"] = SFModel();
-    toplevel["SupraFit"] = floating_version;
+    toplevel["SupraFit"] = qint_version;
     toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
     toplevel["sum_of_absolute"] = m_sum_absolute;
@@ -646,8 +646,13 @@ void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
     }
     if((SupraFit::Model)topjson["model"].toInt() != SFModel())
     {
-        qWarning() << "Models don't fit!";
-        // return;
+        if(topjson["SupraFit"].toInt() >= qint_version)
+        {
+            qWarning() << "No old data, but models dont fit, sorry";
+            return;
+        }
+        qWarning() << "Models don't fit! But that seems to be ok, because it is an old SupraFit file.";
+
     }  
     QJsonObject json = topjson["data"].toObject();
     

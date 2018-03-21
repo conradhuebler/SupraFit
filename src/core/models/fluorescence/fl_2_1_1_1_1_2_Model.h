@@ -82,7 +82,7 @@ public:
 
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
-    virtual inline QString Name() const override { return tr("fl_2:1/1:1/1:2-Model"); }
+    virtual inline QString Name() const override { return tr("&Phi; 2:1/1:1/1:2-Model"); }
     virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
     virtual qreal BC50() const override;
     virtual qreal BC50SF() const override;

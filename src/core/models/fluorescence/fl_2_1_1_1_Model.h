@@ -63,7 +63,7 @@ public:
     virtual int LocalParameterSize() const override {return 4; }
 
     void virtual EvaluateOptions() override;
-    virtual inline QString Name() const override { return tr("fl_2:1/1:1-Model"); }
+    virtual inline QString Name() const override { return tr("&Phi; 2:1/1:1-Model"); }
 
 protected:
     virtual void CalculateVariables() override;

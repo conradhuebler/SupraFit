@@ -78,7 +78,7 @@ public:
 
     virtual int LocalParameterSize() const override {return 4; }
     virtual inline int InputParameterSize() const override { return 1; }
-    virtual inline QString Name() const override { return tr("itc_1:1-Model"); }
+    virtual inline QString Name() const override { return tr("ITC 1:1-Model"); }
 
     virtual inline int Color(int i) const override { if(i == 0) return 1; else return i + 3; }
 

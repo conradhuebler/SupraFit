@@ -62,8 +62,6 @@ public:
             return QString();
     }
 
- //   virtual void DeclareOptions() override;
-//    virtual void EvaluateOptions() override;
     virtual inline QString Name() const override { return tr("1:1-Model"); }
     virtual inline int Color(int i) const override { if(i == 0) return 1; else return i + 3; }
     

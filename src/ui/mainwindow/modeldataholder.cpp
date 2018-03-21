@@ -60,7 +60,7 @@ TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
 {
-    addTab(modelwidget, modelwidget->Model()->Name());
+    addTab(modelwidget, QString());
     
     QCheckBox *hide = new QCheckBox;
     hide->setMaximumSize(20,20);
@@ -89,6 +89,8 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(hide);
     layout->addWidget(color);
+    QLabel *label = new QLabel("<html>" + modelwidget->Model()->Name() + "</html>");
+    layout->addWidget(label);
     tools->setLayout(layout);
     
     connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
@@ -446,7 +448,6 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, SupraFit::Model mode
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
     QSharedPointer<AbstractModel > t = CreateModel(model, m_data);
-    qDebug() << object;
     t->ImportModel(object);
     ActiveModel(t, object);
 #ifdef _DEBUG
@@ -596,32 +597,20 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
     setEnabled(false);
     m_wrapper.data()->stopAnimiation();
     /*
-     * If the json contains only one model, then we have probely only "data" and "model" as keys
-     * and we can load them directly
-     * else we iter through all keys which may be model_x keys containing "data" and "models"
+     * Dont load to many models to the workspace, this is slow and confusing
      */
-    if(keys.contains("data") && keys.contains("model"))
+    int i = m_models.size();
+    for(const QString &key : qAsConst(keys))
     {
-        // we don't allow this model to be added to addToHistory
-        m_history = false;
-        Json2Model(object);
+        if(key == "data")
+            continue;
+        QJsonObject model = object[key].toObject();
+        if(i++ < 5)
+            Json2Model(model);
+        else
+            emit InsertModel(model);
     }
-    else
-    {
-        int i = m_models.size();
-        for(const QString &str : qAsConst(keys))
-        {
-            /*
-             * Dont load to many models to the workspace, this is slow and confusing
-             */
-            QJsonObject model = object[str].toObject();
-            if(i++ < 5)
-                Json2Model(model);
-            else
-                emit InsertModel(model);
-//             QApplication::processEvents();
-        }
-    }
+
     setEnabled(true);
     m_wrapper.data()->restartAnimation();
 }

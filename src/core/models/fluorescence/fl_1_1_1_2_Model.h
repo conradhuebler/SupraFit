@@ -64,7 +64,7 @@ public:
 
     virtual void EvaluateOptions() override;
 
-    virtual inline QString Name() const override { return tr("fl_1:1/1:2-Model"); }
+    virtual inline QString Name() const override { return tr("&Phi; 1:1/1:2-Model"); }
 
 private:
     static qreal Y(qreal x, const QVector<qreal > & parameter);

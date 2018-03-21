@@ -148,7 +148,6 @@ ChartView::ChartView(QtCharts::QChart *chart, bool latex_supported) : m_chart_pr
 {
     m_chart->legend()->setVisible(false);
     m_chart->legend()->setAlignment(Qt::AlignRight);
-    // m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeFromSeries);
     setUi();
 }
 
@@ -158,7 +157,6 @@ ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()
     m_chart_private = new ChartViewPrivate(m_chart, this);
     m_chart->legend()->setVisible(false);
     m_chart->legend()->setAlignment(Qt::AlignRight);
-    //  m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeFromSeries);
     setUi();
 }
 
@@ -232,16 +230,14 @@ void ChartView::addSeries(  QPointer<QtCharts::QAbstractSeries> series)
 {
     if(!m_chart->series().contains(series) || !series)
     {
-        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
         QPointer<QtCharts::QXYSeries > serie = qobject_cast<QtCharts::QXYSeries * >(series);
            if(serie)
             {
-                if(serie->points().size() > 1e3)
+                if(serie->points().size() > 5e3)
                     serie->setUseOpenGL(true);
             }
         m_chart->addSeries(series);
         m_chart->createDefaultAxes();
-        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
     }
     connect(series, &QtCharts::QAbstractSeries::nameChanged, [this, series] (  )
     {
@@ -389,12 +385,10 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
         else
             m_chart->legend()->setAlignment(Qt::AlignRight);
         m_chart->legend()->setFont(chartconfig.m_keys);
-        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
     }
     else
     {
         m_chart->legend()->setVisible(false);
-        //m_chart->legend()->setMarkerShape(QtCharts::QLegend::MarkerShapeDefault);
     }
 }
 
