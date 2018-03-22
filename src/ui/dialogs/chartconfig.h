@@ -33,6 +33,7 @@ struct ChartConfig
 {
     QString x_axis = QString();
     QString y_axis = QString();
+    QString title = QString();
     qreal x_min = 0;
     qreal x_max = 5;
     int x_step = 5;
@@ -40,7 +41,7 @@ struct ChartConfig
     qreal y_max = 7;
     int y_step = 5;
     bool m_legend = false, m_lock_scaling = false;
-    QFont m_label, m_ticks, m_keys;
+    QFont m_label, m_ticks, m_keys, m_title;
     Qt::Alignment align;
 };
 
@@ -55,8 +56,8 @@ public:
     QDialogButtonBox *m_buttons;
 
 private:
-    QPushButton *m_scaleaxis, *m_keys, *m_labels, *m_ticks, *m_alignment;
-    QLineEdit *m_x_axis, *m_y_axis;
+    QPushButton *m_scaleaxis, *m_keys, *m_labels, *m_ticks, *m_alignment, *m_titlefont;
+    QLineEdit *m_x_axis, *m_y_axis, *m_title;
     QDoubleSpinBox *m_x_min, *m_x_max,  *m_y_min, *m_y_max;
     QSpinBox *m_x_step,*m_y_step;
     ChartConfig m_chartconfig;
@@ -67,6 +68,7 @@ private slots:
     void setTicksFont();
     void setKeysFont();
     void setLabelFont();
+    void setTitleFont();
 
 signals:
     void ConfigChanged(ChartConfig chartconfig);

@@ -21,6 +21,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QFontDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
@@ -35,34 +36,56 @@ ChartConfigDialog::ChartConfigDialog()
 {
     setModal(false);
     QGridLayout *layout = new QGridLayout;
+
+    m_title = new QLineEdit;
+    connect(m_title, &QLineEdit::textChanged, this, &ChartConfigDialog::Changed);
+    m_title->setMinimumWidth(400);
+    m_titlefont = new QPushButton(tr("Font"));
+    connect(m_titlefont, &QPushButton::clicked, this, &ChartConfigDialog::setTitleFont);
+    m_titlefont->setMaximumSize(60,30);
+    m_titlefont->setStyleSheet("background-color: #F3ECE0;");
     m_x_axis = new QLineEdit;
     connect(m_x_axis, SIGNAL(textChanged(QString)), this, SLOT(Changed()));
+
     m_y_axis = new QLineEdit;
     connect(m_y_axis, SIGNAL(textChanged(QString)), this, SLOT(Changed()));
+
     m_x_min = new QDoubleSpinBox;
     connect(m_x_min, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
+    m_x_min->setMinimum(-1*1e7);
+    m_x_min->setMaximum(1e7);
+    m_x_min->setDecimals(5);
+
     m_x_max = new QDoubleSpinBox;
     connect(m_x_max, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
+    m_x_max->setMinimum(-1*1e7);
+    m_x_max->setMaximum(1e7);
+    m_x_max->setDecimals(5);
+
     m_x_step = new QSpinBox;
     connect(m_x_step, SIGNAL(valueChanged(int)), this, SLOT(Changed()));
+
     m_y_min = new QDoubleSpinBox;
     m_y_min->setMinimum(-1*1e7);
     m_y_min->setMaximum(1e7);
-    m_y_min->setSingleStep(0.01);
+    m_y_min->setSingleStep(1);
     m_y_min->setDecimals(5);
     connect(m_y_min, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
+
     m_y_max = new QDoubleSpinBox;
-    m_y_max->setSingleStep(0.01);
     m_y_max->setMinimum(-1*1e7);
     m_y_max->setMaximum(1*1e7);
     m_y_max->setDecimals(5);
     connect(m_y_max, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
+
     m_y_step = new QSpinBox;
     connect(m_y_step, SIGNAL(valueChanged(int)), this, SLOT(Changed()));
     
-    m_scaleaxis = new QPushButton(tr("Autoscale X"));
+    m_scaleaxis = new QPushButton(tr("Reset Scaling"));
     connect(m_scaleaxis, SIGNAL(clicked()), this, SIGNAL(ScaleAxis()));
-    
+    m_scaleaxis->setMaximumSize(100,30);
+    m_scaleaxis->setStyleSheet("background-color: #F3ECE0;");
+
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok);
     connect(m_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
 
@@ -71,34 +94,61 @@ ChartConfigDialog::ChartConfigDialog()
 
     m_lock_scaling = new QCheckBox(tr("Lock Scaling"));
     connect(m_lock_scaling, &QCheckBox::stateChanged, this, &ChartConfigDialog::Changed);
-    layout->addWidget(new QLabel(tr("x Label:")), 0, 0);
-    layout->addWidget(m_x_axis, 0, 1, 1, 3);
+    layout->addWidget(new QLabel(tr("<h4>Chart Title</h4>")), 0, 0);
+    layout->addWidget(m_title, 0, 1, 1, 2);
+    layout->addWidget(m_titlefont, 0, 3, Qt::AlignRight);
+
+    QGroupBox *box = new QGroupBox(tr("X Axis"));
+    QGridLayout *grid = new QGridLayout;
+    grid->addWidget(new QLabel(tr("<h5>Label:</h5>")), 0, 0);
+    grid->addWidget(m_x_axis, 0, 1, 1, 2);
     
-    layout->addWidget(new QLabel(tr("Axis")), 1, 0);
-    layout->addWidget(m_x_min, 1, 1);
-    layout->addWidget(m_x_step, 1, 2);
-    layout->addWidget(m_x_max, 1, 3);
-    
-    layout->addWidget(new QLabel(tr("y Label:")), 3, 0);
-    layout->addWidget(m_y_axis, 3, 1, 1, 3);
-    layout->addWidget(new QLabel(tr("Axis")), 4, 0);
-    layout->addWidget(m_y_min, 4, 1);
-    layout->addWidget(m_y_step, 4, 2);
-    layout->addWidget(m_y_max, 4, 3);
-    layout->addWidget(m_legend, 5, 0);
+    grid->addWidget(new QLabel(tr("<div align='center'><h5>Axis Range</h5></div>")), 1, 0, 1, 3);
+    grid->addWidget(m_x_min, 2, 0);
+    grid->addWidget(m_x_step, 2, 1);
+    grid->addWidget(m_x_max, 2, 2);
+
+    box->setLayout(grid);
+
+    layout->addWidget(box, 2, 0, 1, 4);
+
+    box = new QGroupBox(tr("Y Axix"));
+    grid = new QGridLayout;
+    grid->addWidget(new QLabel(tr("<h5>Label:</h5>")), 0, 0);
+    grid->addWidget(m_y_axis, 0, 1, 1, 2);
+
+    grid->addWidget(new QLabel(tr("<div align='center'><h5>Axis Range</h5></div>")), 1, 0, 1, 3);
+    grid->addWidget(m_y_min, 2, 0);
+    grid->addWidget(m_y_step, 2, 1);
+    grid->addWidget(m_y_max, 2, 2);
+
+    box->setLayout(grid);
+
+    layout->addWidget(box, 3, 0,  1, 4);
+
+
     layout->addWidget(m_scaleaxis, 5, 1);
     layout->addWidget(m_lock_scaling, 5, 2);
 
     m_labels = new QPushButton(tr("Label Font"));
     connect(m_labels, &QPushButton::clicked, this, &ChartConfigDialog::setLabelFont);
+    m_labels->setMaximumSize(90,30);
+    m_labels->setStyleSheet("background-color: #F3ECE0;");
 
     m_keys = new QPushButton(tr("Legend Font"));
     connect(m_keys, &QPushButton::clicked, this, &ChartConfigDialog::setKeysFont);
+    m_keys->setMaximumSize(90,30);
+    m_keys->setStyleSheet("background-color: #F3ECE0;");
 
     m_ticks = new QPushButton(tr("Ticks Font"));
     connect(m_ticks, &QPushButton::clicked, this, &ChartConfigDialog::setTicksFont);
+    m_ticks->setMaximumSize(90,30);
+    m_ticks->setStyleSheet("background-color: #F3ECE0;");
 
     m_alignment = new QPushButton(tr("Align Legend"));
+    m_alignment->setMaximumSize(130,30);
+    m_alignment->setStyleSheet("background-color: #F3ECE0;");
+
     QMenu *align = new QMenu;
     QAction *left = new QAction(tr("Left"));
     left->setData(  Qt::AlignLeft );
@@ -124,10 +174,16 @@ ChartConfigDialog::ChartConfigDialog()
     }
     );
 
-    layout->addWidget(m_labels, 7, 0);
-    layout->addWidget(m_keys, 7, 1);
-    layout->addWidget(m_ticks, 7, 2);
-    layout->addWidget(m_alignment, 7, 3);
+    QHBoxLayout *actions = new QHBoxLayout;
+
+    actions->addWidget(m_labels);
+    actions->addWidget(m_ticks);
+    actions->addStretch(300);
+    actions->addWidget(m_keys);
+    actions->addWidget(m_alignment);
+    actions->addWidget(m_legend);
+    layout->addLayout(actions, 6,0, 1, 3);
+
     layout->addWidget(m_buttons, 10, 0, 1, 3);
     setLayout(layout);
     setWindowTitle("Configure charts ...");
@@ -151,10 +207,14 @@ void ChartConfigDialog::setConfig(const ChartConfig& chartconfig)
     m_y_axis->setText(chartconfig.y_axis);
     m_legend->setChecked(chartconfig.m_legend);
     m_lock_scaling->setChecked(chartconfig.m_lock_scaling);
+
+    m_title->setText(chartconfig.title);
 }
 
 void ChartConfigDialog::Changed()
 {
+    m_chartconfig.title = m_title->text();
+
     m_chartconfig.x_axis = m_x_axis->text();
     m_chartconfig.y_axis = m_y_axis->text();
     m_chartconfig.x_min = m_x_min->value();
@@ -197,6 +257,16 @@ void ChartConfigDialog::setTicksFont()
     QFont font = QFontDialog::getFont(&ok, m_chartconfig.m_ticks, this);
     if (ok) {
         m_chartconfig.m_ticks = font;
+        emit ConfigChanged(Config());
+    }
+}
+
+void ChartConfigDialog::setTitleFont()
+{
+    bool ok;
+    QFont font = QFontDialog::getFont(&ok, m_chartconfig.m_title, this);
+    if (ok) {
+        m_chartconfig.m_title = font;
         emit ConfigChanged(Config());
     }
 }

@@ -129,6 +129,9 @@ void ModelActions::resizeButtons()
     m_save->setMaximumSize(70, 30);
     m_new_guess->setMaximumSize(80, 30);
     m_simulate->setMaximumSize(120, 30);
+    m_detailed->setMaximumSize(120, 30);
+    m_restore->setMaximumSize(120, 30);
+    m_search->setMaximumSize(120, 30);
 }
 
 void ModelActions::ToggleMore()

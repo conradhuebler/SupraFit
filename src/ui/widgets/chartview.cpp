@@ -180,10 +180,10 @@ void ChartView::setUi()
     connect(exportpng, SIGNAL(triggered()), this, SLOT(ExportPNG()));
     menu->addAction(exportpng);
     
-    QAction *printplot = new QAction(this);
+    /*QAction *printplot = new QAction(this);
     printplot->setText(tr("Print Diagram"));
     connect(printplot, SIGNAL(triggered()), this, SLOT(PlotSettings()));
-    menu->addAction(printplot);
+    menu->addAction(printplot);*/
 
     if(m_latex_supported)
     {
@@ -339,6 +339,9 @@ void ChartView::forceformatAxis()
     m_ymin = y_min;
     m_xmin = x_min;
     m_xmax = x_max;
+
+    if(connected)
+       m_chartconfigdialog.setConfig(getChartConfig());
 }
 
 void ChartView::PlotSettings()
@@ -390,6 +393,13 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
     {
         m_chart->legend()->setVisible(false);
     }
+    setTitle(chartconfig.title);
+    m_chart->setTitleFont(chartconfig.m_title);
+}
+
+void ChartView::setTitle(const QString &str)
+{
+    m_chart->setTitle(str);
 }
 
 ChartConfig ChartView::getChartConfig() const
@@ -419,6 +429,8 @@ ChartConfig ChartView::getChartConfig() const
 
     chartconfig.m_keys = m_chart->legend()->font();
     chartconfig.align = m_chart->legend()->alignment();
+    chartconfig.title = m_chart->title();
+    chartconfig.m_title = m_chart->titleFont();
 
     return chartconfig;
 }

@@ -77,7 +77,8 @@ public slots:
     
     void setXAxis(const QString &str) { m_x_axis = str; emit AxisChanged(); }
     void setYAxis(const QString &str) { m_y_axis = str; emit AxisChanged(); }
-    
+    void setTitle(const QString &str);
+
 private:
     ChartViewPrivate *m_chart_private;
     QPointer< QtCharts::QChart > m_chart;
