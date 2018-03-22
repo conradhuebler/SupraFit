@@ -542,7 +542,12 @@ QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractMod
         qreal lower = confidence["lower"].toDouble();
         qreal conf = confidence["error"].toDouble();
         text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "[+ " + QString::number(upper-value, 'g', 3) + " / " + QString::number(lower-value, 'g', 3) + "] * </b></td></tr>\n";
-        text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + QString::number(lower, 'f', 4) + " - " + QString::number(upper, 'f', 4) + "] </b></td></tr>\n";
+        // text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + QString::number(lower, 'f', 4) + " - " + QString::number(upper, 'f', 4) + "] </b></td></tr>\n";
+        if(result["type"] == "Global Parameter")
+            text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + model->formatedGlobalParameter(lower) + " - " + model->formatedGlobalParameter(upper) + "] </b></td></tr>\n";
+        else if(result["type"] == "Local Parameter")
+            text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + model->formatedLocalParameter(lower) + " - " + model->formatedLocalParameter(upper) + "] </b></td></tr>\n";
+
     }
     if(type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation)
     {

@@ -146,6 +146,7 @@ void itc_IItoII_Model::CalculateVariables()
     constants_pow << K21 << K11 << K12;
 
 
+
     int maxthreads =qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     for(int i = 0; i < DataPoints(); ++i)
@@ -208,10 +209,12 @@ void itc_IItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
 
+        qreal v = IndependentModel()->data(0,i);
+
         if(!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V*((complex_21-complex_21_prev)*dH21+((complex_11-complex_11_prev)*dH11)+((complex_12-complex_12_prev)*dH12));
+        qreal value = V*((complex_21-complex_21_prev*(1-v/V))*dH21+((complex_11-complex_11_prev*(1-v/V))*dH11)+((complex_12-complex_12_prev*(1-v/V))*dH12));
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

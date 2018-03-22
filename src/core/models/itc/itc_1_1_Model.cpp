@@ -112,6 +112,7 @@ void itc_ItoI_Model::CalculateVariables()
         }
         qreal guest_0 = InitialGuestConcentration(i);
         qreal dilution = 0;
+        qreal v = IndependentModel()->data(0,i);
         if(dil == "auto")
         {
             dilution= (guest_0*dil_heat+dil_inter);
@@ -127,7 +128,7 @@ void itc_ItoI_Model::CalculateVariables()
         if(!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V*(complex-complex_prev)*dH;
+        qreal value = V*(complex-complex_prev*(1-v/V))*dH;
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

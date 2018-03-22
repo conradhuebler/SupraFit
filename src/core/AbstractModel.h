@@ -59,7 +59,6 @@ class AbstractModel : public DataClass
   
 public:
     AbstractModel(DataClass *data);
-    //AbstractModel(AbstractModel *other);
     
     virtual ~AbstractModel();
     
@@ -123,6 +122,12 @@ public:
     virtual QString Name() const = 0; 
     
         
+    /*! \brief set the calculation style to bool fast
+     * some useless loops will be omitted in AbstractModel::Calculation call
+     * Variance, CovFit etc
+     */
+    inline void setFast(bool fast = true) { m_fast = fast; }
+
     /*! \brief get the Name of the ith GlobalParameter
      */
     inline virtual QString GlobalParameterName(int i = 0) const {Q_UNUSED(i) return QString();}

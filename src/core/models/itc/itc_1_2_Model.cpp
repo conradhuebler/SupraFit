@@ -118,6 +118,8 @@ void itc_ItoII_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
+        qreal v = IndependentModel()->data(0,i);
+
         if(binding == "pytc")
         {
             host_0 *= fx;
@@ -143,7 +145,7 @@ void itc_ItoII_Model::CalculateVariables()
         if(!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V*((complex_11-complex_11_prev)*dH1+(complex_12-complex_12_prev)*dH2);
+        qreal value = V*( ( complex_11 - complex_11_prev*(1-v/V) )*dH1 + ( complex_12 - complex_12_prev*(1-v/V) )*dH2 );
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);

@@ -36,7 +36,7 @@
 
 #include "AbstractModel.h"
 
-AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false)
+AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false), m_fast(false)
 {    
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
     d = new AbstractModelPrivate;
@@ -141,7 +141,6 @@ void AbstractModel::Calculate()
 {
     if(!m_local_parameter)
         return; // make sure, that PrepareParameter() has been called from subclass
-    m_fast = false;
     m_corrupt = false;
     m_mean = 0;
     m_variance = 0;
@@ -153,18 +152,25 @@ void AbstractModel::Calculate()
 
     EvaluateOptions();
     CalculateVariables();
-    
-    m_mean /= qreal(m_used_variables);
-    m_variance = CalculateVariance();
-    m_stderror = qSqrt(m_variance)/qSqrt(m_used_variables);
-    m_SEy = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize()));
-    m_chisquared = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize() - 1));
-    if(!m_fast)
-        m_covfit = CalculateCovarianceFit();
+
     if(isCorrupt())
     {
         qDebug() << "Something went wrong during model calculation, most probably some numeric stuff";
     }
+
+    m_mean /= qreal(m_used_variables);
+
+    if(m_fast)
+    {
+        emit Recalculated();
+        return;
+    }
+    m_variance = CalculateVariance();
+    m_stderror = qSqrt(m_variance)/qSqrt(m_used_variables);
+    m_SEy = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize()));
+    m_chisquared = qSqrt(m_sum_squares/(m_used_variables-LocalParameterSize()-GlobalParameterSize() - 1));
+    m_covfit = CalculateCovarianceFit();
+
     emit Recalculated();
 }
 

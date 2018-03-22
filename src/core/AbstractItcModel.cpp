@@ -73,6 +73,7 @@ void AbstractItcModel::DeclareOptions()
 {
     QStringList method = QStringList() << "auto" << "none";
     addOption(Dilution, "Dilution", method);
+    setOption(Dilution, "none");
     QStringList cooperativity = QStringList() << "pytc" /*<< "multiple"*/ << "single";
     addOption(Binding, "Binding", cooperativity);
 }

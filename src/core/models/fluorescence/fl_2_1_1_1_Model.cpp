@@ -133,7 +133,9 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
         vector(3) = complex_21;
         vector(4) = complex_11;
         
-        SetConcentration(i, vector);
+        if(!m_fast)
+            SetConcentration(i, vector);
+
         qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)
         {

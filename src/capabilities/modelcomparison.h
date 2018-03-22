@@ -49,7 +49,7 @@ class MCThread : public AbstractSearchThread
 public:
     inline MCThread( ) : AbstractSearchThread() { }
     inline ~MCThread() { }
-    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); m_model->setFast();}
     void run();
     QList<QJsonObject > Results() const { return m_results; }
     inline void setMaxSteps(int steps) { m_maxsteps = steps; }

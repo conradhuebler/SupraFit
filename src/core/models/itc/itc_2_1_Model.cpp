@@ -112,7 +112,6 @@ void itc_IItoI_Model::CalculateVariables()
     qreal K21 = qPow(10, GlobalParameter()[0]);
     qreal K11 = qPow(10, GlobalParameter()[1]);
 
-
     qreal complex_21_prev = 0, complex_11_prev = 0;
     for(int i = 0; i < DataPoints(); ++i)
     {
@@ -129,6 +128,8 @@ void itc_IItoI_Model::CalculateVariables()
             dilution= (guest_0*dil_heat+dil_inter);
         }
 
+        qreal v = IndependentModel()->data(0,i);
+
         qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);
         qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
         qreal complex_11 = K11*host*guest;
@@ -143,7 +144,7 @@ void itc_IItoI_Model::CalculateVariables()
         if(!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V*((complex_11-complex_11_prev)*dH1+(complex_21-complex_21_prev)*dH2);
+        qreal value = V*((complex_11-complex_11_prev*(1-v/V))*dH1+(complex_21-complex_21_prev*(1-v/V))*dH2);
         if(binding == "multiple")
             value *= fx;
         SetValue(i, 0, value+dilution);
