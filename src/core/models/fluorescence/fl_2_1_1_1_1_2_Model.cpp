@@ -222,9 +222,19 @@ QSharedPointer<AbstractModel> fl_IItoI_ItoI_ItoII_Model::Clone()
 
 QVector<qreal> fl_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
+    QString coop21 = getOption(Cooperativity2_1);
+    QString coop12 = getOption(Cooperativity1_2);
+  //  QString host = getOption(Host);
+
     if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
-        addGlobalParameter(m_global_parameter);
+
+        if(coop21 == "additive" || coop21 == "full")
+            addGlobalParameter(0);
+        addGlobalParameter(1);
+
+        if(coop12 == "additive" || coop12 == "full")
+            addGlobalParameter(2);
     }
     
      if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))

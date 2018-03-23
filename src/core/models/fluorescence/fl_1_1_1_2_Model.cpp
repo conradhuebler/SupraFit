@@ -109,12 +109,13 @@ void fl_ItoI_ItoII_Model::InitialGuess()
 
 QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
-    QString cooperativity = getOption(Cooperativity);
+    QString coop12 = getOption(Cooperativity);
     if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
-        addGlobalParameter(m_global_parameter);
-        if(cooperativity == "statistical" || cooperativity == "noncooperative")
-            m_opt_para.removeLast();
+        addGlobalParameter(0);
+
+        if(coop12 == "additive" || coop12 == "full")
+            addGlobalParameter(1);
     }
 
     if((type & OptimizationType::LocalParameter) == (OptimizationType::GlobalParameter))
@@ -122,7 +123,7 @@ QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType 
          //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
              addLocalParameter(0);
          addLocalParameter(1);
-         if(!(cooperativity == "additive" || cooperativity == "statistical"))
+         if(!(coop12 == "additive" || coop12 == "statistical"))
              addLocalParameter(2);
     } 
     QVector<qreal >parameter;

@@ -255,10 +255,11 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationTy
 
     if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
-        addGlobalParameter(1);
+
         if(coop21 == "additive" || coop21 == "full")
             addGlobalParameter(0);
-        
+        addGlobalParameter(1);
+
         if(coop12 == "additive" || coop12 == "full")
             addGlobalParameter(2);
     }

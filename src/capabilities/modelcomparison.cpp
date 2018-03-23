@@ -36,9 +36,10 @@ void MCThread::run()
 {
     QVector<std::uniform_int_distribution<int> > dist;
     QVector<double > factors(m_model.data()->GlobalParameterSize(), 1);
+    QVector<qreal> parameters = m_model.data()->OptimizeParameters();
     for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
     {
-        factors[i] = qPow(10,log10(qAbs(1e7/m_model.data()->GlobalParameter(i))));
+        factors[i] = qPow(10,log10(qAbs(1e7/parameters[i])));
         int lower = factors[i]*m_box[i][0];
         int upper = factors[i]*m_box[i][1];
         dist << std::uniform_int_distribution<int>(lower, upper);
@@ -52,15 +53,14 @@ void MCThread::run()
         if(m_interrupt)
             return;
 
-        QList<qreal > consts = m_model.data()->GlobalParameter();
+        QVector<qreal > consts = parameters;
         for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) // FIXME dont want that really, but it should work for now
         {
             consts[i] = dist[i](rng)/factors[i];
         }
-        m_model->setGlobalParameter(consts);
+        m_model->setParameter(consts);
         m_model->Calculate();
         m_results << m_model->ExportModel(false);
-
         if(step%update_intervall == 0)
         {
             emit IncrementProgress(QDateTime::currentMSecsSinceEpoch()-t0);
@@ -355,6 +355,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
 
     for(int i = 0; i < m_data_vec.size(); ++i)
         data["global_" + QString::number(i)] = ToolSet::DoubleList2String(m_data_vec[i]);
+
 
     m_controller["data"] = data;
     m_controller["box"] = m_box;

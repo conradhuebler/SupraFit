@@ -151,9 +151,11 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
     QString host = getOption(Host);
     if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
     {
-        addGlobalParameter(1);
         if(coop21 == "additive" || coop21 == "full")
             addGlobalParameter(0);
+
+        addGlobalParameter(1);
+
     }
     
     if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
