@@ -458,6 +458,8 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, SupraFit::Model mode
 
 void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject &object)
 {
+    t->setFast(false);
+
     Charts charts = m_charts->addModel(t); 
     ModelWidget *modelwidget = new ModelWidget(t, charts);
     modelwidget->setColorList(object["colors"].toString()); 

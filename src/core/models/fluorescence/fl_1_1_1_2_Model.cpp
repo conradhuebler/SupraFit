@@ -166,7 +166,9 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
         vector(2) = guest;
         vector(3) = complex_11;
         vector(4) = complex_12;
-        SetConcentration(i, vector);
+
+        if(!m_fast)
+            SetConcentration(i, vector);
 
         qreal value = 0;
         for(int j = 0; j < SeriesCount(); ++j)

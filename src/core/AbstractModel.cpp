@@ -36,7 +36,7 @@
 
 #include "AbstractModel.h"
 
-AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false), m_fast(false)
+AbstractModel::AbstractModel(DataClass *data) : DataClass(data), m_corrupt(false), m_last_p(1), m_f_value(1), m_last_parameter(0), m_last_freedom(0), m_converged(false), m_locked_model(false), m_fast(true)
 {    
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
     d = new AbstractModelPrivate;
@@ -162,7 +162,7 @@ void AbstractModel::Calculate()
 
     if(m_fast)
     {
-        emit Recalculated();
+        // emit Recalculated();
         return;
     }
     m_variance = CalculateVariance();

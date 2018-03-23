@@ -43,7 +43,17 @@ class ChartViewPrivate : public QtCharts::QChartView
   Q_OBJECT
 public:
     inline ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {setRubberBand(QChartView::RectangleRubberBand);}
-    inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)  {setChart(chart); setAcceptDrops(true); setRenderHint(QPainter::Antialiasing, true);setRubberBand(QChartView::RectangleRubberBand);}
+    inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)
+    {
+        setChart(chart);
+        setAcceptDrops(true);
+        setRenderHint(QPainter::Antialiasing, true);
+        setRubberBand(QChartView::RectangleRubberBand);
+        /*QFont font = chart->titleFont();
+        font.setBold(true);
+        font.setPointSize(12);
+        chart->setTitleFont(font);*/
+    }
     inline ~ChartViewPrivate(){ }
     
 protected:

@@ -111,7 +111,9 @@ void fl_ItoI_Model::CalculateVariables()
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
-        SetConcentration(i, vector);
+
+        if(!m_fast)
+            SetConcentration(i, vector);
 
         for(int j = 0; j < SeriesCount(); ++j)
         {

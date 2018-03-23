@@ -155,6 +155,7 @@ ChartView::ChartView() : has_legend(false), connected(false), m_x_axis(QString()
 {
     m_chart = new QtCharts::QChart();
     m_chart_private = new ChartViewPrivate(m_chart, this);
+
     m_chart->legend()->setVisible(false);
     m_chart->legend()->setAlignment(Qt::AlignRight);
     setUi();
@@ -208,7 +209,7 @@ void ChartView::setUi()
     layout->addWidget(m_chart_private, 0, 0, 1, 5);
     layout->addWidget(m_config, 0, 4, Qt::AlignTop);
     setLayout(layout);
-    
+
     connect(&m_chartconfigdialog, SIGNAL(ConfigChanged(ChartConfig)), this, SLOT(setChartConfig(ChartConfig)));
     connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);

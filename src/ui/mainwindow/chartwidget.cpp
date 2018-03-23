@@ -222,8 +222,8 @@ QSharedPointer<ChartWrapper > ChartWidget::setRawData(QSharedPointer<DataClass> 
     
     m_signalview->formatAxis();
 
-    m_signalview->setTitle("<h4>Model</h4>");
-    m_errorview->setTitle("<h4>Errors</h4>");
+    m_signalview->setTitle("Model");
+    m_errorview->setTitle("Errors");
 
     return m_data_mapper;
 }
