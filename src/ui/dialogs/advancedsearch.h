@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef ADVANCEDSEARCH_H
-#define ADVANCEDSEARCH_H
+#pragma once
 
 #include "src/capabilities/globalsearch.h"
 
@@ -52,7 +51,7 @@ class ParameterWidget : public QGroupBox
   Q_OBJECT
   
 public:
-    ParameterWidget(const QString &name, QWidget *parent = 0);
+    ParameterWidget(const QString &name, qreal value, QWidget *parent = 0);
     inline ~ParameterWidget() { }
     double Min() const;
     double Max() const;
@@ -89,6 +88,7 @@ public:
 //     inline QVector<QList<qreal > > FullList() const { return m_full_list; }
     QPointer<GlobalSearch > globalSearch() const { return m_search; }
     GSConfig Config() const;
+
 private:
     void SetUi();
     void Scan(const QVector< QVector<double > > &list);
@@ -132,4 +132,3 @@ signals:
     void setValue(int value);
 };
 
-#endif // ADVANCEDSEARCH_H

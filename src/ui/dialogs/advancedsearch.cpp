@@ -21,6 +21,8 @@
 
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
+#include "src/core/toolset.h"
+
 #include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/guitools/waiter.h"
 
@@ -46,25 +48,38 @@
 
 #include "advancedsearch.h"
 
-ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupBox(QString(tr("Constant: %1").arg(name)),  parent)
+ParameterWidget::ParameterWidget(const QString &name,  qreal value, QWidget* parent) : QGroupBox(parent)
 {
+    qreal div = value/5.0;
+    qreal prod = value*5;
     m_min = new QDoubleSpinBox;
-    m_min->setValue(1);
+    m_min->setMinimum(-1e8);
+    m_min->setMaximum(1e8);
+    m_min->setValue(ToolSet::floor(qMin(div,prod)));
+
     m_max = new QDoubleSpinBox;
-    m_max->setValue(7);
+    m_max->setMinimum(-1e8);
+    m_max->setMaximum(1e8);
+    m_max->setValue(ToolSet::ceil(qMax(div, prod)));
+
     m_step = new QDoubleSpinBox;
-    m_step->setValue(0.25);
+    m_step->setMinimum(0.01);
+    m_step->setMaximum(1e8);
+    m_step->setValue(ToolSet::ceil((m_max->value()-m_min->value())/10));
+
     connect(m_min, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_max, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_step, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(new QLabel(tr("Min")), 0, 0);
-    layout->addWidget(m_min, 0, 1);
-    layout->addWidget(new QLabel(tr("Step")), 1, 0);
-    layout->addWidget(m_step, 1, 1);
-    layout->addWidget(new QLabel(tr("Max")), 2, 0);
-    layout->addWidget(m_max, 2, 1);
+    layout->addWidget(new QLabel(tr("<h4>Parameter: %1</h4>").arg(name)), 0, 0, 1, 2);
+
+    layout->addWidget(new QLabel(tr("Min")), 1, 0);
+    layout->addWidget(m_min, 2, 0);
+    layout->addWidget(new QLabel(tr("Step")), 1, 1);
+    layout->addWidget(m_step, 2, 1);
+    layout->addWidget(new QLabel(tr("Max")), 1, 2);
+    layout->addWidget(m_max, 2, 2);
     setLayout(layout);
 }
 
@@ -137,11 +152,23 @@ void AdvancedSearch::SetUi()
     
     for(int i = 0; i < m_model->GlobalParameterSize(); ++i)
     {
-        QPointer<ParameterWidget > widget = new ParameterWidget(m_model->GlobalParameterName(i), this);
+        QPointer<ParameterWidget > widget = new ParameterWidget(m_model->GlobalParameterName(i), m_model->GlobalParameter(i), this);
         layout->addWidget(widget);
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
         m_parameter_list << widget;
     } 
+
+    if(!m_model->SupportSeries())
+    {
+        for(int i = 0; i < m_model->LocalParameterSize(); ++i)
+        {
+            QPointer<ParameterWidget > widget = new ParameterWidget(m_model->LocalParameterName(i), m_model->LocalParameter(i, 0), this);
+            layout->addWidget(widget);
+            connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+            m_parameter_list << widget;
+        }
+    }
+
     m_initial_guess = new QCheckBox(tr("Apply initial Guess"));
     m_initial_guess->setChecked(true);
     connect(m_initial_guess, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));

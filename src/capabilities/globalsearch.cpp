@@ -123,8 +123,10 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
         QCoreApplication::processEvents();
         QList<double > parameter; 
         for(int j = 0; j < position.size(); ++j)
+        {
             parameter << full_list[j][position[j]];
-        
+            m_model->SetSingleParameter(full_list[j][position[j]], j);
+        }
         bool temporary = true;
         for(int i = 0; i < position.size(); ++i)
         {
@@ -132,7 +134,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
         }
         if(temporary)
             m_allow_break = true;
-        m_model->setGlobalParameter(parameter);
+        //m_model->setGlobalParameter(parameter);
         m_full_list.append( parameter );
         QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_config.runtype, m_config.optimize);
         thread_rows << thread;

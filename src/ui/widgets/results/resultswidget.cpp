@@ -242,13 +242,15 @@ QWidget * ResultsWidget::GridSearchWidget()
     ListChart *view = new ListChart;
     view->setXAxis("constant");
     view->setYAxis("Sum of Squares");
-
+    int series_int = 0;
+    int old_index = 0;
+    int rank = 0;
     for(int i = 0; i < m_data.count() - 1; ++i)
     {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if(data.isEmpty())
             continue;
-        
+        rank = i;
         QString name = data["name"].toString();
         qreal x_0 = data["value"].toDouble();
 
@@ -263,24 +265,33 @@ QWidget * ResultsWidget::GridSearchWidget()
         {
             if(!data.contains("index"))
                 continue;
+
             int index =  data["index"].toString().split("|")[1].toInt();
+            rank = series_int + 2;
+            if(index != old_index)
+                series_int = 0;
             if(m_model.data()->SupportSeries())
-                xy_series->setColor(m_wrapper->Series(index)->color());
+                xy_series->setColor(m_wrapper->Series(series_int)->color());
             else
                 xy_series->setColor(m_wrapper->ColorCode(i));
-            /*connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view]( const QColor &color ) { view->setColor(i, color); });
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });*/
+            /*connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
+            connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, this, [series_int, view]( const QColor &color ) { view->setColor(series_int, color); });*/
+            name = QString::number(series_int + 1) + " " + name;
+            series_int++;
+            old_index = index;
         }else
+        {
             xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
+            name = "0 " + name;
+        }
 
-        view->addSeries(xy_series, i, xy_series->color(), name);
+        view->addSeries(xy_series, rank, xy_series->color(), name);
         
         LineSeries *current_constant= new LineSeries;
         *current_constant << QPointF(x_0, m_model->SumofSquares()) << QPointF(x_0, m_model->SumofSquares()*1.1);
         current_constant->setColor(xy_series->color());
         current_constant->setName(m_model->GlobalParameterName(i));
-        view->addSeries(current_constant, i, xy_series->color(), name);
+        view->addSeries(current_constant, rank, xy_series->color(), name);
     }
     return view;
 }
