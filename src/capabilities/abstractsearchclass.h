@@ -82,9 +82,6 @@ public:
 
     QVector<Pair > DemandCalc();
 
-private:
-    QMutex mutex;
-
 public slots:
     virtual void Interrupt();
     
@@ -98,6 +95,8 @@ protected:
     QQueue< QVector<Pair >> m_batch;
 
     virtual QJsonObject Controller() const = 0;
+    QMutex mutex;
+
 signals:
     void IncrementProgress(int msecs);
     void AnalyseFinished();

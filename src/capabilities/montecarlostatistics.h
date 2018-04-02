@@ -76,11 +76,13 @@ public:
     MonteCarloBatch(const MCConfig &config, QPointer<AbstractSearchClass> parent);
     ~MonteCarloBatch();
     virtual void run() override;
-    void optimise();
     inline QList<QJsonObject> Models() const { return m_models; }
     inline bool Finished() const { return m_finished; }
     inline void setChecked( bool checked) { m_checked = checked; }
+
 private:
+    void optimise();
+
     QPointer<AbstractSearchClass> m_parent;
     bool m_finished, m_checked;
     QSharedPointer<Minimizer> m_minimizer;

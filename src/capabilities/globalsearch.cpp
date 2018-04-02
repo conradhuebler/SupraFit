@@ -17,7 +17,9 @@
  * 
  */
 
-#include "abstractsearchclass.h"
+#include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/montecarlostatistics.h"
+
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
@@ -34,6 +36,52 @@
 
 
 #include "globalsearch.h"
+
+SearchBatch::SearchBatch(const GSConfig &config, QPointer<GlobalSearch> parent) : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater)), m_config(config), m_finished(false), m_parent(parent), m_checked(false), m_interrupt(false)
+{
+
+}
+
+void SearchBatch::run()
+{
+    while(true)
+    {
+        GSResult result;
+        if(m_interrupt)
+            break;
+        QVector<double > parameter = m_parent->DemandParameter();
+        if(parameter.isEmpty())
+            break;
+        result.initial = parameter;
+        for(int i = 0; i < parameter.size(); ++i)
+            m_model->SetSingleParameter(parameter[i], i);
+        optimise();
+        result.optimised = m_model->OptimizeParameters();
+        result.model = m_model->ExportModel(false, false);
+        result.SumError = m_model->SumofSquares();
+        m_result << result;
+    }
+}
+
+void SearchBatch::optimise()
+{
+    if(!m_model || m_interrupt)
+    {
+        qDebug() << "no model set";
+        return;
+    }
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+#ifdef _DEBUG
+//         qDebug() <<  "started!";
+#endif
+    m_minimizer->setModel(m_model);
+    m_finished = m_minimizer->Minimize(m_config.runtype);
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit IncrementProgress(t1-t0);
+#ifdef _DEBUG
+//         qDebug() <<  "finished after " << t1-t0 << "msecs!";
+#endif
+}
 
 GlobalSearch::GlobalSearch(GSConfig config, QObject *parent) : AbstractSearchClass(parent), m_config(config), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
 {
@@ -111,21 +159,21 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
 {  
     m_full_list.clear();
     QVector<int > position(full_list.size(), 0);
-    int maxthreads =qApp->instance()->property("threads").toInt();
-    QVector<QVector<QPointer<NonLinearFitThread> > > threads;
-    QVector<QPointer<NonLinearFitThread> > thread_rows;
-    QThreadPool::globalInstance()->setMaxThreadCount(maxthreads -1 );
+    int maxthreads = qApp->instance()->property("threads").toInt();
     m_allow_break = false;
+
     if(m_config.initial_guess)
         m_model->InitialGuess();
+
+    QVector<double > parameter(m_model->GlobalParameterSize()+m_model->LocalParameterSize(), 0); // = m_model->OptimizeParameters();;
     while(!m_allow_break)
     {
         QCoreApplication::processEvents();
-        QList<double > parameter; 
+       // QList<double > parameter;
         for(int j = 0; j < position.size(); ++j)
         {
-            parameter << full_list[j][position[j]];
-            m_model->SetSingleParameter(full_list[j][position[j]], j);
+            parameter[j] = full_list[j][position[j]];
+           // m_model->SetSingleParameter(full_list[j][position[j]], j);
         }
         bool temporary = true;
         for(int i = 0; i < position.size(); ++i)
@@ -134,14 +182,15 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
         }
         if(temporary)
             m_allow_break = true;
-        //m_model->setGlobalParameter(parameter);
-        m_full_list.append( parameter );
-        QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_config.runtype, m_config.optimize);
-        thread_rows << thread;
-        connect(thread, SIGNAL(finished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+
+        //m_full_list.append( parameter );
+        m_input.enqueue(parameter);
+        //QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_config.runtype, m_config.optimize);
+        //thread_rows << thread;
+        //connect(thread, SIGNAL(finished(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
         
-        if(m_model->SupportThreads())
-            QThreadPool::globalInstance()->waitForDone();
+        //if(m_model->SupportThreads())
+        //    QThreadPool::globalInstance()->waitForDone();
         
         for(int k = position.size() - 1; k >= 0; --k)
         {
@@ -150,8 +199,8 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
                 position[k] = 0;
                 if(position[k] <= full_list[k].size() - 1)
                 {
-                    threads << thread_rows;
-                    thread_rows.clear();
+                    //threads << thread_rows;
+                    //thread_rows.clear();
                 }
             }
             else
@@ -167,6 +216,10 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             }
         }
     }
+
+
+
+    /*
     if(m_config.optimize)
     {
         if(!m_model->SupportThreads())
@@ -178,18 +231,35 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             }
         }
     }
+    */
+
+    QVector<QPointer <SearchBatch > > threads;
+
+    for(int i = 0; i < maxthreads; ++i)
+    {
+        QPointer<SearchBatch > thread = new SearchBatch(m_config, this);
+        connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+       // connect(this, &GlobalSearch::Interrupt, thread, &SearchBatch::Interrupt);
+        thread->setModel(m_model);
+        threads << thread;
+        m_threadpool->start(thread);
+    }
+
+    while(m_threadpool->activeThreadCount())
+        QCoreApplication::processEvents();
+
+
     for(int i = 0; i < threads.size(); ++i)
     {
-        VisualData dataRow1;
-        for(int j = 0; j < threads[i].size(); ++j)
-        {
+       // VisualData dataRow1;
+        //for(int j = 0; j < threads[i].size(); ++j)
+        //{
             QCoreApplication::processEvents();
-            QList< qreal > parameter = threads[i][j]->Model()->GlobalParameter();
-            
-            QJsonObject json = threads[i][j]->ConvergedParameter();
-            m_model->ImportModel(json);
+            m_result << threads[i]->Result();
+            //QJsonObject json = threads[i][j]->ConvergedParameter();
+            //m_model->ImportModel(json);
 //             m_model->Calculate();
-            double current_error = m_model->ModelError();
+            /*double current_error = m_model->ModelError();
             error << current_error; 
             if(error_max < current_error)
                 error_max = current_error;
@@ -197,14 +267,15 @@ void GlobalSearch::ConvertList(const QVector<QVector<double> >& full_list, QVect
             last_result.m_input = full_list;
             if(m_config.runtype & OptimizationType::GlobalParameter)
                 m_models << json;
-            else
-                dataRow1.data.append(QVector<qreal >() << parameter[0] << m_model->SumofSquares() << parameter[1]);
-            delete threads[i][j];
-        }
-        if(!(m_config.runtype & OptimizationType::GlobalParameter))
-            m_3d_data << dataRow1;
+           // else
+           //     dataRow1.data.append(QVector<qreal >() << parameter[0] << m_model->SumofSquares() << parameter[1]);
+            delete threads[i];*/
+    //    }
+        /*if(!(m_config.runtype & OptimizationType::GlobalParameter))
+            m_3d_data << dataRow1;*/
+            delete threads[i];
     }
-    
+
     return;
 }
 
@@ -266,6 +337,15 @@ QJsonObject GlobalSearch::Controller() const
     controller["method"] = "Global Search";
     
     return controller;
+}
+
+QVector<qreal> GlobalSearch::DemandParameter()
+{
+    QMutexLocker lock(&mutex);
+    if(m_input.isEmpty())
+        return QVector<qreal>();
+    else
+        return m_input.dequeue();
 }
 
 #include "globalsearch.moc"

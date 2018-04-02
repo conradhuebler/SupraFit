@@ -44,7 +44,7 @@ class AbstractModelPrivate : public QSharedData
 {
 public:
     AbstractModelPrivate() { }
-    AbstractModelPrivate(const AbstractModelPrivate& other) : QSharedData(other), m_model_options(other.m_model_options) { }
+    AbstractModelPrivate(const AbstractModelPrivate& other) : QSharedData(other), m_model_options(other.m_model_options), m_locked_parameters(other.m_locked_parameters) { }
     ~AbstractModelPrivate() { }
 
     QMap<int, ModelOption > m_model_options;

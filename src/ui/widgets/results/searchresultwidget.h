@@ -37,9 +37,9 @@ class SearchResultWidget : public QWidget
 public:
     SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget *parent);
     ~SearchResultWidget();
-    inline void setModelList(const QList<QJsonObject> &models){m_models = models;};
+    /* inline void setModelList(const QList<QJsonObject> &models){m_models = models;};
     void setModel(const QSharedPointer<AbstractModel> model){ m_model = model; }
-    void setInputList(const QVector<QList <qreal > >&input) { m_input = input; }
+    void setInputList(const QVector<QList <qreal > >&input) { m_input = input; } */
     
 private:
     QList<QJsonObject> m_models;
@@ -53,7 +53,8 @@ private:
     QPointer<GlobalSearch> m_globalsearch;
     QTableView* BuildList();
     ChartView* BuildContour();
-    
+    QList< GSResult > m_results;
+
 private slots:
     void rowSelected(const QModelIndex &index);
     void ShowContextMenu(const QPoint& pos);

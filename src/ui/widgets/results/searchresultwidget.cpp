@@ -46,8 +46,10 @@
 
 SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget *parent) : QWidget(parent), m_globalsearch(globalsearch), m_model(model)
 {    
-    setInputList(m_globalsearch->InputList());
-    setModelList(m_globalsearch->Models());
+    /*setInputList(m_globalsearch->InputList());
+    setModelList(m_globalsearch->Models());*/
+
+    m_results = m_globalsearch->Result();
     
     QGridLayout *layout = new QGridLayout;
     m_switch = new QPushButton(tr("Switch View"));
@@ -82,7 +84,7 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
 
 SearchResultWidget::~SearchResultWidget()
 {
-    m_models.clear();
+    // m_models.clear();
 }
 
 QTableView* SearchResultWidget::BuildList()
@@ -90,21 +92,32 @@ QTableView* SearchResultWidget::BuildList()
     QTableView *table = new QTableView(this);
     QStandardItemModel *model = new QStandardItemModel;
     QStringList header = QStringList() <<  "Sum of Squares";
-    for(int i = 0; i < m_models.size(); ++i)
+   // for(int i = 0; i < m_models.size(); ++i)
+    for(int i = 0; i < m_results.size(); ++i)
     {
-        double error = m_models[i]["sum_of_squares"].toDouble();
+        double error = m_results[i].SumError;
         QStandardItem *item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         model->setItem(i, 0, item);
         int j = 1;
-        for(int l = 0; l < m_input[i].size(); ++l)
+        QVector<qreal> initial = m_results[i].initial;
+        QVector<qreal> optimised = m_results[i].optimised;
+        for(int l = 0; l < m_model->GlobalParameterSize(); ++l)
         {
-            QStandardItem *item = new QStandardItem(QString::number(m_input[i][l]));
+            QStandardItem *item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
             model->setItem(i, j, item);
             j++;
         }
         
+        for(int l = 0; l < m_model->GlobalParameterSize(); ++l)
+        {
+            QStandardItem *item = new QStandardItem(QString::number(optimised[l]));
+            item->setData(i, Qt::UserRole);
+            model->setItem(i, j, item);
+            j++;
+        }
+        /*
         QJsonObject constants = m_models[i]["data"].toObject()["globalParameter"].toObject();
         QStringList keys = constants.keys();
                 
@@ -135,7 +148,7 @@ QTableView* SearchResultWidget::BuildList()
                 j++;
             }
             
-        }
+        }*/
     }
     QStringList head;
     for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
@@ -170,7 +183,7 @@ ChartView * SearchResultWidget::BuildContour()
 void SearchResultWidget::rowSelected(const QModelIndex &index)
 {
     int i = index.data(Qt::UserRole).toInt();
-    QJsonObject model = m_models[i];
+    QJsonObject model = m_results[i].model;
     emit LoadModel(model);
 }
 
@@ -179,7 +192,7 @@ void SearchResultWidget::ShowContextMenu(const QPoint& pos)
     Q_UNUSED(pos)
     QModelIndex index = m_table->currentIndex();
     int i = index.data(Qt::UserRole).toInt();
-    QJsonObject model = m_models[i];
+    QJsonObject model = m_results[i].model;
     emit AddModel(model);
 }
 

@@ -72,14 +72,14 @@ ParameterWidget::ParameterWidget(const QString &name,  qreal value, QWidget* par
     connect(m_step, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(new QLabel(tr("<h4>Parameter: %1</h4>").arg(name)), 0, 0, 1, 2);
+    layout->addWidget(new QLabel(tr("<h4>Parameter: %1</h4>").arg(name)), 0, 0, 1, 6);
 
-    layout->addWidget(new QLabel(tr("Min")), 1, 0);
-    layout->addWidget(m_min, 2, 0);
-    layout->addWidget(new QLabel(tr("Step")), 1, 1);
-    layout->addWidget(m_step, 2, 1);
-    layout->addWidget(new QLabel(tr("Max")), 1, 2);
-    layout->addWidget(m_max, 2, 2);
+    layout->addWidget(new QLabel(tr("Start:")), 1, 0);
+    layout->addWidget(m_min, 1, 1);
+    layout->addWidget(new QLabel(tr("Step")), 1, 3);
+    layout->addWidget(m_step, 1, 4);
+    layout->addWidget(new QLabel(tr("End:")), 1, 5);
+    layout->addWidget(m_max, 1, 6);
     setLayout(layout);
 }
 

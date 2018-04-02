@@ -447,6 +447,8 @@ void ModelDataHolder::Json2Model(const QJsonObject &object, SupraFit::Model mode
 #ifdef _DEBUG
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
+    if(object.isEmpty())
+        return;
     QSharedPointer<AbstractModel > t = CreateModel(model, m_data);
     t->ImportModel(object);
     ActiveModel(t, object);
