@@ -48,10 +48,6 @@ struct GSResult {
     QJsonObject model;
 };
 
-struct VisualData {
-    QVector<QVector<qreal>> data;
-};
-
 class GSConfig : public AbstractConfig {
 public:
     inline GSConfig(OptimizerConfig config, OptimizationType type)
@@ -62,6 +58,7 @@ public:
     bool initial_guess = true;
     bool optimize = true;
     QVector<QVector<qreal>> parameter;
+    QVector<int> ignored_parameter;
 };
 
 class SearchBatch : public AbstractSearchThread {
@@ -97,9 +94,7 @@ public:
 
     inline void setConfig(const GSConfig& config) { m_config = config; }
     inline QVector<QVector<qreal>> InputList() const { return m_full_list; }
-    QList<QList<QPointF>> LocalSearch();
     QList<QJsonObject> SearchGlobal();
-    QVector<VisualData> Create2DPLot();
     void ExportResults(const QString& filename, double threshold, bool allow_invalid);
     QVector<qreal> DemandParameter();
     inline QList<GSResult> Result() { return m_result; }
@@ -120,7 +115,6 @@ private:
     GlobalSearchResult last_result;
     double error_max;
     bool m_allow_break;
-    QVector<VisualData> m_3d_data;
     GSConfig m_config;
     QQueue<QVector<qreal>> m_input;
 

@@ -137,19 +137,6 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
     return m_models;
 }
 
-QVector<VisualData> GlobalSearch::Create2DPLot()
-{
-    QVector<QVector<double>> full_list = ParamList();
-    m_models.clear();
-    QVector<double> error;
-
-    int t0 = QDateTime::currentMSecsSinceEpoch();
-    ConvertList(full_list, error);
-    int t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << "time for scanning: " << t1 - t0 << " msecs." << std::endl;
-    return m_3d_data;
-}
-
 void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list, QVector<double>& error)
 {
     m_full_list.clear();
@@ -217,12 +204,6 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list, QVecto
     return;
 }
 
-QList<QList<QPointF>> GlobalSearch::LocalSearch()
-{
-    QVector<QVector<double>> full_list = ParamList();
-    Scan(full_list);
-    return m_series;
-}
 
 void GlobalSearch::Scan(const QVector<QVector<double>>& list)
 {

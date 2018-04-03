@@ -52,6 +52,7 @@
 
 ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* parent)
     : QGroupBox(parent)
+    , m_value(value)
 {
     qreal div = value / 5.0;
     qreal prod = value * 5;
@@ -70,6 +71,18 @@ ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* pare
     m_step->setMaximum(1e8);
     m_step->setValue(ToolSet::ceil((m_max->value() - m_min->value()) / 10));
 
+    m_variable = new QCheckBox(tr("Include in variation"));
+    m_variable->setToolTip(tr("If checked, the parameter will be varied according from the start to the end.\nIf unchecked, the current value will be taken."));
+    m_variable->setChecked(true);
+    connect(m_variable, &QCheckBox::stateChanged, m_step, &QDoubleSpinBox::setEnabled);
+    connect(m_variable, &QCheckBox::stateChanged, m_max, &QDoubleSpinBox::setEnabled);
+    connect(m_variable, &QCheckBox::stateChanged, m_min, &QDoubleSpinBox::setEnabled);
+    connect(m_variable, &QCheckBox::stateChanged, this, &ParameterWidget::valueChanged);
+
+    m_optimse = new QCheckBox(tr("Optimise Parameter"));
+    m_optimse->setToolTip(tr("If checked, this parameter will be optimised during fitting process.\nIf unchecked, the parameter will be fixed during fitting, but not necessarily in global search process."));
+    m_optimse->setChecked(true);
+
     connect(m_min, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_max, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_step, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
@@ -83,24 +96,10 @@ ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* pare
     layout->addWidget(m_step, 1, 4);
     layout->addWidget(new QLabel(tr("End:")), 1, 5);
     layout->addWidget(m_max, 1, 6);
+    layout->addWidget(m_variable,2,0,1,3);
+    layout->addWidget(m_optimse,2,4,1,3);
     setLayout(layout);
 }
-
-double ParameterWidget::Max() const
-{
-    return m_max->value();
-}
-
-double ParameterWidget::Min() const
-{
-    return m_min->value();
-}
-
-double ParameterWidget::Step() const
-{
-    return m_step->value();
-}
-
 AdvancedSearch::AdvancedSearch(QWidget* parent)
     : QDialog(parent)
 {
@@ -219,14 +218,19 @@ void AdvancedSearch::setOptions()
 void AdvancedSearch::MaxSteps()
 {
     m_parameter.clear();
+    m_ignored_parameter.clear();
     int max_count = 1;
     for (int i = 0; i < m_parameter_list.size(); ++i) {
-        double min = 0, max = 0, step = 0;
-        min = m_parameter_list[i]->Min();
-        max = m_parameter_list[i]->Max();
-        step = m_parameter_list[i]->Step();
+        double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = 1;
+        if(m_parameter_list[i]->Variable())
+        {
+            min = m_parameter_list[i]->Min();
+            max = m_parameter_list[i]->Max();
+            step = m_parameter_list[i]->Step();
+        }
         m_parameter.append(QVector<qreal>() << min << max << step);
         max_count *= (max + step - min) / step;
+        m_ignored_parameter << m_parameter_list[i]->Optimise();
     }
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
@@ -257,19 +261,8 @@ void AdvancedSearch::SearchGlobal()
     m_models_list.clear();
     QVector<double> error;
     m_models_list = m_search->SearchGlobal();
-    //      m_full_list = m_search->Inputlist();
     Finished();
     emit MultiScanFinished();
-}
-
-void AdvancedSearch::LocalSearch()
-{
-    Waiter wait;
-    PrepareProgress();
-    m_search->setConfig(Config());
-    m_series = m_search->LocalSearch();
-    Finished();
-    emit PlotFinished(2);
 }
 
 void AdvancedSearch::IncrementProgress(int time)
@@ -289,6 +282,7 @@ GSConfig AdvancedSearch::Config() const
 {
     GSConfig config;
     config.parameter = m_parameter;
+    config.ignored_parameter = m_ignored_parameter;
     config.runtype = m_optim_flags->getFlags();
     config.initial_guess = m_initial_guess->isChecked();
     config.optimize = m_optim->isChecked();

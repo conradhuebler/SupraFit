@@ -348,7 +348,6 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
     connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
     connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
-    connect(m_actions, SIGNAL(TogglePlot3D()), this, SLOT(TogglePlot3D()));
     connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
     connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
     connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));

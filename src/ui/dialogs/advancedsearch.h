@@ -24,13 +24,14 @@
 #include "src/core/AbstractModel.h"
 #include "src/global.h"
 
-//#include <QtDataVisualization>
 
 #include <QtCore/QMutex>
 #include <QtCore/QPointer>
 #include <QtCore/QWeakPointer>
 
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
+#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 
 class QLabel;
@@ -51,12 +52,17 @@ class ParameterWidget : public QGroupBox {
 public:
     ParameterWidget(const QString& name, qreal value, QWidget* parent = 0);
     inline ~ParameterWidget() {}
-    double Min() const;
-    double Max() const;
-    double Step() const;
+    inline double Min() const { return m_min->value(); }
+    inline double Max() const { return m_max->value(); }
+    inline double Step() const {  return m_step->value(); }
+    inline bool Optimise() const { return m_optimse->isChecked(); }
+    inline bool Variable() const { return m_variable->isChecked(); }
+    inline qreal Value() const { return m_value; }
 
 private:
     QPointer<QDoubleSpinBox> m_min, m_max, m_step;
+    QPointer<QCheckBox> m_variable, m_optimse;
+    qreal m_value;
 
 signals:
     void valueChanged();
@@ -75,7 +81,6 @@ public:
         SetUi();
     }
     inline GlobalSearchResult LastResult() const { return last_result; }
-    // inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
     inline double MaxError() const { return m_error_max; }
     double MaxX() const;
     double MinX() const;
@@ -83,7 +88,6 @@ public:
     double MinY() const;
     QList<QList<QPointF>> Series() const { return m_series; }
     QList<QJsonObject> ModelList() const { return m_models_list; }
-    //     inline QVector<QList<qreal > > FullList() const { return m_full_list; }
     QPointer<GlobalSearch> globalSearch() const { return m_search; }
     GSConfig Config() const;
 
@@ -111,11 +115,12 @@ private:
     quint64 m_time_0;
     QVector<QVector<qreal>> m_parameter;
     QPointer<GlobalSearch> m_search;
+    QVector<int> m_ignored_parameter;
+
     void PrepareProgress();
     void Finished();
 
 private slots:
-    void LocalSearch();
     void SearchGlobal();
     void IncrementProgress(int time);
     void MaxSteps();
