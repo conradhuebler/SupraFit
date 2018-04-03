@@ -28,16 +28,16 @@
 #include <QtCore/QDateTime>
 
 #include "minimizer.h"
-NonLinearFitThread::NonLinearFitThread(bool exchange_statistics): m_exc_statistics(exchange_statistics), m_runtype(OptimizationType::GlobalParameter)
+NonLinearFitThread::NonLinearFitThread(bool exchange_statistics)
+    : m_exc_statistics(exchange_statistics)
+    , m_runtype(OptimizationType::GlobalParameter)
 {
-  setAutoDelete(false);  
-  connect(this, SIGNAL(Message(QString, int)), this, SLOT(Print(QString)));
+    setAutoDelete(false);
+    connect(this, SIGNAL(Message(QString, int)), this, SLOT(Print(QString)));
 }
 
 NonLinearFitThread::~NonLinearFitThread()
 {
-    
-    
 }
 
 void NonLinearFitThread::run()
@@ -47,13 +47,12 @@ void NonLinearFitThread::run()
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     NonLinearFit();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    emit finished(t1-t0);
+    emit finished(t1 - t0);
 }
-
 
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, bool clone)
 {
-    if(clone)
+    if (clone)
         m_model = model->Clone();
     else
         m_model = model;
@@ -66,27 +65,26 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, boo
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
 }
 
-void NonLinearFitThread::setParameter(const QJsonObject &json)
+void NonLinearFitThread::setParameter(const QJsonObject& json)
 {
-     m_model->ImportModel(json);
+    m_model->ImportModel(json);
 }
 
 int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {
-    QList<int >locked = m_model->LockedParamters();
-    QVector<qreal > parameter = m_model->OptimizeParameters(runtype);
-    if(parameter.isEmpty())
+    QList<int> locked = m_model->LockedParamters();
+    QVector<qreal> parameter = m_model->OptimizeParameters(runtype);
+    if (parameter.isEmpty())
         return 0;
-    if(runtype == m_runtype)
-    {
-        if(locked.size() == parameter.size())
-            m_model->setLockedParameter(locked); 
+    if (runtype == m_runtype) {
+        if (locked.size() == parameter.size())
+            m_model->setLockedParameter(locked);
     }
     int iter = NonlinearFit(m_model, parameter);
     m_sum_error = m_model->SumofSquares();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
-    if(iter < m_model.data()->getOptimizerConfig().MaxIter)
+    if (iter < m_model.data()->getOptimizerConfig().MaxIter)
         m_converged = true;
     else
         m_converged = false;
@@ -96,18 +94,18 @@ int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 void NonLinearFitThread::Print(const QString& message)
 {
 #ifdef _DEBUG
-     qDebug() << message;
+    qDebug() << message;
 #else
     Q_UNUSED(message)
 #endif
 }
 
-
-
-Minimizer::Minimizer(bool exchange_statistics, QObject* parent) : QObject(parent), m_exc_statistics(exchange_statistics),m_inform_config_changed(true)
+Minimizer::Minimizer(bool exchange_statistics, QObject* parent)
+    : QObject(parent)
+    , m_exc_statistics(exchange_statistics)
+    , m_inform_config_changed(true)
 {
 }
-
 
 Minimizer::~Minimizer()
 {
@@ -126,7 +124,7 @@ QString Minimizer::OptPara2String() const
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
     result += "|Minipack Factor " + QString::number(m_opt_config.LevMar_Factor) + "|\n";
     result += "|Minipack XTol" + QString::number(m_opt_config.LevMar_Xtol) + "|\n";
-    result += "|Minipack Gtol" +  QString::number(m_opt_config.LevMar_Gtol) + "|\n";
+    result += "|Minipack Gtol" + QString::number(m_opt_config.LevMar_Gtol) + "|\n";
     result += "|Minipack Ftol" + QString::number(m_opt_config.LevMar_Ftol) + "|\n";
     result += "|Minipack epsfcn" + QString::number(m_opt_config.LevMar_epsfcn) + "|\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
@@ -140,27 +138,25 @@ int Minimizer::Minimize(OptimizationType runtype, const QList<int>& locked)
     return Minimize(runtype);
 }
 
-
 int Minimizer::Minimize(OptimizationType runtype)
 {
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     QString OptPara;
-    OptPara += "Starting Optimization Run for " + m_model->Name() +"\n";
-    if(m_inform_config_changed)
-    {
+    OptPara += "Starting Optimization Run for " + m_model->Name() + "\n";
+    if (m_inform_config_changed) {
         OptPara += OptPara2String();
         m_inform_config_changed = false;
     }
     emit Message(OptPara, 2);
-    NonLinearFitThread *thread = new NonLinearFitThread(m_exc_statistics);
+    NonLinearFitThread* thread = new NonLinearFitThread(m_exc_statistics);
     connect(thread, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
     thread->setOptimizationRun(runtype);
-    thread->run();  
+    thread->run();
     bool converged = thread->Converged();
-    if(converged)
+    if (converged)
         m_last_parameter = thread->ConvergedParameter();
     else
         m_last_parameter = thread->BestIntermediateParameter();
@@ -170,7 +166,7 @@ int Minimizer::Minimize(OptimizationType runtype)
     emit RequestRemoveCrashFile();
     addToHistory();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    emit Message("Full calculation took  " + QString::number(t1-t0) + " msecs", 3);
+    emit Message("Full calculation took  " + QString::number(t1 - t0) + " msecs", 3);
     return converged;
 }
 
@@ -179,13 +175,12 @@ QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractMode
     QPointer<NonLinearFitThread> thread = new NonLinearFitThread(m_exc_statistics);
     thread->setModel(model);
     thread->setOptimizationRun(runtype);
-    if(start)
+    if (start)
         QThreadPool::globalInstance()->start(thread);
     else
         emit thread->finished(1);
     return thread;
 }
-
 
 void Minimizer::setModel(const QSharedPointer<AbstractModel> model)
 {
@@ -197,7 +192,7 @@ void Minimizer::setModelCloned(const QSharedPointer<AbstractModel> model)
     m_model = model->Clone();
 }
 
-void Minimizer::setParameter(const QJsonObject& json, const QList<int> &locked)
+void Minimizer::setParameter(const QJsonObject& json, const QList<int>& locked)
 {
     m_model->ImportModel(json);
     m_model->setLockedParameter(locked);
@@ -212,7 +207,7 @@ void Minimizer::addToHistory()
 {
     QJsonObject model = m_model->ExportModel();
     int active = 0;
-    for(int i = 0; i < m_model->ActiveSignals().size(); ++i)
+    for (int i = 0; i < m_model->ActiveSignals().size(); ++i)
         active += m_model->ActiveSignals()[i];
     emit InsertModel(model, active);
 }

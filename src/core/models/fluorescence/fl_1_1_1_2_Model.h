@@ -19,20 +19,18 @@
 
 #pragma once
 
-#include "src/global.h"
 #include "src/core/AbstractTitrationModel.h"
+#include "src/global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
 #include "src/core/dataclass.h"
 
-class fl_ItoI_ItoII_Model : public AbstractTitrationModel
-{
-     Q_OBJECT
-    
-public:
+class fl_ItoI_ItoII_Model : public AbstractTitrationModel {
+    Q_OBJECT
 
+public:
     enum {
         Method = 1,
         Cooperativity = 2
@@ -43,33 +41,32 @@ public:
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::fl_ItoI_ItoII; }
 
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 2;}
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 2; }
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() override;
+    virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override;
-    virtual inline QString GlobalParameterName(int i = 0) const override 
-    { 
-        if(i == 0)
-            return  tr("K<sub>11</sub>");
-        else if( i == 1)
-            return tr("K<sub>12</sub>"); 
+    virtual inline QString GlobalParameterName(int i = 0) const override
+    {
+        if (i == 0)
+            return tr("K<sub>11</sub>");
+        else if (i == 1)
+            return tr("K<sub>12</sub>");
         else
             return QString();
     }
 
     virtual void DeclareOptions() override;
-    virtual int LocalParameterSize() const override {return 4; }
+    virtual int LocalParameterSize() const override { return 4; }
 
     virtual void EvaluateOptions() override;
 
     virtual inline QString Name() const override { return tr("&Phi; 1:1/1:2-Model"); }
 
 private:
-    static qreal Y(qreal x, const QVector<qreal > & parameter);
-    
+    static qreal Y(qreal x, const QVector<qreal>& parameter);
+
 protected:
     virtual void CalculateVariables() override;
 };
-

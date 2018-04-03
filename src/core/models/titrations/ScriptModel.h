@@ -24,17 +24,16 @@
 #ifndef ScriptModel_H
 #define ScriptModel_H
 
-#include "src/global.h"
 #include "src/core/AbstractModel.h"
+#include "src/global.h"
 
-#include <QtCore/QMutex>
 #include <QDebug>
-#include <QtCore/QObject>
-#include <QtCore/QJsonObject>
 #include <QVector>
+#include <QtCore/QJsonObject>
+#include <QtCore/QMutex>
+#include <QtCore/QObject>
 
 #include <chaiscript/chaiscript.hpp>
-
 
 #include "src/core/dataclass.h"
 
@@ -43,36 +42,35 @@ typedef Eigen::VectorXd Vector;
 class ConcentrationSolver;
 struct MassResults;
 
-class ScriptModel : public AbstractTitrationModel 
-{
+class ScriptModel : public AbstractTitrationModel {
     Q_OBJECT
-    
+
 public:
-    ScriptModel(DataClass *data, const QJsonObject &json);
+    ScriptModel(DataClass* data, const QJsonObject& json);
     ~ScriptModel();
     virtual inline SupraFit::Model SFModel() const { return SupraFit::ScriptedModel; }
 
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type);
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type);
     inline int ConstantSize() const { return Constants().size(); }
-    
+
     virtual void InitialGuess();
-    virtual QSharedPointer<AbstractTitrationModel > Clone() const;
+    virtual QSharedPointer<AbstractTitrationModel> Clone() const;
     virtual bool SupportThreads() const { return false; }
     virtual qreal BC50();
     virtual MassResults MassBalance(qreal A, qreal B);
     virtual inline QStringList GlobalParameterNames() const override { return m_complex_names; }
-    
+
 private:
-    QStringList m_constant_names; 
+    QStringList m_constant_names;
     QVariantMap m_complex_map;
     QStringList m_component_list;
     QVariantHash m_complex_hashed;
-    chaiscript::ChaiScript *chai;
+    chaiscript::ChaiScript* chai;
     std::string m_signal_calculation;
     QJsonObject m_json;
-    QVector<std::string > m_mass_balance;
+    QVector<std::string> m_mass_balance;
     QMutex mutex;
-    QList<QPointer<ConcentrationSolver > > m_solvers;
+    QList<QPointer<ConcentrationSolver>> m_solvers;
     /*
      * Reads the json file and sets the model up
      */
@@ -84,12 +82,13 @@ private:
     /*
      * 
      */
-    void CreateMassBalanceEquation(const QJsonObject &json);
-    QList<qreal > m_constants_pow;
+    void CreateMassBalanceEquation(const QJsonObject& json);
+    QList<qreal> m_constants_pow;
+
 protected:
-    QList<qreal > m_signals;
-    virtual void CalculateVariables(const QList<qreal > &constants);
-    virtual void DeclareParameter() override ;
+    QList<qreal> m_signals;
+    virtual void CalculateVariables(const QList<qreal>& constants);
+    virtual void DeclareParameter() override;
 };
 
 #endif // 1_1_Model

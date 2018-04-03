@@ -22,12 +22,14 @@
 #include <QPropertyAnimation>
 
 #include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QWidget>
 
 #include "modelactions.h"
 
-ModelActions::ModelActions(QWidget* parent) : QWidget(parent), m_hidden(true)
+ModelActions::ModelActions(QWidget* parent)
+    : QWidget(parent)
+    , m_hidden(true)
 {
     setUi();
     resizeButtons();
@@ -39,7 +41,7 @@ ModelActions::~ModelActions()
 
 void ModelActions::setUi()
 {
-    QVBoxLayout *layout = new QVBoxLayout;
+    QVBoxLayout* layout = new QVBoxLayout;
     m_minimize_single = new PushButton(tr("Local Fits"));
     m_optim_config = new PushButton(tr("Fit Settings"));
     m_import = new PushButton(tr("Load Constants"));
@@ -58,9 +60,9 @@ void ModelActions::setUi()
     m_toggle = new QPushButton(tr("..more.."));
     m_toggle->setFlat(true);
 
-    QHBoxLayout *h_layout = new QHBoxLayout;
+    QHBoxLayout* h_layout = new QHBoxLayout;
     h_layout->addWidget(m_advanced);
-    h_layout->addWidget(m_statistics); 
+    h_layout->addWidget(m_statistics);
     h_layout->addWidget(m_plots);
     h_layout->addWidget(m_detailed);
     h_layout->addWidget(m_new_guess);
@@ -71,10 +73,10 @@ void ModelActions::setUi()
     h_layout->addWidget(m_toggle);
     h_layout->setAlignment(Qt::AlignLeft);
     layout->addLayout(h_layout);
-    
+
     m_second = new QWidget;
     layout->addWidget(m_second);
-    
+
     h_layout = new QHBoxLayout;
     h_layout->addWidget(m_minimize_single);
     h_layout->addWidget(m_save);
@@ -84,7 +86,7 @@ void ModelActions::setUi()
     h_layout->addStretch();
     h_layout->setAlignment(Qt::AlignLeft);
     m_second->setLayout(h_layout);
-    
+
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(ToggleMore()));
     connect(m_new_guess, SIGNAL(clicked()), this, SIGNAL(NewGuess()));
     connect(m_minimize_single, SIGNAL(clicked()), this, SIGNAL(LocalMinimize()));
@@ -109,7 +111,6 @@ void ModelActions::EnableCharts(bool enable)
     m_plots->setEnabled(enable);
 }
 
-
 void ModelActions::resizeButtons()
 {
     // Thats awfull and hackish, but it works for now and doesn't look that bad
@@ -118,7 +119,7 @@ void ModelActions::resizeButtons()
     m_import->setMaximumSize(110, 30);
     m_export->setMaximumSize(110, 30);
     m_advanced->setMaximumSize(50, 30);
-    m_toggle->setMaximumSize(50,30);
+    m_toggle->setMaximumSize(50, 30);
     m_plots->setMaximumSize(110, 30);
     m_statistics->setMaximumSize(70, 30);
     m_save->setMaximumSize(70, 30);
@@ -132,9 +133,8 @@ void ModelActions::resizeButtons()
 void ModelActions::ToggleMore()
 {
 
-    if(!m_hidden)
-    {
-        QPropertyAnimation *animation = new QPropertyAnimation(m_second, "maximumHeight");
+    if (!m_hidden) {
+        QPropertyAnimation* animation = new QPropertyAnimation(m_second, "maximumHeight");
         animation->setEasingCurve(QEasingCurve::InOutCubic);
         animation->setDuration(200);
         animation->setStartValue(100);
@@ -142,17 +142,16 @@ void ModelActions::ToggleMore()
         animation->start();
         m_toggle->setText(tr("..more.."));
         m_hidden = true;
-    }else{
-        QPropertyAnimation *animation = new QPropertyAnimation(m_second, "maximumHeight");
+    } else {
+        QPropertyAnimation* animation = new QPropertyAnimation(m_second, "maximumHeight");
         animation->setEasingCurve(QEasingCurve::InOutCubic);
-        animation->setDuration(200);         
+        animation->setDuration(200);
         animation->setStartValue(0);
         animation->setEndValue(100);
         animation->start();
-        m_toggle->setText(tr("..less.."));  
+        m_toggle->setText(tr("..less.."));
         m_hidden = false;
     }
 }
-
 
 #include "modelactions.moc"

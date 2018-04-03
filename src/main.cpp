@@ -23,16 +23,16 @@
 #include "src/global_config.h"
 #include "src/version.h"
 
-#include <QtCore/QCommandLineParser>
 #include <QtCore/QCommandLineOption>
+#include <QtCore/QCommandLineParser>
 
 #include <QtWidgets/QApplication>
 
 int main(int argc, char** argv)
 {
-    
+
     qInstallMessageHandler(myMessageOutput);
-    
+
     QApplication app(argc, argv);
     QCommandLineParser parser;
 
@@ -42,12 +42,12 @@ int main(int argc, char** argv)
     const QStringList args = parser.positionalArguments();
 
 #ifdef _DEBUG
-        qDebug() << "Debug output enabled, good fun!";
+    qDebug() << "Debug output enabled, good fun!";
 #endif
-    
+
     MainWindow mainwindow;
     mainwindow.showMaximized();
-    for(const QString &str : qAsConst(args))
+    for (const QString& str : qAsConst(args))
         mainwindow.LoadFile(str);
     return app.exec();
 }

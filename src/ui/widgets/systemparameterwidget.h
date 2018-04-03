@@ -27,20 +27,19 @@
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QLineEdit>
 
-class SystemParameterWidget : public QGroupBox
-{
+class SystemParameterWidget : public QGroupBox {
     Q_OBJECT
-    
+
 public:
-    SystemParameterWidget(const SystemParameter &parameter, QWidget *parent = 0);
+    SystemParameterWidget(const SystemParameter& parameter, QWidget* parent = 0);
     ~SystemParameterWidget();
-    
+
     SystemParameter Value();
-    void setValue(const SystemParameter &variant);
+    void setValue(const SystemParameter& variant);
 
 private:
-    QLineEdit *m_textfield;
-    QCheckBox *m_boolbox;
+    QLineEdit* m_textfield;
+    QCheckBox* m_boolbox;
     SystemParameter m_parameter;
     bool m_change;
 
@@ -51,42 +50,37 @@ signals:
     void valueChanged();
 };
 
-class SPOverview : public QWidget
-{
+class SPOverview : public QWidget {
     Q_OBJECT
 public:
-    inline SPOverview(DataClass *data) : m_data(data)
+    inline SPOverview(DataClass* data)
+        : m_data(data)
     {
-        QVBoxLayout * layout = new QVBoxLayout;
+        QVBoxLayout* layout = new QVBoxLayout;
 
         layout->setAlignment(Qt::AlignTop);
 
-        for(int index : m_data->getSystemParameterList())
-        {
-            QPointer<SystemParameterWidget > widget = new SystemParameterWidget(m_data->getSystemParameter(index), this);
+        for (int index : m_data->getSystemParameterList()) {
+            QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), this);
             layout->addWidget(widget);
             connect(widget, &SystemParameterWidget::valueChanged,
-                    [index, widget, this](  )
-            {
-                if(widget)
-                {
-                    m_data->setSystemParameter(widget->Value());
-                }
-            });
+                [index, widget, this]() {
+                    if (widget) {
+                        m_data->setSystemParameter(widget->Value());
+                    }
+                });
 
             connect(m_data, &DataClass::SystemParameterChanged,
-                    [index, widget, this](  )
-            {
-                if(widget)
-                {
-                    widget->setValue(m_data->getSystemParameter(index));
-                }
-            });
+                [index, widget, this]() {
+                    if (widget) {
+                        widget->setValue(m_data->getSystemParameter(index));
+                    }
+                });
         }
 
         setLayout(layout);
     }
 
 private:
-    DataClass *m_data;
+    DataClass* m_data;
 };

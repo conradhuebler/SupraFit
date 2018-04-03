@@ -31,19 +31,22 @@ class QPushButton;
 class QChart;
 
 struct ChartConfig;
-struct PgfPlotConfig
-{
+struct PgfPlotConfig {
     QString colordefinition;
     QString plots;
     QStringList table;
 };
 
-class ChartViewPrivate : public QtCharts::QChartView
-{
-  Q_OBJECT
+class ChartViewPrivate : public QtCharts::QChartView {
+    Q_OBJECT
 public:
-    inline ChartViewPrivate(QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent) {setRubberBand(QChartView::RectangleRubberBand);}
-    inline ChartViewPrivate(QtCharts::QChart *chart, QWidget *parent = Q_NULLPTR) : QtCharts::QChartView(parent)
+    inline ChartViewPrivate(QWidget* parent = Q_NULLPTR)
+        : QtCharts::QChartView(parent)
+    {
+        setRubberBand(QChartView::RectangleRubberBand);
+    }
+    inline ChartViewPrivate(QtCharts::QChart* chart, QWidget* parent = Q_NULLPTR)
+        : QtCharts::QChartView(parent)
     {
         setChart(chart);
         setAcceptDrops(true);
@@ -54,67 +57,73 @@ public:
         font.setPointSize(12);
         chart->setTitleFont(font);*/
     }
-    inline ~ChartViewPrivate(){ }
-    
-protected:
-    virtual void mousePressEvent(QMouseEvent *event) override;
-    virtual void mouseReleaseEvent(QMouseEvent * event) override;
-    void dragEnterEvent(QDragEnterEvent *event) override;
-    void dragMoveEvent(QDragMoveEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
-private:
+    inline ~ChartViewPrivate() {}
 
+protected:
+    virtual void mousePressEvent(QMouseEvent* event) override;
+    virtual void mouseReleaseEvent(QMouseEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dragMoveEvent(QDragMoveEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+
+private:
 };
 
-
-class ChartView : public QWidget
-{
+class ChartView : public QWidget {
     Q_OBJECT
 public:
-    ChartView(QtCharts::QChart *chart, bool latex_supported = false);
+    ChartView(QtCharts::QChart* chart, bool latex_supported = false);
     ChartView();
-    inline ~ChartView() { }
-    void addSeries( QPointer<QtCharts::QAbstractSeries>);
+    inline ~ChartView() {}
+    void addSeries(QPointer<QtCharts::QAbstractSeries>);
     qreal YMax() const { return m_ymax; }
-    inline void removeSeries(QtCharts::QAbstractSeries *series) { m_chart->removeSeries(series); }
-    inline QList<QtCharts::QAbstractSeries *> series() const { return m_chart->series(); }
-    
-    QtCharts::QLineSeries *addLinearSeries(qreal m, qreal n, qreal min, qreal max);
+    inline void removeSeries(QtCharts::QAbstractSeries* series) { m_chart->removeSeries(series); }
+    inline QList<QtCharts::QAbstractSeries*> series() const { return m_chart->series(); }
+
+    QtCharts::QLineSeries* addLinearSeries(qreal m, qreal n, qreal min, qreal max);
     void ClearChart();
-    
+
 public slots:
     void formatAxis();
-    
-    void setXAxis(const QString &str) { m_x_axis = str; emit AxisChanged(); }
-    void setYAxis(const QString &str) { m_y_axis = str; emit AxisChanged(); }
-    void setTitle(const QString &str);
+
+    void setXAxis(const QString& str)
+    {
+        m_x_axis = str;
+        emit AxisChanged();
+    }
+    void setYAxis(const QString& str)
+    {
+        m_y_axis = str;
+        emit AxisChanged();
+    }
+    void setTitle(const QString& str);
 
 private:
-    ChartViewPrivate *m_chart_private;
-    QPointer< QtCharts::QChart > m_chart;
-    QPushButton *m_config;
+    ChartViewPrivate* m_chart_private;
+    QPointer<QtCharts::QChart> m_chart;
+    QPushButton* m_config;
     void setUi();
     bool has_legend, connected;
     QString m_x_axis, m_y_axis;
     ChartConfig getChartConfig() const;
     PgfPlotConfig getScatterTable() const;
     PgfPlotConfig getLineTable() const;
-    QString Color2RGB(const QColor &color) const;
-    void WriteTable(const QString &str);
+    QString Color2RGB(const QColor& color) const;
+    void WriteTable(const QString& str);
     ChartConfigDialog m_chartconfigdialog;
-    bool m_pending, m_lock_scaling, m_latex_supported;   
+    bool m_pending, m_lock_scaling, m_latex_supported;
     qreal m_ymax, m_ymin, m_xmin, m_xmax;
 
 private slots:
     void PlotSettings();
     void PrintPlot();
     void ExportLatex();
-//     void ExportGnuplot();
+    //     void ExportGnuplot();
     void ExportPNG();
-    void setChartConfig(const ChartConfig &chartconfig);
+    void setChartConfig(const ChartConfig& chartconfig);
     void forceformatAxis();
     void ConfigurationChanged();
-    
+
 signals:
     void AxisChanged();
     void ChartCleared();

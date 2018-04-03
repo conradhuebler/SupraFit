@@ -30,26 +30,24 @@ class QPushButton;
 class QTextEdit;
 struct StatisticResult;
 
-class StatisticWidget : public QWidget
-{
+class StatisticWidget : public QWidget {
     Q_OBJECT
 public:
-    StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget *parent);
+    StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget* parent);
     ~StatisticWidget();
     inline QString Overview() const { return m_short; }
     inline QString Statistic() const { return m_statistics; }
     inline QString Text() const { return m_overview->toPlainText(); }
 public slots:
-     void Update();
-    
+    void Update();
+
 private:
-    QSharedPointer<AbstractModel > m_model;
-    QPushButton *m_show;
-    QWidget *m_subwidget;
-    QTextEdit *m_overview;
+    QSharedPointer<AbstractModel> m_model;
+    QPushButton* m_show;
+    QWidget* m_subwidget;
+    QTextEdit* m_overview;
     QString m_short, m_statistics;
-    
+
 private slots:
     void toggleView();
-   
 };

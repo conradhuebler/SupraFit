@@ -27,14 +27,12 @@
 
 const int update_intervall = 100;
 
-
-class MoCoConfig : public AbstractConfig
-{
+class MoCoConfig : public AbstractConfig {
 public:
-    WGSConfig cv_config;  
+    WGSConfig cv_config;
     int mc_steps = 10000;
     qreal box_multi = 1.5;
-    qreal maxerror = 0; 
+    qreal maxerror = 0;
     qreal confidence = 95;
     qreal f_value = 0;
     bool fisher_statistic = false;
@@ -42,33 +40,43 @@ public:
 
 class AbstractModel;
 
-class MCThread : public AbstractSearchThread
-{
-  Q_OBJECT
-  
+class MCThread : public AbstractSearchThread {
+    Q_OBJECT
+
 public:
-    inline MCThread( ) : AbstractSearchThread() { }
-    inline ~MCThread() { }
-    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); m_model->setFast();}
+    inline MCThread()
+        : AbstractSearchThread()
+    {
+    }
+    inline ~MCThread() {}
+    void setModel(QSharedPointer<AbstractModel> model)
+    {
+        m_model = model->Clone();
+        m_model->setFast();
+    }
     void run();
-    QList<QJsonObject > Results() const { return m_results; }
+    QList<QJsonObject> Results() const { return m_results; }
     inline void setMaxSteps(int steps) { m_maxsteps = steps; }
-    inline void setBox(const QVector<QVector<qreal> > &box) { m_box = box; }
-   
+    inline void setBox(const QVector<QVector<qreal>>& box) { m_box = box; }
+
 private:
     QSharedPointer<AbstractModel> m_model;
-    QList<QJsonObject > m_results;
+    QList<QJsonObject> m_results;
     int m_maxsteps;
-    QVector<QVector<qreal> > m_box;
+    QVector<QVector<qreal>> m_box;
 };
 
-class FCThread : public AbstractSearchThread
-{
-  Q_OBJECT
+class FCThread : public AbstractSearchThread {
+    Q_OBJECT
 
 public:
-    FCThread(MoCoConfig config, int parameter) : AbstractSearchThread(), m_config(config), m_parameter(parameter) { }
-    ~FCThread() { }
+    FCThread(MoCoConfig config, int parameter)
+        : AbstractSearchThread()
+        , m_config(config)
+        , m_parameter(parameter)
+    {
+    }
+    ~FCThread() {}
 
     void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     void run();
@@ -80,32 +88,33 @@ private:
     int m_parameter;
     qreal SingleLimit(int parameter_id, int direction);
     MoCoConfig m_config;
-
 };
 
-
-class ModelComparison : public AbstractSearchClass
-{
+class ModelComparison : public AbstractSearchClass {
     Q_OBJECT
 
 public:
-    ModelComparison(MoCoConfig config, QObject *parent = 0);
+    ModelComparison(MoCoConfig config, QObject* parent = 0);
     ~ModelComparison();
     bool Confidence();
     bool FastConfidence();
     inline qreal Area() const { return m_ellipsoid_area; }
-    inline void setResults(const QList<QJsonObject > results) { m_results = results; m_fast_finished = true; }
+    inline void setResults(const QList<QJsonObject> results)
+    {
+        m_results = results;
+        m_fast_finished = true;
+    }
 
 private:
     void StripResults(const QList<QJsonObject>& results);
-    void MCSearch(const QVector<QVector<qreal> >& box);
+    void MCSearch(const QVector<QVector<qreal>>& box);
     double SingleLimit(int parameter_id, int direction = 1);
     virtual QJsonObject Controller() const override;
 
-    QVector<QVector<qreal> > MakeBox();
+    QVector<QVector<qreal>> MakeBox();
     MoCoConfig m_config;
     QJsonObject m_box, m_controller;
     double m_effective_error, m_box_area, m_ellipsoid_area;
-    QVector<QList<qreal > > m_data_vec;
+    QVector<QList<qreal>> m_data_vec;
     bool m_fast_finished;
 };

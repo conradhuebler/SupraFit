@@ -45,8 +45,8 @@
 
 #include "datawidget.h"
 
-
-DataWidget::DataWidget() : m_system_parameter_loaded(false)
+DataWidget::DataWidget()
+    : m_system_parameter_loaded(false)
 {
     m_widget = new QWidget;
     layout = new QGridLayout;
@@ -55,12 +55,12 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
     m_switch->setStyleSheet("background-color: #77d740;");
     m_switch->setMaximumSize(100, 30);
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
-    
+
     m_linear = new QPushButton(tr("Regression"));
     m_linear->setToolTip(tr("Perform advanced linear regression"));
     m_linear->setStyleSheet("background-color: #77d740;");
     connect(m_linear, &QPushButton::clicked, this, &DataWidget::LinearAnalysis);
-    
+
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
     m_name->setMinimumWidth(450);
@@ -72,8 +72,8 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
     m_signals->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_signals, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     connect(m_concentrations->verticalScrollBar(), SIGNAL(valueChanged(int)), m_signals->verticalScrollBar(), SLOT(setValue(int)));
-    QHBoxLayout *hlayout = new QHBoxLayout;
-    
+    QHBoxLayout* hlayout = new QHBoxLayout;
+
     hlayout->addWidget(new QLabel(tr("<html><h3>Project Name</h3></html>")), 0, Qt::AlignLeft);
     hlayout->addWidget(m_name, 0, Qt::AlignLeft);
     hlayout->addWidget(m_switch, 0, Qt::AlignRight);
@@ -84,26 +84,25 @@ DataWidget::DataWidget() : m_system_parameter_loaded(false)
     m_const_subs = new QLabel;
     m_signals_count = new QLabel;
     m_tables = new QWidget; //(tr("Data Tables"));
-    QHBoxLayout *group_layout = new QHBoxLayout;
+    QHBoxLayout* group_layout = new QHBoxLayout;
     group_layout->addWidget(m_concentrations);
     group_layout->addWidget(m_signals);
     m_tables->setLayout(group_layout);
-    
+
     layout->addLayout(hlayout, 0, 0, 1, 4);
     layout->addWidget(m_datapoints, 1, 0);
     layout->addWidget(m_substances, 1, 1);
-    layout->addWidget(m_const_subs,1,2);
+    layout->addWidget(m_const_subs, 1, 2);
     layout->addWidget(m_signals_count, 1, 3);
-    
+
     m_widget->setLayout(layout);
-    QScrollArea *area = new QScrollArea;
+    QScrollArea* area = new QScrollArea;
     area->setWidgetResizable(true);
     area->setWidget(m_widget);
     m_splitter = new QSplitter;
     m_splitter->setOrientation(Qt::Vertical);
     m_splitter->addWidget(area);
-    
-    
+
     hlayout = new QHBoxLayout;
     hlayout->addWidget(m_splitter);
     setLayout(hlayout);
@@ -117,36 +116,34 @@ DataWidget::~DataWidget()
 }
 
 void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper)
-{  
+{
     m_data = dataclass;
-    m_wrapper = wrapper; 
+    m_wrapper = wrapper;
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     m_concentrations->setModel(m_data.data()->IndependentModel());
     m_signals->setModel(m_data.data()->DependentModel());
-    connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(HidePoint()));
+    connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
     m_name->setText(qApp->instance()->property("projectname").toString());
     m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.data()->IndependentModel()->columnCount()));
     m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));
     m_signals_count->setText(tr("<html><h4>Columns of dependent variables: %1</h4><html>").arg(m_data.data()->SeriesCount()));
-    
-    QVBoxLayout *vlayout = new QVBoxLayout;
-    for(int i = 0; i < m_wrapper.data()->SeriesSize(); ++i)
-    {
-        QPointer<SignalElement > el = new SignalElement(m_data, m_wrapper, i, this);
+
+    QVBoxLayout* vlayout = new QVBoxLayout;
+    for (int i = 0; i < m_wrapper.data()->SeriesSize(); ++i) {
+        QPointer<SignalElement> el = new SignalElement(m_data, m_wrapper, i, this);
         vlayout->addWidget(el);
         m_signal_elements << el;
     }
-    layout->addLayout(vlayout, 2,0, 1, 4);
-    
-    QHBoxLayout *scaling_layout = new QHBoxLayout;
+    layout->addLayout(vlayout, 2, 0, 1, 4);
+
+    QHBoxLayout* scaling_layout = new QHBoxLayout;
     scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
-    
-    for(int i = 0; i < m_data.data()->getScaling().size(); ++i)
-    {
-        
-        QDoubleSpinBox *spin_box = new QDoubleSpinBox;
+
+    for (int i = 0; i < m_data.data()->getScaling().size(); ++i) {
+
+        QDoubleSpinBox* spin_box = new QDoubleSpinBox;
         spin_box->setMaximum(1e8);
         spin_box->setMinimum(-1e8);
         spin_box->setValue(m_data.data()->getScaling()[i]);
@@ -154,22 +151,22 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         spin_box->setDecimals(7);
         connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
         m_scaling_boxes << spin_box;
-        QHBoxLayout *lay = new QHBoxLayout;
+        QHBoxLayout* lay = new QHBoxLayout;
         lay->addWidget(new QLabel(tr("%1. substance").arg(i + 1)));
         lay->addWidget(spin_box);
         scaling_layout->addLayout(lay);
     }
-    layout->addLayout(scaling_layout,3,0,1,4);
+    layout->addLayout(scaling_layout, 3, 0, 1, 4);
 
-    if(m_data.data()->IndependentVariableSize() == 1)
+    if (m_data.data()->IndependentVariableSize() == 1)
         m_switch->hide();
 
     m_systemwidget = new QWidget;
-    
+
     m_splitter->addWidget(m_tables);
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     dialog->UpdatePlots();
-    
+
     QSettings settings;
     settings.beginGroup("overview");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
@@ -195,11 +192,10 @@ void DataWidget::setEditable(bool editable)
     m_data.data()->DependentModel()->setEditable(editable);
 }
 
-
 void DataWidget::setScaling()
 {
     QList<qreal> scaling;
-    for(int i = 0; i < m_scaling_boxes.size(); ++i)
+    for (int i = 0; i < m_scaling_boxes.size(); ++i)
         scaling << m_scaling_boxes[i]->value();
     m_data.data()->setScaling(scaling);
     m_wrapper.data()->UpdateModel();
@@ -226,7 +222,7 @@ void DataWidget::HidePoint()
 
 void DataWidget::MakeSystemParameter()
 {
-    if(m_system_parameter_loaded)
+    if (m_system_parameter_loaded)
         return;
     m_splitter->addWidget(new SPOverview(m_data.data()));
     m_system_parameter_loaded = true;
@@ -236,6 +232,5 @@ void DataWidget::LinearAnalysis()
 {
     dialog->show();
 }
-
 
 #include "datawidget.moc"

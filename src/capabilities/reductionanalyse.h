@@ -22,33 +22,36 @@
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/core/AbstractModel.h"
 
-#include <QtCore/QObject>
 #include <QtCore/QMutex>
+#include <QtCore/QObject>
 #include <QtCore/QSharedPointer>
 
 class AbstractModel;
 class MonteCarloThread;
 class Minimizer;
 
-class ReductionAnalyse : public AbstractSearchClass
-{
+class ReductionAnalyse : public AbstractSearchClass {
     Q_OBJECT
-    
+
 public:
     ReductionAnalyse(OptimizerConfig config, OptimizationType type);
     ~ReductionAnalyse();
-    
-    enum CVType{
+
+    enum CVType {
         LeaveOneOut = 1,
         LeaveTwoOut = 2,
         LeaveManyOut = 3
     };
-    
+
     void CrossValidation(CVType type = CVType::LeaveOneOut);
     void PlainReduction();
     QJsonObject ModelData() const { return m_model_data; }
     /* Since we change the checked rows of the model, we have to detach the data table from the global model */
-    virtual inline void setModel(const QSharedPointer<AbstractModel> model) override { m_model = model->Clone(); m_model->detach(); }
+    virtual inline void setModel(const QSharedPointer<AbstractModel> model) override
+    {
+        m_model = model->Clone();
+        m_model->detach();
+    }
 
 public slots:
     void Interrupt() override;
@@ -56,9 +59,9 @@ public slots:
 private:
     void addThread(QPointer<MonteCarloThread> thread);
     bool Pending() const;
-    inline virtual QJsonObject Controller() const override {return m_controller; } 
-    
-    QVector<QPointer<MonteCarloThread> > m_threads;
+    inline virtual QJsonObject Controller() const override { return m_controller; }
+
+    QVector<QPointer<MonteCarloThread>> m_threads;
     AbstractConfig m_config;
     QJsonObject m_model_data;
     QJsonObject m_controller;

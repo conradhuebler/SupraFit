@@ -17,8 +17,6 @@
  * 
  */
 
-
-
 #include "src/core/AbstractItcModel.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
@@ -26,29 +24,30 @@
 
 #include <QtMath>
 
-#include <QtCore/QFile>
-#include <QtCore/QJsonObject>
 #include <QDebug>
 #include <QtCore/QDateTime>
-#include <cmath>
+#include <QtCore/QFile>
+#include <QtCore/QJsonObject>
 #include <cfloat>
+#include <cmath>
 #include <iostream>
 
 #include "itc_2_1_Model.h"
 
-itc_IItoI_Model::itc_IItoI_Model(DataClass *data) : AbstractItcModel(data)
+itc_IItoI_Model::itc_IItoI_Model(DataClass* data)
+    : AbstractItcModel(data)
 {
-   PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
-itc_IItoI_Model::itc_IItoI_Model(AbstractItcModel *model) : AbstractItcModel(model)
+itc_IItoI_Model::itc_IItoI_Model(AbstractItcModel* model)
+    : AbstractItcModel(model)
 {
-   PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
 itc_IItoI_Model::~itc_IItoI_Model()
 {
-    
 }
 
 void itc_IItoI_Model::InitialGuess()
@@ -60,14 +59,13 @@ void itc_IItoI_Model::InitialGuess()
     m_local_parameter->data(2, 0) = -1000;
     m_local_parameter->data(3, 0) = 1;
     m_local_parameter->data(4, 0) = 1;
-    
+
     AbstractModel::Calculate();
 }
 
 QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private(OptimizationType type)
-{    
-    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
-    {
+{
+    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter) {
         addGlobalParameter(0);
         addGlobalParameter(1);
     }
@@ -77,18 +75,16 @@ QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private(OptimizationType type
     QString binding = getOption(Binding);
     QString dilution = getOption(Dilution);
 
-    if(dilution == "auto")
-    {
+    if (dilution == "auto") {
         addLocalParameter(2);
         addLocalParameter(3);
     }
-    if(binding == "pytc" || binding == "multiple")
-    {
-            addLocalParameter(4);
+    if (binding == "pytc" || binding == "multiple") {
+        addLocalParameter(4);
     }
 
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
+    QVector<qreal> parameter;
+    for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
 }
@@ -101,8 +97,8 @@ void itc_IItoI_Model::CalculateVariables()
     QString binding = getOption(Binding);
     QString dil = getOption(Dilution);
 
-    qreal dH2 =  m_local_parameter->data(0, 0);
-    qreal dH1 =  m_local_parameter->data(1, 0);
+    qreal dH2 = m_local_parameter->data(0, 0);
+    qreal dH1 = m_local_parameter->data(1, 0);
     qreal dil_heat = m_local_parameter->data(2, 0);
     qreal dil_inter = m_local_parameter->data(3, 0);
     qreal fx = m_local_parameter->data(4, 0);
@@ -113,27 +109,24 @@ void itc_IItoI_Model::CalculateVariables()
     qreal K11 = qPow(10, GlobalParameter()[1]);
 
     qreal complex_21_prev = 0, complex_11_prev = 0;
-    for(int i = 0; i < DataPoints(); ++i)
-    {
+    for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
-        if(binding == "pytc")
-        {
+        if (binding == "pytc") {
             host_0 *= fx;
         }
         qreal dilution = 0;
-        if(dil == "auto")
-        {
-            dilution= (guest_0*dil_heat+dil_inter);
+        if (dil == "auto") {
+            dilution = (guest_0 * dil_heat + dil_inter);
         }
 
-        qreal v = IndependentModel()->data(0,i);
+        qreal v = IndependentModel()->data(0, i);
 
         qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);
-        qreal guest = guest_0/(K11*host+K11*K21*host*host+1);
-        qreal complex_11 = K11*host*guest;
-        qreal complex_21 = K11*K21*host*host*guest;
+        qreal guest = guest_0 / (K11 * host + K11 * K21 * host * host + 1);
+        qreal complex_11 = K11 * host * guest;
+        qreal complex_21 = K11 * K21 * host * host * guest;
 
         Vector vector(5);
         vector(0) = i + 1;
@@ -141,22 +134,21 @@ void itc_IItoI_Model::CalculateVariables()
         vector(2) = guest;
         vector(3) = complex_21;
         vector(4) = complex_11;
-        if(!m_fast)
+        if (!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V*((complex_11-complex_11_prev*(1-v/V))*dH1+(complex_21-complex_21_prev*(1-v/V))*dH2);
-        if(binding == "multiple")
+        qreal value = V * ((complex_11 - complex_11_prev * (1 - v / V)) * dH1 + (complex_21 - complex_21_prev * (1 - v / V)) * dH2);
+        if (binding == "multiple")
             value *= fx;
-        SetValue(i, 0, value+dilution);
+        SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
         complex_21_prev = complex_21;
     }
 }
 
-
-QSharedPointer<AbstractModel > itc_IItoI_Model::Clone()
+QSharedPointer<AbstractModel> itc_IItoI_Model::Clone()
 {
-    QSharedPointer<AbstractItcModel > model = QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractItcModel> model = QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
@@ -167,7 +159,7 @@ QSharedPointer<AbstractModel > itc_IItoI_Model::Clone()
 
 qreal itc_IItoI_Model::BC50() const
 {
-    return 1/qPow(10,GlobalParameter()[0]); 
+    return 1 / qPow(10, GlobalParameter()[0]);
 }
 
 #include "itc_2_1_Model.moc"

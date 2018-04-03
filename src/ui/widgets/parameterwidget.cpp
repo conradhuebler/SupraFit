@@ -30,37 +30,33 @@
 
 #include "parameterwidget.h"
 
-LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel > model) : m_model(model)
+LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
+    : m_model(model)
 {
-    QVBoxLayout *layout = new QVBoxLayout;
-    for(int i = 0; i < m_model->LocalParameterSize(); i++)
-    {
-        QWidget *widget = new QWidget;
-        QHBoxLayout *hlayout = new QHBoxLayout;
+    QVBoxLayout* layout = new QVBoxLayout;
+    for (int i = 0; i < m_model->LocalParameterSize(); i++) {
+        QWidget* widget = new QWidget;
+        QHBoxLayout* hlayout = new QHBoxLayout;
         widget->setLayout(hlayout);
         QPointer<SpinBox> box = new SpinBox;
         box->setMinimum(-1e10);
         box->setMaximum(1e10);
         box->setValue(m_model->LocalParameter(i, 0));
         connect(m_model.data(), &AbstractModel::Recalculated,
-                [i, box, this, widget](  )
-        {
-            if(this->m_model && box)
-            {
-                box->setValue(m_model->LocalParameter(i, 0));
-                widget->setEnabled(this->m_model->LocalEnabled(i ));
-            }
-        });
-        connect(box,  &SpinBox::valueChangedNotBySet,
-                [i, box, this](  )
-        {
-            if(this->m_model && box)
-            {
-                m_model->setLocalParameter(box->value(), i, 0);
-                m_model->Calculate();
-            }
+            [i, box, this, widget]() {
+                if (this->m_model && box) {
+                    box->setValue(m_model->LocalParameter(i, 0));
+                    widget->setEnabled(this->m_model->LocalEnabled(i));
+                }
+            });
+        connect(box, &SpinBox::valueChangedNotBySet,
+            [i, box, this]() {
+                if (this->m_model && box) {
+                    m_model->setLocalParameter(box->value(), i, 0);
+                    m_model->Calculate();
+                }
 
-        });
+            });
         hlayout->addWidget(new QLabel(m_model->LocalParameterName(i)));
         hlayout->addWidget(box);
         layout->addWidget(widget);

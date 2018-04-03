@@ -27,15 +27,15 @@
 
 #include "optionswidget.h"
 
-OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel > model) : m_model(model)
+OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel> model)
+    : m_model(model)
 {
-    QVBoxLayout *layout = new QVBoxLayout;
-    for(int index : m_model->getAllOptions())
-    {
+    QVBoxLayout* layout = new QVBoxLayout;
+    for (int index : m_model->getAllOptions()) {
         QString str = m_model->getOptionName(index);
-        QHBoxLayout *hlayout = new QHBoxLayout;
+        QHBoxLayout* hlayout = new QHBoxLayout;
         hlayout->addWidget(new QLabel(str));
-        QPointer<QComboBox > box = new QComboBox;
+        QPointer<QComboBox> box = new QComboBox;
         box->addItems(m_model->getSingleOptionValues(index));
         box->setCurrentText(m_model->getOption(index));
         hlayout->addWidget(box);
@@ -51,13 +51,11 @@ OptionsWidget::~OptionsWidget()
 {
 }
 
-
 void OptionsWidget::setOption()
 {
-    for(int index : m_model->getAllOptions())
-    {
-            QString value = m_options[index]->currentText();
-            m_model->setOption(index, value);
+    for (int index : m_model->getAllOptions()) {
+        QString value = m_options[index]->currentText();
+        m_model->setOption(index, value);
     }
     m_model->Calculate();
 }

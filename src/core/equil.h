@@ -22,85 +22,83 @@
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 
+namespace ItoI {
 
-namespace ItoI{
-    
-    inline qreal HostConcentration(qreal host_0, qreal guest_0, const qreal &constant)
-    {
-        qreal K11 = qPow(10, constant);
-        qreal a, b, c;
-        qreal complex;
-        a = K11;
-        b = -1*(K11*host_0+K11*guest_0+1);
-        c = K11*guest_0*host_0;
-        complex = MinQuadraticRoot(a,b,c);
-        return host_0 - complex;
-    }
-    
-}
-
-namespace IItoI_ItoI{
-    
-    inline qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
-    {
-        if(constants.size() < 2)
-            return host_0;
-
-        qreal K21= constants.first();
-        qreal K11 = constants.last();
-        qreal host;
-        qreal a, b, c;
-        a = K11*K21;
-        b = K11*(2*K21*guest_0-K21*host_0+1);
-        c = K11*(guest_0-host_0)+1;
-        host = MinCubicRoot(a,b,c, -host_0);
-        return host;
-    }
-}
-
-namespace ItoI_ItoII{
-    
-    inline qreal GuestConcentration(qreal host_0, qreal guest_0, const QList< qreal > &constants)
-    {
-        if(constants.size() < 2)
-            return guest_0;
-        
-        qreal K12 = constants.last();
-        qreal K11 = constants.first();
-        qreal a = K11*K12;
-        qreal b = K11*(2*K12*host_0-K12*guest_0+1);
-        qreal c = K11*(host_0-guest_0)+1;
-        qreal guest = MinCubicRoot(a,b,c, -guest_0);
-        return guest;
-    }
-    
-    inline qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal > &constants)
-    {
-        
-        if(constants.size() < 2)
-            return host_0;
-        
-        qreal K12 = constants.last();
-        qreal K11 = constants.first();
-        qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, constants);
-        qreal host;
-        host = host_0/(K11*guest+K11*K12*guest*guest+1);
-        return host;
-    }
-}
-
-class IItoI_ItoI_ItoII_Solver : public QObject,  public QRunnable
+inline qreal HostConcentration(qreal host_0, qreal guest_0, const qreal& constant)
 {
-    
+    qreal K11 = qPow(10, constant);
+    qreal a, b, c;
+    qreal complex;
+    a = K11;
+    b = -1 * (K11 * host_0 + K11 * guest_0 + 1);
+    c = K11 * guest_0 * host_0;
+    complex = MinQuadraticRoot(a, b, c);
+    return host_0 - complex;
+}
+}
+
+namespace IItoI_ItoI {
+
+inline qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal>& constants)
+{
+    if (constants.size() < 2)
+        return host_0;
+
+    qreal K21 = constants.first();
+    qreal K11 = constants.last();
+    qreal host;
+    qreal a, b, c;
+    a = K11 * K21;
+    b = K11 * (2 * K21 * guest_0 - K21 * host_0 + 1);
+    c = K11 * (guest_0 - host_0) + 1;
+    host = MinCubicRoot(a, b, c, -host_0);
+    return host;
+}
+}
+
+namespace ItoI_ItoII {
+
+inline qreal GuestConcentration(qreal host_0, qreal guest_0, const QList<qreal>& constants)
+{
+    if (constants.size() < 2)
+        return guest_0;
+
+    qreal K12 = constants.last();
+    qreal K11 = constants.first();
+    qreal a = K11 * K12;
+    qreal b = K11 * (2 * K12 * host_0 - K12 * guest_0 + 1);
+    qreal c = K11 * (host_0 - guest_0) + 1;
+    qreal guest = MinCubicRoot(a, b, c, -guest_0);
+    return guest;
+}
+
+inline qreal HostConcentration(qreal host_0, qreal guest_0, const QList<qreal>& constants)
+{
+
+    if (constants.size() < 2)
+        return host_0;
+
+    qreal K12 = constants.last();
+    qreal K11 = constants.first();
+    qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, constants);
+    qreal host;
+    host = host_0 / (K11 * guest + K11 * K12 * guest * guest + 1);
+    return host;
+}
+}
+
+class IItoI_ItoI_ItoII_Solver : public QObject, public QRunnable {
+
 public:
     IItoI_ItoI_ItoII_Solver();
     ~IItoI_ItoI_ItoII_Solver();
     virtual void run();
     void setInput(double A_0, double B_0);
-    inline void setConstants(const QList<qreal> &parameter) { m_parameter = parameter; }
+    inline void setConstants(const QList<qreal>& parameter) { m_parameter = parameter; }
     inline void setConfig(OptimizerConfig opt_config) { m_opt_config = opt_config; }
-    inline QPair<double, double> Concentrations() const { return  m_concentration; }
+    inline QPair<double, double> Concentrations() const { return m_concentration; }
     bool Ok() const { return m_ok; }
+
 private:
     QList<qreal> m_parameter;
     qreal m_A_0, m_B_0;

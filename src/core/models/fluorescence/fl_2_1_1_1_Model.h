@@ -19,18 +19,17 @@
 
 #pragma once
 
-#include "src/global.h"
 #include "src/core/AbstractTitrationModel.h"
+#include "src/global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
 #include "src/core/dataclass.h"
 
-class fl_IItoI_ItoI_Model : public AbstractTitrationModel
-{
-     Q_OBJECT
-    
+class fl_IItoI_ItoI_Model : public AbstractTitrationModel {
+    Q_OBJECT
+
 public:
     enum {
         Method = 1,
@@ -42,30 +41,29 @@ public:
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::fl_IItoI_ItoI; }
 
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 2;}
-    
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 2; }
+
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone()  override;
+    virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override;
-    virtual inline QString GlobalParameterName(int i = 0) const override 
-    { 
-        if(i == 0)
+    virtual inline QString GlobalParameterName(int i = 0) const override
+    {
+        if (i == 0)
             return tr("K<sub>21</sub>");
-        else if(i == 1)
-            return tr("K<sub>11</sub>"); 
+        else if (i == 1)
+            return tr("K<sub>11</sub>");
         else
             return QString();
     }
     void virtual DeclareOptions() override;
-    
-    virtual int LocalParameterSize() const override {return 4; }
+
+    virtual int LocalParameterSize() const override { return 4; }
 
     void virtual EvaluateOptions() override;
     virtual inline QString Name() const override { return tr("&Phi; 2:1/1:1-Model"); }
 
 protected:
     virtual void CalculateVariables() override;
-
 };

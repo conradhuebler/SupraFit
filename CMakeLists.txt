@@ -209,7 +209,6 @@ set(suprafit_SRCS
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
                 src/ui/widgets/optimizerflagwidget.cpp
-                #src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/chartview.cpp
                 src/ui/widgets/listchart.cpp
                 src/ui/widgets/buttons/spinbox.h

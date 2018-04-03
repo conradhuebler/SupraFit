@@ -21,32 +21,36 @@
 
 #include <QtWidgets/QDoubleSpinBox>
 
-class SpinBox : public QDoubleSpinBox
-{
+class SpinBox : public QDoubleSpinBox {
     Q_OBJECT
-    
+
 public:
-    inline SpinBox(QWidget * parent = 0 ): QDoubleSpinBox(parent), valueBeingSet(false) { connect(this,SIGNAL(valueChanged(double)),this,SLOT(On_valueChanged(double))); }
-    inline ~SpinBox() { }
-    
+    inline SpinBox(QWidget* parent = 0)
+        : QDoubleSpinBox(parent)
+        , valueBeingSet(false)
+    {
+        connect(this, SIGNAL(valueChanged(double)), this, SLOT(On_valueChanged(double)));
+    }
+    inline ~SpinBox() {}
+
 protected:
     bool valueBeingSet;
-    
+
 public slots:
-    inline void setValue (double val)
+    inline void setValue(double val)
     {
         valueBeingSet = true;
         QDoubleSpinBox::setValue(val);
-        valueBeingSet = false; 
+        valueBeingSet = false;
     }
-    
+
 private slots:
     inline void On_valueChanged(double val)
     {
-        if(!valueBeingSet)
+        if (!valueBeingSet)
             emit valueChangedNotBySet(val);
     }
-    
+
 signals:
     void valueChangedNotBySet(double val);
 };

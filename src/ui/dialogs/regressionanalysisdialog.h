@@ -19,8 +19,8 @@
 #pragma once
 
 #include <QtCharts/QChartView>
-#include <QtCharts/QScatterSeries>
 #include <QtCharts/QLineSeries>
+#include <QtCharts/QScatterSeries>
 
 #include <QtWidgets/QDialog>
 
@@ -35,28 +35,27 @@ class ListChart;
 /**
  * @todo write docs
  */
-class RegressionAnalysisDialog : public QDialog
-{
+class RegressionAnalysisDialog : public QDialog {
     Q_OBJECT
 
 public:
-    RegressionAnalysisDialog(QWeakPointer<DataClass > data,  QWeakPointer<ChartWrapper> wrapper, QWidget *parent = 0);
+    RegressionAnalysisDialog(QWeakPointer<DataClass> data, QWeakPointer<ChartWrapper> wrapper, QWidget* parent = 0);
     ~RegressionAnalysisDialog();
 
 public slots:
     void UpdatePlots();
-    
+
 private:
     void setUI();
-    QPushButton *m_fit;
-    QSpinBox *m_functions;
-    QWeakPointer<DataClass > m_data;
+    QPushButton* m_fit;
+    QSpinBox* m_functions;
+    QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
-    ListChart *m_chart;
-    QList<QPointer<QtCharts::QScatterSeries > > m_series;
-    QMultiHash<int, QtCharts::QLineSeries *> m_linear_series;
-    QTextEdit *m_output;
-    
+    ListChart* m_chart;
+    QList<QPointer<QtCharts::QScatterSeries>> m_series;
+    QMultiHash<int, QtCharts::QLineSeries*> m_linear_series;
+    QTextEdit* m_output;
+
 private slots:
     void FitFunctions();
 };

@@ -21,13 +21,12 @@
 
 #include "src/core/dataclass.h"
 
-
-#include <QtWidgets/QTableView>
+#include <QtCore/QPointer>
+#include <QtCore/QVector>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QHeaderView>
-#include <QtCore/QVector>
-#include <QtCore/QPointer>
+#include <QtWidgets/QTableView>
 
 class QDialogButtonBox;
 class QLineEdit;
@@ -37,46 +36,45 @@ class QCheckBox;
 
 class DataTable;
 
-class TableView : public QTableView
-{
+class TableView : public QTableView {
     Q_OBJECT
 
 public:
-    inline TableView() : QTableView() {}
-    inline ~TableView() { }
-    
+    inline TableView()
+        : QTableView()
+    {
+    }
+    inline ~TableView() {}
+
 protected:
-  virtual void keyPressEvent(QKeyEvent *event);
-    
+    virtual void keyPressEvent(QKeyEvent* event);
+
 signals:
     void Edited();
 };
 
-
-
-class ImportData : public QDialog
-{
+class ImportData : public QDialog {
     Q_OBJECT
 
 public:
-    ImportData(const QString &file, QWidget *parent = 0);
-    ImportData(QWidget *parent = 0);
+    ImportData(const QString& file, QWidget* parent = 0);
+    ImportData(QWidget* parent = 0);
     ~ImportData();
 
-    inline DataClass getStoredData(){ return *m_storeddata;}
-    
+    inline DataClass getStoredData() { return *m_storeddata; }
+
 private:
     void setUi();
-    void WriteData(const DataTable *model, int independent = 2);
-    QPointer<TableView > m_table;
-    QPointer<QLineEdit > m_line;
-    QPointer<QPushButton > m_select, m_export, m_file;
-    QPointer<QSpinBox > m_conc;
-    QPointer<QDialogButtonBox > m_buttonbox;
-    QPointer<DataClass > m_storeddata;
-    QPointer<QCheckBox > m_switch_concentration;
+    void WriteData(const DataTable* model, int independent = 2);
+    QPointer<TableView> m_table;
+    QPointer<QLineEdit> m_line;
+    QPointer<QPushButton> m_select, m_export, m_file;
+    QPointer<QSpinBox> m_conc;
+    QPointer<QDialogButtonBox> m_buttonbox;
+    QPointer<DataClass> m_storeddata;
+    QPointer<QCheckBox> m_switch_concentration;
     QString m_filename;
-    
+
 private slots:
     void LoadFile();
     void SelectFile();
@@ -84,4 +82,3 @@ private slots:
     void accept();
     void NoChanged();
 };
-

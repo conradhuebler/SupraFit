@@ -21,16 +21,14 @@
 
 #include <Eigen/Dense>
 
-#include "src/global_config.h"
 #include "src/core/AbstractModel.h"
+#include "src/global_config.h"
 #include <QtCore/QPair>
-
 
 class AbstractModel;
 struct OptimizerConfig;
 
-struct LinearRegression
-{
+struct LinearRegression {
     QVector<qreal> y, x, y_head;
     qreal m = 0;
     qreal n = 0;
@@ -38,8 +36,7 @@ struct LinearRegression
     qreal sum_err = 0;
 };
 
-struct MultiRegression
-{
+struct MultiRegression {
     QVector<LinearRegression> regressions;
     qreal sum_err = 0;
     QVector<int> start;
@@ -51,13 +48,12 @@ long double MaxQuadraticRoot(long double a, long double b, long double c);
 QPair<long double, long double> QuadraticRoots(long double a, long double b, long double c);
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
 
-LinearRegression LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y);
-QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal> &x, const QVector<qreal> &y, int functions);
+LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y);
+QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y, int functions);
 
-namespace Cubic{
-    qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
-    qreal df(qreal x, qreal a, qreal b, qreal c);
+namespace Cubic {
+qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
+qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
-int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param);
-
+int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param);

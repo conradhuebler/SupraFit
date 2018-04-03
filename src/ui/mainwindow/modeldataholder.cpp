@@ -19,16 +19,16 @@
 
 #include "src/global_config.h"
 
-#include "src/capabilities/weakenedgridsearch.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 
+#include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/mainwindow/datawidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
-#include "src/ui/dialogs/statisticdialog.h"
 
 #include <QApplication>
 
@@ -36,24 +36,25 @@
 #include <QtCore/QJsonObject>
 
 #include <QtGui/QColor>
-#include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMessageBox>
-#include <QtWidgets/QFileDialog>
-#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolButton>
 
 #include "modeldataholder.h"
 
-void ToolButton::ChangeColor(const QColor &color)
+void ToolButton::ChangeColor(const QColor& color)
 {
-    setStyleSheet("background-color:" + color.name()+ ";");
+    setStyleSheet("background-color:" + color.name() + ";");
 }
 
-TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
+TabWidget::TabWidget(QWidget* parent)
+    : QTabWidget(parent)
 {
     setStyleSheet("QTabBar::tab { height: 20px;}");
 }
@@ -61,50 +62,47 @@ TabWidget::TabWidget(QWidget *parent) : QTabWidget(parent)
 void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
 {
     addTab(modelwidget, QString());
-    
-    QCheckBox *hide = new QCheckBox;
-    hide->setMaximumSize(20,20);
+
+    QCheckBox* hide = new QCheckBox;
+    hide->setMaximumSize(20, 20);
     hide->setChecked(true);
     hide->setToolTip(tr("Toggle Series in Charts"));
-    
+
     modelwidget->setCheckbox(hide);
-    
-    ToolButton *color = new ToolButton;
-    color->setMaximumSize(15,15);
+
+    ToolButton* color = new ToolButton;
+    color->setMaximumSize(15, 15);
     QStringList colors = modelwidget->Chart().signal_wrapper->ColorList().split("|");
     colors.removeDuplicates();
-    if(colors.size() > 1)
-    {
+    if (colors.size() > 1) {
         QPalette palette = color->palette();
-        QLinearGradient gradient(color->rect().topLeft(),color->rect().bottomLeft());
+        QLinearGradient gradient(color->rect().topLeft(), color->rect().bottomLeft());
         gradient.setColorAt(0.0, QColor(255, 0, 0, 127));
         gradient.setColorAt(1.0, QColor(0, 0, 255, 127));
         gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
         palette.setBrush(QPalette::Button, QBrush(gradient));
         color->setPalette(palette);
-    }else
+    } else
         color->ChangeColor(QColor(colors.first()));
-    
-    QWidget *tools = new QWidget;
-    QHBoxLayout *layout = new QHBoxLayout;
+
+    QWidget* tools = new QWidget;
+    QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(hide);
     layout->addWidget(color);
-    QLabel *label = new QLabel("<html>" + modelwidget->Model()->Name() + "</html>");
+    QLabel* label = new QLabel("<html>" + modelwidget->Model()->Name() + "</html>");
     layout->addWidget(label);
     tools->setLayout(layout);
-    
+
     connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
     connect(color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
     connect(modelwidget, SIGNAL(ColorChanged(QColor)), color, SLOT(ChangeColor(QColor)));
-    
+
     setCurrentWidget(modelwidget);
     tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, tools);
 
-    if(!modelwidget->Model()->SupportSeries())
-    {
+    if (!modelwidget->Model()->SupportSeries()) {
         modelwidget->setColor(ChartWrapper::ColorCode(currentIndex()));
     }
-
 }
 
 void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
@@ -114,152 +112,150 @@ void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
     m_datawidget = datawidget;
 }
 
-
 MDHDockTitleBar::MDHDockTitleBar()
 {
-    
+
     m_buttons = new QWidget;
     m_buttons->setEnabled(false);
-    
+
     m_hide = new QPushButton;
     m_hide->setFlat(true);
     m_hide->setIcon(QIcon::fromTheme("tab-close"));
-    
-    QHBoxLayout *layout = new QHBoxLayout;
+
+    QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(new QLabel("Workspace"));
     layout->addWidget(m_buttons);
-    
-    
+
     m_add_nmr = new QPushButton(tr("Titratrion"));
     m_add_nmr->setFlat(true);
-    
+
     m_add_itc = new QPushButton(tr("Calorimetry"));
     m_add_itc->setFlat(true);
-    
+
     m_add_kinetics = new QPushButton(tr("Kinetics"));
     m_add_kinetics->setFlat(true);
-    
+
     m_optimize = new QPushButton(tr("Optimize All"));
     m_optimize->setFlat(true);
     connect(m_optimize, &QPushButton::clicked, this, &MDHDockTitleBar::OptimizeAll);
-    
+
     m_statistics = new QPushButton(tr("Statistics"));
     m_statistics->setFlat(true);
     connect(m_statistics, &QPushButton::clicked, this, &MDHDockTitleBar::ShowStatistics);
-    
+
     m_close_all = new QPushButton(tr("Close All"));
     m_close_all->setFlat(true);
     m_close_all->setDisabled(true);
     connect(m_close_all, &QPushButton::clicked, this, &MDHDockTitleBar::CloseAll);
 
 #ifdef NMR_Models
-    QAction *ItoI_action = new QAction(this);
+    QAction* ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
     ItoI_action->setData(SupraFit::ItoI);
     connect(ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << ItoI_action;
-    
-    QAction *IItoI_ItoI_action = new QAction(this);
+
+    QAction* IItoI_ItoI_action = new QAction(this);
     IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
     IItoI_ItoI_action->setData(SupraFit::IItoI_ItoI);
     connect(IItoI_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << IItoI_ItoI_action;
-    
-    QAction *ItoI_ItoII_action = new QAction(this);
+
+    QAction* ItoI_ItoII_action = new QAction(this);
     ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
     ItoI_ItoII_action->setData(SupraFit::ItoI_ItoII);
     connect(ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << ItoI_ItoII_action;
-    
-    QAction *II_I_ItoI_ItoII_action = new QAction(this);
+
+    QAction* II_I_ItoI_ItoII_action = new QAction(this);
     II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
     II_I_ItoI_ItoII_action->setData(SupraFit::IItoI_ItoI_ItoII);
     connect(II_I_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_nmr_model << II_I_ItoI_ItoII_action;
 #endif
-    
+
 #ifdef Fluorescence_Models
-    QAction *fl_ItoI_action = new QAction(this);
+    QAction* fl_ItoI_action = new QAction(this);
     fl_ItoI_action->setText(tr("1:1-Model"));
     fl_ItoI_action->setData(SupraFit::fl_ItoI);
     connect(fl_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_fl_model << fl_ItoI_action;
-    
-     QAction *fl_IItoI_ItoI_action = new QAction(this);
+
+    QAction* fl_IItoI_ItoI_action = new QAction(this);
     fl_IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
     fl_IItoI_ItoI_action->setData(SupraFit::fl_IItoI_ItoI);
     connect(fl_IItoI_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_fl_model << fl_IItoI_ItoI_action;
-    
-    QAction *fl_ItoI_ItoII_action = new QAction(this);
+
+    QAction* fl_ItoI_ItoII_action = new QAction(this);
     fl_ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
     fl_ItoI_ItoII_action->setData(SupraFit::fl_ItoI_ItoII);
     connect(fl_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_fl_model << fl_ItoI_ItoII_action;
-    
-    QAction *fl_IItoI_ItoI_ItoII_action = new QAction(this);
+
+    QAction* fl_IItoI_ItoI_ItoII_action = new QAction(this);
     fl_IItoI_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
     fl_IItoI_ItoI_ItoII_action->setData(SupraFit::fl_IItoI_ItoI_ItoII);
     connect(fl_IItoI_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_fl_model << fl_IItoI_ItoI_ItoII_action;
 #endif
-    
+
 #ifdef Kinetic_Models
-    QAction *mm_action = new QAction(this);
+    QAction* mm_action = new QAction(this);
     mm_action->setText(tr("Michaelis Menten"));
     mm_action->setData(SupraFit::Michaelis_Menten);
     connect(mm_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_kinetcs_model << mm_action;
-    
-    QAction *mono_kinetics = new QAction(this);
+
+    QAction* mono_kinetics = new QAction(this);
     mono_kinetics->setText(tr("Monomolecuar Kinetics"));
     mono_kinetics->setData(SupraFit::MonoMolecularModel);
     connect(mono_kinetics, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_kinetcs_model << mono_kinetics;
 #endif
-    
+
 #ifdef ITC_Models
-    QAction *itc_ItoI_action = new QAction(this);
+    QAction* itc_ItoI_action = new QAction(this);
     itc_ItoI_action->setText(tr("1:1-Model"));
     itc_ItoI_action->setData(SupraFit::itc_ItoI);
     connect(itc_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_itc_model << itc_ItoI_action;
 
-    QAction *itc_IItoI_action = new QAction(this);
+    QAction* itc_IItoI_action = new QAction(this);
     itc_IItoI_action->setText(tr("2:1-Model"));
     itc_IItoI_action->setData(SupraFit::itc_IItoI);
     connect(itc_IItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_itc_model << itc_IItoI_action;
 
-    QAction *itc_ItoII_action = new QAction(this);
+    QAction* itc_ItoII_action = new QAction(this);
     itc_ItoII_action->setText(tr("1:2-Model"));
     itc_ItoII_action->setData(SupraFit::itc_ItoII);
     connect(itc_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_itc_model << itc_ItoII_action;
 
-    QAction *itc_IItoII_action = new QAction(this);
+    QAction* itc_IItoII_action = new QAction(this);
     itc_IItoII_action->setText(tr("2:2-Model"));
     itc_IItoII_action->setData(SupraFit::itc_IItoII);
     connect(itc_IItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
     m_itc_model << itc_IItoII_action;
 #endif
-    
+
     m_script_action = new QAction(this);
     m_script_action->setText(tr("Scripted Models"));
-    
+
 #ifdef experimentel
     ParseScriptedModels();
     m_independet_2 << m_script_action;
 #endif
-    
-    QHBoxLayout *buttons = new QHBoxLayout;
+
+    QHBoxLayout* buttons = new QHBoxLayout;
     buttons->addWidget(m_add_nmr);
     buttons->addWidget(m_add_itc);
     buttons->addWidget(m_add_kinetics);
     buttons->addWidget(m_optimize);
     buttons->addWidget(m_statistics);
     buttons->addWidget(m_close_all);
-    
+
     m_buttons->setLayout(buttons);
     layout->addStretch();
     layout->addWidget(m_hide);
@@ -268,26 +264,23 @@ MDHDockTitleBar::MDHDockTitleBar()
 
 void MDHDockTitleBar::addToMenu(int IndependetCount)
 {
-    
-    auto addMenu = [](const QVector<QPointer<QAction > > &list, QMenu *menu){
-        for(const QPointer<QAction > & ptr : qAsConst(list))
-            menu->addAction(ptr); 
+
+    auto addMenu = [](const QVector<QPointer<QAction>>& list, QMenu* menu) {
+        for (const QPointer<QAction>& ptr : qAsConst(list))
+            menu->addAction(ptr);
     };
-    
-    QMenu *menu = new QMenu;
-    if(IndependetCount == 1)
-    {
+
+    QMenu* menu = new QMenu;
+    if (IndependetCount == 1) {
         addMenu(m_kinetcs_model, menu);
         m_add_kinetics->setMenu(menu);
         m_add_nmr->hide();
         menu = new QMenu;
         addMenu(m_itc_model, menu);
         m_add_itc->setMenu(menu);
-       // m_add_itc->hide();
-    }
-    else if(IndependetCount == 2)
-    {
-        QAction *action = menu->addSection(tr("NMR/UV VIS"));
+        // m_add_itc->hide();
+    } else if (IndependetCount == 2) {
+        QAction* action = menu->addSection(tr("NMR/UV VIS"));
         addMenu(m_nmr_model, menu);
         action = menu->addSection(tr("Fluorescence"));
         addMenu(m_fl_model, menu);
@@ -296,7 +289,7 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
     }
 }
 
-void MDHDockTitleBar::EnableBatch( bool enabled)
+void MDHDockTitleBar::EnableBatch(bool enabled)
 {
     m_close_all->setEnabled(enabled);
     m_statistics->setEnabled(enabled);
@@ -305,18 +298,18 @@ void MDHDockTitleBar::EnableBatch( bool enabled)
 
 void MDHDockTitleBar::PrepareAddModel()
 {
-    m_last_action =  qobject_cast<QAction *>(sender());
+    m_last_action = qobject_cast<QAction*>(sender());
     emit AddModel();
 }
 
-
-
-ModelDataHolder::ModelDataHolder() : m_TitleBarWidget(new MDHDockTitleBar), m_history(true)
+ModelDataHolder::ModelDataHolder()
+    : m_TitleBarWidget(new MDHDockTitleBar)
+    , m_history(true)
 {
-    QGridLayout *layout = new QGridLayout;
-    
+    QGridLayout* layout = new QGridLayout;
+
     setLayout(layout);
-    
+
     m_datawidget = new DataWidget;
     connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
     connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
@@ -325,32 +318,31 @@ ModelDataHolder::ModelDataHolder() : m_TitleBarWidget(new MDHDockTitleBar), m_hi
     m_modelsWidget->setMovable(true);
     connect(m_modelsWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
     connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
-     
+
     m_statistic_dialog = new StatisticDialog(this);
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
     connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
-    
-    connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void(ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
+
+    connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::WGStatistic, this, &ModelDataHolder::WGStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::MCStatistic, this, &ModelDataHolder::MCStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
     connect(m_TitleBarWidget, &MDHDockTitleBar::MoCoStatistic, this, &ModelDataHolder::MoCoStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
-    
+
     layout->addWidget(m_modelsWidget, 1, 0);
 }
 
 ModelDataHolder::~ModelDataHolder()
 {
-    for(int i = 0; i < m_modelsWidget->count(); ++i)
-    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-    {
-        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-        m_modelsWidget->removeTab(i);
-        delete model;
-    }
+    for (int i = 0; i < m_modelsWidget->count(); ++i)
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+            m_modelsWidget->removeTab(i);
+            delete model;
+        }
 }
 
 void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
@@ -359,10 +351,9 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
     m_TitleBarWidget->setEnabled(true);
     m_datawidget->setData(m_data, wrapper);
     m_wrapper = wrapper;
-    m_modelsWidget->setDataTab(m_datawidget); 
+    m_modelsWidget->setDataTab(m_datawidget);
     m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
 }
-
 
 void ModelDataHolder::SetProjectTabName()
 {
@@ -372,22 +363,22 @@ void ModelDataHolder::SetProjectTabName()
 
 void ModelDataHolder::AddModel()
 {
-    const QAction *action = qobject_cast<MDHDockTitleBar*>(sender())->lastAction();
+    const QAction* action = qobject_cast<MDHDockTitleBar*>(sender())->lastAction();
     AddModel(action->data().toInt());
 }
 
 void ModelDataHolder::AddModel(int model)
 {
-    QSharedPointer<AbstractModel > t = CreateModel(model, m_data);
+    QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
     t->InitialGuess();
     m_history = false;
     ActiveModel(t);
 }
 
-void ModelDataHolder::AddModel(const QJsonObject &json)
+void ModelDataHolder::AddModel(const QJsonObject& json)
 {
 #ifdef experimental
-    QSharedPointer<AbstractModel > t =  QSharedPointer<ScriptModel>(new ScriptModel(m_data.data(), json), &QObject::deleteLater);
+    QSharedPointer<AbstractModel> t = QSharedPointer<ScriptModel>(new ScriptModel(m_data.data(), json), &QObject::deleteLater);
     m_history = false;
     ActiveModel(t);
 #endif
@@ -395,24 +386,19 @@ void ModelDataHolder::AddModel(const QJsonObject &json)
 
 void ModelDataHolder::AddModelScript()
 {
-    QAction *action = qobject_cast<QAction *>(sender());
-    if (action)
-    {
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (action) {
         QString str = action->data().toString();
-        
-        if(!str.isEmpty())
-        {
+
+        if (!str.isEmpty()) {
             QJsonObject object;
-            if(JsonHandler::ReadJsonFile(object, str))
-            {
+            if (JsonHandler::ReadJsonFile(object, str)) {
                 AddModel(object);
-            }
-            else
+            } else
                 qDebug() << "loading failed";
         }
     }
 }
-
 
 void ModelDataHolder::ParseScriptedModels()
 {
@@ -433,38 +419,38 @@ void ModelDataHolder::ParseScriptedModels()
     */
 }
 
-void ModelDataHolder::Json2Model(const QJsonObject &object) //, const QString &str)
+void ModelDataHolder::Json2Model(const QJsonObject& object) //, const QString &str)
 {
 
-    if(object.contains("SupraFit"))
+    if (object.contains("SupraFit"))
         Json2Model(object, (SupraFit::Model)object["model"].toInt());
     else
         Json2Model(object, Name2Model(object["model"].toString()));
 }
 
-void ModelDataHolder::Json2Model(const QJsonObject &object, SupraFit::Model model)
+void ModelDataHolder::Json2Model(const QJsonObject& object, SupraFit::Model model)
 {
 #ifdef _DEBUG
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
-    if(object.isEmpty())
+    if (object.isEmpty())
         return;
-    QSharedPointer<AbstractModel > t = CreateModel(model, m_data);
+    QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
     t->ImportModel(object);
     ActiveModel(t, object);
 #ifdef _DEBUG
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "model loaded within" << t1-t0 << " msecs";
+    qDebug() << "model loaded within" << t1 - t0 << " msecs";
 #endif
 }
 
-void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject &object)
+void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object)
 {
     t->setFast(false);
 
-    Charts charts = m_charts->addModel(t); 
-    ModelWidget *modelwidget = new ModelWidget(t, charts);
-    modelwidget->setColorList(object["colors"].toString()); 
+    Charts charts = m_charts->addModel(t);
+    ModelWidget* modelwidget = new ModelWidget(t, charts);
+    modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
     t->setOptimizerConfig(m_config);
     connect(modelwidget, SIGNAL(AddModel(const QJsonObject)), this, SLOT(AddToWorkspace(const QJsonObject)));
@@ -472,25 +458,25 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(this, SIGNAL(recalculate()), modelwidget, SLOT(recalculate()));
-    
+
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(QJsonObject, int)), this, SIGNAL(InsertModel(QJsonObject, int)), Qt::DirectConnection);
-    
+
     connect(modelwidget, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(m_statistic_dialog, SIGNAL(Interrupt()), modelwidget, SIGNAL(Interrupt()));
     connect(m_statistic_dialog, SIGNAL(Interrupt()), this, SLOT(Interrupt()));
-    
+
     m_modelsWidget->addModelsTab(modelwidget);
     m_last_tab = m_modelsWidget->currentIndex();
     m_models << t;
     m_model_widgets << modelwidget;
-    
+
     /*
      * Some models are loaded from history, this should no be added again
      * after not adding them, we allow the next models to be added to history again
      */
-    if(m_history)
+    if (m_history)
         modelwidget->getMinimizer()->addToHistory();
     else
         m_history = true;
@@ -500,27 +486,23 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
 void ModelDataHolder::ActiveBatch()
 {
     m_TitleBarWidget->EnableBatch(m_modelsWidget->count() > 2);
-
 }
 
 void ModelDataHolder::RemoveTab(int i)
 {
-    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-    {
-        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+    if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+        ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
         m_modelsWidget->removeTab(i);
         delete model;
     }
     ActiveBatch();
 }
 
-void ModelDataHolder::setSettings(const OptimizerConfig &config)
+void ModelDataHolder::setSettings(const OptimizerConfig& config)
 {
-    for(int i = 0; i < m_modelsWidget->count(); ++i)
-    {
-        ModelWidget *w = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
-        if(w != 0)
-        {
+    for (int i = 0; i < m_modelsWidget->count(); ++i) {
+        ModelWidget* w = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+        if (w != 0) {
             w->Model()->setOptimizerConfig(config);
             m_config = config;
         }
@@ -537,64 +519,57 @@ void ModelDataHolder::CreateCrashFile()
 {
     RemoveCrashFile();
     QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
-    for(int i = 0; i < m_models.size(); ++i)
-    {
-        if(!m_models[i].isNull())
-        {
+    for (int i = 0; i < m_models.size(); ++i) {
+        if (!m_models[i].isNull()) {
             QJsonObject obj = m_models[i].data()->ExportModel();
-            JsonHandler::AppendJsonFile(obj, filename);        
+            JsonHandler::AppendJsonFile(obj, filename);
         }
-    }   
+    }
 }
 
 void ModelDataHolder::RemoveCrashFile()
 {
-    if(CheckCrashFile())
-    {
+    if (CheckCrashFile()) {
         QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
         QFile::remove(filename);
     }
 }
 
-void ModelDataHolder::SaveCurrentModels(const QString &file)
+void ModelDataHolder::SaveCurrentModels(const QString& file)
 {
     QJsonObject toplevel;
-    for(int i = 1; i < m_modelsWidget->count(); i++)
-    {
-        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
             QJsonObject obj = model->Model()->ExportModel();
             obj["colors"] = model->Chart().signal_wrapper->ColorList();
             obj["keys"] = model->Keys();
-            toplevel["model_" + QString::number(i)] = obj; 
+            toplevel["model_" + QString::number(i)] = obj;
         }
-    }    
-    JsonHandler::WriteJsonFile(toplevel, file);   
+    }
+    JsonHandler::WriteJsonFile(toplevel, file);
 }
 
-void ModelDataHolder::SaveWorkspace(const QString &file)
+void ModelDataHolder::SaveWorkspace(const QString& file)
 {
     QJsonObject toplevel, data;
     data = m_data->ExportData();
-        
-    for(int i = 1; i < m_modelsWidget->count(); i++)
-    {
-        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
             QJsonObject obj = model->Model()->ExportModel();
             obj["colors"] = model->Chart().signal_wrapper->ColorList();
             obj["keys"] = model->Keys();
             data["colors"] = model->Chart().data_wrapper->ColorList();
-            toplevel["model_" + QString::number(i)] = obj; 
+            toplevel["model_" + QString::number(i)] = obj;
         }
-    } 
+    }
     toplevel["data"] = data;
     JsonHandler::WriteJsonFile(toplevel, file);
 }
 
-void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
+void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
 {
     Waiter wait;
     QStringList keys = object.keys();
@@ -604,12 +579,11 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
      * Dont load to many models to the workspace, this is slow and confusing
      */
     int i = m_models.size();
-    for(const QString &key : qAsConst(keys))
-    {
-        if(key == "data")
+    for (const QString& key : qAsConst(keys)) {
+        if (key == "data")
             continue;
         QJsonObject model = object[key].toObject();
-        if(i++ < 5)
+        if (i++ < 5)
             Json2Model(model);
         else
             emit InsertModel(model);
@@ -622,23 +596,18 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject &object)
 void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)
 {
     QStringList keys = object.keys();
-    if(keys.contains("data") && keys.contains("model"))
-    {
-        if(m_modelsWidget->currentIndex() == 0)
-        {
-            if(m_modelsWidget->count() < 2)
+    if (keys.contains("data") && keys.contains("model")) {
+        if (m_modelsWidget->currentIndex() == 0) {
+            if (m_modelsWidget->count() < 2)
                 return;
             m_modelsWidget->setCurrentIndex(1);
         }
         QMessageBox::StandardButton replay;
         replay = QMessageBox::information(this, tr("Override Model."), tr("Do you want to override the current loaded model [Y]\nor just add to workspace [N]?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-        if(replay == QMessageBox::Yes) 
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->currentWidget());
+        if (replay == QMessageBox::Yes) {
+            ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->currentWidget());
             model->LoadJson(object);
-        }
-        else if(replay == QMessageBox::No)
-        {
+        } else if (replay == QMessageBox::No) {
             AddToWorkspace(object);
         }
     }
@@ -649,9 +618,8 @@ void ModelDataHolder::CloseAll()
     QMessageBox::StandardButton replay;
     QString app_name = QString(qApp->instance()->applicationName());
     replay = QMessageBox::information(this, tr("Close All."), tr("Do you really want to close all models on the workspace?"), QMessageBox::Yes | QMessageBox::No);
-    if(replay == QMessageBox::Yes) 
-    {
-        for(int i = m_modelsWidget->count(); i > 0; --i)
+    if (replay == QMessageBox::Yes) {
+        for (int i = m_modelsWidget->count(); i > 0; --i)
             RemoveTab(i);
     }
 }
@@ -659,13 +627,12 @@ void ModelDataHolder::CloseAll()
 int ModelDataHolder::Runs(bool moco) const
 {
     int run = 0;
-    for(int i = 0; i < m_model_widgets.size(); ++i)
-    {
-        if(!m_model_widgets[i])
+    for (int i = 0; i < m_model_widgets.size(); ++i) {
+        if (!m_model_widgets[i])
             continue;
-        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
-        if(moco && m_model_widgets[i]->Model()->GlobalParameterSize() != 2)
+        if (moco && m_model_widgets[i]->Model()->GlobalParameterSize() != 2)
             continue;
         run++;
     }
@@ -673,21 +640,20 @@ int ModelDataHolder::Runs(bool moco) const
 }
 
 void ModelDataHolder::WGStatistic()
-{ 
+{
     m_statistic_dialog->setRuns(Runs());
     m_statistic_dialog->setRuns(m_models.size());
     WGSConfig config = m_statistic_dialog->getWGSConfig();
-    for(int i = 0; i < m_model_widgets.size(); ++i)
-    {
-        if(!m_model_widgets[i])
+    for (int i = 0; i < m_model_widgets.size(); ++i) {
+        if (!m_model_widgets[i])
             continue;
-            
-        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+
+        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
-        
+
         m_model_widgets[i]->WGStatistic(config);
 
-        if(!m_allow_loop)
+        if (!m_allow_loop)
             break;
     }
     m_statistic_dialog->HideWidget();
@@ -698,19 +664,18 @@ void ModelDataHolder::MCStatistic()
     m_statistic_dialog->setRuns(Runs());
     MCConfig config = m_statistic_dialog->getMCConfig();
     m_allow_loop = true;
-    
-    for(int i = 0; i < m_model_widgets.size(); ++i)
-    {
-        if(!m_model_widgets[i])
+
+    for (int i = 0; i < m_model_widgets.size(); ++i) {
+        if (!m_model_widgets[i])
             continue;
-            
-        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+
+        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
-        
+
         config.variance = m_model_widgets[i]->Model()->StdDeviation();
         m_model_widgets[i]->MCStatistic(config);
-        
-        if(!m_allow_loop)
+
+        if (!m_allow_loop)
             break;
     }
     m_statistic_dialog->HideWidget();
@@ -720,44 +685,39 @@ void ModelDataHolder::MoCoStatistic()
 {
     m_allow_loop = true;
     m_statistic_dialog->setRuns(Runs(true));
-    
+
     MoCoConfig config = m_statistic_dialog->getMoCoConfig();
     config.maxerror = 0;
-     for(int i = 0; i < m_model_widgets.size(); ++i)
-    {
-        if(!m_model_widgets[i])
+    for (int i = 0; i < m_model_widgets.size(); ++i) {
+        if (!m_model_widgets[i])
             continue;
-        
-        if(m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+
+        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
-        
-        if(m_model_widgets[i]->Model()->GlobalParameterSize() == 2)
+
+        if (m_model_widgets[i]->Model()->GlobalParameterSize() == 2)
             m_model_widgets[i]->MoCoStatistic(config);
-        
-        if(!m_allow_loop)
+
+        if (!m_allow_loop)
             break;
     }
     m_statistic_dialog->HideWidget();
 }
 
-
 void ModelDataHolder::OptimizeAll()
 {
-    for(int i = 1; i < m_modelsWidget->count(); i++)
-    {
-        if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(i)))
-        {
-            ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(i));
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
             model->GlobalMinimize();
         }
-    } 
+    }
 }
 
 void ModelDataHolder::HideSubWindows(int index)
 {
-    if(qobject_cast<ModelWidget *>(m_modelsWidget->widget(m_last_tab)))
-    {
-        ModelWidget *model = qobject_cast<ModelWidget *>(m_modelsWidget->widget(m_last_tab));
+    if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(m_last_tab))) {
+        ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(m_last_tab));
         model->HideAllWindows();
         m_last_tab = index;
     }

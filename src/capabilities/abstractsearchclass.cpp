@@ -21,19 +21,17 @@
 
 #include "abstractsearchclass.h"
 
-
-AbstractSearchClass::AbstractSearchClass(QObject *parent) : QObject(parent), m_interrupt(false)
+AbstractSearchClass::AbstractSearchClass(QObject* parent)
+    : QObject(parent)
+    , m_interrupt(false)
 {
     m_threadpool = QThreadPool::globalInstance();
     m_threadpool->setMaxThreadCount(qApp->instance()->property("threads").toInt());
 }
 
-
 AbstractSearchClass::~AbstractSearchClass()
 {
-    
 }
-
 
 void AbstractSearchClass::Interrupt()
 {
@@ -45,17 +43,15 @@ void AbstractSearchClass::ExportResults(const QString& filename)
 {
     QJsonObject toplevel;
     int i = 0;
-    for(const QJsonObject &obj: qAsConst(m_models))
-    {
+    for (const QJsonObject& obj : qAsConst(m_models)) {
         QJsonObject constants = obj["data"].toObject()["constants"].toObject();
         QStringList keys = constants.keys();
         bool valid = true;
-        for(const QString &str : qAsConst(keys))
-        {
+        for (const QString& str : qAsConst(keys)) {
             double var = constants[str].toString().toDouble();
             valid = valid && (var > 0);
         }
-        toplevel["model_" + QString::number(i++)] = obj;       
+        toplevel["model_" + QString::number(i++)] = obj;
     }
     JsonHandler::WriteJsonFile(toplevel, filename);
 }
@@ -63,18 +59,18 @@ void AbstractSearchClass::ExportResults(const QString& filename)
 QJsonObject AbstractSearchClass::Result() const
 {
     QJsonObject result;
-    for(int i = 0; i < m_results.size(); ++i)
+    for (int i = 0; i < m_results.size(); ++i)
         result[QString::number(i)] = m_results[i];
-    
+
     result["controller"] = Controller();
     return result;
 }
 
-QVector<Pair >AbstractSearchClass::DemandCalc()
+QVector<Pair> AbstractSearchClass::DemandCalc()
 {
     QMutexLocker lock(&mutex);
 
-    if(m_batch.isEmpty())
+    if (m_batch.isEmpty())
         return QVector<Pair>();
     else
         return m_batch.dequeue();

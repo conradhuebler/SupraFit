@@ -19,42 +19,40 @@
 
 #pragma once
 
-#include <QtWidgets/QWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QWidget>
 
-class PushButton : public QPushButton
-{
-     Q_OBJECT
+class PushButton : public QPushButton {
+    Q_OBJECT
 public:
-    
-    inline PushButton(const QString &str) : QPushButton(str)
+    inline PushButton(const QString& str)
+        : QPushButton(str)
     {
         setStyleSheet("background-color: #77d740;");
     }
     inline ~PushButton() {}
 };
 
-class ModelActions : public QWidget
-{
+class ModelActions : public QWidget {
     Q_OBJECT
 public:
-    ModelActions(QWidget *parent = 0);
+    ModelActions(QWidget* parent = 0);
     ~ModelActions();
-    
+
     void EnableCharts(bool enable);
-    
+
 private:
     void setUi();
     void resizeButtons();
     PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced;
     PushButton *m_statistics, *m_save, *m_simulate, *m_plots, *m_search, *m_restore, *m_detailed;
-    QPushButton *m_toggle;
-    QWidget *m_second;
+    QPushButton* m_toggle;
+    QWidget* m_second;
     bool m_hidden;
-    
+
 private slots:
     void ToggleMore();
-    
+
 signals:
     void LocalMinimize();
     void OptimizerSettings();

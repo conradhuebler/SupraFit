@@ -26,18 +26,16 @@
 class AbstractModel;
 class SpinBox;
 
-class LocalParameterWidget : public QWidget
-{
+class LocalParameterWidget : public QWidget {
     Q_OBJECT
 public:
-    LocalParameterWidget(QSharedPointer<AbstractModel > model);
+    LocalParameterWidget(QSharedPointer<AbstractModel> model);
 
 signals:
 
 public slots:
 
 private:
-    QSharedPointer<AbstractModel > m_model;
-    QList<QPointer<SpinBox > > m_parameter;
+    QSharedPointer<AbstractModel> m_model;
+    QList<QPointer<SpinBox>> m_parameter;
 };
-

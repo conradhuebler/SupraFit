@@ -33,40 +33,39 @@
 ListChart::ListChart()
 {
     m_chart = new QtCharts::QChart;
-        
+
     m_chartview = new ChartView(m_chart, true);
     m_chartview->setYAxis("Y");
     m_chartview->setXAxis("X");
-    
+
     m_list = new QListWidget;
     m_list->setMaximumWidth(200);
     m_list->setSortingEnabled(true);
 
     m_names_list = new QListWidget;
     m_names_list->setMaximumWidth(200);
-    
-    QSplitter *list_splitter = new QSplitter(Qt::Vertical);
+
+    QSplitter* list_splitter = new QSplitter(Qt::Vertical);
     list_splitter->addWidget(m_list);
     list_splitter->addWidget(m_names_list);
-    QSplitter *splitter = new QSplitter(Qt::Horizontal);
+    QSplitter* splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(m_chartview);
     splitter->addWidget(list_splitter);
-    QHBoxLayout *layout = new QHBoxLayout;
+    QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(splitter);
     setLayout(layout);
-    
+
     connect(m_list, &QListWidget::itemDoubleClicked, this, &ListChart::SeriesListClicked);
     connect(m_names_list, &QListWidget::itemDoubleClicked, this, &ListChart::NamesListClicked);
 }
 
 ListChart::~ListChart()
 {
-    
 }
 
 void ListChart::setXAxis(const QString& str)
 {
-      m_chartview->setXAxis(str);  
+    m_chartview->setXAxis(str);
 }
 
 void ListChart::setYAxis(const QString& str)
@@ -74,19 +73,17 @@ void ListChart::setYAxis(const QString& str)
     m_chartview->setYAxis(str);
 }
 
-void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QColor &color, const QString& name)
+void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QColor& color, const QString& name)
 {
-    if(index >= m_list->count())
-    {
-        QListWidgetItem *item = new QListWidgetItem(name);
+    if (index >= m_list->count()) {
+        QListWidgetItem* item = new QListWidgetItem(name);
         item->setData(Qt::UserRole, index);
         item->setBackgroundColor(color);
         m_list->addItem(item);
     }
-    
-    if(!m_names_list->findItems(name,Qt::MatchExactly).size())
-    {
-        QListWidgetItem *item = new QListWidgetItem(name);
+
+    if (!m_names_list->findItems(name, Qt::MatchExactly).size()) {
+        QListWidgetItem* item = new QListWidgetItem(name);
         item->setData(Qt::UserRole, name);
         m_names_list->addItem(item);
     }
@@ -96,22 +93,22 @@ void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QC
     m_hidden[index] = true;
     m_series.insert(index, series);
     m_chartview->formatAxis();
-    if(m_list->count() == m_names_list->count())
+    if (m_list->count() == m_names_list->count())
         m_names_list->hide();
     else
         m_names_list->show();
 }
 
-QtCharts::QLineSeries * ListChart::addLinearSeries(qreal m, qreal n, qreal min, qreal max, int index)
+QtCharts::QLineSeries* ListChart::addLinearSeries(qreal m, qreal n, qreal min, qreal max, int index)
 {
-    QtCharts::QLineSeries *serie = m_chartview->addLinearSeries(m,n,min,max);
+    QtCharts::QLineSeries* serie = m_chartview->addLinearSeries(m, n, min, max);
     m_series.insert(index, serie);
     return serie;
 }
 
 void ListChart::setColor(int index, const QColor& color)
 {
-    if(index < m_list->count())
+    if (index < m_list->count())
         m_list->item(index)->setBackgroundColor(color);
 }
 
@@ -119,25 +116,24 @@ void ListChart::Clear()
 {
     m_chartview->ClearChart();
     m_series.clear();
-    m_list->clear();  
+    m_list->clear();
 }
 
 void ListChart::NamesListClicked(QListWidgetItem* item)
 {
     QString str = item->data(Qt::UserRole).toString();
     QList<QListWidgetItem*> list = m_list->findItems(str, Qt::MatchExactly);
-    for(int i = 0; i < list.size(); ++i)
+    for (int i = 0; i < list.size(); ++i)
         SeriesListClicked(list[i]);
 }
 
 void ListChart::HideSeries(int index)
 {
     m_hidden[index] = !m_hidden[index];
-    QList<QtCharts::QAbstractSeries *> series = m_series.values(index);
-    for(int j = 0; j < series.size(); ++j)
-    {
-        if(qobject_cast<BoxPlotSeries *>(series[j])) // visibility doesnt work for boxplots ??
-            qobject_cast<BoxPlotSeries *>(series[j])->setVisible(m_hidden[index]);
+    QList<QtCharts::QAbstractSeries*> series = m_series.values(index);
+    for (int j = 0; j < series.size(); ++j) {
+        if (qobject_cast<BoxPlotSeries*>(series[j])) // visibility doesnt work for boxplots ??
+            qobject_cast<BoxPlotSeries*>(series[j])->setVisible(m_hidden[index]);
         else
             series[j]->setVisible(m_hidden[index]);
     }

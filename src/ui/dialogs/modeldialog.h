@@ -27,20 +27,20 @@
 class QTabWidget;
 class QGridLayout;
 
-class ModalDialog : public QDialog
-{
+class ModalDialog : public QDialog {
     Q_OBJECT
 public:
-    ModalDialog(QWidget *widget = 0, const QString &str= QString(tr("no name")));
+    ModalDialog(QWidget* widget = 0, const QString& str = QString(tr("no name")));
     ~ModalDialog();
-    void setWidget(QWidget *widget, QString str = QString(tr("no name")));
-    QWidget * Widget() { return m_widget; }
+    void setWidget(QWidget* widget, QString str = QString(tr("no name")));
+    QWidget* Widget() { return m_widget; }
     inline int Count() const { return m_tab->count(); }
+
 private:
-    QGridLayout *layout;
-    QPointer<QWidget > m_widget;
-    QTabWidget *m_tab;
-    
+    QGridLayout* layout;
+    QPointer<QWidget> m_widget;
+    QTabWidget* m_tab;
+
 private slots:
     void RemoveTab(int i);
 };

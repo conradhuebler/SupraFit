@@ -22,30 +22,32 @@
 
 #include <QtCore/QTimer>
 
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
-#include <QtWidgets/QCheckBox>
 
 #include <QDebug>
 
 #include "optimizerflagwidget.h"
 
-OptimizerFlagWidget::OptimizerFlagWidget(QWidget *parent) :QWidget(parent), m_type(OptimizationType::GlobalParameter | OptimizationType::LocalParameter), m_hidden(true)
+OptimizerFlagWidget::OptimizerFlagWidget(QWidget* parent)
+    : QWidget(parent)
+    , m_type(OptimizationType::GlobalParameter | OptimizationType::LocalParameter)
+    , m_hidden(true)
 {
-     setUi();
-     setFlags(m_type);
-
+    setUi();
+    setFlags(m_type);
 }
 
-OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget *parent) :QWidget(parent), m_hidden(true)
+OptimizerFlagWidget::OptimizerFlagWidget(OptimizationType type, QWidget* parent)
+    : QWidget(parent)
+    , m_hidden(true)
 {
-     setUi();
-     setFlags(type);
+    setUi();
+    setFlags(type);
 }
-
-
 
 OptimizerFlagWidget::~OptimizerFlagWidget()
 {
@@ -57,14 +59,13 @@ void OptimizerFlagWidget::setUi()
     m_main_layout->setAlignment(Qt::AlignTop);
     m_globalparameter = new QCheckBox(tr("Global Parameter"));
     m_localparameter = new QCheckBox(tr("Local Parameter"));
-    
-    QHBoxLayout *layout = new QHBoxLayout;
+
+    QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(new QLabel(tr("Define Parameter to be optimised:")));
     layout->addWidget(m_globalparameter);
     layout->addWidget(m_localparameter);
     m_main_layout->addLayout(layout);
     setLayout(m_main_layout);
-
 }
 
 void OptimizerFlagWidget::setFlags(OptimizationType type)
@@ -74,31 +75,27 @@ void OptimizerFlagWidget::setFlags(OptimizationType type)
     m_localparameter->setChecked(((m_type & OptimizationType::LocalParameter) == OptimizationType::LocalParameter));
 }
 
-
 void OptimizerFlagWidget::DisableOptions(OptimizationType type)
 {
-    if(type & OptimizationType::GlobalParameter)
-    {
+    if (type & OptimizationType::GlobalParameter) {
         m_globalparameter->setChecked(false);
         m_globalparameter->setEnabled(false);
     }
 }
 
-
 OptimizationType OptimizerFlagWidget::getFlags() const
 {
     OptimizationType type = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter);
-    
-    if(m_globalparameter->isChecked() && m_globalparameter->isEnabled())
+
+    if (m_globalparameter->isChecked() && m_globalparameter->isEnabled())
         type = type | OptimizationType::GlobalParameter;
-    else 
+    else
         type &= ~OptimizationType::GlobalParameter;
-    
-    if(m_localparameter->isChecked())
+
+    if (m_localparameter->isChecked())
         type = type | OptimizationType::LocalParameter;
     else
         type &= ~OptimizationType::LocalParameter;
-
 
     return type;
 }

@@ -26,82 +26,84 @@
 
 #include "src/capabilities/reductionanalyse.h"
 
-class QPushButton;
-class QDoubleSpinBox;
-class QSpinBox;
 class QCheckBox;
+class QGroupBox;
+class QDoubleSpinBox;
+class QLabel;
+class QSpinBox;
 class QProgressBar;
-class OptimizerFlagWidget;
+class QPushButton;
 class QRadioButton;
 class QTabWidget;
 
+class OptimizerFlagWidget;
 class ScientificBox;
 
 class WGSConfig;
 class MCConfig;
 class MoCoConfig;
 
-class StatisticDialog : public QDialog
-{
+class StatisticDialog : public QDialog {
     Q_OBJECT
+
 public:
-    StatisticDialog(QSharedPointer<AbstractModel> m_model, QWidget *parent = 0);
-    StatisticDialog(QWidget *parent = 0);
+    StatisticDialog(QSharedPointer<AbstractModel> m_model, QWidget* parent = 0);
+    StatisticDialog(QWidget* parent = 0);
     ~StatisticDialog();
-    
+
     MCConfig getMCConfig();
     WGSConfig getWGSConfig();
     MoCoConfig getMoCoConfig();
     ReductionAnalyse::CVType CrossValidationType();
-    
+
     inline void setRuns(int runs) { m_runs = runs; }
     virtual void setVisible(bool visible) override;
     inline bool UseChecked() const { return m_use_checked->isChecked(); }
     void updateUI();
-    
+
 public slots:
     void MaximumSteps(int steps);
     void IncrementProgress(int time);
     void HideWidget();
     void ShowWidget();
-    
+
 private:
     void setUi();
     QString FOutput() const;
-    
-    QWidget *MonteCarloWidget();
-    QWidget *GridSearchWidget();
-    QWidget *ModelComparison();
-    QWidget *CVWidget();
-    
+
+    QWidget* MonteCarloWidget();
+    QWidget* GridSearchWidget();
+    QWidget* ModelComparison();
+    QWidget* CVWidget();
+
     QWidget *m_hide_widget, *m_moco_widget;
-    QTabWidget *m_tab_widget;
+    QTabWidget* m_tab_widget;
     QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_cv_f_value;
-    ScientificBox *m_cv_err_conv;
+    ScientificBox* m_cv_err_conv;
     QSpinBox *m_mc_steps, *m_cv_steps, *m_moco_mc_steps;
     QCheckBox *m_original, *m_bootstrap, *m_cv_f_test, *m_moco_f_test, *m_use_checked;
-    QVector<QCheckBox *> m_indepdent_checkboxes, m_grid_glob, m_grid_local;
-    QVector<QDoubleSpinBox *> m_indepdent_variance;
+    QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_glob, m_grid_local;
+    QVector<QDoubleSpinBox*> m_indepdent_variance;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
     QGroupBox *m_moco_global, *m_moco_monte_carlo;
-    QProgressBar *m_progress;
+    QProgressBar* m_progress;
     QLabel *m_time_info, *m_cv_error_info, *m_moco_error_info;
-    OptimizerFlagWidget *m_optim_flags;
-    QRadioButton *m_cv_loo, *m_cv_l2o; 
+    OptimizerFlagWidget* m_optim_flags;
+    QRadioButton *m_cv_loo, *m_cv_l2o;
     QMutex mutex;
-    
+
     QWeakPointer<AbstractModel> m_model;
-    
+
     int m_time, m_runs;
     quint64 m_time_0;
     qreal m_f_value, m_moco_max, m_cv_max;
     bool m_hidden;
-    
+
 private slots:
-     void Update();
-     void EnableWidgets();
-     void CalculateError();
-     
+    void Update();
+    void EnableWidgets();
+    void CalculateError();
+
 signals:
     void WGStatistic();
     void MCStatistic();

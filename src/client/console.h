@@ -25,12 +25,10 @@
 
 class DataClass;
 
-
 /**
  * @todo write docs
  */
-class Console : public QObject
-{
+class Console : public QObject {
     Q_OBJECT
 
 public:
@@ -38,35 +36,47 @@ public:
     ~Console();
 
     bool FullTest();
-    bool LoadFile(const QString &file);
-    
+    bool LoadFile(const QString& file);
+
     inline void setReduction(bool val) { m_reduction = val; }
     inline void setCrossValidation(bool val) { m_crossvalidation = val; }
     inline void setMonteCarlo(bool val) { m_montecarlo = val; }
     inline void setModelComparison(bool val) { m_modelcomparison = val; }
     inline void setWeakendGridSearch(bool val) { m_weakendgrid = val; }
-    
+
 private:
     QJsonObject m_toplevel;
     QString m_file;
     int m_runs;
     double m_std;
-    
+
     bool m_reduction, m_crossvalidation, m_montecarlo, m_modelcomparison, m_weakendgrid;
-    
-    inline QSharedPointer<AbstractModel> Test11Model(QPointer< DataClass > data){  QSharedPointer<AbstractModel> model = QSharedPointer<ItoI_Model>(new ItoI_Model(data), &QObject::deleteLater); return model; }
-    inline QSharedPointer<AbstractModel> Test2111Model(QPointer< DataClass > data){  QSharedPointer<AbstractModel> model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(data), &QObject::deleteLater); return model; }
-    inline QSharedPointer<AbstractModel> Test1112Model(QPointer< DataClass > data){  QSharedPointer<AbstractModel> model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(data), &QObject::deleteLater); return model; }
-    
+
+    inline QSharedPointer<AbstractModel> Test11Model(QPointer<DataClass> data)
+    {
+        QSharedPointer<AbstractModel> model = QSharedPointer<ItoI_Model>(new ItoI_Model(data), &QObject::deleteLater);
+        return model;
+    }
+    inline QSharedPointer<AbstractModel> Test2111Model(QPointer<DataClass> data)
+    {
+        QSharedPointer<AbstractModel> model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(data), &QObject::deleteLater);
+        return model;
+    }
+    inline QSharedPointer<AbstractModel> Test1112Model(QPointer<DataClass> data)
+    {
+        QSharedPointer<AbstractModel> model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(data), &QObject::deleteLater);
+        return model;
+    }
+
     void Test(QSharedPointer<AbstractModel> model);
-    
-    QPointer<const DataClass > m_data;
-    
+
+    QPointer<const DataClass> m_data;
+
     QJsonObject MonteCarlo(QSharedPointer<AbstractModel> model);
     QJsonObject MoCoAnalyse(QSharedPointer<AbstractModel> model);
     QJsonObject Reduction(QSharedPointer<AbstractModel> model);
     QJsonObject CrossValidation(QSharedPointer<AbstractModel> model);
     QJsonObject GridSearch(QSharedPointer<AbstractModel> model);
-    
-    void PrintStatistic(const QJsonObject &object, QSharedPointer<AbstractModel> model);
+
+    void PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model);
 };

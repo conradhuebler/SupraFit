@@ -38,47 +38,45 @@ class ListChart;
 
 class QJsonObject;
 
-class MCResultsWidget : public QWidget
-{
+class MCResultsWidget : public QWidget {
     Q_OBJECT
-    
+
 public:
-    MCResultsWidget(const QJsonObject &data, QSharedPointer< AbstractModel > model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject>());
+    MCResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models = QList<QJsonObject>());
     ~MCResultsWidget();
-    
-    void setModels(const QList<QJsonObject > &models) { m_models = models; }
+
+    void setModels(const QList<QJsonObject>& models) { m_models = models; }
     inline bool hasData() const { return has_boxplot || has_contour || has_histogram; }
     void setUi();
 
 private:
     QPushButton *m_switch, *m_save;
-    QDoubleSpinBox *m_error;
-    QPointer<ListChart > m_histgram, m_box;
+    QDoubleSpinBox* m_error;
+    QPointer<ListChart> m_histgram, m_box;
     QPointer<ChartView> m_contour;
     QVector<QColor> m_colors;
-    QVector<QtCharts::QAreaSeries * > m_area_series;
-    
-    void UpdateBoxes();
-    void setAreaColor(int index, const QColor &color);
+    QVector<QtCharts::QAreaSeries*> m_area_series;
 
-    QtCharts::QAreaSeries *AreaSeries(const QColor &color) const;
-    QPointer<ListChart > MakeHistogram();
-    QPointer<ChartView > MakeContour();
-    QPointer<ListChart > MakeBoxPlot();
+    void UpdateBoxes();
+    void setAreaColor(int index, const QColor& color);
+
+    QtCharts::QAreaSeries* AreaSeries(const QColor& color) const;
+    QPointer<ListChart> MakeHistogram();
+    QPointer<ChartView> MakeContour();
+    QPointer<ListChart> MakeBoxPlot();
     QList<QJsonObject> m_box_object;
-    QList<QJsonObject > m_models;
+    QList<QJsonObject> m_models;
     bool has_histogram, has_contour, has_boxplot;
     SupraFit::Statistic m_type;
-    
-    ChartWrapper *m_wrapper;
-    QSharedPointer< AbstractModel > m_model;
+
+    ChartWrapper* m_wrapper;
+    QSharedPointer<AbstractModel> m_model;
     QJsonObject m_data;
-    
+
 private slots:
     void ExportResults();
     void GenerateConfidence(double error);
 
 signals:
     void ConfidenceUpdated(QJsonObject data);
-    
 };

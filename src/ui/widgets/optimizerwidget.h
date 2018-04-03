@@ -22,11 +22,10 @@
 
 #include "src/global_config.h"
 
-
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QDoubleSpinBox>
-#include <QLocale>
 #include "src/core/AbstractModel.h"
+#include <QLocale>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QWidget>
 
 struct OptimizerConfig;
 
@@ -36,27 +35,25 @@ class QCheckBox;
 class QTabWidget;
 class ScientificBox;
 
-class OptimizerWidget : public QWidget
-{
+class OptimizerWidget : public QWidget {
     Q_OBJECT
 public:
-    OptimizerWidget(OptimizerConfig config, QWidget *parent = 0);
-    
+    OptimizerWidget(OptimizerConfig config, QWidget* parent = 0);
+
     ~OptimizerWidget();
-     OptimizerConfig Config() const;
-     
+    OptimizerConfig Config() const;
+
 private:
-    QWidget *GeneralWidget();
-    QWidget *LevmarWidget();
-    QWidget *AdvancedWidget();
-    
+    QWidget* GeneralWidget();
+    QWidget* LevmarWidget();
+    QWidget* AdvancedWidget();
+
     OptimizerConfig m_config;
-    QTabWidget *m_tabwidget;
+    QTabWidget* m_tabwidget;
     QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_sum_convergence, *m_levmar_factor, *m_single_iter;
-    QCheckBox *m_skip_corrupt_concentrations;
+    QCheckBox* m_skip_corrupt_concentrations;
     ScientificBox *m_concen_convergency, *m_constant_convergence, *m_error_convergence;
     ScientificBox *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
-
 
     void setUi();
 };

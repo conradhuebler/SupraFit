@@ -24,28 +24,25 @@
 
 #include <QtWidgets/QCheckBox>
 
-class HoverCheckBox : public QCheckBox
-{
+class HoverCheckBox : public QCheckBox {
     Q_OBJECT
-    
-protected:
 
-    inline bool event(QEvent * e)
+protected:
+    inline bool event(QEvent* e)
     {
-        switch(e->type())
-        {
-            case QEvent::HoverEnter:
-                emit hovered();
-                return true;
-                break;
-            
-            default:
-                return QWidget::event(e);
-                break;
+        switch (e->type()) {
+        case QEvent::HoverEnter:
+            emit hovered();
+            return true;
+            break;
+
+        default:
+            return QWidget::event(e);
+            break;
         }
         return QWidget::event(e);
     }
-    
+
 signals:
     void hovered();
 };

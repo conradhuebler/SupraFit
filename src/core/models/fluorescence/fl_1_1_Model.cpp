@@ -22,8 +22,8 @@
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 
-#include <QtMath>
 #include <QDebug>
+#include <QtMath>
 
 #include <QtCore/QDateTime>
 #include <QtCore/QFile>
@@ -31,16 +31,14 @@
 
 #include "fl_1_1_Model.h"
 
-fl_ItoI_Model::fl_ItoI_Model(DataClass *data) : AbstractTitrationModel(data)
+fl_ItoI_Model::fl_ItoI_Model(DataClass* data)
+    : AbstractTitrationModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
-
-
-fl_ItoI_Model::~fl_ItoI_Model() 
+fl_ItoI_Model::~fl_ItoI_Model()
 {
-    
 }
 
 void fl_ItoI_Model::InitialGuess()
@@ -48,19 +46,18 @@ void fl_ItoI_Model::InitialGuess()
     m_global_parameter[0] = Guess_1_1();
 
     qreal factor = InitialHostConcentration(0);
-    
 
-    m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e3, 0);
-    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e3, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e3, 2);
+    m_local_parameter->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
+    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e3, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e3, 2);
 
     Calculate();
 }
 
 void fl_ItoI_Model::DeclareOptions()
 {
-     //QStringList method = QStringList() << "Host" << "no Host";
-     //addOption("Host", method);
+    //QStringList method = QStringList() << "Host" << "no Host";
+    //addOption("Host", method);
 }
 
 void fl_ItoI_Model::EvaluateOptions()
@@ -78,30 +75,28 @@ void fl_ItoI_Model::EvaluateOptions()
 }
 
 QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
-{    
-    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
+{
+    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
         addGlobalParameter(0);
 
-    if((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter))
-    {
+    if ((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter)) {
         //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-            addLocalParameter(0);
+        addLocalParameter(0);
         addLocalParameter(1);
     }
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
+    QVector<qreal> parameter;
+    for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
 }
 
 void fl_ItoI_Model::CalculateVariables()
-{  
+{
     m_sum_absolute = 0;
     m_sum_squares = 0;
     qreal value;
-    QVector<qreal > F0(SeriesCount());
-    for(int i = 0; i < DataPoints(); ++i)
-    {
+    QVector<qreal> F0(SeriesCount());
+    for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
@@ -112,27 +107,24 @@ void fl_ItoI_Model::CalculateVariables()
         vector(2) = guest_0 - complex;
         vector(3) = complex;
 
-        if(!m_fast)
+        if (!m_fast)
             SetConcentration(i, vector);
 
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
-            if(i == 0)
-            {
-                F0[j] = host_0*m_local_parameter->data(0, j);
+        for (int j = 0; j < SeriesCount(); ++j) {
+            if (i == 0) {
+                F0[j] = host_0 * m_local_parameter->data(0, j);
                 value = F0[j];
-            }else
-                value = (host*m_local_parameter->data(1, j) + complex*m_local_parameter->data(2, j)); 
-            
-            SetValue(i, j, value*1e3);
+            } else
+                value = (host * m_local_parameter->data(1, j) + complex * m_local_parameter->data(2, j));
+
+            SetValue(i, j, value * 1e3);
         }
     }
 }
 
-
-QSharedPointer<AbstractModel > fl_ItoI_Model::Clone()
+QSharedPointer<AbstractModel> fl_ItoI_Model::Clone()
 {
-    QSharedPointer<AbstractModel > model = QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(this), &QObject::deleteLater);
+    QSharedPointer<AbstractModel> model = QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());
@@ -142,7 +134,7 @@ QSharedPointer<AbstractModel > fl_ItoI_Model::Clone()
 
 qreal fl_ItoI_Model::BC50() const
 {
-    return 1/qPow(10,GlobalParameter()[0]); 
+    return 1 / qPow(10, GlobalParameter()[0]);
 }
 
 #include "fl_1_1_Model.moc"

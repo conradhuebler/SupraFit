@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include "src/global.h"
 #include "src/core/AbstractModel.h"
+#include "src/global.h"
 
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
@@ -28,10 +28,9 @@
 
 #include "src/core/dataclass.h"
 
-class AbstractItcModel : public AbstractModel
-{
+class AbstractItcModel : public AbstractModel {
     Q_OBJECT
-    
+
 public:
     enum {
         CellVolume = 1,
@@ -45,8 +44,8 @@ public:
         Dilution = 2
     };
 
-    AbstractItcModel(DataClass *data);
-    AbstractItcModel(AbstractItcModel *data);
+    AbstractItcModel(DataClass* data);
+    AbstractItcModel(AbstractItcModel* data);
 
     ~AbstractItcModel();
 
@@ -55,13 +54,21 @@ public:
 
     virtual qreal PrintOutIndependent(int i, int format) const override;
 
-    inline qreal InitialHostConcentration(int i) const { return m_c0->data(0,i);  }
-    inline qreal InitialGuestConcentration(int i) const  { return m_c0->data(1,i);  }
+    inline qreal InitialHostConcentration(int i) const { return m_c0->data(0, i); }
+    inline qreal InitialGuestConcentration(int i) const { return m_c0->data(1, i); }
     QString Model2Text_Private() const;
 
     virtual QString SpeciesName(int i) const = 0;
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override  { Q_UNUSED(i) return QString("10^");  }
-    inline void setConcentrations(const QPointer<DataTable> table) { m_c0 = new DataTable(table); m_lock_concentrations = true; }
+    virtual inline QString GlobalParameterPrefix(int i = 0) const override
+    {
+        Q_UNUSED(i)
+        return QString("10^");
+    }
+    inline void setConcentrations(const QPointer<DataTable> table)
+    {
+        m_c0 = new DataTable(table);
+        m_lock_concentrations = true;
+    }
     inline QPointer<DataTable> ConcentrationTable() const { return m_c0; }
     inline double getV() const { return getSystemParameter(CellVolume).Double(); }
     inline double getCellConcentration() const { return m_cell_concentration; }
@@ -71,7 +78,11 @@ public:
 
     /*! \brief Return a formated value as string of the global parameter with the value
      */
-    virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const { Q_UNUSED(globalParamater) return QString::number(qPow(10,value)); }
+    virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const
+    {
+        Q_UNUSED(globalParamater)
+        return QString::number(qPow(10, value));
+    }
 
     /*! \brief Define the x axis label for charts
      */
@@ -95,10 +106,7 @@ private slots:
 
 protected:
     void SetConcentration(int i, const Vector& equilibrium);
-    QPointer<DataTable > m_c0, m_concentrations;
+    QPointer<DataTable> m_c0, m_concentrations;
     void Concentration() { CalculateConcentrations(); }
     double m_V, m_cell_concentration, m_syringe_concentration, m_T;
-
-
 };
-

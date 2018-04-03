@@ -23,7 +23,8 @@
 
 #include "modeldialog.h"
 
-ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
+ModalDialog::ModalDialog(QWidget* widget, const QString& str)
+    : m_widget(widget)
 {
     layout = new QGridLayout;
     setModal(false);
@@ -36,17 +37,16 @@ ModalDialog::ModalDialog(QWidget* widget, const QString& str) : m_widget(widget)
     connect(m_tab, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
 }
 
-
 ModalDialog::~ModalDialog()
 {
 }
 
 void ModalDialog::setWidget(QWidget* widget, QString str)
-{  
+{
     m_widget = widget;
-    if(!m_widget->objectName().isEmpty() && !m_widget->objectName().isNull())
+    if (!m_widget->objectName().isEmpty() && !m_widget->objectName().isNull())
         str = m_widget->objectName();
-    if(windowTitle().isEmpty() || windowTitle().isNull())
+    if (windowTitle().isEmpty() || windowTitle().isNull())
         setWindowTitle(str);
     int i = m_tab->addTab(m_widget, str);
     m_tab->setCurrentIndex(i);
@@ -54,7 +54,7 @@ void ModalDialog::setWidget(QWidget* widget, QString str)
 
 void ModalDialog::RemoveTab(int tab)
 {
-    QWidget *model = qobject_cast<QWidget *>(m_tab->widget(tab));
+    QWidget* model = qobject_cast<QWidget*>(m_tab->widget(tab));
     m_tab->removeTab(tab);
     delete model;
 }

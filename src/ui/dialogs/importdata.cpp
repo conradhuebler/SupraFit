@@ -23,78 +23,74 @@
 
 #include <QtCore/QFile>
 
-#include <QtGui/QKeyEvent>
 #include <QtGui/QClipboard>
+#include <QtGui/QKeyEvent>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
-#include <QtWidgets/QLabel>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
-#include <QtWidgets/QSpinBox>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QTableView>
 #include <QtWidgets/QMessageBox>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpinBox>
+#include <QtWidgets/QTableView>
 
-#include <QDebug>
 #include "importdata.h"
+#include <QDebug>
 
-void TableView::keyPressEvent(QKeyEvent *event)
+void TableView::keyPressEvent(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) 
-    {
-        QApplication::clipboard()->setText( this->currentIndex().data().toString() );
-    }
-    else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_V) 
-    {
-        QString paste =  QApplication::clipboard()->text();
-        FileHandler *handler = new FileHandler(this);
+    if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) {
+        QApplication::clipboard()->setText(this->currentIndex().data().toString());
+    } else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_V) {
+        QString paste = QApplication::clipboard()->text();
+        FileHandler* handler = new FileHandler(this);
         handler->setFileContent(paste);
-        DataTable *model = handler->getData();
+        DataTable* model = handler->getData();
         setModel(model);
         emit Edited();
         delete handler;
     } else {
-        
+
         QTableView::keyPressEvent(event);
     }
 }
 
-
-ImportData::ImportData(const QString &file, QWidget *parent) : QDialog(parent), m_filename(file)
+ImportData::ImportData(const QString& file, QWidget* parent)
+    : QDialog(parent)
+    , m_filename(file)
 {
     setUi();
     LoadFile();
 }
 
-ImportData::ImportData(QWidget *parent) : QDialog(parent)
+ImportData::ImportData(QWidget* parent)
+    : QDialog(parent)
 {
-    setUi(); 
-    DataTable *model = new DataTable(0,0, this);
+    setUi();
+    DataTable* model = new DataTable(0, 0, this);
     m_table->setModel(model);
 }
 
-
 ImportData::~ImportData()
 {
-    if(m_storeddata)
+    if (m_storeddata)
         delete m_storeddata;
 }
 
-
-
 void ImportData::setUi()
 {
-    QGridLayout *layout = new QGridLayout;
-    
+    QGridLayout* layout = new QGridLayout;
+
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     m_switch_concentration = new QCheckBox;
     m_switch_concentration->setText("Switch Host/Guest");
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    
+
     m_conc = new QSpinBox;
     connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
     m_line = new QLineEdit;
@@ -105,10 +101,10 @@ void ImportData::setUi()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportFile()));
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
     m_table = new TableView;
-    
+
     layout->addWidget(m_select, 0, 0);
     layout->addWidget(m_line, 0, 1);
-//     layout->addWidget(m_file, 0, 2);
+    //     layout->addWidget(m_file, 0, 2);
     layout->addWidget(m_export, 0, 3);
     layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
     layout->addWidget(m_conc, 1, 1);
@@ -118,32 +114,30 @@ void ImportData::setUi()
 
     setLayout(layout);
     setWindowTitle(tr("Import Table"));
-    resize(800,600);
+    resize(800, 600);
 }
 
 void ImportData::NoChanged()
 {
     m_conc->setMinimum(1);
-    m_conc->setMaximum(m_table->model()->columnCount()  - 1);
-    if(m_table->model()->columnCount()  > 2)
+    m_conc->setMaximum(m_table->model()->columnCount() - 1);
+    if (m_table->model()->columnCount() > 2)
         m_conc->setValue(2);
     else
         m_conc->setValue(1);
 }
 
-
 void ImportData::LoadFile()
-{ 
+{
     m_line->setText(m_filename);
-    FileHandler *filehandler = new FileHandler(m_filename, this); 
-    
-    if(filehandler->FileSupported())
-    {
-        DataTable *model = filehandler->getData(); 
+    FileHandler* filehandler = new FileHandler(m_filename, this);
+
+    if (filehandler->FileSupported()) {
+        DataTable* model = filehandler->getData();
         m_table->setModel(model);
-    }else
+    } else
         QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
-    
+
     delete filehandler;
     NoChanged();
 }
@@ -158,16 +152,16 @@ void ImportData::SelectFile()
 void ImportData::ExportFile()
 {
     QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
-    if(filename.isEmpty())
+    if (filename.isEmpty())
         return;
-    
+
     setLastDir(filename);
-    DataTable *model = qobject_cast<DataTable *>(m_table->model());
-    
+    DataTable* model = qobject_cast<DataTable*>(m_table->model());
+
     QFile file(filename);
-    if(!file.open(QIODevice::ReadWrite))
+    if (!file.open(QIODevice::ReadWrite))
         return;
-    
+
     QTextStream stream(&file);
     stream << model->ExportAsString();
 }
@@ -176,19 +170,17 @@ void ImportData::WriteData(const DataTable* model, int independent)
 {
     independent = m_conc->value();
     m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
-    DataTable *concentration_block = model->BlockColumns(0,independent);
-    DataTable *signals_block = model->BlockColumns(independent,model->columnCount() -independent );
-    m_storeddata->setDependentTable( signals_block );
-    m_storeddata->setIndependentTable( concentration_block );
+    DataTable* concentration_block = model->BlockColumns(0, independent);
+    DataTable* signals_block = model->BlockColumns(independent, model->columnCount() - independent);
+    m_storeddata->setDependentTable(signals_block);
+    m_storeddata->setIndependentTable(concentration_block);
 }
-
 
 void ImportData::accept()
 {
-    DataTable *model = qobject_cast<DataTable *>(m_table->model());
+    DataTable* model = qobject_cast<DataTable*>(m_table->model());
     WriteData(model);
     QDialog::accept();
 }
-
 
 #include "importdata.moc"

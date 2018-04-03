@@ -25,43 +25,42 @@ class SpinBox;
 class HoverCheckBox;
 class QLineEdit;
 
-class ModelElement : public QGroupBox
-{
+class ModelElement : public QGroupBox {
     Q_OBJECT
 public:
-    ModelElement(QSharedPointer<AbstractModel> model, Charts charts, int no, QWidget *parent = 0);
+    ModelElement(QSharedPointer<AbstractModel> model, Charts charts, int no, QWidget* parent = 0);
     ~ModelElement();
-    QVector<double > D() const;
+    QVector<double> D() const;
     bool Include() const;
-    
+
 public slots:
     void Update();
     void ToggleSeries(int);
-    void ChangeColor(const QColor &color);
+    void ChangeColor(const QColor& color);
     void setReadOnly(bool readonly);
-    void setLabel(const QString &str);
+    void setLabel(const QString& str);
 
 private:
-    QVector<SpinBox * > m_constants;
-    QLabel *m_error;
+    QVector<SpinBox*> m_constants;
+    QLabel* m_error;
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
-    QCheckBox *m_include;
-    HoverCheckBox *m_show;
-    QSharedPointer<AbstractModel > m_model;
-    QPointer<LineSeries > m_error_series, m_signal_series;
-    QPointer<QLineEdit > m_name;
+    QCheckBox* m_include;
+    HoverCheckBox* m_show;
+    QSharedPointer<AbstractModel> m_model;
+    QPointer<LineSeries> m_error_series, m_signal_series;
+    QPointer<QLineEdit> m_name;
 
     int m_no;
     QColor m_color;
     Charts m_charts;
     void DisableSignal(int state);
-    
+
 private slots:
     void chooseColor();
     void togglePlot();
     void toggleActive();
     void UnCheckToggle(int i);
-    
+
 signals:
     void ValueChanged();
     void Minimize(int i);

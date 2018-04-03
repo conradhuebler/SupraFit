@@ -17,15 +17,14 @@
  * 
  */
 
-
 #pragma once
 
 #include "src/global.h"
 
 #include <Eigen/Dense>
 
-#include <QtCore/QJsonObject>
 #include <QtCore/QDebug>
+#include <QtCore/QJsonObject>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 #include <QtCore/QtMath>
@@ -34,76 +33,84 @@
 
 typedef Eigen::VectorXd Vector;
 
-
-struct MassResults
-{
+struct MassResults {
     Vector MassBalance;
     Vector Components;
 };
 
-class AbstractTitrationModel : public AbstractModel
-{
+class AbstractTitrationModel : public AbstractModel {
     Q_OBJECT
 
 public:
-    
-    enum PlotMode { 
-        H = 1, 
-        G = 2, 
-        HG = 3, 
+    enum PlotMode {
+        H = 1,
+        G = 2,
+        HG = 3,
         GH = 4
     };
-    
+
     enum {
         Host = 1,
         Method = 2
     };
 
-    AbstractTitrationModel(DataClass *data);
-    AbstractTitrationModel(AbstractTitrationModel *other);
+    AbstractTitrationModel(DataClass* data);
+    AbstractTitrationModel(AbstractTitrationModel* other);
     virtual ~AbstractTitrationModel();
 
     inline int Size() const { return DataClass::Size(); }
 
-    inline QVector<qreal *> getOptConstants() const { return m_opt_para; }
-    
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override {Q_UNUSED(i)  return QString("10^"); }
-    virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" ppm"); }
+    inline QVector<qreal*> getOptConstants() const { return m_opt_para; }
+
+    virtual inline QString GlobalParameterPrefix(int i = 0) const override
+    {
+        Q_UNUSED(i)
+        return QString("10^");
+    }
+    virtual inline QString LocalParameterSuffix(int i = 0) const override
+    {
+        Q_UNUSED(i)
+        return QString(" ppm");
+    }
     virtual inline QString LocalParameterDescription(int i = 0) const override
     {
-        if(i == 0)
+        if (i == 0)
             return "Shift of the pure - non silent substrat";
         else
-            return tr("Shift of the pure %1 complex").arg(GlobalParameterName(i-1));
+            return tr("Shift of the pure %1 complex").arg(GlobalParameterName(i - 1));
     }
     inline virtual QString LocalParameterName(int i = 0) const override
     {
-        if(i == 0)
+        if (i == 0)
             return "Pure Component Shift";
         else
-            return tr("%1 Complex Shift").arg(GlobalParameterName(i-1));
+            return tr("%1 Complex Shift").arg(GlobalParameterName(i - 1));
     }
-    
+
     virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
-    virtual QString SpeciesName(int i) const { Q_UNUSED(i) return QString(); }
+    virtual QString SpeciesName(int i) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
     virtual qreal BC50() const;
     virtual qreal BC50SF() const;
     virtual MassResults MassBalance(qreal A, qreal B);
-    inline QPointer<DataTable > getConcentrations() const { return m_concentrations; }
-    inline QPointer<DataTable > getConcentrations() { return m_concentrations; }
+    inline QPointer<DataTable> getConcentrations() const { return m_concentrations; }
+    inline QPointer<DataTable> getConcentrations() { return m_concentrations; }
     /*! \brief we have two concentrations for all titration models, host and guest
      */
     virtual inline int InputParameterSize() const override { return 2; }
-    virtual int LocalParameterSize() const override {return GlobalParameterSize() + 1; }
-    
+    virtual int LocalParameterSize() const override { return GlobalParameterSize() + 1; }
+
     /*! \brief reimplmented from AbstractModel
      */
     virtual QString Model2Text_Private() const override;
-   
+
     /*! \brief reimplementantion model dependented printout of the independant parameter
      */
     virtual qreal PrintOutIndependent(int i, int format = 4) const override;
-    
+
     virtual QString ModelInfo() const override;
 
     virtual inline bool SupportSeries() const override { return true; }
@@ -116,27 +123,26 @@ public:
      */
     virtual QString YLabel() const override { return m_ylabel; }
 
-
     virtual void DeclareOptions() override;
 
     virtual void EvaluateOptions() override;
 
-    virtual inline int MaxParameter() override { return GlobalParameterSize() + LocalParameterSize()*SeriesCount(); }
+    virtual inline int MaxParameter() override { return GlobalParameterSize() + LocalParameterSize() * SeriesCount(); }
 
-protected:    
+protected:
     /*
      * set the concentration of the @param int i datapoint to
      * @param const Vector& equilibrium, 
      * the vector holds the concentration of
      * each species in that model
      */
-    void SetConcentration(int i, const Vector &equlibrium);
+    void SetConcentration(int i, const Vector& equlibrium);
 
     qreal Guess_1_1() const;
-    
+
     QString m_ylabel;
 
-    QVector< QVector < qreal > > m_difference; 
-    
-    QPointer<DataTable > m_concentrations; 
+    QVector<QVector<qreal>> m_difference;
+
+    QPointer<DataTable> m_concentrations;
 };

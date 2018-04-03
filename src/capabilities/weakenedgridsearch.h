@@ -20,20 +20,18 @@
 #pragma once
 
 #include "abstractsearchclass.h"
-#include "src/global.h"
 #include "src/core/AbstractModel.h"
+#include "src/global.h"
 
-#include <QtCore/QRunnable>
 #include <QtCore/QObject>
+#include <QtCore/QRunnable>
 #include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
-
 
 class Minimizer;
 class QPointF;
 
-class WGSConfig : public AbstractConfig
-{
+class WGSConfig : public AbstractConfig {
 public:
     qreal increment = 0;
     int maxsteps = 1e4;
@@ -46,13 +44,11 @@ public:
     QList<int> global_param, local_param;
 };
 
+class WGSearchThread : public AbstractSearchThread {
+    Q_OBJECT
 
-class WGSearchThread : public AbstractSearchThread
-{
- Q_OBJECT
-
-  public:
-    WGSearchThread(const WGSConfig &config);
+public:
+    WGSearchThread(const WGSConfig& config);
     ~WGSearchThread();
 
     inline void setParameterId(int index) { m_index = index; }
@@ -77,41 +73,39 @@ private:
     int m_index, m_steps;
     float m_direction;
     QHash<double, QJsonObject> m_models;
-    QList<qreal > m_x, m_y;
+    QList<qreal> m_x, m_y;
     WGSConfig m_config;
     QJsonObject m_result;
     qreal m_error, m_increment;
     bool m_stationary, m_finished, m_converged;
 };
 
-class WeakenedGridSearch : public AbstractSearchClass
-{
+class WeakenedGridSearch : public AbstractSearchClass {
     Q_OBJECT
-    
+
 public:
-    WeakenedGridSearch(const WGSConfig &config, QObject *parent = 0);
+    WeakenedGridSearch(const WGSConfig& config, QObject* parent = 0);
     ~WeakenedGridSearch();
-    inline void setConfig(const WGSConfig &config) { m_config = config;}
+    inline void setConfig(const WGSConfig& config) { m_config = config; }
     inline bool CV() { return m_cv; }
     inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
-    void setParameter(const QJsonObject &json);
-   
+    void setParameter(const QJsonObject& json);
+
 public slots:
     virtual void Interrupt() override;
-    
+
 private:
-    QPointer<WGSearchThread > CreateThread(int index, bool direction);
+    QPointer<WGSearchThread> CreateThread(int index, bool direction);
     OptimizationType m_type;
     WGSConfig m_config;
     bool allow_break, m_cv;
-    QVector<QVector <qreal > > MakeBox() const;
-    void MCSearch(const QVector<QVector<qreal> > &box);
-    void Search(const QVector<QVector<qreal> > &box);
-    void StripResults(const QList<QJsonObject > &results);
+    QVector<QVector<qreal>> MakeBox() const;
+    void MCSearch(const QVector<QVector<qreal>>& box);
+    void Search(const QVector<QVector<qreal>>& box);
+    void StripResults(const QList<QJsonObject>& results);
     virtual QJsonObject Controller() const override;
 
 signals:
     void StopSubThreads();
 };
-

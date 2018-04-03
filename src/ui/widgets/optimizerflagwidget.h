@@ -22,30 +22,27 @@
 #include <QtCore/QPointer>
 #include <QtWidgets/QGroupBox>
 
-
 #include "src/global.h"
 
 class QVBoxLayout;
 class QCheckBox;
 class QPushButton;
 
-class OptimizerFlagWidget : public QWidget
-{
+class OptimizerFlagWidget : public QWidget {
     Q_OBJECT
 public:
-    OptimizerFlagWidget(QWidget *parent = 0);
-    OptimizerFlagWidget(OptimizationType type, QWidget *parent = 0);
+    OptimizerFlagWidget(QWidget* parent = 0);
+    OptimizerFlagWidget(OptimizationType type, QWidget* parent = 0);
     ~OptimizerFlagWidget();
     OptimizationType getFlags() const;
     void DisableOptions(OptimizationType type);
     void setFlags(OptimizationType type);
     inline void setFlags(int type) { setFlags(static_cast<OptimizationType>(type)); }
-    
+
 private:
     OptimizationType m_type;
     void setUi();
-    QPointer<QCheckBox > m_globalparameter, m_localparameter;
-    QVBoxLayout *m_main_layout;
+    QPointer<QCheckBox> m_globalparameter, m_localparameter;
+    QVBoxLayout* m_main_layout;
     bool m_hidden;
-
 };

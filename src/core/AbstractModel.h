@@ -17,111 +17,108 @@
  * 
  */
 
-
 #pragma once
 
 #include "src/global.h"
 
 #include <Eigen/Dense>
 
-#include <QtCore/QJsonObject>
 #include <QtCore/QDebug>
+#include <QtCore/QJsonObject>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 #include <QtCore/QtMath>
 
 #include "dataclass.h"
 
-struct ModelOption
-{
+struct ModelOption {
     QStringList values;
-    QString value = "unset"; 
+    QString value = "unset";
     QString name;
 };
 
-
-class AbstractModelPrivate : public QSharedData
-{
+class AbstractModelPrivate : public QSharedData {
 public:
-    AbstractModelPrivate() { }
-    AbstractModelPrivate(const AbstractModelPrivate& other) : QSharedData(other), m_model_options(other.m_model_options), m_locked_parameters(other.m_locked_parameters) { }
-    ~AbstractModelPrivate() { }
+    AbstractModelPrivate() {}
+    AbstractModelPrivate(const AbstractModelPrivate& other)
+        : QSharedData(other)
+        , m_model_options(other.m_model_options)
+        , m_locked_parameters(other.m_locked_parameters)
+    {
+    }
+    ~AbstractModelPrivate() {}
 
-    QMap<int, ModelOption > m_model_options;
-    QList<int > m_locked_parameters;
-
+    QMap<int, ModelOption> m_model_options;
+    QList<int> m_locked_parameters;
 };
 
+class AbstractModel : public DataClass {
+    Q_OBJECT
 
-class AbstractModel : public DataClass
-{
-  Q_OBJECT  
-  
 public:
-    AbstractModel(DataClass *data);
-    
+    AbstractModel(DataClass* data);
+
     virtual ~AbstractModel();
-    
+
     virtual SupraFit::Model SFModel() const = 0;
 
     /*! \brief set the OptimizationType to type and returns the Parameters
      * 
      */
-    QVector<qreal > OptimizeParameters(OptimizationType type);
+    QVector<qreal> OptimizeParameters(OptimizationType type);
 
     /*! \brief returns the Parameters used in optimisation
      *
      */
-    inline QVector<qreal > OptimizeParameters() { return m_parameter; }
+    inline QVector<qreal> OptimizeParameters() { return m_parameter; }
 
     /*! \brief returns a pair of int
      *  first - index of parameter
      *  second define if global or local
      */
-    inline QVector<QPair<int, int> > IndexParameters() { return m_opt_index; }
-    
+    inline QVector<QPair<int, int>> IndexParameters() { return m_opt_index; }
+
     /*! \brief Locks Parameter not to be optimised during Levenberg-Marquadt
      */
-    inline void setLockedParameter(const QList<int> &lock){ d->m_locked_parameters = lock; }
-    
+    inline void setLockedParameter(const QList<int>& lock) { d->m_locked_parameters = lock; }
+
     /*! \brief Clear the list of to be optimised Parameters
      */
     void clearOptParameter();
-    
+
     /*! \brief returns the locked Parameters
      */
     inline QList<int> LockedParamters() const { return d->m_locked_parameters; }
-    
+
     /*! \brief Set the last OptimizationType to runtype
      */
     inline void setLastOptimzationRun(OptimizationType last_optimization) { m_last_optimization = last_optimization; }
-    
+
     /*! \brief Returns the last OptimizationType
      */
     inline OptimizationType LastOptimzationRun() const { return m_last_optimization; }
-    
+
     /*
      * function to create a new instance of the model, this way was quite easier than
      * a copy constructor
      */
-    virtual QSharedPointer<AbstractModel > Clone() = 0;
-    
+    virtual QSharedPointer<AbstractModel> Clone() = 0;
+
     /*
      * ! \brief Export model to json file
      * 
      */
     QJsonObject ExportModel(bool statistics = true, bool locked = false) const;
-    
+
     /* ! \brief Import model from json
      * 
      */
-    void ImportModel(const QJsonObject &topjson, bool override = true);
- 
+    void ImportModel(const QJsonObject& topjson, bool override = true);
+
     /*! \brief Returns the name of the model
      */
-    virtual QString Name() const = 0; 
-    
-        
+    virtual QString Name() const = 0;
+
     /*! \brief set the calculation style to bool fast
      * some useless loops will be omitted in AbstractModel::Calculation call
      * Variance, CovFit etc
@@ -130,98 +127,138 @@ public:
 
     /*! \brief get the Name of the ith GlobalParameter
      */
-    inline virtual QString GlobalParameterName(int i = 0) const {Q_UNUSED(i) return QString();}
+    inline virtual QString GlobalParameterName(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
 
     /*! \brief Prefix of the ith global parameter 
      */
-    virtual inline QString GlobalParameterPrefix(int i = 0) const { Q_UNUSED(i) return QString(); }
-    
+    virtual inline QString GlobalParameterPrefix(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
+
     /*! \brief Suffix of the ith  global parameter 
      */
-    virtual inline QString GlobalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
-    
+    virtual inline QString GlobalParameterSuffix(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
+
     /*! \brief Description of the ith global parameter 
-     */   
-    virtual inline QString GlobalParameterDescription(int i = 0) const { Q_UNUSED(i) return QString(); }
-    
+     */
+    virtual inline QString GlobalParameterDescription(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
+
     /*! \brief get the Name of the ith LocalParameter
      */
-    inline virtual QString LocalParameterName(int i = 0) const {Q_UNUSED(i) return QString();} 
-    
+    inline virtual QString LocalParameterName(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
+
     /*! \brief Prefix of theith  local parameter 
      */
-    virtual inline QString LocalParameterPrefix(int i = 0) const {Q_UNUSED(i) return QString(); }
-    
+    virtual inline QString LocalParameterPrefix(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
+
     /*! \brief Suffix of the ith local parameter 
      */
-    virtual inline QString LocalParameterSuffix(int i = 0) const {Q_UNUSED(i) return QString(); }
-    
+    virtual inline QString LocalParameterSuffix(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
+
     /*! \brief Description of the ith local parameter 
-     */   
-    virtual inline QString LocalParameterDescription(int i = 0) const { Q_UNUSED(i) return QString(); }
-    
+     */
+    virtual inline QString LocalParameterDescription(int i = 0) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
+
     /*! \brief Return a formated value as string of the global parameter with the value
      */
-    virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const { Q_UNUSED(globalParamater) return QString::number(value); }
-    
+    virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const
+    {
+        Q_UNUSED(globalParamater)
+        return QString::number(value);
+    }
+
     /*! \brief Return a formated value as string of the global parameter with the value
      */
-    virtual QString formatedLocalParameter(qreal value, int localParamater = 0) const { Q_UNUSED(localParamater) return QString::number(value); }
+    virtual QString formatedLocalParameter(qreal value, int localParamater = 0) const
+    {
+        Q_UNUSED(localParamater)
+        return QString::number(value);
+    }
 
     virtual inline int Color(int i) const { return i; }
-        
+
     void SetSingleParameter(double value, int parameter);
-    void addGlobalParameter(QList <qreal > &vector);
+    void addGlobalParameter(QList<qreal>& vector);
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
-   
-    void UpdateStatistic(const QJsonObject &object);
-    
+
+    void UpdateStatistic(const QJsonObject& object);
+
     QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
     QJsonObject getWGStatisticResult() const { return m_wg_statistics; }
     QJsonObject getMoCoStatisticResult() const { return m_moco_statistics; }
     QJsonObject getReduction() const { return m_reduction; }
     QJsonObject getFastConfidence() const { return m_fast_confidence; }
-    
+
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
-        
-    QList<qreal >  getCalculatedModel();
-        
+
+    QList<qreal> getCalculatedModel();
+
     /*! \brief returns a List of all Series, that are to be included in optimisation
      */
     inline QList<int> ActiveSignals() const { return m_active_signals; }
 
     /*! \brief return if the series i is active in optimisation
      */
-    inline int ActiveSignals(int i) const 
-    { 
-        if(i < m_active_signals.size())
+    inline int ActiveSignals(int i) const
+    {
+        if (i < m_active_signals.size())
             return m_active_signals.at(i);
         else
             return 1;
     }
-    
+
     /*! \brief set the series active / inactive according to the given list
      * 0 - inactive
      * 1 - active
      */
-    inline void setActiveSignals(const QList<int > &active_signals) 
-    { 
-        m_active_signals = active_signals; 
+    inline void setActiveSignals(const QList<int>& active_signals)
+    {
+        m_active_signals = active_signals;
         emit ActiveSignalsChanged(m_active_signals);
     }
-    
+
     /*! \brief Set the current active parameter (which are internally reference through a pointer)
      * to the given vector
      */
-    void setParameter(const QVector<qreal> &parameter);
-    
+    void setParameter(const QVector<qreal>& parameter);
+
     /*! \brief Returns if the current model parameter makes dont't sense
      * true - no sense
      * false - all fine
      */
     inline bool isCorrupt() const { return m_corrupt; }
-    
+
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
     inline int Points() const { return m_used_variables; }
@@ -241,51 +278,51 @@ public:
      */
     qreal finv(qreal p);
     qreal Error(qreal confidence, bool f = true);
-    
+
     virtual void InitialGuess() = 0;
-    
+
     /*! \brief Returns pointer to Model DataTable
      * overloaded function
      */
-    inline DataTable * ModelTable() { return m_model_signal; }
-    
+    inline DataTable* ModelTable() { return m_model_signal; }
+
     /*! \brief Returns pointer to Error DataTable
      * overloaded function
      */
-    inline DataTable * ErrorTable() { return m_model_error; }
-    
+    inline DataTable* ErrorTable() { return m_model_error; }
+
     /*! \brief Returns const pointer to Model DataTable
      * overloaded function
      */
-    inline DataTable * ModelTable() const  { return m_model_signal; }
-    
+    inline DataTable* ModelTable() const { return m_model_signal; }
+
     /*! \brief Returns const pointer to Error DataTable
      * overloaded function
      */
-    inline DataTable * ErrorTable() const { return m_model_error; }
-    
+    inline DataTable* ErrorTable() const { return m_model_error; }
+
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
-    inline void setOptimizerConfig(const OptimizerConfig &config) 
-    { 
+    inline void setOptimizerConfig(const OptimizerConfig& config)
+    {
         m_opt_config = config;
     }
-    
+
     /*
      * definies wheater this model can be calculate in parallel
      * should be useful when the model observables are calculated numerically
      */
     virtual bool SupportThreads() const = 0;
-    
+
     qreal SumOfErrors(int i) const;
-    
+
     qreal ModelError() const;
-    
+
     /*! \brief set the values of the global parameter to const QList< qreal > &list
      */
-    virtual void setGlobalParameter(const QList< qreal > &list);
+    virtual void setGlobalParameter(const QList<qreal>& list);
     /*! \brief return the list of global parameter values
      */
-    inline QList<qreal > GlobalParameter() const { return m_global_parameter; }
+    inline QList<qreal> GlobalParameter() const { return m_global_parameter; }
     /*! \brief return i global parameter
      */
     inline qreal GlobalParameter(int i) const { return m_global_parameter[i]; }
@@ -295,45 +332,45 @@ public:
     /*! \brief return size of input parameter 
      */
     virtual int InputParameterSize() const = 0;
-    
-     /*! \brief returns size of local parameter
+
+    /*! \brief returns size of local parameter
      */
     virtual int LocalParameterSize() const = 0;
-    
+
     qreal LocalParameter(int parameter, int series) const;
     QVector<qreal> getLocalParameterColumn(int parameter) const;
     void setLocalParameter(qreal value, int parameter, int series);
-    void setLocalParameterSeries(const QVector<qreal > &vector, int series);
-    void setLocalParameterSeries(const Vector &vector, int series);
-    void setLocalParameterColumn(const QVector<qreal> &vector, int parameter);
-    void setLocalParameterColumn(const Vector &vector, int parameter);
-    
+    void setLocalParameterSeries(const QVector<qreal>& vector, int series);
+    void setLocalParameterSeries(const Vector& vector, int series);
+    void setLocalParameterColumn(const QVector<qreal>& vector, int parameter);
+    void setLocalParameterColumn(const Vector& vector, int parameter);
+
     /*! \brief return text of stored data
      */
     QString Data2Text() const;
-    
+
     /*! \brief reimplment, if more model specfic raw data information should be printed out
      */
     virtual QString Data2Text_Private() const { return QString(); }
-    
+
     /*! \brief return text of calculated model
      */
     QString Model2Text() const;
-    
+
     QString Global2Text() const;
-    
+
     QString Local2Text() const;
 
     /*! \brief reimplment, if more model specfic model information should be printed out
      */
     virtual QString Model2Text_Private() const { return QString(); }
-    
-    AbstractModel &operator=(const AbstractModel &other);
-    AbstractModel *operator=(const AbstractModel *other);
-    
-    inline void addOption(int index, const QString &name, const QStringList &values)
+
+    AbstractModel& operator=(const AbstractModel& other);
+    AbstractModel* operator=(const AbstractModel* other);
+
+    inline void addOption(int index, const QString& name, const QStringList& values)
     {
-        if(d->m_model_options.contains(index))
+        if (d->m_model_options.contains(index))
             return;
         ModelOption option;
         option.values = values;
@@ -341,20 +378,20 @@ public:
         option.name = name;
         d->m_model_options[index] = option;
     }
-    
-    void setOption(int index, const QString &value);
-    
+
+    void setOption(int index, const QString& value);
+
     inline QString getOption(int index) const
     {
-        if(!d->m_model_options.contains(index))
+        if (!d->m_model_options.contains(index))
             return QString("unset");
         ModelOption option = d->m_model_options[index];
         return option.value;
     }
-    
+
     inline QString getOptionName(int index) const
     {
-        if(!d->m_model_options.contains(index))
+        if (!d->m_model_options.contains(index))
             return QString("unset");
         ModelOption option = d->m_model_options[index];
         return option.name;
@@ -367,19 +404,25 @@ public:
             list << d->m_model_options[index].name;
         return list;
     }*/
-    
+
     inline QList<int> getAllOptions() const { return d->m_model_options.keys(); }
 
-    inline const QStringList getSingleOptionValues(int index) const { if(d->m_model_options.contains(index)) return d->m_model_options[index].values; else return QStringList(); }
-    
-    inline virtual void DeclareOptions() { }
-    
-    inline virtual void DeclareSystemParameter() { }
+    inline const QStringList getSingleOptionValues(int index) const
+    {
+        if (d->m_model_options.contains(index))
+            return d->m_model_options[index].values;
+        else
+            return QStringList();
+    }
 
-    inline virtual void EvaluateOptions() { }
-    
+    inline virtual void DeclareOptions() {}
+
+    inline virtual void DeclareSystemParameter() {}
+
+    inline virtual void EvaluateOptions() {}
+
     inline virtual QString ModelInfo() const { return QString(); }
-    
+
     inline bool isLocked() const { return m_locked_model; }
 
     inline bool LocalEnabled(int i) const { return m_enabled_local[i]; }
@@ -388,7 +431,7 @@ public:
 
     virtual bool SupportSeries() const = 0;
 
-  //  inline DataClass *Data() const { return m_data; }
+    //  inline DataClass *Data() const { return m_data; }
 
     /*! \brief Define the x axis label for charts
      */
@@ -406,11 +449,12 @@ public:
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
-     void Calculate();
-     virtual inline void UpdateParameter() { }
+    void Calculate();
+    virtual inline void UpdateParameter() {}
 
 private:
     QSharedDataPointer<AbstractModelPrivate> d;
+
 protected:
     /*
      * This function handles the optimization flags, which get passed by
@@ -419,18 +463,18 @@ protected:
      * @return QVector<qreal>
      * 
      */
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) = 0;
-    
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) = 0;
+
     /* 
      * @param int i, in j and qreal value
      * of the model value - DataTable 
      */
     void SetValue(int i, int j, qreal value);
-    
+
     /*! \brief This function defines how the model values are to be calculated
      */
     virtual void CalculateVariables() = 0;
-    
+
     /*! \brief Calculated the variance of the estimated model variables
      */
     qreal CalculateVariance();
@@ -438,40 +482,39 @@ protected:
     /*! \brief Calculated the variance of the raw data
      */
     qreal CalculateCovarianceFit();
-        
+
     void PrepareParameter(int global, int local);
 
-// #warning to do as well
+    // #warning to do as well
     //FIXME more must be
-    QVector<double * > m_opt_para;
-    QVector< QPair<int, int> > m_opt_index;
-    QVector<qreal > m_parameter;
-    QList<qreal > m_global_parameter;
-    QList< QJsonObject> m_mc_statistics;
-    
+    QVector<double*> m_opt_para;
+    QVector<QPair<int, int>> m_opt_index;
+    QVector<qreal> m_parameter;
+    QList<qreal> m_global_parameter;
+    QList<QJsonObject> m_mc_statistics;
+
     QJsonObject m_wg_statistics;
     QJsonObject m_moco_statistics;
     QJsonObject m_reduction;
     QJsonObject m_fast_confidence;
-    
+
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
-    QList<int > m_active_signals;
-    QVector<int > m_enabled_local, m_enabled_global;
+    QList<int> m_active_signals;
+    QVector<int> m_enabled_local, m_enabled_global;
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
     bool m_corrupt, m_converged, m_locked_model, m_fast;
     OptimizerConfig m_opt_config;
-    QPointer<DataTable > m_model_signal, m_model_error, m_local_parameter;
-        
-    
+    QPointer<DataTable> m_model_signal, m_model_error, m_local_parameter;
+
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished
      */
     void Recalculated();
-    void Message(const QString &str, int priority = 3);
-    void Warning(const QString &str, int priority = 1);
+    void Message(const QString& str, int priority = 3);
+    void Warning(const QString& str, int priority = 1);
     void StatisticChanged();
 };

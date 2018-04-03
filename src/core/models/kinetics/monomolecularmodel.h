@@ -19,21 +19,18 @@
 
 #pragma once
 
-#include "src/global.h"
 #include "src/core/AbstractModel.h"
-
+#include "src/global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
 #include "src/core/dataclass.h"
 
-class MonoMolecularModel : public AbstractModel
-{
+class MonoMolecularModel : public AbstractModel {
     Q_OBJECT
-    
-public:
 
+public:
     enum {
         ConcentrationA = 1,
         ConcentrationB = 2
@@ -44,24 +41,27 @@ public:
         Component = 2
     };
 
-    MonoMolecularModel(DataClass *data);
+    MonoMolecularModel(DataClass* data);
     ~MonoMolecularModel();
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::MonoMolecularModel; }
 
-
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 2;}
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 2; }
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() override;
+    virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
-    
+
     /*! \brief we have only the time as input parameter
      */
-    virtual inline int InputParameterSize() const override { return 1; } 
-    virtual inline QString GlobalParameterName(int i = 0) const override { Q_UNUSED(i) return tr("k"); }
+    virtual inline int InputParameterSize() const override { return 1; }
+    virtual inline QString GlobalParameterName(int i = 0) const override
+    {
+        Q_UNUSED(i)
+        return tr("k");
+    }
     // virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" M"); }
-    virtual int LocalParameterSize() const override {return 0; }
+    virtual int LocalParameterSize() const override { return 0; }
 
     virtual inline QString Name() const override { return tr("Monomolecular Kinetics"); }
     virtual inline bool SupportSeries() const override { return false; }
@@ -81,7 +81,6 @@ public slots:
 private:
     void virtual DeclareSystemParameter() override;
 
-    
 protected:
     virtual void CalculateVariables() override;
     qreal m_A0, m_B0;

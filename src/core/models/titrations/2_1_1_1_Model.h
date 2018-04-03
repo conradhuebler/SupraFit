@@ -19,22 +19,18 @@
 
 #pragma once
 
-#include "src/global.h"
 #include "src/core/AbstractTitrationModel.h"
+#include "src/global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-
 #include "src/core/dataclass.h"
 
+class IItoI_ItoI_Model : public AbstractTitrationModel {
+    Q_OBJECT
 
-class IItoI_ItoI_Model : public AbstractTitrationModel
-{
-     Q_OBJECT
-    
 public:
-
     enum {
         Cooperativity = 3
     };
@@ -44,45 +40,47 @@ public:
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::IItoI_ItoI; }
 
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 2;}
-    
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 2; }
+
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone()  override;
+    virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override;
     virtual inline qreal BC50SF() const override { return BC50(); }
-    virtual inline QString GlobalParameterName(int i = 0) const override 
-    { 
-        if(i == 0)
+    virtual inline QString GlobalParameterName(int i = 0) const override
+    {
+        if (i == 0)
             return tr("K<sub>21</sub>");
-        else if(i == 1)
-            return tr("K<sub>11</sub>"); 
+        else if (i == 1)
+            return tr("K<sub>11</sub>");
         else
             return QString();
     }
 
     virtual inline QString SpeciesName(int i) const override
     {
-        if(i == 0)
+        if (i == 0)
             return tr("A2B");
-        else if(i == 1)
+        else if (i == 1)
             return tr("AB");
         else
             return QString();
     }
 
-
     void DeclareOptions() override;
-    
-    
+
     void EvaluateOptions() override;
-    
+
     virtual inline QString Name() const override { return tr("2:1/1:1-Model"); }
 
-    virtual inline int Color(int i) const override { if(i > 1) return i + 2; return i; }
-    
+    virtual inline int Color(int i) const override
+    {
+        if (i > 1)
+            return i + 2;
+        return i;
+    }
+
 protected:
     virtual void CalculateVariables() override;
 };
-

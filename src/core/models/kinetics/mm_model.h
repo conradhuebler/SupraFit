@@ -19,48 +19,49 @@
 
 #pragma once
 
-#include "src/global.h"
 #include "src/core/AbstractModel.h"
-
+#include "src/global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
 #include "src/core/dataclass.h"
 
-class Michaelis_Menten_Model : public AbstractModel 
-{
+class Michaelis_Menten_Model : public AbstractModel {
     Q_OBJECT
-    
+
 public:
-    Michaelis_Menten_Model(DataClass *data);
+    Michaelis_Menten_Model(DataClass* data);
     ~Michaelis_Menten_Model();
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::Michaelis_Menten; }
 
-
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 2;} 
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 2; }
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() override;
+    virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
 
     /*! \brief we have only the time as input parameter
      */
-    virtual inline int InputParameterSize() const override { return 1; } 
-    virtual inline QString GlobalParameterName(int i = 0) const override 
-    { 
-        if( i== 0)
+    virtual inline int InputParameterSize() const override { return 1; }
+    virtual inline QString GlobalParameterName(int i = 0) const override
+    {
+        if (i == 0)
             return tr("v<sub>max</sub>");
-        else if( i == 1)
+        else if (i == 1)
             return tr("K<sub>m</sub>");
-        else 
+        else
             return QString();
     }
-    
-    virtual int LocalParameterSize() const override {return 0; }
 
-    virtual qreal PrintOutIndependent(int i, int format = 0) const override { Q_UNUSED(format) return IndependentModel()->data(0,i); }
+    virtual int LocalParameterSize() const override { return 0; }
+
+    virtual qreal PrintOutIndependent(int i, int format = 0) const override
+    {
+        Q_UNUSED(format)
+        return IndependentModel()->data(0, i);
+    }
 
     virtual inline QString Name() const override { return tr("Michaelis Menten"); }
     virtual inline bool SupportSeries() const override { return false; }
@@ -74,8 +75,6 @@ public:
     virtual QString YLabel() const override { return "v"; }
 
 private:
-    
-    
 protected:
     virtual void CalculateVariables() override;
     qreal m_vmax, m_Km;

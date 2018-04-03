@@ -23,8 +23,8 @@
 
 #include <QDebug>
 
-#include <QtCore/QtGlobal>
 #include <QtCore/QJsonObject>
+#include <QtCore/QtGlobal>
 #include <QtCore/QtMath>
 
 #include <Eigen/Dense>
@@ -34,46 +34,49 @@
 #include <iostream>
 
 #include "src/core/libmath.h"
-typedef QList<qreal > Variables;
+typedef QList<qreal> Variables;
 
-template<typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
 
-struct Functor
-{
+struct Functor {
     typedef _Scalar Scalar;
     enum {
         InputsAtCompileTime = NX,
         ValuesAtCompileTime = NY
     };
-    typedef Eigen::Matrix<Scalar,InputsAtCompileTime,1> InputType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,1> ValueType;
-    typedef Eigen::Matrix<Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
-    
+    typedef Eigen::Matrix<Scalar, InputsAtCompileTime, 1> InputType;
+    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
+    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime> JacobianType;
+
     int m_inputs, m_values;
-    
-    inline Functor(int inputs, int values) : m_inputs(inputs), m_values(values) {}
-    
+
+    inline Functor(int inputs, int values)
+        : m_inputs(inputs)
+        , m_values(values)
+    {
+    }
+
     int inputs() const { return m_inputs; }
     int values() const { return m_values; }
-    
 };
 
-struct MyFunctor : Functor<double>
-{
-    inline MyFunctor(int inputs, int values) : Functor(inputs, values), no_parameter(inputs),  no_points(values) 
+struct MyFunctor : Functor<double> {
+    inline MyFunctor(int inputs, int values)
+        : Functor(inputs, values)
+        , no_parameter(inputs)
+        , no_points(values)
     {
-        
     }
-    inline ~MyFunctor() { }
-    inline int operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+    inline ~MyFunctor() {}
+    inline int operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const
     {
-        QVector<qreal > param(inputs());
-        for(int i = 0; i < inputs(); ++i)
+        QVector<qreal> param(inputs());
+        for (int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
         model.data()->setParameter(param);
         model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedModel();
-        for( int i = 0; i < ModelSignals.size(); ++i)
+        for (int i = 0; i < ModelSignals.size(); ++i)
             fvec(i) = CalculatedSignals[i] - ModelSignals[i];
 
         return 0;
@@ -87,24 +90,24 @@ struct MyFunctor : Functor<double>
     int values() const { return no_points; }
 };
 
-struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {};
+struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
+};
 
-int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
+int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
     OptimizerConfig config = model.data()->getOptimizerConfig();
     Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
     model.data()->setFast();
-    if(ModelSignals.size() == 0 || ModelSignals.size() < param.size())
+    if (ModelSignals.size() == 0 || ModelSignals.size() < param.size())
         return -1;
     Eigen::VectorXd parameter(param.size());
-    for(int i = 0; i < param.size(); ++i)
+    for (int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
-    
+
     QString message = QString();
     message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
     message += "Old vector : ";
-    for(double d: param)
-    {
+    for (double d : param) {
         message += QString::number(d) + " ";
     }
     message += "\n";
@@ -113,46 +116,43 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal > &param)
     functor.model = model;
     functor.ModelSignals = ModelSignals;
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor> > lm(numDiff);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor>> lm(numDiff);
     int iter = 0;
     lm.parameters.factor = config.LevMar_Factor; //step bound for the diagonal shift, is this related to damping parameter, lambda?
-    lm.parameters.maxfev = config.MaxIter;//max number of function evaluations
+    lm.parameters.maxfev = config.MaxIter; //max number of function evaluations
     lm.parameters.xtol = config.LevMar_Xtol; //tolerance for the norm of the solution vector
     lm.parameters.ftol = config.LevMar_Ftol; //tolerance for the norm of the vector function
     lm.parameters.gtol = config.LevMar_Gtol; // tolerance for the norm of the gradient of the error vector
     lm.parameters.epsfcn = config.LevMar_epsfcn; //error precision
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-    qreal error_0 = 0; 
+    qreal error_0 = 0;
     qreal error_2 = 1;
     qreal norm = 1;
     QList<qreal> globalConstants;
-    for (;iter < config.MaxIter && ((qAbs(error_0 -error_2) > config.Error_Convergence ) || norm > config.Constant_Convergence);++iter)
-    {
+    for (; iter < config.MaxIter && ((qAbs(error_0 - error_2) > config.Error_Convergence) || norm > config.Constant_Convergence); ++iter) {
         globalConstants.clear();
-        for(int i = 0; i < model.data()->GlobalParameterSize(); ++i)
+        for (int i = 0; i < model.data()->GlobalParameterSize(); ++i)
             globalConstants << model.data()->GlobalParameter()[i];
         error_0 = model.data()->SumofSquares();
-        
+
         status = lm.minimizeOneStep(parameter);
         error_2 = model.data()->SumofSquares();
         norm = 0;
-        for(int i = 0; i < globalConstants.size(); ++i)
-            norm += qAbs(globalConstants[i]-model.data()->GlobalParameter()[i]);
-    } 
+        for (int i = 0; i < globalConstants.size(); ++i)
+            norm += qAbs(globalConstants[i] - model.data()->GlobalParameter()[i]);
+    }
     QString result;
     result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
     result += "Last Sum of Changes in complexation constants was " + QString::number(norm) + "\n";
-    result += "New vector:";    
-    for(int i = 0; i < param.size(); ++i)
-    {
-        result +=  QString::number(param[i]) + " ";
+    result += "New vector:";
+    for (int i = 0; i < param.size(); ++i) {
+        result += QString::number(param[i]) + " ";
     }
     result += "\n";
-//     model.data()->Message(result, 4);
-    
-    for(int i = 0; i < functor.inputs(); ++i)
+    //     model.data()->Message(result, 4);
+
+    for (int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
     model.data()->setConverged(iter < config.MaxIter);
     return iter;
 }
-

@@ -19,50 +19,56 @@
 
 #include "src/core/dataclass.h"
 
-#include <QtCore/QPointer>
-#include <QtCore/QFile>
-#include <QDebug>
 #include "filehandler.h"
+#include <QDebug>
+#include <QtCore/QFile>
+#include <QtCore/QPointer>
 
-
-FileHandler::FileHandler(const QString &filename, QObject *parent) :m_filename(filename), QObject(parent), m_lines(0), m_table(true), m_allint(true), m_file_supported(true)
+FileHandler::FileHandler(const QString& filename, QObject* parent)
+    : m_filename(filename)
+    , QObject(parent)
+    , m_lines(0)
+    , m_table(true)
+    , m_allint(true)
+    , m_file_supported(true)
 {
     LoadFile();
     Read();
     CheckForTable();
 }
 
-FileHandler::FileHandler(QObject* parent) : QObject(parent), m_lines(0), m_table(true), m_allint(true), m_file_supported(true)
+FileHandler::FileHandler(QObject* parent)
+    : QObject(parent)
+    , m_lines(0)
+    , m_table(true)
+    , m_allint(true)
+    , m_file_supported(true)
 {
 }
-
 
 FileHandler::~FileHandler()
 {
 }
 
 void FileHandler::LoadFile()
-{    
+{
     QFile file(m_filename);
-    if(!file.open(QIODevice::ReadOnly))
-    {
+    if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << file.errorString();
-//         return; //FIXME Hää
+        //         return; //FIXME Hää
     }
-    
+
     m_filecontent = QString(file.readAll()).split("\n");
 }
-
 
 void FileHandler::Read()
 {
     int tab = 0, semi = 0;
-    for(const QString &str : qAsConst(m_filecontent))
-    {
+    for (const QString& str : qAsConst(m_filecontent)) {
         tab += str.count("\t");
-        semi+= str.count(";");
+        semi += str.count(";");
     }
-    if(tab > semi)
+    if (tab > semi)
         sep = " ";
     else
         sep = ";";
@@ -72,60 +78,49 @@ void FileHandler::Read()
 void FileHandler::CheckForTable()
 {
     int size = 0;
-    
-    for(int i = 0; i < m_lines; ++i)
-    {
-        if(size)
+
+    for (int i = 0; i < m_lines; ++i) {
+        if (size)
             m_table = (size == m_filecontent[i].split(sep).size());
         size = m_filecontent[i].split(sep).size();
-        
-        if(!m_table)
+
+        if (!m_table)
             return;
-        
-        if(m_table)
-        {
+
+        if (m_table) {
             QStringList elements = m_filecontent[i].split("\n");
-            for(int j = 0; j < elements.size(); ++j)
-            {
-                if(elements[j].contains(QRegExp("[Aa-Zz]")))
+            for (int j = 0; j < elements.size(); ++j) {
+                if (elements[j].contains(QRegExp("[Aa-Zz]")))
                     m_allint = false;
             }
         }
     }
-    m_file_supported = m_allint && m_table; 
+    m_file_supported = m_allint && m_table;
 }
 
 QPointer<DataTable> FileHandler::getData() const
 {
-    QPointer<DataTable > model = new DataTable;
+    QPointer<DataTable> model = new DataTable;
     int i = 0;
-    for(const QString &line: qAsConst(m_filecontent))
-    {
-        if(!line.isEmpty() && !line.isNull())
-        {
+    for (const QString& line : qAsConst(m_filecontent)) {
+        if (!line.isEmpty() && !line.isNull()) {
             QVector<qreal> row;
             QStringList header;
             QStringList items = line.simplified().split(sep);
             double sum = 0;
-            for(const QString &item: qAsConst(items))
-            {
+            for (const QString& item : qAsConst(items)) {
                 row.append((QString(item).replace(",", ".")).toDouble());
                 sum += (QString(item).replace(",", ".")).toDouble();
                 header << item;
             }
-            if(!i && !sum)
-            {
-                for(int j = 0; j < header.size(); ++j)
+            if (!i && !sum) {
+                for (int j = 0; j < header.size(); ++j)
                     model->setHeaderData(j, Qt::Horizontal, (header[j]), Qt::DisplayRole);
-            }
-            else
+            } else
                 model->insertRow(row);
-            
         }
     }
     return model;
 }
-
-
 
 #include "filehandler.moc"

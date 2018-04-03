@@ -24,8 +24,7 @@
 
 #include <QtWidgets/QDoubleSpinBox>
 
-class ScientificBox : public QDoubleSpinBox
-{
+class ScientificBox : public QDoubleSpinBox {
     Q_OBJECT
 public:
     inline ScientificBox() {}
@@ -35,14 +34,14 @@ public:
         return QString::number(val, 'E', 2);
     }
 
-    inline double valueFromText(const QString &text) const
+    inline double valueFromText(const QString& text) const
     {
         QString value = text;
         value.replace(loc.decimalPoint(), '.');
         return value.toDouble();
     }
 
-    inline QValidator::State validate(QString &input, int &pos) const
+    inline QValidator::State validate(QString& input, int& pos) const
     {
         QDoubleValidator validator;
         validator.setBottom(minimum());

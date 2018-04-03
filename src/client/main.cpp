@@ -25,8 +25,8 @@
 
 #include <QDebug>
 
-#include <QtCore/QCommandLineParser>
 #include <QtCore/QCommandLineOption>
+#include <QtCore/QCommandLineParser>
 
 #include <QCoreApplication>
 
@@ -35,39 +35,41 @@
 int main(int argc, char** argv)
 {
     qInstallMessageHandler(myMessageOutput);
-    
-    
+
     QCoreApplication app(argc, argv);
     QCommandLineParser parser;
     Version(&app, &parser);
-    
-    QCommandLineOption experiments(QStringList() << "e" << "experiments",
-                                   QCoreApplication::translate("main", "Number of experiments"),
-                                   QCoreApplication::translate("main", "number"),
-                                   QCoreApplication::translate("main", "1000"));
+
+    QCommandLineOption experiments(QStringList() << "e"
+                                                 << "experiments",
+        QCoreApplication::translate("main", "Number of experiments"),
+        QCoreApplication::translate("main", "number"),
+        QCoreApplication::translate("main", "1000"));
     parser.addOption(experiments);
-    
-    QCommandLineOption threads(QStringList() << "t" << "threads",
-                                   QCoreApplication::translate("main", "Number of threads"),
-                                   QCoreApplication::translate("main", "threads"),
-                                   QCoreApplication::translate("main", "4"));
+
+    QCommandLineOption threads(QStringList() << "t"
+                                             << "threads",
+        QCoreApplication::translate("main", "Number of threads"),
+        QCoreApplication::translate("main", "threads"),
+        QCoreApplication::translate("main", "4"));
     parser.addOption(threads);
 
-    QCommandLineOption _std(QStringList() << "s" << "std",
-                            QCoreApplication::translate("main", "Standard deviation for the data generation"),
-                            QCoreApplication::translate("main", "standard deviation"),
-                            QCoreApplication::translate("main", "0.001"));
+    QCommandLineOption _std(QStringList() << "s"
+                                          << "std",
+        QCoreApplication::translate("main", "Standard deviation for the data generation"),
+        QCoreApplication::translate("main", "standard deviation"),
+        QCoreApplication::translate("main", "0.001"));
     parser.addOption(_std);
-    parser.addOption({{"u", "reduction"}, "Enable Reduction analysis."});
-    parser.addOption({{"c", "crossvalidation"}, "Enable Cross Validation analysis."});
-    parser.addOption({{"m", "montecarlo"}, "Enable Monte Carlo analysis."});
-    parser.addOption({{"o", "modelcomparison"}, "Enable Model Comparison analysis."});
-    parser.addOption({{"w", "weakendgrid"}, "Enable Weakend Grid Search analysis."});
-    
+    parser.addOption({ { "u", "reduction" }, "Enable Reduction analysis." });
+    parser.addOption({ { "c", "crossvalidation" }, "Enable Cross Validation analysis." });
+    parser.addOption({ { "m", "montecarlo" }, "Enable Monte Carlo analysis." });
+    parser.addOption({ { "o", "modelcomparison" }, "Enable Model Comparison analysis." });
+    parser.addOption({ { "w", "weakendgrid" }, "Enable Weakend Grid Search analysis." });
+
     parser.process(app);
-    
+
     const QStringList args = parser.positionalArguments();
-    
+
     int exp = parser.value("e").toInt();
     qreal std = parser.value("s").toDouble();
     bool reduction = parser.isSet("u");
@@ -86,36 +88,32 @@ int main(int argc, char** argv)
     std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
     std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     qDebug() << "Debug output enabled, good fun!";
-    #endif
-    
-    int count = 0;  
-    
-    for(const QString &file : args)
-    {
-        if(!file.isEmpty() && !file.isNull())
-        {
+#endif
+
+    int count = 0;
+
+    for (const QString& file : args) {
+        if (!file.isEmpty() && !file.isNull()) {
             Console console(exp, std);
-            
+
             console.setReduction(reduction);
             console.setCrossValidation(crossvalidation);
             console.setModelComparison(modelcomparison);
             console.setWeakendGridSearch(weakendgrid);
             console.setMonteCarlo(montecarlo);
-            
-            if(console.LoadFile(file))
-            {
+
+            if (console.LoadFile(file)) {
                 ++count;
                 console.FullTest();
             }
         }
     }
 
-    if(!count)
-    {
+    if (!count) {
         std::cout << "Nothing found to be done" << std::endl;
         return 0;
-    }else
+    } else
         return app.exec();
 }

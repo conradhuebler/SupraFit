@@ -21,10 +21,10 @@
 
 #include "src/core/models.h"
 
+#include <Eigen/Dense>
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
 #include <QtCore/QVector>
-#include <Eigen/Dense>
 
 #include <fisher/fisher_dist.h>
 
@@ -32,42 +32,42 @@
 
 typedef Eigen::VectorXd Vector;
 
-namespace ToolSet{
-    
-    QString DoubleVec2String(const QVector<qreal > &vector, const QString &str = " ");
-    QString DoubleList2String(const QList<qreal > &vector, const QString &str = " ");
-    QString DoubleList2String(const Vector &vector, const QString &str = " ");
-    QString Points2String(const QList<QPointF> &points);
-    QList<QPointF> String2Points(const QString &str);
-    QStringList DoubleList2StringList(const Vector &vector);
-    
-    QVector<qreal > String2DoubleVec(const QString &str);
-    QList<qreal > String2DoubleList(const QString &str);
-    QString bool2YesNo(bool var) ;
-    
-    qreal ceil(qreal value);
-    qreal floor(qreal value);
-    qreal scale(qreal value, qreal &pow);
-    qreal scale(qreal value);
-    
-    void Normalise(const QVector<QPair<qreal, qreal > > &hist);
-    QVector<QPair<qreal, qreal > > List2Histogram(const QVector<qreal> &vector, int bins = 0, qreal min = 0, qreal max = 0);
-    SupraFit::ConfidenceBar Confidence(const QList<qreal > &list, qreal error);
-    SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal> &list);
-    QJsonObject Box2Object(const SupraFit::BoxWhisker &box);
-    SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object);
-    QList<QJsonObject> Model2Parameter(const QList<QJsonObject> &models, bool sort = true);
-    void Parameter2Statistic(QList<QJsonObject> &parameter, const QPointer<AbstractModel> model);
-    
-    QList<QPointF> fromModelsList(const QList<QJsonObject> &models, const QString &str);
-    qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal >)> function, const QVector<qreal > &parameter);
-    
-    qreal finv(qreal p, int m, int n);
-    QList<int> InvertLockedList(const QList<int> &locked);
-    void ExportResults(const QString& filename, const QList<QJsonObject> &models);
+namespace ToolSet {
+
+QString DoubleVec2String(const QVector<qreal>& vector, const QString& str = " ");
+QString DoubleList2String(const QList<qreal>& vector, const QString& str = " ");
+QString DoubleList2String(const Vector& vector, const QString& str = " ");
+QString Points2String(const QList<QPointF>& points);
+QList<QPointF> String2Points(const QString& str);
+QStringList DoubleList2StringList(const Vector& vector);
+
+QVector<qreal> String2DoubleVec(const QString& str);
+QList<qreal> String2DoubleList(const QString& str);
+QString bool2YesNo(bool var);
+
+qreal ceil(qreal value);
+qreal floor(qreal value);
+qreal scale(qreal value, qreal& pow);
+qreal scale(qreal value);
+
+void Normalise(const QVector<QPair<qreal, qreal>>& hist);
+QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bins = 0, qreal min = 0, qreal max = 0);
+SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error);
+SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal>& list);
+QJsonObject Box2Object(const SupraFit::BoxWhisker& box);
+SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object);
+QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort = true);
+void Parameter2Statistic(QList<QJsonObject>& parameter, const QPointer<AbstractModel> model);
+
+QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& str);
+qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter);
+
+qreal finv(qreal p, int m, int n);
+QList<int> InvertLockedList(const QList<int>& locked);
+void ExportResults(const QString& filename, const QList<QJsonObject>& models);
 }
 
-namespace Print{
-    QString TextFromConfidence(const QJsonObject &result, const QPointer<AbstractModel> model, const QJsonObject &controller);
-    QString printDouble(double number);
+namespace Print {
+QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractModel> model, const QJsonObject& controller);
+QString printDouble(double number);
 }

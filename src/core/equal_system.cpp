@@ -16,18 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
- 
+
 #include "src/global_config.h"
 
 #include "src/core/models.h"
 
+#include <QDebug>
+#include <QPair>
+#include <QtCore/QPointer>
 #include <QtGlobal>
 #include <QtMath>
-#include <QDebug>
 #include <cmath>
-#include <QPair>
 #include <iostream>
-#include <QtCore/QPointer>
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -35,19 +35,20 @@
 
 #include "equal_system.h"
 
-int MyScripteEqualSystem::operator()(const Eigen::VectorXd &parameter, Eigen::VectorXd &fvec) const
+int MyScripteEqualSystem::operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const
 {
-        qreal A = parameter(0);
-        qreal B = parameter(1); 
-        
-        Vector balance = m_model->MassBalance(A, B).MassBalance;
-        
-        fvec = parameter + balance - Concen_0;
+    qreal A = parameter(0);
+    qreal B = parameter(1);
 
-        return 0;
+    Vector balance = m_model->MassBalance(A, B).MassBalance;
+
+    fvec = parameter + balance - Concen_0;
+
+    return 0;
 }
 
-ConcentrationSolver::ConcentrationSolver(QPointer<AbstractTitrationModel> model) : m_model(model)
+ConcentrationSolver::ConcentrationSolver(QPointer<AbstractTitrationModel> model)
+    : m_model(model)
 {
     setAutoDelete(false);
     functor = new MyScripteEqualSystem(2, 2, m_model);
@@ -71,46 +72,41 @@ void ConcentrationSolver::run()
 
 int ConcentrationSolver::SolveEqualSystem(double A_0, double B_0)
 {
-       
-    if(A_0 == 0 || B_0 == 0)
-    {
-        m_concentration= QList<double>()<<  A_0 << B_0;
+
+    if (A_0 == 0 || B_0 == 0) {
+        m_concentration = QList<double>() << A_0 << B_0;
         return 1;
     }
     Eigen::VectorXd parameter(2);
     parameter(0) = A_0;
     parameter(1) = B_0;
-    
+
     Eigen::VectorXd Concen_0(2);
-        Concen_0(0) = A_0;
-        Concen_0(1) = B_0;
-        
+    Concen_0(0) = A_0;
+    Concen_0(1) = B_0;
+
     functor->Concen_0 = Concen_0;
 
     Eigen::NumericalDiff<MyScripteEqualSystem> numDiff(*functor);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyScripteEqualSystem> > lm(numDiff);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyScripteEqualSystem>> lm(numDiff);
     int iter = 0;
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
-      do {
-          for(int i = 0; i < 2; ++i)
-            if(parameter(i) < 0)
-            {
+    do {
+        for (int i = 0; i < 2; ++i)
+            if (parameter(i) < 0) {
                 std::cout << "numeric error (below zero): " << i << std::endl;
                 parameter(i) = qAbs(parameter(i));
-            }else if(parameter(i) > Concen_0(i))
-            {
+            } else if (parameter(i) > Concen_0(i)) {
                 std::cout << "numeric error (above init): " << i << std::endl;
-                qreal diff = (parameter(i) -Concen_0(i));
+                qreal diff = (parameter(i) - Concen_0(i));
                 parameter(i) = diff;
             }
-         status = lm.minimizeOneStep(parameter);
-         iter++;
-      } while (status == -1);
-    for(int i = 0; i < 2; ++i)
-        if(parameter(i) < 0 || parameter(i) > Concen_0(i))
+        status = lm.minimizeOneStep(parameter);
+        iter++;
+    } while (status == -1);
+    for (int i = 0; i < 2; ++i)
+        if (parameter(i) < 0 || parameter(i) > Concen_0(i))
             std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
     m_concentration = QList<double>() << double(parameter(0)) << double(parameter(1));
     return iter;
 }
-
-

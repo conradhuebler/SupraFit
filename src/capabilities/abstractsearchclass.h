@@ -22,40 +22,45 @@
 #include "src/core/AbstractModel.h"
 
 #include <QtCore/QObject>
-#include <QtCore/QRunnable>
 #include <QtCore/QPointF>
-#include <QtCore/QSharedPointer>
 #include <QtCore/QQueue>
+#include <QtCore/QRunnable>
+#include <QtCore/QSharedPointer>
 
 #include <QtCore/QThreadPool>
 
-typedef QPair<QPointer<DataTable >, QPointer<DataTable> >  Pair;
-
+typedef QPair<QPointer<DataTable>, QPointer<DataTable>> Pair;
 
 class AbstractModel;
 
-class AbstractConfig
-{
-    
+class AbstractConfig {
+
 public:
-    inline AbstractConfig(OptimizerConfig config = OptimizerConfig(), OptimizationType type = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter)) : optimizer_config(config), runtype(type){ }
+    inline AbstractConfig(OptimizerConfig config = OptimizerConfig(), OptimizationType type = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter))
+        : optimizer_config(config)
+        , runtype(type)
+    {
+    }
     inline ~AbstractConfig() {}
     OptimizerConfig optimizer_config;
     OptimizationType runtype;
 };
 
-class AbstractSearchThread : public QObject, public QRunnable
-{
-  Q_OBJECT
-  
+class AbstractSearchThread : public QObject, public QRunnable {
+    Q_OBJECT
+
 public:
-    inline AbstractSearchThread() : m_interrupt(false) { setAutoDelete(false); }
-    inline ~AbstractSearchThread() { }
+    inline AbstractSearchThread()
+        : m_interrupt(false)
+    {
+        setAutoDelete(false);
+    }
+    inline ~AbstractSearchThread() {}
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
-    
+
 public slots:
     inline virtual void Interrupt() { m_interrupt = true; }
-    
+
 protected:
     QSharedPointer<AbstractModel> m_model;
     bool m_interrupt;
@@ -64,35 +69,34 @@ signals:
     void IncrementProgress(int msecs);
 };
 
-class AbstractSearchClass : public QObject
-{
+class AbstractSearchClass : public QObject {
     Q_OBJECT
-    
+
 public:
-    AbstractSearchClass(QObject *parent = 0);
+    AbstractSearchClass(QObject* parent = 0);
     ~AbstractSearchClass();
-    
+
     virtual inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
-    
-    inline QList<QList<QPointF> > Series() const { return m_series; }
-    inline QList<QJsonObject > Models() const { return m_models; }
-    inline QList<QJsonObject > Results() const { return m_results; }
+
+    inline QList<QList<QPointF>> Series() const { return m_series; }
+    inline QList<QJsonObject> Models() const { return m_models; }
+    inline QList<QJsonObject> Results() const { return m_results; }
     QJsonObject Result() const;
     void ExportResults(const QString& filename);
 
-    QVector<Pair > DemandCalc();
+    QVector<Pair> DemandCalc();
 
 public slots:
     virtual void Interrupt();
-    
+
 protected:
     QSharedPointer<AbstractModel> m_model;
-    QThreadPool *m_threadpool;
-    QList<QList<QPointF> > m_series;
-    QList<QJsonObject > m_models;
-    QList<QJsonObject > m_results;
+    QThreadPool* m_threadpool;
+    QList<QList<QPointF>> m_series;
+    QList<QJsonObject> m_models;
+    QList<QJsonObject> m_results;
     bool m_interrupt;
-    QQueue< QVector<Pair >> m_batch;
+    QQueue<QVector<Pair>> m_batch;
 
     virtual QJsonObject Controller() const = 0;
     QMutex mutex;

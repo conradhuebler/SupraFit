@@ -17,8 +17,6 @@
  * 
  */
 
-
-
 #include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
@@ -27,14 +25,14 @@
 #include <QtMath>
 
 #include <QtCore/QCollator>
+#include <QtCore/QDateTime>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
-#include <QtCore/QDateTime>
-
 
 #include "monomolecularmodel.h"
 
-MonoMolecularModel::MonoMolecularModel(DataClass *data) : AbstractModel(data)
+MonoMolecularModel::MonoMolecularModel(DataClass* data)
+    : AbstractModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "t", Qt::DisplayRole);
@@ -43,14 +41,17 @@ MonoMolecularModel::MonoMolecularModel(DataClass *data) : AbstractModel(data)
 
 MonoMolecularModel::~MonoMolecularModel()
 {
-    
 }
 
 void MonoMolecularModel::DeclareOptions()
 {
-    QStringList order = QStringList() << "First" << "Second" << "Mixed" << "Free";
+    QStringList order = QStringList() << "First"
+                                      << "Second"
+                                      << "Mixed"
+                                      << "Free";
     addOption(Order, "Order", order);
-    QStringList component = QStringList() << "A" << "B";
+    QStringList component = QStringList() << "A"
+                                          << "B";
     addOption(Component, "Component detected", component);
 }
 
@@ -61,7 +62,6 @@ void MonoMolecularModel::DeclareSystemParameter()
     setSystemParameterValue(ConcentrationB, 0);
 }
 
-
 void MonoMolecularModel::InitialGuess()
 {
     m_global_parameter[0] = 1;
@@ -70,23 +70,22 @@ void MonoMolecularModel::InitialGuess()
 }
 
 QVector<qreal> MonoMolecularModel::OptimizeParameters_Private(OptimizationType type)
-{    
+{
     QString order = getOption(Order);
-    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
-    {
-        if(order == "First")// || order == "Mixed")
+    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter) {
+        if (order == "First") // || order == "Mixed")
             addGlobalParameter(0);
-        if(order == "Second")// || order == "Mixed")
+        if (order == "Second") // || order == "Mixed")
             addGlobalParameter(1);
     }
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
+    QVector<qreal> parameter;
+    for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
 }
 
 void MonoMolecularModel::CalculateVariables()
-{      
+{
     UpdateParameter();
     qreal A0 = m_A0;
     qreal B0 = m_B0;
@@ -94,28 +93,24 @@ void MonoMolecularModel::CalculateVariables()
     QString component = getOption(Component);
     qreal k1 = GlobalParameter(0);
     qreal k2 = GlobalParameter(1);
-    for(int i = 0; i < DataPoints(); ++i)
-    {
-        qreal t = IndependentModel()->data(0,i)*getScaling()[0]; ///1000.0/60.0;
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
+    for (int i = 0; i < DataPoints(); ++i) {
+        qreal t = IndependentModel()->data(0, i) * getScaling()[0]; ///1000.0/60.0;
+        for (int j = 0; j < SeriesCount(); ++j) {
             qreal value = 0;
-            value += A0 * qExp(-k1*t)*(order == "First"); // || order == "Mixed");
-            value += 1/(2*k2*t + (1/A0) )*(order == "Second");// || order == "Mixed");
+            value += A0 * qExp(-k1 * t) * (order == "First"); // || order == "Mixed");
+            value += 1 / (2 * k2 * t + (1 / A0)) * (order == "Second"); // || order == "Mixed");
 
-
-            if(component == "A")
+            if (component == "A")
                 SetValue(i, j, value);
-            else if(component == "B")
-                SetValue(i, j, A0-value+ B0);
+            else if (component == "B")
+                SetValue(i, j, A0 - value + B0);
         }
     }
 }
 
-
-QSharedPointer<AbstractModel > MonoMolecularModel::Clone()
+QSharedPointer<AbstractModel> MonoMolecularModel::Clone()
 {
-    QSharedPointer<MonoMolecularModel > model = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(this), &QObject::deleteLater);
+    QSharedPointer<MonoMolecularModel> model = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParamters());

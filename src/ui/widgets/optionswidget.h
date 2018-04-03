@@ -20,8 +20,8 @@
 #ifndef OPTIONSWIDGET_H
 #define OPTIONSWIDGET_H
 
-#include <QtCore/QSharedPointer>
 #include <QtCore/QPointer>
+#include <QtCore/QSharedPointer>
 
 #include <QtWidgets/QGroupBox>
 
@@ -29,18 +29,17 @@ class QComboBox;
 
 class AbstractModel;
 
-class OptionsWidget : public QGroupBox
-{
+class OptionsWidget : public QGroupBox {
     Q_OBJECT
-    
+
 public:
-    OptionsWidget(QSharedPointer<AbstractModel > model);
+    OptionsWidget(QSharedPointer<AbstractModel> model);
     ~OptionsWidget();
-    
+
 private:
-    QSharedPointer<AbstractModel > m_model;
-    QHash<int, QPointer<QComboBox> > m_options;
-    
+    QSharedPointer<AbstractModel> m_model;
+    QHash<int, QPointer<QComboBox>> m_options;
+
 private slots:
     void setOption();
 };

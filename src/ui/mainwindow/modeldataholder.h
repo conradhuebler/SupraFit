@@ -31,7 +31,6 @@
 
 #include <QtCharts/QChart>
 
-
 struct OptimizerConfig;
 
 class QToolButton;
@@ -44,52 +43,52 @@ class QPlainTextEdit;
 class QLabel;
 class StatisticDialog;
 
-class ToolButton : public QToolButton
-{
+class ToolButton : public QToolButton {
     Q_OBJECT
-    
+
 public slots:
-    void ChangeColor(const QColor &color);
+    void ChangeColor(const QColor& color);
 };
 
-
-class TabWidget: public QTabWidget
-{
+class TabWidget : public QTabWidget {
     Q_OBJECT
 
 public:
-    TabWidget(QWidget *parent = 0);
-    inline ~TabWidget() { if(m_datawidget) delete m_datawidget; }
-    void setDataTab( QPointer<DataWidget > datawidget );
+    TabWidget(QWidget* parent = 0);
+    inline ~TabWidget()
+    {
+        if (m_datawidget)
+            delete m_datawidget;
+    }
+    void setDataTab(QPointer<DataWidget> datawidget);
     void addModelsTab(QPointer<ModelWidget> modelwidget);
-    
+
 private:
-    QPointer<DataWidget > m_datawidget;
+    QPointer<DataWidget> m_datawidget;
 };
 
-class MDHDockTitleBar : public QWidget
-{
+class MDHDockTitleBar : public QWidget {
     Q_OBJECT
-    
+
 public:
     MDHDockTitleBar();
     // ~MDHDockTitleBar();
-    
-    inline void setEnabled(bool enabled) { m_buttons->setEnabled(enabled); }
-    void EnableBatch( bool enabled);
-    void addToMenu(int IndependetCount);
-    const QAction *lastAction() const { return m_last_action; }
-private:
 
-    QWidget *m_buttons;
-    QPointer<QPushButton > m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all, m_hide;
-    QVector<QPointer<QAction > > m_nmr_model, m_fl_model, m_kinetcs_model, m_itc_model;
-    
+    inline void setEnabled(bool enabled) { m_buttons->setEnabled(enabled); }
+    void EnableBatch(bool enabled);
+    void addToMenu(int IndependetCount);
+    const QAction* lastAction() const { return m_last_action; }
+
+private:
+    QWidget* m_buttons;
+    QPointer<QPushButton> m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all, m_hide;
+    QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_kinetcs_model, m_itc_model;
+
     QAction *m_script_action, *m_last_action;
 
 private slots:
     void PrepareAddModel();
-    
+
 signals:
     void AddModel();
     void CloseAll();
@@ -100,77 +99,73 @@ signals:
     void OptimizeAll();
 };
 
-
-class ModelDataHolder : public QWidget
-{
+class ModelDataHolder : public QWidget {
     Q_OBJECT
 
 public:
     ModelDataHolder();
     ~ModelDataHolder();
-    
-    void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper > wrapper);
+
+    void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper);
     inline void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
 
-    void setSettings(const OptimizerConfig &config);
+    void setSettings(const OptimizerConfig& config);
     /*
      * Export currently open models to file
      */
-    void SaveCurrentModels(const QString &file);
+    void SaveCurrentModels(const QString& file);
     /*
      * Export currently open models and the data table to file
      */
-    void SaveWorkspace(const QString &file);
-    
+    void SaveWorkspace(const QString& file);
+
     bool CheckCrashFile();
-    virtual QSize sizeHint() const { return QSize(800,600); }
-    MDHDockTitleBar *TitleBarWidget() const { return m_TitleBarWidget; }
+    virtual QSize sizeHint() const { return QSize(800, 600); }
+    MDHDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
 public slots:
     /*
      * Add a new model to the workspace
      */
-    void AddToWorkspace(const QJsonObject &object);
+    void AddToWorkspace(const QJsonObject& object);
     /*
      * Overrides the very current model (opened tabe) with this model, if compatible
      */
-    void LoadCurrentProject(const QJsonObject &object);
+    void LoadCurrentProject(const QJsonObject& object);
     /*
      * Make Datatable editable 
      */
-    inline void EditTableAction(bool checked) {m_datawidget->setEditable(checked) ; }
-    
+    inline void EditTableAction(bool checked) { m_datawidget->setEditable(checked); }
+
 private:
-    QPointer<DataWidget > m_datawidget;
-    QPointer<TabWidget > m_modelsWidget;
+    QPointer<DataWidget> m_datawidget;
+    QPointer<TabWidget> m_modelsWidget;
 
     QPointer<MDHDockTitleBar> m_TitleBarWidget;
     QPointer<ChartWidget> m_charts;
     QSharedPointer<DataClass> m_data;
-    QWeakPointer<ChartWrapper > m_wrapper;
-    QVector<QWeakPointer< AbstractModel > > m_models;
+    QWeakPointer<ChartWrapper> m_wrapper;
+    QVector<QWeakPointer<AbstractModel>> m_models;
     QPointer<StatisticDialog> m_statistic_dialog;
-    QVector<QPointer<ModelWidget > > m_model_widgets; 
+    QVector<QPointer<ModelWidget>> m_model_widgets;
     void AddModel(int model);
-    void AddModel(const QJsonObject &json);
+    void AddModel(const QJsonObject& json);
     void ParseScriptedModels();
     void ActiveBatch();
-    
-    
+
     OptimizerConfig m_config;
 
     int m_last_tab;
-    
-    
-    void Json2Model(const QJsonObject &object); //, const QString &str);
-    void Json2Model(const QJsonObject &object, SupraFit::Model model);
-    void ActiveModel(QSharedPointer<AbstractModel > t, const QJsonObject &object = QJsonObject());
+
+    void Json2Model(const QJsonObject& object); //, const QString &str);
+    void Json2Model(const QJsonObject& object, SupraFit::Model model);
+    void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject());
     int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
-    
+
 private slots:
     void AddModel();
     void AddModelScript();
-    
+
     void RemoveTab(int i);
     void CreateCrashFile();
     void RemoveCrashFile();
@@ -182,14 +177,13 @@ private slots:
     void OptimizeAll();
     void HideSubWindows(int index);
     inline void Interrupt() { m_allow_loop = false; }
-    
+
 signals:
-    void ModelAdded(AbstractModel *model);
-    void Message(const QString &str, int priority);
-    void MessageBox(const QString &str, int priority);
-    void InsertModel(const QJsonObject &model, int active);
-    void InsertModel(const QJsonObject &model);
+    void ModelAdded(AbstractModel* model);
+    void Message(const QString& str, int priority);
+    void MessageBox(const QString& str, int priority);
+    void InsertModel(const QJsonObject& model, int active);
+    void InsertModel(const QJsonObject& model);
     void nameChanged();
     void recalculate();
 };
-

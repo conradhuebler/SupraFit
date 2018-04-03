@@ -20,30 +20,29 @@
 #include <QCoreApplication>
 
 #include <QtCore/QFileInfo>
-#include <QtCore/QVariant>
 #include <QtCore/QString>
+#include <QtCore/QVariant>
 
 #include <iostream>
 
-#include "src/global_config.h"
 #include "src/global.h"
+#include "src/global_config.h"
 
 QString getDir()
 {
     int dirlevel = qApp->instance()->property("dirlevel").toInt();
     QString lastdir = qApp->instance()->property("lastdir").toString();
     QString workingdir = qApp->instance()->property("workingdir").toString();
-    if(dirlevel == 0)
+    if (dirlevel == 0)
         return QString(".");
-    else if(dirlevel == 1)
+    else if (dirlevel == 1)
         return lastdir;
-    else if(dirlevel == 2)
+    else if (dirlevel == 2)
         return workingdir;
     return QString(".");
 }
 
-
-void setLastDir(const QString &str)
+void setLastDir(const QString& str)
 {
     QFileInfo info(str);
     qApp->instance()->setProperty("lastdir", info.absolutePath());

@@ -24,8 +24,8 @@
 
 #include "src/core/models.h"
 
-#include <QtCore/QObject>
 #include <QtCore/QList>
+#include <QtCore/QObject>
 #include <QtCore/QPointF>
 #include <QtCore/QQueue>
 #include <QtCore/QVector>
@@ -35,55 +35,52 @@ class GlobalSearch;
 class Minimizer;
 class NonLinearFitThread;
 
-struct GlobalSearchResult
-{
-    QVector< QVector<double > > m_input;  
-    QVector< double > m_error;
-    QVector< double > m_corr_coeff;
-    QVector< QJsonObject > m_models;
+struct GlobalSearchResult {
+    QVector<QVector<double>> m_input;
+    QVector<double> m_error;
+    QVector<double> m_corr_coeff;
+    QVector<QJsonObject> m_models;
 };
 
-struct GSResult
-{
-    QVector< qreal > initial, optimised;
+struct GSResult {
+    QVector<qreal> initial, optimised;
     qreal SumError;
     QJsonObject model;
 };
 
-
-struct VisualData
-{
-    QVector<QVector<qreal > > data;
+struct VisualData {
+    QVector<QVector<qreal>> data;
 };
 
-class GSConfig : public AbstractConfig
-{
+class GSConfig : public AbstractConfig {
 public:
-    inline GSConfig(OptimizerConfig config, OptimizationType type) : AbstractConfig(config, type) { }
-    inline GSConfig() { }
+    inline GSConfig(OptimizerConfig config, OptimizationType type)
+        : AbstractConfig(config, type)
+    {
+    }
+    inline GSConfig() {}
     bool initial_guess = true;
     bool optimize = true;
-    QVector<QVector< qreal > > parameter;
+    QVector<QVector<qreal>> parameter;
 };
 
-class SearchBatch : public AbstractSearchThread
-{
+class SearchBatch : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    SearchBatch(const GSConfig &config, QPointer<GlobalSearch> parent);
-    ~SearchBatch() { }
+    SearchBatch(const GSConfig& config, QPointer<GlobalSearch> parent);
+    ~SearchBatch() {}
 
     virtual void run() override;
-    inline QList<GSResult > Result(){ return m_result; }
+    inline QList<GSResult> Result() { return m_result; }
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
 
 private:
-    NonLinearFitThread *m_thread;
+    NonLinearFitThread* m_thread;
 
     void optimise();
 
-    QList< GSResult > m_result;
+    QList<GSResult> m_result;
     QPointer<GlobalSearch> m_parent;
     GSConfig m_config;
     bool m_finished, m_checked;
@@ -91,46 +88,42 @@ private:
     bool m_interrupt;
 };
 
-
-class GlobalSearch : public AbstractSearchClass
-{
+class GlobalSearch : public AbstractSearchClass {
     Q_OBJECT
-    
+
 public:
-    GlobalSearch(GSConfig config = GSConfig(), QObject *parent = 0);
-    GlobalSearch(QObject *parent = 0);
+    GlobalSearch( QObject* parent = 0);
     ~GlobalSearch();
-    inline void setConfig(const GSConfig &config) { m_config = config; }
-    inline QVector<QVector<qreal > > InputList() const { return m_full_list; }
-    QList<QList<QPointF> >  LocalSearch();
-    QList<QJsonObject > SearchGlobal();
+
+    inline void setConfig(const GSConfig& config) { m_config = config; }
+    inline QVector<QVector<qreal>> InputList() const { return m_full_list; }
+    QList<QList<QPointF>> LocalSearch();
+    QList<QJsonObject> SearchGlobal();
     QVector<VisualData> Create2DPLot();
-    void ExportResults(const QString &filename, double threshold, bool allow_invalid);
+    void ExportResults(const QString& filename, double threshold, bool allow_invalid);
     QVector<qreal> DemandParameter();
-    inline QList<GSResult > Result(){ return m_result; }
+    inline QList<GSResult> Result() { return m_result; }
 
 public slots:
     virtual void Interrupt() override;
-    
+
 private:
-    QVector<QVector<double> > ParamList();
-    void ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error);
-    void Scan(const QVector< QVector<double > >& list);
+    QVector<QVector<double>> ParamList();
+    void ConvertList(const QVector<QVector<double>>& full_list, QVector<double>& error);
+    void Scan(const QVector<QVector<double>>& list);
     virtual QJsonObject Controller() const override;
-    QList< GSResult > m_result;
+    QList<GSResult> m_result;
 
     quint64 m_time_0;
     int m_time, m_max_count;
-    QVector<QVector<double> > m_full_list;
+    QVector<QVector<double>> m_full_list;
     GlobalSearchResult last_result;
     double error_max;
-    QSharedPointer<Minimizer> m_minimizer;
     bool m_allow_break;
     QVector<VisualData> m_3d_data;
     GSConfig m_config;
-    QQueue< QVector<qreal> > m_input;
+    QQueue<QVector<qreal>> m_input;
 
 signals:
     void InterruptAll();
-
 };

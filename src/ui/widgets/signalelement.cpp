@@ -24,14 +24,14 @@
 #include <QApplication>
 #include <QHeaderView>
 
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QColorDialog>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QGridLayout>
-#include <QtWidgets/QColorDialog>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QDoubleSpinBox>
 
 #include <QtCharts/QXYSeries>
 
@@ -41,28 +41,32 @@
 
 #include "signalelement.h"
 
-SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWrapper> wrapper, int no, QWidget *parent) : QGroupBox(parent), m_data(data), m_wrapper(wrapper), m_no(no)
+SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWrapper> wrapper, int no, QWidget* parent)
+    : QGroupBox(parent)
+    , m_data(data)
+    , m_wrapper(wrapper)
+    , m_no(no)
 {
-    m_data_series = qobject_cast<ScatterSeries *>(m_wrapper.data()->Series(m_no)); //DataMapper(m_no)->series());
-    QGridLayout *layout = new QGridLayout;
-    
+    m_data_series = qobject_cast<ScatterSeries*>(m_wrapper.data()->Series(m_no)); //DataMapper(m_no)->series());
+    QGridLayout* layout = new QGridLayout;
+
     m_show = new QCheckBox;
     m_show->setText(tr("Show"));
     m_show->setChecked(true);
     connect(m_show, SIGNAL(stateChanged(int)), this, SLOT(ShowLine(int)));
-    
+
     m_name = new QLineEdit;
     QString name;
     name = data.data()->DependentModel()->headerData(m_no, Qt::Horizontal).toString();
     m_name->setText(name);
     m_data_series->setName(name);
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(setName(QString)));
-    
+
     m_choose = new QPushButton(tr("Color"));
     m_choose->setFlat(true);
     m_choose->setMaximumSize(70, 30);
     connect(m_choose, SIGNAL(clicked()), this, SLOT(chooseColor()));
-    
+
     m_markerSize = new QDoubleSpinBox;
     m_markerSize->setMaximum(20);
     m_markerSize->setMinimum(0.1);
@@ -70,16 +74,16 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     m_markerSize->setValue(10);
     setMarkerSize(10);
     connect(m_markerSize, SIGNAL(valueChanged(qreal)), this, SLOT(setMarkerSize(qreal)));
-    
+
     m_rectangle = new QCheckBox(tr("Rectangle"));
     connect(m_rectangle, SIGNAL(stateChanged(int)), this, SLOT(setMarkerShape(int)));
-    
+
     m_toggle = new QPushButton(tr("Single Plot"));
     m_toggle->setFlat(true);
     m_toggle->setCheckable(true);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
     connect(m_wrapper.data(), SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
-    
+
     layout->addWidget(m_name, 0, 0);
     layout->addWidget(m_show, 0, 1);
     layout->addWidget(m_choose, 0, 2);
@@ -91,35 +95,31 @@ SignalElement::SignalElement(QWeakPointer<DataClass > data, QWeakPointer<ChartWr
     ColorChanged(m_wrapper.data()->color(m_no));
 }
 
-
 SignalElement::~SignalElement()
 {
-    
-    
 }
 
-void SignalElement::ColorChanged(const QColor &color)
+void SignalElement::ColorChanged(const QColor& color)
 {
-    
-    #ifdef _WIN32
-    setStyleSheet("background-color:" + color.name()+ ";");
-    #else
+
+#ifdef _WIN32
+    setStyleSheet("background-color:" + color.name() + ";");
+#else
     QPalette pal = palette();
-    pal.setColor(QPalette::Background,color);
-    setPalette(pal); 
-    #endif
-    
+    pal.setColor(QPalette::Background, color);
+    setPalette(pal);
+#endif
+
     m_color = color;
 }
 
-
 void SignalElement::chooseColor()
 {
-    
+
     QColor color = QColorDialog::getColor(m_color, this, tr("Choose Color for Series"));
-    if(!color.isValid())
+    if (!color.isValid())
         return;
-    
+
     m_data_series->setColor(color);
     ColorChanged(color);
 }
@@ -135,7 +135,7 @@ void SignalElement::ShowLine(int i)
     m_data_series->ShowLine(i);
 }
 
-void SignalElement::setName(const QString &str)
+void SignalElement::setName(const QString& str)
 {
     m_data_series->setName(str);
     m_data.data()->DependentModel()->setHeaderData(m_no, Qt::Horizontal, str, Qt::DisplayRole);
@@ -149,7 +149,7 @@ void SignalElement::setMarkerSize(qreal value)
 
 void SignalElement::setMarkerShape(int shape)
 {
-    if(shape)
+    if (shape)
         m_data_series->setMarkerShape(ScatterSeries::MarkerShapeRectangle);
     else
         m_data_series->setMarkerShape(ScatterSeries::MarkerShapeCircle);
@@ -158,15 +158,15 @@ void SignalElement::setMarkerShape(int shape)
 void SignalElement::togglePlot()
 {
     m_data_series->setVisible(true);
-    if(m_toggle->isChecked())
-        m_wrapper.data()->showSeries(m_no); 
+    if (m_toggle->isChecked())
+        m_wrapper.data()->showSeries(m_no);
     else
         m_wrapper.data()->showSeries(-1);
 }
 
 void SignalElement::UnCheckToggle(int i)
 {
-    if(i != m_no)
-       m_toggle->setChecked(false);
+    if (i != m_no)
+        m_toggle->setChecked(false);
 }
 #include "signalelement.moc"

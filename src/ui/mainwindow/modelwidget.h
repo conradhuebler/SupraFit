@@ -19,13 +19,12 @@
 
 #pragma once
 
+#include "src/core/AbstractModel.h"
+#include "src/core/dataclass.h"
 #include "src/core/minimizer.h"
 
-#include "src/core/dataclass.h"
-#include "src/core/AbstractModel.h"
-
-#include "src/ui/guitools/waiter.h"
 #include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/guitools/waiter.h"
 #include "src/ui/mainwindow/chartwidget.h"
 
 #include <QApplication>
@@ -34,37 +33,36 @@
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QCheckBox>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QWidget>
 
 #include <QtCharts/QLineSeries>
 
-class QSplitter;
-
 class AbstractSearchClass;
 
-class ModalDialog;
-class QDoubleSpinBox;
-class QPushButton;
-class QLineEdit;
-class QVBoxLayout;
-class QGridLayout;
 class QCheckBox;
-class LineSeries;
+class QDoubleSpinBox;
+class QGridLayout;
+class QLineEdit;
+class QSplitter;
+class QPushButton;
+class QVBoxLayout;
+
 class AdvancedSearch;
 class ChartView;
-// class _3DChartView;
+class LineSeries;
+class LocalParameterWidget;
+class ModelActions;
+class ModalDialog;
+class ModelElement;
 class OptimizerFlagWidget;
+class OptionsWidget;
+class SpinBox;
 class StatisticWidget;
 class StatisticDialog;
-class SpinBox;
-class ModelElement;
 class SystemParameterWidget;
-class OptionsWidget;
-class ModelActions;
-class LocalParameterWidget;
 
 struct ModelHistoryElement;
 struct Charts;
@@ -73,30 +71,34 @@ class WGSConfig;
 class MCConfig;
 class MoCoConfig;
 
-
-class ModelWidget : public QWidget
-{
+class ModelWidget : public QWidget {
     Q_OBJECT
-    
+
 public:
-    ModelWidget(QSharedPointer< AbstractModel > model, Charts charts, QWidget *parent = 0);
+    ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWidget* parent = 0);
     virtual ~ModelWidget();
-    virtual inline QSize sizeHint() const{ return QSize(250,50*m_sign_layout->count()); }
-    QSharedPointer< AbstractModel > Model() const { return m_model; }
-    QSharedPointer< Minimizer > getMinimizer() const { return m_minimizer; }
-    
+    virtual inline QSize sizeHint() const { return QSize(250, 50 * m_sign_layout->count()); }
+    QSharedPointer<AbstractModel> Model() const { return m_model; }
+    QSharedPointer<Minimizer> getMinimizer() const { return m_minimizer; }
+
     void WGStatistic(WGSConfig config);
     void MoCoStatistic(MoCoConfig config);
     void MCStatistic(MCConfig config);
     inline void setCheckbox(const QPointer<QCheckBox> checkbox) { m_toggled_box = checkbox; }
-    inline bool isChecked() const { if(!m_toggled_box) return false; else return m_toggled_box->isChecked(); }
+    inline bool isChecked() const
+    {
+        if (!m_toggled_box)
+            return false;
+        else
+            return m_toggled_box->isChecked();
+    }
     inline Charts Chart() const { return m_charts; }
-    void setColorList(const QString &str);
+    void setColorList(const QString& str);
     QString Keys() const;
-    void setKeys(const QString &str);
+    void setKeys(const QString& str);
 
 public slots:
-    void LoadJson(const QJsonObject &object);
+    void LoadJson(const QJsonObject& object);
     void WGStatistic();
     void MCStatistic();
     void MoCoStatistic();
@@ -105,39 +107,38 @@ public slots:
     void GlobalMinimizeLoose();
     void LocalMinimize();
     void HideAllWindows();
-    
+
 private:
-    QSharedPointer< AbstractModel > m_model;
-    QSharedPointer< Minimizer > m_minimizer;
-    
-    QVector<QPointer<SpinBox> > m_constants;
-    QVector<QPointer<ModelElement > > m_model_elements;
+    QSharedPointer<AbstractModel> m_model;
+    QSharedPointer<Minimizer> m_minimizer;
+
+    QVector<QPointer<SpinBox>> m_constants;
+    QVector<QPointer<ModelElement>> m_model_elements;
     QPointer<AdvancedSearch> m_advancedsearch;
     QPointer<StatisticDialog> m_statistic_dialog;
-    ModelActions *m_actions;
-    QPushButton *m_minimize_all;
-    QCheckBox *m_readonly;
-    QLabel *m_bc_50, *m_converged_label; 
-    OptionsWidget *m_model_options_widget;
-    QGridLayout *m_layout;
+    ModelActions* m_actions;
+    QPushButton* m_minimize_all;
+    QCheckBox* m_readonly;
+    QLabel *m_bc_50, *m_converged_label;
+    OptionsWidget* m_model_options_widget;
+    QGridLayout* m_layout;
     bool m_pending;
-    QList<int > ActiveSignals();
+    QList<int> ActiveSignals();
     void DiscreteUI();
     void EmptyUI();
     void resizeButtons();
     void CollectParameters();
     void Data2Text();
     void Model2Text();
-    void MinimizeModel(const OptimizerConfig &config);
+    void MinimizeModel(const OptimizerConfig& config);
     void LoadStatistics();
-    void LoadStatistic(const QJsonObject &data, const QList<QJsonObject> &models = QList<QJsonObject>());
-    
-    QVBoxLayout *m_sign_layout;
-    
-    QWidget *m_model_widget;
-    QSplitter *m_splitter;
-    StatisticWidget *m_statistic_widget;
-   // QPointer<_3DChartView > _3dchart;
+    void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models = QList<QJsonObject>());
+
+    QVBoxLayout* m_sign_layout;
+
+    QWidget* m_model_widget;
+    QSplitter* m_splitter;
+    StatisticWidget* m_statistic_widget;
     QPointer<OptimizerFlagWidget> m_optim_flags;
     ModalDialog *m_statistic_result, *m_search_result, *m_table_result, *m_concentrations_result;
     bool m_statistic;
@@ -147,7 +148,7 @@ private:
     QPointer<QCheckBox> m_toggled_box;
     QPointer<LocalParameterWidget> m_local_parameter;
     QJsonObject m_last_model;
-    QList<QJsonObject > m_fast_confidence;
+    QList<QJsonObject> m_fast_confidence;
 
 private slots:
     void Repaint();
@@ -157,7 +158,6 @@ private slots:
     void ExportConstants();
     void setParameter();
     void OpenAdvancedSearch();
-    void PlotFinished(int runtype);
     void MultiScanFinished();
     void TogglePlot();
     void ToggleStatisticDialog();
@@ -174,14 +174,14 @@ public slots:
     void recalculate();
     void OptimizerSettings();
     void ChangeColor();
-    void setColor(const QColor &color);
+    void setColor(const QColor& color);
 
 signals:
     void Update();
-    void Warning(const QString &str, int i);
-    void AddModel(const QJsonObject &json);
+    void Warning(const QString& str, int i);
+    void AddModel(const QJsonObject& json);
     void ToggleSeries(int);
     void IncrementProgress(int value);
     void Interrupt();
-    void ColorChanged(const QColor &color);
+    void ColorChanged(const QColor& color);
 };

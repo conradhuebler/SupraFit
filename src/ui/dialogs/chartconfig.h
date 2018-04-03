@@ -29,8 +29,7 @@ class QDoubleSpinBox;
 class QSpinBox;
 class QDialogButtonBox;
 
-struct ChartConfig
-{
+struct ChartConfig {
     QString x_axis = QString();
     QString y_axis = QString();
     QString title = QString();
@@ -45,21 +44,20 @@ struct ChartConfig
     Qt::Alignment align;
 };
 
-class ChartConfigDialog : public QDialog
-{
+class ChartConfigDialog : public QDialog {
     Q_OBJECT
 public:
     ChartConfigDialog();
     ~ChartConfigDialog();
-    void setConfig(const ChartConfig &chartconfig);
+    void setConfig(const ChartConfig& chartconfig);
     inline ChartConfig Config() const { return m_chartconfig; }
-    QDialogButtonBox *m_buttons;
+    QDialogButtonBox* m_buttons;
 
 private:
     QPushButton *m_scaleaxis, *m_keys, *m_labels, *m_ticks, *m_alignment, *m_titlefont;
     QLineEdit *m_x_axis, *m_y_axis, *m_title;
-    QDoubleSpinBox *m_x_min, *m_x_max,  *m_y_min, *m_y_max;
-    QSpinBox *m_x_step,*m_y_step;
+    QDoubleSpinBox *m_x_min, *m_x_max, *m_y_min, *m_y_max;
+    QSpinBox *m_x_step, *m_y_step;
     ChartConfig m_chartconfig;
     QCheckBox *m_legend, *m_lock_scaling;
 
@@ -74,4 +72,3 @@ signals:
     void ConfigChanged(ChartConfig chartconfig);
     void ScaleAxis();
 };
-

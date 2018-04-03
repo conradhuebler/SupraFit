@@ -21,18 +21,17 @@
 
 #include "src/capabilities/globalsearch.h"
 
-#include "src/global.h"
 #include "src/core/AbstractModel.h"
+#include "src/global.h"
 
 //#include <QtDataVisualization>
 
 #include <QtCore/QMutex>
-#include <QtCore/QWeakPointer>
 #include <QtCore/QPointer>
+#include <QtCore/QWeakPointer>
 
-#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QDialog>
-
+#include <QtWidgets/QGroupBox>
 
 class QLabel;
 class QLineEdit;
@@ -46,78 +45,77 @@ class QProgressBar;
 
 struct GlobalSearchResult;
 
-class ParameterWidget : public QGroupBox
-{
-  Q_OBJECT
-  
+class ParameterWidget : public QGroupBox {
+    Q_OBJECT
+
 public:
-    ParameterWidget(const QString &name, qreal value, QWidget *parent = 0);
-    inline ~ParameterWidget() { }
+    ParameterWidget(const QString& name, qreal value, QWidget* parent = 0);
+    inline ~ParameterWidget() {}
     double Min() const;
     double Max() const;
     double Step() const;
-    
+
 private:
-    QPointer<QDoubleSpinBox > m_min, m_max, m_step;
-    
+    QPointer<QDoubleSpinBox> m_min, m_max, m_step;
+
 signals:
     void valueChanged();
 };
 
-
-
-class AdvancedSearch : public QDialog
-{
+class AdvancedSearch : public QDialog {
     Q_OBJECT
 
 public:
-    AdvancedSearch(QWidget *parent = 0);
+    AdvancedSearch(QWidget* parent = 0);
     ~AdvancedSearch();
-    
-    
-    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); SetUi();}
-    inline GlobalSearchResult  LastResult() const { return last_result; }
+
+    inline void setModel(const QSharedPointer<AbstractModel> model)
+    {
+        m_model = model->Clone();
+        SetUi();
+    }
+    inline GlobalSearchResult LastResult() const { return last_result; }
     // inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
     inline double MaxError() const { return m_error_max; }
     double MaxX() const;
     double MinX() const;
     double MaxY() const;
     double MinY() const;
-    QList<QList<QPointF> >Series() const { return m_series; }
-    QList<QJsonObject > ModelList() const { return m_models_list; }
-//     inline QVector<QList<qreal > > FullList() const { return m_full_list; }
-    QPointer<GlobalSearch > globalSearch() const { return m_search; }
+    QList<QList<QPointF>> Series() const { return m_series; }
+    QList<QJsonObject> ModelList() const { return m_models_list; }
+    //     inline QVector<QList<qreal > > FullList() const { return m_full_list; }
+    QPointer<GlobalSearch> globalSearch() const { return m_search; }
     GSConfig Config() const;
 
 private:
     void SetUi();
-    void Scan(const QVector< QVector<double > > &list);
-    
-    QProgressBar *m_progress;
-    
+    void Scan(const QVector<QVector<double>>& list);
+
+    QProgressBar* m_progress;
+
     QSharedPointer<AbstractModel> m_model;
-    QCheckBox  *m_optim, *m_initial_guess;
-    QPointer<QPushButton >  m_scan, m_interrupt;
-    QLabel *m_max_steps;
+    QCheckBox *m_optim, *m_initial_guess;
+    QPointer<QPushButton> m_scan, m_interrupt;
+    QLabel* m_max_steps;
     GlobalSearchResult last_result;
-    void ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
+    void ConvertList(const QVector<QVector<double>>& list, QVector<double>& error);
     //QtDataVisualization::QSurfaceDataArray m_3d_data;
-    QList<QList<QPointF> > m_series;
+    QList<QList<QPointF>> m_series;
     OptimizationType m_type;
-    QPointer<OptimizerFlagWidget > m_optim_flags;
+    QPointer<OptimizerFlagWidget> m_optim_flags;
     double m_error_max;
-    QVector< QVector<double > > ParamList();
-    QList<QJsonObject > m_models_list;
-    QVector<QPointer<ParameterWidget > > m_parameter_list;
+    QVector<QVector<double>> ParamList();
+    QList<QJsonObject> m_models_list;
+    QVector<QPointer<ParameterWidget>> m_parameter_list;
     QMutex mutex;
     int m_time;
     quint64 m_time_0;
-    QVector<QVector <qreal > > m_parameter;
+    QVector<QVector<qreal>> m_parameter;
     QPointer<GlobalSearch> m_search;
     void PrepareProgress();
     void Finished();
-//     QVector<QList<double> > m_full_list;
-    
+    //     QVector<QList<double> > m_full_list;
+
 private slots:
     void Create2DPlot();
     void LocalSearch();
@@ -125,10 +123,9 @@ private slots:
     void IncrementProgress(int time);
     void MaxSteps();
     void setOptions();
-    
+
 signals:
     void PlotFinished(int runtype);
     void MultiScanFinished();
     void setValue(int value);
 };
-

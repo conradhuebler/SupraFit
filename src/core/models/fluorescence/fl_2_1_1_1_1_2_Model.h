@@ -19,25 +19,23 @@
 
 #pragma once
 
-#include "src/global.h"
 #include "src/core/AbstractTitrationModel.h"
+#include "src/global.h"
 
+#include "src/core/dataclass.h"
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
-#include <QtCore/QVector>
 #include <QtCore/QThreadPool>
-#include "src/core/dataclass.h"
+#include <QtCore/QVector>
 
 typedef Eigen::VectorXd Vector;
 
 class IItoI_ItoI_ItoII_Solver;
 
-class fl_IItoI_ItoI_ItoII_Model : public AbstractTitrationModel
-{
-     Q_OBJECT
-    
-public:
+class fl_IItoI_ItoI_ItoII_Model : public AbstractTitrationModel {
+    Q_OBJECT
 
+public:
     enum {
         Method = 1,
         Cooperativity2_1 = 2,
@@ -49,32 +47,31 @@ public:
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::fl_IItoI_ItoI_ItoII; }
 
-
-    virtual QVector<qreal > OptimizeParameters_Private(OptimizationType type) override;
-    inline int GlobalParameterSize() const override { return 3;}
+    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) override;
+    inline int GlobalParameterSize() const override { return 3; }
     virtual void InitialGuess() override;
-    virtual QSharedPointer<AbstractModel > Clone() override;
+    virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return true; }
     virtual MassResults MassBalance(qreal A, qreal B) override;
-    virtual inline QString GlobalParameterName(int i = 0) const override 
-    { 
-        if(i == 0)
+    virtual inline QString GlobalParameterName(int i = 0) const override
+    {
+        if (i == 0)
             return tr("K<sub>21</sub>");
-        else if( i == 1)
-            return  tr("K<sub>11</sub>");
-        else if( i == 2 )
-            return  tr("K<sub>12</sub>");
-        else 
+        else if (i == 1)
+            return tr("K<sub>11</sub>");
+        else if (i == 2)
+            return tr("K<sub>12</sub>");
+        else
             return QString();
     }
 
     virtual QString SpeciesName(int i) const override
     {
-        if(i == 0)
+        if (i == 0)
             return tr("A2B");
-        else if(i == 1)
+        else if (i == 1)
             return tr("AB");
-        else if(i == 2)
+        else if (i == 2)
             return tr("AB2");
         else
             return QString();
@@ -83,17 +80,22 @@ public:
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
     virtual inline QString Name() const override { return tr("&Phi; 2:1/1:1/1:2-Model"); }
-    virtual inline int Color(int i) const override {  if(i > 2) return i + 1; return i; }
+    virtual inline int Color(int i) const override
+    {
+        if (i > 2)
+            return i + 1;
+        return i;
+    }
     virtual qreal BC50() const override;
     virtual qreal BC50SF() const override;
-    virtual int LocalParameterSize() const override {return 5; }
+    virtual int LocalParameterSize() const override { return 5; }
 
 private:
-    QList<QPointer<IItoI_ItoI_ItoII_Solver > > m_solvers;
+    QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;
     QList<qreal> m_constants_pow;
-    QThreadPool *m_threadpool;
-    static qreal Y(qreal x, const QVector<qreal > & parameter);
-    static qreal Y_0(qreal x, const QVector<qreal > & parameter);
+    QThreadPool* m_threadpool;
+    static qreal Y(qreal x, const QVector<qreal>& parameter);
+    static qreal Y_0(qreal x, const QVector<qreal>& parameter);
 
 protected:
     virtual void CalculateVariables() override;

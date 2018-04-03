@@ -47,7 +47,7 @@
 
 #include "mcresultswidget.h"
 
-MCResultsWidget::MCResultsWidget(const QJsonObject &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models) 
+MCResultsWidget::MCResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models)
 {
     m_data = data;
     m_model = model;
@@ -55,42 +55,39 @@ MCResultsWidget::MCResultsWidget(const QJsonObject &data, QSharedPointer<Abstrac
     m_wrapper = wrapper;
 
     QJsonObject controller = m_data["controller"].toObject();
-    m_type = SupraFit::Statistic (controller["method"].toInt());
+    m_type = SupraFit::Statistic(controller["method"].toInt());
     has_boxplot = false;
     has_histogram = false;
     has_contour = false;
-
 }
 
 MCResultsWidget::~MCResultsWidget()
 {
-
 }
 
 void MCResultsWidget::setUi()
 {
-    QWidget *widget = new QWidget;
-    QTabWidget *tabs = new QTabWidget;
+    QWidget* widget = new QWidget;
+    QTabWidget* tabs = new QTabWidget;
     tabs->setTabPosition(QTabWidget::South);
-    QGridLayout *layout = new QGridLayout;
+    QGridLayout* layout = new QGridLayout;
     layout->addWidget(tabs, 0, 0, 1, 7);
 
     m_histgram = MakeHistogram();
     m_box = MakeBoxPlot();
-    if(has_histogram)
+    if (has_histogram)
         tabs->addTab(m_histgram, tr("Histogram"));
-    
-    if(has_boxplot)
+
+    if (has_boxplot)
         tabs->addTab(m_box, tr("Boxplot"));
-    
-    if(m_model->GlobalParameterSize() == 2 && m_models.size())
-    {
+
+    if (m_model->GlobalParameterSize() == 2 && m_models.size()) {
         m_contour = MakeContour();
         tabs->addTab(m_contour, tr("Contour Plot"));
     }
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
-    
+
     m_error = new QDoubleSpinBox;
     m_error->setValue(95);
     m_error->setSingleStep(0.5);
@@ -98,14 +95,14 @@ void MCResultsWidget::setUi()
     m_error->setMaximum(100);
     connect(m_error, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &MCResultsWidget::GenerateConfidence);
 
-     layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
-     layout->addWidget(m_error, 1, 1);
+    layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
+    layout->addWidget(m_error, 1, 1);
 
-    if(m_models.size())
+    if (m_models.size())
         layout->addWidget(m_save, 1, 2);
-    
+
     widget->setLayout(layout);
-    
+
     setLayout(layout);
     GenerateConfidence(95);
 }
@@ -115,125 +112,116 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     QPointer<ListChart> view = new ListChart;
     view->setXAxis("parameter");
     view->setYAxis("relative rate");
-    view->setMinimumSize(300,400);
+    view->setMinimumSize(300, 400);
     bool formated = false;
     //QObject *obj = new QObject(this);
-    for(int i = 0; i < m_data.count() - 1; ++i)
-    {
+    for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
-        if(data.isEmpty())
+        if (data.isEmpty())
             continue;
         QString name = data["name"].toString();
         qreal x_0 = data["value"].toDouble();
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
-        QVector<QPair<qreal, qreal> > histogram = ToolSet::List2Histogram(list,500);
-        LineSeries *xy_series = new LineSeries;
-        if(data["type"] == "Local Parameter")
-        {
-            if(!data.contains("index"))
+        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, 500);
+        LineSeries* xy_series = new LineSeries;
+        if (data["type"] == "Local Parameter") {
+            if (!data.contains("index"))
                 continue;
-            int index =  data["index"].toString().split("|")[1].toInt();
+            int index = data["index"].toString().split("|")[1].toInt();
             xy_series->setColor(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view]( const QColor &color ) {  view->setColor(i, color); });
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this]( const QColor &color ) { this->setAreaColor(index, color); });
-        }else
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this](const QColor& color) { this->setAreaColor(index, color); });
+        } else
             xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
-        
-        for(int j = 0; j < histogram.size(); ++j)
-        {
-            xy_series->append(QPointF(histogram[j].first, histogram[j].second));       
+
+        for (int j = 0; j < histogram.size(); ++j) {
+            xy_series->append(QPointF(histogram[j].first, histogram[j].second));
         }
-        if(histogram.size())
-             has_histogram = true;
+        if (histogram.size())
+            has_histogram = true;
         view->addSeries(xy_series, i, xy_series->color(), name);
         view->setColor(i, xy_series->color());
-        if(!formated)
+        if (!formated)
             view->formatAxis();
         formated = true;
-        
-        LineSeries *current_constant = new LineSeries;
+
+        LineSeries* current_constant = new LineSeries;
         connect(xy_series, &QtCharts::QXYSeries::colorChanged, current_constant, &LineSeries::setColor);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
-        current_constant->setName( name);
+        current_constant->setName(name);
         view->addSeries(current_constant, i, xy_series->color(), name);
-        
+
         QJsonObject confidenceObject = data["confidence"].toObject();
-        if(view)
-        {
-            QtCharts::QAreaSeries *area_series = AreaSeries(xy_series->color());
+        if (view) {
+            QtCharts::QAreaSeries* area_series = AreaSeries(xy_series->color());
             view->addSeries(area_series, i, area_series->color(), name);
             m_area_series << area_series;
-        } 
+        }
         m_colors << xy_series->color();
-        
     }
 
     return view;
 }
 
- QPointer<ListChart > MCResultsWidget::MakeBoxPlot()
+QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
 {
-    QPointer<ListChart > boxplot = new ListChart;
+    QPointer<ListChart> boxplot = new ListChart;
     double min = 10, max = 0;
-    
-    for(int i = 0; i < m_data.count() - 1; ++i)
-    {
+
+    for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
-        if(data.isEmpty())
+        if (data.isEmpty())
             continue;
 
         has_boxplot = true;
-        
-        SupraFit::BoxWhisker bw = ToolSet::Object2Whisker( data["boxplot"].toObject() );
+
+        SupraFit::BoxWhisker bw = ToolSet::Object2Whisker(data["boxplot"].toObject());
         min = qMin(bw.lower_whisker, min);
         max = qMax(bw.upper_whisker, max);
-        BoxPlotSeries *series = new BoxPlotSeries(bw);
+        BoxPlotSeries* series = new BoxPlotSeries(bw);
         series->setName(data["name"].toString());
- 
-        if(data["type"] == "Local Parameter")
-        {
-            if(!data.contains("index"))
+
+        if (data["type"] == "Local Parameter") {
+            if (!data.contains("index"))
                 continue;
-            int index =  data["index"].toString().split("|")[1].toInt();
+            int index = data["index"].toString().split("|")[1].toInt();
             series->setBrush(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, boxplot]( const QColor &color ) {if(boxplot) boxplot->setColor(i, color); });
-        }else
+            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, boxplot](const QColor& color) {if(boxplot) boxplot->setColor(i, color); });
+        } else
             series->setBrush(ChartWrapper::ColorCode(m_model->Color(i)));
 
-        boxplot->addSeries(series, i, series->color(), data["name"].toString());  
+        boxplot->addSeries(series, i, series->color(), data["name"].toString());
         boxplot->setColor(i, series->color());
         m_box_object << ToolSet::Box2Object(bw);
     }
 
-    if(has_boxplot)
-    {
-        QtCharts::QValueAxis *y_axis = qobject_cast<QtCharts::QValueAxis *>( boxplot->Chart()->axisY());
-        y_axis->setMin(min*0.99);
-        y_axis->setMax(max*1.01);
+    if (has_boxplot) {
+        QtCharts::QValueAxis* y_axis = qobject_cast<QtCharts::QValueAxis*>(boxplot->Chart()->axisY());
+        y_axis->setMin(min * 0.99);
+        y_axis->setMax(max * 1.01);
     }
     return boxplot;
 }
 
-
 QPointer<ChartView> MCResultsWidget::MakeContour()
 {
-    QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart; 
-    QPointer<ChartView > view = new ChartView(chart_ellipsoid);
-    if(qApp->instance()->property("chartanimation").toBool())
+    QtCharts::QChart* chart_ellipsoid = new QtCharts::QChart;
+    QPointer<ChartView> view = new ChartView(chart_ellipsoid);
+    if (qApp->instance()->property("chartanimation").toBool())
         chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    chart_ellipsoid->setTheme((QtCharts::QChart::ChartTheme) qApp->instance()->property("charttheme").toInt());
-    QList<QPointF > data = ToolSet::fromModelsList(m_models, "globalParameter");
-    if(data.size())
+    chart_ellipsoid->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
+    QList<QPointF> data = ToolSet::fromModelsList(m_models, "globalParameter");
+    if (data.size())
         has_contour = true;
-    QWidget *resultwidget_ellipsoid = new QWidget;
-    QGridLayout *layout_ellipsoid = new QGridLayout;
+    QWidget* resultwidget_ellipsoid = new QWidget;
+    QGridLayout* layout_ellipsoid = new QGridLayout;
     resultwidget_ellipsoid->setLayout(layout_ellipsoid);
 
     layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
-    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+    QtCharts::QScatterSeries* xy_series = new QtCharts::QScatterSeries(this);
     xy_series->append(data);
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
@@ -243,26 +231,24 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
 }
 
 void MCResultsWidget::UpdateBoxes()
-{    
+{
     int elements = m_data.count() - 1;
-    for(int i = 0; i < elements; ++i)
-    {
+    for (int i = 0; i < elements; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
-        if(data.isEmpty())
+        if (data.isEmpty())
             continue;
         QJsonObject confidenceObject = data["confidence"].toObject();
-        if(m_histgram && i < m_area_series.size())
-        {
-            QtCharts::QAreaSeries *area_series = m_area_series[i];
-            QtCharts::QLineSeries *series1 = area_series->lowerSeries();
-            QtCharts::QLineSeries *series2 = area_series->upperSeries();
-            
+        if (m_histgram && i < m_area_series.size()) {
+            QtCharts::QAreaSeries* area_series = m_area_series[i];
+            QtCharts::QLineSeries* series1 = area_series->lowerSeries();
+            QtCharts::QLineSeries* series2 = area_series->upperSeries();
+
             series1->clear();
             series2->clear();
-            
+
             *series1 << QPointF(confidenceObject["lower"].toVariant().toDouble(), 0) << QPointF(confidenceObject["lower"].toVariant().toDouble(), 0.66);
             *series2 << QPointF(confidenceObject["upper"].toVariant().toDouble(), 0) << QPointF(confidenceObject["upper"].toVariant().toDouble(), 0.66);
-            
+
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
             area_series->setName(m_model->GlobalParameterName(i));
@@ -270,27 +256,25 @@ void MCResultsWidget::UpdateBoxes()
     }
 }
 
-
 void MCResultsWidget::ExportResults()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
-    if(str.isEmpty())
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)"));
+    if (str.isEmpty())
         return;
     Waiter wait;
     setLastDir(str);
     ToolSet::ExportResults(str, m_models);
 }
 
-
-QtCharts::QAreaSeries * MCResultsWidget::AreaSeries(const QColor &color) const
+QtCharts::QAreaSeries* MCResultsWidget::AreaSeries(const QColor& color) const
 {
-    QtCharts::QLineSeries *series1 = new QtCharts::QLineSeries();
-    QtCharts::QLineSeries *series2 = new QtCharts::QLineSeries();
-    QtCharts::QAreaSeries *area_series = new QtCharts::QAreaSeries(series1, series2);
+    QtCharts::QLineSeries* series1 = new QtCharts::QLineSeries();
+    QtCharts::QLineSeries* series2 = new QtCharts::QLineSeries();
+    QtCharts::QAreaSeries* area_series = new QtCharts::QAreaSeries(series1, series2);
     QPen pen(0x059605);
     pen.setWidth(3);
     area_series->setPen(pen);
-    
+
     QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
     gradient.setColorAt(0.0, color);
     gradient.setColorAt(1.0, 0x26f626);
@@ -300,16 +284,16 @@ QtCharts::QAreaSeries * MCResultsWidget::AreaSeries(const QColor &color) const
     return area_series;
 }
 
-void MCResultsWidget::setAreaColor(int index, const QColor &color)
+void MCResultsWidget::setAreaColor(int index, const QColor& color)
 {
-    if(index >= m_area_series.size())
+    if (index >= m_area_series.size())
         return;
-    QtCharts::QAreaSeries *area_series = m_area_series[index];
-    
+    QtCharts::QAreaSeries* area_series = m_area_series[index];
+
     QPen pen(0x059605);
     pen.setWidth(3);
     area_series->setPen(pen);
-    
+
     QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
     gradient.setColorAt(0.0, color);
     gradient.setColorAt(1.0, 0x26f626);
@@ -318,16 +302,14 @@ void MCResultsWidget::setAreaColor(int index, const QColor &color)
     area_series->setOpacity(0.4);
 }
 
-
 void MCResultsWidget::GenerateConfidence(double error)
-{    
-    for(int i = 0; i < m_data.count() - 1; ++i)
-    {
+{
+    for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
-        if(data.isEmpty())
+        if (data.isEmpty())
             continue;
-        QList<qreal> list = ToolSet::String2DoubleList(data["data"].toObject()["raw"].toString() );
-        SupraFit::ConfidenceBar bar = ToolSet::Confidence(list, 100-error);
+        QList<qreal> list = ToolSet::String2DoubleList(data["data"].toObject()["raw"].toString());
+        SupraFit::ConfidenceBar bar = ToolSet::Confidence(list, 100 - error);
         QJsonObject confidence;
         confidence["lower"] = bar.lower;
         confidence["upper"] = bar.upper;

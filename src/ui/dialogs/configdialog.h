@@ -34,61 +34,57 @@ class QDialogButtonBox;
 class QComboBox;
 class ScientificBox;
 
-class OptimizerDialog : public QDialog
-{
+class OptimizerDialog : public QDialog {
     Q_OBJECT
 
 public:
-    OptimizerDialog(OptimizerConfig config, QWidget *parent = 0);
+    OptimizerDialog(OptimizerConfig config, QWidget* parent = 0);
     ~OptimizerDialog();
-    OptimizerConfig Config() const { return m_opt_widget->Config();}
+    OptimizerConfig Config() const { return m_opt_widget->Config(); }
+
 private:
     void setUi();
     void createOptimTab();
-    QTabWidget *m_mainwidget;
-    QDialogButtonBox *m_buttons;
+    QTabWidget* m_mainwidget;
+    QDialogButtonBox* m_buttons;
     OptimizerConfig m_opt_config;
-    OptimizerWidget *m_opt_widget;
-    
+    OptimizerWidget* m_opt_widget;
 };
 
-
-
-class ConfigDialog : public QDialog
-{
+class ConfigDialog : public QDialog {
     Q_OBJECT
 
 public:
-    ConfigDialog(OptimizerConfig config, int printlevel, const QString &logfile, QWidget *parent = 0);
+    ConfigDialog(OptimizerConfig config, int printlevel, const QString& logfile, QWidget* parent = 0);
     ~ConfigDialog();
-    inline OptimizerConfig Config() const { return m_opt_widget->Config();}
-    inline QString LogFile() const {return m_logfile; }
+    inline OptimizerConfig Config() const { return m_opt_widget->Config(); }
+    inline QString LogFile() const { return m_logfile; }
     inline int PrintLevel() const { return m_printlevel; }
     virtual void accept();
+
 private:
     QRadioButton *m_printlevel_0, *m_printlevel_1, *m_printlevel_2, *m_printlevel_3, *m_printlevel_4, *m_printlevel_5;
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
-    QSpinBox *m_threads;
-    QDoubleSpinBox *m_p_value;
+    QSpinBox* m_threads;
+    QDoubleSpinBox* m_p_value;
     QLineEdit *m_logfileButton, *m_working;
     QPushButton *m_selectlogfile, *m_select_working;
-    QTabWidget *m_mainwidget;
-    QDialogButtonBox *m_buttons;
-    QComboBox *m_charttheme;
+    QTabWidget* m_mainwidget;
+    QDialogButtonBox* m_buttons;
+    QComboBox* m_charttheme;
     QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit;
     void setUi();
     void createGeneralTab();
     void createStandardCalTab();
     void createOptimTab();
     OptimizerConfig m_opt_config;
-    OptimizerWidget *m_opt_widget;
+    OptimizerWidget* m_opt_widget;
     int m_printlevel, m_dirlevel;
     QString m_logfile, m_working_string;
-    
+
 private slots:
-    void SelectLogFile(); 
+    void SelectLogFile();
     void SelectWorkingDir();
-    
 };
 
 #endif // CONFIGDIALOG_H

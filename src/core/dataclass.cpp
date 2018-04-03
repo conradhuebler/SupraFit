@@ -22,40 +22,47 @@
 
 #include <Eigen/Dense>
 
-#include <QtCore/QString>
+#include "dataclass.h"
+#include <QAbstractTableModel>
+#include <QDebug>
+#include <QPointer>
+#include <QtCore/QCollator>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonObject>
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QReadWriteLock>
-#include <QtCore/QCollator>
-#include <QtCore/QJsonArray>
-#include <QtCore/QJsonObject>
-#include <QAbstractTableModel>
-#include <QPointer>
-#include <QDebug>
-#include "dataclass.h"
+#include <QtCore/QString>
 #include <QtGlobal>
 #include <cmath>
-#include <random>
 #include <iostream>
+#include <random>
 
-DataTable::DataTable(QObject* parent) : QAbstractTableModel(parent), m_checkable(false), m_editable(false)
+DataTable::DataTable(QObject* parent)
+    : QAbstractTableModel(parent)
+    , m_checkable(false)
+    , m_editable(false)
 {
 }
 
-DataTable::DataTable(int columns, int rows, QObject* parent) : QAbstractTableModel(parent), m_checkable(false), m_editable(false)
+DataTable::DataTable(int columns, int rows, QObject* parent)
+    : QAbstractTableModel(parent)
+    , m_checkable(false)
+    , m_editable(false)
 {
     m_table = Eigen::MatrixXd::Zero(rows, columns);
     m_checked_table = Eigen::MatrixXd::Ones(rows, columns);
-    for(int i = 0; i < columns; ++i)
+    for (int i = 0; i < columns; ++i)
         m_header << QString::number(i + 1);
 }
 
-DataTable::DataTable(DataTable& other) : QAbstractTableModel(&other) //FIXME whatever
+DataTable::DataTable(DataTable& other)
+    : QAbstractTableModel(&other) //FIXME whatever
 {
-    m_table =  Eigen::MatrixXd(other.m_table);
+    m_table = Eigen::MatrixXd(other.m_table);
     m_header = other.m_header;
-    m_checked_table =  Eigen::MatrixXd(other.m_checked_table);
+    m_checked_table = Eigen::MatrixXd(other.m_checked_table);
     m_checkable = other.m_checkable;
     m_editable = other.m_editable;
 }
@@ -64,17 +71,20 @@ DataTable::DataTable(DataTable* other) //: QAbstractTableModel(other) FIXME what
 {
     m_table = Eigen::MatrixXd(other->m_table);
     m_header = other->m_header;
-    m_checked_table =  Eigen::MatrixXd(other->m_checked_table);
+    m_checked_table = Eigen::MatrixXd(other->m_checked_table);
     m_checkable = other->m_checkable;
     m_editable = other->m_editable;
 }
 
-DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table) : m_table(table), m_checked_table(checked_table), m_checkable(false), m_editable(false)
+DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table)
+    : m_table(table)
+    , m_checked_table(checked_table)
+    , m_checkable(false)
+    , m_editable(false)
 {
-    for(int i = 0; i < columnCount(); ++i)
+    for (int i = 0; i < columnCount(); ++i)
         m_header << QString::number(i + 1);
 }
-
 
 DataTable::~DataTable()
 {
@@ -85,71 +95,65 @@ Vector DataTable::firstRow()
     return m_table.row(0);
 }
 
-
 Vector DataTable::lastRow()
 {
-    return m_table.row(m_table.rows()-1);
+    return m_table.row(m_table.rows() - 1);
 }
 
 void DataTable::Debug() const
 {
     std::cout << "Table Content" << std::endl;
-    std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
-    std::cout << m_table <<std::endl;
-    
+    std::cout << "Rows: " << m_table.rows() << " Cols: " << m_table.cols() << std::endl;
+    std::cout << m_table << std::endl;
+
     std::cout << "Checked Table" << std::endl;
-    std::cout << "Rows: " << m_table.rows() << " Cols: " <<m_table.cols() << std::endl;
-    std::cout << m_checked_table <<std::endl;
+    std::cout << "Rows: " << m_table.rows() << " Cols: " << m_table.cols() << std::endl;
+    std::cout << m_checked_table << std::endl;
 }
 
-Qt::ItemFlags DataTable::flags(const QModelIndex &index) const
+Qt::ItemFlags DataTable::flags(const QModelIndex& index) const
 {
     Q_UNUSED(index);
     Qt::ItemFlags flags;
-    if(m_checkable)
+    if (m_checkable)
         flags = Qt::ItemIsEnabled | Qt::ItemNeverHasChildren | Qt::ItemIsUserCheckable;
     else
         flags = Qt::ItemIsEnabled | Qt::ItemNeverHasChildren;
-    
-    if(m_editable)
+
+    if (m_editable)
         flags = flags | Qt::ItemIsEditable;
-    
+
     return flags;
 }
 
 int DataTable::columnCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent)
-    if(m_table.size() != 0)
+    if (m_table.size() != 0)
         return m_table.cols();
     return 0;
-    
 }
 
 QVariant DataTable::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(role == Qt::DisplayRole)
-    {
-        if(orientation == Qt::Orientation::Horizontal)
-        {
-            if(section < m_header.size())
+    if (role == Qt::DisplayRole) {
+        if (orientation == Qt::Orientation::Horizontal) {
+            if (section < m_header.size())
                 return QVariant(QString(m_header.at(section)));
-            
-        }else
+
+        } else
             return section + 1;
     }
     return QVariant();
 }
 
-bool DataTable::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role)
+bool DataTable::setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role)
 {
-    if(section < m_header.size() && (role == Qt::DisplayRole || role == Qt::EditRole) && orientation == Qt::Orientation::Horizontal)
-    {
+    if (section < m_header.size() && (role == Qt::DisplayRole || role == Qt::EditRole) && orientation == Qt::Orientation::Horizontal) {
         m_header[section] = value.toString();
         return true;
     }
     return false;
-    
 }
 
 int DataTable::rowCount(const QModelIndex& parent) const
@@ -160,32 +164,29 @@ int DataTable::rowCount(const QModelIndex& parent) const
 
 QVariant DataTable::data(const QModelIndex& index, int role) const
 {
-    if(role == Qt::DisplayRole || role == Qt::EditRole )
-        if(m_editable)
+    if (role == Qt::DisplayRole || role == Qt::EditRole)
+        if (m_editable)
             return QString::number(data(index.column(), index.row()), 'f', 4);
         else
             return data(index.column(), index.row());
     else if (role == Qt::CheckStateRole && m_checkable)
-        return isChecked(index.column(), index.row()); 
+        return isChecked(index.column(), index.row());
     else
         return QVariant();
 }
 
-bool DataTable::setData(const QModelIndex &index, const QVariant &value, int role)
+bool DataTable::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-    if(role == Qt::EditRole)
-    {
+    if (role == Qt::EditRole) {
         bool ok;
         qreal var = value.toDouble(&ok);
-        if(ok)
-        {
+        if (ok) {
             data(index.column(), index.row()) = var;
             emit dataChanged(index, index);
         }
         return ok;
-    }else if(role == Qt::CheckStateRole)
-    {
-        if(m_checked_table(index.row(), index.column()) == 0)
+    } else if (role == Qt::CheckStateRole) {
+        if (m_checked_table(index.row(), index.column()) == 0)
             m_checked_table(index.row(), index.column()) = 1;
         else
             m_checked_table(index.row(), index.column()) = 0;
@@ -198,135 +199,115 @@ bool DataTable::setData(const QModelIndex &index, const QVariant &value, int rol
 void DataTable::CheckRow(int row)
 {
     int check = 0;
-    for(int i = 0; i < columnCount(); ++i)
+    for (int i = 0; i < columnCount(); ++i)
         check += m_checked_table(row, i);
-    bool checked = check < columnCount()/2;
-    for(int i = 0; i < columnCount(); ++i)
+    bool checked = check < columnCount() / 2;
+    for (int i = 0; i < columnCount(); ++i)
         m_checked_table(row, i) = checked;
     emit layoutChanged();
 }
 
 void DataTable::DisableRow(int row)
 {
-    for(int i = 0; i < columnCount(); ++i)
+    for (int i = 0; i < columnCount(); ++i)
         m_checked_table(row, i) = 0;
     emit layoutChanged();
 }
 
 void DataTable::EnableAllRows()
 {
-    for(int j = 0; j < rowCount(); ++j)
-        for(int i = 0; i < columnCount(); ++i)
+    for (int j = 0; j < rowCount(); ++j)
+        for (int i = 0; i < columnCount(); ++i)
             m_checked_table(j, i) = 1;
     emit layoutChanged();
 }
 
 void DataTable::PrintCheckedRows() const
 {
-    for(int i = 0; i < rowCount(); ++i )
-    {
+    for (int i = 0; i < rowCount(); ++i) {
         int check = 0;
-        for(int j = 0; j < columnCount(); ++j)
-            check += m_checked_table(i,j);
+        for (int j = 0; j < columnCount(); ++j)
+            check += m_checked_table(i, j);
         std::cout << "Row " << i << " checked: " << check << std::endl;
     }
-    
 }
-
 
 bool DataTable::isChecked(int column, int row) const
 {
-    if(row < m_checked_table.rows())
-        if(column < m_checked_table.cols())
-        {
-            return m_checked_table(row,column);
-        }
-        else
-        {
+    if (row < m_checked_table.rows())
+        if (column < m_checked_table.cols()) {
+            return m_checked_table(row, column);
+        } else {
             qDebug() << "Column exceeds size of table!";
             return 0;
         }
-        else
-        {
-            qDebug() << "Row exceeds size of table!";
-            return 0;
-        }
+    else {
+        qDebug() << "Row exceeds size of table!";
+        return 0;
+    }
 }
 
 qreal DataTable::data(int column, int row) const
 {
 
-    if(row < m_table.rows())
-        if(column < m_table.cols())
-        {
-            return m_table(row,column);
-        }
-        else
-        {
+    if (row < m_table.rows())
+        if (column < m_table.cols()) {
+            return m_table(row, column);
+        } else {
             qDebug() << "Column exceeds size of table!";
             return 0;
         }
-        else
-        {
-            qDebug() << "Row exceeds size of table!";
-            return 0;
-        }
+    else {
+        qDebug() << "Row exceeds size of table!";
+        return 0;
+    }
 }
 
-qreal & DataTable::data(int column, int row)
+qreal& DataTable::data(int column, int row)
 {
     QReadLocker locker(&mutex);
     m_empty = 0;
-    if(row < m_table.rows())
-        if(column < m_table.cols())
-        {
-            return m_table.operator()(row,column);
-        }
-        else
-        {
+    if (row < m_table.rows())
+        if (column < m_table.cols()) {
+            return m_table.operator()(row, column);
+        } else {
             qDebug() << "Column exceeds size of table!";
             return m_empty;
         }
-        else
-        {
-            qDebug() << "Row exceeds size of table!";
-            return m_empty;
-        }
+    else {
+        qDebug() << "Row exceeds size of table!";
+        return m_empty;
+    }
 }
 
-QPointer<DataTable> DataTable::Block(int row_begin,  int column_begin, int row_end, int column_end) const
+QPointer<DataTable> DataTable::Block(int row_begin, int column_begin, int row_end, int column_end) const
 {
-    if(row_begin < 0 || column_begin < 0 || row_begin >= rowCount() || column_begin >= columnCount() || row_end < 0 || column_end < 0 || row_end > rowCount() || column_end > columnCount())
+    if (row_begin < 0 || column_begin < 0 || row_begin >= rowCount() || column_begin >= columnCount() || row_end < 0 || column_end < 0 || row_end > rowCount() || column_end > columnCount())
         return new DataTable;
-    
-    Eigen::MatrixXd table = m_table.block(row_begin,column_begin,row_end,column_end);
-    Eigen::MatrixXd checked_table = m_checked_table.block(row_begin,column_begin,row_end,column_end);
+
+    Eigen::MatrixXd table = m_table.block(row_begin, column_begin, row_end, column_end);
+    Eigen::MatrixXd checked_table = m_checked_table.block(row_begin, column_begin, row_end, column_end);
     return new DataTable(table, checked_table);
 }
-
-
-
 
 Vector DataTable::Row(int row)
 {
     return m_table.row(row);
 }
 
-Vector DataTable::Row(int row, const QList<int> &active)
+Vector DataTable::Row(int row, const QList<int>& active)
 {
     Vector vector = m_table.row(row);
-    if(vector.cols() != active.size())
+    if (vector.cols() != active.size())
         return vector;
     int size = 0;
-    for(int i = 0; i < active.size(); ++i)
-        if(active[i] == 1)
+    for (int i = 0; i < active.size(); ++i)
+        if (active[i] == 1)
             size++;
     Vector vect(size);
     int pos = 0;
-    for(int i = 0; i < active.size(); ++i)
-    {
-        if(active[i] == 1)
-        {
+    for (int i = 0; i < active.size(); ++i) {
+        if (active[i] == 1) {
             vect(pos) = vector(i);
             pos++;
         }
@@ -334,103 +315,92 @@ Vector DataTable::Row(int row, const QList<int> &active)
     return vect;
 }
 
-void DataTable::insertRow(const QVector<qreal> &row)
+void DataTable::insertRow(const QVector<qreal>& row)
 {
     QReadLocker locker(&mutex);
-    while(m_header.size() < row.size())
+    while (m_header.size() < row.size())
         m_header << QString::number(m_header.size() + 1);
-    
-    if(m_table.cols() == 0)
-    {
+
+    if (m_table.cols() == 0) {
         m_table.conservativeResize(m_table.rows() + 1, row.size());
         m_checked_table.conservativeResize(m_checked_table.rows() + 1, row.size());
-    }
-    else
-    {
+    } else {
         m_table.conservativeResize(m_table.rows() + 1, m_table.cols());
         m_checked_table.conservativeResize(m_checked_table.rows() + 1, m_checked_table.cols());
     }
-    
-    for(int i = 0; i < row.size(); ++i)
-    {
-        m_table(m_table.rows() -1, i) = row[i];
+
+    for (int i = 0; i < row.size(); ++i) {
+        m_table(m_table.rows() - 1, i) = row[i];
         m_checked_table(m_checked_table.rows() - 1, i) = 1;
     }
 }
 
-void DataTable::setColumn(const QVector<qreal> &vector, int column)
+void DataTable::setColumn(const QVector<qreal>& vector, int column)
 {
     Q_UNUSED(vector);
     Q_UNUSED(column);
     return;
 }
 
-void DataTable::setColumn(const Vector &vector, int column)
+void DataTable::setColumn(const Vector& vector, int column)
 {
-    if(m_table.cols() >= column)
-        m_table.col(column) = vector; 
+    if (m_table.cols() >= column)
+        m_table.col(column) = vector;
     return;
 }
 
-void DataTable::setRow(const QVector<qreal> &vector, int row)
+void DataTable::setRow(const QVector<qreal>& vector, int row)
 {
     QReadLocker locker(&mutex);
-    if(m_table.rows() >= row)
-        for(int i = 0; i < vector.size(); ++i)
-            m_table(row, i) = vector[i];   
+    if (m_table.rows() >= row)
+        for (int i = 0; i < vector.size(); ++i)
+            m_table(row, i) = vector[i];
     return;
 }
 
-void DataTable::setRow(const Vector &vector, int row)
+void DataTable::setRow(const Vector& vector, int row)
 {
     QReadLocker locker(&mutex);
-    if(m_table.rows() >= row)
-        m_table.row(row) = vector;   
+    if (m_table.rows() >= row)
+        m_table.row(row) = vector;
     return;
 }
 
-QPointer<DataTable> DataTable::PrepareMC(std::normal_distribution<double> &Phi, std::mt19937 &rng, QVector<int> cols)
+QPointer<DataTable> DataTable::PrepareMC(std::normal_distribution<double>& Phi, std::mt19937& rng, QVector<int> cols)
 {
-    if(cols.size() < columnCount())
-    {
+    if (cols.size() < columnCount()) {
         cols = QVector<int>(columnCount(), 1);
     }
-    QPointer<DataTable > table = new DataTable(this);
-    for(int j = 0; j <  columnCount(); ++j)
-        {
-            if(!cols[j])
-                continue;
-            for(int i = 0; i < rowCount(); ++i)
-            {
-                double randed = Phi(rng);
-                table->data(j,i) += randed;                
-            }
-        }      
+    QPointer<DataTable> table = new DataTable(this);
+    for (int j = 0; j < columnCount(); ++j) {
+        if (!cols[j])
+            continue;
+        for (int i = 0; i < rowCount(); ++i) {
+            double randed = Phi(rng);
+            table->data(j, i) += randed;
+        }
+    }
     return table;
 }
 
-QPointer<DataTable>  DataTable::PrepareBootStrap(std::uniform_int_distribution<int> &Uni, std::mt19937 &rng, const QVector<qreal> &vector)
+QPointer<DataTable> DataTable::PrepareBootStrap(std::uniform_int_distribution<int>& Uni, std::mt19937& rng, const QVector<qreal>& vector)
 {
     QPointer<DataTable> table = new DataTable(this);
-    for(int j = 0; j <  columnCount(); ++j)
-        {
-            for(int i = 0; i < rowCount(); ++i)
-            {
-                int randed = Uni(rng);
-                table->data(j,i) += vector[randed];
-            }
+    for (int j = 0; j < columnCount(); ++j) {
+        for (int i = 0; i < rowCount(); ++i) {
+            int randed = Uni(rng);
+            table->data(j, i) += vector[randed];
         }
+    }
     return table;
 }
 
 QString DataTable::ExportAsString() const
 {
     QString str;
-    for(int j = 0; j < rowCount(); ++j)
-    {
-        for(int i = 0; i< columnCount(); ++i)
-        {
-            str += Print::printDouble(data(i,j));
+    for (int j = 0; j < rowCount(); ++j) {
+        for (int i = 0; i < columnCount(); ++i) {
+            str += Print::printDouble(data(i, j));
             /*
             if(data(i,j) >= 0)
                 str += " ";
@@ -438,7 +408,7 @@ QString DataTable::ExportAsString() const
                 str += QString::number(data(i,j), 'e', 6);
             else //and
                 str += QString::number(data(i,j)); // return no digits*/
-            if(i < columnCount() - 1)
+            if (i < columnCount() - 1)
                 str += "\t";
         }
         str += "\n";
@@ -449,12 +419,10 @@ QString DataTable::ExportAsString() const
 QStringList DataTable::ExportAsStringList() const
 {
     QStringList list;
-    for(int j = 0; j < rowCount(); ++j)
-    {
+    for (int j = 0; j < rowCount(); ++j) {
         QString str;
-        for(int i = 0; i< columnCount(); ++i)
-        {
-            str += Print::printDouble(data(i,j));
+        for (int i = 0; i < columnCount(); ++i) {
+            str += Print::printDouble(data(i, j));
             /*
             if(data(i,j) >= 0)
                 str += " ";
@@ -462,7 +430,7 @@ QStringList DataTable::ExportAsStringList() const
                 str += Print::printDouble(data(i,j));
             else //and
                 str += QString::number(data(i,j)); // return no digits*/
-            if(i < columnCount() - 1)
+            if (i < columnCount() - 1)
                 str += "\t";
         }
         list << str;
@@ -473,47 +441,50 @@ QStringList DataTable::ExportAsStringList() const
 QVector<qreal> DataTable::toList() const
 {
     QVector<qreal> vector;
-    for(int j = 0; j < rowCount(); ++j)
-    {
-        for(int i = 0; i< columnCount(); ++i)
-        {
-            vector << data(i,j);
+    for (int j = 0; j < rowCount(); ++j) {
+        for (int i = 0; i < columnCount(); ++i) {
+            vector << data(i, j);
         }
     }
     return vector;
 }
 
-DataClassPrivate::DataClassPrivate() : m_maxsize(0), m_host_assignment(0)
+DataClassPrivate::DataClassPrivate()
+    : m_maxsize(0)
+    , m_host_assignment(0)
 {
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
     m_dependent_model->setCheckable(true);
     m_raw_data = new DataTable;
-    if(m_independent_model->columnCount() != m_scaling.size())
-        for(int i = 0; i < m_independent_model->columnCount(); ++i)
+    if (m_independent_model->columnCount() != m_scaling.size())
+        for (int i = 0; i < m_independent_model->columnCount(); ++i)
             m_scaling << 1;
     m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
 
-DataClassPrivate::DataClassPrivate(int type) : m_type(type) , m_maxsize(0), m_host_assignment(0)
+DataClassPrivate::DataClassPrivate(int type)
+    : m_type(type)
+    , m_maxsize(0)
+    , m_host_assignment(0)
 {
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
     m_dependent_model->setCheckable(true);
-    m_raw_data = new DataTable;    
-    if(m_independent_model->columnCount() != m_scaling.size())
-        for(int i = 0; i < m_independent_model->columnCount(); ++i)
+    m_raw_data = new DataTable;
+    if (m_independent_model->columnCount() != m_scaling.size())
+        for (int i = 0; i < m_independent_model->columnCount(); ++i)
             m_scaling << 1;
     m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
 }
 
-
-DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(other)
+DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
+    : QSharedData(other)
 {
     m_independent_model = new DataTable(other.m_independent_model);
-    
+
     m_scaling = other.m_scaling;
     m_host_assignment = other.m_host_assignment;
     m_dependent_model = new DataTable(other.m_dependent_model);
@@ -522,66 +493,68 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other) : QSharedData(
     m_system_parameter = other.m_system_parameter;
 }
 
-DataClassPrivate::DataClassPrivate(const DataClassPrivate* other) 
+DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
 {
     m_independent_model = new DataTable(other->m_independent_model);
-    
+
     m_scaling = other->m_scaling;
-       m_host_assignment = other->m_host_assignment; 
+    m_host_assignment = other->m_host_assignment;
     m_dependent_model = new DataTable(other->m_dependent_model);
     m_raw_data = new DataTable(other->m_raw_data);
     m_type = other->m_type;
     m_system_parameter = other->m_system_parameter;
 }
 
-
 DataClassPrivate::~DataClassPrivate()
 {
-    if(m_independent_model)
+    if (m_independent_model)
         delete m_independent_model;
-    if(m_dependent_model)
+    if (m_dependent_model)
         delete m_dependent_model;
-    if(m_raw_data)
+    if (m_raw_data)
         delete m_raw_data;
 }
-
 
 void DataClassPrivate::check()
 {
     std::cout << "Check of data " << std::endl;
-    std::cout << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount()<< std::endl;
-    std::cout << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount()<< std::endl;
-    std::cout << "Raw Table ## Row:" << m_raw_data->rowCount() << " Colums: " << m_raw_data->columnCount()<< std::endl;
+    std::cout << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount() << std::endl;
+    std::cout << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount() << std::endl;
+    std::cout << "Raw Table ## Row:" << m_raw_data->rowCount() << " Colums: " << m_raw_data->columnCount() << std::endl;
 }
 
-
-DataClass::DataClass(QObject *parent) : QObject(parent)
+DataClass::DataClass(QObject* parent)
+    : QObject(parent)
 {
     d = new DataClassPrivate;
 }
 
-DataClass::DataClass(const QJsonObject &json, int type, QObject *parent):  QObject(parent)
+DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
+    : QObject(parent)
 {
     d = new DataClassPrivate();
     d->m_type = type;
     ImportData(json);
-    if(d->m_independent_model->columnCount() != d->m_scaling.size())
-    for(int i = 0; i < d->m_independent_model->columnCount(); ++i)
-        d->m_scaling << 1;
+    if (d->m_independent_model->columnCount() != d->m_scaling.size())
+        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
+            d->m_scaling << 1;
 }
 
-DataClass::DataClass(int type, QObject *parent) :  QObject(parent)
+DataClass::DataClass(int type, QObject* parent)
+    : QObject(parent)
 {
     d = new DataClassPrivate(type);
 }
 
-DataClass::DataClass(const DataClass& other): QObject()
+DataClass::DataClass(const DataClass& other)
+    : QObject()
 {
     d = other.d;
     m_systemObject = other.m_systemObject;
 }
 
-DataClass::DataClass(const DataClass* other): QObject()
+DataClass::DataClass(const DataClass* other)
+    : QObject()
 {
     d = other->d;
     m_systemObject = other->m_systemObject;
@@ -589,24 +562,20 @@ DataClass::DataClass(const DataClass* other): QObject()
 
 DataClass::~DataClass()
 {
-    
 }
 
-
-QList<double>   DataClass::getSignals(QList<int > active_signal)
+QList<double> DataClass::getSignals(QList<int> active_signal)
 {
-    if(active_signal.size() < SeriesCount() )
+    if (active_signal.size() < SeriesCount())
         active_signal = QVector<int>(SeriesCount(), 1).toList();
-    
-    QList<double > x;
-    for(int j = 0; j < SeriesCount(); ++j)
-    {
-        if(active_signal[j] != 1)
+
+    QList<double> x;
+    for (int j = 0; j < SeriesCount(); ++j) {
+        if (active_signal[j] != 1)
             continue;
-        for(int i = 0; i < DataPoints(); ++i)
-        {
-            if(DependentModel()->isChecked(j,i))
-                x.append(DependentModel()->data(j,i));
+        for (int i = 0; i < DataPoints(); ++i) {
+            if (DependentModel()->isChecked(j, i))
+                x.append(DependentModel()->data(j, i));
         }
     }
     return x;
@@ -615,118 +584,103 @@ QList<double>   DataClass::getSignals(QList<int > active_signal)
 void DataClass::SwitchConentrations()
 {
     d->m_host_assignment = !HostAssignment();
-    if(!d->m_host_assignment)
-    {
-       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host (A)"), Qt::DisplayRole);
-       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest (B)"), Qt::DisplayRole);
-    }else
-    {
-       d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Guest (A)"), Qt::DisplayRole);
-       d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Host (B)"), Qt::DisplayRole);
+    if (!d->m_host_assignment) {
+        d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host (A)"), Qt::DisplayRole);
+        d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest (B)"), Qt::DisplayRole);
+    } else {
+        d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Guest (A)"), Qt::DisplayRole);
+        d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Host (B)"), Qt::DisplayRole);
     }
 }
 
 qreal DataClass::InitialGuestConcentration(int i) const
 {
-    return d->m_independent_model->data(!HostAssignment(),i)*d->m_scaling[!HostAssignment()];
+    return d->m_independent_model->data(!HostAssignment(), i) * d->m_scaling[!HostAssignment()];
 }
 
 qreal DataClass::InitialHostConcentration(int i) const
 {
-    return d->m_independent_model->data(HostAssignment(),i)*d->m_scaling[HostAssignment()];
+    return d->m_independent_model->data(HostAssignment(), i) * d->m_scaling[HostAssignment()];
 }
 
-
-const QJsonObject DataClass::ExportData(const QList<int> &active) const
+const QJsonObject DataClass::ExportData(const QList<int>& active) const
 {
     QJsonObject json;
-    
+
     QJsonObject concentrationObject, signalObject, systemObject;
-    
-    for(int i = 0; i < DataPoints(); ++i)
-    {
+
+    for (int i = 0; i < DataPoints(); ++i) {
         concentrationObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_independent_model->Row(i));
-        if(active.size())
+        if (active.size())
             signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i, active));
         else
             signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i));
     }
-    
-    for(const int index : getSystemParameterList())
-    {
+
+    for (const int index : getSystemParameterList()) {
         systemObject[QString::number(index)] = getSystemParameter(index).value().toString();
     }
-    
+
     json["concentrations"] = concentrationObject;
     json["signals"] = signalObject;
     json["system"] = systemObject;
     json["datatype"] = QString("discrete");
     QStringList headers = QStringList() << d->m_independent_model->header();
-    if(active.size())
-    {
-        for(int i = 0; i < active.size(); ++i)
-            if(active[i])
+    if (active.size()) {
+        for (int i = 0; i < active.size(); ++i)
+            if (active[i])
                 headers << d->m_dependent_model->header()[i];
-    }
-    else
-    {
-       headers  << d->m_dependent_model->header();
+    } else {
+        headers << d->m_dependent_model->header();
     }
     json["header"] = headers.join("|");
     return json;
 }
 
-
-bool DataClass::ImportData(const QJsonObject &topjson)
+bool DataClass::ImportData(const QJsonObject& topjson)
 {
     QJsonObject concentrationObject, signalObject;
     concentrationObject = topjson["data"].toObject()["concentrations"].toObject();
     signalObject = topjson["data"].toObject()["signals"].toObject();
     m_systemObject = topjson["data"].toObject()["system"].toObject();
-    if(concentrationObject.isEmpty() || signalObject.isEmpty())
+    if (concentrationObject.isEmpty() || signalObject.isEmpty())
         return false;
-    
+
     QStringList keys = signalObject.keys();
-    
+
     QCollator collator;
     collator.setNumericMode(true);
     std::sort(
         keys.begin(),
-              keys.end(),
-              [&collator](const QString &key1, const QString &key2)
-              {
-                  return collator.compare(key1, key2) < 0;
-              });
-    if(DataPoints() == 0)
-    {
-        for(const QString &str: qAsConst(keys))
-        {
-            QVector<qreal > concentrationsVector, signalVector;
+        keys.end(),
+        [&collator](const QString& key1, const QString& key2) {
+            return collator.compare(key1, key2) < 0;
+        });
+    if (DataPoints() == 0) {
+        for (const QString& str : qAsConst(keys)) {
+            QVector<qreal> concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
             signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
             d->m_independent_model->insertRow(concentrationsVector);
             d->m_dependent_model->insertRow(signalVector);
         }
-            QStringList header = topjson["data"].toObject()["header"].toString().split("|");
-            setHeader(header);
+        QStringList header = topjson["data"].toObject()["header"].toString().split("|");
+        setHeader(header);
         return true;
-    }
-    else if(keys.size() != DataPoints())
-    {
+    } else if (keys.size() != DataPoints()) {
         qWarning() << "table size doesn't fit to imported data";
         return false;
     }
-    for(const QString &str: qAsConst(keys))
-    {
-        QVector<qreal > concentrationsVector, signalVector;
+    for (const QString& str : qAsConst(keys)) {
+        QVector<qreal> concentrationsVector, signalVector;
         concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
         signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
         int row = str.toInt();
         d->m_independent_model->setRow(concentrationsVector, row);
         d->m_dependent_model->setRow(signalVector, row);
     }
-    
-    if("discrete" == topjson["data"].toObject()["datatype"].toString())
+
+    if ("discrete" == topjson["data"].toObject()["datatype"].toString())
         d->m_type = 1;
     QStringList header = topjson["data"].toObject()["header"].toString().split("|");
     setHeader(header);
@@ -735,10 +689,9 @@ bool DataClass::ImportData(const QJsonObject &topjson)
 }
 
 void DataClass::LoadSystemParameter()
-{    
-    for(int index : getSystemParameterList())
-    {
-        if(m_systemObject[QString::number(index)].toString().isEmpty())
+{
+    for (int index : getSystemParameterList()) {
+        if (m_systemObject[QString::number(index)].toString().isEmpty())
             continue;
         setSystemParameterValue(index, m_systemObject[QString::number(index)].toVariant());
     }
@@ -746,14 +699,11 @@ void DataClass::LoadSystemParameter()
     emit SystemParameterLoaded();
 }
 
-
 void DataClass::setHeader(const QStringList& strlist)
 {
-    if(strlist.size() == (d->m_independent_model->columnCount() + d->m_dependent_model->columnCount()))
-    {
-        for(int i = 0; i < strlist.size(); ++i)
-        {
-            if(i < d->m_independent_model->columnCount())
+    if (strlist.size() == (d->m_independent_model->columnCount() + d->m_dependent_model->columnCount())) {
+        for (int i = 0; i < strlist.size(); ++i) {
+            if (i < d->m_independent_model->columnCount())
                 d->m_independent_model->setHeaderData(i, Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
             else
                 d->m_dependent_model->setHeaderData(i - d->m_independent_model->columnCount(), Qt::Horizontal, (strlist[i]), Qt::DisplayRole);
@@ -761,20 +711,20 @@ void DataClass::setHeader(const QStringList& strlist)
     }
 }
 
-void DataClass::OverrideInDependentTable(DataTable *table)
+void DataClass::OverrideInDependentTable(DataTable* table)
 {
     d.detach();
     d->m_independent_model = table;
 }
 
-void DataClass::OverrideDependentTable(DataTable *table)
+void DataClass::OverrideDependentTable(DataTable* table)
 {
     d.detach();
     table->setCheckedTable(d->m_dependent_model->CheckedTable());
     d->m_dependent_model = table;
 }
 
-void DataClass::OverrideCheckedTable(DataTable *table)
+void DataClass::OverrideCheckedTable(DataTable* table)
 {
     d.detach();
     d->m_dependent_model->setCheckedTable(table->CheckedTable());
@@ -782,7 +732,7 @@ void DataClass::OverrideCheckedTable(DataTable *table)
 
 void DataClass::addSystemParameter(int index, const QString& str, const QString& description, SystemParameter::Type type)
 {
-    if(d->m_system_parameter.contains(index))
+    if (d->m_system_parameter.contains(index))
         return;
     SystemParameter parameter(index, str, description, type);
     d->m_system_parameter.insert(index, parameter);
@@ -800,7 +750,7 @@ QList<int> DataClass::getSystemParameterList() const
 
 void DataClass::setSystemParameterValue(int index, const QVariant& value)
 {
-    if(!value.isValid())
+    if (!value.isValid())
         return;
 
     SystemParameter parameter = getSystemParameter(index);
@@ -812,7 +762,7 @@ void DataClass::setSystemParameterValue(int index, const QVariant& value)
 void DataClass::setSystemParameter(const SystemParameter& parameter)
 {
     int index = parameter.Index();
-    if(d->m_system_parameter.contains(index))
+    if (d->m_system_parameter.contains(index))
         d->m_system_parameter[index] = parameter;
     emit SystemParameterChanged();
 }
@@ -820,8 +770,7 @@ void DataClass::setSystemParameter(const SystemParameter& parameter)
 void DataClass::WriteSystemParameter()
 {
     QJsonObject systemObject;
-    for(const int index : getSystemParameterList())
-    {
+    for (const int index : getSystemParameterList()) {
         systemObject[QString::number(index)] = getSystemParameter(index).value().toString();
     }
     m_systemObject = systemObject;

@@ -31,23 +31,21 @@
 
 class AbstractModel;
 
-class NonLinearFitThread : public QObject, public QRunnable
-{
- Q_OBJECT
+class NonLinearFitThread : public QObject, public QRunnable {
+    Q_OBJECT
 
 public:
-    
     NonLinearFitThread(bool exchange_statistics = true);
     ~NonLinearFitThread();
-    void setModel(const QSharedPointer< AbstractModel > model, bool clone = true);
-   
+    void setModel(const QSharedPointer<AbstractModel> model, bool clone = true);
+
     QSharedPointer<AbstractModel> Model() const { return m_model; }
     inline void setOptimizationRun(OptimizationType runtype) { m_runtype = runtype; }
     virtual void run();
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
     inline QJsonObject BestIntermediateParameter() const { return m_best_intermediate; }
-    void setParameter(const QJsonObject &json);
-    inline void setOptimizerConfig(const OptimizerConfig &config) { m_opt_config = config; }
+    void setParameter(const QJsonObject& json);
+    inline void setOptimizerConfig(const OptimizerConfig& config) { m_opt_config = config; }
     inline bool Converged() const { return m_converged; }
     inline qreal SumOfError() const { return m_sum_error; }
 
@@ -64,37 +62,33 @@ private:
     qreal m_sum_error;
 
 signals:
-    void Message(const QString &str, int priority);
-    void Warning(const QString &str, int priority);
+    void Message(const QString& str, int priority);
+    void Warning(const QString& str, int priority);
     void finished(int msecs);
-    
+
 private slots:
-    void Print(const QString &message);
-        
+    void Print(const QString& message);
 };
 
-
-
-class Minimizer : public QObject
-{
+class Minimizer : public QObject {
     Q_OBJECT
 public:
-    Minimizer(bool exchange_statistics = true, QObject *parent = 0);
+    Minimizer(bool exchange_statistics = true, QObject* parent = 0);
     ~Minimizer();
     void setModel(const QSharedPointer<AbstractModel> model);
     void setModelCloned(const QSharedPointer<AbstractModel> model);
     int Minimize(OptimizationType runtype);
-    int Minimize(OptimizationType runtype, const QList<int> &locked);
-    void setOptimizerConfig(const OptimizerConfig &config) 
-    { 
+    int Minimize(OptimizationType runtype, const QList<int>& locked);
+    void setOptimizerConfig(const OptimizerConfig& config)
+    {
         m_opt_config = config;
         m_inform_config_changed = true;
     }
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     void addToHistory();
-    inline QJsonObject Parameter() const{ return m_last_parameter; }
-    void setParameter(const QJsonObject &json, const QList<int> &locked);
-    void setParameter(const QJsonObject &json);
+    inline QJsonObject Parameter() const { return m_last_parameter; }
+    void setParameter(const QJsonObject& json, const QList<int>& locked);
+    void setParameter(const QJsonObject& json);
     QPointer<NonLinearFitThread> addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start = true);
     inline qreal SumOfError() const { return m_sum_error; }
 
@@ -108,9 +102,9 @@ private:
     qreal m_sum_error;
 
 signals:
-    void Message(const QString &str, int priority);
-    void Warning(const QString &str, int priority);
+    void Message(const QString& str, int priority);
+    void Warning(const QString& str, int priority);
     void RequestCrashFile();
     void RequestRemoveCrashFile();
-    void InsertModel(const QJsonObject &model, int active);
+    void InsertModel(const QJsonObject& model, int active);
 };

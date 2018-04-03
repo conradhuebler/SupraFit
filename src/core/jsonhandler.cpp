@@ -19,27 +19,27 @@
 
 #include "jsonhandler.h"
 
+#include <QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
-#include <QDebug>
 
 bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 {
     QFile loadFile(file);
-     if (!loadFile.open(QIODevice::ReadOnly)) {
-        qWarning() << "Couldn't open file!" <<  loadFile.errorString();
+    if (!loadFile.open(QIODevice::ReadOnly)) {
+        qWarning() << "Couldn't open file!" << loadFile.errorString();
         return false;
     }
 
     QByteArray saveData = loadFile.readAll();
 
     QJsonDocument loadDoc;
-    if(file.contains("json"))
+    if (file.contains("json"))
         loadDoc = QJsonDocument::fromJson(saveData);
-    else if(file.contains("jdat") || file.contains("suprafit"))
+    else if (file.contains("jdat") || file.contains("suprafit"))
         loadDoc = QJsonDocument::fromJson(qUncompress(saveData));
-    
+
     json = loadDoc.object();
     return true;
 }
@@ -54,10 +54,10 @@ bool JsonHandler::WriteJsonFile(const QJsonObject& json, const QString& file)
     }
 
     QJsonDocument saveDoc(json);
-      if(file.contains("json"))
-        saveFile.write( saveDoc.toJson() );
-    else if(file.contains("jdat") || file.contains("suprafit"))
-        saveFile.write( qCompress(saveDoc.toJson(QJsonDocument::Compact),9) );
+    if (file.contains("json"))
+        saveFile.write(saveDoc.toJson());
+    else if (file.contains("jdat") || file.contains("suprafit"))
+        saveFile.write(qCompress(saveDoc.toJson(QJsonDocument::Compact), 9));
     return true;
 }
 
@@ -71,10 +71,10 @@ bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file)
     }
 
     QJsonDocument saveDoc(json);
-    if(file.contains("json"))
-        saveFile.write( saveDoc.toJson()        );
-    else if(file.contains("jdat") || file.contains("suprafit"))
-        saveFile.write( qCompress(saveDoc.toJson(QJsonDocument::Compact), 9) );
+    if (file.contains("json"))
+        saveFile.write(saveDoc.toJson());
+    else if (file.contains("jdat") || file.contains("suprafit"))
+        saveFile.write(qCompress(saveDoc.toJson(QJsonDocument::Compact), 9));
     return true;
 }
 

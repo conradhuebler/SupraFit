@@ -27,31 +27,30 @@ class ChartWrapper;
 
 class QJsonObject;
 
-class ResultsWidget : public QWidget
-{
+class ResultsWidget : public QWidget {
     Q_OBJECT
-    
+
 public:
-    ResultsWidget(const QJsonObject &data, QSharedPointer<AbstractModel> model, ChartWrapper *wrapper, const QList<QJsonObject > &models = QList<QJsonObject >() );
+    ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models = QList<QJsonObject>());
     ~ResultsWidget();
-    
+
 private:
-    QWidget *MonteCarloWidget();
-    QWidget *ReductionWidget();
-    QWidget *ModelComparisonWidget();
-    QWidget *GridSearchWidget();
-    QWidget *SearchWidget();
+    QWidget* MonteCarloWidget();
+    QWidget* ReductionWidget();
+    QWidget* ModelComparisonWidget();
+    QWidget* GridSearchWidget();
+    QWidget* SearchWidget();
     void setUi();
-    inline QSize ChartSize() const { return QSize(400,300); }
-        
+    inline QSize ChartSize() const { return QSize(400, 300); }
+
     QJsonObject m_data;
-    
-    ChartWrapper *m_wrapper;
-    QList<QJsonObject > m_models ;
-    QWidget *m_widget;
-    QLabel *m_confidence_label;
-    QSharedPointer< AbstractModel > m_model;
+
+    ChartWrapper* m_wrapper;
+    QList<QJsonObject> m_models;
+    QWidget* m_widget;
+    QLabel* m_confidence_label;
+    QSharedPointer<AbstractModel> m_model;
 
 private slots:
-    void WriteConfidence(const QJsonObject &data);
-};    
+    void WriteConfidence(const QJsonObject& data);
+};

@@ -20,13 +20,13 @@
 #pragma once
 #include "src/core/dataclass.h"
 
-#include <QtCore/QVector>
 #include <QtCore/QPointer>
+#include <QtCore/QVector>
 
 #include <QtWidgets/QGroupBox>
-#include <QtWidgets/QWidget>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTableWidget>
+#include <QtWidgets/QWidget>
 
 class QPushButton;
 class QLabel;
@@ -42,8 +42,7 @@ class SignalElement;
 class SystemParameterWidget;
 class RegressionAnalysisDialog;
 
-class DataWidget : public QWidget
-{
+class DataWidget : public QWidget {
     Q_OBJECT
 
 public:
@@ -51,23 +50,23 @@ public:
     ~DataWidget();
     void setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper);
     void setEditable(bool editable);
-    
+
 private:
-    QTableView  *m_concentrations, *m_signals;
-    QPushButton  *m_switch, *m_linear;
-    QWeakPointer<DataClass > m_data;
+    QTableView *m_concentrations, *m_signals;
+    QPushButton *m_switch, *m_linear;
+    QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
-    QLineEdit *m_name;
+    QLineEdit* m_name;
     QLabel *m_datapoints, *m_substances, *m_const_subs, *m_signals_count;
     QWidget *m_tables, *m_widget;
-    QSplitter *m_splitter;
-    QVector<QPointer<SignalElement > > m_signal_elements;
-    QGridLayout *layout;
-    QList<QPointer<QDoubleSpinBox > > m_scaling_boxes;
-    QWidget *m_systemwidget;
+    QSplitter* m_splitter;
+    QVector<QPointer<SignalElement>> m_signal_elements;
+    QGridLayout* layout;
+    QList<QPointer<QDoubleSpinBox>> m_scaling_boxes;
+    QWidget* m_systemwidget;
     bool m_system_parameter_loaded;
-    RegressionAnalysisDialog *dialog;
-    
+    RegressionAnalysisDialog* dialog;
+
 private slots:
     void ShowContextMenu(const QPoint& pos);
     void switchHG();
@@ -76,7 +75,7 @@ private slots:
     void HidePoint();
     void MakeSystemParameter();
     void LinearAnalysis();
-    
+
 signals:
     void recalculate();
     void NameChanged();

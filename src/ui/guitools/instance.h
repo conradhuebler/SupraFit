@@ -21,27 +21,26 @@
 
 #include <QtCore/QObject>
 
-template <class T> class InstancePointer
-{
+template <class T>
+class InstancePointer {
 public:
     static T* asPtr(QVariant v)
     {
-	return  (T *) v.value<void *>();
+        return (T*)v.value<void*>();
     }
     static QVariant asQVariant(T* ptr)
     {
-	return qVariantFromValue((void *) ptr);
+        return qVariantFromValue((void*)ptr);
     }
 };
 
-class Instance : public QObject
-{
+class Instance : public QObject {
     Q_OBJECT
 
 public:
-    inline static void setInstance(QPointer<Instance> instance) { qApp->instance()->setProperty("InstanceHolder", InstancePointer<Instance >::asQVariant(instance) ); }
-    inline static Instance* GlobalInstance() {  return InstancePointer<Instance >::asPtr(qApp->instance()->property("InstanceHolder")); }
-    
+    inline static void setInstance(QPointer<Instance> instance) { qApp->instance()->setProperty("InstanceHolder", InstancePointer<Instance>::asQVariant(instance)); }
+    inline static Instance* GlobalInstance() { return InstancePointer<Instance>::asPtr(qApp->instance()->property("InstanceHolder")); }
+
 signals:
     void ConfigurationChanged();
 };

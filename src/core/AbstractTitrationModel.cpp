@@ -23,18 +23,19 @@
 
 #include <QtMath>
 
+#include "AbstractTitrationModel.h"
 #include <QDebug>
+#include <QtCore/QCollator>
+#include <QtCore/QDateTime>
+#include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
-#include <QtCore/QJsonArray>
-#include <QtCore/QDateTime>
-#include <QtCore/QCollator>
-#include <cmath>
 #include <cfloat>
+#include <cmath>
 #include <iostream>
-#include "AbstractTitrationModel.h"
 
-AbstractTitrationModel::AbstractTitrationModel(DataClass *data) : AbstractModel(data)
+AbstractTitrationModel::AbstractTitrationModel(DataClass* data)
+    : AbstractModel(data)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter);
 
@@ -43,7 +44,8 @@ AbstractTitrationModel::AbstractTitrationModel(DataClass *data) : AbstractModel(
     m_ylabel = "&delta; [ppm]";
 }
 
-AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel *other) : AbstractModel(other)
+AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel* other)
+    : AbstractModel(other)
 {
     m_last_optimization = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter);
 
@@ -54,45 +56,41 @@ AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel *other) : 
 
 AbstractTitrationModel::~AbstractTitrationModel()
 {
-
 }
 
 void AbstractTitrationModel::DeclareOptions()
 {
-    QStringList host = QStringList() << "yes" << "no";
+    QStringList host = QStringList() << "yes"
+                                     << "no";
     addOption(Host, "Fix Host Signal", host);
     setOption(Host, "no");
 
-    QStringList method = QStringList() << "NMR" << "UV/VIS";
+    QStringList method = QStringList() << "NMR"
+                                       << "UV/VIS";
     addOption(Method, "Method", method);
     setOption(Method, "NMR");
 }
 
-
-
 void AbstractTitrationModel::EvaluateOptions()
 {
-    if(getOption(Method) == "UV/VIS")
+    if (getOption(Method) == "UV/VIS")
         m_ylabel = "I";
     else
         m_ylabel = "&delta; [ppm]";
 }
 
-
 void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 {
-    if(!m_concentrations)
-    {
-        m_concentrations = new DataTable( equilibrium.rows(), DataPoints(), this);
+    if (!m_concentrations) {
+        m_concentrations = new DataTable(equilibrium.rows(), DataPoints(), this);
         m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
         m_concentrations->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
         m_concentrations->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
-        for(int i = 0; i < GlobalParameterSize(); ++i)
+        for (int i = 0; i < GlobalParameterSize(); ++i)
             m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
     }
     m_concentrations->setRow(equilibrium, i);
 }
-
 
 qreal AbstractTitrationModel::BC50() const
 {
@@ -109,7 +107,7 @@ MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
     Q_UNUSED(A)
     Q_UNUSED(B)
     MassResults result;
-    Vector values(1) ;
+    Vector values(1);
     values(0) = 0;
     result.MassBalance = values;
     return result;
@@ -119,7 +117,7 @@ QString AbstractTitrationModel::formatedGlobalParameter(qreal value, int globalP
 {
     Q_UNUSED(globalParameter)
     QString string;
-    string = QString::number(qPow(10,value));
+    string = QString::number(qPow(10, value));
     return string;
 }
 
@@ -128,58 +126,55 @@ QString AbstractTitrationModel::Model2Text_Private() const
     QString text;
 
     text += "Equilibrium concentration calculated with complexation constants:\n";
-    for(int i = 0; i < getConcentrations()->columnCount(); ++i)
-    {
+    for (int i = 0; i < getConcentrations()->columnCount(); ++i) {
         text += " " + getConcentrations()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     }
     text += "\n";
     text += getConcentrations()->ExportAsString();
     text += "\n\n";
     text += "Equilibrium Model Signal calculated with complexation constants:\n";
-    for(int i = 0; i < DependentModel()->columnCount(); ++i)
+    for (int i = 0; i < DependentModel()->columnCount(); ++i)
         text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     return text;
 }
 
 qreal AbstractTitrationModel::PrintOutIndependent(int i, int format) const
 {
-    switch(format){
-            case PlotMode::G:
-                    return InitialGuestConcentration(i); 
-                break;
-                
-            case PlotMode::H:   
-                    return InitialHostConcentration(i);
-                break;
-                
-            case PlotMode::HG:
-                    return InitialHostConcentration(i)/InitialGuestConcentration(i);                
-                break;    
-                
-            case PlotMode::GH:
-            default:
-                    return InitialGuestConcentration(i)/InitialHostConcentration(i);                   
-                break;    
-        };
+    switch (format) {
+    case PlotMode::G:
+        return InitialGuestConcentration(i);
+        break;
+
+    case PlotMode::H:
+        return InitialHostConcentration(i);
+        break;
+
+    case PlotMode::HG:
+        return InitialHostConcentration(i) / InitialGuestConcentration(i);
+        break;
+
+    case PlotMode::GH:
+    default:
+        return InitialGuestConcentration(i) / InitialHostConcentration(i);
+        break;
+    };
 }
 
-QString AbstractTitrationModel::ModelInfo() const 
+QString AbstractTitrationModel::ModelInfo() const
 {
-    qreal bc50 = BC50()*1E6;
-    qreal bc50sf = BC50SF()*1E6;
+    qreal bc50 = BC50() * 1E6;
+    qreal bc50sf = BC50SF() * 1E6;
     QString format_text;
-    if(bc50 > 0 || bc50sf > 0)
-    {
+    if (bc50 > 0 || bc50sf > 0) {
         format_text = tr("<p>BC50<sub>0</sub>: %1").arg(bc50);
         QChar mu = QChar(956);
-        format_text += QString(" [") + mu +  QString("M]</p>");
-        if(bc50 != bc50sf)
-        {
+        format_text += QString(" [") + mu + QString("M]</p>");
+        if (bc50 != bc50sf) {
             format_text += tr("<p>BC50<sub>0</sub> (SF): %1").arg(bc50sf);
             format_text += QString(" [") + mu + QString("M]</p>");
         }
         return format_text;
-    }else
+    } else
         return QString();
 }
 
@@ -187,25 +182,21 @@ qreal AbstractTitrationModel::Guess_1_1() const
 {
     qreal K11 = 0;
     QVector<qreal> x;
-    QVector< QVector<qreal> > y(SeriesCount());
-    for(int i = 1; i < DataPoints(); ++i)
-    {
-        if(!(InitialHostConcentration(i)*InitialGuestConcentration(i)))
+    QVector<QVector<qreal>> y(SeriesCount());
+    for (int i = 1; i < DataPoints(); ++i) {
+        if (!(InitialHostConcentration(i) * InitialGuestConcentration(i)))
             continue;
-        x << (1/InitialHostConcentration(i)/InitialGuestConcentration(i));
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
-            y[j] << 1/(DependentModel()->data(j,i)-DependentModel()->data(j,0));
+        x << (1 / InitialHostConcentration(i) / InitialGuestConcentration(i));
+        for (int j = 0; j < SeriesCount(); ++j) {
+            y[j] << 1 / (DependentModel()->data(j, i) - DependentModel()->data(j, 0));
         }
     }
-    for(int i = 0; i < SeriesCount(); ++i)
-    {
+    for (int i = 0; i < SeriesCount(); ++i) {
         LinearRegression regress = LeastSquares(x, y[i]);
-        K11 += qLn(qAbs(1/regress.m))/2.3;
+        K11 += qLn(qAbs(1 / regress.m)) / 2.3;
     }
     K11 /= double(SeriesCount());
     return K11;
 }
-
 
 #include "AbstractTitrationModel.moc"

@@ -22,11 +22,10 @@
 
 #include <QApplication>
 
-class Waiter
-{
+class Waiter {
 public:
-    inline Waiter() {QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));}
-    inline ~Waiter() {QApplication::restoreOverrideCursor();}
+    inline Waiter() { QApplication::setOverrideCursor(QCursor(Qt::WaitCursor)); }
+    inline ~Waiter() { QApplication::restoreOverrideCursor(); }
 };
 
 #endif

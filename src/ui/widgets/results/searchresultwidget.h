@@ -30,35 +30,34 @@ class QPushButton;
 class ScientificBox;
 class QCheckBox;
 
-class SearchResultWidget : public QWidget
-{
+class SearchResultWidget : public QWidget {
     Q_OBJECT
-    
+
 public:
-    SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget *parent);
+    SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget* parent);
     ~SearchResultWidget();
-    
+
 private:
     QList<QJsonObject> m_models;
-    QTableView *m_table;
-    ChartView *m_contour;
+    QTableView* m_table;
+    ChartView* m_contour;
     QSharedPointer<AbstractModel> m_model;
-    QCheckBox *m_valid;
-    ScientificBox *m_threshold;
+    QCheckBox* m_valid;
+    ScientificBox* m_threshold;
     QPushButton *m_export, *m_switch;
-    QVector<QList <qreal > >m_input;
+    QVector<QList<qreal>> m_input;
     QPointer<GlobalSearch> m_globalsearch;
     QTableView* BuildList();
     ChartView* BuildContour();
-    QList< GSResult > m_results;
+    QList<GSResult> m_results;
 
 private slots:
-    void rowSelected(const QModelIndex &index);
+    void rowSelected(const QModelIndex& index);
     void ShowContextMenu(const QPoint& pos);
     void ExportModels();
     void SwitchView();
-    
+
 signals:
-    void LoadModel(const QJsonObject &object);
-    void AddModel(const QJsonObject &object);
+    void LoadModel(const QJsonObject& object);
+    void AddModel(const QJsonObject& object);
 };

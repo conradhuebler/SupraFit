@@ -18,12 +18,12 @@
  */
 
 #include "src/core/equil.h"
-#include "src/core/models.h"
 #include "src/core/libmath.h"
+#include "src/core/models.h"
 #include "src/core/toolset.h"
 
-#include <QtMath>
 #include <QDebug>
+#include <QtMath>
 
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
@@ -32,50 +32,47 @@
 
 #include "fl_1_1_1_2_Model.h"
 
-fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(DataClass* data) : AbstractTitrationModel(data)
+fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(DataClass* data)
+    : AbstractTitrationModel(data)
 {
-    PrepareParameter(GlobalParameterSize(), LocalParameterSize());    
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
 fl_ItoI_ItoII_Model::~fl_ItoI_ItoII_Model()
 {
-    
 }
 
 void fl_ItoI_ItoII_Model::DeclareOptions()
 {
-     QStringList cooperativity = QStringList() << "full" << "noncooperative" << "additive" << "statistical";
-     addOption(Cooperativity, "Cooperativity", cooperativity);
-    
+    QStringList cooperativity = QStringList() << "full"
+                                              << "noncooperative"
+                                              << "additive"
+                                              << "statistical";
+    addOption(Cooperativity, "Cooperativity", cooperativity);
+
     // QStringList host = QStringList() << "Host" << "no Host";
     // addOption("Host", host);
-     
 }
 
 void fl_ItoI_ItoII_Model::EvaluateOptions()
 {
-    
+
     QString cooperativitiy = getOption(Cooperativity);
-    
-    auto global_coop = [this]()
-    {
-        this->m_global_parameter[1] = log10(double(0.25)*qPow(10,this->m_global_parameter[0]));
-    };
-    
-    auto local_coop = [this]()
-    {
-        for(int i = 0; i < this->SeriesCount(); ++i)
-            this->m_local_parameter->data(2,i) = 2*(this->m_local_parameter->data(1,i)-this->m_local_parameter->data(0,i))+this->m_local_parameter->data(0,i);
+
+    auto global_coop = [this]() {
+        this->m_global_parameter[1] = log10(double(0.25) * qPow(10, this->m_global_parameter[0]));
     };
 
-    if(cooperativitiy == "noncooperative")
-    {
+    auto local_coop = [this]() {
+        for (int i = 0; i < this->SeriesCount(); ++i)
+            this->m_local_parameter->data(2, i) = 2 * (this->m_local_parameter->data(1, i) - this->m_local_parameter->data(0, i)) + this->m_local_parameter->data(0, i);
+    };
+
+    if (cooperativitiy == "noncooperative") {
         global_coop();
-    }else if(cooperativitiy == "additive")
-    {
+    } else if (cooperativitiy == "additive") {
         local_coop();
-    }else if(cooperativitiy == "statistical")
-    {
+    } else if (cooperativitiy == "statistical") {
         local_coop();
         global_coop();
     }
@@ -93,16 +90,15 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
 }
 
 void fl_ItoI_ItoII_Model::InitialGuess()
-{   
+{
     m_global_parameter = QList<qreal>() << 4 << 2;
 
     qreal factor = InitialHostConcentration(0);
-    
 
-    m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e3, 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow()/factor/1e4, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 2);
-    m_local_parameter->setColumn(DependentModel()->lastRow()/factor/1e4, 3);
+    m_local_parameter->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
+    m_local_parameter->setColumn(DependentModel()->firstRow() / factor / 1e4, 1);
+    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e4, 2);
+    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e4, 3);
 
     AbstractTitrationModel::Calculate();
 }
@@ -110,53 +106,47 @@ void fl_ItoI_ItoII_Model::InitialGuess()
 QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
 {
     QString coop12 = getOption(Cooperativity);
-    if((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
-    {
+    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter) {
         addGlobalParameter(0);
 
-        if(coop12 == "additive" || coop12 == "full")
+        if (coop12 == "additive" || coop12 == "full")
             addGlobalParameter(1);
     }
 
-    if((type & OptimizationType::LocalParameter) == (OptimizationType::GlobalParameter))
-    {
-         //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
-             addLocalParameter(0);
-         addLocalParameter(1);
-         if(!(coop12 == "additive" || coop12 == "statistical"))
-             addLocalParameter(2);
-    } 
-    QVector<qreal >parameter;
-    for(int i = 0; i < m_opt_para.size(); ++i)
+    if ((type & OptimizationType::LocalParameter) == (OptimizationType::GlobalParameter)) {
+        //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
+        addLocalParameter(0);
+        addLocalParameter(1);
+        if (!(coop12 == "additive" || coop12 == "statistical"))
+            addLocalParameter(2);
+    }
+    QVector<qreal> parameter;
+    for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
 }
-
-
 
 void fl_ItoI_ItoII_Model::CalculateVariables()
 {
     QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    qreal K12= qPow(10, GlobalParameter().last());
+    qreal K12 = qPow(10, GlobalParameter().last());
     qreal K11 = qPow(10, GlobalParameter().first());
 
     qreal host_zero, guest_zero;
-    QVector<qreal > F0(SeriesCount());
+    QVector<qreal> F0(SeriesCount());
 
-    for(int i = 0; i < DataPoints(); ++i)
-    {
+    for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
         qreal host = ItoI_ItoII::HostConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
-        qreal complex_11 = K11*host*guest;
-        qreal complex_12 = K11*K12*host*guest*guest;
+        qreal complex_11 = K11 * host * guest;
+        qreal complex_12 = K11 * K12 * host * guest * guest;
 
-        if(i == 0)
-        {
+        if (i == 0) {
             host_zero = host;
             guest_zero = guest;
         }
@@ -168,28 +158,25 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
         vector(3) = complex_11;
         vector(4) = complex_12;
 
-        if(!m_fast)
+        if (!m_fast)
             SetConcentration(i, vector);
 
         qreal value = 0;
-        for(int j = 0; j < SeriesCount(); ++j)
-        {
-            if(i == 0)
-            {
-                F0[j] = host_0*m_local_parameter->data(0, j);
+        for (int j = 0; j < SeriesCount(); ++j) {
+            if (i == 0) {
+                F0[j] = host_0 * m_local_parameter->data(0, j);
                 value = F0[j];
-            }else
-                value = (host*m_local_parameter->data(1, j) + complex_11*m_local_parameter->data(2, j) + complex_12*m_local_parameter->data(3, j));
-            
+            } else
+                value = (host * m_local_parameter->data(1, j) + complex_11 * m_local_parameter->data(2, j) + complex_12 * m_local_parameter->data(3, j));
 
-            SetValue(i, j, value*1e3);
+            SetValue(i, j, value * 1e3);
         }
     }
 }
 
-QSharedPointer<AbstractModel > fl_ItoI_ItoII_Model::Clone()
+QSharedPointer<AbstractModel> fl_ItoI_ItoII_Model::Clone()
 {
-    QSharedPointer<fl_ItoI_ItoII_Model > model = QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(this), &QObject::deleteLater);    
+    QSharedPointer<fl_ItoI_ItoII_Model> model = QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(this), &QObject::deleteLater);
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->ImportModel(ExportModel());
     model.data()->setLockedParameter(LockedParamters());
@@ -197,27 +184,26 @@ QSharedPointer<AbstractModel > fl_ItoI_ItoII_Model::Clone()
     return model;
 }
 
-qreal fl_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal> &parameter)
+qreal fl_ItoI_ItoII_Model::Y(qreal x, const QVector<qreal>& parameter)
 {
-    if(2 != parameter.size())
+    if (2 != parameter.size())
         return 0;
     qreal b11 = parameter[0];
     qreal b12 = parameter[1];
-    qreal B = -b11/2/b12 + sqrt((qPow(b11,2))/(4*qPow(b12,2))+((x/(1-x))/b12));
-    qreal A = 1/(b11+2*b12*B);
-    return 1./(A + b11*A*B+b12*A*qPow(B,2));
+    qreal B = -b11 / 2 / b12 + sqrt((qPow(b11, 2)) / (4 * qPow(b12, 2)) + ((x / (1 - x)) / b12));
+    qreal A = 1 / (b11 + 2 * b12 * B);
+    return 1. / (A + b11 * A * B + b12 * A * qPow(B, 2));
 }
-
 
 qreal fl_ItoI_ItoII_Model::BC50() const
 {
-    qreal b11 = qPow(10,GlobalParameter(0));
-    qreal b12 = qPow(10,GlobalParameter(0)+GlobalParameter(1));
+    qreal b11 = qPow(10, GlobalParameter(0));
+    qreal b12 = qPow(10, GlobalParameter(0) + GlobalParameter(1));
     QVector<qreal> parameter;
     parameter << b11 << b12;
-    std::function<qreal(qreal, const QVector<qreal> &)> function = Y;
+    std::function<qreal(qreal, const QVector<qreal>&)> function = Y;
     qreal integ = ToolSet::SimpsonIntegrate(0, 1, function, parameter);
-    return double(1)/double(2)/integ;
+    return double(1) / double(2) / integ;
 }
 
 #include "fl_1_1_1_2_Model.moc"

@@ -18,37 +18,40 @@
  */
 
 #include "src/capabilities/globalsearch.h"
-#include "src/core/toolset.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
+#include "src/core/toolset.h"
 #include "src/ui/widgets/buttons/scientificbox.h"
 #include "src/ui/widgets/chartview.h"
 
-#include <QtCore/QJsonObject>
-#include <QtCore/QSharedPointer>
 #include <QtCore/QCollator>
 #include <QtCore/QFile>
+#include <QtCore/QJsonObject>
+#include <QtCore/QSharedPointer>
 
-#include <QStandardItemModel>
 #include <QSortFilterProxyModel>
+#include <QStandardItemModel>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QWidget>
-#include <QtWidgets/QGridLayout>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QFileDialog>
 
-#include <QtCharts/QScatterSeries>
 #include <QtCharts/QChart>
+#include <QtCharts/QScatterSeries>
 
 #include "searchresultwidget.h"
 
-SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget *parent) : QWidget(parent), m_globalsearch(globalsearch), m_model(model)
-{    
+SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget* parent)
+    : QWidget(parent)
+    , m_globalsearch(globalsearch)
+    , m_model(model)
+{
     m_results = m_globalsearch->Result();
-    
-    QGridLayout *layout = new QGridLayout;
+
+    QGridLayout* layout = new QGridLayout;
     m_switch = new QPushButton(tr("Switch View"));
     m_export = new QPushButton(tr("Export Models"));
     m_valid = new QCheckBox(tr("Invalid Models"));
@@ -59,10 +62,10 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
     layout->addWidget(m_threshold, 0, 2);
     layout->addWidget(m_valid, 0, 3);
     layout->addWidget(m_export, 0, 4);
-    
-    if(!m_model)
+
+    if (!m_model)
         throw 1;
-    
+
     m_table = BuildList();
     m_table->setSortingEnabled(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -72,7 +75,7 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportModels()));
     connect(m_switch, SIGNAL(clicked()), this, SLOT(SwitchView()));
     layout->addWidget(m_table, 1, 0, 1, 5);
-    
+
     m_contour = BuildContour();
     layout->addWidget(m_contour, 1, 0, 1, 5);
     m_contour->hide();
@@ -81,19 +84,17 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
 
 SearchResultWidget::~SearchResultWidget()
 {
-
 }
 
 QTableView* SearchResultWidget::BuildList()
 {
-    QTableView *table = new QTableView(this);
-    QStandardItemModel *model = new QStandardItemModel;
-    QStringList header = QStringList() <<  "Sum of Squares";
+    QTableView* table = new QTableView(this);
+    QStandardItemModel* model = new QStandardItemModel;
+    QStringList header = QStringList() << "Sum of Squares";
     int size_optimsed;
-    for(int i = 0; i < m_results.size(); ++i)
-    {
+    for (int i = 0; i < m_results.size(); ++i) {
         double error = m_results[i].SumError;
-        QStandardItem *item = new QStandardItem(QString::number(error));
+        QStandardItem* item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         item->setData(error, Qt::UserRole + 1);
         model->setItem(i, 0, item);
@@ -101,42 +102,36 @@ QTableView* SearchResultWidget::BuildList()
         QVector<qreal> initial = m_results[i].initial;
         QVector<qreal> optimised = m_results[i].optimised;
         size_optimsed = optimised.size();
-        for(int l = 0; l < m_model->GlobalParameterSize(); ++l)
-        {
-            QStandardItem *item = new QStandardItem(QString::number(initial[l]));
+        for (int l = 0; l < m_model->GlobalParameterSize(); ++l) {
+            QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
             item->setData(initial[l], Qt::UserRole + 1);
             model->setItem(i, j, item);
             j++;
         }
-        if(!m_model->SupportSeries())
-        {
-            for(int l =  m_model->GlobalParameterSize(); l < initial.size(); ++l)
-            {
-                if(!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
+        if (!m_model->SupportSeries()) {
+            for (int l = m_model->GlobalParameterSize(); l < initial.size(); ++l) {
+                if (!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
                     continue;
-                QStandardItem *item = new QStandardItem(QString::number(initial[l]));
+                QStandardItem* item = new QStandardItem(QString::number(initial[l]));
                 item->setData(i, Qt::UserRole);
                 item->setData(initial[l], Qt::UserRole + 1);
                 model->setItem(i, j, item);
                 j++;
             }
         }
-        for(int l = 0; l < m_model->GlobalParameterSize(); ++l)
-        {
-            QStandardItem *item = new QStandardItem(QString::number(optimised[l]));
+        for (int l = 0; l < m_model->GlobalParameterSize(); ++l) {
+            QStandardItem* item = new QStandardItem(QString::number(optimised[l]));
             item->setData(i, Qt::UserRole);
             item->setData(optimised[l], Qt::UserRole + 1);
             model->setItem(i, j, item);
             j++;
         }
-        if(!m_model->SupportSeries())
-        {
-            for(int l =  m_model->GlobalParameterSize(); l < optimised.size(); ++l)
-            {
-                if(!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
+        if (!m_model->SupportSeries()) {
+            for (int l = m_model->GlobalParameterSize(); l < optimised.size(); ++l) {
+                if (!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
                     continue;
-                QStandardItem *item = new QStandardItem(QString::number(optimised[l]));
+                QStandardItem* item = new QStandardItem(QString::number(optimised[l]));
                 item->setData(i, Qt::UserRole);
                 item->setData(optimised[l], Qt::UserRole + 1);
                 model->setItem(i, j, item);
@@ -147,21 +142,19 @@ QTableView* SearchResultWidget::BuildList()
     }
 
     QStringList head;
-    for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
+    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
         head << m_model.data()->GlobalParameterName(i);
 
-    if(!m_model->SupportSeries())
-    {
-        for(int l =  m_model->GlobalParameterSize(); l < size_optimsed; ++l)
-        {
-            if(m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
+    if (!m_model->SupportSeries()) {
+        for (int l = m_model->GlobalParameterSize(); l < size_optimsed; ++l) {
+            if (m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
                 head << m_model->LocalParameterName(l - m_model->GlobalParameterSize());
         }
     }
     header << head << head;
     model->setHorizontalHeaderLabels(header);
 
-    QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
+    QSortFilterProxyModel* proxyModel = new QSortFilterProxyModel(this);
     table->setModel(proxyModel);
     table->resizeColumnsToContents();
 
@@ -172,13 +165,13 @@ QTableView* SearchResultWidget::BuildList()
     return table;
 }
 
-ChartView * SearchResultWidget::BuildContour()
+ChartView* SearchResultWidget::BuildContour()
 {
-    QList<QPointF > data = ToolSet::fromModelsList(m_models, "globalParameter");
-    QtCharts::QChart *chart_ellipsoid = new QtCharts::QChart;
+    QList<QPointF> data = ToolSet::fromModelsList(m_models, "globalParameter");
+    QtCharts::QChart* chart_ellipsoid = new QtCharts::QChart;
     chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    ChartView *view = new ChartView(chart_ellipsoid);
-    QtCharts::QScatterSeries *xy_series = new QtCharts::QScatterSeries(this);
+    ChartView* view = new ChartView(chart_ellipsoid);
+    QtCharts::QScatterSeries* xy_series = new QtCharts::QScatterSeries(this);
     xy_series->append(data);
     xy_series->setMarkerSize(8);
     view->addSeries(xy_series);
@@ -187,8 +180,7 @@ ChartView * SearchResultWidget::BuildContour()
     return view;
 }
 
-
-void SearchResultWidget::rowSelected(const QModelIndex &index)
+void SearchResultWidget::rowSelected(const QModelIndex& index)
 {
     int i = index.data(Qt::UserRole).toInt();
     QJsonObject model = m_results[i].model;
@@ -208,12 +200,11 @@ void SearchResultWidget::ExportModels()
 {
     qreal threshold = m_threshold->value();
     bool allow_invalid = m_valid->isChecked();
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)" ));
-    if(str.isEmpty())
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("Json File (*.json);;Binary (*.jdat);;All files (*.*)"));
+    if (str.isEmpty())
         return;
     setLastDir(str);
     m_globalsearch->ExportResults(str, threshold, allow_invalid);
-    
 }
 
 void SearchResultWidget::SwitchView()
