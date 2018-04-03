@@ -205,16 +205,10 @@ void AdvancedSearch::SetUi()
     mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
     mlayout->addWidget(m_progress, 2, 0, 1, 2);
     mlayout->addWidget(m_optim, 3, 0);
-    if(m_model->GlobalParameterSize() == 1)
-        mlayout->addWidget(m_1d_search,3, 1);
+
     mlayout->addWidget(m_scan, 3, 0);
-    mlayout->addWidget(m_interrupt, 3, 0);
-    if(m_model->GlobalParameterSize() == 2)
-    {
-        mlayout->addWidget(m_2d_search,3, 1);
-    }
-    
-//     m_progress->hide();
+    mlayout->addWidget(m_interrupt, 3, 1);
+
     m_interrupt->hide();
     connect(m_search, SIGNAL(IncrementProgress(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));

@@ -37,9 +37,6 @@ class SearchResultWidget : public QWidget
 public:
     SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget *parent);
     ~SearchResultWidget();
-    /* inline void setModelList(const QList<QJsonObject> &models){m_models = models;};
-    void setModel(const QSharedPointer<AbstractModel> model){ m_model = model; }
-    void setInputList(const QVector<QList <qreal > >&input) { m_input = input; } */
     
 private:
     QList<QJsonObject> m_models;

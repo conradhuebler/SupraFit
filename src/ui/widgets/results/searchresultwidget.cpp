@@ -46,9 +46,6 @@
 
 SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget *parent) : QWidget(parent), m_globalsearch(globalsearch), m_model(model)
 {    
-    /*setInputList(m_globalsearch->InputList());
-    setModelList(m_globalsearch->Models());*/
-
     m_results = m_globalsearch->Result();
     
     QGridLayout *layout = new QGridLayout;
@@ -84,7 +81,7 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
 
 SearchResultWidget::~SearchResultWidget()
 {
-    // m_models.clear();
+
 }
 
 QTableView* SearchResultWidget::BuildList()
@@ -92,74 +89,85 @@ QTableView* SearchResultWidget::BuildList()
     QTableView *table = new QTableView(this);
     QStandardItemModel *model = new QStandardItemModel;
     QStringList header = QStringList() <<  "Sum of Squares";
-   // for(int i = 0; i < m_models.size(); ++i)
+    int size_optimsed;
     for(int i = 0; i < m_results.size(); ++i)
     {
         double error = m_results[i].SumError;
         QStandardItem *item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
+        item->setData(error, Qt::UserRole + 1);
         model->setItem(i, 0, item);
         int j = 1;
         QVector<qreal> initial = m_results[i].initial;
         QVector<qreal> optimised = m_results[i].optimised;
+        size_optimsed = optimised.size();
         for(int l = 0; l < m_model->GlobalParameterSize(); ++l)
         {
             QStandardItem *item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
+            item->setData(initial[l], Qt::UserRole + 1);
             model->setItem(i, j, item);
             j++;
         }
-        
+        if(!m_model->SupportSeries())
+        {
+            for(int l =  m_model->GlobalParameterSize(); l < initial.size(); ++l)
+            {
+                if(!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
+                    continue;
+                QStandardItem *item = new QStandardItem(QString::number(initial[l]));
+                item->setData(i, Qt::UserRole);
+                item->setData(initial[l], Qt::UserRole + 1);
+                model->setItem(i, j, item);
+                j++;
+            }
+        }
         for(int l = 0; l < m_model->GlobalParameterSize(); ++l)
         {
             QStandardItem *item = new QStandardItem(QString::number(optimised[l]));
             item->setData(i, Qt::UserRole);
+            item->setData(optimised[l], Qt::UserRole + 1);
             model->setItem(i, j, item);
             j++;
         }
-        /*
-        QJsonObject constants = m_models[i]["data"].toObject()["globalParameter"].toObject();
-        QStringList keys = constants.keys();
-                
-        if(keys.size() > 10)
+        if(!m_model->SupportSeries())
         {
-            QCollator collator;
-            collator.setNumericMode(true);
-            std::sort(
-                keys.begin(),
-                      keys.end(),
-                      [&collator](const QString &key1, const QString &key2)
-                      {
-                          return collator.compare(key1, key2) < 0;
-                      });
-        }
-        
-        QString consts;
-        for(const QString &str : qAsConst(keys))
-        {
-            if(str == "names")
-                continue;
-            QString element = constants[str].toString();
-            if(!element.isNull() && !element.isEmpty())
+            for(int l =  m_model->GlobalParameterSize(); l < optimised.size(); ++l)
             {
-                QStandardItem *item = new QStandardItem(element);
+                if(!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
+                    continue;
+                QStandardItem *item = new QStandardItem(QString::number(optimised[l]));
                 item->setData(i, Qt::UserRole);
+                item->setData(optimised[l], Qt::UserRole + 1);
                 model->setItem(i, j, item);
                 j++;
             }
-            
-        }*/
+        }
+        m_models << m_results[i].model;
     }
+
     QStringList head;
     for(int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
-//     for(const QString &str : m_model.data()->GlobalParameterNames())
         head << m_model.data()->GlobalParameterName(i);
+
+    if(!m_model->SupportSeries())
+    {
+        for(int l =  m_model->GlobalParameterSize(); l < size_optimsed; ++l)
+        {
+            if(m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
+                head << m_model->LocalParameterName(l - m_model->GlobalParameterSize());
+        }
+    }
     header << head << head;
     model->setHorizontalHeaderLabels(header);
+
     QSortFilterProxyModel *proxyModel = new QSortFilterProxyModel(this);
-    proxyModel->setSourceModel(model);
     table->setModel(proxyModel);
     table->resizeColumnsToContents();
+
+    proxyModel->setSourceModel(model);
+    proxyModel->setSortRole(Qt::UserRole + 1);
+
     resize(table->sizeHint());
     return table;
 }

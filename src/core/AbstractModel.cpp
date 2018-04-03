@@ -640,6 +640,20 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     return toplevel;
 }
 
+QVector<qreal> AbstractModel::AllParameter() const
+{
+    QVector<qreal> parameter = m_global_parameter.toVector();
+
+    for(int r = 0; r < m_local_parameter->rowCount(); ++r)
+        for(int c = 0; c < m_local_parameter->columnCount(); ++c)
+    {
+
+            parameter << m_local_parameter->data(c,r);
+    }
+    return parameter;
+}
+
+
 void AbstractModel::ImportModel(const QJsonObject &topjson, bool override)
 {
 #ifdef _DEBUG

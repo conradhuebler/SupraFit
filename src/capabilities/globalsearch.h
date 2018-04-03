@@ -30,9 +30,10 @@
 #include <QtCore/QQueue>
 #include <QtCore/QVector>
 
-class Minimizer;
 class AbstractModel;
 class GlobalSearch;
+class Minimizer;
+class NonLinearFitThread;
 
 struct GlobalSearchResult
 {
@@ -71,19 +72,20 @@ class SearchBatch : public AbstractSearchThread
 
 public:
     SearchBatch(const GSConfig &config, QPointer<GlobalSearch> parent);
-    ~SearchBatch() { };
+    ~SearchBatch() { }
 
     virtual void run() override;
     inline QList<GSResult > Result(){ return m_result; }
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
 
 private:
+    NonLinearFitThread *m_thread;
+
     void optimise();
 
     QList< GSResult > m_result;
     QPointer<GlobalSearch> m_parent;
     GSConfig m_config;
-    QSharedPointer<Minimizer> m_minimizer;
     bool m_finished, m_checked;
     QSharedPointer<AbstractModel> m_model;
     bool m_interrupt;
@@ -123,8 +125,12 @@ private:
     GlobalSearchResult last_result;
     double error_max;
     QSharedPointer<Minimizer> m_minimizer;
-    bool m_allow_break; //, m_optimize, m_initial_guess;
+    bool m_allow_break;
     QVector<VisualData> m_3d_data;
     GSConfig m_config;
     QQueue< QVector<qreal> > m_input;
+
+signals:
+    void InterruptAll();
+
 };

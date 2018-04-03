@@ -120,6 +120,9 @@ public:
     virtual void DeclareOptions() override;
 
     virtual void EvaluateOptions() override;
+
+    virtual inline int MaxParameter() override { return GlobalParameterSize() + LocalParameterSize()*SeriesCount(); }
+
 protected:    
     /*
      * set the concentration of the @param int i datapoint to

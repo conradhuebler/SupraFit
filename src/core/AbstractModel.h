@@ -398,6 +398,10 @@ public:
      */
     virtual QString YLabel() const = 0;
 
+    virtual inline int MaxParameter() { return GlobalParameterSize() + LocalParameterSize(); }
+
+    QVector<qreal> AllParameter() const;
+
     //inline void Calculate(bool fast);
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
