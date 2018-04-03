@@ -115,28 +115,28 @@ AdvancedSearch::~AdvancedSearch()
 
 double AdvancedSearch::MaxX() const
 {
-    if (m_model->GlobalParameterSize() >= 1)
+    if (m_model.data()->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinX() const
 {
-    if (m_model->GlobalParameterSize() >= 1)
+    if (m_model.data()->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Min();
     return 0;
 }
 
 double AdvancedSearch::MaxY() const
 {
-    if (m_model->GlobalParameterSize() >= 2)
+    if (m_model.data()->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinY() const
 {
-    if (m_model->GlobalParameterSize() >= 2)
+    if (m_model.data()->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Min();
     return 0;
 }
@@ -147,20 +147,19 @@ void AdvancedSearch::SetUi()
         return;
 
     m_search = new GlobalSearch(this);
-    m_search->setModel(m_model);
 
     QVBoxLayout* layout = new QVBoxLayout;
 
-    for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
-        QPointer<ParameterWidget> widget = new ParameterWidget(m_model->GlobalParameterName(i), m_model->GlobalParameter(i), this);
+    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
+        QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->GlobalParameterName(i), m_model.data()->GlobalParameter(i), this);
         layout->addWidget(widget);
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
         m_parameter_list << widget;
     }
 
-    if (!m_model->SupportSeries()) {
-        for (int i = 0; i < m_model->LocalParameterSize(); ++i) {
-            QPointer<ParameterWidget> widget = new ParameterWidget(m_model->LocalParameterName(i), m_model->LocalParameter(i, 0), this);
+    if (!m_model.data()->SupportSeries()) {
+        for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
+            QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->LocalParameterName(i), m_model.data()->LocalParameter(i, 0), this);
             layout->addWidget(widget);
             connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
             m_parameter_list << widget;
@@ -185,14 +184,11 @@ void AdvancedSearch::SetUi()
     m_optim_flags->DisableOptions(type);
     layout->addWidget(m_optim_flags);
 
-    // m_1d_search = new QPushButton(tr("1D Search"));
-    // m_2d_search = new QPushButton(tr("Create 2D Plot"));
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
 
     connect(m_scan, SIGNAL(clicked()), this, SLOT(SearchGlobal()));
-    /*connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
-    connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));*/
+
     connect(m_interrupt, SIGNAL(clicked()), m_search, SLOT(Interrupt()), Qt::DirectConnection);
     m_progress = new QProgressBar;
     m_max_steps = new QLabel;
@@ -255,6 +251,7 @@ void AdvancedSearch::Finished()
 void AdvancedSearch::SearchGlobal()
 {
     Waiter wait;
+    m_search->setModel(m_model);
     PrepareProgress();
     m_search->setConfig(Config());
     m_models_list.clear();
@@ -273,28 +270,6 @@ void AdvancedSearch::LocalSearch()
     m_series = m_search->LocalSearch();
     Finished();
     emit PlotFinished(2);
-}
-
-void AdvancedSearch::Create2DPlot()
-{
-    /*
-     Waiter wait;
-     PrepareProgress();
-     m_search->setConfig(Config());
-     QVector<VisualData> data_list = m_search->Create2DPLot();
-     m_error_max = 0;
-     for(const VisualData &data : data_list)
-     {
-         QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
-         for(int i = 0; i < data.data.size(); ++i)
-         {
-             *dataRow1 << QVector3D(data.data[i][0],data.data[i][1],data.data[i][2]);
-             m_error_max = qMax(m_error_max, data.data[i][1]);
-         }
-        m_3d_data << dataRow1;
-     }
-     Finished();
-     emit PlotFinished(1);*/
 }
 
 void AdvancedSearch::IncrementProgress(int time)

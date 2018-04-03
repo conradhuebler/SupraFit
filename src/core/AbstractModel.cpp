@@ -57,6 +57,27 @@ AbstractModel::AbstractModel(DataClass* data)
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
 }
 
+AbstractModel::AbstractModel(AbstractModel* model)
+    : DataClass(model)
+    , m_corrupt(model->m_corrupt)
+    , m_last_p(model->m_last_p)
+    , m_f_value(model->m_f_value)
+    , m_last_parameter(model->m_last_parameter)
+    , m_last_freedom(model->m_last_freedom)
+    , m_converged(model->m_converged)
+    , m_locked_model(model->m_locked_model)
+    , m_fast(true)
+    , d(new AbstractModelPrivate(*model->d))
+{
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
+    setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
+
+    m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
+    m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
+
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+}
+
 void AbstractModel::PrepareParameter(int global, int local)
 {
     m_local_parameter = new DataTable(local, SeriesCount(), this);
@@ -603,6 +624,13 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
         toplevel["result"] = resultObject;
     }
     return toplevel;
+}
+
+void AbstractModel::DebugOptions() const
+{
+    for (const int i : getAllOptions()) {
+        qDebug() << getOptionName(i) << getOption(i);
+    }
 }
 
 QVector<qreal> AbstractModel::AllParameter() const

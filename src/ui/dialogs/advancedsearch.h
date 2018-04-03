@@ -71,7 +71,7 @@ public:
 
     inline void setModel(const QSharedPointer<AbstractModel> model)
     {
-        m_model = model->Clone();
+        m_model = model;
         SetUi();
     }
     inline GlobalSearchResult LastResult() const { return last_result; }
@@ -93,13 +93,12 @@ private:
 
     QProgressBar* m_progress;
 
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QCheckBox *m_optim, *m_initial_guess;
     QPointer<QPushButton> m_scan, m_interrupt;
     QLabel* m_max_steps;
     GlobalSearchResult last_result;
     void ConvertList(const QVector<QVector<double>>& list, QVector<double>& error);
-    //QtDataVisualization::QSurfaceDataArray m_3d_data;
     QList<QList<QPointF>> m_series;
     OptimizationType m_type;
     QPointer<OptimizerFlagWidget> m_optim_flags;
@@ -114,10 +113,8 @@ private:
     QPointer<GlobalSearch> m_search;
     void PrepareProgress();
     void Finished();
-    //     QVector<QList<double> > m_full_list;
 
 private slots:
-    void Create2DPlot();
     void LocalSearch();
     void SearchGlobal();
     void IncrementProgress(int time);

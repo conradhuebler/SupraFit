@@ -57,6 +57,7 @@ class AbstractModel : public DataClass {
 
 public:
     AbstractModel(DataClass* data);
+    AbstractModel(AbstractModel* model);
 
     virtual ~AbstractModel();
 
@@ -397,13 +398,7 @@ public:
         return option.name;
     }
 
-    /*inline const QStringList getAllOptions() const
-    {
-        QStringList list;
-        for(int index : d->m_model_options.keys())
-            list << d->m_model_options[index].name;
-        return list;
-    }*/
+    void DebugOptions() const;
 
     inline QList<int> getAllOptions() const { return d->m_model_options.keys(); }
 
@@ -444,6 +439,8 @@ public:
     virtual inline int MaxParameter() { return GlobalParameterSize() + LocalParameterSize(); }
 
     QVector<qreal> AllParameter() const;
+
+    inline QVector<int> LocalEnabled() const { return m_enabled_local; }
 
     //inline void Calculate(bool fast);
 public slots:
