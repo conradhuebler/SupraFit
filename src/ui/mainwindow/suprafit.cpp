@@ -34,10 +34,11 @@
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
-#include <QtCore/QSharedPointer>
-#include <QtCore/QWeakPointer>
 #include <QtCore/QSettings>
 #include <QtCore/QJsonObject>
+#include <QtCore/QSharedPointer>
+#include <QtCore/QTimer>
+#include <QtCore/QWeakPointer>
 
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>

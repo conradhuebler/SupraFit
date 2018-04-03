@@ -28,9 +28,11 @@
 
 #include <QApplication>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
 #include <QtCore/QThreadPool>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QTimer>
 
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QDoubleSpinBox>
@@ -189,14 +191,14 @@ void AdvancedSearch::SetUi()
     
 
     
-    m_1d_search = new QPushButton(tr("1D Search"));
-    m_2d_search = new QPushButton(tr("Create 2D Plot"));
+    // m_1d_search = new QPushButton(tr("1D Search"));
+    // m_2d_search = new QPushButton(tr("Create 2D Plot"));
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
     
     connect(m_scan, SIGNAL(clicked()), this, SLOT(SearchGlobal()));
-    connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
-    connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));
+    /*connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
+    connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));*/
     connect(m_interrupt, SIGNAL(clicked()), m_search, SLOT(Interrupt()), Qt::DirectConnection);
     m_progress = new QProgressBar;
     m_max_steps = new QLabel;
@@ -282,6 +284,7 @@ void AdvancedSearch::LocalSearch()
 
 void AdvancedSearch::Create2DPlot()
 {
+    /*
      Waiter wait;
      PrepareProgress();
      m_search->setConfig(Config());
@@ -298,7 +301,7 @@ void AdvancedSearch::Create2DPlot()
         m_3d_data << dataRow1;
      }
      Finished();
-     emit PlotFinished(1);
+     emit PlotFinished(1);*/
 }
 
 

@@ -43,7 +43,6 @@
 
 #include "src/ui/widgets/buttons/spinbox.h"
 #include "src/ui/widgets/chartview.h"
-#include "src/ui/widgets/3dchartview.h"
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/widgets/modelactions.h"
@@ -60,8 +59,11 @@
 #include <QDebug>
 #include <QtMath>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonDocument>
+#include <QtCore/QSettings>
+#include <QtCore/QTime>
 #include <QtCore/QTimer>
 
 #include <QtWidgets/QAction>
@@ -86,7 +88,6 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QXYSeries>
 
-#include <QtDataVisualization>
 
 #include <iostream>
 #include <random>
@@ -302,8 +303,8 @@ ModelWidget::~ModelWidget()
     delete m_charts.error_wrapper;
     
     m_model.clear();
-    if(_3dchart)
-        delete _3dchart;
+    //if(_3dchart)
+    //    delete _3dchart;
     
     m_statistic_dialog->hide();
     m_search_result->hide();
@@ -910,15 +911,9 @@ void ModelWidget::TogglePlot()
 }
 
 
-void ModelWidget::TogglePlot3D()
-{
-    if(_3dchart)
-        _3dchart->setVisible(_3dchart->isVisible());
-}
-
-
 void ModelWidget::PlotFinished(int runtype)
 {
+    /*
     if(runtype == 1)
     {
         
@@ -954,7 +949,7 @@ void ModelWidget::PlotFinished(int runtype)
         m_search_result->setWidget(view, "Simple Plot");
         
     }
-    m_search_result->show();
+    m_search_result->show();*/
 }
 
 

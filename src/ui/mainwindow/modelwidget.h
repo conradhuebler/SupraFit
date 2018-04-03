@@ -40,7 +40,6 @@
 #include <QtWidgets/QVBoxLayout>
 
 #include <QtCharts/QLineSeries>
-#include <QtDataVisualization>
 
 class QSplitter;
 
@@ -56,7 +55,7 @@ class QCheckBox;
 class LineSeries;
 class AdvancedSearch;
 class ChartView;
-class _3DChartView;
+// class _3DChartView;
 class OptimizerFlagWidget;
 class StatisticWidget;
 class StatisticDialog;
@@ -138,7 +137,7 @@ private:
     QWidget *m_model_widget;
     QSplitter *m_splitter;
     StatisticWidget *m_statistic_widget;
-    QPointer<_3DChartView > _3dchart;
+   // QPointer<_3DChartView > _3dchart;
     QPointer<OptimizerFlagWidget> m_optim_flags;
     ModalDialog *m_statistic_result, *m_search_result, *m_table_result, *m_concentrations_result;
     bool m_statistic;
@@ -160,7 +159,6 @@ private slots:
     void OpenAdvancedSearch();
     void PlotFinished(int runtype);
     void MultiScanFinished();
-    void TogglePlot3D();
     void TogglePlot();
     void ToggleStatisticDialog();
     void ToggleSearchTable();

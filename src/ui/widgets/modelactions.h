@@ -47,7 +47,7 @@ private:
     void setUi();
     void resizeButtons();
     PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced;
-    PushButton *m_plot_3d, *m_statistics, *m_save, *m_simulate, *m_plots, *m_search, *m_restore, *m_detailed;
+    PushButton *m_statistics, *m_save, *m_simulate, *m_plots, *m_search, *m_restore, *m_detailed;
     QPushButton *m_toggle;
     QWidget *m_second;
     bool m_hidden;

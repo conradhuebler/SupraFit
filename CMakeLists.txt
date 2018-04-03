@@ -210,7 +210,7 @@ set(suprafit_SRCS
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
                 src/ui/widgets/optimizerflagwidget.cpp
-                src/ui/widgets/3dchartview.cpp
+                #src/ui/widgets/3dchartview.cpp
                 src/ui/widgets/chartview.cpp
                 src/ui/widgets/listchart.cpp
                 src/ui/widgets/buttons/spinbox.h
@@ -240,7 +240,7 @@ set_property(TARGET math models utils PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
 
-qt5_use_modules(suprafit Core Widgets Charts PrintSupport DataVisualization)
+qt5_use_modules(suprafit Core Widgets Charts PrintSupport)
 qt5_use_modules(suprafit_cli Core)
 
 target_link_libraries(suprafit models math utils ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)

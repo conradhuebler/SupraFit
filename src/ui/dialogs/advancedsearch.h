@@ -24,7 +24,7 @@
 #include "src/global.h"
 #include "src/core/AbstractModel.h"
 
-#include <QtDataVisualization>
+//#include <QtDataVisualization>
 
 #include <QtCore/QMutex>
 #include <QtCore/QWeakPointer>
@@ -77,7 +77,7 @@ public:
     
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); SetUi();}
     inline GlobalSearchResult  LastResult() const { return last_result; }
-    inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
+    // inline QtDataVisualization::QSurfaceDataArray dataArray() const { return m_3d_data; }
     inline double MaxError() const { return m_error_max; }
     double MaxX() const;
     double MinX() const;
@@ -97,11 +97,11 @@ private:
     
     QSharedPointer<AbstractModel> m_model;
     QCheckBox  *m_optim, *m_initial_guess;
-    QPointer<QPushButton > m_2d_search, m_1d_search, m_scan, m_interrupt;
+    QPointer<QPushButton >  m_scan, m_interrupt;
     QLabel *m_max_steps;
     GlobalSearchResult last_result;
     void ConvertList(const QVector< QVector<double > > &list,  QVector<double > &error);
-    QtDataVisualization::QSurfaceDataArray m_3d_data;
+    //QtDataVisualization::QSurfaceDataArray m_3d_data;
     QList<QList<QPointF> > m_series;
     OptimizationType m_type;
     QPointer<OptimizerFlagWidget > m_optim_flags;
