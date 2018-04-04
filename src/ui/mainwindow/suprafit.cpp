@@ -445,6 +445,9 @@ void MainWindow::ReadSettings()
     if (qApp->instance()->property("auto_confidence") == QVariant())
         qApp->instance()->setProperty("auto_confidence", true);
 
+    if (qApp->instance()->property("series_confidence") == QVariant())
+        qApp->instance()->setProperty("series_confidence", false);
+
     if (qApp->instance()->property("charttheme") == QVariant())
         qApp->instance()->setProperty("charttheme", 1);
 

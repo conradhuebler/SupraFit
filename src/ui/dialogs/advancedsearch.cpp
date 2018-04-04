@@ -176,13 +176,13 @@ void AdvancedSearch::SetUi()
 
     options->addWidget(m_optim);
     options->addWidget(m_initial_guess);
-   // layout->addLayout(options);
+    // layout->addLayout(options);
 
     m_optim_flags = new OptimizerFlagWidget;
     OptimizationType type = static_cast<OptimizationType>(0);
     type = OptimizationType::GlobalParameter;
     m_optim_flags->DisableOptions(type);
-  //  layout->addWidget(m_optim_flags);
+    //  layout->addWidget(m_optim_flags);
 
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
@@ -234,8 +234,8 @@ void AdvancedSearch::MaxSteps()
         m_ignored_parameter << m_parameter_list[i]->Optimise();
     }
 
-    if(m_model.data()->SupportSeries())
-        for(int i = m_ignored_parameter.size(); i < m_model.data()->MaxParameter(); ++i)
+    if (m_model.data()->SupportSeries())
+        for (int i = m_ignored_parameter.size(); i < m_model.data()->MaxParameter(); ++i)
             m_ignored_parameter << 1;
 
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));

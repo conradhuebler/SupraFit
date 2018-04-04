@@ -149,10 +149,14 @@ bool ModelComparison::FastConfidence()
     m_controller["fisher"] = m_config.fisher_statistic;
     m_controller["maxerror"] = m_config.maxerror;
     m_controller["f-value"] = m_config.f_value;
-
+    bool series = qApp->instance()->property("series_confidence").toBool();
     QVector<double> parameter = m_model.data()->OptimizeParameters();
     QVector<QPointer<FCThread>> threads;
     for (int i = 0; i < parameter.size(); ++i) {
+
+        if(!series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
+            continue;
+
         QPointer<FCThread> thread = new FCThread(m_config, i);
         thread->setModel(m_model);
         if (!m_model.data()->SupportThreads())
@@ -165,7 +169,7 @@ bool ModelComparison::FastConfidence()
         while (m_threadpool->activeThreadCount())
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
-    for (int i = 0; i < parameter.size(); ++i) {
+    for (int i = 0; i < threads.size(); ++i) {
         QJsonObject result;
         QPair<int, int> pair = m_model.data()->IndexParameters()[i];
         if (pair.second == 0) {

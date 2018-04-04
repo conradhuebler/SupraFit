@@ -201,6 +201,13 @@ void ConfigDialog::createStandardCalTab()
     m_auto_confidence->setChecked(qApp->instance()->property("auto_confidence").toBool());
     layout->addWidget(m_auto_confidence);
 
+    m_series_confidence = new QCheckBox(tr("Include Series in Automatic Confidence Calculation"));
+    m_series_confidence->setChecked(qApp->instance()->property("series_confidence").toBool());
+    m_series_confidence->setEnabled(qApp->instance()->property("auto_confidence").toBool());
+    layout->addWidget(m_series_confidence);
+
+    connect(m_auto_confidence, &QCheckBox::stateChanged, m_series_confidence, &QCheckBox::setEnabled);
+
     m_p_value = new QDoubleSpinBox;
     m_p_value->setMaximum(100);
     m_p_value->setMinimum(0);
@@ -259,6 +266,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("workingdir", m_working->text());
     qApp->instance()->setProperty("dirlevel", m_dirlevel);
     qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());
+    qApp->instance()->setProperty("series_confidence", m_series_confidence->isChecked());
     qApp->instance()->setProperty("p_value", m_p_value->value());
     qApp->instance()->setProperty("ask_on_exit", m_ask_on_exit->isChecked());
     qApp->instance()->setProperty("save_on_exit", m_save_on_exit->isChecked());

@@ -78,6 +78,8 @@ int main(int argc, char** argv)
     bool modelcomparison = parser.isSet("o");
     bool weakendgrid = parser.isSet("w");
     qApp->instance()->setProperty("threads", parser.value("t").toInt());
+    qApp->instance()->setProperty("series_confidence", true);
+
     std::cout << SupraFit::about().toStdString() << std::endl;
     std::cout << "No. Experiments to be simulated " << exp << std::endl;
     std::cout << "Standard Deviation to be used " << std << std::endl;
