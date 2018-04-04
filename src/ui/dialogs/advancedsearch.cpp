@@ -82,6 +82,7 @@ ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* pare
     m_optimse = new QCheckBox(tr("Optimise Parameter"));
     m_optimse->setToolTip(tr("If checked, this parameter will be optimised during fitting process.\nIf unchecked, the parameter will be fixed during fitting, but not necessarily in global search process."));
     m_optimse->setChecked(true);
+    connect(m_optimse, &QCheckBox::stateChanged, this, &ParameterWidget::valueChanged);
 
     connect(m_min, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_max, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
@@ -175,13 +176,13 @@ void AdvancedSearch::SetUi()
 
     options->addWidget(m_optim);
     options->addWidget(m_initial_guess);
-    layout->addLayout(options);
+   // layout->addLayout(options);
 
     m_optim_flags = new OptimizerFlagWidget;
     OptimizationType type = static_cast<OptimizationType>(0);
     type = OptimizationType::GlobalParameter;
     m_optim_flags->DisableOptions(type);
-    layout->addWidget(m_optim_flags);
+  //  layout->addWidget(m_optim_flags);
 
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
@@ -195,7 +196,7 @@ void AdvancedSearch::SetUi()
     mlayout->addLayout(layout, 0, 0, 1, 2);
     mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
     mlayout->addWidget(m_progress, 2, 0, 1, 2);
-    mlayout->addWidget(m_optim, 3, 0);
+    //mlayout->addWidget(m_optim, 3, 0);
 
     mlayout->addWidget(m_scan, 3, 0);
     mlayout->addWidget(m_interrupt, 3, 1);
@@ -232,6 +233,11 @@ void AdvancedSearch::MaxSteps()
         max_count *= (max + step - min) / step;
         m_ignored_parameter << m_parameter_list[i]->Optimise();
     }
+
+    if(m_model.data()->SupportSeries())
+        for(int i = m_ignored_parameter.size(); i < m_model.data()->MaxParameter(); ++i)
+            m_ignored_parameter << 1;
+
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 

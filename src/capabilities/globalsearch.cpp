@@ -41,7 +41,6 @@ SearchBatch::SearchBatch(const GSConfig& config, QPointer<GlobalSearch> parent)
     , m_finished(false)
     , m_parent(parent)
     , m_checked(false)
-    , m_interrupt(false)
 {
 }
 
@@ -77,6 +76,7 @@ void SearchBatch::optimise()
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
+    m_model->setLockedParameter(m_config.ignored_parameter);
     m_thread->setModel(m_model, false);
     m_thread->setOptimizationRun(m_config.runtype);
     m_thread->run();

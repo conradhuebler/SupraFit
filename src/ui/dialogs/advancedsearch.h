@@ -115,7 +115,7 @@ private:
     quint64 m_time_0;
     QVector<QVector<qreal>> m_parameter;
     QPointer<GlobalSearch> m_search;
-    QVector<int> m_ignored_parameter;
+    QList<int> m_ignored_parameter;
 
     void PrepareProgress();
     void Finished();

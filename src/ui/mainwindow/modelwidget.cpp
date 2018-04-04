@@ -808,11 +808,18 @@ void ModelWidget::ImportConstants()
 
 void ModelWidget::LoadJson(const QJsonObject& object)
 {
+    Waiter wait;
     m_model->ImportModel(object);
 
     QList<qreal> constants = m_model->GlobalParameter();
     for (int j = 0; j < constants.size(); ++j)
         m_constants[j]->setValue(constants[j]);
+
+    if (qApp->instance()->property("auto_confidence").toBool())
+        FastConfidence();
+    else
+        m_statistic_widget->Update();
+
     Repaint();
     m_optim_flags->setFlags(m_model->LastOptimzationRun());
 }

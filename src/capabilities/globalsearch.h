@@ -58,7 +58,7 @@ public:
     bool initial_guess = true;
     bool optimize = true;
     QVector<QVector<qreal>> parameter;
-    QVector<int> ignored_parameter;
+    QList<int> ignored_parameter;
 };
 
 class SearchBatch : public AbstractSearchThread {
@@ -82,7 +82,6 @@ private:
     GSConfig m_config;
     bool m_finished, m_checked;
     QSharedPointer<AbstractModel> m_model;
-    bool m_interrupt;
 };
 
 class GlobalSearch : public AbstractSearchClass {
