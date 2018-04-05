@@ -158,9 +158,5 @@ QSharedPointer<AbstractModel> itc_ItoII_Model::Clone()
     return model;
 }
 
-qreal itc_ItoII_Model::BC50() const
-{
-    return 1 / qPow(10, GlobalParameter()[0]);
-}
 
 #include "itc_1_2_Model.moc"

@@ -154,7 +154,7 @@ bool ModelComparison::FastConfidence()
     QVector<QPointer<FCThread>> threads;
     for (int i = 0; i < parameter.size(); ++i) {
 
-        if(!series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
+        if (!series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
             continue;
 
         QPointer<FCThread> thread = new FCThread(m_config, i);

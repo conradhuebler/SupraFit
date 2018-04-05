@@ -21,12 +21,13 @@
 
 #include "src/core/models.h"
 
-#include <Eigen/Dense>
+#include <fisher/fisher_dist.h>
+
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
 #include <QtCore/QVector>
 
-#include <fisher/fisher_dist.h>
+#include <Eigen/Dense>
 
 #include <functional>
 
@@ -60,7 +61,6 @@ QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort =
 void Parameter2Statistic(QList<QJsonObject>& parameter, const QPointer<AbstractModel> model);
 
 QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& str);
-qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter);
 
 qreal finv(qreal p, int m, int n);
 QList<int> InvertLockedList(const QList<int>& locked);

@@ -19,14 +19,16 @@
 
 #pragma once
 
-#include "src/core/AbstractTitrationModel.h"
+#include "src/core/bc50.h"
 #include "src/global.h"
 
-#include "src/core/dataclass.h"
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 #include <QtCore/QThreadPool>
 #include <QtCore/QVector>
+
+#include "src/core/AbstractTitrationModel.h"
+#include "src/core/dataclass.h"
 
 typedef Eigen::VectorXd Vector;
 
@@ -86,16 +88,15 @@ public:
             return i + 1;
         return i;
     }
-    virtual qreal BC50() const override;
-    virtual qreal BC50SF() const override;
+    virtual qreal BC50() const override { return BC50::IItoI_ItoI_ItoII_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2)); }
+    virtual qreal BC50SF() const override { return BC50::IItoI_ItoI_ItoII_BC50_SF(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2)); }
     virtual int LocalParameterSize() const override { return 5; }
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;
     QList<qreal> m_constants_pow;
     QThreadPool* m_threadpool;
-    static qreal Y(qreal x, const QVector<qreal>& parameter);
-    static qreal Y_0(qreal x, const QVector<qreal>& parameter);
+
 
 protected:
     virtual void CalculateVariables() override;

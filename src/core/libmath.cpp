@@ -214,3 +214,18 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
             return root1;
     }
 }
+
+qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter)
+{
+    qreal integ = 0;
+    qreal delta = 1E-4;
+    int increments = (upper - lower) / delta;
+#pragma omp parallel for reduction(+ \
+                                   : integ)
+    for (int i = 0; i < increments - 1; ++i) {
+        double x = lower + i / double(increments);
+        qreal b = x + delta;
+        integ += (b - x) / 6 * (function(x, parameter) + 4 * function((x + b) / 2, parameter) + function(b, parameter));
+    }
+    return integ;
+}

@@ -17,6 +17,10 @@
  *
  */
 
+#include "jsonhandler.h"
+
+#include <QDebug>
+
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
@@ -24,12 +28,11 @@
 #include <QtCore/QVector>
 
 #include <Eigen/Dense>
-#include <QDebug>
 
-#include "jsonhandler.h"
 #include <functional>
 
 #include "toolset.h"
+
 typedef Eigen::VectorXd Vector;
 
 namespace ToolSet {
@@ -423,21 +426,6 @@ QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& s
         series << QPointF(constants[QString::number(0)].toString().toDouble(), constants[QString::number(1)].toString().toDouble());
     }
     return series;
-}
-
-qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter)
-{
-    qreal integ = 0;
-    qreal delta = 1E-4;
-    int increments = (upper - lower) / delta;
-#pragma omp parallel for reduction(+ \
-                                   : integ)
-    for (int i = 0; i < increments - 1; ++i) {
-        double x = lower + i / double(increments);
-        qreal b = x + delta;
-        integ += (b - x) / 6 * (function(x, parameter) + 4 * function((x + b) / 2, parameter) + function(b, parameter));
-    }
-    return integ;
 }
 
 qreal finv(qreal p, int m, int n)

@@ -92,6 +92,8 @@ public:
      */
     virtual QString YLabel() const override { return "q"; }
 
+    virtual QString ModelInfo() const override;
+
 public slots:
     virtual void UpdateParameter();
 

@@ -177,4 +177,23 @@ void AbstractItcModel::UpdateParameter()
     m_T = getSystemParameter(Temperature).Double();
     Concentration();
 }
+
+QString AbstractItcModel::ModelInfo() const
+{
+    qreal bc50 = BC50() * 1E6;
+    qreal bc50sf = BC50SF() * 1E6;
+    QString format_text;
+    if (bc50 > 0 || bc50sf > 0) {
+        format_text = tr("<p>BC50<sub>0</sub>: %1").arg(bc50);
+        QChar mu = QChar(956);
+        format_text += QString(" [") + mu + QString("M]</p>");
+        if (bc50 != bc50sf) {
+            format_text += tr("<p>BC50<sub>0</sub> (SF): %1").arg(bc50sf);
+            format_text += QString(" [") + mu + QString("M]</p>");
+        }
+        return format_text;
+    } else
+        return QString();
+}
+
 #include "AbstractItcModel.moc"

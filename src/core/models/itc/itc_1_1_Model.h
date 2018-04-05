@@ -19,12 +19,13 @@
 
 #pragma once
 
-#include "src/core/AbstractItcModel.h"
+#include "src/core/bc50.h"
 #include "src/global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
+#include "src/core/AbstractItcModel.h"
 #include "src/core/dataclass.h"
 
 class itc_ItoI_Model : public AbstractItcModel {
@@ -43,8 +44,10 @@ public:
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
-    virtual qreal BC50() const override;
+
+    virtual inline qreal BC50() const override { return BC50::ItoI_BC50(GlobalParameter(0)); }
     virtual inline qreal BC50SF() const override { return BC50(); }
+
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
