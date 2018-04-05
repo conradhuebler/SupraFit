@@ -53,7 +53,6 @@ QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector
 
 qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter);
 
-
 namespace Cubic {
 qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
 qreal df(qreal x, qreal a, qreal b, qreal c);

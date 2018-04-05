@@ -97,7 +97,6 @@ private:
     QList<qreal> m_constants_pow;
     QThreadPool* m_threadpool;
 
-
 protected:
     virtual void CalculateVariables() override;
 };
