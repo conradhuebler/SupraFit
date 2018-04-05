@@ -81,8 +81,6 @@ void WGSearchThread::Calculate()
     int lowcount = 0, upcount = 0;
     double value = param[m_index];
     m_last = value;
-    bool converged = false;
-    bool infinity = true;
     NonLinearFitThread* thread = new NonLinearFitThread(false);
     while (m_steps < m_config.maxsteps && lowcount < 50 && upcount < 5) {
         value += (increment * m_direction);

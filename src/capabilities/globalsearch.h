@@ -103,7 +103,7 @@ public slots:
 
 private:
     QVector<QVector<double>> ParamList();
-    void ConvertList(const QVector<QVector<double>>& full_list, QVector<double>& error);
+    void ConvertList(const QVector<QVector<double>>& full_list);
     void Scan(const QVector<QVector<double>>& list);
     virtual QJsonObject Controller() const override;
     QList<GSResult> m_result;

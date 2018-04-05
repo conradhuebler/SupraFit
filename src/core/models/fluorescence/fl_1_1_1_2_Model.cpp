@@ -135,7 +135,6 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
     qreal K12 = qPow(10, GlobalParameter().last());
     qreal K11 = qPow(10, GlobalParameter().first());
 
-    qreal host_zero, guest_zero;
     QVector<qreal> F0(SeriesCount());
 
     for (int i = 0; i < DataPoints(); ++i) {
@@ -146,11 +145,6 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
         qreal guest = ItoI_ItoII::GuestConcentration(host_0, guest_0, QList<qreal>() << K11 << K12);
         qreal complex_11 = K11 * host * guest;
         qreal complex_12 = K11 * K12 * host * guest * guest;
-
-        if (i == 0) {
-            host_zero = host;
-            guest_zero = guest;
-        }
 
         Vector vector(5);
         vector(0) = i + 1;

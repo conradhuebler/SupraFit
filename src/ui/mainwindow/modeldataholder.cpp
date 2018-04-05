@@ -278,7 +278,6 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         menu = new QMenu;
         addMenu(m_itc_model, menu);
         m_add_itc->setMenu(menu);
-        // m_add_itc->hide();
     } else if (IndependetCount == 2) {
         QAction* action = menu->addSection(tr("NMR/UV VIS"));
         addMenu(m_nmr_model, menu);
@@ -286,6 +285,7 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         addMenu(m_fl_model, menu);
         m_add_nmr->setMenu(menu);
         m_add_kinetics->hide();
+        m_add_itc->hide();
     }
 }
 
@@ -375,51 +375,7 @@ void ModelDataHolder::AddModel(int model)
     ActiveModel(t);
 }
 
-void ModelDataHolder::AddModel(const QJsonObject& json)
-{
-#ifdef experimental
-    QSharedPointer<AbstractModel> t = QSharedPointer<ScriptModel>(new ScriptModel(m_data.data(), json), &QObject::deleteLater);
-    m_history = false;
-    ActiveModel(t);
-#endif
-}
-
-void ModelDataHolder::AddModelScript()
-{
-    QAction* action = qobject_cast<QAction*>(sender());
-    if (action) {
-        QString str = action->data().toString();
-
-        if (!str.isEmpty()) {
-            QJsonObject object;
-            if (JsonHandler::ReadJsonFile(object, str)) {
-                AddModel(object);
-            } else
-                qDebug() << "loading failed";
-        }
-    }
-}
-
-void ModelDataHolder::ParseScriptedModels()
-{
-#warning reintroduce sometimes
-    /*
-    QMenu *menu = new QMenu;
-    QDirIterator it(":/data/models/", QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString name = it.next();
-        
-        QAction *sub_model = new QAction(this);
-        sub_model->setData(name);
-        sub_model->setText(name.remove(".json").remove(":/data/models/"));
-        connect(sub_model, SIGNAL(triggered()), this, SLOT(AddModelScript()));
-        menu->addAction(sub_model);
-    }
-    m_script_action->setMenu(menu);
-    */
-}
-
-void ModelDataHolder::Json2Model(const QJsonObject& object) //, const QString &str)
+void ModelDataHolder::Json2Model(const QJsonObject& object)
 {
 
     if (object.contains("SupraFit"))

@@ -148,15 +148,13 @@ private:
     QPointer<StatisticDialog> m_statistic_dialog;
     QVector<QPointer<ModelWidget>> m_model_widgets;
     void AddModel(int model);
-    void AddModel(const QJsonObject& json);
-    void ParseScriptedModels();
     void ActiveBatch();
 
     OptimizerConfig m_config;
 
     int m_last_tab;
 
-    void Json2Model(const QJsonObject& object); //, const QString &str);
+    void Json2Model(const QJsonObject& object);
     void Json2Model(const QJsonObject& object, SupraFit::Model model);
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject());
     int Runs(bool moco = false) const;
@@ -164,7 +162,6 @@ private:
 
 private slots:
     void AddModel();
-    void AddModelScript();
 
     void RemoveTab(int i);
     void CreateCrashFile();

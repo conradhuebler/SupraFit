@@ -296,7 +296,6 @@ QList<double> AbstractModel::getCalculatedModel()
             if (DependentModel()->isChecked(j, i))
                 x.append(m_model_signal->data(j, i));
     }
-#warning will this break everything ?
     return x;
 }
 

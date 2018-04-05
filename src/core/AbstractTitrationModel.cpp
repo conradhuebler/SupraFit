@@ -184,7 +184,7 @@ qreal AbstractTitrationModel::Guess_1_1() const
     QVector<qreal> x;
     QVector<QVector<qreal>> y(SeriesCount());
     for (int i = 1; i < DataPoints(); ++i) {
-        if (!(InitialHostConcentration(i) * InitialGuestConcentration(i)))
+        if (!(InitialHostConcentration(i) && InitialGuestConcentration(i)))
             continue;
         x << (1 / InitialHostConcentration(i) / InitialGuestConcentration(i));
         for (int j = 0; j < SeriesCount(); ++j) {

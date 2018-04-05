@@ -131,13 +131,13 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
     m_config.runtype |= OptimizationType::GlobalParameter;
     std::cout << "starting the scanning ..." << m_max_count << " steps approx." << std::endl;
     int t0 = QDateTime::currentMSecsSinceEpoch();
-    ConvertList(full_list, error);
+    ConvertList(full_list);
     int t1 = QDateTime::currentMSecsSinceEpoch();
     std::cout << "time for scanning: " << t1 - t0 << " msecs." << std::endl;
     return m_models;
 }
 
-void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list, QVector<double>& error)
+void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 {
     m_full_list.clear();
     QVector<int> position(full_list.size(), 0);
