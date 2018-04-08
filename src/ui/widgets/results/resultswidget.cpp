@@ -173,17 +173,18 @@ QWidget* ResultsWidget::ModelComparisonWidget()
 {
     QJsonObject controller = m_data["controller"].toObject();
     ListChart* view = new ListChart;
-    qDebug() << m_data;
-    for (int a = 0; a < m_model->GlobalParameterSize(); ++a) {
-        for (int b = a + 1; b < m_model->GlobalParameterSize(); ++b) {
+    QVector<qreal> values(m_data.keys().size() - 1, 0);
+    for (int a = 0; a < m_data.keys().size() - 1; ++a) {
+        values[a] = m_data[QString::number(a)].toObject()["value"].toDouble();
+        for (int b = a + 1; b < m_data.keys().size() - 1; ++b) {
             QColor color = ChartWrapper::ColorCode(m_model->Color(a + b - 1));
             int index = a + b - 1;
 
             QString name = m_data[QString::number(a)].toObject()["name"].toString() + " vs. " + m_data[QString::number(b)].toObject()["name"].toString();
             QtCharts::QScatterSeries* xy_series = new QtCharts::QScatterSeries;
 
-            QList<qreal> x = ToolSet::String2DoubleList(controller["data"].toObject()["global_" + QString::number(a)].toString());
-            QList<qreal> y = ToolSet::String2DoubleList(controller["data"].toObject()["global_" + QString::number(b)].toString());
+            QList<qreal> x = ToolSet::String2DoubleList(m_data[QString::number(a)].toObject()["data"].toString());
+            QList<qreal> y = ToolSet::String2DoubleList(m_data[QString::number(b)].toObject()["data"].toString());
             if (x.size() > 1e4)
                 xy_series->setUseOpenGL(true);
             for (int j = 0; j < x.size(); ++j)
@@ -200,16 +201,16 @@ QWidget* ResultsWidget::ModelComparisonWidget()
             QList<QPointF> val1 = ToolSet::String2Points(box[QString::number(a)].toString());
             QList<QPointF> val2 = ToolSet::String2Points(box[QString::number(b)].toString());
 
-            if (!val1.isEmpty() && !val2.isEmpty()) {
+            /*if (!val1.isEmpty() && !val2.isEmpty()) {
                 QPointF range1 = val1[0];
                 QPointF range2 = val2[0];
                 QList<QPointF> serie;
-                serie << QPointF(m_model->GlobalParameter(a), range2.x()) << QPointF(m_model->GlobalParameter(a), range2.y());
+                serie << QPointF(values[a], range2.x()) << QPointF(values[a], range2.y());
                 series << serie;
                 serie.clear();
-                serie << QPointF(range1.x(), m_model->GlobalParameter(b)) << QPointF(range1.y(), m_model->GlobalParameter(b));
+                serie << QPointF(range1.x(), values[b]) << QPointF(range1.y(), values[b]);
                 series << serie;
-            }
+            }*/
 
             for (const QList<QPointF>& serie : qAsConst(series)) {
                 LineSeries* xy_serie = new LineSeries;

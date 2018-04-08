@@ -309,28 +309,29 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
                     confidence_global[i].second = constants[QString::number(i)].toString().toDouble();
             }
 
+            constants = object["data"].toObject()["localParameter"].toObject();
+
             for (int i = 0; i < m_model->SeriesCount(); ++i) {
 
-                constants = object["data"].toObject()["localParameter"].toObject();
 
                 QVector<qreal> param = ToolSet::String2DoubleVec(constants[QString::number(i)].toString());
 
                 for (int j = 0; j < param.size(); ++j) {
-                    data_local[i + j] << param[j];
+                    data_local[i + m_model->SeriesCount() * j] << param[j];
 
-                    qreal min = confidence_local[i + j].first;
-                    qreal max = confidence_local[i + j].second;
+                    qreal min = confidence_local[i + m_model->SeriesCount() * j].first;
+                    qreal max = confidence_local[i + m_model->SeriesCount() * j].second;
 
                     if (min != 0)
-                        confidence_local[i + j].first = qMin(min, param[j]);
+                        confidence_local[i + m_model->SeriesCount() * j].first = qMin(min, param[j]);
                     else
-                        confidence_local[i + j].first = param[j];
+                        confidence_local[i + m_model->SeriesCount() * j].first = param[j];
 
                     if (max != 0)
-                        confidence_local[i + j].second = qMax(max, param[j]);
+                        confidence_local[i + m_model->SeriesCount() * j].second = qMax(max, param[j]);
                     else
-                        confidence_local[i + j].second = param[j];
-                    local_values[i + j] = QPair<int, int>(j, i);
+                        confidence_local[i + m_model->SeriesCount() * j].second = param[j];
+                    local_values[i + m_model->SeriesCount() * j] = QPair<int, int>(j, i);
                 }
             }
         }
@@ -354,6 +355,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->GlobalParameterName(i);
         result["type"] = "Global Parameter";
+        result["data"] = ToolSet::DoubleList2String(data_global[i]);
 
         m_results << result;
     }
@@ -374,6 +376,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["value"] = m_model->LocalParameter(local_values[i].first, local_values[i].second);
         result["name"] = m_model->LocalParameterName(local_values[i].first);
         result["type"] = "Local Parameter";
+        result["data"] = ToolSet::DoubleList2String(data_local[i]);
 
         m_results << result;
     }
@@ -385,15 +388,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     m_controller["f-value"] = m_config.f_value;
     m_controller["method"] = SupraFit::Statistic::ModelComparison;
     m_controller["moco_area"] = m_ellipsoid_area;
-    QJsonObject data;
 
-    for (int i = 0; i < data_global.size(); ++i)
-        data["global_" + QString::number(i)] = ToolSet::DoubleList2String(data_global[i]);
-
-    for (int i = 0; i < data_local.size(); ++i)
-        data["local_" + QString::number(i)] = ToolSet::DoubleList2String(data_local[i]);
-
-    m_controller["data"] = data;
     m_controller["box"] = m_box;
 }
 
