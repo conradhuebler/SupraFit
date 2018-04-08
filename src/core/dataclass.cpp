@@ -290,6 +290,11 @@ QPointer<DataTable> DataTable::Block(int row_begin, int column_begin, int row_en
     return new DataTable(table, checked_table);
 }
 
+Vector DataTable::Column(int column)
+{
+    return m_table.col(column);
+}
+
 Vector DataTable::Row(int row)
 {
     return m_table.row(row);

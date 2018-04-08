@@ -173,7 +173,7 @@ QWidget* ResultsWidget::ModelComparisonWidget()
 {
     QJsonObject controller = m_data["controller"].toObject();
     ListChart* view = new ListChart;
-
+    qDebug() << m_data;
     for (int a = 0; a < m_model->GlobalParameterSize(); ++a) {
         for (int b = a + 1; b < m_model->GlobalParameterSize(); ++b) {
             QColor color = ChartWrapper::ColorCode(m_model->Color(a + b - 1));

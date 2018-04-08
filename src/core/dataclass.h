@@ -106,6 +106,8 @@ public:
     void setColumn(const QVector<qreal>& vector, int column);
     void setColumn(const Vector& vector, int column);
 
+    Vector Column(int row);
+
     Vector Row(int row);
     Vector Row(int row, const QList<int>& active);
     Vector firstRow();

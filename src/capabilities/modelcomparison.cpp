@@ -34,9 +34,9 @@
 void MCThread::run()
 {
     QVector<std::uniform_int_distribution<int>> dist;
-    QVector<double> factors(m_model.data()->GlobalParameterSize(), 1);
     QVector<qreal> parameters = m_model.data()->OptimizeParameters();
-    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
+    QVector<double> factors(parameters.size(), 1);
+    for (int i = 0; i < m_model.data()->OptimizeParameters().size(); ++i) {
         factors[i] = qPow(10, log10(qAbs(1e7 / parameters[i])));
         int lower = factors[i] * m_box[i][0];
         int upper = factors[i] * m_box[i][1];
@@ -51,8 +51,12 @@ void MCThread::run()
             return;
 
         QVector<qreal> consts = parameters;
-        for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) // FIXME dont want that really, but it should work for now
-        {
+        for (int i = 0; i < m_model.data()->OptimizeParameters().size(); ++i) {
+            if (i < m_model.data()->GlobalParameterSize()) {
+                if (!m_config.global_param[i])
+                    continue;
+            } else if (!m_config.local_param[i - m_model.data()->GlobalParameterSize()])
+                continue;
             consts[i] = dist[i](rng) / factors[i];
         }
         m_model->setParameter(consts);
@@ -136,7 +140,7 @@ ModelComparison::~ModelComparison()
 {
 }
 
-bool ModelComparison::FastConfidence()
+bool ModelComparison::FastConfidence(bool Series)
 {
     if (!m_model)
         return false;
@@ -149,12 +153,12 @@ bool ModelComparison::FastConfidence()
     m_controller["fisher"] = m_config.fisher_statistic;
     m_controller["maxerror"] = m_config.maxerror;
     m_controller["f-value"] = m_config.f_value;
-    bool series = qApp->instance()->property("series_confidence").toBool();
+
     QVector<double> parameter = m_model.data()->OptimizeParameters();
     QVector<QPointer<FCThread>> threads;
     for (int i = 0; i < parameter.size(); ++i) {
 
-        if (!series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
+        if (!Series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
             continue;
 
         QPointer<FCThread> thread = new FCThread(m_config, i);
@@ -227,10 +231,10 @@ bool ModelComparison::Confidence()
     //if(!m_fast_finished)
     //{
     //   qDebug() << "automatic perform guess";
-    FastConfidence();
+    FastConfidence(true);
     //}
-    if (m_model.data()->GlobalParameterSize() == 1)
-        return true;
+    //   if (m_model.data()->GlobalParameterSize() == 1)
+    //       return true;
 
     QVector<QVector<qreal>> box = MakeBox();
     if (box.size() > 1) {
@@ -249,7 +253,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     int thread_count = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);
     for (int i = 0; i < thread_count; ++i) {
-        MCThread* thread = new MCThread;
+        MCThread* thread = new MCThread(m_config);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->setMaxSteps(maxsteps / thread_count);
@@ -272,30 +276,62 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
 
 void ModelComparison::StripResults(const QList<QJsonObject>& results)
 {
-    QVector<QPair<qreal, qreal>> confidence(m_model->GlobalParameterSize(), QPair<qreal, qreal>(0, 0));
+    QVector<QPair<qreal, qreal>> confidence_global(m_model->GlobalParameterSize(), QPair<qreal, qreal>(0, 0));
+    QVector<QPair<qreal, qreal>> confidence_local(m_model->LocalParameterSize() * m_model->SeriesCount(), QPair<qreal, qreal>(0, 0));
     int inner = 0;
     int all = 0;
-    m_data_vec = QVector<QList<qreal>>(m_model->GlobalParameterSize());
+    QVector<QList<qreal>> data_global = QVector<QList<qreal>>(m_model->GlobalParameterSize());
+    QVector<QList<qreal>> data_local = QVector<QList<qreal>>(m_model->LocalParameterSize() * m_model->SeriesCount());
+    QVector<QPair<qreal, qreal>> local_values = QVector<QPair<qreal, qreal>>(m_model->LocalParameterSize() * m_model->SeriesCount());
     for (const QJsonObject& object : qAsConst(results)) {
         all++;
         if (object["sum_of_squares"].toDouble() <= m_effective_error) {
             inner++;
             m_models << object;
-            QJsonObject constants = object["data"].toObject()["globalParameter"].toObject();
+            QJsonObject constants;
             for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
-                m_data_vec[i] << constants[QString::number(i)].toString().toDouble();
-                qreal min = confidence[i].first;
-                qreal max = confidence[i].second;
+
+                constants = object["data"].toObject()["globalParameter"].toObject();
+
+                data_global[i] << constants[QString::number(i)].toString().toDouble();
+
+                qreal min = confidence_global[i].first;
+                qreal max = confidence_global[i].second;
 
                 if (min != 0)
-                    confidence[i].first = qMin(min, constants[QString::number(i)].toString().toDouble());
+                    confidence_global[i].first = qMin(min, constants[QString::number(i)].toString().toDouble());
                 else
-                    confidence[i].first = constants[QString::number(i)].toString().toDouble();
+                    confidence_global[i].first = constants[QString::number(i)].toString().toDouble();
 
                 if (max != 0)
-                    confidence[i].second = qMax(max, constants[QString::number(i)].toString().toDouble());
+                    confidence_global[i].second = qMax(max, constants[QString::number(i)].toString().toDouble());
                 else
-                    confidence[i].second = constants[QString::number(i)].toString().toDouble();
+                    confidence_global[i].second = constants[QString::number(i)].toString().toDouble();
+            }
+
+            for (int i = 0; i < m_model->SeriesCount(); ++i) {
+
+                constants = object["data"].toObject()["localParameter"].toObject();
+
+                QVector<qreal> param = ToolSet::String2DoubleVec(constants[QString::number(i)].toString());
+
+                for (int j = 0; j < param.size(); ++j) {
+                    data_local[i + j] << param[j];
+
+                    qreal min = confidence_local[i + j].first;
+                    qreal max = confidence_local[i + j].second;
+
+                    if (min != 0)
+                        confidence_local[i + j].first = qMin(min, param[j]);
+                    else
+                        confidence_local[i + j].first = param[j];
+
+                    if (max != 0)
+                        confidence_local[i + j].second = qMax(max, param[j]);
+                    else
+                        confidence_local[i + j].second = param[j];
+                    local_values[i + j] = QPair<int, int>(j, i);
+                }
             }
         }
         QCoreApplication::processEvents();
@@ -303,17 +339,42 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     m_ellipsoid_area = double(inner) / double(all) * m_box_area;
     m_results.clear();
 
-    for (int i = 0; i < confidence.size(); ++i) {
+    for (int i = 0; i < confidence_global.size(); ++i) {
+
+        if (!m_config.global_param[i])
+            continue;
         QJsonObject conf;
-        conf["lower"] = confidence[i].first;
-        conf["upper"] = confidence[i].second;
+        conf["lower"] = confidence_global[i].first;
+        conf["upper"] = confidence_global[i].second;
         conf["error"] = m_config.confidence;
 
         QJsonObject result;
         result["confidence"] = conf;
+
         result["value"] = m_model->GlobalParameter(i);
         result["name"] = m_model->GlobalParameterName(i);
         result["type"] = "Global Parameter";
+
+        m_results << result;
+    }
+
+    for (int i = 0; i < confidence_local.size(); ++i) {
+
+        if (!m_config.local_param[i])
+            continue;
+
+        QJsonObject conf;
+        conf["lower"] = confidence_local[i].first;
+        conf["upper"] = confidence_local[i].second;
+        conf["error"] = m_config.confidence;
+
+        QJsonObject result;
+        result["confidence"] = conf;
+
+        result["value"] = m_model->LocalParameter(local_values[i].first, local_values[i].second);
+        result["name"] = m_model->LocalParameterName(local_values[i].first);
+        result["type"] = "Local Parameter";
+
         m_results << result;
     }
 
@@ -326,8 +387,11 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     m_controller["moco_area"] = m_ellipsoid_area;
     QJsonObject data;
 
-    for (int i = 0; i < m_data_vec.size(); ++i)
-        data["global_" + QString::number(i)] = ToolSet::DoubleList2String(m_data_vec[i]);
+    for (int i = 0; i < data_global.size(); ++i)
+        data["global_" + QString::number(i)] = ToolSet::DoubleList2String(data_global[i]);
+
+    for (int i = 0; i < data_local.size(); ++i)
+        data["local_" + QString::number(i)] = ToolSet::DoubleList2String(data_local[i]);
 
     m_controller["data"] = data;
     m_controller["box"] = m_box;

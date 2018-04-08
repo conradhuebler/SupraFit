@@ -83,10 +83,6 @@ void StatisticDialog::updateUI()
     m_moco_f_value->setToolTip(FOutput());
     m_cv_f_value->setValue(m_model.data()->finv(m_cv_maxerror->value() / 100));
     m_moco_f_value->setValue(m_model.data()->finv(m_moco_maxerror->value() / 100));
-    if (m_model.data()->GlobalParameterSize() == 1) {
-        m_moco_widget->setDisabled(true);
-        m_moco_widget->setToolTip("<p>Model Comparison is not enabled for 1:1 and 2:1/1:1/1:2 models.</p><p>For 1:1 models the result are equal to the automatic confidence calculation.</p><p>For more complicated models the confidence region becomes an ellipsoid, which is not supported yet.</br>This may come in later release of suprafit</p>");
-    }
 }
 
 void StatisticDialog::setUi()
@@ -211,7 +207,7 @@ QWidget* StatisticDialog::GridSearchWidget()
         for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             checkbox->setChecked(true);
-            m_grid_glob << checkbox;
+            m_grid_global << checkbox;
             QHBoxLayout* hlayout = new QHBoxLayout;
             hlayout->addWidget(checkbox);
             hlayout->addWidget(new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>"));
@@ -311,7 +307,35 @@ QWidget* StatisticDialog::ModelComparison()
     QWidget* mo_widget = new QWidget;
     QGridLayout* layout = new QGridLayout;
 
-    m_moco_global = new QGroupBox(tr("Settings"));
+    QGroupBox* parameter = new QGroupBox(tr("Parameter"));
+    if (m_model) {
+        layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
+        QVBoxLayout* layout = new QVBoxLayout;
+        for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
+            QCheckBox* checkbox = new QCheckBox;
+            checkbox->setChecked(true);
+            m_moco_global << checkbox;
+            QHBoxLayout* hlayout = new QHBoxLayout;
+            hlayout->addWidget(checkbox);
+            hlayout->addWidget(new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>"));
+            hlayout->addStretch(100);
+            layout->addLayout(hlayout);
+        }
+
+        for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
+            QCheckBox* checkbox = new QCheckBox;
+            m_moco_local << checkbox;
+            QHBoxLayout* hlayout = new QHBoxLayout;
+            hlayout->addWidget(checkbox);
+            hlayout->addWidget(new QLabel("<html>" + m_model.data()->LocalParameterName(i) + "</html>"));
+            hlayout->addStretch(100);
+            layout->addLayout(hlayout);
+        }
+        parameter->setLayout(layout);
+    }
+    layout->addWidget(parameter, 0, 0, 1, 3);
+
+    m_moco_global_settings = new QGroupBox(tr("Settings"));
     QGridLayout* global_layout = new QGridLayout;
 
     m_moco_maxerror = new QDoubleSpinBox;
@@ -352,8 +376,8 @@ QWidget* StatisticDialog::ModelComparison()
     global_layout->addWidget(new QLabel(tr("Box Scaling")), 3, 0);
     global_layout->addWidget(m_moco_box_multi, 3, 1);
 
-    m_moco_global->setLayout(global_layout);
-    layout->addWidget(m_moco_global, 0, 0, 1, 3);
+    m_moco_global_settings->setLayout(global_layout);
+    layout->addWidget(m_moco_global_settings, 1, 0, 1, 3);
     m_moco_monte_carlo = new QGroupBox(tr("Monte Carlo Settings"));
     QGridLayout* monte_layout = new QGridLayout;
 
@@ -365,7 +389,7 @@ QWidget* StatisticDialog::ModelComparison()
     monte_layout->addWidget(new QLabel(tr("Max. Steps")), 1, 0);
     monte_layout->addWidget(m_moco_mc_steps, 1, 1, 1, 2);
     m_moco_monte_carlo->setLayout(monte_layout);
-    layout->addWidget(m_moco_monte_carlo, 1, 0, 1, 3);
+    layout->addWidget(m_moco_monte_carlo, 2, 0, 1, 3);
 
     m_moco = new QPushButton(tr("Start ..."));
     layout->addWidget(m_moco, 5, 0, 1, 3);
@@ -410,9 +434,9 @@ WGSConfig StatisticDialog::getWGSConfig()
 
     QList<int> glob_param, local_param;
     int max = 0;
-    for (int i = 0; i < m_grid_glob.size(); ++i) {
-        glob_param << m_grid_glob[i]->isChecked();
-        max += m_grid_glob[i]->isChecked();
+    for (int i = 0; i < m_grid_global.size(); ++i) {
+        glob_param << m_grid_global[i]->isChecked();
+        max += m_grid_global[i]->isChecked();
     }
 
     for (int i = 0; i < m_grid_local.size(); ++i) {
@@ -443,6 +467,23 @@ MoCoConfig StatisticDialog::getMoCoConfig()
     config.cv_config = cv_config;
     config.fisher_statistic = m_moco_f_test->isChecked();
     config.f_value = m_moco_f_value->value();
+
+    QList<int> glob_param, local_param;
+    int max = 0;
+    for (int i = 0; i < m_moco_global.size(); ++i) {
+        glob_param << m_moco_global[i]->isChecked();
+        max += m_moco_global[i]->isChecked();
+    }
+
+    for (int i = 0; i < m_moco_local.size(); ++i) {
+        for (int j = 0; j < m_model.data()->SeriesCount(); ++j)
+            local_param << m_moco_local[i]->isChecked();
+        max += m_model.data()->SeriesCount() * m_moco_local[i]->isChecked();
+    }
+
+    config.global_param = glob_param;
+    config.local_param = local_param;
+
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_runs * (1 + m_moco_mc_steps->value() / update_intervall));

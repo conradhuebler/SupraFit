@@ -554,7 +554,8 @@ void ModelWidget::FastConfidence()
     config.confidence = qApp->instance()->property("p_value").toDouble();
     ModelComparison* statistic = new ModelComparison(config, this);
     statistic->setModel(m_model);
-    statistic->FastConfidence();
+    bool series = qApp->instance()->property("series_confidence").toBool();
+    statistic->FastConfidence(series);
     m_model->UpdateStatistic(statistic->Result());
     m_fast_confidence = statistic->Results();
     delete statistic;

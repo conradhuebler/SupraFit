@@ -36,6 +36,7 @@ public:
     qreal confidence = 95;
     qreal f_value = 0;
     bool fisher_statistic = false;
+    QList<int> global_param, local_param;
 };
 
 class AbstractModel;
@@ -44,8 +45,9 @@ class MCThread : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    inline MCThread()
+    inline MCThread(MoCoConfig config)
         : AbstractSearchThread()
+        , m_config(config)
     {
     }
     inline ~MCThread() {}
@@ -64,6 +66,7 @@ private:
     QList<QJsonObject> m_results;
     int m_maxsteps;
     QVector<QVector<qreal>> m_box;
+    MoCoConfig m_config;
 };
 
 class FCThread : public AbstractSearchThread {
@@ -97,7 +100,7 @@ public:
     ModelComparison(MoCoConfig config, QObject* parent = 0);
     ~ModelComparison();
     bool Confidence();
-    bool FastConfidence();
+    bool FastConfidence(bool Series);
     inline qreal Area() const { return m_ellipsoid_area; }
     inline void setResults(const QList<QJsonObject> results)
     {
@@ -115,6 +118,6 @@ private:
     MoCoConfig m_config;
     QJsonObject m_box, m_controller;
     double m_effective_error, m_box_area, m_ellipsoid_area;
-    QVector<QList<qreal>> m_data_vec;
+    QVector<QList<qreal>> m_data_global, m_data_local;
     bool m_fast_finished;
 };
