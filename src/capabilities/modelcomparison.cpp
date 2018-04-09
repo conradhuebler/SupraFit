@@ -388,7 +388,8 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     m_controller["f-value"] = m_config.f_value;
     m_controller["method"] = SupraFit::Statistic::ModelComparison;
     m_controller["moco_area"] = m_ellipsoid_area;
-
+    m_controller["local_parameter"] = ToolSet::IntVec2String(m_config.local_param.toVector());
+    m_controller["global_parameter"] = ToolSet::IntVec2String(m_config.global_param.toVector());
     m_controller["box"] = m_box;
 }
 

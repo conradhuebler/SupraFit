@@ -117,6 +117,7 @@ void ListChart::Clear()
     m_chartview->ClearChart();
     m_series.clear();
     m_list->clear();
+    m_names_list->clear();
 }
 
 void ListChart::NamesListClicked(QListWidgetItem* item)

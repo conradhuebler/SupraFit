@@ -30,11 +30,11 @@ class ContourWidget : public QWidget {
 
 public:
     ContourWidget(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model);
+    void MakePlot(int var_1, int var_2);
 
 private:
     void setUi();
     void CheckBox(int variable, int state);
-    void MakePlot(int var_1, int var_2);
 
     QWidget* VariWidget();
 
@@ -47,4 +47,6 @@ private:
 
 signals:
     void Checked(int var_1, int var_2);
+    void HideBox(int parameter);
+    void CheckParameterBox(int parameter);
 };

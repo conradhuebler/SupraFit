@@ -78,10 +78,22 @@ QWidget* ContourWidget::VariWidget()
                 box->setEnabled(var_1 == index || var_2 == index);
         });
 
+        connect(this, &ContourWidget::CheckParameterBox, box, [index, box, this](int parameter) {
+            if (parameter == index)
+                box->setChecked(true);
+        });
+
         QLabel* label = new QLabel("<html>" + m_model->GlobalParameterName(i) + "</html>");
         m_names << m_model->GlobalParameterName(i);
         hlayout->addWidget(box);
         hlayout->addWidget(label, Qt::AlignLeft);
+
+        connect(this, &ContourWidget::HideBox, box, [index, box, label](int parameter) {
+            if (parameter == index) {
+                box->setHidden(true);
+                label->setHidden(true);
+            }
+        });
         index++;
     }
     layout->addLayout(hlayout);
@@ -101,10 +113,23 @@ QWidget* ContourWidget::VariWidget()
                     box->setEnabled(var_1 == index || var_2 == index);
             });
 
+            connect(this, &ContourWidget::CheckParameterBox, box, [index, box, this](int parameter) {
+                if (parameter == index)
+                    box->setChecked(true);
+            });
+
             QLabel* label = new QLabel("<html>" + QString::number(i + 1) + " - " + (m_model->LocalParameterName(j)) + "</html>");
             m_names << QString::number(i + 1) + " - " + (m_model->LocalParameterName(j));
             hlayout->addWidget(box);
             hlayout->addWidget(label, Qt::AlignLeft);
+
+            connect(this, &ContourWidget::HideBox, box, [index, box, label](int parameter) {
+                if (parameter == index) {
+                    box->setHidden(true);
+                    label->setHidden(true);
+                }
+            });
+
             index++;
         }
         layout->addLayout(hlayout);

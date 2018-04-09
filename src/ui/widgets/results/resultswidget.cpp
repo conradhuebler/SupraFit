@@ -232,6 +232,23 @@ QWidget* ResultsWidget::ModelComparisonWidget()
     return view;*/
 
     ContourWidget* widget = new ContourWidget(m_models, m_model);
+    QJsonObject controller = m_data["controller"].toObject();
+    QVector<int> global = ToolSet::String2IntVec(controller["global_parameter"].toString());
+    QVector<int> local = ToolSet::String2IntVec(controller["local_parameter"].toString());
+    QVector<int> param = QVector<int>() << global << local;
+    QVector<int> checked;
+
+    for (int i = 0; i < param.size(); ++i) {
+        if (param[i] == 0)
+            emit widget->HideBox(i);
+        else
+            checked << i;
+    }
+
+    if (checked.size() >= 2) {
+        widget->CheckParameterBox(checked.first());
+        widget->CheckParameterBox(checked[1]);
+    }
 
     return widget;
 }
