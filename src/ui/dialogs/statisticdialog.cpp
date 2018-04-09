@@ -371,7 +371,7 @@ QWidget* StatisticDialog::ModelComparison()
     m_moco_box_multi = new QDoubleSpinBox;
     m_moco_box_multi->setMaximum(20);
     m_moco_box_multi->setSingleStep(0.5);
-    m_moco_box_multi->setValue(2);
+    m_moco_box_multi->setValue(1.25);
     m_moco_box_multi->setDecimals(2);
     global_layout->addWidget(new QLabel(tr("Box Scaling")), 3, 0);
     global_layout->addWidget(m_moco_box_multi, 3, 1);

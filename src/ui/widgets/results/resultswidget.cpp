@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
@@ -26,6 +27,8 @@
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/statisticwidget.h"
+
+#include "src/ui/widgets/results/contourwidget.h"
 
 #include <QtCore/QPointer>
 
@@ -171,6 +174,7 @@ QWidget* ResultsWidget::ReductionWidget()
 
 QWidget* ResultsWidget::ModelComparisonWidget()
 {
+    /*
     QJsonObject controller = m_data["controller"].toObject();
     ListChart* view = new ListChart;
     QVector<qreal> values(m_data.keys().size() - 1, 0);
@@ -210,7 +214,7 @@ QWidget* ResultsWidget::ModelComparisonWidget()
                 serie.clear();
                 serie << QPointF(range1.x(), values[b]) << QPointF(range1.y(), values[b]);
                 series << serie;
-            }*/
+            }
 
             for (const QList<QPointF>& serie : qAsConst(series)) {
                 LineSeries* xy_serie = new LineSeries;
@@ -225,7 +229,11 @@ QWidget* ResultsWidget::ModelComparisonWidget()
     view->setXAxis("Parameter 1");
     view->setYAxis("Parameter 2");
 
-    return view;
+    return view;*/
+
+    ContourWidget* widget = new ContourWidget(m_models, m_model);
+
+    return widget;
 }
 
 QWidget* ResultsWidget::GridSearchWidget()
