@@ -34,6 +34,7 @@
 
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QWidget>
@@ -46,7 +47,7 @@ ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractMod
     m_model = model;
     m_models = models;
     m_wrapper = wrapper;
-
+    m_text = QString("");
     setUi();
     resize(1024, 600);
 }
@@ -102,7 +103,10 @@ void ResultsWidget::setUi()
 
     splitter->addWidget(m_widget);
     splitter->addWidget(scroll);
-    layout->addWidget(splitter, 0, 0);
+    layout->addWidget(splitter, 0, 0, 1, 4);
+    m_detailed = new QPushButton(tr("Detailed"));
+    connect(m_detailed, &QPushButton::clicked, this, &ResultsWidget::Detailed);
+    layout->addWidget(m_detailed, 1, 3);
     setLayout(layout);
     WriteConfidence(m_data);
 }
@@ -117,9 +121,14 @@ QWidget* ResultsWidget::MonteCarloWidget()
 
 QWidget* ResultsWidget::ReductionWidget()
 {
+    QStringList text;
+    QString parameter_text;
     QPointer<ListChart> view = new ListChart;
 
     QVector<qreal> x = ToolSet::String2DoubleVec(m_data["controller"].toObject()["x"].toString());
+    text << "  X";
+    for (int i = 0; i < x.size(); ++i)
+        text << Print::printDouble(x[i]);
     for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if (data.isEmpty())
@@ -130,8 +139,13 @@ QWidget* ResultsWidget::ReductionWidget()
         serie->setSize(4);
         QList<QPointF> series;
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
-        for (int i = 0; i < list.size(); ++i)
+        text[0] += "\t  Param " + QString::number(i);
+        parameter_text += "Param " + QString::number(i) + " := " + name + "\n";
+        for (int i = 0; i < list.size(); ++i) {
             series << QPointF(x[i], list[i]);
+            text[i + 1] += "\t" + Print::printDouble(list[i]);
+        }
+
         if (series.isEmpty())
             continue;
 
@@ -169,6 +183,10 @@ QWidget* ResultsWidget::ReductionWidget()
         if (data["type"].toString() != "Global Parameter")
             view->HideSeries(i);
     }
+    for (const QString& string : text)
+        m_text += string + "\n";
+
+    m_text += "\n" + parameter_text;
     return view;
 }
 
@@ -329,4 +347,15 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     m_confidence_label->setText(text);
 }
 
+void ResultsWidget::Detailed()
+{
+    QHBoxLayout* layout = new QHBoxLayout;
+    QTextEdit* text = new QTextEdit;
+    text->setText("<html><pre> " + m_text + "</pre></html>");
+    layout->addWidget(text);
+    QDialog dialog(this);
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
+}
 #include "resultswidget.moc"

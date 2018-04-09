@@ -26,6 +26,7 @@ class AbstractModel;
 class ChartWrapper;
 
 class QJsonObject;
+class QPushButton;
 
 class ResultsWidget : public QWidget {
     Q_OBJECT
@@ -50,7 +51,10 @@ private:
     QWidget* m_widget;
     QLabel* m_confidence_label;
     QSharedPointer<AbstractModel> m_model;
+    QString m_text;
+    QPushButton* m_detailed;
 
 private slots:
     void WriteConfidence(const QJsonObject& data);
+    void Detailed();
 };
