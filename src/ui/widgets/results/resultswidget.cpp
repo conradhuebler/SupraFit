@@ -25,10 +25,10 @@
 #include "src/ui/widgets/chartview.h"
 
 #include "src/ui/widgets/listchart.h"
+#include "src/ui/widgets/results/contourwidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
-#include "src/ui/widgets/results/contourwidget.h"
 
 #include <QtCore/QPointer>
 

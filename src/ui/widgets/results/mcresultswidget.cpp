@@ -25,6 +25,7 @@
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/listchart.h"
+#include "src/ui/widgets/results/contourwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
 #include <QtCore/QPointer>
@@ -81,10 +82,9 @@ void MCResultsWidget::setUi()
     if (has_boxplot)
         tabs->addTab(m_box, tr("Boxplot"));
 
-    if (m_model->GlobalParameterSize() == 2 && m_models.size()) {
-        m_contour = MakeContour();
-        tabs->addTab(m_contour, tr("Contour Plot"));
-    }
+    m_contour = MakeContour();
+    tabs->addTab(m_contour, tr("Contour Plot"));
+
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
 
@@ -206,8 +206,9 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
     return boxplot;
 }
 
-QPointer<ChartView> MCResultsWidget::MakeContour()
+QPointer<QWidget> MCResultsWidget::MakeContour()
 {
+    /*
     QtCharts::QChart* chart_ellipsoid = new QtCharts::QChart;
     QPointer<ChartView> view = new ChartView(chart_ellipsoid);
     if (qApp->instance()->property("chartanimation").toBool())
@@ -227,7 +228,12 @@ QPointer<ChartView> MCResultsWidget::MakeContour()
     view->addSeries(xy_series);
     view->setXAxis(m_model->GlobalParameterName(0));
     view->setYAxis(m_model->GlobalParameterName(1));
-    return view;
+    return view;*/
+
+    ContourWidget* widget = new ContourWidget(m_models, m_model);
+    QJsonObject controller = m_data["controller"].toObject();
+
+    return widget;
 }
 
 void MCResultsWidget::UpdateBoxes()
