@@ -18,6 +18,7 @@
  */
 
 #include <QtCore/QJsonObject>
+#include <QtCore/QMultiMap>
 #include <QtCore/QPair>
 #include <QtCore/QString>
 #include <QtCore/QVector>
@@ -31,10 +32,13 @@ namespace StatisticTool {
 
 QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>> models, double cutoff)
 {
+    QMultiMap<qreal, QString> concl;
     QString result = QString("<table>");
     QVector<qreal> X;
+    qreal all_std = 0;
     int cut = 0;
     int index = 0;
+    int j = 0;
     for (const QPair<QJsonObject, QVector<int>>& model : models) {
         index++;
         bool skip = false;
@@ -85,15 +89,30 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             aver /= double(cut);
             aver_err = sqrt(sum_err) / double(cut);
             stdev = Stddev(vector, cut);
+            all_std += stdev;
             result += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
             result += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
             result += "<tr><td></td></tr>";
+            concl.insert(stdev, QString("<p> " + Model2Name((SupraFit::Model)model.first["model"].toInt()) + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " stddev: " + Print::printDouble(stdev)) + "</p>");
         }
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
+        j++;
     }
-    result += "</table>";
-
+    all_std /= double(j);
+    result += "</table></br >";
+    result += "<p> Summary: Ordered list of all partial standard deviations for each parameter </p>";
+    result += "<p> Mean standard deviations " + Print::printDouble(all_std) + "</p>";
+    qreal old_std = 0;
+    QMap<qreal, QString>::iterator i = concl.begin();
+    int indx = 0;
+    while (i != concl.constEnd()) {
+        if (indx - 1 < concl.size() / 2 && indx >= concl.size() / 2)
+            result += "<p>-------------------------------------------------------------------------------------</p>";
+        result += i.value();
+        indx++;
+        ++i;
+    }
     return result;
 }
 }

@@ -151,7 +151,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_close_all->setDisabled(true);
     connect(m_close_all, &QPushButton::clicked, this, &MDHDockTitleBar::CloseAll);
 
-    m_analyse = new QPushButton(tr("Anlyse and Comapre"));
+    m_analyse = new QPushButton(tr("Analyse and Compare"));
     m_analyse->setFlat(true);
     // m_analyse->setDisabled(true);
     connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
