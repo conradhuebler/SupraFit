@@ -23,6 +23,7 @@
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/weakenedgridsearch.h"
 
+#include "src/core/analyse.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 
@@ -39,6 +40,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QInputDialog>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
@@ -148,6 +150,11 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_close_all->setDisabled(true);
     connect(m_close_all, &QPushButton::clicked, this, &MDHDockTitleBar::CloseAll);
 
+    m_analyse = new QPushButton(tr("Anlyse and Comapre"));
+    m_analyse->setFlat(true);
+    // m_analyse->setDisabled(true);
+    connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
+
 #ifdef NMR_Models
     QAction* ItoI_action = new QAction(this);
     ItoI_action->setText(tr("1:1-Model"));
@@ -254,6 +261,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     buttons->addWidget(m_add_kinetics);
     buttons->addWidget(m_optimize);
     buttons->addWidget(m_statistics);
+    buttons->addWidget(m_analyse);
     buttons->addWidget(m_close_all);
 
     m_buttons->setLayout(buttons);
@@ -326,6 +334,7 @@ ModelDataHolder::ModelDataHolder()
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::Compare, this, &ModelDataHolder::Compare);
     connect(m_TitleBarWidget, &MDHDockTitleBar::WGStatistic, this, &ModelDataHolder::WGStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::MCStatistic, this, &ModelDataHolder::MCStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
@@ -678,4 +687,38 @@ void ModelDataHolder::HideSubWindows(int index)
         m_last_tab = index;
     }
 }
+
+void ModelDataHolder::Compare()
+{
+    bool ok;
+    qreal cutoff = QInputDialog::getDouble(this, tr("Set CutOff"), tr("Set cutoff for comparison of reduction analysis"), 1.8, 0, 1e6, 4, &ok);
+    if (!ok)
+        return;
+    QVector<QPair<QJsonObject, QVector<int>>> models;
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+            QJsonObject model = modelwidget->Model()->ExportModel();
+            QPair<QJsonObject, QVector<int>> pair;
+            pair.first = model;
+            QVector<int> parameter;
+            for (int i = 0; i < modelwidget->Model()->GlobalParameterSize(); ++i)
+                parameter << i;
+            pair.second = parameter;
+            models << pair;
+        }
+    }
+
+    QString result = StatisticTool::AnalyseReductionAnalysis(models, cutoff);
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    QTextEdit* text = new QTextEdit;
+    text->setText("<html><pre> " + result + "</pre></html>");
+    layout->addWidget(text);
+    QDialog dialog(this);
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
+}
+
 #include "modeldataholder.moc"

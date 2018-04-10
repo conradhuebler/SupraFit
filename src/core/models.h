@@ -67,6 +67,40 @@ inline SupraFit::Model Name2Model(const QString& str)
         return SupraFit::Unknown;
 }
 
+inline QString Model2Name(SupraFit::Model model)
+{
+    if (model == SupraFit::ItoI)
+        return "1:1-Model";
+    else if (model == SupraFit::IItoI_ItoI)
+        return "2:1/1:1-Model";
+    else if (model == SupraFit::ItoI_ItoII)
+        return "1:1/1:2-Model";
+    else if (model == SupraFit::IItoI_ItoI_ItoII)
+        return "2:1/1:1/1:2-Model";
+    else if (model == SupraFit::itc_ItoI)
+        return "itc_1:1-Model";
+    else if (model == SupraFit::itc_IItoI)
+        return "itc_2:1/1:1-Model";
+    else if (model == SupraFit::itc_ItoII)
+        return "itc_1:1/1:2-Model";
+    else if (model == SupraFit::itc_IItoII)
+        return "itc_2:1/1:1/1:2-Model";
+    else if (model == SupraFit::fl_ItoI)
+        return "fl_1:1-Model";
+    else if (model == SupraFit::fl_IItoI_ItoI)
+        return "fl_2:1/1:1-Model";
+    else if (model == SupraFit::fl_ItoI_ItoII)
+        return "fl_1:1/1:2-Model";
+    else if (model == SupraFit::fl_IItoI_ItoI_ItoII)
+        return "fl_2:1/1:1/1:2-Model";
+    else if (model == SupraFit::MonoMolecularModel)
+        return "Monomolecular Kinetics";
+    else if (model == SupraFit::Michaelis_Menten)
+        return "Michaelis Menten";
+    else
+        return "Unknown";
+}
+
 inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataClass> data)
 {
     QSharedPointer<AbstractModel> t;
