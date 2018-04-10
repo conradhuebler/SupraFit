@@ -85,7 +85,7 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
                 sum_err += (value - vector[i]) * (value - vector[i]);
                 max_err = qMax(qAbs(value - vector[i]), max_err);
             }
-
+            j++;
             aver /= double(cut);
             aver_err = sqrt(sum_err) / double(cut);
             stdev = Stddev(vector, cut);
@@ -97,7 +97,6 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         }
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
-        j++;
     }
     all_std /= double(j);
     result += "</table></br >";
@@ -108,8 +107,11 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
     int indx = 0;
     while (i != concl.constEnd()) {
         if (indx - 1 < concl.size() / 2 && indx >= concl.size() / 2)
-            result += "<p>-------------------------------------------------------------------------------------</p>";
+            result += "<p>------------------------- Median Line --------------------------------</p>";
+        if (old_std < all_std && all_std < i.key())
+            result += "<p>------------------------- Average Line -------------------------------</p>";
         result += i.value();
+        old_std = i.key();
         indx++;
         ++i;
     }
