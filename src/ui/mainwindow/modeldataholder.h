@@ -18,6 +18,7 @@
  */
 
 #pragma once
+
 #include "src/core/dataclass.h"
 #include "src/core/models.h"
 
@@ -95,6 +96,8 @@ signals:
     void WGStatistic();
     void MCStatistic();
     void MoCoStatistic();
+    void ReductionStatistic();
+    void CVStatistic();
     void ShowStatistics();
     void OptimizeAll();
     void Compare();
@@ -172,6 +175,8 @@ private slots:
     void WGStatistic();
     void MCStatistic();
     void MoCoStatistic();
+    void ReductionStatistic();
+    void CVStatistic();
     void OptimizeAll();
     void Compare();
     void HideSubWindows(int index);

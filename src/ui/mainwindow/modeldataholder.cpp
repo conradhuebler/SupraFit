@@ -21,6 +21,7 @@
 
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/reductionanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/analyse.h"
@@ -331,6 +332,8 @@ ModelDataHolder::ModelDataHolder()
     connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
     connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
     connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
+    connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelDataHolder::ReductionStatistic);
+    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelDataHolder::CVStatistic);
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
@@ -639,6 +642,46 @@ void ModelDataHolder::MCStatistic()
 
         config.variance = m_model_widgets[i]->Model()->StdDeviation();
         m_model_widgets[i]->MCStatistic(config);
+
+        if (!m_allow_loop)
+            break;
+    }
+    m_statistic_dialog->HideWidget();
+}
+
+void ModelDataHolder::ReductionStatistic()
+{
+    m_statistic_dialog->setRuns(Runs());
+    m_allow_loop = true;
+
+    for (int i = 0; i < m_model_widgets.size(); ++i) {
+        if (!m_model_widgets[i])
+            continue;
+
+        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+            continue;
+
+        m_model_widgets[i]->DoReductionAnalyse();
+
+        if (!m_allow_loop)
+            break;
+    }
+    m_statistic_dialog->HideWidget();
+}
+
+void ModelDataHolder::CVStatistic()
+{
+    m_statistic_dialog->setRuns(Runs());
+    m_allow_loop = true;
+
+    for (int i = 0; i < m_model_widgets.size(); ++i) {
+        if (!m_model_widgets[i])
+            continue;
+
+        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
+            continue;
+
+        m_model_widgets[i]->CVAnalyse(m_statistic_dialog->CrossValidationType());
 
         if (!m_allow_loop)
             break;

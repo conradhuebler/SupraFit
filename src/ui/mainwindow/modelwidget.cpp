@@ -112,7 +112,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::MCStatistic));
     connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::WGStatistic));
     connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::MoCoStatistic));
-    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelWidget::CVAnalyse);
+    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::CVAnalyse));
     connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelWidget::DoReductionAnalyse);
 
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
@@ -558,6 +558,18 @@ void ModelWidget::FastConfidence()
     statistic->FastConfidence(series);
     m_model->UpdateStatistic(statistic->Result());
     m_fast_confidence = statistic->Results();
+    delete statistic;
+}
+
+void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
+{
+    Waiter wait;
+    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    statistic->setModel(m_model);
+    statistic->CrossValidation(type);
+    LoadStatistic(statistic->Result(), statistic->Models());
+    emit IncrementProgress(1);
     delete statistic;
 }
 

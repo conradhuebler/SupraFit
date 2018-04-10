@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "src/capabilities/reductionanalyse.h"
+
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 #include "src/core/minimizer.h"
@@ -84,6 +86,7 @@ public:
     void WGStatistic(WGSConfig config);
     void MoCoStatistic(MoCoConfig config);
     void MCStatistic(MCConfig config);
+    void CVAnalyse(ReductionAnalyse::CVType type);
     inline void setCheckbox(const QPointer<QCheckBox> checkbox) { m_toggled_box = checkbox; }
     inline bool isChecked() const
     {
@@ -107,6 +110,7 @@ public slots:
     void GlobalMinimizeLoose();
     void LocalMinimize();
     void HideAllWindows();
+    void DoReductionAnalyse();
 
 private:
     QSharedPointer<AbstractModel> m_model;
@@ -165,7 +169,6 @@ private slots:
     void Save2File();
     void ExportSimModel();
     void FastConfidence();
-    void DoReductionAnalyse();
     void SplitterResized();
     void Restore();
     void Detailed();
