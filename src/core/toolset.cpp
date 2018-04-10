@@ -132,7 +132,7 @@ QString Points2String(const QList<QPointF>& points)
 {
     QString string;
     for (int i = 0; i < points.size(); ++i)
-        string += "(" + QString::number(points[i].x()) + "," + QString::number(points[i].y()) + ") ";
+        string += "(" + Print::printDouble(points[i].x()) + "," + Print::printDouble(points[i].y()) + ") ";
     return string;
 }
 
@@ -505,7 +505,7 @@ QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractMod
         pot = model->LocalParameterPrefix();
     }
 
-    text += "<tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + QString::number(value, 'f', 4) + "</th></tr>";
+    text += "<tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch || type == SupraFit::Statistic::FastConfidence) {
         QJsonObject confidence = result["confidence"].toObject();
         qreal upper = confidence["upper"].toDouble();
@@ -527,16 +527,19 @@ QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractMod
         }
     }
     if (type == SupraFit::Statistic::Reduction) {
-        qreal value = 0, sum_err = 0, max_err = 0, aver_err = 0;
+        qreal value = 0, sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0;
         value = result["value"].toDouble();
         QVector<qreal> vector = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
         for (int i = 0; i < vector.size(); ++i) {
+            aver += vector[i];
             sum_err += (value - vector[i]) * (value - vector[i]);
             max_err = qMax(qAbs(value - vector[i]), max_err);
         }
+        aver /= double(vector.size());
         aver_err = sqrt(sum_err) / double(vector.size());
-
-        text += "<tr><td> Sum of Errors: " + QString::number(sum_err) + "  </td><td>  Max Error = " + QString::number(max_err) + " </td><td>   Average Error = " + QString::number(aver_err) + "</td></tr>";
+        stdev = Stddev(vector);
+        text += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
+        text += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
     }
     text += "\n";
     text += "<tr><td></td></tr>\n";
@@ -546,19 +549,21 @@ QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractMod
 QString printDouble(double number)
 {
     QString string;
+    QLocale local;
+
     if (number >= 0)
         string += " ";
 
     if (qAbs(number - int(number)) < 1e-30)
-        string += QString::number(number);
+        string += local.toString(number);
     else if (qAbs(number) < 1e-17)
         string += "0";
     else if (qAbs(number) < 1e-9)
-        string += QString::number(number, 'e', 2);
+        string += local.toString(number, 'e', 2);
     else if (qAbs(number) < 1e-4)
-        string += QString::number(number, 'e', 3);
+        string += local.toString(number, 'e', 3);
     else
-        string += QString::number(number, 'f', 6);
+        string += local.toString(number, 'f', 6);
 
     return string;
 }

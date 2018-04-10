@@ -125,6 +125,20 @@ long double MaxQuadraticRoot(long double a, long double b, long double c)
     return (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
 }
 
+qreal Stddev(const QVector<qreal>& vector)
+{
+    qreal average = 0;
+    for (int i = 0; i < vector.size(); ++i)
+        average += vector[i];
+    average /= double(vector.size());
+    qDebug() << average;
+    qreal stdev = 0;
+    for (int i = 0; i < vector.size(); ++i)
+        stdev += (vector[i] - average) * (vector[i] - average);
+    qDebug() << stdev;
+    return sqrt(stdev / double(vector.size() - 1));
+}
+
 QPair<long double, long double> QuadraticRoot(long double a, long double b, long double c)
 {
     QPair<long double, long double> pair(0, 0);
