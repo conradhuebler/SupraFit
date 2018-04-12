@@ -21,6 +21,10 @@
 #include "src/core/filehandler.h"
 #include "src/global.h"
 
+#include "src/ui/dialogs/thermogram.h"
+
+#include <QDebug>
+
 #include <QtCore/QFile>
 
 #include <QtGui/QClipboard>
@@ -39,7 +43,6 @@
 #include <QtWidgets/QTableView>
 
 #include "importdata.h"
-#include <QDebug>
 
 void TableView::keyPressEvent(QKeyEvent* event)
 {
@@ -100,6 +103,10 @@ void ImportData::setUi()
     m_export = new QPushButton("Export table");
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportFile()));
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
+
+    m_thermogram = new QPushButton(tr("Import Thermogram"));
+    connect(m_thermogram, &QPushButton::clicked, this, &ImportData::ImportTheromgram);
+
     m_table = new TableView;
 
     layout->addWidget(m_select, 0, 0);
@@ -109,6 +116,7 @@ void ImportData::setUi()
     layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
     layout->addWidget(m_conc, 1, 1);
     layout->addWidget(m_table, 3, 0, 1, 4);
+    layout->addWidget(m_thermogram, 4, 0);
     layout->addWidget(m_buttonbox, 4, 1, 1, 4);
     connect(m_table, &TableView::Edited, this, &ImportData::NoChanged);
 
@@ -181,6 +189,22 @@ void ImportData::accept()
     DataTable* model = qobject_cast<DataTable*>(m_table->model());
     WriteData(model);
     QDialog::accept();
+}
+
+void ImportData::ImportTheromgram()
+{
+    Thermogram* thermogram = new Thermogram;
+    if (thermogram->exec() == QDialog::Accepted) {
+        qDebug() << thermogram->Content();
+
+        FileHandler* handler = new FileHandler(this);
+        handler->setFileContent(thermogram->Content());
+        DataTable* model = handler->getData();
+        m_table->setModel(model);
+        NoChanged();
+    }
+
+    delete thermogram;
 }
 
 #include "importdata.moc"

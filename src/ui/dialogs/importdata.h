@@ -68,7 +68,7 @@ private:
     void WriteData(const DataTable* model, int independent = 2);
     QPointer<TableView> m_table;
     QPointer<QLineEdit> m_line;
-    QPointer<QPushButton> m_select, m_export, m_file;
+    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram;
     QPointer<QSpinBox> m_conc;
     QPointer<QDialogButtonBox> m_buttonbox;
     QPointer<DataClass> m_storeddata;
@@ -81,4 +81,5 @@ private slots:
     void ExportFile();
     void accept();
     void NoChanged();
+    void ImportTheromgram();
 };
