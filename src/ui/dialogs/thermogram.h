@@ -35,6 +35,7 @@ class QTabWidget;
 
 class ChartView;
 class LineSeries;
+class ScatterSeries;
 
 typedef Eigen::VectorXd Vector;
 
@@ -43,7 +44,7 @@ class Thermogram : public QDialog {
 public:
     Thermogram();
 
-    QString Content() const { return m_content; }
+    QString Content(); //{ return m_content; }
 
 private:
     void setUi();
@@ -57,7 +58,7 @@ private:
 
     std::vector<PeakPick::Peak> PickPeaks(const PeakPick::spectrum, QTableWidget* widget);
     std::vector<PeakPick::Peak> m_exp_peaks, m_dil_peaks;
-    LineSeries* m_thermogram;
+    ScatterSeries* m_thermogram;
     QDialogButtonBox* m_buttonbox;
 
     QString m_content;

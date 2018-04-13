@@ -73,7 +73,7 @@ void Thermogram::setUi()
 
     m_table = new QTableWidget;
     m_table->setFixedWidth(250);
-    m_thermogram = new LineSeries;
+    m_thermogram = new ScatterSeries;
     m_therm = new QtCharts::QChart();
     m_thermogram_view = new ChartView(m_therm);
     m_thermogram_view->setMinimumSize(800, 600);
@@ -146,7 +146,7 @@ void Thermogram::setExperiment()
 
     PeakPick::spectrum original = PeakPick::spectrum(experiment.second, experiment.first[0], experiment.first[experiment.first.size() - 1]);
     m_experiment_view->ClearChart();
-
+    original.center();
     m_exp_peaks = PickPeaks(original, m_exp_table);
 
     m_thermogram->clear();
@@ -160,8 +160,8 @@ void Thermogram::setExperiment()
         QTableWidgetItem* newItem;
         newItem = new QTableWidgetItem(m_injct->text());
         m_table->setItem(j, 0, newItem);
-        m_heat << -1 * m_exp_peaks[j].integ_num;
-        m_raw << -1 * m_exp_peaks[j].integ_num;
+        m_heat << m_exp_peaks[j].integ_num;
+        m_raw << m_exp_peaks[j].integ_num;
         newItem = new QTableWidgetItem(QString::number(m_heat[j]));
         m_table->setItem(j, 1, newItem);
         m_thermogram->append(QPointF(j, m_heat[j]));
@@ -187,6 +187,7 @@ void Thermogram::setDilution()
         return;
     m_dil_file->setText(filename);
     PeakPick::spectrum original = PeakPick::spectrum(dilution.second, dilution.first[0], dilution.first[dilution.first.size() - 1]);
+    original.center();
     m_dilution_view->ClearChart();
 
     m_dil_peaks = PickPeaks(original, m_dil_table);
@@ -197,7 +198,7 @@ void Thermogram::setDilution()
             QTableWidgetItem* newItem;
             newItem = new QTableWidgetItem(m_injct->text());
             m_table->setItem(j, 0, newItem);
-            m_heat[j] = m_raw[j] + m_dil_peaks[j].integ_num;
+            m_heat[j] = m_raw[j] - m_dil_peaks[j].integ_num;
             newItem = new QTableWidgetItem(QString::number(m_heat[j]));
             m_table->setItem(j, 1, newItem);
             m_thermogram->append(QPointF(j, m_heat[j]));
@@ -222,14 +223,24 @@ LineSeries* Thermogram::fromSpectrum(const PeakPick::spectrum original)
 
 std::vector<PeakPick::Peak> Thermogram::PickPeaks(const PeakPick::spectrum spectrum, QTableWidget* widget)
 {
+    PeakPick::spectrum sign = spectrum;
+    sign.InvertSgn();
 
-    std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&spectrum, 0, qPow(2, 1));
-
+    std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&sign, 0, qPow(2, 1));
     for (int i = 0; i < peaks.size(); ++i) {
-        int pos = PeakPick::FindMaximum(&spectrum, peaks[i]);
+        int pos = PeakPick::FindMinimum(&spectrum, peaks[i]);
         peaks[i].max = pos;
         PeakPick::IntegrateNumerical(&spectrum, peaks[i]);
     }
+
+    std::vector<PeakPick::Peak> max_peak = PeakPick::PickPeaks(&spectrum, 0, qPow(2, 1));
+
+    for (int i = 0; i < max_peak.size(); ++i) {
+        int pos = PeakPick::FindMaximum(&spectrum, max_peak[i]);
+        max_peak[i].max = pos;
+        PeakPick::IntegrateNumerical(&spectrum, max_peak[i]);
+    }
+    peaks.insert(peaks.end(), max_peak.begin(), max_peak.end());
 
     widget->clear();
     widget->setRowCount(peaks.size());
@@ -257,4 +268,14 @@ void Thermogram::UpdateInject()
         m_table->setItem(j, 0, newItem);
         m_content += m_injct->text() + "\t" + QString::number(m_heat[j]) + "\n";
     }
+}
+
+QString Thermogram::Content()
+{
+    m_content = QString();
+
+    for (int j = 0; j < m_table->rowCount(); ++j) {
+        m_content += m_injct->text() + "\t" + QString::number(m_heat[j]) + "\n";
+    }
+    return m_content;
 }
