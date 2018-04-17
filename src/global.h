@@ -51,6 +51,8 @@ enum Model {
     itc_IItoI = 11,
     itc_ItoII = 12,
     itc_IItoII = 13,
+    itc_n_ItoI = 14,
+    itc_n_ItoII = 15,
     fl_ItoI = 20,
     fl_IItoI_ItoI = 21,
     fl_ItoI_ItoII = 22,
@@ -58,7 +60,6 @@ enum Model {
     ScriptedModel = 100,
     Unknown = 404
 };
-
 struct ConfidenceBar {
     qreal lower = 0;
     qreal upper = 0;
@@ -188,4 +189,80 @@ inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
         fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
         abort();
     }
+}
+
+inline SupraFit::Model Name2Model(const QString& str)
+{
+    if (str == "1:1-Model")
+        return SupraFit::ItoI;
+    else if (str == "2:1/1:1-Model")
+        return SupraFit::IItoI_ItoI;
+    else if (str == "1:1/1:2-Model")
+        return SupraFit::ItoI_ItoII;
+    else if (str == "2:1/1:1/1:2-Model")
+        return SupraFit::IItoI_ItoI_ItoII;
+    else if (str == "itc_1:1-Model")
+        return SupraFit::itc_ItoI;
+    else if (str == "itc_2:1/1:1-Model")
+        return SupraFit::itc_IItoI;
+    else if (str == "itc_1:1/1:2-Model")
+        return SupraFit::itc_ItoII;
+    else if (str == "itc_2:1/1:1/1:2-Model")
+        return SupraFit::itc_n_ItoI;
+    else if (str == "Independent Multiple Site")
+        return SupraFit::itc_n_ItoII;
+    else if (str == "Two Set Multiple Site")
+        return SupraFit::itc_ItoI;
+    else if (str == "fl_1:1-Model")
+        return SupraFit::fl_ItoI;
+    else if (str == "fl_2:1/1:1-Model")
+        return SupraFit::fl_IItoI_ItoI;
+    else if (str == "fl_1:1/1:2-Model")
+        return SupraFit::fl_ItoI_ItoII;
+    else if (str == "fl_2:1/1:1/1:2-Model")
+        return SupraFit::fl_IItoI_ItoI_ItoII;
+    else if (str == "Monomolecular Kinetics")
+        return SupraFit::MonoMolecularModel;
+    else if (str == "Michaelis Menten")
+        return SupraFit::Michaelis_Menten;
+    else
+        return SupraFit::Unknown;
+}
+
+inline QString Model2Name(SupraFit::Model model)
+{
+    if (model == SupraFit::ItoI)
+        return "1:1-Model";
+    else if (model == SupraFit::IItoI_ItoI)
+        return "2:1/1:1-Model";
+    else if (model == SupraFit::ItoI_ItoII)
+        return "1:1/1:2-Model";
+    else if (model == SupraFit::IItoI_ItoI_ItoII)
+        return "2:1/1:1/1:2-Model";
+    else if (model == SupraFit::itc_ItoI)
+        return "ITC 1:1-Model";
+    else if (model == SupraFit::itc_IItoI)
+        return "ITC 2:1/1:1-Model";
+    else if (model == SupraFit::itc_ItoII)
+        return "ITC 1:1/1:2-Model";
+    else if (model == SupraFit::itc_IItoII)
+        return "ITC 2:1/1:1/1:2-Model";
+    else if (model == SupraFit::itc_n_ItoI)
+        return "Independent Multiple Site";
+    else if (model == SupraFit::itc_n_ItoII)
+        return "Two Set Multiple Site";
+    else if (model == SupraFit::fl_ItoI)
+        return "&Phi; 1:1-Model";
+    else if (model == SupraFit::fl_IItoI_ItoI)
+        return "&Phi; 2:1/1:1-Model";
+    else if (model == SupraFit::fl_ItoI_ItoII)
+        return "&Phi; 1:1/1:2-Model";
+    else if (model == SupraFit::fl_IItoI_ItoI_ItoII)
+        return "&Phi; 2:1/1:1/1:2-Model";
+    else if (model == SupraFit::MonoMolecularModel)
+        return "Monomolecular Kinetics";
+    else if (model == SupraFit::Michaelis_Menten)
+        return "Michaelis Menten";
+    else
+        return "Unknown";
 }

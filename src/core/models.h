@@ -15,7 +15,8 @@
 #include "models/itc/itc_1_2_Model.h"
 #include "models/itc/itc_2_1_Model.h"
 #include "models/itc/itc_2_2_Model.h"
-
+#include "models/itc/itc_n_1_1_Model.h"
+#include "models/itc/itc_n_1_2_Model.h"
 /* Fluorescence Models */
 #include "models/fluorescence/fl_1_1_1_2_Model.h"
 #include "models/fluorescence/fl_1_1_Model.h"
@@ -32,74 +33,6 @@
 /* Kinetic Models */
 #include "models/kinetics/mm_model.h"
 #include "models/kinetics/monomolecularmodel.h"
-
-inline SupraFit::Model Name2Model(const QString& str)
-{
-    if (str == "1:1-Model")
-        return SupraFit::ItoI;
-    else if (str == "2:1/1:1-Model")
-        return SupraFit::IItoI_ItoI;
-    else if (str == "1:1/1:2-Model")
-        return SupraFit::ItoI_ItoII;
-    else if (str == "2:1/1:1/1:2-Model")
-        return SupraFit::IItoI_ItoI_ItoII;
-    else if (str == "itc_1:1-Model")
-        return SupraFit::itc_ItoI;
-    else if (str == "itc_2:1/1:1-Model")
-        return SupraFit::itc_IItoI;
-    else if (str == "itc_1:1/1:2-Model")
-        return SupraFit::itc_ItoII;
-    else if (str == "itc_2:1/1:1/1:2-Model")
-        return SupraFit::itc_IItoII;
-    else if (str == "fl_1:1-Model")
-        return SupraFit::fl_ItoI;
-    else if (str == "fl_2:1/1:1-Model")
-        return SupraFit::fl_IItoI_ItoI;
-    else if (str == "fl_1:1/1:2-Model")
-        return SupraFit::fl_ItoI_ItoII;
-    else if (str == "fl_2:1/1:1/1:2-Model")
-        return SupraFit::fl_IItoI_ItoI_ItoII;
-    else if (str == "Monomolecular Kinetics")
-        return SupraFit::MonoMolecularModel;
-    else if (str == "Michaelis Menten")
-        return SupraFit::Michaelis_Menten;
-    else
-        return SupraFit::Unknown;
-}
-
-inline QString Model2Name(SupraFit::Model model)
-{
-    if (model == SupraFit::ItoI)
-        return "1:1-Model";
-    else if (model == SupraFit::IItoI_ItoI)
-        return "2:1/1:1-Model";
-    else if (model == SupraFit::ItoI_ItoII)
-        return "1:1/1:2-Model";
-    else if (model == SupraFit::IItoI_ItoI_ItoII)
-        return "2:1/1:1/1:2-Model";
-    else if (model == SupraFit::itc_ItoI)
-        return "itc_1:1-Model";
-    else if (model == SupraFit::itc_IItoI)
-        return "itc_2:1/1:1-Model";
-    else if (model == SupraFit::itc_ItoII)
-        return "itc_1:1/1:2-Model";
-    else if (model == SupraFit::itc_IItoII)
-        return "itc_2:1/1:1/1:2-Model";
-    else if (model == SupraFit::fl_ItoI)
-        return "fl_1:1-Model";
-    else if (model == SupraFit::fl_IItoI_ItoI)
-        return "fl_2:1/1:1-Model";
-    else if (model == SupraFit::fl_ItoI_ItoII)
-        return "fl_1:1/1:2-Model";
-    else if (model == SupraFit::fl_IItoI_ItoI_ItoII)
-        return "fl_2:1/1:1/1:2-Model";
-    else if (model == SupraFit::MonoMolecularModel)
-        return "Monomolecular Kinetics";
-    else if (model == SupraFit::Michaelis_Menten)
-        return "Michaelis Menten";
-    else
-        return "Unknown";
-}
 
 inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataClass> data)
 {
@@ -135,6 +68,12 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataCla
         break;
     case SupraFit::itc_IItoII:
         t = QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(data.data()), &QObject::deleteLater);
+        break;
+    case SupraFit::itc_n_ItoI:
+        t = QSharedPointer<itc_n_ItoI_Model>(new itc_n_ItoI_Model(data.data()), &QObject::deleteLater);
+        break;
+    case SupraFit::itc_n_ItoII:
+        t = QSharedPointer<itc_n_ItoII_Model>(new itc_n_ItoII_Model(data.data()), &QObject::deleteLater);
         break;
     case SupraFit::fl_ItoI:
         t = QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(data.data()), &QObject::deleteLater);

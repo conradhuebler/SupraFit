@@ -62,7 +62,7 @@ public:
             return QString();
     }
 
-    virtual inline QString Name() const override { return tr("1:1-Model"); }
+    //   virtual inline QString Name() const override { return tr("1:1-Model"); }
     virtual inline int Color(int i) const override
     {
         if (i == 0)

@@ -17,6 +17,7 @@
  * 
  */
 
+#include "src/global.h"
 #include "src/global_config.h"
 
 #include "src/capabilities/modelcomparison.h"
@@ -156,96 +157,43 @@ MDHDockTitleBar::MDHDockTitleBar()
     // m_analyse->setDisabled(true);
     connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
 
+    auto addModel = [this](SupraFit::Model model) -> QAction* {
+        QAction* action = new QAction(this);
+        action->setText(Model2Name(model));
+        action->setData(model);
+        connect(action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
+        return action;
+    };
+
 #ifdef NMR_Models
-    QAction* ItoI_action = new QAction(this);
-    ItoI_action->setText(tr("1:1-Model"));
-    ItoI_action->setData(SupraFit::ItoI);
-    connect(ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_nmr_model << ItoI_action;
-
-    QAction* IItoI_ItoI_action = new QAction(this);
-    IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
-    IItoI_ItoI_action->setData(SupraFit::IItoI_ItoI);
-    connect(IItoI_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_nmr_model << IItoI_ItoI_action;
-
-    QAction* ItoI_ItoII_action = new QAction(this);
-    ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
-    ItoI_ItoII_action->setData(SupraFit::ItoI_ItoII);
-    connect(ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_nmr_model << ItoI_ItoII_action;
-
-    QAction* II_I_ItoI_ItoII_action = new QAction(this);
-    II_I_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
-    II_I_ItoI_ItoII_action->setData(SupraFit::IItoI_ItoI_ItoII);
-    connect(II_I_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_nmr_model << II_I_ItoI_ItoII_action;
+    m_nmr_model << addModel(SupraFit::ItoI);
+    m_nmr_model << addModel(SupraFit::IItoI_ItoI);
+    m_nmr_model << addModel(SupraFit::ItoI_ItoII);
+    m_nmr_model << addModel(SupraFit::IItoI_ItoI_ItoII);
 #endif
 
 #ifdef Fluorescence_Models
-    QAction* fl_ItoI_action = new QAction(this);
-    fl_ItoI_action->setText(tr("1:1-Model"));
-    fl_ItoI_action->setData(SupraFit::fl_ItoI);
-    connect(fl_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_fl_model << fl_ItoI_action;
-
-    QAction* fl_IItoI_ItoI_action = new QAction(this);
-    fl_IItoI_ItoI_action->setText(tr("2:1/1:1-Model"));
-    fl_IItoI_ItoI_action->setData(SupraFit::fl_IItoI_ItoI);
-    connect(fl_IItoI_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_fl_model << fl_IItoI_ItoI_action;
-
-    QAction* fl_ItoI_ItoII_action = new QAction(this);
-    fl_ItoI_ItoII_action->setText(tr("1:1/1:2-Model"));
-    fl_ItoI_ItoII_action->setData(SupraFit::fl_ItoI_ItoII);
-    connect(fl_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_fl_model << fl_ItoI_ItoII_action;
-
-    QAction* fl_IItoI_ItoI_ItoII_action = new QAction(this);
-    fl_IItoI_ItoI_ItoII_action->setText(tr("2:1/1:1/1:2-Model"));
-    fl_IItoI_ItoI_ItoII_action->setData(SupraFit::fl_IItoI_ItoI_ItoII);
-    connect(fl_IItoI_ItoI_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_fl_model << fl_IItoI_ItoI_ItoII_action;
+    m_fl_model << addModel(SupraFit::fl_ItoI);
+    m_fl_model << addModel(SupraFit::fl_IItoI_ItoI);
+    m_fl_model << addModel(SupraFit::fl_ItoI_ItoII);
+    m_fl_model << addModel(SupraFit::fl_ItoI);
 #endif
 
 #ifdef Kinetic_Models
-    QAction* mm_action = new QAction(this);
-    mm_action->setText(tr("Michaelis Menten"));
-    mm_action->setData(SupraFit::Michaelis_Menten);
-    connect(mm_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_kinetcs_model << mm_action;
-
-    QAction* mono_kinetics = new QAction(this);
-    mono_kinetics->setText(tr("Monomolecuar Kinetics"));
-    mono_kinetics->setData(SupraFit::MonoMolecularModel);
-    connect(mono_kinetics, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_kinetcs_model << mono_kinetics;
+    m_kinetcs_model << addModel(SupraFit::Michaelis_Menten);
+    ;
+    m_kinetcs_model << addModel(SupraFit::MonoMolecularModel);
 #endif
 
 #ifdef ITC_Models
-    QAction* itc_ItoI_action = new QAction(this);
-    itc_ItoI_action->setText(tr("1:1-Model"));
-    itc_ItoI_action->setData(SupraFit::itc_ItoI);
-    connect(itc_ItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_itc_model << itc_ItoI_action;
+    m_itc_fixed_model << addModel(SupraFit::itc_ItoI);
+    m_itc_fixed_model << addModel(SupraFit::itc_IItoI);
+    m_itc_fixed_model << addModel(SupraFit::itc_ItoII);
+    m_itc_fixed_model << addModel(SupraFit::itc_IItoII);
 
-    QAction* itc_IItoI_action = new QAction(this);
-    itc_IItoI_action->setText(tr("2:1-Model"));
-    itc_IItoI_action->setData(SupraFit::itc_IItoI);
-    connect(itc_IItoI_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_itc_model << itc_IItoI_action;
+    m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
+    m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);
 
-    QAction* itc_ItoII_action = new QAction(this);
-    itc_ItoII_action->setText(tr("1:2-Model"));
-    itc_ItoII_action->setData(SupraFit::itc_ItoII);
-    connect(itc_ItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_itc_model << itc_ItoII_action;
-
-    QAction* itc_IItoII_action = new QAction(this);
-    itc_IItoII_action->setText(tr("2:2-Model"));
-    itc_IItoII_action->setData(SupraFit::itc_IItoII);
-    connect(itc_IItoII_action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
-    m_itc_model << itc_IItoII_action;
 #endif
 
     m_script_action = new QAction(this);
@@ -285,8 +233,11 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         m_add_kinetics->setMenu(menu);
         m_add_nmr->hide();
         menu = new QMenu;
-        addMenu(m_itc_model, menu);
+        QAction* action = menu->addSection(tr("Fixed Stoichiometry"));
+        addMenu(m_itc_fixed_model, menu);
         m_add_itc->setMenu(menu);
+        action = menu->addSection(tr("Flexible Stoichiometry"));
+        addMenu(m_itc_flex_model, menu);
     } else if (IndependetCount == 2) {
         QAction* action = menu->addSection(tr("NMR/UV VIS"));
         addMenu(m_nmr_model, menu);

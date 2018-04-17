@@ -223,7 +223,7 @@ QWidget* ResultsWidget::ModelComparisonWidget()
             QList<QPointF> val1 = ToolSet::String2Points(box[QString::number(a)].toString());
             QList<QPointF> val2 = ToolSet::String2Points(box[QString::number(b)].toString());
 
-            /*if (!val1.isEmpty() && !val2.isEmpty()) {
+            if (!val1.isEmpty() && !val2.isEmpty()) {
                 QPointF range1 = val1[0];
                 QPointF range2 = val2[0];
                 QList<QPointF> serie;

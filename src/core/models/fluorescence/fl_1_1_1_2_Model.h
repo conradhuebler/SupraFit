@@ -66,7 +66,7 @@ public:
 
     virtual void EvaluateOptions() override;
 
-    virtual inline QString Name() const override { return tr("&Phi; 1:1/1:2-Model"); }
+    //    virtual inline QString Name() const override { return tr("&Phi; 1:1/1:2-Model"); }
 
 protected:
     virtual void CalculateVariables() override;

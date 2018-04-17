@@ -30,7 +30,6 @@
 #include <QtCore/QtMath>
 
 #include "dataclass.h"
-
 struct ModelOption {
     QStringList values;
     QString value = "unset";
@@ -118,7 +117,7 @@ public:
 
     /*! \brief Returns the name of the model
      */
-    virtual QString Name() const = 0;
+    inline QString Name() const { return Model2Name(SFModel()); }
 
     /*! \brief set the calculation style to bool fast
      * some useless loops will be omitted in AbstractModel::Calculation call

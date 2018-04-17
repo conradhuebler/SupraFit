@@ -154,6 +154,8 @@ set(models_SRC
                 src/core/models/itc/itc_2_1_Model.cpp
                 src/core/models/itc/itc_1_2_Model.cpp
                 src/core/models/itc/itc_2_2_Model.cpp
+                src/core/models/itc/itc_n_1_1_Model.cpp
+                src/core/models/itc/itc_n_1_2_Model.cpp
                 src/core/models/fluorescence/fl_1_1_Model.cpp
                 src/core/models/fluorescence/fl_1_1_1_2_Model.cpp
                 src/core/models/fluorescence/fl_2_1_1_1_Model.cpp

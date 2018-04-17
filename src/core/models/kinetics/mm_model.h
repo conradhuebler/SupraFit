@@ -63,7 +63,7 @@ public:
         return IndependentModel()->data(0, i);
     }
 
-    virtual inline QString Name() const override { return tr("Michaelis Menten"); }
+    //  virtual inline QString Name() const override { return tr("Michaelis Menten"); }
     virtual inline bool SupportSeries() const override { return false; }
 
     /*! \brief Define the x axis label for charts
