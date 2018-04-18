@@ -24,6 +24,7 @@
 class AbstractSearchClass;
 class AbstractModel;
 class ChartWrapper;
+class ModalDialog;
 
 class QJsonObject;
 class QPushButton;
@@ -53,7 +54,7 @@ private:
     QSharedPointer<AbstractModel> m_model;
     QString m_text;
     QPushButton* m_detailed;
-
+    ModalDialog* m_dialog;
 private slots:
     void WriteConfidence(const QJsonObject& data);
     void Detailed();

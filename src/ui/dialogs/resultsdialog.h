@@ -36,6 +36,7 @@ public:
 
 public slots:
     void ShowResult(SupraFit::Statistic type);
+    void Attention();
 
 private:
     QWeakPointer<AbstractModel> m_model;

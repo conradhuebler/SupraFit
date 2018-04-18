@@ -48,6 +48,13 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, QWidget* paren
     resize(1024, 800);
 }
 
+void ResultsDialog::Attention()
+{
+    show();
+    raise();
+    activateWindow();
+}
+
 void ResultsDialog::ShowResult(SupraFit::Statistic type)
 {
 }

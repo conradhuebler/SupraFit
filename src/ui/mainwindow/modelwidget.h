@@ -145,7 +145,7 @@ private:
     QSplitter* m_splitter;
     StatisticWidget* m_statistic_widget;
     QPointer<OptimizerFlagWidget> m_optim_flags;
-    ModalDialog *m_statistic_result, *m_search_result, *m_table_result;
+    ModalDialog *m_statistic_result, *m_dialogs, *m_table_result;
     ResultsDialog* m_results;
 
     bool m_statistic;

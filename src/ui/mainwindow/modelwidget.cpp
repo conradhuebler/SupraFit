@@ -120,8 +120,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper, SLOT(SetBlocked(int)));
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper, SLOT(SetBlocked(int)));
 
-    m_search_result = new ModalDialog;
-    m_search_result->setWindowTitle("Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
+    m_dialogs = new ModalDialog;
+    m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_statistic_result = new ModalDialog;
     m_statistic_result->setWindowTitle("Statistics for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -296,11 +296,11 @@ ModelWidget::~ModelWidget()
     m_model.clear();
 
     m_statistic_dialog->hide();
-    m_search_result->hide();
+    m_dialogs->hide();
     m_statistic_result->hide();
 
     delete m_statistic_result;
-    delete m_search_result;
+    delete m_dialogs;
     delete m_table_result;
     delete m_statistic_dialog;
 }
@@ -490,12 +490,12 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 
 void ModelWidget::ToggleStatisticDialog()
 {
-    m_statistic_dialog->show();
+    m_statistic_dialog->Attention();
 }
 
 void ModelWidget::ToggleSearchTable()
 {
-    m_table_result->show();
+    m_table_result->Attention();
 }
 
 void ModelWidget::MCStatistic()
@@ -679,7 +679,7 @@ void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject
 {
     m_model->UpdateStatistic(data);
     m_statistic_result->setWidget(new ResultsWidget(data, m_model, m_charts.signal_wrapper, models));
-    m_statistic_result->show();
+    m_statistic_result->Attention();
     m_statistic_dialog->HideWidget();
     m_actions->EnableCharts(true);
 }
@@ -881,7 +881,7 @@ void ModelWidget::ExportSimModel()
 
 void ModelWidget::TogglePlot()
 {
-    m_statistic_result->show();
+    m_statistic_result->Attention();
 }
 
 void ModelWidget::MultiScanFinished()
@@ -894,7 +894,7 @@ void ModelWidget::MultiScanFinished()
         m_table_result->setWidget(table, "Scan Results");
 
         m_advancedsearch->hide();
-        m_table_result->show();
+        m_table_result->Attention();
     }
 
     catch (int val) {
@@ -969,14 +969,10 @@ void ModelWidget::Restore()
 
 void ModelWidget::Detailed()
 {
-    QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
     text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
-    layout->addWidget(text);
-    QDialog dialog(this);
-    dialog.setLayout(layout);
-    dialog.resize(1024, 800);
-    dialog.exec();
+    m_dialogs->setWidget(text, tr("Detailed Information on Calculation Results"));
+    m_dialogs->Attention();
 }
 
 QString ModelWidget::Keys() const

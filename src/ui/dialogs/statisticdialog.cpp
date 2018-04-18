@@ -69,6 +69,13 @@ StatisticDialog::~StatisticDialog()
 {
 }
 
+void StatisticDialog::Attention()
+{
+    show();
+    raise();
+    activateWindow();
+}
+
 void StatisticDialog::setVisible(bool visible)
 {
     updateUI();
