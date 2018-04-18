@@ -130,9 +130,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
-    m_concentrations_result = new ModalDialog;
-    m_concentrations_result->setWindowTitle("Concentration Table for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
-
     m_layout = new QGridLayout;
     QLabel* pure_shift = new QLabel(tr("Constants:"));
     QHBoxLayout* const_layout = new QHBoxLayout;
@@ -300,13 +297,11 @@ ModelWidget::~ModelWidget()
 
     m_statistic_dialog->hide();
     m_search_result->hide();
-    m_concentrations_result->hide();
     m_statistic_result->hide();
 
     delete m_statistic_result;
     delete m_search_result;
     delete m_table_result;
-    delete m_concentrations_result;
     delete m_statistic_dialog;
 }
 
