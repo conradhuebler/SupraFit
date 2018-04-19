@@ -223,6 +223,11 @@ public:
 
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
 
+    /*! \brief Load statistic defined by type
+     * If more than results can be stored, define index
+     */
+    QJsonObject getStatistic(SupraFit::Statistic type, int index = 0);
+
     QList<qreal> getCalculatedModel();
 
     /*! \brief returns a List of all Series, that are to be included in optimisation

@@ -27,11 +27,14 @@
 
 #include "src/core/models.h"
 
+#include "src/ui/guitools/chartwrapper.h"
+
 #include "resultsdialog.h"
 
-ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, QWidget* parent)
+ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, QWidget* parent)
     : QDialog(parent)
     , m_model(model)
+    , m_wrapper(wrapper)
 {
     m_layout = new QGridLayout;
     setModal(false);
@@ -46,6 +49,8 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, QWidget* paren
     setWindowTitle("Collected Results for " + m_model.data()->Name());
     setLayout(m_layout);
     resize(1024, 800);
+    UpdateList();
+    connect(m_model.data(), &AbstractModel::StatisticChanged, this, &ResultsDialog::UpdateList);
 }
 
 void ResultsDialog::Attention()
@@ -61,4 +66,51 @@ void ResultsDialog::ShowResult(SupraFit::Statistic type)
 
 void ResultsDialog::UpdateList()
 {
+    /* We load the MC statistcs from model
+     */
+    m_results->clear();
+
+    for (int i = 0; i < m_model.data()->getMCStatisticResult(); ++i) {
+        if (!m_model.data()->getMCStatisticResult(i).isEmpty()) {
+            QListWidgetItem* item = new QListWidgetItem(tr("Monte Carlo"));
+            item->setData(Qt::UserRole, SupraFit::Statistic::MonteCarlo);
+            item->setData(Qt::UserRole + 1, i);
+            m_results->addItem(item);
+        }
+    }
+
+    QJsonObject statistic = m_model.data()->getWGStatisticResult();
+    if (!statistic.isEmpty()) {
+        QListWidgetItem* item = new QListWidgetItem(tr("Weakend Grid Search"));
+        item->setData(Qt::UserRole, SupraFit::Statistic::WeakenedGridSearch);
+        item->setData(Qt::UserRole + 1, 0);
+        m_results->addItem(item);
+    }
+
+    statistic = m_model.data()->getMoCoStatisticResult();
+    if (!statistic.isEmpty()) {
+        QListWidgetItem* item = new QListWidgetItem(tr("Model Comparison"));
+        item->setData(Qt::UserRole, SupraFit::Statistic::ModelComparison);
+        item->setData(Qt::UserRole + 1, 0);
+        m_results->addItem(item);
+    }
+
+    statistic = m_model.data()->getReduction();
+    if (!statistic.isEmpty()) {
+        //m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
+        QListWidgetItem* item = new QListWidgetItem(tr("Reduction Analysis"));
+        item->setData(Qt::UserRole, SupraFit::Statistic::Reduction);
+        item->setData(Qt::UserRole + 1, 0);
+        m_results->addItem(item);
+    }
+}
+
+void ResultsDialog::itemDoubleClicked(QListWidgetItem* item)
+{
+    SupraFit::Statistic type = SupraFit::Statistic(item->data(Qt::UserRole).toInt());
+    QJsonObject statistic;
+    if (type == SupraFit::Statistic::MonteCarlo) {
+        int index = item->data(Qt::UserRole + 1).toInt();
+        statistic = m_model.data()->getMCStatisticResult(index);
+    }
 }

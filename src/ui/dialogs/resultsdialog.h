@@ -24,15 +24,17 @@
 #include "src/global.h"
 
 class QListWidget;
+class QListWidgetItem;
 class QSplitter;
 class QTabWidget;
 
 class AbstractModel;
+class ChartWrapper;
 
 class ResultsDialog : public QDialog {
     Q_OBJECT
 public:
-    ResultsDialog(QSharedPointer<AbstractModel> model, QWidget* parent);
+    ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, QWidget* parent);
 
 public slots:
     void ShowResult(SupraFit::Statistic type);
@@ -44,7 +46,9 @@ private:
     QListWidget* m_results;
     QTabWidget* m_tabs;
     QGridLayout* m_layout;
+    ChartWrapper* m_wrapper;
 
 private slots:
     void UpdateList();
+    void itemDoubleClicked(QListWidgetItem* item);
 };

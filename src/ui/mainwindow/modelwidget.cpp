@@ -35,6 +35,7 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
 #include "src/ui/guitools/chartwrapper.h"
@@ -126,7 +127,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_statistic_result = new ModalDialog;
     m_statistic_result->setWindowTitle("Statistics for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
-    m_statistic_widget = new StatisticWidget(m_model, this),
+    m_statistic_widget = new StatisticWidget(m_model, this);
+
+    m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
+    m_results->Attention();
+
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
@@ -285,7 +290,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     LoadStatistics();
     m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));
-    ;
 }
 
 ModelWidget::~ModelWidget()

@@ -469,6 +469,35 @@ void AbstractModel::UpdateStatistic(const QJsonObject& object)
     emit StatisticChanged();
 }
 
+QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index)
+{
+    switch (type) {
+    case SupraFit::Statistic::WeakenedGridSearch:
+        return m_wg_statistics;
+        break;
+
+    case SupraFit::Statistic::ModelComparison:
+        return m_moco_statistics;
+        break;
+
+    case SupraFit::Statistic::FastConfidence:
+        return m_fast_confidence;
+        break;
+
+    case SupraFit::Statistic::Reduction:
+        return m_reduction;
+        break;
+
+    case SupraFit::Statistic::MonteCarlo:
+    case SupraFit::Statistic::CrossValidation:
+        if (index < m_mc_statistics.size())
+            return m_mc_statistics[index];
+        break;
+    default:
+        return QJsonObject();
+    }
+}
+
 QString AbstractModel::Data2Text() const
 {
     QString text;
