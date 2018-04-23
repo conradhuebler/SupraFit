@@ -48,6 +48,9 @@ public:
 
 private:
     void setUi();
+    PeakPick::spectrum LoadITCFile(const QString& filename, std::vector<PeakPick::Peak>* peaks);
+    PeakPick::spectrum LoadXYFile(const QString& filename);
+
     QPushButton *m_exp_button, *m_dil_button;
     QLineEdit *m_exp_file, *m_dil_file, *m_injct;
     QTabWidget* m_mainwidget;

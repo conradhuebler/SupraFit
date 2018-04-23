@@ -44,6 +44,7 @@ typedef Eigen::VectorXd Vector;
 
 Thermogram::Thermogram()
 {
+    setModal(true);
     setUi();
 }
 
@@ -119,7 +120,7 @@ void Thermogram::setUi()
     layout->addWidget(m_mainwidget, 2, 0, 1, 4);
 
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    ;
+
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
@@ -127,6 +128,79 @@ void Thermogram::setUi()
     m_buttonbox->setDisabled(m_injct->text().isEmpty());
 
     setLayout(layout);
+}
+
+PeakPick::spectrum Thermogram::LoadITCFile(const QString& filename, std::vector<PeakPick::Peak>* peaks)
+{
+    peaks->clear();
+
+    Vector x, y;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << file.errorString();
+    }
+
+    QStringList filecontent = QString(file.readAll()).split("\n");
+
+    std::vector<double> entries_x, entries_y;
+    bool start_peak = false;
+    qreal last_x = 0, offset = 0, freq = 2.0;
+    PeakPick::Peak floating_peak;
+    int i_offset = 0;
+    for (const QString& str : filecontent) {
+        if (str.contains("$") || str.contains("#") || str.contains("?") || str.contains("%")) {
+            if (str.contains("%")) {
+                i_offset++;
+                if (i_offset == 3)
+                    offset = QString(str).remove("%").remove(" ").toDouble();
+            }
+        } else if (str.contains("@")) {
+            start_peak = true;
+            floating_peak.end = last_x;
+            if (last_x)
+                peaks->push_back(floating_peak);
+        } else {
+            QStringList elements = str.simplified().split(",");
+            if (elements.size() == 7) {
+                entries_x.push_back(elements[0].toDouble());
+                entries_y.push_back(elements[1].toDouble());
+                if (start_peak) {
+                    floating_peak.start = elements[0].toDouble() / freq;
+                    start_peak = false;
+                }
+                last_x = elements[0].toDouble() / freq;
+            }
+        }
+    }
+
+    floating_peak.end = last_x;
+    peaks->push_back(floating_peak);
+
+    x = Vector::Map(&entries_x[0], entries_x.size());
+    y = Vector::Map(&entries_y[0], entries_y.size());
+
+    PeakPick::spectrum original(y, x[0], x[x.size() - 1]);
+
+    for (int i = 0; i < peaks->size(); ++i) {
+        int min = PeakPick::FindMinimum(&original, (*peaks)[i]);
+        int max = PeakPick::FindMaximum(&original, (*peaks)[i]);
+        //qDebug() << i << (*peaks)[i].start << (*peaks)[i].end << ((*peaks)[i].end+(*peaks)[i].start)/2.0;;
+        (*peaks)[i].max = ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
+        PeakPick::IntegrateNumerical(&original, (*peaks)[i], offset);
+    }
+    return original;
+}
+
+PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
+{
+    QPair<Vector, Vector> experiment = ToolSet::LoadXYFile(filename);
+    if (!(experiment.first.size() && experiment.second.size())) {
+        qDebug() << "size dont fit";
+        return PeakPick::spectrum();
+    }
+
+    return PeakPick::spectrum(experiment.second, experiment.first[0], experiment.first[experiment.first.size() - 1]);
 }
 
 void Thermogram::setExperiment()
@@ -137,17 +211,30 @@ void Thermogram::setExperiment()
         return;
     }
     setLastDir(filename);
-    QPair<Vector, Vector> experiment = ToolSet::LoadXYFile(filename);
-    if (!(experiment.first.size() && experiment.second.size())) {
-        qDebug() << "size dont fit";
-        return;
+    QFileInfo info(filename);
+    PeakPick::spectrum original;
+    if (info.suffix() == "itc") {
+        original = LoadITCFile(filename, &m_exp_peaks);
+        m_exp_table->clear();
+        m_exp_table->setRowCount(m_exp_peaks.size());
+        m_exp_table->setColumnCount(2);
+        for (int j = 0; j < m_exp_peaks.size(); ++j) {
+            int pos = m_exp_peaks[j].max;
+            QTableWidgetItem* newItem;
+            newItem = new QTableWidgetItem(QString::number(original.X(pos)));
+            m_exp_table->setItem(j, 0, newItem);
+            newItem = new QTableWidgetItem(QString::number(m_exp_peaks[j].integ_num));
+            m_exp_table->setItem(j, 1, newItem);
+        }
+    } else {
+        original = LoadXYFile(filename);
+        original.center();
+        m_exp_peaks = PickPeaks(original, m_exp_table);
     }
+
     m_exp_file->setText(filename);
 
-    PeakPick::spectrum original = PeakPick::spectrum(experiment.second, experiment.first[0], experiment.first[experiment.first.size() - 1]);
     m_experiment_view->ClearChart();
-    original.center();
-    m_exp_peaks = PickPeaks(original, m_exp_table);
 
     m_thermogram->clear();
     m_heat.clear();
@@ -182,15 +269,31 @@ void Thermogram::setDilution()
 
     setLastDir(filename);
 
-    QPair<Vector, Vector> dilution = ToolSet::LoadXYFile(filename);
-    if (!(dilution.first.size() && dilution.second.size()))
-        return;
+    QFileInfo info(filename);
+    PeakPick::spectrum original;
+    if (info.suffix() == "itc") {
+        original = LoadITCFile(filename, &m_dil_peaks);
+        m_dil_table->clear();
+        m_dil_table->setRowCount(m_dil_peaks.size());
+        m_dil_table->setColumnCount(2);
+        for (int j = 0; j < m_dil_peaks.size(); ++j) {
+            int pos = m_dil_peaks[j].max;
+            QTableWidgetItem* newItem;
+            newItem = new QTableWidgetItem(QString::number(original.X(pos)));
+            m_dil_table->setItem(j, 0, newItem);
+            newItem = new QTableWidgetItem(QString::number(m_dil_peaks[j].integ_num));
+            m_dil_table->setItem(j, 1, newItem);
+        }
+    } else {
+        original = LoadXYFile(filename);
+        original.center();
+        m_dil_peaks = PickPeaks(original, m_dil_table);
+    }
+
     m_dil_file->setText(filename);
-    PeakPick::spectrum original = PeakPick::spectrum(dilution.second, dilution.first[0], dilution.first[dilution.first.size() - 1]);
-    original.center();
+
     m_dilution_view->ClearChart();
 
-    m_dil_peaks = PickPeaks(original, m_dil_table);
     m_content = QString();
     m_thermogram->clear();
     if (m_dil_peaks.size() == m_exp_peaks.size()) {

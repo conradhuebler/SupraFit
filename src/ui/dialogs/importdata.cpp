@@ -194,9 +194,9 @@ void ImportData::accept()
 void ImportData::ImportTheromgram()
 {
     Thermogram* thermogram = new Thermogram;
-    if (thermogram->exec() == QDialog::Accepted) {
-        qDebug() << thermogram->Content();
+    thermogram->show();
 
+    if (thermogram->exec() == QDialog::Accepted) {
         FileHandler* handler = new FileHandler(this);
         handler->setFileContent(thermogram->Content());
         DataTable* model = handler->getData();
