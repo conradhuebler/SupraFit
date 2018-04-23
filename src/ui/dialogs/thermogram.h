@@ -28,6 +28,7 @@
 #include "libpeakpick/peakpick.h"
 
 class QDialogButtonBox;
+class QLabel;
 class QLineEdit;
 class QPushButton;
 class QTableWidget;
@@ -45,14 +46,25 @@ public:
     Thermogram();
 
     QString Content(); //{ return m_content; }
+    virtual void keyPressEvent(QKeyEvent* evt) override
+    {
+        if (evt->key() == Qt::Key_Enter || evt->key() == Qt::Key_Return)
+            return;
+        QDialog::keyPressEvent(evt);
+    }
+
+    void setExperimentFile(const QString& str);
 
 private:
     void setUi();
+    void UpdateTable();
+
     PeakPick::spectrum LoadITCFile(const QString& filename, std::vector<PeakPick::Peak>* peaks);
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button;
     QLineEdit *m_exp_file, *m_dil_file, *m_injct;
+    QLabel* m_message;
     QTabWidget* m_mainwidget;
     QTableWidget *m_table, *m_exp_table, *m_dil_table;
     ChartView *m_experiment_view, *m_dilution_view, *m_thermogram_view;
@@ -65,7 +77,8 @@ private:
     QDialogButtonBox* m_buttonbox;
 
     QString m_content;
-    QVector<qreal> m_heat, m_raw;
+    QVector<qreal> m_heat, m_raw, m_inject;
+    bool m_forceInject = false, m_injection = false;
 
 private slots:
     void setExperiment();

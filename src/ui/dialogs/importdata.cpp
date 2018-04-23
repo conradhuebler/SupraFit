@@ -135,26 +135,51 @@ void ImportData::NoChanged()
         m_conc->setValue(1);
 }
 
-void ImportData::LoadFile()
-{
-    m_line->setText(m_filename);
-    FileHandler* filehandler = new FileHandler(m_filename, this);
-
-    if (filehandler->FileSupported()) {
-        DataTable* model = filehandler->getData();
-        m_table->setModel(model);
-    } else
-        QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
-
-    delete filehandler;
-    NoChanged();
-}
 
 void ImportData::SelectFile()
 {
     m_filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
     setLastDir(m_filename);
+    m_projectfile = QString();
     LoadFile();
+}
+
+void ImportData::LoadFile()
+{
+    QFileInfo info(m_filename);
+    PeakPick::spectrum original;
+    if (info.suffix() == "itc" || info.suffix() == "ITC") {
+
+        Thermogram* thermogram = new Thermogram;
+        thermogram->setExperimentFile(m_filename);
+        thermogram->show();
+
+        if (thermogram->exec() == QDialog::Accepted) {
+            FileHandler* handler = new FileHandler(this);
+            handler->setFileContent(thermogram->Content());
+            DataTable* model = handler->getData();
+            m_table->setModel(model);
+            NoChanged();
+        }
+
+        delete thermogram;
+
+    } else if (info.suffix() == "json" || info.suffix() == "JSON" || info.suffix() == "suprafit" || info.suffix() == "SUPRAFIT" || info.suffix() == "jdat" || info.suffix() == "JDAT") {
+        m_projectfile = m_filename;
+        QDialog::accept();
+    } else {
+        m_line->setText(m_filename);
+        FileHandler* filehandler = new FileHandler(m_filename, this);
+
+        if (filehandler->FileSupported()) {
+            DataTable* model = filehandler->getData();
+            m_table->setModel(model);
+        } else
+            QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
+
+        delete filehandler;
+        NoChanged();
+    }
 }
 
 void ImportData::ExportFile()
