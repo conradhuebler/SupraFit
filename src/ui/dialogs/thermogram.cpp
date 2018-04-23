@@ -210,7 +210,6 @@ PeakPick::spectrum Thermogram::LoadITCFile(const QString& filename, std::vector<
     for (int i = 0; i < peaks->size(); ++i) {
         int min = PeakPick::FindMinimum(&original, (*peaks)[i]);
         int max = PeakPick::FindMaximum(&original, (*peaks)[i]);
-        qDebug() << i << (*peaks)[i].start << (*peaks)[i].end << ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
         ;
         (*peaks)[i].max = ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
         PeakPick::IntegrateNumerical(&original, (*peaks)[i], offset);

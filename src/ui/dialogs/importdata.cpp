@@ -174,6 +174,8 @@ void ImportData::LoadFile()
         if (filehandler->FileSupported()) {
             DataTable* model = filehandler->getData();
             m_table->setModel(model);
+            if (model->columnCount() == 2 && model->rowCount() > 100)
+                QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly."));
         } else
             QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
 
@@ -219,6 +221,8 @@ void ImportData::accept()
 void ImportData::ImportTheromgram()
 {
     Thermogram* thermogram = new Thermogram;
+    if (!m_filename.isEmpty())
+        thermogram->setExperimentFile(m_filename);
     thermogram->show();
 
     if (thermogram->exec() == QDialog::Accepted) {
