@@ -29,6 +29,8 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 
+#include "src/ui/widgets/results/resultswidget.h"
+
 #include "resultsdialog.h"
 
 ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, QWidget* parent)
@@ -41,7 +43,12 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     m_mainwidget = new QSplitter(Qt::Horizontal);
     m_layout->addWidget(m_mainwidget, 0, 0);
     m_results = new QListWidget;
+    m_results->setMaximumWidth(200);
+    connect(m_results, &QListWidget::itemDoubleClicked, this, &ResultsDialog::itemDoubleClicked);
+
     m_tabs = new QTabWidget;
+    m_tabs->setTabsClosable(true);
+    m_tabs->setMovable(true);
 
     m_mainwidget->addWidget(m_results);
     m_mainwidget->addWidget(m_tabs);
@@ -113,4 +120,6 @@ void ResultsDialog::itemDoubleClicked(QListWidgetItem* item)
         int index = item->data(Qt::UserRole + 1).toInt();
         statistic = m_model.data()->getMCStatisticResult(index);
     }
+
+    m_tabs->addTab(new ResultsWidget(statistic, m_model, m_wrapper), QString::number(type));
 }

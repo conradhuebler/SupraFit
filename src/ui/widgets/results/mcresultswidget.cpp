@@ -52,11 +52,9 @@ MCResultsWidget::MCResultsWidget(const QJsonObject& data, QSharedPointer<Abstrac
 {
     m_data = data;
     m_model = model;
-    m_models = models;
     m_wrapper = wrapper;
+    m_models = models;
 
-    QJsonObject controller = m_data["controller"].toObject();
-    m_type = SupraFit::Statistic(controller["method"].toInt());
     has_boxplot = false;
     has_histogram = false;
     has_contour = false;
@@ -114,7 +112,6 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     view->setYAxis("relative rate");
     view->setMinimumSize(300, 400);
     bool formated = false;
-    //QObject *obj = new QObject(this);
     for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if (data.isEmpty())

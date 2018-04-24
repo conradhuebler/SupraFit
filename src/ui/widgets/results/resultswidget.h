@@ -27,13 +27,14 @@ class ChartWrapper;
 class ModalDialog;
 
 class QJsonObject;
+class QLabel;
 class QPushButton;
 
 class ResultsWidget : public QWidget {
     Q_OBJECT
 
 public:
-    ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models = QList<QJsonObject>());
+    ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper);
     ~ResultsWidget();
 
 private:

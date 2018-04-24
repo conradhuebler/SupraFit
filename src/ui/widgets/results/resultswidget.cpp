@@ -42,11 +42,17 @@
 
 #include "resultswidget.h"
 
-ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models)
+ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper)
 {
     m_data = data;
     m_model = model;
-    m_models = models;
+
+    QJsonObject controller = m_data["controller"].toObject();
+    QJsonObject temp = model->ExportModel(false, false);
+    for (int i = 0; i < controller["raw"].toObject().size(); ++i) {
+        temp["data"] = controller["raw"].toObject()[QString::number(i)];
+        m_models << temp;
+    }
     m_wrapper = wrapper;
     m_dialog = new ModalDialog;
     m_text = QString("");

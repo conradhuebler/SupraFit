@@ -130,7 +130,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_statistic_widget = new StatisticWidget(m_model, this);
 
     m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
-    m_results->Attention();
+    //m_results->Attention();
 
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -682,16 +682,18 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
 void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models)
 {
     m_model->UpdateStatistic(data);
-    m_statistic_result->setWidget(new ResultsWidget(data, m_model, m_charts.signal_wrapper, models));
-    m_statistic_result->Attention();
+    m_results->Attention();
     m_statistic_dialog->HideWidget();
-    m_actions->EnableCharts(true);
+
+    /*    m_statistic_result->setWidget(new ResultsWidget(data, m_model, m_charts.signal_wrapper, models));
+    m_statistic_result->Attention();
+    m_actions->EnableCharts(true);*/
 }
 
 void ModelWidget::LoadStatistics()
 {
     /* We load the MC statistcs from model
-     */
+
 
     for (int i = 0; i < m_model->getMCStatisticResult(); ++i) {
         if (!m_model->getMCStatisticResult(i).isEmpty())
@@ -714,6 +716,7 @@ void ModelWidget::LoadStatistics()
 
     if (m_statistic_result->Count())
         m_actions->EnableCharts(true);
+ */
 }
 
 void ModelWidget::LocalMinimize()
@@ -885,7 +888,7 @@ void ModelWidget::ExportSimModel()
 
 void ModelWidget::TogglePlot()
 {
-    m_statistic_result->Attention();
+    m_results->Attention();
 }
 
 void ModelWidget::MultiScanFinished()
