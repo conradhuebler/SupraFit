@@ -27,6 +27,7 @@
 
 #include "libpeakpick/peakpick.h"
 
+class QCheckBox;
 class QDialogButtonBox;
 class QLabel;
 class QLineEdit;
@@ -66,8 +67,9 @@ private:
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit;
+    QCheckBox* m_remove_offset;
     QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_scale;
-    QLabel* m_message;
+    QLabel *m_message, *m_offset;
     QTabWidget* m_mainwidget;
     QTableWidget *m_table, *m_exp_table, *m_dil_table;
     ChartView *m_experiment_view, *m_dilution_view, *m_thermogram_view;
@@ -83,6 +85,8 @@ private:
     QString m_content;
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
     bool m_forceInject = false, m_injection = false;
+    qreal m_heat_offset = 0, m_dil_offset = 0;
+    qreal PeakAt(int i);
 
 private slots:
     void setExperiment();
