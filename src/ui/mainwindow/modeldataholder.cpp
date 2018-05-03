@@ -28,6 +28,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 
+#include "src/ui/dialogs/comparedialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/mainwindow/datawidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
@@ -335,9 +336,18 @@ ModelDataHolder::ModelDataHolder()
     connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelDataHolder::ReductionStatistic);
     connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelDataHolder::CVStatistic);
 
+    m_compare_dialog = new CompareDialog(this);
+    connect(m_compare_dialog, &CompareDialog::CompareReduction, this, &ModelDataHolder::CompareReduction);
+    connect(m_compare_dialog, &CompareDialog::CompareAIC, this, &ModelDataHolder::CompareAIC);
+
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
-    connect(m_TitleBarWidget, &MDHDockTitleBar::Compare, this, &ModelDataHolder::Compare);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::Compare, this, [this]() {
+        if (this->m_compare_dialog) {
+            m_compare_dialog->setCutoff(1.8);
+            m_compare_dialog->show();
+        }
+    });
     connect(m_TitleBarWidget, &MDHDockTitleBar::WGStatistic, this, &ModelDataHolder::WGStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::MCStatistic, this, &ModelDataHolder::MCStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
@@ -731,14 +741,14 @@ void ModelDataHolder::HideSubWindows(int index)
     }
 }
 
-void ModelDataHolder::Compare()
+void ModelDataHolder::CompareReduction()
 {
-    bool ok;
-    qreal cutoff = QInputDialog::getDouble(this, tr("Set CutOff"), tr("Set cutoff for comparison of reduction analysis"), 1.8, 0, 1e6, 4, &ok);
-    if (!ok)
+    if (!m_compare_dialog)
         return;
 
-    bool global = (QMessageBox::Yes == QMessageBox(QMessageBox::Information, "Choose Parameter", "Only Global parameter! (Don't include Local)", QMessageBox::Yes | QMessageBox::No).exec());
+    qreal cutoff = m_compare_dialog->CutOff(); //QInputDialog::getDouble(this, tr("Set CutOff"), tr("Set cutoff for comparison of reduction analysis"), 1.8, 0, 1e6, 4, &ok);
+
+    bool local = m_compare_dialog->Local(); //(QMessageBox::Yes == QMessageBox(QMessageBox::Information, "Choose Parameter", "Only Global parameter! (Don't include Local)", QMessageBox::Yes | QMessageBox::No).exec());
 
     QVector<QPair<QJsonObject, QVector<int>>> models;
     for (int i = 1; i < m_modelsWidget->count(); i++) {
@@ -748,11 +758,11 @@ void ModelDataHolder::Compare()
             QPair<QJsonObject, QVector<int>> pair;
             pair.first = model;
             QVector<int> parameter;
-            if (global)
-                for (int i = 0; i < modelwidget->Model()->GlobalParameterSize(); ++i)
+            if (local)
+                for (int i = 0; i < modelwidget->Model()->MaxParameter(); ++i)
                     parameter << i;
             else
-                for (int i = 0; i < modelwidget->Model()->MaxParameter(); ++i)
+                for (int i = 0; i < modelwidget->Model()->GlobalParameterSize(); ++i)
                     parameter << i;
 
             pair.second = parameter;
@@ -764,7 +774,29 @@ void ModelDataHolder::Compare()
 
     QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
-    text->setText("<html><pre> " + result + "</pre></html>");
+    text->setText("<html><pre>" + result + "</pre></html>");
+    layout->addWidget(text);
+    QDialog dialog(this);
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
+}
+
+void ModelDataHolder::CompareAIC()
+{
+    QVector<QWeakPointer<AbstractModel>> models;
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+            models << modelwidget->Model();
+        }
+    }
+
+    QString result = StatisticTool::CompareAIC(models);
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    QTextEdit* text = new QTextEdit;
+    text->setText("<html><pre>" + result + "</pre></html>");
     layout->addWidget(text);
     QDialog dialog(this);
     dialog.setLayout(layout);

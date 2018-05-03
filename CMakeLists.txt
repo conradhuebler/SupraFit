@@ -197,6 +197,7 @@ set(suprafit_SRCS
                 src/ui/dialogs/advancedsearch.cpp
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp
+                src/ui/dialogs/comparedialog.cpp
                 src/ui/dialogs/chartconfig.cpp
                 src/ui/dialogs/thermogram.cpp
                 src/ui/widgets/parameterwidget.cpp
