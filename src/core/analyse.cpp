@@ -22,7 +22,9 @@
 #include <QtCore/QPair>
 #include <QtCore/QString>
 #include <QtCore/QVector>
+#include <QtCore/QWeakPointer>
 
+#include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
 
@@ -50,7 +52,9 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         }
         if (X.isEmpty()) {
             X = ToolSet::String2DoubleVec(reduction["controller"].toObject()["x"].toString());
-            for (int i = 0; i <= X.size(); ++i) {
+            if (X.isEmpty())
+                return QString("No Data found. Sorry for that.");
+            for (int i = 0; i < X.size(); ++i) {
                 if (X[i] > cutoff)
                     cut = i;
             }
@@ -115,6 +119,45 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         indx++;
         ++i;
     }
+    return result;
+}
+
+QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
+{
+    QString result = "Akaike's Information Criterion AIC";
+    result += "<table>";
+    QMultiMap<qreal, QString> list_first, list_second;
+    result += "<tr><th>Model</th><th>Second Order AIC</th><th>AIC</th></tr>";
+    for (int i = 0; i < models.size(); ++i) {
+        QString str(QString::number(i) + " - " + models[i].data()->Name());
+        list_second.insert(models[i].data()->AICc(), str);
+        list_first.insert(models[i].data()->AIC(), str);
+        result += "<tr><td>" + str + ":</td><td>" + Print::printDouble(models[i].data()->AICc()) + "</td><td>" + Print::printDouble(models[i].data()->AIC()) + "</td></tr>";
+    }
+    result += "</table>\n";
+    result += "<p>List ordered by 2nd AIC Value (corrected AIC)</p>";
+
+    QMap<qreal, QString>::iterator i = list_second.begin();
+    qreal first = 0;
+    while (i != list_second.constEnd()) {
+
+        if (i == list_second.begin())
+            first = i.key();
+        result += "<p>" + i.value() + ":  2nd Order AIC:" + Print::printDouble(i.key()) + " - Evidence Ratio:" + Print::printDouble(1 / exp(-0.5 * (first - i.key()))) + "</p>";
+        ++i;
+    }
+
+    result += "\n\n<p>List ordered by uncorrected AIC Value</p>";
+    i = list_first.begin();
+    while (i != list_first.constEnd()) {
+
+        if (i == list_first.begin())
+            first = i.key();
+
+        result += "<p>" + i.value() + ":  AIC:" + Print::printDouble(i.key()) + " - Evidence Ratio:" + Print::printDouble(1 / exp(-0.5 * (first - i.key()))) + "</p>";
+        ++i;
+    }
+    result += "For more information on AIC see H. Motulsky, A. Christopoulos, Fitting Models to Biological Data using Linear and Nonlinear Regression. A practical guide to curve fitting. GraphPad Software Inc., San Diego CA, 2003";
     return result;
 }
 }

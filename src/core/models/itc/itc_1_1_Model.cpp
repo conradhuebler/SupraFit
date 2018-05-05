@@ -67,18 +67,19 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
     if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
         addGlobalParameter(0);
 
-    addLocalParameter(0);
+    if ((OptimizationType::LocalParameter & type) == OptimizationType::LocalParameter) {
+        addLocalParameter(0);
 
-    QString binding = getOption(Binding);
-    QString dilution = getOption(Dilution);
-    if (dilution == "auto") {
-        addLocalParameter(1);
-        addLocalParameter(2);
+        QString binding = getOption(Binding);
+        QString dilution = getOption(Dilution);
+        if (dilution == "auto") {
+            addLocalParameter(1);
+            addLocalParameter(2);
+        }
+        if (binding == "pytc" || binding == "multiple") {
+            addLocalParameter(3);
+        }
     }
-    if (binding == "pytc" || binding == "multiple") {
-        addLocalParameter(3);
-    }
-
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

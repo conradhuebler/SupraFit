@@ -21,6 +21,10 @@
 #include "src/core/filehandler.h"
 #include "src/global.h"
 
+#include "src/ui/dialogs/thermogram.h"
+
+#include <QDebug>
+
 #include <QtCore/QFile>
 
 #include <QtGui/QClipboard>
@@ -39,7 +43,6 @@
 #include <QtWidgets/QTableView>
 
 #include "importdata.h"
-#include <QDebug>
 
 void TableView::keyPressEvent(QKeyEvent* event)
 {
@@ -100,6 +103,10 @@ void ImportData::setUi()
     m_export = new QPushButton("Export table");
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportFile()));
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
+
+    m_thermogram = new QPushButton(tr("Import Thermogram"));
+    connect(m_thermogram, &QPushButton::clicked, this, &ImportData::ImportTheromgram);
+
     m_table = new TableView;
 
     layout->addWidget(m_select, 0, 0);
@@ -109,6 +116,7 @@ void ImportData::setUi()
     layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
     layout->addWidget(m_conc, 1, 1);
     layout->addWidget(m_table, 3, 0, 1, 4);
+    layout->addWidget(m_thermogram, 4, 0);
     layout->addWidget(m_buttonbox, 4, 1, 1, 4);
     connect(m_table, &TableView::Edited, this, &ImportData::NoChanged);
 
@@ -127,26 +135,53 @@ void ImportData::NoChanged()
         m_conc->setValue(1);
 }
 
-void ImportData::LoadFile()
-{
-    m_line->setText(m_filename);
-    FileHandler* filehandler = new FileHandler(m_filename, this);
-
-    if (filehandler->FileSupported()) {
-        DataTable* model = filehandler->getData();
-        m_table->setModel(model);
-    } else
-        QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
-
-    delete filehandler;
-    NoChanged();
-}
 
 void ImportData::SelectFile()
 {
     m_filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
     setLastDir(m_filename);
+    m_projectfile = QString();
     LoadFile();
+}
+
+void ImportData::LoadFile()
+{
+    QFileInfo info(m_filename);
+    PeakPick::spectrum original;
+    if (info.suffix() == "itc" || info.suffix() == "ITC") {
+
+        Thermogram* thermogram = new Thermogram;
+        thermogram->setExperimentFile(m_filename);
+        thermogram->show();
+
+        if (thermogram->exec() == QDialog::Accepted) {
+            FileHandler* handler = new FileHandler(this);
+            handler->setFileContent(thermogram->Content());
+            DataTable* model = handler->getData();
+            m_table->setModel(model);
+            NoChanged();
+        }
+
+        delete thermogram;
+
+    } else if (info.suffix() == "json" || info.suffix() == "JSON" || info.suffix() == "suprafit" || info.suffix() == "SUPRAFIT" || info.suffix() == "jdat" || info.suffix() == "JDAT") {
+        m_projectfile = m_filename;
+        QDialog::accept();
+    } else {
+        m_line->setText(m_filename);
+        FileHandler* filehandler = new FileHandler(m_filename, this);
+
+        if (filehandler->FileSupported()) {
+            DataTable* model = filehandler->getData();
+            m_table->setModel(model);
+            if (model->columnCount() == 2 && model->rowCount() > 100)
+                QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly."));
+        } else
+            QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
+
+        delete filehandler;
+        NoChanged();
+    }
 }
 
 void ImportData::ExportFile()
@@ -181,6 +216,24 @@ void ImportData::accept()
     DataTable* model = qobject_cast<DataTable*>(m_table->model());
     WriteData(model);
     QDialog::accept();
+}
+
+void ImportData::ImportTheromgram()
+{
+    Thermogram* thermogram = new Thermogram;
+    if (!m_filename.isEmpty())
+        thermogram->setExperimentFile(m_filename);
+    thermogram->show();
+
+    if (thermogram->exec() == QDialog::Accepted) {
+        FileHandler* handler = new FileHandler(this);
+        handler->setFileContent(thermogram->Content());
+        DataTable* model = handler->getData();
+        m_table->setModel(model);
+        NoChanged();
+    }
+
+    delete thermogram;
 }
 
 #include "importdata.moc"

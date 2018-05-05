@@ -17,16 +17,34 @@
  *
  */
 
-#include <QtCore/QJsonObject>
-#include <QtCore/QPair>
-#include <QtCore/QString>
-#include <QtCore/QVector>
-#include <QtCore/QWeakPointer>
+#pragma once
 
-#include "src/core/AbstractModel.h"
+#include <QtCore/QPointer>
 
-namespace StatisticTool {
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QDoubleSpinBox>
 
-QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>> models, double cutoff = 0);
-QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models);
-}
+class QPushButton;
+
+class CompareDialog : public QDialog {
+    Q_OBJECT
+public:
+    CompareDialog(QWidget* parent);
+    void setCutoff(qreal cutoff);
+    inline qreal CutOff() const { return m_cutoff_box->value(); }
+    inline bool Local() const { return m_local->isChecked(); }
+
+private:
+    void setUi();
+
+    QPushButton *m_reduction, *m_aic, *m_hide;
+    QPointer<QDoubleSpinBox> m_cutoff_box;
+    QCheckBox* m_local;
+
+    qreal m_cutoff;
+
+signals:
+    void CompareReduction();
+    void CompareAIC();
+};

@@ -296,8 +296,12 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString& str
 void MainWindow::NewTable()
 {
     ImportData dialog(this);
-    if (dialog.exec() == QDialog::Accepted)
-        SetData(new DataClass(dialog.getStoredData()));
+    if (dialog.exec() == QDialog::Accepted) {
+        if (dialog.ProjectFile().isEmpty())
+            SetData(new DataClass(dialog.getStoredData()));
+        else
+            LoadProject(dialog.ProjectFile());
+    }
 }
 
 void MainWindow::OpenFile()
@@ -313,8 +317,12 @@ void MainWindow::ImportTable(const QString& file)
 {
     ImportData dialog(file, this);
 
-    if (dialog.exec() == QDialog::Accepted)
-        SetData(new DataClass(dialog.getStoredData()), file);
+    if (dialog.exec() == QDialog::Accepted) {
+        if (dialog.ProjectFile().isEmpty())
+            SetData(new DataClass(dialog.getStoredData()), file);
+        else
+            LoadProject(dialog.ProjectFile());
+    }
 }
 
 bool MainWindow::LoadProject(const QString& filename)

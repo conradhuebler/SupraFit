@@ -208,6 +208,18 @@ public:
 
     virtual inline int Color(int i) const { return i; }
 
+    /*! \brief returns Akaike’s Information Criterion (AIC)
+    */
+    inline qreal AIC() const { return DataPoints() * log(SumofSquares() / double(DataPoints())) + 2 * (Parameter() + 1); }
+
+    /*! \brief returns a second-order (corrected) Akaike’s Information Criterion (AIC)
+    */
+    inline qreal AICc() const
+    {
+        int K = Parameter() + 1;
+        return AIC() + (2 * K * (K + 1)) / double(DataPoints() - K - 1);
+    }
+
     void SetSingleParameter(double value, int parameter);
     void addGlobalParameter(QList<qreal>& vector);
     void addGlobalParameter(int i);
@@ -268,7 +280,7 @@ public:
     inline qreal SumofSquares() const { return m_sum_squares; }
     inline qreal SumofAbsolute() const { return m_sum_absolute; }
     inline int Points() const { return m_used_variables; }
-    inline int Parameter() { return m_opt_para.size(); }
+    inline int Parameter() const { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
     inline qreal Variance() const { return m_variance; }
     inline qreal StdDeviation() const { return qSqrt(m_variance); }

@@ -126,7 +126,7 @@ find_package(Qt5PrintSupport REQUIRED)
 find_package(Qt5Charts REQUIRED)
 
 include_directories(SYSTEM ${QT_INCLUDES} eigen/)
-include_directories(${CMAKE_CURRENT_BINARY_DIR} fisher_dist/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} fisher_dist/ libpeakpick/)
 
 if(experimental)
     include_directories(SYSTEM ChaiScript/include)
@@ -197,8 +197,10 @@ set(suprafit_SRCS
                 src/ui/dialogs/advancedsearch.cpp
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp
+                src/ui/dialogs/comparedialog.cpp
                 src/ui/dialogs/chartconfig.cpp
                 src/ui/dialogs/resultsdialog.cpp
+                src/ui/dialogs/thermogram.cpp
                 src/ui/widgets/parameterwidget.cpp
                 src/ui/widgets/optimizerwidget.cpp
                 src/ui/widgets/results/contourwidget.cpp

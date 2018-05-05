@@ -324,8 +324,11 @@ void ModelWidget::setKeys(const QString& str)
         return;
     QStringList labels = str.split("|");
     if (labels.size() == m_charts.signal_wrapper->SeriesSize()) {
-        for (int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i)
+        for (int i = 0; i < m_charts.signal_wrapper->SeriesSize(); ++i) {
+            if (m_model_elements.size() <= i)
+                continue;
             m_model_elements[i]->setLabel(labels[i]);
+        }
     }
 }
 
