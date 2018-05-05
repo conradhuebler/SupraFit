@@ -19,13 +19,18 @@
 
 #pragma once
 
-#include <QWidget>
+#include <QtWidgets/QWidget>
 
 #include <QtCharts/QChart>
 
 typedef Eigen::VectorXd Vector;
 
+class QComboBox;
+class QLineEdit;
+class QSpinBox;
+class QPushButton;
 class QTableWidget;
+
 class LineSeries;
 class ChartView;
 
@@ -34,12 +39,8 @@ class ThermogramWidget : public QWidget {
 
 public:
     ThermogramWidget(QWidget* parent = nullptr);
-    inline void setThermogram(PeakPick::spectrum* spec)
-    {
-        m_spec = spec;
-        m_spectrum = true;
-        UpdatePlot();
-    }
+    void setThermogram(PeakPick::spectrum* spec, qreal offset = 0);
+
     inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list)
     {
         m_peak_list = peak_list;
@@ -53,6 +54,7 @@ public:
     void clear();
 
 signals:
+    void IntegrationChanged();
 
 public slots:
 
@@ -60,18 +62,33 @@ private:
     void setUi();
     void UpdateTable();
     void UpdatePlot();
+    void UpdateLimits();
+    void UpdateBase();
 
-    LineSeries* fromSpectrum(const PeakPick::spectrum* original);
+    void fromSpectrum(const PeakPick::spectrum* original, LineSeries* series);
+    void fromPolynomial(const Vector& coeff, LineSeries* series);
+
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
 
+    QComboBox *m_baseline_type, *m_fit_type;
+    QSpinBox* m_degree;
+    QLineEdit *m_constant, *m_stdev, *m_mult;
+    QPushButton* m_fit_button;
+    QCheckBox* m_limits;
     QTableWidget* m_table;
     ChartView* m_thermogram;
     QtCharts::QChart* m_data;
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper;
-    const PeakPick::spectrum* m_spec;
+    PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     bool m_spectrum = false;
     QVector<qreal> m_peaks;
     Vector m_baseline;
     qreal m_scale = 4.184, m_offset = 0;
+    QString m_base, m_fit;
+
+private slots:
+    void UpdateBaseLine(const QString& str);
+    void UpdateFit(const QString& str);
+    void FitBaseLine();
 };

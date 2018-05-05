@@ -20,6 +20,7 @@
 #include <Eigen/Dense>
 
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
@@ -27,10 +28,12 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTableWidget>
 
 #include <QtCharts/QChart>
 
+#include "libpeakpick/baseline.h"
 #include "libpeakpick/peakpick.h"
 
 #include "src/ui/guitools/chartwrapper.h"
@@ -44,6 +47,11 @@
 ThermogramWidget::ThermogramWidget(QWidget* parent)
     : QWidget(parent)
 {
+    m_thermogram_series = new LineSeries;
+    m_baseline_series = new LineSeries;
+    m_upper = new LineSeries;
+    m_lower = new LineSeries;
+
     setUi();
 }
 
@@ -61,7 +69,92 @@ void ThermogramWidget::setUi()
 
     hlayout->addWidget(m_thermogram);
     hlayout->addWidget(m_table);
-    setLayout(hlayout);
+
+    QWidget* chart = new QWidget;
+
+    chart->setLayout(hlayout);
+
+    QWidget* baseline = new QWidget;
+
+    QGridLayout* baselayout = new QGridLayout;
+
+    m_baseline_type = new QComboBox;
+    QStringList options = QStringList() << tr("none") << tr("offset") << tr("constant") << tr("polynomial");
+    m_baseline_type->addItems(options);
+    m_baseline_type->setCurrentText("offset");
+    connect(m_baseline_type, &QComboBox::currentTextChanged, this, &ThermogramWidget::UpdateBaseLine);
+
+    m_fit_type = new QComboBox;
+    options = QStringList() << tr("ignore") << tr("simple") << tr("cutoff") << tr("iterative cutoff");
+    m_fit_type->addItems(options);
+    connect(m_fit_type, &QComboBox::currentTextChanged, this, &ThermogramWidget::UpdateFit);
+
+    baselayout->addWidget(new QLabel(tr("Baseline corretion"), 0, 0));
+    baselayout->addWidget(m_baseline_type, 0, 1);
+    baselayout->addWidget(new QLabel(tr("Baseline fit type:")), 0, 2);
+    baselayout->addWidget(m_fit_type, 0, 3);
+
+    m_limits = new QCheckBox(tr("Show Fit limit"));
+    baselayout->addWidget(m_limits, 0, 4);
+    connect(m_limits, &QCheckBox::stateChanged, this, [this](int state) {
+        m_upper->setVisible(state);
+        m_lower->setVisible(state);
+        UpdateLimits();
+    });
+
+    m_degree = new QSpinBox;
+    m_degree->setMinimum(2);
+    m_degree->setMaximum(12);
+    m_degree->setValue(3);
+    connect(m_degree, QOverload<int>::of(&QSpinBox::valueChanged), this, &ThermogramWidget::FitBaseLine);
+
+    m_constant = new QLineEdit(QString::number(m_offset));
+    connect(m_constant, &QLineEdit::textChanged, this, &ThermogramWidget::UpdateLimits);
+
+    baselayout->addWidget(new QLabel(tr("Constant offset")), 1, 0);
+    baselayout->addWidget(m_constant, 1, 1);
+    baselayout->addWidget(new QLabel(tr("Polynomial degree")), 1, 2);
+    baselayout->addWidget(m_degree, 1, 3);
+
+    m_stdev = new QLineEdit;
+    connect(m_stdev, &QLineEdit::textChanged, this, &ThermogramWidget::UpdateLimits);
+
+    m_mult = new QLineEdit("1");
+    connect(m_mult, &QLineEdit::textChanged, this, &ThermogramWidget::UpdateLimits);
+
+    baselayout->addWidget(new QLabel(tr("Stddev")), 2, 0);
+    baselayout->addWidget(m_stdev, 2, 1);
+    baselayout->addWidget(new QLabel(tr("Multiplier")), 2, 2);
+    baselayout->addWidget(m_mult, 2, 3);
+
+    m_fit_button = new QPushButton(tr("Refit Baseline"));
+    baselayout->addWidget(m_fit_button, 2, 4);
+    connect(m_fit_button, &QPushButton::clicked, this, &ThermogramWidget::FitBaseLine);
+
+    baseline->setLayout(baselayout);
+
+    QVBoxLayout* layout = new QVBoxLayout;
+    layout->addWidget(chart);
+    layout->addWidget(baseline);
+
+    setLayout(layout);
+}
+
+void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
+{
+    m_spec = *spec;
+    if (offset == 0)
+        m_offset = m_spec.Mean();
+    else
+        m_offset = offset;
+
+    m_spectrum = true;
+    m_baseline = Vector(1);
+    m_baseline(0) = m_offset;
+
+    UpdatePlot();
+    m_stdev->setText(QString::number(spec->StdDev()));
+    m_constant->setText(QString::number(spec->Mean()));
 }
 
 void ThermogramWidget::UpdateTable()
@@ -71,7 +164,7 @@ void ThermogramWidget::UpdateTable()
     m_table->setColumnCount(2);
     for (int j = 0; j < m_peak_list.size(); ++j) {
         QTableWidgetItem* newItem;
-        newItem = new QTableWidgetItem(QString::number(m_spec->X(m_peak_list[j].start)) + " - " + QString::number(m_spec->X(m_peak_list[j].end)));
+        newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].start)) + " - " + QString::number(m_spec.X(m_peak_list[j].end)));
         m_table->setItem(j, 0, newItem);
         newItem = new QTableWidgetItem(QString::number(m_peak_list[j].integ_num * m_scale));
         m_table->setItem(j, 1, newItem);
@@ -80,8 +173,38 @@ void ThermogramWidget::UpdateTable()
 
 void ThermogramWidget::UpdatePlot()
 {
-    m_thermogram_series = fromSpectrum(m_spec);
+    fromSpectrum(&m_spec, m_thermogram_series);
     m_thermogram->addSeries(m_thermogram_series);
+    UpdateBase();
+}
+
+void ThermogramWidget::UpdateBase()
+{
+    fromPolynomial(m_baseline, m_baseline_series);
+    m_thermogram->addSeries(m_baseline_series);
+}
+
+void ThermogramWidget::UpdateLimits()
+{
+    if (!m_limits->isChecked())
+        return;
+
+    qreal constant;
+
+    if (m_baseline_type->currentText() == "constant")
+        constant = m_constant->text().toDouble();
+    else
+        constant = m_offset;
+    qreal stdev = m_stdev->text().toDouble();
+    qreal mult = m_mult->text().toDouble();
+    Vector coeff = Vector(1);
+    coeff(0) = constant + (mult * stdev);
+    fromPolynomial(coeff, m_upper);
+    m_thermogram->addSeries(m_upper);
+
+    coeff(0) = constant - (mult * stdev);
+    fromPolynomial(coeff, m_lower);
+    m_thermogram->addSeries(m_lower);
 }
 
 void ThermogramWidget::PickPeaks()
@@ -94,17 +217,17 @@ void ThermogramWidget::PickPeaks()
 
     std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&sign, 0, qPow(2, 1));
     for (int i = 0; i < peaks.size(); ++i) {
-        int pos = PeakPick::FindMinimum(m_spec, peaks[i]);
+        int pos = PeakPick::FindMinimum(&m_spec, peaks[i]);
         peaks[i].max = pos;
-        PeakPick::IntegrateNumerical(m_spec, peaks[i]);
+        PeakPick::IntegrateNumerical(&m_spec, peaks[i]);
     }
 
-    std::vector<PeakPick::Peak> max_peak = PeakPick::PickPeaks(m_spec, 0, qPow(2, 1));
+    std::vector<PeakPick::Peak> max_peak = PeakPick::PickPeaks(&m_spec, 0, qPow(2, 1));
 
     for (int i = 0; i < max_peak.size(); ++i) {
-        int pos = PeakPick::FindMaximum(m_spec, max_peak[i]);
+        int pos = PeakPick::FindMaximum(&m_spec, max_peak[i]);
         max_peak[i].max = pos;
-        PeakPick::IntegrateNumerical(m_spec, max_peak[i]);
+        PeakPick::IntegrateNumerical(&m_spec, max_peak[i]);
     }
     peaks.insert(peaks.end(), max_peak.begin(), max_peak.end());
 
@@ -114,7 +237,7 @@ void ThermogramWidget::PickPeaks()
     for (int j = 0; j < peaks.size(); ++j) {
         int pos = peaks[j].max;
         QTableWidgetItem* newItem;
-        newItem = new QTableWidgetItem(QString::number(m_spec->X(pos)));
+        newItem = new QTableWidgetItem(QString::number(m_spec.X(pos)));
         m_table->setItem(j, 0, newItem);
         newItem = new QTableWidgetItem(QString::number(peaks[j].integ_num));
         m_table->setItem(j, 1, newItem);
@@ -123,27 +246,32 @@ void ThermogramWidget::PickPeaks()
     UpdateTable();
 }
 
-LineSeries* ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original)
+void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeries* series)
 {
-    LineSeries* series = new LineSeries;
+    series->clear();
     for (int i = 0; i < original->size(); i++)
         series->append(QPointF(original->X(i), original->Y(i) * m_scale));
+}
 
-    return series;
+void ThermogramWidget::fromPolynomial(const Vector& coeff, LineSeries* series)
+{
+    std::cout << coeff << std::endl;
+    series->clear();
+    for (int i = 0; i < m_spec.size(); i++)
+        series->append(QPointF(m_spec.X(i), PeakPick::Polynomial(m_spec.X(i), coeff) * m_scale));
 }
 
 void ThermogramWidget::clear()
 {
     m_peak_list.clear();
     m_spectrum = false;
-    delete m_spec;
     m_table->clear();
     m_thermogram->ClearChart();
 }
 
 void ThermogramWidget::Update()
 {
-    Integrate(&m_peak_list, m_spec);
+    Integrate(&m_peak_list, &m_spec);
     UpdateTable();
 }
 
@@ -154,7 +282,80 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
         int min = PeakPick::FindMinimum(original, (*peaks)[i]);
         int max = PeakPick::FindMaximum(original, (*peaks)[i]);
         (*peaks)[i].max = ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
-        PeakPick::IntegrateNumerical(original, (*peaks)[i], m_offset);
+        PeakPick::IntegrateNumerical(original, (*peaks)[i], m_baseline);
         m_peaks << (*peaks)[i].integ_num;
     }
+}
+
+void ThermogramWidget::UpdateBaseLine(const QString& str)
+{
+    if (str == m_base)
+        return;
+
+    Vector coeff;
+
+    if (str == "none") {
+        coeff = Vector(1);
+        coeff(0) = 0;
+        m_limits->setChecked(false);
+
+    } else if (str == "offset") {
+        coeff = Vector(1);
+        coeff(0) = m_offset;
+    } else if (str == "constant") {
+        coeff = Vector(1);
+        coeff(0) = m_constant->text().toDouble();
+    } else if (str == "polynomial") {
+        coeff = Vector(m_degree->value());
+        for (int i = 0; i < coeff.size(); ++i)
+            coeff(i) = 1;
+    }
+    m_baseline = coeff;
+    UpdatePlot();
+    emit IntegrationChanged();
+
+    m_base = str;
+}
+
+void ThermogramWidget::UpdateFit(const QString& str)
+{
+    if (str == m_fit)
+        return;
+
+    FitBaseLine();
+    m_fit = str;
+}
+
+void ThermogramWidget::FitBaseLine()
+{
+    if (m_fit == "ignore") {
+        m_baseline = Vector(1);
+        if (m_baseline_type->currentText() == "constant")
+            m_baseline(0) = m_constant->text().toDouble();
+        else
+            m_baseline(0) = m_offset;
+        UpdateBase();
+        return;
+    }
+    PeakPick::BaseLine baseline(&m_spec);
+    baseline.setDegree(m_degree->value());
+
+    qreal constant;
+
+    if (m_baseline_type->currentText() == "constant")
+        constant = m_constant->text().toDouble();
+    else
+        constant = m_offset;
+
+    qreal stdev = m_stdev->text().toDouble();
+    qreal mult = m_mult->text().toDouble();
+
+    if (m_fit == "cutoff") {
+        baseline.setLower(constant - (mult * stdev));
+        baseline.setUpper(constant + (mult * stdev));
+    }
+    m_baseline = baseline.Fit();
+    UpdateBase();
+
+    emit IntegrationChanged();
 }
