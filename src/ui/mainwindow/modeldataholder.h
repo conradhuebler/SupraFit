@@ -43,6 +43,7 @@ class ChartWidget;
 class QPlainTextEdit;
 class QLabel;
 class StatisticDialog;
+class CompareDialog;
 
 class ToolButton : public QToolButton {
     Q_OBJECT
@@ -150,6 +151,7 @@ private:
     QWeakPointer<ChartWrapper> m_wrapper;
     QVector<QWeakPointer<AbstractModel>> m_models;
     QPointer<StatisticDialog> m_statistic_dialog;
+    QPointer<CompareDialog> m_compare_dialog;
     QVector<QPointer<ModelWidget>> m_model_widgets;
     void AddModel(int model);
     void ActiveBatch();
@@ -178,7 +180,8 @@ private slots:
     void ReductionStatistic();
     void CVStatistic();
     void OptimizeAll();
-    void Compare();
+    void CompareReduction();
+    void CompareAIC();
     void HideSubWindows(int index);
     inline void Interrupt() { m_allow_loop = false; }
 

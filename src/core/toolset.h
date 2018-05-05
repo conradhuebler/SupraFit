@@ -68,6 +68,7 @@ QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& s
 qreal finv(qreal p, int m, int n);
 QList<int> InvertLockedList(const QList<int>& locked);
 void ExportResults(const QString& filename, const QList<QJsonObject>& models);
+QPair<Vector, Vector> LoadXYFile(const QString& filename);
 }
 
 namespace Print {

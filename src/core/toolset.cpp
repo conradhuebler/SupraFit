@@ -485,6 +485,35 @@ void ExportResults(const QString& filename, const QList<QJsonObject>& models)
     }
     JsonHandler::WriteJsonFile(toplevel, filename);
 }
+
+QPair<Vector, Vector> LoadXYFile(const QString& filename)
+{
+    Vector x, y;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << file.errorString();
+        return QPair<Vector, Vector>(x, y);
+    }
+
+    QStringList filecontent = QString(file.readAll()).split("\n");
+
+    std::vector<double> entries_x, entries_y;
+    for (const QString& str : filecontent) {
+        if (!str.contains("#")) {
+            QStringList elements = str.simplified().split(" ");
+            if (elements.size() == 2) {
+                entries_x.push_back(elements[0].toDouble());
+                entries_y.push_back(elements[1].toDouble());
+            }
+        }
+    }
+
+    x = Vector::Map(&entries_x[0], entries_x.size());
+    y = Vector::Map(&entries_y[0], entries_y.size());
+
+    return QPair<Vector, Vector>(x, y);
+}
 }
 
 namespace Print {

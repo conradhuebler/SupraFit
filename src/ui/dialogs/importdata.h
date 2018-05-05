@@ -62,18 +62,20 @@ public:
     ~ImportData();
 
     inline DataClass getStoredData() { return *m_storeddata; }
+    inline QString ProjectFile() const { return m_projectfile; }
 
 private:
     void setUi();
     void WriteData(const DataTable* model, int independent = 2);
+
     QPointer<TableView> m_table;
     QPointer<QLineEdit> m_line;
-    QPointer<QPushButton> m_select, m_export, m_file;
+    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram;
     QPointer<QSpinBox> m_conc;
     QPointer<QDialogButtonBox> m_buttonbox;
     QPointer<DataClass> m_storeddata;
     QPointer<QCheckBox> m_switch_concentration;
-    QString m_filename;
+    QString m_filename, m_projectfile;
 
 private slots:
     void LoadFile();
@@ -81,4 +83,5 @@ private slots:
     void ExportFile();
     void accept();
     void NoChanged();
+    void ImportTheromgram();
 };
