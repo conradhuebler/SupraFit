@@ -38,6 +38,7 @@ class QTabWidget;
 class ChartView;
 class LineSeries;
 class ScatterSeries;
+class ThermogramWidget;
 
 typedef Eigen::VectorXd Vector;
 
@@ -61,7 +62,6 @@ private:
     void UpdateTable();
     void UpdateExpTable();
     void UpdateDilTable();
-    void Integrate(std::vector<PeakPick::Peak>* peaks, qreal offset, const PeakPick::spectrum& original);
 
     PeakPick::spectrum LoadITCFile(const QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset);
     PeakPick::spectrum LoadXYFile(const QString& filename);
@@ -71,15 +71,17 @@ private:
     QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_scale;
     QLabel *m_message, *m_offset;
     QTabWidget* m_mainwidget;
-    QTableWidget *m_table, *m_exp_table, *m_dil_table;
-    ChartView *m_experiment_view, *m_dilution_view, *m_thermogram_view;
-    QtCharts::QChart *m_experiment, *m_dilution, *m_therm;
+
+    QTableWidget* m_table;
+    ThermogramWidget *m_experiment, *m_dilution;
+    ChartView* m_data_view;
+    QtCharts::QChart* m_data;
     LineSeries* fromSpectrum(const PeakPick::spectrum original);
 
     std::vector<PeakPick::Peak> PickPeaks(const PeakPick::spectrum, QTableWidget* widget);
     std::vector<PeakPick::Peak> m_exp_peaks, m_dil_peaks;
     PeakPick::spectrum m_exp_therm, m_dil_therm;
-    ScatterSeries* m_thermogram;
+    ScatterSeries* m_data_series;
     QDialogButtonBox* m_buttonbox;
 
     QString m_content;
