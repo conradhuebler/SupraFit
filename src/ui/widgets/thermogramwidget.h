@@ -30,6 +30,7 @@ class QLineEdit;
 class QSpinBox;
 class QPushButton;
 class QTableWidget;
+class QTableWidgetItem;
 
 class LineSeries;
 class ChartView;
@@ -71,14 +72,14 @@ private:
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
 
     QComboBox *m_baseline_type, *m_fit_type;
-    QSpinBox* m_degree;
+    QSpinBox *m_degree, *m_filter, *m_peak_box;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QPushButton* m_fit_button;
-    QCheckBox* m_limits;
+    QCheckBox *m_limits, *m_smooth;
     QTableWidget* m_table;
     ChartView* m_thermogram;
     QtCharts::QChart* m_data;
-    LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper;
+    LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right;
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     bool m_spectrum = false;
@@ -91,4 +92,7 @@ private slots:
     void UpdateBaseLine(const QString& str);
     void UpdateFit(const QString& str);
     void FitBaseLine();
+    void PeakDoubleClicked(const QModelIndex& index);
+    void PeakDoubleClicked(int peak);
+    void PeakChanged(int row, int column, int value);
 };

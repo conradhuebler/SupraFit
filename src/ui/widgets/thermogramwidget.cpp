@@ -51,6 +51,8 @@ ThermogramWidget::ThermogramWidget(QWidget* parent)
     m_baseline_series = new LineSeries;
     m_upper = new LineSeries;
     m_lower = new LineSeries;
+    m_left = new LineSeries;
+    m_right = new LineSeries;
 
     setUi();
 }
@@ -64,6 +66,7 @@ void ThermogramWidget::setUi()
 
     m_table = new QTableWidget;
     m_table->setFixedWidth(250);
+    connect(m_table, &QTableWidget::doubleClicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakDoubleClicked));
 
     QHBoxLayout* hlayout = new QHBoxLayout;
 
@@ -85,7 +88,7 @@ void ThermogramWidget::setUi()
     connect(m_baseline_type, &QComboBox::currentTextChanged, this, &ThermogramWidget::UpdateBaseLine);
 
     m_fit_type = new QComboBox;
-    options = QStringList() << tr("ignore") << tr("simple") << tr("cutoff") << tr("iterative cutoff");
+    options = QStringList() << tr("ignore") << tr("simple") << tr("peaks") << tr("cutoff") << tr("iterative cutoff");
     m_fit_type->addItems(options);
     connect(m_fit_type, &QComboBox::currentTextChanged, this, &ThermogramWidget::UpdateFit);
 
@@ -102,19 +105,32 @@ void ThermogramWidget::setUi()
         UpdateLimits();
     });
 
+    m_smooth = new QCheckBox(tr("Smooth"));
+    connect(m_smooth, &QCheckBox::stateChanged, this, &ThermogramWidget::UpdatePlot);
+    connect(m_smooth, &QCheckBox::stateChanged, this, &ThermogramWidget::Update);
+
     m_degree = new QSpinBox;
     m_degree->setMinimum(2);
-    m_degree->setMaximum(12);
+    m_degree->setMaximum(120);
     m_degree->setValue(3);
     connect(m_degree, QOverload<int>::of(&QSpinBox::valueChanged), this, &ThermogramWidget::FitBaseLine);
 
     m_constant = new QLineEdit(QString::number(m_offset));
     connect(m_constant, &QLineEdit::textChanged, this, &ThermogramWidget::UpdateLimits);
 
+    m_filter = new QSpinBox;
+    m_filter->setMinimum(1);
+    m_filter->setMaximum(12);
+    m_filter->setValue(3);
+    connect(m_filter, QOverload<int>::of(&QSpinBox::valueChanged), this, &ThermogramWidget::UpdatePlot);
+    connect(m_filter, QOverload<int>::of(&QSpinBox::valueChanged), this, &ThermogramWidget::Update);
+
     baselayout->addWidget(new QLabel(tr("Constant offset")), 1, 0);
     baselayout->addWidget(m_constant, 1, 1);
     baselayout->addWidget(new QLabel(tr("Polynomial degree")), 1, 2);
     baselayout->addWidget(m_degree, 1, 3);
+    baselayout->addWidget(m_smooth, 1, 4);
+    baselayout->addWidget(m_filter, 1, 5);
 
     m_stdev = new QLineEdit;
     connect(m_stdev, &QLineEdit::textChanged, this, &ThermogramWidget::UpdateLimits);
@@ -161,13 +177,34 @@ void ThermogramWidget::UpdateTable()
 {
     m_table->clear();
     m_table->setRowCount(m_peak_list.size());
-    m_table->setColumnCount(2);
+    m_table->setColumnCount(3);
     for (int j = 0; j < m_peak_list.size(); ++j) {
         QTableWidgetItem* newItem;
-        newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].start)) + " - " + QString::number(m_spec.X(m_peak_list[j].end)));
-        m_table->setItem(j, 0, newItem);
+
         newItem = new QTableWidgetItem(QString::number(m_peak_list[j].integ_num * m_scale));
+        m_table->setItem(j, 0, newItem);
+
+        newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].start)));
+        QSpinBox* box = new QSpinBox(m_table);
+        box->setMaximum(1e9);
+        box->setMinimum(-1e9);
+        box->setValue(m_spec.X(m_peak_list[j].start));
+        connect(box, &QSpinBox::editingFinished, this, [this, j, box]() {
+            PeakChanged(j, 1, box->value() / 2); //FIXME hack
+        });
+        m_table->setCellWidget(j, 1, box);
         m_table->setItem(j, 1, newItem);
+
+        newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].end)));
+        box = new QSpinBox(m_table);
+        box->setMaximum(1e9);
+        box->setMinimum(-1e9);
+        box->setValue(m_spec.X(m_peak_list[j].end));
+        connect(box, &QSpinBox::editingFinished, this, [this, j, box]() {
+            PeakChanged(j, 2, box->value() / 2); //FIXME hack
+        });
+        m_table->setCellWidget(j, 2, box);
+        m_table->setItem(j, 2, newItem);
     }
 }
 
@@ -248,9 +285,13 @@ void ThermogramWidget::PickPeaks()
 
 void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeries* series)
 {
+    PeakPick::spectrum* spectrum = new PeakPick::spectrum(original);
+    if (m_smooth->isChecked())
+        SmoothFunction(spectrum, m_filter->value());
+
     series->clear();
-    for (int i = 0; i < original->size(); i++)
-        series->append(QPointF(original->X(i), original->Y(i) * m_scale));
+    for (int i = 0; i < spectrum->size(); i++)
+        series->append(QPointF(spectrum->X(i), spectrum->Y(i) * m_scale));
 }
 
 void ThermogramWidget::fromPolynomial(const Vector& coeff, LineSeries* series)
@@ -271,7 +312,11 @@ void ThermogramWidget::clear()
 
 void ThermogramWidget::Update()
 {
-    Integrate(&m_peak_list, &m_spec);
+    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
+    if (m_smooth->isChecked())
+        SmoothFunction(spectrum, m_filter->value());
+    Integrate(&m_peak_list, spectrum);
+    delete spectrum;
     UpdateTable();
 }
 
@@ -337,7 +382,12 @@ void ThermogramWidget::FitBaseLine()
         UpdateBase();
         return;
     }
-    PeakPick::BaseLine baseline(&m_spec);
+
+    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
+    if (m_smooth->isChecked())
+        SmoothFunction(spectrum, m_filter->value());
+
+    PeakPick::BaseLine baseline(spectrum);
     baseline.setDegree(m_degree->value());
 
     qreal constant;
@@ -353,9 +403,65 @@ void ThermogramWidget::FitBaseLine()
     if (m_fit == "cutoff") {
         baseline.setLower(constant - (mult * stdev));
         baseline.setUpper(constant + (mult * stdev));
+    } else if (m_fit == "peaks") {
+        baseline.setPeaks(&m_peak_list);
     }
     m_baseline = baseline.Fit();
     UpdateBase();
+    delete spectrum;
 
     emit IntegrationChanged();
+}
+
+void ThermogramWidget::PeakDoubleClicked(const QModelIndex& index)
+{
+    int peak = index.row();
+    PeakDoubleClicked(peak);
+}
+
+void ThermogramWidget::PeakDoubleClicked(int peak)
+{
+    int lower = peak, upper = peak;
+
+    if (peak > 1)
+        lower = peak - 1;
+
+    if (peak < m_peak_list.size() - 1)
+        upper = peak + 1;
+
+    qreal ymax = m_thermogram->YMaxRange();
+    qreal ymin = m_thermogram->YMinRange();
+
+    qreal xmin;
+    qreal xmax;
+
+    xmin = m_spec.X(m_peak_list[peak].start);
+    xmax = m_spec.X(m_peak_list[peak].end);
+
+    m_left->clear();
+    m_left->append(xmin, ymin);
+    m_left->append(xmin, ymax);
+    m_thermogram->addSeries(m_left);
+
+    m_right->clear();
+    m_right->append(xmax, ymin);
+    m_right->append(xmax, ymax);
+    m_thermogram->addSeries(m_right);
+
+    xmin = m_spec.X(m_peak_list[lower].start);
+    xmax = m_spec.X(m_peak_list[upper].end);
+
+    m_thermogram->setXRange(xmin, xmax);
+    m_thermogram->setYRange(ymin, ymax);
+}
+
+void ThermogramWidget::PeakChanged(int row, int column, int value)
+{
+    if (column == 1)
+        m_peak_list[row].start = value;
+    else if (column == 2)
+        m_peak_list[row].end = value;
+
+    Update();
+    PeakDoubleClicked(row);
 }
