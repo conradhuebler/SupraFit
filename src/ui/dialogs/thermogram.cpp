@@ -402,5 +402,5 @@ qreal Thermogram::PeakAt(int i)
     qreal dilution = 0;
     if (i < m_dil_heat.size())
         dilution = m_dil_heat[i];
-    return (m_raw[i] + dilution - (m_heat_offset + m_dil_offset) * m_remove_offset->isChecked()) * m_scale->text().toDouble();
+    return (m_raw[i] - dilution - (m_heat_offset + m_dil_offset) * m_remove_offset->isChecked()) * m_scale->text().toDouble();
 }
