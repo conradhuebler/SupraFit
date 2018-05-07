@@ -82,7 +82,7 @@ void StatisticWidget::Update()
     QString moco;
 
     QJsonObject result = m_model->getFastConfidence();
-    if (!m_model->getFastConfidence().isEmpty() && m_model->getMoCoStatisticResult().isEmpty()) {
+    if (!m_model->getFastConfidence().isEmpty()) {
         moco += "<p><b>Fast Confidence Results:</b></p>\n";
         moco += "<table>\n";
 
@@ -98,7 +98,7 @@ void StatisticWidget::Update()
         moco += "</table>\n";
         overview += moco;
     }
-    moco = QString();
+    /*moco = QString();
 
     if (!m_model->getMoCoStatisticResult().isEmpty()) {
         moco += "<p><b>Model Comparison Results:</b></p>\n";
@@ -174,7 +174,7 @@ void StatisticWidget::Update()
 
         mc += "</table>\n";
         overview += mc;
-    }
+    }*/
     m_overview->setText(m_short + overview);
     m_statistics = overview;
 }

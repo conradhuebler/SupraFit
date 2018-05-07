@@ -78,6 +78,40 @@ struct BoxWhisker {
     inline qreal LowerNotch() const { return median - (1.58 * (upper_quantile - lower_quantile) / sqrt(count)); }
 };
 
+inline QString Statistic2Name(SupraFit::Statistic type)
+{
+    switch (type) {
+    case SupraFit::Statistic::WeakenedGridSearch:
+        return ("Weakend Grid Search");
+        break;
+
+    case SupraFit::Statistic::ModelComparison:
+        return ("Model Comparison");
+        break;
+
+    case SupraFit::Statistic::FastConfidence:
+        return ("Fast Confidence");
+        break;
+
+    case SupraFit::Statistic::Reduction:
+        return ("Reduction Analysis");
+        break;
+
+    case SupraFit::Statistic::MonteCarlo:
+        return ("Monte Carlo Simulation");
+        break;
+    case SupraFit::Statistic::CrossValidation:
+        return ("Cross Validation");
+        break;
+    }
+    return QString();
+}
+
+inline QString Statistic2Name(int type)
+{
+    return Statistic2Name(SupraFit::Statistic(type));
+}
+
 inline QString aboutHtml()
 {
     QString info;

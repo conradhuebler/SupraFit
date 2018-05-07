@@ -73,53 +73,58 @@ void ResultsDialog::ShowResult(SupraFit::Statistic type)
 
 void ResultsDialog::UpdateList()
 {
-    /* We load the MC statistcs from model
-     */
     m_results->clear();
 
     for (int i = 0; i < m_model.data()->getMCStatisticResult(); ++i) {
-        if (!m_model.data()->getMCStatisticResult(i).isEmpty()) {
-            QListWidgetItem* item = new QListWidgetItem(tr("Monte Carlo"));
-            item->setData(Qt::UserRole, SupraFit::Statistic::MonteCarlo);
-            item->setData(Qt::UserRole + 1, i);
-            m_results->addItem(item);
-        }
+        QJsonObject controller = m_model.data()->getStatistic(SupraFit::Statistic::MonteCarlo, i)["controller"].toObject();
+
+        QListWidgetItem* item = new QListWidgetItem(SupraFit::Statistic2Name(controller["method"].toInt()));
+        item->setData(Qt::UserRole, controller["method"].toInt());
+        item->setData(Qt::UserRole + 1, i);
+        item->setData(Qt::UserRole + 2, -1);
+        m_results->addItem(item);
     }
 
-    QJsonObject statistic = m_model.data()->getWGStatisticResult();
-    if (!statistic.isEmpty()) {
+    for (int i = 0; i < m_model.data()->getWGStatisticResult(); ++i) {
         QListWidgetItem* item = new QListWidgetItem(tr("Weakend Grid Search"));
         item->setData(Qt::UserRole, SupraFit::Statistic::WeakenedGridSearch);
-        item->setData(Qt::UserRole + 1, 0);
+        item->setData(Qt::UserRole + 1, i);
+        item->setData(Qt::UserRole + 2, -1);
         m_results->addItem(item);
     }
 
-    statistic = m_model.data()->getMoCoStatisticResult();
-    if (!statistic.isEmpty()) {
+    for (int i = 0; i < m_model.data()->getMoCoStatisticResult(); ++i) {
         QListWidgetItem* item = new QListWidgetItem(tr("Model Comparison"));
         item->setData(Qt::UserRole, SupraFit::Statistic::ModelComparison);
-        item->setData(Qt::UserRole + 1, 0);
+        item->setData(Qt::UserRole + 1, i);
+        item->setData(Qt::UserRole + 2, -1);
         m_results->addItem(item);
     }
 
-    statistic = m_model.data()->getReduction();
+    QJsonObject statistic = m_model.data()->getReduction();
     if (!statistic.isEmpty()) {
-        //m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
         QListWidgetItem* item = new QListWidgetItem(tr("Reduction Analysis"));
         item->setData(Qt::UserRole, SupraFit::Statistic::Reduction);
         item->setData(Qt::UserRole + 1, 0);
+        item->setData(Qt::UserRole + 2, -1);
         m_results->addItem(item);
     }
 }
 
 void ResultsDialog::itemDoubleClicked(QListWidgetItem* item)
 {
-    SupraFit::Statistic type = SupraFit::Statistic(item->data(Qt::UserRole).toInt());
-    QJsonObject statistic;
-    if (type == SupraFit::Statistic::MonteCarlo) {
+    if (-1 == item->data(Qt::UserRole + 2).toInt()) {
+        SupraFit::Statistic type = SupraFit::Statistic(item->data(Qt::UserRole).toInt());
         int index = item->data(Qt::UserRole + 1).toInt();
-        statistic = m_model.data()->getMCStatisticResult(index);
-    }
-
-    m_tabs->addTab(new ResultsWidget(statistic, m_model, m_wrapper), QString::number(type));
+        int tab = m_tabs->addTab(new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper), SupraFit::Statistic2Name(type));
+        /*if(item == NULL)
+        {
+            qDebug() << "nothing";
+            return;
+        }
+        qDebug() << item;
+        qDebug() << item->data(Qt::UserRole) << tab;
+        item->setData(Qt::UserRole + 2, tab);*/
+    } else
+        m_tabs->setCurrentIndex(item->data(Qt::UserRole + 2).toInt());
 }

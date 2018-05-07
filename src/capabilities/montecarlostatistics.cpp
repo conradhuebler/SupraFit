@@ -210,7 +210,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     for (int step = 0; step < m_config.maxsteps; ++step) {
         QPointer<DataTable> dep_table;
         if (m_config.original)
-            dep_table = m_model->DependentModel();
+            dep_table = new DataTable(m_model->DependentModel());
         else
             dep_table = m_model->ModelTable();
         m_ptr_table << dep_table;
