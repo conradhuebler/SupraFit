@@ -287,7 +287,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     settings.beginGroup("minimizer");
     m_optim_flags->setFlags(settings.value("flags", OptimizationType::GlobalParameter | OptimizationType::LocalParameter).toInt());
     settings.endGroup();
-    LoadStatistics();
     m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));
 }
@@ -684,42 +683,11 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
 
 void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models)
 {
-    m_model->UpdateStatistic(data);
+    int index = m_model->UpdateStatistic(data);
     m_results->Attention();
     m_statistic_dialog->HideWidget();
-
-    /*    m_statistic_result->setWidget(new ResultsWidget(data, m_model, m_charts.signal_wrapper, models));
-    m_statistic_result->Attention();
-    m_actions->EnableCharts(true);*/
-}
-
-void ModelWidget::LoadStatistics()
-{
-    /* We load the MC statistcs from model
-
-
-    for (int i = 0; i < m_model->getMCStatisticResult(); ++i) {
-        if (!m_model->getMCStatisticResult(i).isEmpty())
-            m_statistic_result->setWidget(new ResultsWidget(m_model->getMCStatisticResult(i), m_model, m_charts.signal_wrapper));
-
-        QApplication::processEvents();
-    }
-
-    QJsonObject statistic = m_model->getWGStatisticResult();
-    if (!statistic.isEmpty())
-        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
-
-    statistic = m_model->getMoCoStatisticResult();
-    if (!statistic.isEmpty())
-        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
-
-    statistic = m_model->getReduction();
-    if (!statistic.isEmpty())
-        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
-
-    if (m_statistic_result->Count())
-        m_actions->EnableCharts(true);
- */
+    SupraFit::Statistic type = SupraFit::Statistic(data["controller"].toObject()["method"].toInt());
+    m_results->ShowResult(type, index);
 }
 
 void ModelWidget::LocalMinimize()

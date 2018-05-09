@@ -19,12 +19,15 @@
 
 #pragma once
 
+#include <QtGui/QStandardItem>
+
 #include <QtWidgets/QDialog>
 
 #include "src/global.h"
 
-class QListWidget;
+class QListView;
 class QListWidgetItem;
+class QStandardItemModel;
 class QSplitter;
 class QTabWidget;
 
@@ -37,18 +40,23 @@ public:
     ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, QWidget* parent);
 
 public slots:
-    void ShowResult(SupraFit::Statistic type);
+    void ShowResult(SupraFit::Statistic type, int index);
     void Attention();
 
 private:
+    inline QString Index(const QStandardItem* item) const { return QString::number(item->data(Qt::UserRole).toInt()) + ":" + QString::number(item->data(Qt::UserRole + 1).toInt()); }
+    inline QString Index(int type, int index) const { return QString::number(type) + ":" + QString::number(index); }
+
     QWeakPointer<AbstractModel> m_model;
     QSplitter* m_mainwidget;
-    QListWidget* m_results;
+    QListView* m_results;
+    QStandardItemModel* m_itemmodel;
     QTabWidget* m_tabs;
     QGridLayout* m_layout;
     ChartWrapper* m_wrapper;
+    QHash<QString, int> m_indices;
 
 private slots:
     void UpdateList();
-    void itemDoubleClicked(QListWidgetItem* item);
+    void itemDoubleClicked(const QModelIndex& index);
 };

@@ -136,7 +136,6 @@ private:
     void Data2Text();
     void Model2Text();
     void MinimizeModel(const OptimizerConfig& config);
-    void LoadStatistics();
     void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models = QList<QJsonObject>());
 
     QVBoxLayout* m_sign_layout;

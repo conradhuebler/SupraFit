@@ -225,7 +225,7 @@ public:
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
 
-    void UpdateStatistic(const QJsonObject& object);
+    int UpdateStatistic(const QJsonObject& object);
 
     QJsonObject getReduction() const { return m_reduction; }
     QJsonObject getFastConfidence() const { return m_fast_confidence; }

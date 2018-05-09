@@ -432,24 +432,29 @@ void AbstractModel::addLocalParameter(int i)
     m_enabled_local[i] = 1;
 }
 
-void AbstractModel::UpdateStatistic(const QJsonObject& object)
+int AbstractModel::UpdateStatistic(const QJsonObject& object)
 {
+    int index;
     QJsonObject controller = object["controller"].toObject();
     switch (controller["method"].toInt()) {
     case SupraFit::Statistic::WeakenedGridSearch:
         m_wg_statistics << object;
+        index = m_wg_statistics.lastIndexOf(object);
         break;
 
     case SupraFit::Statistic::ModelComparison:
         m_moco_statistics << object;
+        index = m_moco_statistics.lastIndexOf(object);
         break;
 
     case SupraFit::Statistic::FastConfidence:
         m_fast_confidence = object;
+        index = 0;
         break;
 
     case SupraFit::Statistic::Reduction:
         m_reduction = object;
+        index = 0;
         break;
 
     case SupraFit::Statistic::MonteCarlo:
@@ -464,9 +469,11 @@ void AbstractModel::UpdateStatistic(const QJsonObject& object)
         }
         if (!duplicate)
             m_mc_statistics << object;
+        index = m_mc_statistics.lastIndexOf(object);
         break;
     }
     emit StatisticChanged();
+    return index;
 }
 
 QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index)
