@@ -134,7 +134,7 @@ void Thermogram::setUi()
     m_data = new QtCharts::QChart();
     m_data_view = new ChartView(m_data);
     m_data_view->setModal(true);
-    m_data_view->setMinimumSize(800, 600);
+    m_data_view->setMinimumSize(400, 300);
 
     QWidget* widget = new QWidget;
     hlayout = new QHBoxLayout;

@@ -189,3 +189,6 @@ inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
         abort();
     }
 }
+
+inline const QString included() { return QString("#77d740;"); }
+inline const QString excluded() { return QString("#e17f7f;"); }

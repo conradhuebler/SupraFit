@@ -72,9 +72,13 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setToolTip(m_model->LocalParameterDescription(i));
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-        connect(m_model.data(), &AbstractModel::Recalculated, this, [i, widget, this]() {
+        connect(m_model.data(), &AbstractModel::Recalculated, this, [i, constant, this, widget]() {
             if (this->m_model && widget)
-                widget->setEnabled(this->m_model->LocalEnabled(i));
+                if (this->m_model->LocalEnabled(i))
+                    constant->setStyleSheet("background-color: " + included());
+                else
+                    constant->setStyleSheet("background-color: " + excluded());
+
         });
         QVBoxLayout* vlayout = new QVBoxLayout;
         widget->setLayout(vlayout);
@@ -205,7 +209,8 @@ void ModelElement::Update()
     if (!m_include->isChecked())
         return;
     for (int i = 0; i < m_model->LocalParameterSize(); ++i) {
-        m_constants[i]->setValue(m_model->LocalParameter(i, m_no));
+        if (qAbs(m_constants[i]->value() - m_model->LocalParameter(i, m_no)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
+            m_constants[i]->setValue(m_model->LocalParameter(i, m_no));
     }
     if (m_model->Type() != 3)
         m_error->setText("Sum of Squares: <b>" + Print::printDouble(m_model->SumOfErrors(m_no)) + "</b>");

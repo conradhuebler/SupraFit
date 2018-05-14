@@ -62,7 +62,7 @@ void ThermogramWidget::setUi()
     m_data = new QtCharts::QChart();
     m_thermogram = new ChartView(m_data);
     m_thermogram->setModal(true);
-    m_thermogram->setMinimumSize(800, 600);
+    m_thermogram->setMinimumSize(600, 450);
 
     m_table = new QTableWidget;
     m_table->setFixedWidth(250);

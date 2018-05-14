@@ -18,6 +18,7 @@
  */
 
 #include "src/core/models.h"
+#include "src/global.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"
 
@@ -46,7 +47,11 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
             [i, box, this, widget]() {
                 if (this->m_model && box) {
                     box->setValue(m_model->LocalParameter(i, 0));
-                    widget->setEnabled(this->m_model->LocalEnabled(i));
+                    if (this->m_model->LocalEnabled(i))
+                        box->setStyleSheet("background-color: " + included());
+                    else
+                        box->setStyleSheet("background-color: " + excluded());
+                    //widget->setEnabled(this->m_model->LocalEnabled(i));
                 }
             });
         connect(box, &SpinBox::valueChangedNotBySet,
