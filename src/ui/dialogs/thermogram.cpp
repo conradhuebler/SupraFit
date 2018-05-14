@@ -197,7 +197,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(const QString& filename, std::vector<
             m_inject << str.split(",")[1].toDouble();
         } else {
             QStringList elements = str.simplified().split(",");
-            if (elements.size() == 7) {
+            if (elements.size() > 2) {
                 if (skip) {
                     offset += elements[1].toDouble();
                     i_offset++;
