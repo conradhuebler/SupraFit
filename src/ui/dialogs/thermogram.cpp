@@ -35,6 +35,7 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/widgets/chartview.h"
+#include "src/ui/widgets/thermogramwidget.h"
 
 #include "src/core/toolset.h"
 #include "src/global.h"
@@ -51,6 +52,9 @@ Thermogram::Thermogram()
 
 void Thermogram::setUi()
 {
+    m_experiment = new ThermogramWidget(this);
+    m_dilution = new ThermogramWidget(this);
+
     QGridLayout* layout = new QGridLayout;
 
     m_exp_button = new QPushButton(tr("Load Experiment"));
@@ -70,7 +74,14 @@ void Thermogram::setUi()
     connect(m_dil_file, &QLineEdit::textChanged, this, &Thermogram::clearDilution);
 
     m_scale = new QLineEdit(tr("4.184"));
-
+    connect(m_scale, &QLineEdit::textChanged, m_scale, [this]() {
+        bool ok;
+        qreal scale = m_scale->text().toDouble(&ok);
+        if (ok) {
+            m_experiment->setScale(scale);
+            m_dilution->setScale(scale);
+        }
+    });
     m_injct = new QLineEdit;
 
     m_exp_base = new QLineEdit;
@@ -119,51 +130,21 @@ void Thermogram::setUi()
 
     m_table = new QTableWidget;
     m_table->setFixedWidth(250);
-    m_thermogram = new ScatterSeries;
-    m_therm = new QtCharts::QChart();
-    m_thermogram_view = new ChartView(m_therm);
-    m_thermogram_view->setModal(true);
-    m_thermogram_view->setMinimumSize(800, 600);
+    m_data_series = new ScatterSeries;
+    m_data = new QtCharts::QChart();
+    m_data_view = new ChartView(m_data);
+    m_data_view->setModal(true);
+    m_data_view->setMinimumSize(400, 300);
 
     QWidget* widget = new QWidget;
     hlayout = new QHBoxLayout;
     widget->setLayout(hlayout);
-    hlayout->addWidget(m_thermogram_view);
+    hlayout->addWidget(m_data_view);
     hlayout->addWidget(m_table);
     m_mainwidget->addTab(widget, tr("Data Table"));
 
-    m_experiment = new QtCharts::QChart();
-    m_experiment_view = new ChartView(m_experiment);
-    m_experiment_view->setModal(true);
-    m_experiment_view->setMinimumSize(800, 600);
-
-    m_exp_table = new QTableWidget;
-    m_exp_table->setFixedWidth(250);
-
-    widget = new QWidget;
-    hlayout = new QHBoxLayout;
-
-    hlayout->addWidget(m_experiment_view);
-    hlayout->addWidget(m_exp_table);
-    widget->setLayout(hlayout);
-
-    m_mainwidget->addTab(widget, tr("Experiment"));
-
-    m_dilution = new QtCharts::QChart();
-    m_dilution_view = new ChartView(m_dilution);
-    m_dilution_view->setModal(true);
-    m_dilution_view->setMinimumSize(800, 600);
-
-    m_dil_table = new QTableWidget;
-    m_dil_table->setFixedWidth(250);
-
-    widget = new QWidget;
-    hlayout = new QHBoxLayout;
-    hlayout->addWidget(m_dilution_view);
-    hlayout->addWidget(m_dil_table);
-    widget->setLayout(hlayout);
-
-    m_mainwidget->addTab(widget, tr("Dilution"));
+    m_mainwidget->addTab(m_experiment, tr("Experiment"));
+    m_mainwidget->addTab(m_dilution, tr("Dilution"));
 
     layout->addWidget(m_mainwidget, 4, 0, 1, 4);
 
@@ -175,18 +156,10 @@ void Thermogram::setUi()
     layout->addWidget(m_buttonbox, 5, 0, 1, 4);
     m_buttonbox->setDisabled(m_injct->text().isEmpty());
 
-    setLayout(layout);
-}
+    connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateData);
+    //connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateData);
 
-void Thermogram::Integrate(std::vector<PeakPick::Peak>* peaks, qreal offset, const PeakPick::spectrum& original)
-{
-    for (int i = 0; i < peaks->size(); ++i) {
-        int min = PeakPick::FindMinimum(&original, (*peaks)[i]);
-        int max = PeakPick::FindMaximum(&original, (*peaks)[i]);
-        ;
-        (*peaks)[i].max = ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
-        PeakPick::IntegrateNumerical(&original, (*peaks)[i], offset);
-    }
+    setLayout(layout);
 }
 
 PeakPick::spectrum Thermogram::LoadITCFile(const QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
@@ -224,7 +197,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(const QString& filename, std::vector<
             m_inject << str.split(",")[1].toDouble();
         } else {
             QStringList elements = str.simplified().split(",");
-            if (elements.size() == 7) {
+            if (elements.size() > 2) {
                 if (skip) {
                     offset += elements[1].toDouble();
                     i_offset++;
@@ -248,7 +221,6 @@ PeakPick::spectrum Thermogram::LoadITCFile(const QString& filename, std::vector<
     y = Vector::Map(&entries_y[0], entries_y.size());
 
     PeakPick::spectrum original(y, x[0], x[x.size() - 1]);
-    Integrate(peaks, offset, original);
     return original;
 }
 
@@ -272,49 +244,22 @@ void Thermogram::setExperimentFile(const QString& filename)
         qreal offset = 0;
         original = LoadITCFile(filename, &m_exp_peaks, offset);
         m_exp_base->setText(QString::number(offset));
-
+        m_experiment->setThermogram(&original, offset);
+        m_experiment->setPeakList(m_exp_peaks);
     } else {
         original = LoadXYFile(filename);
-        original.center();
-        m_exp_peaks = PickPeaks(original, m_exp_table);
+        m_experiment->setThermogram(&original);
+        m_experiment->PickPeaks();
     }
     m_buttonbox->setEnabled(m_injection);
     m_exp_therm = original;
-    for (int j = 0; j < m_exp_peaks.size(); ++j) {
-        m_raw << m_exp_peaks[j].integ_num;
-    }
 
-    UpdateExpTable();
+    m_raw = m_experiment->PeakList();
     m_exp_file->setText(filename);
 
-    m_experiment_view->ClearChart();
-
-    m_heat.clear();
-    m_raw.clear();
     m_content = QString();
-
     UpdateData();
-    LineSeries* series = fromSpectrum(original);
-    m_experiment_view->addSeries(series);
     m_mainwidget->setCurrentIndex(1);
-}
-
-void Thermogram::UpdateExpTable()
-{
-    m_heat_offset = 0;
-    m_exp_table->clear();
-    m_exp_table->setRowCount(m_exp_peaks.size());
-    m_exp_table->setColumnCount(2);
-    qreal scale = m_scale->text().toDouble();
-    for (int j = 0; j < m_exp_peaks.size(); ++j) {
-        int pos = m_exp_peaks[j].max;
-        QTableWidgetItem* newItem;
-        newItem = new QTableWidgetItem(QString::number(m_exp_therm.X(pos)));
-        m_exp_table->setItem(j, 0, newItem);
-        newItem = new QTableWidgetItem(QString::number(m_exp_peaks[j].integ_num * scale));
-        m_exp_table->setItem(j, 1, newItem);
-        m_heat_offset = m_exp_peaks[j].integ_num;
-    }
 }
 
 void Thermogram::setExperiment()
@@ -330,7 +275,7 @@ void Thermogram::setExperiment()
 
 void Thermogram::UpdateTable()
 {
-    m_thermogram->clear();
+    m_data_series->clear();
     m_table->clear();
     m_table->setRowCount(m_exp_peaks.size());
     m_table->setColumnCount(2);
@@ -353,9 +298,9 @@ void Thermogram::UpdateTable()
         m_heat << m_exp_peaks[j].integ_num - dil;
         newItem = new QTableWidgetItem(QString::number(PeakAt(j)));
         m_table->setItem(j, 1, newItem);
-        m_thermogram->append(QPointF(j, PeakAt(j)));
+        m_data_series->append(QPointF(j, PeakAt(j)));
     }
-    m_thermogram_view->addSeries(m_thermogram);
+    m_data_view->addSeries(m_data_series);
 }
 
 void Thermogram::setDilution()
@@ -372,92 +317,19 @@ void Thermogram::setDilution()
     if (info.suffix() == "itc") {
         qreal offset = 0;
         original = LoadITCFile(filename, &m_dil_peaks, offset);
+        m_dilution->setThermogram(&original, offset);
+        m_dilution->setPeakList(m_exp_peaks);
         m_dil_base->setText(QString::number(offset));
     } else {
         original = LoadXYFile(filename);
-        original.center();
-        m_dil_peaks = PickPeaks(original, m_dil_table);
+        m_dilution->setThermogram(&original);
+        m_dilution->PickPeaks();
     }
     m_dil_therm = original;
-    UpdateDilTable();
     m_dil_file->setText(filename);
-
-    m_dilution_view->ClearChart();
-    m_thermogram->clear();
-    qreal scale = m_scale->text().toDouble();
-    if (m_dil_peaks.size() == m_exp_peaks.size()) {
-        for (int j = 0; j < m_dil_peaks.size(); ++j)
-            m_dil_heat << m_dil_peaks[j].integ_num;
-
-        m_thermogram_view->addSeries(m_thermogram);
-    }
-    LineSeries* series = fromSpectrum(original);
+    m_dil_heat = m_dilution->PeakList();
     UpdateData();
-    m_dilution_view->addSeries(series);
     m_mainwidget->setCurrentIndex(2);
-}
-
-void Thermogram::UpdateDilTable()
-{
-    m_dil_offset = 0;
-    m_dil_table->clear();
-    m_dil_table->setRowCount(m_dil_peaks.size());
-    m_dil_table->setColumnCount(2);
-    qreal scale = m_scale->text().toDouble();
-    for (int j = 0; j < m_dil_peaks.size(); ++j) {
-        int pos = m_dil_peaks[j].max;
-        QTableWidgetItem* newItem;
-        newItem = new QTableWidgetItem(QString::number(m_dil_therm.X(pos)));
-        m_dil_table->setItem(j, 0, newItem);
-        newItem = new QTableWidgetItem(QString::number(m_dil_peaks[j].integ_num * scale));
-        m_dil_table->setItem(j, 1, newItem);
-        m_dil_offset = m_dil_peaks[j].integ_num;
-    }
-}
-
-LineSeries* Thermogram::fromSpectrum(const PeakPick::spectrum original)
-{
-    LineSeries* series = new LineSeries;
-    qreal scale = m_scale->text().toDouble();
-    for (int i = 0; i < original.size(); i++)
-        series->append(QPointF(original.X(i), original.Y(i) * scale));
-
-    return series;
-}
-
-std::vector<PeakPick::Peak> Thermogram::PickPeaks(const PeakPick::spectrum spectrum, QTableWidget* widget)
-{
-    PeakPick::spectrum sign = spectrum;
-    sign.InvertSgn();
-
-    std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&sign, 0, qPow(2, 1));
-    for (int i = 0; i < peaks.size(); ++i) {
-        int pos = PeakPick::FindMinimum(&spectrum, peaks[i]);
-        peaks[i].max = pos;
-        PeakPick::IntegrateNumerical(&spectrum, peaks[i]);
-    }
-
-    std::vector<PeakPick::Peak> max_peak = PeakPick::PickPeaks(&spectrum, 0, qPow(2, 1));
-
-    for (int i = 0; i < max_peak.size(); ++i) {
-        int pos = PeakPick::FindMaximum(&spectrum, max_peak[i]);
-        max_peak[i].max = pos;
-        PeakPick::IntegrateNumerical(&spectrum, max_peak[i]);
-    }
-    peaks.insert(peaks.end(), max_peak.begin(), max_peak.end());
-
-    widget->clear();
-    widget->setRowCount(peaks.size());
-    widget->setColumnCount(2);
-    for (int j = 0; j < peaks.size(); ++j) {
-        int pos = peaks[j].max;
-        QTableWidgetItem* newItem;
-        newItem = new QTableWidgetItem(QString::number(spectrum.X(pos)));
-        widget->setItem(j, 0, newItem);
-        newItem = new QTableWidgetItem(QString::number(peaks[j].integ_num));
-        widget->setItem(j, 1, newItem);
-    }
-    return peaks;
 }
 
 void Thermogram::UpdateInject()
@@ -502,10 +374,7 @@ QString Thermogram::Content()
 void Thermogram::clearExperiment()
 {
     if (m_exp_file->text().isEmpty()) {
-        m_exp_peaks.clear();
-        m_exp_therm = PeakPick::spectrum();
-        m_exp_table->clear();
-        m_experiment_view->ClearChart();
+        m_experiment->clear();
         UpdateData();
     }
 }
@@ -513,21 +382,17 @@ void Thermogram::clearExperiment()
 void Thermogram::clearDilution()
 {
     if (m_dil_file->text().isEmpty()) {
-        m_dil_peaks.clear();
-        m_dil_heat.clear();
-        m_dil_therm = PeakPick::spectrum();
-        m_dil_table->clear();
-        m_dilution_view->ClearChart();
+        m_dilution->clear();
         UpdateData();
     }
 }
 
 void Thermogram::UpdateData()
 {
-    Integrate(&m_exp_peaks, m_exp_base->text().toDouble(), m_exp_therm);
-    UpdateExpTable();
-    Integrate(&m_dil_peaks, m_dil_base->text().toDouble(), m_dil_therm);
-    UpdateDilTable();
+    m_experiment->Update();
+    m_dilution->Update();
+    m_raw = m_experiment->PeakList();
+    m_dil_heat = m_dilution->PeakList();
     m_offset->setText(QString::number((m_heat_offset + m_dil_offset) * m_scale->text().toDouble()) + " = Heat: " + QString::number(m_heat_offset * m_scale->text().toDouble()) + "+ Dilution:" + QString::number(m_dil_offset * m_scale->text().toDouble()) + "  ");
     UpdateTable();
 }
@@ -537,5 +402,5 @@ qreal Thermogram::PeakAt(int i)
     qreal dilution = 0;
     if (i < m_dil_heat.size())
         dilution = m_dil_heat[i];
-    return (m_raw[i] + dilution - (m_heat_offset + m_dil_offset) * m_remove_offset->isChecked()) * m_scale->text().toDouble();
+    return (m_raw[i] - dilution - (m_heat_offset + m_dil_offset) * m_remove_offset->isChecked()) * m_scale->text().toDouble();
 }

@@ -159,10 +159,10 @@ QWidget* StatisticDialog::MonteCarloWidget()
         m_varianz_box->setValue(m_model.data()->StdDeviation());
     } else {
         m_varianz_box->setDisabled(true);
-        m_varianz_box->setToolTip(tr("Variance of each model will be set automatically."));
+        m_varianz_box->setToolTip(tr("Standard Deviation of each model will be set automatically."));
     }
     if (m_model) {
-        layout->addWidget(new QLabel(tr("Variance")), 1, 0);
+        layout->addWidget(new QLabel(tr("<html>Standard Deviation &sigma;</html>")), 1, 0);
         layout->addWidget(m_varianz_box, 1, 1);
     }
 

@@ -154,8 +154,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
         connect(m_model.data(), &AbstractModel::Recalculated, this,
             [i, constant, this]() {
-                if (this->m_model && constant)
-                    constant->setEnabled(this->m_model->GlobalEnabled(i));
+                if (this->m_model && constant) {
+                    if (this->m_model->GlobalEnabled(i))
+                        constant->setStyleSheet("background-color: " + included());
+                    else
+                        constant->setStyleSheet("background-color: " + excluded());
+                }
             });
         const_layout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         const_layout->addWidget(constant);
@@ -289,6 +293,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     settings.endGroup();
     m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));
+    emit m_model->Recalculated();
 }
 
 ModelWidget::~ModelWidget()
@@ -376,8 +381,10 @@ void ModelWidget::EmptyUI()
 void ModelWidget::setParameter()
 {
     QList<qreal> constants = m_model->GlobalParameter();
-    for (int j = 0; j < constants.size(); ++j)
-        m_constants[j]->setValue(constants[j]);
+    for (int j = 0; j < constants.size(); ++j) {
+        if (qAbs(m_constants[j]->value() - constants[j]) > 1e-5) // lets do no update if the model was calculated with the recently set constants
+            m_constants[j]->setValue(constants[j]);
+    }
     emit Update();
 }
 

@@ -45,6 +45,7 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     setModal(false);
     m_mainwidget = new QSplitter(Qt::Horizontal);
     m_layout->addWidget(m_mainwidget, 0, 0);
+
     m_results = new QListView;
     m_results->setMaximumWidth(200);
     m_results->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -80,7 +81,6 @@ void ResultsDialog::ShowResult(SupraFit::Statistic type, int index)
 
 void ResultsDialog::UpdateList()
 {
-
     auto makeItem = [this](QStandardItem* item) {
         const QString index = Index(item);
         if (m_indices.keys().contains(index))
