@@ -88,8 +88,10 @@ void ThermogramWidget::setUi()
     connect(m_baseline_type, &QComboBox::currentTextChanged, this, &ThermogramWidget::UpdateBaseLine);
 
     m_fit_type = new QComboBox;
-    options = QStringList() << tr("ignore") << tr("simple") << tr("peaks") << tr("cutoff") << tr("iterative cutoff");
+    options = QStringList() << /*tr("ignore") <<*/ tr("all") << tr("peaks") << tr("cutoff") /*<< tr("iterative cutoff")*/;
     m_fit_type->addItems(options);
+    m_fit_type->setCurrentText("peaks");
+    m_fit = "peaks";
     connect(m_fit_type, &QComboBox::currentTextChanged, this, &ThermogramWidget::UpdateFit);
 
     baselayout->addWidget(new QLabel(tr("Baseline corretion"), 0, 0));
@@ -127,7 +129,7 @@ void ThermogramWidget::setUi()
 
     baselayout->addWidget(new QLabel(tr("Constant offset")), 1, 0);
     baselayout->addWidget(m_constant, 1, 1);
-    baselayout->addWidget(new QLabel(tr("Polynomial degree")), 1, 2);
+    baselayout->addWidget(new QLabel(tr("Coefficents:")), 1, 2);
     baselayout->addWidget(m_degree, 1, 3);
     baselayout->addWidget(m_smooth, 1, 4);
     baselayout->addWidget(m_filter, 1, 5);
@@ -154,6 +156,13 @@ void ThermogramWidget::setUi()
     layout->addWidget(baseline);
 
     setLayout(layout);
+
+    m_fit_type->setDisabled(true);
+    m_degree->setDisabled(true);
+    m_constant->setDisabled(true);
+
+    m_stdev->setEnabled(false);
+    m_mult->setEnabled(false);
 }
 
 void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
@@ -344,18 +353,48 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
         coeff(0) = 0;
         m_limits->setChecked(false);
 
+        m_fit_type->setDisabled(true);
+        m_degree->setDisabled(true);
+        m_constant->setDisabled(true);
+
+        m_stdev->setEnabled(false);
+        m_mult->setEnabled(false);
+
     } else if (str == "offset") {
         coeff = Vector(1);
         coeff(0) = m_offset;
+
+        m_fit_type->setDisabled(true);
+        m_degree->setDisabled(true);
+        m_constant->setDisabled(true);
+
+        m_stdev->setEnabled(false);
+        m_mult->setEnabled(false);
+
     } else if (str == "constant") {
         coeff = Vector(1);
+
+        m_fit_type->setDisabled(true);
+        m_degree->setDisabled(true);
+        m_constant->setDisabled(false);
+
+        m_stdev->setEnabled(false);
+        m_mult->setEnabled(false);
+
         coeff(0) = m_constant->text().toDouble();
     } else if (str == "polynomial") {
         coeff = Vector(m_degree->value());
         for (int i = 0; i < coeff.size(); ++i)
             coeff(i) = 1;
+
+        m_fit_type->setDisabled(false);
+        m_degree->setDisabled(false);
+        m_constant->setDisabled(false);
+        m_stdev->setEnabled(true);
+        m_mult->setEnabled(true);
     }
     m_baseline = coeff;
+    FitBaseLine();
     UpdatePlot();
     emit IntegrationChanged();
 
@@ -364,8 +403,8 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
 
 void ThermogramWidget::UpdateFit(const QString& str)
 {
-    if (str == m_fit)
-        return;
+    //if (str == m_fit)
+    //    return;
 
     FitBaseLine();
     m_fit = str;
@@ -373,29 +412,18 @@ void ThermogramWidget::UpdateFit(const QString& str)
 
 void ThermogramWidget::FitBaseLine()
 {
-    if (m_fit == "ignore") {
-        m_baseline = Vector(1);
-        if (m_baseline_type->currentText() == "constant")
-            m_baseline(0) = m_constant->text().toDouble();
-        else
-            m_baseline(0) = m_offset;
-        UpdateBase();
+    if (m_baseline_type->currentText() != "polynomial")
         return;
-    }
 
     PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
     if (m_smooth->isChecked())
         SmoothFunction(spectrum, m_filter->value());
 
     PeakPick::BaseLine baseline(spectrum);
-    baseline.setDegree(m_degree->value());
+    baseline.setNoCoeffs(m_degree->value());
 
-    qreal constant;
-
-    if (m_baseline_type->currentText() == "constant")
-        constant = m_constant->text().toDouble();
-    else
-        constant = m_offset;
+    qreal constant = m_constant->text().toDouble();
+    ;
 
     qreal stdev = m_stdev->text().toDouble();
     qreal mult = m_mult->text().toDouble();
@@ -405,6 +433,9 @@ void ThermogramWidget::FitBaseLine()
         baseline.setUpper(constant + (mult * stdev));
     } else if (m_fit == "peaks") {
         baseline.setPeaks(&m_peak_list);
+    } else if (m_fit == "all") {
+        baseline.setLower(0);
+        baseline.setUpper(0);
     }
     m_baseline = baseline.Fit();
     UpdateBase();

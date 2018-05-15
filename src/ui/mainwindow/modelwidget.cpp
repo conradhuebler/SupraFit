@@ -292,7 +292,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     LoadStatistics();
     m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));
-    ;
+    emit m_model->Recalculated();
 }
 
 ModelWidget::~ModelWidget()
