@@ -52,7 +52,7 @@ void ModelActions::setUi()
     m_new_guess = new PushButton(tr("New Guess"));
     m_simulate = new PushButton(tr("Export Simulated"));
     m_plots = new PushButton(tr("Toggle Charts"));
-    m_plots->setEnabled(false);
+    //m_plots->setEnabled(false);
     m_search = new PushButton(tr("Search Table"));
     m_detailed = new PushButton(tr("Detailed"));
     m_restore = new PushButton(tr("Restore"));
@@ -108,7 +108,7 @@ void ModelActions::setUi()
 
 void ModelActions::EnableCharts(bool enable)
 {
-    m_plots->setEnabled(enable);
+    //m_plots->setEnabled(enable);
 }
 
 void ModelActions::resizeButtons()

@@ -136,8 +136,8 @@ void itc_n_ItoII_Model::CalculateVariables()
 
         qreal guest = MinCubicRoot(1, p, q, r);
 
-        qreal phi1 = K1 * guest / (1 + K1 * guest);
-        qreal phi2 = K2 * guest / (1 + K2 * guest);
+        qreal phi1 = n1*K1 * guest / (1 + K1 * guest);
+        qreal phi2 = n2*K2 * guest / (1 + K2 * guest);
 
         qreal value = V * ((phi1 - phi1_prev * (1 - v / V)) * dH1 + (phi2 - phi2_prev * (1 - v / V)) * dH2) * host_0;
 

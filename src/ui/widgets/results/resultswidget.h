@@ -24,15 +24,17 @@
 class AbstractSearchClass;
 class AbstractModel;
 class ChartWrapper;
+class ModalDialog;
 
 class QJsonObject;
+class QLabel;
 class QPushButton;
 
 class ResultsWidget : public QWidget {
     Q_OBJECT
 
 public:
-    ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models = QList<QJsonObject>());
+    ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper);
     ~ResultsWidget();
 
 private:
@@ -53,7 +55,7 @@ private:
     QSharedPointer<AbstractModel> m_model;
     QString m_text;
     QPushButton* m_detailed;
-
+    ModalDialog* m_dialog;
 private slots:
     void WriteConfidence(const QJsonObject& data);
     void Detailed();

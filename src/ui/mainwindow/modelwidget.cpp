@@ -35,6 +35,7 @@
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
 #include "src/ui/guitools/chartwrapper.h"
@@ -120,18 +121,19 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper, SLOT(SetBlocked(int)));
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper, SLOT(SetBlocked(int)));
 
-    m_search_result = new ModalDialog;
-    m_search_result->setWindowTitle("Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
+    m_dialogs = new ModalDialog;
+    m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_statistic_result = new ModalDialog;
     m_statistic_result->setWindowTitle("Statistics for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
-    m_statistic_widget = new StatisticWidget(m_model, this),
+    m_statistic_widget = new StatisticWidget(m_model, this);
+
+    m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
+    //m_results->Attention();
+
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
-
-    m_concentrations_result = new ModalDialog;
-    m_concentrations_result->setWindowTitle("Concentration Table for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_layout = new QGridLayout;
     QLabel* pure_shift = new QLabel(tr("Constants:"));
@@ -152,8 +154,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
         connect(m_model.data(), &AbstractModel::Recalculated, this,
             [i, constant, this]() {
-                if (this->m_model && constant)
-                    constant->setEnabled(this->m_model->GlobalEnabled(i));
+                if (this->m_model && constant) {
+                    if (this->m_model->GlobalEnabled(i))
+                        constant->setStyleSheet("background-color: " + included());
+                    else
+                        constant->setStyleSheet("background-color: " + excluded());
+                }
             });
         const_layout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         const_layout->addWidget(constant);
@@ -285,10 +291,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     settings.beginGroup("minimizer");
     m_optim_flags->setFlags(settings.value("flags", OptimizationType::GlobalParameter | OptimizationType::LocalParameter).toInt());
     settings.endGroup();
-    LoadStatistics();
     m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));
-    ;
+    emit m_model->Recalculated();
 }
 
 ModelWidget::~ModelWidget()
@@ -299,14 +304,12 @@ ModelWidget::~ModelWidget()
     m_model.clear();
 
     m_statistic_dialog->hide();
-    m_search_result->hide();
-    m_concentrations_result->hide();
+    m_dialogs->hide();
     m_statistic_result->hide();
 
     delete m_statistic_result;
-    delete m_search_result;
+    delete m_dialogs;
     delete m_table_result;
-    delete m_concentrations_result;
     delete m_statistic_dialog;
 }
 
@@ -378,8 +381,10 @@ void ModelWidget::EmptyUI()
 void ModelWidget::setParameter()
 {
     QList<qreal> constants = m_model->GlobalParameter();
-    for (int j = 0; j < constants.size(); ++j)
-        m_constants[j]->setValue(constants[j]);
+    for (int j = 0; j < constants.size(); ++j) {
+        if (qAbs(m_constants[j]->value() - constants[j]) > 1e-5) // lets do no update if the model was calculated with the recently set constants
+            m_constants[j]->setValue(constants[j]);
+    }
     emit Update();
 }
 
@@ -498,12 +503,12 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 
 void ModelWidget::ToggleStatisticDialog()
 {
-    m_statistic_dialog->show();
+    m_statistic_dialog->Attention();
 }
 
 void ModelWidget::ToggleSearchTable()
 {
-    m_table_result->show();
+    m_table_result->Attention();
 }
 
 void ModelWidget::MCStatistic()
@@ -685,39 +690,11 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
 
 void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models)
 {
-    m_model->UpdateStatistic(data);
-    m_statistic_result->setWidget(new ResultsWidget(data, m_model, m_charts.signal_wrapper, models));
-    m_statistic_result->show();
+    int index = m_model->UpdateStatistic(data);
+    m_results->Attention();
     m_statistic_dialog->HideWidget();
-    m_actions->EnableCharts(true);
-}
-
-void ModelWidget::LoadStatistics()
-{
-    /* We load the MC statistcs from model
-     */
-
-    for (int i = 0; i < m_model->getMCStatisticResult(); ++i) {
-        if (!m_model->getMCStatisticResult(i).isEmpty())
-            m_statistic_result->setWidget(new ResultsWidget(m_model->getMCStatisticResult(i), m_model, m_charts.signal_wrapper));
-
-        QApplication::processEvents();
-    }
-
-    QJsonObject statistic = m_model->getWGStatisticResult();
-    if (!statistic.isEmpty())
-        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
-
-    statistic = m_model->getMoCoStatisticResult();
-    if (!statistic.isEmpty())
-        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
-
-    statistic = m_model->getReduction();
-    if (!statistic.isEmpty())
-        m_statistic_result->setWidget(new ResultsWidget(statistic, m_model, m_charts.signal_wrapper));
-
-    if (m_statistic_result->Count())
-        m_actions->EnableCharts(true);
+    SupraFit::Statistic type = SupraFit::Statistic(data["controller"].toObject()["method"].toInt());
+    m_results->ShowResult(type, index);
 }
 
 void ModelWidget::LocalMinimize()
@@ -889,7 +866,7 @@ void ModelWidget::ExportSimModel()
 
 void ModelWidget::TogglePlot()
 {
-    m_statistic_result->show();
+    m_results->Attention();
 }
 
 void ModelWidget::MultiScanFinished()
@@ -902,7 +879,7 @@ void ModelWidget::MultiScanFinished()
         m_table_result->setWidget(table, "Scan Results");
 
         m_advancedsearch->hide();
-        m_table_result->show();
+        m_table_result->Attention();
     }
 
     catch (int val) {
@@ -977,14 +954,10 @@ void ModelWidget::Restore()
 
 void ModelWidget::Detailed()
 {
-    QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
     text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
-    layout->addWidget(text);
-    QDialog dialog(this);
-    dialog.setLayout(layout);
-    dialog.resize(1024, 800);
-    dialog.exec();
+    m_dialogs->setWidget(text, tr("Detailed Information on Calculation Results"));
+    m_dialogs->Attention();
 }
 
 QString ModelWidget::Keys() const

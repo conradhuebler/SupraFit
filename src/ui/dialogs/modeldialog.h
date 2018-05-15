@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef MODELDIALOG_H
-#define MODELDIALOG_H
+#pragma once
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QDialog>
@@ -36,6 +35,9 @@ public:
     QWidget* Widget() { return m_widget; }
     inline int Count() const { return m_tab->count(); }
 
+public slots:
+    void Attention();
+
 private:
     QGridLayout* layout;
     QPointer<QWidget> m_widget;
@@ -45,4 +47,3 @@ private slots:
     void RemoveTab(int i);
 };
 
-#endif // MODELDIALOG_H

@@ -66,6 +66,7 @@ public slots:
     void IncrementProgress(int time);
     void HideWidget();
     void ShowWidget();
+    void Attention();
 
 private:
     void setUi();

@@ -22,8 +22,9 @@
 #include "src/core/toolset.h"
 #include "src/ui/guitools/chartwrapper.h"
 
-#include "src/ui/widgets/chartview.h"
+#include "src/ui/dialogs/modeldialog.h"
 
+#include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/results/contourwidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
@@ -41,12 +42,19 @@
 
 #include "resultswidget.h"
 
-ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, const QList<QJsonObject>& models)
+ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper)
 {
     m_data = data;
     m_model = model;
-    m_models = models;
+
+    QJsonObject controller = m_data["controller"].toObject();
+    QJsonObject temp = model->ExportModel(false, false);
+    for (int i = 0; i < controller["raw"].toObject().size(); ++i) {
+        temp["data"] = controller["raw"].toObject()[QString::number(i)];
+        m_models << temp;
+    }
     m_wrapper = wrapper;
+    m_dialog = new ModalDialog;
     m_text = QString("");
     setUi();
     resize(1024, 600);
@@ -54,6 +62,7 @@ ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractMod
 
 ResultsWidget::~ResultsWidget()
 {
+    delete m_dialog;
 }
 
 void ResultsWidget::setUi()
@@ -349,13 +358,9 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
 
 void ResultsWidget::Detailed()
 {
-    QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
     text->setText("<html><pre> " + m_text + "</pre></html>");
-    layout->addWidget(text);
-    QDialog dialog(this);
-    dialog.setLayout(layout);
-    dialog.resize(1024, 800);
-    dialog.exec();
+    m_dialog->setWidget(text, tr("Details on Statistic Analysis"));
+    m_dialog->show();
 }
 #include "resultswidget.moc"

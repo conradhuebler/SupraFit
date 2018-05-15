@@ -224,15 +224,21 @@ public:
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
 
-    void UpdateStatistic(const QJsonObject& object);
+    int UpdateStatistic(const QJsonObject& object);
 
-    QJsonObject getMCStatisticResult(int i) const { return m_mc_statistics[i]; }
-    QJsonObject getWGStatisticResult() const { return m_wg_statistics; }
-    QJsonObject getMoCoStatisticResult() const { return m_moco_statistics; }
     QJsonObject getReduction() const { return m_reduction; }
     QJsonObject getFastConfidence() const { return m_fast_confidence; }
 
+    int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
+
+    int getWGStatisticResult() const { return m_wg_statistics.size(); }
+
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
+
+    /*! \brief Load statistic defined by type
+     * If more than results can be stored, define index
+     */
+    QJsonObject getStatistic(SupraFit::Statistic type, int index = 0);
 
     QList<qreal> getCalculatedModel();
 
@@ -499,10 +505,11 @@ protected:
     QVector<QPair<int, int>> m_opt_index;
     QVector<qreal> m_parameter;
     QList<qreal> m_global_parameter;
-    QList<QJsonObject> m_mc_statistics;
 
-    QJsonObject m_wg_statistics;
-    QJsonObject m_moco_statistics;
+    QList<QJsonObject> m_mc_statistics;
+    QList<QJsonObject> m_wg_statistics;
+    QList<QJsonObject> m_moco_statistics;
+
     QJsonObject m_reduction;
     QJsonObject m_fast_confidence;
 

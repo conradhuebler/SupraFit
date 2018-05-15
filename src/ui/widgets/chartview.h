@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef CHARTVIEW_H
-#define CHARTVIEW_H
+#pragma once
 
 #include "src/ui/dialogs/chartconfig.h"
 
@@ -83,6 +82,59 @@ public:
     QtCharts::QLineSeries* addLinearSeries(qreal m, qreal n, qreal min, qreal max);
     void ClearChart();
     inline void setModal(bool modal) { m_chartconfigdialog.setModal(modal); }
+
+    inline qreal YMaxRange() const
+    {
+        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
+        if (axis)
+            return axis->max();
+        else
+            return 0;
+    }
+    inline qreal YMinRange() const
+    {
+        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
+        if (axis)
+            return axis->min();
+        else
+            return 0;
+    }
+
+    inline qreal XMaxRange() const
+    {
+        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
+        if (axis)
+            return axis->max();
+        else
+            return 0;
+    }
+    inline qreal XMinRange() const
+    {
+        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
+        if (axis)
+            return axis->min();
+        else
+            return 0;
+    }
+
+    inline void setXRange(qreal xmin, qreal xmax)
+    {
+        QPointer<QtCharts::QValueAxis> x_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
+        if (x_axis) {
+            x_axis->setMin(xmin);
+            x_axis->setMax(xmax);
+        }
+    }
+
+    inline void setYRange(qreal ymin, qreal ymax)
+    {
+        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
+        if (axis) {
+            axis->setMin(ymin);
+            axis->setMax(ymax);
+        }
+    }
+
 public slots:
     void formatAxis();
 
@@ -128,5 +180,3 @@ signals:
     void AxisChanged();
     void ChartCleared();
 };
-
-#endif // CHARTVIEW_H

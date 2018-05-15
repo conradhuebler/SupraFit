@@ -61,6 +61,7 @@ class ModalDialog;
 class ModelElement;
 class OptimizerFlagWidget;
 class OptionsWidget;
+class ResultsDialog;
 class SpinBox;
 class StatisticWidget;
 class StatisticDialog;
@@ -135,7 +136,6 @@ private:
     void Data2Text();
     void Model2Text();
     void MinimizeModel(const OptimizerConfig& config);
-    void LoadStatistics();
     void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models = QList<QJsonObject>());
 
     QVBoxLayout* m_sign_layout;
@@ -144,7 +144,9 @@ private:
     QSplitter* m_splitter;
     StatisticWidget* m_statistic_widget;
     QPointer<OptimizerFlagWidget> m_optim_flags;
-    ModalDialog *m_statistic_result, *m_search_result, *m_table_result, *m_concentrations_result;
+    ModalDialog *m_statistic_result, *m_dialogs, *m_table_result;
+    ResultsDialog* m_results;
+
     bool m_statistic;
     Charts m_charts;
     QString m_logging;

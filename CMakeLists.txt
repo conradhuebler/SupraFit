@@ -201,6 +201,7 @@ set(suprafit_SRCS
                 src/ui/dialogs/configdialog.cpp
                 src/ui/dialogs/comparedialog.cpp
                 src/ui/dialogs/chartconfig.cpp
+                src/ui/dialogs/resultsdialog.cpp
                 src/ui/dialogs/thermogram.cpp
                 src/ui/widgets/parameterwidget.cpp
                 src/ui/widgets/optimizerwidget.cpp
@@ -220,6 +221,7 @@ set(suprafit_SRCS
                 src/ui/widgets/buttons/spinbox.h
                 src/ui/widgets/buttons/scientificbox.h
                 src/ui/widgets/buttons/hovercheckbox.h
+                src/ui/widgets/thermogramwidget.cpp
                 src/ui/mainwindow/modelhistorywidget.cpp
                 src/ui/mainwindow/chartwidget.cpp
                 src/ui/mainwindow/modeldataholder.cpp
