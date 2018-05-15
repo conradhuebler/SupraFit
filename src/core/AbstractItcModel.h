@@ -49,7 +49,7 @@ public:
 
     ~AbstractItcModel();
 
-    virtual qreal BC50() const = 0;
+    virtual qreal BC50() const { return 0; }
     virtual inline qreal BC50SF() const { return BC50(); }
 
     virtual qreal PrintOutIndependent(int i, int format) const override;
@@ -58,7 +58,8 @@ public:
     inline qreal InitialGuestConcentration(int i) const { return m_c0->data(1, i); }
     QString Model2Text_Private() const;
 
-    virtual QString SpeciesName(int i) const = 0;
+    virtual QString SpeciesName(int i) const { Q_UNUSED(i)
+        return QString(); }
     virtual inline QString GlobalParameterPrefix(int i = 0) const override
     {
         Q_UNUSED(i)

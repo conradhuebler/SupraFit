@@ -195,6 +195,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
     m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);
 
+    m_itc_fixed_model << addModel(SupraFit::itc_blank);
 #endif
 
     m_script_action = new QAction(this);

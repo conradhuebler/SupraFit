@@ -11,6 +11,7 @@
 #include "AbstractTitrationModel.h"
 
 /* ITC Models */
+#include "models/itc/blank.h"
 #include "models/itc/itc_1_1_Model.h"
 #include "models/itc/itc_1_2_Model.h"
 #include "models/itc/itc_2_1_Model.h"
@@ -74,6 +75,9 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataCla
         break;
     case SupraFit::itc_n_ItoII:
         t = QSharedPointer<itc_n_ItoII_Model>(new itc_n_ItoII_Model(data.data()), &QObject::deleteLater);
+        break;
+    case SupraFit::itc_blank:
+        t = QSharedPointer<Blank>(new Blank(data.data()), &QObject::deleteLater);
         break;
     case SupraFit::fl_ItoI:
         t = QSharedPointer<fl_ItoI_Model>(new fl_ItoI_Model(data.data()), &QObject::deleteLater);
