@@ -460,6 +460,9 @@ public:
     inline QVector<int> LocalEnabled() const { return m_enabled_local; }
 
     //inline void Calculate(bool fast);
+
+    inline void RemoveOption(int key) { d->m_model_options.remove(key); }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

@@ -264,6 +264,8 @@ public:
 
     inline QMap<int, SystemParameter> SysPar() const { return d->m_system_parameter; }
 
+    inline void RemoveSystemParameter(int key) { d->m_system_parameter.remove(key); }
+
     inline void detach() { d.detach(); }
 
     /*! \brief model dependented printout of the independant parameter
