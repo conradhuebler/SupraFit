@@ -182,7 +182,7 @@ MDHDockTitleBar::MDHDockTitleBar()
 
 #ifdef Kinetic_Models
     m_kinetcs_model << addModel(SupraFit::Michaelis_Menten);
-    ;
+
     m_kinetcs_model << addModel(SupraFit::MonoMolecularModel);
 #endif
 
@@ -192,7 +192,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_itc_fixed_model << addModel(SupraFit::itc_ItoII);
     m_itc_fixed_model << addModel(SupraFit::itc_IItoII);
 
-    m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
+    //m_itc_flex_model << addModel(SupraFit::itc_n_ItoI);
     m_itc_flex_model << addModel(SupraFit::itc_n_ItoII);
 
     m_itc_fixed_model << addModel(SupraFit::itc_blank);

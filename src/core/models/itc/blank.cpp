@@ -100,4 +100,16 @@ QSharedPointer<AbstractModel> Blank::Clone()
     return model;
 }
 
+qreal Blank::PrintOutIndependent(int i, int format) const
+{
+    Q_UNUSED(format)
+    qreal val = i;
+    if (m_c0) {
+        val = InitialGuestConcentration(i);
+        if (std::isnan(val))
+            val = i;
+    }
+    return val;
+}
+
 #include "blank.moc"

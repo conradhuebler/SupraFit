@@ -48,6 +48,7 @@ AbstractModel::AbstractModel(DataClass* data)
     , m_fast(true)
 {
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
+    connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
     d = new AbstractModelPrivate;
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
 
@@ -70,6 +71,8 @@ AbstractModel::AbstractModel(AbstractModel* model)
     , d(new AbstractModelPrivate(*model->d))
 {
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
+    connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
+
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
 
     m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
@@ -856,6 +859,7 @@ void AbstractModel::setOption(int index, const QString& value)
         return;
     d->m_model_options[index].value = value;
     OptimizeParameters(m_last_optimization);
+    emit OptionChanged(index, value);
 }
 
 AbstractModel& AbstractModel::operator=(const AbstractModel& other)

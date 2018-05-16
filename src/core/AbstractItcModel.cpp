@@ -35,9 +35,10 @@ AbstractItcModel::AbstractItcModel(DataClass* data)
     : AbstractModel(data)
     , m_lock_concentrations(false)
 {
-    m_c0 = new DataTable(2, DataPoints(), this);
-    m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
-    m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+    m_c0 = new DataTable(3, DataPoints(), this);
+    m_c0->setHeaderData(0, Qt::Horizontal, "V (cell)", Qt::DisplayRole);
+    m_c0->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
+    m_c0->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     LoadSystemParameter();
 }
 
@@ -45,9 +46,10 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
     : AbstractModel(data)
     , m_lock_concentrations(false)
 {
-    m_c0 = new DataTable(2, DataPoints(), this);
-    m_c0->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
-    m_c0->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+    m_c0 = new DataTable(3, DataPoints(), this);
+    m_c0->setHeaderData(0, Qt::Horizontal, "V (cell)", Qt::DisplayRole);
+    m_c0->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
+    m_c0->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
 
     m_V = data->m_V;
     m_cell_concentration = data->m_cell_concentration;
@@ -81,6 +83,11 @@ void AbstractItcModel::DeclareOptions()
     setOption(Dilution, "none");
     QStringList cooperativity = QStringList() << "pytc" /*<< "multiple"*/ << "single";
     addOption(Binding, "Binding", cooperativity);
+
+    QStringList reservoir = QStringList() << "constant"
+                                          << "variable";
+    addOption(Reservoir, "Volume", reservoir);
+    setOption(Reservoir, "constant");
 }
 
 void AbstractItcModel::CalculateConcentrations()
@@ -90,24 +97,30 @@ void AbstractItcModel::CalculateConcentrations()
 
     qreal emp_exp = 1e-3;
 
-    if (!m_V || !m_cell_concentration || !m_syringe_concentration)
+    if ((!m_V || !m_cell_concentration || !m_syringe_concentration) && (SFModel() != SupraFit::itc_blank))
         return;
 
     qreal V_cell = m_V;
+    bool reservoir = getOption(Reservoir) == "constant";
 
     qreal cell = m_cell_concentration * emp_exp;
     qreal gun = m_syringe_concentration * emp_exp;
     qreal prod = 1;
+    qreal cell_0 = V_cell * cell;
+    qreal cumulative_shot = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal shot_vol = IndependentModel()->data(0, i);
         V_cell += shot_vol;
+        cumulative_shot += shot_vol;
         prod *= (1 - shot_vol / m_V);
         cell *= (1 - shot_vol / m_V);
-        qreal host_0 = cell;
-        qreal guest_0 = gun * (1 - prod);
-        Vector vector(2);
-        vector(0) = host_0;
-        vector(1) = guest_0;
+        qreal host_0 = cell * reservoir + !reservoir * cell_0 / V_cell;
+        qreal guest_0 = gun * (1 - prod) * reservoir + !reservoir * (gun * cumulative_shot) / V_cell;
+
+        Vector vector(3);
+        vector(0) = reservoir * m_V + !reservoir * V_cell;
+        vector(1) = host_0;
+        vector(2) = guest_0;
 
         if (std::isnan(host_0) || std::isinf(host_0) || std::isnan(guest_0) || std::isinf(guest_0))
             m_corrupt = true;
@@ -180,20 +193,13 @@ void AbstractItcModel::UpdateParameter()
 
 QString AbstractItcModel::ModelInfo() const
 {
-    qreal bc50 = BC50() * 1E6;
-    qreal bc50sf = BC50SF() * 1E6;
-    QString format_text;
-    if (bc50 > 0 || bc50sf > 0) {
-        format_text = tr("<p>BC50<sub>0</sub>: %1").arg(bc50);
-        QChar mu = QChar(956);
-        format_text += QString(" [") + mu + QString("M]</p>");
-        if (bc50 != bc50sf) {
-            format_text += tr("<p>BC50<sub>0</sub> (SF): %1").arg(bc50sf);
-            format_text += QString(" [") + mu + QString("M]</p>");
-        }
-        return format_text;
-    } else
-        return QString();
+    return QString();
+}
+
+void AbstractItcModel::UpdateOption(int index, const QString& str)
+{
+    if (index == Reservoir)
+        Concentration();
 }
 
 #include "AbstractItcModel.moc"

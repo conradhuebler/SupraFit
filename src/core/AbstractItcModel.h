@@ -41,7 +41,8 @@ public:
 
     enum {
         Binding = 1,
-        Dilution = 2
+        Dilution = 2,
+        Reservoir = 3
     };
 
     AbstractItcModel(DataClass* data);
@@ -54,8 +55,8 @@ public:
 
     virtual qreal PrintOutIndependent(int i, int format) const override;
 
-    inline qreal InitialHostConcentration(int i) const { return m_c0->data(0, i); }
-    inline qreal InitialGuestConcentration(int i) const { return m_c0->data(1, i); }
+    inline qreal InitialHostConcentration(int i) const { return m_c0->data(1, i); }
+    inline qreal InitialGuestConcentration(int i) const { return m_c0->data(2, i); }
     QString Model2Text_Private() const;
 
     virtual QString SpeciesName(int i) const { Q_UNUSED(i)
@@ -94,6 +95,8 @@ public:
     virtual QString YLabel() const override { return "q"; }
 
     virtual QString ModelInfo() const override;
+
+    virtual void UpdateOption(int index, const QString& str) override;
 
 public slots:
     virtual void UpdateParameter();

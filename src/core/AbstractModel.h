@@ -466,6 +466,9 @@ public slots:
     void Calculate();
     virtual inline void UpdateParameter() {}
 
+    virtual inline void UpdateOption(int index, const QString& str) { Q_UNUSED(index)
+        Q_UNUSED(str) }
+
 private:
     QSharedDataPointer<AbstractModelPrivate> d;
 
@@ -532,4 +535,5 @@ signals:
     void Message(const QString& str, int priority = 3);
     void Warning(const QString& str, int priority = 1);
     void StatisticChanged();
+    void OptionChanged(int index, const QString& value);
 };

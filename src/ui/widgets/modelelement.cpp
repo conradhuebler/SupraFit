@@ -73,11 +73,12 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         connect(m_model.data(), &AbstractModel::Recalculated, this, [i, constant, this, widget]() {
-            if (this->m_model && widget)
+            if (this->m_model && widget) {
                 if (this->m_model->LocalEnabled(i))
                     constant->setStyleSheet("background-color: " + included());
                 else
                     constant->setStyleSheet("background-color: " + excluded());
+            }
 
         });
         QVBoxLayout* vlayout = new QVBoxLayout;

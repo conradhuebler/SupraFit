@@ -358,7 +358,6 @@ void Thermogram::UpdateInject()
 QString Thermogram::Content()
 {
     m_content = QString();
-    qreal scale = m_scale->text().toDouble();
     for (int j = 0; j < m_table->rowCount(); ++j) {
         QString string;
         if (j < m_inject.size() || m_forceInject)

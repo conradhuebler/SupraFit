@@ -65,6 +65,12 @@ public:
             return i + 3;
     }
 
+    /*! \brief Define the x axis label for charts
+     */
+    virtual QString XLabel() const override { return "c<sub>0</sub>"; }
+
+    virtual qreal PrintOutIndependent(int i, int format) const override;
+
 protected:
     virtual void CalculateVariables() override;
 };
