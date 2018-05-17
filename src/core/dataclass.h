@@ -106,10 +106,10 @@ public:
     void setColumn(const QVector<qreal>& vector, int column);
     void setColumn(const Vector& vector, int column);
 
-    Vector Column(int row);
+    Vector Column(int row) const;
 
-    Vector Row(int row);
-    Vector Row(int row, const QList<int>& active);
+    Vector Row(int row) const;
+    Vector Row(int row, const QList<int>& active) const;
     Vector firstRow();
     Vector lastRow();
 
@@ -124,6 +124,9 @@ public:
     QPointer<DataTable> PrepareBootStrap(std::uniform_int_distribution<int>& Uni, std::mt19937& rng, const QVector<qreal>& vector);
     QString ExportAsString() const;
     QStringList ExportAsStringList() const;
+
+    QJsonObject ExportTable(bool checked) const;
+    bool ImportTable(const QJsonObject& table);
 
 private:
     Eigen::MatrixXd m_table, m_checked_table;
@@ -218,7 +221,7 @@ public:
     /* 
      * !\brief Export data to json
      */
-    const QJsonObject ExportData(const QList<int>& active = QList<int>()) const;
+    const QJsonObject ExportData() const;
     /*
      * !\brief Import data from json
      */

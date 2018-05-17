@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/global.h"
 #include "src/global_config.h"
 
 #include "src/core/toolset.h"
@@ -290,17 +291,17 @@ QPointer<DataTable> DataTable::Block(int row_begin, int column_begin, int row_en
     return new DataTable(table, checked_table);
 }
 
-Vector DataTable::Column(int column)
+Vector DataTable::Column(int column) const
 {
     return m_table.col(column);
 }
 
-Vector DataTable::Row(int row)
+Vector DataTable::Row(int row) const
 {
     return m_table.row(row);
 }
 
-Vector DataTable::Row(int row, const QList<int>& active)
+Vector DataTable::Row(int row, const QList<int>& active) const
 {
     Vector vector = m_table.row(row);
     if (vector.cols() != active.size())
@@ -452,6 +453,62 @@ QVector<qreal> DataTable::toList() const
         }
     }
     return vector;
+}
+
+QJsonObject DataTable::ExportTable(bool checked) const
+{
+    QJsonObject table, data, check;
+
+    for (int i = 0; i < rowCount(); ++i) {
+        data[QString::number(i)] = ToolSet::DoubleList2String(Row(i));
+        check[QString::number(i)] = ToolSet::DoubleList2String(m_checked_table.row(i));
+    }
+
+    table["data"] = data;
+    if (checked)
+        table["checked"] = check;
+    table["rows"] = rowCount();
+    table["cols"] = columnCount();
+
+    QStringList headers = QStringList() << header();
+    table["header"] = headers.join("|");
+
+    return table;
+}
+
+bool DataTable::ImportTable(const QJsonObject& table)
+{
+    int rows = table["rows"].toInt();
+    int cols = table["cols"].toInt();
+
+    if (rows != rowCount() || cols != columnCount()) {
+        m_table = Eigen::MatrixXd::Zero(rows, cols);
+        m_checked_table = Eigen::MatrixXd::Ones(rows, cols);
+    }
+
+    bool check = table.contains("checked");
+    QJsonObject checked;
+    QJsonObject data = table["data"].toObject();
+    if (check)
+        checked = table["checked"].toObject();
+
+    for (int i = 0; i < rows; ++i) {
+        QString str = QString::number(i);
+        QVector<qreal> vector;
+        vector = ToolSet::String2DoubleVec(data[str].toString());
+        setRow(vector, i);
+
+        if (check) {
+            QVector<qreal> vector;
+            vector = ToolSet::String2DoubleVec(checked[str].toString());
+            for (int j = 0; j < vector.size(); ++j)
+                m_checked_table(i, j) = vector[j];
+        }
+    }
+
+    m_header = table["header"].toString().split("|");
+
+    return true;
 }
 
 DataClassPrivate::DataClassPrivate()
@@ -608,87 +665,78 @@ qreal DataClass::InitialHostConcentration(int i) const
     return d->m_independent_model->data(HostAssignment(), i) * d->m_scaling[HostAssignment()];
 }
 
-const QJsonObject DataClass::ExportData(const QList<int>& active) const
+const QJsonObject DataClass::ExportData() const
 {
-    QJsonObject json;
-
-    QJsonObject concentrationObject, signalObject, systemObject;
-
-    for (int i = 0; i < DataPoints(); ++i) {
-        concentrationObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_independent_model->Row(i));
-        if (active.size())
-            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i, active));
-        else
-            signalObject[QString::number(i)] = ToolSet::DoubleList2String(d->m_dependent_model->Row(i));
-    }
-
+    QJsonObject json, systemObject;
     for (const int index : getSystemParameterList()) {
         systemObject[QString::number(index)] = getSystemParameter(index).value().toString();
     }
 
-    json["concentrations"] = concentrationObject;
-    json["signals"] = signalObject;
+    json["independent"] = d->m_independent_model->ExportTable(true);
+    json["dependent"] = d->m_dependent_model->ExportTable(true);
     json["system"] = systemObject;
     json["datatype"] = QString("discrete");
-    QStringList headers = QStringList() << d->m_independent_model->header();
-    if (active.size()) {
-        for (int i = 0; i < active.size(); ++i)
-            if (active[i])
-                headers << d->m_dependent_model->header()[i];
-    } else {
-        headers << d->m_dependent_model->header();
-    }
-    json["header"] = headers.join("|");
+    json["SupraFit"] = qint_version;
+
     return json;
 }
 
 bool DataClass::ImportData(const QJsonObject& topjson)
 {
-    QJsonObject concentrationObject, signalObject;
-    concentrationObject = topjson["data"].toObject()["concentrations"].toObject();
-    signalObject = topjson["data"].toObject()["signals"].toObject();
-    m_systemObject = topjson["data"].toObject()["system"].toObject();
-    if (concentrationObject.isEmpty() || signalObject.isEmpty())
-        return false;
+    int fileversion = topjson["SupraFit"].toInt();
 
-    QStringList keys = signalObject.keys();
+    m_systemObject = topjson["system"].toObject();
+    if ("discrete" == topjson["datatype"].toString())
+        d->m_type = 1;
 
-    QCollator collator;
-    collator.setNumericMode(true);
-    std::sort(
-        keys.begin(),
-        keys.end(),
-        [&collator](const QString& key1, const QString& key2) {
-            return collator.compare(key1, key2) < 0;
-        });
-    if (DataPoints() == 0) {
+    if (fileversion >= 1601) {
+        d->m_independent_model->ImportTable(topjson["independent"].toObject());
+        d->m_dependent_model->ImportTable(topjson["dependent"].toObject());
+    } else {
+        QJsonObject concentrationObject, signalObject;
+        concentrationObject = topjson["concentrations"].toObject();
+        signalObject = topjson["signals"].toObject();
+        if (concentrationObject.isEmpty() || signalObject.isEmpty())
+            return false;
+
+        QStringList keys = signalObject.keys();
+
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+            keys.end(),
+            [&collator](const QString& key1, const QString& key2) {
+                return collator.compare(key1, key2) < 0;
+            });
+        if (DataPoints() == 0) {
+            for (const QString& str : qAsConst(keys)) {
+                QVector<qreal> concentrationsVector, signalVector;
+                concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
+                signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
+                d->m_independent_model->insertRow(concentrationsVector);
+                d->m_dependent_model->insertRow(signalVector);
+            }
+            QStringList header = topjson["header"].toString().split("|");
+            setHeader(header);
+            return true;
+        } else if (keys.size() != DataPoints()) {
+            qWarning() << "table size doesn't fit to imported data";
+            return false;
+        }
         for (const QString& str : qAsConst(keys)) {
             QVector<qreal> concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
             signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
-            d->m_independent_model->insertRow(concentrationsVector);
-            d->m_dependent_model->insertRow(signalVector);
+            int row = str.toInt();
+            d->m_independent_model->setRow(concentrationsVector, row);
+            d->m_dependent_model->setRow(signalVector, row);
         }
-        QStringList header = topjson["data"].toObject()["header"].toString().split("|");
+
+        QStringList header = topjson["header"].toString().split("|");
         setHeader(header);
-        return true;
-    } else if (keys.size() != DataPoints()) {
-        qWarning() << "table size doesn't fit to imported data";
-        return false;
-    }
-    for (const QString& str : qAsConst(keys)) {
-        QVector<qreal> concentrationsVector, signalVector;
-        concentrationsVector = ToolSet::String2DoubleVec(concentrationObject[str].toString());
-        signalVector = ToolSet::String2DoubleVec(signalObject[str].toString());
-        int row = str.toInt();
-        d->m_independent_model->setRow(concentrationsVector, row);
-        d->m_dependent_model->setRow(signalVector, row);
     }
 
-    if ("discrete" == topjson["data"].toObject()["datatype"].toString())
-        d->m_type = 1;
-    QStringList header = topjson["data"].toObject()["header"].toString().split("|");
-    setHeader(header);
 
     return true;
 }

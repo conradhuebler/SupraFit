@@ -329,7 +329,7 @@ bool MainWindow::LoadProject(const QString& filename)
 {
     QJsonObject toplevel;
     if (JsonHandler::ReadJsonFile(toplevel, filename)) {
-        QPointer<const DataClass> data = new DataClass(toplevel);
+        QPointer<const DataClass> data = new DataClass(toplevel["data"].toObject());
         if (data->DataPoints() != 0) {
             SetData(data, filename, toplevel["data"].toObject()["colors"].toString());
             return true;

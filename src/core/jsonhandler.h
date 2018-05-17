@@ -23,8 +23,8 @@ class QJsonObject;
 class QString;
 class JsonHandler {
 public:
-    JsonHandler(){};
-    ~JsonHandler(){};
+    JsonHandler() {}
+    ~JsonHandler() {}
     static bool WriteJsonFile(const QJsonObject& json, const QString& file);
     static bool AppendJsonFile(const QJsonObject& json, const QString& filee);
     static bool ReadJsonFile(QJsonObject& json, const QString& file);
