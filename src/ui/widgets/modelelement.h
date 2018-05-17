@@ -66,4 +66,5 @@ signals:
     void Minimize(int i);
     void SetColor();
     void ActiveSignalChanged();
+    void ColorChanged(const QColor& color);
 };

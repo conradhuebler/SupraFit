@@ -152,7 +152,7 @@ QSharedPointer<AbstractModel> itc_n_ItoII_Model::Clone()
     QSharedPointer<AbstractItcModel> model = QSharedPointer<itc_n_ItoII_Model>(new itc_n_ItoII_Model(this), &QObject::deleteLater);
     model.data()->ImportModel(ExportModel());
     model.data()->setActiveSignals(ActiveSignals());
-    model.data()->setLockedParameter(LockedParamters());
+    model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     model.data()->setConcentrations(ConcentrationTable());
     return model;

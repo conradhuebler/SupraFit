@@ -60,17 +60,28 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     QHBoxLayout* shifts = new QHBoxLayout;
     for (int i = 0; i < m_model->LocalParameterSize(); ++i) {
         QPointer<QWidget> widget = new QWidget;
-
+        /*connect(this, &ModelElement::ColorChanged, widget, [widget](const QColor &color)
+        {
+            QPalette pal = widget->palette();
+            pal.setColor(QPalette::Background, color);
+            widget->setPalette(pal);
+        });*/
+        widget->setFixedWidth(150);
+        QCheckBox* check = new QCheckBox;
+        connect(check, &QCheckBox::stateChanged, check, [this, i, no]() {
+            qDebug() << this->m_model->LockedParameters() << i << no;
+        });
+        check->setChecked(true);
         QPointer<SpinBox> constant = new SpinBox;
         m_constants << constant;
         constant->setMinimum(-1e9);
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
         constant->setMaximum(1e9);
+        constant->setMaximumWidth(110);
         constant->setSuffix(m_model->LocalParameterSuffix(i));
         constant->setValue(m_model->LocalParameter(i, m_no));
         constant->setToolTip(m_model->LocalParameterDescription(i));
-        constant->setMaximumWidth(130);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         connect(m_model.data(), &AbstractModel::Recalculated, this, [i, constant, this, widget]() {
             if (this->m_model && widget) {
@@ -81,10 +92,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
             }
 
         });
-        QVBoxLayout* vlayout = new QVBoxLayout;
+        QGridLayout* vlayout = new QGridLayout;
         widget->setLayout(vlayout);
-        vlayout->addWidget(constant);
-        vlayout->addWidget(new QLabel(m_model.data()->LocalParameterName(i)));
+        vlayout->addWidget(constant, 0, 0);
+        vlayout->addWidget(check, 0, 1);
+        vlayout->addWidget(new QLabel(m_model.data()->LocalParameterName(i)), 1, 0, 1, 2);
         shifts->addWidget(widget, 0);
     }
 
@@ -229,6 +241,7 @@ void ModelElement::ChangeColor(const QColor& color)
     setPalette(pal);
 #endif
     m_color = color;
+    emit ColorChanged(m_color);
 }
 
 void ModelElement::setLabel(const QString& str)

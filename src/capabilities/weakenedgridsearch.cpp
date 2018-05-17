@@ -71,7 +71,7 @@ void WGSearchThread::Calculate()
     else
         increment = m_config.increment;
 
-    QList<int> locked = m_model->LockedParamters();
+    QList<int> locked = m_model->LockedParameters();
     QVector<qreal> param = m_model->OptimizeParameters();
 
     locked[m_index] = 0;

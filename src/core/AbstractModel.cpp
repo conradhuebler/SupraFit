@@ -86,8 +86,11 @@ void AbstractModel::PrepareParameter(int global, int local)
     m_local_parameter = new DataTable(local, SeriesCount(), this);
 
     m_global_parameter = QVector<qreal>(global, 0).toList();
-    m_enabled_global = QVector<int>(global, 0);
-    m_enabled_local = QVector<int>(local, 0);
+    d->m_enabled_global = QVector<int>(global, 0);
+    d->m_enabled_local = QVector<int>(local, 0);
+
+    d->m_locked_global = QVector<int>(global, 0);
+    d->m_locked_local = QVector<int>(local, 0);
 
     addGlobalParameter(m_global_parameter);
     DeclareSystemParameter();
@@ -127,11 +130,11 @@ void AbstractModel::clearOptParameter()
 {
     m_opt_para.clear();
     m_opt_index.clear();
-    for (int i = 0; i < m_enabled_local.size(); ++i)
-        m_enabled_local[i] = 0;
+    for (int i = 0; i < d->m_enabled_local.size(); ++i)
+        d->m_enabled_local[i] = 0;
 
-    for (int i = 0; i < m_enabled_global.size(); ++i)
-        m_enabled_global[i] = 0;
+    for (int i = 0; i < d->m_enabled_global.size(); ++i)
+        d->m_enabled_global[i] = 0;
 }
 
 void AbstractModel::setGlobalParameter(const QList<qreal>& list)
@@ -411,7 +414,7 @@ void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
     for (int i = 0; i < parameter.size(); ++i) {
         m_opt_para << &parameter[i];
         m_opt_index << QPair<int, int>(i, 0);
-        m_enabled_global[i] = 1;
+        d->m_enabled_global[i] = 1;
     }
 }
 
@@ -419,7 +422,7 @@ void AbstractModel::addGlobalParameter(int i)
 {
     if (i < m_global_parameter.size()) {
         m_opt_para << &m_global_parameter[i];
-        m_enabled_global[i] = 1;
+        d->m_enabled_global[i] = 1;
         m_opt_index << QPair<int, int>(i, 0);
     }
 }
@@ -432,7 +435,7 @@ void AbstractModel::addLocalParameter(int i)
         m_opt_para << &m_local_parameter->data(i, j);
         m_opt_index << QPair<int, int>(i, 1);
     }
-    m_enabled_local[i] = 1;
+    d->m_enabled_local[i] = 1;
 }
 
 int AbstractModel::UpdateStatistic(const QJsonObject& object)
@@ -643,7 +646,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
         localParameter["names"] = names;
         json["localParameter"] = localParameter;
     }
-
+    json["locked"] = ToolSet::IntVec2String(d->m_locked_parameters.toVector());
     for (int index : getAllOptions())
         optionObject[QString::number(index)] = getOption(index);
 
@@ -769,6 +772,10 @@ void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             m_moco_statistics << statisticObject[str].toObject();
         else if (str.contains(QString::number(SupraFit::Statistic::WeakenedGridSearch) + ":"))
             m_wg_statistics << statisticObject[str].toObject();
+    }
+
+    if (fileversion >= 1601) {
+        d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
     }
 
     if (json.contains("localParameter")) {

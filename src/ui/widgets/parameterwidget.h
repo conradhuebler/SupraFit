@@ -23,6 +23,8 @@
 
 #include <QtWidgets/QWidget>
 
+class QCheckBox;
+
 class AbstractModel;
 class SpinBox;
 
@@ -38,4 +40,5 @@ public slots:
 private:
     QSharedPointer<AbstractModel> m_model;
     QList<QPointer<SpinBox>> m_parameter;
+    QList<QPointer<QCheckBox>> m_locked;
 };

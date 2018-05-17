@@ -126,7 +126,7 @@ private:
     QCheckBox* m_readonly;
     QLabel *m_bc_50, *m_converged_label;
     OptionsWidget* m_model_options_widget;
-    QGridLayout* m_layout;
+    QVBoxLayout* m_layout;
     bool m_pending;
     QList<int> ActiveSignals();
     void DiscreteUI();

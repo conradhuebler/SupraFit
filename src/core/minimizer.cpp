@@ -60,7 +60,7 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, boo
     m_model->Calculate();
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
-    m_model->setLockedParameter(model->LockedParamters());
+    m_model->setLockedParameter(model->LockedParameters());
     connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
 }
@@ -72,7 +72,7 @@ void NonLinearFitThread::setParameter(const QJsonObject& json)
 
 int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
 {
-    QList<int> locked = m_model->LockedParamters();
+    QList<int> locked = m_model->LockedParameters();
     QVector<qreal> parameter = m_model->OptimizeParameters(runtype);
     if (parameter.isEmpty())
         return 0;

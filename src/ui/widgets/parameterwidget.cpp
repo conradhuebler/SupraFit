@@ -24,6 +24,7 @@
 
 #include <QtCore/QPointer>
 
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
@@ -39,31 +40,48 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         QWidget* widget = new QWidget;
         QHBoxLayout* hlayout = new QHBoxLayout;
         widget->setLayout(hlayout);
+
+        QPointer<QCheckBox> check = new QCheckBox;
+        check->setChecked(true);
+
         QPointer<SpinBox> box = new SpinBox;
         box->setMinimum(-1e10);
         box->setMaximum(1e10);
         box->setValue(m_model->LocalParameter(i, 0));
-        connect(m_model.data(), &AbstractModel::Recalculated,
-            [i, box, this, widget]() {
-                if (this->m_model && box) {
+        connect(m_model.data(), &AbstractModel::Recalculated, box,
+            [i, box, check, this, widget]() {
+                if (this->m_model && check) {
                     box->setValue(m_model->LocalParameter(i, 0));
-                    if (this->m_model->LocalEnabled(i))
+                    if (this->m_model->LocalEnabled(i)) {
                         box->setStyleSheet("background-color: " + included());
-                    else
+                        if (check->isChecked())
+                            check->setEnabled(true);
+                    } else {
                         box->setStyleSheet("background-color: " + excluded());
-                    //widget->setEnabled(this->m_model->LocalEnabled(i));
+                        check->setEnabled(false);
+                    }
                 }
             });
-        connect(box, &SpinBox::valueChangedNotBySet,
+        connect(box, &SpinBox::valueChangedNotBySet, box,
             [i, box, this]() {
-                if (this->m_model && box) {
+                if (this->m_model) {
                     m_model->setLocalParameter(box->value(), i, 0);
                     m_model->Calculate();
                 }
 
             });
+
+        connect(check, &QCheckBox::stateChanged, check, [i, this](int state) {
+            if (this->m_model) {
+                QList<int> locked = this->m_model->LockedParameters();
+                locked[i + m_model->GlobalParameterSize()] = state;
+                this->m_model->setLockedParameter(locked);
+            }
+
+        });
         hlayout->addWidget(new QLabel(m_model->LocalParameterName(i)));
         hlayout->addWidget(box);
+        hlayout->addWidget(check);
         layout->addWidget(widget);
     }
 

@@ -43,12 +43,17 @@ public:
         : QSharedData(other)
         , m_model_options(other.m_model_options)
         , m_locked_parameters(other.m_locked_parameters)
+        , m_enabled_global(other.m_enabled_global)
+        , m_enabled_local(other.m_enabled_local)
+        , m_locked_global(other.m_locked_global)
+        , m_locked_local(other.m_locked_local)
     {
     }
     ~AbstractModelPrivate() {}
 
     QMap<int, ModelOption> m_model_options;
     QList<int> m_locked_parameters;
+    QVector<int> m_enabled_local, m_enabled_global, m_locked_local, m_locked_global;
 };
 
 class AbstractModel : public DataClass {
@@ -88,7 +93,7 @@ public:
 
     /*! \brief returns the locked Parameters
      */
-    inline QList<int> LockedParamters() const { return d->m_locked_parameters; }
+    inline QList<int> LockedParameters() const { return d->m_locked_parameters; }
 
     /*! \brief Set the last OptimizationType to runtype
      */
@@ -437,13 +442,11 @@ public:
 
     inline bool isLocked() const { return m_locked_model; }
 
-    inline bool LocalEnabled(int i) const { return m_enabled_local[i]; }
+    inline bool LocalEnabled(int i) const { return d->m_enabled_local[i]; }
 
-    inline bool GlobalEnabled(int i) const { return m_enabled_global[i]; }
+    inline bool GlobalEnabled(int i) const { return d->m_enabled_global[i]; }
 
     virtual bool SupportSeries() const = 0;
-
-    //  inline DataClass *Data() const { return m_data; }
 
     /*! \brief Define the x axis label for charts
      */
@@ -457,7 +460,7 @@ public:
 
     QVector<qreal> AllParameter() const;
 
-    inline QVector<int> LocalEnabled() const { return m_enabled_local; }
+    inline QVector<int> LocalEnabled() const { return d->m_enabled_local; }
 
     //inline void Calculate(bool fast);
 
@@ -522,7 +525,6 @@ protected:
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
     QList<int> m_active_signals;
-    QVector<int> m_enabled_local, m_enabled_global;
     OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;

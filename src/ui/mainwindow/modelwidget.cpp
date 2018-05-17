@@ -135,12 +135,15 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
-    m_layout = new QGridLayout;
-    QLabel* pure_shift = new QLabel(tr("Constants:"));
+    m_layout = new QVBoxLayout;
     QHBoxLayout* const_layout = new QHBoxLayout;
-    const_layout->addWidget(pure_shift, 0, 0);
     for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
+        QGroupBox* group = new QGroupBox;
+        group->setFixedWidth(180);
+        QHBoxLayout* hlayout = new QHBoxLayout;
         QPointer<SpinBox> constant = new SpinBox;
+        QPointer<QCheckBox> check = new QCheckBox;
+        check->setChecked(true);
         m_constants << constant;
         constant->setDecimals(4);
 
@@ -150,7 +153,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
         constant->setValue(m_model->GlobalParameter()[i]);
         constant->setMaximum(1e9);
         constant->setMinimum(-1e9);
-        constant->setMaximumWidth(150);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
         connect(m_model.data(), &AbstractModel::Recalculated, this,
             [i, constant, this]() {
@@ -161,11 +163,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
                         constant->setStyleSheet("background-color: " + excluded());
                 }
             });
-        const_layout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
-        const_layout->addWidget(constant);
+        hlayout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
+        hlayout->addWidget(constant);
+        hlayout->addWidget(check);
+        group->setLayout(hlayout);
+        const_layout->addWidget(group);
     }
     m_bc_50 = new QLabel(tr("BC50_0"));
-    const_layout->addWidget(m_bc_50);
     const_layout->addStretch(100);
 
     m_minimize_all = new QPushButton(tr("Fit"));
@@ -187,13 +191,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_minimize_all->setMenu(menu);
 
     const_layout->addWidget(m_minimize_all);
-    m_layout->addLayout(const_layout, 0, 0, 1, m_model->GlobalParameterSize() + 3);
+    m_layout->addLayout(const_layout);
+    m_layout->addWidget(m_bc_50);
 
     m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
-    m_layout->addWidget(m_optim_flags, 1, 0, 1, m_model->GlobalParameterSize() + 3);
+    m_layout->addWidget(m_optim_flags);
     m_model_options_widget = new OptionsWidget(m_model);
     if (m_model->getAllOptions().size())
-        m_layout->addWidget(m_model_options_widget, 2, 0, 1, m_model->GlobalParameterSize() + 3);
+        m_layout->addWidget(m_model_options_widget);
 
     m_sign_layout = new QVBoxLayout;
 
@@ -267,7 +272,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     area->setWidgetResizable(true);
     area->setWidget(scroll);
 
-    m_layout->addWidget(area, 3, 0, 1, m_model->GlobalParameterSize() + 3);
+    m_layout->addWidget(area);
 
     if (m_model->Type() == 1)
         DiscreteUI();
@@ -362,7 +367,7 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
 
-    m_layout->addWidget(m_actions, 4, 0, 1, m_model->GlobalParameterSize() + 3);
+    m_layout->addWidget(m_actions);
 }
 
 void ModelWidget::resizeButtons()
@@ -474,6 +479,7 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 
     CollectParameters();
     QJsonObject json = m_model->ExportModel();
+    QList<int> locked = m_model->LockedParameters();
     m_minimizer->setParameter(json);
 
     m_model->setOptimizerConfig(config);

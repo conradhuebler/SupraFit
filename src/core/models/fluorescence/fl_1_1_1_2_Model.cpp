@@ -174,7 +174,7 @@ QSharedPointer<AbstractModel> fl_ItoI_ItoII_Model::Clone()
     QSharedPointer<fl_ItoI_ItoII_Model> model = QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(this), &QObject::deleteLater);
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->ImportModel(ExportModel());
-    model.data()->setLockedParameter(LockedParamters());
+    model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
 }
