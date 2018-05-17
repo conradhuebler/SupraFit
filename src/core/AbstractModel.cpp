@@ -632,7 +632,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
         json["statistics"] = statisticObject;
     }
 
-    if (LocalParameterSize()) {
+    /*if (LocalParameterSize()) {
         QJsonObject localParameter;
         for (int i = 0; i < m_local_parameter->rowCount(); ++i)
             if (ActiveSignals(i))
@@ -645,7 +645,8 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
         names.chop(1);
         localParameter["names"] = names;
         json["localParameter"] = localParameter;
-    }
+    }*/
+    json["localParameter"] = m_local_parameter->ExportTable(true);
     json["locked"] = ToolSet::IntVec2String(d->m_locked_parameters.toVector());
     for (int index : getAllOptions())
         optionObject[QString::number(index)] = getOption(index);
@@ -656,6 +657,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
             resultObject[QString::number(i)] = ToolSet::DoubleList2String(ModelTable()->Row(i));
         }
     }
+    json["active_series"] = ToolSet::IntVec2String(m_active_signals.toVector());
 
     toplevel["data"] = json;
     toplevel["options"] = optionObject;
@@ -777,48 +779,53 @@ void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     if (fileversion >= 1601) {
         d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
     }
-
-    if (json.contains("localParameter")) {
-        /*
-     * Here goes SupraFit 2 data handling
-    */
-        if (LocalParameterSize()) {
-            QJsonObject localParameter = json["localParameter"].toObject();
-            for (int i = 0; i < SeriesCount(); ++i) {
-                QVector<qreal> localVector;
-                if (!localParameter[QString::number(i)].isNull()) {
-                    localVector = ToolSet::String2DoubleVec(localParameter[QString::number(i)].toString());
-                    active_signals << 1;
-                } else {
-                    localVector = QVector<qreal>(LocalParameterSize(), 0);
-                    active_signals << 0;
+    if (fileversion < 1601) {
+        if (json.contains("localParameter")) {
+            /*
+         * Here goes (legacy) SupraFit 2 data handling
+        */
+            if (LocalParameterSize()) {
+                QJsonObject localParameter = json["localParameter"].toObject();
+                for (int i = 0; i < SeriesCount(); ++i) {
+                    QVector<qreal> localVector;
+                    if (!localParameter[QString::number(i)].isNull()) {
+                        localVector = ToolSet::String2DoubleVec(localParameter[QString::number(i)].toString());
+                        active_signals << 1;
+                    } else {
+                        localVector = QVector<qreal>(LocalParameterSize(), 0);
+                        active_signals << 0;
+                    }
+                    m_local_parameter->setRow(localVector, i);
                 }
-                m_local_parameter->setRow(localVector, i);
+            }
+        } else if (json.contains("pureShift")) {
+            /*
+             * This is SupraFit 1 legacy data handling
+             */
+            for (int i = 0; i < SeriesCount(); ++i) {
+                QVector<qreal> localSeries;
+                QJsonObject pureShiftObject = json["pureShift"].toObject();
+
+                localSeries << pureShiftObject[QString::number(i)].toString().toDouble();
+
+                if (!pureShiftObject[QString::number(i)].isNull())
+                    active_signals << 1;
+                else
+                    active_signals << 0;
+
+                for (int j = 0; j < GlobalParameter().size(); ++j) {
+                    QJsonObject object = json["shift_" + QString::number(j)].toObject();
+                    localSeries << object[QString::number(i)].toString().toDouble();
+                }
+                m_local_parameter->setRow(localSeries, i);
             }
         }
-    } else if (json.contains("pureShift")) {
-        /*
-         * This is SupraFit 1 legacy data handling
-         */
-        for (int i = 0; i < SeriesCount(); ++i) {
-            QVector<qreal> localSeries;
-            QJsonObject pureShiftObject = json["pureShift"].toObject();
 
-            localSeries << pureShiftObject[QString::number(i)].toString().toDouble();
-
-            if (!pureShiftObject[QString::number(i)].isNull())
-                active_signals << 1;
-            else
-                active_signals << 0;
-
-            for (int j = 0; j < GlobalParameter().size(); ++j) {
-                QJsonObject object = json["shift_" + QString::number(j)].toObject();
-                localSeries << object[QString::number(i)].toString().toDouble();
-            }
-            m_local_parameter->setRow(localSeries, i);
-        }
+    } else {
+        active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
+        qDebug() << active_signals << json["active_series"].toString();
+        m_local_parameter->ImportTable(json["localParameter"].toObject());
     }
-
     setActiveSignals(active_signals);
     if (topjson["runtype"].toInt() != 0)
         OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
