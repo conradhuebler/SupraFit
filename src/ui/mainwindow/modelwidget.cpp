@@ -163,6 +163,13 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
                         constant->setStyleSheet("background-color: " + excluded());
                 }
             });
+        connect(check, &QCheckBox::stateChanged, check, [i, this](int state) {
+            if (this->m_model) {
+                m_model->GlobalTable()->setChecked(i, 0, state);
+            }
+            m_model->GlobalTable()->Debug();
+        });
+
         hlayout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         hlayout->addWidget(constant);
         hlayout->addWidget(check);

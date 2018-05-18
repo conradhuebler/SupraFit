@@ -48,9 +48,16 @@ public:
         , m_local_parameter(other.m_local_parameter)
         , m_global_parameter(other.m_global_parameter)
     {
-        m_global_parameter->Debug();
     }
-    ~AbstractModelPrivate() {}
+    ~AbstractModelPrivate()
+    {
+
+        /*    if(m_global_parameter)
+            delete m_global_parameter;
+
+        if(m_local_parameter)
+            delete m_local_parameter;*/
+    }
 
     QMap<int, ModelOption> m_model_options;
     QList<int> m_locked_parameters;

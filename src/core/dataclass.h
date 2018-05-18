@@ -104,6 +104,8 @@ public:
     QPointer<DataTable> Block(int row_begin, int column_begin, int row_end, int column_end) const;
 
     bool isChecked(int i, int j) const;
+    void setChecked(int i, int j, bool checked);
+
     void insertRow(const QVector<qreal>& row);
     void setRow(const QVector<qreal>& vector, int row);
     void setRow(const Vector& vector, int row);

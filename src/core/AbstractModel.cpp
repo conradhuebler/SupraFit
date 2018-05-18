@@ -115,11 +115,6 @@ AbstractModel::~AbstractModel()
     if (m_model_error)
         delete m_model_error;
 
-    /*  if(m_global_parameter)
-        delete m_global_parameter;
-
-    if(m_local_parameter)
-        delete m_local_parameter;*/
 }
 
 QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
@@ -435,6 +430,8 @@ void AbstractModel::setLocalParameterSeries(const Vector& vector, int series)
 void AbstractModel::addGlobalParameter()
 {
     for (int i = 0; i < GlobalTable()->columnCount(); ++i) {
+        if (!GlobalTable()->isChecked(i, 0))
+            continue;
         m_opt_para << &(*GlobalTable())[i];
         m_opt_index << QPair<int, int>(i, 0);
         d->m_enabled_global[i] = 1;
@@ -444,6 +441,8 @@ void AbstractModel::addGlobalParameter()
 void AbstractModel::addGlobalParameter(int i)
 {
     if (i < GlobalTable()->columnCount()) {
+        if (!GlobalTable()->isChecked(i, 0))
+            return;
         m_opt_para << &(*GlobalTable())[i];
         d->m_enabled_global[i] = 1;
         m_opt_index << QPair<int, int>(i, 0);
@@ -454,6 +453,8 @@ void AbstractModel::addLocalParameter(int i)
 {
     for (int j = 0; j < LocalTable()->rowCount(); ++j) {
         if (!ActiveSignals(j))
+            continue;
+        if (!LocalTable()->isChecked(i, j))
             continue;
         m_opt_para << &LocalTable()->data(i, j);
         m_opt_index << QPair<int, int>(i, 1);
@@ -626,14 +627,8 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
 {
     QJsonObject json, toplevel;
     QJsonObject optionObject;
-    /*QString names;
-    for (int i = 0; i < GlobalParameter().size(); ++i) {
-        constantObject[QString::number(i)] = (QString::number(GlobalParameter()[i]));
-        names += GlobalParameterName(i) + "|";
-    }
-    names.chop(1);
-    constantObject["names"] = names;*/
-    json["globalParameter"] = GlobalTable()->ExportTable(true); //constantObject;
+
+    json["globalParameter"] = GlobalTable()->ExportTable(true);
 
     if (statistics) {
         QJsonObject statisticObject;
@@ -895,8 +890,6 @@ AbstractModel& AbstractModel::operator=(const AbstractModel& other)
 
     m_active_signals = other.m_active_signals;
     d = other.d;
-    //m_global_parameter = other.m_global_parameter;
-    //m_local_parameter = other.m_local_parameter;
 
     m_mc_statistics = other.m_mc_statistics;
     m_wg_statistics = other.m_wg_statistics;
@@ -926,8 +919,6 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
 
     m_active_signals = other->m_active_signals;
     d = other->d;
-    //m_global_parameter = other->m_global_parameter;
-    //m_local_parameter = other->m_local_parameter;
 
     m_mc_statistics = other->m_mc_statistics;
     m_wg_statistics = other->m_wg_statistics;

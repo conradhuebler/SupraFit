@@ -278,6 +278,19 @@ bool DataTable::isChecked(int column, int row) const
     }
 }
 
+void DataTable::setChecked(int column, int row, bool checked)
+{
+    if (row < m_checked_table.rows())
+        if (column < m_checked_table.cols()) {
+            m_checked_table(row, column) = checked;
+        } else {
+            qDebug() << "Column exceeds size of table!";
+        }
+    else {
+        qDebug() << "Row exceeds size of table!";
+    }
+}
+
 qreal DataTable::data(int column, int row) const
 {
 

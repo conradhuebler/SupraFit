@@ -262,7 +262,7 @@ void ThermogramWidget::PickPeaks()
     sign.InvertSgn();
 
     std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&sign, 0, qPow(2, 1));
-    for (int i = 0; i < peaks.size(); ++i) {
+    for (unsigned int i = 0; i < peaks.size(); ++i) {
         int pos = PeakPick::FindMinimum(&m_spec, peaks[i]);
         peaks[i].max = pos;
         PeakPick::IntegrateNumerical(&m_spec, peaks[i]);

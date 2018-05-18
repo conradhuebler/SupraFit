@@ -73,9 +73,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
 
         connect(check, &QCheckBox::stateChanged, check, [i, this](int state) {
             if (this->m_model) {
-                QList<int> locked = this->m_model->LockedParameters();
-                locked[i + m_model->GlobalParameterSize()] = state;
-                this->m_model->setLockedParameter(locked);
+                m_model->LocalTable()->setChecked(i, 0, state);
             }
 
         });

@@ -60,16 +60,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     QHBoxLayout* shifts = new QHBoxLayout;
     for (int i = 0; i < m_model->LocalParameterSize(); ++i) {
         QPointer<QWidget> widget = new QWidget;
-        /*connect(this, &ModelElement::ColorChanged, widget, [widget](const QColor &color)
-        {
-            QPalette pal = widget->palette();
-            pal.setColor(QPalette::Background, color);
-            widget->setPalette(pal);
-        });*/
         widget->setFixedWidth(150);
         QCheckBox* check = new QCheckBox;
-        connect(check, &QCheckBox::stateChanged, check, [this, i, no]() {
-            qDebug() << this->m_model->LockedParameters() << i << no;
+        connect(check, &QCheckBox::stateChanged, check, [this, i, no](int state) {
+            m_model->LocalTable()->setChecked(i, no, state);
+
         });
         check->setChecked(true);
         QPointer<SpinBox> constant = new SpinBox;
