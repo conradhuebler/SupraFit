@@ -150,7 +150,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
         constant->setPrefix(m_model->GlobalParameterPrefix(i));
         constant->setSingleStep(m_model->GlobalParameter(i) / 100);
 
-        constant->setValue(m_model->GlobalParameter()[i]);
+        constant->setValue(m_model->GlobalParameter(i));
         constant->setMaximum(1e9);
         constant->setMinimum(-1e9);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
@@ -385,10 +385,9 @@ void ModelWidget::EmptyUI()
 
 void ModelWidget::setParameter()
 {
-    QList<qreal> constants = m_model->GlobalParameter();
-    for (int j = 0; j < constants.size(); ++j) {
-        if (qAbs(m_constants[j]->value() - constants[j]) > 1e-5) // lets do no update if the model was calculated with the recently set constants
-            m_constants[j]->setValue(constants[j]);
+    for (int j = 0; j < m_model->GlobalParameterSize(); ++j) {
+        if (qAbs(m_constants[j]->value() - m_model->GlobalParameter(j)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
+            m_constants[j]->setValue(m_model->GlobalParameter(j));
     }
     emit Update();
 }
@@ -769,9 +768,9 @@ void ModelWidget::NewGuess()
     if (r == QMessageBox::No)
         return;
     m_model->InitialGuess();
-    QList<qreal> constants = m_model->GlobalParameter();
-    for (int j = 0; j < constants.size(); ++j)
-        m_constants[j]->setValue(constants[j]);
+    //QList<qreal> constants = m_model->GlobalParameter();
+    for (int j = 0; j < m_model->GlobalParameterSize(); ++j)
+        m_constants[j]->setValue(m_model->GlobalParameter(j));
     emit Update();
 }
 
@@ -810,9 +809,8 @@ void ModelWidget::LoadJson(const QJsonObject& object)
     Waiter wait;
     m_model->ImportModel(object);
 
-    QList<qreal> constants = m_model->GlobalParameter();
-    for (int j = 0; j < constants.size(); ++j)
-        m_constants[j]->setValue(constants[j]);
+    for (int j = 0; j < m_model->GlobalParameterSize(); ++j)
+        m_constants[j]->setValue(m_model->GlobalParameter(j));
 
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();

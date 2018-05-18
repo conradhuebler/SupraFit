@@ -204,7 +204,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
     return;
 }
 
-
+/*
 void GlobalSearch::Scan(const QVector<QVector<double>>& list)
 {
     for (int i = 0; i < m_series.size(); ++i)
@@ -221,7 +221,7 @@ void GlobalSearch::Scan(const QVector<QVector<double>>& list)
         }
         m_series << series;
     }
-}
+}*/
 
 void GlobalSearch::ExportResults(const QString& filename, double threshold, bool allow_invalid)
 {

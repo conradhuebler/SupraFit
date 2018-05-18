@@ -52,13 +52,14 @@ itc_ItoII_Model::~itc_ItoII_Model()
 
 void itc_ItoII_Model::InitialGuess()
 {
-    m_global_parameter = QList<qreal>() << 6 << 6;
+    GlobalTable()->data(0, 0) = 6;
+    GlobalTable()->data(1, 0) = 6;
 
-    m_local_parameter->data(0, 0) = -4000;
-    m_local_parameter->data(1, 0) = -4000;
-    m_local_parameter->data(2, 0) = -1000;
-    m_local_parameter->data(3, 0) = 1;
-    m_local_parameter->data(4, 0) = 1;
+    LocalTable()->data(0, 0) = -4000;
+    LocalTable()->data(1, 0) = -4000;
+    LocalTable()->data(2, 0) = -1000;
+    LocalTable()->data(3, 0) = 1;
+    LocalTable()->data(4, 0) = 1;
 
     AbstractModel::Calculate();
 }
@@ -98,16 +99,16 @@ void itc_ItoII_Model::CalculateVariables()
     QString binding = getOption(Binding);
     QString dil = getOption(Dilution);
 
-    qreal dil_heat = m_local_parameter->data(2, 0);
-    qreal dil_inter = m_local_parameter->data(3, 0);
-    qreal fx = m_local_parameter->data(4, 0);
+    qreal dil_heat = LocalTable()->data(2, 0);
+    qreal dil_inter = LocalTable()->data(3, 0);
+    qreal fx = LocalTable()->data(4, 0);
     qreal V = m_V;
 
-    qreal K11 = qPow(10, GlobalParameter()[0]);
-    qreal K12 = qPow(10, GlobalParameter()[1]);
+    qreal K11 = qPow(10, GlobalParameter(0));
+    qreal K12 = qPow(10, GlobalParameter(1));
 
-    qreal dH1 = m_local_parameter->data(0, 0);
-    qreal dH2 = m_local_parameter->data(1, 0);
+    qreal dH1 = LocalTable()->data(0, 0);
+    qreal dH2 = LocalTable()->data(1, 0);
 
     qreal complex_11_prev = 0, complex_12_prev = 0;
     for (int i = 0; i < DataPoints(); ++i) {

@@ -75,7 +75,7 @@ void MonteCarloThread::run()
 
     m_optimized = m_minimizer->Parameter();
     m_model->ImportModel(m_optimized);
-    m_constants = m_model->GlobalParameter();
+    //m_constants = m_model->GlobalParameter();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
 #ifdef _DEBUG

@@ -64,8 +64,8 @@ void MonoMolecularModel::DeclareSystemParameter()
 
 void MonoMolecularModel::InitialGuess()
 {
-    m_global_parameter[0] = 1;
-    m_global_parameter[1] = 1;
+    (*GlobalTable())[0] = 1;
+    (*GlobalTable())[1] = 1;
     Calculate();
 }
 

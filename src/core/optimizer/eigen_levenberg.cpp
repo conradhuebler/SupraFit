@@ -132,14 +132,14 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     for (; iter < config.MaxIter && ((qAbs(error_0 - error_2) > config.Error_Convergence) || norm > config.Constant_Convergence); ++iter) {
         globalConstants.clear();
         for (int i = 0; i < model.data()->GlobalParameterSize(); ++i)
-            globalConstants << model.data()->GlobalParameter()[i];
+            globalConstants << model.data()->GlobalParameter(i);
         error_0 = model.data()->SumofSquares();
 
         status = lm.minimizeOneStep(parameter);
         error_2 = model.data()->SumofSquares();
         norm = 0;
         for (int i = 0; i < globalConstants.size(); ++i)
-            norm += qAbs(globalConstants[i] - model.data()->GlobalParameter()[i]);
+            norm += qAbs(globalConstants[i] - model.data()->GlobalParameter(i));
     }
     QString result;
     result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";

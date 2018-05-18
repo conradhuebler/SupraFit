@@ -89,6 +89,10 @@ public:
     virtual bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
     qreal data(int column, int row) const;
     qreal& data(int column, int row);
+
+    qreal& operator[](int column);
+    qreal& operator()(int column, int row);
+
     void CheckRow(int row);
     void DisableRow(int row);
     void PrintCheckedRows() const;
@@ -117,6 +121,7 @@ public:
 
     void Debug() const;
     inline QStringList header() const { return m_header; }
+    inline void setHeader(const QStringList& header) { m_header = header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
     inline void setEditable(bool editable) { m_editable = editable; }
     inline bool Checkable() const { return m_checkable; }

@@ -43,13 +43,13 @@ fl_ItoI_Model::~fl_ItoI_Model()
 
 void fl_ItoI_Model::InitialGuess()
 {
-    m_global_parameter[0] = Guess_1_1();
+    (*GlobalTable())[0] = Guess_1_1();
 
     qreal factor = InitialHostConcentration(0);
 
-    m_local_parameter->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
-    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e3, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e3, 2);
+    LocalTable()->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
+    LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e3, 1);
+    LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e3, 2);
 
     Calculate();
 }
@@ -68,8 +68,8 @@ void fl_ItoI_Model::EvaluateOptions()
     {
          for(int i = 0; i < SeriesCount(); ++i)
          {
-            this->m_local_parameter->data(0,i) = 0;
-            this->m_local_parameter->data(1,i) = 0;
+            this->LocalTable()->data(0,i) = 0;
+            this->LocalTable()->data(1,i) = 0;
          }
     }*/
 }
@@ -112,10 +112,10 @@ void fl_ItoI_Model::CalculateVariables()
 
         for (int j = 0; j < SeriesCount(); ++j) {
             if (i == 0) {
-                F0[j] = host_0 * m_local_parameter->data(0, j);
+                F0[j] = host_0 * LocalTable()->data(0, j);
                 value = F0[j];
             } else
-                value = (host * m_local_parameter->data(1, j) + complex * m_local_parameter->data(2, j));
+                value = (host * LocalTable()->data(1, j) + complex * LocalTable()->data(2, j));
 
             SetValue(i, j, value * 1e3);
         }

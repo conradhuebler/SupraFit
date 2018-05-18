@@ -346,15 +346,14 @@ SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object)
 
 QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
 {
-
     int globalcount = 0, localcount = 0, each_local = 0;
     QJsonObject model = models.first()["data"].toObject();
-    globalcount = qMax(0, model["globalParameter"].toObject().size() - 1);
-    localcount = qMax(0, model["localParameter"].toObject().size() - 1);
+    globalcount = model["globalParameter"].toObject()["cols"].toInt();
+    localcount = model["localParameter"].toObject()["rows"].toInt();
     QStringList local_names, global_names;
-    local_names = model["localParameter"].toObject()["names"].toString().split("|");
+    local_names = model["localParameter"].toObject()["header"].toString().split("|");
     each_local = local_names.count();
-    global_names = model["globalParameter"].toObject()["names"].toString().split("|");
+    global_names = model["globalParameter"].toObject()["header"].toString().split("|");
 
     QVector<QVector<qreal>> global(globalcount);
     QVector<QVector<qreal>> local(localcount * each_local);
@@ -365,21 +364,18 @@ QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
 
         QJsonObject globalObject = model["globalParameter"].toObject();
         QJsonObject localObject = model["localParameter"].toObject();
+        QVector<qreal> vector = String2DoubleVec(globalObject["data"].toObject()["0"].toString());
         for (int j = 0; j < globalcount; ++j)
-            global[j] << globalObject[QString::number(j)].toString().toDouble();
+            global[j] << vector[j];
 
-        QStringList keys = localObject.keys();
-        int j = 0;
-        for (const QString& key : qAsConst(keys)) {
-            QList<qreal> values = String2DoubleList(localObject[key].toString());
-            if (values.size() == 0 || key == "names")
-                continue;
+        // QStringList keys = localObject.keys();
+        for (int j = 0; j < localcount; ++j) {
+            QList<qreal> values = String2DoubleList(localObject["data"].toObject()[QString::number(j)].toString());
             for (int k = 0; k < each_local; ++k) {
                 local[each_local * j + k] << values[k];
             }
             if (i == 0)
-                int_keys << key.toInt();
-            j++;
+                int_keys << j;
         }
     }
 

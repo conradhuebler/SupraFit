@@ -59,8 +59,8 @@ Blank::~Blank()
 void Blank::InitialGuess()
 {
 
-    m_local_parameter->data(0, 0) = 1;
-    m_local_parameter->data(1, 0) = 1;
+    LocalTable()->data(0, 0) = 1;
+    LocalTable()->data(1, 0) = 1;
 
     AbstractModel::Calculate();
 }
@@ -81,8 +81,8 @@ void Blank::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    qreal dil_heat = m_local_parameter->data(0, 0);
-    qreal dil_inter = m_local_parameter->data(1, 0);
+    qreal dil_heat = LocalTable()->data(0, 0);
+    qreal dil_inter = LocalTable()->data(1, 0);
 
     for (int i = 0; i < DataPoints(); ++i) {
 

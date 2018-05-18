@@ -176,6 +176,36 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
         return QVariant();
 }
 
+qreal& DataTable::operator[](int column)
+{
+    QReadLocker locker(&mutex);
+    m_empty = 0;
+
+    if (column < m_table.cols()) {
+        return m_table.operator()(0, column);
+    } else {
+        qDebug() << "Column exceeds size of table!";
+        return m_empty;
+    }
+}
+
+qreal& DataTable::operator()(int column, int row)
+{
+    QReadLocker locker(&mutex);
+    m_empty = 0;
+    if (row < m_table.rows())
+        if (column < m_table.cols()) {
+            return m_table.operator()(row, column);
+        } else {
+            qDebug() << "Column exceeds size of table!";
+            return m_empty;
+        }
+    else {
+        qDebug() << "Row exceeds size of table!";
+        return m_empty;
+    }
+}
+
 bool DataTable::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     if (role == Qt::EditRole) {

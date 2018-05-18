@@ -58,8 +58,8 @@ void Michaelis_Menten_Model::InitialGuess()
     LinearRegression regress = LeastSquares(x, y);
     m_vmax = 1 / regress.n;
     m_Km = regress.m * m_vmax;
-    m_global_parameter[0] = m_vmax;
-    m_global_parameter[1] = m_Km;
+    (*GlobalTable())[0] = m_vmax;
+    (*GlobalTable())[1] = m_Km;
     Calculate();
 }
 

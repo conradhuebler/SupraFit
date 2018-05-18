@@ -44,15 +44,15 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess()
 {
-    m_global_parameter[0] = Guess_1_1();
+    (*GlobalTable())[0] = Guess_1_1();
 
     qreal factor = 1;
     if (getOption(Method) == "UV/VIS") {
         factor = 1 / InitialHostConcentration(0);
     }
 
-    m_local_parameter->setColumn(DependentModel()->firstRow() * factor, 0);
-    m_local_parameter->setColumn(DependentModel()->lastRow() * factor, 1);
+    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
+    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 1);
 
     Calculate();
 }
@@ -97,9 +97,9 @@ void ItoI_Model::CalculateVariables()
 
         for (int j = 0; j < SeriesCount(); ++j) {
             if (method == "NMR")
-                value = host / host_0 * m_local_parameter->data(0, j) + complex / host_0 * m_local_parameter->data(1, j);
+                value = host / host_0 * LocalTable()->data(0, j) + complex / host_0 * LocalTable()->data(1, j);
             else if (method == "UV/VIS")
-                value = host * m_local_parameter->data(0, j) + complex * m_local_parameter->data(1, j);
+                value = host * LocalTable()->data(0, j) + complex * LocalTable()->data(1, j);
             SetValue(i, j, value);
         }
     }

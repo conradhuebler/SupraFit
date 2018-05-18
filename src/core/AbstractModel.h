@@ -45,15 +45,17 @@ public:
         , m_locked_parameters(other.m_locked_parameters)
         , m_enabled_global(other.m_enabled_global)
         , m_enabled_local(other.m_enabled_local)
-        , m_locked_global(other.m_locked_global)
-        , m_locked_local(other.m_locked_local)
+        , m_local_parameter(other.m_local_parameter)
+        , m_global_parameter(other.m_global_parameter)
     {
+        m_global_parameter->Debug();
     }
     ~AbstractModelPrivate() {}
 
     QMap<int, ModelOption> m_model_options;
     QList<int> m_locked_parameters;
-    QVector<int> m_enabled_local, m_enabled_global, m_locked_local, m_locked_global;
+    QVector<int> m_enabled_local, m_enabled_global;
+    QPointer<DataTable> m_local_parameter, m_global_parameter;
 };
 
 class AbstractModel : public DataClass {
@@ -225,7 +227,7 @@ public:
     }
 
     void SetSingleParameter(double value, int parameter);
-    void addGlobalParameter(QList<qreal>& vector);
+    void addGlobalParameter();
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
 
@@ -324,6 +326,26 @@ public:
      */
     inline DataTable* ErrorTable() const { return m_model_error; }
 
+    /*! \brief Returns pointer to Global DataTable
+     * overloaded function
+     */
+    inline DataTable* GlobalTable() { return d->m_global_parameter; }
+
+    /*! \brief Returns pointer to Global DataTable
+     * overloaded function
+     */
+    inline DataTable* GlobalTable() const { return d->m_global_parameter; }
+
+    /*! \brief Returns const pointer to Local DataTable
+     * overloaded function
+     */
+    inline DataTable* LocalTable() { return d->m_local_parameter; }
+
+    /*! \brief Returns const pointer to Local DataTable
+     * overloaded function
+     */
+    inline DataTable* LocalTable() const { return d->m_local_parameter; }
+
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     inline void setOptimizerConfig(const OptimizerConfig& config)
     {
@@ -340,15 +362,20 @@ public:
 
     qreal ModelError() const;
 
+    /*! \brief set the values of the global parameter to const QPointer<DataTable> list
+     */
+    virtual void setGlobalParameter(const QPointer<DataTable> list);
+
     /*! \brief set the values of the global parameter to const QList< qreal > &list
      */
     virtual void setGlobalParameter(const QList<qreal>& list);
-    /*! \brief return the list of global parameter values
+
+    /*! \brief return the list of global parameter values, overloaded function
      */
-    inline QList<qreal> GlobalParameter() const { return m_global_parameter; }
+    inline QPointer<DataTable> GlobalParameter() const { return GlobalTable(); }
     /*! \brief return i global parameter
      */
-    inline qreal GlobalParameter(int i) const { return m_global_parameter[i]; }
+    inline qreal GlobalParameter(int i) const { return (*GlobalTable())[i]; }
     /*! \brief returns size of global parameter
      */
     virtual int GlobalParameterSize() const = 0;
@@ -513,7 +540,6 @@ protected:
     QVector<double*> m_opt_para;
     QVector<QPair<int, int>> m_opt_index;
     QVector<qreal> m_parameter;
-    QList<qreal> m_global_parameter;
 
     QList<QJsonObject> m_mc_statistics;
     QList<QJsonObject> m_wg_statistics;
@@ -530,8 +556,8 @@ protected:
     int m_last_parameter, m_last_freedom;
     bool m_corrupt, m_converged, m_locked_model, m_fast;
     OptimizerConfig m_opt_config;
-    QPointer<DataTable> m_model_signal, m_model_error, m_local_parameter;
-
+    QPointer<DataTable> m_model_signal, m_model_error;
+    // QPointer<DataTable> m_local_parameter, m_global_parameter;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

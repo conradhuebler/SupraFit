@@ -52,12 +52,12 @@ itc_ItoI_Model::~itc_ItoI_Model()
 
 void itc_ItoI_Model::InitialGuess()
 {
-    m_global_parameter = QList<qreal>() << 6;
+    (*GlobalTable())[0] = 6;
 
-    m_local_parameter->data(0, 0) = -4000;
-    m_local_parameter->data(1, 0) = -1000;
-    m_local_parameter->data(2, 0) = 1;
-    m_local_parameter->data(3, 0) = 1;
+    LocalTable()->data(0, 0) = -4000;
+    LocalTable()->data(1, 0) = -1000;
+    LocalTable()->data(2, 0) = 1;
+    LocalTable()->data(3, 0) = 1;
 
     AbstractModel::Calculate();
 }
@@ -94,10 +94,10 @@ void itc_ItoI_Model::CalculateVariables()
     QString binding = getOption(Binding);
     QString dil = getOption(Dilution);
 
-    qreal dH = m_local_parameter->data(0, 0);
-    qreal dil_heat = m_local_parameter->data(1, 0);
-    qreal dil_inter = m_local_parameter->data(2, 0);
-    qreal fx = m_local_parameter->data(3, 0);
+    qreal dH = LocalTable()->data(0, 0);
+    qreal dil_heat = LocalTable()->data(1, 0);
+    qreal dil_inter = LocalTable()->data(2, 0);
+    qreal fx = LocalTable()->data(3, 0);
     qreal V = m_V;
 
     qreal complex_prev = 0;

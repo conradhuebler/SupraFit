@@ -61,12 +61,12 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
     QString cooperativitiy = getOption(Cooperativity);
 
     auto global_coop = [this]() {
-        this->m_global_parameter[1] = log10(double(0.25) * qPow(10, this->m_global_parameter[0]));
+        (*this->GlobalTable())[1] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[0]));
     };
 
     auto local_coop = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->m_local_parameter->data(2, i) = 2 * (this->m_local_parameter->data(1, i) - this->m_local_parameter->data(0, i)) + this->m_local_parameter->data(0, i);
+            this->LocalTable()->data(2, i) = 2 * (this->LocalTable()->data(1, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
     };
 
     if (cooperativitiy == "noncooperative") {
@@ -83,8 +83,8 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
     {
          for(int i = 0; i < SeriesCount(); ++i)
          {
-            this->m_local_parameter->data(0,i) = 0;
-            this->m_local_parameter->data(1,i) = 0;
+            this->LocalTable()->data(0,i) = 0;
+            this->LocalTable()->data(1,i) = 0;
          }
     }
     */
@@ -92,14 +92,15 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
 
 void fl_ItoI_ItoII_Model::InitialGuess()
 {
-    m_global_parameter = QList<qreal>() << 4 << 2;
+    (*GlobalTable())[0] = 4;
+    (*GlobalTable())[1] = 2;
 
     qreal factor = InitialHostConcentration(0);
 
-    m_local_parameter->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow() / factor / 1e4, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e4, 2);
-    m_local_parameter->setColumn(DependentModel()->lastRow() / factor / 1e4, 3);
+    LocalTable()->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
+    LocalTable()->setColumn(DependentModel()->firstRow() / factor / 1e4, 1);
+    LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e4, 2);
+    LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e4, 3);
 
     AbstractTitrationModel::Calculate();
 }
@@ -132,8 +133,8 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
     QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    qreal K12 = qPow(10, GlobalParameter().last());
-    qreal K11 = qPow(10, GlobalParameter().first());
+    qreal K11 = qPow(10, GlobalParameter(0));
+    qreal K12 = qPow(10, GlobalParameter(1));
 
     QVector<qreal> F0(SeriesCount());
 
@@ -159,10 +160,10 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
             if (i == 0) {
-                F0[j] = host_0 * m_local_parameter->data(0, j);
+                F0[j] = host_0 * LocalTable()->data(0, j);
                 value = F0[j];
             } else
-                value = (host * m_local_parameter->data(1, j) + complex_11 * m_local_parameter->data(2, j) + complex_12 * m_local_parameter->data(3, j));
+                value = (host * LocalTable()->data(1, j) + complex_11 * LocalTable()->data(2, j) + complex_12 * LocalTable()->data(3, j));
 
             SetValue(i, j, value * 1e3);
         }

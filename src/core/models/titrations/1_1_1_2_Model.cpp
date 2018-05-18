@@ -64,7 +64,7 @@ void ItoI_ItoII_Model::EvaluateOptions()
      * valid for statistical and noncooperative systems
      */
     auto global_coop = [this]() {
-        this->m_global_parameter[1] = log10(double(0.25) * qPow(10, this->m_global_parameter[0]));
+        (*this->GlobalTable())[1] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[0]));
     };
 
     /*
@@ -75,7 +75,7 @@ void ItoI_ItoII_Model::EvaluateOptions()
      */
     auto local_coop = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->m_local_parameter->data(2, i) = 2 * (this->m_local_parameter->data(1, i) - this->m_local_parameter->data(0, i)) + this->m_local_parameter->data(0, i);
+            this->LocalTable()->data(2, i) = 2 * (this->LocalTable()->data(1, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
     };
 
     if (cooperativitiy == "noncooperative") {
@@ -92,16 +92,17 @@ void ItoI_ItoII_Model::EvaluateOptions()
 void ItoI_ItoII_Model::InitialGuess()
 {
     qreal K11 = Guess_1_1();
-    m_global_parameter = QList<qreal>() << Guess_1_1() << K11 / 2;
+    (*GlobalTable())[0] = Guess_1_1();
+    (*GlobalTable())[1] = K11 / 2;
 
     qreal factor = 1;
     if (getOption(Method) == "UV/VIS") {
         factor = 1 / InitialHostConcentration(0);
     }
 
-    m_local_parameter->setColumn(DependentModel()->firstRow() * factor, 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow() * factor, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow() * factor, 2);
+    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
+    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
+    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
 
     Calculate();
 }
@@ -136,8 +137,8 @@ void ItoI_ItoII_Model::CalculateVariables()
     QString method = getOption(Method);
     m_sum_absolute = 0;
     m_sum_squares = 0;
-    qreal K12 = qPow(10, GlobalParameter().last());
-    qreal K11 = qPow(10, GlobalParameter().first());
+    qreal K11 = qPow(10, GlobalParameter(0));
+    qreal K12 = qPow(10, GlobalParameter(1));
 
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
@@ -161,9 +162,9 @@ void ItoI_ItoII_Model::CalculateVariables()
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
             if (method == "NMR")
-                value = host / host_0 * m_local_parameter->data(0, j) + complex_11 / host_0 * m_local_parameter->data(1, j) + complex_12 / host_0 * m_local_parameter->data(2, j);
+                value = host / host_0 * LocalTable()->data(0, j) + complex_11 / host_0 * LocalTable()->data(1, j) + complex_12 / host_0 * LocalTable()->data(2, j);
             else if (method == "UV/VIS")
-                value = host * m_local_parameter->data(0, j) + complex_11 * m_local_parameter->data(1, j) + complex_12 * m_local_parameter->data(2, j);
+                value = host * LocalTable()->data(0, j) + complex_11 * LocalTable()->data(1, j) + complex_12 * LocalTable()->data(2, j);
 
             SetValue(i, j, value);
         }

@@ -79,7 +79,7 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
      * valid for statistical and noncooperative systems
      */
     auto global_coop21 = [this]() {
-        this->m_global_parameter[0] = log10(double(0.25) * qPow(10, this->m_global_parameter[1]));
+        (*this->GlobalTable())[0] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
     };
 
     /*
@@ -90,7 +90,7 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
      */
     auto local_coop21 = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->m_local_parameter->data(1, i) = 2 * (this->m_local_parameter->data(2, i) - this->m_local_parameter->data(0, i)) + this->m_local_parameter->data(0, i);
+            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
     };
 
     if (coop21 == "noncooperative") {
@@ -110,7 +110,7 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
      * valid for statistical and noncooperative systems
      */
     auto global_coop12 = [this]() {
-        this->m_global_parameter[2] = log10(double(0.25) * qPow(10, this->m_global_parameter[1]));
+        (*this->GlobalTable())[2] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
     };
     /*
      * Chem. Soc. Rev., 2017, 46, 2622--2637
@@ -120,7 +120,7 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
      */
     auto local_coop12 = [this]() {
         for (int i = 0; i < this->SeriesCount(); ++i)
-            this->m_local_parameter->data(3, i) = 2 * (this->m_local_parameter->data(2, i) - this->m_local_parameter->data(0, i)) + this->m_local_parameter->data(0, i);
+            this->LocalTable()->data(3, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
     };
 
     if (coop12 == "noncooperative") {
@@ -137,18 +137,20 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
 void IItoI_ItoI_ItoII_Model::InitialGuess()
 {
     qreal K11 = Guess_1_1();
-    m_global_parameter = QList<qreal>() << 1 << K11 << 1;
-
+    //GlobalTable() = QList<qreal>() << 1 << K11 << 1;
+    (*GlobalTable())[0] = K11 / 2;
+    (*GlobalTable())[1] = Guess_1_1();
+    (*GlobalTable())[2] = K11 / 2;
     qreal factor = 1;
 
     if (getOption(Method) == "UV/VIS") {
         factor = 1 / InitialHostConcentration(0);
     }
 
-    m_local_parameter->setColumn(DependentModel()->firstRow() * factor, 0);
-    m_local_parameter->setColumn(DependentModel()->firstRow() * factor, 1);
-    m_local_parameter->setColumn(DependentModel()->lastRow() * factor, 2);
-    m_local_parameter->setColumn(DependentModel()->lastRow() * factor, 3);
+    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
+    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
+    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
+    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
 
     Calculate();
 }
@@ -159,9 +161,9 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    qreal K21 = qPow(10, GlobalParameter().first());
-    qreal K11 = qPow(10, GlobalParameter()[1]);
-    qreal K12 = qPow(10, GlobalParameter().last());
+    qreal K21 = qPow(10, GlobalParameter(0));
+    qreal K11 = qPow(10, GlobalParameter(1));
+    qreal K12 = qPow(10, GlobalParameter(2));
     m_constants_pow = QList<qreal>() << K21 << K11 << K12;
 
     int maxthreads = qApp->instance()->property("threads").toInt();
@@ -220,9 +222,9 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
             if (method == "NMR")
-                value = host / host_0 * m_local_parameter->data(0, j) + 2 * complex_21 / host_0 * m_local_parameter->data(1, j) + complex_11 / host_0 * m_local_parameter->data(2, j) + complex_12 / host_0 * m_local_parameter->data(3, j);
+                value = host / host_0 * LocalTable()->data(0, j) + 2 * complex_21 / host_0 * LocalTable()->data(1, j) + complex_11 / host_0 * LocalTable()->data(2, j) + complex_12 / host_0 * LocalTable()->data(3, j);
             else if (method == "UV/VIS")
-                value = host * m_local_parameter->data(0, j) + 2 * complex_21 * m_local_parameter->data(1, j) + complex_11 * m_local_parameter->data(2, j) + complex_12 * m_local_parameter->data(3, j);
+                value = host * LocalTable()->data(0, j) + 2 * complex_21 * LocalTable()->data(1, j) + complex_11 * LocalTable()->data(2, j) + complex_12 * LocalTable()->data(3, j);
 
             SetValue(i, j, value);
         }

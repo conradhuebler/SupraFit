@@ -83,16 +83,25 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
 void AbstractModel::PrepareParameter(int global, int local)
 {
-    m_local_parameter = new DataTable(local, SeriesCount(), this);
+    QStringList header;
 
-    m_global_parameter = QVector<qreal>(global, 0).toList();
+    if (!d->m_local_parameter)
+        d->m_local_parameter = new DataTable(local, SeriesCount(), this);
+    for (int i = 0; i < LocalParameterSize(); ++i)
+        header << LocalParameterName(i);
+    d->m_local_parameter->setHeader(header);
+
+    header = QStringList();
+    if (!d->m_global_parameter)
+        d->m_global_parameter = new DataTable(global, 1, this);
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        header << GlobalParameterName(i);
+    d->m_global_parameter->setHeader(header);
+
     d->m_enabled_global = QVector<int>(global, 0);
     d->m_enabled_local = QVector<int>(local, 0);
 
-    d->m_locked_global = QVector<int>(global, 0);
-    d->m_locked_local = QVector<int>(local, 0);
-
-    addGlobalParameter(m_global_parameter);
+    addGlobalParameter();
     DeclareSystemParameter();
     DeclareOptions();
     LoadSystemParameter();
@@ -105,6 +114,12 @@ AbstractModel::~AbstractModel()
 
     if (m_model_error)
         delete m_model_error;
+
+    /*  if(m_global_parameter)
+        delete m_global_parameter;
+
+    if(m_local_parameter)
+        delete m_local_parameter;*/
 }
 
 QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
@@ -137,12 +152,20 @@ void AbstractModel::clearOptParameter()
         d->m_enabled_global[i] = 0;
 }
 
+void AbstractModel::setGlobalParameter(const QPointer<DataTable> list)
+{
+    if (list->columnCount() != GlobalTable()->columnCount())
+        return;
+    for (int i = 0; i < list->columnCount(); ++i)
+        (*GlobalTable())[i] = (*list)[i];
+}
+
 void AbstractModel::setGlobalParameter(const QList<qreal>& list)
 {
-    if (list.size() != m_global_parameter.size())
+    if (list.size() != GlobalTable()->columnCount())
         return;
     for (int i = 0; i < list.size(); ++i)
-        m_global_parameter[i] = list[i];
+        (*GlobalTable())[i] = list[i];
 }
 
 void AbstractModel::SetValue(int i, int j, qreal value)
@@ -169,7 +192,7 @@ void AbstractModel::SetValue(int i, int j, qreal value)
 
 void AbstractModel::Calculate()
 {
-    if (!m_local_parameter)
+    if (!LocalTable())
         return; // make sure, that PrepareParameter() has been called from subclass
     m_corrupt = false;
     m_mean = 0;
@@ -359,60 +382,60 @@ void AbstractModel::setParameter(const QVector<qreal>& parameter)
 
 qreal AbstractModel::LocalParameter(int parameter, int series) const
 {
-    if (series >= m_local_parameter->rowCount() || parameter >= m_local_parameter->columnCount())
+    if (series >= LocalTable()->rowCount() || parameter >= LocalTable()->columnCount())
         return 0;
     else
-        return m_local_parameter->data(parameter, series);
+        return LocalTable()->data(parameter, series);
 }
 
 QVector<qreal> AbstractModel::getLocalParameterColumn(int parameter) const
 {
     QVector<qreal> column;
-    if (parameter >= m_local_parameter->columnCount())
+    if (parameter >= LocalTable()->columnCount())
         return column;
     else {
-        for (int i = 0; i < m_local_parameter->rowCount(); ++i)
-            column << m_local_parameter->data(parameter, i);
+        for (int i = 0; i < LocalTable()->rowCount(); ++i)
+            column << LocalTable()->data(parameter, i);
     }
     return column;
 }
 
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
-    //if(parameter < m_local_parameter->rowCount() && series < m_local_parameter->columnCount())
+    //if(parameter < LocalTable()->rowCount() && series < LocalTable()->columnCount())
     {
-        m_local_parameter->data(parameter, series) = value;
+        LocalTable()->data(parameter, series) = value;
     }
 }
 
 void AbstractModel::setLocalParameterColumn(const QVector<qreal>& vector, int parameter)
 {
-    if (parameter < m_local_parameter->columnCount())
-        m_local_parameter->setColumn(vector, parameter);
+    if (parameter < LocalTable()->columnCount())
+        LocalTable()->setColumn(vector, parameter);
 }
 
 void AbstractModel::setLocalParameterColumn(const Vector& vector, int parameter)
 {
-    if (parameter < m_local_parameter->columnCount())
-        m_local_parameter->setColumn(vector, parameter);
+    if (parameter < LocalTable()->columnCount())
+        LocalTable()->setColumn(vector, parameter);
 }
 
 void AbstractModel::setLocalParameterSeries(const QVector<qreal>& vector, int series)
 {
-    if (series < m_local_parameter->rowCount())
-        m_local_parameter->setRow(vector, series);
+    if (series < LocalTable()->rowCount())
+        LocalTable()->setRow(vector, series);
 }
 
 void AbstractModel::setLocalParameterSeries(const Vector& vector, int series)
 {
-    if (series < m_local_parameter->rowCount())
-        m_local_parameter->setRow(vector, series);
+    if (series < LocalTable()->rowCount())
+        LocalTable()->setRow(vector, series);
 }
 
-void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
+void AbstractModel::addGlobalParameter()
 {
-    for (int i = 0; i < parameter.size(); ++i) {
-        m_opt_para << &parameter[i];
+    for (int i = 0; i < GlobalTable()->columnCount(); ++i) {
+        m_opt_para << &(*GlobalTable())[i];
         m_opt_index << QPair<int, int>(i, 0);
         d->m_enabled_global[i] = 1;
     }
@@ -420,8 +443,8 @@ void AbstractModel::addGlobalParameter(QList<qreal>& parameter)
 
 void AbstractModel::addGlobalParameter(int i)
 {
-    if (i < m_global_parameter.size()) {
-        m_opt_para << &m_global_parameter[i];
+    if (i < GlobalTable()->columnCount()) {
+        m_opt_para << &(*GlobalTable())[i];
         d->m_enabled_global[i] = 1;
         m_opt_index << QPair<int, int>(i, 0);
     }
@@ -429,10 +452,10 @@ void AbstractModel::addGlobalParameter(int i)
 
 void AbstractModel::addLocalParameter(int i)
 {
-    for (int j = 0; j < m_local_parameter->rowCount(); ++j) {
+    for (int j = 0; j < LocalTable()->rowCount(); ++j) {
         if (!ActiveSignals(j))
             continue;
-        m_opt_para << &m_local_parameter->data(i, j);
+        m_opt_para << &LocalTable()->data(i, j);
         m_opt_index << QPair<int, int>(i, 1);
     }
     d->m_enabled_local[i] = 1;
@@ -547,7 +570,7 @@ QString AbstractModel::Model2Text() const
         text += GlobalParameterName(i) + "\t\t: " + formatedGlobalParameter(GlobalParameter(i), i) + "\n";
     if (SupportSeries()) {
         text += "Local parameter for model\n";
-        text += m_local_parameter->ExportAsString();
+        text += LocalTable()->ExportAsString();
     } else {
         for (int i = 0; i < LocalParameterSize(); ++i)
             text += LocalParameterName(i) + "\t\t: " + QString::number(LocalParameter(i, 0)) + "\n";
@@ -591,7 +614,7 @@ QString AbstractModel::Local2Text() const
     text += "#### Current Model Results #####\n";
     if (SupportSeries()) {
         text += "Local parameter for model\n";
-        text += m_local_parameter->ExportAsString();
+        text += LocalTable()->ExportAsString();
     } else {
         for (int i = 0; i < LocalParameterSize(); ++i)
             text += LocalParameterName(i) + "\t\t: " + QString::number(LocalParameter(i, 0)) + "\n";
@@ -602,15 +625,15 @@ QString AbstractModel::Local2Text() const
 QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
 {
     QJsonObject json, toplevel;
-    QJsonObject constantObject, optionObject;
-    QString names;
+    QJsonObject optionObject;
+    /*QString names;
     for (int i = 0; i < GlobalParameter().size(); ++i) {
         constantObject[QString::number(i)] = (QString::number(GlobalParameter()[i]));
         names += GlobalParameterName(i) + "|";
     }
     names.chop(1);
-    constantObject["names"] = names;
-    json["globalParameter"] = constantObject;
+    constantObject["names"] = names;*/
+    json["globalParameter"] = GlobalTable()->ExportTable(true); //constantObject;
 
     if (statistics) {
         QJsonObject statisticObject;
@@ -632,21 +655,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
         json["statistics"] = statisticObject;
     }
 
-    /*if (LocalParameterSize()) {
-        QJsonObject localParameter;
-        for (int i = 0; i < m_local_parameter->rowCount(); ++i)
-            if (ActiveSignals(i))
-                localParameter[QString::number(i)] = (ToolSet::DoubleList2String(m_local_parameter->Row(i)));
-
-        names = QString();
-        for (int i = 0; i < LocalParameterSize(); ++i)
-            names += LocalParameterName(i) + "|";
-
-        names.chop(1);
-        localParameter["names"] = names;
-        json["localParameter"] = localParameter;
-    }*/
-    json["localParameter"] = m_local_parameter->ExportTable(true);
+    json["localParameter"] = LocalTable()->ExportTable(true);
     json["locked"] = ToolSet::IntVec2String(d->m_locked_parameters.toVector());
     for (int index : getAllOptions())
         optionObject[QString::number(index)] = getOption(index);
@@ -689,13 +698,13 @@ void AbstractModel::DebugOptions() const
 
 QVector<qreal> AbstractModel::AllParameter() const
 {
-    QVector<qreal> parameter = m_global_parameter.toVector();
+    QVector<qreal> parameter = GlobalTable()->toList();
 
-    for (int r = 0; r < m_local_parameter->rowCount(); ++r)
-        for (int c = 0; c < m_local_parameter->columnCount(); ++c) {
-
-            parameter << m_local_parameter->data(c, r);
+    for (int r = 0; r < LocalTable()->rowCount(); ++r) {
+        for (int c = 0; c < LocalTable()->columnCount(); ++c) {
+            parameter << LocalTable()->data(c, r);
         }
+    }
     return parameter;
 }
 
@@ -722,17 +731,19 @@ void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     QList<qreal> constants;
     QJsonObject globalParameter, optionObject;
 
-    if (json.contains("globalParameter"))
-        globalParameter = json["globalParameter"].toObject();
-    else if (json.contains("constants"))
-        globalParameter = json["constants"].toObject();
-    else {
-        qWarning() << "No global parameter found!";
-    }
-    for (int i = 0; i < GlobalParameter().size(); ++i) {
-        constants << globalParameter[QString::number(i)].toString().toDouble();
-    }
-    setGlobalParameter(constants);
+    if (fileversion < 1602) {
+        if (json.contains("globalParameter"))
+            globalParameter = json["globalParameter"].toObject();
+        else if (json.contains("constants"))
+            globalParameter = json["constants"].toObject();
+        else {
+            qWarning() << "No global parameter found!";
+        }
+        for (int i = 0; i < GlobalParameterSize(); ++i) {
+            (*GlobalTable())[i] = globalParameter[QString::number(i)].toString().toDouble();
+        }
+    } else
+        GlobalTable()->ImportTable(json["globalParameter"].toObject());
 
     optionObject = topjson["options"].toObject();
     for (int index : getAllOptions())
@@ -795,7 +806,7 @@ void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
                         localVector = QVector<qreal>(LocalParameterSize(), 0);
                         active_signals << 0;
                     }
-                    m_local_parameter->setRow(localVector, i);
+                    LocalTable()->setRow(localVector, i);
                 }
             }
         } else if (json.contains("pureShift")) {
@@ -813,18 +824,17 @@ void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
                 else
                     active_signals << 0;
 
-                for (int j = 0; j < GlobalParameter().size(); ++j) {
+                for (int j = 0; j < GlobalParameterSize(); ++j) {
                     QJsonObject object = json["shift_" + QString::number(j)].toObject();
                     localSeries << object[QString::number(i)].toString().toDouble();
                 }
-                m_local_parameter->setRow(localSeries, i);
+                LocalTable()->setRow(localSeries, i);
             }
         }
 
     } else {
         active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
-        qDebug() << active_signals << json["active_series"].toString();
-        m_local_parameter->ImportTable(json["localParameter"].toObject());
+        LocalTable()->ImportTable(json["localParameter"].toObject());
     }
     setActiveSignals(active_signals);
     if (topjson["runtype"].toInt() != 0)
@@ -883,10 +893,10 @@ AbstractModel& AbstractModel::operator=(const AbstractModel& other)
     m_model_signal = other.m_model_signal;
     m_model_error = other.m_model_error;
 
-    m_local_parameter = other.m_local_parameter;
     m_active_signals = other.m_active_signals;
     d = other.d;
-    m_global_parameter = other.m_global_parameter;
+    //m_global_parameter = other.m_global_parameter;
+    //m_local_parameter = other.m_local_parameter;
 
     m_mc_statistics = other.m_mc_statistics;
     m_wg_statistics = other.m_wg_statistics;
@@ -914,10 +924,10 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
     m_model_signal = other->m_model_signal;
     m_model_error = other->m_model_error;
 
-    m_local_parameter = other->m_local_parameter;
     m_active_signals = other->m_active_signals;
     d = other->d;
-    m_global_parameter = other->m_global_parameter;
+    //m_global_parameter = other->m_global_parameter;
+    //m_local_parameter = other->m_local_parameter;
 
     m_mc_statistics = other->m_mc_statistics;
     m_wg_statistics = other->m_wg_statistics;
