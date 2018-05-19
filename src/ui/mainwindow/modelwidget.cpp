@@ -130,7 +130,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_statistic_widget = new StatisticWidget(m_model, this);
 
     m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
-    //m_results->Attention();
 
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -167,7 +166,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
             if (this->m_model) {
                 m_model->GlobalTable()->setChecked(i, 0, state);
             }
-            m_model->GlobalTable()->Debug();
         });
 
         hlayout->addWidget(new QLabel(m_model->GlobalParameterName(i)));

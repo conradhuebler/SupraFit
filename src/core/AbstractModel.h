@@ -45,24 +45,17 @@ public:
         , m_locked_parameters(other.m_locked_parameters)
         , m_enabled_global(other.m_enabled_global)
         , m_enabled_local(other.m_enabled_local)
-        , m_local_parameter(other.m_local_parameter)
-        , m_global_parameter(other.m_global_parameter)
     {
     }
     ~AbstractModelPrivate()
     {
 
-        /*    if(m_global_parameter)
-            delete m_global_parameter;
 
-        if(m_local_parameter)
-            delete m_local_parameter;*/
     }
 
     QMap<int, ModelOption> m_model_options;
     QList<int> m_locked_parameters;
     QVector<int> m_enabled_local, m_enabled_global;
-    QPointer<DataTable> m_local_parameter, m_global_parameter;
 };
 
 class AbstractModel : public DataClass {
@@ -336,22 +329,22 @@ public:
     /*! \brief Returns pointer to Global DataTable
      * overloaded function
      */
-    inline DataTable* GlobalTable() { return d->m_global_parameter; }
+    inline DataTable* GlobalTable() { return m_global_parameter; }
 
     /*! \brief Returns pointer to Global DataTable
      * overloaded function
      */
-    inline DataTable* GlobalTable() const { return d->m_global_parameter; }
+    inline DataTable* GlobalTable() const { return m_global_parameter; }
 
     /*! \brief Returns const pointer to Local DataTable
      * overloaded function
      */
-    inline DataTable* LocalTable() { return d->m_local_parameter; }
+    inline DataTable* LocalTable() { return m_local_parameter; }
 
     /*! \brief Returns const pointer to Local DataTable
      * overloaded function
      */
-    inline DataTable* LocalTable() const { return d->m_local_parameter; }
+    inline DataTable* LocalTable() const { return m_local_parameter; }
 
     inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
     inline void setOptimizerConfig(const OptimizerConfig& config)
@@ -564,7 +557,7 @@ protected:
     bool m_corrupt, m_converged, m_locked_model, m_fast;
     OptimizerConfig m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
-    // QPointer<DataTable> m_local_parameter, m_global_parameter;
+    QPointer<DataTable> m_local_parameter, m_global_parameter;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

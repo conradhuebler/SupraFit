@@ -85,18 +85,18 @@ void AbstractModel::PrepareParameter(int global, int local)
 {
     QStringList header;
 
-    if (!d->m_local_parameter)
-        d->m_local_parameter = new DataTable(local, SeriesCount(), this);
+    if (!LocalTable())
+        m_local_parameter = new DataTable(local, SeriesCount(), this);
     for (int i = 0; i < LocalParameterSize(); ++i)
         header << LocalParameterName(i);
-    d->m_local_parameter->setHeader(header);
+    LocalTable()->setHeader(header);
 
     header = QStringList();
-    if (!d->m_global_parameter)
-        d->m_global_parameter = new DataTable(global, 1, this);
+    if (!GlobalTable())
+        m_global_parameter = new DataTable(global, 1, this);
     for (int i = 0; i < GlobalParameterSize(); ++i)
         header << GlobalParameterName(i);
-    d->m_global_parameter->setHeader(header);
+    GlobalTable()->setHeader(header);
 
     d->m_enabled_global = QVector<int>(global, 0);
     d->m_enabled_local = QVector<int>(local, 0);

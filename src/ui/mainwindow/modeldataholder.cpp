@@ -698,9 +698,8 @@ void ModelDataHolder::CompareReduction()
     if (!m_compare_dialog)
         return;
 
-    qreal cutoff = m_compare_dialog->CutOff(); //QInputDialog::getDouble(this, tr("Set CutOff"), tr("Set cutoff for comparison of reduction analysis"), 1.8, 0, 1e6, 4, &ok);
-
-    bool local = m_compare_dialog->Local(); //(QMessageBox::Yes == QMessageBox(QMessageBox::Information, "Choose Parameter", "Only Global parameter! (Don't include Local)", QMessageBox::Yes | QMessageBox::No).exec());
+    qreal cutoff = m_compare_dialog->CutOff();
+    bool local = m_compare_dialog->Local();
 
     QVector<QPair<QJsonObject, QVector<int>>> models;
     for (int i = 1; i < m_modelsWidget->count(); i++) {
