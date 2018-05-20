@@ -70,15 +70,12 @@ QVector<qreal> itc_n_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
     if ((OptimizationType::LocalParameter & type) == OptimizationType::LocalParameter) {
         addLocalParameter(0);
 
-        QString binding = getOption(Binding);
         QString dilution = getOption(Dilution);
         if (dilution == "auto") {
             addLocalParameter(1);
             addLocalParameter(2);
         }
-        if (binding == "pytc" || binding == "multiple") {
-            addLocalParameter(3);
-        }
+        addLocalParameter(3);
     }
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
@@ -91,7 +88,6 @@ void itc_n_ItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    QString binding = getOption(Binding);
     QString dil = getOption(Dilution);
 
     qreal dH = LocalTable()->data(0, 0);

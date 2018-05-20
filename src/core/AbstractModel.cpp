@@ -48,6 +48,7 @@ AbstractModel::AbstractModel(DataClass* data)
     , m_fast(true)
 {
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
+
     connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
     d = new AbstractModelPrivate;
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());

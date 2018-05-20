@@ -74,16 +74,14 @@ QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private(OptimizationType type
         addLocalParameter(0);
         addLocalParameter(1);
 
-        QString binding = getOption(Binding);
         QString dilution = getOption(Dilution);
 
         if (dilution == "auto") {
             addLocalParameter(2);
             addLocalParameter(3);
         }
-        if (binding == "pytc" || binding == "multiple") {
-            addLocalParameter(4);
-        }
+
+        addLocalParameter(4);
     }
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
@@ -96,7 +94,6 @@ void itc_IItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    QString binding = getOption(Binding);
     QString dil = getOption(Dilution);
 
     qreal dH2 = LocalTable()->data(0, 0);
@@ -115,9 +112,8 @@ void itc_IItoI_Model::CalculateVariables()
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
-        if (binding == "pytc") {
-            host_0 *= fx;
-        }
+        host_0 *= fx;
+
         qreal dilution = 0;
         if (dil == "auto") {
             dilution = (guest_0 * dil_heat + dil_inter);
@@ -140,8 +136,7 @@ void itc_IItoI_Model::CalculateVariables()
             SetConcentration(i, vector);
 
         qreal value = V * ((complex_11 - complex_11_prev * (1 - v / V)) * dH1 + (complex_21 - complex_21_prev * (1 - v / V)) * dH2);
-        if (binding == "multiple")
-            value *= fx;
+
         SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
         complex_21_prev = complex_21;

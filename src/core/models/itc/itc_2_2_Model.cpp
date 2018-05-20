@@ -50,12 +50,6 @@ itc_IItoII_Model::itc_IItoII_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-
-    /* m_V = model->getV();
-   m_cell_concentration = model->getCellConcentration();
-   m_syringe_concentration = model->getSyringeConcentration();
-   m_T = model->getT();*/
-
     m_threadpool = new QThreadPool(this);
     for (int i = 0; i < DataPoints(); ++i)
         m_solvers << new IItoI_ItoI_ItoII_Solver();
@@ -96,16 +90,13 @@ QVector<qreal> itc_IItoII_Model::OptimizeParameters_Private(OptimizationType typ
         addLocalParameter(1);
         addLocalParameter(2);
 
-        QString binding = getOption(Binding);
         QString dilution = getOption(Dilution);
 
         if (dilution == "auto") {
             addLocalParameter(3);
             addLocalParameter(4);
         }
-        if (binding == "pytc" || binding == "multiple") {
-            addLocalParameter(5);
-        }
+        addLocalParameter(5);
     }
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
@@ -121,7 +112,6 @@ void itc_IItoII_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    QString binding = getOption(Binding);
     QString dil = getOption(Dilution);
 
     qreal dH21 = LocalTable()->data(0, 0);
@@ -145,9 +135,8 @@ void itc_IItoII_Model::CalculateVariables()
     m_threadpool->setMaxThreadCount(maxthreads);
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
-        if (binding == "pytc") {
-            host_0 *= fx;
-        }
+        host_0 *= fx;
+
         qreal guest_0 = InitialGuestConcentration(i);
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
@@ -203,8 +192,7 @@ void itc_IItoII_Model::CalculateVariables()
             SetConcentration(i, vector);
 
         qreal value = V * ((complex_21 - complex_21_prev * (1 - v / V)) * dH21 + ((complex_11 - complex_11_prev * (1 - v / V)) * dH11) + ((complex_12 - complex_12_prev * (1 - v / V)) * dH12));
-        if (binding == "multiple")
-            value *= fx;
+
         SetValue(i, 0, value + dilution);
         complex_21_prev = complex_21;
         complex_11_prev = complex_11;

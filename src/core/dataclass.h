@@ -151,6 +151,16 @@ private:
     bool m_checkable, m_editable;
 };
 
+class DataClassPrivateObject : public QObject {
+    Q_OBJECT
+public:
+    DataClassPrivateObject() {}
+
+signals:
+    void SystemParameterChanged();
+    void SystemParameterLoaded();
+};
+
 class DataClassPrivate : public QSharedData {
 
 public:
@@ -172,7 +182,7 @@ public:
     QPointer<DataTable> m_dependent_model, m_independent_model, m_raw_data;
     QList<qreal> m_scaling;
     QMap<int, SystemParameter> m_system_parameter;
-
+    QPointer<DataClassPrivateObject> m_info;
     void check();
 };
 

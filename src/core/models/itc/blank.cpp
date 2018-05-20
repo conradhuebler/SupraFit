@@ -38,7 +38,6 @@ Blank::Blank(DataClass* data)
     : AbstractItcModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-    RemoveOption(Binding);
     RemoveOption(Dilution);
     RemoveSystemParameter(CellConcentration);
 }
@@ -47,7 +46,6 @@ Blank::Blank(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-    RemoveOption(Binding);
     RemoveOption(Dilution);
     RemoveSystemParameter(CellConcentration);
 }

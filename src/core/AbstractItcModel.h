@@ -42,8 +42,7 @@ public:
     };
 
     enum {
-        Binding = 1,
-        Dilution = 2,
+        Dilution = 2
     };
 
     AbstractItcModel(DataClass* data);

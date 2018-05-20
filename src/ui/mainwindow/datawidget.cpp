@@ -171,7 +171,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     settings.beginGroup("overview");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
-    connect(m_data.data(), SIGNAL(SystemParameterLoaded()), this, SLOT(MakeSystemParameter()));
+    //connect(m_data.data(), SIGNAL(SystemParameterLoaded()), this, SLOT(MakeSystemParameter()));
 }
 
 void DataWidget::switchHG()
@@ -222,10 +222,11 @@ void DataWidget::HidePoint()
 
 void DataWidget::MakeSystemParameter()
 {
+    /*
     if (m_system_parameter_loaded)
         return;
     m_splitter->addWidget(new SPOverview(m_data.data()));
-    m_system_parameter_loaded = true;
+    m_system_parameter_loaded = true;*/
 }
 
 void DataWidget::LinearAnalysis()

@@ -72,7 +72,8 @@ SystemParameter SystemParameterWidget::Value()
         m_parameter.setValue(m_textfield->text().replace(",", "."));
     else if (m_parameter.isBool())
         m_parameter.setValue(m_boolbox->isChecked());
-
+    else if (m_parameter.isList())
+        m_parameter.setValue(m_list->currentText());
     return m_parameter;
 }
 
@@ -82,8 +83,10 @@ void SystemParameterWidget::setValue(const SystemParameter& parameter)
     QVariant variant = parameter.value();
     if (m_parameter.isScalar() || m_parameter.isString())
         m_textfield->setText(variant.toString());
-    else
+    else if (m_parameter.isBool())
         m_boolbox->setChecked(variant.toBool());
+    else if (m_parameter.isList())
+        m_list->setCurrentText(variant.toString());
     m_change = false;
 }
 

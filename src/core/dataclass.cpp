@@ -557,6 +557,7 @@ bool DataTable::ImportTable(const QJsonObject& table)
 DataClassPrivate::DataClassPrivate()
     : m_maxsize(0)
     , m_host_assignment(0)
+    , m_info(new DataClassPrivateObject)
 {
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
@@ -573,6 +574,7 @@ DataClassPrivate::DataClassPrivate(int type)
     : m_type(type)
     , m_maxsize(0)
     , m_host_assignment(0)
+    , m_info(new DataClassPrivateObject)
 {
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
@@ -587,6 +589,7 @@ DataClassPrivate::DataClassPrivate(int type)
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     : QSharedData(other)
+    , m_info(other.m_info)
 {
     m_independent_model = new DataTable(other.m_independent_model);
 
@@ -599,6 +602,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
+    : m_info(other->m_info)
 {
     m_independent_model = new DataTable(other->m_independent_model);
 
@@ -618,6 +622,8 @@ DataClassPrivate::~DataClassPrivate()
         delete m_dependent_model;
     if (m_raw_data)
         delete m_raw_data;
+    if (m_info)
+        delete m_info;
 }
 
 void DataClassPrivate::check()
@@ -632,6 +638,7 @@ DataClass::DataClass(QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate;
+    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
 DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
@@ -643,12 +650,14 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
     if (d->m_independent_model->columnCount() != d->m_scaling.size())
         for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
             d->m_scaling << 1;
+    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
 DataClass::DataClass(int type, QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate(type);
+    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
 DataClass::DataClass(const DataClass& other)
@@ -656,6 +665,7 @@ DataClass::DataClass(const DataClass& other)
 {
     d = other.d;
     m_systemObject = other.m_systemObject;
+    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
 DataClass::DataClass(const DataClass* other)
@@ -663,6 +673,7 @@ DataClass::DataClass(const DataClass* other)
 {
     d = other->d;
     m_systemObject = other->m_systemObject;
+    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
 DataClass::~DataClass()
@@ -852,7 +863,7 @@ void DataClass::setSystemParameterValue(int index, const QVariant& value)
     SystemParameter parameter = getSystemParameter(index);
     parameter.setValue(value);
     d->m_system_parameter[index] = parameter;
-    emit SystemParameterChanged();
+    // emit d->m_info->SystemParameterChanged();
 }
 
 void DataClass::setSystemParameterList(int index, const QStringList& value)
@@ -869,7 +880,7 @@ void DataClass::setSystemParameter(const SystemParameter& parameter)
     int index = parameter.Index();
     if (d->m_system_parameter.contains(index))
         d->m_system_parameter[index] = parameter;
-    emit SystemParameterChanged();
+    emit d->m_info->SystemParameterChanged();
 }
 
 void DataClass::WriteSystemParameter()
