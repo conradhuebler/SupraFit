@@ -19,6 +19,7 @@
 #include "src/core/AbstractModel.h"
 
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
@@ -34,6 +35,7 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, Q
 {
     m_textfield = new QLineEdit;
     m_boolbox = new QCheckBox;
+    m_list = new QComboBox;
     QLabel* label = new QLabel(parameter.Description());
     label->setFixedWidth(250);
     connect(m_textfield, SIGNAL(textChanged(QString)), this, SLOT(PrepareChanged()));
@@ -47,6 +49,11 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, Q
         layout->addWidget(m_textfield);
     else if (parameter.isBool())
         layout->addWidget(m_boolbox);
+
+    else if (parameter.isList()) {
+        layout->addWidget(m_list);
+        m_list->addItems(parameter.getList());
+    }
 
     if (parameter.isBool())
         m_boolbox->setChecked(parameter.Bool());

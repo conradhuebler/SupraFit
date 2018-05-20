@@ -22,6 +22,7 @@
 #include "src/core/AbstractModel.h"
 
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLayout>
@@ -40,6 +41,7 @@ public:
 private:
     QLineEdit* m_textfield;
     QCheckBox* m_boolbox;
+    QComboBox* m_list;
     SystemParameter m_parameter;
     bool m_change;
 
@@ -57,12 +59,12 @@ public:
         : m_data(data)
     {
         QVBoxLayout* layout = new QVBoxLayout;
-
+        QHBoxLayout* hlayout = new QHBoxLayout;
         layout->setAlignment(Qt::AlignTop);
 
         for (int index : m_data->getSystemParameterList()) {
             QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), this);
-            layout->addWidget(widget);
+            hlayout->addWidget(widget);
             connect(widget, &SystemParameterWidget::valueChanged,
                 [index, widget, this]() {
                     if (widget) {
@@ -76,6 +78,10 @@ public:
                         widget->setValue(m_data->getSystemParameter(index));
                     }
                 });
+            if (index % 2 == 0 && index) {
+                layout->addLayout(hlayout);
+                hlayout = new QHBoxLayout;
+            }
         }
 
         setLayout(layout);

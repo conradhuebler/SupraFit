@@ -68,11 +68,23 @@ AbstractItcModel::~AbstractItcModel()
 void AbstractItcModel::DeclareSystemParameter()
 {
     QChar mu = QChar(956);
+
     addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
     addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
     addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mol/L", SystemParameter::Scalar);
+
     addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mol/L", SystemParameter::Scalar);
     setSystemParameterValue(Temperature, 298);
+
+    addSystemParameter(Reservoir, "Cell Volume constant", "Keep the volume in cell constant", SystemParameter::Boolean);
+    setSystemParameterValue(Reservoir, true);
+
+    addSystemParameter(InptUnit, "Unit", "Observed heat in", SystemParameter::List);
+    QStringList units = QStringList() << QString(mu) + " cal" << QString(mu) + "J"
+                                      << "mcal"
+                                      << "mJ";
+    setSystemParameterList(InptUnit, units);
+    setSystemParameterValue(InptUnit, 0);
 }
 
 void AbstractItcModel::DeclareOptions()
@@ -84,10 +96,10 @@ void AbstractItcModel::DeclareOptions()
     QStringList cooperativity = QStringList() << "pytc" /*<< "multiple"*/ << "single";
     addOption(Binding, "Binding", cooperativity);
 
-    QStringList reservoir = QStringList() << "constant"
+    /*QStringList reservoir = QStringList() << "constant"
                                           << "variable";
     addOption(Reservoir, "Volume", reservoir);
-    setOption(Reservoir, "constant");
+    setOption(Reservoir, "constant");*/
 }
 
 void AbstractItcModel::CalculateConcentrations()
@@ -101,7 +113,7 @@ void AbstractItcModel::CalculateConcentrations()
         return;
 
     qreal V_cell = m_V;
-    bool reservoir = getOption(Reservoir) == "constant";
+    bool reservoir = m_reservior;
 
     qreal cell = m_cell_concentration * emp_exp;
     qreal gun = m_syringe_concentration * emp_exp;
@@ -188,6 +200,7 @@ void AbstractItcModel::UpdateParameter()
     m_cell_concentration = getSystemParameter(CellConcentration).Double();
     m_syringe_concentration = getSystemParameter(SyringeConcentration).Double();
     m_T = getSystemParameter(Temperature).Double();
+    m_reservior = getSystemParameter(Reservoir).Bool();
     Concentration();
 }
 
@@ -198,8 +211,8 @@ QString AbstractItcModel::ModelInfo() const
 
 void AbstractItcModel::UpdateOption(int index, const QString& str)
 {
-    if (index == Reservoir)
-        Concentration();
+    /*if (index == Reservoir)
+        Concentration();*/
 }
 
 #include "AbstractItcModel.moc"

@@ -36,13 +36,14 @@ public:
         CellVolume = 1,
         CellConcentration = 2,
         SyringeConcentration = 3,
-        Temperature = 4
+        Temperature = 4,
+        Reservoir = 5,
+        InptUnit = 6
     };
 
     enum {
         Binding = 1,
         Dilution = 2,
-        Reservoir = 3
     };
 
     AbstractItcModel(DataClass* data);
@@ -115,4 +116,5 @@ protected:
     QPointer<DataTable> m_c0, m_concentrations;
     void Concentration() { CalculateConcentrations(); }
     double m_V, m_cell_concentration, m_syringe_concentration, m_T;
+    bool m_reservior = true;
 };

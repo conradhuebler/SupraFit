@@ -39,7 +39,8 @@ public:
     enum Type {
         String = 0,
         Scalar = 1,
-        Boolean = 2
+        Boolean = 2,
+        List = 3
     };
 
     inline SystemParameter(int index, const QString& name, const QString& description, Type type)
@@ -47,6 +48,7 @@ public:
         , m_name(name)
         , m_description(description)
         , m_type(type)
+        , m_list(QStringList())
     {
     }
     inline SystemParameter() {}
@@ -56,17 +58,23 @@ public:
     inline QString Name() const { return m_name; }
     inline qreal Double() const { return m_value.toDouble(); }
     inline bool Bool() const { return m_value.toBool(); }
+    inline QString getString() const { return m_value.toString(); }
+    inline QStringList getList() const { return m_list; }
     inline QString Description() const { return m_description; }
     inline void setValue(const QVariant& value) { m_value = value; }
     inline bool isBool() const { return m_type == 2; }
     inline bool isString() const { return m_type == 0; }
     inline bool isScalar() const { return m_type == 1; }
+    inline bool isList() const { return m_type == 3; }
     inline int Index() const { return m_index; }
+
+    inline void setList(const QStringList& list) { m_list = list; }
 
 private:
     Type m_type;
     QString m_name, m_description;
     QVariant m_value;
+    QStringList m_list;
     int m_index;
 };
 
@@ -255,6 +263,10 @@ public:
     /*! \brief Set the value of the system parameter
      */
     void setSystemParameterValue(int index, const QVariant& value);
+
+    /*! \brief Set the value of the system parameter list
+     */
+    void setSystemParameterList(int index, const QStringList& value);
 
     /*! \brief set a systemparameter to the given one
      */
