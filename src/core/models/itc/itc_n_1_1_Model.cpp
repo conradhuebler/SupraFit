@@ -62,12 +62,10 @@ void itc_n_ItoI_Model::InitialGuess()
     AbstractModel::Calculate();
 }
 
-QVector<qreal> itc_n_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> itc_n_ItoI_Model::OptimizeParameters_Private()
 {
-    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
         addGlobalParameter(0);
 
-    if ((OptimizationType::LocalParameter & type) == OptimizationType::LocalParameter) {
         addLocalParameter(0);
 
         QString dilution = getOption(Dilution);
@@ -76,7 +74,7 @@ QVector<qreal> itc_n_ItoI_Model::OptimizeParameters_Private(OptimizationType typ
             addLocalParameter(2);
         }
         addLocalParameter(3);
-    }
+
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

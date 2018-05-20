@@ -47,7 +47,6 @@
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/modelelement.h"
-#include "src/ui/widgets/optimizerflagwidget.h"
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/parameterwidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
@@ -134,6 +133,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
+    m_global_box = new QCheckBox(tr("Global Parameter"));
+    m_global_box->setChecked(true);
+
+    m_local_box = new QCheckBox(tr("Local Parameter"));
+    m_local_box->setChecked(true);
+
     m_layout = new QVBoxLayout;
     QHBoxLayout* const_layout = new QHBoxLayout;
     for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
@@ -167,6 +172,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
                 m_model->GlobalTable()->setChecked(i, 0, state);
             }
         });
+        connect(m_global_box, &QCheckBox::stateChanged, check, [check](int state) {
+            check->setChecked(state);
+        });
 
         hlayout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         hlayout->addWidget(constant);
@@ -176,6 +184,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     }
     m_bc_50 = new QLabel(tr("BC50_0"));
     const_layout->addStretch(100);
+
+    QVBoxLayout* fit_layout = new QVBoxLayout;
+    fit_layout->addWidget(m_global_box);
+    fit_layout->addWidget(m_local_box);
+    const_layout->addLayout(fit_layout);
 
     m_minimize_all = new QPushButton(tr("Fit"));
 
@@ -199,8 +212,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_layout->addLayout(const_layout);
     m_layout->addWidget(m_bc_50);
 
-    m_optim_flags = new OptimizerFlagWidget(m_model->LastOptimzationRun());
-    m_layout->addWidget(m_optim_flags);
     m_model_options_widget = new OptionsWidget(m_model);
     if (m_model->getAllOptions().size())
         m_layout->addWidget(m_model_options_widget);
@@ -224,6 +235,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
                 connect(this, SIGNAL(Update()), el, SLOT(Update()));
                 connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
                 connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
+                connect(m_local_box, &QCheckBox::stateChanged, el, &ModelElement::LocalCheckState);
                 m_sign_layout->addWidget(el);
                 m_model_elements << el;
             }
@@ -269,6 +281,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
             });
         if (m_model->getSystemParameterList().size())
             m_sign_layout->addWidget(new SPOverview(m_model.data()));
+        connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
     }
 
     QWidget* scroll = new QWidget;
@@ -297,9 +310,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     QSettings settings;
     settings.beginGroup("model");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
-    settings.endGroup();
-    settings.beginGroup("minimizer");
-    m_optim_flags->setFlags(settings.value("flags", OptimizationType::GlobalParameter | OptimizationType::LocalParameter).toInt());
     settings.endGroup();
     m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));
@@ -488,13 +498,12 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 
     m_model->setOptimizerConfig(config);
     int result;
-    result = m_minimizer->Minimize(m_optim_flags->getFlags());
+    result = m_minimizer->Minimize();
 
     json = m_minimizer->Parameter();
     m_last_model = json;
     m_model->ImportModel(json);
     Repaint();
-    m_model->OptimizeParameters(m_optim_flags->getFlags());
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
     else
@@ -502,7 +511,6 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 
     QSettings settings;
     settings.beginGroup("minimizer");
-    settings.setValue("flags", m_optim_flags->getFlags());
     settings.endGroup();
 
     if (!result)
@@ -532,7 +540,6 @@ void ModelWidget::MCStatistic(MCConfig config)
     Waiter wait;
 
     config.optimizer_config = m_model->getOptimizerConfig();
-    config.runtype = m_optim_flags->getFlags();
 
     QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
@@ -567,7 +574,6 @@ void ModelWidget::FastConfidence()
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
     config.optimizer_config = m_model->getOptimizerConfig();
-    config.runtype = m_optim_flags->getFlags();
     config.fisher_statistic = true;
     config.confidence = qApp->instance()->property("p_value").toDouble();
     ModelComparison* statistic = new ModelComparison(config, this);
@@ -582,7 +588,7 @@ void ModelWidget::FastConfidence()
 void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 {
     Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     statistic->setModel(m_model);
     statistic->CrossValidation(type);
@@ -594,7 +600,7 @@ void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 void ModelWidget::CVAnalyse()
 {
     Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
@@ -610,7 +616,7 @@ void ModelWidget::CVAnalyse()
 void ModelWidget::DoReductionAnalyse()
 {
     Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig(), m_optim_flags->getFlags());
+    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
 
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
@@ -636,7 +642,6 @@ void ModelWidget::WGStatistic(WGSConfig config)
     Waiter wait;
 
     config.optimizer_config = m_model->getOptimizerConfig();
-    config.runtype = m_optim_flags->getFlags();
 
     if (config.maxerror < 1E-8)
         config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
@@ -673,7 +678,6 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     Waiter wait;
 
     config.optimizer_config = m_model->getOptimizerConfig();
-    config.runtype = m_optim_flags->getFlags();
 
     if (config.maxerror < 1E-8)
         config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
@@ -730,14 +734,13 @@ void ModelWidget::LocalMinimize()
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
 
-        result += m_minimizer->Minimize(m_optim_flags->getFlags());
+        result += m_minimizer->Minimize();
 
         QJsonObject json = m_minimizer->Parameter();
         m_local_fits << json;
 
         QSettings settings;
         settings.beginGroup("minimizer");
-        settings.setValue("flags", m_optim_flags->getFlags());
         settings.endGroup();
     }
 
@@ -823,7 +826,6 @@ void ModelWidget::LoadJson(const QJsonObject& object)
         m_statistic_widget->Update();
 
     Repaint();
-    m_optim_flags->setFlags(m_model->LastOptimzationRun());
 }
 
 void ModelWidget::OpenAdvancedSearch()

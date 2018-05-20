@@ -104,8 +104,6 @@ private:
     GlobalSearchResult last_result;
     void ConvertList(const QVector<QVector<double>>& list, QVector<double>& error);
     QList<QList<QPointF>> m_series;
-    OptimizationType m_type;
-    QPointer<OptimizerFlagWidget> m_optim_flags;
     double m_error_max;
     QVector<QVector<double>> ParamList();
     QList<QJsonObject> m_models_list;

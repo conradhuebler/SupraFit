@@ -66,6 +66,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
             m_model->LocalTable()->setChecked(i, no, state);
 
         });
+        connect(this, &ModelElement::LocalCheckState, check, &QCheckBox::setChecked);
+
         check->setChecked(true);
         QPointer<SpinBox> constant = new SpinBox;
         m_constants << constant;

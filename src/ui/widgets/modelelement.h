@@ -67,4 +67,5 @@ signals:
     void SetColor();
     void ActiveSignalChanged();
     void ColorChanged(const QColor& color);
+    void LocalCheckState(int state);
 };

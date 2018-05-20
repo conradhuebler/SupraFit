@@ -71,7 +71,7 @@ void MonteCarloThread::run()
 //         qDebug() <<  "started!";
 #endif
     m_minimizer->setModel(m_model);
-    m_finished = m_minimizer->Minimize(m_config.runtype);
+    m_finished = m_minimizer->Minimize();
 
     m_optimized = m_minimizer->Parameter();
     m_model->ImportModel(m_optimized);
@@ -132,7 +132,7 @@ void MonteCarloBatch::optimise()
 //         qDebug() <<  "started!";
 #endif
     m_minimizer->setModel(m_model);
-    m_finished = m_minimizer->Minimize(m_config.runtype);
+    m_finished = m_minimizer->Minimize();
     if (m_finished)
         m_models << m_minimizer->Parameter();
 
@@ -175,7 +175,6 @@ bool MonteCarloStatistics::Evaluate()
 QJsonObject MonteCarloStatistics::Controller() const
 {
     QJsonObject controller;
-    controller["runtype"] = m_config.runtype;
     controller["steps"] = m_steps;
     controller["variance"] = m_config.variance;
     controller["original"] = m_config.original;

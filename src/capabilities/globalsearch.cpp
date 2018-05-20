@@ -78,7 +78,6 @@ void SearchBatch::optimise()
 #endif
     m_model->setLockedParameter(m_config.ignored_parameter);
     m_thread->setModel(m_model, false);
-    m_thread->setOptimizationRun(m_config.runtype);
     m_thread->run();
     m_model->ImportModel(m_thread->ConvergedParameter());
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
@@ -128,7 +127,6 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
     QVector<QVector<double>> full_list = ParamList();
     m_models.clear();
     QVector<double> error;
-    m_config.runtype |= OptimizationType::GlobalParameter;
     std::cout << "starting the scanning ..." << m_max_count << " steps approx." << std::endl;
     int t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list);
@@ -247,7 +245,6 @@ QJsonObject GlobalSearch::Controller() const
 #warning adopt and complete
 
     QJsonObject controller;
-    controller["runtype"] = m_config.runtype;
     controller["method"] = "Global Search";
 
     return controller;

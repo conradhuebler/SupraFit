@@ -57,18 +57,16 @@ void ItoI_Model::InitialGuess()
     Calculate();
 }
 
-QVector<qreal> ItoI_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> ItoI_Model::OptimizeParameters_Private()
 {
     QString host = getOption(Host);
 
-    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
         addGlobalParameter(0);
 
-    if ((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter)) {
         if (host == "no")
             addLocalParameter(0);
         addLocalParameter(1);
-    }
+
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

@@ -74,16 +74,13 @@ void fl_ItoI_Model::EvaluateOptions()
     }*/
 }
 
-QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private()
 {
-    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter)
         addGlobalParameter(0);
 
-    if ((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter)) {
-        //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
         addLocalParameter(0);
         addLocalParameter(1);
-    }
+
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

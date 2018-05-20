@@ -24,7 +24,6 @@
 #include "src/core/toolset.h"
 
 #include "src/ui/guitools/waiter.h"
-#include "src/ui/widgets/optimizerflagwidget.h"
 
 #include <QApplication>
 
@@ -178,12 +177,6 @@ void AdvancedSearch::SetUi()
     options->addWidget(m_initial_guess);
     // layout->addLayout(options);
 
-    m_optim_flags = new OptimizerFlagWidget;
-    OptimizationType type = static_cast<OptimizationType>(0);
-    type = OptimizationType::GlobalParameter;
-    m_optim_flags->DisableOptions(type);
-    //  layout->addWidget(m_optim_flags);
-
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
 
@@ -213,7 +206,6 @@ void AdvancedSearch::SetUi()
 
 void AdvancedSearch::setOptions()
 {
-    m_optim_flags->setEnabled(m_optim->isChecked());
 }
 
 void AdvancedSearch::MaxSteps()
@@ -289,7 +281,6 @@ GSConfig AdvancedSearch::Config() const
     GSConfig config;
     config.parameter = m_parameter;
     config.ignored_parameter = m_ignored_parameter;
-    config.runtype = m_optim_flags->getFlags();
     config.initial_guess = m_initial_guess->isChecked();
     config.optimize = m_optim->isChecked();
     return config;

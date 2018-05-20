@@ -36,7 +36,6 @@ class QPushButton;
 class QRadioButton;
 class QTabWidget;
 
-class OptimizerFlagWidget;
 class ScientificBox;
 
 class WGSConfig;
@@ -89,7 +88,6 @@ private:
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
     QProgressBar* m_progress;
     QLabel *m_time_info, *m_cv_error_info, *m_moco_error_info;
-    OptimizerFlagWidget* m_optim_flags;
     QRadioButton *m_cv_loo, *m_cv_l2o;
     QMutex mutex;
 

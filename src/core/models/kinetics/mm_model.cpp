@@ -63,12 +63,11 @@ void Michaelis_Menten_Model::InitialGuess()
     Calculate();
 }
 
-QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private()
 {
-    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter) {
         addGlobalParameter(0);
         addGlobalParameter(1);
-    }
+
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

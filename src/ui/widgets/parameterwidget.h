@@ -34,6 +34,7 @@ public:
     LocalParameterWidget(QSharedPointer<AbstractModel> model);
 
 signals:
+    void LocalCheckState(int state);
 
 public slots:
 

@@ -124,7 +124,7 @@ inline QString aboutHtml()
     info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;rster</strong> and <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
-    info += "<p>SupraFit website on GitHub: <a href='https://github.com/contra98/SupraFit'>https://github.com/contra98/SupraFit</a></p>";
+    info += "<p>SupraFit website on GitHub: <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/contra98/SupraFit</a></p>";
     info += "<p>SupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n";
     return info;
 }
@@ -141,25 +141,12 @@ inline QString about()
     info += "\tSpecial thanks to \t Dr. Sebastian Förster \t  and \t Stefan Kaiser \t for finding bugs and constructive feedback.\n\n";
     info += "\tThanks to all encouraged me writing the application.\n\n";
     info += "\tBuilt-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org\n";
-    info += "\tSupraFit website on GitHub: https://github.com/contra98/SupraFit\n\n";
+    info += "\tSupraFit website on GitHub: https://github.com/conradhuebler/SupraFit\n\n";
     info += "\tSupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n\n";
     info += "\t*********************************************************************************************************\n\n";
     return info;
 }
 }
-
-enum OptimizationType {
-    GlobalParameter = 0x01,
-    LocalParameter = 0x02
-};
-
-inline OptimizationType operator~(OptimizationType a) { return (OptimizationType) ~(int)a; }
-inline OptimizationType operator|(OptimizationType a, OptimizationType b) { return (OptimizationType)((int)a | (int)b); }
-inline OptimizationType operator&(OptimizationType a, OptimizationType b) { return (OptimizationType)((int)a & (int)b); }
-inline OptimizationType operator^(OptimizationType a, OptimizationType b) { return (OptimizationType)((int)a ^ (int)b); }
-inline OptimizationType& operator|=(OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a |= (int)b); }
-inline OptimizationType& operator&=(OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a &= (int)b); }
-inline OptimizationType& operator^=(OptimizationType& a, OptimizationType b) { return (OptimizationType&)((int&)a ^= (int)b); }
 
 struct OptimizerConfig {
     int MaxIter = 75;

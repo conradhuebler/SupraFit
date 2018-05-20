@@ -72,12 +72,12 @@ public:
     /*! \brief set the OptimizationType to type and returns the Parameters
      * 
      */
-    QVector<qreal> OptimizeParameters(OptimizationType type);
+    QVector<qreal> OptimizeParameters();
 
     /*! \brief returns the Parameters used in optimisation
      *
      */
-    inline QVector<qreal> OptimizeParameters() { return m_parameter; }
+    inline QVector<qreal> OptimizeParameters() const { return m_parameter; }
 
     /*! \brief returns a pair of int
      *  first - index of parameter
@@ -96,14 +96,6 @@ public:
     /*! \brief returns the locked Parameters
      */
     inline QList<int> LockedParameters() const { return d->m_locked_parameters; }
-
-    /*! \brief Set the last OptimizationType to runtype
-     */
-    inline void setLastOptimzationRun(OptimizationType last_optimization) { m_last_optimization = last_optimization; }
-
-    /*! \brief Returns the last OptimizationType
-     */
-    inline OptimizationType LastOptimzationRun() const { return m_last_optimization; }
 
     /*
      * function to create a new instance of the model, this way was quite easier than
@@ -513,7 +505,7 @@ protected:
      * @return QVector<qreal>
      * 
      */
-    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) = 0;
+    virtual QVector<qreal> OptimizeParameters_Private() = 0;
 
     /* 
      * @param int i, in j and qreal value
@@ -551,7 +543,6 @@ protected:
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
     int m_used_variables;
     QList<int> m_active_signals;
-    OptimizationType m_last_optimization;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
     bool m_corrupt, m_converged, m_locked_model, m_fast;

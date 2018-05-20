@@ -27,7 +27,6 @@
 
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/buttons/scientificbox.h"
-#include "src/ui/widgets/optimizerflagwidget.h"
 
 #include <QtCore/QDateTime>
 #include <QtCore/QMutexLocker>
@@ -39,6 +38,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
@@ -101,11 +101,6 @@ void StatisticDialog::setUi()
     m_tab_widget->addTab(GridSearchWidget(), tr("Weakened Grid Search"));
     m_moco_widget = ModelComparison();
     m_tab_widget->addTab(m_moco_widget, tr("Model Comparison"));
-
-    if (m_model)
-        m_optim_flags = new OptimizerFlagWidget(m_model.data()->LastOptimzationRun());
-    else
-        m_optim_flags = new OptimizerFlagWidget;
 
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;

@@ -36,7 +36,7 @@ public:
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::Michaelis_Menten; }
 
-    virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type) override;
+    virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 2; }
     virtual void InitialGuess() override;
     virtual QSharedPointer<AbstractModel> Clone() override;

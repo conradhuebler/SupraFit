@@ -31,8 +31,8 @@
 
 #include "reductionanalyse.h"
 
-ReductionAnalyse::ReductionAnalyse(OptimizerConfig config, OptimizationType type)
-    : m_config(config, type)
+ReductionAnalyse::ReductionAnalyse(OptimizerConfig config)
+    : m_config(config)
 {
 }
 
@@ -54,10 +54,8 @@ bool ReductionAnalyse::Pending() const
 void ReductionAnalyse::CrossValidation(CVType type)
 {
     MCConfig config;
-    config.runtype = m_config.runtype;
     config.optimizer_config = m_config.optimizer_config;
 
-    m_controller["runtype"] = m_config.runtype;
     m_controller["method"] = SupraFit::Statistic::CrossValidation;
     m_controller["CVType"] = type;
 
@@ -135,10 +133,8 @@ void ReductionAnalyse::CrossValidation(CVType type)
 void ReductionAnalyse::PlainReduction()
 {
     MCConfig config;
-    config.runtype = m_config.runtype;
-    config.optimizer_config = m_config.optimizer_config;
 
-    m_controller["runtype"] = m_config.runtype;
+    config.optimizer_config = m_config.optimizer_config;
     m_controller["method"] = SupraFit::Statistic::Reduction;
 
     emit MaximumSteps(m_model->DataPoints());

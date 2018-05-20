@@ -64,13 +64,11 @@ void itc_ItoII_Model::InitialGuess()
     AbstractModel::Calculate();
 }
 
-QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private()
 {
-    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter) {
         addGlobalParameter(0);
         addGlobalParameter(1);
-    }
-    if ((OptimizationType::LocalParameter & type) == OptimizationType::LocalParameter) {
+
         addLocalParameter(0);
         addLocalParameter(1);
 
@@ -82,7 +80,7 @@ QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private(OptimizationType type
         }
 
         addLocalParameter(4);
-    }
+
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

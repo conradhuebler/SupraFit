@@ -118,10 +118,10 @@ AbstractModel::~AbstractModel()
 
 }
 
-QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
+QVector<qreal> AbstractModel::OptimizeParameters()
 {
     clearOptParameter();
-    QVector<qreal> variables = OptimizeParameters_Private(type);
+    QVector<qreal> variables = OptimizeParameters_Private();
     for (int j = m_opt_para.size() - 1; j >= 0; --j) {
         if (variables[j] == 0) {
             variables.removeAt(j);
@@ -132,7 +132,6 @@ QVector<qreal> AbstractModel::OptimizeParameters(OptimizationType type)
     d->m_locked_parameters.clear();
     for (int i = 0; i < variables.size(); ++i)
         d->m_locked_parameters << 1;
-    m_last_optimization = type;
     m_parameter = variables;
     return variables;
 }
@@ -668,7 +667,6 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
     toplevel["options"] = optionObject;
     toplevel["model"] = SFModel();
     toplevel["SupraFit"] = qint_version;
-    toplevel["runtype"] = m_last_optimization;
     toplevel["sum_of_squares"] = m_sum_squares;
     toplevel["sum_of_absolute"] = m_sum_absolute;
     toplevel["mean_error"] = m_mean;
@@ -833,8 +831,6 @@ void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         LocalTable()->ImportTable(json["localParameter"].toObject());
     }
     setActiveSignals(active_signals);
-    if (topjson["runtype"].toInt() != 0)
-        OptimizeParameters(static_cast<OptimizationType>(topjson["runtype"].toInt()));
 
     m_converged = topjson["converged"].toBool();
 
@@ -878,7 +874,7 @@ void AbstractModel::setOption(int index, const QString& value)
     if (!d->m_model_options.contains(index) || value.isEmpty() || value.isNull())
         return;
     d->m_model_options[index].value = value;
-    OptimizeParameters(m_last_optimization);
+    OptimizeParameters();
     emit OptionChanged(index, value);
 }
 

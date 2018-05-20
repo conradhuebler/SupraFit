@@ -37,8 +37,6 @@
 AbstractTitrationModel::AbstractTitrationModel(DataClass* data)
     : AbstractModel(data)
 {
-    m_last_optimization = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter);
-
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     m_ylabel = "&delta; [ppm]";
@@ -47,8 +45,6 @@ AbstractTitrationModel::AbstractTitrationModel(DataClass* data)
 AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel* other)
     : AbstractModel(other)
 {
-    m_last_optimization = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter);
-
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     m_ylabel = "&delta; [ppm]";

@@ -43,6 +43,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
 
         QPointer<QCheckBox> check = new QCheckBox;
         check->setChecked(true);
+        connect(this, &LocalParameterWidget::LocalCheckState, check, &QCheckBox::setChecked);
 
         QPointer<SpinBox> box = new SpinBox;
         box->setMinimum(-1e10);

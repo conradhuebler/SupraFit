@@ -36,14 +36,12 @@ class AbstractModel;
 class AbstractConfig {
 
 public:
-    inline AbstractConfig(OptimizerConfig config = OptimizerConfig(), OptimizationType type = static_cast<OptimizationType>(OptimizationType::GlobalParameter | OptimizationType::LocalParameter))
+    inline AbstractConfig(OptimizerConfig config = OptimizerConfig())
         : optimizer_config(config)
-        , runtype(type)
     {
     }
     inline ~AbstractConfig() {}
     OptimizerConfig optimizer_config;
-    OptimizationType runtype;
 };
 
 class AbstractSearchThread : public QObject, public QRunnable {

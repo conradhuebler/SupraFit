@@ -145,24 +145,20 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
     }
 }
 
-QVector<qreal> fl_IItoI_ItoI_Model::OptimizeParameters_Private(OptimizationType type)
+QVector<qreal> fl_IItoI_ItoI_Model::OptimizeParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
 
-    if ((OptimizationType::GlobalParameter & type) == OptimizationType::GlobalParameter) {
         if (coop21 == "additive" || coop21 == "full")
             addGlobalParameter(0);
 
         addGlobalParameter(1);
-    }
 
-    if ((type & OptimizationType::LocalParameter) == (OptimizationType::LocalParameter)) {
-        //if((type & OptimizationType::IgnoreZeroConcentrations) != OptimizationType::IgnoreZeroConcentrations)
         addLocalParameter(0);
         if (coop21 != "additive" && coop21 != "statistical")
             addLocalParameter(1);
         addLocalParameter(2);
-    }
+
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];

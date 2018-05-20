@@ -381,7 +381,6 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         m_results << result;
     }
 
-    m_controller["runtype"] = m_config.runtype;
     m_controller["steps"] = m_config.mc_steps;
     m_controller["fisher"] = m_config.fisher_statistic;
     m_controller["maxerror"] = m_config.maxerror;

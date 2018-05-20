@@ -30,7 +30,6 @@
 #include "minimizer.h"
 NonLinearFitThread::NonLinearFitThread(bool exchange_statistics)
     : m_exc_statistics(exchange_statistics)
-    , m_runtype(OptimizationType::GlobalParameter)
 {
     setAutoDelete(false);
     connect(this, SIGNAL(Message(QString, int)), this, SLOT(Print(QString)));
@@ -70,16 +69,14 @@ void NonLinearFitThread::setParameter(const QJsonObject& json)
     m_model->ImportModel(json);
 }
 
-int NonLinearFitThread::NonLinearFit(OptimizationType runtype)
+int NonLinearFitThread::NonLinearFit()
 {
     QList<int> locked = m_model->LockedParameters();
-    QVector<qreal> parameter = m_model->OptimizeParameters(runtype);
+    QVector<qreal> parameter = m_model->OptimizeParameters();
     if (parameter.isEmpty())
         return 0;
-    if (runtype == m_runtype) {
         if (locked.size() == parameter.size())
             m_model->setLockedParameter(locked);
-    }
     int iter = NonlinearFit(m_model, parameter);
     m_sum_error = m_model->SumofSquares();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
@@ -132,13 +129,13 @@ QString Minimizer::OptPara2String() const
     return result;
 }
 
-int Minimizer::Minimize(OptimizationType runtype, const QList<int>& locked)
+int Minimizer::Minimize(const QList<int>& locked)
 {
     m_model->setLockedParameter(locked);
-    return Minimize(runtype);
+    return Minimize();
 }
 
-int Minimizer::Minimize(OptimizationType runtype)
+int Minimizer::Minimize()
 {
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
@@ -153,7 +150,6 @@ int Minimizer::Minimize(OptimizationType runtype)
     connect(thread, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
-    thread->setOptimizationRun(runtype);
     thread->run();
     bool converged = thread->Converged();
     if (converged)
@@ -170,11 +166,10 @@ int Minimizer::Minimize(OptimizationType runtype)
     return converged;
 }
 
-QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractModel> model, OptimizationType runtype, bool start)
+QPointer<NonLinearFitThread> Minimizer::addJob(const QSharedPointer<AbstractModel> model, bool start)
 {
     QPointer<NonLinearFitThread> thread = new NonLinearFitThread(m_exc_statistics);
     thread->setModel(model);
-    thread->setOptimizationRun(runtype);
     if (start)
         QThreadPool::globalInstance()->start(thread);
     else

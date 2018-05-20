@@ -34,7 +34,7 @@ class ReductionAnalyse : public AbstractSearchClass {
     Q_OBJECT
 
 public:
-    ReductionAnalyse(OptimizerConfig config, OptimizationType type);
+    ReductionAnalyse(OptimizerConfig config);
     ~ReductionAnalyse();
 
     enum CVType {

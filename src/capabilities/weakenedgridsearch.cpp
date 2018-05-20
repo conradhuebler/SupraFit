@@ -89,7 +89,6 @@ void WGSearchThread::Calculate()
         m_model.data()->SetSingleParameter(value, m_index);
         m_model->setLockedParameter(locked);
         thread->setModel(m_model, false);
-        thread->setOptimizationRun(m_config.runtype);
         thread->run();
         bool converged = thread->Converged();
         QJsonObject model;
@@ -102,7 +101,6 @@ void WGSearchThread::Calculate()
         if (!upcount)
             m_last = value;
 
-        // m_models[new_error] = model;
         if (new_error > m_config.maxerror) {
             m_finished = new_error > m_config.maxerror;
             m_stationary = qAbs(new_error - error) < m_config.error_conv;
@@ -247,7 +245,6 @@ void WeakenedGridSearch::setParameter(const QJsonObject& json)
 QJsonObject WeakenedGridSearch::Controller() const
 {
     QJsonObject controller;
-    controller["runtype"] = m_config.runtype;
     controller["steps"] = m_config.maxsteps;
     controller["increment"] = m_config.increment;
     controller["maxerror"] = m_config.maxerror;

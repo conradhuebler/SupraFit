@@ -50,8 +50,8 @@ struct GSResult {
 
 class GSConfig : public AbstractConfig {
 public:
-    inline GSConfig(OptimizerConfig config, OptimizationType type)
-        : AbstractConfig(config, type)
+    inline GSConfig(OptimizerConfig config)
+        : AbstractConfig(config)
     {
     }
     inline GSConfig() {}

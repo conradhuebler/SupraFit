@@ -88,7 +88,6 @@ public:
     ~WeakenedGridSearch();
     inline void setConfig(const WGSConfig& config) { m_config = config; }
     inline bool CV() { return m_cv; }
-    inline void setOptimizationRun(OptimizationType runtype) { m_type = runtype; }
     bool ConfidenceAssesment();
     void setParameter(const QJsonObject& json);
 
@@ -97,7 +96,6 @@ public slots:
 
 private:
     QPointer<WGSearchThread> CreateThread(int index, bool direction);
-    OptimizationType m_type;
     WGSConfig m_config;
     bool allow_break, m_cv;
     QVector<QVector<qreal>> MakeBox() const;

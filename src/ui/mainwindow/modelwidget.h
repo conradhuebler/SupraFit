@@ -143,7 +143,6 @@ private:
     QWidget* m_model_widget;
     QSplitter* m_splitter;
     StatisticWidget* m_statistic_widget;
-    QPointer<OptimizerFlagWidget> m_optim_flags;
     ModalDialog *m_statistic_result, *m_dialogs, *m_table_result;
     ResultsDialog* m_results;
 
@@ -151,7 +150,7 @@ private:
     Charts m_charts;
     QString m_logging;
     QList<QJsonObject> m_local_fits;
-    QPointer<QCheckBox> m_toggled_box;
+    QPointer<QCheckBox> m_toggled_box, m_global_box, m_local_box;
     QPointer<LocalParameterWidget> m_local_parameter;
     QJsonObject m_last_model;
     QList<QJsonObject> m_fast_confidence;
