@@ -40,7 +40,6 @@ ListChart::ListChart()
 
     m_list = new QListWidget;
     m_list->setMaximumWidth(200);
-    m_list->setSortingEnabled(true);
 
     m_names_list = new QListWidget;
     m_names_list->setMaximumWidth(200);

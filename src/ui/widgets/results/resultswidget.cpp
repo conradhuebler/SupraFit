@@ -30,7 +30,6 @@
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
-
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QGridLayout>
@@ -57,7 +56,7 @@ ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractMod
     m_dialog = new ModalDialog;
     m_text = QString("");
     setUi();
-    resize(1024, 600);
+    resize(600, 400);
 }
 
 ResultsWidget::~ResultsWidget()
@@ -201,63 +200,6 @@ QWidget* ResultsWidget::ReductionWidget()
 
 QWidget* ResultsWidget::ModelComparisonWidget()
 {
-    /*
-    QJsonObject controller = m_data["controller"].toObject();
-    ListChart* view = new ListChart;
-    QVector<qreal> values(m_data.keys().size() - 1, 0);
-    for (int a = 0; a < m_data.keys().size() - 1; ++a) {
-        values[a] = m_data[QString::number(a)].toObject()["value"].toDouble();
-        for (int b = a + 1; b < m_data.keys().size() - 1; ++b) {
-            QColor color = ChartWrapper::ColorCode(m_model->Color(a + b - 1));
-            int index = a + b - 1;
-
-            QString name = m_data[QString::number(a)].toObject()["name"].toString() + " vs. " + m_data[QString::number(b)].toObject()["name"].toString();
-            QtCharts::QScatterSeries* xy_series = new QtCharts::QScatterSeries;
-
-            QList<qreal> x = ToolSet::String2DoubleList(m_data[QString::number(a)].toObject()["data"].toString());
-            QList<qreal> y = ToolSet::String2DoubleList(m_data[QString::number(b)].toObject()["data"].toString());
-            if (x.size() > 1e4)
-                xy_series->setUseOpenGL(true);
-            for (int j = 0; j < x.size(); ++j)
-                xy_series->append(QPointF(x[j], y[j]));
-
-            xy_series->setMarkerSize(5);
-            xy_series->setName(name);
-            view->addSeries(xy_series, index, color, name);
-            xy_series->setColor(color);
-
-            QList<QList<QPointF>> series;
-
-            QJsonObject box = controller["box"].toObject();
-            QList<QPointF> val1 = ToolSet::String2Points(box[QString::number(a)].toString());
-            QList<QPointF> val2 = ToolSet::String2Points(box[QString::number(b)].toString());
-
-            if (!val1.isEmpty() && !val2.isEmpty()) {
-                QPointF range1 = val1[0];
-                QPointF range2 = val2[0];
-                QList<QPointF> serie;
-                serie << QPointF(values[a], range2.x()) << QPointF(values[a], range2.y());
-                series << serie;
-                serie.clear();
-                serie << QPointF(range1.x(), values[b]) << QPointF(range1.y(), values[b]);
-                series << serie;
-            }
-
-            for (const QList<QPointF>& serie : qAsConst(series)) {
-                LineSeries* xy_serie = new LineSeries;
-                xy_serie->append(serie);
-                xy_serie->setName(name);
-                view->addSeries(xy_serie, index, color, name);
-                xy_serie->setColor(color);
-            }
-        }
-    }
-
-    view->setXAxis("Parameter 1");
-    view->setYAxis("Parameter 2");
-
-    return view;*/
-
     ContourWidget* widget = new ContourWidget(m_models, m_model);
     QJsonObject controller = m_data["controller"].toObject();
     QVector<int> global = ToolSet::String2IntVec(controller["global_parameter"].toString());
@@ -317,12 +259,11 @@ QWidget* ResultsWidget::GridSearchWidget()
                 xy_series->setColor(m_wrapper->ColorCode(i));
             /*connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, this, [series_int, view]( const QColor &color ) { view->setColor(series_int, color); });*/
-            name = QString::number(series_int + 1) + " " + name;
             series_int++;
             old_index = index;
         } else {
             xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
-            name = "0 " + name;
+            name = name;
         }
 
         view->addSeries(xy_series, rank, xy_series->color(), name);
