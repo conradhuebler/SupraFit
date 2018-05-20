@@ -159,12 +159,15 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
         constant->setMinimum(-1e9);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
         connect(m_model.data(), &AbstractModel::Recalculated, this,
-            [i, constant, this]() {
+            [i, constant, this, check]() {
                 if (this->m_model && constant) {
-                    if (this->m_model->GlobalEnabled(i))
+                    if (this->m_model->GlobalEnabled(i)) {
                         constant->setStyleSheet("background-color: " + included());
-                    else
+                        check->setEnabled(true);
+                    } else {
+                        check->setEnabled(false);
                         constant->setStyleSheet("background-color: " + excluded());
+                    }
                 }
             });
         connect(check, &QCheckBox::stateChanged, check, [i, this](int state) {

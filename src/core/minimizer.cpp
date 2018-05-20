@@ -75,8 +75,8 @@ int NonLinearFitThread::NonLinearFit()
     QVector<qreal> parameter = m_model->OptimizeParameters();
     if (parameter.isEmpty())
         return 0;
-        if (locked.size() == parameter.size())
-            m_model->setLockedParameter(locked);
+    if (locked.size() == parameter.size())
+        m_model->setLockedParameter(locked);
     int iter = NonlinearFit(m_model, parameter);
     m_sum_error = m_model->SumofSquares();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);

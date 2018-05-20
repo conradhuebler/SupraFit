@@ -80,14 +80,16 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setValue(m_model->LocalParameter(i, m_no));
         constant->setToolTip(m_model->LocalParameterDescription(i));
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-        connect(m_model.data(), &AbstractModel::Recalculated, this, [i, constant, this, widget]() {
+        connect(m_model.data(), &AbstractModel::Recalculated, this, [i, constant, this, widget, check]() {
             if (this->m_model && widget) {
-                if (this->m_model->LocalEnabled(i))
+                if (this->m_model->LocalEnabled(i)) {
                     constant->setStyleSheet("background-color: " + included());
-                else
+                    check->setEnabled(true);
+                } else {
                     constant->setStyleSheet("background-color: " + excluded());
+                    check->setEnabled(false);
+                }
             }
-
         });
         QGridLayout* vlayout = new QGridLayout;
         widget->setLayout(vlayout);

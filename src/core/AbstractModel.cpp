@@ -430,21 +430,24 @@ void AbstractModel::setLocalParameterSeries(const Vector& vector, int series)
 void AbstractModel::addGlobalParameter()
 {
     for (int i = 0; i < GlobalTable()->columnCount(); ++i) {
+        /* We enable this parameter, since it is used in model calculation, but */
+        d->m_enabled_global[i] = 1;
+        /* we allow to break, if this is unchecked for optimisation*/
         if (!GlobalTable()->isChecked(i, 0))
             continue;
         m_opt_para << &(*GlobalTable())[i];
         m_opt_index << QPair<int, int>(i, 0);
-        d->m_enabled_global[i] = 1;
     }
 }
 
 void AbstractModel::addGlobalParameter(int i)
 {
     if (i < GlobalTable()->columnCount()) {
+        d->m_enabled_global[i] = 1;
+        /* see above comment */
         if (!GlobalTable()->isChecked(i, 0))
             return;
         m_opt_para << &(*GlobalTable())[i];
-        d->m_enabled_global[i] = 1;
         m_opt_index << QPair<int, int>(i, 0);
     }
 }
