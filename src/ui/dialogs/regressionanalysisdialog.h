@@ -24,6 +24,9 @@
 
 #include <QtWidgets/QDialog>
 
+#include "src/core/libmath.h"
+
+class QListWidget;
 class QPushButton;
 class QSpinBox;
 class QTextEdit;
@@ -47,6 +50,7 @@ public slots:
 
 private:
     void setUI();
+
     QPushButton* m_fit;
     QSpinBox* m_functions;
     QWeakPointer<DataClass> m_data;
@@ -55,7 +59,10 @@ private:
     QList<QPointer<QtCharts::QScatterSeries>> m_series;
     QMultiHash<int, QtCharts::QLineSeries*> m_linear_series;
     QTextEdit* m_output;
+    QListWidget* m_lists;
+    QList<QMap<qreal, MultiRegression>> m_result;
 
 private slots:
     void FitFunctions();
+    void LoadRegression(int index);
 };

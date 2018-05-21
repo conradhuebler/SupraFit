@@ -42,6 +42,44 @@ struct MultiRegression {
     QVector<int> start;
 };
 
+class AddVector {
+
+public:
+    inline AddVector(QVector<int> start, QVector<int> max)
+        : m_max(max)
+        , m_value(start)
+    {
+    }
+
+    bool jacob() // like the ladder, we want to climb
+    {
+        for (int i = m_max.size() - 1; i >= 0; --i) {
+            if (m_value[i] < m_max[i]) {
+                m_value[i]++;
+                return true;
+            } else if (m_value[i] == m_max[i] && i) {
+                QVector<int> initial = m_value;
+                if (initial[i - 1] < m_max[i - 1]) {
+                    initial[i - 1]++;
+                    for (int j = i; j < m_max.size(); ++j) {
+                        initial[i] = initial[i - 1] + 2;
+                    }
+                    m_value = initial;
+                    return true;
+                }
+
+            } else if (!i) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    inline QVector<int> Value() const { return m_value; }
+    QVector<int> m_max;
+    QVector<int> m_value;
+};
+
 long double MinQuadraticRoot(long double a, long double b, long double c);
 long double MaxQuadraticRoot(long double a, long double b, long double c);
 

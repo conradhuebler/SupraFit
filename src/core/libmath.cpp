@@ -83,6 +83,10 @@ LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y)
 QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y, int functions)
 {
     QMap<qreal, MultiRegression> regressions;
+
+    if (x.size() != y.size())
+        return regressions;
+
     if (functions == 1) {
         LinearRegression regression = LeastSquares(x, y);
         MultiRegression reg;
@@ -90,26 +94,49 @@ QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector
         reg.sum_err = regression.sum_err;
         reg.start << 0 << x.size() - 1;
         regressions.insert(reg.sum_err, reg);
-    } else if (functions == 2) {
-        for (int i = 2; i < x.size() - 1; ++i) {
-            QVector<qreal> x_i, x_j, y_i, y_j;
-            for (int i_i = 0; i_i < i; ++i_i) {
-                x_i << x[i_i];
-                y_i << y[i_i];
-            }
-            for (int j_j = i; j_j < x.size(); ++j_j) {
-                x_j << x[j_j];
-                y_j << y[j_j];
-            }
+    } else {
+        QVector<int> starts, ends;
+        for (int i = 0; i < functions; i++) {
+            int start = 2 * i;
+            starts << start;
+            int end = x.size() - 2 * i;
+            ends.prepend(end);
+        }
+        AddVector vector(starts, ends);
 
-            LinearRegression reg_i = LeastSquares(x_i, y_i);
-            LinearRegression reg_j = LeastSquares(x_j, y_j);
+        while (true) {
+            if (vector.Value().first() != 0)
+                break;
             MultiRegression reg;
-            reg.regressions << reg_i;
-            reg.regressions << reg_j;
-            reg.start << 0 << i << i - 1 << x.size() - 1;
-            reg.sum_err = reg_i.sum_err + reg_j.sum_err;
-            regressions.insert(reg.sum_err, reg);
+            qreal sum = 0;
+            QVector<int> work = vector.Value();
+            work << x.size();
+            bool valid = true;
+
+            for (int i = 0; i < work.size() - 1; ++i) {
+
+                QVector<qreal> x_i, y_i;
+                for (int j = work[i]; j < work[i + 1]; ++j) {
+
+                    x_i << x[j];
+                    y_i << y[j];
+                }
+                valid = valid && x_i.size();
+                LinearRegression regression = LeastSquares(x_i, y_i);
+                reg.regressions << regression;
+
+                reg.start << work[i] << work[i + 1] - 1;
+
+                sum += regression.sum_err;
+            }
+            reg.sum_err = sum;
+            if (!std::isnan(sum) && valid)
+                regressions.insert(reg.sum_err, reg);
+            if (regressions.size() > 10)
+                regressions.remove(regressions.lastKey());
+
+            if (!vector.jacob())
+                break;
         }
     }
     return regressions;

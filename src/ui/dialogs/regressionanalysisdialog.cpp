@@ -57,15 +57,24 @@ void RegressionAnalysisDialog::setUI()
 {
     m_fit = new QPushButton(tr("Fit linear"));
     m_functions = new QSpinBox;
-    m_functions->setRange(1, 2);
+    m_functions->setRange(1, 1);
 
     m_chart = new ListChart;
 
     m_output = new QTextEdit;
+    m_lists = new QListWidget;
+    m_lists->setMaximumWidth(230);
+    connect(m_lists, &QListWidget::currentRowChanged, this, &RegressionAnalysisDialog::LoadRegression);
 
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(m_chart);
-    splitter->addWidget(m_output);
+
+    QWidget* results = new QWidget;
+    QHBoxLayout* hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_output);
+    hlayout->addWidget(m_lists);
+    results->setLayout(hlayout);
+    splitter->addWidget(results);
 
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(new QLabel(tr("Number of functions")), 0, 0);
@@ -84,12 +93,17 @@ void RegressionAnalysisDialog::UpdatePlots()
     m_output->clear();
     m_series = m_wrapper.data()->CloneSeries();
     for (int i = 0; i < m_series.size(); ++i)
-        m_chart->addSeries(m_series[i], i, m_series[i]->color(), QString::number(i + 1));
+        m_chart->addSeries(m_series[i], i, m_series[i]->color(), Print::printDouble(i + 1));
+    m_functions->setRange(1, m_series.first()->points().size() / 2);
 }
 
 void RegressionAnalysisDialog::FitFunctions()
 {
-    QString output("");
+    m_lists->clear();
+    m_result.clear();
+    int size = 10;
+    QVector<qreal> sums(size, 0);
+
     for (int i = 0; i < m_series.size(); ++i) {
         QVector<qreal> x, y;
         QList<QPointF> points = m_series[i]->points();
@@ -98,31 +112,51 @@ void RegressionAnalysisDialog::FitFunctions()
             y << points[j].y();
         }
         QMap<qreal, MultiRegression> result = LeastSquares(x, y, m_functions->value());
+        if (result.isEmpty())
+            continue;
+        size = qMin(size, result.size());
 
-        /*        
-        QMap<qreal, MultiRegression>::const_iterator iter = result.constBegin();
-        while (iter != result.constEnd()) {
-            qDebug() << iter.key() << ": " << iter.value().regressions.size();
-            ++iter;
+        for (int index = 0; index < size; ++index) {
+            sums[index] += result.value(result.keys()[index]).sum_err;
         }
-        */
-        MultiRegression regression = result.first();
+        m_result << result;
+    }
+    for (int i = 0; i < size; ++i)
+        m_lists->addItem("Fit Number " + QString::number(i) + ": SSE = " + Print::printDouble(sums[i]));
+    LoadRegression(0);
+}
+
+void RegressionAnalysisDialog::LoadRegression(int index)
+{
+    if (index < 0)
+        return;
+    UpdatePlots();
+    QString output;
+    QVector<qreal> x;
+
+    QList<QPointF> points = m_series.first()->points();
+    for (int j = 0; j < points.size(); ++j) {
+        x << points[j].x();
+    }
+
+    for (int i = 0; i < m_series.size(); ++i) {
+
+        MultiRegression regression = m_result[i].value(m_result[i].keys()[index]);
+        output += "<h4>Series " + Print::printDouble(i + 1) + "</h4>";
         for (int m = 0; m < regression.regressions.size(); ++m) {
-            QtCharts::QLineSeries* series = m_chart->addLinearSeries(regression.regressions[m].m, regression.regressions[m].n, x[regression.start[2 * m]], x[regression.start[2 * m + 1]], i);
+            QtCharts::QLineSeries* series = m_chart->addLinearSeries(regression.regressions[m].m, regression.regressions[m].n, x[regression.start[2 * m - m]], x[regression.start[2 * m + regression.regressions.size() - m]], i);
             series->setColor(m_series[i]->color());
             m_linear_series.insert(i, series);
+            output += "<p>y(" + QString::number(m) + ") = " + Print::printDouble(regression.regressions[m].m) + "x + " + Print::printDouble(regression.regressions[m].n) + " ( R<sup>2</sup>=" + Print::printDouble(regression.regressions[m].R) + ", SSE = " + Print::printDouble(regression.regressions[m].sum_err) + ")</ p>";
+            output += "<p> x<sub>0</sub> = " + Print::printDouble((0 - regression.regressions[m].n) / (regression.regressions[m].m)) + "<p>";
+            if (regression.regressions.size() >= 2 && m < regression.regressions.size() - 1) {
+                qreal x = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
+                qreal y = regression.regressions[m + 1].m * x + regression.regressions[m + 1].n;
+                output += "<p>Intersection of function " + Print::printDouble(m) + " and function " + Print::printDouble(m + 1) + " at (<font color='red'>" + Print::printDouble(x) + "," + Print::printDouble(y) + "</font>)</p>";
+            }
         }
-        /*
-         * Sometimes some sophisticated will be placed here
-         */
-        if (m_functions->value() == 1) {
-            output += "<p>Series " + QString::number(i + 1) + ": y = " + QString::number(regression.regressions[0].m) + "x + " + QString::number(regression.regressions[0].n) + " ( R<sup>2</sup>=" + QString::number(regression.regressions[0].R) + ")</ p>";
-        } else if (m_functions->value() == 2) {
-            qreal x = (regression.regressions[0].n - regression.regressions[1].n) / (regression.regressions[1].m - regression.regressions[0].m);
-            qreal y = regression.regressions[1].m * x + regression.regressions[1].n;
-            output += "<p>Series " + QString::number(i + 1) + ": y1 = " + QString::number(regression.regressions[0].m) + "x + " + QString::number(regression.regressions[0].n) + " (Points: " + QString::number(regression.regressions[0].x.size()) + ", R<sup>2</sup>=" + QString::number(regression.regressions[0].R) + "): y2 = " + QString::number(regression.regressions[1].m) + "x + " + QString::number(regression.regressions[1].n) + " (Points: " + QString::number(regression.regressions[1].x.size()) + ", R<sup>2</sup>=" + QString::number(regression.regressions[1].R) + ") </ p>";
-            output += "<p>Intersection at (<font color='red'>" + QString::number(x) + "," + QString::number(y) + "</font>)</p>";
-        }
+        if (regression.regressions.size() != 1)
+            output += "<p>Sum of SSE for all function = " + Print::printDouble(regression.sum_err) + "<p>";
     }
     m_output->append(output);
 }
