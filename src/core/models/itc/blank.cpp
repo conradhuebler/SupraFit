@@ -54,7 +54,7 @@ Blank::~Blank()
 {
 }
 
-void Blank::InitialGuess()
+void Blank::InitialGuess_Private()
 {
 
     LocalTable()->data(0, 0) = 1;

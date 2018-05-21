@@ -46,7 +46,7 @@ Michaelis_Menten_Model::~Michaelis_Menten_Model()
 {
 }
 
-void Michaelis_Menten_Model::InitialGuess()
+void Michaelis_Menten_Model::InitialGuess_Private()
 {
     QVector<qreal> x, y;
 

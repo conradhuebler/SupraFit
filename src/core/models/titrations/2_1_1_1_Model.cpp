@@ -85,7 +85,7 @@ void IItoI_ItoI_Model::EvaluateOptions()
     AbstractTitrationModel::EvaluateOptions();
 }
 
-void IItoI_ItoI_Model::InitialGuess()
+void IItoI_ItoI_Model::InitialGuess_Private()
 {
     (*GlobalTable())[1] = Guess_1_1();
     (*GlobalTable())[0] = (*GlobalTable())[1] / 2;

@@ -112,7 +112,7 @@ void fl_IItoI_ItoI_ItoII_Model::EvaluateOptions()
     }
 }
 
-void fl_IItoI_ItoI_ItoII_Model::InitialGuess()
+void fl_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 {
     qreal K11 = Guess_1_1();
     (*GlobalTable())[0] = 2;

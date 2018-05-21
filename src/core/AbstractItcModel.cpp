@@ -18,6 +18,7 @@
  */
 
 #include "src/core/AbstractModel.h"
+#include "src/core/libmath.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -93,13 +94,58 @@ void AbstractItcModel::DeclareOptions()
                                        << "none";
     addOption(Dilution, "Dilution", method);
     setOption(Dilution, "none");
-    /*QStringList cooperativity = QStringList() << "pytc" << "single";
-    addOption(Binding, "Binding", cooperativity);*/
+}
 
-    /*QStringList reservoir = QStringList() << "constant"
-                                          << "variable";
-    addOption(Reservoir, "Volume", reservoir);
-    setOption(Reservoir, "constant");*/
+qreal AbstractItcModel::GuessdH()
+{
+    if (!m_V || !m_cell_concentration || !m_syringe_concentration) {
+        m_guess_failed = true;
+        return -4000;
+    }
+
+    /* Lets calculate the dH guess by using the heat change from point 2 -> 3 (first are omitted since they are offen incorrect
+     * No complexation constant is used, it is asumed, that all guest will form the new complex
+     * and there for dH = q/(dc*V)
+     */
+
+    m_guess_failed = false;
+    qreal c0 = m_c0->data(2, 2);
+    qreal c1 = m_c0->data(2, 3);
+    qreal dn = (c1 - c0) * m_V;
+    qreal q = DependentModel()->data(0, 3);
+    return q / dn;
+}
+
+qreal AbstractItcModel::GuessFx()
+{
+
+    if (!m_V || !m_cell_concentration || !m_syringe_concentration) {
+        m_guess_failed = true;
+        return 1;
+    }
+    m_guess_failed = false;
+
+    /* The inflection point can easily be obtained through 3-x-linear regression and using the
+     * the mean x value of the intersections of 1-2 and 2-3
+     */
+
+    QVector<qreal> x, y;
+
+    for (int i = 1; i < DataPoints(); ++i) {
+        x << PrintOutIndependent(i, 0);
+        y << DependentModel()->data(0, i);
+    }
+    QMap<qreal, MultiRegression> result = LeastSquares(x, y, 3);
+    MultiRegression regression = result.first();
+
+    qreal x1 = 0, x2 = 0;
+    int m = 0;
+    x1 = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
+    m = 1;
+
+    x2 = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
+
+    return (x1 + x2) / 2;
 }
 
 void AbstractItcModel::CalculateConcentrations()
@@ -202,6 +248,8 @@ void AbstractItcModel::UpdateParameter()
     m_T = getSystemParameter(Temperature).Double();
     m_reservior = getSystemParameter(Reservoir).Bool();
     Concentration();
+    if (m_guess_failed && m_demand_guess)
+        InitialGuess();
 }
 
 QString AbstractItcModel::ModelInfo() const

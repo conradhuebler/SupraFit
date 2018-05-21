@@ -72,6 +72,22 @@ public:
         m_lock_concentrations = true;
     }
     inline QPointer<DataTable> ConcentrationTable() const { return m_c0; }
+
+    /*! \brief Calculates the initial guess for the heat of formation
+     * Defined for 1:1 system, but works for more complex systems as well
+     * If not enough system parameter are defined, the function will fail
+     * and be called after all parameter are defined
+     */
+    qreal GuessdH();
+
+    /*! \brief Calculates the initial guess for the fx factor
+     * Defined for 1:1 system, but works for more complex systems as well
+     * This correction or stoichiometry factor defines the number of binding sites
+     * If not enough system parameter are defined, the function will fail
+     * and be called after all parameter are defined
+     */
+    qreal GuessFx();
+
     inline double getV() const { return getSystemParameter(CellVolume).Double(); }
     inline double getCellConcentration() const { return m_cell_concentration; }
     inline double getSyringeConcentration() const { return m_syringe_concentration; }

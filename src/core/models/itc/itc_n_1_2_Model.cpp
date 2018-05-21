@@ -50,7 +50,7 @@ itc_n_ItoII_Model::~itc_n_ItoII_Model()
 {
 }
 
-void itc_n_ItoII_Model::InitialGuess()
+void itc_n_ItoII_Model::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 6;
     (*GlobalTable())[1] = 6;
@@ -61,6 +61,15 @@ void itc_n_ItoII_Model::InitialGuess()
     LocalTable()->data(3, 0) = 1;
     LocalTable()->data(4, 0) = -400;
     LocalTable()->data(5, 0) = 1;
+
+    /*
+    LocalTable()->data(0, 0) = GuessdH();
+    LocalTable()->data(1, 0) = GuessFx();
+    LocalTable()->data(2, 0) = GuessdH();
+    LocalTable()->data(3, 0) = 2*GuessFx();
+    LocalTable()->data(4, 0) = -400;
+    LocalTable()->data(5, 0) = 1;
+    */
 
     AbstractModel::Calculate();
 }

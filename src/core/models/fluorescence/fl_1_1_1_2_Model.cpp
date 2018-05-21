@@ -90,7 +90,7 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
     */
 }
 
-void fl_ItoI_ItoII_Model::InitialGuess()
+void fl_ItoI_ItoII_Model::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 4;
     (*GlobalTable())[1] = 2;

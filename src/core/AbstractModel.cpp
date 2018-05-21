@@ -106,6 +106,7 @@ void AbstractModel::PrepareParameter(int global, int local)
     DeclareSystemParameter();
     DeclareOptions();
     LoadSystemParameter();
+    UpdateParameter();
 }
 
 AbstractModel::~AbstractModel()

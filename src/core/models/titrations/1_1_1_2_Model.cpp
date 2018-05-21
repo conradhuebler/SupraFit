@@ -89,7 +89,7 @@ void ItoI_ItoII_Model::EvaluateOptions()
     AbstractTitrationModel::EvaluateOptions();
 }
 
-void ItoI_ItoII_Model::InitialGuess()
+void ItoI_ItoII_Model::InitialGuess_Private()
 {
     qreal K11 = Guess_1_1();
     (*GlobalTable())[0] = Guess_1_1();

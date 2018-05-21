@@ -134,7 +134,7 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
     AbstractTitrationModel::EvaluateOptions();
 }
 
-void IItoI_ItoI_ItoII_Model::InitialGuess()
+void IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 {
     qreal K11 = Guess_1_1();
     //GlobalTable() = QList<qreal>() << 1 << K11 << 1;

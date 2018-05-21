@@ -62,7 +62,7 @@ void MonoMolecularModel::DeclareSystemParameter()
     setSystemParameterValue(ConcentrationB, 0);
 }
 
-void MonoMolecularModel::InitialGuess()
+void MonoMolecularModel::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 1;
     (*GlobalTable())[1] = 1;

@@ -41,7 +41,7 @@ fl_ItoI_Model::~fl_ItoI_Model()
 {
 }
 
-void fl_ItoI_Model::InitialGuess()
+void fl_ItoI_Model::InitialGuess_Private()
 {
     (*GlobalTable())[0] = Guess_1_1();
 

@@ -62,18 +62,18 @@ itc_IItoII_Model::~itc_IItoII_Model()
             delete m_solvers[i];
 }
 
-void itc_IItoII_Model::InitialGuess()
+void itc_IItoII_Model::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 6;
     (*GlobalTable())[1] = 6;
     (*GlobalTable())[2] = 6;
 
-    LocalTable()->data(0, 0) = -4000;
-    LocalTable()->data(1, 0) = -4000;
-    LocalTable()->data(2, 0) = -4000;
+    LocalTable()->data(0, 0) = GuessdH();
+    LocalTable()->data(1, 0) = GuessdH();
+    LocalTable()->data(2, 0) = GuessdH();
     LocalTable()->data(3, 0) = -1000;
     LocalTable()->data(4, 0) = 1;
-    LocalTable()->data(5, 0) = 1;
+    LocalTable()->data(5, 0) = GuessFx();
 
     AbstractModel::Calculate();
 }

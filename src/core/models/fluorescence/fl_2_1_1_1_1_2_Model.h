@@ -51,7 +51,7 @@ public:
 
     virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 3; }
-    virtual void InitialGuess() override;
+    virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return true; }
     virtual MassResults MassBalance(qreal A, qreal B) override;

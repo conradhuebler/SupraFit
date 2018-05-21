@@ -45,7 +45,7 @@ public:
     virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 2; }
 
-    virtual void InitialGuess() override;
+    virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
     virtual qreal BC50() const override { return BC50::IItoI_ItoI_BC50(GlobalParameter(0), GlobalParameter(1)); }

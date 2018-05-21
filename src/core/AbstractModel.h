@@ -296,7 +296,20 @@ public:
     qreal finv(qreal p);
     qreal Error(qreal confidence, bool f = true);
 
-    virtual void InitialGuess() = 0;
+    /*! \brief Demand initial guess
+     * An initial guess will be demanded, if it fails, the guess will be automatically calculated
+     * when all requirement are met
+     */
+    inline void InitialGuess()
+    {
+        m_demand_guess = true;
+        InitialGuess_Private();
+    }
+
+    /*! \brief Here goes the model implementation for the initial guess
+     */
+
+    virtual void InitialGuess_Private() = 0;
 
     /*! \brief Returns pointer to Model DataTable
      * overloaded function
@@ -545,7 +558,7 @@ protected:
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
-    bool m_corrupt, m_converged, m_locked_model, m_fast;
+    bool m_corrupt, m_converged, m_locked_model, m_fast, m_guess_failed = true, m_demand_guess = false;
     OptimizerConfig m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;

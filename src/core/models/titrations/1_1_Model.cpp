@@ -42,7 +42,7 @@ ItoI_Model::~ItoI_Model()
 {
 }
 
-void ItoI_Model::InitialGuess()
+void ItoI_Model::InitialGuess_Private()
 {
     (*GlobalTable())[0] = Guess_1_1();
 
