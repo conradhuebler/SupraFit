@@ -52,12 +52,12 @@ itc_ItoI_Model::~itc_ItoI_Model()
 
 void itc_ItoI_Model::InitialGuess_Private()
 {
-    (*GlobalTable())[0] = 6;
-
     LocalTable()->data(0, 0) = GuessdH();
     LocalTable()->data(1, 0) = -1000;
     LocalTable()->data(2, 0) = 1;
     LocalTable()->data(3, 0) = GuessFx();
+
+    (*GlobalTable())[0] = GuessK();
 
     AbstractModel::Calculate();
 }

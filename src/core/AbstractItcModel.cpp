@@ -148,6 +148,22 @@ qreal AbstractItcModel::GuessFx()
     return (x1 + x2) / 2;
 }
 
+qreal AbstractItcModel::GuessK(int index)
+{
+
+    /* For now, this is really a crude method
+     */
+
+    QMap<qreal, qreal> vals;
+
+    for (double i = 1; i < 10; i += 0.5) {
+        (*GlobalTable())[index] = i;
+        Calculate();
+        vals[SumofSquares()] = i;
+    }
+    return vals.first();
+}
+
 void AbstractItcModel::CalculateConcentrations()
 {
     if (m_lock_concentrations)

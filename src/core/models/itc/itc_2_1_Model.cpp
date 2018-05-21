@@ -52,7 +52,6 @@ itc_IItoI_Model::~itc_IItoI_Model()
 
 void itc_IItoI_Model::InitialGuess_Private()
 {
-    (*GlobalTable())[0] = 6;
     (*GlobalTable())[1] = 6;
 
     LocalTable()->data(0, 0) = GuessdH();
@@ -60,6 +59,11 @@ void itc_IItoI_Model::InitialGuess_Private()
     LocalTable()->data(2, 0) = -1000;
     LocalTable()->data(3, 0) = 1;
     LocalTable()->data(4, 0) = GuessFx();
+
+    qreal K = GuessK(1);
+
+    (*GlobalTable())[0] = K / 2.0;
+    (*GlobalTable())[1] = K;
 
     AbstractModel::Calculate();
 }

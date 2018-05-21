@@ -88,6 +88,14 @@ public:
      */
     qreal GuessFx();
 
+    /*! \brief Calculates the initial guess for the K11
+     * Defined for 1:1 system, but works for more complex systems as well
+     *
+     * If not enough system parameter are defined, the function will fail
+     * and be called after all parameter are defined
+     */
+    qreal GuessK(int index = 0);
+
     inline double getV() const { return getSystemParameter(CellVolume).Double(); }
     inline double getCellConcentration() const { return m_cell_concentration; }
     inline double getSyringeConcentration() const { return m_syringe_concentration; }
