@@ -164,6 +164,12 @@ signals:
 class DataClassPrivate : public QSharedData {
 
 public:
+    enum DataType {
+        Table = 1,
+        Thermogram = 2,
+        Spectrum = 3
+    };
+
     DataClassPrivate();
     DataClassPrivate(int i);
     DataClassPrivate(const DataClassPrivate* other);
@@ -179,10 +185,14 @@ public:
     int m_type, m_maxsize;
     int m_host_assignment;
 
-    QPointer<DataTable> m_dependent_model, m_independent_model, m_raw_data;
+    QPointer<DataTable> m_dependent_model, m_independent_model;
+    DataType m_datatype;
+    QJsonObject m_raw_data;
+
     QList<qreal> m_scaling;
     QMap<int, SystemParameter> m_system_parameter;
     QPointer<DataClassPrivateObject> m_info;
+    QString m_title;
     void check();
 };
 
@@ -193,16 +203,9 @@ class DataClass : public QObject {
 public:
     DataClass(QObject* parent = 0);
     DataClass(const QJsonObject& json, int type = 1, QObject* parent = 0);
-    DataClass(int type = 1, QObject* parent = 0);
     DataClass(const DataClass* other);
     DataClass(const DataClass& other);
     virtual ~DataClass();
-
-    enum {
-        DiscretData = 1,
-        ContiuousData = 2,
-        EmptyData = 3
-    };
 
     inline void addPoint(QVector<qreal> conc, QVector<qreal> data)
     {
@@ -307,6 +310,15 @@ public:
         Q_UNUSED(format)
         return i + 1;
     }
+    inline void setRawData(const QJsonObject& data) { d->m_raw_data = data; }
+
+    inline void setDataType(DataClassPrivate::DataType type) { d->m_datatype = type; }
+
+    inline DataClassPrivate::DataType DataType() const { return d->m_datatype; }
+
+    inline void setProjectTitle(const QString& str) { d->m_title = str; }
+
+    inline QString ProjectTitle() const { return d->m_title; }
 
 private:
     QJsonObject m_systemObject;

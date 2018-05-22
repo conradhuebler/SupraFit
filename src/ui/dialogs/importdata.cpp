@@ -105,7 +105,7 @@ void ImportData::setUi()
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
 
     m_thermogram = new QPushButton(tr("Import Thermogram"));
-    connect(m_thermogram, &QPushButton::clicked, this, &ImportData::ImportTheromgram);
+    connect(m_thermogram, &QPushButton::clicked, this, &ImportData::ImportThermogram);
 
     m_table = new TableView;
 
@@ -159,6 +159,9 @@ void ImportData::LoadFile()
             handler->setFileContent(thermogram->Content());
             DataTable* model = handler->getData();
             m_table->setModel(model);
+            m_raw = thermogram->Raw();
+            m_type = DataClassPrivate::Thermogram;
+            m_title = thermogram->ProjectName();
             NoChanged();
         }
 
@@ -204,11 +207,14 @@ void ImportData::ExportFile()
 void ImportData::WriteData(const DataTable* model, int independent)
 {
     independent = m_conc->value();
-    m_storeddata = new DataClass(DataClass::DiscretData); //TODO for spectra this must be changeable
+    m_storeddata = new DataClass;
     DataTable* concentration_block = model->BlockColumns(0, independent);
     DataTable* signals_block = model->BlockColumns(independent, model->columnCount() - independent);
     m_storeddata->setDependentTable(signals_block);
     m_storeddata->setIndependentTable(concentration_block);
+    m_storeddata->setRawData(m_raw);
+    m_storeddata->setDataType(m_type);
+    m_storeddata->setProjectTitle(m_title);
 }
 
 void ImportData::accept()
@@ -218,7 +224,7 @@ void ImportData::accept()
     QDialog::accept();
 }
 
-void ImportData::ImportTheromgram()
+void ImportData::ImportThermogram()
 {
     Thermogram* thermogram = new Thermogram;
     if (!m_filename.isEmpty())
@@ -231,6 +237,9 @@ void ImportData::ImportTheromgram()
         DataTable* model = handler->getData();
         m_table->setModel(model);
         NoChanged();
+        m_raw = thermogram->Raw();
+        m_type = DataClassPrivate::Thermogram;
+        m_title = thermogram->ProjectName();
     }
 
     delete thermogram;

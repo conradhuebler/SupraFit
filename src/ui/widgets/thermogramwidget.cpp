@@ -111,11 +111,11 @@ void ThermogramWidget::setUi()
     connect(m_smooth, &QCheckBox::stateChanged, this, &ThermogramWidget::UpdatePlot);
     connect(m_smooth, &QCheckBox::stateChanged, this, &ThermogramWidget::Update);
 
-    m_degree = new QSpinBox;
-    m_degree->setMinimum(2);
-    m_degree->setMaximum(120);
-    m_degree->setValue(3);
-    connect(m_degree, QOverload<int>::of(&QSpinBox::valueChanged), this, &ThermogramWidget::FitBaseLine);
+    m_coeffs = new QSpinBox;
+    m_coeffs->setMinimum(2);
+    m_coeffs->setMaximum(120);
+    m_coeffs->setValue(3);
+    connect(m_coeffs, QOverload<int>::of(&QSpinBox::valueChanged), this, &ThermogramWidget::FitBaseLine);
 
     m_constant = new QLineEdit(QString::number(m_offset));
     connect(m_constant, &QLineEdit::textChanged, this, &ThermogramWidget::UpdateLimits);
@@ -130,7 +130,7 @@ void ThermogramWidget::setUi()
     baselayout->addWidget(new QLabel(tr("Constant offset")), 1, 0);
     baselayout->addWidget(m_constant, 1, 1);
     baselayout->addWidget(new QLabel(tr("Coefficents:")), 1, 2);
-    baselayout->addWidget(m_degree, 1, 3);
+    baselayout->addWidget(m_coeffs, 1, 3);
     baselayout->addWidget(m_smooth, 1, 4);
     baselayout->addWidget(m_filter, 1, 5);
 
@@ -158,7 +158,7 @@ void ThermogramWidget::setUi()
     setLayout(layout);
 
     m_fit_type->setDisabled(true);
-    m_degree->setDisabled(true);
+    m_coeffs->setDisabled(true);
     m_constant->setDisabled(true);
 
     m_stdev->setEnabled(false);
@@ -354,7 +354,7 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
         m_limits->setChecked(false);
 
         m_fit_type->setDisabled(true);
-        m_degree->setDisabled(true);
+        m_coeffs->setDisabled(true);
         m_constant->setDisabled(true);
 
         m_stdev->setEnabled(false);
@@ -365,7 +365,7 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
         coeff(0) = m_offset;
 
         m_fit_type->setDisabled(true);
-        m_degree->setDisabled(true);
+        m_coeffs->setDisabled(true);
         m_constant->setDisabled(true);
 
         m_stdev->setEnabled(false);
@@ -375,7 +375,7 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
         coeff = Vector(1);
 
         m_fit_type->setDisabled(true);
-        m_degree->setDisabled(true);
+        m_coeffs->setDisabled(true);
         m_constant->setDisabled(false);
 
         m_stdev->setEnabled(false);
@@ -383,12 +383,12 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
 
         coeff(0) = m_constant->text().toDouble();
     } else if (str == "polynomial") {
-        coeff = Vector(m_degree->value());
+        coeff = Vector(m_coeffs->value());
         for (int i = 0; i < coeff.size(); ++i)
             coeff(i) = 1;
 
         m_fit_type->setDisabled(false);
-        m_degree->setDisabled(false);
+        m_coeffs->setDisabled(false);
         m_constant->setDisabled(false);
         m_stdev->setEnabled(true);
         m_mult->setEnabled(true);
@@ -420,10 +420,9 @@ void ThermogramWidget::FitBaseLine()
         SmoothFunction(spectrum, m_filter->value());
 
     PeakPick::BaseLine baseline(spectrum);
-    baseline.setNoCoeffs(m_degree->value());
+    baseline.setNoCoeffs(m_coeffs->value());
 
     qreal constant = m_constant->text().toDouble();
-    ;
 
     qreal stdev = m_stdev->text().toDouble();
     qreal mult = m_mult->text().toDouble();
@@ -495,4 +494,35 @@ void ThermogramWidget::PeakChanged(int row, int column, int value)
 
     Update();
     PeakDoubleClicked(row);
+}
+
+void ThermogramWidget::setFit(const QJsonObject& fit)
+{
+    m_baseline_type->setCurrentText(fit["baseline"].toString());
+    m_fit_type->setCurrentText(fit["baseline_fit"].toString());
+    m_coeffs->setValue(fit["coeffs"].toInt());
+    m_constant->setText(fit["constants"].toString());
+    m_stdev->setText(fit["stddev"].toString());
+    m_mult->setText(fit["multiplier"].toString());
+    if (fit.contains("smooth")) {
+        m_smooth->setChecked(true);
+        m_filter->setValue(fit["SV"].toInt());
+    }
+    Update();
+}
+
+QJsonObject ThermogramWidget::Fit() const
+{
+    QJsonObject fit;
+    fit["baseline"] = m_baseline_type->currentText();
+    fit["baseline_fit"] = m_fit_type->currentText();
+    fit["coeffs"] = m_coeffs->value();
+    fit["constants"] = m_constant->text();
+    fit["stddev"] = m_stdev->text();
+    fit["multiplier"] = m_mult->text();
+    if (m_smooth->isChecked()) {
+        fit["smooth"] = "SG";
+        fit["SV"] = m_filter->value();
+    }
+    return fit;
 }

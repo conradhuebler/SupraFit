@@ -129,7 +129,7 @@ MainWindow::MainWindow()
     m_new = new QAction(Icon("document-new"), tr("New Table"));
     connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
 
-    m_load = new QAction(Icon("document-open"), tr("Open File"));
+    m_load = new QAction(Icon("document-open"), tr("Open Project"));
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
 
     m_save = new QAction(Icon("document-save-all"), tr("Save Project"));
@@ -306,7 +306,7 @@ void MainWindow::NewTable()
 
 void MainWindow::OpenFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt);;All files (*.*)"));
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat, *.itc, *.ITC);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt, *.itc);;All files (*.*)"));
     if (filename.isEmpty())
         return;
     setLastDir(filename);

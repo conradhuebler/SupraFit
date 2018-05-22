@@ -562,7 +562,6 @@ DataClassPrivate::DataClassPrivate()
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
     m_dependent_model->setCheckable(true);
-    m_raw_data = new DataTable;
     if (m_independent_model->columnCount() != m_scaling.size())
         for (int i = 0; i < m_independent_model->columnCount(); ++i)
             m_scaling << 1;
@@ -579,7 +578,6 @@ DataClassPrivate::DataClassPrivate(int type)
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
     m_dependent_model->setCheckable(true);
-    m_raw_data = new DataTable;
     if (m_independent_model->columnCount() != m_scaling.size())
         for (int i = 0; i < m_independent_model->columnCount(); ++i)
             m_scaling << 1;
@@ -596,9 +594,11 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_scaling = other.m_scaling;
     m_host_assignment = other.m_host_assignment;
     m_dependent_model = new DataTable(other.m_dependent_model);
-    m_raw_data = new DataTable(other.m_raw_data);
+    m_raw_data = other.m_raw_data;
     m_type = other.m_type;
     m_system_parameter = other.m_system_parameter;
+    m_datatype = other.m_datatype;
+    m_title = other.m_title;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
@@ -609,9 +609,11 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_scaling = other->m_scaling;
     m_host_assignment = other->m_host_assignment;
     m_dependent_model = new DataTable(other->m_dependent_model);
-    m_raw_data = new DataTable(other->m_raw_data);
+    m_raw_data = other->m_raw_data;
     m_type = other->m_type;
     m_system_parameter = other->m_system_parameter;
+    m_datatype = other->m_datatype;
+    m_title = other->m_title;
 }
 
 DataClassPrivate::~DataClassPrivate()
@@ -620,8 +622,6 @@ DataClassPrivate::~DataClassPrivate()
         delete m_independent_model;
     if (m_dependent_model)
         delete m_dependent_model;
-    if (m_raw_data)
-        delete m_raw_data;
     if (m_info)
         delete m_info;
 }
@@ -631,7 +631,6 @@ void DataClassPrivate::check()
     std::cout << "Check of data " << std::endl;
     std::cout << "Concentration Table ## Row:" << m_independent_model->rowCount() << " Colums: " << m_independent_model->columnCount() << std::endl;
     std::cout << "Signal Table ## Row:" << m_dependent_model->rowCount() << " Colums: " << m_dependent_model->columnCount() << std::endl;
-    std::cout << "Raw Table ## Row:" << m_raw_data->rowCount() << " Colums: " << m_raw_data->columnCount() << std::endl;
 }
 
 DataClass::DataClass(QObject* parent)
@@ -650,13 +649,6 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
     if (d->m_independent_model->columnCount() != d->m_scaling.size())
         for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
             d->m_scaling << 1;
-    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
-}
-
-DataClass::DataClass(int type, QObject* parent)
-    : QObject(parent)
-{
-    d = new DataClassPrivate(type);
     connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
@@ -729,9 +721,10 @@ const QJsonObject DataClass::ExportData() const
     json["independent"] = d->m_independent_model->ExportTable(true);
     json["dependent"] = d->m_dependent_model->ExportTable(true);
     json["system"] = systemObject;
-    json["datatype"] = QString("discrete");
+    json["DataType"] = d->m_datatype;
     json["SupraFit"] = qint_version;
-
+    json["raw"] = d->m_raw_data;
+    json["title"] = d->m_title;
     return json;
 }
 
@@ -740,8 +733,6 @@ bool DataClass::ImportData(const QJsonObject& topjson)
     int fileversion = topjson["SupraFit"].toInt();
 
     m_systemObject = topjson["system"].toObject();
-    if ("discrete" == topjson["datatype"].toString())
-        d->m_type = 1;
 
     if (fileversion >= 1601) {
         d->m_independent_model->ImportTable(topjson["independent"].toObject());
@@ -790,8 +781,11 @@ bool DataClass::ImportData(const QJsonObject& topjson)
         QStringList header = topjson["header"].toString().split("|");
         setHeader(header);
     }
-
-
+    if (fileversion > 1602) {
+        d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
+        d->m_raw_data = topjson["raw"].toObject();
+        d->m_title = topjson["title"].toString();
+    }
     return true;
 }
 

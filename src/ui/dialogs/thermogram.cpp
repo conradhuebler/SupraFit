@@ -403,3 +403,26 @@ qreal Thermogram::PeakAt(int i)
         dilution = m_dil_heat[i];
     return (m_raw[i] - dilution - (m_heat_offset + m_dil_offset) * m_remove_offset->isChecked()) * m_scale->text().toDouble();
 }
+
+QJsonObject Thermogram::Raw() const
+{
+    QJsonObject raw, block;
+
+    block["fit"] = m_experiment->Fit();
+    block["file"] = m_exp_file->text();
+    raw["experiment"] = block;
+
+    if (!m_dil_file->text().isEmpty()) {
+        block["fit"] = m_dilution->Fit();
+        block["file"] = m_dil_file->text();
+        raw["dilution"] = block;
+    }
+
+    return raw;
+}
+
+QString Thermogram::ProjectName() const
+{
+    QFileInfo file(m_dil_file->text());
+    return file.baseName();
+}

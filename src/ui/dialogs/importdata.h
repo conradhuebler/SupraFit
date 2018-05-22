@@ -63,6 +63,7 @@ public:
 
     inline DataClass getStoredData() { return *m_storeddata; }
     inline QString ProjectFile() const { return m_projectfile; }
+    inline QJsonObject getProject() const { m_storeddata->ExportData(); }
 
 private:
     void setUi();
@@ -76,6 +77,9 @@ private:
     QPointer<DataClass> m_storeddata;
     QPointer<QCheckBox> m_switch_concentration;
     QString m_filename, m_projectfile;
+    QJsonObject m_raw;
+    DataClassPrivate::DataType m_type = DataClassPrivate::Table;
+    QString m_title;
 
 private slots:
     void LoadFile();
@@ -83,5 +87,5 @@ private slots:
     void ExportFile();
     void accept();
     void NoChanged();
-    void ImportTheromgram();
+    void ImportThermogram();
 };

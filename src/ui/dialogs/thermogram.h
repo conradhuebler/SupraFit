@@ -47,7 +47,10 @@ class Thermogram : public QDialog {
 public:
     Thermogram();
 
-    QString Content(); //{ return m_content; }
+    QString Content();
+    QJsonObject Raw() const;
+    QString ProjectName() const;
+
     virtual void keyPressEvent(QKeyEvent* evt) override
     {
         if (evt->key() == Qt::Key_Enter || evt->key() == Qt::Key_Return)
@@ -56,6 +59,9 @@ public:
     }
 
     void setExperimentFile(const QString& str);
+    void setDilutionFile(const QString& str);
+    void setExperimentFit(const QJsonObject& json);
+    void setDilutionFit(const QJsonObject& json);
 
 private:
     void setUi();

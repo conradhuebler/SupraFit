@@ -54,6 +54,9 @@ public:
     void PickPeaks();
     void clear();
 
+    void setFit(const QJsonObject& fit);
+    QJsonObject Fit() const;
+
 signals:
     void IntegrationChanged();
 
@@ -72,7 +75,7 @@ private:
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
 
     QComboBox *m_baseline_type, *m_fit_type;
-    QSpinBox *m_degree, *m_filter, *m_peak_box;
+    QSpinBox *m_coeffs, *m_filter, *m_peak_box;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QPushButton* m_fit_button;
     QCheckBox *m_limits, *m_smooth;
