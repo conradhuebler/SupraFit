@@ -58,8 +58,8 @@ public:
         QDialog::keyPressEvent(evt);
     }
 
-    void setExperimentFile(const QString& str);
-    void setDilutionFile(const QString& str);
+    void setExperimentFile(QString str);
+    void setDilutionFile(QString str);
     void setExperimentFit(const QJsonObject& json);
     void setDilutionFit(const QJsonObject& json);
 
@@ -69,7 +69,7 @@ private:
     void UpdateExpTable();
     void UpdateDilTable();
 
-    PeakPick::spectrum LoadITCFile(QString filename, std::vector<PeakPick::Peak>* peaks, qreal& offset);
+    PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset);
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit;

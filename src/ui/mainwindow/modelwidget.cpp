@@ -295,10 +295,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
 
     m_layout->addWidget(area);
 
-    if (m_model->Type() == 1)
-        DiscreteUI();
-    else if (m_model->Type() == 3)
-        EmptyUI();
+    DiscreteUI();
 
     resizeButtons();
     m_model_widget->setLayout(m_layout);

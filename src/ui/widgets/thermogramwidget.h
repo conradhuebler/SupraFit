@@ -68,6 +68,7 @@ private:
     void UpdatePlot();
     void UpdateLimits();
     void UpdateBase();
+    void CreateSeries();
 
     void fromSpectrum(const PeakPick::spectrum* original, LineSeries* series);
     void fromPolynomial(const Vector& coeff, LineSeries* series);

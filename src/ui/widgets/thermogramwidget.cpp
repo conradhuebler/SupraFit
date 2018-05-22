@@ -47,13 +47,7 @@
 ThermogramWidget::ThermogramWidget(QWidget* parent)
     : QWidget(parent)
 {
-    m_thermogram_series = new LineSeries;
-    m_baseline_series = new LineSeries;
-    m_upper = new LineSeries;
-    m_lower = new LineSeries;
-    m_left = new LineSeries;
-    m_right = new LineSeries;
-
+    CreateSeries();
     setUi();
 }
 
@@ -299,8 +293,11 @@ void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeri
         SmoothFunction(spectrum, m_filter->value());
 
     series->clear();
-    for (int i = 0; i < spectrum->size(); i++)
+    for (int i = 0; i < spectrum->size(); i++) {
+        spectrum->X(i);
+        spectrum->Y(i);
         series->append(QPointF(spectrum->X(i), spectrum->Y(i) * m_scale));
+    }
 }
 
 void ThermogramWidget::fromPolynomial(const Vector& coeff, LineSeries* series)
@@ -317,6 +314,7 @@ void ThermogramWidget::clear()
     m_spectrum = false;
     m_table->clear();
     m_thermogram->ClearChart();
+    CreateSeries();
 }
 
 void ThermogramWidget::Update()
@@ -525,4 +523,14 @@ QJsonObject ThermogramWidget::Fit() const
         fit["SV"] = m_filter->value();
     }
     return fit;
+}
+
+void ThermogramWidget::CreateSeries()
+{
+    m_thermogram_series = new LineSeries;
+    m_baseline_series = new LineSeries;
+    m_upper = new LineSeries;
+    m_lower = new LineSeries;
+    m_left = new LineSeries;
+    m_right = new LineSeries;
 }

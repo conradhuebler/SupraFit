@@ -275,15 +275,15 @@ void ImportData::ImportThermogram()
 
     QJsonObject experiment = m_raw["experiment"].toObject();
 
-    thermogram->setExperimentFile(experiment["file"].toString());
-    thermogram->setExperimentFit(experiment["fit"].toObject());
-
     if (m_raw.keys().contains("dilution")) {
         QJsonObject experiment = m_raw["dilution"].toObject();
 
         thermogram->setDilutionFile(experiment["file"].toString());
         thermogram->setDilutionFit(experiment["fit"].toObject());
     }
+
+    thermogram->setExperimentFile(experiment["file"].toString());
+    thermogram->setExperimentFit(experiment["fit"].toObject());
 
     thermogram->show();
 

@@ -158,12 +158,12 @@ void Thermogram::setUi()
     m_buttonbox->setDisabled(m_injct->text().isEmpty());
 
     connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateData);
-    //connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateData);
+    connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateData);
 
     setLayout(layout);
 }
 
-PeakPick::spectrum Thermogram::LoadITCFile(QString filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
+PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
 {
     peaks->clear();
     m_forceInject = true;
@@ -179,7 +179,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString filename, std::vector<PeakPic
         if (inf.exists())
             filename = lastdir + "/" + file;
         else
-            QMessageBox::information(this, tr("I Am Really Sorry"), tr("I will crash now, I could find the stored file (not at\nthe old place or in the current directory!"));
+            throw 404;
     }
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -247,14 +247,24 @@ PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
     return PeakPick::spectrum(experiment.second, experiment.first[0], experiment.first[experiment.first.size() - 1]);
 }
 
-void Thermogram::setExperimentFile(const QString& filename)
+void Thermogram::setExperimentFile(QString filename)
 {
     m_heat_offset = 0;
     QFileInfo info(filename);
     PeakPick::spectrum original;
     if (info.suffix() == "itc") {
         qreal offset = 0;
-        original = LoadITCFile(filename, &m_exp_peaks, offset);
+        try {
+            original = LoadITCFile(filename, &m_exp_peaks, offset);
+        } catch (int error) {
+            if (error == 404) {
+                m_exp_file->setStyleSheet("background-color: " + excluded());
+                qDebug() << "file no found";
+                return;
+            }
+        }
+        m_exp_file->setText(filename);
+        m_exp_file->setStyleSheet("background-color: " + included());
         m_exp_base->setText(QString::number(offset));
         m_experiment->setThermogram(&original, offset);
         m_experiment->setPeakList(m_exp_peaks);
@@ -326,7 +336,7 @@ void Thermogram::setDilution()
     setDilutionFile(filename);
 }
 
-void Thermogram::setDilutionFile(const QString& filename)
+void Thermogram::setDilutionFile(QString filename)
 {
     setLastDir(filename);
 
@@ -334,7 +344,17 @@ void Thermogram::setDilutionFile(const QString& filename)
     PeakPick::spectrum original;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
         qreal offset = 0;
-        original = LoadITCFile(filename, &m_dil_peaks, offset);
+        try {
+            original = LoadITCFile(filename, &m_dil_peaks, offset);
+        } catch (int error) {
+            if (error == 404) {
+                m_dil_file->setStyleSheet("background-color: " + excluded());
+                qDebug() << "file no found";
+                return;
+            }
+        }
+        m_dil_file->setText(filename);
+        m_dil_file->setStyleSheet("background-color: " + included());
         m_dilution->setThermogram(&original, offset);
         m_dilution->setPeakList(m_exp_peaks);
         m_dil_base->setText(QString::number(offset));
@@ -393,6 +413,7 @@ void Thermogram::clearExperiment()
     if (m_exp_file->text().isEmpty()) {
         m_experiment->clear();
         UpdateData();
+        m_exp_file->setStyleSheet("background-color: white");
     }
 }
 
@@ -401,6 +422,7 @@ void Thermogram::clearDilution()
     if (m_dil_file->text().isEmpty()) {
         m_dilution->clear();
         UpdateData();
+        m_dil_file->setStyleSheet("background-color: white");
     }
 }
 
