@@ -26,6 +26,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableWidget>
 
@@ -162,13 +163,24 @@ void Thermogram::setUi()
     setLayout(layout);
 }
 
-PeakPick::spectrum Thermogram::LoadITCFile(const QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
+PeakPick::spectrum Thermogram::LoadITCFile(QString filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
 {
     peaks->clear();
     m_forceInject = true;
     m_injection = true;
     Vector x, y;
 
+    QFileInfo info(filename);
+    if (!info.exists()) {
+        qDebug() << "File not found, trying in current directory";
+        QString file = info.baseName() + "." + info.suffix();
+        QString lastdir = qApp->instance()->property("lastdir").toString();
+        QFileInfo inf(lastdir + "/" + file);
+        if (inf.exists())
+            filename = lastdir + "/" + file;
+        else
+            QMessageBox::information(this, tr("I Am Really Sorry"), tr("I will crash now, I could find the stored file (not at\nthe old place or in the current directory!"));
+    }
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << file.errorString();
