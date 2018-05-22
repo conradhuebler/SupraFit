@@ -136,9 +136,10 @@ MainWindow::MainWindow()
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
 
     m_edit = new QAction(Icon("document-edit"), tr("Edit Data"));
-    m_edit->setCheckable(true);
-    m_edit->setChecked(false);
-    connect(m_edit, SIGNAL(toggled(bool)), m_model_dataholder, SLOT(EditTableAction(bool)));
+    //m_edit->setCheckable(true);
+    //m_edit->setChecked(false);
+    //connect(m_edit, SIGNAL(toggled(bool)), m_model_dataholder, SLOT(EditTableAction(bool)));
+    connect(m_edit, &QAction::triggered, this, &MainWindow::EditData);
 
     m_importmodel = new QAction(Icon("document-import"), tr("Import Models"));
     connect(m_importmodel, SIGNAL(triggered(bool)), this, SLOT(ImportModelAction()));
@@ -575,6 +576,26 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         return !qApp->instance()->property("tooltips").toBool();
     } else
         return QMainWindow::eventFilter(obj, event);
+}
+
+void MainWindow::EditData()
+{
+    int version = m_titration_data->ExportData()["SupraFit"].toInt();
+    if (version < 1602) {
+        QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
+
+        m_edit->setCheckable(true);
+        m_model_dataholder->EditTableAction(!m_edit->isChecked());
+        m_edit->setChecked(!m_edit->isChecked());
+    } else {
+        ImportData dialog(m_titration_data);
+        if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
+            {
+                if (m_titration_data->DataType() == DataClassPrivate::Thermogram)
+                    m_titration_data->ImportData(dialog.getStoredData().ExportData());
+            }
+        }
+    }
 }
 
 #include "suprafit.moc"

@@ -58,18 +58,20 @@ class ImportData : public QDialog {
 
 public:
     ImportData(const QString& file, QWidget* parent = 0);
+    ImportData(QWeakPointer<DataClass> data);
     ImportData(QWidget* parent = 0);
     ~ImportData();
 
     inline DataClass getStoredData() { return *m_storeddata; }
     inline QString ProjectFile() const { return m_projectfile; }
-    inline QJsonObject getProject() const { m_storeddata->ExportData(); }
+    inline QJsonObject getProject() const { return m_storeddata->ExportData(); }
 
 private:
-    void setUi();
+    void setUi(bool single = true);
+
     void WriteData(const DataTable* model, int independent = 2);
 
-    QPointer<TableView> m_table;
+    QPointer<TableView> m_table, m_sec_table;
     QPointer<QLineEdit> m_line;
     QPointer<QPushButton> m_select, m_export, m_file, m_thermogram;
     QPointer<QSpinBox> m_conc;
@@ -80,6 +82,7 @@ private:
     QJsonObject m_raw;
     DataClassPrivate::DataType m_type = DataClassPrivate::Table;
     QString m_title;
+    bool m_single = true;
 
 private slots:
     void LoadFile();
@@ -87,5 +90,6 @@ private slots:
     void ExportFile();
     void accept();
     void NoChanged();
+    void ImportThermogram(const QString& filename);
     void ImportThermogram();
 };

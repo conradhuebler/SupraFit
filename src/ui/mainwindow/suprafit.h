@@ -109,6 +109,7 @@ private slots:
     void InsertHistoryElement(const QJsonObject& model);
     void InsertHistoryElement(const QJsonObject& model, int active);
     void FirstStart();
+    void EditData();
 
 signals:
     void AppendPlainText(const QString& str);

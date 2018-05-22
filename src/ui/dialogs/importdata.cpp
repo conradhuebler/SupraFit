@@ -26,6 +26,7 @@
 #include <QDebug>
 
 #include <QtCore/QFile>
+#include <QtCore/QTimer>
 
 #include <QtGui/QClipboard>
 #include <QtGui/QKeyEvent>
@@ -78,13 +79,36 @@ ImportData::ImportData(QWidget* parent)
     m_table->setModel(model);
 }
 
+ImportData::ImportData(QWeakPointer<DataClass> data)
+    : m_single(false)
+{
+    // That is all not nice, I know
+
+    if (data.data()->DataType() == DataClassPrivate::Table) {
+        setUi(m_single);
+        m_table->setModel(data.data()->IndependentModel());
+        m_sec_table->setModel(data.data()->DependentModel());
+    } else if (data.data()->DataType() == DataClassPrivate::Thermogram) {
+        setUi(true);
+        DataTable* model = new DataTable(0, 0, this);
+        m_table->setModel(model);
+        m_raw = data.data()->ExportData()["raw"].toObject();
+        QTimer::singleShot(0, this, SLOT(ImportThermogram(QString)));
+
+    } else {
+        setUi();
+        DataTable* model = new DataTable(0, 0, this);
+        m_table->setModel(model);
+    }
+}
+
 ImportData::~ImportData()
 {
     if (m_storeddata)
         delete m_storeddata;
 }
 
-void ImportData::setUi()
+void ImportData::setUi(bool single)
 {
     QGridLayout* layout = new QGridLayout;
 
@@ -105,18 +129,33 @@ void ImportData::setUi()
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
 
     m_thermogram = new QPushButton(tr("Import Thermogram"));
-    connect(m_thermogram, &QPushButton::clicked, this, &ImportData::ImportThermogram);
+    connect(m_thermogram, &QPushButton::clicked, this, [this]() {
+        ImportThermogram(m_filename);
+    });
 
     m_table = new TableView;
 
-    layout->addWidget(m_select, 0, 0);
-    layout->addWidget(m_line, 0, 1);
-    //     layout->addWidget(m_file, 0, 2);
-    layout->addWidget(m_export, 0, 3);
-    layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
-    layout->addWidget(m_conc, 1, 1);
-    layout->addWidget(m_table, 3, 0, 1, 4);
-    layout->addWidget(m_thermogram, 4, 0);
+    if (single == false) {
+        m_sec_table = new TableView;
+    }
+    if (single) {
+        layout->addWidget(m_select, 0, 0);
+        layout->addWidget(m_line, 0, 1);
+        layout->addWidget(m_export, 0, 3);
+
+        layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
+        layout->addWidget(m_conc, 1, 1);
+        layout->addWidget(m_table, 3, 0, 1, 4);
+    }
+    if (!single) {
+        layout->addWidget(m_table, 3, 0);
+        m_table->setFixedWidth(200);
+        layout->addWidget(m_sec_table, 3, 1, 1, 3);
+        m_sec_table->setFixedWidth(600);
+    }
+    if (single) {
+        layout->addWidget(m_thermogram, 4, 0);
+    }
     layout->addWidget(m_buttonbox, 4, 1, 1, 4);
     connect(m_table, &TableView::Edited, this, &ImportData::NoChanged);
 
@@ -150,23 +189,7 @@ void ImportData::LoadFile()
     PeakPick::spectrum original;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
 
-        Thermogram* thermogram = new Thermogram;
-        thermogram->setExperimentFile(m_filename);
-        thermogram->show();
-
-        if (thermogram->exec() == QDialog::Accepted) {
-            FileHandler* handler = new FileHandler(this);
-            handler->setFileContent(thermogram->Content());
-            DataTable* model = handler->getData();
-            m_table->setModel(model);
-            m_raw = thermogram->Raw();
-            m_type = DataClassPrivate::Thermogram;
-            m_title = thermogram->ProjectName();
-            NoChanged();
-        }
-
-        delete thermogram;
-
+        ImportThermogram(m_filename);
     } else if (info.suffix() == "json" || info.suffix() == "JSON" || info.suffix() == "suprafit" || info.suffix() == "SUPRAFIT" || info.suffix() == "jdat" || info.suffix() == "JDAT") {
         m_projectfile = m_filename;
         QDialog::accept();
@@ -176,6 +199,7 @@ void ImportData::LoadFile()
 
         if (filehandler->FileSupported()) {
             DataTable* model = filehandler->getData();
+            model->setEditable(true);
             m_table->setModel(model);
             if (model->columnCount() == 2 && model->rowCount() > 100)
                 QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly."));
@@ -224,11 +248,11 @@ void ImportData::accept()
     QDialog::accept();
 }
 
-void ImportData::ImportThermogram()
+void ImportData::ImportThermogram(const QString& filename)
 {
     Thermogram* thermogram = new Thermogram;
     if (!m_filename.isEmpty())
-        thermogram->setExperimentFile(m_filename);
+        thermogram->setExperimentFile(filename);
     thermogram->show();
 
     if (thermogram->exec() == QDialog::Accepted) {
@@ -240,9 +264,44 @@ void ImportData::ImportThermogram()
         m_raw = thermogram->Raw();
         m_type = DataClassPrivate::Thermogram;
         m_title = thermogram->ProjectName();
+        delete thermogram;
+        accept();
+    } else
+        delete thermogram;
+}
+void ImportData::ImportThermogram()
+{
+    Thermogram* thermogram = new Thermogram;
+
+    QJsonObject experiment = m_raw["experiment"].toObject();
+
+    thermogram->setExperimentFile(experiment["file"].toString());
+    thermogram->setExperimentFit(experiment["fit"].toObject());
+
+    if (m_raw.keys().contains("dilution")) {
+        QJsonObject experiment = m_raw["dilution"].toObject();
+
+        thermogram->setDilutionFile(experiment["file"].toString());
+        thermogram->setDilutionFit(experiment["fit"].toObject());
     }
 
-    delete thermogram;
-}
+    thermogram->show();
 
+    if (thermogram->exec() == QDialog::Accepted) {
+        FileHandler* handler = new FileHandler(this);
+        handler->setFileContent(thermogram->Content());
+        DataTable* model = handler->getData();
+        m_table->setModel(model);
+        NoChanged();
+        m_raw = thermogram->Raw();
+        m_type = DataClassPrivate::Thermogram;
+        m_title = thermogram->ProjectName();
+        delete thermogram;
+        accept();
+
+    } else {
+        delete thermogram;
+        QDialog::reject();
+    }
+}
 #include "importdata.moc"

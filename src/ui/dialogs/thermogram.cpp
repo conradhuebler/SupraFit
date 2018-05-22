@@ -309,12 +309,18 @@ void Thermogram::setDilution()
     QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
     if (filename.isEmpty())
         return;
+    setLastDir(filename);
 
+    setDilutionFile(filename);
+}
+
+void Thermogram::setDilutionFile(const QString& filename)
+{
     setLastDir(filename);
 
     QFileInfo info(filename);
     PeakPick::spectrum original;
-    if (info.suffix() == "itc") {
+    if (info.suffix() == "itc" || info.suffix() == "ITC") {
         qreal offset = 0;
         original = LoadITCFile(filename, &m_dil_peaks, offset);
         m_dilution->setThermogram(&original, offset);
@@ -423,6 +429,16 @@ QJsonObject Thermogram::Raw() const
 
 QString Thermogram::ProjectName() const
 {
-    QFileInfo file(m_dil_file->text());
+    QFileInfo file(m_exp_file->text());
     return file.baseName();
+}
+
+void Thermogram::setExperimentFit(const QJsonObject& json)
+{
+    m_experiment->setFit(json);
+}
+
+void Thermogram::setDilutionFit(const QJsonObject& json)
+{
+    m_dilution->setFit(json);
 }

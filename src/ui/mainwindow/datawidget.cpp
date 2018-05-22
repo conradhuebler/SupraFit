@@ -125,6 +125,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
+    qApp->instance()->setProperty("projectname", m_data.data()->ProjectTitle());
     m_name->setText(qApp->instance()->property("projectname").toString());
     m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.data()->IndependentModel()->columnCount()));
     m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));

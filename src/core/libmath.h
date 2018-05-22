@@ -51,7 +51,7 @@ public:
     {
     }
 
-    bool jacob() // like the ladder, we want to climb
+    inline bool jacob() // like the ladder, we want to climb
     {
         for (int i = m_max.size() - 1; i >= 0; --i) {
             if (m_value[i] < m_max[i]) {
