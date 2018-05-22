@@ -17,7 +17,7 @@
  * 
  */
 
-#include "ui/mainwindow/suprafit.h"
+#include "ui/mainwindow/suprafitgui.h".h "
 
 #include "src/global.h"
 #include "src/global_config.h"
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     qDebug() << "Debug output enabled, good fun!";
 #endif
 
-    MainWindow mainwindow;
+    SupraFitGui mainwindow;
     mainwindow.showMaximized();
     for (const QString& str : qAsConst(args))
         mainwindow.LoadFile(str);

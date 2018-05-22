@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/global.h"
@@ -31,6 +31,7 @@
 
 #include "src/ui/mainwindow/chartwidget.h"
 #include "src/ui/mainwindow/datawidget.h"
+#include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
@@ -54,77 +55,27 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QSplitter>
+#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
 
 #include <stdio.h>
 
-#include "suprafit.h"
+#include "suprafitgui.h"
 
-MainWindow::MainWindow()
+SupraFitGui::SupraFitGui()
 {
     m_instance = new Instance;
     Instance::setInstance(m_instance);
 
+    m_central_widget = new QTabWidget;
+
+    m_central_widget->setTabShape(QTabWidget::Triangular);
+    m_central_widget->setTabPosition(QTabWidget::South);
+
+    setCentralWidget(m_central_widget);
+
     ReadSettings();
-
-    m_model_dataholder = new ModelDataHolder;
-    m_modeldock = new QDockWidget(tr("Workspace"), this);
-    m_modeldock->setObjectName(tr("data_and_models"));
-    m_modeldock->setToolTip(tr("This <strong>workspace widget</strong> contains all open models and allows them to be manipulated!"));
-    m_modeldock->setWidget(m_model_dataholder);
-    m_modeldock->setTitleBarWidget(m_model_dataholder->TitleBarWidget());
-    m_modeldock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
-
-    connect(m_model_dataholder, SIGNAL(Message(QString, int)), this, SLOT(WriteMessages(QString, int)), Qt::DirectConnection);
-    connect(m_model_dataholder, SIGNAL(MessageBox(QString, int)), this, SLOT(MessageBox(QString, int)), Qt::DirectConnection);
-
-    m_charts = new ChartWidget;
-    m_model_dataholder->setChartWidget(m_charts);
-    m_chartdock = new QDockWidget(tr("Charts"), this);
-    m_chartdock->setObjectName(tr("charts"));
-    m_chartdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
-    m_chartdock->setWidget(m_charts);
-    m_chartdock->setTitleBarWidget(m_charts->TitleBarWidget());
-    m_chartdock->setToolTip(tr("This <strong>chart widget</strong> contains the charts for the calculated models and the model errors!"));
-    connect(m_charts->TitleBarWidget(), &ChartDockTitleBar::close, m_chartdock, &QDockWidget::close);
-
-    m_logdock = new QDockWidget(tr("Logging output"), this);
-    m_logdock->setObjectName(tr("logging"));
-    m_logWidget = new QPlainTextEdit(this);
-    m_logdock->setWidget(m_logWidget);
-    connect(this, SIGNAL(AppendPlainText(QString)), m_logWidget, SLOT(appendPlainText(QString)));
-    m_logdock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
-    m_logdock->setToolTip(tr("The <strong>log widget</strong> contains the log output of SupraFit!"));
-
-    m_logdock->hide();
-
-    m_stdout.open(stdout, QIODevice::WriteOnly);
-
-    m_historywidget = new ModelHistory(this);
-    QScrollArea* history_scroll = new QScrollArea(this);
-    history_scroll->setWidget(m_historywidget);
-    history_scroll->setWidgetResizable(true);
-    history_scroll->setAlignment(Qt::AlignTop);
-    m_history_dock = new QDockWidget("Models Stack");
-    m_history_dock->setObjectName(tr("history"));
-    m_history_dock->setWidget(history_scroll);
-    m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
-    m_history_dock->setMaximumWidth(240);
-    m_history_dock->setMinimumWidth(240);
-    m_history_dock->setToolTip(tr("This widget contains the <strong>stack</strong>, where <strong>models</strong> appear!"));
-
-    addDockWidget(Qt::LeftDockWidgetArea, m_history_dock, Qt::Horizontal);
-    addDockWidget(Qt::LeftDockWidgetArea, m_modeldock, Qt::Horizontal);
-    addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
-    addDockWidget(Qt::BottomDockWidgetArea, m_logdock);
-
-    connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject, int)), this, SLOT(InsertHistoryElement(QJsonObject, int)), Qt::DirectConnection);
-    connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
-    connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
-    connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
-    connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
-    setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
 
     m_new = new QAction(Icon("document-new"), tr("New Table"));
     connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
@@ -135,11 +86,8 @@ MainWindow::MainWindow()
     m_save = new QAction(Icon("document-save-all"), tr("Save Project"));
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
 
-    m_edit = new QAction(Icon("document-edit"), tr("Edit Data"));
-    //m_edit->setCheckable(true);
-    //m_edit->setChecked(false);
-    //connect(m_edit, SIGNAL(toggled(bool)), m_model_dataholder, SLOT(EditTableAction(bool)));
-    connect(m_edit, &QAction::triggered, this, &MainWindow::EditData);
+    // m_edit = new QAction(Icon("document-edit"), tr("Edit Data"));
+    // connect(m_edit, &QAction::triggered, this, &SupraFitGui::EditData);
 
     m_importmodel = new QAction(Icon("document-import"), tr("Import Models"));
     connect(m_importmodel, SIGNAL(triggered(bool)), this, SLOT(ImportModelAction()));
@@ -170,7 +118,7 @@ MainWindow::MainWindow()
     m_model_toolbar = new QToolBar;
     m_model_toolbar->setObjectName(tr("model_toolbar"));
     m_model_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    m_model_toolbar->addAction(m_edit);
+    // m_model_toolbar->addAction(m_edit);
     m_model_toolbar->addAction(m_importmodel);
     m_model_toolbar->addAction(m_export);
     addToolBar(m_model_toolbar);
@@ -179,7 +127,7 @@ MainWindow::MainWindow()
     m_system_toolbar->setObjectName(tr("system_toolbar"));
     QAction* toggleView;
 
-    toggleView = m_modeldock->toggleViewAction();
+    /*toggleView = m_modeldock->toggleViewAction();
     toggleView->setIcon(QIcon(":/icons/workspace.png"));
     m_system_toolbar->addAction(toggleView);
 
@@ -193,7 +141,7 @@ MainWindow::MainWindow()
 
     toggleView = m_history_dock->toggleViewAction();
     toggleView->setIcon(Icon("view-list-text"));
-    m_system_toolbar->addAction(toggleView);
+    m_system_toolbar->addAction(toggleView);*/
     m_system_toolbar->addSeparator();
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_about);
@@ -217,13 +165,13 @@ MainWindow::MainWindow()
     qApp->installEventFilter(this);
 }
 
-MainWindow::~MainWindow()
+SupraFitGui::~SupraFitGui()
 {
     if (m_instance)
         delete m_instance;
 }
 
-QIcon MainWindow::Icon(const QString& str)
+QIcon SupraFitGui::Icon(const QString& str)
 {
 #ifdef _Theme
     return QIcon::fromTheme(str);
@@ -232,7 +180,7 @@ QIcon MainWindow::Icon(const QString& str)
 #endif
 }
 
-void MainWindow::LoadFile(const QString& file)
+void SupraFitGui::LoadFile(const QString& file)
 {
     bool invalid_json = false;
     if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
@@ -247,54 +195,23 @@ void MainWindow::LoadFile(const QString& file)
         QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
 }
 
-void MainWindow::setActionEnabled(bool enabled)
+void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
     m_export->setEnabled(enabled);
-    m_edit->setEnabled(enabled);
+    // m_edit->setEnabled(enabled);
     m_importmodel->setEnabled(enabled);
 }
 
-bool MainWindow::SetData(QPointer<const DataClass> dataclass, const QString& str, const QString& colors)
+bool SupraFitGui::SetData(QPointer<const DataClass> dataclass, const QString& str, const QString& colors)
 {
-    if (!m_titration_data.isNull()) {
-        MainWindow* mainwindow = new MainWindow;
-        mainwindow->SetData(dataclass, str);
-        mainwindow->show();
-        return false;
-    } else {
-        QFileInfo info(str);
-        qApp->instance()->setProperty("projectpath", str);
-        qApp->instance()->setProperty("projectname", info.baseName());
-        m_titration_data = QSharedPointer<DataClass>(new DataClass((dataclass)));
-        QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(m_titration_data);
-        if (!colors.isEmpty() && !colors.isNull())
-            wrapper->setColorList(colors);
-        m_model_dataholder->setData(m_titration_data, wrapper);
-
-        setActionEnabled(true);
-
-        QJsonObject toplevel;
-        if (JsonHandler::ReadJsonFile(toplevel, str)) {
-            m_model_dataholder->AddToWorkspace(toplevel);
-        }
-
-        if (m_model_dataholder->CheckCrashFile()) {
-            QMessageBox::StandardButton replay;
-            QString app_name = QString(qApp->instance()->applicationName());
-            replay = QMessageBox::information(this, tr("Old Models found."), tr("It seems %1 crashed (unfortunately)!\nShall I recover the last models?").arg(app_name), QMessageBox::Yes | QMessageBox::No);
-            if (replay == QMessageBox::Yes) {
-                QJsonObject toplevel;
-                if (JsonHandler::ReadJsonFile(toplevel, qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit"))
-                    m_model_dataholder->AddToWorkspace(toplevel);
-            }
-        }
-        setWindowTitle();
-        return true;
-    }
+    MainWindow* window = new MainWindow;
+    window->SetData(dataclass, str, colors);
+    m_central_widget->addTab(window, dataclass->ProjectTitle());
+    return true;
 }
 
-void MainWindow::NewTable()
+void SupraFitGui::NewTable()
 {
     ImportData dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
@@ -305,7 +222,7 @@ void MainWindow::NewTable()
     }
 }
 
-void MainWindow::OpenFile()
+void SupraFitGui::OpenFile()
 {
     QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat, *.itc, *.ITC);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt, *.itc);;All files (*.*)"));
     if (filename.isEmpty())
@@ -314,7 +231,7 @@ void MainWindow::OpenFile()
     LoadFile(filename);
 }
 
-void MainWindow::ImportTable(const QString& file)
+void SupraFitGui::ImportTable(const QString& file)
 {
     ImportData dialog(file, this);
 
@@ -326,8 +243,9 @@ void MainWindow::ImportTable(const QString& file)
     }
 }
 
-bool MainWindow::LoadProject(const QString& filename)
+bool SupraFitGui::LoadProject(const QString& filename)
 {
+
     QJsonObject toplevel;
     if (JsonHandler::ReadJsonFile(toplevel, filename)) {
         QPointer<const DataClass> data = new DataClass(toplevel["data"].toObject());
@@ -340,49 +258,49 @@ bool MainWindow::LoadProject(const QString& filename)
     return false;
 }
 
-void MainWindow::SaveProjectAction()
+void SupraFitGui::SaveProjectAction()
 {
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json);;All files (*.*)"));
     if (!str.isEmpty()) {
         setLastDir(str);
-        m_model_dataholder->SaveWorkspace(str);
+        // m_model_dataholder->SaveWorkspace(str);
     }
 }
 
-void MainWindow::ImportModelAction()
+void SupraFitGui::ImportModelAction()
 {
     QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("SupraFit Project File  (*.suprafit *.jdat);;Json File (*.json);;All files (*.*)"));
     if (!str.isEmpty()) {
         setLastDir(str);
         QJsonObject toplevel;
         if (JsonHandler::ReadJsonFile(toplevel, str)) {
-            m_model_dataholder->AddToWorkspace(toplevel);
+            // m_model_dataholder->AddToWorkspace(toplevel);
         }
     }
 }
 
-void MainWindow::ExportModelAction()
+void SupraFitGui::ExportModelAction()
 {
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File (*.suprafit);;Json File (*.json);;All files (*.*)"));
     if (!str.isEmpty()) {
         setLastDir(str);
-        m_model_dataholder->SaveCurrentModels(str);
+        //m_model_dataholder->SaveCurrentModels(str);
     }
 }
 
-void MainWindow::SettingsDialog()
+void SupraFitGui::SettingsDialog()
 {
     ConfigDialog dialog(m_opt_config, m_printlevel, m_logfile, this);
     if (dialog.exec() == QDialog::Accepted) {
         m_opt_config = dialog.Config();
-        m_model_dataholder->setSettings(m_opt_config);
+        //m_model_dataholder->setSettings(m_opt_config);
         m_printlevel = dialog.PrintLevel();
         m_logfile = dialog.LogFile();
         WriteSettings();
     }
 }
 
-void MainWindow::LogFile()
+void SupraFitGui::LogFile()
 {
     if (m_logfile.isEmpty() && m_file.isOpen())
         m_file.close();
@@ -398,7 +316,7 @@ void MainWindow::LogFile()
     }
 }
 
-void MainWindow::WriteMessages(const QString& message, int priority)
+void SupraFitGui::WriteMessages(const QString& message, int priority)
 {
     //     QTextStream stdout_stream(&m_stdout);
     //      stdout_stream << message << "\n";
@@ -408,16 +326,16 @@ void MainWindow::WriteMessages(const QString& message, int priority)
         QTextStream fileout_stream(&m_file);
         fileout_stream << message << "\n";
 
-        QTimer::singleShot(0, m_logWidget, SLOT(appendPlainText(message)));
+        // QTimer::singleShot(0, m_logWidget, SLOT(appendPlainText(message)));
     }
 }
 
-void MainWindow::setWindowTitle()
+void SupraFitGui::setWindowTitle()
 {
     QMainWindow::setWindowTitle(QString("*" + qApp->instance()->property("projectname").toString() + "*"));
 }
 
-void MainWindow::MessageBox(const QString& str, int priority)
+void SupraFitGui::MessageBox(const QString& str, int priority)
 {
     if (priority == 0) {
         QMessageBox::critical(this, tr("Optimizer Error."), str, QMessageBox::Ok | QMessageBox::Default);
@@ -426,7 +344,7 @@ void MainWindow::MessageBox(const QString& str, int priority)
     }
 }
 
-void MainWindow::ReadSettings()
+void SupraFitGui::ReadSettings()
 {
     QSettings _settings;
     _settings.beginGroup("main");
@@ -467,7 +385,7 @@ void MainWindow::ReadSettings()
         qApp->instance()->setProperty("p_value", 0.95);
 }
 
-void MainWindow::ReadGeometry()
+void SupraFitGui::ReadGeometry()
 {
     QSettings _settings;
     _settings.beginGroup("window");
@@ -476,7 +394,7 @@ void MainWindow::ReadGeometry()
     _settings.endGroup();
 }
 
-void MainWindow::WriteSettings(bool ignore_window_state)
+void SupraFitGui::WriteSettings(bool ignore_window_state)
 {
     QSettings _settings;
 
@@ -497,22 +415,22 @@ void MainWindow::WriteSettings(bool ignore_window_state)
     }
 }
 
-void MainWindow::InsertHistoryElement(const QJsonObject& model)
+void SupraFitGui::InsertHistoryElement(const QJsonObject& model)
 {
-    m_historywidget->InsertElement(model);
+    // m_historywidget->InsertElement(model);
 }
 
-void MainWindow::InsertHistoryElement(const QJsonObject& model, int active)
+void SupraFitGui::InsertHistoryElement(const QJsonObject& model, int active)
 {
-    m_historywidget->InsertElement(model, active);
+    // m_historywidget->InsertElement(model, active);
 }
 
-void MainWindow::about()
+void SupraFitGui::about()
 {
     QMessageBox::about(this, tr("About this application"), SupraFit::aboutHtml());
 }
 
-void MainWindow::FirstStart()
+void SupraFitGui::FirstStart()
 {
     QString info;
     info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramoleculare NMR titration experiments.< /p>";
@@ -525,7 +443,7 @@ void MainWindow::FirstStart()
     QMessageBox::about(this, tr("First Start Information"), info);
 }
 
-void MainWindow::closeEvent(QCloseEvent* event)
+void SupraFitGui::closeEvent(QCloseEvent* event)
 {
     if (qApp->instance()->property("ask_on_exit").toBool()) {
         QCheckBox* checkbox = new QCheckBox;
@@ -553,24 +471,17 @@ void MainWindow::closeEvent(QCloseEvent* event)
             filename = filename + ".autosave_" + QString::number(i) + ".suprafit";
         } else
             filename = filename + ".autosave.suprafit";
-        m_model_dataholder->SaveWorkspace(filename);
+        // m_model_dataholder->SaveWorkspace(filename);
     }
 
     m_stdout.close();
 
     WriteSettings(false);
 
-    if (m_model_dataholder)
-        delete m_model_dataholder;
-    if (m_charts)
-        delete m_charts;
-    if (m_historywidget)
-        delete m_historywidget;
-
     QMainWindow::closeEvent(event);
 }
 
-bool MainWindow::eventFilter(QObject* obj, QEvent* event)
+bool SupraFitGui::eventFilter(QObject* obj, QEvent* event)
 {
     if (event->type() == QEvent::ToolTip) {
         return !qApp->instance()->property("tooltips").toBool();
@@ -578,14 +489,14 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         return QMainWindow::eventFilter(obj, event);
 }
 
-void MainWindow::EditData()
+void SupraFitGui::EditData()
 {
-    int version = m_titration_data->ExportData()["SupraFit"].toInt();
+    /*int version = m_titration_data->ExportData()["SupraFit"].toInt();
     if (version < 1602) {
         QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
 
         m_edit->setCheckable(true);
-        m_model_dataholder->EditTableAction(!m_edit->isChecked());
+        // m_model_dataholder->EditTableAction(!m_edit->isChecked());
         m_edit->setChecked(!m_edit->isChecked());
     } else {
         ImportData dialog(m_titration_data);
@@ -595,7 +506,5 @@ void MainWindow::EditData()
                     m_titration_data->ImportData(dialog.getStoredData().ExportData());
             }
         }
-    }
+    }*/
 }
-
-#include "suprafit.moc"

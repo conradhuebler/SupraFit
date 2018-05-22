@@ -47,12 +47,12 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow();
-    virtual ~MainWindow();
+    inline ~MainWindow() {}
 
-    bool SetData(QPointer<const DataClass> dataclass, const QString& str = QString("new table"), const QString& colors = QString());
+    bool SetData(QPointer<const DataClass> dataclass, QString str, const QString& colors = QString());
 
 public slots:
-    void LoadFile(const QString& file);
+    // void LoadFile(const QString& file);
 
 private:
     void setActionEnabled(bool enabled);
@@ -70,50 +70,22 @@ private:
     QPointer<ModelDataHolder> m_model_dataholder;
     QPointer<ModelHistory> m_historywidget;
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
-    QSharedPointer<DataClass> m_titration_data;
+    QSharedPointer<DataClass> m_data;
     bool m_hasData;
     QAction *m_new, *m_edit, *m_config, *m_about, *m_aboutqt, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     OptimizerConfig m_opt_config;
 
-    QDockWidget *m_logdock, *m_modeldock, *m_chartdock, *m_history_dock;
-    QPlainTextEdit* m_logWidget;
+    QDockWidget *m_modeldock, *m_chartdock, *m_history_dock;
     QString m_logfile;
     int m_printlevel;
     void LogFile();
     QFile m_file, m_stdout;
-    virtual void closeEvent(QCloseEvent* event);
-    const QStringList m_properties = QStringList() << "threads"
-                                                   << "chartanimation"
-                                                   << "workingdir"
-                                                   << "dirlevel"
-                                                   << "auto_confidence"
-                                                   << "lastdir"
-                                                   << "p_value"
-                                                   << "charttheme"
-                                                   << "ask_on_exit"
-                                                   << "tooltips";
-
-    QPointer<Instance> m_instance;
 
 private slots:
-    void NewTable();
-    void OpenFile();
-    void setWindowTitle();
-    void SaveProjectAction();
-    void ImportModelAction();
-    void ExportModelAction();
-    void SettingsDialog();
-    void about();
-    void WriteMessages(const QString& message, int priority);
-    void MessageBox(const QString& str, int priority);
     void InsertHistoryElement(const QJsonObject& model);
     void InsertHistoryElement(const QJsonObject& model, int active);
-    void FirstStart();
     void EditData();
 
 signals:
     void AppendPlainText(const QString& str);
-
-protected:
-    bool eventFilter(QObject* obj, QEvent* ev);
 };

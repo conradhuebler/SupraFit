@@ -216,7 +216,6 @@ set(suprafit_SRCS
                 src/ui/widgets/modelelement.cpp
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
-               # src/ui/widgets/optimizerflagwidget.cpp
                 src/ui/widgets/chartview.cpp
                 src/ui/widgets/listchart.cpp
                 src/ui/widgets/buttons/spinbox.h
@@ -228,7 +227,8 @@ set(suprafit_SRCS
                 src/ui/mainwindow/modeldataholder.cpp
                 src/ui/mainwindow/datawidget.cpp
                 src/ui/mainwindow/modelwidget.cpp
-                src/ui/mainwindow/suprafit.cpp 
+                src/ui/mainwindow/mainwindow.cpp
+                src/ui/mainwindow/suprafitgui.cpp
                 src/main.cpp)
 qt5_add_resources(suprafit_SRCS files.qrc)
 add_executable(suprafit ${suprafit_SRCS})
