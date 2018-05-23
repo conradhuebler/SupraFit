@@ -64,8 +64,6 @@ private:
     bool LoadProject(const QString& filename);
     void ImportTable(const QString& file);
 
-    QIcon Icon(const QString& str);
-
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QVector<QSharedPointer<DataClass>> m_data_list;
     bool m_hasData;

@@ -17,6 +17,8 @@
  */
 
 #pragma once
+
+#include <QtGui/QIcon>
 #include <QtWidgets/QApplication>
 
 #include <QtCore/QObject>
@@ -44,3 +46,12 @@ public:
 signals:
     void ConfigurationChanged();
 };
+
+inline QIcon Icon(const QString& str)
+{
+#ifdef _Theme
+    return QIcon::fromTheme(str);
+#else
+    return QIcon(":/icons/" + str + ".png");
+#endif
+}

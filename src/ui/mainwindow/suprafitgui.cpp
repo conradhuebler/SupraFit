@@ -171,15 +171,6 @@ SupraFitGui::~SupraFitGui()
         delete m_instance;
 }
 
-QIcon SupraFitGui::Icon(const QString& str)
-{
-#ifdef _Theme
-    return QIcon::fromTheme(str);
-#else
-    return QIcon(":/icons/" + str + ".png");
-#endif
-}
-
 void SupraFitGui::LoadFile(const QString& file)
 {
     bool invalid_json = false;

@@ -83,7 +83,7 @@ public:
 
 private:
     QWidget* m_buttons;
-    QPointer<QPushButton> m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all, m_hide, m_analyse;
+    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all, m_hide, m_analyse;
     QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_kinetcs_model, m_itc_fixed_model, m_itc_flex_model;
 
     QAction *m_script_action, *m_last_action;
@@ -102,6 +102,7 @@ signals:
     void ShowStatistics();
     void OptimizeAll();
     void Compare();
+    void EditData();
 };
 
 class ModelDataHolder : public QWidget {
@@ -182,6 +183,7 @@ private slots:
     void OptimizeAll();
     void CompareReduction();
     void CompareAIC();
+    void EditData();
     void HideSubWindows(int index);
     inline void Interrupt() { m_allow_loop = false; }
 

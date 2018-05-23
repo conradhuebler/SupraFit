@@ -30,7 +30,9 @@
 #include "src/core/models.h"
 
 #include "src/ui/dialogs/comparedialog.h"
+#include "src/ui/dialogs/importdata.h"
 #include "src/ui/dialogs/statisticdialog.h"
+#include "src/ui/guitools/instance.h"
 #include "src/ui/mainwindow/datawidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
@@ -131,6 +133,11 @@ MDHDockTitleBar::MDHDockTitleBar()
     layout->addWidget(new QLabel("Workspace"));
     layout->addWidget(m_buttons);
 
+    m_edit_data = new QPushButton(tr("Edit Data"));
+    m_edit_data->setFlat(true);
+    m_edit_data->setIcon(Icon("document-edit"));
+    connect(m_edit_data, &QPushButton::clicked, this, &MDHDockTitleBar::EditData);
+
     m_add_nmr = new QPushButton(tr("Titratrion"));
     m_add_nmr->setFlat(true);
 
@@ -207,9 +214,12 @@ MDHDockTitleBar::MDHDockTitleBar()
 #endif
 
     QHBoxLayout* buttons = new QHBoxLayout;
+    buttons->addWidget(m_edit_data);
+    buttons->addStretch(100);
     buttons->addWidget(m_add_nmr);
     buttons->addWidget(m_add_itc);
     buttons->addWidget(m_add_kinetics);
+    buttons->addStretch(100);
     buttons->addWidget(m_optimize);
     buttons->addWidget(m_statistics);
     buttons->addWidget(m_analyse);
@@ -305,6 +315,7 @@ ModelDataHolder::ModelDataHolder()
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
     connect(m_TitleBarWidget, &MDHDockTitleBar::MoCoStatistic, this, &ModelDataHolder::MoCoStatistic);
     connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::EditData, this, &ModelDataHolder::EditData);
 
     layout->addWidget(m_modelsWidget, 1, 0);
 }
@@ -753,6 +764,26 @@ void ModelDataHolder::CompareAIC()
     dialog.setLayout(layout);
     dialog.resize(1024, 800);
     dialog.exec();
+}
+
+void ModelDataHolder::EditData()
+{
+    int version = m_data->ExportData()["SupraFit"].toInt();
+    if (version < 1602) {
+        QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
+
+        /*m_edit->setCheckable(true);
+        m_model_dataholder->EditTableAction(!m_edit->isChecked());
+        m_edit->setChecked(!m_edit->isChecked());*/
+    } else {
+        ImportData dialog(m_data);
+        if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
+            {
+                if (m_data->DataType() == DataClassPrivate::Thermogram)
+                    m_data->ImportData(dialog.getStoredData().ExportData());
+            }
+        }
+    }
 }
 
 #include "modeldataholder.moc"
