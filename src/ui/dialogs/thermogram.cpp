@@ -173,17 +173,23 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     QFileInfo info(filename);
     if (!info.exists()) {
         qDebug() << "File not found, trying in current directory";
-        QString file = info.baseName() + "." + info.suffix();
+        QStringList list = filename.split("/");
+        qDebug() << list;
+        QString file = list.last();
         QString lastdir = qApp->instance()->property("lastdir").toString();
+        qDebug() << lastdir;
         QFileInfo inf(lastdir + "/" + file);
         if (inf.exists())
             filename = lastdir + "/" + file;
-        else
+        else {
+            qDebug() << QString(lastdir + "/" + file) << "doesnt work";
             throw 404;
+        }
     }
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << file.errorString();
+        throw 404;
     }
 
     QStringList filecontent = QString(file.readAll()).split("\n");
@@ -229,6 +235,9 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     floating_peak.end = last_x;
     peaks->push_back(floating_peak);
     offset /= double(i_offset);
+    if (x.size() < 1 || y.size() < 1 || x.size() != y.size())
+        throw 101;
+
     x = Vector::Map(&entries_x[0], entries_x.size());
     y = Vector::Map(&entries_y[0], entries_y.size());
 
@@ -260,6 +269,11 @@ void Thermogram::setExperimentFile(QString filename)
             if (error == 404) {
                 m_exp_file->setStyleSheet("background-color: " + excluded());
                 qDebug() << "file no found";
+                return;
+            }
+            if (error == 101) {
+                m_exp_file->setStyleSheet("background-color: " + excluded());
+                qDebug() << "no thermogram found";
                 return;
             }
         }
@@ -350,6 +364,11 @@ void Thermogram::setDilutionFile(QString filename)
             if (error == 404) {
                 m_dil_file->setStyleSheet("background-color: " + excluded());
                 qDebug() << "file no found";
+                return;
+            }
+            if (error == 101) {
+                m_dil_file->setStyleSheet("background-color: " + excluded());
+                qDebug() << "no thermogram found";
                 return;
             }
         }

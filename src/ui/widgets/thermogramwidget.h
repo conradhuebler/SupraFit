@@ -86,7 +86,7 @@ private:
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right;
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
-    bool m_spectrum = false;
+    bool m_spectrum = false, m_block = false;
     QVector<qreal> m_peaks;
     Vector m_baseline;
     qreal m_scale = 4.184, m_offset = 0;

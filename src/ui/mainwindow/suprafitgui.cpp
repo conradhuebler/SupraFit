@@ -86,9 +86,6 @@ SupraFitGui::SupraFitGui()
     m_save = new QAction(Icon("document-save-all"), tr("Save Project"));
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
 
-    // m_edit = new QAction(Icon("document-edit"), tr("Edit Data"));
-    // connect(m_edit, &QAction::triggered, this, &SupraFitGui::EditData);
-
     m_importmodel = new QAction(Icon("document-import"), tr("Import Models"));
     connect(m_importmodel, SIGNAL(triggered(bool)), this, SLOT(ImportModelAction()));
 
@@ -133,10 +130,6 @@ SupraFitGui::SupraFitGui()
 
     toggleView = m_chartdock->toggleViewAction();
     toggleView->setIcon(QIcon(":/icons/charts.png"));
-    m_system_toolbar->addAction(toggleView);
-
-    toggleView = m_logdock->toggleViewAction();
-    toggleView->setIcon(Icon("text-field"));
     m_system_toolbar->addAction(toggleView);
 
     toggleView = m_history_dock->toggleViewAction();
@@ -190,7 +183,6 @@ void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
     m_export->setEnabled(enabled);
-    // m_edit->setEnabled(enabled);
     m_importmodel->setEnabled(enabled);
 }
 

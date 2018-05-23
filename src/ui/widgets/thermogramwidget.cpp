@@ -341,7 +341,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
 
 void ThermogramWidget::UpdateBaseLine(const QString& str)
 {
-    if (str == m_base)
+    if (str == m_base || m_block)
         return;
 
     Vector coeff;
@@ -496,6 +496,7 @@ void ThermogramWidget::PeakChanged(int row, int column, int value)
 
 void ThermogramWidget::setFit(const QJsonObject& fit)
 {
+    m_block = true;
     m_baseline_type->setCurrentText(fit["baseline"].toString());
     m_fit_type->setCurrentText(fit["baseline_fit"].toString());
     m_coeffs->setValue(fit["coeffs"].toInt());
@@ -506,6 +507,7 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
         m_smooth->setChecked(true);
         m_filter->setValue(fit["SV"].toInt());
     }
+    m_block = false;
     Update();
 }
 
