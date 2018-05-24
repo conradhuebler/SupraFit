@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelhistorywidget.h"
 #include "src/ui/widgets/optimizerwidget.h"
 
@@ -49,7 +50,9 @@ public:
     MainWindow();
     inline ~MainWindow() {}
 
-    bool SetData(QPointer<const DataClass> dataclass, QString str, const QString& colors = QString());
+    QSharedPointer<DataClass> SetData(const QJsonObject& object);
+
+    inline QJsonObject SaveProject() const { return m_model_dataholder->SaveWorkspace(); }
 
 public slots:
     // void LoadFile(const QString& file);
@@ -59,11 +62,6 @@ private:
     void ReadSettings();
     void ReadGeometry();
     void WriteSettings(bool ignore_window_state = true);
-
-    bool LoadProject(const QString& filename);
-    void ImportTable(const QString& file);
-
-    QIcon Icon(const QString& str);
 
     QPointer<QSplitter> m_mainsplitter;
     QPointer<ChartWidget> m_charts;

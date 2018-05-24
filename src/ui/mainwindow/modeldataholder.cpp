@@ -491,7 +491,7 @@ void ModelDataHolder::SaveCurrentModels(const QString& file)
     JsonHandler::WriteJsonFile(toplevel, file);
 }
 
-void ModelDataHolder::SaveWorkspace(const QString& file)
+QJsonObject ModelDataHolder::SaveWorkspace()
 {
     QJsonObject toplevel, data;
     data = m_data->ExportData();
@@ -507,12 +507,11 @@ void ModelDataHolder::SaveWorkspace(const QString& file)
         }
     }
     toplevel["data"] = data;
-    JsonHandler::WriteJsonFile(toplevel, file);
+    return toplevel;
 }
 
 void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
 {
-    Waiter wait;
     QStringList keys = object.keys();
     setEnabled(false);
     m_wrapper.data()->stopAnimiation();
@@ -523,6 +522,7 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
     for (const QString& key : qAsConst(keys)) {
         if (key == "data")
             continue;
+
         QJsonObject model = object[key].toObject();
         if (i++ < 5)
             Json2Model(model);

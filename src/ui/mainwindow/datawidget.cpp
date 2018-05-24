@@ -62,7 +62,7 @@ DataWidget::DataWidget()
     connect(m_linear, &QPushButton::clicked, this, &DataWidget::LinearAnalysis);
 
     m_name = new QLineEdit();
-    connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(SetProjectName()));
+    connect(m_name, SIGNAL(textEdited(QString)), this, SLOT(SetProjectName()));
     m_name->setMinimumWidth(450);
     m_concentrations = new QTableView;
     m_concentrations->setMaximumWidth(230);
@@ -173,6 +173,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
     //connect(m_data.data(), SIGNAL(SystemParameterLoaded()), this, SLOT(MakeSystemParameter()));
+    connect(m_data.data(), &DataClass::NameChanged, m_name, &QLineEdit::setText);
 }
 
 void DataWidget::switchHG()
@@ -185,6 +186,7 @@ void DataWidget::switchHG()
 void DataWidget::SetProjectName()
 {
     qApp->instance()->setProperty("projectname", m_name->text());
+    m_data.data()->setProjectTitle(m_name->text());
     emit NameChanged();
 }
 

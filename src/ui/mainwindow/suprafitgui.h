@@ -50,7 +50,7 @@ public:
     explicit SupraFitGui();
     ~SupraFitGui();
 
-    bool SetData(QPointer<const DataClass> dataclass, const QString& str = QString("new table"), const QString& colors = QString());
+    bool SetData(const QJsonObject& object, const QString& file);
 
 public slots:
     void LoadFile(const QString& file);
@@ -65,7 +65,7 @@ private:
     void ImportTable(const QString& file);
 
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
-    QVector<QSharedPointer<DataClass>> m_data_list;
+    QVector<QWeakPointer<DataClass>> m_data_list;
     bool m_hasData;
     QAction *m_new, *m_edit, *m_config, *m_about, *m_aboutqt, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     OptimizerConfig m_opt_config;
@@ -88,6 +88,7 @@ private:
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
+    QVector<QPointer<MainWindow>> m_project_list;
 
 private slots:
     void NewTable();
@@ -103,7 +104,6 @@ private slots:
     void InsertHistoryElement(const QJsonObject& model);
     void InsertHistoryElement(const QJsonObject& model, int active);
     void FirstStart();
-    void EditData();
 
 signals:
     void AppendPlainText(const QString& str);

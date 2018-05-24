@@ -115,7 +115,6 @@ SupraFitGui::SupraFitGui()
     m_model_toolbar = new QToolBar;
     m_model_toolbar->setObjectName(tr("model_toolbar"));
     m_model_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    // m_model_toolbar->addAction(m_edit);
     m_model_toolbar->addAction(m_importmodel);
     m_model_toolbar->addAction(m_export);
     addToolBar(m_model_toolbar);
@@ -186,11 +185,22 @@ void SupraFitGui::setActionEnabled(bool enabled)
     m_importmodel->setEnabled(enabled);
 }
 
-bool SupraFitGui::SetData(QPointer<const DataClass> dataclass, const QString& str, const QString& colors)
+bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 {
     MainWindow* window = new MainWindow;
-    window->SetData(dataclass, str, colors);
-    m_central_widget->addTab(window, dataclass->ProjectTitle());
+    QWeakPointer<DataClass> data = window->SetData(object);
+    if (!data)
+        return false;
+    QString name = data.data()->ProjectTitle();
+    if (name.isEmpty() || name.isNull()) {
+        name = file;
+        data.data()->setProjectTitle(name);
+    }
+    int index = m_central_widget->addTab(window, name);
+    connect(data.data(), &DataClass::NameChanged, m_central_widget, [index, this](const QString& name) {
+        m_central_widget->setTabText(index, name);
+    });
+    m_data_list << data;
     return true;
 }
 
@@ -199,7 +209,7 @@ void SupraFitGui::NewTable()
     ImportData dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
         if (dialog.ProjectFile().isEmpty())
-            SetData(new DataClass(dialog.getStoredData()));
+            SetData(dialog.getProject(), dialog.ProjectFile());
         else
             LoadProject(dialog.ProjectFile());
     }
@@ -212,31 +222,45 @@ void SupraFitGui::OpenFile()
         return;
     setLastDir(filename);
     LoadFile(filename);
+    setActionEnabled(true);
 }
 
 void SupraFitGui::ImportTable(const QString& file)
 {
-    ImportData dialog(file, this);
+    /*ImportData dialog(file, this);
 
     if (dialog.exec() == QDialog::Accepted) {
         if (dialog.ProjectFile().isEmpty())
             SetData(new DataClass(dialog.getStoredData()), file);
         else
             LoadProject(dialog.ProjectFile());
-    }
+    }*/
 }
 
 bool SupraFitGui::LoadProject(const QString& filename)
 {
+    Waiter wait;
+    QFileInfo info(filename);
+    qApp->instance()->setProperty("projectpath", info.absoluteFilePath());
+    qApp->instance()->setProperty("projectname", info.baseName());
 
     QJsonObject toplevel;
+
     if (JsonHandler::ReadJsonFile(toplevel, filename)) {
-        QPointer<const DataClass> data = new DataClass(toplevel["data"].toObject());
-        if (data->DataPoints() != 0) {
-            SetData(data, filename, toplevel["data"].toObject()["colors"].toString());
-            return true;
-        } else
-            return false;
+
+        QStringList keys = toplevel.keys();
+        if (keys.contains("data")) {
+            return SetData(toplevel, info.baseName());
+        } else {
+            bool exit = true;
+            int index = 1;
+            for (const QString& str : qAsConst(keys)) {
+                QJsonObject object = toplevel[str].toObject();
+                exit = exit && SetData(object, info.baseName() + "-" + QString::number(index));
+                index++;
+            }
+            return exit;
+        }
     }
     return false;
 }
@@ -245,8 +269,25 @@ void SupraFitGui::SaveProjectAction()
 {
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json);;All files (*.*)"));
     if (!str.isEmpty()) {
+
+        QVector<QJsonObject> projects;
+        for (int i = 0; i < m_central_widget->count(); i++) {
+            if (qobject_cast<MainWindow*>(m_central_widget->widget(i))) {
+                QPointer<MainWindow> project_widget = qobject_cast<MainWindow*>(m_central_widget->widget(i));
+                projects << project_widget->SaveProject();
+            }
+        }
+        if (projects.isEmpty())
+            return;
+        else if (projects.size() == 1) {
+            JsonHandler::WriteJsonFile(projects.first(), str);
+        } else {
+            QJsonObject json;
+            for (int i = 0; i < projects.size(); ++i)
+                json["project_" + QString::number(i)] = projects[i];
+            JsonHandler::WriteJsonFile(json, str);
+        }
         setLastDir(str);
-        // m_model_dataholder->SaveWorkspace(str);
     }
 }
 
@@ -470,24 +511,4 @@ bool SupraFitGui::eventFilter(QObject* obj, QEvent* event)
         return !qApp->instance()->property("tooltips").toBool();
     } else
         return QMainWindow::eventFilter(obj, event);
-}
-
-void SupraFitGui::EditData()
-{
-    /*int version = m_titration_data->ExportData()["SupraFit"].toInt();
-    if (version < 1602) {
-        QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
-
-        m_edit->setCheckable(true);
-        // m_model_dataholder->EditTableAction(!m_edit->isChecked());
-        m_edit->setChecked(!m_edit->isChecked());
-    } else {
-        ImportData dialog(m_titration_data);
-        if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
-            {
-                if (m_titration_data->DataType() == DataClassPrivate::Thermogram)
-                    m_titration_data->ImportData(dialog.getStoredData().ExportData());
-            }
-        }
-    }*/
 }

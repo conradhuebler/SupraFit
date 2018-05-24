@@ -316,7 +316,11 @@ public:
 
     inline DataClassPrivate::DataType DataType() const { return d->m_datatype; }
 
-    inline void setProjectTitle(const QString& str) { d->m_title = str; }
+    inline void setProjectTitle(const QString& str)
+    {
+        d->m_title = str;
+        emit NameChanged(str);
+    }
 
     inline QString ProjectTitle() const { return d->m_title; }
 
@@ -332,4 +336,5 @@ signals:
     void ActiveSignalsChanged(QList<int> active_signals);
     void SystemParameterLoaded();
     void SystemParameterChanged();
+    void NameChanged(const QString& name);
 };

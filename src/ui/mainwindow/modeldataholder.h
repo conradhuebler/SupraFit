@@ -22,6 +22,9 @@
 #include "src/core/dataclass.h"
 #include "src/core/models.h"
 
+#include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/mainwindow/datawidget.h"
+
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QLabel>
@@ -123,7 +126,7 @@ public:
     /*
      * Export currently open models and the data table to file
      */
-    void SaveWorkspace(const QString& file);
+    QJsonObject SaveWorkspace();
 
     bool CheckCrashFile();
     virtual QSize sizeHint() const { return QSize(800, 600); }
@@ -140,7 +143,7 @@ public slots:
     /*
      * Make Datatable editable 
      */
-    inline void EditTableAction(bool checked) { m_datawidget->setEditable(checked); }
+    // inline void EditTableAction(bool checked) { m_datawidget->setEditable(checked); }
 
 private:
     QPointer<DataWidget> m_datawidget;

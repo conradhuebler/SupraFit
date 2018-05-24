@@ -118,24 +118,17 @@ MainWindow::MainWindow()
     qApp->installEventFilter(this);
 }
 
-bool MainWindow::SetData(QPointer<const DataClass> dataclass, QString str, const QString& colors)
+QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
 {
-    if (str.isEmpty())
-        str = "No Name :-)";
-
-    QFileInfo info(str);
-    qApp->instance()->setProperty("projectpath", str);
-    qApp->instance()->setProperty("projectname", info.baseName());
-    m_data = QSharedPointer<DataClass>(new DataClass((dataclass)));
+    QString colors = object["data"].toObject()["colors"].toString();
+    m_data = QSharedPointer<DataClass>(new DataClass(object["data"].toObject()));
     QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(m_data);
     if (!colors.isEmpty() && !colors.isNull())
         wrapper->setColorList(colors);
     m_model_dataholder->setData(m_data, wrapper);
 
     QJsonObject toplevel;
-    if (JsonHandler::ReadJsonFile(toplevel, str)) {
-        m_model_dataholder->AddToWorkspace(toplevel);
-    }
+    m_model_dataholder->AddToWorkspace(object);
 
     if (m_model_dataholder->CheckCrashFile()) {
         QMessageBox::StandardButton replay;
@@ -147,22 +140,9 @@ bool MainWindow::SetData(QPointer<const DataClass> dataclass, QString str, const
                 m_model_dataholder->AddToWorkspace(toplevel);
         }
     }
-    return true;
+    return m_data;
 }
 
-bool MainWindow::LoadProject(const QString& filename)
-{
-    QJsonObject toplevel;
-    if (JsonHandler::ReadJsonFile(toplevel, filename)) {
-        QPointer<const DataClass> data = new DataClass(toplevel["data"].toObject());
-        if (data->DataPoints() != 0) {
-            SetData(data, filename, toplevel["data"].toObject()["colors"].toString());
-            return true;
-        } else
-            return false;
-    }
-    return false;
-}
 
 void MainWindow::ReadGeometry()
 {
@@ -200,9 +180,9 @@ void MainWindow::EditData()
     if (version < 1602) {
         QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
 
-        m_edit->setCheckable(true);
-        m_model_dataholder->EditTableAction(!m_edit->isChecked());
-        m_edit->setChecked(!m_edit->isChecked());
+        //m_edit->setCheckable(true);
+        //m_model_dataholder->EditTableAction(!m_edit->isChecked());
+        //m_edit->setChecked(!m_edit->isChecked());
     } else {
         ImportData dialog(m_data);
         if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
