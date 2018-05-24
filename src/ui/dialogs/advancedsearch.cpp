@@ -152,7 +152,11 @@ void AdvancedSearch::SetUi()
     for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
         QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->GlobalParameterName(i), m_model.data()->GlobalParameter(i), this);
         layout->addWidget(widget);
+        widget->setEnabled(m_model.data()->GlobalEnabled(i));
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+        connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+            widget->setEnabled(m_model.data()->GlobalEnabled(i));
+        });
         m_parameter_list << widget;
     }
 
@@ -160,7 +164,11 @@ void AdvancedSearch::SetUi()
         for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
             QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->LocalParameterName(i), m_model.data()->LocalParameter(i, 0), this);
             layout->addWidget(widget);
+            widget->setEnabled(m_model.data()->LocalEnabled(i));
             connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+            connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+                widget->setEnabled(m_model.data()->LocalEnabled(i));
+            });
             m_parameter_list << widget;
         }
     }
@@ -175,7 +183,6 @@ void AdvancedSearch::SetUi()
 
     options->addWidget(m_optim);
     options->addWidget(m_initial_guess);
-    // layout->addLayout(options);
 
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
@@ -189,7 +196,6 @@ void AdvancedSearch::SetUi()
     mlayout->addLayout(layout, 0, 0, 1, 2);
     mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
     mlayout->addWidget(m_progress, 2, 0, 1, 2);
-    //mlayout->addWidget(m_optim, 3, 0);
 
     mlayout->addWidget(m_scan, 3, 0);
     mlayout->addWidget(m_interrupt, 3, 1);
@@ -217,9 +223,15 @@ void AdvancedSearch::MaxSteps()
         double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = 1;
         if(m_parameter_list[i]->Variable())
         {
-            min = m_parameter_list[i]->Min();
-            max = m_parameter_list[i]->Max();
-            step = m_parameter_list[i]->Step();
+            if (!m_parameter_list[i]->isEnabled()) {
+                min = m_parameter_list[i]->Value();
+                max = m_parameter_list[i]->Value();
+                step = 1;
+            } else {
+                min = m_parameter_list[i]->Min();
+                max = m_parameter_list[i]->Max();
+                step = m_parameter_list[i]->Step();
+            }
         }
         m_parameter.append(QVector<qreal>() << min << max << step);
         max_count *= (max + step - min) / step;
