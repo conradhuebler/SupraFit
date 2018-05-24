@@ -56,9 +56,17 @@ Blank::~Blank()
 
 void Blank::InitialGuess_Private()
 {
+    QVector<qreal> x, y;
 
-    LocalTable()->data(0, 0) = 1;
-    LocalTable()->data(1, 0) = 1;
+    for (int i = 1; i < DataPoints(); ++i) {
+        x << PrintOutIndependent(i, 0);
+        y << DependentModel()->data(0, i);
+    }
+    QMap<qreal, MultiRegression> result = LeastSquares(x, y, 1);
+    MultiRegression regression = result.first();
+
+    LocalTable()->data(0, 0) = regression.regressions[0].m;
+    LocalTable()->data(1, 0) = regression.regressions[0].n;
 
     AbstractModel::Calculate();
 }

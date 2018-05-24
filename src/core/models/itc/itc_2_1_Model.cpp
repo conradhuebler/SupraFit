@@ -54,7 +54,7 @@ void itc_IItoI_Model::InitialGuess_Private()
 {
     (*GlobalTable())[1] = 6;
 
-    LocalTable()->data(0, 0) = GuessdH();
+    LocalTable()->data(0, 0) = GuessdH() / 10.0;
     LocalTable()->data(1, 0) = GuessdH();
     LocalTable()->data(2, 0) = -1000;
     LocalTable()->data(3, 0) = 1;
@@ -98,8 +98,9 @@ void itc_IItoI_Model::CalculateVariables()
 
     QString dil = getOption(Dilution);
 
-    qreal dH2 = LocalTable()->data(0, 0);
     qreal dH1 = LocalTable()->data(1, 0);
+    qreal dH2 = LocalTable()->data(0, 0) + dH1;
+
     qreal dil_heat = LocalTable()->data(2, 0);
     qreal dil_inter = LocalTable()->data(3, 0);
     qreal fx = LocalTable()->data(4, 0);
