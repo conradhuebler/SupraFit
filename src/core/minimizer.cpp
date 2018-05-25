@@ -81,6 +81,7 @@ int NonLinearFitThread::NonLinearFit()
     m_sum_error = m_model->SumofSquares();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
+    m_model.data()->setConverged(iter < m_model.data()->getOptimizerConfig().MaxIter);
     if (iter < m_model.data()->getOptimizerConfig().MaxIter)
         m_converged = true;
     else

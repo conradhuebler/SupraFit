@@ -53,7 +53,7 @@ itc_ItoII_Model::~itc_ItoII_Model()
 void itc_ItoII_Model::InitialGuess_Private()
 {
     LocalTable()->data(0, 0) = GuessdH();
-    LocalTable()->data(1, 0) = GuessdH();
+    LocalTable()->data(1, 0) = GuessdH() / 10.0;
     LocalTable()->data(2, 0) = -1000;
     LocalTable()->data(3, 0) = 1;
     LocalTable()->data(4, 0) = GuessFx();
@@ -105,7 +105,7 @@ void itc_ItoII_Model::CalculateVariables()
     qreal K12 = qPow(10, GlobalParameter(1));
 
     qreal dH1 = LocalTable()->data(0, 0);
-    qreal dH2 = LocalTable()->data(1, 0);
+    qreal dH2 = LocalTable()->data(1, 0) + dH1;
 
     qreal complex_11_prev = 0, complex_12_prev = 0;
     for (int i = 0; i < DataPoints(); ++i) {
@@ -136,7 +136,7 @@ void itc_ItoII_Model::CalculateVariables()
         if (!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V * ((complex_11 - complex_11_prev * (1 - v / V)) * dH1 + (complex_12 - complex_12_prev * (1 - v / V)) * dH2);
+        qreal value = V * ((complex_11 - complex_11_prev * (1 - v / V)) * dH1 + (complex_12 - complex_12_prev * (1 - v / V)) * (dH2));
         SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;

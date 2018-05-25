@@ -51,16 +51,25 @@ void SearchBatch::run()
         GSResult result;
         if (m_interrupt)
             break;
+
         QVector<double> parameter = m_parent->DemandParameter();
         if (parameter.isEmpty())
             break;
+
         result.initial = parameter;
-        for (int i = 0; i < parameter.size(); ++i)
-            m_model->SetSingleParameter(parameter[i], i);
+        for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
+            m_model->setGlobalParameter(parameter[i], i);
+        if (!m_model.data()->SupportSeries()) {
+#warning this is just a hack
+            for (int i = m_model.data()->GlobalParameterSize(); i < parameter.size(); ++i)
+                m_model->setLocalParameter(parameter[i], i - m_model.data()->GlobalParameterSize(), 0);
+        }
         optimise();
         result.optimised = m_model->AllParameter();
         result.model = m_model->ExportModel(false, false);
         result.SumError = m_model->SumofSquares();
+        result.valid = !m_model->isCorrupt();
+        result.converged = m_model->isConverged();
         m_result << result;
     }
     delete m_thread;
@@ -76,7 +85,6 @@ void SearchBatch::optimise()
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
-    m_model->setLockedParameter(m_config.ignored_parameter);
     m_thread->setModel(m_model, false);
     m_thread->run();
     m_model->ImportModel(m_thread->ConvergedParameter());
@@ -201,25 +209,6 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 
     return;
 }
-
-/*
-void GlobalSearch::Scan(const QVector<QVector<double>>& list)
-{
-    for (int i = 0; i < m_series.size(); ++i)
-        m_series[i].clear();
-    m_series.clear();
-    QVector<double> error;
-    for (int j = 0; j < list.size(); ++j) {
-        QList<QPointF> series;
-        for (int i = 0; i < list[j].size(); ++i) {
-            m_model->setGlobalParameter(QList<qreal>() << list[j][i]);
-            m_model->Calculate();
-            error << m_model->ModelError();
-            series.append(QPointF(list[j][i], m_model->ModelError()));
-        }
-        m_series << series;
-    }
-}*/
 
 void GlobalSearch::ExportResults(const QString& filename, double threshold, bool allow_invalid)
 {

@@ -59,6 +59,8 @@ public:
     inline bool Variable() const { return m_variable->isChecked(); }
     inline qreal Value() const { return m_value; }
 
+    void setValue(qreal value) { m_value = value; }
+
 private:
     QPointer<QDoubleSpinBox> m_min, m_max, m_step;
     QPointer<QCheckBox> m_variable, m_optimse;
@@ -66,6 +68,7 @@ private:
 
 signals:
     void valueChanged();
+    void checkChanged(int state);
 };
 
 class AdvancedSearch : public QDialog {

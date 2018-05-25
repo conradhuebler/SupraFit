@@ -81,7 +81,7 @@ ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* pare
     m_optimse = new QCheckBox(tr("Optimise Parameter"));
     m_optimse->setToolTip(tr("If checked, this parameter will be optimised during fitting process.\nIf unchecked, the parameter will be fixed during fitting, but not necessarily in global search process."));
     m_optimse->setChecked(true);
-    connect(m_optimse, &QCheckBox::stateChanged, this, &ParameterWidget::valueChanged);
+    connect(m_optimse, &QCheckBox::stateChanged, this, &ParameterWidget::checkChanged);
 
     connect(m_min, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_max, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
@@ -92,10 +92,10 @@ ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* pare
 
     layout->addWidget(new QLabel(tr("Start:")), 1, 0);
     layout->addWidget(m_min, 1, 1);
-    layout->addWidget(new QLabel(tr("Step")), 1, 3);
-    layout->addWidget(m_step, 1, 4);
-    layout->addWidget(new QLabel(tr("End:")), 1, 5);
-    layout->addWidget(m_max, 1, 6);
+    layout->addWidget(new QLabel(tr("End:")), 1, 2);
+    layout->addWidget(m_max, 1, 3);
+    layout->addWidget(new QLabel(tr("Step")), 1, 4);
+    layout->addWidget(m_step, 1, 5);
     layout->addWidget(m_variable,2,0,1,3);
     layout->addWidget(m_optimse,2,4,1,3);
     setLayout(layout);
@@ -152,7 +152,19 @@ void AdvancedSearch::SetUi()
     for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
         QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->GlobalParameterName(i), m_model.data()->GlobalParameter(i), this);
         layout->addWidget(widget);
+        widget->setEnabled(m_model.data()->GlobalEnabled(i));
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+
+        connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+            widget->setEnabled(m_model.data()->GlobalEnabled(i));
+            widget->setValue(m_model.data()->GlobalParameter(i));
+        });
+
+        connect(widget, &ParameterWidget::checkChanged, m_model.data(), [this, i](int state) {
+            m_model.data()->GlobalTable()->setChecked(i, 0, state);
+
+        });
+
         m_parameter_list << widget;
     }
 
@@ -160,7 +172,19 @@ void AdvancedSearch::SetUi()
         for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
             QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->LocalParameterName(i), m_model.data()->LocalParameter(i, 0), this);
             layout->addWidget(widget);
+            widget->setEnabled(m_model.data()->LocalEnabled(i));
             connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+
+            connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+                widget->setEnabled(m_model.data()->LocalEnabled(i));
+                widget->setValue(m_model.data()->LocalParameter(i, 0));
+            });
+
+            connect(widget, &ParameterWidget::checkChanged, m_model.data(), [this, i](int state) {
+                m_model.data()->LocalTable()->setChecked(i, 0, state);
+
+            });
+
             m_parameter_list << widget;
         }
     }
@@ -175,7 +199,6 @@ void AdvancedSearch::SetUi()
 
     options->addWidget(m_optim);
     options->addWidget(m_initial_guess);
-    // layout->addLayout(options);
 
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
@@ -189,7 +212,6 @@ void AdvancedSearch::SetUi()
     mlayout->addLayout(layout, 0, 0, 1, 2);
     mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
     mlayout->addWidget(m_progress, 2, 0, 1, 2);
-    //mlayout->addWidget(m_optim, 3, 0);
 
     mlayout->addWidget(m_scan, 3, 0);
     mlayout->addWidget(m_interrupt, 3, 1);
@@ -217,18 +239,19 @@ void AdvancedSearch::MaxSteps()
         double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = 1;
         if(m_parameter_list[i]->Variable())
         {
-            min = m_parameter_list[i]->Min();
-            max = m_parameter_list[i]->Max();
-            step = m_parameter_list[i]->Step();
+            if (!m_parameter_list[i]->isEnabled()) {
+                min = m_parameter_list[i]->Value();
+                max = m_parameter_list[i]->Value();
+                step = 1;
+            } else {
+                min = m_parameter_list[i]->Min();
+                max = m_parameter_list[i]->Max();
+                step = m_parameter_list[i]->Step();
+            }
         }
         m_parameter.append(QVector<qreal>() << min << max << step);
         max_count *= (max + step - min) / step;
-        m_ignored_parameter << m_parameter_list[i]->Optimise();
     }
-
-    if (m_model.data()->SupportSeries())
-        for (int i = m_ignored_parameter.size(); i < m_model.data()->MaxParameter(); ++i)
-            m_ignored_parameter << 1;
 
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
@@ -245,7 +268,6 @@ void AdvancedSearch::PrepareProgress()
 
 void AdvancedSearch::Finished()
 {
-    //     m_progress->hide();
     m_scan->show();
     m_interrupt->hide();
 }

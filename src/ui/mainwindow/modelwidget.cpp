@@ -164,6 +164,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
                     if (this->m_model->GlobalEnabled(i)) {
                         constant->setStyleSheet("background-color: " + included());
                         check->setEnabled(true);
+                        check->setChecked(m_model->GlobalTable()->isChecked(i, 0));
                     } else {
                         check->setEnabled(false);
                         constant->setStyleSheet("background-color: " + excluded());

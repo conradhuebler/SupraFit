@@ -219,6 +219,9 @@ public:
     }
 
     void SetSingleParameter(double value, int parameter);
+
+    void setGlobalParameter(double value, int parameter);
+
     void addGlobalParameter();
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
@@ -334,7 +337,11 @@ public:
     /*! \brief Returns pointer to Global DataTable
      * overloaded function
      */
-    inline DataTable* GlobalTable() { return m_global_parameter; }
+    inline DataTable* GlobalTable()
+    {
+        return m_global_parameter;
+        emit Recalculated();
+    }
 
     /*! \brief Returns pointer to Global DataTable
      * overloaded function
@@ -344,7 +351,11 @@ public:
     /*! \brief Returns const pointer to Local DataTable
      * overloaded function
      */
-    inline DataTable* LocalTable() { return m_local_parameter; }
+    inline DataTable* LocalTable()
+    {
+        return m_local_parameter;
+        emit Recalculated();
+    }
 
     /*! \brief Returns const pointer to Local DataTable
      * overloaded function

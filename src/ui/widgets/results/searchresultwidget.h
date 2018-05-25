@@ -21,14 +21,16 @@
 
 #include <QtWidgets/QWidget>
 
-class ChartView;
-
-class GlobalSearch;
 class AbstractModel;
-class QTableView;
-class QPushButton;
+class GlobalSearch;
+
+class ChartView;
 class ScientificBox;
+
 class QCheckBox;
+class QPushButton;
+class QTableView;
+class QTabWidget;
 
 class SearchResultWidget : public QWidget {
     Q_OBJECT
@@ -38,17 +40,20 @@ public:
     ~SearchResultWidget();
 
 private:
+    QTableView* BuildList();
+    QWidget* BuildContour();
+
     QList<QJsonObject> m_models;
     QTableView* m_table;
-    ChartView* m_contour;
+    QWidget* m_contour;
+    QTabWidget* m_central_widget;
     QSharedPointer<AbstractModel> m_model;
     QCheckBox* m_valid;
     ScientificBox* m_threshold;
     QPushButton *m_export, *m_switch;
     QVector<QList<qreal>> m_input;
     QPointer<GlobalSearch> m_globalsearch;
-    QTableView* BuildList();
-    ChartView* BuildContour();
+
     QList<GSResult> m_results;
 
 private slots:

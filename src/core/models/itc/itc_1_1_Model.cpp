@@ -86,7 +86,6 @@ void itc_ItoI_Model::CalculateVariables()
     m_sum_absolute = 0;
     m_sum_squares = 0;
 
-    // QString binding = getOption(Binding);
     QString dil = getOption(Dilution);
 
     qreal dH = LocalTable()->data(0, 0);
@@ -99,9 +98,7 @@ void itc_ItoI_Model::CalculateVariables()
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
 
-        //if (binding == "pytc") {
         host_0 *= fx;
-        //}
         qreal guest_0 = InitialGuestConcentration(i);
         qreal dilution = 0;
         qreal v = IndependentModel()->data(0, i);
