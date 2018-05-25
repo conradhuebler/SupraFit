@@ -38,6 +38,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QWidget>
 
@@ -51,19 +52,18 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
     , m_globalsearch(globalsearch)
     , m_model(model)
 {
+    m_central_widget = new QTabWidget;
     m_results = m_globalsearch->Result();
 
     QGridLayout* layout = new QGridLayout;
-    m_switch = new QPushButton(tr("Switch View"));
     m_export = new QPushButton(tr("Export Models"));
     m_valid = new QCheckBox(tr("Invalid Models"));
     m_threshold = new ScientificBox;
     m_threshold->setValue(1);
-    layout->addWidget(m_switch, 0, 0);
-    layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 1);
-    layout->addWidget(m_threshold, 0, 2);
-    layout->addWidget(m_valid, 0, 3);
-    layout->addWidget(m_export, 0, 4);
+    layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 0);
+    layout->addWidget(m_threshold, 0, 1);
+    layout->addWidget(m_valid, 0, 2);
+    layout->addWidget(m_export, 0, 3);
 
     if (!m_model)
         throw 1;
@@ -75,12 +75,12 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
     connect(m_table, SIGNAL(clicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
     connect(m_table, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportModels()));
-    connect(m_switch, SIGNAL(clicked()), this, SLOT(SwitchView()));
-    layout->addWidget(m_table, 1, 0, 1, 5);
+    layout->addWidget(m_central_widget, 1, 0, 1, 5);
 
     m_contour = BuildContour();
-    layout->addWidget(m_contour, 1, 0, 1, 5);
-    m_contour->hide();
+    m_central_widget->addTab(m_table, tr("Result List"));
+    m_central_widget->addTab(m_contour, tr("Contour Plot"));
+
     setLayout(layout);
 }
 
@@ -169,9 +169,9 @@ QTableView* SearchResultWidget::BuildList()
     proxyModel->setSourceModel(model);
     proxyModel->setSortRole(Qt::UserRole + 1);
 
-    /*proxyModel->setFilterRole(Qt::UserRole + 4);
+    proxyModel->setFilterRole(Qt::UserRole + 4);
     proxyModel->setFilterRegExp(QRegExp("1"));
-    proxyModel->setFilterKeyColumn(0);*/
+    proxyModel->setFilterKeyColumn(0);
 
     resize(table->sizeHint());
     return table;

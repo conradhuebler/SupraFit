@@ -64,7 +64,6 @@ void SearchBatch::run()
             for (int i = m_model.data()->GlobalParameterSize(); i < parameter.size(); ++i)
                 m_model->setLocalParameter(parameter[i], i - m_model.data()->GlobalParameterSize(), 0);
         }
-        qDebug() << m_model.data()->OptimizeParameters();
         optimise();
         result.optimised = m_model->AllParameter();
         result.model = m_model->ExportModel(false, false);
