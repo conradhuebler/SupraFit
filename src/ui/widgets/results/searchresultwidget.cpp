@@ -21,8 +21,10 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 #include "src/core/toolset.h"
+
 #include "src/ui/widgets/buttons/scientificbox.h"
 #include "src/ui/widgets/chartview.h"
+#include "src/ui/widgets/results/contourwidget.h"
 
 #include <QtCore/QCollator>
 #include <QtCore/QFile>
@@ -94,9 +96,14 @@ QTableView* SearchResultWidget::BuildList()
     int size_optimsed;
     for (int i = 0; i < m_results.size(); ++i) {
         double error = m_results[i].SumError;
+
+        //qDebug() << m_results[i].converged << m_results[i].valid << error;
         QStandardItem* item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         item->setData(error, Qt::UserRole + 1);
+        item->setData(QString::number(m_results[i].converged), Qt::UserRole + 2);
+        item->setData(QString::number(m_results[i].valid), Qt::UserRole + 3);
+        item->setData(QString::number(m_results[i].valid && m_results[i].converged), Qt::UserRole + 4);
         model->setItem(i, 0, item);
         int j = 1;
         QVector<qreal> initial = m_results[i].initial;
@@ -138,7 +145,8 @@ QTableView* SearchResultWidget::BuildList()
                 j++;
             }
         }
-        m_models << m_results[i].model;
+        if ((m_results[i].converged && m_results[i].valid))
+            m_models << m_results[i].model;
     }
 
     QStringList head;
@@ -161,23 +169,18 @@ QTableView* SearchResultWidget::BuildList()
     proxyModel->setSourceModel(model);
     proxyModel->setSortRole(Qt::UserRole + 1);
 
+    /*proxyModel->setFilterRole(Qt::UserRole + 4);
+    proxyModel->setFilterRegExp(QRegExp("1"));
+    proxyModel->setFilterKeyColumn(0);*/
+
     resize(table->sizeHint());
     return table;
 }
 
-ChartView* SearchResultWidget::BuildContour()
+QWidget* SearchResultWidget::BuildContour()
 {
-    QList<QPointF> data = ToolSet::fromModelsList(m_models, "globalParameter");
-    QtCharts::QChart* chart_ellipsoid = new QtCharts::QChart;
-    chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    ChartView* view = new ChartView(chart_ellipsoid);
-    QtCharts::QScatterSeries* xy_series = new QtCharts::QScatterSeries(this);
-    xy_series->append(data);
-    xy_series->setMarkerSize(8);
-    view->addSeries(xy_series);
-    view->setXAxis(m_model->GlobalParameterName(0));
-    view->setYAxis(m_model->GlobalParameterName(1));
-    return view;
+    ContourWidget* widget = new ContourWidget(m_models, m_model);
+    return widget;
 }
 
 void SearchResultWidget::rowSelected(const QModelIndex& index)

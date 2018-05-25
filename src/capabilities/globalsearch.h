@@ -46,6 +46,7 @@ struct GSResult {
     QVector<qreal> initial, optimised;
     qreal SumError;
     QJsonObject model;
+    bool valid, converged;
 };
 
 class GSConfig : public AbstractConfig {
@@ -70,13 +71,17 @@ public:
 
     virtual void run() override;
     inline QList<GSResult> Result() { return m_result; }
-    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    inline void setModel(const QSharedPointer<AbstractModel> model)
+    {
+        m_model = model->Clone();
+        guess = m_model->ExportModel(false, false);
+    }
 
 private:
     NonLinearFitThread* m_thread;
 
     void optimise();
-
+    QJsonObject guess;
     QList<GSResult> m_result;
     QPointer<GlobalSearch> m_parent;
     GSConfig m_config;

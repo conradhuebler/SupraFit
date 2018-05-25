@@ -148,6 +148,11 @@ void AbstractModel::clearOptParameter()
         d->m_enabled_global[i] = 0;
 }
 
+void AbstractModel::setGlobalParameter(double value, int parameter)
+{
+    (*GlobalTable())[parameter] = value;
+}
+
 void AbstractModel::setGlobalParameter(const QPointer<DataTable> list)
 {
     if (list->columnCount() != GlobalTable()->columnCount())
@@ -203,7 +208,7 @@ void AbstractModel::Calculate()
     CalculateVariables();
 
     if (isCorrupt()) {
-        qDebug() << "Something went wrong during model calculation, most probably some numeric stuff";
+        // qDebug() << "Something went wrong during model calculation, most probably some numeric stuff";
     }
 
     m_mean /= qreal(m_used_variables);
@@ -363,8 +368,9 @@ qreal AbstractModel::Error(qreal confidence, bool f)
 
 void AbstractModel::SetSingleParameter(double value, int parameter)
 {
-    if (parameter < m_opt_para.size())
+    if (parameter < m_opt_para.size()) {
         *m_opt_para[parameter] = value;
+    }
 }
 
 void AbstractModel::setParameter(const QVector<qreal>& parameter)

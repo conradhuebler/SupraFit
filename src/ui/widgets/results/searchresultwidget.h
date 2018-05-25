@@ -38,17 +38,19 @@ public:
     ~SearchResultWidget();
 
 private:
+    QTableView* BuildList();
+    QWidget* BuildContour();
+
     QList<QJsonObject> m_models;
     QTableView* m_table;
-    ChartView* m_contour;
+    QWidget* m_contour;
     QSharedPointer<AbstractModel> m_model;
     QCheckBox* m_valid;
     ScientificBox* m_threshold;
     QPushButton *m_export, *m_switch;
     QVector<QList<qreal>> m_input;
     QPointer<GlobalSearch> m_globalsearch;
-    QTableView* BuildList();
-    ChartView* BuildContour();
+
     QList<GSResult> m_results;
 
 private slots:

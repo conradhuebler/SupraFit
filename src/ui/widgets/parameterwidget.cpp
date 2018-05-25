@@ -56,6 +56,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
                     if (this->m_model->LocalEnabled(i)) {
                         box->setStyleSheet("background-color: " + included());
                         check->setEnabled(true);
+                        check->setChecked(m_model->LocalTable()->isChecked(i, 0));
                     } else {
                         box->setStyleSheet("background-color: " + excluded());
                         check->setEnabled(false);
