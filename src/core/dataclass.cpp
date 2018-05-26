@@ -801,6 +801,11 @@ void DataClass::LoadSystemParameter()
     emit SystemParameterLoaded();
 }
 
+void DataClass::setSystemObject(const QJsonObject& object)
+{
+    m_systemObject = object;
+}
+
 void DataClass::setHeader(const QStringList& strlist)
 {
     if (strlist.size() == (d->m_independent_model->columnCount() + d->m_dependent_model->columnCount())) {

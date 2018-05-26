@@ -23,6 +23,8 @@
 
 #include <QtCore/QVector>
 
+#include <iostream>
+
 namespace BC50 {
 
 inline qreal ItoI_BC50(const qreal logK11) { return 1 / qPow(10, logK11); }

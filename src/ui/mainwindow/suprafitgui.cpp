@@ -201,6 +201,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         m_central_widget->setTabText(index, name);
     });
     m_data_list << data;
+    setActionEnabled(true);
     return true;
 }
 
@@ -208,10 +209,7 @@ void SupraFitGui::NewTable()
 {
     ImportData dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
-        if (dialog.ProjectFile().isEmpty())
-            SetData(dialog.getProject(), dialog.ProjectFile());
-        else
-            LoadProject(dialog.ProjectFile());
+        SetData(dialog.getProject(), dialog.ProjectFile());
     }
 }
 

@@ -38,6 +38,7 @@
 
 #include <QApplication>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 

@@ -324,6 +324,8 @@ public:
 
     inline QString ProjectTitle() const { return d->m_title; }
 
+    void setSystemObject(const QJsonObject& object);
+
 private:
     QJsonObject m_systemObject;
     QMutex m_lock;

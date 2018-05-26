@@ -61,7 +61,7 @@ public:
         QVBoxLayout* layout = new QVBoxLayout;
         QHBoxLayout* hlayout = new QHBoxLayout;
         layout->setAlignment(Qt::AlignTop);
-
+        int counter = 1;
         for (int index : m_data->getSystemParameterList()) {
             QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), this);
             hlayout->addWidget(widget);
@@ -78,12 +78,13 @@ public:
                         widget->setValue(m_data->getSystemParameter(index));
                     }
                 });
-            if (index % 2 == 0 && index) {
+            if (counter % 2 == 0) {
                 layout->addLayout(hlayout);
                 hlayout = new QHBoxLayout;
             }
+            counter++;
         }
-
+        layout->addLayout(hlayout);
         setLayout(layout);
     }
 

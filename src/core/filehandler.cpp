@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,11 +18,16 @@
  */
 
 #include "src/core/dataclass.h"
+#include "src/core/models.h"
+
+#include <QDebug>
+
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QPointer>
+#include <QtCore/QStringList>
 
 #include "filehandler.h"
-#include <QDebug>
-#include <QtCore/QFile>
-#include <QtCore/QPointer>
 
 FileHandler::FileHandler(const QString& filename, QObject* parent)
     : m_filename(filename)
@@ -31,10 +36,9 @@ FileHandler::FileHandler(const QString& filename, QObject* parent)
     , m_table(true)
     , m_allint(true)
     , m_file_supported(true)
+    , m_filetype(FileType::Generic)
 {
     LoadFile();
-    Read();
-    CheckForTable();
 }
 
 FileHandler::FileHandler(QObject* parent)
@@ -43,6 +47,7 @@ FileHandler::FileHandler(QObject* parent)
     , m_table(true)
     , m_allint(true)
     , m_file_supported(true)
+    , m_filetype(FileType::Generic)
 {
 }
 
@@ -53,15 +58,26 @@ FileHandler::~FileHandler()
 void FileHandler::LoadFile()
 {
     QFile file(m_filename);
-    if (!file.open(QIODevice::ReadOnly)) {
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qDebug() << file.errorString();
-        //         return; //FIXME Hää
+        return;
     }
 
+    QFileInfo info(m_filename);
+    if (info.suffix() == "DH" || info.suffix() == "dh")
+        m_filetype = FileType::dH;
+
     m_filecontent = QString(file.readAll()).split("\n");
+
+    if (m_filetype == FileType::Generic)
+        ReadGeneric();
+    else if (m_filetype == FileType::dH)
+        ReaddH();
+    else
+        m_file_supported = false;
 }
 
-void FileHandler::Read()
+void FileHandler::ReadGeneric()
 {
     int tab = 0, semi = 0;
     for (const QString& str : qAsConst(m_filecontent)) {
@@ -73,34 +89,11 @@ void FileHandler::Read()
     else
         sep = ";";
     m_lines = m_filecontent.size();
-}
 
-void FileHandler::CheckForTable()
-{
-    int size = 0;
+    if (!CheckForTable())
+        return;
 
-    for (int i = 0; i < m_lines; ++i) {
-        if (size)
-            m_table = (size == m_filecontent[i].split(sep).size());
-        size = m_filecontent[i].split(sep).size();
-
-        if (!m_table)
-            return;
-
-        if (m_table) {
-            QStringList elements = m_filecontent[i].split("\n");
-            for (int j = 0; j < elements.size(); ++j) {
-                if (elements[j].contains(QRegExp("[Aa-Zz]")))
-                    m_allint = false;
-            }
-        }
-    }
-    m_file_supported = m_allint && m_table;
-}
-
-QPointer<DataTable> FileHandler::getData() const
-{
-    QPointer<DataTable> model = new DataTable;
+    m_stored_table = new DataTable;
     int i = 0;
     for (const QString& line : qAsConst(m_filecontent)) {
         if (!line.isEmpty() && !line.isNull()) {
@@ -115,12 +108,62 @@ QPointer<DataTable> FileHandler::getData() const
             }
             if (!i && !sum) {
                 for (int j = 0; j < header.size(); ++j)
-                    model->setHeaderData(j, Qt::Horizontal, (header[j]), Qt::DisplayRole);
+                    m_stored_table->setHeaderData(j, Qt::Horizontal, (header[j]), Qt::DisplayRole);
             } else
-                model->insertRow(row);
+                m_stored_table->insertRow(row);
         }
     }
-    return model;
+}
+
+bool FileHandler::CheckForTable()
+{
+    int size = 0;
+
+    for (int i = 0; i < m_lines; ++i) {
+        if (size)
+            m_table = (size == m_filecontent[i].split(sep).size());
+        size = m_filecontent[i].split(sep).size();
+
+        if (!m_table)
+            return false;
+
+        if (m_table) {
+            QStringList elements = m_filecontent[i].split("\n");
+            for (int j = 0; j < elements.size(); ++j) {
+                if (elements[j].contains(QRegExp("[Aa-Zz]")))
+                    m_allint = false;
+            }
+        }
+    }
+    m_file_supported = m_allint && m_table;
+    return m_allint && m_table;
+}
+
+void FileHandler::ReaddH()
+{
+
+    if (m_filecontent.size() < 5)
+        return;
+
+    int number = m_filecontent[1].split(",")[1].toInt();
+
+    QStringList parameter = m_filecontent[2].split(",");
+    if (parameter.size() < 4)
+        return;
+
+    m_systemparameter[QString::number(AbstractItcModel::Temperature)] = QString::number(parameter[0].toDouble() + 273.15);
+    m_systemparameter[QString::number(AbstractItcModel::CellConcentration)] = QString::number(parameter[1].toDouble());
+    m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)] = QString::number(parameter[2].toDouble());
+    m_systemparameter[QString::number(AbstractItcModel::CellVolume)] = QString::number(parameter[3].toDouble() * 1000);
+    m_stored_table = new DataTable;
+
+    for (int i = 5; i < (number + 5); ++i) {
+        QVector<qreal> row;
+        QStringList items = m_filecontent[i].split(",");
+        for (int j = 0; j < items.size(); ++j)
+            row << items[j].toDouble();
+        m_stored_table->insertRow(row);
+    }
 }
 
 #include "filehandler.moc"
