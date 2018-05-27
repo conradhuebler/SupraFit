@@ -66,11 +66,8 @@ public:
     inline QString ProjectFile() const { return m_projectfile; }
     inline QJsonObject getProject() const
     {
-        QJsonObject object, data;
-        data = m_storeddata->ExportData();
-        data["system"] = m_systemparameter;
-        object["data"] = data;
-        return object;
+
+        return m_project;
     }
 
 private:
@@ -90,7 +87,7 @@ private:
     DataClassPrivate::DataType m_type = DataClassPrivate::Table;
     QString m_title;
     bool m_single = true;
-    QJsonObject m_systemparameter;
+    QJsonObject m_systemparameter, m_project;
 
 private slots:
     void LoadFile();

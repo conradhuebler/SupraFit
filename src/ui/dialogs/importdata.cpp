@@ -19,6 +19,7 @@
 
 #include "src/core/dataclass.h"
 #include "src/core/filehandler.h"
+#include "src/core/jsonhandler.h"
 #include "src/global.h"
 
 #include "src/ui/dialogs/thermogram.h"
@@ -192,6 +193,7 @@ void ImportData::LoadFile()
         ImportThermogram(m_filename);
     } else if (info.suffix() == "json" || info.suffix() == "JSON" || info.suffix() == "suprafit" || info.suffix() == "SUPRAFIT" || info.suffix() == "jdat" || info.suffix() == "JDAT") {
         m_projectfile = m_filename;
+        JsonHandler::ReadJsonFile(m_project, m_filename);
         QDialog::accept();
     } else {
         m_projectfile = m_filename;
@@ -254,6 +256,11 @@ void ImportData::accept()
 {
     DataTable* model = qobject_cast<DataTable*>(m_table->model());
     WriteData(model);
+    QJsonObject object, data;
+    data = m_storeddata->ExportData();
+    data["system"] = m_systemparameter;
+    object["data"] = data;
+    m_project = object;
     QDialog::accept();
 }
 

@@ -56,6 +56,7 @@ public slots:
     void LoadFile(const QString& file);
 
 private:
+    void LoadJson(const QJsonObject& json);
     void setActionEnabled(bool enabled);
     void ReadSettings();
     void ReadGeometry();
@@ -91,6 +92,7 @@ private:
     QVector<QPointer<MainWindow>> m_project_list;
 
 private slots:
+    void NewWindow();
     void NewTable();
     void OpenFile();
     void setWindowTitle();

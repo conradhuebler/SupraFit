@@ -77,8 +77,8 @@ SupraFitGui::SupraFitGui()
 
     ReadSettings();
 
-    m_new = new QAction(Icon("document-new"), tr("New Table"));
-    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
+    m_new = new QAction(Icon("window-new"), tr("New Window"));
+    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewWindow()));
 
     m_load = new QAction(Icon("document-open"), tr("Open Project"));
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
@@ -205,17 +205,37 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     return true;
 }
 
+void SupraFitGui::NewWindow()
+{
+    if (m_data_list.size()) {
+        QMessageBox question(QMessageBox::Question, tr("New Window"), tr("Do yout really want to open a new window?"), QMessageBox::Yes | QMessageBox::No, this);
+        if (question.exec() == QMessageBox::No) {
+            return;
+        }
+    }
+    SupraFitGui* mainwindow = new SupraFitGui;
+    mainwindow->show();
+}
+
 void SupraFitGui::NewTable()
 {
-    ImportData dialog(this);
-    if (dialog.exec() == QDialog::Accepted) {
-        SetData(dialog.getProject(), dialog.ProjectFile());
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)"));
+    if (filename.isEmpty())
+        return;
+
+    if (filename.contains("*.json") || filename.contains("*.suprafit")) {
+        LoadProject(filename);
+    } else {
+        ImportData dialog(filename);
+        if (dialog.exec() == QDialog::Accepted) {
+            SetData(dialog.getProject(), dialog.ProjectFile());
+        }
     }
 }
 
 void SupraFitGui::OpenFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat, *.itc, *.ITC);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt, *.itc);;All files (*.*)"));
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)"));
     if (filename.isEmpty())
         return;
     setLastDir(filename);
@@ -225,14 +245,11 @@ void SupraFitGui::OpenFile()
 
 void SupraFitGui::ImportTable(const QString& file)
 {
-    /*ImportData dialog(file, this);
+    ImportData dialog(file, this);
 
     if (dialog.exec() == QDialog::Accepted) {
-        if (dialog.ProjectFile().isEmpty())
-            SetData(new DataClass(dialog.getStoredData()), file);
-        else
-            LoadProject(dialog.ProjectFile());
-    }*/
+        SetData(dialog.getProject(), dialog.ProjectFile());
+    }
 }
 
 bool SupraFitGui::LoadProject(const QString& filename)

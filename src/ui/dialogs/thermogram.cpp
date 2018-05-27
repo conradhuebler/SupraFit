@@ -172,12 +172,9 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
 
     QFileInfo info(filename);
     if (!info.exists()) {
-        qDebug() << "File not found, trying in current directory";
         QStringList list = filename.split("/");
-        qDebug() << list;
         QString file = list.last();
         QString lastdir = qApp->instance()->property("lastdir").toString();
-        qDebug() << lastdir;
         QFileInfo inf(lastdir + "/" + file);
         if (inf.exists())
             filename = lastdir + "/" + file;
@@ -187,7 +184,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
         }
     }
     QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly)) {
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qDebug() << file.errorString();
         throw 404;
     }
@@ -235,7 +232,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     floating_peak.end = last_x;
     peaks->push_back(floating_peak);
     offset /= double(i_offset);
-    if (x.size() < 1 || y.size() < 1 || x.size() != y.size())
+    if (entries_x.size() < 1 || entries_y.size() < 1 || entries_x.size() != entries_y.size())
         throw 101;
 
     x = Vector::Map(&entries_x[0], entries_x.size());
