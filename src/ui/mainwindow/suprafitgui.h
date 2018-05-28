@@ -22,6 +22,7 @@
 #include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/widgets/optimizerwidget.h"
 
+#include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
 #include <QtCore/QPointer>
 
@@ -34,6 +35,7 @@ class QResizeEvent;
 class QPlainTextEdit;
 class QToolBar;
 class QTabWidget;
+class QTreeView;
 
 class DataClass;
 class ChartWidget;
@@ -43,6 +45,27 @@ class MainWindow;
 class ModelDataHolder;
 
 struct OptimizerConfig;
+
+class ProjectTree : public QAbstractItemModel {
+    Q_OBJECT
+public:
+    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list) { m_project_list = project_list; }
+
+    inline ~ProjectTree() {}
+
+    virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+
+    virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+
+    virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+
+    virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+
+    virtual QModelIndex parent(const QModelIndex& child) const override;
+
+private:
+    QVector<QPointer<MainWindow>>* m_project_list;
+};
 
 class SupraFitGui : public QMainWindow {
     Q_OBJECT
@@ -90,7 +113,8 @@ private:
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
     QVector<QPointer<MainWindow>> m_project_list;
-
+    QTreeView* m_project_view;
+    QPointer<ProjectTree> m_project_tree;
 private slots:
     void NewWindow();
     void NewTable();

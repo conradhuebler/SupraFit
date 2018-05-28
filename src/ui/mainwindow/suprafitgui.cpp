@@ -58,22 +58,128 @@
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
+#include <QtWidgets/QTreeView>
 
 #include <stdio.h>
 
 #include "suprafitgui.h"
+
+int ProjectTree::columnCount(const QModelIndex& parent) const
+{
+    Q_UNUSED(parent)
+    return 1;
+}
+
+int ProjectTree::rowCount(const QModelIndex& parent) const
+{
+    int count = m_project_list->size();
+
+    QPointer<DataClass> data = static_cast<DataClass*>(parent.internalPointer());
+    bool model = qobject_cast<AbstractModel*>(data);
+
+    if (parent.isValid()) {
+        if (!model)
+            count = (*m_project_list)[parent.row()]->ModelCount();
+        else
+            count = 0;
+    }
+
+    return count;
+}
+
+QVariant ProjectTree::data(const QModelIndex& index, int role) const
+{
+    QVariant data;
+    if (!index.isValid())
+        return data;
+
+    if (role == Qt::DisplayRole) {
+        QPointer<DataClass> dataclass = static_cast<DataClass*>(index.internalPointer());
+        bool model = qobject_cast<AbstractModel*>(dataclass);
+
+        if (!model)
+            data = dataclass->ProjectTitle();
+        else {
+            data = Model2Name(qobject_cast<AbstractModel*>(dataclass)->SFModel());
+        }
+    }
+    return data;
+}
+
+QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) const
+{
+
+    QModelIndex index;
+    if (!hasIndex(row, column, parent))
+        index = QModelIndex();
+
+    if (!parent.isValid()) {
+        index = createIndex(row, column, (*m_project_list)[row]->Data());
+    } else {
+        index = createIndex(row, column, (*m_project_list)[parent.row()]->Model(row));
+    }
+
+    return index;
+}
+
+QModelIndex ProjectTree::parent(const QModelIndex& child) const
+{
+    QModelIndex index;
+
+    if (!child.isValid())
+        return index;
+
+    QPointer<DataClass> data = static_cast<DataClass*>(child.internalPointer());
+    bool model = qobject_cast<AbstractModel*>(data);
+
+    QPointer<DataClass> p;
+    int dataclass = -1, modelclass = -1;
+    int count1 = 0, count2 = 0;
+    for (int i = 0; i < m_project_list->size(); ++i) {
+        for (int j = 0; j < (*m_project_list)[i]->ModelCount(); ++j) {
+
+            if ((*m_project_list)[i]->Data() == data) {
+                dataclass = i;
+                count1++;
+            }
+            if (!model)
+                continue;
+
+            if ((*m_project_list)[i]->Model(j) == qobject_cast<AbstractModel*>(data)) {
+                modelclass = j;
+                dataclass = i;
+                p = (*m_project_list)[i]->Data();
+                count2++;
+                break;
+            }
+        }
+    }
+    if (modelclass != -1)
+        index = createIndex(dataclass, 0, p);
+
+    return index;
+}
 
 SupraFitGui::SupraFitGui()
 {
     m_instance = new Instance;
     Instance::setInstance(m_instance);
 
+    m_project_view = new QTreeView;
+
     m_central_widget = new QTabWidget;
 
     m_central_widget->setTabShape(QTabWidget::Triangular);
     m_central_widget->setTabPosition(QTabWidget::South);
 
-    setCentralWidget(m_central_widget);
+    QSplitter* splitter = new QSplitter(Qt::Horizontal);
+    splitter->addWidget(m_project_view);
+    splitter->addWidget(m_central_widget);
+
+    m_project_tree = new ProjectTree(&m_project_list);
+    m_project_view->setModel(m_project_tree);
+
+    setCentralWidget(splitter);
 
     ReadSettings();
 
@@ -182,10 +288,12 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         data.data()->setProjectTitle(name);
     }
     int index = m_central_widget->addTab(window, name);
+    m_project_list << window;
     connect(data.data(), &DataClass::NameChanged, m_central_widget, [index, this](const QString& name) {
         m_central_widget->setTabText(index, name);
     });
     m_data_list << data;
+    m_project_tree->layoutChanged();
     setActionEnabled(true);
     return true;
 }

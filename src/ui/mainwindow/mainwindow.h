@@ -54,6 +54,12 @@ public:
 
     inline QJsonObject SaveProject() const { return m_model_dataholder->SaveWorkspace(); }
 
+    inline int ModelCount() const { return m_model_dataholder->ModelCount(); }
+
+    inline QPointer<AbstractModel> Model(int index) const { return m_model_dataholder->Model(index); }
+
+    inline QPointer<DataClass> Data() const { return m_data.data(); }
+
 public slots:
     // void LoadFile(const QString& file);
 

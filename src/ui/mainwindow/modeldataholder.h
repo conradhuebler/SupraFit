@@ -80,6 +80,7 @@ public:
     // ~MDHDockTitleBar();
 
     inline void setEnabled(bool enabled) { m_buttons->setEnabled(enabled); }
+
     void EnableBatch(bool enabled);
     void addToMenu(int IndependetCount);
     const QAction* lastAction() const { return m_last_action; }
@@ -131,6 +132,10 @@ public:
     bool CheckCrashFile();
     virtual QSize sizeHint() const { return QSize(800, 600); }
     MDHDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
+
+    inline int ModelCount() const { return m_models.size(); }
+    inline QPointer<AbstractModel> Model(int index) const { return m_models[index].data(); }
+
 public slots:
     /*
      * Add a new model to the workspace

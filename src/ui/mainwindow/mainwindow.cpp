@@ -99,7 +99,7 @@ MainWindow::MainWindow()
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
 
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject, int)), this, SLOT(InsertHistoryElement(QJsonObject, int)), Qt::DirectConnection);
-    connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
+    // connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
     connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
