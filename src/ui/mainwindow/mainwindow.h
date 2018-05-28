@@ -48,7 +48,7 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow();
-    inline ~MainWindow() {}
+    ~MainWindow();
 
     QSharedPointer<DataClass> SetData(const QJsonObject& object);
 

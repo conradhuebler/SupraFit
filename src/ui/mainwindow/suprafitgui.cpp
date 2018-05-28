@@ -76,6 +76,7 @@ int ProjectTree::rowCount(const QModelIndex& parent) const
     int count = m_project_list->size();
 
     QPointer<DataClass> data = static_cast<DataClass*>(parent.internalPointer());
+
     bool model = qobject_cast<AbstractModel*>(data);
 
     if (parent.isValid()) {
@@ -84,7 +85,6 @@ int ProjectTree::rowCount(const QModelIndex& parent) const
         else
             count = 0;
     }
-
     return count;
 }
 
@@ -131,6 +131,10 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
         return index;
 
     QPointer<DataClass> data = static_cast<DataClass*>(child.internalPointer());
+
+    if (!data)
+        return index;
+
     bool model = qobject_cast<AbstractModel*>(data);
 
     QPointer<DataClass> p;
@@ -259,6 +263,7 @@ SupraFitGui::SupraFitGui()
                   "}");
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
+    //connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeRemoveRequest);
 }
 
 SupraFitGui::~SupraFitGui()
@@ -616,4 +621,25 @@ void SupraFitGui::TreeClicked(const QModelIndex& index)
     }
     m_project_list[widget]->show();
     m_project_list[widget]->setCurrentTab(tab + 1);
+}
+
+void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
+{
+
+    int widget = 0;
+    int tab = -1;
+    if (m_project_tree->parent(index).isValid()) {
+        widget = m_project_tree->parent(index).row();
+        tab = index.row();
+    } else {
+        widget = index.row();
+        MainWindow* mainwindow = m_project_list.takeAt(widget);
+        delete mainwindow;
+    }
+
+    delete m_project_tree;
+    m_project_tree = new ProjectTree(&m_project_list);
+    m_project_view->setModel(m_project_tree);
+    if (m_project_list.size())
+        m_project_list.first()->show();
 }

@@ -331,12 +331,14 @@ ModelDataHolder::ModelDataHolder()
 
 ModelDataHolder::~ModelDataHolder()
 {
-    for (int i = 0; i < m_modelsWidget->count(); ++i)
+    for (int i = 0; i < m_modelsWidget->count(); ++i) {
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
             ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
             m_modelsWidget->removeTab(i);
             delete model;
         }
+    }
+    m_data.clear();
 }
 
 void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)

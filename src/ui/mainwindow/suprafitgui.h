@@ -132,6 +132,8 @@ private slots:
 
     void TreeClicked(const QModelIndex& index);
 
+    void TreeRemoveRequest(const QModelIndex& index);
+
 signals:
     void AppendPlainText(const QString& str);
 

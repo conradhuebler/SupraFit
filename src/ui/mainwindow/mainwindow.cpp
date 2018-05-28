@@ -120,6 +120,11 @@ MainWindow::MainWindow()
     qApp->installEventFilter(this);
 }
 
+MainWindow::~MainWindow()
+{
+    m_data.clear();
+}
+
 QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
 {
     QString colors = object["data"].toObject()["colors"].toString();
