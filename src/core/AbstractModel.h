@@ -493,11 +493,11 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const = 0;
+    virtual QString XLabel() const { return QString(); }
 
     /*! \brief Define the y axis for charts
      */
-    virtual QString YLabel() const = 0;
+    virtual QString YLabel() const { return QString(); }
 
     virtual inline int MaxParameter() { return GlobalParameterSize() + LocalParameterSize(); }
 

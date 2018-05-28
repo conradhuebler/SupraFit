@@ -150,6 +150,7 @@ set(models_SRC
                 src/core/AbstractModel.cpp
                 src/core/AbstractItcModel.cpp
                 src/core/AbstractTitrationModel.cpp
+                src/core/models/meta_model.cpp
                 src/core/models/itc/blank.cpp
                 src/core/models/itc/itc_1_1_Model.cpp
                 src/core/models/itc/itc_2_1_Model.cpp

@@ -10,6 +10,9 @@
 #include "AbstractModel.h"
 #include "AbstractTitrationModel.h"
 
+/* Meta Model - holds different models */
+#include "models/meta_model.h"
+
 /* ITC Models */
 #include "models/itc/blank.h"
 #include "models/itc/itc_1_1_Model.h"
@@ -91,6 +94,11 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataCla
     case SupraFit::fl_IItoI_ItoI_ItoII:
         t = QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
         break;
+
+    case SupraFit::MetaModel:
+        t = QSharedPointer<MetaModel>(new MetaModel(), &QObject::deleteLater);
+        break;
+
     default:
         t.clear();
     };
