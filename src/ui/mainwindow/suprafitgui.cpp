@@ -77,20 +77,17 @@ SupraFitGui::SupraFitGui()
 
     ReadSettings();
 
-    m_new = new QAction(Icon("window-new"), tr("New Window"));
-    connect(m_new, SIGNAL(triggered(bool)), this, SLOT(NewWindow()));
+    m_new_window = new QAction(Icon("window-new"), tr("New Window"));
+    connect(m_new_window, SIGNAL(triggered(bool)), this, SLOT(NewWindow()));
+
+    m_new_table = new QAction(Icon("document-new"), tr("New Table"));
+    connect(m_new_table, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
 
     m_load = new QAction(Icon("document-open"), tr("Open Project"));
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
 
     m_save = new QAction(Icon("document-save-all"), tr("Save Project"));
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
-
-    m_importmodel = new QAction(Icon("document-import"), tr("Import Models"));
-    connect(m_importmodel, SIGNAL(triggered(bool)), this, SLOT(ImportModelAction()));
-
-    m_export = new QAction(Icon("document-export"), tr("Export Models"));
-    connect(m_export, SIGNAL(triggered(bool)), this, SLOT(ExportModelAction()));
 
     m_config = new QAction(Icon("configure"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
@@ -106,34 +103,24 @@ SupraFitGui::SupraFitGui()
 
     m_main_toolbar = new QToolBar;
     m_main_toolbar->setObjectName(tr("main_toolbar"));
-    m_main_toolbar->addAction(m_new);
+    m_main_toolbar->addAction(m_new_window);
+    m_main_toolbar->addSeparator();
+    m_main_toolbar->addAction(m_new_table);
     m_main_toolbar->addAction(m_load);
     m_main_toolbar->addAction(m_save);
     m_main_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     addToolBar(m_main_toolbar);
 
-    m_model_toolbar = new QToolBar;
+    /*m_model_toolbar = new QToolBar;
     m_model_toolbar->setObjectName(tr("model_toolbar"));
     m_model_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     m_model_toolbar->addAction(m_importmodel);
     m_model_toolbar->addAction(m_export);
-    addToolBar(m_model_toolbar);
+    addToolBar(m_model_toolbar);*/
 
     m_system_toolbar = new QToolBar;
     m_system_toolbar->setObjectName(tr("system_toolbar"));
-    QAction* toggleView;
 
-    /*toggleView = m_modeldock->toggleViewAction();
-    toggleView->setIcon(QIcon(":/icons/workspace.png"));
-    m_system_toolbar->addAction(toggleView);
-
-    toggleView = m_chartdock->toggleViewAction();
-    toggleView->setIcon(QIcon(":/icons/charts.png"));
-    m_system_toolbar->addAction(toggleView);
-
-    toggleView = m_history_dock->toggleViewAction();
-    toggleView->setIcon(Icon("view-list-text"));
-    m_system_toolbar->addAction(toggleView);*/
     m_system_toolbar->addSeparator();
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_about);
@@ -181,8 +168,6 @@ void SupraFitGui::LoadFile(const QString& file)
 void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
-    m_export->setEnabled(enabled);
-    m_importmodel->setEnabled(enabled);
 }
 
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
@@ -207,7 +192,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 
 void SupraFitGui::NewWindow()
 {
-    if (m_data_list.size()) {
+    if (!m_data_list.size()) {
         QMessageBox question(QMessageBox::Question, tr("New Window"), tr("Do yout really want to open a new window?"), QMessageBox::Yes | QMessageBox::No, this);
         if (question.exec() == QMessageBox::No) {
             return;
@@ -219,18 +204,10 @@ void SupraFitGui::NewWindow()
 
 void SupraFitGui::NewTable()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)"));
-    if (filename.isEmpty())
-        return;
-
-    if (filename.contains("*.json") || filename.contains("*.suprafit")) {
-        LoadProject(filename);
-    } else {
-        ImportData dialog(filename);
-        if (dialog.exec() == QDialog::Accepted) {
-            SetData(dialog.getProject(), dialog.ProjectFile());
+    ImportData dialog;
+    if (dialog.exec() == QDialog::Accepted) {
+        SetData(dialog.getProject(), dialog.ProjectFile());
         }
-    }
 }
 
 void SupraFitGui::OpenFile()
@@ -303,27 +280,6 @@ void SupraFitGui::SaveProjectAction()
             JsonHandler::WriteJsonFile(json, str);
         }
         setLastDir(str);
-    }
-}
-
-void SupraFitGui::ImportModelAction()
-{
-    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("SupraFit Project File  (*.suprafit *.jdat);;Json File (*.json);;All files (*.*)"));
-    if (!str.isEmpty()) {
-        setLastDir(str);
-        QJsonObject toplevel;
-        if (JsonHandler::ReadJsonFile(toplevel, str)) {
-            // m_model_dataholder->AddToWorkspace(toplevel);
-        }
-    }
-}
-
-void SupraFitGui::ExportModelAction()
-{
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File (*.suprafit);;Json File (*.json);;All files (*.*)"));
-    if (!str.isEmpty()) {
-        setLastDir(str);
-        //m_model_dataholder->SaveCurrentModels(str);
     }
 }
 
@@ -452,16 +408,6 @@ void SupraFitGui::WriteSettings(bool ignore_window_state)
         _settings.setValue("state", saveState());
         _settings.endGroup();
     }
-}
-
-void SupraFitGui::InsertHistoryElement(const QJsonObject& model)
-{
-    // m_historywidget->InsertElement(model);
-}
-
-void SupraFitGui::InsertHistoryElement(const QJsonObject& model, int active)
-{
-    // m_historywidget->InsertElement(model, active);
 }
 
 void SupraFitGui::about()

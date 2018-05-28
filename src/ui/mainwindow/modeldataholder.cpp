@@ -141,30 +141,37 @@ MDHDockTitleBar::MDHDockTitleBar()
 
     m_add_nmr = new QPushButton(tr("Titratrion"));
     m_add_nmr->setFlat(true);
+    m_add_nmr->setIcon(Icon("list-add"));
 
     m_add_itc = new QPushButton(tr("Calorimetry"));
     m_add_itc->setFlat(true);
+    m_add_itc->setIcon(Icon("list-add"));
 
     m_add_kinetics = new QPushButton(tr("Kinetics"));
     m_add_kinetics->setFlat(true);
+    m_add_kinetics->setIcon(Icon("list-add"));
 
     m_optimize = new QPushButton(tr("Optimize All"));
     m_optimize->setFlat(true);
+    m_optimize->setIcon(Icon("go-down"));
     connect(m_optimize, &QPushButton::clicked, this, &MDHDockTitleBar::OptimizeAll);
 
     m_statistics = new QPushButton(tr("Statistics"));
     m_statistics->setFlat(true);
+    m_statistics->setIcon(Icon("fork"));
     connect(m_statistics, &QPushButton::clicked, this, &MDHDockTitleBar::ShowStatistics);
-
-    m_close_all = new QPushButton(tr("Close All"));
-    m_close_all->setFlat(true);
-    m_close_all->setDisabled(true);
-    connect(m_close_all, &QPushButton::clicked, this, &MDHDockTitleBar::CloseAll);
 
     m_analyse = new QPushButton(tr("Analyse and Compare"));
     m_analyse->setFlat(true);
-    // m_analyse->setDisabled(true);
+    m_analyse->setIcon(Icon("help-hint"));
     connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
+
+    m_close_all = new QPushButton(tr("Close All"));
+    m_close_all->setFlat(true);
+    m_close_all->setIcon(Icon("trash-empty"));
+    m_close_all->setDisabled(true);
+    connect(m_close_all, &QPushButton::clicked, this, &MDHDockTitleBar::CloseAll);
+
 
     auto addModel = [this](SupraFit::Model model) -> QAction* {
         QAction* action = new QAction(this);
@@ -215,8 +222,7 @@ MDHDockTitleBar::MDHDockTitleBar()
 #endif
 
     QHBoxLayout* buttons = new QHBoxLayout;
-    buttons->addWidget(m_edit_data);
-    buttons->addStretch(100);
+
     buttons->addWidget(m_add_nmr);
     buttons->addWidget(m_add_itc);
     buttons->addWidget(m_add_kinetics);
@@ -225,6 +231,8 @@ MDHDockTitleBar::MDHDockTitleBar()
     buttons->addWidget(m_statistics);
     buttons->addWidget(m_analyse);
     buttons->addWidget(m_close_all);
+    buttons->addStretch(100);
+    buttons->addWidget(m_edit_data);
 
     m_buttons->setLayout(buttons);
     layout->addStretch();
@@ -777,12 +785,17 @@ void ModelDataHolder::EditData()
         m_model_dataholder->EditTableAction(!m_edit->isChecked());
         m_edit->setChecked(!m_edit->isChecked());*/
     } else {
-        ImportData dialog(m_data);
-        if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
-            {
-                if (m_data->DataType() == DataClassPrivate::Thermogram)
-                    m_data->ImportData(dialog.getStoredData().ExportData());
+        if (m_data->DataType() == DataClassPrivate::Thermogram) {
+            ImportData dialog(m_data);
+            if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
+                {
+                    if (m_data->DataType() == DataClassPrivate::Thermogram)
+                        m_data->ImportData(dialog.getStoredData().ExportData());
+                }
             }
+        } else {
+            m_data->IndependentModel()->setEditable(!m_data->IndependentModel()->isEditable());
+            m_data->DependentModel()->setEditable(!m_data->DependentModel()->isEditable());
         }
     }
 }

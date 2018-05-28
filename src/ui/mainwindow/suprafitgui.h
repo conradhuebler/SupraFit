@@ -68,7 +68,7 @@ private:
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QVector<QWeakPointer<DataClass>> m_data_list;
     bool m_hasData;
-    QAction *m_new, *m_edit, *m_config, *m_about, *m_aboutqt, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
+    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_load;
     OptimizerConfig m_opt_config;
 
     QString m_logfile;
@@ -97,14 +97,10 @@ private slots:
     void OpenFile();
     void setWindowTitle();
     void SaveProjectAction();
-    void ImportModelAction();
-    void ExportModelAction();
     void SettingsDialog();
     void about();
     void WriteMessages(const QString& message, int priority);
     void MessageBox(const QString& str, int priority);
-    void InsertHistoryElement(const QJsonObject& model);
-    void InsertHistoryElement(const QJsonObject& model, int active);
     void FirstStart();
 
 signals:

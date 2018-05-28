@@ -134,6 +134,7 @@ public:
     inline void setHeader(const QStringList& header) { m_header = header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
     inline void setEditable(bool editable) { m_editable = editable; }
+    inline bool isEditable() const { return m_editable; }
     inline bool Checkable() const { return m_checkable; }
     QPointer<DataTable> PrepareMC(std::normal_distribution<double>& Phi, std::mt19937& rng, QVector<int> cols = QVector<int>());
     QPointer<DataTable> PrepareBootStrap(std::uniform_int_distribution<int>& Uni, std::mt19937& rng, const QVector<qreal>& vector);

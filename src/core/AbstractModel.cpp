@@ -123,13 +123,15 @@ QVector<qreal> AbstractModel::OptimizeParameters()
 {
     clearOptParameter();
     QVector<qreal> variables = OptimizeParameters_Private();
+    /* I really hope, this is old und already obsolete stuff, can remember right now */
+    /*qDebug() << m_opt_para;
     for (int j = m_opt_para.size() - 1; j >= 0; --j) {
         if (variables[j] == 0) {
             variables.removeAt(j);
             m_opt_para.removeAt(j);
             m_opt_index.removeAt(j);
         }
-    }
+    }*/
     d->m_locked_parameters.clear();
     for (int i = 0; i < variables.size(); ++i)
         d->m_locked_parameters << 1;

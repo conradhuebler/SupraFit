@@ -504,6 +504,7 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
     json = m_minimizer->Parameter();
     m_last_model = json;
     m_model->ImportModel(json);
+    m_model->OptimizeParameters();
     Repaint();
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
