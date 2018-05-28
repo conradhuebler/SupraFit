@@ -780,10 +780,8 @@ void ModelDataHolder::EditData()
     int version = m_data->ExportData()["SupraFit"].toInt();
     if (version < 1602) {
         QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
-
-        /*m_edit->setCheckable(true);
-        m_model_dataholder->EditTableAction(!m_edit->isChecked());
-        m_edit->setChecked(!m_edit->isChecked());*/
+        m_data->IndependentModel()->setEditable(!m_data->IndependentModel()->isEditable());
+        m_data->DependentModel()->setEditable(!m_data->DependentModel()->isEditable());
     } else {
         if (m_data->DataType() == DataClassPrivate::Thermogram) {
             ImportData dialog(m_data);
@@ -798,6 +796,12 @@ void ModelDataHolder::EditData()
             m_data->DependentModel()->setEditable(!m_data->DependentModel()->isEditable());
         }
     }
+}
+
+void ModelDataHolder::setCurrentTab(int index)
+{
+    if (index < m_modelsWidget->count())
+        m_modelsWidget->setCurrentIndex(index);
 }
 
 #include "modeldataholder.moc"

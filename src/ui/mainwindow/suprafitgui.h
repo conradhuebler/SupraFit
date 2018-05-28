@@ -30,6 +30,7 @@
 #include <QtWidgets/QSplitter>
 
 class QDockWidget;
+class QGridLayout;
 class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
@@ -115,6 +116,8 @@ private:
     QVector<QPointer<MainWindow>> m_project_list;
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
+    QGridLayout* m_layout;
+
 private slots:
     void NewWindow();
     void NewTable();
@@ -126,6 +129,8 @@ private slots:
     void WriteMessages(const QString& message, int priority);
     void MessageBox(const QString& str, int priority);
     void FirstStart();
+
+    void TreeClicked(const QModelIndex& index);
 
 signals:
     void AppendPlainText(const QString& str);

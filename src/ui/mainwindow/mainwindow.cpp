@@ -103,6 +103,8 @@ MainWindow::MainWindow()
     connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
     connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
     connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
+    connect(m_model_dataholder, &ModelDataHolder::ModelAdded, this, &MainWindow::ModelAdded);
+
     setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
 
     ReadGeometry();
@@ -192,6 +194,11 @@ void MainWindow::EditData()
             }
         }
     }
+}
+
+void MainWindow::setCurrentTab(int index)
+{
+    m_model_dataholder->setCurrentTab(index);
 }
 
 #include "mainwindow.moc"

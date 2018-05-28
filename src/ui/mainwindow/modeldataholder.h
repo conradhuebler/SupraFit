@@ -136,6 +136,8 @@ public:
     inline int ModelCount() const { return m_models.size(); }
     inline QPointer<AbstractModel> Model(int index) const { return m_models[index].data(); }
 
+    void setCurrentTab(int index);
+
 public slots:
     /*
      * Add a new model to the workspace

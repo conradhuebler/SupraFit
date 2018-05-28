@@ -48,6 +48,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMenu>
@@ -165,21 +166,30 @@ SupraFitGui::SupraFitGui()
     m_instance = new Instance;
     Instance::setInstance(m_instance);
 
+    m_layout = new QGridLayout;
+
+    QWidget* widget = new QWidget;
+    widget->setLayout(m_layout);
+
     m_project_view = new QTreeView;
 
-    m_central_widget = new QTabWidget;
+    /*m_central_widget = new QTabWidget;
 
     m_central_widget->setTabShape(QTabWidget::Triangular);
-    m_central_widget->setTabPosition(QTabWidget::South);
+    m_central_widget->setTabPosition(QTabWidget::South);*/
 
-    QSplitter* splitter = new QSplitter(Qt::Horizontal);
+    /*QSplitter* splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(m_project_view);
-    splitter->addWidget(m_central_widget);
+    splitter->addWidget(m_central_widget);*/
 
     m_project_tree = new ProjectTree(&m_project_list);
     m_project_view->setModel(m_project_tree);
 
-    setCentralWidget(splitter);
+    m_layout->addWidget(m_project_view, 0, 0);
+
+    m_project_view->setMaximumWidth(200);
+
+    setCentralWidget(widget);
 
     ReadSettings();
 
@@ -248,6 +258,7 @@ SupraFitGui::SupraFitGui()
                   "border-radius: 4px;"
                   "}");
     qApp->installEventFilter(this);
+    connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
 }
 
 SupraFitGui::~SupraFitGui()
@@ -278,6 +289,9 @@ void SupraFitGui::setActionEnabled(bool enabled)
 
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 {
+    for (int i = 0; i < m_project_list.size(); ++i)
+        m_project_list[i]->hide();
+
     MainWindow* window = new MainWindow;
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data)
@@ -287,11 +301,18 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         name = file;
         data.data()->setProjectTitle(name);
     }
+    m_layout->addWidget(window, 0, 1);
+    /*
     int index = m_central_widget->addTab(window, name);
-    m_project_list << window;
     connect(data.data(), &DataClass::NameChanged, m_central_widget, [index, this](const QString& name) {
         m_central_widget->setTabText(index, name);
+    });*/
+    connect(window, &MainWindow::ModelAdded, m_project_tree, [this]() {
+        m_project_tree->layoutChanged();
     });
+
+    m_project_list << window;
+
     m_data_list << data;
     m_project_tree->layoutChanged();
     setActionEnabled(true);
@@ -371,11 +392,9 @@ void SupraFitGui::SaveProjectAction()
     if (!str.isEmpty()) {
 
         QVector<QJsonObject> projects;
-        for (int i = 0; i < m_central_widget->count(); i++) {
-            if (qobject_cast<MainWindow*>(m_central_widget->widget(i))) {
-                QPointer<MainWindow> project_widget = qobject_cast<MainWindow*>(m_central_widget->widget(i));
-                projects << project_widget->SaveProject();
-            }
+        for (int i = 0; i < m_project_list.size(); i++) {
+            QPointer<MainWindow> project_widget = m_project_list[i];
+            projects << project_widget->SaveProject();
         }
         if (projects.isEmpty())
             return;
@@ -580,4 +599,21 @@ bool SupraFitGui::eventFilter(QObject* obj, QEvent* event)
         return !qApp->instance()->property("tooltips").toBool();
     } else
         return QMainWindow::eventFilter(obj, event);
+}
+
+void SupraFitGui::TreeClicked(const QModelIndex& index)
+{
+    for (int i = 0; i < m_project_list.size(); ++i)
+        m_project_list[i]->hide();
+
+    int widget = 0;
+    int tab = -1;
+    if (m_project_tree->parent(index).isValid()) {
+        widget = m_project_tree->parent(index).row();
+        tab = index.row();
+    } else {
+        widget = index.row();
+    }
+    m_project_list[widget]->show();
+    m_project_list[widget]->setCurrentTab(tab + 1);
 }

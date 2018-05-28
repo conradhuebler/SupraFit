@@ -60,6 +60,8 @@ public:
 
     inline QPointer<DataClass> Data() const { return m_data.data(); }
 
+    void setCurrentTab(int index);
+
 public slots:
     // void LoadFile(const QString& file);
 
@@ -92,4 +94,5 @@ private slots:
 
 signals:
     void AppendPlainText(const QString& str);
+    void ModelAdded();
 };
