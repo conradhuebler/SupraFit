@@ -184,10 +184,18 @@ SupraFitGui::SupraFitGui()
         TreeClicked(m_project_view->currentIndex());
 
     });
+
+    action = new QAction("Add MetaModel", m_project_view);
+    m_project_view->addAction(action);
+    connect(action, &QAction::triggered, action, [this]() {
+        AddMetaModel(m_project_view->currentIndex());
+    });
+
     action = new QAction("Delete", m_project_view);
     connect(action, &QAction::triggered, action, [this]() {
         TreeRemoveRequest(m_project_view->currentIndex());
     });
+
     m_project_view->addAction(action);
 
     /*m_central_widget = new QTabWidget;
@@ -673,4 +681,24 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
 
     if (m_project_list.size())
         m_project_list.first()->show();
+}
+
+void SupraFitGui::AddMetaModel(const QModelIndex& index)
+{
+    MainWindow* window = new MainWindow;
+    QWeakPointer<AbstractModel> model = window->CreateMetaModel();
+    if (!model)
+        return;
+
+    m_layout->addWidget(window, 0, 1);
+
+    connect(window, &MainWindow::ModelsChanged, this, [=]() {
+        m_project_tree->layoutChanged();
+    });
+
+    m_project_list << window;
+
+    m_data_list << model;
+    m_project_tree->layoutChanged();
+    setActionEnabled(true);
 }

@@ -270,6 +270,11 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
     }
 }
 
+void MDHDockTitleBar::HideModelTools()
+{
+    m_buttons->hide();
+}
+
 void MDHDockTitleBar::EnableBatch(bool enabled)
 {
     m_close_all->setEnabled(enabled);
@@ -348,7 +353,10 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
     m_datawidget->setData(m_data, wrapper);
     m_wrapper = wrapper;
     m_modelsWidget->setDataTab(m_datawidget);
-    m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
+    if (!qobject_cast<MetaModel*>(data))
+        m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
+    else
+        m_TitleBarWidget->HideModelTools();
 }
 
 void ModelDataHolder::SetProjectTabName()

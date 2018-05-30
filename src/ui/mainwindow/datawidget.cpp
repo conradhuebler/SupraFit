@@ -119,12 +119,20 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 {
     m_data = dataclass;
     m_wrapper = wrapper;
-    dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
-    m_concentrations->setModel(m_data.data()->IndependentModel());
-    m_signals->setModel(m_data.data()->DependentModel());
-    connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
-    m_concentrations->resizeColumnsToContents();
-    m_signals->resizeColumnsToContents();
+    if (qobject_cast<AbstractModel*>(m_data.data())) {
+        m_data.data()->setProjectTitle("Meta Model");
+        m_switch->hide();
+        m_linear->hide();
+
+    } else {
+        dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+        m_concentrations->setModel(m_data.data()->IndependentModel());
+        m_signals->setModel(m_data.data()->DependentModel());
+        connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
+        m_concentrations->resizeColumnsToContents();
+        m_signals->resizeColumnsToContents();
+    }
+
     qApp->instance()->setProperty("projectname", m_data.data()->ProjectTitle());
     m_name->setText(qApp->instance()->property("projectname").toString());
     m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.data()->IndependentModel()->columnCount()));
@@ -137,42 +145,41 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         vlayout->addWidget(el);
         m_signal_elements << el;
     }
+
     layout->addLayout(vlayout, 2, 0, 1, 4);
 
-    QHBoxLayout* scaling_layout = new QHBoxLayout;
-    scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
+    if (!qobject_cast<AbstractModel*>(m_data.data())) {
+        QHBoxLayout* scaling_layout = new QHBoxLayout;
+        scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
 
-    for (int i = 0; i < m_data.data()->getScaling().size(); ++i) {
+        for (int i = 0; i < m_data.data()->getScaling().size(); ++i) {
 
-        QDoubleSpinBox* spin_box = new QDoubleSpinBox;
-        spin_box->setMaximum(1e8);
-        spin_box->setMinimum(-1e8);
-        spin_box->setValue(m_data.data()->getScaling()[i]);
-        spin_box->setSingleStep(1e-2);
-        spin_box->setDecimals(7);
-        connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
-        m_scaling_boxes << spin_box;
-        QHBoxLayout* lay = new QHBoxLayout;
-        lay->addWidget(new QLabel(tr("%1. substance").arg(i + 1)));
-        lay->addWidget(spin_box);
-        scaling_layout->addLayout(lay);
+            QDoubleSpinBox* spin_box = new QDoubleSpinBox;
+            spin_box->setMaximum(1e8);
+            spin_box->setMinimum(-1e8);
+            spin_box->setValue(m_data.data()->getScaling()[i]);
+            spin_box->setSingleStep(1e-2);
+            spin_box->setDecimals(7);
+            connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
+            m_scaling_boxes << spin_box;
+            QHBoxLayout* lay = new QHBoxLayout;
+            lay->addWidget(new QLabel(tr("%1. substance").arg(i + 1)));
+            lay->addWidget(spin_box);
+            scaling_layout->addLayout(lay);
+        }
+        layout->addLayout(scaling_layout, 3, 0, 1, 4);
+
+        if (m_data.data()->IndependentVariableSize() == 1)
+            m_switch->hide();
+        m_splitter->addWidget(m_tables);
+        dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+        dialog->UpdatePlots();
+        QSettings settings;
+        settings.beginGroup("overview");
+        m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
+        m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
     }
-    layout->addLayout(scaling_layout, 3, 0, 1, 4);
 
-    if (m_data.data()->IndependentVariableSize() == 1)
-        m_switch->hide();
-
-    m_systemwidget = new QWidget;
-
-    m_splitter->addWidget(m_tables);
-    dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
-    dialog->UpdatePlots();
-
-    QSettings settings;
-    settings.beginGroup("overview");
-    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
-    m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
-    //connect(m_data.data(), SIGNAL(SystemParameterLoaded()), this, SLOT(MakeSystemParameter()));
     connect(m_data.data(), &DataClass::NameChanged, m_name, &QLineEdit::setText);
 }
 
@@ -223,14 +230,6 @@ void DataWidget::HidePoint()
     dialog->UpdatePlots();
 }
 
-void DataWidget::MakeSystemParameter()
-{
-    /*
-    if (m_system_parameter_loaded)
-        return;
-    m_splitter->addWidget(new SPOverview(m_data.data()));
-    m_system_parameter_loaded = true;*/
-}
 
 void DataWidget::LinearAnalysis()
 {

@@ -83,6 +83,8 @@ public:
 
     void EnableBatch(bool enabled);
     void addToMenu(int IndependetCount);
+    void HideModelTools();
+
     const QAction* lastAction() const { return m_last_action; }
 
 private:

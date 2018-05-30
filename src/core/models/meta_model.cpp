@@ -32,7 +32,7 @@
 #include "meta_model.h"
 
 MetaModel::MetaModel()
-    : AbstractModel(new DataClass(this))
+    : AbstractModel(new DataClass())
 {
     PrepareParameter(0, 0);
 }

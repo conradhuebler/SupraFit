@@ -151,6 +151,17 @@ QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
     return m_data;
 }
 
+QSharedPointer<AbstractModel> MainWindow::CreateMetaModel()
+{
+    m_data = QSharedPointer<DataClass>(new DataClass(this));
+
+    QSharedPointer<AbstractModel> model = CreateModel(SupraFit::MetaModel, m_data);
+    QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(model);
+
+    m_model_dataholder->setData(model, wrapper);
+
+    return model;
+}
 
 void MainWindow::ReadGeometry()
 {

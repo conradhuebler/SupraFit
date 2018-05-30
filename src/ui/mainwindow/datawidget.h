@@ -73,7 +73,6 @@ private slots:
     void SetProjectName();
     void setScaling();
     void HidePoint();
-    void MakeSystemParameter();
     void LinearAnalysis();
 
 signals:

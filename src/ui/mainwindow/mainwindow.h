@@ -51,6 +51,7 @@ public:
     ~MainWindow();
 
     QSharedPointer<DataClass> SetData(const QJsonObject& object);
+    QSharedPointer<AbstractModel> CreateMetaModel();
 
     inline QJsonObject SaveProject() const { return m_model_dataholder->SaveWorkspace(); }
 
