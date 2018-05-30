@@ -152,6 +152,8 @@ public slots:
      */
     // inline void EditTableAction(bool checked) { m_datawidget->setEditable(checked); }
 
+    void RemoveTab(int i);
+
 private:
     QPointer<DataWidget> m_datawidget;
     QPointer<TabWidget> m_modelsWidget;
@@ -180,7 +182,6 @@ private:
 private slots:
     void AddModel();
 
-    void RemoveTab(int i);
     void CreateCrashFile();
     void RemoveCrashFile();
     void SetProjectTabName();

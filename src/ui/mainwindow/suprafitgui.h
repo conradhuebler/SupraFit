@@ -54,6 +54,18 @@ public:
 
     inline ~ProjectTree() {}
 
+    Qt::ItemFlags flags(const QModelIndex& index) const
+    {
+        Q_UNUSED(index);
+        Qt::ItemFlags flags;
+        //if (m_checkable)
+        flags = Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
+        //else
+        //    flags = Qt::ItemIsEnabled;
+
+        return flags;
+    }
+
     virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
     virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -132,7 +144,6 @@ private slots:
 
     void UpdateTreeView(bool regenerate = false);
     void TreeClicked(const QModelIndex& index);
-
     void TreeRemoveRequest(const QModelIndex& index);
 
 signals:

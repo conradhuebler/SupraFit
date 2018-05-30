@@ -176,8 +176,22 @@ SupraFitGui::SupraFitGui()
     widget->setLayout(m_layout);
 
     m_project_view = new QTreeView;
+    m_project_view->setContextMenuPolicy(Qt::ActionsContextMenu);
+    QAction* action;
+    action = new QAction("Load", m_project_view);
+    m_project_view->addAction(action);
+    connect(action, &QAction::triggered, action, [this]() {
+        TreeClicked(m_project_view->currentIndex());
+
+    });
+    action = new QAction("Delete", m_project_view);
+    connect(action, &QAction::triggered, action, [this]() {
+        TreeRemoveRequest(m_project_view->currentIndex());
+    });
+    m_project_view->addAction(action);
 
     /*m_central_widget = new QTabWidget;
+     *
 
     m_central_widget->setTabShape(QTabWidget::Triangular);
     m_central_widget->setTabPosition(QTabWidget::South);*/
@@ -263,6 +277,7 @@ SupraFitGui::SupraFitGui()
                   "}");
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeClicked);
+    //connect(m_project_view, &QTreeView::customContextMenuRequested, this, &SupraFitGui::ContextMenu);
     //connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeRemoveRequest);
 }
 
@@ -632,6 +647,7 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
     if (m_project_tree->parent(index).isValid()) {
         widget = m_project_tree->parent(index).row();
         tab = index.row();
+        m_project_list[widget]->RemoveTab(tab + 1);
     } else {
         widget = index.row();
         MainWindow* mainwindow = m_project_list.takeAt(widget);

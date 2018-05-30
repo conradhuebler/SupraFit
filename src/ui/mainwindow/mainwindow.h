@@ -62,6 +62,8 @@ public:
 
     void setCurrentTab(int index);
 
+    inline void RemoveTab(int i) { m_model_dataholder->RemoveTab(i); }
+
 public slots:
     // void LoadFile(const QString& file);
 
