@@ -198,7 +198,9 @@ private slots:
     inline void Interrupt() { m_allow_loop = false; }
 
 signals:
-    void ModelAdded(AbstractModel* model);
+    // void ModelAdded(AbstractModel* model);
+    void ModelAdded();
+    void ModelRemoved();
     void Message(const QString& str, int priority);
     void MessageBox(const QString& str, int priority);
     void InsertModel(const QJsonObject& model, int active);

@@ -130,6 +130,7 @@ private slots:
     void MessageBox(const QString& str, int priority);
     void FirstStart();
 
+    void UpdateTreeView(bool regenerate = false);
     void TreeClicked(const QModelIndex& index);
 
     void TreeRemoveRequest(const QModelIndex& index);

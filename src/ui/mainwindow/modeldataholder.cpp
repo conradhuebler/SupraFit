@@ -433,6 +433,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     else
         m_history = true;
     ActiveBatch();
+    emit ModelAdded();
 }
 
 void ModelDataHolder::ActiveBatch()
@@ -445,7 +446,9 @@ void ModelDataHolder::RemoveTab(int i)
     if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
         m_modelsWidget->removeTab(i);
+        m_models.remove(m_models.indexOf(model->Model()));
         delete model;
+        emit ModelRemoved();
     }
     ActiveBatch();
 }
@@ -543,6 +546,7 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
 
     setEnabled(true);
     m_wrapper.data()->restartAnimation();
+    emit ModelAdded();
 }
 
 void ModelDataHolder::LoadCurrentProject(const QJsonObject& object)

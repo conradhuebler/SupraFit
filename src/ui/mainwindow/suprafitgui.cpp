@@ -262,7 +262,7 @@ SupraFitGui::SupraFitGui()
                   "border-radius: 4px;"
                   "}");
     qApp->installEventFilter(this);
-    connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
+    connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeClicked);
     //connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeRemoveRequest);
 }
 
@@ -312,7 +312,8 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     connect(data.data(), &DataClass::NameChanged, m_central_widget, [index, this](const QString& name) {
         m_central_widget->setTabText(index, name);
     });*/
-    connect(window, &MainWindow::ModelAdded, m_project_tree, [this]() {
+    //connect(window, &MainWindow::ModelsChanged, this, &SupraFitGui::UpdateTreeView);
+    connect(window, &MainWindow::ModelsChanged, this, [=]() {
         m_project_tree->layoutChanged();
     });
 
@@ -637,9 +638,23 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
         delete mainwindow;
     }
 
+    UpdateTreeView(true);
+}
+
+void SupraFitGui::UpdateTreeView(bool regenerate)
+{
+    if (!regenerate) {
+        m_project_tree->layoutChanged();
+        return;
+    }
+
     delete m_project_tree;
-    m_project_tree = new ProjectTree(&m_project_list);
-    m_project_view->setModel(m_project_tree);
+    ProjectTree* project_tree = new ProjectTree(&m_project_list);
+    m_project_view->setModel(project_tree);
+    if (m_project_tree)
+        delete m_project_tree;
+    m_project_tree = project_tree;
+
     if (m_project_list.size())
         m_project_list.first()->show();
 }

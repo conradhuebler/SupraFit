@@ -95,4 +95,5 @@ private slots:
 signals:
     void AppendPlainText(const QString& str);
     void ModelAdded();
+    void ModelsChanged();
 };
