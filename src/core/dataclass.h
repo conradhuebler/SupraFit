@@ -217,10 +217,10 @@ public:
                 d->m_scaling << 1;
     }
 
-    inline int Size() const { return DataPoints(); }
-    inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
-    inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
-    inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
+    virtual inline int Size() const { return DataPoints(); }
+    virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
+    virtual inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
+    virtual inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
     inline int Type() const { return d->m_type; }
     inline void setType(int type) { d->m_type = type; }
     inline DataTable* IndependentModel() { return d->m_independent_model; }

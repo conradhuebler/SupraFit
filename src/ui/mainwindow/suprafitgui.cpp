@@ -177,6 +177,9 @@ SupraFitGui::SupraFitGui()
 
     m_project_view = new QTreeView;
     m_project_view->setContextMenuPolicy(Qt::ActionsContextMenu);
+    m_project_view->setDragEnabled(true);
+    m_project_view->setDragDropMode(QAbstractItemView::DragOnly);
+
     QAction* action;
     action = new QAction("Load", m_project_view);
     m_project_view->addAction(action);
@@ -197,16 +200,6 @@ SupraFitGui::SupraFitGui()
     });
 
     m_project_view->addAction(action);
-
-    /*m_central_widget = new QTabWidget;
-     *
-
-    m_central_widget->setTabShape(QTabWidget::Triangular);
-    m_central_widget->setTabPosition(QTabWidget::South);*/
-
-    /*QSplitter* splitter = new QSplitter(Qt::Horizontal);
-    splitter->addWidget(m_project_view);
-    splitter->addWidget(m_central_widget);*/
 
     m_project_tree = new ProjectTree(&m_project_list);
     m_project_view->setModel(m_project_tree);
@@ -685,20 +678,31 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
 
 void SupraFitGui::AddMetaModel(const QModelIndex& index)
 {
-    MainWindow* window = new MainWindow;
-    QWeakPointer<AbstractModel> model = window->CreateMetaModel();
-    if (!model)
-        return;
+    QPointer<DataClass> data = static_cast<DataClass*>(index.internalPointer());
 
-    m_layout->addWidget(window, 0, 1);
+    if (!m_meta_model) {
+        MainWindow* window = new MainWindow;
 
-    connect(window, &MainWindow::ModelsChanged, this, [=]() {
+        QWeakPointer<MetaModel> model = qobject_cast<MetaModel*>(window->CreateMetaModel());
+        if (!model)
+            return;
+
+        bool is_model = qobject_cast<AbstractModel*>(data);
+        if (!is_model)
+            return;
+
+        m_layout->addWidget(window, 0, 1);
+
+        connect(window, &MainWindow::ModelsChanged, this, [=]() {
+            m_project_tree->layoutChanged();
+        });
+
+        m_project_list << window;
+
+        m_data_list << model;
         m_project_tree->layoutChanged();
-    });
-
-    m_project_list << window;
-
-    m_data_list << model;
-    m_project_tree->layoutChanged();
-    setActionEnabled(true);
+        setActionEnabled(true);
+        m_meta_model = model;
+    }
+    m_meta_model.data()->addModel(qobject_cast<AbstractModel*>(data));
 }

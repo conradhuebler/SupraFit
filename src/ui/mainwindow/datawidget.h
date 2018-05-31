@@ -57,7 +57,7 @@ private:
     QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
     QLineEdit* m_name;
-    QLabel *m_datapoints, *m_substances, *m_const_subs, *m_signals_count;
+    QLabel *m_datapoints, *m_substances, *m_const_subs, *m_signals_count, *m_model_info;
     QWidget *m_tables, *m_widget;
     QSplitter* m_splitter;
     QVector<QPointer<SignalElement>> m_signal_elements;
@@ -74,6 +74,7 @@ private slots:
     void setScaling();
     void HidePoint();
     void LinearAnalysis();
+    void MetaModelUpdated();
 
 signals:
     void recalculate();

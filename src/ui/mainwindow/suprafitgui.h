@@ -54,17 +54,22 @@ public:
 
     inline ~ProjectTree() {}
 
-    Qt::ItemFlags flags(const QModelIndex& index) const
+    Qt::ItemFlags flags(const QModelIndex& index) const override
     {
         Q_UNUSED(index);
         Qt::ItemFlags flags;
         //if (m_checkable)
-        flags = Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
+        flags = Qt::ItemIsDragEnabled | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
         //else
         //    flags = Qt::ItemIsEnabled;
 
         return flags;
     }
+
+    /* Qt::DropActions supportedDragActions() const override
+    {
+
+    }*/
 
     virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
@@ -129,6 +134,7 @@ private:
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
     QGridLayout* m_layout;
+    QWeakPointer<MetaModel> m_meta_model;
 
 private slots:
     void NewWindow();

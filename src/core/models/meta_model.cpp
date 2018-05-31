@@ -39,6 +39,8 @@ MetaModel::MetaModel()
 
 MetaModel::~MetaModel()
 {
+    for (int i = 0; i < m_models.size(); ++i)
+        m_models[i].clear();
 }
 
 void MetaModel::InitialGuess_Private()
@@ -58,6 +60,22 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
     return parameter;
 }
 
+void MetaModel::addModel(const QPointer<AbstractModel> model)
+{
+    /* We will create a copy of that model
+     */
+    m_models << model->Clone();
+    connect(model, &DataClass::NameChanged, m_models.last().data(), &DataClass::setProjectTitle);
+    m_glob_param += model->GlobalParameterSize();
+    m_inp_param += model->InputParameterSize();
+    m_loc_param += model->LocalParameterSize();
+    m_size += model->Size();
+    m_indep_var += model->IndependentVariableSize();
+    m_dep_var += model->DataPoints();
+    m_series_count += model->SeriesCount();
+    emit ModelAdded();
+}
+
 void MetaModel::CalculateVariables()
 {
     for (int i = 0; i < m_models.size(); ++i)
@@ -68,8 +86,8 @@ QSharedPointer<AbstractModel> MetaModel::Clone()
 {
     QSharedPointer<MetaModel> model = QSharedPointer<MetaModel>(new MetaModel, &QObject::deleteLater);
 
-    for (const QWeakPointer<AbstractModel> m : Models())
-        model.data()->addModel(m.data()->Clone());
+    for (const QSharedPointer<AbstractModel> m : Models())
+        model.data()->addModel(m->Clone().data());
 
     return model;
 }

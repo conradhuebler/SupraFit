@@ -48,22 +48,26 @@ public:
 
     virtual int LocalParameterSize() const { return m_loc_param; }
 
-    inline void addModel(QSharedPointer<AbstractModel> model)
-    {
-        m_models << model;
-        m_glob_param += model->GlobalParameterSize();
-        m_inp_param += model->InputParameterSize();
-        m_loc_param += model->LocalParameterSize();
-    }
+    virtual inline int Size() const override { return m_size; }
+    virtual inline int IndependentVariableSize() const override { return m_indep_var; }
+    virtual inline int DataPoints() const override { return m_dep_var; }
+    virtual inline int SeriesCount() const override { return m_series_count; }
 
-    inline QVector<QWeakPointer<AbstractModel>> Models() const { return m_models; }
+    void addModel(const QPointer<AbstractModel> model);
+
+    inline QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
+
+    inline int ModelSize() const { return m_models.size(); }
 
     virtual bool SupportSeries() const { return true; }
 
 private:
-    QVector<QWeakPointer<AbstractModel>> m_models;
-    int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0;
+    QVector<QSharedPointer<AbstractModel>> m_models;
+    int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0;
 
 protected:
     virtual void CalculateVariables() override;
+
+signals:
+    void ModelAdded();
 };

@@ -83,6 +83,7 @@ DataWidget::DataWidget()
     m_substances = new QLabel;
     m_const_subs = new QLabel;
     m_signals_count = new QLabel;
+    m_model_info = new QLabel;
     m_tables = new QWidget; //(tr("Data Tables"));
     QHBoxLayout* group_layout = new QHBoxLayout;
     group_layout->addWidget(m_concentrations);
@@ -94,6 +95,7 @@ DataWidget::DataWidget()
     layout->addWidget(m_substances, 1, 1);
     layout->addWidget(m_const_subs, 1, 2);
     layout->addWidget(m_signals_count, 1, 3);
+    layout->addWidget(m_model_info, 2, 0, 1, 4);
 
     m_widget->setLayout(layout);
     QScrollArea* area = new QScrollArea;
@@ -119,11 +121,11 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 {
     m_data = dataclass;
     m_wrapper = wrapper;
-    if (qobject_cast<AbstractModel*>(m_data.data())) {
+    if (qobject_cast<MetaModel*>(m_data.data())) {
         m_data.data()->setProjectTitle("Meta Model");
         m_switch->hide();
         m_linear->hide();
-
+        connect(qobject_cast<MetaModel*>(m_data.data()), &MetaModel::ModelAdded, this, &DataWidget::MetaModelUpdated);
     } else {
         dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
         m_concentrations->setModel(m_data.data()->IndependentModel());
@@ -234,6 +236,19 @@ void DataWidget::HidePoint()
 void DataWidget::LinearAnalysis()
 {
     dialog->show();
+}
+
+void DataWidget::MetaModelUpdated()
+{
+    QString text = QString();
+    QPointer<MetaModel> model = qobject_cast<MetaModel*>(m_data.data());
+    for (int i = 0; i < model->ModelSize(); ++i)
+        text += "Model Included: " + Model2Name(model->Models()[i]->SFModel()) + " from " + model->Models()[i]->ProjectTitle() + "\n";
+    text += "parameter count = " + QString::number(model->GlobalParameterSize() + model->LocalParameterSize());
+    m_model_info->setText(text);
+    m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(model->IndependentModel()->columnCount()));
+    m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(model->DependentModel()->rowCount()));
+    m_signals_count->setText(tr("<html><h4>Columns of dependent variables: %1</h4><html>").arg(model->SeriesCount()));
 }
 
 #include "datawidget.moc"
