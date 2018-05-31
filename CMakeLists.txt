@@ -227,6 +227,7 @@ set(suprafit_SRCS
                 src/ui/mainwindow/chartwidget.cpp
                 src/ui/mainwindow/modeldataholder.cpp
                 src/ui/mainwindow/datawidget.cpp
+                src/ui/mainwindow/metamodelwidget.cpp
                 src/ui/mainwindow/modelwidget.cpp
                 src/ui/mainwindow/mainwindow.cpp
                 src/ui/mainwindow/suprafitgui.cpp
