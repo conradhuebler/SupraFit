@@ -187,6 +187,8 @@ void ChartWrapper::MakeSeries()
         double x = m_model->PrintOutIndependent(i);
         for (int j = 0; j < cols; ++j) {
             if (m_model->DependentModel()->isChecked(j, i)) {
+                if (j >= m_stored_series.size())
+                    continue;
                 if (m_flip)
                     m_stored_series[j]->append(m_table->data(j, i), x);
                 else

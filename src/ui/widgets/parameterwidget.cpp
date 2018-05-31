@@ -80,9 +80,16 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         });
         hlayout->addWidget(new QLabel(m_model->LocalParameterName(i)));
         hlayout->addWidget(box);
+        m_parameter << box;
         hlayout->addWidget(check);
         layout->addWidget(widget);
     }
 
     setLayout(layout);
+}
+
+void LocalParameterWidget::setReadOnly(bool readonly)
+{
+    for (int i = 0; i < m_parameter.size(); ++i)
+        m_parameter[i]->setReadOnly(readonly);
 }

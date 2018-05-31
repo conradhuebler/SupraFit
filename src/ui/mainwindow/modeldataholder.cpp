@@ -34,6 +34,7 @@
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/instance.h"
 #include "src/ui/mainwindow/datawidget.h"
+#include "src/ui/mainwindow/metamodelwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
 #include <QApplication>
@@ -118,6 +119,13 @@ void TabWidget::setDataTab(QPointer<DataWidget> datawidget)
     addTab(datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
     tabBar()->setTabButton(0, QTabBar::RightSide, 0);
     m_datawidget = datawidget;
+}
+
+void TabWidget::setMetaTab(QPointer<MetaModelWidget> datawidget)
+{
+    addTab(datawidget, "Overview: " + qApp->instance()->property("projectname").toString());
+    tabBar()->setTabButton(0, QTabBar::RightSide, 0);
+    m_metamodelwidget = datawidget;
 }
 
 MDHDockTitleBar::MDHDockTitleBar()
@@ -297,6 +305,7 @@ ModelDataHolder::ModelDataHolder()
     setLayout(layout);
 
     m_datawidget = new DataWidget;
+    m_metamodelwidget = new MetaModelWidget;
     connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
     connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     m_modelsWidget = new TabWidget(this);
@@ -350,13 +359,16 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
 {
     m_data = data;
     m_TitleBarWidget->setEnabled(true);
-    m_datawidget->setData(m_data, wrapper);
     m_wrapper = wrapper;
-    m_modelsWidget->setDataTab(m_datawidget);
-    if (!qobject_cast<MetaModel*>(data))
+    if (!qobject_cast<MetaModel*>(data)) {
+        m_datawidget->setData(m_data, wrapper);
+        m_modelsWidget->setDataTab(m_datawidget);
         m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
-    else
+    } else {
+        m_metamodelwidget->setMetaModel(qobject_cast<MetaModel*>(data));
+        m_modelsWidget->setMetaTab(m_metamodelwidget);
         m_TitleBarWidget->HideModelTools();
+    }
 }
 
 void ModelDataHolder::SetProjectTabName()
@@ -404,12 +416,12 @@ void ModelDataHolder::Json2Model(const QJsonObject& object, SupraFit::Model mode
 #endif
 }
 
-void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object)
+void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object, bool readonly)
 {
     t->setFast(false);
 
     Charts charts = m_charts->addModel(t);
-    ModelWidget* modelwidget = new ModelWidget(t, charts);
+    ModelWidget* modelwidget = new ModelWidget(t, charts, readonly);
     modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
     t->setOptimizerConfig(m_config);
@@ -442,6 +454,11 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
         m_history = true;
     ActiveBatch();
     emit ModelAdded();
+}
+
+void ModelDataHolder::addMetaModel(QSharedPointer<AbstractModel> t)
+{
+    ActiveModel(t, QJsonObject(), true);
 }
 
 void ModelDataHolder::ActiveBatch()

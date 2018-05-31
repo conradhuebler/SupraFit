@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,24 +23,26 @@
 
 #include <QtWidgets/QWidget>
 
-class QCheckBox;
+#include "src/core/models.h"
 
-class AbstractModel;
-class SpinBox;
+class QPushButton;
 
-class LocalParameterWidget : public QWidget {
+class MetaModelWidget : public QWidget {
     Q_OBJECT
 public:
-    LocalParameterWidget(QSharedPointer<AbstractModel> model);
+    MetaModelWidget(QWidget* parent = 0);
+    inline void setMetaModel(QSharedPointer<AbstractModel> model) { m_model = model; }
 
 signals:
-    void LocalCheckState(int state);
 
 public slots:
-    void setReadOnly(bool readonly);
+
+private slots:
+    void Minimize();
 
 private:
+    void setUi();
+
     QSharedPointer<AbstractModel> m_model;
-    QList<QPointer<SpinBox>> m_parameter;
-    QList<QPointer<QCheckBox>> m_locked;
+    QPushButton* m_minimize;
 };

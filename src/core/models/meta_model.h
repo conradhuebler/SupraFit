@@ -40,6 +40,15 @@ public:
     virtual void InitialGuess_Private() override;
 
     virtual QSharedPointer<AbstractModel> Clone() override;
+
+    /*virtual QPointer<DataTable> GlobalParameter() const
+    {
+        qDebug() << "should rather crash now";
+        return GlobalTable();
+    }
+*/
+    virtual qreal GlobalParameter(int i) const override;
+
     virtual bool SupportThreads() const override { return false; }
 
     virtual int GlobalParameterSize() const { return m_glob_param; }
@@ -61,13 +70,30 @@ public:
 
     virtual bool SupportSeries() const { return true; }
 
+    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false) const;
+
+    virtual bool ImportModel(const QJsonObject& topjson, bool override = true);
+
+    virtual QList<double> getSignals(QList<int> active_signal) override;
+
+    virtual QList<double> getCalculatedModel() override;
+
+    virtual qreal ModelError() const override;
+
+    virtual qreal SumOfErrors(int i) const override;
+
+    virtual qreal CalculateCovarianceFit() override;
+
+    virtual qreal CalculateVariance() override;
+
 private:
     QVector<QSharedPointer<AbstractModel>> m_models;
     int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0;
+    QVector<qreal> m_parameter;
 
 protected:
     virtual void CalculateVariables() override;
 
 signals:
-    void ModelAdded();
+    void ModelAdded(QSharedPointer<AbstractModel> model);
 };

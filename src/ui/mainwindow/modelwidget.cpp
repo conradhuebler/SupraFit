@@ -93,13 +93,14 @@
 
 #include "modelwidget.h"
 
-ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWidget* parent)
+ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, bool readonly, QWidget* parent)
     : QWidget(parent)
     , m_model(model)
     , m_charts(charts)
     , m_pending(false)
     , m_minimizer(QSharedPointer<Minimizer>(new Minimizer(true, this), &QObject::deleteLater))
     , m_statistic(false)
+    , m_val_readonly(readonly)
 {
     m_model->SystemParameterChanged();
     m_model_widget = new QWidget;
@@ -157,6 +158,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
         constant->setValue(m_model->GlobalParameter(i));
         constant->setMaximum(1e9);
         constant->setMinimum(-1e9);
+        constant->setReadOnly(m_val_readonly);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
         connect(m_model.data(), &AbstractModel::Recalculated, this,
             [i, constant, this, check]() {
@@ -192,7 +194,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     QVBoxLayout* fit_layout = new QVBoxLayout;
     fit_layout->addWidget(m_global_box);
     fit_layout->addWidget(m_local_box);
-    const_layout->addLayout(fit_layout);
+
+    if (!m_val_readonly)
+        const_layout->addLayout(fit_layout);
 
     m_minimize_all = new QPushButton(tr("Fit"));
 
@@ -212,7 +216,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
-    const_layout->addWidget(m_minimize_all);
+    if (!m_val_readonly)
+        const_layout->addWidget(m_minimize_all);
+
     m_layout->addLayout(const_layout);
     m_layout->addWidget(m_bc_50);
 
@@ -228,7 +234,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
     m_readonly = new QCheckBox(tr("Read Only"));
     QHBoxLayout* head = new QHBoxLayout;
     head->addWidget(m_converged_label);
-    head->addWidget(m_readonly);
+
+    if (!m_val_readonly)
+        head->addWidget(m_readonly);
+
     m_sign_layout->addLayout(head);
     if (m_model->SupportSeries()) {
         if (m_model->LocalParameterSize()) {
@@ -238,8 +247,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
                 connect(el, SIGNAL(ActiveSignalChanged()), this, SLOT(CollectActiveSignals()));
                 connect(this, SIGNAL(Update()), el, SLOT(Update()));
                 connect(this, SIGNAL(ToggleSeries(int)), el, SLOT(ToggleSeries(int)));
-                connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
+
+                if (!m_val_readonly)
+                    connect(m_readonly, &QCheckBox::stateChanged, el, &ModelElement::setReadOnly);
+
                 connect(m_local_box, &QCheckBox::stateChanged, el, &ModelElement::LocalCheckState);
+                el->setReadOnly(m_val_readonly);
                 m_sign_layout->addWidget(el);
                 m_model_elements << el;
             }
@@ -278,6 +291,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWi
         m_local_parameter = new LocalParameterWidget(m_model);
         m_sign_layout->addWidget(m_local_parameter);
 
+        if (!m_val_readonly)
+            connect(m_readonly, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::setReadOnly);
+        m_local_parameter->setReadOnly(m_val_readonly);
         connect(this, &ModelWidget::ToggleSeries, this,
             [this]() {
                 m_charts.signal_wrapper->Series(0)->setVisible(!m_charts.signal_wrapper->Series(0)->isVisible());

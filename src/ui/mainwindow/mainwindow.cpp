@@ -160,6 +160,8 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel()
 
     m_model_dataholder->setData(model, wrapper);
 
+    connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, m_model_dataholder, &ModelDataHolder::addMetaModel);
+
     return model;
 }
 

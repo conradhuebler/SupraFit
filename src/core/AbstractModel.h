@@ -107,12 +107,12 @@ public:
      * ! \brief Export model to json file
      * 
      */
-    QJsonObject ExportModel(bool statistics = true, bool locked = false) const;
+    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false) const;
 
     /* ! \brief Import model from json
      * 
      */
-    void ImportModel(const QJsonObject& topjson, bool override = true);
+    virtual bool ImportModel(const QJsonObject& topjson, bool override = true);
 
     /*! \brief Returns the name of the model
      */
@@ -242,7 +242,7 @@ public:
      */
     QJsonObject getStatistic(SupraFit::Statistic type, int index = 0);
 
-    QList<qreal> getCalculatedModel();
+    virtual QList<qreal> getCalculatedModel();
 
     /*! \brief returns a List of all Series, that are to be included in optimisation
      */
@@ -374,9 +374,9 @@ public:
      */
     virtual bool SupportThreads() const = 0;
 
-    qreal SumOfErrors(int i) const;
+    virtual qreal SumOfErrors(int i) const;
 
-    qreal ModelError() const;
+    virtual qreal ModelError() const;
 
     /*! \brief set the values of the global parameter to const QPointer<DataTable> list
      */
@@ -388,10 +388,10 @@ public:
 
     /*! \brief return the list of global parameter values, overloaded function
      */
-    inline QPointer<DataTable> GlobalParameter() const { return GlobalTable(); }
+    virtual inline QPointer<DataTable> GlobalParameter() const { return GlobalTable(); }
     /*! \brief return i global parameter
      */
-    inline qreal GlobalParameter(int i) const { return (*GlobalTable())[i]; }
+    virtual inline qreal GlobalParameter(int i) const { return (*GlobalTable())[i]; }
     /*! \brief returns size of global parameter
      */
     virtual int GlobalParameterSize() const = 0;
@@ -543,11 +543,11 @@ protected:
 
     /*! \brief Calculated the variance of the estimated model variables
      */
-    qreal CalculateVariance();
+    virtual qreal CalculateVariance();
 
     /*! \brief Calculated the variance of the raw data
      */
-    qreal CalculateCovarianceFit();
+    virtual qreal CalculateCovarianceFit();
 
     void PrepareParameter(int global, int local);
 

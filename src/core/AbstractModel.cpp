@@ -326,7 +326,7 @@ QList<double> AbstractModel::getCalculatedModel()
             continue;
         for (int i = 0; i < DataPoints(); ++i)
             if (DependentModel()->isChecked(j, i))
-                x.append(m_model_signal->data(j, i));
+                x.append(ModelTable()->data(j, i));
     }
     return x;
 }
@@ -714,20 +714,20 @@ QVector<qreal> AbstractModel::AllParameter() const
     return parameter;
 }
 
-void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
+bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 {
 #ifdef _DEBUG
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
     if (topjson[Name()].isNull()) {
         qWarning() << "file doesn't contain any " + Name();
-        return;
+        return false;
     }
     int fileversion = topjson["SupraFit"].toInt();
     if ((SupraFit::Model)topjson["model"].toInt() != SFModel()) {
         if (fileversion >= qint_version) {
             qWarning() << "No old data, but models dont fit, sorry";
-            return;
+            return false;
         }
         qWarning() << "Models don't fit! But that seems to be ok, because it is an old SupraFit file.";
     }
@@ -879,6 +879,7 @@ void AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();
     qDebug() << "calculation took " << t2 - t1 << " msecs";
 #endif
+    return true;
 }
 
 void AbstractModel::setOption(int index, const QString& value)

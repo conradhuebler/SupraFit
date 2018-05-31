@@ -78,7 +78,7 @@ class ModelWidget : public QWidget {
     Q_OBJECT
 
 public:
-    ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, QWidget* parent = 0);
+    ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, bool readonly = false, QWidget* parent = 0);
     virtual ~ModelWidget();
     virtual inline QSize sizeHint() const { return QSize(250, 50 * m_sign_layout->count()); }
     QSharedPointer<AbstractModel> Model() const { return m_model; }
@@ -146,7 +146,7 @@ private:
     ModalDialog *m_statistic_result, *m_dialogs, *m_table_result;
     ResultsDialog* m_results;
 
-    bool m_statistic;
+    bool m_statistic, m_val_readonly;
     Charts m_charts;
     QString m_logging;
     QList<QJsonObject> m_local_fits;

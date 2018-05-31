@@ -38,6 +38,7 @@
 struct OptimizerConfig;
 
 class QToolButton;
+class MetaModelWidget;
 class ModelWidget;
 class DataWidget;
 class QTabWidget;
@@ -66,10 +67,13 @@ public:
             delete m_datawidget;
     }
     void setDataTab(QPointer<DataWidget> datawidget);
+    void setMetaTab(QPointer<MetaModelWidget> datawidget);
+
     void addModelsTab(QPointer<ModelWidget> modelwidget);
 
 private:
     QPointer<DataWidget> m_datawidget;
+    QPointer<MetaModelWidget> m_metamodelwidget;
 };
 
 class MDHDockTitleBar : public QWidget {
@@ -139,6 +143,7 @@ public:
     inline QPointer<AbstractModel> Model(int index) const { return m_models[index].data(); }
 
     void setCurrentTab(int index);
+    void addMetaModel(QSharedPointer<AbstractModel> t);
 
 public slots:
     /*
@@ -159,6 +164,7 @@ public slots:
 private:
     QPointer<DataWidget> m_datawidget;
     QPointer<TabWidget> m_modelsWidget;
+    QPointer<MetaModelWidget> m_metamodelwidget;
 
     QPointer<MDHDockTitleBar> m_TitleBarWidget;
     QPointer<ChartWidget> m_charts;
@@ -177,7 +183,7 @@ private:
 
     void Json2Model(const QJsonObject& object);
     void Json2Model(const QJsonObject& object, SupraFit::Model model);
-    void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject());
+    void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
     int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
 

@@ -83,7 +83,6 @@ DataWidget::DataWidget()
     m_substances = new QLabel;
     m_const_subs = new QLabel;
     m_signals_count = new QLabel;
-    m_model_info = new QLabel;
     m_tables = new QWidget; //(tr("Data Tables"));
     QHBoxLayout* group_layout = new QHBoxLayout;
     group_layout->addWidget(m_concentrations);
@@ -95,7 +94,6 @@ DataWidget::DataWidget()
     layout->addWidget(m_substances, 1, 1);
     layout->addWidget(m_const_subs, 1, 2);
     layout->addWidget(m_signals_count, 1, 3);
-    layout->addWidget(m_model_info, 2, 0, 1, 4);
 
     m_widget->setLayout(layout);
     QScrollArea* area = new QScrollArea;
@@ -121,19 +119,13 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 {
     m_data = dataclass;
     m_wrapper = wrapper;
-    if (qobject_cast<MetaModel*>(m_data.data())) {
-        m_data.data()->setProjectTitle("Meta Model");
-        m_switch->hide();
-        m_linear->hide();
-        connect(qobject_cast<MetaModel*>(m_data.data()), &MetaModel::ModelAdded, this, &DataWidget::MetaModelUpdated);
-    } else {
+
         dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
         m_concentrations->setModel(m_data.data()->IndependentModel());
         m_signals->setModel(m_data.data()->DependentModel());
         connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
         m_concentrations->resizeColumnsToContents();
         m_signals->resizeColumnsToContents();
-    }
 
     qApp->instance()->setProperty("projectname", m_data.data()->ProjectTitle());
     m_name->setText(qApp->instance()->property("projectname").toString());
@@ -150,7 +142,6 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     layout->addLayout(vlayout, 2, 0, 1, 4);
 
-    if (!qobject_cast<AbstractModel*>(m_data.data())) {
         QHBoxLayout* scaling_layout = new QHBoxLayout;
         scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
 
@@ -180,7 +171,6 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         settings.beginGroup("overview");
         m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
         m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
-    }
 
     connect(m_data.data(), &DataClass::NameChanged, m_name, &QLineEdit::setText);
 }
@@ -236,19 +226,6 @@ void DataWidget::HidePoint()
 void DataWidget::LinearAnalysis()
 {
     dialog->show();
-}
-
-void DataWidget::MetaModelUpdated()
-{
-    QString text = QString();
-    QPointer<MetaModel> model = qobject_cast<MetaModel*>(m_data.data());
-    for (int i = 0; i < model->ModelSize(); ++i)
-        text += "Model Included: " + Model2Name(model->Models()[i]->SFModel()) + " from " + model->Models()[i]->ProjectTitle() + "\n";
-    text += "parameter count = " + QString::number(model->GlobalParameterSize() + model->LocalParameterSize());
-    m_model_info->setText(text);
-    m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(model->IndependentModel()->columnCount()));
-    m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(model->DependentModel()->rowCount()));
-    m_signals_count->setText(tr("<html><h4>Columns of dependent variables: %1</h4><html>").arg(model->SeriesCount()));
 }
 
 #include "datawidget.moc"
