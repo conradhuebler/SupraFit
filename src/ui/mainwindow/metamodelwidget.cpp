@@ -57,7 +57,7 @@ void MetaModelWidget::Minimize()
     else
         model = thread->BestIntermediateParameter();
     qreal new_error = thread->SumOfError();
-    qDebug() << model;
-    m_model->ImportModel(model);
+    if (!m_model->ImportModel(model))
+        qDebug() << "something went wrong";
     delete thread;
 }

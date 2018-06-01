@@ -53,17 +53,20 @@ void MetaModel::InitialGuess_Private()
 
 qreal MetaModel::GlobalParameter(int i) const
 {
-    if (i >= m_glob_param)
+/* if (i >= m_glob_param)
         return 0;
 
     int model = 0;
     int index = 0;
 
     if (i) {
-        model = m_glob_param / i;
+        model = m_glob_param / i - 1;
         index = m_glob_param % i;
     }
-    return m_models[model]->GlobalParameter(index);
+    return m_models[model]->GlobalParameter(index);*/
+#warning this is a hack ...
+
+    return m_parameter[i];
 }
 
 QVector<qreal> MetaModel::OptimizeParameters_Private()
@@ -228,7 +231,6 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
 
 void MetaModel::CalculateVariables()
 {
-    qDebug() << m_parameter;
     for (int i = 0; i < m_models.size(); ++i) {
         m_models[i].data()->setParameter(m_parameter);
         m_models[i].data()->Calculate();
@@ -255,7 +257,12 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
     QJsonObject raw = topjson["raw"].toObject();
     bool result = true;
     for (int i = 0; i < size; ++i) {
-        result = result && m_models[i]->ImportModel(raw[QString::number(i)].toObject(), override);
+        bool import = m_models[i]->ImportModel(raw[QString::number(i)].toObject(), override);
+        result = result && import;
+        if (!import)
+            qDebug() << "Import failed for some reasons";
+        else
+            qDebug() << "Import worked" << m_models[i];
     }
     return result;
 }

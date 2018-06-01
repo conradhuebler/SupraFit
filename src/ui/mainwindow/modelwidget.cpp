@@ -102,6 +102,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
+    qDebug() << m_model << model;
     m_model->SystemParameterChanged();
     m_model_widget = new QWidget;
     Data2Text();
@@ -331,6 +332,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_last_model = m_model->ExportModel(true, true);
     QTimer::singleShot(1, this, SLOT(Repaint()));
     emit m_model->Recalculated();
+    connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
 }
 
 ModelWidget::~ModelWidget()
@@ -439,6 +441,8 @@ void ModelWidget::Repaint()
     m_pending = false;
     m_minimize_all->setEnabled(true);
 
+    QTimer::singleShot(1, m_statistic_widget, SLOT(Update()));
+
     m_bc_50->setText(m_model->ModelInfo());
 
     QString converged;
@@ -467,7 +471,6 @@ void ModelWidget::recalculate()
     CollectParameters();
     m_model->Calculate();
     QTimer::singleShot(1, this, SLOT(Repaint()));
-    QTimer::singleShot(1, m_statistic_widget, SLOT(Update()));
     m_pending = false;
 }
 
