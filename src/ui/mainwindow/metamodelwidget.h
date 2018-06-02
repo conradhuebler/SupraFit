@@ -25,6 +25,9 @@
 
 #include "src/core/models.h"
 
+class ModelActions;
+
+class QComboBox;
 class QPushButton;
 
 class MetaModelWidget : public QWidget {
@@ -43,6 +46,8 @@ private:
 
     QSharedPointer<AbstractModel> m_model;
     QPushButton* m_minimize;
+    QComboBox* m_type;
+    ModelActions* m_actions;
 
 private slots:
     void Minimize();

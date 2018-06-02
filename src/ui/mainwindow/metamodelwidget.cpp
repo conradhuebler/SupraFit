@@ -20,8 +20,10 @@
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
 
-#include <QtWidgets/QGridLayout>
+#include "src/ui/widgets/modelactions.h"
 
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QPushButton>
 
 #include "metamodelwidget.h"
@@ -37,8 +39,31 @@ void MetaModelWidget::setUi()
     QGridLayout* layout = new QGridLayout;
 
     m_minimize = new QPushButton(tr("Minimize"));
-
     layout->addWidget(m_minimize, 0, 0);
+
+    m_type = new QComboBox;
+    m_type->addItems(QStringList() << "None"
+                                   << "All");
+    layout->addWidget(m_type, 0, 1);
+
+    m_actions = new ModelActions;
+    /*
+    connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
+    connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
+    connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
+    connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
+    connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
+    connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
+    connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
+    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
+    connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
+    connect(m_actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
+    connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
+    connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
+    connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
+*/
+    layout->addWidget(m_actions, 1, 0, 1, 2);
+
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
 
     setLayout(layout);
@@ -48,7 +73,7 @@ void MetaModelWidget::Minimize()
 {
     NonLinearFitThread* thread = new NonLinearFitThread(false);
 
-    Model()->setConnectType(MetaModel::All);
+    Model()->setConnectType((MetaModel::ConnectType)m_type->currentIndex());
 
     thread->setModel(m_model, false);
     thread->run();

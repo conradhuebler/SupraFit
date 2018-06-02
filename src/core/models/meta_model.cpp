@@ -79,8 +79,6 @@ void MetaModel::setConnectType(ConnectType type)
     m_combined_local.clear();
 
     if (type == ConnectType::All) {
-        if (!m_model_identic)
-            return;
 
         m_combined_local = QVector<QVector<CombinedParameter>>(m_local_names.size());
         m_combined_global = QVector<QVector<CombinedParameter>>(m_global_names.size());
@@ -104,6 +102,32 @@ void MetaModel::setConnectType(ConnectType type)
                 parameter.name = m_models[i]->LocalParameterName(j);
                 m_combined_local[m_local_names.indexOf(parameter.name)] << parameter;
             }
+        }
+    } else if (type == ConnectType::None) {
+        for (int i = 0; i < m_models.size(); ++i) {
+            QVector<CombinedParameter> param;
+
+            for (int j = 0; j < m_global_index[i].size(); ++j) {
+                CombinedParameter parameter;
+                parameter.model = i;
+                parameter.global = 0;
+                parameter.index = QPair<int, int>(j, 0);
+                parameter.name = m_models[i]->GlobalParameterName(j);
+                param << parameter;
+            }
+            m_combined_global << param;
+        }
+        for (int i = 0; i < m_models.size(); ++i) {
+            QVector<CombinedParameter> param;
+            for (int j = 0; j < m_local_index[i].size(); ++j) {
+                CombinedParameter parameter;
+                parameter.model = i;
+                parameter.global = 1;
+                parameter.index = QPair<int, int>(j, 0);
+                parameter.name = m_models[i]->LocalParameterName(j);
+                param << parameter;
+            }
+            m_combined_local << param;
         }
     }
 }
