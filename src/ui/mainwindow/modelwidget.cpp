@@ -102,7 +102,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
-    qDebug() << m_model << model;
     m_model->SystemParameterChanged();
     m_model_widget = new QWidget;
     Data2Text();
@@ -223,9 +222,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_layout->addLayout(const_layout);
     m_layout->addWidget(m_bc_50);
 
-    m_model_options_widget = new OptionsWidget(m_model);
-    if (m_model->getAllOptions().size())
-        m_layout->addWidget(m_model_options_widget);
+    if (!m_val_readonly) {
+        m_model_options_widget = new OptionsWidget(m_model);
+        if (m_model->getAllOptions().size())
+            m_layout->addWidget(m_model_options_widget);
+    }
 
     m_sign_layout = new QVBoxLayout;
 
@@ -273,19 +274,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         });
 
         connect(m_charts.signal_wrapper->Series(0), &LineSeries::nameChanged, m_charts.signal_wrapper->Series(0), [this, name]() {
-            /*if(name)
-            {
-                if(name->isModified())
-                {*/
             this->m_charts.signal_wrapper->Series(0)->setName(name->text());
             this->m_charts.error_wrapper->Series(0)->setName(name->text());
-            /*}
-                else
-                {
-                    if(name->text() != this->m_charts.signal_wrapper->Series(0)->name())
-                        name->setText(this->m_charts.signal_wrapper->Series(0)->name());
-                }
-            }*/
         });
         m_charts.signal_wrapper->Series(0)->setName(m_model->Name());
 
@@ -300,9 +290,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
                 m_charts.signal_wrapper->Series(0)->setVisible(!m_charts.signal_wrapper->Series(0)->isVisible());
                 m_charts.error_wrapper->Series(0)->setVisible(!m_charts.error_wrapper->Series(0)->isVisible());
             });
-        if (m_model->getSystemParameterList().size())
-            m_sign_layout->addWidget(new SPOverview(m_model.data()));
-        connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
+        if (!m_val_readonly) {
+            if (m_model->getSystemParameterList().size())
+                m_sign_layout->addWidget(new SPOverview(m_model.data()));
+            connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
+        }
     }
 
     QWidget* scroll = new QWidget;

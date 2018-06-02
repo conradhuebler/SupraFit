@@ -142,6 +142,8 @@ QVector<qreal> AbstractModel::OptimizeParameters()
 void AbstractModel::clearOptParameter()
 {
     m_opt_para.clear();
+    m_global_index.clear();
+    m_local_index.clear();
     m_opt_index.clear();
     for (int i = 0; i < d->m_enabled_local.size(); ++i)
         d->m_enabled_local[i] = 0;
@@ -445,6 +447,7 @@ void AbstractModel::addGlobalParameter()
         if (!GlobalTable()->isChecked(i, 0))
             continue;
         m_opt_para << &(*GlobalTable())[i];
+        m_global_index << QPair<int, int>(i, 0);
         m_opt_index << QPair<int, int>(i, 0);
     }
 }
@@ -457,6 +460,7 @@ void AbstractModel::addGlobalParameter(int i)
         if (!GlobalTable()->isChecked(i, 0))
             return;
         m_opt_para << &(*GlobalTable())[i];
+        m_global_index << QPair<int, int>(i, 0);
         m_opt_index << QPair<int, int>(i, 0);
     }
 }
@@ -469,6 +473,7 @@ void AbstractModel::addLocalParameter(int i)
         if (!LocalTable()->isChecked(i, j))
             continue;
         m_opt_para << &LocalTable()->data(i, j);
+        m_local_index << QPair<int, int>(i, j);
         m_opt_index << QPair<int, int>(i, 1);
     }
     d->m_enabled_local[i] = 1;

@@ -27,12 +27,28 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 
+struct CombinedParameter {
+    int model = -1;
+    QPair<int, int> index = QPair<int, int>(-1, -1);
+    /* Let 0 be true for global parameter
+     * and 1 be true for local parameter */
+    int global = 0;
+    QString name = QString();
+};
+
 class MetaModel : public AbstractModel {
     Q_OBJECT
 
 public:
     MetaModel();
     ~MetaModel();
+
+    enum ConnectType {
+        None = 0,
+        All = 1,
+        Dilution = 2,
+        Custom = 3
+    };
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::MetaModel; }
 
@@ -41,12 +57,6 @@ public:
 
     virtual QSharedPointer<AbstractModel> Clone() override;
 
-    /*virtual QPointer<DataTable> GlobalParameter() const
-    {
-        qDebug() << "should rather crash now";
-        return GlobalTable();
-    }
-*/
     virtual qreal GlobalParameter(int i) const override;
 
     virtual bool SupportThreads() const override { return false; }
@@ -63,6 +73,8 @@ public:
     virtual inline int SeriesCount() const override { return m_series_count; }
 
     void addModel(const QPointer<AbstractModel> model);
+
+    void setConnectType(ConnectType type);
 
     inline QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
 
@@ -88,8 +100,13 @@ public:
 
 private:
     QVector<QSharedPointer<AbstractModel>> m_models;
-    int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0;
-    QVector<qreal> m_parameter;
+    int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0, m_unique_global = 0, m_unique_local = 0, m_unique_series = 0;
+    QVector<QVector<qreal>> m_parameter;
+    QVector<QVector<QPair<int, int>>> m_global_index, m_local_index;
+    QVector<QVector<CombinedParameter>> m_combined;
+    bool m_model_identic = true, m_contains_dilution = false;
+
+    SupraFit::Model m_model_type;
 
 protected:
     virtual void CalculateVariables() override;

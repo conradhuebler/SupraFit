@@ -434,6 +434,10 @@ public:
     AbstractModel& operator=(const AbstractModel& other);
     AbstractModel* operator=(const AbstractModel* other);
 
+    inline QVector<QPair<int, int>> GlobalIndex() const { return m_global_index; }
+
+    inline QVector<QPair<int, int>> LocalIndex() const { return m_local_index; }
+
     inline void addOption(int index, const QString& name, const QStringList& values)
     {
         if (d->m_model_options.contains(index))
@@ -554,7 +558,7 @@ protected:
     // #warning to do as well
     //FIXME more must be
     QVector<double*> m_opt_para;
-    QVector<QPair<int, int>> m_opt_index;
+    QVector<QPair<int, int>> m_local_index, m_global_index, m_opt_index;
     QVector<qreal> m_parameter;
 
     QList<QJsonObject> m_mc_statistics;

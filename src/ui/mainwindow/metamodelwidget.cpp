@@ -48,6 +48,8 @@ void MetaModelWidget::Minimize()
 {
     NonLinearFitThread* thread = new NonLinearFitThread(false);
 
+    Model()->setConnectType(MetaModel::All);
+
     thread->setModel(m_model, false);
     thread->run();
     bool converged = thread->Converged();

@@ -29,20 +29,23 @@ class QPushButton;
 
 class MetaModelWidget : public QWidget {
     Q_OBJECT
+
 public:
     MetaModelWidget(QWidget* parent = 0);
     inline void setMetaModel(QSharedPointer<AbstractModel> model) { m_model = model; }
-
-signals:
+    inline QPointer<MetaModel> Model() { return qobject_cast<MetaModel*>(m_model.data()); }
 
 public slots:
 
-private slots:
-    void Minimize();
 
 private:
     void setUi();
 
     QSharedPointer<AbstractModel> m_model;
     QPushButton* m_minimize;
+
+private slots:
+    void Minimize();
+
+signals:
 };

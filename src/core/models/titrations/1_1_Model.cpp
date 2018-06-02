@@ -61,11 +61,11 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private()
 {
     QString host = getOption(Host);
 
-        addGlobalParameter(0);
+    addGlobalParameter(0);
+    if (host == "no")
+        addLocalParameter(0);
 
-        if (host == "no")
-            addLocalParameter(0);
-        addLocalParameter(1);
+    addLocalParameter(1);
 
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)

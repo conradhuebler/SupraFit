@@ -247,22 +247,22 @@ QVector<qreal> IItoI_ItoI_ItoII_Model::OptimizeParameters_Private()
     QString coop12 = getOption(Cooperativity1_2);
     QString host = getOption(Host);
 
+    if (coop21 == "additive" || coop21 == "full")
+        addGlobalParameter(0);
+    addGlobalParameter(1);
 
-        if (coop21 == "additive" || coop21 == "full")
-            addGlobalParameter(0);
-        addGlobalParameter(1);
+    if (coop12 == "additive" || coop12 == "full")
+        addGlobalParameter(2);
 
-        if (coop12 == "additive" || coop12 == "full")
-            addGlobalParameter(2);
+    if (host == "no")
+        addLocalParameter(0);
 
-        if (host == "no")
-            addLocalParameter(0);
-        if (coop21 == "noncooperative" || coop21 == "full")
-            addLocalParameter(1);
+    if (coop21 == "noncooperative" || coop21 == "full")
+        addLocalParameter(1);
 
-        addLocalParameter(2);
-        if (coop12 == "noncooperative" || coop12 == "full")
-            addLocalParameter(3);
+    addLocalParameter(2);
+    if (coop12 == "noncooperative" || coop12 == "full")
+        addLocalParameter(3);
 
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
