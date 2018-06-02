@@ -71,39 +71,40 @@ qreal MetaModel::GlobalParameter(int i) const
 
 void MetaModel::setConnectType(ConnectType type)
 {
-    m_combined.clear();
+    if (m_global_index.isEmpty() && m_local_index.isEmpty())
+        return;
+    OptimizeParameters_Private();
+
+    m_combined_global.clear();
+    m_combined_local.clear();
+
     if (type == ConnectType::All) {
         if (!m_model_identic)
             return;
 
-        m_combined = QVector<QVector<CombinedParameter>>(m_unique_global + m_unique_local);
+        m_combined_local = QVector<QVector<CombinedParameter>>(m_local_names.size());
+        m_combined_global = QVector<QVector<CombinedParameter>>(m_global_names.size());
 
-        for (int j = 0; j < m_unique_global; ++j) {
-            for (int i = 0; i < m_models.size(); ++i) {
+        for (int i = 0; i < m_models.size(); ++i) {
+            for (int j = 0; j < m_global_index[i].size(); ++j) {
                 CombinedParameter parameter;
                 parameter.model = i;
                 parameter.global = 0;
                 parameter.index = QPair<int, int>(j, 0);
                 parameter.name = m_models[i]->GlobalParameterName(j);
-                m_combined[j] << parameter;
+                m_combined_global[m_global_names.indexOf(parameter.name)] << parameter;
             }
         }
-        for (int j = 0; j < m_unique_local; ++j) {
-            for (int k = 0; k < m_unique_series; ++k) {
-                for (int i = 0; i < m_models.size(); ++i) {
-                    CombinedParameter parameter;
-                    parameter.model = i;
-                    parameter.global = 1;
-                    parameter.index = QPair<int, int>(j, k);
-                    parameter.name = m_models[i]->LocalParameterName(j);
-                    m_combined[j + m_unique_global] << parameter;
-                }
+        for (int i = 0; i < m_models.size(); ++i) {
+            for (int j = 0; j < m_local_index[i].size(); ++j) {
+                CombinedParameter parameter;
+                parameter.model = i;
+                parameter.global = 1;
+                parameter.index = QPair<int, int>(j, 0);
+                parameter.name = m_models[i]->LocalParameterName(j);
+                m_combined_local[m_local_names.indexOf(parameter.name)] << parameter;
             }
         }
-    }
-    for (int i = 0; i < m_combined.size(); ++i) {
-        for (int j = 0; j < m_combined[i].size(); ++j)
-            qDebug() << m_combined[i][j].model << m_combined[i][j].global << m_combined[i][j].index << m_combined[i][j].name;
     }
 }
 
@@ -115,10 +116,10 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
     QVector<QVector<qreal>> parameter;
     for (int i = 0; i < m_models.size(); ++i) {
         parameter << m_models[i].data()->OptimizeParameters();
-        qDebug() << m_models[i].data()->GlobalIndex() << m_models[i].data()->LocalIndex();
         m_global_index << m_models[i].data()->GlobalIndex();
         m_local_index << m_models[i].data()->LocalIndex();
     }
+
     m_parameter = parameter;
 
     m_opt_para.clear();
@@ -283,6 +284,15 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
                 m_contains_dilution = true;
         }
     }
+    for (int i = 0; i < model->GlobalParameterSize(); ++i)
+        m_global_names << model->GlobalParameterName(i);
+
+    for (int i = 0; i < model->LocalParameterSize(); ++i)
+        m_local_names << model->LocalParameterName(i);
+
+    m_global_names.removeDuplicates();
+    m_local_names.removeDuplicates();
+
     m_models << t;
     connect(model, &DataClass::NameChanged, t.data(), &DataClass::setProjectTitle);
     m_glob_param += model->GlobalParameterSize();
@@ -295,17 +305,54 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     emit ModelAdded(t);
 }
 
+void MetaModel::CombineParameter()
+{
+    if (m_parameter.isEmpty())
+        return;
+
+    for (int i = 0; i < m_combined_global.size(); ++i) {
+        qreal value;
+        for (int j = 0; j < m_combined_global[i].size(); ++j) {
+
+            if (j == 0)
+                value = m_parameter[m_combined_global[i][j].model][m_combined_global[i][j].index.first];
+            else
+                m_parameter[m_combined_global[i][j].model][m_combined_global[i][j].index.first] = value;
+        }
+    }
+
+    for (int i = 0; i < m_combined_local.size(); ++i) {
+        qreal value;
+        for (int j = 0; j < m_combined_local[i].size(); ++j) {
+            {
+                if (j == 0)
+                    value = m_parameter[m_combined_local[i][j].model][m_combined_local[i][j].index.first + m_models[m_combined_local[i][j].model].data()->GlobalParameterSize()];
+                else
+                    m_parameter[m_combined_local[i][j].model][m_combined_local[i][j].index.first + m_models[m_combined_local[i][j].model].data()->GlobalParameterSize()] = value;
+            }
+        }
+    }
+}
+
 void MetaModel::CalculateVariables()
 {
-    qDebug() << m_parameter;
-    for (int i = 0; i < m_combined.size(); ++i) {
-        for (int j = 0; j < m_combined[i].size(); ++j) {
+    CombineParameter();
+
+    for (int i = 0; i < m_global_index.size(); ++i) {
+        for (int j = 0; j < m_global_index[i].size(); ++j) {
+            QPair<int, int> pair = m_global_index[i][j];
+            m_models[i].data()->setGlobalParameter(m_parameter[i][j], pair.first);
+        }
+    }
+
+    for (int i = 0; i < m_local_index.size(); ++i) {
+        for (int j = 0; j < m_local_index[i].size(); ++j) {
+            QPair<int, int> pair = m_local_index[i][j];
+            m_models[i].data()->setLocalParameter(m_parameter[i][j + m_models[i].data()->GlobalParameterSize()], pair.first, pair.second);
         }
     }
 
     for (int i = 0; i < m_models.size(); ++i) {
-        if (i < m_parameter.size())
-            m_models[i].data()->setParameter(m_parameter[i]);
         m_models[i].data()->Calculate();
     }
 }
