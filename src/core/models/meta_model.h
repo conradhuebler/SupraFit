@@ -22,19 +22,13 @@
 #include "src/global.h"
 
 #include <QtCore/QObject>
+#include <QtCore/QPair>
 #include <QtCore/QVector>
 
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 
-struct CombinedParameter {
-    int model = -1;
-    QPair<int, int> index = QPair<int, int>(-1, -1);
-    /* Let 0 be true for global parameter
-     * and 1 be true for local parameter */
-    int global = 0;
-    QString name = QString();
-};
+typedef QPair<int, QPair<int, int>> CombinedParameter;
 
 class MetaModel : public AbstractModel {
     Q_OBJECT
@@ -52,7 +46,10 @@ public:
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::MetaModel; }
 
+    virtual inline void setConnectType(ConnectType type) { m_connect_type = type; }
+
     virtual QVector<qreal> OptimizeParameters_Private() override;
+
     virtual void InitialGuess_Private() override;
 
     virtual QSharedPointer<AbstractModel> Clone() override;
@@ -61,11 +58,11 @@ public:
 
     virtual bool SupportThreads() const override { return false; }
 
-    virtual int GlobalParameterSize() const { return m_glob_param; }
+    virtual int GlobalParameterSize() const { return m_global_par.size(); }
 
     virtual int InputParameterSize() const { return m_inp_param; }
 
-    virtual int LocalParameterSize() const { return m_loc_param; }
+    virtual int LocalParameterSize() const { return m_local_par.size(); }
 
     virtual inline int Size() const override { return m_size; }
     virtual inline int IndependentVariableSize() const override { return m_indep_var; }
@@ -73,8 +70,6 @@ public:
     virtual inline int SeriesCount() const override { return m_series_count; }
 
     void addModel(const QPointer<AbstractModel> model);
-
-    void setConnectType(ConnectType type);
 
     inline QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
 
@@ -99,17 +94,18 @@ public:
     virtual qreal CalculateVariance() override;
 
 private:
-    void CombineParameter();
+    void ApplyConnectType();
 
     QVector<QSharedPointer<AbstractModel>> m_models;
     int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0, m_unique_global = 0, m_unique_local = 0, m_unique_series = 0;
-    QVector<QVector<qreal>> m_parameter;
     QVector<QVector<QPair<int, int>>> m_global_index, m_local_index;
     QStringList m_global_names, m_local_names;
-    QVector<QVector<CombinedParameter>> m_combined_local, m_combined_global;
+    QVector<QPair<qreal, QVector<CombinedParameter>>> m_combined_local, m_combined_global;
+    QVector<QPair<int, int>> m_global_par, m_local_par;
     bool m_model_identic = true, m_contains_dilution = false;
 
     SupraFit::Model m_model_type;
+    ConnectType m_connect_type = ConnectType::None;
 
 protected:
     virtual void CalculateVariables() override;
