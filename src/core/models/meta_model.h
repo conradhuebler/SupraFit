@@ -101,6 +101,12 @@ public:
     virtual qreal CalculateVariance() override;
 
     void PrepareTables();
+    virtual void IndependentModelOverride() override;
+
+    virtual void DependentModelOverride() override;
+
+private slots:
+    void UpdateCalculated();
 
 private:
     void ApplyConnectType();

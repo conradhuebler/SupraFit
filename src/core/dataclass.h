@@ -263,7 +263,11 @@ public:
     inline void setScaling(const QList<qreal>& scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList& strlist);
     void OverrideInDependentTable(DataTable* table);
+
+    virtual void IndependentModelOverride() {}
     void OverrideDependentTable(DataTable* table);
+
+    virtual void DependentModelOverride() {}
 
     void OverrideCheckedTable(DataTable* table);
     /*! \brief Add a system parameter to the current model

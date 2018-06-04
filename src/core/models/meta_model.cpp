@@ -35,6 +35,7 @@ MetaModel::MetaModel()
     : AbstractModel(new DataClass())
 {
     PrepareParameter(0, 0);
+    connect(this, &AbstractModel::Recalculated, this, &MetaModel::UpdateCalculated);
 }
 
 MetaModel::~MetaModel()
@@ -223,8 +224,8 @@ qreal MetaModel::CalculateVariance()
     for (int index = 0; index < m_models.size(); ++index) {
         for (int i = 0; i < m_models[index]->DataPoints(); ++i) {
             for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
-                if (!m_models[index]->ActiveSignals(j))
-                    continue;
+                /*if (!m_models[index]->ActiveSignals(j))
+                    continue;*/
                 if (m_models[index]->DependentModel()->isChecked(j, i)) {
                     v += qPow(m_models[index]->ErrorTable()->data(j, i) - m_mean, 2);
                     count++;
@@ -319,6 +320,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
 
     IndependentModel()->append(model->IndependentModel());
     DependentModel()->append(model->DependentModel());
+    ModelTable()->append(model->ModelTable());
 
     m_models << t;
     connect(model, &DataClass::NameChanged, t.data(), &DataClass::setProjectTitle);
@@ -330,6 +332,29 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_dep_var += model->DataPoints();
     m_series_count += model->SeriesCount();
     emit ModelAdded(t);
+}
+
+void MetaModel::UpdateCalculated()
+{
+    if (m_model_signal)
+        delete m_model_signal;
+    m_model_signal = new DataTable(0, 0, this);
+    for (int i = 0; i < m_models.size(); ++i)
+        ModelTable()->append(m_models[i]->ModelTable());
+}
+
+void MetaModel::IndependentModelOverride()
+{
+}
+
+void MetaModel::DependentModelOverride()
+{
+    int pred = 0;
+    for (int i = 0; i < m_models.size(); ++i) {
+        QPointer<DataTable> table = (DependentModel()->Block(pred, 0, pred + m_models[i]->DependentModel()->rowCount(), 1));
+        m_models[i].data()->OverrideDependentTable(table);
+        pred = m_models[i]->DependentModel()->rowCount();
+    }
 }
 
 void MetaModel::CalculateVariables()
@@ -347,10 +372,8 @@ void MetaModel::CalculateVariables()
             m_models[para.first].data()->setLocalParameter(m_combined_local[i].first, para.second);
         }
     }
-    int pred = 0;
+
     for (int i = 0; i < m_models.size(); ++i) {
-        // m_models[i].data()->OverrideDependentTable(DependentModel()->Block(pred, 0,  m_models[i]->DependentModel()->rowCount() - 1, 1));
-        // pred = m_models[i]->DependentModel()->rowCount();
         m_models[i].data()->Calculate();
         m_sum_squares += m_models[i].data()->SumofSquares();
         m_used_variables += m_models[i].data()->Points();

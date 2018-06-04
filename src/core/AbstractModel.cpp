@@ -219,10 +219,9 @@ void AbstractModel::Calculate()
 
     m_mean /= qreal(m_used_variables);
 
-    if (m_fast) {
-        // emit Recalculated();
+    if (m_fast)
         return;
-    }
+
     m_variance = CalculateVariance();
     m_stderror = qSqrt(m_variance) / qSqrt(m_used_variables);
     m_SEy = qSqrt(m_sum_squares / (m_used_variables - LocalParameterSize() - GlobalParameterSize()));
