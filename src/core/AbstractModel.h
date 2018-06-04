@@ -107,7 +107,7 @@ public:
      * ! \brief Export model to json file
      * 
      */
-    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false) const;
+    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false);
 
     /* ! \brief Import model from json
      * 
@@ -510,8 +510,6 @@ public:
     QVector<qreal> AllParameter() const;
 
     inline QVector<int> LocalEnabled() const { return d->m_enabled_local; }
-
-    //inline void Calculate(bool fast);
 
     inline void RemoveOption(int key) { d->m_model_options.remove(key); }
 

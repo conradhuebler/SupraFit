@@ -105,6 +105,7 @@ public:
     void DisableRow(int row);
     void PrintCheckedRows() const;
     void EnableAllRows();
+    void setCheckedAll(bool checked);
     inline void setCheckedTable(Eigen::MatrixXd checked) { m_checked_table = checked; }
     inline Eigen::MatrixXd CheckedTable() const { return m_checked_table; }
     inline DataTable* BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() - 1); }

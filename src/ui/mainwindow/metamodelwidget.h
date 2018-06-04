@@ -27,6 +27,7 @@
 
 class ModalDialog;
 class ModelActions;
+class ResultsDialog;
 class StatisticWidget;
 
 class QComboBox;
@@ -37,7 +38,11 @@ class MetaModelWidget : public QWidget {
 
 public:
     MetaModelWidget(QWidget* parent = 0);
-    inline void setMetaModel(QSharedPointer<AbstractModel> model) { m_model = model; }
+    inline void setMetaModel(QSharedPointer<AbstractModel> model)
+    {
+        m_model = model;
+        setUi();
+    }
     inline QPointer<MetaModel> Model() { return qobject_cast<MetaModel*>(m_model.data()); }
 
 public slots:
@@ -52,6 +57,9 @@ private:
     ModelActions* m_actions;
     ModalDialog *m_dialogs, *m_table_result;
     StatisticWidget* m_statistic_widget;
+    ResultsDialog* m_results;
+
+    void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models);
 
 private slots:
     void Minimize();

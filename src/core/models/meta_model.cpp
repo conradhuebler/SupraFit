@@ -138,6 +138,8 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
     ApplyConnectType();
 
     m_opt_para.clear();
+    m_global_par.clear();
+    m_local_par.clear();
     QVector<qreal> param;
     for (int i = 0; i < m_combined_global.size(); ++i) {
 
@@ -343,9 +345,12 @@ void MetaModel::CalculateVariables()
         }
     }
 
-
     for (int i = 0; i < m_models.size(); ++i) {
         m_models[i].data()->Calculate();
+        m_sum_squares += m_models[i].data()->SumofSquares();
+        m_used_variables += m_models[i].data()->Points();
+        m_sum_absolute += m_models[i].data()->SumofAbsolute();
+        m_mean += m_models[i].data()->MeanError();
     }
 }
 
@@ -359,10 +364,47 @@ QSharedPointer<AbstractModel> MetaModel::Clone()
     return model;
 }
 
+void MetaModel::PrepareTables()
+{
+    QStringList header;
+
+    if (LocalTable())
+        delete m_local_parameter;
+
+    m_local_parameter = new DataTable(LocalParameterSize(), SeriesCount(), this);
+    m_local_parameter->setCheckedAll(false);
+    for (int i = 0; m_local_par.size(); ++i) {
+        QPair<int, int> pair = m_local_par[i];
+        qreal val;
+
+        if (pair.first == 0)
+            val = m_combined_global[pair.second].first;
+        else
+            val = m_combined_local[pair.second].first;
+
+        LocalTable()->data(i, 0) = val;
+        LocalTable()->setChecked(i, 0, true);
+    }
+
+    header = QStringList();
+    if (GlobalTable())
+        delete m_global_parameter;
+
+    m_global_parameter = new DataTable(GlobalParameterSize(), 1, this);
+    m_global_parameter->setCheckedAll(false);
+
+    for (int i = 0; i < GlobalParameterSize(); ++i) {
+        (*GlobalTable())[i] = GlobalParameter(i);
+        GlobalTable()->setChecked(i, 0, true);
+    }
+}
+
 bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
 {
     if (topjson["model"].toInt() != SFModel())
         return false;
+
+    AbstractModel::ImportModel(topjson, override);
 
     int size = topjson["size"].toInt();
 
@@ -372,19 +414,22 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
         bool import = m_models[i]->ImportModel(raw[QString::number(i)].toObject(), override);
         result = result && import;
     }
+    m_connect_type = (ConnectType)topjson["connecttype"].toInt();
     return result;
 }
 
-QJsonObject MetaModel::ExportModel(bool statistics, bool locked) const
+QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
 {
-    QJsonObject model;
+    PrepareTables();
+    QJsonObject model = AbstractModel::ExportModel(statistics, locked);
     model["size"] = m_models.size();
-    model["model"] = SFModel();
     QJsonObject raw;
     for (int i = 0; i < m_models.size(); ++i) {
         raw[QString::number(i)] = m_models[i]->ExportModel(statistics, locked);
     }
     model["raw"] = raw;
+    model["connecttype"] = m_connect_type;
+
     return model;
 }
 

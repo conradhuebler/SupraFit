@@ -646,7 +646,7 @@ QString AbstractModel::Local2Text() const
     return text;
 }
 
-QJsonObject AbstractModel::ExportModel(bool statistics, bool locked) const
+QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
 {
     QJsonObject json, toplevel;
     QJsonObject optionObject;
@@ -884,7 +884,16 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     qDebug() << "model importet within" << t1 - t0 << " msecs";
 #endif
-    Calculate();
+
+    m_sum_squares = topjson["sum_of_squares"].toInt();
+    m_sum_absolute = topjson["sum_of_absolute"].toInt();
+    m_mean = topjson["mean_error"].toInt();
+    m_variance = topjson["variance"].toInt();
+    m_stderror = topjson["standard_error"].toInt();
+    m_converged = topjson["converged"].toBool();
+
+    if (SFModel() != SupraFit::MetaModel)
+        Calculate();
 
 #ifdef _DEBUG
     quint64 t2 = QDateTime::currentMSecsSinceEpoch();

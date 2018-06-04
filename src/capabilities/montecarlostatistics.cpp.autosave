@@ -132,15 +132,17 @@ void MonteCarloBatch::optimise()
 //         qDebug() <<  "started!";
 #endif
 
+
     NonLinearFitThread* thread = new NonLinearFitThread(false);
     thread->setModel(m_model, false);
     thread->run();
     m_finished = thread->Converged();
-    m_model->setConverged(true);
+    m_model->setConverged(m_finished);
     qDebug() << m_finished << thread->ConvergedParameter();
     m_models << thread->ConvergedParameter();
 
     delete thread;
+
 
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);

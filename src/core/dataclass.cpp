@@ -227,6 +227,14 @@ bool DataTable::setData(const QModelIndex& index, const QVariant& value, int rol
     return false;
 }
 
+void DataTable::setCheckedAll(bool checked)
+{
+    if (checked)
+        m_checked_table = Eigen::MatrixXd::Ones(rowCount(), columnCount());
+    else
+        m_checked_table = Eigen::MatrixXd::Zero(rowCount(), columnCount());
+}
+
 void DataTable::CheckRow(int row)
 {
     int check = 0;

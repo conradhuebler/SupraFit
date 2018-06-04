@@ -84,7 +84,7 @@ public:
 
     virtual bool SupportSeries() const { return true; }
 
-    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false) const;
+    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false);
 
     virtual bool ImportModel(const QJsonObject& topjson, bool override = true);
 
@@ -99,6 +99,8 @@ public:
     virtual qreal CalculateCovarianceFit() override;
 
     virtual qreal CalculateVariance() override;
+
+    void PrepareTables();
 
 private:
     void ApplyConnectType();

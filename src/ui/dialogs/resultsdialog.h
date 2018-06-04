@@ -25,6 +25,7 @@
 
 #include "src/global.h"
 
+class QGridLayout;
 class QListView;
 class QListWidgetItem;
 class QStandardItemModel;
