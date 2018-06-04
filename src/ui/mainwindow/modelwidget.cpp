@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/global.h"
@@ -124,9 +124,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_dialogs = new ModalDialog;
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
-    m_statistic_result = new ModalDialog;
+    /*m_statistic_result = new ModalDialog;
     m_statistic_result->setWindowTitle("Statistics for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
-
+    */
     m_statistic_widget = new StatisticWidget(m_model, this);
 
     m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
@@ -336,9 +336,9 @@ ModelWidget::~ModelWidget()
 
     m_statistic_dialog->hide();
     m_dialogs->hide();
-    m_statistic_result->hide();
+    //m_statistic_result->hide();
 
-    delete m_statistic_result;
+    //delete m_statistic_result;
     delete m_dialogs;
     delete m_table_result;
     delete m_statistic_dialog;

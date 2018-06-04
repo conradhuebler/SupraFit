@@ -292,7 +292,7 @@ public:
     inline qreal CovFit() const { return m_covfit; }
 
     inline bool isConverged() const { return m_converged; }
-    inline void setConverged(bool converged) { m_converged = converged; }
+    virtual inline void setConverged(bool converged) { m_converged = converged; }
     /*! \brief Returns the f value for the given p value
      *  Degrees of freedom and number of parameters are taken in account
      */
@@ -405,7 +405,9 @@ public:
 
     qreal LocalParameter(int parameter, int series) const;
     QVector<qreal> getLocalParameterColumn(int parameter) const;
+    qreal LocalParameter(const QPair<int, int>& pair) const;
     void setLocalParameter(qreal value, int parameter, int series);
+    void setLocalParameter(qreal value, const QPair<int, int>& pair);
     void setLocalParameterSeries(const QVector<qreal>& vector, int series);
     void setLocalParameterSeries(const Vector& vector, int series);
     void setLocalParameterColumn(const QVector<qreal>& vector, int parameter);

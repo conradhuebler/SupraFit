@@ -406,14 +406,20 @@ QVector<qreal> AbstractModel::getLocalParameterColumn(int parameter) const
     return column;
 }
 
-void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
+void AbstractModel::setLocalParameter(qreal value, const QPair<int, int>& pair)
 {
-    //if(parameter < LocalTable()->rowCount() && series < LocalTable()->columnCount())
-    {
-        LocalTable()->data(parameter, series) = value;
-    }
+    LocalTable()->data(pair.first, pair.second) = value;
 }
 
+void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
+{
+    LocalTable()->data(parameter, series) = value;
+}
+
+qreal AbstractModel::LocalParameter(const QPair<int, int>& pair) const
+{
+    return LocalTable()->data(pair.first, pair.second);
+}
 void AbstractModel::setLocalParameterColumn(const QVector<qreal>& vector, int parameter)
 {
     if (parameter < LocalTable()->columnCount())

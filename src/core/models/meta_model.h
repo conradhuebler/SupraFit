@@ -69,6 +69,13 @@ public:
     virtual inline int DataPoints() const override { return m_dep_var; }
     virtual inline int SeriesCount() const override { return m_series_count; }
 
+    virtual inline void setConverged(bool converged)
+    {
+        for (int i = 0; i < m_models.size(); ++i)
+            m_models[i]->setConverged(converged);
+        m_converged = converged;
+    }
+
     void addModel(const QPointer<AbstractModel> model);
 
     inline QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
@@ -102,7 +109,6 @@ private:
     QStringList m_global_names, m_local_names;
     QVector<QPair<qreal, QVector<CombinedParameter>>> m_combined_local, m_combined_global;
     QVector<QPair<int, int>> m_global_par, m_local_par;
-    bool m_model_identic = true, m_contains_dilution = false;
 
     SupraFit::Model m_model_type;
     ConnectType m_connect_type = ConnectType::None;

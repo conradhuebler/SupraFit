@@ -25,7 +25,9 @@
 
 #include "src/core/models.h"
 
+class ModalDialog;
 class ModelActions;
+class StatisticWidget;
 
 class QComboBox;
 class QPushButton;
@@ -48,9 +50,22 @@ private:
     QPushButton* m_minimize;
     QComboBox* m_type;
     ModelActions* m_actions;
+    ModalDialog *m_dialogs, *m_table_result;
+    StatisticWidget* m_statistic_widget;
 
 private slots:
     void Minimize();
+    void MonteCarlo();
+    void Reduction();
+    void CrossValidation();
+    void ModelComparison();
+    void WeakendGridSearch();
+    void OpenAdvancedSearch();
+    void NewGuess();
+    void ImportConstants();
+    void ExportConstants();
+    void ToggleStatisticDialog();
+    void Detailed();
 
 signals:
 };
