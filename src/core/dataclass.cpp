@@ -372,6 +372,32 @@ Vector DataTable::Row(int row, const QList<int>& active) const
     return vect;
 }
 
+void DataTable::append(const QPointer<DataTable> table)
+{
+    for (int i = 0; i < table->rowCount(); ++i)
+        insertRow(table->Row(i));
+}
+
+void DataTable::insertRow(const Vector& row)
+{
+    QReadLocker locker(&mutex);
+    while (m_header.size() < row.size())
+        m_header << QString::number(m_header.size() + 1);
+
+    if (m_table.cols() == 0) {
+        m_table.conservativeResize(m_table.rows() + 1, row.size());
+        m_checked_table.conservativeResize(m_checked_table.rows() + 1, row.size());
+    } else {
+        m_table.conservativeResize(m_table.rows() + 1, m_table.cols());
+        m_checked_table.conservativeResize(m_checked_table.rows() + 1, m_checked_table.cols());
+    }
+
+    for (int i = 0; i < row.size(); ++i) {
+        m_table(m_table.rows() - 1, i) = row(i);
+        m_checked_table(m_checked_table.rows() - 1, i) = 1;
+    }
+}
+
 void DataTable::insertRow(const QVector<qreal>& row)
 {
     QReadLocker locker(&mutex);

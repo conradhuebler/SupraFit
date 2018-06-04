@@ -149,7 +149,7 @@ void MetaModelWidget::MonteCarlo()
     MCConfig config;
     config.maxsteps = 1000;
     config.optimizer_config = m_model->getOptimizerConfig();
-
+    config.optimizer_config.MaxIter = 75;
     QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
     //connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);

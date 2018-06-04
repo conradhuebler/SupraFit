@@ -76,8 +76,7 @@ QVector<qreal> ItoI_Model::OptimizeParameters_Private()
 void ItoI_Model::CalculateVariables()
 {
     QString method = getOption(Method);
-    m_sum_absolute = 0;
-    m_sum_squares = 0;
+
     qreal value = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);

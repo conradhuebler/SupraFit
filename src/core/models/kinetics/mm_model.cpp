@@ -76,8 +76,6 @@ QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private()
 
 void Michaelis_Menten_Model::CalculateVariables()
 {
-    m_sum_absolute = 0;
-    m_sum_squares = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal vmax = GlobalParameter(0);
         qreal Km = GlobalParameter(1);

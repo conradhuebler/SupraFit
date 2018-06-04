@@ -136,8 +136,8 @@ void MonteCarloBatch::optimise()
     thread->setModel(m_model, false);
     thread->run();
     m_finished = thread->Converged();
-    m_model->setConverged(true);
-    qDebug() << m_finished << thread->ConvergedParameter();
+    m_model->setConverged(m_finished);
+
     m_models << thread->ConvergedParameter();
 
     delete thread;

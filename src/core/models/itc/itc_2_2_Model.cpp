@@ -109,9 +109,6 @@ void itc_IItoII_Model::CalculateVariables()
     if (!m_threadpool)
         return;
 
-    m_sum_absolute = 0;
-    m_sum_squares = 0;
-
     QString dil = getOption(Dilution);
 
     qreal dH11 = LocalTable()->data(1, 0);

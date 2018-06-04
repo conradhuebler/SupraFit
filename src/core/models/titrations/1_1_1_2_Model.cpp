@@ -134,8 +134,7 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private()
 void ItoI_ItoII_Model::CalculateVariables()
 {
     QString method = getOption(Method);
-    m_sum_absolute = 0;
-    m_sum_squares = 0;
+
     qreal K11 = qPow(10, GlobalParameter(0));
     qreal K12 = qPow(10, GlobalParameter(1));
 

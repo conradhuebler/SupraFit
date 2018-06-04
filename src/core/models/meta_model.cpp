@@ -317,6 +317,9 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_global_names.removeDuplicates();
     m_local_names.removeDuplicates();
 
+    IndependentModel()->append(model->IndependentModel());
+    DependentModel()->append(model->DependentModel());
+
     m_models << t;
     connect(model, &DataClass::NameChanged, t.data(), &DataClass::setProjectTitle);
     m_glob_param += model->GlobalParameterSize();
@@ -344,8 +347,10 @@ void MetaModel::CalculateVariables()
             m_models[para.first].data()->setLocalParameter(m_combined_local[i].first, para.second);
         }
     }
-
+    int pred = 0;
     for (int i = 0; i < m_models.size(); ++i) {
+        // m_models[i].data()->OverrideDependentTable(DependentModel()->Block(pred, 0,  m_models[i]->DependentModel()->rowCount() - 1, 1));
+        // pred = m_models[i]->DependentModel()->rowCount();
         m_models[i].data()->Calculate();
         m_sum_squares += m_models[i].data()->SumofSquares();
         m_used_variables += m_models[i].data()->Points();
@@ -361,6 +366,8 @@ QSharedPointer<AbstractModel> MetaModel::Clone()
     for (const QSharedPointer<AbstractModel> m : Models())
         model.data()->addModel(m->Clone().data());
 
+    model.data()->OptimizeParameters_Private();
+
     return model;
 }
 
@@ -373,7 +380,7 @@ void MetaModel::PrepareTables()
 
     m_local_parameter = new DataTable(LocalParameterSize(), SeriesCount(), this);
     m_local_parameter->setCheckedAll(false);
-    for (int i = 0; m_local_par.size(); ++i) {
+    for (int i = 0; i < m_local_par.size(); ++i) {
         QPair<int, int> pair = m_local_par[i];
         qreal val;
 

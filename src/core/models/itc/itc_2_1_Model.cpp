@@ -93,9 +93,6 @@ QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private()
 
 void itc_IItoI_Model::CalculateVariables()
 {
-    m_sum_absolute = 0;
-    m_sum_squares = 0;
-
     QString dil = getOption(Dilution);
 
     qreal dH1 = LocalTable()->data(1, 0);

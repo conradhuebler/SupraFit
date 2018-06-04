@@ -106,8 +106,6 @@ void fl_IItoI_ItoI_Model::InitialGuess_Private()
 
 void fl_IItoI_ItoI_Model::CalculateVariables()
 {
-    m_sum_absolute = 0;
-    m_sum_squares = 0;
 
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));

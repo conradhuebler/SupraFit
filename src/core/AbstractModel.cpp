@@ -207,6 +207,8 @@ void AbstractModel::Calculate()
     m_SEy = 0;
     m_chisquared = 0;
     m_covfit = 0;
+    m_sum_squares = 0;
+    m_sum_absolute = 0;
 
     EvaluateOptions();
     CalculateVariables();

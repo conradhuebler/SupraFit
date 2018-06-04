@@ -84,8 +84,6 @@ QVector<qreal> Blank::OptimizeParameters_Private()
 
 void Blank::CalculateVariables()
 {
-    m_sum_absolute = 0;
-    m_sum_squares = 0;
 
     qreal dil_heat = LocalTable()->data(0, 0);
     qreal dil_inter = LocalTable()->data(1, 0);

@@ -133,6 +133,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         globalConstants.clear();
         for (int i = 0; i < model.data()->GlobalParameterSize(); ++i)
             globalConstants << model.data()->GlobalParameter(i);
+
         error_0 = model.data()->SumofSquares();
 
         status = lm.minimizeOneStep(parameter);

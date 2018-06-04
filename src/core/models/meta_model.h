@@ -69,7 +69,7 @@ public:
     virtual inline int DataPoints() const override { return m_dep_var; }
     virtual inline int SeriesCount() const override { return m_series_count; }
 
-    virtual inline void setConverged(bool converged)
+    virtual inline void setConverged(bool converged) override
     {
         for (int i = 0; i < m_models.size(); ++i)
             m_models[i]->setConverged(converged);

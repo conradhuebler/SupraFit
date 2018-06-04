@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
@@ -108,13 +108,16 @@ public:
     void setCheckedAll(bool checked);
     inline void setCheckedTable(Eigen::MatrixXd checked) { m_checked_table = checked; }
     inline Eigen::MatrixXd CheckedTable() const { return m_checked_table; }
-    inline DataTable* BlockRows(int row_begin, int row_end) const { return Block(row_begin, 0, row_end, columnCount() - 1); }
+    inline DataTable* BlockRows(int row_begin, int row_end) const { return Block(row_begin, 1, row_end, columnCount()); }
     inline DataTable* BlockColumns(int column_begin, int column_end) const { return Block(0, column_begin, rowCount(), column_end); }
     QPointer<DataTable> Block(int row_begin, int column_begin, int row_end, int column_end) const;
 
     bool isChecked(int i, int j) const;
     void setChecked(int i, int j, bool checked);
 
+    void append(const QPointer<DataTable> table);
+
+    void insertRow(const Vector& row);
     void insertRow(const QVector<qreal>& row);
     void setRow(const QVector<qreal>& vector, int row);
     void setRow(const Vector& vector, int row);
@@ -248,7 +251,7 @@ public:
     inline int HostAssignment() const { return d->m_host_assignment; }
 
     qreal XValue(int i) const;
-    /* 
+    /*
      * !\brief Export data to json
      */
     const QJsonObject ExportData() const;
