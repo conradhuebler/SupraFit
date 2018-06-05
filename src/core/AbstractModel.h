@@ -403,7 +403,7 @@ public:
      */
     virtual int LocalParameterSize() const = 0;
 
-    qreal LocalParameter(int parameter, int series) const;
+    virtual qreal LocalParameter(int parameter, int series) const;
     QVector<qreal> getLocalParameterColumn(int parameter) const;
     qreal LocalParameter(const QPair<int, int>& pair) const;
     void setLocalParameter(qreal value, int parameter, int series);

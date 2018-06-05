@@ -109,6 +109,12 @@ void MetaModelWidget::Minimize()
     qreal new_error = thread->SumOfError();
     if (!m_model->ImportModel(model))
         qDebug() << "something went wrong";
+
+    m_model->setFast(false);
+    m_model->Calculate();
+    //qDebug() << m_model->GlobalParameterSize() << m_model->LocalParameterSize();
+    //qDebug() << m_model->ExportModel();
+
     delete thread;
 }
 

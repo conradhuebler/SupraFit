@@ -133,11 +133,14 @@ void MonteCarloBatch::optimise()
 #endif
 
     NonLinearFitThread* thread = new NonLinearFitThread(false);
+
     thread->setModel(m_model, false);
     thread->run();
+
+    qDebug() << m_model->OptimizeParameters();
+
     m_finished = thread->Converged();
     m_model->setConverged(m_finished);
-
     m_models << thread->ConvergedParameter();
 
     delete thread;
@@ -193,7 +196,7 @@ QJsonObject MonteCarloStatistics::Controller() const
 QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 {
     int blocksize = 25;
-    int maxthreads = qApp->instance()->property("threads").toInt();
+    int maxthreads = 1; //qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     m_model->Calculate();
     m_table = new DataTable(m_model->ModelTable());
@@ -254,9 +257,9 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         connect(this, &MonteCarloStatistics::InterruptAll, thread, &MonteCarloBatch::Interrupt);
         thread->setModel(m_model);
         threads << thread;
-        m_threadpool->start(thread);
+        //    m_threadpool->start(thread);
     }
-    //threads.first()->run();
+    threads.first()->run();
     return threads;
 }
 

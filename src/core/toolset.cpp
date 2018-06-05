@@ -352,7 +352,7 @@ QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
     localcount = model["localParameter"].toObject()["rows"].toInt();
     QStringList local_names, global_names;
     local_names = model["localParameter"].toObject()["header"].toString().split("|");
-    each_local = model["localParameter"].toObject()["cols"].toInt(); //toString().split("|");
+    each_local = model["localParameter"].toObject()["cols"].toInt();
     global_names = model["globalParameter"].toObject()["header"].toString().split("|");
 
     QVector<QVector<qreal>> global(globalcount);

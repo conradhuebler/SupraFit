@@ -56,6 +56,8 @@ public:
 
     virtual qreal GlobalParameter(int i) const override;
 
+    virtual qreal LocalParameter(int parameter, int series) const override;
+
     virtual bool SupportThreads() const override { return false; }
 
     virtual int GlobalParameterSize() const { return m_global_par.size(); }

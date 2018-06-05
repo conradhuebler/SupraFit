@@ -62,6 +62,30 @@ qreal MetaModel::GlobalParameter(int i) const
         return m_combined_local[pair.second].first;
 }
 
+qreal MetaModel::LocalParameter(int parameter, int series) const
+{
+    int count = 0;
+    for (int i = 0; i < m_local_par.size(); ++i) {
+        QPair<int, int> pair = m_local_par[i];
+        int index = 0;
+        qreal value = 0;
+        if (pair.first == 0) {
+            index = m_combined_global[pair.second].second.first().first;
+            value = m_combined_global[pair.second].first;
+        } else {
+            index = m_combined_local[pair.second].second.first().first;
+            value = m_combined_local[pair.second].first;
+        }
+        if (index == series) {
+            if (count == parameter)
+                return value;
+            count++;
+        }
+    }
+
+    return 0;
+}
+
 void MetaModel::ApplyConnectType()
 {
 
@@ -99,7 +123,7 @@ void MetaModel::ApplyConnectType()
 
         for (int i = 0; i < m_combined_local.size(); ++i)
             m_combined_local[i].first /= double(m_combined_local[i].second.size());
-
+        m_series_count = 0;
     } else if (m_connect_type == ConnectType::None) {
         for (int i = 0; i < m_models.size(); ++i) {
 
@@ -123,7 +147,10 @@ void MetaModel::ApplyConnectType()
                 m_combined_local << QPair<qreal, QVector<CombinedParameter>>(m_models[i]->LocalParameter(m_local_index[i][j]), param);
             }
         }
+        m_series_count = m_models.size();
     }
+    // qDebug() << m_combined_global;
+    // qDebug() << m_combined_local;
 }
 
 QVector<qreal> MetaModel::OptimizeParameters_Private()
@@ -141,6 +168,7 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
     m_opt_para.clear();
     m_global_par.clear();
     m_local_par.clear();
+
     QVector<qreal> param;
     for (int i = 0; i < m_combined_global.size(); ++i) {
 
@@ -224,8 +252,8 @@ qreal MetaModel::CalculateVariance()
     for (int index = 0; index < m_models.size(); ++index) {
         for (int i = 0; i < m_models[index]->DataPoints(); ++i) {
             for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
-                /*if (!m_models[index]->ActiveSignals(j))
-                    continue;*/
+                if (!m_models[index]->ActiveSignals(j))
+                    continue;
                 if (m_models[index]->DependentModel()->isChecked(j, i)) {
                     v += qPow(m_models[index]->ErrorTable()->data(j, i) - m_mean, 2);
                     count++;
@@ -351,8 +379,9 @@ void MetaModel::DependentModelOverride()
 {
     int pred = 0;
     for (int i = 0; i < m_models.size(); ++i) {
-        QPointer<DataTable> table = (DependentModel()->Block(pred, 0, pred + m_models[i]->DependentModel()->rowCount(), 1));
-        m_models[i].data()->OverrideDependentTable(table);
+        //m_models[i].data()->DependentModel()->Debug();
+        m_models[i].data()->OverrideDependentTable(DependentModel()->Block(pred, 0, m_models[i]->DependentModel()->rowCount(), 1));
+        //m_models[i].data()->DependentModel()->Debug();
         pred = m_models[i]->DependentModel()->rowCount();
     }
 }
@@ -380,6 +409,8 @@ void MetaModel::CalculateVariables()
         m_sum_absolute += m_models[i].data()->SumofAbsolute();
         m_mean += m_models[i].data()->MeanError();
     }
+    if (!m_fast)
+        PrepareTables();
 }
 
 QSharedPointer<AbstractModel> MetaModel::Clone()
@@ -388,7 +419,7 @@ QSharedPointer<AbstractModel> MetaModel::Clone()
 
     for (const QSharedPointer<AbstractModel> m : Models())
         model.data()->addModel(m->Clone().data());
-
+    model.data()->setConnectType(m_connect_type);
     model.data()->OptimizeParameters_Private();
 
     return model;
@@ -401,26 +432,32 @@ void MetaModel::PrepareTables()
     if (LocalTable())
         delete m_local_parameter;
 
-    m_local_parameter = new DataTable(LocalParameterSize(), SeriesCount(), this);
-    m_local_parameter->setCheckedAll(false);
+    m_local_parameter = new DataTable(0, 0, this);
+    //m_local_parameter->setCheckedAll(false);
+    QVector<QVector<qreal>> parameters(SeriesCount());
     for (int i = 0; i < m_local_par.size(); ++i) {
         QPair<int, int> pair = m_local_par[i];
         qreal val;
-
-        if (pair.first == 0)
+        int index = 0;
+        if (pair.first == 0) {
             val = m_combined_global[pair.second].first;
-        else
+            index = m_combined_global[pair.second].second.first().first;
+        } else {
             val = m_combined_local[pair.second].first;
-
-        LocalTable()->data(i, 0) = val;
-        LocalTable()->setChecked(i, 0, true);
+            index = m_combined_local[pair.second].second.first().first;
+        }
+        parameters[index] << val;
     }
+    for (int i = 0; i < parameters.size(); ++i)
+        m_local_parameter->insertRow(parameters[i]);
 
     header = QStringList();
     if (GlobalTable())
         delete m_global_parameter;
-
-    m_global_parameter = new DataTable(GlobalParameterSize(), 1, this);
+    int size = 0;
+    if (GlobalParameterSize())
+        size = 1;
+    m_global_parameter = new DataTable(GlobalParameterSize(), size, this);
     m_global_parameter->setCheckedAll(false);
 
     for (int i = 0; i < GlobalParameterSize(); ++i) {

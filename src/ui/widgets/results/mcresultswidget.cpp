@@ -73,12 +73,12 @@ void MCResultsWidget::setUi()
     layout->addWidget(tabs, 0, 0, 1, 7);
 
     m_histgram = MakeHistogram();
-    m_box = MakeBoxPlot();
+    //m_box = MakeBoxPlot();
     if (has_histogram)
         tabs->addTab(m_histgram, tr("Histogram"));
 
-    if (has_boxplot)
-        tabs->addTab(m_box, tr("Boxplot"));
+    // if (has_boxplot)
+    //     tabs->addTab(m_box, tr("Boxplot"));
 
     m_contour = MakeContour();
     tabs->addTab(m_contour, tr("Contour Plot"));
@@ -125,15 +125,16 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             if (!data.contains("index"))
                 continue;
             int index = data["index"].toString().split("|")[1].toInt();
-            xy_series->setColor(m_wrapper->Series(index)->color());
+            /*xy_series->setColor(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this](const QColor& color) { this->setAreaColor(index, color); });
+            */
         } else
-            xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
+            //xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
 
-        for (int j = 0; j < histogram.size(); ++j) {
-            xy_series->append(QPointF(histogram[j].first, histogram[j].second));
+            for (int j = 0; j < histogram.size(); ++j) {
+                xy_series->append(QPointF(histogram[j].first, histogram[j].second));
         }
         if (histogram.size())
             has_histogram = true;
