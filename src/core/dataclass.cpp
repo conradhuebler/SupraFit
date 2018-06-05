@@ -861,7 +861,7 @@ void DataClass::OverrideInDependentTable(DataTable* table)
 
 void DataClass::OverrideDependentTable(DataTable* table)
 {
-    d.detach();
+    // d.detach();
     table->setCheckedTable(d->m_dependent_model->CheckedTable());
     d->m_dependent_model = table;
     DependentModelOverride();

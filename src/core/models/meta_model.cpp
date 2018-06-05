@@ -123,7 +123,7 @@ void MetaModel::ApplyConnectType()
 
         for (int i = 0; i < m_combined_local.size(); ++i)
             m_combined_local[i].first /= double(m_combined_local[i].second.size());
-        m_series_count = 0;
+        m_series_count = 1;
     } else if (m_connect_type == ConnectType::None) {
         for (int i = 0; i < m_models.size(); ++i) {
 
@@ -149,8 +149,6 @@ void MetaModel::ApplyConnectType()
         }
         m_series_count = m_models.size();
     }
-    // qDebug() << m_combined_global;
-    // qDebug() << m_combined_local;
 }
 
 QVector<qreal> MetaModel::OptimizeParameters_Private()
@@ -379,10 +377,8 @@ void MetaModel::DependentModelOverride()
 {
     int pred = 0;
     for (int i = 0; i < m_models.size(); ++i) {
-        //m_models[i].data()->DependentModel()->Debug();
         m_models[i].data()->OverrideDependentTable(DependentModel()->Block(pred, 0, m_models[i]->DependentModel()->rowCount(), 1));
-        //m_models[i].data()->DependentModel()->Debug();
-        pred = m_models[i]->DependentModel()->rowCount();
+        pred += m_models[i]->DependentModel()->rowCount();
     }
 }
 

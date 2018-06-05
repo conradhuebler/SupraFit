@@ -77,7 +77,6 @@ public:
     virtual inline void setModel(const QSharedPointer<AbstractModel> model)
     {
         m_model = model->Clone();
-        m_model->DependentModel()->Debug();
     }
 
     inline QList<QList<QPointF>> Series() const { return m_series; }

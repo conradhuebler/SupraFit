@@ -73,7 +73,7 @@ struct MyFunctor : Functor<double> {
         QVector<qreal> param(inputs());
         for (int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
-        qDebug() << param;
+        //qDebug() << param;
         model.data()->setParameter(param);
         model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedModel();

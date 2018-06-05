@@ -112,8 +112,6 @@ void MetaModelWidget::Minimize()
 
     m_model->setFast(false);
     m_model->Calculate();
-    //qDebug() << m_model->GlobalParameterSize() << m_model->LocalParameterSize();
-    //qDebug() << m_model->ExportModel();
 
     delete thread;
 }
