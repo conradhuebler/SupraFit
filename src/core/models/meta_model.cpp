@@ -173,12 +173,19 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
         if (std::isnan(m_combined_global[i].first))
             continue;
 
-        if (m_combined_global[i].second.size() > 1 && m_models.size() > 1)
+        if (m_combined_global[i].second.size() > 1 && m_models.size() > 1) {
             m_global_par << QPair<int, int>(0, i);
-        else if (m_combined_global[i].second.size() == 1 && m_models.size() > 1)
+            m_opt_index << QPair<int, int>(param.size(), 0);
+
+        } else if (m_combined_global[i].second.size() == 1 && m_models.size() > 1) {
             m_local_par << QPair<int, int>(0, i);
-        else
+            m_opt_index << QPair<int, int>(param.size(), 1);
+
+        } else {
             m_global_par << QPair<int, int>(0, i);
+            m_opt_index << QPair<int, int>(param.size(), 0);
+        }
+
         m_opt_para << &m_combined_global[i].first;
         param << m_combined_global[i].first;
     }
@@ -187,12 +194,16 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
 
         if (std::isnan(m_combined_local[i].first))
             continue;
-        if (m_combined_local[i].second.size() > 1 && m_models.size() > 1)
+        if (m_combined_local[i].second.size() > 1 && m_models.size() > 1) {
             m_global_par << QPair<int, int>(1, i);
-        else if (m_combined_local[i].second.size() == 1 && m_models.size() > 1)
+            m_opt_index << QPair<int, int>(param.size(), 0);
+        } else if (m_combined_local[i].second.size() == 1 && m_models.size() > 1) {
             m_local_par << QPair<int, int>(1, i);
-        else
+            m_opt_index << QPair<int, int>(param.size(), 1);
+        } else {
             m_global_par << QPair<int, int>(1, i);
+            m_opt_index << QPair<int, int>(param.size(), 0);
+        }
 
         m_opt_para << &m_combined_local[i].first;
         param << m_combined_local[i].first;
@@ -425,10 +436,7 @@ void MetaModel::PrepareTables()
 {
     QStringList header;
 
-    if (LocalTable())
-        delete m_local_parameter;
-
-    m_local_parameter = new DataTable(0, 0, this);
+    m_local_parameter->clear();
     //m_local_parameter->setCheckedAll(false);
     QVector<QVector<qreal>> parameters(SeriesCount());
     for (int i = 0; i < m_local_par.size(); ++i) {
@@ -448,12 +456,13 @@ void MetaModel::PrepareTables()
         m_local_parameter->insertRow(parameters[i]);
 
     header = QStringList();
-    if (GlobalTable())
-        delete m_global_parameter;
+
     int size = 0;
     if (GlobalParameterSize())
         size = 1;
-    m_global_parameter = new DataTable(GlobalParameterSize(), size, this);
+
+    m_global_parameter->clear(GlobalParameterSize(), size);
+
     m_global_parameter->setCheckedAll(false);
 
     for (int i = 0; i < GlobalParameterSize(); ++i) {

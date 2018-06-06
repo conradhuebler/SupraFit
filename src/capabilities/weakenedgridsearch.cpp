@@ -172,7 +172,7 @@ bool WeakenedGridSearch::ConfidenceAssesment()
 
     for (int i = 0; i < parameter.size(); ++i) {
         bool step = true;
-        QPair<int, int> index_pair = m_model.data()->IndexParameters()[i];
+        QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
         if (index_pair.second == 0) {
             step = m_config.global_param[index_pair.first];
         } else if (index_pair.second == 1) {
@@ -207,7 +207,7 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         qreal lower = pair.second->Last();
 
         QJsonObject result;
-        QPair<int, int> index_pair = m_model.data()->IndexParameters()[index];
+        QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
         if (index_pair.second == 0) {
             result["name"] = m_model.data()->GlobalParameterName(index_pair.first);
             result["type"] = "Global Parameter";

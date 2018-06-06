@@ -87,6 +87,9 @@ public:
     DataTable(DataTable* other);
     DataTable(DataTable& other);
     virtual ~DataTable();
+
+    void clear(int columns = 0, int rows = 0);
+
     int rowCount(const QModelIndex& parent = QModelIndex()) const Q_DECL_OVERRIDE;
     int columnCount(const QModelIndex& parent = QModelIndex()) const Q_DECL_OVERRIDE;
     virtual Qt::ItemFlags flags(const QModelIndex& index) const Q_DECL_OVERRIDE;

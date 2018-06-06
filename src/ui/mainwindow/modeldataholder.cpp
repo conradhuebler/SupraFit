@@ -315,9 +315,9 @@ ModelDataHolder::ModelDataHolder()
     connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
 
     m_statistic_dialog = new StatisticDialog(this);
-    connect(m_statistic_dialog, SIGNAL(MCStatistic()), this, SLOT(MCStatistic()));
-    connect(m_statistic_dialog, SIGNAL(WGStatistic()), this, SLOT(WGStatistic()));
-    connect(m_statistic_dialog, SIGNAL(MoCoStatistic()), this, SLOT(MoCoStatistic()));
+    connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelDataHolder::MCStatistic);
+    connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, &ModelDataHolder::WGStatistic);
+    connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, &ModelDataHolder::MoCoStatistic);
     connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelDataHolder::ReductionStatistic);
     connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelDataHolder::CVStatistic);
 
@@ -326,6 +326,8 @@ ModelDataHolder::ModelDataHolder()
     connect(m_compare_dialog, &CompareDialog::CompareAIC, this, &ModelDataHolder::CompareAIC);
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
+    connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
+
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::Compare, this, [this]() {
         if (this->m_compare_dialog) {
@@ -333,12 +335,6 @@ ModelDataHolder::ModelDataHolder()
             m_compare_dialog->show();
         }
     });
-    connect(m_TitleBarWidget, &MDHDockTitleBar::WGStatistic, this, &ModelDataHolder::WGStatistic);
-    connect(m_TitleBarWidget, &MDHDockTitleBar::MCStatistic, this, &ModelDataHolder::MCStatistic);
-    connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
-    connect(m_TitleBarWidget, &MDHDockTitleBar::MoCoStatistic, this, &ModelDataHolder::MoCoStatistic);
-    connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
-    connect(m_TitleBarWidget, &MDHDockTitleBar::EditData, this, &ModelDataHolder::EditData);
 
     layout->addWidget(m_modelsWidget, 1, 0);
 }
@@ -620,11 +616,10 @@ int ModelDataHolder::Runs(bool moco) const
     return run;
 }
 
-void ModelDataHolder::WGStatistic()
+void ModelDataHolder::WGStatistic(const WGSConfig& config)
 {
     m_statistic_dialog->setRuns(Runs());
     m_statistic_dialog->setRuns(m_models.size());
-    WGSConfig config = m_statistic_dialog->getWGSConfig();
     for (int i = 0; i < m_model_widgets.size(); ++i) {
         if (!m_model_widgets[i])
             continue;
@@ -640,10 +635,9 @@ void ModelDataHolder::WGStatistic()
     m_statistic_dialog->HideWidget();
 }
 
-void ModelDataHolder::MCStatistic()
+void ModelDataHolder::MCStatistic(MCConfig config)
 {
     m_statistic_dialog->setRuns(Runs());
-    MCConfig config = m_statistic_dialog->getMCConfig();
     m_allow_loop = true;
 
     for (int i = 0; i < m_model_widgets.size(); ++i) {
@@ -682,7 +676,7 @@ void ModelDataHolder::ReductionStatistic()
     m_statistic_dialog->HideWidget();
 }
 
-void ModelDataHolder::CVStatistic()
+void ModelDataHolder::CVStatistic(ReductionAnalyse::CVType type)
 {
     m_statistic_dialog->setRuns(Runs());
     m_allow_loop = true;
@@ -694,7 +688,7 @@ void ModelDataHolder::CVStatistic()
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
 
-        m_model_widgets[i]->CVAnalyse(m_statistic_dialog->CrossValidationType());
+        m_model_widgets[i]->CVAnalyse(type);
 
         if (!m_allow_loop)
             break;
@@ -702,12 +696,11 @@ void ModelDataHolder::CVStatistic()
     m_statistic_dialog->HideWidget();
 }
 
-void ModelDataHolder::MoCoStatistic()
+void ModelDataHolder::MoCoStatistic(MoCoConfig config)
 {
     m_allow_loop = true;
     m_statistic_dialog->setRuns(Runs(true));
 
-    MoCoConfig config = m_statistic_dialog->getMoCoConfig();
     config.maxerror = 0;
     for (int i = 0; i < m_model_widgets.size(); ++i) {
         if (!m_model_widgets[i])

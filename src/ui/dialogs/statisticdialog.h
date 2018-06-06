@@ -104,10 +104,10 @@ private slots:
     void CalculateError();
 
 signals:
-    void WGStatistic();
-    void MCStatistic();
-    void MoCoStatistic();
-    void CrossValidation();
+    void WGStatistic(const WGSConfig& config);
+    void MCStatistic(const MCConfig& config);
+    void MoCoStatistic(const MoCoConfig& config);
+    void CrossValidation(ReductionAnalyse::CVType type);
     void Reduction();
     void Interrupt();
     void setMaximumSteps(int steps);

@@ -19,6 +19,12 @@
 
 #pragma once
 
+#include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/modelcomparison.h"
+#include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/reductionanalyse.h"
+#include "src/capabilities/weakenedgridsearch.h"
+
 #include "src/core/dataclass.h"
 #include "src/core/models.h"
 
@@ -104,15 +110,16 @@ private slots:
 signals:
     void AddModel();
     void CloseAll();
-    void WGStatistic();
-    void MCStatistic();
-    void MoCoStatistic();
-    void ReductionStatistic();
-    void CVStatistic();
     void ShowStatistics();
     void OptimizeAll();
     void Compare();
     void EditData();
+
+    void WGStatistic(const WGSConfig& config);
+    void MCStatistic(MCConfig config);
+    void MoCoStatistic(MoCoConfig config);
+    void ReductionStatistic();
+    void CVStatistic(ReductionAnalyse::CVType type);
 };
 
 class ModelDataHolder : public QWidget {
@@ -194,11 +201,11 @@ private slots:
     void RemoveCrashFile();
     void SetProjectTabName();
     void CloseAll();
-    void WGStatistic();
-    void MCStatistic();
-    void MoCoStatistic();
+    void WGStatistic(const WGSConfig& config);
+    void MCStatistic(MCConfig config);
+    void MoCoStatistic(MoCoConfig config);
     void ReductionStatistic();
-    void CVStatistic();
+    void CVStatistic(ReductionAnalyse::CVType type);
     void OptimizeAll();
     void CompareReduction();
     void CompareAIC();

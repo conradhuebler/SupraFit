@@ -28,6 +28,7 @@
 #include "src/core/models.h"
 
 #include "src/ui/dialogs/resultsdialog.h"
+#include "src/ui/dialogs/statisticdialog.h"
 
 #include "src/ui/dialogs/modeldialog.h"
 #include "src/ui/guitools/chartwrapper.h"
@@ -75,8 +76,8 @@ void MetaModelWidget::setUi()
     connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
     connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
     connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
-    //connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
-    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(MonteCarlo()));
+    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
+    //connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(MonteCarlo()));
     connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
     connect(m_actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
     //connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
@@ -118,6 +119,20 @@ void MetaModelWidget::Minimize()
 
 void MetaModelWidget::ToggleStatisticDialog()
 {
+    StatisticDialog* statistic_dialog = new StatisticDialog(m_model, this);
+    connect(statistic_dialog, &StatisticDialog::MCStatistic, this, &MetaModelWidget::MCStatistic);
+    connect(statistic_dialog, &StatisticDialog::WGStatistic, this, &MetaModelWidget::WGStatistic);
+    connect(statistic_dialog, &StatisticDialog::MoCoStatistic, this, &MetaModelWidget::MoCoStatistic);
+    connect(statistic_dialog, &StatisticDialog::CrossValidation, this, &MetaModelWidget::CVAnalyse);
+    connect(statistic_dialog, &StatisticDialog::Reduction, this, &MetaModelWidget::Reduction);
+    connect(statistic_dialog, &StatisticDialog::Reduction, this, &MetaModelWidget::Interrupt);
+    connect(this, &MetaModelWidget::IncrementProgress, statistic_dialog, &StatisticDialog::IncrementProgress);
+    connect(this, &MetaModelWidget::Finished, statistic_dialog, &StatisticDialog::accept);
+
+    if (statistic_dialog->exec()) {
+    }
+
+    delete statistic_dialog;
 }
 
 void MetaModelWidget::OpenAdvancedSearch()
@@ -141,45 +156,108 @@ void MetaModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonOb
 {
     int index = m_model->UpdateStatistic(data);
     m_results->Attention();
-    //m_statistic_dialog->HideWidget();
     SupraFit::Statistic type = SupraFit::Statistic(data["controller"].toObject()["method"].toInt());
     m_results->ShowResult(type, index);
 }
 
-void MetaModelWidget::MonteCarlo()
+void MetaModelWidget::MCStatistic(MCConfig config)
 {
     Waiter wait;
 
-    MCConfig config;
-    config.maxsteps = 1000;
-    config.optimizer_config = m_model->getOptimizerConfig();
-    config.variance = m_model->StdDeviation();
     QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
-    //connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    //connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
+    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
+    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
+
     statistic->setModel(m_model);
     statistic->Evaluate();
 
     LoadStatistic(statistic->Result(), statistic->Models());
+    emit Finished();
     delete statistic;
 }
 
 void MetaModelWidget::Reduction()
 {
+    Waiter wait;
+    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
+
+    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
+    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
+
+    statistic->setModel(m_model);
+    statistic->PlainReduction();
+    LoadStatistic(statistic->Result(), statistic->Models());
+
+    emit Finished();
+    delete statistic;
 }
 
-void MetaModelWidget::CrossValidation()
+void MetaModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 {
+    Waiter wait;
+    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
+    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
+    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
+    statistic->setModel(m_model);
+    statistic->CrossValidation(type);
+    LoadStatistic(statistic->Result(), statistic->Models());
+
+    delete statistic;
 }
 
-void MetaModelWidget::ModelComparison()
+void MetaModelWidget::MoCoStatistic(MoCoConfig config)
 {
+    Waiter wait;
+
+    config.optimizer_config = m_model->getOptimizerConfig();
+
+    if (config.maxerror < 1E-8)
+        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
+
+    ModelComparison* statistic = new ModelComparison(config, this);
+    /*if (m_fast_confidence.size())
+        statistic->setResults(m_fast_confidence);*/
+    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
+    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
+
+    QJsonObject json = m_model->ExportModel(false);
+    statistic->setModel(m_model);
+    bool result = statistic->Confidence();
+    if (result)
+        LoadStatistic(statistic->Result(), statistic->Models());
+    // else
+    //     QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
+    //m_statistic_dialog->HideWidget();
+    emit Finished();
+    delete statistic;
 }
 
-void MetaModelWidget::WeakendGridSearch()
+void MetaModelWidget::WGStatistic(WGSConfig config)
 {
+    Waiter wait;
+
+    config.optimizer_config = m_model->getOptimizerConfig();
+
+    if (config.maxerror < 1E-8)
+        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
+
+    WeakenedGridSearch* statistic = new WeakenedGridSearch(config, this);
+
+    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
+    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
+
+    QJsonObject json = m_model->ExportModel(false);
+    statistic->setModel(m_model);
+    statistic->setParameter(json);
+
+    if (!statistic->ConfidenceAssesment()) {
+        // emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
+    }
+
+    LoadStatistic(statistic->Result(), statistic->Models());
+
+    emit Finished();
+    delete statistic;
 }
 
 void MetaModelWidget::ImportConstants()
@@ -206,4 +284,9 @@ void MetaModelWidget::ExportConstants()
         QJsonObject gameObject = m_model->ExportModel();
         JsonHandler::WriteJsonFile(gameObject, str);
     }
+}
+
+void MetaModelWidget::TogglePlot()
+{
+    m_results->Attention();
 }

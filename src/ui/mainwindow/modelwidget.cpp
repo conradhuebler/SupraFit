@@ -110,10 +110,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_advancedsearch->setModel(m_model);
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
-    connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::MCStatistic));
-    connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::WGStatistic));
-    connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::MoCoStatistic));
-    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, static_cast<void (ModelWidget::*)()>(&ModelWidget::CVAnalyse));
+    connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelWidget::MCStatistic);
+    connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, &ModelWidget::WGStatistic);
+    connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, &ModelWidget::MoCoStatistic);
+    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelWidget::CVAnalyse);
     connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelWidget::DoReductionAnalyse);
 
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
@@ -124,9 +124,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_dialogs = new ModalDialog;
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
-    /*m_statistic_result = new ModalDialog;
-    m_statistic_result->setWindowTitle("Statistics for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
-    */
     m_statistic_widget = new StatisticWidget(m_model, this);
 
     m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
@@ -336,9 +333,7 @@ ModelWidget::~ModelWidget()
 
     m_statistic_dialog->hide();
     m_dialogs->hide();
-    //m_statistic_result->hide();
 
-    //delete m_statistic_result;
     delete m_dialogs;
     delete m_table_result;
     delete m_statistic_dialog;
@@ -542,11 +537,6 @@ void ModelWidget::ToggleSearchTable()
     m_table_result->Attention();
 }
 
-void ModelWidget::MCStatistic()
-{
-    MCConfig config = m_statistic_dialog->getMCConfig();
-    MCStatistic(config);
-}
 
 void ModelWidget::MCStatistic(MCConfig config)
 {
@@ -602,25 +592,13 @@ void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 {
     Waiter wait;
     ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
-    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    statistic->setModel(m_model);
-    statistic->CrossValidation(type);
-    LoadStatistic(statistic->Result(), statistic->Models());
-    emit IncrementProgress(1);
-    delete statistic;
-}
-
-void ModelWidget::CVAnalyse()
-{
-    Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     statistic->setModel(m_model);
-    statistic->CrossValidation(m_statistic_dialog->CrossValidationType());
+    statistic->CrossValidation(type);
     LoadStatistic(statistic->Result(), statistic->Models());
     emit IncrementProgress(1);
     delete statistic;
@@ -643,12 +621,12 @@ void ModelWidget::DoReductionAnalyse()
     emit IncrementProgress(1);
     delete statistic;
 }
-
+/*
 void ModelWidget::WGStatistic()
 {
     WGSConfig config = m_statistic_dialog->getWGSConfig();
     WGStatistic(config);
-}
+}*/
 
 void ModelWidget::WGStatistic(WGSConfig config)
 {
@@ -679,13 +657,13 @@ void ModelWidget::WGStatistic(WGSConfig config)
     emit IncrementProgress(1);
     delete statistic;
 }
-
+/*
 void ModelWidget::MoCoStatistic()
 {
     MoCoConfig config = m_statistic_dialog->getMoCoConfig();
     MoCoStatistic(config);
 }
-
+*/
 void ModelWidget::MoCoStatistic(MoCoConfig config)
 {
     Waiter wait;

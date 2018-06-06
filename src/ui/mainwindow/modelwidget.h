@@ -19,7 +19,11 @@
 
 #pragma once
 
+#include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/modelcomparison.h"
+#include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/reductionanalyse.h"
+#include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
@@ -84,10 +88,6 @@ public:
     QSharedPointer<AbstractModel> Model() const { return m_model; }
     QSharedPointer<Minimizer> getMinimizer() const { return m_minimizer; }
 
-    void WGStatistic(WGSConfig config);
-    void MoCoStatistic(MoCoConfig config);
-    void MCStatistic(MCConfig config);
-    void CVAnalyse(ReductionAnalyse::CVType type);
     inline void setCheckbox(const QPointer<QCheckBox> checkbox) { m_toggled_box = checkbox; }
     inline bool isChecked() const
     {
@@ -103,10 +103,12 @@ public:
 
 public slots:
     void LoadJson(const QJsonObject& object);
-    void WGStatistic();
-    void MCStatistic();
-    void MoCoStatistic();
-    void CVAnalyse();
+
+    void WGStatistic(WGSConfig config);
+    void MoCoStatistic(MoCoConfig config);
+    void MCStatistic(MCConfig config);
+    void CVAnalyse(ReductionAnalyse::CVType type);
+
     void GlobalMinimize();
     void GlobalMinimizeLoose();
     void LocalMinimize();

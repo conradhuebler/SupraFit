@@ -83,7 +83,7 @@ public:
      *  first - index of parameter
      *  second define if global or local
      */
-    inline QVector<QPair<int, int>> IndexParameters() { return m_opt_index; }
+    virtual inline QPair<int, int> IndexParameters(int i) const { return m_opt_index[i]; }
 
     /*! \brief Locks Parameter not to be optimised during Levenberg-Marquadt
      */

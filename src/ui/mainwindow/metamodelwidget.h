@@ -19,6 +19,12 @@
 
 #pragma once
 
+#include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/modelcomparison.h"
+#include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/reductionanalyse.h"
+#include "src/capabilities/weakenedgridsearch.h"
+
 #include <QtCore/QSharedPointer>
 
 #include <QtWidgets/QWidget>
@@ -63,17 +69,23 @@ private:
 
 private slots:
     void Minimize();
-    void MonteCarlo();
+
+    void WGStatistic(WGSConfig config);
+    void MoCoStatistic(MoCoConfig config);
+    void MCStatistic(MCConfig config);
+    void CVAnalyse(ReductionAnalyse::CVType type);
     void Reduction();
-    void CrossValidation();
-    void ModelComparison();
-    void WeakendGridSearch();
+
     void OpenAdvancedSearch();
     void NewGuess();
     void ImportConstants();
     void ExportConstants();
     void ToggleStatisticDialog();
+    void TogglePlot();
     void Detailed();
 
 signals:
+    void Interrupt();
+    void Finished();
+    void IncrementProgress(int progess);
 };

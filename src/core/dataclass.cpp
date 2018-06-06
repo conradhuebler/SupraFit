@@ -91,6 +91,14 @@ DataTable::~DataTable()
 {
 }
 
+void DataTable::clear(int columns, int rows)
+{
+    m_table = Eigen::MatrixXd::Zero(rows, columns);
+    m_checked_table = Eigen::MatrixXd::Ones(rows, columns);
+    for (int i = 0; i < columns; ++i)
+        m_header << QString::number(i + 1);
+}
+
 Vector DataTable::firstRow()
 {
     return m_table.row(0);
