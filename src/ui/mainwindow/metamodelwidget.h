@@ -64,8 +64,10 @@ private:
     ModalDialog *m_dialogs, *m_table_result;
     StatisticWidget* m_statistic_widget;
     ResultsDialog* m_results;
+    QList<QJsonObject> m_fast_confidence;
 
     void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models);
+    void FastConfidence();
 
 private slots:
     void Minimize();
@@ -88,4 +90,5 @@ signals:
     void Interrupt();
     void Finished();
     void IncrementProgress(int progess);
+    void MaximumSteps(int steps);
 };

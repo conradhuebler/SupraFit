@@ -246,6 +246,7 @@ public:
     {
         d->m_dependent_model = table;
         d->m_dependent_model->setCheckable(true);
+        DependentModelOverride();
     }
     void SwitchConentrations();
     virtual QList<qreal> getSignals(QList<int> dealing_signals = QVector<int>(1, 0).toList());
