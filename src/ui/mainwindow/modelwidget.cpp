@@ -287,11 +287,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
                 m_charts.signal_wrapper->Series(0)->setVisible(!m_charts.signal_wrapper->Series(0)->isVisible());
                 m_charts.error_wrapper->Series(0)->setVisible(!m_charts.error_wrapper->Series(0)->isVisible());
             });
-        if (!m_val_readonly) {
-            if (m_model->getSystemParameterList().size())
-                m_sign_layout->addWidget(new SPOverview(m_model.data()));
-            connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
-        }
+    }
+
+    if (!m_val_readonly) {
+        if (m_model->getSystemParameterList().size())
+            m_sign_layout->addWidget(new SPOverview(m_model.data()));
+        connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
     }
 
     QWidget* scroll = new QWidget;

@@ -66,6 +66,10 @@ void MonoMolecularModel::InitialGuess_Private()
 {
     (*GlobalTable())[0] = 1;
     (*GlobalTable())[1] = 1;
+
+    for (int i = 0; i < SeriesCount(); ++i)
+        (*LocalTable())(i, 0) = 1;
+
     Calculate();
 }
 
@@ -77,10 +81,12 @@ QVector<qreal> MonoMolecularModel::OptimizeParameters_Private()
         if (order == "Second") // || order == "Mixed")
             addGlobalParameter(1);
 
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
+        addLocalParameter(0);
+
+        QVector<qreal> parameter;
+        for (int i = 0; i < m_opt_para.size(); ++i)
+            parameter << *m_opt_para[i];
+        return parameter;
 }
 
 void MonoMolecularModel::CalculateVariables()
@@ -98,6 +104,8 @@ void MonoMolecularModel::CalculateVariables()
             qreal value = 0;
             value += A0 * qExp(-k1 * t) * (order == "First"); // || order == "Mixed");
             value += 1 / (2 * k2 * t + (1 / A0)) * (order == "Second"); // || order == "Mixed");
+
+            value *= LocalTable()->data(0, j);
 
             if (component == "A")
                 SetValue(i, j, value);

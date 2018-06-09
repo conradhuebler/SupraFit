@@ -60,11 +60,14 @@ public:
         Q_UNUSED(i)
         return tr("k");
     }
-    // virtual inline QString LocalParameterSuffix(int i = 0) const override {Q_UNUSED(i) return QString(" M"); }
-    virtual int LocalParameterSize() const override { return 0; }
+    virtual inline QString LocalParameterName(int i = 0) const override
+    {
+        Q_UNUSED(i)
+        return QString("I");
+    }
+    virtual int LocalParameterSize() const override { return 1; }
 
-    //  virtual inline QString Name() const override { return tr("Monomolecular Kinetics"); }
-    virtual inline bool SupportSeries() const override { return false; }
+    virtual inline bool SupportSeries() const override { return true; }
     virtual void DeclareOptions() override;
 
     /*! \brief Define the x axis label for charts
