@@ -4,11 +4,13 @@ project(suprafit)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 
-# Tell CMake to run moc when necessary:
-set(CMAKE_AUTOMOC ON)
 # As moc files are generated in the binary dir, tell CMake
 # to always look for includes there:
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Tell CMake to run moc when necessary:
+set(CMAKE_AUTOMOC ON)
+
 
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
@@ -121,9 +123,10 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare")                                        
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5PrintSupport REQUIRED)
-find_package(Qt5Charts REQUIRED)
+find_package(Qt5Widgets CONFIG REQUIRED)
+
+find_package(Qt5PrintSupport CONFIG REQUIRED)
+find_package(Qt5Charts CONFIG REQUIRED)
 
 include_directories(SYSTEM ${QT_INCLUDES} eigen/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} fisher_dist/ libpeakpick/)
@@ -143,7 +146,7 @@ set(libmath_SRC
 
 add_library(math ${libmath_SRC})
 
-qt5_use_modules(math Core)
+target_link_libraries(math Qt5::Core)
 
 set(models_SRC
                 src/core/dataclass.cpp
@@ -173,7 +176,7 @@ set(models_SRC
 
 add_library(models ${models_SRC})
 
-qt5_use_modules(models Core)
+target_link_libraries(models Qt5::Core)
 set(utils_SRC
                 src/capabilities/reductionanalyse.cpp
                 src/capabilities/abstractsearchclass.cpp
@@ -190,7 +193,7 @@ set(utils_SRC
 
 add_library(utils ${utils_SRC})
 
-qt5_use_modules(utils Core)
+target_link_libraries(utils Qt5::Core)
 
 set(suprafit_SRCS
                 src/ui/guitools/chartwrapper.cpp
@@ -233,6 +236,8 @@ set(suprafit_SRCS
                 src/ui/mainwindow/suprafitgui.cpp
                 src/main.cpp)
 qt5_add_resources(suprafit_SRCS files.qrc)
+target_link_libraries(utils Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport Qt5::Charts)
+
 add_executable(suprafit ${suprafit_SRCS})
 
 
@@ -249,12 +254,9 @@ set_property(TARGET math models utils PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
 
-qt5_use_modules(suprafit Core Widgets Charts PrintSupport)
-qt5_use_modules(suprafit_cli Core)
+target_link_libraries(suprafit models math utils)
 
-target_link_libraries(suprafit models math utils ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTPRINT_LIBRARY} Qt5::PrintSupport)
-
-target_link_libraries(suprafit_cli models math utils ${QT_QTCORE_LIBRARY} )
+target_link_libraries(suprafit_cli models math utils)
 
 if(testing)
     enable_testing()
@@ -265,7 +267,7 @@ if(testing)
     add_executable(supratest  ${basic_test})
     #set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
     set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
-    qt5_use_modules(supratest Core Test)
+    target_link_libraries(supratest Qt5::Core Qt5::Test)
     target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)
 
