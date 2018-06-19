@@ -93,7 +93,8 @@ MainWindow::MainWindow()
     m_history_dock->setMinimumWidth(240);
     m_history_dock->setToolTip(tr("This widget contains the <strong>stack</strong>, where <strong>models</strong> appear!"));
 
-    addDockWidget(Qt::LeftDockWidgetArea, m_history_dock, Qt::Horizontal);
+    //addDockWidget(Qt::LeftDockWidgetArea, m_history_dock, Qt::Horizontal);
+#warning lets have sometimes something else than this history dock
     addDockWidget(Qt::LeftDockWidgetArea, m_modeldock, Qt::Horizontal);
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
 

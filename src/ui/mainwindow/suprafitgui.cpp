@@ -321,6 +321,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         name = file;
         data.data()->setProjectTitle(name);
     }
+    window->setWindowFlags(Qt::Widget);
 
     m_layout->addWidget(window, 0, 1);
     /*
