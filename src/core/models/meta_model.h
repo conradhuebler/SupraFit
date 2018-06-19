@@ -107,6 +107,8 @@ public:
 
     virtual void DependentModelOverride() override;
 
+    virtual void CheckedModelOverride() override { DependentModelOverride(); }
+
 private slots:
     void UpdateCalculated();
 

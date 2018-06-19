@@ -382,6 +382,11 @@ void MetaModel::UpdateCalculated()
 
 void MetaModel::IndependentModelOverride()
 {
+    int pred = 0;
+    for (int i = 0; i < m_models.size(); ++i) {
+        m_models[i].data()->OverrideInDependentTable(IndependentModel()->Block(pred, 0, m_models[i]->IndependentModel()->rowCount(), 1));
+        pred += m_models[i]->IndependentModel()->rowCount();
+    }
 }
 
 void MetaModel::DependentModelOverride()
