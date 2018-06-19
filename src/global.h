@@ -22,9 +22,9 @@
 #include "src/global_config.h"
 #include "src/version.h"
 
-#include <QCommandLineParser>
-#include <QCoreApplication>
-#include <QtGlobal>
+#include <QtCore/QCommandLineParser>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QtGlobal>
 
 #include <QtCore/QVector>
 

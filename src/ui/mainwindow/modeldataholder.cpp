@@ -37,13 +37,13 @@
 #include "src/ui/mainwindow/metamodelwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
-#include <QApplication>
-
 #include <QtCore/QDateTime>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
+#include <QtGui/QApplication>
 #include <QtGui/QColor>
+
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>

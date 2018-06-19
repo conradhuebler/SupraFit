@@ -24,7 +24,6 @@
 #include "src/core/AbstractModel.h"
 #include "src/global.h"
 
-
 #include <QtCore/QMutex>
 #include <QtCore/QPointer>
 #include <QtCore/QWeakPointer>

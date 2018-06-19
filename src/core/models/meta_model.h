@@ -107,6 +107,7 @@ public:
 
     virtual void DependentModelOverride() override;
 
+    void DebugParameter() const;
 private slots:
     void UpdateCalculated();
 

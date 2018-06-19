@@ -21,8 +21,13 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 
-#include <QApplication>
-#include <QHeaderView>
+#include <QtCharts/QXYSeries>
+
+#include <QtCore/QDebug>
+
+#include <QtGui/QApplication>
+#include <QtGui/QHeaderView>
+#include <QtGui/QStandardItemModel>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
@@ -32,12 +37,6 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
-
-#include <QtCharts/QXYSeries>
-
-#include <QStandardItemModel>
-
-#include <QDebug>
 
 #include "signalelement.h"
 

@@ -27,12 +27,16 @@
 #include "src/ui/widgets/buttons/hovercheckbox.h"
 #include "src/ui/widgets/buttons/spinbox.h"
 
-#include <QApplication>
-#include <QtMath>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QXYSeries>
 
+#include <QtCore/QDebug>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QTimer>
+#include <QtCore/QtMath>
+
+#include <QtGui/QApplication>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
@@ -42,11 +46,6 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
-
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QXYSeries>
-
-#include <QDebug>
 
 #include "modelelement.h"
 

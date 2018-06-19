@@ -508,4 +508,18 @@ QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
     return model;
 }
 
+void MetaModel::DebugParameter() const
+{
+    //qDebug() << m_global_names;
+    //qDebug() << m_combined_global;
+    for (int i = 0; i < m_combined_global.size(); ++i) {
+        qDebug() << m_combined_global[i].first;
+        for (int j = 0; j < m_combined_global[i].second.size(); ++j) {
+            int model = m_combined_global[i].second[j].first;
+            qDebug() << m_combined_global[i].second[j].second;
+            //int index = m_combined_global[i].second[j].second;
+            //m_models[model]->GlobalParameterName(index);
+        }
+    }
+}
 #include "meta_model.moc"

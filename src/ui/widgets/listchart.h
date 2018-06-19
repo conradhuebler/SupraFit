@@ -18,12 +18,12 @@
 
 #pragma once
 
-#include <QChart>
 #include <QtCharts/QAbstractSeries>
+#include <QtCharts/QChart>
 #include <QtCharts/QChartView>
 
-#include <QTextDocument>
 #include <QtCore/QModelIndex>
+#include <QtGui/QTextDocument>
 
 #include <QtWidgets/QListWidgetItem>
 #include <QtWidgets/QStyleOptionViewItem>

@@ -19,10 +19,10 @@
 
 #include "src/global_config.h"
 
-#include <QDebug>
-#include <QPair>
-#include <QtGlobal>
-#include <QtMath>
+#include <QtCore/QDebug>
+#include <QtCore/QPair>
+#include <QtCore/QtGlobal>
+#include <QtCore/QtMath>
 
 #include <cmath>
 #include <iostream>

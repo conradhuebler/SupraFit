@@ -55,16 +55,21 @@
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/systemparameterwidget.h"
 
-#include <QApplication>
-#include <QDebug>
-#include <QtMath>
+#include <QtCharts/QAreaSeries>
+#include <QtCharts/QChart>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QXYSeries>
 
 #include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
 #include <QtCore/QTime>
 #include <QtCore/QTimer>
+#include <QtCore/QtMath>
+
+#include <QtGui/QApplication>
 
 #include <QtWidgets/QAction>
 #include <QtWidgets/QCheckBox>
@@ -82,11 +87,6 @@
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QTextEdit>
-
-#include <QtCharts/QAreaSeries>
-#include <QtCharts/QChart>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QXYSeries>
 
 #include <iostream>
 #include <random>

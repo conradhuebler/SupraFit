@@ -24,11 +24,22 @@
 #include "src/ui/guitools/instance.h"
 #include "src/ui/widgets/chartview.h"
 
+#include <QtCharts/QCategoryAxis>
+#include <QtCharts/QChart>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
+
 #include <QtCore/QBuffer>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QTimer>
 #include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
+
+#include <QtGui/QApplication>
+#include <QtGui/QDrag>
+
+#include <QtPrintSupport/QPrintPreviewDialog>
+#include <QtPrintSupport/QPrinter>
 
 #include <QtWidgets/QAction>
 #include <QtWidgets/QComboBox>
@@ -38,16 +49,6 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTableView>
-
-#include <QApplication>
-#include <QDrag>
-#include <QPrintPreviewDialog>
-#include <QPrinter>
-
-#include <QtCharts/QCategoryAxis>
-#include <QtCharts/QChart>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QValueAxis>
 
 #include <iostream>
 
