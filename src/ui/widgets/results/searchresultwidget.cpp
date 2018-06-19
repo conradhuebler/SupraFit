@@ -33,8 +33,8 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QtCore/QSharedPointer>
+#include <QtCore/QSortFilterProxyModel>
 
-#include <QtGui/QSortFilterProxyModel>
 #include <QtGui/QStandardItemModel>
 
 #include <QtWidgets/QCheckBox>
