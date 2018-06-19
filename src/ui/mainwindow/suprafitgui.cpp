@@ -321,8 +321,8 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         name = file;
         data.data()->setProjectTitle(name);
     }
-    window->show();
-    //m_layout->addWidget(window, 0, 1);
+
+    m_layout->addWidget(window, 0, 1);
     /*
     int index = m_central_widget->addTab(window, name);
     connect(data.data(), &DataClass::NameChanged, m_central_widget, [index, this](const QString& name) {

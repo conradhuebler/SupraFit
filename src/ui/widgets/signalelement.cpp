@@ -25,7 +25,6 @@
 
 #include <QtCore/QDebug>
 
-#include <QtGui/QHeaderView>
 #include <QtGui/QStandardItemModel>
 
 #include <QtWidgets/QApplication>
@@ -34,6 +33,7 @@
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
+#include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>

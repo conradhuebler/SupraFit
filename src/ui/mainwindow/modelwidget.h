@@ -38,8 +38,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
 
-#include <QtGui/QApplication>
-
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
