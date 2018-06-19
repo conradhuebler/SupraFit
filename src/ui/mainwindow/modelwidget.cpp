@@ -69,9 +69,8 @@
 #include <QtCore/QTimer>
 #include <QtCore/QtMath>
 
-#include <QtGui/QApplication>
-
 #include <QtWidgets/QAction>
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>

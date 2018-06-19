@@ -41,9 +41,9 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 
-#include <QtGui/QApplication>
 #include <QtGui/QColor>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>

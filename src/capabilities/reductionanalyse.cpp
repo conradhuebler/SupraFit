@@ -19,7 +19,7 @@
 
 #include <QtCore/QMutexLocker>
 
-#include <QtGui/QApplication>
+#include <QtWidgets/QApplication>
 
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"

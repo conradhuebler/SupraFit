@@ -35,13 +35,13 @@
 #include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
 
-#include <QtGui/QApplication>
 #include <QtGui/QDrag>
 
 #include <QtPrintSupport/QPrintPreviewDialog>
 #include <QtPrintSupport/QPrinter>
 
 #include <QtWidgets/QAction>
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QGridLayout>

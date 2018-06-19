@@ -26,8 +26,7 @@
 #include <QtCore/QSettings>
 #include <QtCore/QTimer>
 
-#include <QtGui/QApplication>
-
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>

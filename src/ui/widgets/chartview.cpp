@@ -36,9 +36,9 @@
 #include <QtCore/QMimeData>
 #include <QtCore/QTextStream>
 
-#include <QtGui/QApplication>
 #include <QtGui/QDrag>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QLayout>

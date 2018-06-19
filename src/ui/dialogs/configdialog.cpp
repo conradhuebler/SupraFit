@@ -24,8 +24,7 @@
 
 #include <QtCore/QThread>
 
-#include <QtGui/QApplication>
-
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialogButtonBox>

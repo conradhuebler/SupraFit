@@ -33,8 +33,7 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QTimer>
 
-#include <QtGui/QApplication>
-
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QDoubleSpinBox>

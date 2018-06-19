@@ -25,10 +25,10 @@
 
 #include <QtCore/QDebug>
 
-#include <QtGui/QApplication>
 #include <QtGui/QHeaderView>
 #include <QtGui/QStandardItemModel>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>
