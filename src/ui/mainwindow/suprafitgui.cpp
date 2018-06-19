@@ -35,8 +35,7 @@
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
-#include <QDebug>
-
+#include <QtCore/QDebug>
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
 #include <QtCore/QSharedPointer>
@@ -313,7 +312,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     for (int i = 0; i < m_project_list.size(); ++i)
         m_project_list[i]->hide();
 
-    MainWindow* window = new MainWindow;
+    QPointer<MainWindow> window = new MainWindow;
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data)
         return false;
@@ -322,6 +321,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         name = file;
         data.data()->setProjectTitle(name);
     }
+
     m_layout->addWidget(window, 0, 1);
     /*
     int index = m_central_widget->addTab(window, name);

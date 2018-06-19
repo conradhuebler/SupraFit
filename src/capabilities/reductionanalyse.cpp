@@ -78,6 +78,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
                 m_batch.enqueue(block);
                 block.clear();
             }
+            QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         }
         break;
     case CVType::LeaveTwoOut:
@@ -93,6 +94,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
                     m_batch.enqueue(block);
                     block.clear();
                 }
+                QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
             }
         break;
 
@@ -154,6 +156,7 @@ void ReductionAnalyse::PlainReduction()
         model->detach();
         thread->setModel(model);
         addThread(thread);
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
     while (Pending()) {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);

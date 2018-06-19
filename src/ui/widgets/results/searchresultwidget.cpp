@@ -26,13 +26,17 @@
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/results/contourwidget.h"
 
+#include <QtCharts/QChart>
+#include <QtCharts/QScatterSeries>
+
 #include <QtCore/QCollator>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
 #include <QtCore/QSharedPointer>
+#include <QtCore/QSortFilterProxyModel>
 
-#include <QSortFilterProxyModel>
-#include <QStandardItemModel>
+#include <QtGui/QStandardItemModel>
+
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
@@ -41,9 +45,6 @@
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableView>
 #include <QtWidgets/QWidget>
-
-#include <QtCharts/QChart>
-#include <QtCharts/QScatterSeries>
 
 #include "searchresultwidget.h"
 

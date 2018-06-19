@@ -133,7 +133,7 @@ private:
     QVector<QPointer<MainWindow>> m_project_list;
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
-    QGridLayout* m_layout;
+    QPointer<QGridLayout> m_layout;
     QWeakPointer<MetaModel> m_meta_model;
 
 private slots:

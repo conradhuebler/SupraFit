@@ -24,18 +24,6 @@
 #include "src/ui/dialogs/chartconfig.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
-#include <QtCore/QBuffer>
-#include <QtCore/QMimeData>
-#include <QtCore/QTextStream>
-
-#include <QApplication>
-
-#include <QtWidgets/QFileDialog>
-#include <QtWidgets/QInputDialog>
-#include <QtWidgets/QLayout>
-#include <QtWidgets/QMenu>
-#include <QtWidgets/QPushButton>
-
 #include <QtCharts/QChart>
 #include <QtCharts/QLegendMarker>
 #include <QtCharts/QLineSeries>
@@ -43,12 +31,24 @@
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QXYSeries>
 
-#include <QDebug>
-#include <QDrag>
+#include <QtCore/QBuffer>
+#include <QtCore/QDebug>
+#include <QtCore/QMimeData>
+#include <QtCore/QTextStream>
 
-#include "chartview.h"
+#include <QtGui/QDrag>
+
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QInputDialog>
+#include <QtWidgets/QLayout>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QPushButton>
+
 #include <cmath>
 #include <iostream>
+
+#include "chartview.h"
 
 void ChartViewPrivate::mousePressEvent(QMouseEvent* event)
 {

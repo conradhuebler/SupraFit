@@ -34,8 +34,7 @@
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
-#include <QDebug>
-
+#include <QtCore/QDebug>
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
 #include <QtCore/QSharedPointer>
@@ -43,12 +42,12 @@
 #include <QtCore/QWeakPointer>
 
 #include <QtWidgets/QAction>
-#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QMessageBox>

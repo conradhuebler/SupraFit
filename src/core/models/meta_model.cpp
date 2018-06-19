@@ -368,6 +368,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_indep_var += model->IndependentVariableSize();
     m_dep_var += model->DataPoints();
     m_series_count += model->SeriesCount();
+    OptimizeParameters_Private();
     emit ModelAdded(t);
 }
 
@@ -393,7 +394,9 @@ void MetaModel::DependentModelOverride()
 {
     int pred = 0;
     for (int i = 0; i < m_models.size(); ++i) {
-        m_models[i].data()->OverrideDependentTable(DependentModel()->Block(pred, 0, m_models[i]->DependentModel()->rowCount(), 1));
+        DataTable* table = DependentModel()->Block(pred, 0, m_models[i]->DependentModel()->rowCount(), 1);
+        m_models[i].data()->OverrideCheckedTable(table);
+        m_models[i].data()->OverrideDependentTable(table);
         pred += m_models[i]->DependentModel()->rowCount();
     }
 }
@@ -442,7 +445,6 @@ void MetaModel::PrepareTables()
     QStringList header;
 
     m_local_parameter->clear();
-    //m_local_parameter->setCheckedAll(false);
     QVector<QVector<qreal>> parameters(SeriesCount());
     for (int i = 0; i < m_local_par.size(); ++i) {
         QPair<int, int> pair = m_local_par[i];
@@ -492,6 +494,7 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
         result = result && import;
     }
     m_connect_type = (ConnectType)topjson["connecttype"].toInt();
+    OptimizeParameters_Private();
     return result;
 }
 
@@ -510,4 +513,18 @@ QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
     return model;
 }
 
+void MetaModel::DebugParameter() const
+{
+    //qDebug() << m_global_names;
+    //qDebug() << m_combined_global;
+    for (int i = 0; i < m_combined_global.size(); ++i) {
+        qDebug() << m_combined_global[i].first;
+        for (int j = 0; j < m_combined_global[i].second.size(); ++j) {
+            int model = m_combined_global[i].second[j].first;
+            qDebug() << m_combined_global[i].second[j].second;
+            //int index = m_combined_global[i].second[j].second;
+            //m_models[model]->GlobalParameterName(index);
+        }
+    }
+}
 #include "meta_model.moc"

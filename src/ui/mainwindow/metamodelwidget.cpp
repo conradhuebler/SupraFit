@@ -57,6 +57,8 @@ void MetaModelWidget::setUi()
 
     m_results = new ResultsDialog(m_model, new ChartWrapper(false), this);
 
+    m_statistic_widget = new StatisticWidget(m_model, this);
+
     QGridLayout* layout = new QGridLayout;
 
     m_minimize = new QPushButton(tr("Minimize"));
@@ -85,7 +87,7 @@ void MetaModelWidget::setUi()
     connect(m_actions, &ModelActions::Detailed, this, &MetaModelWidget::Detailed);
 
     layout->addWidget(m_actions, 1, 0, 1, 2);
-
+    layout->addWidget(m_statistic_widget, 2, 0, 1, 2);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
 
     setLayout(layout);
@@ -100,6 +102,7 @@ void MetaModelWidget::Minimize()
     Model()->setConnectType((MetaModel::ConnectType)m_type->currentIndex());
 
     thread->setModel(m_model, false);
+    Model()->DebugParameter();
     thread->run();
     bool converged = thread->Converged();
     QJsonObject model;
@@ -115,6 +118,11 @@ void MetaModelWidget::Minimize()
     m_model->Calculate();
 
     delete thread;
+
+    if (qApp->instance()->property("auto_confidence").toBool())
+        FastConfidence();
+    else
+        m_statistic_widget->Update();
 }
 
 void MetaModelWidget::ToggleStatisticDialog()
@@ -127,10 +135,10 @@ void MetaModelWidget::ToggleStatisticDialog()
     connect(statistic_dialog, &StatisticDialog::Reduction, this, &MetaModelWidget::Reduction);
     connect(statistic_dialog, &StatisticDialog::Reduction, this, &MetaModelWidget::Interrupt);
     connect(this, &MetaModelWidget::IncrementProgress, statistic_dialog, &StatisticDialog::IncrementProgress);
+    connect(this, &MetaModelWidget::MaximumSteps, statistic_dialog, &StatisticDialog::MaximumSteps);
     connect(this, &MetaModelWidget::Finished, statistic_dialog, &StatisticDialog::accept);
 
-    if (statistic_dialog->exec()) {
-    }
+    statistic_dialog->exec();
 
     delete statistic_dialog;
 }
@@ -160,6 +168,25 @@ void MetaModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonOb
     m_results->ShowResult(type, index);
 }
 
+void MetaModelWidget::FastConfidence()
+{
+    MoCoConfig config;
+
+    qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble() / 100);
+    qreal error = m_model.data()->SumofSquares();
+    config.maxerror = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    config.optimizer_config = m_model->getOptimizerConfig();
+    config.fisher_statistic = true;
+    config.confidence = qApp->instance()->property("p_value").toDouble();
+    ModelComparison* statistic = new ModelComparison(config, this);
+    statistic->setModel(m_model);
+    bool series = qApp->instance()->property("series_confidence").toBool();
+    statistic->FastConfidence(series);
+    m_model->UpdateStatistic(statistic->Result());
+    m_fast_confidence = statistic->Results();
+    delete statistic;
+}
+
 void MetaModelWidget::MCStatistic(MCConfig config)
 {
     Waiter wait;
@@ -183,6 +210,7 @@ void MetaModelWidget::Reduction()
 
     connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
     connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
+    connect(statistic, &AbstractSearchClass::setMaximumSteps, this, &MetaModelWidget::MaximumSteps);
 
     statistic->setModel(m_model);
     statistic->PlainReduction();
@@ -198,9 +226,12 @@ void MetaModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
     ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
     connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
     connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
+    connect(statistic, &AbstractSearchClass::setMaximumSteps, this, &MetaModelWidget::MaximumSteps, Qt::DirectConnection);
+
     statistic->setModel(m_model);
     statistic->CrossValidation(type);
     LoadStatistic(statistic->Result(), statistic->Models());
+    emit Finished();
 
     delete statistic;
 }
@@ -215,8 +246,8 @@ void MetaModelWidget::MoCoStatistic(MoCoConfig config)
         config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
 
     ModelComparison* statistic = new ModelComparison(config, this);
-    /*if (m_fast_confidence.size())
-        statistic->setResults(m_fast_confidence);*/
+    if (m_fast_confidence.size())
+        statistic->setResults(m_fast_confidence);
     connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
     connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
 

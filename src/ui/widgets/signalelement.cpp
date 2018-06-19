@@ -21,23 +21,22 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 
-#include <QApplication>
-#include <QHeaderView>
+#include <QtCharts/QXYSeries>
 
+#include <QtCore/QDebug>
+
+#include <QtGui/QStandardItemModel>
+
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
+#include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
-
-#include <QtCharts/QXYSeries>
-
-#include <QStandardItemModel>
-
-#include <QDebug>
 
 #include "signalelement.h"
 

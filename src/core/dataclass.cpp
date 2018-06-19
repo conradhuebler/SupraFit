@@ -880,6 +880,7 @@ void DataClass::OverrideCheckedTable(DataTable* table)
     d.detach();
     d->m_dependent_model->setCheckedTable(table->CheckedTable());
     CheckedModelOverride();
+    DependentModelOverride();
 }
 
 void DataClass::addSystemParameter(int index, const QString& str, const QString& description, SystemParameter::Type type)
