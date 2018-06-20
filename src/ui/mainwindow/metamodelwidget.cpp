@@ -102,7 +102,7 @@ void MetaModelWidget::Minimize()
     Model()->setConnectType((MetaModel::ConnectType)m_type->currentIndex());
 
     thread->setModel(m_model, false);
-    Model()->DebugParameter();
+    //Model()->DebugParameter();
     thread->run();
     bool converged = thread->Converged();
     QJsonObject model;

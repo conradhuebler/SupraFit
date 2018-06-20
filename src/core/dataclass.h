@@ -121,7 +121,7 @@ public:
     void append(const QPointer<DataTable> table);
 
     void insertRow(const Vector& row);
-    void insertRow(const QVector<qreal>& row);
+    void insertRow(const QVector<qreal>& row, bool zero = false);
     void setRow(const QVector<qreal>& vector, int row);
     void setRow(const Vector& vector, int row);
     void setColumn(const QVector<qreal>& vector, int column);

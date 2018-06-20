@@ -371,8 +371,11 @@ QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
         // QStringList keys = localObject.keys();
         for (int j = 0; j < localcount; ++j) {
             QList<qreal> values = String2DoubleList(localObject["data"].toObject()[QString::number(j)].toString());
+            QList<qreal> checked = String2DoubleList(localObject["checked"].toObject()[QString::number(j)].toString());
+
             for (int k = 0; k < each_local; ++k) {
-                local[each_local * j + k] << values[k];
+                if (checked[k])
+                    local[each_local * j + k] << values[k];
             }
             if (i == 0)
                 int_keys << j;
@@ -409,6 +412,8 @@ QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
         for (int j = 0; j < each_local; ++j) {
             QJsonObject object;
             QJsonObject data;
+            if (local[each_local * i + j].size() == 0)
+                continue;
             data["raw"] = DoubleVec2String(local[each_local * i + j]);
             object["data"] = data;
             object["name"] = local_names[j];

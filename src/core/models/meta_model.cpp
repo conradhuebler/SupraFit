@@ -446,7 +446,6 @@ void MetaModel::PrepareTables()
 
     m_local_parameter->clear();
     QVector<QVector<qreal>> parameters(m_models.size(), QVector<qreal>(m_global_names.size() + m_local_names.size(), 0));
-    qDebug() << m_global_names << m_local_names;
     for (int i = 0; i < m_local_par.size(); ++i) {
         QPair<int, int> pair = m_local_par[i];
         qreal val;
@@ -470,12 +469,10 @@ void MetaModel::PrepareTables()
         parameters[index_model][index_parm] = val;
     }
     for (int i = 0; i < parameters.size(); ++i)
-        m_local_parameter->insertRow(parameters[i]);
+        m_local_parameter->insertRow(parameters[i], true);
 
-    m_local_parameter->Debug();
-
-    header = QStringList();
-
+    header = QStringList() << m_global_names << m_local_names;
+    m_local_parameter->setHeader(header);
     int size = 0;
     if (GlobalParameterSize())
         size = 1;
