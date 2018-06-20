@@ -110,6 +110,11 @@ public:
     virtual void CheckedModelOverride() override { DependentModelOverride(); }
 
     void DebugParameter() const;
+
+    inline QVector<QPair<qreal, QVector<CombinedParameter>>> CombinedGlobal() const { return m_combined_global; }
+
+    inline QVector<QPair<qreal, QVector<CombinedParameter>>> CombinedLocal() const { return m_combined_local; }
+
 private slots:
     void UpdateCalculated();
 

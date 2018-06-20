@@ -33,6 +33,7 @@
 #include "src/ui/dialogs/modeldialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/waiter.h"
+#include "src/ui/widgets/metamodelparameter.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/results/resultswidget.h"
 #include "src/ui/widgets/statisticwidget.h"
@@ -70,6 +71,8 @@ void MetaModelWidget::setUi()
     layout->addWidget(m_type, 0, 1);
 
     m_actions = new ModelActions;
+    m_metamodelparameter = new MetaModelParameter(m_model);
+    layout->addWidget(m_metamodelparameter, 1, 0, 1, 2);
 
     connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
     //connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
@@ -86,8 +89,8 @@ void MetaModelWidget::setUi()
     //connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &MetaModelWidget::Detailed);
 
-    layout->addWidget(m_actions, 1, 0, 1, 2);
-    layout->addWidget(m_statistic_widget, 2, 0, 1, 2);
+    layout->addWidget(m_actions, 2, 0, 1, 2);
+    layout->addWidget(m_statistic_widget, 3, 0, 1, 2);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
 
     setLayout(layout);

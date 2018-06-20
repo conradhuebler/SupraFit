@@ -149,6 +149,7 @@ void MetaModel::ApplyConnectType()
         }
         m_series_count = m_models.size();
     }
+    qDebug() << m_combined_global;
 }
 
 QVector<qreal> MetaModel::OptimizeParameters_Private()

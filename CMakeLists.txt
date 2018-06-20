@@ -208,6 +208,7 @@ set(suprafit_SRCS
                 src/ui/dialogs/chartconfig.cpp
                 src/ui/dialogs/resultsdialog.cpp
                 src/ui/dialogs/thermogram.cpp
+                src/ui/widgets/metamodelparameter.cpp
                 src/ui/widgets/parameterwidget.cpp
                 src/ui/widgets/optimizerwidget.cpp
                 src/ui/widgets/results/contourwidget.cpp

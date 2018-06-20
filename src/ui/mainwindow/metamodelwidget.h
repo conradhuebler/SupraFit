@@ -31,6 +31,7 @@
 
 #include "src/core/models.h"
 
+class MetaModelParameter;
 class ModalDialog;
 class ModelActions;
 class ResultsDialog;
@@ -64,6 +65,7 @@ private:
     ModalDialog *m_dialogs, *m_table_result;
     StatisticWidget* m_statistic_widget;
     ResultsDialog* m_results;
+    MetaModelParameter* m_metamodelparameter;
     QList<QJsonObject> m_fast_confidence;
 
     void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models);
