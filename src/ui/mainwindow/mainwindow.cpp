@@ -34,8 +34,7 @@
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
-#include <QDebug>
-
+#include <QtCore/QDebug>
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
 #include <QtCore/QSharedPointer>
@@ -43,12 +42,12 @@
 #include <QtCore/QWeakPointer>
 
 #include <QtWidgets/QAction>
-#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QMessageBox>
@@ -94,7 +93,8 @@ MainWindow::MainWindow()
     m_history_dock->setMinimumWidth(240);
     m_history_dock->setToolTip(tr("This widget contains the <strong>stack</strong>, where <strong>models</strong> appear!"));
 
-    addDockWidget(Qt::LeftDockWidgetArea, m_history_dock, Qt::Horizontal);
+    //addDockWidget(Qt::LeftDockWidgetArea, m_history_dock, Qt::Horizontal);
+#warning lets have sometimes something else than this history dock
     addDockWidget(Qt::LeftDockWidgetArea, m_modeldock, Qt::Horizontal);
     addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
 

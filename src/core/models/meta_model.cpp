@@ -383,6 +383,11 @@ void MetaModel::UpdateCalculated()
 
 void MetaModel::IndependentModelOverride()
 {
+    int pred = 0;
+    for (int i = 0; i < m_models.size(); ++i) {
+        m_models[i].data()->OverrideInDependentTable(IndependentModel()->Block(pred, 0, m_models[i]->IndependentModel()->rowCount(), 1));
+        pred += m_models[i]->IndependentModel()->rowCount();
+    }
 }
 
 void MetaModel::DependentModelOverride()
@@ -440,25 +445,34 @@ void MetaModel::PrepareTables()
     QStringList header;
 
     m_local_parameter->clear();
-    QVector<QVector<qreal>> parameters(SeriesCount());
+    QVector<QVector<qreal>> parameters(m_models.size(), QVector<qreal>(m_global_names.size() + m_local_names.size(), 0));
     for (int i = 0; i < m_local_par.size(); ++i) {
         QPair<int, int> pair = m_local_par[i];
         qreal val;
-        int index = 0;
+        int index_model = 0;
+        int index_parm = 0;
         if (pair.first == 0) {
             val = m_combined_global[pair.second].first;
-            index = m_combined_global[pair.second].second.first().first;
+            index_model = m_combined_global[pair.second].second.first().first;
+            QString name = m_models[index_model]->GlobalParameterName(m_combined_global[pair.second].second[0].second.first);
+            index_parm = m_global_names.indexOf(name);
+
         } else {
             val = m_combined_local[pair.second].first;
-            index = m_combined_local[pair.second].second.first().first;
+            index_model = m_combined_local[pair.second].second.first().first;
+            QString name = m_models[index_model]->LocalParameterName(m_combined_local[pair.second].second[0].second.first);
+            index_parm = m_global_names.size() + m_local_names.indexOf(name);
         }
-        parameters[index] << val;
+        if (index_parm == -1 || index_model == -1)
+            continue;
+
+        parameters[index_model][index_parm] = val;
     }
     for (int i = 0; i < parameters.size(); ++i)
-        m_local_parameter->insertRow(parameters[i]);
+        m_local_parameter->insertRow(parameters[i], true);
 
-    header = QStringList();
-
+    header = QStringList() << m_global_names << m_local_names;
+    m_local_parameter->setHeader(header);
     int size = 0;
     if (GlobalParameterSize())
         size = 1;
@@ -508,4 +522,18 @@ QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
     return model;
 }
 
+void MetaModel::DebugParameter() const
+{
+    //qDebug() << m_global_names;
+    //qDebug() << m_combined_global;
+    for (int i = 0; i < m_combined_global.size(); ++i) {
+        qDebug() << m_combined_global[i].first;
+        for (int j = 0; j < m_combined_global[i].second.size(); ++j) {
+            int model = m_combined_global[i].second[j].first;
+            qDebug() << m_combined_global[i].second[j].second;
+            //int index = m_combined_global[i].second[j].second;
+            //m_models[model]->GlobalParameterName(index);
+        }
+    }
+}
 #include "meta_model.moc"

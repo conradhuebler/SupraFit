@@ -20,10 +20,11 @@
 #include "src/ui/widgets/buttons/scientificbox.h"
 #include "src/ui/widgets/optimizerwidget.h"
 
+#include <QtCharts/QChart>
+
 #include <QtCore/QThread>
 
-#include <QApplication>
-
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialogButtonBox>
@@ -35,7 +36,6 @@
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTabWidget>
 
-#include <QtCharts/QChart>
 
 #include "configdialog.h"
 

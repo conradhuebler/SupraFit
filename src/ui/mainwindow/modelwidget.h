@@ -33,18 +33,18 @@
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/mainwindow/chartwidget.h"
 
-#include <QApplication>
+#include <QtCharts/QLineSeries>
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 
-#include <QtCharts/QLineSeries>
 
 class AbstractSearchClass;
 

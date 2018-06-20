@@ -406,7 +406,7 @@ void DataTable::insertRow(const Vector& row)
     }
 }
 
-void DataTable::insertRow(const QVector<qreal>& row)
+void DataTable::insertRow(const QVector<qreal>& row, bool zero)
 {
     QReadLocker locker(&mutex);
     while (m_header.size() < row.size())
@@ -422,7 +422,10 @@ void DataTable::insertRow(const QVector<qreal>& row)
 
     for (int i = 0; i < row.size(); ++i) {
         m_table(m_table.rows() - 1, i) = row[i];
-        m_checked_table(m_checked_table.rows() - 1, i) = 1;
+        if (zero)
+            m_checked_table(m_checked_table.rows() - 1, i) = row[i] != 0;
+        else
+            m_checked_table(m_checked_table.rows() - 1, i) = 1;
     }
 }
 
@@ -879,6 +882,7 @@ void DataClass::OverrideCheckedTable(DataTable* table)
 {
     d.detach();
     d->m_dependent_model->setCheckedTable(table->CheckedTable());
+    CheckedModelOverride();
     DependentModelOverride();
 }
 

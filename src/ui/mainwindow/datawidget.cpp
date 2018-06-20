@@ -22,12 +22,11 @@
 #include "src/ui/widgets/signalelement.h"
 #include "src/ui/widgets/systemparameterwidget.h"
 
-#include <QApplication>
-#include <QDebug>
-#include <QSettings>
-
+#include <QtCore/QDebug>
+#include <QtCore/QSettings>
 #include <QtCore/QTimer>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QDoubleSpinBox>

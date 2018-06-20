@@ -25,15 +25,15 @@
 
 #include "src/ui/guitools/waiter.h"
 
-#include <QApplication>
-
 #include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 #include <QtCore/QJsonObject>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QPointer>
 #include <QtCore/QThreadPool>
 #include <QtCore/QTimer>
 
-#include <QtCore/QPointer>
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QDoubleSpinBox>
@@ -44,7 +44,6 @@
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
 
-#include <QDebug>
 #include <iostream>
 
 #include "advancedsearch.h"

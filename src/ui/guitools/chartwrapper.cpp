@@ -21,9 +21,10 @@
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
 
-#include <QStandardItemModel>
 #include <QtCharts/QAbstractSeries>
 #include <QtCharts/QBoxPlotSeries>
+
+#include <QtGui/QStandardItemModel>
 
 #include "chartwrapper.h"
 

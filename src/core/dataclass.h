@@ -121,7 +121,7 @@ public:
     void append(const QPointer<DataTable> table);
 
     void insertRow(const Vector& row);
-    void insertRow(const QVector<qreal>& row);
+    void insertRow(const QVector<qreal>& row, bool zero = false);
     void setRow(const QVector<qreal>& vector, int row);
     void setRow(const Vector& vector, int row);
     void setColumn(const QVector<qreal>& vector, int column);
@@ -266,14 +266,17 @@ public:
     inline QList<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QList<qreal>& scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList& strlist);
-    void OverrideInDependentTable(DataTable* table);
 
+    void OverrideInDependentTable(DataTable* table);
     virtual void IndependentModelOverride() {}
+
     void OverrideDependentTable(DataTable* table);
 
     virtual void DependentModelOverride() {}
 
+    virtual void CheckedModelOverride() {}
     void OverrideCheckedTable(DataTable* table);
+
     /*! \brief Add a system parameter to the current model
      */
     void addSystemParameter(int index, const QString& str, const QString& description, SystemParameter::Type type);

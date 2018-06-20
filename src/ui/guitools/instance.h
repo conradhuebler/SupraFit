@@ -18,10 +18,11 @@
 
 #pragma once
 
-#include <QtGui/QIcon>
-#include <QtWidgets/QApplication>
-
 #include <QtCore/QObject>
+
+#include <QtGui/QIcon>
+
+#include <QtWidgets/QApplication>
 
 template <class T>
 class InstancePointer {
