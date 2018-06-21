@@ -37,15 +37,16 @@ int ParameterTree::columnCount(const QModelIndex& parent) const
 int ParameterTree::rowCount(const QModelIndex& parent) const
 {
 
-    int count = 0;
-    int* pos = static_cast<int*>(parent.internalPointer());
+   int count = 0;
+   int* pos = static_cast<int*>(parent.internalPointer());
 
-    if (!parent.isValid())
-        count = m_model.data()->GlobalParameterSize() + m_model.data()->LocalParameterSize();
-    else if (pos == zero)
-        count = (m_model.data()->CombinedGlobal() << m_model.data()->CombinedLocal())[parent.row()].second.size();
-    else
-        count = 0;
+   if(!parent.isValid())
+       count = m_model.data()->GlobalParameterSize() + m_model.data()->LocalParameterSize();
+   else if (pos == zero)
+       count = (m_model.data()->CombinedGlobal() << m_model.data()->CombinedLocal())[parent.row()].second.size();
+   else
+       count = 0;
+
 
     return count;
 }
@@ -59,13 +60,13 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
     int* pos = static_cast<int*>(index.internalPointer());
 
     if (role == Qt::DisplayRole) {
-        qDebug() << pos << *pos;
         if (pos == zero)
             data = (m_model.data()->CombinedGlobal() << m_model.data()->CombinedLocal())[index.row()].first;
-        else if (pos == one)
+        else if(pos == one)
             data = QString("one"); //Model2Name(qobject_cast<AbstractModel*>(dataclass)->SFModel());
         else
             data = QString("two");
+
     }
     return data;
 }
@@ -85,6 +86,7 @@ QModelIndex ParameterTree::index(int row, int column, const QModelIndex& parent)
     else
         index = createIndex(row, column, two);
 
+
     return index;
 }
 
@@ -94,7 +96,9 @@ QModelIndex ParameterTree::parent(const QModelIndex& child) const
 
     if (!child.isValid())
         return index;
-
+    
+    qDebug() << child.row() << child.column() << 
+    
     return index;
 }
 

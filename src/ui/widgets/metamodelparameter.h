@@ -33,7 +33,7 @@ public:
     inline ParameterTree(QWeakPointer<MetaModel> model)
     {
         m_model = model;
-        zero = new int(0);
+        zero = new int(-1);
         one = new int(1);
         two = new int(2);
     }
