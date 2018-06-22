@@ -68,6 +68,12 @@ private:
         return model;
     }
 
+    inline QSharedPointer<AbstractModel> Test22Model(QPointer<DataClass> data)
+    {
+        QSharedPointer<AbstractModel> model = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(data), &QObject::deleteLater);
+        return model;
+    }
+
     void Test(QSharedPointer<AbstractModel> model);
 
     QPointer<const DataClass> m_data;

@@ -105,16 +105,24 @@ bool Console::FullTest()
         QSharedPointer<AbstractModel> model_1to2 = Test1112Model(data);
         Test(model_1to2);
 
+        QSharedPointer<AbstractModel> model_2to2 = Test22Model(data);
+        Test(model_2to2);
+
         QJsonObject toplevel, dataObject;
         dataObject = data->ExportData();
 
         toplevel["model_0"] = model_1to1->ExportModel();
-        ;
+
         toplevel["model_1"] = model_2to1->ExportModel();
-        ;
+
         toplevel["model_2"] = model_1to2->ExportModel();
-        ;
+
+        toplevel["model_3"] = model_2to2->ExportModel();
+
+
         toplevel["data"] = dataObject;
+
+
         if (JsonHandler::WriteJsonFile(toplevel, m_file + "_" + QString::number(i) + ".suprafit"))
             std::cout << QString(m_file + "_" + QString::number(i) + ".suprafit").toStdString() << " successfully written to disk" << std::endl;
 
