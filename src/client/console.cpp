@@ -55,7 +55,7 @@ bool Console::LoadFile(const QString& file)
     m_file = file;
     QJsonObject m_toplevel;
     if (JsonHandler::ReadJsonFile(m_toplevel, m_file)) {
-        m_data = new DataClass(m_toplevel);
+        m_data = new DataClass(m_toplevel["data"].toObject());
         if (m_data->DataPoints() != 0) {
 #ifdef _DEBUG
             qDebug() << m_file << " successfully loaded";
