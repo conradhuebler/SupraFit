@@ -28,7 +28,7 @@
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 
-typedef QPair<int, QPair<int, int>> CombinedParameter;
+typedef QPair<qreal, QVector<QVector<int>>> MMParameter;
 
 class MetaModel : public AbstractModel {
     Q_OBJECT
@@ -111,9 +111,7 @@ public:
 
     void DebugParameter() const;
 
-    inline QVector<QPair<qreal, QVector<CombinedParameter>>> CombinedGlobal() const { return m_combined_global; }
-
-    inline QVector<QPair<qreal, QVector<CombinedParameter>>> CombinedLocal() const { return m_combined_local; }
+    // inline QVector<MMParameter> *CombinedParameter() const { return &m_mmparameter; }
 
 private slots:
     void UpdateCalculated();
@@ -125,8 +123,12 @@ private:
     int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0, m_unique_global = 0, m_unique_local = 0, m_unique_series = 0;
     QVector<QVector<QPair<int, int>>> m_global_index, m_local_index;
     QStringList m_global_names, m_local_names;
-    QVector<QPair<qreal, QVector<CombinedParameter>>> m_combined_local, m_combined_global;
-    QVector<QPair<int, int>> m_global_par, m_local_par;
+
+    QVector<MMParameter> m_mmparameter;
+
+    QVector<QVector<int>> m_indicies;
+
+    QVector<int> m_global_par, m_local_par;
 
     SupraFit::Model m_model_type;
     ConnectType m_connect_type = ConnectType::None;

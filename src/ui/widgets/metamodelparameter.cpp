@@ -38,15 +38,18 @@ int ParameterTree::rowCount(const QModelIndex& parent) const
 {
 
     int count = 0;
-    int* pos = static_cast<int*>(parent.internalPointer());
-
+    /*
     if (!parent.isValid())
-        count = m_model.data()->GlobalParameterSize() + m_model.data()->LocalParameterSize();
-    else if (pos == zero)
-        count = (m_model.data()->CombinedGlobal() << m_model.data()->CombinedLocal())[parent.row()].second.size();
-    else
-        count = 0;
+        count = m_model.data()->CombinedParameter().size();
+    else{
+        qreal * pos = static_cast<qreal *>(parent.internalPointer());
 
+        if(pos == m_null)
+            count = m_model.data()->CombinedParameter()[parent.row()].second.size();
+        else
+            count = 0;
+    }
+    */
     return count;
 }
 
@@ -56,16 +59,14 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return data;
 
-    int* pos = static_cast<int*>(index.internalPointer());
+    qreal* pos = static_cast<qreal*>(index.internalPointer());
 
     if (role == Qt::DisplayRole) {
-        qDebug() << pos << *pos;
-        if (pos == zero)
-            data = (m_model.data()->CombinedGlobal() << m_model.data()->CombinedLocal())[index.row()].first;
-        else if (pos == one)
-            data = QString("one"); //Model2Name(qobject_cast<AbstractModel*>(dataclass)->SFModel());
+        qDebug() << *pos << pos;
+        if (pos == m_null)
+            data = "1"; //m_model.data()->CombinedParameter()[index.row()].first;
         else
-            data = QString("two");
+            data = "blub";
     }
     return data;
 }
@@ -73,18 +74,18 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
 QModelIndex ParameterTree::index(int row, int column, const QModelIndex& parent) const
 {
     QModelIndex index;
+
     if (!hasIndex(row, column, parent))
         index = QModelIndex();
 
-    int* pos = static_cast<int*>(parent.internalPointer());
-
-    if (pos == NULL)
-        index = createIndex(row, column, zero);
-    else if (pos == zero)
-        index = createIndex(row, column, one);
-    else
-        index = createIndex(row, column, two);
-
+    if (!parent.isValid()) {
+        index = createIndex(row, column, m_null);
+    } else {
+        //  qDebug() << parent.row() << row << &m_model.data()->CombinedParameter()[parent.row()].first << m_model.data()->CombinedParameter()[parent.row()].first;
+        //  QVector<MMParameter> parm = m_model.data()->CombinedParameter();
+        //qreal *value = &parm[parent.row()].first;
+        //index = createIndex(row, column, value);
+    }
     return index;
 }
 
@@ -94,7 +95,20 @@ QModelIndex ParameterTree::parent(const QModelIndex& child) const
 
     if (!child.isValid())
         return index;
-
+    /*
+    qreal * pos = static_cast<qreal *>(child.internalPointer());
+    if(pos != m_null)
+    {
+        for(int i = 0; i < m_model.data()->CombinedParameter().size(); ++i)
+        {
+            for(int j = 0; j < m_model.data()->CombinedParameter()[i].second.size(); ++j)
+                if(&m_model.data()->CombinedParameter()[i].first == pos)
+                {
+                    index = createIndex(i, 0, m_null);
+                }
+        }
+    }
+    */
     return index;
 }
 

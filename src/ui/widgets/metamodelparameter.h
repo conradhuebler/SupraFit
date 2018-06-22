@@ -33,16 +33,14 @@ public:
     inline ParameterTree(QWeakPointer<MetaModel> model)
     {
         m_model = model;
-        zero = new int(-1);
-        one = new int(1);
-        two = new int(2);
+        m_null = &null;
+        m_zero = new QVector<int>;
+        (*m_zero) = { -1, -1, -1, -1 };
     }
 
     inline ~ParameterTree()
     {
-        delete zero;
-        delete one;
-        delete two;
+        delete m_zero;
     }
 
     Qt::ItemFlags flags(const QModelIndex& index) const override
@@ -74,7 +72,9 @@ public:
 
 private:
     QWeakPointer<MetaModel> m_model;
-    int *zero, *one, *two;
+    QVector<int>* m_zero;
+    qreal null = -1;
+    qreal* m_null;
 };
 
 class MetaModelParameter : public QWidget {
