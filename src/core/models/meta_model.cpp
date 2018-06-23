@@ -84,6 +84,8 @@ qreal MetaModel::LocalParameter(int parameter, int series) const
 
 void MetaModel::ApplyConnectType()
 {
+    if (m_connect_type == ConnectType::Custom)
+        return;
 
     m_mmparameter.clear();
 
@@ -173,10 +175,15 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
 
     ApplyConnectType();
 
+    return CollectParameter();
+}
+
+QVector<qreal> MetaModel::CollectParameter()
+{
+
     m_opt_para.clear();
     m_global_par.clear();
     m_local_par.clear();
-
     QVector<qreal> param;
 
     for (int i = 0; i < m_mmparameter.size(); ++i) {
@@ -516,4 +523,28 @@ QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
 void MetaModel::DebugParameter() const
 {
 }
+
+void MetaModel::MoveParameterList(int source, int destination)
+{
+    if (source < m_mmparameter.size() && destination < m_mmparameter.size()) {
+        MMParameter parameter = m_mmparameter[source];
+        for (int i = 0; i < parameter.second.size(); ++i)
+            m_mmparameter[destination].second << parameter.second[i];
+        m_mmparameter.takeAt(source);
+    }
+    CollectParameter();
+    emit ParameterMoved();
+}
+
+void MetaModel::MoveSingleParameter(int parameter_index_1, int parameter_index_2, int destination)
+{
+    if (parameter_index_1 < m_mmparameter.size() && destination < m_mmparameter.size()) {
+        MMParameter parameter = m_mmparameter[parameter_index_1];
+        m_mmparameter[destination].second << parameter.second[parameter_index_2];
+        m_mmparameter[parameter_index_1].second.takeAt(parameter_index_2);
+    }
+    CollectParameter();
+    emit ParameterMoved();
+}
+
 #include "meta_model.moc"

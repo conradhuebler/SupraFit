@@ -21,6 +21,7 @@
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
+#include <QtCore/QMimeData>
 #include <QtCore/QSharedPointer>
 
 #include <QtWidgets/QWidget>
@@ -34,31 +35,27 @@ public:
     {
         m_model = model;
         m_null = &null;
-        m_zero = new QVector<int>;
-        (*m_zero) = { -1, -1, -1, -1 };
     }
 
     inline ~ParameterTree()
     {
-        delete m_zero;
     }
 
     Qt::ItemFlags flags(const QModelIndex& index) const override
     {
-        Q_UNUSED(index);
-        Qt::ItemFlags flags;
-        //if (m_checkable)
-        flags = Qt::ItemIsDragEnabled | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
-        //else
-        //    flags = Qt::ItemIsEnabled;
-
-        return flags;
+        if (!index.isValid())
+            return 0;
+        return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | QAbstractItemModel::flags(index);
     }
 
-    /* Qt::DropActions supportedDragActions() const override
+    Qt::DropActions supportedDropActions() const override
     {
+        return Qt::CopyAction | Qt::MoveAction;
+    }
 
-    }*/
+    QMimeData* mimeData(const QModelIndexList& indexes) const override;
+
+    virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
 
     virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
@@ -70,9 +67,10 @@ public:
 
     virtual QModelIndex parent(const QModelIndex& child) const override;
 
+    virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const { return true; }
+
 private:
     QWeakPointer<MetaModel> m_model;
-    QVector<int>* m_zero;
     qreal null = -1;
     qreal* m_null;
 };

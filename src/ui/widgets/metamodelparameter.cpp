@@ -21,6 +21,7 @@
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
+#include <QtCore/QMimeData>
 #include <QtCore/QSharedPointer>
 
 #include <QtWidgets/QGridLayout>
@@ -38,7 +39,7 @@ int ParameterTree::rowCount(const QModelIndex& parent) const
 {
 
     int count = 0;
-    /*
+
     if (!parent.isValid())
         count = m_model.data()->CombinedParameter().size();
     else{
@@ -49,8 +50,64 @@ int ParameterTree::rowCount(const QModelIndex& parent) const
         else
             count = 0;
     }
-    */
+
     return count;
+}
+
+QMimeData* ParameterTree::mimeData(const QModelIndexList& indexes) const
+{
+    QMimeData* mimeData = new QMimeData();
+
+    QString data;
+
+    for (const QModelIndex& index : qAsConst(indexes)) {
+        if (index.isValid()) {
+
+            qreal* pos = static_cast<qreal*>(index.internalPointer());
+
+            if (pos == m_null)
+                data = QString::number(index.row()) + " -1";
+            else {
+                for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
+                    if (pos == &m_model.data()->CombinedParameter(i)->first) {
+                        data = QString::number(i) + " " + QString::number(index.row());
+                    }
+                }
+            }
+        }
+    }
+    mimeData->setText(data);
+    return mimeData;
+}
+
+bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+{
+    QString string = data->text();
+
+    qreal* pos = static_cast<qreal*>(parent.internalPointer());
+    int parameter;
+    if (pos == m_null)
+        parameter = parent.row();
+    else {
+        for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
+            if (pos == &m_model.data()->CombinedParameter(i)->first) {
+                parameter = i;
+            }
+        }
+    }
+
+    QStringList list = string.split(" ");
+    if (list.size() != 2)
+        return false;
+
+    if (list[1].toInt() == -1) {
+        m_model.data()->MoveParameterList(list[0].toInt(), parameter);
+    } else
+        m_model.data()->MoveSingleParameter(list[0].toInt(), list[1].toInt(), parameter);
+
+    layoutChanged();
+
+    return true;
 }
 
 QVariant ParameterTree::data(const QModelIndex& index, int role) const
@@ -62,11 +119,23 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
     qreal* pos = static_cast<qreal*>(index.internalPointer());
 
     if (role == Qt::DisplayRole) {
-        qDebug() << *pos << pos;
         if (pos == m_null)
-            data = "1"; //m_model.data()->CombinedParameter()[index.row()].first;
-        else
-            data = "blub";
+            data = m_model.data()->CombinedParameter()[index.row()].first;
+        else {
+            for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
+                if (pos == &m_model.data()->CombinedParameter(i)->first) {
+                    const MMParameter* param = m_model.data()->CombinedParameter(i);
+                    QSharedPointer<AbstractModel> model = m_model.data()->Models()[param->second[index.row()][0]];
+                    QString name;
+
+                    if (param->second[index.row()][1] == 0)
+                        name = model->GlobalParameterName(param->second[index.row()][2]);
+                    else
+                        name = model->LocalParameterName(param->second[index.row()][2]);
+                    data = model->ProjectTitle() + ":" + model->Name() + " " + name;
+                }
+            }
+        }
     }
     return data;
 }
@@ -81,10 +150,8 @@ QModelIndex ParameterTree::index(int row, int column, const QModelIndex& parent)
     if (!parent.isValid()) {
         index = createIndex(row, column, m_null);
     } else {
-        //  qDebug() << parent.row() << row << &m_model.data()->CombinedParameter()[parent.row()].first << m_model.data()->CombinedParameter()[parent.row()].first;
-        //  QVector<MMParameter> parm = m_model.data()->CombinedParameter();
-        //qreal *value = &parm[parent.row()].first;
-        //index = createIndex(row, column, value);
+        qreal* value = const_cast<qreal*>(&m_model.data()->CombinedParameter(parent.row())->first);
+        index = createIndex(row, column, value);
     }
     return index;
 }
@@ -95,20 +162,19 @@ QModelIndex ParameterTree::parent(const QModelIndex& child) const
 
     if (!child.isValid())
         return index;
-    /*
+
     qreal * pos = static_cast<qreal *>(child.internalPointer());
     if(pos != m_null)
     {
         for(int i = 0; i < m_model.data()->CombinedParameter().size(); ++i)
         {
             for(int j = 0; j < m_model.data()->CombinedParameter()[i].second.size(); ++j)
-                if(&m_model.data()->CombinedParameter()[i].first == pos)
-                {
+                if (&m_model.data()->CombinedParameter(i)->first == pos) {
                     index = createIndex(i, 0, m_null);
                 }
         }
     }
-    */
+
     return index;
 }
 
@@ -125,6 +191,12 @@ void MetaModelParameter::setUi()
     m_tree = new QTreeView;
     m_treemodel = new ParameterTree(m_model);
     m_tree->setModel(m_treemodel);
+
+    m_tree->setDragEnabled(true);
+
+    m_tree->setAcceptDrops(true);
+    m_tree->setDropIndicatorShown(true);
+    m_tree->setDragDropMode(QAbstractItemView::DragDrop);
 
     m_layout->addWidget(m_tree, 0, 0);
 

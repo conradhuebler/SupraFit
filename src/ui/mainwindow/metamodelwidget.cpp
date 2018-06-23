@@ -67,7 +67,9 @@ void MetaModelWidget::setUi()
 
     m_type = new QComboBox;
     m_type->addItems(QStringList() << "None"
-                                   << "All");
+                                   << "All"
+                                   << "Custom");
+
     layout->addWidget(m_type, 0, 1);
 
     m_actions = new ModelActions;
@@ -92,7 +94,7 @@ void MetaModelWidget::setUi()
     layout->addWidget(m_actions, 2, 0, 1, 2);
     layout->addWidget(m_statistic_widget, 3, 0, 1, 2);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
-
+    connect(Model(), &MetaModel::ParameterMoved, this, [this]() { m_type->setCurrentIndex(2); });
     setLayout(layout);
 }
 
@@ -105,7 +107,7 @@ void MetaModelWidget::Minimize()
     Model()->setConnectType((MetaModel::ConnectType)m_type->currentIndex());
 
     thread->setModel(m_model, false);
-    //Model()->DebugParameter();
+
     thread->run();
     bool converged = thread->Converged();
     QJsonObject model;

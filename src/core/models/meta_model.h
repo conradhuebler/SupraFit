@@ -40,8 +40,7 @@ public:
     enum ConnectType {
         None = 0,
         All = 1,
-        Dilution = 2,
-        Custom = 3
+        Custom = 2
     };
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::MetaModel; }
@@ -49,6 +48,8 @@ public:
     virtual inline void setConnectType(ConnectType type) { m_connect_type = type; }
 
     virtual QVector<qreal> OptimizeParameters_Private() override;
+
+    QVector<qreal> CollectParameter();
 
     virtual void InitialGuess_Private() override;
 
@@ -111,7 +112,13 @@ public:
 
     void DebugParameter() const;
 
-    // inline QVector<MMParameter> *CombinedParameter() const { return &m_mmparameter; }
+    inline QVector<MMParameter> CombinedParameter() const { return m_mmparameter; }
+
+    inline const MMParameter* CombinedParameter(int i) const { return &m_mmparameter[i]; }
+
+    void MoveParameterList(int source, int destination);
+
+    void MoveSingleParameter(int parameter_index_1, int parameter_index_2, int destination);
 
 private slots:
     void UpdateCalculated();
@@ -138,4 +145,5 @@ protected:
 
 signals:
     void ModelAdded(QSharedPointer<AbstractModel> model);
+    void ParameterMoved();
 };
