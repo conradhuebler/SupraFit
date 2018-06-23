@@ -542,6 +542,8 @@ void MetaModel::MoveSingleParameter(int parameter_index_1, int parameter_index_2
         MMParameter parameter = m_mmparameter[parameter_index_1];
         m_mmparameter[destination].second << parameter.second[parameter_index_2];
         m_mmparameter[parameter_index_1].second.takeAt(parameter_index_2);
+        if (m_mmparameter[parameter_index_1].second.size() == 0)
+            m_mmparameter.takeAt(parameter_index_1);
     }
     CollectParameter();
     emit ParameterMoved();

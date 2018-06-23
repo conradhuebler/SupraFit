@@ -24,6 +24,7 @@
 #include <QtCore/QMimeData>
 #include <QtCore/QSharedPointer>
 
+#include <QtWidgets/QStyledItemDelegate>
 #include <QtWidgets/QWidget>
 
 class QTreeView;
@@ -73,6 +74,18 @@ private:
     QWeakPointer<MetaModel> m_model;
     qreal null = -1;
     qreal* m_null;
+};
+
+class ModelParameterEntry : public QStyledItemDelegate {
+    Q_OBJECT
+public:
+    explicit ModelParameterEntry(QObject* parent = 0)
+        : QStyledItemDelegate(parent)
+    {
+    }
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const;
+
+private:
 };
 
 class MetaModelParameter : public QWidget {

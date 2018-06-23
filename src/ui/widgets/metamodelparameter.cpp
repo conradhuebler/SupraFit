@@ -24,6 +24,9 @@
 #include <QtCore/QMimeData>
 #include <QtCore/QSharedPointer>
 
+#include <QtGui/QPainter>
+#include <QtGui/QTextDocument>
+
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTreeView>
 
@@ -178,6 +181,26 @@ QModelIndex ParameterTree::parent(const QModelIndex& child) const
     return index;
 }
 
+void ModelParameterEntry::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    QStyleOptionViewItemV4 options = option;
+    initStyleOption(&options, index);
+
+    painter->save();
+
+    QTextDocument doc;
+    doc.setHtml(options.text);
+
+    options.text = "";
+    options.widget->style()->drawControl(QStyle::CE_ItemViewItem, &options, painter);
+
+    painter->translate(options.rect.left(), options.rect.top());
+    QRect clip(0, 0, options.rect.width(), options.rect.height());
+    doc.drawContents(painter, clip);
+
+    painter->restore();
+}
+
 MetaModelParameter::MetaModelParameter(QSharedPointer<AbstractModel> model)
 {
     m_model = qSharedPointerCast<MetaModel>(model);
@@ -197,7 +220,7 @@ void MetaModelParameter::setUi()
     m_tree->setAcceptDrops(true);
     m_tree->setDropIndicatorShown(true);
     m_tree->setDragDropMode(QAbstractItemView::DragDrop);
-
+    m_tree->setItemDelegate(new ModelParameterEntry());
     m_layout->addWidget(m_tree, 0, 0);
 
     setLayout(m_layout);
