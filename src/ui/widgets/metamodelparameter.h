@@ -46,8 +46,19 @@ public:
     {
         if (!index.isValid())
             return 0;
-        return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | QAbstractItemModel::flags(index);
+
+        Qt::ItemFlags flag;
+
+        qreal* pos = static_cast<qreal*>(index.internalPointer());
+        bool ok = false;
+        index.data(Qt::DisplayRole).toDouble(&ok);
+        if (pos == m_null && ok)
+            flag = Qt::ItemIsEditable;
+
+        return flag | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | QAbstractItemModel::flags(index);
     }
+
+    virtual bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
     Qt::DropActions supportedDropActions() const override
     {

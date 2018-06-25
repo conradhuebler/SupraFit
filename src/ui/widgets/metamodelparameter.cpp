@@ -121,7 +121,7 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
 
     qreal* pos = static_cast<qreal*>(index.internalPointer());
 
-    if (role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole || role == Qt::EditRole) {
         if (pos == m_null)
             data = m_model.data()->CombinedParameter()[index.row()].first;
         else {
@@ -141,6 +141,21 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
         }
     }
     return data;
+}
+
+bool ParameterTree::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    qreal* pos = static_cast<qreal*>(index.internalPointer());
+
+    if (role != Qt::EditRole || pos != m_null)
+        return false;
+
+    m_model.data()->SetSingleParameter(value.toDouble(), index.row());
+    m_model.data()->Calculate();
+
+    emit dataChanged(index, index);
+
+    return true;
 }
 
 QModelIndex ParameterTree::index(int row, int column, const QModelIndex& parent) const

@@ -154,15 +154,18 @@ void AbstractModel::clearOptParameter()
 
 void AbstractModel::setGlobalParameter(double value, int parameter)
 {
-    (*GlobalTable())[parameter] = value;
+    if (GlobalParameter()->isChecked(parameter, 0))
+        (*GlobalTable())[parameter] = value;
 }
 
 void AbstractModel::setGlobalParameter(const QPointer<DataTable> list)
 {
     if (list->columnCount() != GlobalTable()->columnCount())
         return;
-    for (int i = 0; i < list->columnCount(); ++i)
-        (*GlobalTable())[i] = (*list)[i];
+    for (int i = 0; i < list->columnCount(); ++i) {
+        if (GlobalParameter()->isChecked(i, 0))
+            (*GlobalTable())[i] = (*list)[i];
+    }
 }
 
 void AbstractModel::setGlobalParameter(const QList<qreal>& list)
@@ -409,18 +412,21 @@ QVector<qreal> AbstractModel::getLocalParameterColumn(int parameter) const
 
 void AbstractModel::setLocalParameter(qreal value, const QPair<int, int>& pair)
 {
-    LocalTable()->data(pair.first, pair.second) = value;
+    if (LocalTable()->isChecked(pair.first, pair.second))
+        LocalTable()->data(pair.first, pair.second) = value;
 }
 
 void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
-    LocalTable()->data(parameter, series) = value;
+    if (LocalTable()->isChecked(parameter, series))
+        LocalTable()->data(parameter, series) = value;
 }
 
 qreal AbstractModel::LocalParameter(const QPair<int, int>& pair) const
 {
     return LocalTable()->data(pair.first, pair.second);
 }
+
 void AbstractModel::setLocalParameterColumn(const QVector<qreal>& vector, int parameter)
 {
     if (parameter < LocalTable()->columnCount())
