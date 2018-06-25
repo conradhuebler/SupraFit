@@ -55,6 +55,7 @@
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QSplitter>
+#include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
@@ -205,6 +206,10 @@ SupraFitGui::SupraFitGui()
 
     m_layout->addWidget(m_project_view, 0, 0);
 
+    m_stack_widget = new QStackedWidget;
+
+    m_layout->addWidget(m_stack_widget, 0, 1);
+
     m_project_view->setMaximumWidth(200);
 
     setCentralWidget(widget);
@@ -277,7 +282,10 @@ SupraFitGui::SupraFitGui()
                   "}");
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeClicked);
+
     m_project_view->hide();
+    m_stack_widget->hide();
+
     //connect(m_project_view, &QTreeView::customContextMenuRequested, this, &SupraFitGui::ContextMenu);
     //connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeRemoveRequest);
 }
@@ -319,6 +327,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         return false;
 
     m_project_view->show();
+    m_stack_widget->show();
 
     QString name = data.data()->ProjectTitle();
     if (name.isEmpty() || name.isNull()) {
@@ -327,7 +336,9 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     }
     window->setWindowFlags(Qt::Widget);
 
-    m_layout->addWidget(window, 0, 1);
+    //m_layout->addWidget(window, 0, 1);
+    m_stack_widget->addWidget(window);
+    m_stack_widget->setCurrentWidget(window);
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
         m_project_tree->layoutChanged();
     });
@@ -624,9 +635,6 @@ bool SupraFitGui::eventFilter(QObject* obj, QEvent* event)
 
 void SupraFitGui::TreeClicked(const QModelIndex& index)
 {
-    for (int i = 0; i < m_project_list.size(); ++i)
-        m_project_list[i]->hide();
-
     int widget = 0;
     int tab = -1;
     if (m_project_tree->parent(index).isValid()) {
@@ -635,7 +643,7 @@ void SupraFitGui::TreeClicked(const QModelIndex& index)
     } else {
         widget = index.row();
     }
-    m_project_list[widget]->show();
+    m_stack_widget->setCurrentWidget(m_project_list[widget]);
     m_project_list[widget]->setCurrentTab(tab + 1);
 }
 
@@ -651,6 +659,7 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
     } else {
         widget = index.row();
         MainWindow* mainwindow = m_project_list.takeAt(widget);
+        m_stack_widget->removeWidget(mainwindow);
         delete mainwindow;
     }
 

@@ -34,6 +34,7 @@ class QGridLayout;
 class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
+class QStackedWidget;
 class QToolBar;
 class QTabWidget;
 class QTreeView;
@@ -134,6 +135,7 @@ private:
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
     QPointer<QGridLayout> m_layout;
+    QStackedWidget* m_stack_widget;
     QWeakPointer<MetaModel> m_meta_model;
 
 private slots:
