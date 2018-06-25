@@ -277,6 +277,7 @@ SupraFitGui::SupraFitGui()
                   "}");
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeClicked);
+    m_project_view->hide();
     //connect(m_project_view, &QTreeView::customContextMenuRequested, this, &SupraFitGui::ContextMenu);
     //connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeRemoveRequest);
 }
@@ -316,6 +317,9 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data)
         return false;
+
+    m_project_view->show();
+
     QString name = data.data()->ProjectTitle();
     if (name.isEmpty() || name.isNull()) {
         name = file;
@@ -324,12 +328,6 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     window->setWindowFlags(Qt::Widget);
 
     m_layout->addWidget(window, 0, 1);
-    /*
-    int index = m_central_widget->addTab(window, name);
-    connect(data.data(), &DataClass::NameChanged, m_central_widget, [index, this](const QString& name) {
-        m_central_widget->setTabText(index, name);
-    });*/
-    //connect(window, &MainWindow::ModelsChanged, this, &SupraFitGui::UpdateTreeView);
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
         m_project_tree->layoutChanged();
     });

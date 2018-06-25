@@ -120,6 +120,8 @@ bool FileHandler::CheckForTable()
     int size = 0;
 
     for (int i = 0; i < m_lines; ++i) {
+        if (m_filecontent[i].isEmpty())
+            continue;
         if (size)
             m_table = (size == m_filecontent[i].split(sep).size());
         size = m_filecontent[i].split(sep).size();
