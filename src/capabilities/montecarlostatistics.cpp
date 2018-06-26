@@ -172,9 +172,10 @@ bool MonteCarloStatistics::Evaluate()
     Collect(threads);
     if (m_models.size() == 0)
         return false;
-    m_results = ToolSet::Model2Parameter(m_models);
 
+    m_results = ToolSet::Model2Parameter(m_models);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
+
     return true;
 }
 

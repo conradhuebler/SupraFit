@@ -55,6 +55,15 @@ QString IntVec2String(const QVector<int>& vector, const QString& str)
     return string.left(string.length() - 1);
 }
 
+QString IntList2String(const QList<int>& vector, const QString& str)
+{
+    QString string;
+    for (int i = 0; i < vector.size(); ++i)
+        string += QString::number(vector[i]) + str;
+
+    return string.left(string.length() - 1);
+}
+
 QString DoubleList2String(const QList<qreal>& vector, const QString& str)
 {
     QString string;

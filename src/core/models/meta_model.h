@@ -79,6 +79,9 @@ public:
         m_converged = converged;
     }
 
+    virtual QString GlobalParameterName(int i = 0) const override;
+    virtual QString LocalParameterName(int i = 0) const override;
+
     void addModel(const QPointer<AbstractModel> model);
 
     inline QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }

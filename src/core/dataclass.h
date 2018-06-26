@@ -148,7 +148,7 @@ public:
     QString ExportAsString() const;
     QStringList ExportAsStringList() const;
 
-    QJsonObject ExportTable(bool checked) const;
+    QJsonObject ExportTable(bool checked, const QVector<int> checked_table = QVector<int>()) const;
     bool ImportTable(const QJsonObject& table);
 
 private:

@@ -658,7 +658,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     QJsonObject json, toplevel;
     QJsonObject optionObject;
 
-    json["globalParameter"] = GlobalTable()->ExportTable(true);
+    json["globalParameter"] = GlobalTable()->ExportTable(true, d->m_enabled_global);
 
     if (statistics) {
         QJsonObject statisticObject;
@@ -680,7 +680,8 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         json["statistics"] = statisticObject;
     }
 
-    json["localParameter"] = LocalTable()->ExportTable(true);
+    json["localParameter"] = LocalTable()->ExportTable(true, d->m_enabled_local);
+
     json["locked"] = ToolSet::IntVec2String(d->m_locked_parameters.toVector());
     for (int index : getAllOptions())
         optionObject[QString::number(index)] = getOption(index);

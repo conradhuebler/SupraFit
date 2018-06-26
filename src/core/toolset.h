@@ -37,6 +37,8 @@ namespace ToolSet {
 
 QString DoubleVec2String(const QVector<qreal>& vector, const QString& str = " ");
 QString IntVec2String(const QVector<int>& vector, const QString& str = " ");
+QString IntList2String(const QList<int>& vector, const QString& str = " ");
+
 QString DoubleList2String(const QList<qreal>& vector, const QString& str = " ");
 QString DoubleList2String(const Vector& vector, const QString& str = " ");
 QString Points2String(const QList<QPointF>& points);

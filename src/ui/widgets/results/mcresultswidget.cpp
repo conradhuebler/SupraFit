@@ -119,6 +119,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         QString name = data["name"].toString();
         qreal x_0 = data["value"].toDouble();
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
+
         QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, 500);
         LineSeries* xy_series = new LineSeries;
         if (data["type"] == "Local Parameter") {
@@ -130,11 +131,11 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this](const QColor& color) { this->setAreaColor(index, color); });
             */
-        } else
+        } else {
             //xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
-
-            for (int j = 0; j < histogram.size(); ++j) {
-                xy_series->append(QPointF(histogram[j].first, histogram[j].second));
+        }
+        for (int j = 0; j < histogram.size(); ++j) {
+            xy_series->append(QPointF(histogram[j].first, histogram[j].second));
         }
         if (histogram.size())
             has_histogram = true;
@@ -256,6 +257,7 @@ void MCResultsWidget::UpdateBoxes()
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
             area_series->setName(m_model->GlobalParameterName(i));
+#warning why is this always a global parameter?
         }
     }
 }

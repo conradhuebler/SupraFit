@@ -543,13 +543,16 @@ QVector<qreal> DataTable::toList() const
     return vector;
 }
 
-QJsonObject DataTable::ExportTable(bool checked) const
+QJsonObject DataTable::ExportTable(bool checked, const QVector<int> checked_table) const
 {
     QJsonObject table, data, check;
-
+    QString checkedstring = ToolSet::IntVec2String(checked_table);
     for (int i = 0; i < rowCount(); ++i) {
         data[QString::number(i)] = ToolSet::DoubleList2String(Row(i));
-        check[QString::number(i)] = ToolSet::DoubleList2String(m_checked_table.row(i));
+        if (checked_table.size() == m_checked_table.row(i).size())
+            check[QString::number(i)] = checkedstring;
+        else
+            check[QString::number(i)] = ToolSet::DoubleList2String(m_checked_table.row(i));
     }
 
     table["data"] = data;

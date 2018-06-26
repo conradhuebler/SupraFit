@@ -59,6 +59,46 @@ qreal MetaModel::GlobalParameter(int i) const
     return m_mmparameter[index].first;
 }
 
+QString MetaModel::GlobalParameterName(int j) const
+{
+    QString string = QString::number(j);
+    if (j >= m_global_par.size())
+        return string;
+    int index = m_global_par[j];
+    QStringList names;
+    QVector<QVector<int>> parameter = m_mmparameter[index].second;
+    for (int i = 0; i < parameter.size(); ++i) {
+        if (parameter[i][1] == 0)
+            names << m_models[parameter[i][0]]->GlobalParameterName(parameter[i][2]);
+        else
+            names << m_models[parameter[i][0]]->LocalParameterName(parameter[i][2]);
+    }
+    names.removeDuplicates();
+    string = names.join(" ");
+
+    return string;
+}
+
+QString MetaModel::LocalParameterName(int j) const
+{
+    QString string = QString::number(j);
+    if (j >= m_local_par.size())
+        return string;
+    int index = m_local_par[j];
+    QStringList names;
+    QVector<QVector<int>> parameter = m_mmparameter[index].second;
+    for (int i = 0; i < parameter.size(); ++i) {
+        if (parameter[i][1] == 0)
+            names << m_models[parameter[i][0]]->GlobalParameterName(parameter[i][2]);
+        else
+            names << m_models[parameter[i][0]]->LocalParameterName(parameter[i][2]);
+    }
+    names.removeDuplicates();
+    string = names.join(" ");
+
+    return string;
+}
+
 qreal MetaModel::LocalParameter(int parameter, int series) const
 {
     int count = 0;
@@ -471,6 +511,7 @@ void MetaModel::PrepareTables()
 
     header = QStringList() << m_global_names << m_local_names;
     m_local_parameter->setHeader(header);
+    header.clear();
     int size = 0;
     if (GlobalParameterSize())
         size = 1;
@@ -482,7 +523,9 @@ void MetaModel::PrepareTables()
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         (*GlobalTable())[i] = GlobalParameter(i);
         GlobalTable()->setChecked(i, 0, true);
+        header << GlobalParameterName(i);
     }
+    GlobalTable()->setHeader(header);
 }
 
 bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
