@@ -106,7 +106,6 @@ ChartWrapper::ChartWrapper(bool flipable, QObject* parent)
     , QObject(parent)
     , m_blocked(false)
     , m_transformed(false)
-    , m_flip(false)
 {
 }
 
@@ -118,24 +117,10 @@ ChartWrapper::~ChartWrapper()
     }
 }
 
-void ChartWrapper::FlipChart(bool flip)
-{
-    if (m_flipable)
-        m_flip = flip;
-}
 
 void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
     m_model = model;
-    /*if(m_flipable)
-    {
-        if(m_model->DataPoints() > m_model->SeriesCount())
-            m_flip = false;
-        else
-            m_flip = true;
-    }
-    else*/
-    m_flip = false;
     if (qobject_cast<AbstractModel*>(m_model))
         connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
 
@@ -147,10 +132,8 @@ void ChartWrapper::InitaliseSeries()
 {
     if (m_stored_series.isEmpty()) {
         int serie = 0;
-        if (m_flip)
-            serie = m_model->DataPoints();
-        else
-            serie = m_model->SeriesCount();
+
+        serie = m_model->SeriesCount();
 
         for (int j = 0; j < serie; ++j) {
             QPointer<QtCharts::QXYSeries> series;
@@ -176,13 +159,9 @@ void ChartWrapper::MakeSeries()
 
     int rows = 0;
     int cols = 0;
-    if (m_flip) {
-        cols = m_model->DataPoints();
-        rows = m_model->SeriesCount();
-    } else {
+
         rows = m_model->DataPoints();
         cols = m_model->SeriesCount();
-    }
 
     for (int i = 0; i < rows; ++i) {
         double x = m_model->PrintOutIndependent(i);
@@ -190,10 +169,7 @@ void ChartWrapper::MakeSeries()
             if (m_model->DependentModel()->isChecked(j, i)) {
                 if (j >= m_stored_series.size())
                     continue;
-                if (m_flip)
-                    m_stored_series[j]->append(m_table->data(j, i), x);
-                else
-                    m_stored_series[j]->append(x, m_table->data(j, i));
+                m_stored_series[j]->append(x, m_table->data(j, i));
             }
         }
     }

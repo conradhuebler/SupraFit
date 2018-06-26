@@ -124,7 +124,6 @@ public:
     void setData(QSharedPointer<DataClass> model);
     inline void setDataTable(const DataTable* table) { m_table = table; }
     inline int SeriesSize() const { return m_stored_series.size(); }
-    inline bool ChartFliped() const { return m_flip; }
     inline QPointer<QtCharts::QXYSeries> Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const;
@@ -141,13 +140,12 @@ public slots:
     void MakeSeries();
     void showSeries(int i);
     void SetBlocked(int blocked);
-    void FlipChart(bool flip);
 
 private:
     const DataTable* m_table;
     QList<QPointer<QtCharts::QXYSeries>> m_stored_series;
     QSharedPointer<DataClass> m_model;
-    bool m_blocked, m_transformed, m_flipable, m_flip;
+    bool m_blocked, m_transformed, m_flipable;
     void InitaliseSeries();
 
 signals:

@@ -61,11 +61,6 @@ ChartDockTitleBar::ChartDockTitleBar()
     m_tools->setIcon(QIcon::fromTheme("applications-system"));
     QMenu* toolsmenu = new QMenu;
 
-    m_flip = new QAction(tr("Flip View"));
-    connect(m_flip, &QAction::toggled, this, &ChartDockTitleBar::ChartFlip);
-
-    toolsmenu->addAction(m_flip);
-
     toolsmenu->addSeparator();
 
     m_animation = new QAction(tr("Animation"));

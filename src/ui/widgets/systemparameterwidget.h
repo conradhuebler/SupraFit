@@ -69,6 +69,7 @@ public:
                 [index, widget, this]() {
                     if (widget) {
                         m_data->setSystemParameter(widget->Value());
+                        m_data->WriteSystemParameter();
                     }
                 });
 
