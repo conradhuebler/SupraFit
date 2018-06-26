@@ -636,6 +636,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     , m_info(other.m_info)
 {
     m_independent_model = new DataTable(other.m_independent_model);
+    m_systemObject = other.m_systemObject;
 
     m_scaling = other.m_scaling;
     m_host_assignment = other.m_host_assignment;
@@ -651,6 +652,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     : m_info(other->m_info)
 {
     m_independent_model = new DataTable(other->m_independent_model);
+    m_systemObject = other->m_systemObject;
 
     m_scaling = other->m_scaling;
     m_host_assignment = other->m_host_assignment;
@@ -702,7 +704,6 @@ DataClass::DataClass(const DataClass& other)
     : QObject()
 {
     d = other.d;
-    m_systemObject = other.m_systemObject;
     connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
@@ -710,7 +711,6 @@ DataClass::DataClass(const DataClass* other)
     : QObject()
 {
     d = other->d;
-    m_systemObject = other->m_systemObject;
     connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
 }
 
@@ -778,7 +778,7 @@ bool DataClass::ImportData(const QJsonObject& topjson)
 {
     int fileversion = topjson["SupraFit"].toInt();
 
-    m_systemObject = topjson["system"].toObject();
+    d->m_systemObject = topjson["system"].toObject();
 
     if (fileversion >= 1601) {
         d->m_independent_model->ImportTable(topjson["independent"].toObject());
@@ -838,9 +838,9 @@ bool DataClass::ImportData(const QJsonObject& topjson)
 void DataClass::LoadSystemParameter()
 {
     for (int index : getSystemParameterList()) {
-        if (m_systemObject[QString::number(index)].toString().isEmpty())
+        if (d->m_systemObject[QString::number(index)].toString().isEmpty())
             continue;
-        setSystemParameterValue(index, m_systemObject[QString::number(index)].toVariant());
+        setSystemParameterValue(index, d->m_systemObject[QString::number(index)].toVariant());
     }
 
     emit SystemParameterLoaded();
@@ -848,7 +848,7 @@ void DataClass::LoadSystemParameter()
 
 void DataClass::setSystemObject(const QJsonObject& object)
 {
-    m_systemObject = object;
+    d->m_systemObject = object;
 }
 
 void DataClass::setHeader(const QStringList& strlist)
@@ -938,5 +938,5 @@ void DataClass::WriteSystemParameter()
     for (const int index : getSystemParameterList()) {
         systemObject[QString::number(index)] = getSystemParameter(index).value().toString();
     }
-    m_systemObject = systemObject;
+    d->m_systemObject = systemObject;
 }

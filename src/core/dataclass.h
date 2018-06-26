@@ -196,6 +196,7 @@ public:
     QPointer<DataTable> m_dependent_model, m_independent_model;
     DataType m_datatype;
     QJsonObject m_raw_data;
+    QJsonObject m_systemObject;
 
     QList<qreal> m_scaling;
     QMap<int, SystemParameter> m_system_parameter;
@@ -343,7 +344,6 @@ public:
     void setSystemObject(const QJsonObject& object);
 
 private:
-    QJsonObject m_systemObject;
     QMutex m_lock;
 
 protected:
