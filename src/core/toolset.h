@@ -48,6 +48,9 @@ QStringList DoubleList2StringList(const Vector& vector);
 QVector<qreal> String2DoubleVec(const QString& str);
 QVector<int> String2IntVec(const QString& str);
 
+QVector<int> VecAndVec(const QVector<int>& a, const QVector<int>& b);
+QVector<int> VecAndVec(const Vector& a, const QVector<int>& b);
+
 QList<qreal> String2DoubleList(const QString& str);
 QString bool2YesNo(bool var);
 

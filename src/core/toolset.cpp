@@ -64,6 +64,33 @@ QString IntList2String(const QList<int>& vector, const QString& str)
     return string.left(string.length() - 1);
 }
 
+QVector<int> VecAndVec(const QVector<int>& a, const QVector<int>& b)
+{
+    QVector<int> c;
+
+    if (a.size() != b.size())
+        return a;
+
+    for (int i = 0; i < a.size(); ++i)
+        c << a[i] * b[i];
+
+    return c;
+}
+
+QVector<int> VecAndVec(const Vector& a, const QVector<int>& b)
+{
+    QVector<int> c;
+
+    if (a.size() != b.size()) {
+        for (int i = 0; i < a.size(); ++i)
+            c << a[i];
+    } else {
+        for (int i = 0; i < a.size(); ++i)
+            c << a[i] * b[i];
+    }
+    return c;
+}
+
 QString DoubleList2String(const QList<qreal>& vector, const QString& str)
 {
     QString string;
