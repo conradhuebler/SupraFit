@@ -21,16 +21,18 @@
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 
-#include <QtMath>
-
-#include <QDebug>
 #include <QtCore/QCollator>
 #include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
+#include <QtCore/QtMath>
 
 #include <cmath>
 #include <iostream>
+
+#include <libpeakpick/mathhelper.h>
+#include <libpeakpick/peakpick.h>
 
 #include "mm_model.h"
 
@@ -55,7 +57,7 @@ void Michaelis_Menten_Model::InitialGuess_Private()
         y << 1 / DependentModel()->data(0, i);
     }
 
-    LinearRegression regress = LeastSquares(x, y);
+    PeakPick::LinearRegression regress = LeastSquares(x, y);
     m_vmax = 1 / regress.n;
     m_Km = regress.m * m_vmax;
     (*GlobalTable())[0] = m_vmax;

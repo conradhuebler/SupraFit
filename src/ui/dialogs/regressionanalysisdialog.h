@@ -24,8 +24,13 @@
 
 #include <QtWidgets/QDialog>
 
+#include <libpeakpick/baseline.h>
+#include <libpeakpick/nxlinregress.h>
+#include <libpeakpick/peakpick.h>
+
 #include "src/core/libmath.h"
 
+class QComboBox;
 class QListWidget;
 class QPushButton;
 class QSpinBox;
@@ -60,7 +65,12 @@ private:
     QMultiHash<int, QtCharts::QLineSeries*> m_linear_series;
     QTextEdit* m_output;
     QListWidget* m_lists;
-    QList<QMap<qreal, MultiRegression>> m_result;
+    QList<QMap<qreal, PeakPick::MultiRegression>> m_result;
+    QComboBox* m_method;
+
+    void TestPeaks();
+    QMap<double, int> m_peak_list;
+    std::vector<PeakPick::Peak> m_peaks;
 
 private slots:
     void FitFunctions();

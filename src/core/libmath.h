@@ -21,64 +21,18 @@
 
 #include <Eigen/Dense>
 
-#include "src/core/AbstractModel.h"
-#include "src/global_config.h"
 #include <QtCore/QPair>
+
+#include <libpeakpick/mathhelper.h>
+#include <libpeakpick/nxlinregress.h>
+#include <libpeakpick/peakpick.h>
+
+#include "src/core/AbstractModel.h"
+
+#include "src/global_config.h"
 
 class AbstractModel;
 struct OptimizerConfig;
-
-struct LinearRegression {
-    QVector<qreal> y, x, y_head;
-    qreal m = 0;
-    qreal n = 0;
-    qreal R = 0;
-    qreal sum_err = 0;
-};
-
-struct MultiRegression {
-    QVector<LinearRegression> regressions;
-    qreal sum_err = 0;
-    QVector<int> start;
-};
-
-class AddVector {
-
-public:
-    inline AddVector(QVector<int> start, QVector<int> max)
-        : m_max(max)
-        , m_value(start)
-    {
-    }
-
-    inline bool jacob() // like the ladder, we want to climb
-    {
-        for (int i = m_max.size() - 1; i >= 0; --i) {
-            if (m_value[i] < m_max[i]) {
-                m_value[i]++;
-                return true;
-            } else if (m_value[i] == m_max[i] && i) {
-                QVector<int> initial = m_value;
-                if (initial[i - 1] < m_max[i - 1]) {
-                    initial[i - 1]++;
-                    for (int j = i; j < m_max.size(); ++j) {
-                        initial[i] = initial[i - 1] + 2;
-                    }
-                    m_value = initial;
-                    return true;
-                }
-
-            } else if (!i) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    inline QVector<int> Value() const { return m_value; }
-    QVector<int> m_max;
-    QVector<int> m_value;
-};
 
 long double MinQuadraticRoot(long double a, long double b, long double c);
 long double MaxQuadraticRoot(long double a, long double b, long double c);
@@ -86,8 +40,8 @@ long double MaxQuadraticRoot(long double a, long double b, long double c);
 QPair<long double, long double> QuadraticRoots(long double a, long double b, long double c);
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
 
-LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y);
-QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y, int functions);
+PeakPick::LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y);
+QMap<qreal, PeakPick::MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y, int functions);
 
 qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter);
 

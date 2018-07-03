@@ -27,6 +27,10 @@
 #include <cmath>
 #include <iostream>
 
+#include <libpeakpick/mathhelper.h>
+#include <libpeakpick/nxlinregress.h>
+#include <libpeakpick/peakpick.h>
+
 #include "src/core/AbstractModel.h"
 
 #include "libmath.h"
@@ -43,102 +47,42 @@ qreal df(qreal x, qreal a, qreal b, qreal c)
 }
 }
 
-LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y)
+PeakPick::LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y)
 {
-    LinearRegression regression;
-
     if (x.size() != y.size())
-        return regression;
-    // http://www.bragitoff.com/2015/09/c-program-to-linear-fit-the-data-using-least-squares-method/ //
-    qreal xsum = 0, x2sum = 0, ysum = 0, xysum = 0; //variables for sums/sigma of xi,yi,xi^2,xiyi etc
-    int n = x.size();
-    for (int i = 0; i < n; ++i) {
-        xsum += x[i]; //calculate sigma(xi)
-        ysum += y[i]; //calculate sigma(yi)
-        x2sum += (x[i] * x[i]); //calculate sigma(x^2i)
-        xysum += x[i] * y[i]; //calculate sigma(xi*yi)
-    }
-    regression.m = (n * xysum - xsum * ysum) / (n * x2sum - xsum * xsum); //calculate slope
-    regression.n = (x2sum * ysum - xsum * xysum) / (x2sum * n - xsum * xsum); //calculate intercept
-    qreal mean_x = xsum / double(n);
-    qreal mean_y = ysum / double(n);
-    qreal x_ = 0;
-    qreal y_ = 0;
-    qreal xy_ = 0;
-    regression.x = x;
-    regression.y = y;
-    for (int i = 0; i < n; ++i) {
-        qreal y_head = regression.m * x[i] + regression.n;
-        regression.y_head << y_head;
-        regression.sum_err += (y_head - y[i]) * (y_head - y[i]);
-        x_ += (x[i] - mean_x) * (x[i] - mean_x);
-        y_ += (y[i] - mean_y) * (y[i] - mean_y);
-        xy_ += (x[i] - mean_x) * (y[i] - mean_y);
-    }
-    regression.R = (xy_ / qSqrt(x_ * y_)) * (xy_ / qSqrt(x_ * y_));
+        throw 404;
 
-    return regression;
+    Vector _x;
+    Vector _y;
+
+    _x.resize(x.size());
+    _y.resize(y.size());
+
+    for (int i = 0; i < x.size(); ++i) {
+        _x(i) = x[i];
+        _y(i) = y[i];
+    }
+
+    return PeakPick::LeastSquares(_x, _y);
 }
 
-QMap<qreal, MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y, int functions)
+QMap<qreal, PeakPick::MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y, int functions)
 {
-    QMap<qreal, MultiRegression> regressions;
-
     if (x.size() != y.size())
-        return regressions;
+        return QMap<qreal, PeakPick::MultiRegression>();
 
-    if (functions == 1) {
-        LinearRegression regression = LeastSquares(x, y);
-        MultiRegression reg;
-        reg.regressions << regression;
-        reg.sum_err = regression.sum_err;
-        reg.start << 0 << x.size() - 1;
-        regressions.insert(reg.sum_err, reg);
-    } else {
-        QVector<int> starts, ends;
-        for (int i = 0; i < functions; i++) {
-            int start = 2 * i;
-            starts << start;
-            int end = x.size() - 2 * i;
-            ends.prepend(end);
-        }
-        AddVector vector(starts, ends);
+    Vector _x;
+    Vector _y;
 
-        while (true) {
-            if (vector.Value().first() != 0)
-                break;
-            MultiRegression reg;
-            qreal sum = 0;
-            QVector<int> work = vector.Value();
-            work << x.size();
-            bool valid = true;
-
-            for (int i = 0; i < work.size() - 1; ++i) {
-
-                QVector<qreal> x_i, y_i;
-                for (int j = work[i]; j < work[i + 1]; ++j) {
-
-                    x_i << x[j];
-                    y_i << y[j];
-                }
-                valid = valid && x_i.size();
-                LinearRegression regression = LeastSquares(x_i, y_i);
-                reg.regressions << regression;
-
-                reg.start << work[i] << work[i + 1] - 1;
-
-                sum += regression.sum_err;
-            }
-            reg.sum_err = sum;
-            if (!std::isnan(sum) && valid)
-                regressions.insert(reg.sum_err, reg);
-            if (regressions.size() > 10)
-                regressions.remove(regressions.lastKey());
-
-            if (!vector.jacob())
-                break;
-        }
+    _x.resize(x.size());
+    _y.resize(y.size());
+    for (int i = 0; i < x.size(); ++i) {
+        _x(i) = x[i];
+        _y(i) = y[i];
     }
+
+    QMap<double, PeakPick::MultiRegression> regressions(PeakPick::LeastSquares(_x, _y, functions));
+
     return regressions;
 }
 

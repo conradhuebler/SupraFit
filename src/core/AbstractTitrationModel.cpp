@@ -21,18 +21,22 @@
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
 
-#include <QtMath>
-
-#include "AbstractTitrationModel.h"
-#include <QDebug>
 #include <QtCore/QCollator>
 #include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QtMath>
+
 #include <cfloat>
 #include <cmath>
 #include <iostream>
+
+#include <libpeakpick/mathhelper.h>
+#include <libpeakpick/peakpick.h>
+
+#include "AbstractTitrationModel.h"
 
 AbstractTitrationModel::AbstractTitrationModel(DataClass* data)
     : AbstractModel(data)
@@ -188,7 +192,7 @@ qreal AbstractTitrationModel::Guess_1_1() const
         }
     }
     for (int i = 0; i < SeriesCount(); ++i) {
-        LinearRegression regress = LeastSquares(x, y[i]);
+        PeakPick::LinearRegression regress = LeastSquares(x, y[i]);
         K11 += qLn(qAbs(1 / regress.m)) / 2.3;
     }
     K11 /= double(SeriesCount());
