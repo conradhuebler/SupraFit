@@ -35,11 +35,18 @@ class itc_IItoII_Model : public AbstractItcModel {
     Q_OBJECT
 
 public:
+    enum {
+        Cooperativity2_1 = 3,
+        Cooperativity1_2 = 4
+    };
+
     itc_IItoII_Model(DataClass* data);
     itc_IItoII_Model(AbstractItcModel* data);
     ~itc_IItoII_Model();
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_IItoII; }
+    virtual void DeclareOptions() override;
+    virtual void EvaluateOptions() override;
 
     virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 3; }

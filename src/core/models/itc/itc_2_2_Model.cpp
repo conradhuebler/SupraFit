@@ -62,6 +62,88 @@ itc_IItoII_Model::~itc_IItoII_Model()
             delete m_solvers[i];
 }
 
+void itc_IItoII_Model::DeclareOptions()
+{
+    QStringList cooperativity = QStringList() << "full"
+                                              << "noncooperative";
+    //                                          << "additive"
+    //                                          << "statistical";
+
+    addOption(Cooperativity2_1, "Cooperativity 2:1", cooperativity);
+    cooperativity = QStringList() << "full"
+                                  << "noncooperative";
+    //   << "additive"
+    //   << "statistical";
+    addOption(Cooperativity1_2, "Cooperativity 1:2", cooperativity);
+
+    AbstractItcModel::DeclareOptions();
+}
+
+void itc_IItoII_Model::EvaluateOptions()
+{
+    QString coop21 = getOption(Cooperativity2_1);
+
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * K11 = 4*K21 | K21 = 0.25 K11
+     * valid for statistical and noncooperative systems
+     */
+    auto global_coop21 = [this]() {
+        (*this->GlobalTable())[0] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
+    };
+
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * Y(A2B) = 2Y(AB)
+     * valid for statistical and additive systems
+     * We first have to subtract the Host_0 Shift and afterwards calculate the new Signal
+     */
+    auto local_coop21 = [this]() {
+        for (int i = 0; i < this->SeriesCount(); ++i)
+            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+    };
+
+    if (coop21 == "noncooperative") {
+        global_coop21();
+    } else if (coop21 == "additive") {
+        local_coop21();
+    } else if (coop21 == "statistical") {
+        local_coop21();
+        global_coop21();
+    }
+
+    QString coop12 = getOption(Cooperativity1_2);
+
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * K11 = 4*K12 | K12 = 0.25 K11
+     * valid for statistical and noncooperative systems
+     */
+    auto global_coop12 = [this]() {
+        (*this->GlobalTable())[2] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
+    };
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * Y(AB2) = 2Y(AB)
+     * valid for statistical and additive systems
+     * We first have to subtract the Host_0 Shift and afterwards calculate the new Signal
+     */
+    auto local_coop12 = [this]() {
+        for (int i = 0; i < this->SeriesCount(); ++i)
+            this->LocalTable()->data(3, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+    };
+
+    if (coop12 == "noncooperative") {
+        global_coop12();
+    } else if (coop12 == "additive") {
+        local_coop12();
+    } else if (coop12 == "statistical") {
+        local_coop12();
+        global_coop12();
+    }
+    AbstractItcModel::EvaluateOptions();
+}
+
 void itc_IItoII_Model::InitialGuess_Private()
 {
     LocalTable()->data(0, 0) = GuessdH() / 10.0;
@@ -82,8 +164,14 @@ void itc_IItoII_Model::InitialGuess_Private()
 
 QVector<qreal> itc_IItoII_Model::OptimizeParameters_Private()
 {
+    QString coop21 = getOption(Cooperativity2_1);
+    QString coop12 = getOption(Cooperativity1_2);
+
+    if (coop21 == "additive" || coop21 == "full")
         addGlobalParameter(0);
-        addGlobalParameter(1);
+    addGlobalParameter(1);
+
+    if (coop12 == "additive" || coop12 == "full")
         addGlobalParameter(2);
 
         addLocalParameter(0);

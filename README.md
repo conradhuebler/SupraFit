@@ -1,11 +1,13 @@
 [![Build Status](https://travis-ci.com/conradhuebler/SupraFit.svg?token=kbszubggsBRpbhwmvtTL&branch=master)](https://travis-ci.com/conradhuebler/SupraFit)
 
+![SupraFit Logo](https://raw.githubusercontent.com/conradhuebler/SupraFit/master/misc/logo_small.png)
+
 # SupraFit 
 
 A Open Source Qt5 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry) and Michaelis Menten Kinetics
 
 ## Download and requirements
-git clones automatically Eigen, ChaiScript and fisher_dist. Eigen is used as non-linear optimimization tool and ChaiScript is for now only for experimental stuff in use. Fisher_dist provides suprafit with a f-value for a given critical p-value.
+git clones automatically Eigen, ChaiScript, fisher_dist and libpeakpick. Eigen is used as non-linear optimimization tool and ChaiScript is for now only for experimental stuff in use. Fisher_dist provides suprafit with a f-value for a given critical p-value. LibPeakPick provides rudimentary methods for peak picking, peak integration and some kind of linear regression methods.
 
 ## Compiling
 To compile SupraFit you will need CMake 3 or newer and a C++11-capable compiler.
@@ -53,6 +55,8 @@ The first two columns contain the concentrations of host and guest, the followin
 | 0.1 | -11 |
 
 The first column contains the injected volume while the second columns has to contains the integrated heat response of the system.
+
+SupraFit supports import of *.itc files with peak integration and some basic base line corrections. Alternatively *.dH files from Origin can be loaded right away.
 
 ### Michaelis Menten Kinetics
 | S_0 | v | 

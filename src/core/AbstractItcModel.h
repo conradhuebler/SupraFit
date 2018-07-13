@@ -127,7 +127,6 @@ public slots:
 
 private:
     void virtual DeclareSystemParameter() override;
-    void virtual DeclareOptions() override;
     bool m_lock_concentrations;
     QMutex m_lock;
 
@@ -136,6 +135,7 @@ private slots:
 
 protected:
     void SetConcentration(int i, const Vector& equilibrium);
+    void virtual DeclareOptions() override;
     QPointer<DataTable> m_c0, m_concentrations;
     void Concentration() { CalculateConcentrations(); }
     double m_V, m_cell_concentration, m_syringe_concentration, m_T;

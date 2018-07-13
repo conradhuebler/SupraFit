@@ -50,6 +50,50 @@ itc_IItoI_Model::~itc_IItoI_Model()
 {
 }
 
+void itc_IItoI_Model::DeclareOptions()
+{
+    QStringList cooperativity = QStringList() << "full"
+                                              << "noncooperative";
+    //   << "additive"
+    //   << "statistical";
+    addOption(Cooperativity, "Cooperativity", cooperativity);
+
+    AbstractItcModel::DeclareOptions();
+}
+
+void itc_IItoI_Model::EvaluateOptions()
+{
+    QString cooperativitiy = getOption(Cooperativity);
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * K11 = 4*K21 | K21 = 0.25 K11
+     * valid for statistical and noncooperative systems
+     */
+    auto global_coop = [this]() {
+        (*this->GlobalTable())[0] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
+    };
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * Y(A2B) = 2Y(AB)
+     * valid for statistical and additive systems
+     * We first have to subtract the Host_0 Shift and afterwards calculate the new Signal
+     */
+    auto local_coop = [this]() {
+        for (int i = 0; i < this->SeriesCount(); ++i)
+            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+    };
+
+    if (cooperativitiy == "noncooperative") {
+        global_coop();
+    } else if (cooperativitiy == "additive") {
+        local_coop();
+    } else if (cooperativitiy == "statistical") {
+        local_coop();
+        global_coop();
+    }
+    AbstractItcModel::EvaluateOptions();
+}
+
 void itc_IItoI_Model::InitialGuess_Private()
 {
     (*GlobalTable())[1] = 6;
@@ -70,17 +114,21 @@ void itc_IItoI_Model::InitialGuess_Private()
 
 QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private()
 {
+    QString coop21 = getOption(Cooperativity);
+
+    if (coop21 == "additive" || coop21 == "full")
         addGlobalParameter(0);
-        addGlobalParameter(1);
 
-        addLocalParameter(0);
-        addLocalParameter(1);
+    addGlobalParameter(1);
 
-        QString dilution = getOption(Dilution);
+    addLocalParameter(0);
+    addLocalParameter(1);
 
-        if (dilution == "auto") {
-            addLocalParameter(2);
-            addLocalParameter(3);
+    QString dilution = getOption(Dilution);
+
+    if (dilution == "auto") {
+        addLocalParameter(2);
+        addLocalParameter(3);
         }
 
         addLocalParameter(4);
