@@ -558,6 +558,8 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
         if (key == "data")
             continue;
 
+        QApplication::processEvents();
+
         QJsonObject model = object[key].toObject();
         if (i++ < 5)
             Json2Model(model);

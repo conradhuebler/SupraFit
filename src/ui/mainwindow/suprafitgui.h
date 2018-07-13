@@ -34,6 +34,7 @@ class QGridLayout;
 class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
+class QSplashScreen;
 class QStackedWidget;
 class QToolBar;
 class QTabWidget;
@@ -110,10 +111,10 @@ private:
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QVector<QWeakPointer<DataClass>> m_data_list;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_load;
+    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_save_as, *m_load;
     OptimizerConfig m_opt_config;
 
-    QString m_logfile;
+    QString m_logfile, m_supr_file;
     int m_printlevel;
     void LogFile();
     QFile m_file, m_stdout;
@@ -137,6 +138,7 @@ private:
     QPointer<QGridLayout> m_layout;
     QStackedWidget* m_stack_widget;
     QWeakPointer<MetaModel> m_meta_model;
+    QSplashScreen* m_splash;
 
 private slots:
     void NewWindow();
@@ -144,6 +146,7 @@ private slots:
     void OpenFile();
     void setWindowTitle();
     void SaveProjectAction();
+    void SaveAsProjectAction();
     void SettingsDialog();
     void about();
     void WriteMessages(const QString& message, int priority);

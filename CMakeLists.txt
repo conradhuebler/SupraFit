@@ -280,3 +280,13 @@ endif(UNIX)
 
 install(TARGETS suprafit RUNTIME DESTINATION bin)
 install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
+# Do platform specific post target stuff
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+    # Install desktop entry
+    install(FILES misc/suprafit.desktop DESTINATION share/applications )
+
+    # Install icon
+    install(FILES misc/suprafit.png DESTINATION share/icons/pixmaps/)
+
+endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")

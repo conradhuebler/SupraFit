@@ -54,6 +54,7 @@
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QSplashScreen>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QTabWidget>
@@ -170,6 +171,8 @@ SupraFitGui::SupraFitGui()
     m_instance = new Instance;
     Instance::setInstance(m_instance);
 
+    m_splash = new QSplashScreen(this, QPixmap(":/misc/logo_small.png"));
+
     m_layout = new QGridLayout;
 
     QWidget* widget = new QWidget;
@@ -221,17 +224,25 @@ SupraFitGui::SupraFitGui()
 
     m_new_table = new QAction(Icon("document-new"), tr("New Table"));
     connect(m_new_table, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
+    m_new_table->setShortcut(QKeySequence::New);
 
     m_load = new QAction(Icon("document-open"), tr("Open Project"));
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
+    m_load->setShortcut(QKeySequence::Open);
 
-    m_save = new QAction(Icon("document-save-all"), tr("Save Project"));
+    m_save = new QAction(Icon("document-save"), tr("&Save Project"));
+    m_save->setShortcuts(QKeySequence::Save);
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
+
+    m_save_as = new QAction(Icon("document-save-as"), tr("Save Project &As"));
+    connect(m_save_as, SIGNAL(triggered(bool)), this, SLOT(SaveAsProjectAction()));
+    m_save_as->setShortcut(QKeySequence::SaveAs);
 
     m_config = new QAction(Icon("configure"), tr("Settings"));
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
+    m_config->setShortcut(QKeySequence::Preferences);
 
-    m_about = new QAction(Icon("help-about"), tr("Info"));
+    m_about = new QAction(QIcon(":/misc/suprafit.png"), tr("Info"));
     connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
 
     m_aboutqt = new QAction(Icon("help-about"), tr("About Qt"));
@@ -247,6 +258,7 @@ SupraFitGui::SupraFitGui()
     m_main_toolbar->addAction(m_new_table);
     m_main_toolbar->addAction(m_load);
     m_main_toolbar->addAction(m_save);
+    m_main_toolbar->addAction(m_save_as);
     m_main_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     addToolBar(m_main_toolbar);
 
@@ -285,7 +297,7 @@ SupraFitGui::SupraFitGui()
 
     m_project_view->hide();
     m_stack_widget->hide();
-
+    setWindowIcon(QIcon(":/misc/suprafit.png"));
     //connect(m_project_view, &QTreeView::customContextMenuRequested, this, &SupraFitGui::ContextMenu);
     //connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeRemoveRequest);
 }
@@ -298,14 +310,21 @@ SupraFitGui::~SupraFitGui()
 
 void SupraFitGui::LoadFile(const QString& file)
 {
+    m_splash->show();
+    centralWidget()->hide();
     bool invalid_json = false;
     if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
         invalid_json = !LoadProject(file);
-        if (!invalid_json)
+        if (!invalid_json) {
+            centralWidget()->show();
+            QTimer::singleShot(1, m_splash, &QSplashScreen::close);
             return;
+        }
     } else {
         ImportTable(file);
     }
+    centralWidget()->show();
+    QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 
     if (invalid_json)
         QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
@@ -400,7 +419,8 @@ bool SupraFitGui::LoadProject(const QString& filename)
     QJsonObject toplevel;
 
     if (JsonHandler::ReadJsonFile(toplevel, filename)) {
-
+        if (m_supr_file.isEmpty() || m_supr_file.isNull())
+            m_supr_file = filename;
         QStringList keys = toplevel.keys();
         if (keys.contains("data")) {
             return SetData(toplevel, info.baseName());
@@ -408,6 +428,7 @@ bool SupraFitGui::LoadProject(const QString& filename)
             bool exit = true;
             int index = 1;
             for (const QString& str : qAsConst(keys)) {
+                QApplication::processEvents();
                 QJsonObject object = toplevel[str].toObject();
                 exit = exit && SetData(object, info.baseName() + "-" + QString::number(index));
                 index++;
@@ -420,9 +441,37 @@ bool SupraFitGui::LoadProject(const QString& filename)
 
 void SupraFitGui::SaveProjectAction()
 {
-    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json);;All files (*.*)"));
-    if (!str.isEmpty()) {
 
+    if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
+        QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
+        if (str.isEmpty())
+            return;
+        m_supr_file = str;
+    }
+
+    QVector<QJsonObject> projects;
+    for (int i = 0; i < m_project_list.size(); i++) {
+        QPointer<MainWindow> project_widget = m_project_list[i];
+        projects << project_widget->SaveProject();
+    }
+    if (projects.isEmpty())
+        return;
+    else if (projects.size() == 1) {
+        JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
+    } else {
+        QJsonObject json;
+        for (int i = 0; i < projects.size(); ++i)
+            json["project_" + QString::number(i)] = projects[i];
+        JsonHandler::WriteJsonFile(json, m_supr_file);
+    }
+    setLastDir(m_supr_file);
+}
+
+void SupraFitGui::SaveAsProjectAction()
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
+    if (!str.isEmpty()) {
+        m_supr_file = str;
         QVector<QJsonObject> projects;
         for (int i = 0; i < m_project_list.size(); i++) {
             QPointer<MainWindow> project_widget = m_project_list[i];

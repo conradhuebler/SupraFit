@@ -24,5 +24,8 @@
         <file>icons/view-list-text.png</file>
         <file>icons/workspace.png</file>
         <file>icons/window-new.png</file>
+        <file>misc/logo_small.png</file>
+        <file>misc/suprafit.ico</file>
+        <file>misc/suprafit.png</file>
     </qresource>
 </RCC>
