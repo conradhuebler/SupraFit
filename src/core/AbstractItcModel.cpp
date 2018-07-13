@@ -28,9 +28,14 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QMutexLocker>
 
+#include <iostream>
+
+#include <libpeakpick/mathhelper.h>
+#include <libpeakpick/nxlinregress.h>
+#include <libpeakpick/peakpick.h>
+
 #include "AbstractItcModel.h"
 
-#include <iostream>
 
 AbstractItcModel::AbstractItcModel(DataClass* data)
     : AbstractModel(data)
@@ -135,8 +140,8 @@ qreal AbstractItcModel::GuessFx()
         x << PrintOutIndependent(i, 0);
         y << DependentModel()->data(0, i);
     }
-    QMap<qreal, MultiRegression> result = LeastSquares(x, y, 3);
-    MultiRegression regression = result.first();
+    QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);
+    PeakPick::MultiRegression regression = result.first();
 
     qreal x1 = 0, x2 = 0;
     int m = 0;

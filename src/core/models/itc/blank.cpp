@@ -22,15 +22,18 @@
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 
-#include <QtMath>
-
-#include <QDebug>
 #include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QJsonObject>
+#include <QtCore/QtMath>
+
 #include <cfloat>
 #include <cmath>
 #include <iostream>
+
+#include <libpeakpick/mathhelper.h>
+#include <libpeakpick/peakpick.h>
 
 #include "blank.h"
 
@@ -62,8 +65,8 @@ void Blank::InitialGuess_Private()
         x << PrintOutIndependent(i, 0);
         y << DependentModel()->data(0, i);
     }
-    QMap<qreal, MultiRegression> result = LeastSquares(x, y, 1);
-    MultiRegression regression = result.first();
+    QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 1);
+    PeakPick::MultiRegression regression = result.first();
 
     LocalTable()->data(0, 0) = regression.regressions[0].m;
     LocalTable()->data(1, 0) = regression.regressions[0].n;

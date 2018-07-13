@@ -16,15 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QDebug>
 
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
 
+#include <QtCore/QDebug>
 #include <QtCore/QMap>
 #include <QtCore/QMultiHash>
 
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QListWidget>
@@ -32,6 +33,10 @@
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTextEdit>
+
+#include <libpeakpick/baseline.h>
+#include <libpeakpick/nxlinregress.h>
+#include <libpeakpick/peakpick.h>
 
 #include "src/core/libmath.h"
 
@@ -69,6 +74,10 @@ void RegressionAnalysisDialog::setUI()
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(m_chart);
 
+    m_method = new QComboBox;
+    m_method->addItem("Trial and Error");
+    m_method->addItem("Fast Guess");
+
     QWidget* results = new QWidget;
     QHBoxLayout* hlayout = new QHBoxLayout;
     hlayout->addWidget(m_output);
@@ -79,8 +88,9 @@ void RegressionAnalysisDialog::setUI()
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(new QLabel(tr("Number of functions")), 0, 0);
     layout->addWidget(m_functions, 0, 1);
-    layout->addWidget(m_fit, 0, 2);
-    layout->addWidget(splitter, 1, 0, 1, 3);
+    layout->addWidget(m_method, 0, 2);
+    layout->addWidget(m_fit, 0, 3);
+    layout->addWidget(splitter, 1, 0, 1, 4);
     setLayout(layout);
 
     connect(m_fit, &QPushButton::clicked, this, &RegressionAnalysisDialog::FitFunctions);
@@ -92,9 +102,53 @@ void RegressionAnalysisDialog::UpdatePlots()
     m_chart->Clear();
     m_output->clear();
     m_series = m_wrapper.data()->CloneSeries();
-    for (int i = 0; i < m_series.size(); ++i)
+    for (int i = 0; i < m_series.size(); ++i) {
         m_chart->addSeries(m_series[i], i, m_series[i]->color(), Print::printDouble(i + 1));
+        m_series[i]->setBorderColor(m_series[i]->color());
+        m_series[i]->setMarkerSize(1);
+    }
     m_functions->setRange(1, m_series.first()->points().size() / 2);
+    // TestPeaks();
+}
+
+void RegressionAnalysisDialog::TestPeaks()
+{
+    std::vector<double> x, y;
+    for (int i = 0; i < m_series.size(); ++i) {
+        QList<QPointF> points = m_series[i]->points();
+        for (int j = 0; j < points.size(); ++j) {
+            x.push_back(points[j].x());
+            y.push_back(points[j].y());
+        }
+        Vector y_vec = Vector::Map(&y[0], x.size());
+        PeakPick::spectrum spectrum(y_vec, x[0], x[x.size() - 1]);
+        PeakPick::BaseLine baseline(&spectrum);
+        baseline.setNoCoeffs(2);
+        baseline.Fit(PeakPick::BaseLine::StartEnd);
+        PeakPick::spectrum corrected = baseline.Corrected();
+        qDebug() << corrected.PosMax() << corrected.PosMin();
+
+        PeakPick::SmoothFunction(&corrected, 12);
+        PeakPick::SmoothFunction(&corrected, 12);
+        PeakPick::SmoothFunction(&corrected, 12);
+        ScatterSeries* series = new ScatterSeries;
+        series->setMarkerSize(1);
+        series->setBorderColor(m_series[i]->color());
+        for (int i = 0; i < corrected.size(); ++i)
+            series->append(corrected.X(i), corrected.Y(i));
+        m_chart->addSeries(series, i, m_series[i]->color());
+        std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&corrected, 0, 0.25);
+        corrected.InvertSgn();
+        std::vector<PeakPick::Peak> peaks2 = PeakPick::PickPeaks(&corrected, 0, 1);
+        for (int i = 0; i < peaks2.size(); ++i)
+            peaks.push_back(peaks2[i]);
+        m_peaks = peaks;
+        for (int i = 0; i < peaks.size(); ++i) {
+            IntegrateNumerical(&corrected, peaks[i]);
+            m_peak_list[qAbs(peaks[i].integ_num)] = i;
+        }
+        qDebug() << m_peak_list;
+    }
 }
 
 void RegressionAnalysisDialog::FitFunctions()
@@ -111,7 +165,42 @@ void RegressionAnalysisDialog::FitFunctions()
             x << points[j].x();
             y << points[j].y();
         }
-        QMap<qreal, MultiRegression> result = LeastSquares(x, y, m_functions->value());
+        QMap<qreal, PeakPick::MultiRegression> result;
+        if (m_method->currentIndex() == 0)
+            result = LeastSquares(x, y, m_functions->value());
+        else if (m_method->currentIndex() == 1) {
+
+            if (m_functions->value() == 3) {
+                std::vector<double> x, y;
+                for (int i = 0; i < m_series.size(); ++i) {
+                    QList<QPointF> points = m_series[i]->points();
+                    for (int j = 0; j < points.size(); ++j) {
+                        x.push_back(points[j].x());
+                        y.push_back(points[j].y());
+                    }
+                    Vector y_vec = Vector::Map(&y[0], x.size());
+                    PeakPick::spectrum spectrum(y_vec, x[0], x[x.size() - 1]);
+                    PeakPick::BaseLine baseline(&spectrum);
+                    baseline.setNoCoeffs(2);
+                    baseline.Fit(PeakPick::BaseLine::StartEnd);
+                    PeakPick::spectrum corrected = baseline.Corrected();
+                    qDebug() << corrected.PosMax() << corrected.PosMin();
+                }
+            } else
+                return;
+
+            /*
+            int index = 1;
+            QMap<double, int>::const_iterator i = m_peak_list.constBegin();
+            while (i != m_peak_list.constEnd() && index <= m_functions->value()) {
+                std::cout << i.key() << ": " << i.value() << std::endl;
+                std::cout << m_peaks[i.value()].start << " " << m_peaks[i.value()].end << std::endl;
+                ++i;
+                index++;
+            }
+            return;*/
+        } else
+            return;
         if (result.isEmpty())
             continue;
         size = qMin(size, result.size());
@@ -141,7 +230,7 @@ void RegressionAnalysisDialog::LoadRegression(int index)
 
     for (int i = 0; i < m_series.size(); ++i) {
 
-        MultiRegression regression = m_result[i].value(m_result[i].keys()[index]);
+        PeakPick::MultiRegression regression = m_result[i].value(m_result[i].keys()[index]);
         output += "<h4>Series " + Print::printDouble(i + 1) + "</h4>";
         for (int m = 0; m < regression.regressions.size(); ++m) {
             QtCharts::QLineSeries* series = m_chart->addLinearSeries(regression.regressions[m].m, regression.regressions[m].n, x[regression.start[2 * m - m]], x[regression.start[2 * m + regression.regressions.size() - m]], i);
