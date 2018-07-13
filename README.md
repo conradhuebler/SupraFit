@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/conradhuebler/SupraFit.svg?token=kbszubggsBRpbhwmvtTL&branch=master)](https://travis-ci.com/conradhuebler/SupraFit)
 
-![SupraFit Logo](https://raw.githubusercontent.com/conradhuebler/SupraFit/master/misc/logo_small.png)
+![SupraFit Logo](https://raw.githubusercontent.com/conradhuebler/SupraFit/master/misc/logo_small.png?token=AMnGZuxzSpGlvgkAAKLEDvyLJDL6vM9uks5bUfOAwA%3D%3D)
 
 # SupraFit 
 

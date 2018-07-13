@@ -54,6 +54,7 @@ public:
     QSharedPointer<AbstractModel> CreateMetaModel();
 
     inline QJsonObject SaveProject() const { return m_model_dataholder->SaveWorkspace(); }
+    inline QJsonObject SaveModel(int index) const { return m_model_dataholder->SaveModel(index); }
 
     inline int ModelCount() const { return m_model_dataholder->ModelCount(); }
 

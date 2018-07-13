@@ -154,6 +154,8 @@ private slots:
     void FirstStart();
 
     void AddMetaModel(const QModelIndex& index);
+    void SaveData(const QModelIndex& index);
+
     void UpdateTreeView(bool regenerate = false);
     void TreeClicked(const QModelIndex& index);
     void TreeRemoveRequest(const QModelIndex& index);

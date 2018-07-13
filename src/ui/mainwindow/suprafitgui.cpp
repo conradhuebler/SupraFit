@@ -191,6 +191,12 @@ SupraFitGui::SupraFitGui()
 
     });
 
+    action = new QAction("Save", m_project_view);
+    m_project_view->addAction(action);
+    connect(action, &QAction::triggered, action, [this]() {
+        SaveData(m_project_view->currentIndex());
+    });
+
     action = new QAction("Add MetaModel", m_project_view);
     m_project_view->addAction(action);
     connect(action, &QAction::triggered, action, [this]() {
@@ -731,6 +737,27 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
 
     if (m_project_list.size())
         m_project_list.first()->show();
+}
+
+void SupraFitGui::SaveData(const QModelIndex& index)
+{
+    QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
+    if (str.isEmpty() || str.isNull())
+        return;
+
+    QJsonObject object;
+    int widget = 0;
+    int tab = -1;
+    if (m_project_tree->parent(index).isValid()) {
+        widget = m_project_tree->parent(index).row();
+        tab = index.row();
+        object = m_project_list[widget]->SaveModel(tab + 1);
+    } else {
+        widget = index.row();
+        object = m_project_list[widget]->SaveProject();
+    }
+    JsonHandler::WriteJsonFile(object, str);
+    setLastDir(str);
 }
 
 void SupraFitGui::AddMetaModel(const QModelIndex& index)

@@ -545,6 +545,24 @@ QJsonObject ModelDataHolder::SaveWorkspace()
     return toplevel;
 }
 
+QJsonObject ModelDataHolder::SaveModel(int index)
+{
+    QJsonObject toplevel, data;
+    data = m_data->ExportData();
+
+    if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(index))) {
+        ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(index));
+        QJsonObject obj = model->Model()->ExportModel();
+        obj["colors"] = model->Chart().signal_wrapper->ColorList();
+        obj["keys"] = model->Keys();
+        data["colors"] = model->Chart().data_wrapper->ColorList();
+        toplevel["model_0"] = obj;
+    }
+
+    toplevel["data"] = data;
+    return toplevel;
+}
+
 void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
 {
     QStringList keys = object.keys();

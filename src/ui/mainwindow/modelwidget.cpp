@@ -439,9 +439,9 @@ void ModelWidget::Repaint()
 
     QString corrupt;
     if (m_model->isCorrupt())
-        corrupt = "<font color =\'red\'><strong>Model is corrupt, probably numerical errors in concentration calculation. Please don't relay on this results.</strong></font>\n";
+        corrupt = "<font color =\'red\'><strong>Model is corrupt, probably numerical errors in concentration calculation. Please don't rely on these results.</strong></font>\n";
 
-    m_converged_label->setText("<html>" + converged + "</br>" + corrupt + "</html>");
+    m_converged_label->setText("<html><p>" + converged + "</p><p>" + corrupt + "</p></html>");
 
     Model2Text();
     QTextDocument doc;

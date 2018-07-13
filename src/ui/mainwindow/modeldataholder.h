@@ -141,6 +141,7 @@ public:
      * Export currently open models and the data table to file
      */
     QJsonObject SaveWorkspace();
+    QJsonObject SaveModel(int index);
 
     bool CheckCrashFile();
     virtual QSize sizeHint() const { return QSize(800, 600); }
