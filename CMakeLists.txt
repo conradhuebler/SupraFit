@@ -239,8 +239,11 @@ set(suprafit_SRCS
 qt5_add_resources(suprafit_SRCS files.qrc)
 target_link_libraries(utils Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport Qt5::Charts)
 
-add_executable(suprafit ${suprafit_SRCS})
-
+if(WIN32) # Check if we are on Windows
+    add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
+else()
+    add_executable(suprafit ${suprafit_SRCS})
+endif(WIN32)
 
 set(suprafit_cli_SRCS
                 src/core/minimizer.cpp # whatsoever ...

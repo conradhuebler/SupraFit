@@ -27,5 +27,6 @@
         <file>misc/logo_small.png</file>
         <file>misc/suprafit.ico</file>
         <file>misc/suprafit.png</file>
+        <file>icons/document-save-as.png</file>
     </qresource>
 </RCC>

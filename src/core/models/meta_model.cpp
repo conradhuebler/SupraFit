@@ -409,6 +409,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_dep_var += model->DataPoints();
     m_series_count += model->SeriesCount();
     OptimizeParameters_Private();
+    DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     emit ModelAdded(t);
 }
 
