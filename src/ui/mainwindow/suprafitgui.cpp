@@ -316,7 +316,7 @@ SupraFitGui::~SupraFitGui()
 
 void SupraFitGui::LoadFile(const QString& file)
 {
-    if (file.contains("*.json") || file.contains("*.suprafit")) {
+    if (file.contains("json") || file.contains("suprafit")) {
         m_splash->show();
         centralWidget()->hide();
     }

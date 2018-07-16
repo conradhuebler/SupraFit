@@ -241,9 +241,6 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
 
     PeakPick::spectrum original(y, x[0], x[x.size() - 1]);
 
-    for (int i = 0; i < peaks->size(); ++i)
-        std::cout << peaks->at(i).start << " " << peaks->at(i).end << "  :: " << i << "-- (" << original.X(peaks->at(i).start) << " " << original.Y(peaks->at(i).start) << ") -- " << original.X(peaks->at(i).end) << " " << original.Y(peaks->at(i).end) << ") " << std::endl;
-
     return original;
 }
 
