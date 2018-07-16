@@ -187,6 +187,14 @@ void ChartView::setUi()
     connect(plotsettings, SIGNAL(triggered()), this, SLOT(PlotSettings()));
     menu->addAction(plotsettings);
 
+    m_lock_action = new QAction(this);
+    m_lock_action->setText(tr("Lock Scaling"));
+    m_lock_action->setCheckable(true);
+    connect(m_lock_action, &QAction::triggered, this, [this]() {
+        m_lock_scaling = m_lock_action->isChecked();
+    });
+    menu->addAction(m_lock_action);
+
     QAction* scaleAction = new QAction(this);
     scaleAction->setText(tr("Rescale Axis"));
     connect(scaleAction, SIGNAL(triggered()), this, SLOT(forceformatAxis()));
@@ -359,6 +367,7 @@ void ChartView::PlotSettings()
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
 {
     m_lock_scaling = chartconfig.m_lock_scaling;
+    m_lock_action->setChecked(m_lock_scaling);
 
     QPointer<QtCharts::QValueAxis> x_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
     if (x_axis) {

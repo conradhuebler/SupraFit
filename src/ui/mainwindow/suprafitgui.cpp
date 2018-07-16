@@ -316,8 +316,10 @@ SupraFitGui::~SupraFitGui()
 
 void SupraFitGui::LoadFile(const QString& file)
 {
-    m_splash->show();
-    centralWidget()->hide();
+    if (file.contains("*.json") || file.contains("*.suprafit")) {
+        m_splash->show();
+        centralWidget()->hide();
+    }
     bool invalid_json = false;
     if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
         invalid_json = !LoadProject(file);

@@ -151,6 +151,7 @@ public slots:
     void setTitle(const QString& str);
 
 private:
+    QAction* m_lock_action;
     ChartViewPrivate* m_chart_private;
     QPointer<QtCharts::QChart> m_chart;
     QPushButton* m_config;

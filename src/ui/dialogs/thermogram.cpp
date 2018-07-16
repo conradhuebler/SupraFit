@@ -231,6 +231,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
 
     floating_peak.end = last_x;
     peaks->push_back(floating_peak);
+
     offset /= double(i_offset);
     if (entries_x.size() < 1 || entries_y.size() < 1 || entries_x.size() != entries_y.size())
         throw 101;
@@ -239,6 +240,10 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     y = Vector::Map(&entries_y[0], entries_y.size());
 
     PeakPick::spectrum original(y, x[0], x[x.size() - 1]);
+
+    for (int i = 0; i < peaks->size(); ++i)
+        std::cout << peaks->at(i).start << " " << peaks->at(i).end << "  :: " << i << "-- (" << original.X(peaks->at(i).start) << " " << original.Y(peaks->at(i).start) << ") -- " << original.X(peaks->at(i).end) << " " << original.Y(peaks->at(i).end) << ") " << std::endl;
+
     return original;
 }
 

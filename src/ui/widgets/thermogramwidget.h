@@ -23,17 +23,19 @@
 
 #include <QtCharts/QChart>
 
-typedef Eigen::VectorXd Vector;
+#include "libpeakpick/baseline.h"
 
 class QComboBox;
 class QLineEdit;
 class QSpinBox;
+class QRadioButton;
 class QPushButton;
 class QTableWidget;
 class QTableWidgetItem;
 
-class LineSeries;
 class ChartView;
+class LineSeries;
+class ScatterSeries;
 
 class ThermogramWidget : public QWidget {
     Q_OBJECT
@@ -67,7 +69,6 @@ private:
     void UpdateTable();
     void UpdatePlot();
     void UpdateLimits();
-    void UpdateBase();
     void CreateSeries();
 
     void fromSpectrum(const PeakPick::spectrum* original, LineSeries* series);
@@ -78,17 +79,21 @@ private:
     QComboBox *m_baseline_type, *m_fit_type;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box;
     QLineEdit *m_constant, *m_stdev, *m_mult;
+    QRadioButton *m_peak_wise, *m_full_spec;
     QPushButton* m_fit_button;
     QCheckBox *m_limits, *m_smooth;
     QTableWidget* m_table;
     ChartView* m_thermogram;
     QtCharts::QChart* m_data;
+
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right;
+    ScatterSeries* m_base_grids;
+
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     bool m_spectrum = false, m_block = false;
     QVector<qreal> m_peaks;
-    Vector m_baseline;
+    PeakPick::BaseLineResult m_baseline;
     qreal m_scale = 4.184, m_offset = 0;
     QString m_base, m_fit;
 
