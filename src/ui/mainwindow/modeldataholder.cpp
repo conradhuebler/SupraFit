@@ -327,8 +327,9 @@ ModelDataHolder::ModelDataHolder()
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
-
+    connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::EditData, this, &ModelDataHolder::EditData);
     connect(m_TitleBarWidget, &MDHDockTitleBar::Compare, this, [this]() {
         if (this->m_compare_dialog) {
             m_compare_dialog->setCutoff(1.8);
