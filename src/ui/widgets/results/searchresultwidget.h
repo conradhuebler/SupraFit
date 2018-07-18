@@ -21,6 +21,8 @@
 
 #include <QtWidgets/QWidget>
 
+#include "src/capabilities/globalsearch.h"
+
 class AbstractModel;
 class GlobalSearch;
 

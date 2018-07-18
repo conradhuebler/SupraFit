@@ -19,11 +19,14 @@
 
 #pragma once
 
+#include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QWidget>
 
 #include <QtCharts/QAreaSeries>
+
+#include "src/global.h"
 
 #include "resultswidget.h"
 

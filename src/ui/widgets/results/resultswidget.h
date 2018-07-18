@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <QtCore/QJsonObject>
+
 #include <QtWidgets/QWidget>
 
 class AbstractSearchClass;
