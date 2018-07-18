@@ -580,6 +580,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("chartanimation") == QVariant())
         qApp->instance()->setProperty("chartanimation", true);
 
+    if (qApp->instance()->property("threads") == QVariant())
+        qApp->instance()->setProperty("threads", QThread::idealThreadCount());
+
     if (qApp->instance()->property("auto_confidence") == QVariant())
         qApp->instance()->setProperty("auto_confidence", true);
 
