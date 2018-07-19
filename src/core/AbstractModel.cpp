@@ -158,6 +158,11 @@ void AbstractModel::setGlobalParameter(double value, int parameter)
         (*GlobalTable())[parameter] = value;
 }
 
+void AbstractModel::forceGlobalParameter(double value, int parameter)
+{
+    (*GlobalTable())[parameter] = value;
+}
+
 void AbstractModel::setGlobalParameter(const QPointer<DataTable> list)
 {
     if (list->columnCount() != GlobalTable()->columnCount())
@@ -420,6 +425,16 @@ void AbstractModel::setLocalParameter(qreal value, int parameter, int series)
 {
     if (LocalTable()->isChecked(parameter, series))
         LocalTable()->data(parameter, series) = value;
+}
+
+void AbstractModel::forceLocalParameter(qreal value, const QPair<int, int>& pair)
+{
+    LocalTable()->data(pair.first, pair.second) = value;
+}
+
+void AbstractModel::forceLocalParameter(qreal value, int parameter, int series)
+{
+    LocalTable()->data(parameter, series) = value;
 }
 
 qreal AbstractModel::LocalParameter(const QPair<int, int>& pair) const

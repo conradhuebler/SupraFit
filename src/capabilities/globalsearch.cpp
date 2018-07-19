@@ -58,11 +58,11 @@ void SearchBatch::run()
 
         result.initial = parameter;
         for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
-            m_model->setGlobalParameter(parameter[i], i);
+            m_model->forceGlobalParameter(parameter[i], i);
         if (!m_model.data()->SupportSeries()) {
 #warning this is just a hack
             for (int i = m_model.data()->GlobalParameterSize(); i < parameter.size(); ++i)
-                m_model->setLocalParameter(parameter[i], i - m_model.data()->GlobalParameterSize(), 0);
+                m_model->forceLocalParameter(parameter[i], i - m_model.data()->GlobalParameterSize(), 0);
         }
         optimise();
         result.optimised = m_model->AllParameter();

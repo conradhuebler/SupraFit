@@ -363,9 +363,10 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     }
     window->setWindowFlags(Qt::Widget);
 
-    //m_layout->addWidget(window, 0, 1);
     m_stack_widget->addWidget(window);
     m_stack_widget->setCurrentWidget(window);
+
+    window->show();
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
         m_project_tree->layoutChanged();
     });

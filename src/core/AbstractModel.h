@@ -386,6 +386,10 @@ public:
      */
     virtual void setGlobalParameter(const QList<qreal>& list);
 
+    /*! \brief set the values of the global parameter to const QList< qreal > &list
+     */
+    virtual void forceGlobalParameter(double value, int parameter);
+
     /*! \brief return the list of global parameter values, overloaded function
      */
     virtual inline QPointer<DataTable> GlobalParameter() const { return GlobalTable(); }
@@ -406,10 +410,16 @@ public:
     virtual qreal LocalParameter(int parameter, int series) const;
     QVector<qreal> getLocalParameterColumn(int parameter) const;
     qreal LocalParameter(const QPair<int, int>& pair) const;
+
     void setLocalParameter(qreal value, int parameter, int series);
     void setLocalParameter(qreal value, const QPair<int, int>& pair);
+
+    void forceLocalParameter(qreal value, const QPair<int, int>& pair);
+    void forceLocalParameter(qreal value, int parameter, int series);
+
     void setLocalParameterSeries(const QVector<qreal>& vector, int series);
     void setLocalParameterSeries(const Vector& vector, int series);
+
     void setLocalParameterColumn(const QVector<qreal>& vector, int parameter);
     void setLocalParameterColumn(const Vector& vector, int parameter);
 

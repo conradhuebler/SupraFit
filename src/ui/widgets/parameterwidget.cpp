@@ -66,7 +66,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         connect(box, &SpinBox::valueChangedNotBySet, box,
             [i, box, this]() {
                 if (this->m_model) {
-                    m_model->setLocalParameter(box->value(), i, 0);
+                    m_model->forceLocalParameter(box->value(), i, 0);
                     m_model->Calculate();
                 }
 
