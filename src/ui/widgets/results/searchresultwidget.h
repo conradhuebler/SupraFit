@@ -28,8 +28,10 @@ class GlobalSearch;
 
 class ChartView;
 class ScientificBox;
+class ContourWidget;
 
 class QCheckBox;
+class QSortFilterProxyModel;
 class QPushButton;
 class QTableView;
 class QTabWidget;
@@ -43,26 +45,29 @@ public:
 
 private:
     QTableView* BuildList();
-    QWidget* BuildContour();
+    ContourWidget* BuildContour();
 
     QList<QJsonObject> m_models;
     QTableView* m_table;
-    QWidget* m_contour;
+    ContourWidget* m_contour;
     QTabWidget* m_central_widget;
     QSharedPointer<AbstractModel> m_model;
-    QCheckBox* m_valid;
+    QCheckBox *m_valid, *m_converged;
     ScientificBox* m_threshold;
-    QPushButton *m_export, *m_switch;
+    QPushButton* m_export;
     QVector<QList<qreal>> m_input;
     QPointer<GlobalSearch> m_globalsearch;
 
     QList<GSResult> m_results;
+    QSortFilterProxyModel* m_proxyModel;
 
 private slots:
     void rowSelected(const QModelIndex& index);
     void ShowContextMenu(const QPoint& pos);
     void ExportModels();
     void SwitchView();
+    void ApplyFilter();
+    void ModelClicked(int model);
 
 signals:
     void LoadModel(const QJsonObject& object);

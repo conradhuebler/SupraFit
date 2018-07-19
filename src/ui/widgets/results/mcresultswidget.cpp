@@ -229,7 +229,8 @@ QPointer<QWidget> MCResultsWidget::MakeContour()
     view->setYAxis(m_model->GlobalParameterName(1));
     return view;*/
 
-    ContourWidget* widget = new ContourWidget(m_models, m_model);
+    ContourWidget* widget = new ContourWidget;
+    widget->setData(m_models, m_model);
     QJsonObject controller = m_data["controller"].toObject();
 
     return widget;

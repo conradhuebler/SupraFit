@@ -38,10 +38,15 @@
 
 #include "contourwidget.h"
 
-ContourWidget::ContourWidget(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model)
-    : m_models(models)
-    , m_model(model->Clone())
+ContourWidget::ContourWidget()
+
 {
+}
+
+void ContourWidget::setData(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model)
+{
+    m_models = models;
+    m_model = model->Clone();
     setUi();
 }
 
@@ -49,7 +54,7 @@ void ContourWidget::setUi()
 {
     QGridLayout* layout = new QGridLayout;
     view = new ListChart;
-
+    m_xy_series = new QtCharts::QScatterSeries;
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(view);
     splitter->addWidget(VariWidget());
@@ -162,31 +167,57 @@ void ContourWidget::CheckBox(int variable, int state)
     MakePlot(m_var_1, m_var_2);
 }
 
+void ContourWidget::Update()
+{
+    MakePlot(m_var_1, m_var_2);
+}
+
 void ContourWidget::MakePlot(int var_1, int var_2)
 {
     if (var_1 == -1 || var_2 == -1)
         return;
+
+    m_var_1 = var_1;
+    m_var_2 = var_2;
     Waiter wait;
     view->Clear();
     QColor color = ChartWrapper::ColorCode(m_model->Color(1)).lighter(50);
-    QtCharts::QScatterSeries* xy_series = new QtCharts::QScatterSeries;
+    m_xy_series = new QtCharts::QScatterSeries;
 
     QList<qreal> x, y;
     for (int i = 0; i < m_models.size(); ++i) {
         m_model->ImportModel(m_models[i]);
+
+        if (m_converged && !m_model->isConverged())
+            continue;
+        if (m_valid && m_model->isCorrupt())
+            continue;
+
         x << m_model->AllParameter()[var_1];
         y << m_model->AllParameter()[var_2];
     }
 
     if (x.size() > 1e4)
-        xy_series->setUseOpenGL(true);
+        m_xy_series->setUseOpenGL(true);
     for (int j = 0; j < x.size(); ++j)
-        xy_series->append(QPointF(x[j], y[j]));
+        m_xy_series->append(QPointF(x[j], y[j]));
 
-    xy_series->setMarkerSize(5);
-    xy_series->setName(m_names[var_1] + " vs. " + m_names[var_2]);
-    view->addSeries(xy_series, 0, color, m_names[var_1] + " vs. " + m_names[var_2]);
+    connect(m_xy_series, &QtCharts::QXYSeries::clicked, this, &ContourWidget::PointClicked);
+
+    m_xy_series->setMarkerSize(7);
+    m_xy_series->setName(m_names[var_1] + " vs. " + m_names[var_2]);
+    view->addSeries(m_xy_series, 0, color, m_names[var_1] + " vs. " + m_names[var_2]);
     view->setXAxis(m_names[var_1]);
     view->setYAxis(m_names[var_2]);
-    xy_series->setColor(color);
+    m_xy_series->setColor(color);
+}
+
+void ContourWidget::PointClicked(const QPointF& point)
+{
+    QList<QPointF> series = m_xy_series->points();
+    for (int i = 0; i < series.size(); ++i)
+        if (series[i] == point) {
+            emit ModelClicked(i);
+            break;
+        }
 }

@@ -274,6 +274,7 @@ void AdvancedSearch::Finished()
 void AdvancedSearch::SearchGlobal()
 {
     Waiter wait;
+    MaxSteps();
     m_search->setModel(m_model);
     PrepareProgress();
     m_search->setConfig(Config());

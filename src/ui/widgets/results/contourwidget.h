@@ -21,6 +21,8 @@
 
 #include <QtWidgets/QWidget>
 
+#include <QtCharts/QScatterSeries>
+
 class AbstractModel;
 class ListChart;
 
@@ -29,24 +31,42 @@ class ContourWidget : public QWidget {
     Q_OBJECT
 
 public:
-    ContourWidget(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model);
+    ContourWidget();
     void MakePlot(int var_1, int var_2);
+    void setData(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model);
+public slots:
+    inline void setConverged(bool converged)
+    {
+        m_converged = converged;
+        Update();
+    }
+    inline void setValid(bool valid)
+    {
+        m_valid = valid;
+        Update();
+    }
 
 private:
     void setUi();
     void CheckBox(int variable, int state);
+    void Update();
 
     QWidget* VariWidget();
 
     QList<QJsonObject> m_models;
     QSharedPointer<AbstractModel> m_model;
+    QtCharts::QScatterSeries* m_xy_series;
 
     ListChart* view;
     int m_var_1 = -1, m_var_2 = -1;
     QStringList m_names;
 
+    bool m_converged = true, m_valid = true;
+    void PointClicked(const QPointF& point);
+
 signals:
     void Checked(int var_1, int var_2);
     void HideBox(int parameter);
     void CheckParameterBox(int parameter);
+    void ModelClicked(int model);
 };

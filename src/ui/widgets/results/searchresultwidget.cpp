@@ -58,27 +58,42 @@ SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, cons
 
     QGridLayout* layout = new QGridLayout;
     m_export = new QPushButton(tr("Export Models"));
-    m_valid = new QCheckBox(tr("Invalid Models"));
+
+    m_valid = new QCheckBox(tr("Only Valid Models"));
+    m_valid->setChecked(true);
+    connect(m_valid, &QCheckBox::stateChanged, this, &SearchResultWidget::ApplyFilter);
+
+    m_converged = new QCheckBox(tr("Only Converged Models"));
+    m_converged->setChecked(true);
+    connect(m_converged, &QCheckBox::stateChanged, this, &SearchResultWidget::ApplyFilter);
+
     m_threshold = new ScientificBox;
     m_threshold->setValue(1);
+    //connect(m_threshold, &ScientificBox::valueChanged, this, &SearchResultWidget::ApplyFilter);
+
     layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 0);
     layout->addWidget(m_threshold, 0, 1);
     layout->addWidget(m_valid, 0, 2);
-    layout->addWidget(m_export, 0, 3);
+    layout->addWidget(m_converged, 0, 3);
+    layout->addWidget(m_export, 0, 4);
 
     if (!m_model)
         throw 1;
 
+    m_contour = BuildContour();
+    connect(m_contour, &ContourWidget::ModelClicked, this, &SearchResultWidget::ModelClicked);
     m_table = BuildList();
     m_table->setSortingEnabled(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    m_contour->setData(m_models, m_model);
+
     connect(m_table, SIGNAL(clicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
     connect(m_table, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportModels()));
-    layout->addWidget(m_central_widget, 1, 0, 1, 5);
+    layout->addWidget(m_central_widget, 3, 0, 1, 5);
 
-    m_contour = BuildContour();
     m_central_widget->addTab(m_table, tr("Result List"));
     m_central_widget->addTab(m_contour, tr("Contour Plot"));
 
@@ -98,13 +113,19 @@ QTableView* SearchResultWidget::BuildList()
     for (int i = 0; i < m_results.size(); ++i) {
         double error = m_results[i].SumError;
 
-        //qDebug() << m_results[i].converged << m_results[i].valid << error;
         QStandardItem* item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         item->setData(error, Qt::UserRole + 1);
         item->setData(QString::number(m_results[i].converged), Qt::UserRole + 2);
         item->setData(QString::number(m_results[i].valid), Qt::UserRole + 3);
         item->setData(QString::number(m_results[i].valid && m_results[i].converged), Qt::UserRole + 4);
+        item->setData(1, Qt::UserRole + 5);
+        QBrush brush;
+        if (m_results[i].valid && m_results[i].converged) {
+            brush.setColor(Qt::green);
+        }
+        item->setData(brush, Qt::BackgroundRole);
+
         model->setItem(i, 0, item);
         int j = 1;
         QVector<qreal> initial = m_results[i].initial;
@@ -114,6 +135,7 @@ QTableView* SearchResultWidget::BuildList()
             QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
             item->setData(initial[l], Qt::UserRole + 1);
+            item->setData(brush, Qt::BackgroundRole);
             model->setItem(i, j, item);
             j++;
         }
@@ -124,6 +146,7 @@ QTableView* SearchResultWidget::BuildList()
                 QStandardItem* item = new QStandardItem(QString::number(initial[l]));
                 item->setData(i, Qt::UserRole);
                 item->setData(initial[l], Qt::UserRole + 1);
+                item->setData(brush, Qt::BackgroundRole);
                 model->setItem(i, j, item);
                 j++;
             }
@@ -132,6 +155,7 @@ QTableView* SearchResultWidget::BuildList()
             QStandardItem* item = new QStandardItem(QString::number(optimised[l]));
             item->setData(i, Qt::UserRole);
             item->setData(optimised[l], Qt::UserRole + 1);
+            item->setData(brush, Qt::BackgroundRole);
             model->setItem(i, j, item);
             j++;
         }
@@ -142,11 +166,11 @@ QTableView* SearchResultWidget::BuildList()
                 QStandardItem* item = new QStandardItem(QString::number(optimised[l]));
                 item->setData(i, Qt::UserRole);
                 item->setData(optimised[l], Qt::UserRole + 1);
+                item->setData(brush, Qt::BackgroundRole);
                 model->setItem(i, j, item);
                 j++;
             }
         }
-        if ((m_results[i].converged && m_results[i].valid))
             m_models << m_results[i].model;
     }
 
@@ -163,24 +187,28 @@ QTableView* SearchResultWidget::BuildList()
     header << head << head;
     model->setHorizontalHeaderLabels(header);
 
-    QSortFilterProxyModel* proxyModel = new QSortFilterProxyModel(this);
-    table->setModel(proxyModel);
+    m_proxyModel = new QSortFilterProxyModel(this);
+    table->setModel(m_proxyModel);
     table->resizeColumnsToContents();
 
-    proxyModel->setSourceModel(model);
-    proxyModel->setSortRole(Qt::UserRole + 1);
+    m_proxyModel->setSourceModel(model);
+    m_proxyModel->setSortRole(Qt::UserRole + 1);
 
-    proxyModel->setFilterRole(Qt::UserRole + 4);
-    proxyModel->setFilterRegExp(QRegExp("1"));
-    proxyModel->setFilterKeyColumn(0);
+    ApplyFilter();
 
     resize(table->sizeHint());
     return table;
 }
 
-QWidget* SearchResultWidget::BuildContour()
+void SearchResultWidget::ModelClicked(int model)
 {
-    ContourWidget* widget = new ContourWidget(m_models, m_model);
+    if (model < m_models.size())
+        emit LoadModel(m_models[model]);
+}
+
+ContourWidget* SearchResultWidget::BuildContour()
+{
+    ContourWidget* widget = new ContourWidget();
     return widget;
 }
 
@@ -216,6 +244,25 @@ void SearchResultWidget::SwitchView()
     bool histogram = m_table->isHidden();
     m_table->setHidden(!histogram);
     m_contour->setHidden(histogram);
+}
+
+void SearchResultWidget::ApplyFilter()
+{
+    m_proxyModel->setFilterRegExp(QRegExp("1"));
+    m_proxyModel->setFilterKeyColumn(0);
+
+    if (m_valid->isChecked() && !m_converged->isChecked()) {
+        m_proxyModel->setFilterRole(Qt::UserRole + 3);
+    } else if (!m_valid->isChecked() && m_converged->isChecked()) {
+        m_proxyModel->setFilterRole(Qt::UserRole + 2);
+    } else if (m_valid->isChecked() && m_converged->isChecked()) {
+        m_proxyModel->setFilterRole(Qt::UserRole + 4);
+    } else {
+        m_proxyModel->setFilterRole(Qt::UserRole + 5);
+    }
+
+    m_contour->setConverged(m_converged->isChecked());
+    m_contour->setValid(m_valid->isChecked());
 }
 
 #include "searchresultwidget.h"

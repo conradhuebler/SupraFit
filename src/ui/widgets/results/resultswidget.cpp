@@ -200,7 +200,8 @@ QWidget* ResultsWidget::ReductionWidget()
 
 QWidget* ResultsWidget::ModelComparisonWidget()
 {
-    ContourWidget* widget = new ContourWidget(m_models, m_model);
+    ContourWidget* widget = new ContourWidget;
+    widget->setData(m_models, m_model);
     QJsonObject controller = m_data["controller"].toObject();
     QVector<int> global = ToolSet::String2IntVec(controller["global_parameter"].toString());
     QVector<int> local = ToolSet::String2IntVec(controller["local_parameter"].toString());

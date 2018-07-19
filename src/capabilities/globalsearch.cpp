@@ -53,6 +53,8 @@ void SearchBatch::run()
             break;
 
         QVector<double> parameter = m_parent->DemandParameter();
+        //qDebug() << parameter;
+
         if (parameter.isEmpty())
             break;
 
@@ -146,6 +148,7 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
 void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 {
     m_full_list.clear();
+    qDebug() << full_list;
     QVector<int> position(full_list.size(), 0);
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_allow_break = false;
@@ -184,7 +187,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
             }
         }
     }
-
+    qDebug() << m_input.size();
     emit setMaximumSteps(m_input.size());
 
     QVector<QPointer<SearchBatch>> threads;

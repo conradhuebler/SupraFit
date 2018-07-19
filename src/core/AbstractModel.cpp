@@ -878,8 +878,6 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
     setActiveSignals(active_signals);
 
-    m_converged = topjson["converged"].toBool();
-
     if (topjson.contains("locked_model")) {
 #ifdef _DEBUG
 //         qDebug() << "Loaded calculated data from json file";
