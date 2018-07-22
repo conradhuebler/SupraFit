@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
 #include "src/global.h"
 #include "src/global_config.h"
 
@@ -23,22 +24,25 @@
 
 #include <Eigen/Dense>
 
-#include "dataclass.h"
-#include <QAbstractTableModel>
-#include <QDebug>
-#include <QPointer>
+#include <QtCore/QAbstractTableModel>
 #include <QtCore/QCollator>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QPointer>
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QString>
-#include <QtGlobal>
+#include <QtCore/QUuid>
+#include <QtCore/QtGlobal>
+
 #include <cmath>
 #include <iostream>
 #include <random>
+
+#include "dataclass.h"
 
 DataTable::DataTable(QObject* parent)
     : QAbstractTableModel(parent)
@@ -610,6 +614,10 @@ DataClassPrivate::DataClassPrivate()
 {
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
+
+    QUuid uuid;
+    m_uuid = uuid.createUuid().toString();
+
     m_dependent_model->setCheckable(true);
     if (m_independent_model->columnCount() != m_scaling.size())
         for (int i = 0; i < m_independent_model->columnCount(); ++i)
@@ -627,6 +635,10 @@ DataClassPrivate::DataClassPrivate(int type)
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
     m_dependent_model->setCheckable(true);
+
+    QUuid uuid;
+    m_uuid = uuid.createUuid().toString();
+
     if (m_independent_model->columnCount() != m_scaling.size())
         for (int i = 0; i < m_independent_model->columnCount(); ++i)
             m_scaling << 1;
@@ -640,7 +652,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
 {
     m_independent_model = new DataTable(other.m_independent_model);
     m_systemObject = other.m_systemObject;
-
+    m_uuid = other.m_uuid;
     m_scaling = other.m_scaling;
     m_host_assignment = other.m_host_assignment;
     m_dependent_model = new DataTable(other.m_dependent_model);
@@ -656,7 +668,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
 {
     m_independent_model = new DataTable(other->m_independent_model);
     m_systemObject = other->m_systemObject;
-
+    m_uuid = other->m_uuid;
     m_scaling = other->m_scaling;
     m_host_assignment = other->m_host_assignment;
     m_dependent_model = new DataTable(other->m_dependent_model);
@@ -774,6 +786,7 @@ const QJsonObject DataClass::ExportData() const
     json["SupraFit"] = qint_version;
     json["raw"] = d->m_raw_data;
     json["title"] = d->m_title;
+    json["uuid"] = d->m_uuid;
     return json;
 }
 
@@ -834,6 +847,12 @@ bool DataClass::ImportData(const QJsonObject& topjson)
         d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
         d->m_raw_data = topjson["raw"].toObject();
         d->m_title = topjson["title"].toString();
+    }
+    if (fileversion > 1603) {
+        d->m_uuid = topjson["uuid"].toString();
+    } else {
+        QUuid uuid;
+        d->m_uuid = uuid.createUuid().toString();
     }
     return true;
 }

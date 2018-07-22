@@ -90,7 +90,7 @@ public:
 
     virtual bool SupportSeries() const { return true; }
 
-    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false);
+    virtual QJsonObject ExportModel(bool statistics = true, bool locked = false) override;
 
     virtual bool ImportModel(const QJsonObject& topjson, bool override = true);
 

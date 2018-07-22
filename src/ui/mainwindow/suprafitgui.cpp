@@ -349,6 +349,58 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         m_project_list[i]->hide();
 
     QPointer<MainWindow> window = new MainWindow;
+    if (object["data"].toObject().contains("model")) {
+        qDebug() << "found meta model, still to be handled";
+
+        QJsonObject uuids = object["data"].toObject()["uuids"].toObject();
+        int size = object["data"].toObject()["size"].toInt();
+
+        for (int i = 0; i < size; ++i) {
+
+            QWeakPointer<DataClass> data = m_hashed_data[uuids[QString::number(i)].toString()];
+            qDebug() << "found meta model" << uuids[QString::number(i)].toString();
+
+            if (!data) {
+                qDebug() << "found no data set for meta model, skipping";
+                continue;
+            }
+            QJsonObject rawmodel = object["data"].toObject()["raw"].toObject()[QString::number(i)].toObject();
+            if (!m_meta_model) {
+                MainWindow* window = new MainWindow;
+
+                QWeakPointer<MetaModel> model = qobject_cast<MetaModel*>(window->CreateMetaModel());
+                if (!model)
+                    return false;
+
+                QSharedPointer<AbstractModel> t = CreateModel(SupraFit::Model(rawmodel["model"].toInt()), data);
+                t->ImportModel(rawmodel);
+                model.data()->addModel(t.data());
+
+                /*
+                bool is_model = qobject_cast<AbstractModel*>(data);
+                if (!is_model)
+                    return false;*/
+
+                m_stack_widget->addWidget(window);
+
+                connect(window, &MainWindow::ModelsChanged, this, [=]() {
+                    m_project_tree->layoutChanged();
+                });
+
+                m_project_list << window;
+
+                m_data_list << model;
+                m_project_tree->layoutChanged();
+                setActionEnabled(true);
+                m_meta_model = model;
+            }
+            //m_meta_model.data()->addModel(qobject_cast<AbstractModel*>(data));
+        }
+        m_stack_widget->addWidget(window);
+        m_stack_widget->setCurrentWidget(window);
+        return true;
+    }
+
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data)
         return false;
@@ -366,7 +418,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_stack_widget->addWidget(window);
     m_stack_widget->setCurrentWidget(window);
 
-    window->show();
+    // window->show();
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
         m_project_tree->layoutChanged();
     });
@@ -374,6 +426,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_project_list << window;
 
     m_data_list << data;
+    m_hashed_data[data.data()->UUID()] = data;
     m_project_tree->layoutChanged();
     setActionEnabled(true);
     return true;

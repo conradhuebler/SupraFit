@@ -304,10 +304,6 @@ ModelDataHolder::ModelDataHolder()
 
     setLayout(layout);
 
-    m_datawidget = new DataWidget;
-    m_metamodelwidget = new MetaModelWidget;
-    connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
-    connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     m_modelsWidget = new TabWidget(this);
     m_modelsWidget->setTabsClosable(true);
     m_modelsWidget->setMovable(true);
@@ -358,10 +354,14 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
     m_TitleBarWidget->setEnabled(true);
     m_wrapper = wrapper;
     if (!qobject_cast<MetaModel*>(data)) {
+        m_datawidget = new DataWidget;
         m_datawidget->setData(m_data, wrapper);
         m_modelsWidget->setDataTab(m_datawidget);
         m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
+        connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
+        connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     } else {
+        m_metamodelwidget = new MetaModelWidget;
         m_metamodelwidget->setMetaModel(qobject_cast<MetaModel*>(data));
         m_modelsWidget->setMetaTab(m_metamodelwidget);
         m_TitleBarWidget->HideModelTools();
@@ -532,17 +532,21 @@ QJsonObject ModelDataHolder::SaveWorkspace()
     QJsonObject toplevel, data;
     data = m_data->ExportData();
 
-    for (int i = 1; i < m_modelsWidget->count(); i++) {
-        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
-            ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
-            QJsonObject obj = model->Model()->ExportModel();
-            obj["colors"] = model->Chart().signal_wrapper->ColorList();
-            obj["keys"] = model->Keys();
-            data["colors"] = model->Chart().data_wrapper->ColorList();
-            toplevel["model_" + QString::number(i)] = obj;
+    if (m_datawidget) {
+        for (int i = 1; i < m_modelsWidget->count(); i++) {
+            if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+                ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+                QJsonObject obj = model->Model()->ExportModel();
+                obj["colors"] = model->Chart().signal_wrapper->ColorList();
+                obj["keys"] = model->Keys();
+                data["colors"] = model->Chart().data_wrapper->ColorList();
+                toplevel["model_" + QString::number(i)] = obj;
+            }
         }
+        toplevel["data"] = data;
+    } else {
+        toplevel["data"] = m_metamodelwidget->Model()->ExportModel(true, false);
     }
-    toplevel["data"] = data;
     return toplevel;
 }
 

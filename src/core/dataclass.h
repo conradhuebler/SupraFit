@@ -201,7 +201,7 @@ public:
     QList<qreal> m_scaling;
     QMap<int, SystemParameter> m_system_parameter;
     QPointer<DataClassPrivateObject> m_info;
-    QString m_title;
+    QString m_title, m_uuid;
     void check();
 };
 
@@ -224,6 +224,8 @@ public:
             for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
+
+    inline QString UUID() const { return d->m_uuid; }
 
     virtual inline int Size() const { return DataPoints(); }
     virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }

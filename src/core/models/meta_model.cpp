@@ -558,7 +558,12 @@ QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
     for (int i = 0; i < m_models.size(); ++i) {
         raw[QString::number(i)] = m_models[i]->ExportModel(statistics, locked);
     }
+    QJsonObject uuid;
+    for (int i = 0; i < m_models.size(); ++i) {
+        uuid[QString::number(i)] = m_models[i]->UUID();
+    }
     model["raw"] = raw;
+    model["uuids"] = uuid;
     model["connecttype"] = m_connect_type;
 
     return model;
