@@ -177,6 +177,7 @@ void ContourWidget::MakePlot(int var_1, int var_2)
     if (var_1 == -1 || var_2 == -1)
         return;
 
+    m_linked_models.clear();
     m_var_1 = var_1;
     m_var_2 = var_2;
     Waiter wait;
@@ -195,6 +196,7 @@ void ContourWidget::MakePlot(int var_1, int var_2)
 
         x << m_model->AllParameter()[var_1];
         y << m_model->AllParameter()[var_2];
+        m_linked_models.insert(QPointF(m_model->AllParameter()[var_1], m_model->AllParameter()[var_2]), i);
     }
 
     if (x.size() > 1e4)
@@ -214,10 +216,9 @@ void ContourWidget::MakePlot(int var_1, int var_2)
 
 void ContourWidget::PointClicked(const QPointF& point)
 {
-    QList<QPointF> series = m_xy_series->points();
-    for (int i = 0; i < series.size(); ++i)
-        if (series[i] == point) {
-            emit ModelClicked(i);
-            break;
-        }
+    QList<int> values = m_linked_models.values(point);
+    if (values.isEmpty())
+        return;
+
+    emit ModelClicked(values.first());
 }

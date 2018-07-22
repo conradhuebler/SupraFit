@@ -126,7 +126,7 @@ inline QString aboutHtml()
     info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;rster</strong> and <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
-    info += "<p>SupraFit website on GitHub: <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/contra98/SupraFit</a></p>";
+    info += "<p>SupraFit website on GitHub: <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/conradhuebler/SupraFit</a></p>";
     info += "<p>SupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n";
     return info;
 }

@@ -19,12 +19,19 @@
 
 #pragma once
 
+#include <QtCore/QPointF>
+
 #include <QtWidgets/QWidget>
 
 #include <QtCharts/QScatterSeries>
 
 class AbstractModel;
 class ListChart;
+
+inline uint qHash(const QPointF& key)
+{
+    return qHash(QPair<int, int>(key.x(), key.y()));
+}
 
 class ContourWidget : public QWidget {
 
@@ -60,6 +67,7 @@ private:
     ListChart* view;
     int m_var_1 = -1, m_var_2 = -1;
     QStringList m_names;
+    QMultiHash<QPointF, int> m_linked_models;
 
     bool m_converged = true, m_valid = true;
     void PointClicked(const QPointF& point);
