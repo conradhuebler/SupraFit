@@ -66,6 +66,7 @@ public:
 
     inline void RemoveTab(int i) { m_model_dataholder->RemoveTab(i); }
 
+    inline bool isMetaModel() const { return m_meta_model; }
 public slots:
     // void LoadFile(const QString& file);
 
@@ -81,7 +82,7 @@ private:
     QPointer<ModelHistory> m_historywidget;
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer<DataClass> m_data;
-    bool m_hasData;
+    bool m_hasData, m_meta_model = false;
     QAction *m_new, *m_edit, *m_config, *m_about, *m_aboutqt, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
     OptimizerConfig m_opt_config;
 

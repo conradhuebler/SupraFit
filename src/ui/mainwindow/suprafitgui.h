@@ -24,6 +24,7 @@
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
+#include <QtCore/QMimeData>
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QMainWindow>
@@ -49,6 +50,25 @@ class ModelDataHolder;
 
 struct OptimizerConfig;
 
+class ModelMime : public QMimeData {
+
+    Q_OBJECT
+
+public:
+    inline void setData(DataClass* data) { m_data = data; }
+    inline DataClass* Data() const { return m_data; }
+    inline void setModel(bool model) { m_model = model; }
+    inline bool isModel() const { return m_model; }
+
+    inline void setModelIndex(const QModelIndex& index) { m_index = index; }
+    inline QModelIndex Index() const { return m_index; }
+
+private:
+    DataClass* m_data;
+    bool m_model = false;
+    QModelIndex m_index;
+};
+
 class ProjectTree : public QAbstractItemModel {
     Q_OBJECT
 public:
@@ -60,18 +80,12 @@ public:
     {
         Q_UNUSED(index);
         Qt::ItemFlags flags;
-        //if (m_checkable)
-        flags = Qt::ItemIsDragEnabled | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
-        //else
-        //    flags = Qt::ItemIsEnabled;
+
+        flags = QAbstractItemModel::flags(index);
+        flags = flags | Qt::ItemIsDragEnabled | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsDropEnabled;
 
         return flags;
     }
-
-    /* Qt::DropActions supportedDragActions() const override
-    {
-
-    }*/
 
     virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
@@ -83,8 +97,24 @@ public:
 
     virtual QModelIndex parent(const QModelIndex& child) const override;
 
+    virtual Qt::DropActions supportedDropActions() const override
+    {
+        return Qt::CopyAction | Qt::MoveAction;
+    }
+
+    QMimeData* mimeData(const QModelIndexList& indexes) const override;
+
+    virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+
+    virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
+
 private:
     QVector<QPointer<MainWindow>>* m_project_list;
+
+signals:
+    void AddMetaModel(const QModelIndex& index, int position);
+    void CopySystemParameter(const QModelIndex& source, int position);
+    void UiMessage(const QString& str);
 };
 
 class SupraFitGui : public QMainWindow {
@@ -138,7 +168,7 @@ private:
     QPointer<ProjectTree> m_project_tree;
     QPointer<QGridLayout> m_layout;
     QStackedWidget* m_stack_widget;
-    QWeakPointer<MetaModel> m_meta_model;
+    QVector<QWeakPointer<MetaModel>> m_meta_models;
     QSplashScreen* m_splash;
 
 private slots:
@@ -154,7 +184,9 @@ private slots:
     void MessageBox(const QString& str, int priority);
     void FirstStart();
 
-    void AddMetaModel(const QModelIndex& index);
+    void AddMetaModel(const QModelIndex& index, int position);
+    void CopySystemParameter(const QModelIndex& source, int position);
+
     void SaveData(const QModelIndex& index);
 
     void UpdateTreeView(bool regenerate = false);

@@ -306,7 +306,11 @@ public:
 
     /*! \brief Overrides system parameter
      */
-    void OverrideSystemParameter(const QMap<int, SystemParameter>& system_parameter) { d->m_system_parameter = system_parameter; }
+    inline void OverrideSystemParameter(const QMap<int, SystemParameter>& system_parameter)
+    {
+        d->m_system_parameter = system_parameter;
+        emit d->m_info->SystemParameterChanged();
+    }
 
     /*! \brief load previously cached system parameter
      */

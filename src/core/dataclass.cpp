@@ -934,7 +934,6 @@ void DataClass::setSystemParameterValue(int index, const QVariant& value)
     SystemParameter parameter = getSystemParameter(index);
     parameter.setValue(value);
     d->m_system_parameter[index] = parameter;
-    // emit d->m_info->SystemParameterChanged();
 }
 
 void DataClass::setSystemParameterList(int index, const QStringList& value)
