@@ -36,6 +36,7 @@ class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
 class QSplashScreen;
+class QSplitter;
 class QStackedWidget;
 class QToolBar;
 class QTabWidget;
@@ -170,6 +171,7 @@ private:
     QStackedWidget* m_stack_widget;
     QVector<QWeakPointer<MetaModel>> m_meta_models;
     QSplashScreen* m_splash;
+    QSplitter* m_mainsplitter;
 
 private slots:
     void NewWindow();

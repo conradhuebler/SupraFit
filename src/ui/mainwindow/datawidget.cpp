@@ -62,11 +62,11 @@ DataWidget::DataWidget()
 
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textEdited(QString)), this, SLOT(SetProjectName()));
-    m_name->setMinimumWidth(450);
+    //m_name->setMinimumWidth(350);
     m_concentrations = new QTableView;
-    m_concentrations->setMaximumWidth(230);
+    //m_concentrations->setMaximumWidth(230);
     m_signals = new QTableView;
-    m_signals->setMaximumWidth(750);
+    //m_signals->setMaximumWidth(750);
     m_signals->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_signals->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_signals, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));

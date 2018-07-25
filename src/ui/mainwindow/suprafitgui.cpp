@@ -295,13 +295,15 @@ SupraFitGui::SupraFitGui()
     m_project_view->setDropIndicatorShown(true);
     m_project_view->setDragDropMode(QAbstractItemView::DragDrop);
 
-    m_layout->addWidget(m_project_view, 0, 0);
-
     m_stack_widget = new QStackedWidget;
 
-    m_layout->addWidget(m_stack_widget, 0, 1);
+    m_mainsplitter = new QSplitter(Qt::Horizontal);
+    m_mainsplitter->addWidget(m_project_view);
+    m_mainsplitter->addWidget(m_stack_widget);
 
-    m_project_view->setMaximumWidth(200);
+    m_layout->addWidget(m_mainsplitter, 0, 0);
+
+    //m_project_view->setMaximumWidth(200);
 
     setCentralWidget(widget);
 
@@ -383,11 +385,8 @@ SupraFitGui::SupraFitGui()
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeClicked);
 
-    m_project_view->hide();
-    m_stack_widget->hide();
+    m_mainsplitter->hide();
     setWindowIcon(QIcon(":/misc/suprafit.png"));
-    //connect(m_project_view, &QTreeView::customContextMenuRequested, this, &SupraFitGui::ContextMenu);
-    //connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeRemoveRequest);
 }
 
 SupraFitGui::~SupraFitGui()
@@ -400,20 +399,20 @@ void SupraFitGui::LoadFile(const QString& file)
 {
     if (file.contains("json") || file.contains("suprafit")) {
         m_splash->show();
-        centralWidget()->hide();
+        m_mainsplitter->hide();
     }
     bool invalid_json = false;
     if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
         invalid_json = !LoadProject(file);
         if (!invalid_json) {
-            centralWidget()->show();
+            m_mainsplitter->show();
             QTimer::singleShot(1, m_splash, &QSplashScreen::close);
             return;
         }
     } else {
         ImportTable(file);
     }
-    centralWidget()->show();
+    m_mainsplitter->show();
     QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 
     if (invalid_json)
@@ -500,7 +499,6 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_stack_widget->addWidget(window);
     m_stack_widget->setCurrentWidget(window);
 
-    // window->show();
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
         m_project_tree->layoutChanged();
     });

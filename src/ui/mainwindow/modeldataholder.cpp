@@ -229,20 +229,25 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_independet_2 << m_script_action;
 #endif
 
-    QHBoxLayout* buttons = new QHBoxLayout;
+    QVBoxLayout* vlayout = new QVBoxLayout;
 
+    QHBoxLayout* buttons = new QHBoxLayout;
     buttons->addWidget(m_add_nmr);
     buttons->addWidget(m_add_itc);
     buttons->addWidget(m_add_kinetics);
-    buttons->addStretch(100);
+    buttons->addWidget(m_edit_data);
+
+    vlayout->addLayout(buttons);
+
+    buttons = new QHBoxLayout;
     buttons->addWidget(m_optimize);
     buttons->addWidget(m_statistics);
     buttons->addWidget(m_analyse);
     buttons->addWidget(m_close_all);
-    buttons->addStretch(100);
-    buttons->addWidget(m_edit_data);
 
-    m_buttons->setLayout(buttons);
+    vlayout->addLayout(buttons);
+
+    m_buttons->setLayout(vlayout);
     layout->addStretch();
     layout->addWidget(m_hide);
     setLayout(layout);
