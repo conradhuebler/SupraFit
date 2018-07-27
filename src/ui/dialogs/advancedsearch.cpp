@@ -249,7 +249,9 @@ void AdvancedSearch::MaxSteps()
             }
         }
         m_parameter.append(QVector<qreal>() << min << max << step);
-        max_count *= (max + step - min) / step;
+
+        if (max > min)
+            max_count *= std::ceil((max - min) / step);
     }
 
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
@@ -289,7 +291,7 @@ void AdvancedSearch::IncrementProgress(int time)
 {
     QMutexLocker locker(&mutex);
     m_time += time;
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     int val = m_progress->value() + 1;
     qreal aver = double(m_time) / val;
     int remain = double(m_progress->maximum() - val) * aver / 3000;

@@ -83,14 +83,14 @@ void SearchBatch::optimise()
         qDebug() << "no model set";
         return;
     }
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
     m_thread->setModel(m_model, false);
     m_thread->run();
     m_model->ImportModel(m_thread->ConvergedParameter());
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
 #ifdef _DEBUG
 //         qDebug() <<  "finished after " << t1-t0 << "msecs!";
@@ -123,7 +123,8 @@ QVector<QVector<double>> GlobalSearch::ParamList()
         min = m_config.parameter[i][0];
         max = m_config.parameter[i][1];
         step = m_config.parameter[i][2];
-        m_max_count *= (max + step - min) / step;
+        if (max > min)
+            m_max_count *= std::ceil((max - min) / step);
         for (double s = min; s <= max; s += step)
             list << s;
         full_list << list;
@@ -138,9 +139,9 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
     m_models.clear();
     QVector<double> error;
     std::cout << "starting the scanning ..." << m_max_count << " steps approx." << std::endl;
-    int t0 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     ConvertList(full_list);
-    int t1 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     std::cout << "time for scanning: " << t1 - t0 << " msecs." << std::endl;
     return m_models;
 }
@@ -148,7 +149,8 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
 void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 {
     m_full_list.clear();
-    qDebug() << full_list;
+    m_result.clear();
+
     QVector<int> position(full_list.size(), 0);
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_allow_break = false;
@@ -187,8 +189,6 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
             }
         }
     }
-    qDebug() << m_input.size();
-    emit setMaximumSteps(m_input.size());
 
     QVector<QPointer<SearchBatch>> threads;
 

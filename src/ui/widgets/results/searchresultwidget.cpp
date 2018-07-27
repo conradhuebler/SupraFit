@@ -110,6 +110,9 @@ QTableView* SearchResultWidget::BuildList()
     QStandardItemModel* model = new QStandardItemModel;
     QStringList header = QStringList() << "Sum of Squares";
     int size_optimsed;
+
+    qDebug() << m_results.size();
+
     for (int i = 0; i < m_results.size(); ++i) {
         double error = m_results[i].SumError;
 
