@@ -21,9 +21,9 @@
 
 #include <QtGui/QStandardItemModel>
 
+#include <QtWidgets/QAction>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QListView>
-
 #include <QtWidgets/QSplitter>
 
 #include "src/global.h"
@@ -49,7 +49,21 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     m_results = new QListView;
     m_results->setMaximumWidth(200);
     m_results->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_results->setContextMenuPolicy(Qt::ActionsContextMenu);
     connect(m_results, &QListView::doubleClicked, this, &ResultsDialog::itemDoubleClicked);
+
+    QAction* action;
+    action = new QAction("Load Load", m_results);
+    m_results->addAction(action);
+    connect(action, &QAction::triggered, action, [this]() {
+        itemDoubleClicked(m_results->currentIndex());
+    });
+
+    action = new QAction("Remove Item", m_results);
+    m_results->addAction(action);
+    connect(action, &QAction::triggered, action, [this]() {
+        RemoveItem(m_results->currentIndex());
+    });
 
     m_tabs = new QTabWidget;
     m_tabs->setTabsClosable(true);
@@ -159,4 +173,17 @@ void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
         m_indices[Index(item)] = tab;
     } else
         m_tabs->setCurrentIndex(m_indices[Index(item)]);
+}
+
+void ResultsDialog::RemoveItem(const QModelIndex& index)
+{
+    QStandardItem* item = m_itemmodel->itemFromIndex(index);
+    if (-1 != m_indices[Index(item)]) {
+        // m_tabs->removeTab(m_indices[Index(item)]);
+    }
+
+    SupraFit::Statistic type = SupraFit::Statistic(item->data(Qt::UserRole).toInt());
+    int i = item->data(Qt::UserRole + 1).toInt();
+    m_model.data()->RemoveStatistic(type, i);
+    UpdateList();
 }

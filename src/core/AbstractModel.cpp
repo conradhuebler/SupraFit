@@ -589,6 +589,52 @@ QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index)
     return QJsonObject();
 }
 
+bool AbstractModel::RemoveStatistic(SupraFit::Statistic type, int index)
+{
+    switch (type) {
+    case SupraFit::Statistic::WeakenedGridSearch:
+        if (index < m_wg_statistics.size())
+            m_wg_statistics.takeAt(index);
+        else
+            return false;
+        break;
+
+    case SupraFit::Statistic::ModelComparison:
+        if (index < m_moco_statistics.size())
+            m_moco_statistics.takeAt(index);
+        else
+            return false;
+        break;
+
+    case SupraFit::Statistic::FastConfidence:
+        m_fast_confidence = QJsonObject();
+        break;
+
+    case SupraFit::Statistic::Reduction:
+        m_reduction = QJsonObject();
+        break;
+
+    case SupraFit::Statistic::MonteCarlo:
+    case SupraFit::Statistic::CrossValidation:
+        if (index < m_mc_statistics.size())
+            m_mc_statistics.takeAt(index);
+        else
+            return false;
+        break;
+
+    case SupraFit::Statistic::GlobalSearch:
+        if (index < m_search_results.size())
+            m_search_results.takeAt(index);
+        else
+            return false;
+        break;
+
+    default:
+        return false;
+    }
+    return true;
+}
+
 QString AbstractModel::Data2Text() const
 {
     QString text;

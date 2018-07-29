@@ -242,6 +242,8 @@ public:
      */
     QJsonObject getStatistic(SupraFit::Statistic type, int index = 0);
 
+    bool RemoveStatistic(SupraFit::Statistic type, int index = 0);
+
     virtual QList<qreal> getCalculatedModel();
 
     /*! \brief returns a List of all Series, that are to be included in optimisation
