@@ -23,6 +23,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
+#include "src/core/toolset.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
@@ -37,9 +38,9 @@
 #include "globalsearch.h"
 
 SearchBatch::SearchBatch(const GSConfig& config, QPointer<GlobalSearch> parent)
-    : m_config(config)
+    : m_parent(parent)
+    , m_config(config)
     , m_finished(false)
-    , m_parent(parent)
     , m_checked(false)
 {
 }
@@ -48,17 +49,16 @@ void SearchBatch::run()
 {
     m_thread = new NonLinearFitThread(false);
     while (true) {
-        GSResult result;
+        QJsonObject result;
         if (m_interrupt)
             break;
 
         QVector<double> parameter = m_parent->DemandParameter();
-        //qDebug() << parameter;
 
         if (parameter.isEmpty())
             break;
 
-        result.initial = parameter;
+        result["initial"] = ToolSet::DoubleVec2String(parameter);
         for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
             m_model->forceGlobalParameter(parameter[i], i);
         if (!m_model.data()->SupportSeries()) {
@@ -67,11 +67,11 @@ void SearchBatch::run()
                 m_model->forceLocalParameter(parameter[i], i - m_model.data()->GlobalParameterSize(), 0);
         }
         optimise();
-        result.optimised = m_model->AllParameter();
-        result.model = m_model->ExportModel(false, false);
-        result.SumError = m_model->SumofSquares();
-        result.valid = !m_model->isCorrupt();
-        result.converged = m_model->isConverged();
+        result["optimised"] = ToolSet::DoubleVec2String(m_model->AllParameter());
+        result["model"] = m_model->ExportModel(false, false);
+        result["SSE"] = m_model->SumofSquares();
+        result["valid"] = !m_model->isCorrupt();
+        result["converged"] = m_model->isConverged();
         m_result << result;
     }
     delete m_thread;
@@ -149,7 +149,7 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
 void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 {
     m_full_list.clear();
-    m_result.clear();
+    m_result = QJsonObject();
 
     QVector<int> position(full_list.size(), 0);
     int maxthreads = qApp->instance()->property("threads").toInt();
@@ -203,13 +203,11 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 
     while (m_threadpool->activeThreadCount())
         QCoreApplication::processEvents();
-
     for (int i = 0; i < threads.size(); ++i) {
         QCoreApplication::processEvents();
-        m_result << threads[i]->Result();
+        m_results << threads[i]->Result();
         delete threads[i];
     }
-
     return;
 }
 
@@ -234,11 +232,9 @@ void GlobalSearch::ExportResults(const QString& filename, double threshold, bool
 
 QJsonObject GlobalSearch::Controller() const
 {
-#warning adopt and complete
-
     QJsonObject controller;
-    controller["method"] = "Global Search";
-
+    controller["method"] = SupraFit::Statistic::GlobalSearch;
+    controller["size"] = m_results.size();
     return controller;
 }
 

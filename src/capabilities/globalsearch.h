@@ -35,20 +35,6 @@ class GlobalSearch;
 class Minimizer;
 class NonLinearFitThread;
 
-struct GlobalSearchResult {
-    QVector<QVector<double>> m_input;
-    QVector<double> m_error;
-    QVector<double> m_corr_coeff;
-    QVector<QJsonObject> m_models;
-};
-
-struct GSResult {
-    QVector<qreal> initial, optimised;
-    qreal SumError;
-    QJsonObject model;
-    bool valid, converged;
-};
-
 class GSConfig : public AbstractConfig {
 public:
     inline GSConfig(OptimizerConfig config)
@@ -70,7 +56,7 @@ public:
     ~SearchBatch() {}
 
     virtual void run() override;
-    inline QList<GSResult> Result() { return m_result; }
+    inline QList<QJsonObject> Result() { return m_result; }
     inline void setModel(const QSharedPointer<AbstractModel> model)
     {
         m_model = model->Clone();
@@ -82,8 +68,8 @@ private:
 
     void optimise();
     QJsonObject guess;
-    QList<GSResult> m_result;
     QPointer<GlobalSearch> m_parent;
+    QList<QJsonObject> m_result;
     GSConfig m_config;
     bool m_finished, m_checked;
     QSharedPointer<AbstractModel> m_model;
@@ -101,7 +87,6 @@ public:
     QList<QJsonObject> SearchGlobal();
     void ExportResults(const QString& filename, double threshold, bool allow_invalid);
     QVector<qreal> DemandParameter();
-    inline QList<GSResult> Result() { return m_result; }
 
 public slots:
     virtual void Interrupt() override;
@@ -109,14 +94,12 @@ public slots:
 private:
     QVector<QVector<double>> ParamList();
     void ConvertList(const QVector<QVector<double>>& full_list);
-    // void Scan(const QVector<QVector<double>>& list);
     virtual QJsonObject Controller() const override;
-    QList<GSResult> m_result;
+    QJsonObject m_result;
 
     quint64 m_time_0;
     int m_time, m_max_count;
     QVector<QVector<double>> m_full_list;
-    GlobalSearchResult last_result;
     double error_max;
     bool m_allow_break;
     GSConfig m_config;

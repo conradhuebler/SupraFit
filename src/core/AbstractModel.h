@@ -523,6 +523,12 @@ public:
 
     inline void RemoveOption(int key) { d->m_model_options.remove(key); }
 
+    inline void addSearchResult(const QJsonObject& search) { m_search_results << search; }
+
+    inline int SearchSize() const { return m_search_results.size(); }
+
+    inline QJsonObject Search(int i) { return m_search_results[i]; }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -574,6 +580,7 @@ protected:
     QList<QJsonObject> m_mc_statistics;
     QList<QJsonObject> m_wg_statistics;
     QList<QJsonObject> m_moco_statistics;
+    QList<QJsonObject> m_search_results;
 
     QJsonObject m_reduction;
     QJsonObject m_fast_confidence;

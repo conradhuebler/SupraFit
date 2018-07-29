@@ -60,4 +60,8 @@ private:
 private slots:
     void UpdateList();
     void itemDoubleClicked(const QModelIndex& index);
+
+signals:
+    void LoadModel(const QJsonObject& object);
+    void AddModel(const QJsonObject& object);
 };

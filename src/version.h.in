@@ -14,4 +14,4 @@ const QString conf_mode = "RELEASE Mode"; /*! Last compilation mode used */
 
 const QString version = "Suprafit 2 v-1.6 Alpha \n\t Git Branch: @GIT_BRANCH@ -- Commit: @GIT_COMMIT_HASH@  -- Commit Date : @GIT_COMMIT_DATE@ - " + conf_mode; /*! Version name */
 
-const int qint_version = 1604;
+const int qint_version = 1605;

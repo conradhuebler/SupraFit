@@ -130,6 +130,16 @@ void ResultsDialog::UpdateList()
         makeItem(item);
         model->appendRow(item);
     }
+
+    for (int i = 0; i < m_model.data()->SearchSize(); ++i) {
+        QStandardItem* item = new QStandardItem(tr("Global Search"));
+        item->setData(tr("Global Search"), Qt::DisplayRole);
+        item->setData(SupraFit::Statistic::GlobalSearch, Qt::UserRole);
+        item->setData(i, Qt::UserRole + 1);
+        makeItem(item);
+        model->appendRow(item);
+    }
+
     m_itemmodel = model;
     m_results->setModel(m_itemmodel);
 }
@@ -141,7 +151,10 @@ void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
     if (-1 == m_indices[Index(item)]) {
         SupraFit::Statistic type = SupraFit::Statistic(item->data(Qt::UserRole).toInt());
         int index = item->data(Qt::UserRole + 1).toInt();
-        int tab = m_tabs->addTab(new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper), SupraFit::Statistic2Name(type));
+        ResultsWidget* results = new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper);
+        int tab = m_tabs->addTab(results, SupraFit::Statistic2Name(type));
+        connect(results, &ResultsWidget::LoadModel, this, &ResultsDialog::LoadModel);
+        connect(results, &ResultsWidget::AddModel, this, &ResultsDialog::AddModel);
         item->setData(tab, Qt::UserRole + 2);
         m_indices[Index(item)] = tab;
     } else

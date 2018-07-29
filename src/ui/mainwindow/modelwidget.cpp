@@ -126,6 +126,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_statistic_widget = new StatisticWidget(m_model, this);
 
     m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
+    connect(m_results, &ResultsDialog::LoadModel, this, &ModelWidget::LoadJson);
+    connect(m_results, &ResultsDialog::AddModel, this, &ModelWidget::AddModel);
 
     m_table_result = new ModalDialog;
     m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
@@ -872,21 +874,8 @@ void ModelWidget::TogglePlot()
 
 void ModelWidget::MultiScanFinished()
 {
-    try {
-        SearchResultWidget* table = new SearchResultWidget(m_advancedsearch->globalSearch(), m_model, this);
-        connect(table, SIGNAL(LoadModel(const QJsonObject)), this, SLOT(LoadJson(const QJsonObject)));
-        connect(table, SIGNAL(AddModel(const QJsonObject)), this, SIGNAL(AddModel(const QJsonObject)));
-
-        m_table_result->setWidget(table, "Scan Results");
-
-        m_advancedsearch->hide();
-        m_table_result->Attention();
-    }
-
-    catch (int val) {
-        if (val == 1)
-            qDebug() << "model empty, should not happen at all.";
-    }
+    m_model->addSearchResult(m_advancedsearch->globalSearch()->Result());
+    emit m_model->StatisticChanged();
 }
 
 void ModelWidget::HideAllWindows()

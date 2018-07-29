@@ -37,7 +37,8 @@ enum Statistic {
     ModelComparison = 3,
     CrossValidation = 4,
     Reduction = 5,
-    FastConfidence = 6
+    FastConfidence = 6,
+    GlobalSearch = 7
 };
 
 enum Model {
@@ -105,6 +106,10 @@ inline QString Statistic2Name(SupraFit::Statistic type)
         break;
     case SupraFit::Statistic::CrossValidation:
         return ("Cross Validation");
+        break;
+
+    case SupraFit::Statistic::GlobalSearch:
+        return ("Global Search");
         break;
     }
     return QString();

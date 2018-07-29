@@ -577,6 +577,12 @@ QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index)
         if (index < m_mc_statistics.size())
             return m_mc_statistics[index];
         break;
+
+    case SupraFit::Statistic::GlobalSearch:
+        if (index < m_search_results.size())
+            return m_search_results[index];
+        break;
+
     default:
         return QJsonObject();
     }
@@ -688,6 +694,10 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
 
         for (int i = 0; i < m_wg_statistics.size(); ++i) {
             statisticObject[QString::number(SupraFit::Statistic::WeakenedGridSearch) + ":" + QString::number(i)] = m_wg_statistics[i];
+        }
+
+        for (int i = 0; i < m_search_results.size(); ++i) {
+            statisticObject[QString::number(SupraFit::Statistic::GlobalSearch) + ":" + QString::number(i)] = m_search_results[i];
         }
 
         statisticObject[QString::number(SupraFit::Statistic::Reduction)] = m_reduction;
@@ -825,6 +835,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             m_moco_statistics << statisticObject[str].toObject();
         else if (str.contains(QString::number(SupraFit::Statistic::WeakenedGridSearch) + ":"))
             m_wg_statistics << statisticObject[str].toObject();
+        else if (str.contains(QString::number(SupraFit::Statistic::GlobalSearch) + ":"))
+            m_search_results << statisticObject[str].toObject();
     }
 
     if (fileversion >= 1601) {

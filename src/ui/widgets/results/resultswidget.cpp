@@ -28,6 +28,7 @@
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/results/contourwidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
+#include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
 #include <QtCore/QPointer>
@@ -98,6 +99,11 @@ void ResultsWidget::setUi()
     case SupraFit::Statistic::CrossValidation:
         m_widget = MonteCarloWidget();
         setObjectName("Cross Validation Estimation for " + m_model->Name());
+        break;
+
+    case SupraFit::Statistic::GlobalSearch:
+        m_widget = SearchWidget();
+        setObjectName("Global Search for " + m_model->Name());
         break;
 
     default:
@@ -280,8 +286,10 @@ QWidget* ResultsWidget::GridSearchWidget()
 
 QWidget* ResultsWidget::SearchWidget()
 {
-    QWidget* widget = new QWidget;
-    return widget;
+    SearchResultWidget* table = new SearchResultWidget(m_data, m_model, this);
+    connect(table, &SearchResultWidget::LoadModel, this, &ResultsWidget::LoadModel);
+    connect(table, &SearchResultWidget::AddModel, this, &ResultsWidget::AddModel);
+    return table;
 }
 
 void ResultsWidget::WriteConfidence(const QJsonObject& data)

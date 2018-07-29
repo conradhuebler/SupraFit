@@ -40,7 +40,7 @@ class SearchResultWidget : public QWidget {
     Q_OBJECT
 
 public:
-    SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget* parent);
+    SearchResultWidget(const QJsonObject& results, const QSharedPointer<AbstractModel> model, QWidget* parent);
     ~SearchResultWidget();
 
 private:
@@ -56,9 +56,8 @@ private:
     ScientificBox* m_threshold;
     QPushButton* m_export;
     QVector<QList<qreal>> m_input;
-    QPointer<GlobalSearch> m_globalsearch;
 
-    QList<GSResult> m_results;
+    QJsonObject m_results;
     QSortFilterProxyModel* m_proxyModel;
 
 private slots:

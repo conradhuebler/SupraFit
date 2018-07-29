@@ -48,13 +48,12 @@
 
 #include "searchresultwidget.h"
 
-SearchResultWidget::SearchResultWidget(QPointer<GlobalSearch> globalsearch, const QSharedPointer<AbstractModel> model, QWidget* parent)
+SearchResultWidget::SearchResultWidget(const QJsonObject& results, const QSharedPointer<AbstractModel> model, QWidget* parent)
     : QWidget(parent)
-    , m_globalsearch(globalsearch)
     , m_model(model)
+    , m_results(results)
 {
     m_central_widget = new QTabWidget;
-    m_results = m_globalsearch->Result();
 
     QGridLayout* layout = new QGridLayout;
     m_export = new QPushButton(tr("Export Models"));
@@ -109,31 +108,30 @@ QTableView* SearchResultWidget::BuildList()
     QTableView* table = new QTableView(this);
     QStandardItemModel* model = new QStandardItemModel;
     QStringList header = QStringList() << "Sum of Squares";
-    int size_optimsed;
-
-    qDebug() << m_results.size();
-
-    for (int i = 0; i < m_results.size(); ++i) {
-        double error = m_results[i].SumError;
+    int size_optimised;
+    int size = m_results["controller"].toObject()["size"].toInt();
+    for (int i = 0; i < size; ++i) {
+        QJsonObject local_model = m_results[QString::number(i)].toObject();
+        double error = local_model["SSE"].toDouble();
 
         QStandardItem* item = new QStandardItem(QString::number(error));
         item->setData(i, Qt::UserRole);
         item->setData(error, Qt::UserRole + 1);
-        item->setData(QString::number(m_results[i].converged), Qt::UserRole + 2);
-        item->setData(QString::number(m_results[i].valid), Qt::UserRole + 3);
-        item->setData(QString::number(m_results[i].valid && m_results[i].converged), Qt::UserRole + 4);
+        item->setData(QString::number(local_model["converged"].toBool()), Qt::UserRole + 2);
+        item->setData(QString::number(local_model["valid"].toBool()), Qt::UserRole + 3);
+        item->setData(QString::number(local_model["valid"].toBool() && local_model["converged"].toBool()), Qt::UserRole + 4);
         item->setData(1, Qt::UserRole + 5);
         QBrush brush;
-        if (m_results[i].valid && m_results[i].converged) {
+        if (local_model["valid"].toBool() && local_model["converged"].toBool()) {
             brush.setColor(Qt::green);
         }
         item->setData(brush, Qt::BackgroundRole);
 
         model->setItem(i, 0, item);
         int j = 1;
-        QVector<qreal> initial = m_results[i].initial;
-        QVector<qreal> optimised = m_results[i].optimised;
-        size_optimsed = optimised.size();
+        QVector<qreal> initial = ToolSet::String2DoubleVec(local_model["initial"].toString());
+        QVector<qreal> optimised = ToolSet::String2DoubleVec(local_model["optimised"].toString());
+        size_optimised = optimised.size();
         for (int l = 0; l < m_model->GlobalParameterSize(); ++l) {
             QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
@@ -174,7 +172,7 @@ QTableView* SearchResultWidget::BuildList()
                 j++;
             }
         }
-            m_models << m_results[i].model;
+        m_models << local_model["model"].toObject();
     }
 
     QStringList head;
@@ -182,7 +180,7 @@ QTableView* SearchResultWidget::BuildList()
         head << m_model.data()->GlobalParameterName(i);
 
     if (!m_model->SupportSeries()) {
-        for (int l = m_model->GlobalParameterSize(); l < size_optimsed; ++l) {
+        for (int l = m_model->GlobalParameterSize(); l < size_optimised; ++l) {
             if (m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
                 head << m_model->LocalParameterName(l - m_model->GlobalParameterSize());
         }
@@ -218,7 +216,7 @@ ContourWidget* SearchResultWidget::BuildContour()
 void SearchResultWidget::rowSelected(const QModelIndex& index)
 {
     int i = index.data(Qt::UserRole).toInt();
-    QJsonObject model = m_results[i].model;
+    QJsonObject model = m_results[QString::number(i)].toObject()["model"].toObject();
     emit LoadModel(model);
 }
 
@@ -227,7 +225,7 @@ void SearchResultWidget::ShowContextMenu(const QPoint& pos)
     Q_UNUSED(pos)
     QModelIndex index = m_table->currentIndex();
     int i = index.data(Qt::UserRole).toInt();
-    QJsonObject model = m_results[i].model;
+    QJsonObject model = m_results[QString::number(i)].toObject()["model"].toObject();
     emit AddModel(model);
 }
 
@@ -239,7 +237,7 @@ void SearchResultWidget::ExportModels()
     if (str.isEmpty())
         return;
     setLastDir(str);
-    m_globalsearch->ExportResults(str, threshold, allow_invalid);
+    //m_globalsearch->ExportResults(str, threshold, allow_invalid);
 }
 
 void SearchResultWidget::SwitchView()

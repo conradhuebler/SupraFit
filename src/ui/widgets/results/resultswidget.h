@@ -45,6 +45,7 @@ private:
     QWidget* ModelComparisonWidget();
     QWidget* GridSearchWidget();
     QWidget* SearchWidget();
+
     void setUi();
     inline QSize ChartSize() const { return QSize(400, 300); }
 
@@ -61,4 +62,8 @@ private:
 private slots:
     void WriteConfidence(const QJsonObject& data);
     void Detailed();
+
+signals:
+    void LoadModel(const QJsonObject& object);
+    void AddModel(const QJsonObject& object);
 };

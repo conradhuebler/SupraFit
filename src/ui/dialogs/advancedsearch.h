@@ -82,7 +82,6 @@ public:
         m_model = model;
         SetUi();
     }
-    inline GlobalSearchResult LastResult() const { return last_result; }
     inline double MaxError() const { return m_error_max; }
     double MaxX() const;
     double MinX() const;
@@ -103,7 +102,6 @@ private:
     QCheckBox *m_optim, *m_initial_guess;
     QPointer<QPushButton> m_scan, m_interrupt;
     QLabel* m_max_steps;
-    GlobalSearchResult last_result;
     void ConvertList(const QVector<QVector<double>>& list, QVector<double>& error);
     QList<QList<QPointF>> m_series;
     double m_error_max;
