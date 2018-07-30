@@ -385,6 +385,7 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
 
     m_layout->addWidget(m_actions);
+    m_actions->LocalEnabled(m_model->SupportSeries());
 }
 
 void ModelWidget::resizeButtons()
@@ -821,7 +822,7 @@ void ModelWidget::ExportSimModel()
     bool ok;
     qreal scatter = QInputDialog::getDouble(this, tr("Set Standard Deviation"), tr("Set Standard Deviation for scatter"), m_model->StdDeviation(), 0, 2147483647, 4, &ok);
     if (ok) {
-        quint64 seed = QDateTime::currentMSecsSinceEpoch();
+        qint64 seed = QDateTime::currentMSecsSinceEpoch();
         std::mt19937 rng;
         rng.seed(seed);
         std::normal_distribution<double> Phi = std::normal_distribution<double>(0, scatter);
@@ -834,11 +835,12 @@ void ModelWidget::ExportSimModel()
         /*
          * Add pure shifts only, when concentration table don't provide them
          */
-        if (host[1].toDouble() != 0) {
-            model.prepend(ToolSet::DoubleList2String(m_model->getLocalParameterColumn(0).toList(), QString("\t")));
-            concentrations.prepend(QString(host[0] + "\t" + QString("0")));
+        if (host.size() >= 1) {
+            if (host[1].toDouble() != 0.0) {
+                model.prepend(ToolSet::DoubleList2String(m_model->getLocalParameterColumn(0).toList(), QString("\t")));
+                concentrations.prepend(QString(host[0] + "\t" + QString("0")));
+            }
         }
-
         if (model.size() != concentrations.size()) {
             QMessageBox::warning(this, tr("Strange"), tr("Tables don't fit, sorry!"));
             return;

@@ -632,7 +632,7 @@ QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controll
     QString text = QString("<html><h3>Global Search Result Overview</h3>");
     text += "<p>Models tested: <b>" + QString::number(size) + "</b> </p>";
     text += "<p>Models converged: <b>" + QString::number(converged) + "</b> </p>";
-    text += "<p>Models invalid: <b>" + QString::number(invalid) + "</b> </p>";
+    text += "<p>Models invalid: <b>" + QString::number(size - invalid) + "</b> </p>";
     text += "<p>SSE best model: <b>" + QString::number(min_error) + "</b> </p>";
     text += "<p>SSE worst model: <b>" + QString::number(max_error) + "</b> </p>";
 

@@ -43,6 +43,7 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
 {
     m_layout = new QGridLayout;
     setModal(false);
+    setWindowFlags(Qt::Window);
     m_mainwidget = new QSplitter(Qt::Horizontal);
     m_layout->addWidget(m_mainwidget, 0, 0);
 

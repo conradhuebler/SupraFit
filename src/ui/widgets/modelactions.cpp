@@ -51,9 +51,8 @@ void ModelActions::setUi()
     m_save = new PushButton(tr("Save"));
     m_new_guess = new PushButton(tr("New Guess"));
     m_simulate = new PushButton(tr("Export Simulated"));
-    m_plots = new PushButton(tr("Toggle Charts"));
+    m_plots = new PushButton(tr("Results"));
     //m_plots->setEnabled(false);
-    m_search = new PushButton(tr("Search Table"));
     m_detailed = new PushButton(tr("Detailed"));
     m_restore = new PushButton(tr("Restore"));
 
@@ -68,7 +67,6 @@ void ModelActions::setUi()
     h_layout->addWidget(m_new_guess);
     h_layout->addWidget(m_restore);
     h_layout->addWidget(m_optim_config);
-    h_layout->addWidget(m_search);
     h_layout->addStretch();
     h_layout->addWidget(m_toggle);
     h_layout->setAlignment(Qt::AlignLeft);
@@ -98,7 +96,6 @@ void ModelActions::setUi()
     connect(m_save, SIGNAL(clicked()), this, SIGNAL(Save2File()));
     connect(m_simulate, SIGNAL(clicked()), this, SIGNAL(ExportSimModel()));
     connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
-    connect(m_search, SIGNAL(clicked()), this, SIGNAL(ToggleSearch()));
     connect(m_restore, &PushButton::clicked, this, &ModelActions::Restore);
     connect(m_detailed, &PushButton::clicked, this, &ModelActions::Detailed);
 
@@ -109,6 +106,11 @@ void ModelActions::setUi()
 void ModelActions::EnableCharts(bool enable)
 {
     //m_plots->setEnabled(enable);
+}
+
+void ModelActions::LocalEnabled(bool enabled)
+{
+    m_minimize_single->setEnabled(enabled);
 }
 
 void ModelActions::resizeButtons()
@@ -127,7 +129,6 @@ void ModelActions::resizeButtons()
     m_simulate->setMaximumSize(120, 30);
     m_detailed->setMaximumSize(120, 30);
     m_restore->setMaximumSize(120, 30);
-    m_search->setMaximumSize(120, 30);
 }
 
 void ModelActions::ToggleMore()
