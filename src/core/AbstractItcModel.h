@@ -122,6 +122,10 @@ public:
 
     virtual void UpdateOption(int index, const QString& str) override;
 
+    virtual QString RandomInput(const QVector<double>& indep, const QVector<double>& dep) const override;
+
+    inline virtual QString RandomExportSuffix() const override { return QString("Peak Files(*.dH)"); }
+
 public slots:
     virtual void UpdateParameter();
 

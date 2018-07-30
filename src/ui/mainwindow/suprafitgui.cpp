@@ -533,7 +533,8 @@ void SupraFitGui::NewTable()
     ImportData dialog;
     if (dialog.exec() == QDialog::Accepted) {
         SetData(dialog.getProject(), dialog.ProjectFile());
-        }
+        m_mainsplitter->show();
+    }
 }
 
 void SupraFitGui::OpenFile()
@@ -552,6 +553,7 @@ void SupraFitGui::ImportTable(const QString& file)
 
     if (dialog.exec() == QDialog::Accepted) {
         SetData(dialog.getProject(), dialog.ProjectFile());
+        // m_mainsplitter->show();
     }
 }
 

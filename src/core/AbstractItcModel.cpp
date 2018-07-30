@@ -278,6 +278,35 @@ QString AbstractItcModel::ModelInfo() const
     return QString();
 }
 
+QString AbstractItcModel::RandomInput(const QVector<double>& indep, const QVector<double>& dep) const
+{
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    std::mt19937 rng(seed);
+
+    QString input;
+    QPointer<DataTable> indep_model = IndependentModel()->PrepareMC(indep, rng);
+    QPointer<DataTable> dep_model = DependentModel()->PrepareMC(dep, rng);
+
+    QStringList x = indep_model->ExportAsStringList();
+    QStringList y = dep_model->ExportAsStringList();
+
+    delete indep_model;
+    delete dep_model;
+
+    input = "10\n";
+    input += "0," + QString::number(DataPoints()) + ",0,0,0\n";
+    input += QString::number(getT() - 273) + "," + QString::number(getCellConcentration()) + "," + QString::number(getSyringeConcentration()) + "," + QString::number(getV() / 1000.0) + ",0\n";
+    input += "0\n";
+    input += "0\n";
+
+    if (x.size() == y.size()) {
+        for (int i = 0; i < x.size(); ++i)
+            input += (x[i].simplified().replace(",", ".") + "," + y[i].simplified().replace(",", ".")).simplified() + "\n";
+    }
+
+    return input;
+}
+
 void AbstractItcModel::UpdateOption(int index, const QString& str)
 {
     /*if (index == Reservoir)

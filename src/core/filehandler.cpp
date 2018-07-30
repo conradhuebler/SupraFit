@@ -64,7 +64,8 @@ void FileHandler::LoadFile()
     }
 
     QFileInfo info(m_filename);
-    if (info.suffix() == "DH" || info.suffix() == "dh")
+
+    if ((info.suffix()).toLower() == "dh")
         m_filetype = FileType::dH;
 
     m_filecontent = QString(file.readAll()).split("\n");
@@ -120,15 +121,20 @@ bool FileHandler::CheckForTable()
     int size = 0;
 
     for (int i = 0; i < m_lines; ++i) {
+        // qDebug() << m_filecontent[i];
         if (m_filecontent[i].isEmpty())
             continue;
-        if (size)
+        /*
+      if (size)
+        {
+            qDebug() << m_filecontent[i] << m_filecontent[i].split(sep) << m_filecontent[i].split(sep).size();
             m_table = (size == m_filecontent[i].split(sep).size());
+        }
         size = m_filecontent[i].split(sep).size();
 
         if (!m_table)
             return false;
-
+         */
         if (m_table) {
             QStringList elements = m_filecontent[i].split("\n");
             for (int j = 0; j < elements.size(); ++j) {

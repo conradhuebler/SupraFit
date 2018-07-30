@@ -531,6 +531,12 @@ public:
 
     inline QJsonObject Search(int i) { return m_search_results[i]; }
 
+    QString RandomInput(double indep, double dep) const;
+
+    virtual QString RandomInput(const QVector<double>& indep, const QVector<double>& dep) const;
+
+    inline virtual QString RandomExportSuffix() const { return QString("*.dat (*.dat)"); }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

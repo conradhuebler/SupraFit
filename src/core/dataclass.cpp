@@ -481,6 +481,31 @@ QPointer<DataTable> DataTable::PrepareMC(std::normal_distribution<double>& Phi, 
     return table;
 }
 
+QPointer<DataTable> DataTable::PrepareMC(QVector<double> stddev, std::mt19937& rng, QVector<int> cols)
+{
+
+    while (stddev.size() < columnCount())
+        stddev << stddev.last();
+
+    QVector<std::normal_distribution<double>> _Phi;
+    for (int i = 0; i < stddev.size(); ++i)
+        _Phi << std::normal_distribution<double>(0, stddev[i]);
+
+    if (cols.size() < columnCount()) {
+        cols = QVector<int>(columnCount(), 1);
+    }
+    QPointer<DataTable> table = new DataTable(this);
+    for (int j = 0; j < columnCount(); ++j) {
+        if (!cols[j])
+            continue;
+        for (int i = 0; i < rowCount(); ++i) {
+            double randed = _Phi[j](rng);
+            table->data(j, i) += randed;
+        }
+    }
+    return table;
+}
+
 QPointer<DataTable> DataTable::PrepareBootStrap(std::uniform_int_distribution<int>& Uni, std::mt19937& rng, const QVector<qreal>& vector)
 {
     QPointer<DataTable> table = new DataTable(this);

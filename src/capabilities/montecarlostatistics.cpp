@@ -142,7 +142,7 @@ void MonteCarloBatch::optimise()
 
     delete thread;
 
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
 #ifdef _DEBUG
 //         qDebug() <<  "finished after " << t1-t0 << "msecs!";
@@ -153,7 +153,7 @@ MonteCarloStatistics::MonteCarloStatistics(const MCConfig& config, QObject* pare
     : AbstractSearchClass(parent)
     , m_config(config)
 {
-    quint64 seed = QDateTime::currentMSecsSinceEpoch();
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);
     Phi = std::normal_distribution<double>(0, m_config.variance);
 }

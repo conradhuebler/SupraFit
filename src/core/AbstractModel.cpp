@@ -992,6 +992,34 @@ void AbstractModel::setOption(int index, const QString& value)
     emit OptionChanged(index, value);
 }
 
+QString AbstractModel::RandomInput(double indep, double dep) const
+{
+    QVector<double> vec_indep(InputParameterSize(), indep), vec_dep(SeriesCount(), dep);
+    return RandomInput(vec_indep, vec_dep);
+}
+
+QString AbstractModel::RandomInput(const QVector<double>& indep, const QVector<double>& dep) const
+{
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    std::mt19937 rng(seed);
+
+    QString input;
+    QPointer<DataTable> indep_model = IndependentModel()->PrepareMC(indep, rng);
+    QPointer<DataTable> dep_model = DependentModel()->PrepareMC(dep, rng);
+
+    QStringList x = indep_model->ExportAsStringList();
+    QStringList y = dep_model->ExportAsStringList();
+
+    if (x.size() == y.size()) {
+        for (int i = 0; i < x.size(); ++i)
+            input += x[i].replace(",", ".") + "\t" + y[i].replace(",", ".") + "\n";
+    }
+
+    delete indep_model;
+    delete dep_model;
+    return input;
+}
+
 AbstractModel& AbstractModel::operator=(const AbstractModel& other)
 {
     setOptimizerConfig(other.getOptimizerConfig());

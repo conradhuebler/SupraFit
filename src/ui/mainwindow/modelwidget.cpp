@@ -822,38 +822,15 @@ void ModelWidget::ExportSimModel()
     bool ok;
     qreal scatter = QInputDialog::getDouble(this, tr("Set Standard Deviation"), tr("Set Standard Deviation for scatter"), m_model->StdDeviation(), 0, 2147483647, 4, &ok);
     if (ok) {
-        qint64 seed = QDateTime::currentMSecsSinceEpoch();
-        std::mt19937 rng;
-        rng.seed(seed);
-        std::normal_distribution<double> Phi = std::normal_distribution<double>(0, scatter);
-        DataTable* model_table = m_model->ModelTable()->PrepareMC(Phi, rng);
-        QStringList model = model_table->ExportAsStringList();
-        QStringList concentrations = m_model->IndependentModel()->ExportAsStringList();
+        QString content = m_model->RandomInput(0, scatter);
 
-        QString first = concentrations.first();
-        QStringList host = first.split("\t");
-        /*
-         * Add pure shifts only, when concentration table don't provide them
-         */
-        if (host.size() >= 1) {
-            if (host[1].toDouble() != 0.0) {
-                model.prepend(ToolSet::DoubleList2String(m_model->getLocalParameterColumn(0).toList(), QString("\t")));
-                concentrations.prepend(QString(host[0] + "\t" + QString("0")));
-            }
-        }
-        if (model.size() != concentrations.size()) {
-            QMessageBox::warning(this, tr("Strange"), tr("Tables don't fit, sorry!"));
-            return;
-        }
-
-        QString filename = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("All files (*.*)"));
+        QString filename = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), m_model->RandomExportSuffix());
         if (!filename.isEmpty()) {
             setLastDir(filename);
             QFile file(filename);
             if (file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
                 QTextStream stream(&file);
-                for (int i = 0; i < model.size(); ++i)
-                    stream << concentrations[i] << "\t" << model[i] << endl;
+                stream << content;
             }
         }
     }
