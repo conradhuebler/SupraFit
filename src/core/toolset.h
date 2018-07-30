@@ -78,5 +78,7 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename);
 
 namespace Print {
 QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractModel> model, const QJsonObject& controller);
+QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller);
+
 QString printDouble(double number);
 }

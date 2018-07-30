@@ -88,7 +88,11 @@ void ResultsDialog::Attention()
 
 void ResultsDialog::ShowResult(SupraFit::Statistic type, int index)
 {
-    int tab = m_tabs->addTab(new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper), SupraFit::Statistic2Name(type));
+    ResultsWidget* results = new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper);
+    int tab = m_tabs->addTab(results, SupraFit::Statistic2Name(type));
+    connect(results, &ResultsWidget::LoadModel, this, &ResultsDialog::LoadModel);
+    connect(results, &ResultsWidget::AddModel, this, &ResultsDialog::AddModel);
+
     m_tabs->setCurrentIndex(tab);
     m_indices[Index(type, index)] = tab;
 }

@@ -612,6 +612,33 @@ QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractMod
     return box_message + text;
 }
 
+QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller)
+{
+
+    int converged = 0;
+    int invalid = 0;
+
+    double min_error = 1e10, max_error = 0;
+
+    int size = controller["size"].toInt();
+    for (int i = 0; i < size; ++i) {
+        QJsonObject local_model = result[QString::number(i)].toObject();
+        min_error = qMin(min_error, local_model["SSE"].toDouble());
+        max_error = qMax(max_error, local_model["SSE"].toDouble());
+
+        converged += local_model["converged"].toBool();
+        invalid += local_model["valid"].toBool();
+    }
+    QString text = QString("<html><h3>Global Search Result Overview</h3>");
+    text += "<p>Models tested: <b>" + QString::number(size) + "</b> </p>";
+    text += "<p>Models converged: <b>" + QString::number(converged) + "</b> </p>";
+    text += "<p>Models invalid: <b>" + QString::number(invalid) + "</b> </p>";
+    text += "<p>SSE best model: <b>" + QString::number(min_error) + "</b> </p>";
+    text += "<p>SSE worst model: <b>" + QString::number(max_error) + "</b> </p>";
+
+    return text;
+}
+
 QString printDouble(double number)
 {
     QString string;

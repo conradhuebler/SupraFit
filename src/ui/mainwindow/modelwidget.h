@@ -145,7 +145,7 @@ private:
     QWidget* m_model_widget;
     QSplitter* m_splitter;
     StatisticWidget* m_statistic_widget;
-    ModalDialog *m_dialogs, *m_table_result;
+    ModalDialog* m_dialogs;
     ResultsDialog* m_results;
 
     bool m_statistic, m_val_readonly;
@@ -168,7 +168,6 @@ private slots:
     void MultiScanFinished();
     void TogglePlot();
     void ToggleStatisticDialog();
-    void ToggleSearchTable();
     void Save2File();
     void ExportSimModel();
     void FastConfidence();

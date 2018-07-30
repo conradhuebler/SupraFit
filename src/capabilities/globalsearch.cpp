@@ -129,7 +129,6 @@ QVector<QVector<double>> GlobalSearch::ParamList()
             list << s;
         full_list << list;
     }
-    emit setMaximumSteps(m_max_count);
     return full_list;
 }
 
@@ -150,6 +149,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 {
     m_full_list.clear();
     m_result = QJsonObject();
+    m_results.clear();
 
     QVector<int> position(full_list.size(), 0);
     int maxthreads = qApp->instance()->property("threads").toInt();
@@ -189,6 +189,11 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
             }
         }
     }
+
+    m_max_count = m_input.size();
+    std::cout << "starting the scanning with " << m_max_count << " steps." << std::endl;
+
+    emit setMaximumSteps(m_max_count);
 
     QVector<QPointer<SearchBatch>> threads;
 

@@ -532,6 +532,11 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
         index = 0;
         break;
 
+    case SupraFit::Statistic::GlobalSearch:
+        m_search_results << object;
+        index = m_search_results.lastIndexOf(object);
+        break;
+
     case SupraFit::Statistic::MonteCarlo:
     case SupraFit::Statistic::CrossValidation:
         bool duplicate = false;
@@ -582,9 +587,6 @@ QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index)
         if (index < m_search_results.size())
             return m_search_results[index];
         break;
-
-    default:
-        return QJsonObject();
     }
     return QJsonObject();
 }

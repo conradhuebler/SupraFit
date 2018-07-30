@@ -129,9 +129,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_results, &ResultsDialog::LoadModel, this, &ModelWidget::LoadJson);
     connect(m_results, &ResultsDialog::AddModel, this, &ModelWidget::AddModel);
 
-    m_table_result = new ModalDialog;
-    m_table_result->setWindowTitle("Search Results " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
-
     m_global_box = new QCheckBox(tr("Global Parameter"));
     m_global_box->setChecked(true);
 
@@ -336,7 +333,6 @@ ModelWidget::~ModelWidget()
     m_dialogs->hide();
 
     delete m_dialogs;
-    delete m_table_result;
     delete m_statistic_dialog;
 }
 
@@ -384,7 +380,6 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
     connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
     connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
-    connect(m_actions, SIGNAL(ToggleSearch()), this, SLOT(ToggleSearchTable()));
     connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
@@ -531,11 +526,6 @@ void ModelWidget::MinimizeModel(const OptimizerConfig& config)
 void ModelWidget::ToggleStatisticDialog()
 {
     m_statistic_dialog->Attention();
-}
-
-void ModelWidget::ToggleSearchTable()
-{
-    m_table_result->Attention();
 }
 
 
@@ -874,8 +864,7 @@ void ModelWidget::TogglePlot()
 
 void ModelWidget::MultiScanFinished()
 {
-    m_model->addSearchResult(m_advancedsearch->globalSearch()->Result());
-    emit m_model->StatisticChanged();
+    LoadStatistic(m_advancedsearch->globalSearch()->Result());
 }
 
 void ModelWidget::HideAllWindows()

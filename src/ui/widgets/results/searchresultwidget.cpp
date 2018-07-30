@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -106,7 +106,10 @@ SearchResultWidget::~SearchResultWidget()
 QTableView* SearchResultWidget::BuildList()
 {
     QTableView* table = new QTableView(this);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
     QStandardItemModel* model = new QStandardItemModel;
+
     QStringList header = QStringList() << "Sum of Squares";
     int size_optimised;
     int size = m_results["controller"].toObject()["size"].toInt();

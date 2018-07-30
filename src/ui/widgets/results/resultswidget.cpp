@@ -297,11 +297,15 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     QString text;
     m_data = data;
     QJsonObject controller = m_data["controller"].toObject();
-    for (int i = 0; i < m_data.count() - 1; ++i) {
-        QJsonObject data = m_data[QString::number(i)].toObject();
-        if (data.isEmpty())
-            continue;
-        text += Print::TextFromConfidence(data, m_model.data(), controller);
+    if (controller["method"].toInt() == SupraFit::Statistic::GlobalSearch) {
+        text += Print::TextFromStatistic(data, controller);
+    } else {
+        for (int i = 0; i < m_data.count() - 1; ++i) {
+            QJsonObject data = m_data[QString::number(i)].toObject();
+            if (data.isEmpty())
+                continue;
+            text += Print::TextFromConfidence(data, m_model.data(), controller);
+        }
     }
     m_confidence_label->setText(text);
 }
