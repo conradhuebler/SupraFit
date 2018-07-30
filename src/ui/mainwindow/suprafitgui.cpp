@@ -190,7 +190,7 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
     return mimeData;
 }
 
-bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
+bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const
 {
     QString string = data->text();
     const ModelMime* d = qobject_cast<const ModelMime*>(data);
@@ -208,41 +208,44 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
             }
     }*/
 
-    if (string.contains("Data") && !this->parent(parent).isValid())
+    if (string.contains("Data") && !parent(index).isValid())
         return true;
-    else if ((string.contains("Data") && this->parent(parent).isValid()))
+    else if ((string.contains("Data") && parent(index).isValid()))
         return false;
     else
         return true;
 }
 
-bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
     QString string = data->text();
 
-    if (row == -1 && column == -1 && !parent.isValid()) {
+    if (row == -1 && column == -1 && !index.isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
         emit AddMetaModel(d->Index(), -1);
         return true;
     }
-    if (parent.isValid() && !this->parent(parent).isValid()) {
-        int r = parent.row();
+    if (index.isValid() && !parent(index).isValid()) {
+        int r = index.row();
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
-        if ((*m_project_list)[r]->isMetaModel() && parent.isValid()) {
+        if ((*m_project_list)[r]->isMetaModel() && index.isValid()) {
             if (d->Index().parent().isValid())
                 emit AddMetaModel(d->Index(), r);
             else
                 emit UiMessage(tr("It doesn't make sense to add whole project to a meta model.\nTry one of the models within this project."));
-        } else if (parent.isValid()) {
+        } else if (index.isValid()) {
             if (!d->Index().parent().isValid())
                 emit CopySystemParameter(d->Index(), r);
             else
                 emit UiMessage(tr("Nothing to tell"));
         }
         return true;
-    }
-
+    } else if (index.isValid() && parent(index).isValid()) {
+        const ModelMime* d = qobject_cast<const ModelMime*>(data);
+        emit CopyModel(d->Index(), parent(index).row(), index.row());
+    } else
+        return true;
     return true;
 }
 
@@ -287,6 +290,7 @@ SupraFitGui::SupraFitGui()
     m_project_tree = new ProjectTree(&m_project_list);
     connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
+    connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
 
     m_project_view->setModel(m_project_tree);
 
@@ -857,11 +861,13 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
         widget = index.row();
         MainWindow* mainwindow = m_project_list.takeAt(widget);
         m_stack_widget->removeWidget(mainwindow);
+        m_data_list.remove(widget);
         delete mainwindow;
     }
     for (int i = m_meta_models.size() - 1; i >= 0; --i)
         if (!m_meta_models[i])
             m_meta_models.remove(i);
+
     UpdateTreeView(true);
 }
 
@@ -871,16 +877,16 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
         m_project_tree->layoutChanged();
         return;
     }
+
     m_project_tree->disconnect();
 
-    delete m_project_tree;
     ProjectTree* project_tree = new ProjectTree(&m_project_list);
     m_project_view->setModel(project_tree);
-    if (m_project_tree)
-        delete m_project_tree;
+
     m_project_tree = project_tree;
     connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
+    connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
 
     if (m_project_list.size())
         m_project_list.first()->show();
@@ -949,4 +955,13 @@ void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)
 
     QPointer<DataClass> data = static_cast<DataClass*>(source.internalPointer());
     m_data_list[position].data()->OverrideSystemParameter(data->SysPar());
+}
+
+void SupraFitGui::CopyModel(const QModelIndex& source, int data, int model)
+{
+    QPointer<AbstractModel> m = static_cast<AbstractModel*>(source.internalPointer());
+    if (data < m_project_list.size()) {
+        m_project_list[data]->Model(model)->ImportModel(m->ExportModel(true, true));
+    } else
+        qDebug() << "not found" << data << model;
 }

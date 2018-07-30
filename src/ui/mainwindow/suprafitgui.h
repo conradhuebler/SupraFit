@@ -116,6 +116,7 @@ signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);
     void UiMessage(const QString& str);
+    void CopyModel(const QModelIndex& source, int data, int model);
 };
 
 class SupraFitGui : public QMainWindow {
@@ -190,6 +191,7 @@ private slots:
     void CopySystemParameter(const QModelIndex& source, int position);
 
     void SaveData(const QModelIndex& index);
+    void CopyModel(const QModelIndex& source, int data, int model);
 
     void UpdateTreeView(bool regenerate = false);
     void TreeClicked(const QModelIndex& index);
