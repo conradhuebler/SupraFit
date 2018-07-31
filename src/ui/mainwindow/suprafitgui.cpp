@@ -193,20 +193,10 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
 bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const
 {
     QString string = data->text();
-    const ModelMime* d = qobject_cast<const ModelMime*>(data);
+    // const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
     if (row == -1 && column == -1)
         return true; //FIXME stranger things are going on here
-
-    /*
-    if(parent.isValid())
-    {
-
-            if(d->isModel())
-            {
-
-            }
-    }*/
 
     if (string.contains("Data") && !parent(index).isValid())
         return true;
@@ -439,6 +429,14 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         return true;
     }
 
+    QString uuid = object["data"].toObject()["uuid"].toString();
+    if (m_hashed_data.keys().contains(uuid)) {
+        QMessageBox question(QMessageBox::Question, tr("Data already open"), tr("The current data has already been opened. At least the UUID\n%1\nexist. Continue?").arg(uuid), QMessageBox::Yes | QMessageBox::No, this);
+        if (question.exec() == QMessageBox::No) {
+            return true;
+        }
+    }
+
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data)
         return false;
@@ -484,19 +482,18 @@ void SupraFitGui::LoadMetaModels()
         for (int i = 0; i < size; ++i) {
 
             QWeakPointer<DataClass> data = m_hashed_data[uuids[QString::number(i)].toString()];
-            qDebug() << "found meta model" << uuids[QString::number(i)].toString();
 
             if (!data) {
                 qDebug() << "found no data set for meta model, skipping";
                 continue;
             }
             QJsonObject rawmodel = object["data"].toObject()["raw"].toObject()[QString::number(i)].toObject();
-            // if (!m_meta_models.size()) {
 
             QSharedPointer<AbstractModel> t = CreateModel(SupraFit::Model(rawmodel["model"].toInt()), data);
             t->ImportModel(rawmodel);
             model.data()->addModel(t.data());
         }
+        model.data()->ImportModel(object["data"].toObject());
 
         m_stack_widget->addWidget(window);
 
@@ -514,6 +511,8 @@ void SupraFitGui::LoadMetaModels()
         m_stack_widget->addWidget(window);
         m_stack_widget->setCurrentWidget(window);
     }
+
+    m_cached_meta.clear();
 }
 
 void SupraFitGui::NewWindow()

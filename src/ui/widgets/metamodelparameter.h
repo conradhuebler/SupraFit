@@ -45,7 +45,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex& index) const override
     {
         if (!index.isValid())
-            return 0;
+            return Qt::ItemIsDropEnabled;
 
         Qt::ItemFlags flag;
 
@@ -67,7 +67,7 @@ public:
 
     QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
-    virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
+    virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) override;
 
     virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
@@ -79,7 +79,7 @@ public:
 
     virtual QModelIndex parent(const QModelIndex& child) const override;
 
-    virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override { return true; }
+    virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const override { return true; }
 
 private:
     QWeakPointer<MetaModel> m_model;
@@ -114,4 +114,7 @@ private:
     QGridLayout* m_layout;
     ParameterTree* m_treemodel;
     void setUi();
+
+private slots:
+    void SplitParameter();
 };

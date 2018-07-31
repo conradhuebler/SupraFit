@@ -77,6 +77,25 @@ QVector<int> VecAndVec(const QVector<int>& a, const QVector<int>& b)
     return c;
 }
 
+QString Int2DVec2String(const QVector<QVector<int>>& vector)
+{
+    QString string("");
+    for (int i = 0; i < vector.size(); ++i)
+        string += IntVec2String(vector[i], " ") + "|";
+
+    return string.left(string.length() - 1);
+}
+
+QVector<QVector<int>> String2Int2DVec(const QString& str)
+{
+    QStringList input = str.split("|");
+    QVector<QVector<int>> vector;
+    for (const QString& string : qAsConst(input))
+        vector << String2IntVec(string);
+
+    return vector;
+}
+
 QVector<int> VecAndVec(const Vector& a, const QVector<int>& b)
 {
     QVector<int> c;

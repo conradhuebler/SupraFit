@@ -27,6 +27,7 @@
 #include <QtGui/QPainter>
 #include <QtGui/QTextDocument>
 
+#include <QtWidgets/QAction>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTreeView>
 
@@ -83,14 +84,14 @@ QMimeData* ParameterTree::mimeData(const QModelIndexList& indexes) const
     return mimeData;
 }
 
-bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
     QString string = data->text();
 
-    qreal* pos = static_cast<qreal*>(parent.internalPointer());
+    qreal* pos = static_cast<qreal*>(index.internalPointer());
     int parameter;
     if (pos == m_null)
-        parameter = parent.row();
+        parameter = index.row();
     else {
         for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
             if (pos == &m_model.data()->CombinedParameter(i)->first) {
@@ -103,6 +104,13 @@ bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, i
     if (list.size() != 2)
         return false;
 
+    if (row == -1 && column == -1 && !index.isValid()) {
+        if (list[1] == "-1")
+            return false;
+        else
+            m_model.data()->MoveSingleParameter(list[0].toInt(), list[1].toInt());
+        return true;
+    }
     if (list[1].toInt() == -1) {
         m_model.data()->MoveParameterList(list[0].toInt(), parameter);
     } else
@@ -236,6 +244,12 @@ void MetaModelParameter::setUi()
     m_tree->setDropIndicatorShown(true);
     m_tree->setDragDropMode(QAbstractItemView::DragDrop);
     m_tree->setItemDelegate(new ModelParameterEntry());
+    m_tree->setContextMenuPolicy(Qt::ActionsContextMenu);
+
+    QAction* action = new QAction(tr("Split Parameter"));
+    m_tree->addAction(action);
+    connect(action, &QAction::triggered, this, &MetaModelParameter::SplitParameter);
+
     m_layout->addWidget(m_tree, 0, 0);
 
     setLayout(m_layout);
@@ -246,4 +260,12 @@ void MetaModelParameter::setUi()
     connect(m_model.data(), &MetaModel::Recalculated, this, [this]() {
         m_treemodel->layoutChanged();
     });
+}
+
+void MetaModelParameter::SplitParameter()
+{
+    const QModelIndex index = m_tree->currentIndex();
+    if (m_treemodel->parent(index).isValid())
+        return;
+    m_model.data()->MoveSingleParameter(index.row());
 }

@@ -71,6 +71,8 @@ void MetaModelWidget::setUi()
     m_type->addItems(QStringList() << "None"
                                    << "All"
                                    << "Custom");
+    m_type->setCurrentIndex(Model()->ConnectionType());
+
     connect(m_type, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
         this->Model()->setConnectType(static_cast<MetaModel::ConnectType>(index));
     });
@@ -100,7 +102,7 @@ void MetaModelWidget::setUi()
     layout->addWidget(m_actions, 2, 0, 1, 2);
     layout->addWidget(m_statistic_widget, 3, 0, 1, 2);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
-    connect(Model(), &MetaModel::ParameterMoved, this, [this]() { m_type->setCurrentIndex(2); });
+    connect(Model(), &MetaModel::ParameterMoved, this, [this]() { m_type->setCurrentIndex(this->Model()->ConnectionType()); });
     setLayout(layout);
 }
 

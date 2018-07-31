@@ -45,8 +45,12 @@ QString Points2String(const QList<QPointF>& points);
 QList<QPointF> String2Points(const QString& str);
 QStringList DoubleList2StringList(const Vector& vector);
 
+QString Int2DVec2String(const QVector<QVector<int>>& vector);
+
 QVector<qreal> String2DoubleVec(const QString& str);
 QVector<int> String2IntVec(const QString& str);
+
+QVector<QVector<int>> String2Int2DVec(const QString& str);
 
 QVector<int> VecAndVec(const QVector<int>& a, const QVector<int>& b);
 QVector<int> VecAndVec(const Vector& a, const QVector<int>& b);

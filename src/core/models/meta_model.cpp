@@ -21,6 +21,7 @@
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
+#include "src/core/toolset.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -566,7 +567,20 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
         result = result && import;
     }
     m_connect_type = static_cast<ConnectType>(topjson["connecttype"].toInt());
+    if (m_connect_type == ConnectType::Custom) {
+        m_mmparameter.clear();
+        QJsonObject parameter = topjson["parameter"].toObject();
+        int size = parameter["size"].toInt();
+        for (int i = 0; i < size; ++i) {
+
+            QStringList seq = parameter[QString::number(i)].toString().split(":");
+            double value = seq.first().toDouble();
+            QVector<QVector<int>> parm = ToolSet::String2Int2DVec(seq.last());
+            m_mmparameter << MMParameter(value, parm);
+        }
+    }
     OptimizeParameters_Private();
+    emit ParameterMoved();
     return result;
 }
 
@@ -586,7 +600,13 @@ QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
     model["raw"] = raw;
     model["uuids"] = uuid;
     model["connecttype"] = m_connect_type;
-
+    if (m_connect_type == ConnectType::Custom) {
+        QJsonObject parameter;
+        parameter["size"] = m_mmparameter.size();
+        for (int i = 0; i < m_mmparameter.size(); ++i)
+            parameter[QString::number(i)] = QString::number(m_mmparameter[i].first) + ":" + ToolSet::Int2DVec2String(m_mmparameter[i].second);
+        model["parameter"] = parameter;
+    }
     return model;
 }
 
@@ -596,6 +616,8 @@ void MetaModel::DebugParameter() const
 
 void MetaModel::MoveParameterList(int source, int destination)
 {
+    m_connect_type = ConnectType::Custom;
+
     if (source < m_mmparameter.size() && destination < m_mmparameter.size()) {
         MMParameter parameter = m_mmparameter[source];
         for (int i = 0; i < parameter.second.size(); ++i)
@@ -608,13 +630,29 @@ void MetaModel::MoveParameterList(int source, int destination)
 
 void MetaModel::MoveSingleParameter(int parameter_index_1, int parameter_index_2, int destination)
 {
-    if (parameter_index_1 < m_mmparameter.size() && destination < m_mmparameter.size()) {
+    m_connect_type = ConnectType::Custom;
+
+    if (parameter_index_2 == -1 && destination == -1 && parameter_index_1 < m_mmparameter.size()) {
+        for (int i = m_mmparameter[parameter_index_1].second.size() - 1; i >= 1; --i)
+            MoveSingleParameter(parameter_index_1, i);
+
+    } else if (parameter_index_2 != -1 && destination == -1) {
+        if (m_mmparameter[parameter_index_1].second.size() == 1)
+            return;
+
+        MMParameter parameter = m_mmparameter[parameter_index_1];
+        m_mmparameter[parameter_index_1].second.takeAt(parameter_index_2);
+        parameter.second = QVector<QVector<int>>() << parameter.second[parameter_index_2];
+        m_mmparameter << parameter;
+
+    } else if (parameter_index_1 < m_mmparameter.size() && destination < m_mmparameter.size()) {
         MMParameter parameter = m_mmparameter[parameter_index_1];
         m_mmparameter[destination].second << parameter.second[parameter_index_2];
         m_mmparameter[parameter_index_1].second.takeAt(parameter_index_2);
         if (m_mmparameter[parameter_index_1].second.size() == 0)
             m_mmparameter.takeAt(parameter_index_1);
-    }
+    } else
+        return;
     CollectParameter();
     emit ParameterMoved();
 }

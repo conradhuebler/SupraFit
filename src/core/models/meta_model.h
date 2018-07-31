@@ -131,7 +131,7 @@ public:
 
     void MoveParameterList(int source, int destination);
 
-    void MoveSingleParameter(int parameter_index_1, int parameter_index_2, int destination);
+    void MoveSingleParameter(int parameter_index_1, int parameter_index_2 = -1, int destination = -1);
 
     inline bool LocalEnabled(int i) const override { Q_UNUSED(i)
         return true; }
@@ -140,6 +140,8 @@ public:
         return true; }
 
     virtual QVector<qreal> AllParameter() const override;
+
+    ConnectType ConnectionType() const { return m_connect_type; }
 
 private slots:
     void UpdateCalculated();
