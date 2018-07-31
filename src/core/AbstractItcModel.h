@@ -50,6 +50,8 @@ public:
 
     ~AbstractItcModel();
 
+    inline virtual void ReleaseLocks() override { m_lock_concentrations = false; }
+
     virtual qreal BC50() const { return 0; }
     virtual inline qreal BC50SF() const { return BC50(); }
 
@@ -127,10 +129,10 @@ public:
     inline virtual QString RandomExportSuffix() const override { return QString("Peak Files(*.dH)"); }
 
 public slots:
-    virtual void UpdateParameter();
+    virtual void UpdateParameter() override;
 
 private:
-    void virtual DeclareSystemParameter() override;
+    virtual void DeclareSystemParameter() override;
     bool m_lock_concentrations;
     QMutex m_lock;
 
@@ -141,7 +143,7 @@ protected:
     void SetConcentration(int i, const Vector& equilibrium);
     void virtual DeclareOptions() override;
     QPointer<DataTable> m_c0, m_concentrations;
-    void Concentration() { CalculateConcentrations(); }
+    inline void Concentration() { CalculateConcentrations(); }
     double m_V, m_cell_concentration, m_syringe_concentration, m_T;
     bool m_reservior = true;
 };

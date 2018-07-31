@@ -28,14 +28,20 @@
 
 #include "systemparameterwidget.h"
 
-SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, QWidget* parent)
-    : m_parameter(parameter)
-    , QGroupBox(parent)
+SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, bool readonly, QWidget* parent)
+    : QGroupBox(parent)
+    , m_parameter(parameter)
     , m_change(false)
+    , m_readonly(readonly)
+
 {
     m_textfield = new QLineEdit;
+    m_textfield->setReadOnly(m_readonly);
     m_boolbox = new QCheckBox;
+    m_boolbox->setDisabled(m_readonly);
     m_list = new QComboBox;
+    m_list->setDisabled(m_readonly);
+
     QLabel* label = new QLabel(parameter.Description());
     label->setFixedWidth(250);
     connect(m_textfield, SIGNAL(textChanged(QString)), this, SLOT(PrepareChanged()));

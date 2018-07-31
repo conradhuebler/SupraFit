@@ -37,6 +37,7 @@ struct ModelOption {
 };
 
 class AbstractModelPrivate : public QSharedData {
+
 public:
     AbstractModelPrivate() {}
     AbstractModelPrivate(const AbstractModelPrivate& other)
@@ -217,6 +218,8 @@ public:
         int K = Parameter() + 1;
         return AIC() + (2 * K * (K + 1)) / double(DataPoints() - K - 1);
     }
+
+    inline virtual void ReleaseLocks() {}
 
     void SetSingleParameter(double value, int parameter);
 

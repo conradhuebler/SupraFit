@@ -32,7 +32,7 @@ class SystemParameterWidget : public QGroupBox {
     Q_OBJECT
 
 public:
-    SystemParameterWidget(const SystemParameter& parameter, QWidget* parent = 0);
+    SystemParameterWidget(const SystemParameter& parameter, bool readonly, QWidget* parent = 0);
     ~SystemParameterWidget();
 
     SystemParameter Value();
@@ -43,7 +43,7 @@ private:
     QCheckBox* m_boolbox;
     QComboBox* m_list;
     SystemParameter m_parameter;
-    bool m_change;
+    bool m_change, m_readonly;
 
 private slots:
     void PrepareChanged();
@@ -55,15 +55,16 @@ signals:
 class SPOverview : public QWidget {
     Q_OBJECT
 public:
-    inline SPOverview(DataClass* data)
+    inline SPOverview(DataClass* data, bool readonly)
         : m_data(data)
+        , m_readonly(readonly)
     {
         QVBoxLayout* layout = new QVBoxLayout;
         QHBoxLayout* hlayout = new QHBoxLayout;
         layout->setAlignment(Qt::AlignTop);
         int counter = 1;
         for (int index : m_data->getSystemParameterList()) {
-            QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), this);
+            QPointer<SystemParameterWidget> widget = new SystemParameterWidget(m_data->getSystemParameter(index), m_readonly, this);
             hlayout->addWidget(widget);
             connect(widget, &SystemParameterWidget::valueChanged,
                 [index, widget, this]() {
@@ -91,4 +92,5 @@ public:
 
 private:
     DataClass* m_data;
+    bool m_readonly;
 };

@@ -139,6 +139,7 @@ private:
 
     bool LoadProject(const QString& filename);
     void ImportTable(const QString& file);
+    void LoadMetaModels();
 
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QVector<QWeakPointer<DataClass>> m_data_list;
@@ -173,6 +174,7 @@ private:
     QVector<QWeakPointer<MetaModel>> m_meta_models;
     QSplashScreen* m_splash;
     QSplitter* m_mainsplitter;
+    QVector<QJsonObject> m_cached_meta;
 
 private slots:
     void NewWindow();

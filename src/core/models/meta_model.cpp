@@ -411,6 +411,8 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     for (int i = 0; i < model->LocalParameterSize(); ++i)
         m_local_names << model->LocalParameterName(i);
 
+    t->ReleaseLocks();
+
     m_global_names.removeDuplicates();
     m_local_names.removeDuplicates();
 

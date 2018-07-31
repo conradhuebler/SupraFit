@@ -114,23 +114,21 @@ void itc_ItoII_Model::InitialGuess_Private()
 QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
-
     addGlobalParameter(0);
 
     if (coop12 == "additive" || coop12 == "full")
         addGlobalParameter(1);
 
-        addLocalParameter(0);
-        addLocalParameter(1);
+    addLocalParameter(0);
+    addLocalParameter(1);
 
-        QString dilution = getOption(Dilution);
+    QString dilution = getOption(Dilution);
+    if (dilution == "auto") {
+        addLocalParameter(2);
+        addLocalParameter(3);
+    }
 
-        if (dilution == "auto") {
-            addLocalParameter(2);
-            addLocalParameter(3);
-        }
-
-        addLocalParameter(4);
+    addLocalParameter(4);
 
     QVector<qreal> parameter;
     for (int i = 0; i < m_opt_para.size(); ++i)
@@ -140,7 +138,6 @@ QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private()
 
 void itc_ItoII_Model::CalculateVariables()
 {
-
     QString dil = getOption(Dilution);
 
     qreal dil_heat = LocalTable()->data(2, 0);
