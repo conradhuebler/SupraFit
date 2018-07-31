@@ -252,6 +252,25 @@ QVector<qreal> MetaModel::CollectParameter()
     return param;
 }
 
+QVector<qreal> MetaModel::AllParameter() const
+{
+    QVector<qreal> parameter;
+    for (int i = 0; i < m_mmparameter.size(); ++i)
+        parameter << m_mmparameter[i].first;
+    return parameter;
+}
+
+void MetaModel::forceGlobalParameter(double value, int parameter)
+{
+    m_mmparameter[parameter].first = value;
+}
+
+void MetaModel::forceLocalParameter(qreal value, int parameter, int series)
+{
+    Q_UNUSED(series)
+    m_mmparameter[parameter].first = value;
+}
+
 QList<double> MetaModel::getSignals(QList<int> active_signal)
 {
     QList<double> x;
@@ -471,7 +490,7 @@ QSharedPointer<AbstractModel> MetaModel::Clone()
 {
     QSharedPointer<MetaModel> model = QSharedPointer<MetaModel>(new MetaModel, &QObject::deleteLater);
 
-    for (const QSharedPointer<AbstractModel> m : Models())
+    for (const QSharedPointer<AbstractModel>& m : Models())
         model.data()->addModel(m->Clone().data());
     model.data()->setConnectType(m_connect_type);
     model.data()->OptimizeParameters_Private();
@@ -544,7 +563,7 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
         bool import = m_models[i]->ImportModel(raw[QString::number(i)].toObject(), override);
         result = result && import;
     }
-    m_connect_type = (ConnectType)topjson["connecttype"].toInt();
+    m_connect_type = static_cast<ConnectType>(topjson["connecttype"].toInt());
     OptimizeParameters_Private();
     return result;
 }

@@ -59,14 +59,21 @@ void SearchBatch::run()
             break;
 
         result["initial"] = ToolSet::DoubleVec2String(parameter);
+
         for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
             m_model->forceGlobalParameter(parameter[i], i);
+
         if (!m_model.data()->SupportSeries()) {
 #warning this is just a hack
             for (int i = m_model.data()->GlobalParameterSize(); i < parameter.size(); ++i)
                 m_model->forceLocalParameter(parameter[i], i - m_model.data()->GlobalParameterSize(), 0);
         }
+
         optimise();
+        m_model->setFast(false);
+        m_model->Calculate();
+        m_model->setFast(true);
+
         result["optimised"] = ToolSet::DoubleVec2String(m_model->AllParameter());
         result["model"] = m_model->ExportModel(false, false);
         result["SSE"] = m_model->SumofSquares();

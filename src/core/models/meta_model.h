@@ -45,7 +45,13 @@ public:
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::MetaModel; }
 
-    virtual inline void setConnectType(ConnectType type) { m_connect_type = type; }
+    virtual inline void setConnectType(ConnectType type)
+    {
+        m_connect_type = type;
+        ApplyConnectType();
+        CollectParameter();
+        emit Recalculated();
+    }
 
     virtual QVector<qreal> OptimizeParameters_Private() override;
 
@@ -61,9 +67,9 @@ public:
 
     virtual bool SupportThreads() const override { return false; }
 
-    virtual int GlobalParameterSize() const { return m_global_par.size(); }
+    virtual int GlobalParameterSize() const override { return m_global_par.size(); }
 
-    virtual int InputParameterSize() const { return m_inp_param; }
+    virtual int InputParameterSize() const override { return m_inp_param; }
 
     virtual int LocalParameterSize() const { return m_local_par.size(); }
 
@@ -71,6 +77,10 @@ public:
     virtual inline int IndependentVariableSize() const override { return m_indep_var; }
     virtual inline int DataPoints() const override { return m_dep_var; }
     virtual inline int SeriesCount() const override { return m_series_count; }
+
+    virtual void forceGlobalParameter(double value, int parameter) override;
+
+    virtual void forceLocalParameter(qreal value, int parameter, int series) override;
 
     virtual inline void setConverged(bool converged) override
     {
@@ -84,15 +94,15 @@ public:
 
     void addModel(const QPointer<AbstractModel> model);
 
-    inline QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
+    inline const QVector<QSharedPointer<AbstractModel>> Models() const { return m_models; }
 
     inline int ModelSize() const { return m_models.size(); }
 
-    virtual bool SupportSeries() const { return true; }
+    virtual bool SupportSeries() const override { return true; }
 
     virtual QJsonObject ExportModel(bool statistics = true, bool locked = false) override;
 
-    virtual bool ImportModel(const QJsonObject& topjson, bool override = true);
+    virtual bool ImportModel(const QJsonObject& topjson, bool override = true) override;
 
     virtual QList<double> getSignals(QList<int> active_signal) override;
 
@@ -122,6 +132,14 @@ public:
     void MoveParameterList(int source, int destination);
 
     void MoveSingleParameter(int parameter_index_1, int parameter_index_2, int destination);
+
+    inline bool LocalEnabled(int i) const override { Q_UNUSED(i)
+        return true; }
+
+    inline bool GlobalEnabled(int i) const override { Q_UNUSED(i)
+        return true; }
+
+    virtual QVector<qreal> AllParameter() const override;
 
 private slots:
     void UpdateCalculated();

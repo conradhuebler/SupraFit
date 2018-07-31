@@ -53,7 +53,7 @@ public:
     inline QPointer<MetaModel> Model() { return qobject_cast<MetaModel*>(m_model.data()); }
 
 public slots:
-
+    void LoadJson(const QJsonObject& object);
 
 private:
     void setUi();
@@ -68,7 +68,7 @@ private:
     MetaModelParameter* m_metamodelparameter;
     QList<QJsonObject> m_fast_confidence;
 
-    void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models);
+    void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models = QList<QJsonObject>());
     void FastConfidence();
 
 private slots:

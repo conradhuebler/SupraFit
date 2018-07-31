@@ -285,6 +285,7 @@ void AdvancedSearch::SearchGlobal()
     m_models_list = m_search->SearchGlobal();
     Finished();
     emit MultiScanFinished();
+    QDialog::accept();
 }
 
 void AdvancedSearch::IncrementProgress(int time)

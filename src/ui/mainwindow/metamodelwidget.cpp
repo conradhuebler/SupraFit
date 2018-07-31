@@ -27,6 +27,7 @@
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
 
+#include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
@@ -57,6 +58,7 @@ void MetaModelWidget::setUi()
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_results = new ResultsDialog(m_model, new ChartWrapper(false), this);
+    connect(m_results, &ResultsDialog::LoadModel, this, &MetaModelWidget::LoadJson);
 
     m_statistic_widget = new StatisticWidget(m_model, this);
 
@@ -69,6 +71,11 @@ void MetaModelWidget::setUi()
     m_type->addItems(QStringList() << "None"
                                    << "All"
                                    << "Custom");
+    connect(m_type, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
+        this->Model()->setConnectType(static_cast<MetaModel::ConnectType>(index));
+    });
+
+    Model()->setConnectType(static_cast<MetaModel::ConnectType>(m_type->currentIndex()));
 
     layout->addWidget(m_type, 0, 1);
 
@@ -102,9 +109,6 @@ void MetaModelWidget::Minimize()
     Waiter wait;
 
     NonLinearFitThread* thread = new NonLinearFitThread(false);
-
-    Model()->setConnectType((MetaModel::ConnectType)m_type->currentIndex());
-
     thread->setModel(m_model, false);
 
     thread->run();
@@ -114,7 +118,7 @@ void MetaModelWidget::Minimize()
         model = thread->ConvergedParameter();
     else
         model = thread->BestIntermediateParameter();
-    qreal new_error = thread->SumOfError();
+
     if (!m_model->ImportModel(model))
         qDebug() << "something went wrong";
 
@@ -149,6 +153,10 @@ void MetaModelWidget::ToggleStatisticDialog()
 
 void MetaModelWidget::OpenAdvancedSearch()
 {
+    AdvancedSearch* advancedsearch = new AdvancedSearch(this);
+    advancedsearch->setModel(m_model);
+    advancedsearch->exec();
+    LoadStatistic(advancedsearch->globalSearch()->Result());
 }
 
 void MetaModelWidget::Detailed()
@@ -210,6 +218,7 @@ void MetaModelWidget::MCStatistic(MCConfig config)
 void MetaModelWidget::Reduction()
 {
     Waiter wait;
+
     ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
 
     connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
@@ -227,6 +236,7 @@ void MetaModelWidget::Reduction()
 void MetaModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 {
     Waiter wait;
+
     ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
     connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
     connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
@@ -301,12 +311,17 @@ void MetaModelWidget::ImportConstants()
     if (!str.isEmpty()) {
         setLastDir(str);
         QJsonObject object;
-        /*
+
         if (JsonHandler::ReadJsonFile(object, str))
             LoadJson(object);
         else
-            qDebug() << "loading failed";*/
+            qDebug() << "loading failed";
     }
+}
+
+void MetaModelWidget::LoadJson(const QJsonObject& object)
+{
+    m_model->ImportModel(object);
 }
 
 void MetaModelWidget::ExportConstants()

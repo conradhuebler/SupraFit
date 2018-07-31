@@ -410,14 +410,15 @@ public:
     virtual int LocalParameterSize() const = 0;
 
     virtual qreal LocalParameter(int parameter, int series) const;
+
     QVector<qreal> getLocalParameterColumn(int parameter) const;
     qreal LocalParameter(const QPair<int, int>& pair) const;
 
     void setLocalParameter(qreal value, int parameter, int series);
     void setLocalParameter(qreal value, const QPair<int, int>& pair);
 
-    void forceLocalParameter(qreal value, const QPair<int, int>& pair);
-    void forceLocalParameter(qreal value, int parameter, int series);
+    virtual void forceLocalParameter(qreal value, const QPair<int, int>& pair);
+    virtual void forceLocalParameter(qreal value, int parameter, int series);
 
     void setLocalParameterSeries(const QVector<qreal>& vector, int series);
     void setLocalParameterSeries(const Vector& vector, int series);
@@ -503,9 +504,9 @@ public:
 
     inline bool isLocked() const { return m_locked_model; }
 
-    inline bool LocalEnabled(int i) const { return d->m_enabled_local[i]; }
+    inline virtual bool LocalEnabled(int i) const { return d->m_enabled_local[i]; }
 
-    inline bool GlobalEnabled(int i) const { return d->m_enabled_global[i]; }
+    inline virtual bool GlobalEnabled(int i) const { return d->m_enabled_global[i]; }
 
     virtual bool SupportSeries() const = 0;
 
@@ -519,7 +520,7 @@ public:
 
     virtual inline int MaxParameter() { return GlobalParameterSize() + LocalParameterSize(); }
 
-    QVector<qreal> AllParameter() const;
+    virtual QVector<qreal> AllParameter() const;
 
     inline QVector<int> LocalEnabled() const { return d->m_enabled_local; }
 
