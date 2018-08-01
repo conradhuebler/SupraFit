@@ -79,7 +79,7 @@ public:
 
     virtual QModelIndex parent(const QModelIndex& child) const override;
 
-    virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const override { return true; }
+    virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const override;
 
 private:
     QWeakPointer<MetaModel> m_model;

@@ -192,6 +192,8 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
 
 bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const
 {
+    Q_UNUSED(action)
+
     QString string = data->text();
     // const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
@@ -208,6 +210,8 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
 
 bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
+    Q_UNUSED(action)
+
     QString string = data->text();
 
     if (row == -1 && column == -1 && !index.isValid()) {

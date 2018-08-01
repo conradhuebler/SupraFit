@@ -315,7 +315,7 @@ void Thermogram::UpdateTable()
     m_table->setRowCount(m_exp_peaks.size());
     m_table->setColumnCount(2);
     m_heat.clear();
-    for (int j = 0; j < m_exp_peaks.size(); ++j) {
+    for (unsigned int j = 0; j < m_exp_peaks.size(); ++j) {
         QTableWidgetItem* newItem;
         QString string;
         if (j < m_inject.size() || m_forceInject) {

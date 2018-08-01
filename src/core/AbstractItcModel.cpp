@@ -309,6 +309,8 @@ QString AbstractItcModel::RandomInput(const QVector<double>& indep, const QVecto
 
 void AbstractItcModel::UpdateOption(int index, const QString& str)
 {
+    Q_UNUSED(index)
+    Q_UNUSED(str)
     /*if (index == Reservoir)
         Concentration();*/
 }

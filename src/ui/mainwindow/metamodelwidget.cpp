@@ -174,7 +174,7 @@ void MetaModelWidget::NewGuess()
     m_model->InitialGuess();
 }
 
-void MetaModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models)
+void MetaModelWidget::LoadStatistic(const QJsonObject& data)
 {
     int index = m_model->UpdateStatistic(data);
     m_results->Attention();
@@ -212,7 +212,7 @@ void MetaModelWidget::MCStatistic(MCConfig config)
     statistic->setModel(m_model);
     statistic->Evaluate();
 
-    LoadStatistic(statistic->Result(), statistic->Models());
+    LoadStatistic(statistic->Result());
     emit Finished();
     delete statistic;
 }
@@ -229,7 +229,7 @@ void MetaModelWidget::Reduction()
 
     statistic->setModel(m_model);
     statistic->PlainReduction();
-    LoadStatistic(statistic->Result(), statistic->Models());
+    LoadStatistic(statistic->Result());
 
     emit Finished();
     delete statistic;
@@ -246,7 +246,7 @@ void MetaModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 
     statistic->setModel(m_model);
     statistic->CrossValidation(type);
-    LoadStatistic(statistic->Result(), statistic->Models());
+    LoadStatistic(statistic->Result());
     emit Finished();
 
     delete statistic;
@@ -271,7 +271,7 @@ void MetaModelWidget::MoCoStatistic(MoCoConfig config)
     statistic->setModel(m_model);
     bool result = statistic->Confidence();
     if (result)
-        LoadStatistic(statistic->Result(), statistic->Models());
+        LoadStatistic(statistic->Result());
     // else
     //     QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
     //m_statistic_dialog->HideWidget();
@@ -301,7 +301,7 @@ void MetaModelWidget::WGStatistic(WGSConfig config)
         // emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
     }
 
-    LoadStatistic(statistic->Result(), statistic->Models());
+    LoadStatistic(statistic->Result());
 
     emit Finished();
     delete statistic;

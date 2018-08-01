@@ -192,7 +192,7 @@ void ThermogramWidget::UpdateTable()
     m_table->clear();
     m_table->setRowCount(m_peak_list.size());
     m_table->setColumnCount(3);
-    for (int j = 0; j < m_peak_list.size(); ++j) {
+    for (unsigned int j = 0; j < m_peak_list.size(); ++j) {
         QTableWidgetItem* newItem;
 
         newItem = new QTableWidgetItem(QString::number(m_peak_list[j].integ_num * m_scale));
@@ -297,7 +297,7 @@ void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeri
         SmoothFunction(spectrum, m_filter->value());
 
     series->clear();
-    for (int i = 1; i <= spectrum->size(); i++) {
+    for (unsigned int i = 1; i <= spectrum->size(); i++) {
         series->append(QPointF(spectrum->X(i), spectrum->Y(i) * m_scale));
     }
 }
@@ -305,7 +305,7 @@ void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeri
 void ThermogramWidget::fromPolynomial(const Vector& coeff, LineSeries* series)
 {
     series->clear();
-    for (int i = 1; i <= m_spec.size(); i++)
+    for (unsigned int i = 1; i <= m_spec.size(); i++)
         series->append(QPointF(m_spec.X(i), PeakPick::Polynomial(m_spec.X(i), coeff) * m_scale));
 }
 

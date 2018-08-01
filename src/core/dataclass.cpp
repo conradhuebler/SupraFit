@@ -634,8 +634,8 @@ bool DataTable::ImportTable(const QJsonObject& table)
 DataClassPrivate::DataClassPrivate()
     : m_maxsize(0)
     , m_host_assignment(0)
-    , m_info(new DataClassPrivateObject)
     , m_datatype(DataClassPrivate::Table)
+    , m_info(new DataClassPrivateObject)
 {
     m_independent_model = new DataTable;
     m_dependent_model = new DataTable;
@@ -652,9 +652,10 @@ DataClassPrivate::DataClassPrivate()
 }
 
 DataClassPrivate::DataClassPrivate(int type)
-    : m_datatype(DataClassPrivate::Table)
+    : m_type(type)
     , m_maxsize(0)
     , m_host_assignment(0)
+    , m_datatype(DataClassPrivate::Table)
     , m_info(new DataClassPrivateObject)
 {
     m_independent_model = new DataTable;

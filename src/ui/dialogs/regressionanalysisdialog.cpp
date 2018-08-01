@@ -134,16 +134,16 @@ void RegressionAnalysisDialog::TestPeaks()
         ScatterSeries* series = new ScatterSeries;
         series->setMarkerSize(1);
         series->setBorderColor(m_series[i]->color());
-        for (int i = 0; i < corrected.size(); ++i)
+        for (unsigned int i = 0; i < corrected.size(); ++i)
             series->append(corrected.X(i), corrected.Y(i));
         m_chart->addSeries(series, i, m_series[i]->color());
         std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&corrected, 0, 0.25);
         corrected.InvertSgn();
         std::vector<PeakPick::Peak> peaks2 = PeakPick::PickPeaks(&corrected, 0, 1);
-        for (int i = 0; i < peaks2.size(); ++i)
+        for (unsigned int i = 0; i < peaks2.size(); ++i)
             peaks.push_back(peaks2[i]);
         m_peaks = peaks;
-        for (int i = 0; i < peaks.size(); ++i) {
+        for (unsigned int i = 0; i < peaks.size(); ++i) {
             IntegrateNumerical(&corrected, peaks[i]);
             m_peak_list[qAbs(peaks[i].integ_num)] = i;
         }
@@ -232,7 +232,7 @@ void RegressionAnalysisDialog::LoadRegression(int index)
 
         PeakPick::MultiRegression regression = m_result[i].value(m_result[i].keys()[index]);
         output += "<h4>Series " + Print::printDouble(i + 1) + "</h4>";
-        for (int m = 0; m < regression.regressions.size(); ++m) {
+        for (unsigned int m = 0; m < regression.regressions.size(); ++m) {
             QtCharts::QLineSeries* series = m_chart->addLinearSeries(regression.regressions[m].m, regression.regressions[m].n, x[regression.start[2 * m - m]], x[regression.start[2 * m + regression.regressions.size() - m]], i);
             series->setColor(m_series[i]->color());
             m_linear_series.insert(i, series);

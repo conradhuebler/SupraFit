@@ -20,8 +20,7 @@
 #include "src/core/dataclass.h"
 #include "src/core/models.h"
 
-#include <QDebug>
-
+#include <QtCore/QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QPointer>
@@ -30,12 +29,12 @@
 #include "filehandler.h"
 
 FileHandler::FileHandler(const QString& filename, QObject* parent)
-    : m_filename(filename)
-    , QObject(parent)
-    , m_lines(0)
+    : QObject(parent)
     , m_table(true)
     , m_allint(true)
     , m_file_supported(true)
+    , m_filename(filename)
+    , m_lines(0)
     , m_filetype(FileType::Generic)
 {
     LoadFile();
@@ -43,10 +42,10 @@ FileHandler::FileHandler(const QString& filename, QObject* parent)
 
 FileHandler::FileHandler(QObject* parent)
     : QObject(parent)
-    , m_lines(0)
     , m_table(true)
     , m_allint(true)
     , m_file_supported(true)
+    , m_lines(0)
     , m_filetype(FileType::Generic)
 {
 }
@@ -118,8 +117,8 @@ void FileHandler::ReadGeneric()
 
 bool FileHandler::CheckForTable()
 {
-    int size = 0;
-
+    // int size = 0;
+#warning rethink about it
     for (int i = 0; i < m_lines; ++i) {
         // qDebug() << m_filecontent[i];
         if (m_filecontent[i].isEmpty())

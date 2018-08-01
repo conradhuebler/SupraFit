@@ -68,7 +68,7 @@ private:
     MetaModelParameter* m_metamodelparameter;
     QList<QJsonObject> m_fast_confidence;
 
-    void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models = QList<QJsonObject>());
+    void LoadStatistic(const QJsonObject& data);
     void FastConfidence();
 
 private slots:

@@ -83,9 +83,19 @@ QMimeData* ParameterTree::mimeData(const QModelIndexList& indexes) const
     mimeData->setText(data);
     return mimeData;
 }
+bool ParameterTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const
+{
+    Q_UNUSED(data)
+    Q_UNUSED(action)
+    Q_UNUSED(row)
+    Q_UNUSED(column)
+    Q_UNUSED(index)
+    return true;
+}
 
 bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
+    Q_UNUSED(action)
     QString string = data->text();
 
     qreal* pos = static_cast<qreal*>(index.internalPointer());
