@@ -38,6 +38,7 @@
 #include "libpeakpick/peakpick.h"
 
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/chartview.h"
 
 #include "src/core/toolset.h"
@@ -94,8 +95,12 @@ void ThermogramWidget::setUi()
     baselayout->addWidget(new QLabel(tr("Baseline fit type:")), 0, 2);
     baselayout->addWidget(m_fit_type, 0, 3);
 
+    m_poly_slow = new QCheckBox(tr("Slow Fit"));
+    m_poly_slow->setChecked(true);
+    baselayout->addWidget(m_poly_slow, 0, 4);
+
     m_limits = new QCheckBox(tr("Show Fit limit"));
-    baselayout->addWidget(m_limits, 0, 4);
+    baselayout->addWidget(m_limits, 0, 5);
     connect(m_limits, &QCheckBox::stateChanged, this, [this](int state) {
         m_upper->setVisible(state);
         m_lower->setVisible(state);
@@ -143,6 +148,9 @@ void ThermogramWidget::setUi()
     m_fit_button = new QPushButton(tr("Refit Baseline"));
     baselayout->addWidget(m_fit_button, 2, 4);
     connect(m_fit_button, &QPushButton::clicked, this, &ThermogramWidget::FitBaseLine);
+
+    m_baseline_polynom = new QLabel;
+    baselayout->addWidget(m_baseline_polynom, 3, 0, 1, 4);
 
     baseline->setLayout(baselayout);
 
@@ -220,6 +228,24 @@ void ThermogramWidget::UpdateTable()
         m_table->setCellWidget(j, 2, box);
         m_table->setItem(j, 2, newItem);
     }
+
+    if (m_baseline.baselines.size() == 1) {
+        QString string("<html><p>f(x) = ");
+        for (unsigned int i = 0; i < m_baseline.baselines[0].size(); ++i) {
+            if (i != 0)
+                string += " (" + QString::number(m_baseline.baselines[0](i)) + ") x<sup>" + QString::number(i) + "</sup> +";
+            else
+                string += QString::number(m_baseline.baselines[0](i)) + " +";
+            if (i % 5 == 0 && i != 0 && (i < m_baseline.baselines[0].size() - 1)) {
+                string += "</p><p>+";
+            }
+        }
+        string.chop(1);
+        string += "</p></html>";
+
+        m_baseline_polynom->setText(string);
+    } else
+        m_baseline_polynom->clear();
 }
 
 void ThermogramWidget::UpdatePlot()
@@ -368,7 +394,6 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
 {
     if (str == m_base || m_block)
         return;
-
     Vector coeff;
 
     if (str == "none") {
@@ -420,6 +445,7 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
     m_baseline.baselines.push_back(coeff);
     FitBaseLine();
     UpdatePlot();
+
     emit IntegrationChanged();
 
     m_base = str;
@@ -438,6 +464,7 @@ void ThermogramWidget::FitBaseLine()
 {
     if (m_baseline_type->currentText() != "polynomial")
         return;
+    Waiter wait;
 
     PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
     if (m_smooth->isChecked())
@@ -467,7 +494,21 @@ void ThermogramWidget::FitBaseLine()
         baseline.setLower(0);
         baseline.setUpper(0);
     }
+
+    if (m_poly_slow->isChecked())
+        baseline.setPolynomFit(PeakPick::BaseLine::Polynom::Slow);
+    else
+        baseline.setPolynomFit(PeakPick::BaseLine::Polynom::Fast);
+
+    baseline.setInitialBaseLine(m_initial_baseline);
+
     m_baseline = baseline.Fit();
+
+    if (m_baseline.baselines.size() == 1) {
+        m_initial_baseline = m_baseline.baselines[0];
+        m_coeffs->setValue(m_initial_baseline.size());
+    }
+
     delete spectrum;
 
     emit IntegrationChanged();
@@ -544,6 +585,11 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
     else
         m_full_spec->setChecked(true);
 
+    if (fit.contains("slow")) {
+        m_poly_slow->setChecked(fit["slow"].toBool());
+    } else
+        m_poly_slow->setChecked(false);
+
     m_block = false;
     Update();
 }
@@ -562,6 +608,7 @@ QJsonObject ThermogramWidget::Fit() const
         fit["SV"] = m_filter->value();
     }
     fit["peakwise"] = m_peak_wise->isChecked();
+    fit["slow"] = m_poly_slow->isChecked();
     return fit;
 }
 

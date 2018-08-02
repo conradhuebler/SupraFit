@@ -81,10 +81,11 @@ private:
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
     QPushButton* m_fit_button;
-    QCheckBox *m_limits, *m_smooth;
+    QCheckBox *m_limits, *m_smooth, *m_poly_slow;
     QTableWidget* m_table;
     ChartView* m_thermogram;
     QtCharts::QChart* m_data;
+    QLabel* m_baseline_polynom;
 
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right;
     ScatterSeries* m_base_grids;
@@ -94,6 +95,7 @@ private:
     bool m_spectrum = false, m_block = false;
     QVector<qreal> m_peaks;
     PeakPick::BaseLineResult m_baseline;
+    Vector m_initial_baseline = Vector(0);
     qreal m_scale = 4.184, m_offset = 0;
     QString m_base, m_fit;
 
