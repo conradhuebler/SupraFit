@@ -237,7 +237,7 @@ void ThermogramWidget::UpdateTable()
             else
                 string += QString::number(m_baseline.baselines[0](i)) + " +";
             if (i % 5 == 0 && i != 0 && (i < m_baseline.baselines[0].size() - 1)) {
-                string += "</p><p>+";
+                string += "</p><p>     = ";
             }
         }
         string.chop(1);
