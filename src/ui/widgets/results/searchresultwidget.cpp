@@ -37,6 +37,7 @@
 
 #include <QtGui/QStandardItemModel>
 
+#include <QtWidgets/QAction>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
@@ -84,12 +85,11 @@ SearchResultWidget::SearchResultWidget(const QJsonObject& results, const QShared
     m_table = BuildList();
     m_table->setSortingEnabled(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setContextMenuPolicy(Qt::CustomContextMenu);
+    m_table->setContextMenuPolicy(Qt::ActionsContextMenu);
 
     m_contour->setData(m_models, m_model);
 
-    connect(m_table, SIGNAL(clicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
-    connect(m_table, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(ShowContextMenu(const QPoint&)));
+    connect(m_table, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(rowSelected(QModelIndex)));
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportModels()));
     layout->addWidget(m_central_widget, 3, 0, 1, 5);
 
@@ -108,6 +108,23 @@ QTableView* SearchResultWidget::BuildList()
     QTableView* table = new QTableView(this);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    QAction* action;
+    action = new QAction("Replace", table);
+    table->addAction(action);
+    connect(action, &QAction::triggered, action, [this]() {
+        this->rowSelected(m_table->currentIndex());
+    });
+
+    action = new QAction("Add", table);
+    table->addAction(action);
+    connect(action, &QAction::triggered, action, [this]() {
+        QModelIndex index = m_table->currentIndex();
+        int i = index.data(Qt::UserRole).toInt();
+        QJsonObject model = this->m_results[QString::number(i)].toObject()["model"].toObject();
+        emit this->AddModel(model);
+    });
+
     QStandardItemModel* model = new QStandardItemModel;
 
     QStringList header = QStringList() << "Sum of Squares";
@@ -222,16 +239,6 @@ void SearchResultWidget::rowSelected(const QModelIndex& index)
     QJsonObject model = m_results[QString::number(i)].toObject()["model"].toObject();
     emit LoadModel(model);
 }
-
-void SearchResultWidget::ShowContextMenu(const QPoint& pos)
-{
-    Q_UNUSED(pos)
-    QModelIndex index = m_table->currentIndex();
-    int i = index.data(Qt::UserRole).toInt();
-    QJsonObject model = m_results[QString::number(i)].toObject()["model"].toObject();
-    emit AddModel(model);
-}
-
 void SearchResultWidget::ExportModels()
 {
     /*

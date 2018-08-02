@@ -62,7 +62,6 @@ private:
 
 private slots:
     void rowSelected(const QModelIndex& index);
-    void ShowContextMenu(const QPoint& pos);
     void ExportModels();
     void SwitchView();
     void ApplyFilter();

@@ -427,7 +427,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
     t->setOptimizerConfig(m_config);
-    connect(modelwidget, SIGNAL(AddModel(const QJsonObject)), this, SLOT(AddToWorkspace(const QJsonObject)));
+    connect(modelwidget, &ModelWidget::AddModel, this, [this](const QJsonObject& object) { this->Json2Model(object); });
     connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
@@ -587,12 +587,14 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
             continue;
 
         QApplication::processEvents();
-
+        /*
+     * We cannot stick with that for now, we have no old models stack
+     */
         QJsonObject model = object[key].toObject();
-        if (i++ < 5)
-            Json2Model(model);
-        else
-            emit InsertModel(model);
+        //if (i++ < 5)
+        Json2Model(model);
+        //else
+        //  emit InsertModel(model);
     }
 
     setEnabled(true);
