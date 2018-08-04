@@ -194,7 +194,7 @@ public:
 
     int m_type, m_maxsize;
     int m_host_assignment;
-
+    int m_ref_counter = 1;
     QPointer<DataTable> m_dependent_model, m_independent_model;
     DataType m_datatype;
     QJsonObject m_raw_data;

@@ -687,6 +687,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_system_parameter = other.m_system_parameter;
     m_datatype = other.m_datatype;
     m_title = other.m_title;
+    m_ref_counter++;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
@@ -703,16 +704,22 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_system_parameter = other->m_system_parameter;
     m_datatype = other->m_datatype;
     m_title = other->m_title;
+    m_ref_counter++;
 }
 
 DataClassPrivate::~DataClassPrivate()
 {
-    if (m_independent_model)
-        delete m_independent_model;
-    if (m_dependent_model)
-        delete m_dependent_model;
-    if (m_info)
-        delete m_info;
+    --m_ref_counter;
+    if(m_ref_counter < 1)
+    {
+        if (m_independent_model)
+            delete m_independent_model;
+        if (m_dependent_model)
+            delete m_dependent_model;
+        if (m_info)
+            delete m_info;
+        qDebug() << "got away with it ...";
+    }
 }
 
 void DataClassPrivate::check()
