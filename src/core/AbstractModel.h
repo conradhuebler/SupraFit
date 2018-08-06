@@ -606,6 +606,8 @@ protected:
     OptimizerConfig m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
+
+    QString m_more_info;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

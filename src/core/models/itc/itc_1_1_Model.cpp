@@ -20,7 +20,7 @@
 #include "src/core/AbstractItcModel.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
-#include "src/core/minimizer.h"
+#include "src/core/toolset.h"
 
 #include <QtMath>
 
@@ -83,6 +83,7 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private()
 
 void itc_ItoI_Model::CalculateVariables()
 {
+    QString more_info = QString("Inject\tq(AB)\tSum\n");
     QString dil = getOption(Dilution);
 
     qreal dH = LocalTable()->data(0, 0);
@@ -113,11 +114,14 @@ void itc_ItoI_Model::CalculateVariables()
         if (!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V * (complex - complex_prev * (1 - v / V)) * dH;
+        qreal q_ab = V * (complex - complex_prev * (1 - v / V)) * dH;
+        qreal value = q_ab;
+        more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(value) + "\n";
 
         SetValue(i, 0, value + dilution);
         complex_prev = complex;
     }
+    m_more_info = more_info;
 }
 
 QSharedPointer<AbstractModel> itc_ItoI_Model::Clone()

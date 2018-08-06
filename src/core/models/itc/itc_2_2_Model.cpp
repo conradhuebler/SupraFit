@@ -21,6 +21,7 @@
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
+#include "src/core/toolset.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -199,6 +200,8 @@ void itc_IItoII_Model::CalculateVariables()
     if (!m_threadpool)
         return;
 
+    QString more_info = QString("Inject\tq(AB)\tq(AB2)\tSum\n");
+
     QString dil = getOption(Dilution);
 
     qreal dH11 = LocalTable()->data(1, 0);
@@ -278,13 +281,19 @@ void itc_IItoII_Model::CalculateVariables()
         if (!m_fast)
             SetConcentration(i, vector);
 
-        qreal value = V * ((complex_21 - complex_21_prev * (1 - v / V)) * dH21 + ((complex_11 - complex_11_prev * (1 - v / V)) * dH11) + ((complex_12 - complex_12_prev * (1 - v / V)) * dH12));
+        qreal q_a2b = (complex_21 - complex_21_prev * (1 - v / V)) * dH21 * V;
+        qreal q_ab = (complex_11 - complex_11_prev * (1 - v / V)) * dH11 * V;
+        qreal q_ab2 = (complex_12 - complex_12_prev * (1 - v / V)) * dH12 * V;
+        //qreal value = V * ((complex_21 - complex_21_prev * (1 - v / V)) * dH21 + ((complex_11 - complex_11_prev * (1 - v / V)) * dH11) + ((complex_12 - complex_12_prev * (1 - v / V)) * dH12));
+        qreal value = q_a2b + q_ab + q_ab2;
+        more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_a2b) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(q_ab2) + "\t" + Print::printDouble(value) + "\n";
 
         SetValue(i, 0, value + dilution);
         complex_21_prev = complex_21;
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;
     }
+    m_more_info = more_info;
 }
 
 QSharedPointer<AbstractModel> itc_IItoII_Model::Clone()

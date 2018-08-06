@@ -174,23 +174,44 @@ void AbstractItcModel::CalculateConcentrations()
     if (m_lock_concentrations)
         return;
 
-    qreal emp_exp = 1e-3;
-
     if ((!m_V || !m_cell_concentration || !m_syringe_concentration) && (SFModel() != SupraFit::itc_blank))
         return;
 
+    /*
+     * Conversation from L to mL
+     * */
+    qreal convers = 1e-3;
+
+    /*
+     * Cell Volumen is given in muL since each inject is given in
+     * muL as well
+     * */
     qreal V_cell = m_V;
+
     bool reservoir = m_reservior;
 
-    qreal cell = m_cell_concentration * emp_exp;
-    qreal gun = m_syringe_concentration * emp_exp;
+    /*
+     * Initial concentration is given in mol/L
+     * therefore we want to convert into mol/mL
+     * */
+    qreal cell = m_cell_concentration * convers;
+    qreal gun = m_syringe_concentration * convers;
+
     qreal prod = 1;
     qreal cell_0 = V_cell * cell;
     qreal cumulative_shot = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal shot_vol = IndependentModel()->data(0, i);
+
+        /*
+         * Assuming constant cell volume, the absolute amount of host changes upon injection
+         * The equation is taken from Freire, E., Schön, A., & Velazquez‐Campoy, A. (2009). Isothermal titration calorimetry: ..., 455, 127-155. Page 134 eq. 5.14
+         * If the cell volume is not constant, we just add up
+         * The correct value is set through the boolean reservoir value to avoid branching in loops
+         * */
         V_cell += shot_vol;
         cumulative_shot += shot_vol;
+
         prod *= (1 - shot_vol / m_V);
         cell *= (1 - shot_vol / m_V);
         qreal host_0 = cell * reservoir + !reservoir * cell_0 / V_cell;
@@ -245,6 +266,9 @@ QString AbstractItcModel::Model2Text_Private() const
     text += "Equilibrium Model Signal calculated with complexation constants:\n";
     for (int i = 0; i < DependentModel()->columnCount(); ++i)
         text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+
+    text += "\n\nEquilibrium Model Signal consisting of:\n";
+    text += m_more_info;
 
     return text;
 }
