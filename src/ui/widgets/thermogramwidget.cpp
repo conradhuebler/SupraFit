@@ -181,7 +181,7 @@ void ThermogramWidget::setUi()
 void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
 {
     m_spec = *spec;
-    if (offset == 0)
+    if (offset == 0.0)
         m_offset = m_spec.Mean();
     else
         m_offset = offset;

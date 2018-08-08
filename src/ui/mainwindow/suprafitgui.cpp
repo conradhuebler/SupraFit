@@ -455,7 +455,15 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     }
     window->setWindowFlags(Qt::Widget);
 
-    m_stack_widget->addWidget(window);
+    /*
+    qDebug() << m_stack_widget << window;
+    window->show(); */
+
+    // FIXME there is a strange bug that make SupraFit crash while opening a file
+    // crashing right here on some linux platforms
+    // qDebug() << m_stack_widget->count();
+
+    m_stack_widget->insertWidget(0, window);
     m_stack_widget->setCurrentWidget(window);
 
     connect(window, &MainWindow::ModelsChanged, this, [=]() {

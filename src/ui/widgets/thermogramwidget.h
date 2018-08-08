@@ -42,7 +42,7 @@ class ThermogramWidget : public QWidget {
 
 public:
     ThermogramWidget(QWidget* parent = nullptr);
-    void setThermogram(PeakPick::spectrum* spec, qreal offset = 0);
+    void setThermogram(PeakPick::spectrum* spec, qreal offset = 0.0);
 
     inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list)
     {

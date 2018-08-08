@@ -82,6 +82,7 @@ void FileHandler::ReadGeneric()
     int tab = 0, semi = 0;
     for (const QString& str : qAsConst(m_filecontent)) {
         tab += str.count("\t");
+        tab += str.count(" ");
         semi += str.count(";");
     }
     if (tab > semi)
