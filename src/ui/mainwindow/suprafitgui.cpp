@@ -250,11 +250,6 @@ SupraFitGui::SupraFitGui()
 
     m_splash = new QSplashScreen(this, QPixmap(":/misc/logo_small.png"));
 
-    m_layout = new QGridLayout;
-
-    QWidget* widget = new QWidget;
-    widget->setLayout(m_layout);
-
     m_project_view = new QTreeView;
     m_project_view->setContextMenuPolicy(Qt::ActionsContextMenu);
     m_project_view->setDragEnabled(true);
@@ -287,7 +282,6 @@ SupraFitGui::SupraFitGui()
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
 
     m_project_view->setModel(m_project_tree);
-
     m_project_view->setDragEnabled(true);
     m_project_view->setAcceptDrops(true);
     m_project_view->setDropIndicatorShown(true);
@@ -295,15 +289,22 @@ SupraFitGui::SupraFitGui()
 
     m_stack_widget = new QStackedWidget;
 
+    m_filename_line = new QLineEdit;
+    m_filename_line->setClearButtonEnabled(true);
+    connect(m_filename_line, &QLineEdit::textChanged, this, [this](const QString& str) { this->m_supr_file = str; });
+    QWidget* widget = new QWidget;
+    QGridLayout* layout = new QGridLayout;
+
+    layout->addWidget(new QLabel(tr("Filename:")), 0, 0);
+    layout->addWidget(m_filename_line, 0, 1);
+    layout->addWidget(m_project_view, 1, 0, 1, 2);
+    widget->setLayout(layout);
+
     m_mainsplitter = new QSplitter(Qt::Horizontal);
-    m_mainsplitter->addWidget(m_project_view);
+    m_mainsplitter->addWidget(widget);
     m_mainsplitter->addWidget(m_stack_widget);
 
-    m_layout->addWidget(m_mainsplitter, 0, 0);
-
-    //m_project_view->setMaximumWidth(200);
-
-    setCentralWidget(widget);
+    setCentralWidget(m_mainsplitter);
 
     ReadSettings();
 
@@ -424,46 +425,38 @@ void SupraFitGui::setActionEnabled(bool enabled)
 
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 {
-    for (int i = 0; i < m_project_list.size(); ++i)
-        m_project_list[i]->hide();
+    QString uuid = object["data"].toObject()["uuid"].toString();
+    if (m_hashed_data.keys().contains(uuid)) {
+        QString name = m_hashed_data[uuid].data()->ProjectTitle();
+        QMessageBox question(QMessageBox::Question, tr("Data already open"), tr("The current data has already been opened. At least the UUID\n%1\nwith the project name\n%2\nexist. Continue?").arg(uuid).arg(name), QMessageBox::Yes | QMessageBox::No, this);
+        if (question.exec() == QMessageBox::No) {
+            m_mainsplitter->show();
+            return true;
+        }
+    }
 
-    QPointer<MainWindow> window = new MainWindow;
+    /* there is some bad code in here
+     * let the stack widget take ownership of the widget before anything happens
+     * in it, prevents suprafit to crash while loading to many (2!) models in one mainwindow
+     * lets fix it sometimes
+     */
+    QPointer<MainWindow> window = new MainWindow(m_stack_widget);
     if (object["data"].toObject().contains("model")) {
         m_cached_meta << object;
         return true;
-    }
-
-    QString uuid = object["data"].toObject()["uuid"].toString();
-    if (m_hashed_data.keys().contains(uuid)) {
-        QMessageBox question(QMessageBox::Question, tr("Data already open"), tr("The current data has already been opened. At least the UUID\n%1\nexist. Continue?").arg(uuid), QMessageBox::Yes | QMessageBox::No, this);
-        if (question.exec() == QMessageBox::No) {
-            return true;
-        }
     }
 
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data)
         return false;
 
-    m_project_view->show();
-    m_stack_widget->show();
-
     QString name = data.data()->ProjectTitle();
     if (name.isEmpty() || name.isNull()) {
         name = file;
         data.data()->setProjectTitle(name);
     }
-    window->setWindowFlags(Qt::Widget);
 
-    /*
-    qDebug() << m_stack_widget << window;
-    window->show(); */
-
-    // FIXME there is a strange bug that make SupraFit crash while opening a file
-    // crashing right here on some linux platforms
-    // qDebug() << m_stack_widget->count();
-
-    m_stack_widget->insertWidget(0, window);
+    m_stack_widget->addWidget(window);
     m_stack_widget->setCurrentWidget(window);
 
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
@@ -564,7 +557,7 @@ void SupraFitGui::ImportTable(const QString& file)
 
     if (dialog.exec() == QDialog::Accepted) {
         SetData(dialog.getProject(), dialog.ProjectFile());
-        // m_mainsplitter->show();
+        m_mainsplitter->show();
     }
 }
 
@@ -578,8 +571,10 @@ bool SupraFitGui::LoadProject(const QString& filename)
     QJsonObject toplevel;
 
     if (JsonHandler::ReadJsonFile(toplevel, filename)) {
-        if (m_supr_file.isEmpty() || m_supr_file.isNull())
+        if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
             m_supr_file = filename;
+            m_filename_line->setText(m_supr_file);
+        }
         QStringList keys = toplevel.keys();
         if (keys.contains("data")) {
             return SetData(toplevel, info.baseName());
@@ -607,6 +602,7 @@ void SupraFitGui::SaveProjectAction()
         if (str.isEmpty())
             return;
         m_supr_file = str;
+        m_filename_line->setText(m_supr_file);
     }
 
     QVector<QJsonObject> projects;
@@ -632,6 +628,8 @@ void SupraFitGui::SaveAsProjectAction()
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
     if (!str.isEmpty()) {
         m_supr_file = str;
+        m_filename_line->setText(m_supr_file);
+
         QVector<QJsonObject> projects;
         for (int i = 0; i < m_project_list.size(); i++) {
             QPointer<MainWindow> project_widget = m_project_list[i];
@@ -876,6 +874,7 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
         MainWindow* mainwindow = m_project_list.takeAt(widget);
         m_stack_widget->removeWidget(mainwindow);
         m_data_list.remove(widget);
+        m_hashed_data.remove(mainwindow->Data()->UUID());
         delete mainwindow;
     }
     for (int i = m_meta_models.size() - 1; i >= 0; --i)

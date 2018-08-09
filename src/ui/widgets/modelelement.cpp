@@ -168,7 +168,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
-    connect(m_charts.data_wrapper, SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
+    connect(m_charts.data_wrapper.data(), SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
     toggleActive();
     Update();
 }

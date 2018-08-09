@@ -119,15 +119,15 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
 
-    connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper, SLOT(SetBlocked(int)));
-    connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper, SLOT(SetBlocked(int)));
+    connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper.data(), SLOT(SetBlocked(int)));
+    connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper.data(), SLOT(SetBlocked(int)));
 
     m_dialogs = new ModalDialog;
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_statistic_widget = new StatisticWidget(m_model, this);
 
-    m_results = new ResultsDialog(m_model, m_charts.signal_wrapper, this);
+    m_results = new ResultsDialog(m_model, m_charts.signal_wrapper.data(), this);
     connect(m_results, &ResultsDialog::LoadModel, this, &ModelWidget::LoadJson);
     connect(m_results, &ResultsDialog::AddModel, this, &ModelWidget::AddModel);
 
@@ -324,8 +324,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
 ModelWidget::~ModelWidget()
 {
-    delete m_charts.signal_wrapper;
-    delete m_charts.error_wrapper;
+    // delete m_charts.signal_wrapper;
+    // delete m_charts.error_wrapper;
 
     m_model.clear();
 

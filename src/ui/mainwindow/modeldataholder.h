@@ -169,6 +169,12 @@ public slots:
 
     void RemoveTab(int i);
 
+    /* Close all open projects */
+    void CloseAll();
+
+    /* Close all open projects */
+    void CloseAllForced();
+
 private:
     QPointer<DataWidget> m_datawidget;
     QPointer<TabWidget> m_modelsWidget;
@@ -201,7 +207,6 @@ private slots:
     void CreateCrashFile();
     void RemoveCrashFile();
     void SetProjectTabName();
-    void CloseAll();
     void WGStatistic(const WGSConfig& config);
     void MCStatistic(MCConfig config);
     void MoCoStatistic(MoCoConfig config);

@@ -43,11 +43,11 @@ class ModelDataHolder;
 
 struct OptimizerConfig;
 
-class MainWindow : public QMainWindow {
+class MainWindow : public QWidget {
     Q_OBJECT
 
 public:
-    MainWindow();
+    MainWindow(QWidget* parent = 0);
     ~MainWindow();
 
     QSharedPointer<DataClass> SetData(const QJsonObject& object);
@@ -72,8 +72,6 @@ public slots:
 
 private:
     void setActionEnabled(bool enabled);
-    void ReadSettings();
-    void ReadGeometry();
     void WriteSettings(bool ignore_window_state = true);
 
     QPointer<QSplitter> m_mainsplitter;

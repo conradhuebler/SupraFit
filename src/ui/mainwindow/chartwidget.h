@@ -25,13 +25,14 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QScatterSeries>
-
 #include <QtCharts/QValueAxis>
 
-#include "src/ui/widgets/chartview.h"
 #include <QtCore/QPointer>
 #include <QtCore/QVector>
+
 #include <QtWidgets/QWidget>
+
+#include "src/ui/widgets/chartview.h"
 
 class AbstractModel;
 
@@ -43,9 +44,9 @@ class QChartView;
 class ChartWrapper;
 
 struct Charts {
-    ChartWrapper* error_wrapper;
-    ChartWrapper* signal_wrapper;
-    ChartWrapper* data_wrapper;
+    QSharedPointer<ChartWrapper> error_wrapper;
+    QSharedPointer<ChartWrapper> signal_wrapper;
+    QSharedPointer<ChartWrapper> data_wrapper;
 };
 
 class ChartDockTitleBar : public QWidget {

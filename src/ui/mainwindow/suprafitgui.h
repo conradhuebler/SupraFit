@@ -169,12 +169,12 @@ private:
     QVector<QPointer<MainWindow>> m_project_list;
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
-    QPointer<QGridLayout> m_layout;
     QStackedWidget* m_stack_widget;
     QVector<QWeakPointer<MetaModel>> m_meta_models;
     QSplashScreen* m_splash;
     QSplitter* m_mainsplitter;
     QVector<QJsonObject> m_cached_meta;
+    QLineEdit* m_filename_line;
 
 private slots:
     void NewWindow();

@@ -220,16 +220,16 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 {
     m_models << model;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    ChartWrapper* signal_wrapper = new ChartWrapper(false, this);
-    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper, SLOT(UpdateModel()));
-    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper, SLOT(showSeries(int)));
+    QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
+    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper.data(), SLOT(UpdateModel()));
+    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper.data(), SLOT(showSeries(int)));
     signal_wrapper->setDataTable(model->ModelTable());
     m_data_mapper->TransformModel(model);
     signal_wrapper->setData(model);
 
-    ChartWrapper* error_wrapper = new ChartWrapper(false, this);
-    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper, SLOT(UpdateModel()));
-    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper, SLOT(showSeries(int)));
+    QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
+    connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper.data(), SLOT(UpdateModel()));
+    connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper.data(), SLOT(showSeries(int)));
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model);
 
@@ -258,7 +258,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     Charts charts;
     charts.error_wrapper = error_wrapper;
     charts.signal_wrapper = signal_wrapper;
-    charts.data_wrapper = m_data_mapper.data();
+    charts.data_wrapper = m_data_mapper;
     connect(model.data(), &AbstractModel::Recalculated, model.data(), [model, this]() {
         m_signal_x = model->XLabel();
         m_signal_y = model->YLabel();

@@ -628,9 +628,14 @@ void ModelDataHolder::CloseAll()
     QString app_name = QString(qApp->instance()->applicationName());
     replay = QMessageBox::information(this, tr("Close All."), tr("Do you really want to close all models on the workspace?"), QMessageBox::Yes | QMessageBox::No);
     if (replay == QMessageBox::Yes) {
-        for (int i = m_modelsWidget->count(); i > 0; --i)
-            RemoveTab(i);
+        CloseAllForced();
     }
+}
+
+void ModelDataHolder::CloseAllForced()
+{
+    for (int i = m_modelsWidget->count(); i > 0; --i)
+        RemoveTab(i);
 }
 
 int ModelDataHolder::Runs(bool moco) const

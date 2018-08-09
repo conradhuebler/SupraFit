@@ -120,7 +120,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
                                            -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations\
-                                           -Wno-error=unused-local-typedefs -Wno-error=enum-compare")                                        
+                                           -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
