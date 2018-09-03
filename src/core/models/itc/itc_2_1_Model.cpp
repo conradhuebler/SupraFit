@@ -142,7 +142,7 @@ QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private()
 void itc_IItoI_Model::CalculateVariables()
 {
 
-    QString more_info = QString("Inject\tq(AB)\tq(AB2)\tSum\n");
+    QString more_info = QString("Inject\tq(A2B)\tq(AB)\tDilution\tSum\n");
 
     QString dil = getOption(Dilution);
 
@@ -188,7 +188,7 @@ void itc_IItoI_Model::CalculateVariables()
         qreal q_a2b = (complex_21 - complex_21_prev * (1 - v / V)) * dH2 * V;
         qreal q_ab = (complex_11 - complex_11_prev * (1 - v / V)) * dH1 * V;
         qreal value = q_a2b + q_ab;
-        more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_a2b) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(value) + "\n";
+        more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_a2b) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
         SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
