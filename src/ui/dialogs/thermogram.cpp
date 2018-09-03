@@ -22,6 +22,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QDialogButtonBox>
+#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
@@ -88,6 +89,15 @@ void Thermogram::setUi()
     m_exp_base = new QLineEdit;
     m_dil_base = new QLineEdit;
 
+    m_freq = new QDoubleSpinBox;
+    m_freq->setValue(1.0);
+    m_freq->setStyleSheet("background-color: green");
+    connect(m_freq, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this]() {
+        m_forceStep = true;
+        this->setDilutionFile(m_dil_file->text());
+        this->setExperimentFile(m_exp_file->text());
+        //m_freq->setStyleSheet("background-color: orange");
+    });
     m_remove_offset = new QCheckBox(tr("Remove Offset"));
     connect(m_remove_offset, &QCheckBox::stateChanged, this, &Thermogram::UpdateData);
 
@@ -115,6 +125,8 @@ void Thermogram::setUi()
     layout->addWidget(m_message, 1, 2, 1, 2);
 
     QHBoxLayout* hlayout = new QHBoxLayout;
+    hlayout->addWidget(new QLabel(tr("Freq:")));
+    hlayout->addWidget(m_freq);
     hlayout->addWidget(m_remove_offset);
     hlayout->addWidget(m_offset);
     hlayout->addWidget(new QLabel(tr("cal->J")));
@@ -193,13 +205,27 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
 
     std::vector<double> entries_x, entries_y;
     bool start_peak = false, skip = false;
-    qreal last_x = 0, freq = 2.0;
+    qreal last_x = 0, freq = m_freq->value();
     offset = 0;
     PeakPick::Peak floating_peak;
     int i_offset = 0;
     for (const QString& str : filecontent) {
         if (str.contains("$") || str.contains("#") || str.contains("?") || str.contains("%")) {
             if (str.contains("%")) {
+            }
+            if (str.contains("$")) {
+                if (str.simplified().split(" ").size() == 8) {
+                    double val = str.simplified().split(" ").last().toDouble();
+                    if (!m_forceStep) {
+                        const QSignalBlocker blocker(m_freq);
+                        m_freq->setValue(val);
+                        freq = val;
+                    }
+                    if (int(val) == int(freq))
+                        m_freq->setStyleSheet("background-color: green");
+                    else
+                        m_freq->setStyleSheet("background-color: orange");
+                }
             }
         } else if (str.contains("@")) {
             skip = (str.contains("@0"));

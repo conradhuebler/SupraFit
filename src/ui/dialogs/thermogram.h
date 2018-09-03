@@ -31,6 +31,7 @@ class QCheckBox;
 class QDialogButtonBox;
 class QLabel;
 class QLineEdit;
+class QDoubleSpinBox;
 class QPushButton;
 class QTableWidget;
 class QTabWidget;
@@ -77,6 +78,7 @@ private:
     QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_scale;
     QLabel *m_message, *m_offset;
     QTabWidget* m_mainwidget;
+    QDoubleSpinBox* m_freq;
 
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
@@ -92,7 +94,7 @@ private:
 
     QString m_content;
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
-    bool m_forceInject = false, m_injection = false;
+    bool m_forceInject = false, m_injection = false, m_forceStep = false;
     qreal m_heat_offset = 0, m_dil_offset = 0;
     qreal PeakAt(int i);
 
