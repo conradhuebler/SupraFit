@@ -122,7 +122,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper.data(), SLOT(SetBlocked(int)));
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper.data(), SLOT(SetBlocked(int)));
 
-    m_dialogs = new ModalDialog;
+    m_dialogs = new ModalDialog(this);
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
     m_statistic_widget = new StatisticWidget(m_model, this);
@@ -330,9 +330,6 @@ ModelWidget::~ModelWidget()
     m_model.clear();
 
     m_statistic_dialog->hide();
-    m_dialogs->hide();
-
-    delete m_dialogs;
     delete m_statistic_dialog;
 }
 
@@ -913,6 +910,8 @@ void ModelWidget::Restore()
 void ModelWidget::Detailed()
 {
     QTextEdit* text = new QTextEdit;
+    m_model->setFast(false);
+    m_model->Calculate();
     text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");
     m_dialogs->setWidget(text, tr("Detailed Information on Calculation Results"));
     m_dialogs->Attention();

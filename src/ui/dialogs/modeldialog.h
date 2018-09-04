@@ -30,7 +30,6 @@ class ModalDialog : public QDialog {
     Q_OBJECT
 public:
     ModalDialog(QWidget* widget = 0, const QString& str = QString(tr("no name")));
-    ~ModalDialog();
     void setWidget(QWidget* widget, QString str = QString(tr("no name")));
     QWidget* Widget() { return m_widget; }
     inline int Count() const { return m_tab->count(); }

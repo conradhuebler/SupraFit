@@ -77,9 +77,9 @@ void AbstractItcModel::DeclareSystemParameter()
 
     addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
     addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
-    addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mol/L", SystemParameter::Scalar);
+    addSystemParameter(CellConcentration, "Cell concentration", "Concentration in cell in mmol/L", SystemParameter::Scalar);
 
-    addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mol/L", SystemParameter::Scalar);
+    addSystemParameter(SyringeConcentration, "Syringe concentration", "Concentration in syringe in mmol/L", SystemParameter::Scalar);
     setSystemParameterValue(Temperature, 298);
 
     addSystemParameter(Reservoir, "Cell Volume constant", "Keep the volume in cell constant", SystemParameter::Boolean);

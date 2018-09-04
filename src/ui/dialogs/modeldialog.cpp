@@ -24,7 +24,7 @@
 #include "modeldialog.h"
 
 ModalDialog::ModalDialog(QWidget* widget, const QString& str)
-    : m_widget(widget)
+    : QDialog(widget)
 {
     layout = new QGridLayout;
     setModal(false);
@@ -35,10 +35,6 @@ ModalDialog::ModalDialog(QWidget* widget, const QString& str)
     setLayout(layout);
     resize(800, 400);
     connect(m_tab, SIGNAL(tabCloseRequested(int)), this, SLOT(RemoveTab(int)));
-}
-
-ModalDialog::~ModalDialog()
-{
 }
 
 void ModalDialog::Attention()
