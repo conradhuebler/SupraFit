@@ -139,6 +139,7 @@ QVector<qreal> itc_ItoII_Model::OptimizeParameters_Private()
 void itc_ItoII_Model::CalculateVariables()
 {
     QString more_info = QString("Inject\tq(AB)\tq(AB2)\tDilution\tSum\n");
+    QString more_info_2 = QString("\nInject\tq'(AB)\tq'(AB2)\tDilution\tSum\n");
 
     QString dil = getOption(Dilution);
 
@@ -152,14 +153,14 @@ void itc_ItoII_Model::CalculateVariables()
 
     qreal dH1 = LocalTable()->data(0, 0);
     qreal dH2 = LocalTable()->data(1, 0) + dH1;
-
+    qreal dH2_ = LocalTable()->data(1, 0);
     qreal complex_11_prev = 0, complex_12_prev = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
         qreal v = IndependentModel()->data(0, i);
-
+        qreal dv = (1 - v / V);
         host_0 *= fx;
 
         qreal dilution = 0;
@@ -182,16 +183,19 @@ void itc_ItoII_Model::CalculateVariables()
         if (!m_fast)
             SetConcentration(i, vector);
 
-        qreal q_ab = (complex_11 - complex_11_prev * (1 - v / V)) * dH1 * V;
-        qreal q_ab2 = (complex_12 - complex_12_prev * (1 - v / V)) * (dH2)*V;
+        qreal q_ab = (complex_11 - complex_11_prev * dv) * dH1 * V;
+        qreal q_ab2 = (complex_12 - complex_12_prev * dv) * dH2 * V;
+        qreal q_ab_ = ((complex_11 - complex_11_prev * dv) + (complex_12 - complex_12_prev * dv)) * dH1 * V;
+        qreal q_ab2_ = (complex_12 - complex_12_prev * dv) * dH2_ * V;
         qreal value = q_ab + q_ab2;
         more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(q_ab2) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
+        more_info_2 += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(q_ab2_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
         SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;
     }
-    m_more_info = more_info;
+    m_more_info = more_info + "\n" + more_info_2;
 }
 
 QSharedPointer<AbstractModel> itc_ItoII_Model::Clone()

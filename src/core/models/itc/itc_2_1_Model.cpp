@@ -143,11 +143,13 @@ void itc_IItoI_Model::CalculateVariables()
 {
 
     QString more_info = QString("Inject\tq(A2B)\tq(AB)\tDilution\tSum\n");
+    QString more_info_2 = QString("\nInject\tq'(A2B)\tq'(AB)\tDilution\tSum\n");
 
     QString dil = getOption(Dilution);
 
     qreal dH1 = LocalTable()->data(1, 0);
     qreal dH2 = LocalTable()->data(0, 0) + dH1;
+    qreal dH2_ = LocalTable()->data(0, 0);
 
     qreal dil_heat = LocalTable()->data(2, 0);
     qreal dil_inter = LocalTable()->data(3, 0);
@@ -171,6 +173,7 @@ void itc_IItoI_Model::CalculateVariables()
         }
 
         qreal v = IndependentModel()->data(0, i);
+        qreal dv = (1 - v / V);
 
         qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);
         qreal guest = guest_0 / (K11 * host + K11 * K21 * host * host + 1);
@@ -183,18 +186,24 @@ void itc_IItoI_Model::CalculateVariables()
         vector(2) = guest;
         vector(3) = complex_21;
         vector(4) = complex_11;
+
         if (!m_fast)
             SetConcentration(i, vector);
-        qreal q_a2b = (complex_21 - complex_21_prev * (1 - v / V)) * dH2 * V;
-        qreal q_ab = (complex_11 - complex_11_prev * (1 - v / V)) * dH1 * V;
+
+        qreal q_a2b = (complex_21 - complex_21_prev * dv) * dH2 * V;
+        qreal q_ab = (complex_11 - complex_11_prev * dv) * dH1 * V;
+        qreal q_ab_ = ((complex_21 - complex_21_prev * dv) + (complex_11 - complex_11_prev * dv)) * dH1 * V;
+        qreal q_a2b_ = (complex_21 - complex_21_prev * dv) * dH2_ * V;
         qreal value = q_a2b + q_ab;
+
         more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_a2b) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
+        more_info_2 += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_a2b_) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
         SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
         complex_21_prev = complex_21;
     }
-    m_more_info = more_info;
+    m_more_info = more_info + "\n" + more_info_2;
 }
 
 QSharedPointer<AbstractModel> itc_IItoI_Model::Clone()
