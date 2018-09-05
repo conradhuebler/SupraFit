@@ -1,0 +1,7 @@
+# SupraFit 2.0 pre-Alpha
+
+- More consistent parameter names 
+- MetaModels are uniquely created and SupraFit doesn't crash due to wrongly
+override system parameters on drag and drop in the project list
+
+Changelog begin on 5.09.2018
