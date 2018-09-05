@@ -60,11 +60,11 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("K<sub>21</sub>");
+            return K21;
         else if (i == 1)
-            return tr("K<sub>11</sub>");
+            return K11;
         else if (i == 2)
-            return tr("K<sub>12</sub>");
+            return K12;
         else
             return QString();
     }
@@ -72,17 +72,17 @@ public:
     virtual inline QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("dH (A2B)");
+            return dHA2B_;
         else if (i == 1)
-            return tr("dH (AB)");
+            return dHAB_;
         else if (i == 2)
-            return tr("dH (AB2)");
+            return dHAB2_;
         else if (i == 3)
-            return tr("m (solv H)");
+            return msolv;
         else if (i == 4)
-            return tr("n (solv H)");
+            return nsolv;
         else if (i == 5)
-            return tr("fx");
+            return fx;
         else
             return QString();
     }
@@ -90,11 +90,11 @@ public:
     virtual inline QString SpeciesName(int i) const override
     {
         if (i == 0)
-            return tr("A2B");
+            return A2B;
         else if (i == 1)
-            return tr("AB");
+            return AB;
         else if (i == 2)
-            return tr("AB2");
+            return AB2;
         else
             return QString();
     }
@@ -102,13 +102,14 @@ public:
     virtual int LocalParameterSize() const override { return 6; }
     virtual inline int InputParameterSize() const override { return 1; }
 
-    // virtual inline QString Name() const override { return tr("ITC 2:1/1:1/1:2-Model"); }
     virtual inline int Color(int i) const override
     {
         if (i > 2)
             return i + 1;
         return i;
     }
+
+    virtual QString AdditionOutput() const override;
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;

@@ -200,8 +200,8 @@ void itc_IItoII_Model::CalculateVariables()
     if (!m_threadpool)
         return;
 
-    QString more_info = QString("Inject\tq(A2B)\tq(AB)\tq(AB2)\tDilution\tSum\n");
-    QString more_info_2 = QString("\nInject\tq'(A2B)\tq'(AB)\tq'(AB2)\tDilution\tSum\n");
+    QString more_info = QString("Inject\t" + qA2B + "\t" + qAB + "\t" + qAB2 + "\t" + qsolv + "\t" + q + "\n");
+    QString more_info_2 = QString("\nInject\t" + qA2B_ + "\t" + qAB_ + "\t" + qAB2_ + "\t" + qsolv + "\t" + q + "\n");
 
     QString dil = getOption(Dilution);
 
@@ -316,6 +316,11 @@ QSharedPointer<AbstractModel> itc_IItoII_Model::Clone()
     model.data()->setOptimizerConfig(getOptimizerConfig());
     model.data()->setConcentrations(ConcentrationTable());
     return model;
+}
+
+QString itc_IItoII_Model::AdditionOutput() const
+{
+    return QString();
 }
 
 #include "itc_2_2_Model.moc"

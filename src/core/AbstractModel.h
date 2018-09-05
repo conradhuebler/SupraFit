@@ -541,6 +541,8 @@ public:
 
     inline virtual QString RandomExportSuffix() const { return QString("*.dat (*.dat)"); }
 
+    virtual QString AdditionOutput() const { return QString(); }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

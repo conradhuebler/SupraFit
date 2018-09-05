@@ -51,9 +51,9 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("K<sub>1</sub>");
+            return K1;
         else if (i == 1)
-            return tr("K<sub>2</sub>");
+            return K2;
         else
             return QString();
     }
@@ -71,17 +71,17 @@ public:
     virtual inline QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("dH1");
+            return dH1;
         else if (i == 1)
-            return tr("n1");
+            return n1;
         else if (i == 2)
-            return tr("dH2");
+            return dH2;
         else if (i == 3)
-            return tr("n2");
+            return n2;
         else if (i == 4)
-            return tr("m (solv H)");
+            return msolv;
         else if (i == 5)
-            return tr("n (solv H)");
+            return nsolv;
         else
             return QString();
     }

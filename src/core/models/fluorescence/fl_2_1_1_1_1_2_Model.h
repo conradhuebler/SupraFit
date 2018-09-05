@@ -58,11 +58,11 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("K<sub>21</sub>");
+            return K21;
         else if (i == 1)
-            return tr("K<sub>11</sub>");
+            return K11;
         else if (i == 2)
-            return tr("K<sub>12</sub>");
+            return K12;
         else
             return QString();
     }
@@ -81,7 +81,7 @@ public:
 
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
-    //    virtual inline QString Name() const override { return tr("&Phi; 2:1/1:1/1:2-Model"); }
+
     virtual inline int Color(int i) const override
     {
         if (i > 2)

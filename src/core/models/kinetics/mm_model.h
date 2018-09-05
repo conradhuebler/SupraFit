@@ -48,9 +48,9 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("v<sub>max</sub>");
+            return vmax;
         else if (i == 1)
-            return tr("K<sub>m</sub>");
+            return Km;
         else
             return QString();
     }
@@ -68,7 +68,7 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const override { return "S<sub>0</sub>"; }
+    virtual QString XLabel() const override { return S0; }
 
     /*! \brief Define the y axis for charts
      */

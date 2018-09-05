@@ -47,9 +47,9 @@ public:
     virtual inline QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("m (solv H)");
+            return msolv;
         else if (i == 1)
-            return tr("n (solv H)");
+            return nsolv;
         else
             return QString();
     }

@@ -703,6 +703,7 @@ QString AbstractModel::Global2Text() const
         text += " " + IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
 
     text += "## Current Model Results Done ####\n";
+    text += AdditionOutput() + "\n";
     return text;
 }
 

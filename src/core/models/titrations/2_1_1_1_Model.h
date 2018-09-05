@@ -25,7 +25,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-#include "src/core/AbstractTitrationModel.h"
+#include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 
 class IItoI_ItoI_Model : public AbstractTitrationModel {
@@ -54,9 +54,9 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("K<sub>21</sub>");
+            return K21;
         else if (i == 1)
-            return tr("K<sub>11</sub>");
+            return K11;
         else
             return QString();
     }
@@ -64,18 +64,15 @@ public:
     virtual inline QString SpeciesName(int i) const override
     {
         if (i == 0)
-            return tr("A2B");
+            return A2B;
         else if (i == 1)
-            return tr("AB");
+            return AB;
         else
             return QString();
     }
 
     void DeclareOptions() override;
-
     void EvaluateOptions() override;
-
-    //    virtual inline QString Name() const override { return tr("2:1/1:1-Model"); }
 
     virtual inline int Color(int i) const override
     {

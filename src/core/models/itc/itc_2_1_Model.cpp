@@ -142,8 +142,8 @@ QVector<qreal> itc_IItoI_Model::OptimizeParameters_Private()
 void itc_IItoI_Model::CalculateVariables()
 {
 
-    QString more_info = QString("Inject\tq(A2B)\tq(AB)\tDilution\tSum\n");
-    QString more_info_2 = QString("\nInject\tq'(A2B)\tq'(AB)\tDilution\tSum\n");
+    QString more_info = QString("Inject\t" + qA2B + "\t" + qAB + "\t" + qsolv + "\t" + q + "\n");
+    QString more_info_2 = QString("\nInject\t" + qA2B_ + "\t" + qAB_ + "\t" + qsolv + "\t" + q + "\n");
 
     QString dil = getOption(Dilution);
 
@@ -215,6 +215,11 @@ QSharedPointer<AbstractModel> itc_IItoI_Model::Clone()
     model.data()->setOptimizerConfig(getOptimizerConfig());
     model.data()->setConcentrations(ConcentrationTable());
     return model;
+}
+
+QString itc_IItoI_Model::AdditionOutput() const
+{
+    return QString();
 }
 
 #include "itc_2_1_Model.moc"

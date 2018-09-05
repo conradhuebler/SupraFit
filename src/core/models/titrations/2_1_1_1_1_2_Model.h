@@ -27,7 +27,7 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QVector>
 
-#include "src/core/AbstractTitrationModel.h"
+#include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 
 typedef Eigen::VectorXd Vector;
@@ -57,11 +57,11 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("K<sub>21</sub>");
+            return K21;
         else if (i == 1)
-            return tr("K<sub>11</sub>");
+            return K11;
         else if (i == 2)
-            return tr("K<sub>12</sub>");
+            return K12;
         else
             return QString();
     }
@@ -69,11 +69,11 @@ public:
     virtual inline QString SpeciesName(int i) const override
     {
         if (i == 0)
-            return tr("A2B");
+            return A2B;
         else if (i == 1)
-            return tr("AB");
+            return AB;
         else if (i == 2)
-            return tr("AB2");
+            return AB2;
         else
             return QString();
     }

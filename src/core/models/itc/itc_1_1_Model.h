@@ -51,7 +51,7 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("K<sub>11</sub>");
+            return K11;
         else
             return QString();
     }
@@ -59,7 +59,7 @@ public:
     virtual inline QString SpeciesName(int i) const override
     {
         if (i == 0)
-            return tr("AB");
+            return AB;
         else
             return QString();
     }
@@ -67,20 +67,19 @@ public:
     virtual inline QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("dH (AB)");
+            return dHAB_;
         else if (i == 1)
-            return tr("m (solv H)");
+            return msolv;
         else if (i == 2)
-            return tr("n (solv H)");
+            return nsolv;
         else if (i == 3)
-            return tr("fx");
+            return fx;
         else
             return QString();
     }
 
     virtual int LocalParameterSize() const override { return 4; }
     virtual inline int InputParameterSize() const override { return 1; }
-    //  virtual inline QString Name() const override { return tr("ITC 1:1-Model"); }
 
     virtual inline int Color(int i) const override
     {
@@ -89,6 +88,8 @@ public:
         else
             return i + 3;
     }
+
+    virtual QString AdditionOutput() const override;
 
 protected:
     virtual void CalculateVariables() override;

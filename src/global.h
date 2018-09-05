@@ -342,3 +342,53 @@ inline QString Model2Name(SupraFit::Model model)
 inline const QString included() { return QString("#77d740;"); }
 inline const QString excluded() { return QString("#e17f7f;"); }
 
+/*
+ * Define the names/strings of the
+ * used parameter
+ */
+
+const QString K11 = QString("K<sub>11</sub>");
+const QString K21 = QString("K<sub>21</sub>");
+const QString K12 = QString("K<sub>12</sub>");
+
+const QString K1 = QString("K<sub>1</sub>");
+const QString K2 = QString("K<sub>2</sub>");
+
+const QString dHAB = QString("&Delta;H<sub>AB</sub>");
+const QString dHAB2 = QString("&Delta;H<sub>AB2</sub>");
+const QString dHA2B = QString("&Delta;H<sub>A2B</sub>");
+
+const QString dHAB_ = QString("&Delta;H'<sub>AB</sub>");
+const QString dHAB2_ = QString("&Delta;H'<sub>AB2</sub>");
+const QString dHA2B_ = QString("&Delta;H'<sub>A2B</sub>");
+
+const QString dH1 = QString("&Delta;H<sub>1</sub>");
+const QString dH2 = QString("&Delta;H<sub>2</sub>");
+
+const QString n1 = QString("n<sub>1</sub>");
+const QString n2 = QString("n<sub>2</sub>");
+
+const QString msolv = QString("m (&delta;<sub>solv</sub>)");
+const QString nsolv = QString("n (&delta;<sub>solv</sub>)");
+
+const QString fx = QString("fx");
+
+const QString AB = QString("AB");
+const QString AB2 = QString("AB<sub>2</sub>");
+const QString A2B = QString("A<sub>2</sub>B");
+
+const QString vmax = QString("v<sub>max</sub>");
+const QString Km = QString("K<sub>M</sub>");
+
+const QString S0 = QString("S<sub>0</sub>");
+
+const QString qAB = QString("q<sub>AB</sub>");
+const QString qAB2 = QString("q<sub>AB2</sub>");
+const QString qA2B = QString("q<sub>A2B</sub>");
+const QString qsolv = QString("q<sub>solv</sub>");
+
+const QString qAB_ = QString("q'<sub>AB</sub>");
+const QString qAB2_ = QString("q'<sub>AB2</sub>");
+const QString qA2B_ = QString("q'<sub>A2B</sub>");
+
+const QString q = QString("q");

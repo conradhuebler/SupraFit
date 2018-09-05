@@ -32,8 +32,8 @@
 
 #include "meta_model.h"
 
-MetaModel::MetaModel()
-    : AbstractModel(new DataClass())
+MetaModel::MetaModel(DataClass* data)
+    : AbstractModel(data)
 {
     PrepareParameter(0, 0);
     connect(this, &AbstractModel::Recalculated, this, &MetaModel::UpdateCalculated);
@@ -491,7 +491,7 @@ void MetaModel::CalculateVariables()
 
 QSharedPointer<AbstractModel> MetaModel::Clone()
 {
-    QSharedPointer<MetaModel> model = QSharedPointer<MetaModel>(new MetaModel, &QObject::deleteLater);
+    QSharedPointer<MetaModel> model = QSharedPointer<MetaModel>(new MetaModel(new DataClass()), &QObject::deleteLater);
 
     for (const QSharedPointer<AbstractModel>& m : Models())
         model.data()->addModel(m->Clone().data());

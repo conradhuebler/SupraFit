@@ -96,7 +96,7 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataCla
         break;
 
     case SupraFit::MetaModel:
-        t = QSharedPointer<MetaModel>(new MetaModel(), &QObject::deleteLater);
+        t = QSharedPointer<MetaModel>(new MetaModel(data.data()), &QObject::deleteLater);
         break;
 
     default:

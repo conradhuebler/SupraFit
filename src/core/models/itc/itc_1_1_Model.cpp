@@ -83,7 +83,7 @@ QVector<qreal> itc_ItoI_Model::OptimizeParameters_Private()
 
 void itc_ItoI_Model::CalculateVariables()
 {
-    QString more_info = QString("Inject\tq(AB)\tDilution\tSum\n");
+    QString more_info = QString("Inject\t" + qAB + "\t" + qsolv + "\t" + q + "\n");
     QString dil = getOption(Dilution);
 
     qreal dH = LocalTable()->data(0, 0);
@@ -135,5 +135,9 @@ QSharedPointer<AbstractModel> itc_ItoI_Model::Clone()
     return model;
 }
 
+QString itc_ItoI_Model::AdditionOutput() const
+{
+    return QString();
+}
 
 #include "itc_1_1_Model.moc"

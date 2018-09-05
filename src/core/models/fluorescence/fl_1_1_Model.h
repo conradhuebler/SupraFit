@@ -49,7 +49,7 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("K<sub>11</sub>");
+            return K11;
         else
             return QString();
     }
@@ -57,8 +57,6 @@ public:
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
     virtual int LocalParameterSize() const override { return 3; }
-
-    //   virtual inline QString Name() const override { return tr("&Phi; 1:1-Model"); }
 
 protected:
     virtual void CalculateVariables() override;

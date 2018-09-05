@@ -950,13 +950,13 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
             m_project_tree->layoutChanged();
         });
 
-        m_project_list << window;
+        m_project_list.append(window);
 
-        m_data_list << model;
+        m_data_list.append(model);
         m_project_tree->layoutChanged();
         setActionEnabled(true);
         model.data()->addModel(qobject_cast<AbstractModel*>(data));
-        m_meta_models << model;
+        m_meta_models.append(model);
     } else if ((position - (m_data_list.size() - m_meta_models.size())) < m_meta_models.size())
         m_meta_models[position - (m_data_list.size() - m_meta_models.size())].data()->addModel(qobject_cast<AbstractModel*>(data));
 }
@@ -967,6 +967,10 @@ void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)
         return;
 
     QPointer<DataClass> data = static_cast<DataClass*>(source.internalPointer());
+    for (int i = 0; i < m_meta_models.size(); ++i) {
+        if (m_meta_models[i].data()->UUID() == data.data()->UUID())
+            return;
+    }
     m_data_list[position].data()->OverrideSystemParameter(data->SysPar());
 }
 

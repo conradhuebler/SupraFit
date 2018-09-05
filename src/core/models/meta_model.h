@@ -34,7 +34,7 @@ class MetaModel : public AbstractModel {
     Q_OBJECT
 
 public:
-    MetaModel();
+    MetaModel(DataClass* data);
     ~MetaModel();
 
     enum ConnectType {
