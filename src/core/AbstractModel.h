@@ -243,7 +243,7 @@ public:
     /*! \brief Load statistic defined by type
      * If more than results can be stored, define index
      */
-    QJsonObject getStatistic(SupraFit::Statistic type, int index = 0);
+    QJsonObject getStatistic(SupraFit::Statistic type, int index = 0) const;
 
     bool RemoveStatistic(SupraFit::Statistic type, int index = 0);
 
@@ -541,7 +541,7 @@ public:
 
     inline virtual QString RandomExportSuffix() const { return QString("*.dat (*.dat)"); }
 
-    virtual QString AdditionOutput() const { return QString(); }
+    virtual QString AdditionalOutput() const { return QString(); }
 
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters

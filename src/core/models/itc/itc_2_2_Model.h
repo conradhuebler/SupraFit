@@ -109,7 +109,7 @@ public:
         return i;
     }
 
-    virtual QString AdditionOutput() const override;
+    virtual QString AdditionalOutput() const override;
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;

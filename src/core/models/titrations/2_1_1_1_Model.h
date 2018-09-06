@@ -81,6 +81,8 @@ public:
         return i;
     }
 
+    virtual QString AdditionalOutput() const override;
+
 protected:
     virtual void CalculateVariables() override;
 };

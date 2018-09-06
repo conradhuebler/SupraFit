@@ -78,11 +78,17 @@ qreal finv(qreal p, int m, int n);
 QList<int> InvertLockedList(const QList<int>& locked);
 void ExportResults(const QString& filename, const QList<QJsonObject>& models);
 QPair<Vector, Vector> LoadXYFile(const QString& filename);
+
+/*! \brief Convert log K (complexation constant) to free Enthalpy for given T */
+qreal K2G(qreal logK, qreal T);
+
+/*! \brief Use Gibbs-Helmholtz equation to calculate Entropy */
+qreal GHE(qreal G, qreal H, qreal T);
 }
 
 namespace Print {
 QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractModel> model, const QJsonObject& controller);
 QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller);
 
-QString printDouble(double number);
+QString printDouble(double number, int prec = -1);
 }

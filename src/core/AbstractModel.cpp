@@ -556,7 +556,7 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
     return index;
 }
 
-QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index)
+QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index) const
 {
     switch (type) {
     case SupraFit::Statistic::WeakenedGridSearch:
@@ -703,7 +703,7 @@ QString AbstractModel::Global2Text() const
         text += " " + IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
 
     text += "## Current Model Results Done ####\n";
-    text += AdditionOutput() + "\n";
+    text += AdditionalOutput() + "\n";
     return text;
 }
 
@@ -817,7 +817,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         return false;
     }
     int fileversion = topjson["SupraFit"].toInt();
-    if ((SupraFit::Model)topjson["model"].toInt() != SFModel()) {
+    if (static_cast<SupraFit::Model>(topjson["model"].toInt()) != SFModel()) {
         if (fileversion >= qint_version) {
             qWarning() << "No old data, but models dont fit, sorry";
             return false;

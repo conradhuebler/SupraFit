@@ -300,10 +300,11 @@ SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error)
     if (list.isEmpty())
         return result;
     error /= 2;
-    if (error == 0) {
+
+    if (qFuzzyCompare(error, 0)) {
         result.lower = list.first();
         result.upper = list.last();
-    } else if (error == 100) {
+    } else if (qFuzzyCompare(error, 100)) {
         int max = list.size();
         int pos = max / 2;
         if (max % 2 == 1) {
@@ -315,10 +316,22 @@ SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error)
         }
     } else {
         int max = list.size();
-        int pos_upper = max * (1 - error / 100);
-        int pos_lower = max * (error / 100);
-        result.lower = list[pos_lower];
-        result.upper = list[pos_upper];
+        int pos_upper = round(max * (1 - error / 100));
+        int pos_lower = round(max * (error / 100));
+        if (pos_lower == 0)
+            pos_lower = 1;
+        if (pos_upper == 0)
+            pos_upper = 1;
+        /* returns now identical values compared to octaves quantile functions
+         * at least for the tested 10, 100, 1000 step mc simulations
+         */
+        if (max >= 1000) {
+            result.lower = (list[pos_lower - 1] + list[pos_lower]) / 2.0;
+            result.upper = (list[pos_upper - 1] + list[pos_upper]) / 2.0;
+        } else {
+            result.lower = list[pos_lower - 1];
+            result.upper = list[pos_upper - 1];
+        }
     }
     return result;
 }
@@ -570,6 +583,15 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename)
 
     return QPair<Vector, Vector>(x, y);
 }
+qreal K2G(qreal logK, qreal T)
+{
+    return -R * T * logK * log2ln;
+}
+
+qreal GHE(qreal G, qreal H, qreal T)
+{
+    return -(G - H) / T;
+}
 }
 
 namespace Print {
@@ -658,7 +680,7 @@ QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controll
     return text;
 }
 
-QString printDouble(double number)
+QString printDouble(double number, int prec)
 {
     QString string;
     QLocale local;
@@ -666,17 +688,33 @@ QString printDouble(double number)
     if (number >= 0)
         string += " ";
 
-    if (qAbs(number - int(number)) < 1e-30)
-        string += local.toString(number);
-    else if (qAbs(number) < 1e-17)
-        string += "0";
-    else if (qAbs(number) < 1e-9)
-        string += local.toString(number, 'e', 2);
-    else if (qAbs(number) < 1e-4)
-        string += local.toString(number, 'e', 3);
-    else
-        string += local.toString(number, 'f', 6);
-
+    if (prec == -1) {
+        if (qAbs(number - int(number)) < 1e-30)
+            string += local.toString(number);
+        else if (qAbs(number) < 1e-17)
+            string += "0";
+        else if (qAbs(number) < 1e-9)
+            string += local.toString(number, 'e', 2);
+        else if (qAbs(number) < 1e-4)
+            string += local.toString(number, 'e', 3);
+        else if (qAbs(number) > 1e3)
+            string += local.toString(number, 'f', 2);
+        else
+            string += local.toString(number, 'f', 6);
+    } else {
+        if (qAbs(number - int(number)) < 1e-30)
+            string += local.toString(number);
+        else if (qAbs(number) < 1e-17)
+            string += "0";
+        else if (qAbs(number) < 1e-9)
+            string += local.toString(number, 'e', prec);
+        else if (qAbs(number) < 1e-4)
+            string += local.toString(number, 'e', prec);
+        else if (qAbs(number) > 1e3)
+            string += local.toString(number, 'f', prec);
+        else
+            string += local.toString(number, 'f', prec);
+    }
     return string;
 }
 }

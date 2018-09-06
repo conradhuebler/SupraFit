@@ -99,7 +99,7 @@ public:
         return i;
     }
 
-    virtual QString AdditionOutput() const override;
+    virtual QString AdditionalOutput() const override;
 
 protected:
     virtual void CalculateVariables() override;

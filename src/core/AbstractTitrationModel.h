@@ -50,6 +50,10 @@ public:
     };
 
     enum {
+        Temperature = 4
+    };
+
+    enum {
         Host = 1,
         Method = 2
     };
@@ -129,6 +133,14 @@ public:
 
     virtual inline int MaxParameter() override { return GlobalParameterSize() + LocalParameterSize() * SeriesCount(); }
 
+    inline double getT() const { return m_T; }
+
+public slots:
+    virtual void UpdateParameter() override;
+
+private:
+    virtual void DeclareSystemParameter() override;
+
 protected:
     /*
      * set the concentration of the @param int i datapoint to
@@ -137,6 +149,8 @@ protected:
      * each species in that model
      */
     void SetConcentration(int i, const Vector& equlibrium);
+
+    double m_T;
 
     qreal Guess_1_1() const;
 

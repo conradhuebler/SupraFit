@@ -69,6 +69,7 @@ public:
         else
             return i + 3;
     }
+    virtual QString AdditionalOutput() const override;
 
 protected:
     virtual void CalculateVariables() override;

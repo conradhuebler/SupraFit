@@ -20,6 +20,7 @@
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/models.h"
+#include "src/core/thermo.h"
 #include "src/core/toolset.h"
 
 #include <QDebug>
@@ -177,6 +178,45 @@ QSharedPointer<AbstractModel> ItoI_ItoII_Model::Clone()
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
+}
+
+QString ItoI_ItoII_Model::AdditionalOutput() const
+{
+    QString result = tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+    result += "<h4>without statistical data:</h4>";
+
+    auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
+        result += "<p>Reaction: A + B &#8652; AB</p>";
+        result += Thermo::Statistic2Thermo(GlobalParameter(0), 0, getT(), object);
+        result += "<p>Reaction: AB + B &#8652; AB<sub>2</sub></p>";
+        result += Thermo::Statistic2Thermo(GlobalParameter(1), 0, getT(), object);
+    };
+
+    conf2therm();
+
+    if (!m_fast_confidence.isEmpty()) {
+        result += "<h4>Statistics from Fast Confidence Calculation:</h4>";
+        conf2therm(m_fast_confidence);
+    }
+
+    for (int i = 0; i < getMCStatisticResult(); ++i) {
+        if (static_cast<SupraFit::Statistic>(getStatistic(SupraFit::Statistic::MonteCarlo, i)["controller"].toObject()["method"].toInt()) == SupraFit::Statistic::MonteCarlo) {
+            result += tr("<h4>Monte Carlo Simulation %1:</h4>").arg(i);
+            conf2therm(getStatistic(SupraFit::Statistic::MonteCarlo, i));
+        }
+    }
+
+    for (int i = 0; i < getMoCoStatisticResult(); ++i) {
+        result += tr("<h4>Model Comparison %1:</h4>").arg(i);
+        conf2therm(getStatistic(SupraFit::Statistic::ModelComparison, i));
+    }
+
+    for (int i = 0; i < getWGStatisticResult(); ++i) {
+        result += tr("<h4>Weakend Grid Search %1:</h4>").arg(i);
+        conf2therm(getStatistic(SupraFit::Statistic::WeakenedGridSearch, i));
+    }
+
+    return result;
 }
 
 #include "1_1_1_2_Model.moc"

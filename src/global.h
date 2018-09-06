@@ -334,7 +334,6 @@ inline QString Model2Name(SupraFit::Model model)
 
     else if (model == SupraFit::MetaModel)
         return "Meta Model";
-
     else
         return "Unknown";
 }
@@ -392,3 +391,6 @@ const QString qAB2_ = QString("q'<sub>AB2</sub>");
 const QString qA2B_ = QString("q'<sub>A2B</sub>");
 
 const QString q = QString("q");
+
+const qreal R = 8.314459;
+const qreal log2ln = 2.302585093;
