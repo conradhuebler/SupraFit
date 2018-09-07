@@ -249,7 +249,8 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
         m_peaks_start->setValue(m_peak_list[0].start * m_spec.Step() - m_spec.Step());
         m_peaks_time->setValue(m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step());
     }
-    UpdateTable();
+
+    Update();
 }
 
 void ThermogramWidget::UpdateTable()
@@ -706,9 +707,11 @@ void ThermogramWidget::UpdatePeaks()
     m_offset = offset / double(off);
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
-    emit PeaksChanged();
     FitBaseLine();
-    UpdatePlot();
+    Update();
+    emit PeaksChanged();
+    emit IntegrationChanged();
+    //UpdatePlot();
 
-    UpdateTable();
+    //UpdateTable();
 }

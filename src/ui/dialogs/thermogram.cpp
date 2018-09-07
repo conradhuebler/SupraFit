@@ -58,11 +58,13 @@ void Thermogram::setUi()
     m_experiment = new ThermogramWidget(this);
     connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, [this]() {
         this->m_exp_peaks = this->m_experiment->Peaks();
+        this->UpdateTable();
     });
 
     m_dilution = new ThermogramWidget(this);
     connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, [this]() {
         this->m_dil_peaks = this->m_dilution->Peaks();
+        this->UpdateTable();
     });
 
     QGridLayout* layout = new QGridLayout;
@@ -235,6 +237,7 @@ void Thermogram::setExperimentFile(QString filename)
         m_exp_base->setText(QString::number(offset));
         m_experiment->setThermogram(&original, offset);
         m_experiment->setPeakList(m_exp_peaks);
+        m_exp_peaks = m_experiment->Peaks();
     } else {
         original = LoadXYFile(filename);
         QSignalBlocker block(m_freq);
@@ -356,6 +359,7 @@ void Thermogram::setDilutionFile(QString filename)
         m_dilution->setThermogram(&original, offset);
         m_dilution->setPeakList(m_exp_peaks);
         m_dil_base->setText(QString::number(offset));
+        m_dil_peaks = m_dilution->Peaks();
     } else {
         original = LoadXYFile(filename);
         m_dilution->setThermogram(&original);
@@ -374,6 +378,7 @@ void Thermogram::clearExperiment()
 {
     if (m_exp_file->text().isEmpty()) {
         m_experiment->clear();
+        m_exp_peaks.clear();
         UpdateData();
         m_exp_file->setStyleSheet("background-color: white");
     }
@@ -383,6 +388,7 @@ void Thermogram::clearDilution()
 {
     if (m_dil_file->text().isEmpty()) {
         m_dilution->clear();
+        m_dil_peaks.clear();
         UpdateData();
         m_dil_file->setStyleSheet("background-color: white");
     }
