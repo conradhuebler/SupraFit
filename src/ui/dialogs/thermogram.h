@@ -28,6 +28,7 @@
 #include "libpeakpick/peakpick.h"
 
 class QCheckBox;
+class QComboBox;
 class QDialogButtonBox;
 class QLabel;
 class QLineEdit;
@@ -48,7 +49,7 @@ class Thermogram : public QDialog {
 public:
     Thermogram();
 
-    QString Content();
+    inline QString Content() { return m_content; }
     QJsonObject Raw() const;
     QString ProjectName() const;
 
@@ -75,7 +76,8 @@ private:
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit;
     QCheckBox* m_remove_offset;
-    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_scale;
+    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base;
+    QComboBox* m_scale;
     QLabel *m_message, *m_offset;
     QTabWidget* m_mainwidget;
     QDoubleSpinBox* m_freq;
@@ -89,7 +91,7 @@ private:
     std::vector<PeakPick::Peak> PickPeaks(const PeakPick::spectrum, QTableWidget* widget);
     std::vector<PeakPick::Peak> m_exp_peaks, m_dil_peaks;
     PeakPick::spectrum m_exp_therm, m_dil_therm;
-    ScatterSeries* m_data_series;
+    ScatterSeries *m_thm_series, *m_raw_series, *m_dil_series;
     QDialogButtonBox* m_buttonbox;
 
     QString m_content;
@@ -103,6 +105,5 @@ private slots:
     void clearExperiment();
     void setDilution();
     void clearDilution();
-    void UpdateInject();
     void UpdateData();
 };

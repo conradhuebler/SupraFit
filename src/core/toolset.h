@@ -78,6 +78,7 @@ qreal finv(qreal p, int m, int n);
 QList<int> InvertLockedList(const QList<int>& locked);
 void ExportResults(const QString& filename, const QList<QJsonObject>& models);
 QPair<Vector, Vector> LoadXYFile(const QString& filename);
+PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, qreal& freq, QVector<qreal>& inject);
 
 /*! \brief Convert log K (complexation constant) to free Enthalpy for given T */
 qreal K2G(qreal logK, qreal T);

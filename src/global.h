@@ -394,3 +394,4 @@ const QString q = QString("q");
 
 const qreal R = 8.314459;
 const qreal log2ln = 2.302585093;
+const qreal cal2joule = 4.1868;

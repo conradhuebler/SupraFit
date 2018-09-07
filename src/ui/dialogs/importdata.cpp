@@ -281,10 +281,12 @@ void ImportData::ImportThermogram(const QString& filename)
         m_type = DataClassPrivate::Thermogram;
         m_title = thermogram->ProjectName();
         delete thermogram;
-        accept();
+        model->setEditable(true);
+
     } else
         delete thermogram;
 }
+
 void ImportData::ImportThermogram()
 {
     Thermogram* thermogram = new Thermogram;
@@ -313,7 +315,7 @@ void ImportData::ImportThermogram()
         m_type = DataClassPrivate::Thermogram;
         m_title = thermogram->ProjectName();
         delete thermogram;
-        accept();
+        model->setEditable(true);
 
     } else {
         delete thermogram;

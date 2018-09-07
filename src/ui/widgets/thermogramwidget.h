@@ -42,16 +42,15 @@ class ThermogramWidget : public QWidget {
 
 public:
     ThermogramWidget(QWidget* parent = nullptr);
+    ~ThermogramWidget();
+
     void setThermogram(PeakPick::spectrum* spec, qreal offset = 0.0);
 
-    inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list)
-    {
-        m_peak_list = peak_list;
-        UpdateTable();
-    }
+    void setPeakList(const std::vector<PeakPick::Peak>& peak_list);
     void Update();
-    inline QVector<qreal> PeakList() const { return m_peaks; }
-    inline void setScale(qreal scale) { m_scale = scale; }
+
+    // inline QVector<qreal> PeakList() const { return m_peaks; }
+    // inline void setScale(qreal scale) { m_scale = scale; }
     inline void setOffset(qreal offset) { m_offset = offset; }
     void PickPeaks();
     void clear();
@@ -59,10 +58,14 @@ public:
     void setFit(const QJsonObject& fit);
     QJsonObject Fit() const;
 
+    inline std::vector<PeakPick::Peak> Peaks() const { return m_peak_list; }
 signals:
     void IntegrationChanged();
+    void PeaksChanged();
 
 public slots:
+    inline void setFrequency(qreal frequency) { m_frequency = frequency; }
+    void FitBaseLine();
 
 private:
     void setUi();
@@ -78,9 +81,10 @@ private:
 
     QComboBox *m_baseline_type, *m_fit_type;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box;
+    QDoubleSpinBox *m_peaks_start, *m_peaks_time, *m_const_offset;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
-    QPushButton* m_fit_button;
+    QPushButton *m_fit_button, *m_peak_apply;
     QCheckBox *m_limits, *m_smooth, *m_poly_slow;
     QTableWidget* m_table;
     ChartView* m_thermogram;
@@ -93,17 +97,16 @@ private:
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     bool m_spectrum = false, m_block = false;
-    QVector<qreal> m_peaks;
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
-    qreal m_scale = 4.184, m_offset = 0;
+    qreal m_scale = 4.184, m_offset = 0, m_frequency;
     QString m_base, m_fit;
 
 private slots:
     void UpdateBaseLine(const QString& str);
     void UpdateFit(const QString& str);
-    void FitBaseLine();
     void PeakDoubleClicked(const QModelIndex& index);
     void PeakDoubleClicked(int peak);
     void PeakChanged(int row, int column, int value);
+    void UpdatePeaks();
 };

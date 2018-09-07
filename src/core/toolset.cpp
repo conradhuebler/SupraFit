@@ -19,9 +19,9 @@
 
 #include "jsonhandler.h"
 
-#include <QDebug>
-
+#include <QtCore/QDebug>
 #include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
 #include <QtCore/QString>
@@ -583,6 +583,90 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename)
 
     return QPair<Vector, Vector>(x, y);
 }
+
+PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, qreal& freq, QVector<qreal>& inject)
+{
+
+    Vector x, y;
+
+    QFileInfo info(filename);
+    if (!info.exists()) {
+        QStringList list = filename.split("/");
+        QString file = list.last();
+        QString lastdir = qApp->instance()->property("lastdir").toString();
+        QFileInfo inf(lastdir + "/" + file);
+        if (inf.exists())
+            filename = lastdir + "/" + file;
+        else {
+            qDebug() << QString(lastdir + "/" + file) << "doesnt work";
+            throw 404;
+        }
+    }
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << file.errorString();
+        throw 404;
+    }
+
+    QStringList filecontent = QString(file.readAll()).split("\n");
+
+    std::vector<double> entries_x, entries_y;
+    bool start_peak = false, skip = false;
+    qreal last_x = 0;
+    offset = 0;
+    PeakPick::Peak floating_peak;
+    int i_offset = 0;
+    for (const QString& str : filecontent) {
+        if (str.contains("$") || str.contains("#") || str.contains("?") || str.contains("%")) {
+            if (str.contains("%")) {
+            }
+            if (str.contains("$")) {
+                if (str.simplified().split(" ").size() == 8) {
+                    double val = str.simplified().split(" ").last().toDouble();
+                    freq = val;
+                }
+            }
+        } else if (str.contains("@")) {
+            skip = (str.contains("@0"));
+            if (skip)
+                continue;
+            start_peak = true;
+            floating_peak.end = last_x;
+            if (last_x && floating_peak.start)
+                peaks->push_back(floating_peak);
+            inject << str.split(",")[1].toDouble();
+        } else {
+            QStringList elements = str.simplified().split(",");
+            if (elements.size() > 2) {
+                if (skip) {
+                    offset += elements[1].toDouble();
+                    i_offset++;
+                    last_x = elements[0].toDouble() / freq;
+                }
+                entries_x.push_back(elements[0].toDouble());
+                entries_y.push_back(elements[1].toDouble());
+                if (start_peak) {
+                    floating_peak.start = elements[0].toDouble() / freq;
+                    start_peak = false;
+                }
+                last_x = elements[0].toDouble() / freq;
+            }
+        }
+    }
+
+    floating_peak.end = last_x;
+    peaks->push_back(floating_peak);
+
+    offset /= double(i_offset);
+    if (entries_x.size() < 1 || entries_y.size() < 1 || entries_x.size() != entries_y.size())
+        throw 101;
+
+    x = Vector::Map(&entries_x[0], entries_x.size());
+    y = Vector::Map(&entries_y[0], entries_y.size());
+
+    return PeakPick::spectrum(y, x[0], x[x.size() - 1]);
+}
+
 qreal K2G(qreal logK, qreal T)
 {
     return -R * T * logK * log2ln;
