@@ -164,11 +164,16 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     setMaximumHeight(110);
     setMinimumHeight(110);
     ChangeColor(m_charts.data_wrapper->color(m_no));
-    connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
+
+    if (m_charts.data_wrapper) {
+        if (m_no < m_charts.data_wrapper->SeriesSize())
+            connect(m_charts.data_wrapper->Series(m_no), SIGNAL(colorChanged(QColor)), this, SLOT(ChangeColor(QColor)));
+        connect(m_charts.data_wrapper.data(), SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
+    }
+
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
-    connect(m_charts.data_wrapper.data(), SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
     toggleActive();
     Update();
 }
