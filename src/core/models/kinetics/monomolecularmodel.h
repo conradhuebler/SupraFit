@@ -61,7 +61,8 @@ public:
         return tr("k");
     }
 
-    virtual int LocalParameterSize() const override { return 0; }
+    virtual int LocalParameterSize(int i = 0) const override { Q_UNUSED(i)
+        return 0; }
     virtual inline bool SupportSeries() const override { return false; }
     virtual void DeclareOptions() override;
 

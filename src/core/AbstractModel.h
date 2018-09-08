@@ -345,7 +345,6 @@ public:
     inline DataTable* GlobalTable()
     {
         return m_global_parameter;
-        emit Recalculated();
     }
 
     /*! \brief Returns pointer to Global DataTable
@@ -359,7 +358,6 @@ public:
     inline DataTable* LocalTable()
     {
         return m_local_parameter;
-        emit Recalculated();
     }
 
     /*! \brief Returns const pointer to Local DataTable
@@ -410,7 +408,7 @@ public:
 
     /*! \brief returns size of local parameter
      */
-    virtual int LocalParameterSize() const = 0;
+    virtual int LocalParameterSize(int series = 0) const = 0;
 
     virtual qreal LocalParameter(int parameter, int series) const;
 

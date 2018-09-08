@@ -62,7 +62,8 @@ public:
     }
 
     virtual void DeclareOptions() override;
-    virtual int LocalParameterSize() const override { return 4; }
+    virtual int LocalParameterSize(int series = 0) const override { Q_UNUSED(series)
+        return 4; }
     virtual void EvaluateOptions() override;
 
 protected:

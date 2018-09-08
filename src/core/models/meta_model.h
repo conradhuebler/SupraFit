@@ -71,7 +71,7 @@ public:
 
     virtual int InputParameterSize() const override { return m_inp_param; }
 
-    virtual int LocalParameterSize() const { return m_local_par.size(); }
+    virtual int LocalParameterSize(int i = 0) const;
 
     virtual inline int Size() const override { return m_size; }
     virtual inline int IndependentVariableSize() const override { return m_indep_var; }

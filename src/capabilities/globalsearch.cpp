@@ -64,9 +64,16 @@ void SearchBatch::run()
             m_model->forceGlobalParameter(parameter[i], i);
 
         if (!m_model.data()->SupportSeries()) {
-#warning this is just a hack
             for (int i = m_model.data()->GlobalParameterSize(); i < parameter.size(); ++i)
                 m_model->forceLocalParameter(parameter[i], i - m_model.data()->GlobalParameterSize(), 0);
+        } else {
+            int index = m_model.data()->GlobalParameterSize();
+            for (int i = 0; i < m_model->SeriesCount(); ++i) {
+                for (int j = 0; j < m_model->LocalParameterSize(); ++j) {
+                    m_model->forceLocalParameter(parameter[index], j, i);
+                    index++;
+                }
+            }
         }
 
         optimise();

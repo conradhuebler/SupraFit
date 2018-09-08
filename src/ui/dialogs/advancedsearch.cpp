@@ -43,6 +43,8 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
+#include <QtWidgets/QTabWidget>
 
 #include <iostream>
 
@@ -50,6 +52,7 @@
 
 ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* parent)
     : QGroupBox(parent)
+    , m_name(name)
     , m_value(value)
 {
     qreal div = value / 5.0;
@@ -77,17 +80,19 @@ ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* pare
     connect(m_variable, &QCheckBox::stateChanged, m_min, &QDoubleSpinBox::setEnabled);
     connect(m_variable, &QCheckBox::stateChanged, this, &ParameterWidget::valueChanged);
 
-    m_optimse = new QCheckBox(tr("Optimise Parameter"));
-    m_optimse->setToolTip(tr("If checked, this parameter will be optimised during fitting process.\nIf unchecked, the parameter will be fixed during fitting, but not necessarily in global search process."));
-    m_optimse->setChecked(true);
-    connect(m_optimse, &QCheckBox::stateChanged, this, &ParameterWidget::checkChanged);
+    m_optimise = new QCheckBox(tr("Optimise Parameter"));
+    m_optimise->setToolTip(tr("If checked, this parameter will be optimised during fitting process.\nIf unchecked, the parameter will be fixed during fitting, but not necessarily in global search process."));
+    m_optimise->setChecked(true);
+    connect(m_optimise, &QCheckBox::stateChanged, this, &ParameterWidget::checkChanged);
 
     connect(m_min, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_max, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_step, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
 
     QGridLayout* layout = new QGridLayout;
-    layout->addWidget(new QLabel(tr("<h4>Parameter: %1</h4>").arg(name)), 0, 0, 1, 6);
+
+    m_info = new QLabel(tr("<h4>Parameter: %1 (%2)</h4>").arg(m_name).arg(m_value));
+    layout->addWidget(m_info, 0, 0, 1, 6);
 
     layout->addWidget(new QLabel(tr("Start:")), 1, 0);
     layout->addWidget(m_min, 1, 1);
@@ -96,9 +101,16 @@ ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* pare
     layout->addWidget(new QLabel(tr("Step")), 1, 4);
     layout->addWidget(m_step, 1, 5);
     layout->addWidget(m_variable,2,0,1,3);
-    layout->addWidget(m_optimse,2,4,1,3);
+    layout->addWidget(m_optimise, 2, 4, 1, 3);
     setLayout(layout);
 }
+
+void ParameterWidget::setValue(qreal value)
+{
+    m_value = value;
+    m_info->setText(tr("<h4>Parameter: %1 (%2)</h4>").arg(m_name).arg(m_value));
+}
+
 AdvancedSearch::AdvancedSearch(QWidget* parent)
     : QDialog(parent)
 {
@@ -186,6 +198,35 @@ void AdvancedSearch::SetUi()
 
             m_parameter_list << widget;
         }
+    } else {
+        QTabWidget* tabwidget = new QTabWidget;
+        layout->addWidget(new QLabel("<h4>Series and Local Parameter</h4>"));
+        layout->addWidget(tabwidget);
+
+        for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
+            QWidget* w = new QWidget;
+            QVBoxLayout* vlayout = new QVBoxLayout;
+            w->setLayout(vlayout);
+            for (int i = 0; i < m_model.data()->LocalParameterSize(j); ++i) {
+                QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->LocalParameterName(i), m_model.data()->LocalParameter(i, j), this);
+                widget->Disable(true);
+                vlayout->addWidget(widget);
+                widget->setEnabled(m_model.data()->LocalEnabled(i));
+                connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+
+                connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this, j]() {
+                    widget->setEnabled(m_model.data()->LocalEnabled(i));
+                    widget->setValue(m_model.data()->LocalParameter(i, j));
+                });
+
+                connect(widget, &ParameterWidget::checkChanged, m_model.data(), [this, i, j](int state) {
+                    m_model.data()->LocalTable()->setChecked(i, j, state);
+                });
+
+                m_parameter_list << widget;
+            }
+            tabwidget->addTab(w, tr("Series No %1").arg(j + 1));
+        }
     }
 
     m_initial_guess = new QCheckBox(tr("Apply initial Guess"));
@@ -208,7 +249,12 @@ void AdvancedSearch::SetUi()
     m_progress = new QProgressBar;
     m_max_steps = new QLabel;
     QGridLayout* mlayout = new QGridLayout;
-    mlayout->addLayout(layout, 0, 0, 1, 2);
+    QScrollArea* scroll = new QScrollArea;
+    scroll->setFixedWidth(560);
+    QWidget* scrollWidget = new QWidget;
+    scrollWidget->setLayout(layout);
+    scroll->setWidget(scrollWidget);
+    mlayout->addWidget(scroll, 0, 0, 1, 2);
     mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
     mlayout->addWidget(m_progress, 2, 0, 1, 2);
 
@@ -253,7 +299,6 @@ void AdvancedSearch::MaxSteps()
         if (max > min)
             max_count *= std::ceil((max - min) / step);
     }
-
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 

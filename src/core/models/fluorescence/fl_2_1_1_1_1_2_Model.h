@@ -90,7 +90,8 @@ public:
     }
     virtual qreal BC50() const override { return BC50::IItoI_ItoI_ItoII_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2)); }
     virtual qreal BC50SF() const override { return BC50::IItoI_ItoI_ItoII_BC50_SF(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2)); }
-    virtual int LocalParameterSize() const override { return 5; }
+    virtual int LocalParameterSize(int series = 0) const override { Q_UNUSED(series)
+        return 5; }
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;

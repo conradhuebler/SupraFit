@@ -54,16 +54,22 @@ public:
     inline double Min() const { return m_min->value(); }
     inline double Max() const { return m_max->value(); }
     inline double Step() const {  return m_step->value(); }
-    inline bool Optimise() const { return m_optimse->isChecked(); }
+    inline bool Optimise() const { return m_optimise->isChecked(); }
     inline bool Variable() const { return m_variable->isChecked(); }
     inline qreal Value() const { return m_value; }
-
-    void setValue(qreal value) { m_value = value; }
+    inline void Disable(bool disable)
+    {
+        m_optimise->setChecked(disable);
+        m_variable->setChecked(!disable);
+    }
+    void setValue(qreal value);
 
 private:
     QPointer<QDoubleSpinBox> m_min, m_max, m_step;
-    QPointer<QCheckBox> m_variable, m_optimse;
+    QPointer<QCheckBox> m_variable, m_optimise;
     qreal m_value;
+    QLabel* m_info;
+    QString m_name;
 
 signals:
     void valueChanged();

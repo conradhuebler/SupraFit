@@ -86,7 +86,8 @@ public:
             return QString();
     }
 
-    virtual int LocalParameterSize() const override { return 6; }
+    virtual int LocalParameterSize(int i = 0) const override { Q_UNUSED(i)
+        return 6; }
     virtual inline int InputParameterSize() const override { return 1; }
 
     virtual inline int Color(int i) const override

@@ -657,4 +657,14 @@ void MetaModel::MoveSingleParameter(int parameter_index_1, int parameter_index_2
     emit ParameterMoved();
 }
 
+int MetaModel::LocalParameterSize(int i) const
+{
+    if (m_connect_type == ConnectType::None && i < m_models.size())
+        return m_models[i]->LocalParameterSize();
+    else if (m_connect_type == ConnectType::All)
+        return m_local_par.size();
+    else
+        return 0;
+}
+
 #include "meta_model.moc"

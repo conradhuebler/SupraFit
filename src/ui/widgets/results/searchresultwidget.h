@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include <QtGui/QPainter>
+#include <QtGui/QTextDocument>
+
+#include <QtWidgets/QHeaderView>
 #include <QtWidgets/QWidget>
 
 #include "src/capabilities/globalsearch.h"
@@ -35,6 +39,69 @@ class QSortFilterProxyModel;
 class QPushButton;
 class QTableView;
 class QTabWidget;
+
+class HeaderView : public QHeaderView {
+public:
+    HeaderView(Qt::Orientation orientation, QWidget* parent = nullptr)
+        : QHeaderView(orientation, parent)
+    {
+        setSectionsClickable(true);
+        setHighlightSections(true);
+    }
+
+protected:
+    virtual void paintSection(QPainter* painter, const QRect& rect, int logicalIndex) const override
+    {
+        QHeaderView::paintSection(painter, rect, logicalIndex);
+
+        QStyleOptionHeader opt;
+        initStyleOption(&opt);
+
+        opt.rect = rect;
+        opt.section = logicalIndex;
+        opt.text = this->model()->headerData(logicalIndex, this->orientation(), Qt::DisplayRole).toString();
+        opt.textAlignment = Qt::AlignCenter;
+
+        // the section position
+
+        int visual = visualIndex(logicalIndex);
+
+        Q_ASSERT(visual != -1);
+
+        if (count() == 1)
+            opt.position = QStyleOptionHeader::OnlyOneSection;
+
+        else if (visual == 0)
+            opt.position = QStyleOptionHeader::Beginning;
+
+        else if (visual == count() - 1)
+            opt.position = QStyleOptionHeader::End;
+
+        else
+            opt.position = QStyleOptionHeader::Middle;
+
+        QTextDocument TextDoc;
+        QString tmp = opt.text;
+        opt.text = ""; //IMPORTANT!
+
+        // draw the section
+        style()->drawControl(QStyle::CE_Header, &opt, painter, this);
+
+        painter->save();
+        QRect textRect = style()->subElementRect(QStyle::SE_HeaderLabel, &opt, this);
+
+        painter->translate(textRect.topLeft());
+
+        TextDoc.setDocumentMargin(0);
+        TextDoc.setHtml(tmp);
+        TextDoc.drawContents(painter, QRect(QPoint(0, 0), textRect.size()));
+
+        painter->restore();
+    }
+
+private:
+    QTextDocument TextDoc;
+};
 
 class SearchResultWidget : public QWidget {
     Q_OBJECT

@@ -105,7 +105,8 @@ public:
     /*! \brief we have two concentrations for all titration models, host and guest
      */
     virtual inline int InputParameterSize() const override { return 2; }
-    virtual int LocalParameterSize() const override { return GlobalParameterSize() + 1; }
+    virtual int LocalParameterSize(int series = 0) const override { Q_UNUSED(series)
+                                                                    return GlobalParameterSize() + 1; }
 
     /*! \brief reimplmented from AbstractModel
      */

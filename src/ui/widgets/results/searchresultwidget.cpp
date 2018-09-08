@@ -108,7 +108,7 @@ QTableView* SearchResultWidget::BuildList()
     QTableView* table = new QTableView(this);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
-
+    table->setHorizontalHeader(new HeaderView(Qt::Horizontal, table));
     QAction* action;
     action = new QAction("Replace", table);
     table->addAction(action);
@@ -152,60 +152,78 @@ QTableView* SearchResultWidget::BuildList()
         QVector<qreal> initial = ToolSet::String2DoubleVec(local_model["initial"].toString());
         QVector<qreal> optimised = ToolSet::String2DoubleVec(local_model["optimised"].toString());
         size_optimised = optimised.size();
+
         for (int l = 0; l < m_model->GlobalParameterSize(); ++l) {
+            if (!m_model->GlobalTable()->isChecked(l, 0) || !m_model->GlobalEnabled(l))
+                continue;
             QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
             item->setData(initial[l], Qt::UserRole + 1);
             item->setData(brush, Qt::BackgroundRole);
             model->setItem(i, j, item);
             j++;
-        }
-        if (!m_model->SupportSeries()) {
-            for (int l = m_model->GlobalParameterSize(); l < initial.size(); ++l) {
-                if (!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
-                    continue;
-                QStandardItem* item = new QStandardItem(QString::number(initial[l]));
-                item->setData(i, Qt::UserRole);
-                item->setData(initial[l], Qt::UserRole + 1);
-                item->setData(brush, Qt::BackgroundRole);
-                model->setItem(i, j, item);
-                j++;
-            }
-        }
-        for (int l = 0; l < m_model->GlobalParameterSize(); ++l) {
-            QStandardItem* item = new QStandardItem(QString::number(optimised[l]));
+            item = new QStandardItem(QString::number(optimised[l]));
             item->setData(i, Qt::UserRole);
             item->setData(optimised[l], Qt::UserRole + 1);
             item->setData(brush, Qt::BackgroundRole);
             model->setItem(i, j, item);
             j++;
         }
-        if (!m_model->SupportSeries()) {
-            for (int l = m_model->GlobalParameterSize(); l < optimised.size(); ++l) {
-                if (!m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
+
+        int index = m_model.data()->GlobalParameterSize();
+        int idx = 0;
+        for (int k = 0; k < m_model->SeriesCount(); ++k) {
+            for (int l = 0; l < m_model->LocalParameterSize(); ++l) {
+                if (!m_model->LocalTable()->isChecked(l, k) || !m_model->LocalEnabled(l)) {
+                    index++;
+                    idx++;
                     continue;
-                QStandardItem* item = new QStandardItem(QString::number(optimised[l]));
+                }
+                QStandardItem* item = new QStandardItem(QString::number(initial[index]));
                 item->setData(i, Qt::UserRole);
-                item->setData(optimised[l], Qt::UserRole + 1);
+                item->setData(initial[index], Qt::UserRole + 1);
                 item->setData(brush, Qt::BackgroundRole);
                 model->setItem(i, j, item);
+
+                j++;
+
+                item = new QStandardItem(QString::number(optimised[index]));
+                item->setData(i, Qt::UserRole);
+                item->setData(optimised[index], Qt::UserRole + 1);
+                item->setData(brush, Qt::BackgroundRole);
+                model->setItem(i, j, item);
+
+                index++;
+                idx++;
                 j++;
             }
         }
+
         m_models << local_model["model"].toObject();
     }
 
-    QStringList head;
-    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i)
-        head << m_model.data()->GlobalParameterName(i);
+    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
+        if (!m_model->GlobalTable()->isChecked(i, 0) || !m_model->GlobalEnabled(i))
+            continue;
+        header << tr("%1\n (before)").arg(m_model.data()->GlobalParameterName(i));
+        header << tr("%1\n (after)").arg(m_model.data()->GlobalParameterName(i));
+    }
 
-    if (!m_model->SupportSeries()) {
-        for (int l = m_model->GlobalParameterSize(); l < size_optimised; ++l) {
-            if (m_model->LocalEnabled(l - m_model->GlobalParameterSize()))
-                head << m_model->LocalParameterName(l - m_model->GlobalParameterSize());
+    QString series;
+    for (int k = 0; k < m_model->SeriesCount(); ++k) {
+        if (m_model->SupportSeries())
+            series = tr("Series %1, ").arg(k + 1);
+        else
+            series = QString();
+
+        for (int l = 0; l < m_model->LocalParameterSize(); ++l) {
+            if (!m_model->LocalTable()->isChecked(l, k) || !m_model->LocalEnabled(l))
+                continue;
+            header << tr("%1 %2 \n (before)").arg(series).arg(m_model->LocalParameterName(l));
+            header << tr("%1 %2 \n (after)").arg(series).arg(m_model->LocalParameterName(l));
         }
     }
-    header << head << head;
+
     model->setHorizontalHeaderLabels(header);
 
     m_proxyModel = new QSortFilterProxyModel(this);

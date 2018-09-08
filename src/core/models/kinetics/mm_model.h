@@ -55,7 +55,8 @@ public:
             return QString();
     }
 
-    virtual int LocalParameterSize() const override { return 0; }
+    virtual int LocalParameterSize(int i = 0) const override { Q_UNUSED(i)
+        return 0; }
 
     virtual qreal PrintOutIndependent(int i, int format = 0) const override
     {
