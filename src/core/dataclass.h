@@ -330,9 +330,8 @@ public:
 
     /*! \brief model dependented printout of the independant parameter
      */
-    virtual qreal PrintOutIndependent(int i, int format = 0) const
+    virtual qreal PrintOutIndependent(int i) const
     {
-        Q_UNUSED(format)
         return i + 1;
     }
     inline void setRawData(const QJsonObject& data) { d->m_raw_data = data; }

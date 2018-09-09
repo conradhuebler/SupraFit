@@ -68,9 +68,9 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const override { return "c<sub>0</sub>"; }
+    // virtual QString XLabel() const override { return "c<sub>0</sub>"; }
 
-    virtual qreal PrintOutIndependent(int i, int format) const override;
+    virtual qreal PrintOutIndependent(int i) const override;
 
 protected:
     virtual void CalculateVariables() override;

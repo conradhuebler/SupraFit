@@ -55,7 +55,7 @@ public:
     virtual qreal BC50() const { return 0; }
     virtual inline qreal BC50SF() const { return BC50(); }
 
-    virtual qreal PrintOutIndependent(int i, int format) const override;
+    virtual qreal PrintOutIndependent(int i) const override;
 
     inline qreal InitialHostConcentration(int i) const { return m_c0->data(1, i); }
     inline qreal InitialGuestConcentration(int i) const { return m_c0->data(2, i); }
@@ -102,6 +102,8 @@ public:
     inline double getCellConcentration() const { return m_cell_concentration; }
     inline double getSyringeConcentration() const { return m_syringe_concentration; }
     inline double getT() const { return m_T; }
+    inline QString getPlotMode() const { return m_plotMode; }
+
     virtual inline bool SupportSeries() const override { return false; }
 
     /*! \brief Return a formated value as string of the global parameter with the value
@@ -114,7 +116,7 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const override { return "G<sub>0</sub>/H<sub>0</sub>"; }
+    virtual QString XLabel() const override { return m_plotMode; } // { return "G<sub>0</sub>/H<sub>0</sub>"; }
 
     /*! \brief Define the y axis for charts
      */
@@ -146,4 +148,5 @@ protected:
     inline void Concentration() { CalculateConcentrations(); }
     double m_V, m_cell_concentration, m_syringe_concentration, m_T;
     bool m_reservior = true;
+    QString m_plotMode;
 };

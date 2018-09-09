@@ -64,11 +64,19 @@ void AbstractTitrationModel::DeclareSystemParameter()
 {
     addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
     setSystemParameterValue(Temperature, 298);
+
+    addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
+    QStringList plotmode = QStringList() << "[G]/[H]"
+                                         << "[G]"
+                                         << "Number";
+    setSystemParameterList(PlotMode, plotmode);
+    setSystemParameterValue(PlotMode, "[G]/[H]");
 }
 
 void AbstractTitrationModel::UpdateParameter()
 {
     m_T = getSystemParameter(Temperature).Double();
+    m_plotMode = getSystemParameter(PlotMode).getString();
 }
 
 void AbstractTitrationModel::DeclareOptions()
@@ -152,26 +160,16 @@ QString AbstractTitrationModel::Model2Text_Private() const
     return text;
 }
 
-qreal AbstractTitrationModel::PrintOutIndependent(int i, int format) const
+qreal AbstractTitrationModel::PrintOutIndependent(int i) const
 {
-    switch (format) {
-    case PlotMode::G:
-        return InitialGuestConcentration(i);
-        break;
+    QString plotmode = getPlotMode();
 
-    case PlotMode::H:
-        return InitialHostConcentration(i);
-        break;
-
-    case PlotMode::HG:
-        return InitialHostConcentration(i) / InitialGuestConcentration(i);
-        break;
-
-    case PlotMode::GH:
-    default:
+    if (plotmode == "[G]/[H]")
         return InitialGuestConcentration(i) / InitialHostConcentration(i);
-        break;
-    };
+    else if (plotmode == "[G]")
+        return InitialGuestConcentration(i);
+    else
+        return i;
 }
 
 QString AbstractTitrationModel::ModelInfo() const

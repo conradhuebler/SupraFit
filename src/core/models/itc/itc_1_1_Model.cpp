@@ -117,7 +117,7 @@ void itc_ItoI_Model::CalculateVariables()
 
         qreal q_ab = V * (complex - complex_prev * (1 - v / V)) * dH;
         qreal value = q_ab;
-        more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
+        more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
         SetValue(i, 0, value + dilution);
         complex_prev = complex;

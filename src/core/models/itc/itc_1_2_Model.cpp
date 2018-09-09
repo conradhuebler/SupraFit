@@ -189,8 +189,8 @@ void itc_ItoII_Model::CalculateVariables()
         qreal q_ab_ = ((complex_11 - complex_11_prev * dv) + (complex_12 - complex_12_prev * dv)) * dH1 * V;
         qreal q_ab2_ = (complex_12 - complex_12_prev * dv) * dH2_ * V;
         qreal value = q_ab + q_ab2;
-        more_info += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(q_ab2) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
-        more_info_2 += Print::printDouble(PrintOutIndependent(i, 0)) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(q_ab2_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
+        more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(q_ab2) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
+        more_info_2 += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(q_ab2_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
         SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;

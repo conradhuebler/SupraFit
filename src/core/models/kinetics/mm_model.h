@@ -58,9 +58,8 @@ public:
     virtual int LocalParameterSize(int i = 0) const override { Q_UNUSED(i)
         return 0; }
 
-    virtual qreal PrintOutIndependent(int i, int format = 0) const override
+    virtual qreal PrintOutIndependent(int i) const override
     {
-        Q_UNUSED(format)
         return IndependentModel()->data(0, i);
     }
 

@@ -62,7 +62,7 @@ void Blank::InitialGuess_Private()
     QVector<qreal> x, y;
 
     for (int i = 1; i < DataPoints(); ++i) {
-        x << PrintOutIndependent(i, 0);
+        x << PrintOutIndependent(i);
         y << DependentModel()->data(0, i);
     }
     QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 1);
@@ -109,16 +109,17 @@ QSharedPointer<AbstractModel> Blank::Clone()
     return model;
 }
 
-qreal Blank::PrintOutIndependent(int i, int format) const
+qreal Blank::PrintOutIndependent(int i) const
 {
-    Q_UNUSED(format)
-    qreal val = i;
+    QString plotmode = getOption(PlotMode);
+
     if (m_c0) {
-        val = InitialGuestConcentration(i);
-        if (std::isnan(val))
-            val = i;
-    }
-    return val;
+        if (plotmode == "[G]/[H]" || plotmode == "[G]")
+            return InitialGuestConcentration(i);
+        else if (plotmode == "Number")
+            return i;
+    } else
+        return i;
 }
 
 #include "blank.moc"

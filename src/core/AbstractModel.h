@@ -63,7 +63,10 @@ class AbstractModel : public DataClass {
     Q_OBJECT
 
 public:
+    enum { PlotMode = 1024 };
+
     AbstractModel(DataClass* data);
+
     AbstractModel(AbstractModel* model);
 
     virtual ~AbstractModel();
@@ -481,6 +484,15 @@ public:
             return QString("unset");
         ModelOption option = d->m_model_options[index];
         return option.name;
+    }
+
+    inline int getOptionIndex(int index) const
+    {
+        if (!d->m_model_options.contains(index))
+            return -1;
+        ModelOption option = d->m_model_options[index];
+        QStringList values = option.values;
+        return values.indexOf(option.value);
     }
 
     void DebugOptions() const;

@@ -91,6 +91,13 @@ void AbstractItcModel::DeclareSystemParameter()
                                       << "mJ";
     setSystemParameterList(InptUnit, units);
     setSystemParameterValue(InptUnit, 0);
+
+    addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
+    QStringList plotmode = QStringList() << "[G]/[H]"
+                                         << "[G]"
+                                         << "Number";
+    setSystemParameterList(PlotMode, plotmode);
+    setSystemParameterValue(PlotMode, "[G]/[H]");
 }
 
 void AbstractItcModel::DeclareOptions()
@@ -123,7 +130,6 @@ qreal AbstractItcModel::GuessdH()
 
 qreal AbstractItcModel::GuessFx()
 {
-
     if (!m_V || !m_cell_concentration || !m_syringe_concentration) {
         m_guess_failed = true;
         return 1;
@@ -137,7 +143,7 @@ qreal AbstractItcModel::GuessFx()
     QVector<qreal> x, y;
 
     for (int i = 1; i < DataPoints(); ++i) {
-        x << PrintOutIndependent(i, 0);
+        x << PrintOutIndependent(i);
         y << DependentModel()->data(0, i);
     }
     QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);
@@ -273,16 +279,19 @@ QString AbstractItcModel::Model2Text_Private() const
     return text;
 }
 
-qreal AbstractItcModel::PrintOutIndependent(int i, int format) const
+qreal AbstractItcModel::PrintOutIndependent(int i) const
 {
-    Q_UNUSED(format)
-    qreal val = i;
+    QString plotmode = getPlotMode();
+
     if (m_c0) {
-        val = InitialGuestConcentration(i) / InitialHostConcentration(i);
-        if (std::isnan(val))
-            val = i;
-    }
-    return val;
+        if (plotmode == "[G]/[H]")
+            return InitialGuestConcentration(i) / InitialHostConcentration(i);
+        else if (plotmode == "[G]")
+            return InitialGuestConcentration(i);
+        else if (plotmode == "Number")
+            return i;
+    } else
+        return i;
 }
 
 void AbstractItcModel::UpdateParameter()
@@ -292,6 +301,8 @@ void AbstractItcModel::UpdateParameter()
     m_syringe_concentration = getSystemParameter(SyringeConcentration).Double();
     m_T = getSystemParameter(Temperature).Double();
     m_reservior = getSystemParameter(Reservoir).Bool();
+    m_plotMode = getSystemParameter(PlotMode).getString();
+
     Concentration();
     if (m_guess_failed && m_demand_guess)
         InitialGuess();

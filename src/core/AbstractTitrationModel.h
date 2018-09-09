@@ -42,12 +42,6 @@ class AbstractTitrationModel : public AbstractModel {
     Q_OBJECT
 
 public:
-    enum PlotMode {
-        H = 1,
-        G = 2,
-        HG = 3,
-        GH = 4
-    };
 
     enum {
         Temperature = 4
@@ -114,7 +108,7 @@ public:
 
     /*! \brief reimplementantion model dependented printout of the independant parameter
      */
-    virtual qreal PrintOutIndependent(int i, int format = 4) const override;
+    virtual qreal PrintOutIndependent(int i) const override;
 
     virtual QString ModelInfo() const override;
 
@@ -122,7 +116,7 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const override { return "G<sub>0</sub>/H<sub>0</sub>"; }
+    virtual QString XLabel() const override { return m_plotMode; } // { return "G<sub>0</sub>/H<sub>0</sub>"; }
 
     /*! \brief Define the y axis for charts
      */
@@ -135,6 +129,8 @@ public:
     virtual inline int MaxParameter() override { return GlobalParameterSize() + LocalParameterSize() * SeriesCount(); }
 
     inline double getT() const { return m_T; }
+
+    inline QString getPlotMode() const { return m_plotMode; }
 
 public slots:
     virtual void UpdateParameter() override;
@@ -155,7 +151,7 @@ protected:
 
     qreal Guess_1_1() const;
 
-    QString m_ylabel;
+    QString m_ylabel, m_plotMode;
 
     QVector<QVector<qreal>> m_difference;
 

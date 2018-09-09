@@ -219,11 +219,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_layout->addLayout(const_layout);
     m_layout->addWidget(m_bc_50);
 
-    if (!m_val_readonly) {
-        m_model_options_widget = new OptionsWidget(m_model);
-        if (m_model->getAllOptions().size())
-            m_layout->addWidget(m_model_options_widget);
-    }
+    //    if (!m_val_readonly) {
+    m_model_options_widget = new OptionsWidget(m_model);
+    if (m_model->getAllOptions().size())
+        m_layout->addWidget(m_model_options_widget);
+    //    }
 
     m_sign_layout = new QVBoxLayout;
 
