@@ -220,7 +220,8 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
 {
     m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
 
-    m_data_mapper->addWrapper(wrapper);
+    if (wrapper)
+        m_data_mapper->addWrapper(wrapper);
 
     for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
         ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));

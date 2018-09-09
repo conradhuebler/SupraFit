@@ -522,6 +522,7 @@ void SupraFitGui::LoadMetaModels()
         QWeakPointer<MetaModel> model = qobject_cast<MetaModel*>(window->CreateMetaModel());
         if (!model)
             continue;
+        QWeakPointer<ChartWrapper> wrapper = window->getChartWrapper();
 
         for (int i = 0; i < size; ++i) {
 
@@ -534,6 +535,8 @@ void SupraFitGui::LoadMetaModels()
             QJsonObject rawmodel = object["data"].toObject()["raw"].toObject()[QString::number(i)].toObject();
 
             QSharedPointer<AbstractModel> t = CreateModel(SupraFit::Model(rawmodel["model"].toInt()), data);
+            wrapper.data()->addWrapper(m_hashed_wrapper[uuids[QString::number(i)].toString()]);
+
             t->ImportModel(rawmodel);
             model.data()->addModel(t.data());
         }
