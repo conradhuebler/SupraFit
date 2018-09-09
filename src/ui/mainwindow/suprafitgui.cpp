@@ -449,6 +449,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data)
         return false;
+    m_hashed_wrapper.insert(data.data()->UUID(), window->getChartWrapper());
 
     QString name = data.data()->ProjectTitle();
     if (name.isEmpty() || name.isNull()) {
@@ -470,6 +471,44 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_project_tree->layoutChanged();
     setActionEnabled(true);
     return true;
+}
+
+void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
+{
+    QPointer<DataClass> data = static_cast<DataClass*>(index.internalPointer());
+    if (position == -1) {
+        MainWindow* window = new MainWindow;
+
+        QWeakPointer<MetaModel> model = qobject_cast<MetaModel*>(window->CreateMetaModel(m_hashed_wrapper[data->UUID()]));
+        if (!model) {
+            delete window;
+            return;
+        }
+
+        bool is_model = qobject_cast<AbstractModel*>(data);
+        if (!is_model) {
+            delete window;
+            return;
+        }
+
+        m_stack_widget->addWidget(window);
+
+        connect(window, &MainWindow::ModelsChanged, this, [=]() {
+            m_project_tree->layoutChanged();
+        });
+        m_project_list.append(window);
+
+        m_data_list.append(model);
+        m_project_tree->layoutChanged();
+        setActionEnabled(true);
+        model.data()->addModel(qobject_cast<AbstractModel*>(data));
+        m_meta_models.append(model);
+    } else if ((position - (m_data_list.size() - m_meta_models.size())) < m_meta_models.size()) {
+        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].data()->addModel(qobject_cast<AbstractModel*>(data));
+
+        QWeakPointer<ChartWrapper> wrapper = m_project_list[position]->getChartWrapper();
+        wrapper.data()->addWrapper(m_hashed_wrapper[data->UUID()]);
+    }
 }
 
 void SupraFitGui::LoadMetaModels()
@@ -924,41 +963,6 @@ void SupraFitGui::SaveData(const QModelIndex& index)
     }
     JsonHandler::WriteJsonFile(object, str);
     setLastDir(str);
-}
-
-void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
-{
-    QPointer<DataClass> data = static_cast<DataClass*>(index.internalPointer());
-    if (position == -1) {
-        MainWindow* window = new MainWindow;
-
-        QWeakPointer<MetaModel> model = qobject_cast<MetaModel*>(window->CreateMetaModel());
-        if (!model) {
-            delete window;
-            return;
-        }
-
-        bool is_model = qobject_cast<AbstractModel*>(data);
-        if (!is_model) {
-            delete window;
-            return;
-        }
-
-        m_stack_widget->addWidget(window);
-
-        connect(window, &MainWindow::ModelsChanged, this, [=]() {
-            m_project_tree->layoutChanged();
-        });
-
-        m_project_list.append(window);
-
-        m_data_list.append(model);
-        m_project_tree->layoutChanged();
-        setActionEnabled(true);
-        model.data()->addModel(qobject_cast<AbstractModel*>(data));
-        m_meta_models.append(model);
-    } else if ((position - (m_data_list.size() - m_meta_models.size())) < m_meta_models.size())
-        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].data()->addModel(qobject_cast<AbstractModel*>(data));
 }
 
 void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)

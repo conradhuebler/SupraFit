@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelhistorywidget.h"
 #include "src/ui/widgets/optimizerwidget.h"
@@ -51,7 +52,7 @@ public:
     ~MainWindow();
 
     QSharedPointer<DataClass> SetData(const QJsonObject& object);
-    QSharedPointer<AbstractModel> CreateMetaModel();
+    QSharedPointer<AbstractModel> CreateMetaModel(const QWeakPointer<ChartWrapper>& wrapper = QWeakPointer<ChartWrapper>());
 
     inline QJsonObject SaveProject() const { return m_model_dataholder->SaveWorkspace(); }
     inline QJsonObject SaveModel(int index) const { return m_model_dataholder->SaveModel(index); }
@@ -60,6 +61,8 @@ public:
 
     inline QPointer<AbstractModel> Model(int index) const { return m_model_dataholder->Model(index); }
 
+    inline QWeakPointer<ChartWrapper> getChartWrapper() const { return m_model_dataholder->getChartWrapper(); }
+
     inline QPointer<DataClass> Data() const { return m_data.data(); }
 
     void setCurrentTab(int index);
@@ -67,6 +70,7 @@ public:
     inline void RemoveTab(int i) { m_model_dataholder->RemoveTab(i); }
 
     inline bool isMetaModel() const { return m_meta_model; }
+
 public slots:
     // void LoadFile(const QString& file);
 

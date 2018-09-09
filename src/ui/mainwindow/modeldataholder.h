@@ -153,6 +153,7 @@ public:
     void setCurrentTab(int index);
     void addMetaModel(QSharedPointer<AbstractModel> t);
 
+    inline QWeakPointer<ChartWrapper> getChartWrapper() const { return m_wrapper; }
 public slots:
     /*
      * Add a new model to the workspace
@@ -182,8 +183,8 @@ private:
 
     QPointer<MDHDockTitleBar> m_TitleBarWidget;
     QPointer<ChartWidget> m_charts;
-    QSharedPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
+    QSharedPointer<DataClass> m_data;
     QVector<QWeakPointer<AbstractModel>> m_models;
     QPointer<StatisticDialog> m_statistic_dialog;
     QPointer<CompareDialog> m_compare_dialog;

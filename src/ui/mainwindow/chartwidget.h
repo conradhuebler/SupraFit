@@ -83,6 +83,7 @@ public:
     ChartWidget();
     ~ChartWidget();
     QSharedPointer<ChartWrapper> setRawData(QSharedPointer<DataClass> rawdata);
+    QSharedPointer<ChartWrapper> setRawWrapper(const QWeakPointer<ChartWrapper>& wrapper);
     Charts addModel(QSharedPointer<AbstractModel> model);
     inline ChartDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
 

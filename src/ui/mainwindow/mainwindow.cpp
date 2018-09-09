@@ -161,14 +161,14 @@ QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
     return m_data;
 }
 
-QSharedPointer<AbstractModel> MainWindow::CreateMetaModel()
+QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<ChartWrapper>& wrapper)
 {
     m_data = QSharedPointer<DataClass>(new DataClass(this));
     m_data->setProjectTitle("MetaModel");
     QSharedPointer<AbstractModel> model = CreateModel(SupraFit::MetaModel, m_data);
-    QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(model);
+    QSharedPointer<ChartWrapper> w = m_charts->setRawWrapper(wrapper);
 
-    m_model_dataholder->setData(model, wrapper);
+    m_model_dataholder->setData(model, w);
 
     connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, m_model_dataholder, &ModelDataHolder::addMetaModel);
     m_meta_model = true;

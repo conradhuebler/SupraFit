@@ -472,9 +472,12 @@ void ModelDataHolder::RemoveTab(int i)
 {
     if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+        AbstractModel* m = model->Model().data();
         m_modelsWidget->removeTab(i);
         m_models.remove(m_models.indexOf(model->Model()));
         delete model;
+        if (qobject_cast<MetaModel*>(m_data))
+            qobject_cast<MetaModel*>(m_data)->RemoveModel(m);
         emit ModelRemoved();
     }
     ActiveBatch();

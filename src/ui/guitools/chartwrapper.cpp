@@ -128,12 +128,42 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
     UpdateModel();
 }
 
+void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
+{
+    m_stored_wrapper << wrapper;
+
+    for (int i = 0; i < wrapper.data()->SeriesSize(); ++i) {
+        ScatterSeries* series = new ScatterSeries;
+        for (const QPointF& point : wrapper.data()->Series(i)->points()) {
+            series->append(point);
+            series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize());
+            series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
+            series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
+            series->setBorderColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->borderColor());
+            series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
+        }
+
+        connect(wrapper.data(), &ChartWrapper::ModelChanged, wrapper.data()->Series(i), [series, wrapper, i]() {
+            series->clear();
+            for (const QPointF& point : wrapper.data()->Series(i)->points())
+                series->append(point);
+
+            series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize());
+            series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
+            series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
+            series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
+        });
+
+        m_stored_series << series;
+        emit SeriesAdded(m_stored_series.size() - 1);
+    }
+}
+
 void ChartWrapper::InitaliseSeries()
 {
     if (m_stored_series.isEmpty()) {
-        int serie = 0;
 
-        serie = m_model->SeriesCount();
+        int serie = m_model->SeriesCount();
 
         for (int j = 0; j < serie; ++j) {
             QPointer<QtCharts::QXYSeries> series;
@@ -154,14 +184,13 @@ void ChartWrapper::UpdateModel()
 
 void ChartWrapper::MakeSeries()
 {
+    if (!m_table)
+        return;
     for (int j = 0; j < m_stored_series.size(); ++j)
         m_stored_series[j]->clear();
 
-    int rows = 0;
-    int cols = 0;
-
-        rows = m_model->DataPoints();
-        cols = m_model->SeriesCount();
+    int rows = m_model->DataPoints();
+    int cols = m_model->SeriesCount();
 
     for (int i = 0; i < rows; ++i) {
         double x = m_model->PrintOutIndependent(i);

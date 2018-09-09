@@ -143,6 +143,8 @@ public:
 
     ConnectType ConnectionType() const { return m_connect_type; }
 
+    void RemoveModel(const AbstractModel* model);
+
 private slots:
     void UpdateCalculated();
 
@@ -168,5 +170,6 @@ protected:
 
 signals:
     void ModelAdded(QSharedPointer<AbstractModel> model);
+    void ModelRemoved();
     void ParameterMoved();
 };

@@ -122,6 +122,8 @@ public:
     ChartWrapper(bool flipable, QObject* parent = 0);
     ~ChartWrapper();
     void setData(QSharedPointer<DataClass> model);
+    void addWrapper(const QWeakPointer<ChartWrapper>& wrapper);
+
     inline void setDataTable(const DataTable* table) { m_table = table; }
     inline int SeriesSize() const { return m_stored_series.size(); }
     inline QPointer<QtCharts::QXYSeries> Series(int i) { return m_stored_series[i]; }
@@ -132,6 +134,7 @@ public:
     bool setColorList(const QString& str);
 
     QList<QPointer<QtCharts::QScatterSeries>> CloneSeries() const;
+    QList<QWeakPointer<ChartWrapper>> m_stored_wrapper;
 
     static QColor ColorCode(int i);
 
@@ -142,7 +145,7 @@ public slots:
     void SetBlocked(int blocked);
 
 private:
-    const DataTable* m_table;
+    QPointer<const DataTable> m_table;
     QList<QPointer<QtCharts::QXYSeries>> m_stored_series;
     QSharedPointer<DataClass> m_model;
     bool m_blocked, m_transformed, m_flipable;
@@ -154,4 +157,5 @@ signals:
     void restartAnimation();
     void ShowSeries(int i);
     void ModelTransformed();
+    void SeriesAdded(int i);
 };

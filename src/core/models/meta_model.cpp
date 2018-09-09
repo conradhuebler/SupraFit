@@ -435,6 +435,47 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     emit ModelAdded(t);
 }
 
+void MetaModel::RemoveModel(const AbstractModel* model)
+{
+    QVector<QSharedPointer<AbstractModel>> models = m_models;
+    m_models.clear();
+
+    IndependentModel()->clear();
+    DependentModel()->clear();
+    ModelTable()->clear();
+
+    for (int l = 0; l < models.size(); ++l) {
+        if (models[l].data() == model)
+            continue;
+
+        for (int i = 0; i < models[l].data()->GlobalParameterSize(); ++i)
+            m_global_names << models[l].data()->GlobalParameterName(i);
+
+        for (int i = 0; i < models[l].data()->LocalParameterSize(); ++i)
+            m_local_names << models[l].data()->LocalParameterName(i);
+
+        m_global_names.removeDuplicates();
+        m_local_names.removeDuplicates();
+
+        IndependentModel()->append(models[l].data()->IndependentModel());
+        DependentModel()->append(models[l].data()->DependentModel());
+        ModelTable()->append(models[l].data()->ModelTable());
+
+        m_models << models[l];
+
+        m_glob_param += models[l].data()->GlobalParameterSize();
+        m_inp_param += models[l].data()->InputParameterSize();
+        m_loc_param += models[l].data()->LocalParameterSize();
+        m_size += models[l].data()->Size();
+        m_indep_var += models[l].data()->IndependentVariableSize();
+        m_dep_var += models[l].data()->DataPoints();
+        m_series_count += models[l].data()->SeriesCount();
+    }
+
+    OptimizeParameters_Private();
+    DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
+}
+
 void MetaModel::UpdateCalculated()
 {
     if (m_model_signal)

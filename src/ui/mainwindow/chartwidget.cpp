@@ -216,6 +216,30 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     return m_data_mapper;
 }
 
+QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<ChartWrapper>& wrapper)
+{
+    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
+
+    m_data_mapper->addWrapper(wrapper);
+
+    for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
+        ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));
+        m_data_mapper->setSeries(signal_series, i);
+        m_signalview->addSeries(signal_series);
+    }
+
+    connect(m_data_mapper.data(), &ChartWrapper::SeriesAdded, m_data_mapper.data(), [this](int series) {
+        m_signalview->addSeries(qobject_cast<ScatterSeries*>(m_data_mapper.data()->Series(series)));
+    });
+
+    m_signalview->formatAxis();
+
+    m_signalview->setTitle("Model");
+    m_errorview->setTitle("Errors");
+
+    return m_data_mapper;
+}
+
 Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 {
     m_models << model;
@@ -233,7 +257,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model);
 
-    for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
+    for (int i = 0; i < model->SeriesCount(); ++i) {
         if (model->Type() != 3) {
             LineSeries* model_series = (qobject_cast<LineSeries*>(signal_wrapper->Series(i)));
             signal_wrapper->setSeries(model_series, i);
@@ -313,8 +337,10 @@ void ChartWidget::setAnimation(bool animation)
 
 void ChartWidget::updateUI()
 {
-    for (int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
-        m_data_mapper->Series(i)->setColor(m_data_mapper->color(i));
+    if (m_rawdata) {
+        for (int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
+            m_data_mapper->Series(i)->setColor(m_data_mapper->color(i));
+    }
 }
 
 void ChartWidget::stopAnimiation()
