@@ -24,13 +24,13 @@
 #include <QtGui/QPainter>
 #include <QtGui/QTextDocument>
 
-#include <QtWidget/QStyledItemDelegate>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QStyledItemDelegate>
 
 class HTMLDelegate : public QStyledItemDelegate {
 protected:

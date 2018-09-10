@@ -38,11 +38,11 @@
 
 AbstractModel::AbstractModel(DataClass* data)
     : DataClass(data)
-    , m_corrupt(false)
     , m_last_p(1)
     , m_f_value(1)
     , m_last_parameter(0)
     , m_last_freedom(0)
+    , m_corrupt(false)
     , m_converged(false)
     , m_locked_model(false)
     , m_fast(true)
@@ -61,15 +61,15 @@ AbstractModel::AbstractModel(DataClass* data)
 
 AbstractModel::AbstractModel(AbstractModel* model)
     : DataClass(model)
-    , m_corrupt(model->m_corrupt)
+    , d(new AbstractModelPrivate(*model->d))
     , m_last_p(model->m_last_p)
     , m_f_value(model->m_f_value)
     , m_last_parameter(model->m_last_parameter)
     , m_last_freedom(model->m_last_freedom)
+    , m_corrupt(model->m_corrupt)
     , m_converged(model->m_converged)
     , m_locked_model(model->m_locked_model)
     , m_fast(true)
-    , d(new AbstractModelPrivate(*model->d))
 {
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
     connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
@@ -360,7 +360,7 @@ qreal AbstractModel::finv(qreal p)
     /*
      * Lets cache the f-value, that if nothing changes, no integration is needed
      */
-    if (!(p == m_last_p && m_last_parameter == Parameter() && m_last_freedom == Points() - Parameter())) {
+    if (!(qFuzzyCompare(p, m_last_p) && m_last_parameter == Parameter() && m_last_freedom == Points() - Parameter())) {
         m_f_value = ToolSet::finv(p, Parameter(), Points() - Parameter());
         m_last_p = p;
         m_last_parameter = Parameter();
@@ -630,9 +630,6 @@ bool AbstractModel::RemoveStatistic(SupraFit::Statistic type, int index)
         else
             return false;
         break;
-
-    default:
-        return false;
     }
     return true;
 }
