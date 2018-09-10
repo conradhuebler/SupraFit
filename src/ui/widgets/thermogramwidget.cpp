@@ -29,6 +29,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QSpinBox>
@@ -50,8 +51,6 @@
 
 ThermogramWidget::ThermogramWidget(QWidget* parent)
     : QWidget(parent)
-    , m_scale(1)
-
 {
     CreateSeries();
     setUi();
@@ -156,9 +155,17 @@ void ThermogramWidget::setUi()
     // baselayout->addWidget(m_fit_button, 2, 4);
     connect(m_fit_button, &QPushButton::clicked, this, &ThermogramWidget::FitBaseLine);
 
-    m_baseline_polynom = new QLabel;
-    baselayout->addWidget(m_baseline_polynom, 3, 0, 1, 4);
+    m_baseline_polynom = new QPlainTextEdit;
+    m_baseline_polynom->setReadOnly(true);
 
+    QPalette p = m_baseline_polynom->palette();
+    p.setColor(QPalette::Active, QPalette::Base, Qt::lightGray);
+    p.setColor(QPalette::Inactive, QPalette::Base, Qt::lightGray);
+    p.setColor(QPalette::Inactive, QPalette::Text, Qt::black);
+    p.setColor(QPalette::Inactive, QPalette::Window, Qt::black);
+    m_baseline_polynom->setPalette(p);
+
+    baselayout->addWidget(m_baseline_polynom, 3, 0, 1, 4);
     baseline->setLayout(baselayout);
 
     m_full_spec = new QRadioButton(tr("Full Spectrum"));
@@ -261,7 +268,7 @@ void ThermogramWidget::UpdateTable()
     for (unsigned int j = 0; j < m_peak_list.size(); ++j) {
         QTableWidgetItem* newItem;
 
-        newItem = new QTableWidgetItem(QString::number(m_peak_list[j].integ_num * m_scale));
+        newItem = new QTableWidgetItem(QString::number(m_peak_list[j].integ_num));
         m_table->setItem(j, 0, newItem);
 
         newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].start)));
@@ -302,7 +309,8 @@ void ThermogramWidget::UpdateTable()
         string.chop(1);
         string += "</p></html>";
 
-        m_baseline_polynom->setText(string);
+        m_baseline_polynom->clear();
+        m_baseline_polynom->appendHtml(string);
     } else
         m_baseline_polynom->clear();
 }
@@ -372,7 +380,7 @@ void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeri
 
     series->clear();
     for (unsigned int i = 1; i <= spectrum->size(); i++) {
-        series->append(QPointF(spectrum->X(i), spectrum->Y(i) * m_scale));
+        series->append(QPointF(spectrum->X(i), spectrum->Y(i)));
     }
 }
 
@@ -380,7 +388,7 @@ void ThermogramWidget::fromPolynomial(const Vector& coeff, LineSeries* series)
 {
     series->clear();
     for (unsigned int i = 1; i <= m_spec.size(); i++)
-        series->append(QPointF(m_spec.X(i), PeakPick::Polynomial(m_spec.X(i), coeff) * m_scale));
+        series->append(QPointF(m_spec.X(i), PeakPick::Polynomial(m_spec.X(i), coeff)));
 }
 
 void ThermogramWidget::clear()
@@ -421,7 +429,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
         if (peaks->size() == m_baseline.baselines.size()) {
             baseline = m_baseline.baselines[i];
             for (int j = 0; j < int(m_baseline.x_grid_points[i].size()); ++j) {
-                m_base_grids->append(m_baseline.x_grid_points[i][j], m_baseline.y_grid_points[i][j] * m_scale);
+                m_base_grids->append(m_baseline.x_grid_points[i][j], m_baseline.y_grid_points[i][j]);
             }
         }
         (*peaks)[i].max = ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
@@ -429,12 +437,12 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
         (*peaks)[i].integ_num -= m_const_offset->value();
 
         for (int j = (*peaks)[i].start; j <= int((*peaks)[i].end); ++j)
-            m_baseline_series->append(QPointF(m_spec.X(j + 1), PeakPick::Polynomial(m_spec.X(j + 1), baseline) * m_scale));
+            m_baseline_series->append(QPointF(m_spec.X(j + 1), PeakPick::Polynomial(m_spec.X(j + 1), baseline)));
     }
 
     if (m_baseline.x_grid_points.size() == 1) {
         for (int j = 0; j < int(m_baseline.x_grid_points[0].size()); ++j) {
-            m_base_grids->append(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j] * m_scale);
+            m_base_grids->append(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j]);
         }
     }
     m_base_grids->setMarkerSize(8);
@@ -711,7 +719,4 @@ void ThermogramWidget::UpdatePeaks()
     Update();
     emit PeaksChanged();
     emit IntegrationChanged();
-    //UpdatePlot();
-
-    //UpdateTable();
 }

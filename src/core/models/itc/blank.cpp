@@ -111,10 +111,10 @@ QSharedPointer<AbstractModel> Blank::Clone()
 
 qreal Blank::PrintOutIndependent(int i) const
 {
-    QString plotmode = getOption(PlotMode);
+    QString plotmode = getPlotMode();
 
     if (m_c0) {
-        if (plotmode == "[G]/[H]" || plotmode == "[G]")
+        if (plotmode == "[G<sub>0</sub>]/[H<sub>0</sub>]" || plotmode == "[G<sub>0</sub>]")
             return InitialGuestConcentration(i);
         else if (plotmode == "Number")
             return i;

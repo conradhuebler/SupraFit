@@ -32,6 +32,7 @@ class QRadioButton;
 class QPushButton;
 class QTableWidget;
 class QTableWidgetItem;
+class QPlainTextEdit;
 
 class ChartView;
 class LineSeries;
@@ -50,7 +51,7 @@ public:
     void Update();
 
     // inline QVector<qreal> PeakList() const { return m_peaks; }
-    // inline void setScale(qreal scale) { m_scale = scale; }
+
     inline void setOffset(qreal offset) { m_offset = offset; }
     void PickPeaks();
     void clear();
@@ -89,7 +90,7 @@ private:
     QTableWidget* m_table;
     ChartView* m_thermogram;
     QtCharts::QChart* m_data;
-    QLabel* m_baseline_polynom;
+    QPlainTextEdit* m_baseline_polynom;
 
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right;
     ScatterSeries* m_base_grids;
@@ -99,7 +100,7 @@ private:
     bool m_spectrum = false, m_block = false;
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
-    qreal m_scale = 4.184, m_offset = 0, m_frequency;
+    qreal m_offset = 0, m_frequency = 1;
     QString m_base, m_fit;
 
 private slots:

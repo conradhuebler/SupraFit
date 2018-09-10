@@ -38,8 +38,8 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWid
     m_overview->setReadOnly(true);
     QPalette p = m_overview->palette();
 
-    p.setColor(QPalette::Active, QPalette::Base, Qt::gray);
-    p.setColor(QPalette::Inactive, QPalette::Base, Qt::gray);
+    p.setColor(QPalette::Active, QPalette::Base, Qt::lightGray);
+    p.setColor(QPalette::Inactive, QPalette::Base, Qt::lightGray);
     p.setColor(QPalette::Inactive, QPalette::Text, Qt::black);
     p.setColor(QPalette::Inactive, QPalette::Window, Qt::black);
     m_overview->setPalette(p);

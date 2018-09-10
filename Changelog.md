@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- Scaling of x axis can be set in system parameters for several models
 - Removing models from meta models removes them from meta models, not only from UI
 - Chart support for meta models
 - Add global search for local parameter in series, partly for meta models as well

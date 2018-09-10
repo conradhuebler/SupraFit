@@ -85,19 +85,19 @@ void AbstractItcModel::DeclareSystemParameter()
     addSystemParameter(Reservoir, "Cell Volume constant", "Keep the volume in cell constant", SystemParameter::Boolean);
     setSystemParameterValue(Reservoir, true);
 
-    addSystemParameter(InptUnit, "Unit", "Observed heat in", SystemParameter::List);
+    /*addSystemParameter(InptUnit, "Unit", "Observed heat in", SystemParameter::List);
     QStringList units = QStringList() << QString(mu) + " cal" << QString(mu) + "J"
                                       << "mcal"
                                       << "mJ";
     setSystemParameterList(InptUnit, units);
-    setSystemParameterValue(InptUnit, 0);
+    setSystemParameterValue(InptUnit, 0);*/
 
     addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
-    QStringList plotmode = QStringList() << "[G]/[H]"
-                                         << "[G]"
+    QStringList plotmode = QStringList() << "[G<sub>0</sub>]/[H<sub>0</sub>]"
+                                         << "[G<sub>0</sub>]"
                                          << "Number";
     setSystemParameterList(PlotMode, plotmode);
-    setSystemParameterValue(PlotMode, "[G]/[H]");
+    setSystemParameterValue(PlotMode, "[G<sub>0</sub>]/[H<sub>0</sub>]");
 }
 
 void AbstractItcModel::DeclareOptions()
@@ -284,9 +284,9 @@ qreal AbstractItcModel::PrintOutIndependent(int i) const
     QString plotmode = getPlotMode();
 
     if (m_c0) {
-        if (plotmode == "[G]/[H]")
+        if (plotmode == "[G<sub>0</sub>]/[H<sub>0</sub>]")
             return InitialGuestConcentration(i) / InitialHostConcentration(i);
-        else if (plotmode == "[G]")
+        else if (plotmode == "[G<sub>0</sub>]")
             return InitialGuestConcentration(i);
         else if (plotmode == "Number")
             return i;
