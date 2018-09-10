@@ -680,7 +680,7 @@ qreal GHE(qreal G, qreal H, qreal T)
 
 namespace Print {
 
-QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractModel> model, const QJsonObject& controller)
+QString TextFromConfidence(const QJsonObject& result, const AbstractModel* model, const QJsonObject& controller)
 {
     int type = controller["method"].toInt();
     QString text, box_message("");
@@ -702,12 +702,14 @@ QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractMod
         qreal upper = confidence["upper"].toDouble();
         qreal lower = confidence["lower"].toDouble();
         qreal conf = confidence["error"].toDouble();
-        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "[+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "] * </b></td></tr>\n";
+        //text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "[+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "] * </b></td></tr>\n";
+        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + QString::number(value) + "[+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "] * </b></td></tr>\n";
+
         // text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + QString::number(lower, 'f', 4) + " - " + QString::number(upper, 'f', 4) + "] </b></td></tr>\n";
-        if (result["type"] == "Global Parameter")
-            text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + model->formatedGlobalParameter(lower) + " - " + model->formatedGlobalParameter(upper) + "] </b></td></tr>\n";
-        else if (result["type"] == "Local Parameter")
-            text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + model->formatedLocalParameter(lower) + " - " + model->formatedLocalParameter(upper) + "] </b></td></tr>\n";
+        // if (result["type"] == "Global Parameter")
+        text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + QString::number(lower) + " - " + QString::number(upper) + "] </b></td></tr>\n";
+        // else if (result["type"] == "Local Parameter")
+        //     text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + model->formatedLocalParameter(lower) + " - " + model->formatedLocalParameter(upper) + "] </b></td></tr>\n";
     }
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation) {
         SupraFit::BoxWhisker box = ToolSet::Object2Whisker(result["boxplot"].toObject());

@@ -88,7 +88,7 @@ qreal GHE(qreal G, qreal H, qreal T);
 }
 
 namespace Print {
-QString TextFromConfidence(const QJsonObject& result, const QPointer<AbstractModel> model, const QJsonObject& controller);
+QString TextFromConfidence(const QJsonObject& result, const AbstractModel* model, const QJsonObject& controller);
 QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller);
 
 QString printDouble(double number, int prec = -1);

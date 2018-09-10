@@ -19,6 +19,7 @@
 
 #include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
+#include "src/core/thermo.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -342,12 +343,51 @@ QString AbstractItcModel::RandomInput(const QVector<double>& indep, const QVecto
     return input;
 }
 
-void AbstractItcModel::UpdateOption(int index, const QString& str)
-{
+void AbstractItcModel::UpdateOption(int index, const QString& str){
     Q_UNUSED(index)
-    Q_UNUSED(str)
+        Q_UNUSED(str)
     /*if (index == Reservoir)
         Concentration();*/
+}
+
+QString AbstractItcModel::AnalyseStatistic() const
+{
+    QString result;
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+    result += "<h4>without statistical data:</h4>";
+
+    auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
+        result += tr("<p>Reaction: A + B &#8652; AB</p> %1").arg(i);
+        result += Thermo::Statistic2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT(), object);
+    };
+
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        conf2therm(i);
+
+    result += AbstractModel::AnalyseStatistic();
+
+    return result;
+}
+
+QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object) const
+{
+
+    QString result;
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+
+    auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
+        result += tr("<p>Reaction: A + B &#8652; AB</p> %1").arg(i);
+        result += Thermo::Statistic2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT(), object);
+    };
+
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        conf2therm(i, object);
+
+    result += AbstractModel::AnalyseMonteCarlo(object);
+
+    return result;
 }
 
 #include "AbstractItcModel.moc"

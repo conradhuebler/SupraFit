@@ -63,7 +63,8 @@ public:
     virtual inline QString GlobalParameterPrefix(int i = 0) const override
     {
         Q_UNUSED(i)
-        return QString("10^");
+        //return QString("10^");
+        return QString();
     }
     virtual inline QString LocalParameterSuffix(int i = 0) const override
     {
@@ -85,7 +86,7 @@ public:
             return tr("%1 Complex Shift").arg(GlobalParameterName(i - 1));
     }
 
-    virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
+    // virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
     virtual QString SpeciesName(int i) const
     {
         Q_UNUSED(i)

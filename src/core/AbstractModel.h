@@ -553,6 +553,18 @@ public:
 
     virtual QString AdditionalOutput() const { return QString(); }
 
+    /*! \brief Calculate standard type statistics for stored statistic results */
+    virtual QString AnalyseStatistic() const;
+
+    /*! \brief Calculate standard type of monte carlo statistics */
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const;
+
+    /*! \brief Calculate standard type of model comparison statistics */
+    virtual QString AnalyseModelComparison(const QJsonObject& object) const;
+
+    /*! \brief Calculate standard type of grid search statistics */
+    virtual QString AnalyseGridSearch(const QJsonObject& object) const;
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

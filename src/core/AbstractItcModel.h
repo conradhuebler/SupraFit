@@ -66,7 +66,8 @@ public:
     virtual inline QString GlobalParameterPrefix(int i = 0) const override
     {
         Q_UNUSED(i)
-        return QString("10^");
+        //return QString("10^");
+        return QString();
     }
     inline void setConcentrations(const QPointer<DataTable> table)
     {
@@ -108,11 +109,11 @@ public:
 
     /*! \brief Return a formated value as string of the global parameter with the value
      */
-    virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const
+    /* virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const
     {
         Q_UNUSED(globalParamater)
         return QString::number(qPow(10, value));
-    }
+    }*/
 
     /*! \brief Define the x axis label for charts
      */
@@ -129,6 +130,12 @@ public:
     virtual QString RandomInput(const QVector<double>& indep, const QVector<double>& dep) const override;
 
     inline virtual QString RandomExportSuffix() const override { return QString("Peak Files(*.dH)"); }
+
+    /*! \brief Calculate standard type statistics for stored statistic results */
+    virtual QString AnalyseStatistic() const;
+
+    /*! \brief Calculate standard type of monte carlo statistics */
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
 
 public slots:
     virtual void UpdateParameter() override;

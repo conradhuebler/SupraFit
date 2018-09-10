@@ -682,7 +682,10 @@ QString AbstractModel::Model2Text() const
         text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";
     text += ErrorTable()->ExportAsString();
-    text += "\n";
+    text += "\n\n";
+    text += "###############################################################################################\n\n";
+    text += AnalyseStatistic();
+    text += "\n\n###############################################################################################";
     text += "## Current Model Results Done ####\n";
     return text;
 }
@@ -1075,4 +1078,75 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
 
     return this;
 }
+
+QString AbstractModel::AnalyseStatistic() const
+{
+    QString result = QString("<table>");
+
+    for (int i = 0; i < getMCStatisticResult(); ++i) {
+        result += "<tr><th>Monte Carlo</th></tr>";
+        result += AnalyseMonteCarlo(getStatistic(SupraFit::MonteCarlo, i));
+    }
+    /*
+    for(int i = 0; i < getMoCoStatisticResult(); ++i)
+    {
+        result += "<tr><th>Model Comparison</th></tr>";
+        result += AnalyseModelComparison(getStatistic(SupraFit::ModelComparison, i));
+    }
+
+    for(int i = 0; i < getWGStatisticResult(); ++i)
+    {
+        result += "<tr><th>Grid Search</th></tr>";
+        result += AnalyseGridSearch(getStatistic(SupraFit::WeakenedGridSearch, i));
+    }
+    */
+    result += "</table";
+
+    return result;
+}
+
+QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object) const
+{
+    QString result;
+    QJsonObject controller = object["controller"].toObject();
+    QStringList keys = object.keys();
+
+    for (const QString& key : qAsConst(keys)) {
+        if (key == "controller")
+            continue;
+        result += Print::TextFromConfidence(object[key].toObject(), this, controller);
+    }
+
+    return result;
+}
+
+QString AbstractModel::AnalyseModelComparison(const QJsonObject& object) const
+{
+    QString result;
+    QJsonObject controller = object["controller"].toObject();
+    QStringList keys = object.keys();
+
+    for (const QString& key : qAsConst(keys)) {
+        if (key == "controller")
+            continue;
+        result += Print::TextFromConfidence(object[key].toObject(), this, controller);
+    }
+    return result;
+}
+
+QString AbstractModel::AnalyseGridSearch(const QJsonObject& object) const
+{
+    QString result;
+    QJsonObject controller = object["controller"].toObject();
+    QStringList keys = object.keys();
+
+    for (const QString& key : qAsConst(keys)) {
+        if (key == "controller")
+            continue;
+        result += Print::TextFromConfidence(object[key].toObject(), this, controller);
+    }
+
+    return result;
+}
+
 #include "AbstractModel.moc"

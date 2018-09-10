@@ -133,14 +133,14 @@ MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
     result.MassBalance = values;
     return result;
 }
-
+/*
 QString AbstractTitrationModel::formatedGlobalParameter(qreal value, int globalParameter) const
 {
     Q_UNUSED(globalParameter)
     QString string;
     string = QString::number(qPow(10, value));
     return string;
-}
+}*/
 
 QString AbstractTitrationModel::Model2Text_Private() const
 {
