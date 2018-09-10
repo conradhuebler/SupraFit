@@ -140,12 +140,29 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
     qreal* pos = static_cast<qreal*>(index.internalPointer());
 
     if (role == Qt::DisplayRole || role == Qt::EditRole) {
-        if (pos == m_null)
-            data = m_model.data()->CombinedParameter()[index.row()].first;
-        else {
+        if (pos == m_null) {
+            QString name = tr("%1 (%2)").arg(m_model.data()->CombinedParameter()[index.row()].first).arg(m_model.data()->CombinedParameter()[index.row()].second.size());
+
+            if (m_model.data()->CombinedParameter()[index.row()].second.size() == 1) {
+                MMParameter param = m_model.data()->CombinedParameter()[index.row()];
+                QSharedPointer<AbstractModel> model = m_model.data()->Models()[param.second[0][0]];
+
+                if (param.second[0][1] == 0)
+                    name += " | " + model->ProjectTitle() + ":" + model->Name() + tr(" [%1]").arg(model->GlobalParameterName(param.second[0][2]));
+                else
+                    name += " | " + model->ProjectTitle() + ":" + model->Name() + tr(" [%1]").arg(model->LocalParameterName(param.second[0][2]));
+            }
+            data = name;
+        } else {
             for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
                 if (pos == &m_model.data()->CombinedParameter(i)->first) {
                     const MMParameter* param = m_model.data()->CombinedParameter(i);
+
+                    if (index.row() >= param->second.size()) {
+                        data = "Dr Strange, the bug hunter redeems SupraFit until the bug is fixed ... . He goes away after optimising.";
+                        continue;
+                    }
+
                     QSharedPointer<AbstractModel> model = m_model.data()->Models()[param->second[index.row()][0]];
                     QString name;
 

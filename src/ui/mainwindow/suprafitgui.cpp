@@ -464,9 +464,9 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         m_project_tree->layoutChanged();
     });
 
-    m_project_list << window;
+    m_project_list.insert(m_project_list.size() - m_meta_models.size(), window);
+    m_data_list.insert(m_data_list.size() - m_meta_models.size(), data);
 
-    m_data_list << data;
     m_hashed_data[data.data()->UUID()] = data;
     m_project_tree->layoutChanged();
     setActionEnabled(true);

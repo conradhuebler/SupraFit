@@ -22,9 +22,9 @@
 #include "src/core/AbstractModel.h"
 
 #include <QtGui/QPainter>
-#include <QtGui/QStyledItemDelegate>
 #include <QtGui/QTextDocument>
 
+#include <QtWidget/QStyledItemDelegate>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDoubleSpinBox>

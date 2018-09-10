@@ -116,7 +116,7 @@ qreal Blank::PrintOutIndependent(int i) const
     if (m_c0) {
         if (plotmode == "[G<sub>0</sub>]/[H<sub>0</sub>]" || plotmode == "[G<sub>0</sub>]")
             return InitialGuestConcentration(i);
-        else if (plotmode == "Number")
+        else //if (plotmode == "Number")
             return i;
     } else
         return i;

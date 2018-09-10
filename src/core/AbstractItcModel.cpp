@@ -288,7 +288,7 @@ qreal AbstractItcModel::PrintOutIndependent(int i) const
             return InitialGuestConcentration(i) / InitialHostConcentration(i);
         else if (plotmode == "[G<sub>0</sub>]")
             return InitialGuestConcentration(i);
-        else if (plotmode == "Number")
+        else // if (plotmode == "Number")
             return i;
     } else
         return i;
