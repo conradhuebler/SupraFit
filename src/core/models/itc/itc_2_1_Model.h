@@ -100,7 +100,7 @@ public:
 
     virtual QString AdditionalOutput() const override;
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
     QString ParameterComment(int parameter) const override;
 

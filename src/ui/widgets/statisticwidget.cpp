@@ -77,7 +77,7 @@ void StatisticWidget::Update()
 
     overview += "</table></br>";
     overview += m_model.data()->ModelInfo() + "</br>";
-    overview += m_model.data()->AdditionalOutput();
+    // overview += m_model.data()->AdditionalOutput();
 
     m_short = overview;
     overview.clear();

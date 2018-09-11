@@ -189,17 +189,17 @@ QString AbstractTitrationModel::ModelInfo() const
     return result;
 }
 
-QString AbstractTitrationModel::AnalyseStatistic() const
+QString AbstractTitrationModel::AnalyseStatistic(bool forceAll) const
 {
     QString result;
 
     result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += AbstractModel::AnalyseStatistic();
+    result += AbstractModel::AnalyseStatistic(forceAll);
 
     return result;
 }
 
-QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object) const
+QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
 
     QString result;
@@ -208,13 +208,14 @@ QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object) con
 
     auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Thermo::Statistic2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT(), object);
+        result += Thermo::Statistic2Thermo(GlobalParameter(i), 0, getT(), object);
     };
 
     for (int i = 0; i < GlobalParameterSize(); ++i)
         conf2therm(i, object);
 
-    result += AbstractModel::AnalyseMonteCarlo(object);
+    if (forceAll)
+        result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
     return result;
 }

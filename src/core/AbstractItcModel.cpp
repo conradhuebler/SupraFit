@@ -360,17 +360,17 @@ void AbstractItcModel::UpdateOption(int index, const QString& str){
         Concentration();*/
 }
 
-QString AbstractItcModel::AnalyseStatistic() const
+QString AbstractItcModel::AnalyseStatistic(bool forceAll) const
 {
     QString result;
 
     result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += AbstractModel::AnalyseStatistic();
+    result += AbstractModel::AnalyseStatistic(forceAll);
 
     return result;
 }
 
-QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object) const
+QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
 
     QString result;
@@ -385,7 +385,7 @@ QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object) const
     for (int i = 0; i < GlobalParameterSize(); ++i)
         conf2therm(i, object);
 
-    result += AbstractModel::AnalyseMonteCarlo(object);
+    result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
     return result;
 }

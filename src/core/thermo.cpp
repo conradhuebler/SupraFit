@@ -55,22 +55,6 @@ QString Statistic2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
         }
     }
 
-    QStringList models = object["controller"].toObject()["raw"].toObject().keys();
-    QList<qreal> s;
-
-    for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-        qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index_global];
-        QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
-        qreal H = local[index_local];
-        // qDebug() << K << H;
-        s << ToolSet::GHE(ToolSet::K2G(K, T), H, T);
-    }
-
-    std::sort(s.begin(), s.end());
-
-    SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, 95);
-
     qreal dG = ToolSet::K2G(K, T);
     qreal dS = ToolSet::GHE(dG, H, T);
 
@@ -88,12 +72,6 @@ QString Statistic2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
         */
     // qDebug() << dSll << dSuu << dSul << dSlu << conf.lower << conf.upper << dS;
 
-    qreal conf_dH11u = H - dH11u;
-    qreal conf_dH11l = H - dH11l;
-
-    qreal conf_dSl = conf.upper - dS;
-    qreal conf_dSu = dS - conf.lower;
-
     result += "<table>";
     result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K)) + "</td>";
 
@@ -107,6 +85,29 @@ QString Statistic2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
     result += "<td>kJ/mol</td></tr>";
 
     if (!qFuzzyCompare(H, 0)) {
+
+        QStringList models = object["controller"].toObject()["raw"].toObject().keys();
+        QList<qreal> s;
+
+        for (int i = 0; i < models.size(); ++i) {
+            QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+            qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index_global];
+            QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
+            qreal H = local[index_local];
+            // qDebug() << K << H;
+            s << ToolSet::GHE(ToolSet::K2G(K, T), H, T);
+        }
+
+        std::sort(s.begin(), s.end());
+
+        SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, 95);
+
+        qreal conf_dH11u = H - dH11u;
+        qreal conf_dH11l = H - dH11l;
+
+        qreal conf_dSl = conf.upper - dS;
+        qreal conf_dSu = dS - conf.lower;
+
         result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0) + "</td>";
         if (!object.isEmpty())
             result += "<td>(" + Print::printDouble(conf_dH11u / 1000, 3) + "/-" + Print::printDouble(conf_dH11l / 1000, 3) + ")</td>";

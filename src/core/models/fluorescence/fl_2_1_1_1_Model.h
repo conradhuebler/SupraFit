@@ -65,7 +65,7 @@ public:
         return 4; }
     void virtual EvaluateOptions() override;
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QString AdditionalOutput() const override { return QString(); }
 

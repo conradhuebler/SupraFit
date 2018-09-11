@@ -265,7 +265,7 @@ QString itc_IItoI_Model::ParameterComment(int parameter) const
         return QString("Reaction: A + B &#8652; AB");
 }
 
-QString itc_IItoI_Model::AnalyseMonteCarlo(const QJsonObject& object) const
+QString itc_IItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
     QStringList models = object["controller"].toObject()["raw"].toObject().keys();
     QList<qreal> s;
@@ -285,7 +285,7 @@ QString itc_IItoI_Model::AnalyseMonteCarlo(const QJsonObject& object) const
     qreal conf_dSl = conf.upper - BC50;
     qreal conf_dSu = BC50 - conf.lower;
 
-    QString result = AbstractItcModel::AnalyseMonteCarlo(object);
+    QString result = AbstractItcModel::AnalyseMonteCarlo(object, forceAll);
 
     result += tr("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSu).arg(conf_dSl).arg(QChar(956));
     result += tr("[%1 - %2] %3M</p>").arg(conf.lower).arg(conf.upper).arg(QChar(956));

@@ -93,7 +93,7 @@ public:
     virtual int LocalParameterSize(int series = 0) const override { Q_UNUSED(series)
         return 5; }
 
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QString AdditionalOutput() const override { return QString(); }
 

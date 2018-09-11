@@ -683,19 +683,21 @@ namespace Print {
 QString TextFromConfidence(const QJsonObject& result, const AbstractModel* model, const QJsonObject& controller)
 {
     int type = controller["method"].toInt();
-    QString text, box_message("");
+    QString text = "<table>", box_message = QString();
     qreal value = result["value"].toDouble();
+    /*
     QString pot;
     QString nr;
-    QString const_name;
+
     if (result["type"] == "Global Parameter") {
         nr = " = " + model->formatedGlobalParameter(value);
         pot = model->GlobalParameterPrefix();
     } else if (result["type"] == "Local Parameter") {
         nr = " = " + model->formatedLocalParameter(value);
         pot = model->LocalParameterPrefix();
-    }
+    }*/
 
+    QString const_name;
     text += "<tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch || type == SupraFit::Statistic::FastConfidence) {
         QJsonObject confidence = result["confidence"].toObject();
@@ -734,8 +736,7 @@ QString TextFromConfidence(const QJsonObject& result, const AbstractModel* model
         text += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
         text += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
     }
-    text += "\n";
-    text += "<tr><td></td></tr>\n";
+    text += "<tr><td></td></tr></table>\n";
     return box_message + text;
 }
 

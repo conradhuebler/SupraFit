@@ -82,7 +82,7 @@ public:
     virtual QString AdditionalOutput() const override;
 
     /*! \brief Calculate standard type of monte carlo statistics */
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QString ParameterComment(int parameter) const override;
 

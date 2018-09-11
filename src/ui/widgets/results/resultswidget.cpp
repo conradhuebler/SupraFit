@@ -300,20 +300,16 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     if (controller["method"].toInt() == SupraFit::Statistic::GlobalSearch) {
         text += Print::TextFromStatistic(data, controller);
     } else {
-        for (int i = 0; i < m_data.count() - 1; ++i) {
-            QJsonObject data = m_data[QString::number(i)].toObject();
-            if (data.isEmpty())
-                continue;
-            text += Print::TextFromConfidence(data, m_model.data(), controller);
-        }
+        text += m_model->AnalyseStatistic(m_data, false);
     }
+    //qDebug() << text;
     m_confidence_label->setText(text);
 }
 
 void ResultsWidget::Detailed()
 {
     QTextEdit* text = new QTextEdit;
-    text->setText("<html><pre> " + m_text + "</pre></html>");
+    text->setText("<html><pre> " + m_text + "</br> " + m_model->AnalyseStatistic(m_data, true) + "</pre></html>");
     m_dialog->setWidget(text, tr("Details on Statistic Analysis"));
     m_dialog->show();
 }

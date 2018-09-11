@@ -1079,33 +1079,74 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
     return this;
 }
 
-QString AbstractModel::AnalyseStatistic() const
+QString AbstractModel::AnalyseStatistic(bool forceAll) const
 {
     QString result = QString("<table>");
 
     for (int i = 0; i < getMCStatisticResult(); ++i) {
         result += "<tr><th>Monte Carlo</th></tr>";
-        result += AnalyseMonteCarlo(getStatistic(SupraFit::MonteCarlo, i));
+        result += AnalyseMonteCarlo(getStatistic(SupraFit::MonteCarlo, i), forceAll);
     }
-    /*
+
     for(int i = 0; i < getMoCoStatisticResult(); ++i)
     {
         result += "<tr><th>Model Comparison</th></tr>";
-        result += AnalyseModelComparison(getStatistic(SupraFit::ModelComparison, i));
+        result += AnalyseModelComparison(getStatistic(SupraFit::ModelComparison, i), forceAll);
     }
 
     for(int i = 0; i < getWGStatisticResult(); ++i)
     {
         result += "<tr><th>Grid Search</th></tr>";
-        result += AnalyseGridSearch(getStatistic(SupraFit::WeakenedGridSearch, i));
+        result += AnalyseGridSearch(getStatistic(SupraFit::WeakenedGridSearch, i), forceAll);
     }
-    */
+
     result += "</table";
 
     return result;
 }
 
-QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object) const
+QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll) const
+{
+    QJsonObject controller = object["controller"].toObject();
+    switch (controller["method"].toInt()) {
+    case SupraFit::Statistic::WeakenedGridSearch:
+        return AnalyseGridSearch(object, forceAll);
+        break;
+
+    case SupraFit::Statistic::ModelComparison:
+        return AnalyseModelComparison(object, forceAll);
+        break;
+
+    case SupraFit::Statistic::FastConfidence:
+        return AnalyseModelComparison(object, forceAll);
+        break;
+
+    case SupraFit::Statistic::Reduction:
+        return Print::TextFromConfidence(object, this, controller);
+        break;
+
+    case SupraFit::Statistic::MonteCarlo:
+        return AnalyseMonteCarlo(object, forceAll);
+        break;
+        /*
+    case SupraFit::Statistic::CrossValidation:
+        bool duplicate = false;
+        for (int i = 0; i < m_mc_statistics.size(); ++i) {
+            QJsonObject control = m_mc_statistics[i]["controller"].toObject();
+            if (controller == control) {
+                duplicate = true;
+                m_mc_statistics[i] = object;
+            }
+        }
+        if (!duplicate)
+            m_mc_statistics << object;
+        index = m_mc_statistics.lastIndexOf(object);
+        break;*/
+    }
+    return QString();
+}
+
+QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
     QString result;
     QJsonObject controller = object["controller"].toObject();
@@ -1120,7 +1161,7 @@ QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object) const
     return result;
 }
 
-QString AbstractModel::AnalyseModelComparison(const QJsonObject& object) const
+QString AbstractModel::AnalyseModelComparison(const QJsonObject& object, bool forceAll) const
 {
     QString result;
     QJsonObject controller = object["controller"].toObject();
@@ -1134,7 +1175,7 @@ QString AbstractModel::AnalyseModelComparison(const QJsonObject& object) const
     return result;
 }
 
-QString AbstractModel::AnalyseGridSearch(const QJsonObject& object) const
+QString AbstractModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
     QString result;
     QJsonObject controller = object["controller"].toObject();

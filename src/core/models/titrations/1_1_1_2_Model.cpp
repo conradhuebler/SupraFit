@@ -235,8 +235,14 @@ QString ItoI_ItoII_Model::ModelInfo() const
     return result;
 }
 
-QString ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object) const
+QString ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
+
+    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
+
+    if (!forceAll)
+        return result;
+
     QStringList models = object["controller"].toObject()["raw"].toObject().keys();
     QList<qreal> s, s_sf;
 
@@ -264,7 +270,6 @@ QString ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object) const
     qreal conf_dSl_sf = conf_sf.upper - BC50_sf;
     qreal conf_dSu_sf = BC50_sf - conf_sf.lower;
 
-    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object);
 
     result += tr("<p>BC50 %1 [+%2,-%3] %4M ... ").arg(BC50).arg(conf_dSu).arg(conf_dSl).arg(QChar(956));
     result += tr("[%1 - %2] %3M</p>").arg(conf.lower).arg(conf.upper).arg(QChar(956));

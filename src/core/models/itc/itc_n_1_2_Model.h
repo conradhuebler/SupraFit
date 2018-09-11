@@ -102,8 +102,8 @@ public:
 
     virtual QString ParameterComment(int parameter) const override
     {
-        if (parameter == 0)
-            return QString("");
+        Q_UNUSED(parameter)
+        return QString("");
     }
 
 protected:

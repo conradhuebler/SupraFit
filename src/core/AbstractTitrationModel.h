@@ -129,10 +129,10 @@ public:
     inline QString getPlotMode() const { return m_plotMode; }
 
     /*! \brief Calculate standard type statistics for stored statistic results */
-    virtual QString AnalyseStatistic() const override;
+    virtual QString AnalyseStatistic(bool forceAll = false) const override;
 
     /*! \brief Calculate standard type of monte carlo statistics */
-    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QString ParameterComment(int parameter) const = 0;
 public slots:
