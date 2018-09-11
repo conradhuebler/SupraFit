@@ -35,7 +35,8 @@ class MetaModel : public AbstractModel {
 
 public:
     MetaModel(DataClass* data);
-    ~MetaModel();
+
+    virtual ~MetaModel() override;
 
     enum ConnectType {
         None = 0,

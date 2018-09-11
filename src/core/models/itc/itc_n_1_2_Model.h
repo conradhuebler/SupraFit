@@ -35,7 +35,7 @@ public:
     itc_n_ItoII_Model(DataClass* data);
     itc_n_ItoII_Model(AbstractItcModel* data);
 
-    ~itc_n_ItoII_Model();
+    virtual ~itc_n_ItoII_Model() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_n_ItoII; }
 
@@ -98,6 +98,12 @@ public:
             return 2;
         else
             return i + 2;
+    }
+
+    virtual QString ParameterComment(int parameter) const override
+    {
+        if (parameter == 0)
+            return QString("");
     }
 
 protected:

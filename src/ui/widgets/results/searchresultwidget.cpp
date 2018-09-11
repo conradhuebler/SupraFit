@@ -128,7 +128,6 @@ QTableView* SearchResultWidget::BuildList()
     QStandardItemModel* model = new QStandardItemModel;
 
     QStringList header = QStringList() << "Sum of Squares";
-    int size_optimised;
     int size = m_results["controller"].toObject()["size"].toInt();
     for (int i = 0; i < size; ++i) {
         QJsonObject local_model = m_results[QString::number(i)].toObject();
@@ -151,7 +150,6 @@ QTableView* SearchResultWidget::BuildList()
         int j = 1;
         QVector<qreal> initial = ToolSet::String2DoubleVec(local_model["initial"].toString());
         QVector<qreal> optimised = ToolSet::String2DoubleVec(local_model["optimised"].toString());
-        size_optimised = optimised.size();
 
         for (int l = 0; l < m_model->GlobalParameterSize(); ++l) {
             if (!m_model->GlobalTable()->isChecked(l, 0) || !m_model->GlobalEnabled(l))

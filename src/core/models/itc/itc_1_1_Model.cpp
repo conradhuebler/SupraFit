@@ -173,4 +173,18 @@ QString itc_ItoI_Model::AdditionalOutput() const
     return result;
 }
 
+QString itc_ItoI_Model::ModelInfo() const
+{
+    QString result = AbstractItcModel::ModelInfo();
+    result += BC50::Format_ItoI_BC50(GlobalParameter(0));
+
+    return result;
+}
+
+QString itc_ItoI_Model::ParameterComment(int parameter) const
+{
+    Q_UNUSED(parameter)
+    return QString("Reaction: A + B &#8652; AB");
+}
+
 #include "itc_1_1_Model.moc"

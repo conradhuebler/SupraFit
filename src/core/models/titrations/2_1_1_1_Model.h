@@ -37,7 +37,8 @@ public:
     };
 
     IItoI_ItoI_Model(DataClass* data);
-    ~IItoI_ItoI_Model();
+
+    virtual ~IItoI_ItoI_Model() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::IItoI_ItoI; }
 
@@ -47,9 +48,6 @@ public:
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
-
-    virtual inline qreal BC50() const override { return BC50::IItoI_ItoI_BC50(GlobalParameter(0), GlobalParameter(1)); }
-    virtual inline qreal BC50SF() const override { return BC50(); }
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -82,6 +80,13 @@ public:
     }
 
     virtual QString AdditionalOutput() const override;
+
+    /*! \brief Calculate standard type of monte carlo statistics */
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+
+    virtual QString ParameterComment(int parameter) const override;
+
+    virtual QString ModelInfo() const override;
 
 protected:
     virtual void CalculateVariables() override;

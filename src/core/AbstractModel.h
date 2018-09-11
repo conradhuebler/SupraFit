@@ -48,7 +48,8 @@ public:
         , m_enabled_local(other.m_enabled_local)
     {
     }
-    ~AbstractModelPrivate()
+
+    virtual ~AbstractModelPrivate()
     {
 
 

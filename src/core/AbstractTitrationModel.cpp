@@ -19,6 +19,7 @@
 
 #include "libmath.h"
 #include "src/core/dataclass.h"
+#include "src/core/thermo.h"
 #include "src/core/toolset.h"
 
 #include <QtCore/QCollator>
@@ -113,6 +114,7 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
     m_concentrations->setRow(equilibrium, i);
 }
 
+/*
 qreal AbstractTitrationModel::BC50() const
 {
     return 0;
@@ -121,7 +123,7 @@ qreal AbstractTitrationModel::BC50() const
 qreal AbstractTitrationModel::BC50SF() const
 {
     return 0;
-}
+}*/
 
 MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
 {
@@ -174,20 +176,47 @@ qreal AbstractTitrationModel::PrintOutIndependent(int i) const
 
 QString AbstractTitrationModel::ModelInfo() const
 {
-    qreal bc50 = BC50() * 1E6;
-    qreal bc50sf = BC50SF() * 1E6;
-    QString format_text;
-    if (bc50 > 0 || bc50sf > 0) {
-        format_text = tr("BC50<sub>0</sub>: %1").arg(bc50);
-        QChar mu = QChar(956);
-        format_text += QString(" [") + mu + QString("M]   ");
-        if (bc50 != bc50sf) {
-            format_text += tr("BC50<sub>0</sub> (SF): %1").arg(bc50sf);
-            format_text += QString(" [") + mu + QString("M]");
-        }
-        return format_text;
-    } else
-        return QString();
+    QString result;
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+    result += "<h4>... without statistical data ...</h4>";
+
+    for (int i = 0; i < GlobalParameterSize(); ++i) {
+        result += tr("<p>%1</p>").arg(ParameterComment(i));
+        result += Thermo::Statistic2Thermo(GlobalParameter(i), 0, getT());
+    }
+
+    return result;
+}
+
+QString AbstractTitrationModel::AnalyseStatistic() const
+{
+    QString result;
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+    result += AbstractModel::AnalyseStatistic();
+
+    return result;
+}
+
+QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object) const
+{
+
+    QString result;
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+
+    auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
+        result += tr("<p>%1</p>").arg(ParameterComment(i));
+        result += Thermo::Statistic2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT(), object);
+    };
+
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        conf2therm(i, object);
+
+    result += AbstractModel::AnalyseMonteCarlo(object);
+
+    return result;
 }
 
 qreal AbstractTitrationModel::Guess_1_1() const

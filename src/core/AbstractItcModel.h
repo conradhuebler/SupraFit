@@ -48,7 +48,7 @@ public:
     AbstractItcModel(DataClass* data);
     AbstractItcModel(AbstractItcModel* data);
 
-    ~AbstractItcModel();
+    virtual ~AbstractItcModel() override;
 
     inline virtual void ReleaseLocks() override { m_lock_concentrations = false; }
 
@@ -63,12 +63,7 @@ public:
 
     virtual QString SpeciesName(int i) const { Q_UNUSED(i)
         return QString(); }
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override
-    {
-        Q_UNUSED(i)
-        //return QString("10^");
-        return QString();
-    }
+
     inline void setConcentrations(const QPointer<DataTable> table)
     {
         m_c0 = new DataTable(table);
@@ -107,14 +102,6 @@ public:
 
     virtual inline bool SupportSeries() const override { return false; }
 
-    /*! \brief Return a formated value as string of the global parameter with the value
-     */
-    /* virtual QString formatedGlobalParameter(qreal value, int globalParamater = 0) const
-    {
-        Q_UNUSED(globalParamater)
-        return QString::number(qPow(10, value));
-    }*/
-
     /*! \brief Define the x axis label for charts
      */
     virtual QString XLabel() const override { return m_plotMode; } // { return "G<sub>0</sub>/H<sub>0</sub>"; }
@@ -132,10 +119,12 @@ public:
     inline virtual QString RandomExportSuffix() const override { return QString("Peak Files(*.dH)"); }
 
     /*! \brief Calculate standard type statistics for stored statistic results */
-    virtual QString AnalyseStatistic() const;
+    virtual QString AnalyseStatistic() const override;
 
     /*! \brief Calculate standard type of monte carlo statistics */
     virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+
+    virtual QString ParameterComment(int parameter) const = 0;
 
 public slots:
     virtual void UpdateParameter() override;

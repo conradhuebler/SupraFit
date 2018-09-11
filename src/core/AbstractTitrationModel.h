@@ -60,12 +60,6 @@ public:
 
     inline QVector<qreal*> getOptConstants() const { return m_opt_para; }
 
-    virtual inline QString GlobalParameterPrefix(int i = 0) const override
-    {
-        Q_UNUSED(i)
-        //return QString("10^");
-        return QString();
-    }
     virtual inline QString LocalParameterSuffix(int i = 0) const override
     {
         Q_UNUSED(i)
@@ -76,14 +70,14 @@ public:
         if (i == 0)
             return "Shift of the pure - non silent substrat";
         else
-            return tr("Shift of the pure %1 complex").arg(GlobalParameterName(i - 1));
+            return tr("Shift of the pure %1 complex").arg(GlobalParameterName(i - 1)).remove("lg");
     }
     inline virtual QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
             return "Pure Component Shift";
         else
-            return tr("%1 Complex Shift").arg(GlobalParameterName(i - 1));
+            return tr("%1 Complex Shift").arg(GlobalParameterName(i - 1)).remove("lg");
     }
 
     // virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
@@ -92,8 +86,9 @@ public:
         Q_UNUSED(i)
         return QString();
     }
+    /*
     virtual qreal BC50() const;
-    virtual qreal BC50SF() const;
+    virtual qreal BC50SF() const;*/
     virtual MassResults MassBalance(qreal A, qreal B);
     inline QPointer<DataTable> getConcentrations() const { return m_concentrations; }
     inline QPointer<DataTable> getConcentrations() { return m_concentrations; }
@@ -133,6 +128,13 @@ public:
 
     inline QString getPlotMode() const { return m_plotMode; }
 
+    /*! \brief Calculate standard type statistics for stored statistic results */
+    virtual QString AnalyseStatistic() const override;
+
+    /*! \brief Calculate standard type of monte carlo statistics */
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+
+    virtual QString ParameterComment(int parameter) const = 0;
 public slots:
     virtual void UpdateParameter() override;
 

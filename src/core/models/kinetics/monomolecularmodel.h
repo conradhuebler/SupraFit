@@ -42,7 +42,8 @@ public:
     };
 
     MonoMolecularModel(DataClass* data);
-    ~MonoMolecularModel();
+
+    virtual ~MonoMolecularModel() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::MonoMolecularModel; }
 

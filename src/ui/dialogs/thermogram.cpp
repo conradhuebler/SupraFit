@@ -90,10 +90,13 @@ void Thermogram::setUi()
     m_scale->addItem("1");
     m_scale->setEditable(true);
     connect(m_scale, &QComboBox::currentTextChanged, m_scale, [this]() {
+#warning remove me
+        /*
         bool ok;
         qreal scale = m_scale->currentText().toDouble(&ok);
         if (ok)
-            this->UpdateTable();
+        */
+        this->UpdateTable();
     });
     m_injct = new QLineEdit;
 

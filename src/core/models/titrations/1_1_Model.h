@@ -33,7 +33,8 @@ class ItoI_Model : public AbstractTitrationModel {
 
 public:
     ItoI_Model(DataClass* data);
-    ~ItoI_Model();
+
+    virtual ~ItoI_Model() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::ItoI; }
 
@@ -42,9 +43,6 @@ public:
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
-
-    virtual inline qreal BC50() const override { return BC50::ItoI_BC50(GlobalParameter(0)); }
-    virtual inline qreal BC50SF() const override { return BC50(); }
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -70,6 +68,10 @@ public:
             return i + 3;
     }
     virtual QString AdditionalOutput() const override;
+
+    virtual QString ParameterComment(int parameter) const override;
+
+    virtual QString ModelInfo() const override;
 
 protected:
     virtual void CalculateVariables() override;

@@ -346,12 +346,12 @@ inline const QString excluded() { return QString("#e17f7f;"); }
  * used parameter
  */
 
-const QString K11 = QString("log K<sub>11</sub>");
-const QString K21 = QString("log K<sub>21</sub>");
-const QString K12 = QString("log K<sub>12</sub>");
+const QString K11 = QString("lg K<sub>11</sub>");
+const QString K21 = QString("lg K<sub>21</sub>");
+const QString K12 = QString("lg K<sub>12</sub>");
 
-const QString K1 = QString("log K<sub>1</sub>");
-const QString K2 = QString("log K<sub>2</sub>");
+const QString K1 = QString("lg K<sub>1</sub>");
+const QString K2 = QString("lg K<sub>2</sub>");
 
 const QString dHAB = QString("&Delta;H<sub>AB</sub>");
 const QString dHAB2 = QString("&Delta;H<sub>AB2</sub>");

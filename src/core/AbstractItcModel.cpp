@@ -311,7 +311,17 @@ void AbstractItcModel::UpdateParameter()
 
 QString AbstractItcModel::ModelInfo() const
 {
-    return QString();
+    QString result;
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+    result += "<h4>... without statistical data ...</h4>";
+
+    for (int i = 0; i < GlobalParameterSize(); ++i) {
+        result += tr("<p>%1</p>").arg(ParameterComment(i));
+        result += Thermo::Statistic2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT());
+    }
+
+    return result;
 }
 
 QString AbstractItcModel::RandomInput(const QVector<double>& indep, const QVector<double>& dep) const
@@ -355,16 +365,6 @@ QString AbstractItcModel::AnalyseStatistic() const
     QString result;
 
     result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += "<h4>without statistical data:</h4>";
-
-    auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
-        result += tr("<p>Reaction: A + B &#8652; AB</p> %1").arg(i);
-        result += Thermo::Statistic2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT(), object);
-    };
-
-    for (int i = 0; i < GlobalParameterSize(); ++i)
-        conf2therm(i);
-
     result += AbstractModel::AnalyseStatistic();
 
     return result;
@@ -378,7 +378,7 @@ QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object) const
     result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
 
     auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
-        result += tr("<p>Reaction: A + B &#8652; AB</p> %1").arg(i);
+        result += tr("<p>%1</p>").arg(ParameterComment(i));
         result += Thermo::Statistic2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT(), object);
     };
 

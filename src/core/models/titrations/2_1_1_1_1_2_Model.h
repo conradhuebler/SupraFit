@@ -44,7 +44,8 @@ public:
     };
 
     IItoI_ItoI_ItoII_Model(DataClass* data);
-    ~IItoI_ItoI_ItoII_Model();
+
+    virtual ~IItoI_ItoI_ItoII_Model() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::IItoI_ItoI_ItoII; }
 
@@ -88,10 +89,13 @@ public:
         return i;
     }
 
-    virtual qreal BC50() const override { return BC50::IItoI_ItoI_ItoII_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2)); }
-    virtual qreal BC50SF() const override { return BC50::IItoI_ItoI_ItoII_BC50_SF(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2)); }
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
 
     virtual QString AdditionalOutput() const override;
+
+    virtual QString ParameterComment(int parameter) const override;
+
+    virtual QString ModelInfo() const override;
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;

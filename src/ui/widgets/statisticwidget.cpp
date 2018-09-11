@@ -75,7 +75,8 @@ void StatisticWidget::Update()
     overview += "<tr><td>&chi;:</td><td><b>" + Print::printDouble(m_model.data()->ChiSquared()) + "</b></td></tr>\n";
     overview += "<tr><td>cov<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.data()->CovFit()) + "</b></td></tr>\n";
 
-    overview += "</table>";
+    overview += "</table></br>";
+    overview += m_model.data()->ModelInfo() + "</br>";
     overview += m_model.data()->AdditionalOutput();
 
     m_short = overview;

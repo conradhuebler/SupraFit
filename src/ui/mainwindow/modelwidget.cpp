@@ -185,7 +185,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         group->setLayout(hlayout);
         const_layout->addWidget(group);
     }
-    m_bc_50 = new QLabel(tr("BC50_0"));
     const_layout->addStretch(100);
 
     QVBoxLayout* fit_layout = new QVBoxLayout;
@@ -217,7 +216,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         const_layout->addWidget(m_minimize_all);
 
     m_layout->addLayout(const_layout);
-    m_layout->addWidget(m_bc_50);
 
     //    if (!m_val_readonly) {
     m_model_options_widget = new OptionsWidget(m_model);
@@ -425,8 +423,6 @@ void ModelWidget::Repaint()
     m_minimize_all->setEnabled(true);
 
     QTimer::singleShot(1, m_statistic_widget, SLOT(Update()));
-
-    m_bc_50->setText(m_model->ModelInfo());
 
     QString converged;
     if (!m_model->isConverged())

@@ -38,7 +38,8 @@ public:
 
     itc_ItoII_Model(DataClass* data);
     itc_ItoII_Model(AbstractItcModel* data);
-    ~itc_ItoII_Model();
+
+    virtual ~itc_ItoII_Model() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_ItoII; }
 
@@ -50,9 +51,6 @@ public:
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
-
-    virtual qreal BC50() const override { return BC50::ItoI_ItoII_BC50(GlobalParameter(0), GlobalParameter(1)); }
-    virtual qreal BC50SF() const override { return BC50::ItoI_ItoII_BC50_SF(GlobalParameter(0), GlobalParameter(1)); }
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -104,7 +102,13 @@ public:
             return i + 2;
     }
 
+    virtual QString AnalyseMonteCarlo(const QJsonObject& object) const override;
+
     virtual QString AdditionalOutput() const override;
+
+    QString ParameterComment(int parameter) const override;
+
+    QString ModelInfo() const override;
 
 protected:
     virtual void CalculateVariables() override;

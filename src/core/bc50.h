@@ -21,6 +21,7 @@
 
 #include "src/core/libmath.h"
 
+#include <QtCore/QString>
 #include <QtCore/QVector>
 
 #include <iostream>
@@ -206,5 +207,47 @@ inline qreal IItoI_ItoI_ItoII_BC50_SF(const qreal logK21, const qreal logK11, co
     std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_IItoI_ItoI_ItoII_SF_Y_0;
     qreal integ = SimpsonIntegrate(0, 1, function, parameter);
     return integ;
+}
+
+inline QString Format_ItoI_BC50(const qreal logK11)
+{
+    QString result = QString();
+    QChar mu = QChar(956);
+
+    result += QString("<p>BC50<sub>0</sub> = %1 %2M</p>").arg(ItoI_BC50(logK11) * 1e6).arg(mu);
+
+    return result;
+}
+
+inline QString Format_IItoI_BC50(const qreal logK21, const qreal logK11)
+{
+    QString result = QString();
+    QChar mu = QChar(956);
+
+    result += QString("<p>BC50<sub>0</sub> = %1 %2M</p>").arg(IItoI_ItoI_BC50(logK21, logK11) * 1e6).arg(mu);
+
+    return result;
+}
+
+inline QString Format_IItoII_BC50(const qreal logK21, const qreal logK11, const qreal logK12)
+{
+    QString result = QString();
+    QChar mu = QChar(956);
+
+    result += QString("<p>BC50<sub>0</sub> =  %1 %2M ... ").arg(IItoI_ItoI_ItoII_BC50(logK21, logK11, logK12) * 1e6).arg(mu);
+    result += QString("BC50<sub>0</sub>(SF) = %1 %2M</p>").arg(IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6).arg(mu);
+
+    return result;
+}
+
+inline QString Format_ItoII_BC50(const qreal logK11, const qreal logK12)
+{
+    QString result = QString();
+    QChar mu = QChar(956);
+
+    result += QString("<p>BC50<sub>0</sub> =  %1 %2M ... ").arg(ItoI_ItoII_BC50(logK11, logK12) * 1e6).arg(mu);
+    result += QString("BC50<sub>0</sub>(SF) = %1 %2M</p>").arg(ItoI_ItoII_BC50_SF(logK11, logK12) * 1e6).arg(mu);
+
+    return result;
 }
 }

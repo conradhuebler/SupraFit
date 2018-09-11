@@ -126,7 +126,7 @@ private:
     ModelActions* m_actions;
     QPushButton* m_minimize_all;
     QCheckBox* m_readonly;
-    QLabel *m_bc_50, *m_converged_label;
+    QLabel* m_converged_label;
     OptionsWidget* m_model_options_widget;
     QVBoxLayout* m_layout;
     bool m_pending;

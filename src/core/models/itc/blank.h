@@ -34,7 +34,7 @@ public:
     Blank(DataClass* data);
     Blank(AbstractItcModel* data);
 
-    ~Blank();
+    virtual ~Blank() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_blank; }
 
@@ -71,6 +71,9 @@ public:
     // virtual QString XLabel() const override { return "c<sub>0</sub>"; }
 
     virtual qreal PrintOutIndependent(int i) const override;
+
+    virtual QString ParameterComment(int parameter) const override { Q_UNUSED(parameter)
+        return QString(); }
 
 protected:
     virtual void CalculateVariables() override;

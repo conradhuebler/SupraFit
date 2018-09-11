@@ -35,7 +35,7 @@ public:
     itc_n_ItoI_Model(DataClass* data);
     itc_n_ItoI_Model(AbstractItcModel* data);
 
-    ~itc_n_ItoI_Model();
+    virtual ~itc_n_ItoI_Model() override;
 
     virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_n_ItoI; }
 
@@ -90,6 +90,9 @@ public:
         else
             return i + 3;
     }
+
+    virtual QString ParameterComment(int parameter) const override { Q_UNUSED(parameter)
+        return QString("Reaction: A + B &#8652; AB"); }
 
 protected:
     virtual void CalculateVariables() override;
