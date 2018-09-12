@@ -26,4 +26,8 @@
 namespace Thermo {
 
 QString Statistic2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object = QJsonObject());
+QString Statistic2BC50_1(const qreal logK11, const QJsonObject& object);
+QString Statistic2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
+QString Statistic2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);
+QString Statistic2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
 }

@@ -254,7 +254,7 @@ void Normalise(QVector<QPair<qreal, qreal>>& hist)
 
 QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bins, qreal min, qreal max)
 {
-    if (min == max) {
+    if (qFuzzyCompare(min, max)) {
         for (int i = 0; i < vector.size(); ++i) {
             min = qMin(min, vector[i]);
             max = qMax(max, vector[i]);
@@ -683,42 +683,27 @@ namespace Print {
 QString TextFromConfidence(const QJsonObject& result, const AbstractModel* model, const QJsonObject& controller)
 {
     int type = controller["method"].toInt();
-    QString text = "<table>", box_message = QString();
     qreal value = result["value"].toDouble();
-    /*
-    QString pot;
-    QString nr;
 
-    if (result["type"] == "Global Parameter") {
-        nr = " = " + model->formatedGlobalParameter(value);
-        pot = model->GlobalParameterPrefix();
-    } else if (result["type"] == "Local Parameter") {
-        nr = " = " + model->formatedLocalParameter(value);
-        pot = model->LocalParameterPrefix();
-    }*/
+    QString text = QString("<p> --- statistic block --- </p><p>%1</p>").arg(result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value));
 
     QString const_name;
-    text += "<tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
+    //text += "<table><tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch || type == SupraFit::Statistic::FastConfidence) {
         QJsonObject confidence = result["confidence"].toObject();
         qreal upper = confidence["upper"].toDouble();
         qreal lower = confidence["lower"].toDouble();
         qreal conf = confidence["error"].toDouble();
-        //text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + pot + QString::number(value) + " " + nr + " * " + pot + "[+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "] * </b></td></tr>\n";
-        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td> <b>" + QString::number(value) + "[+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "] * </b></td></tr>\n";
-
-        // text += "<tr><td>"+QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + QString::number(lower, 'f', 4) + " - " + QString::number(upper, 'f', 4) + "] </b></td></tr>\n";
-        // if (result["type"] == "Global Parameter")
-        text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + QString::number(lower) + " - " + QString::number(upper) + "] </b></td></tr>\n";
-        // else if (result["type"] == "Local Parameter")
-        //     text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td> <b> [" + model->formatedLocalParameter(lower) + " - " + model->formatedLocalParameter(upper) + "] </b></td></tr>\n";
+        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td>" + QString::number(value) + " [+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "]</td></tr>";
+        text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[" + QString::number(lower) + " - " + QString::number(upper) + "]</td></tr>";
     }
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation) {
         SupraFit::BoxWhisker box = ToolSet::Object2Whisker(result["boxplot"].toObject());
+        text += "<tr><td colspan='2'>Analyse of the Monte Carlo Histogram</td></tr>\n";
         text += "<tr><td>Median: </td><td> <b>" + QString::number(box.median, 'f', 4) + "</b></td></tr>\n";
-        text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) + " - " + QString::number(box.UpperNotch(), 'f', 4) + "</b></td></tr>\n";
+        text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) + " - " + QString::number(box.UpperNotch(), 'f', 4) + "</b></td></tr>";
         if (value > box.UpperNotch() || value < box.LowerNotch()) {
-            box_message = "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>\n";
+            text += "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>";
         }
     }
     if (type == SupraFit::Statistic::Reduction) {
@@ -736,8 +721,8 @@ QString TextFromConfidence(const QJsonObject& result, const AbstractModel* model
         text += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
         text += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
     }
-    text += "<tr><td></td></tr></table>\n";
-    return box_message + text;
+    text += "<tr><td></td></tr></table><p> ... done ...</p>";
+    return text;
 }
 
 QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller)

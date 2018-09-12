@@ -214,8 +214,7 @@ QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object, boo
     for (int i = 0; i < GlobalParameterSize(); ++i)
         conf2therm(i, object);
 
-    if (forceAll)
-        result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
+    result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
 
     return result;
 }

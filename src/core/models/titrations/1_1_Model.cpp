@@ -164,4 +164,16 @@ QString ItoI_Model::ParameterComment(int parameter) const
     return QString("Reaction: A + B &#8652; AB");
 }
 
+QString ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+{
+
+    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
+
+    if (!forceAll)
+        return result;
+
+    QString bc = Thermo::Statistic2BC50_1(GlobalParameter(0), object);
+    return bc + result;
+}
+
 #include "1_1_Model.moc"

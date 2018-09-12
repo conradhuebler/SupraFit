@@ -302,7 +302,6 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     } else {
         text += m_model->AnalyseStatistic(m_data, false);
     }
-    //qDebug() << text;
     m_confidence_label->setText(text);
 }
 

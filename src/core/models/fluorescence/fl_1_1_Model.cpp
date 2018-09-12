@@ -21,6 +21,7 @@
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
+#include "src/core/thermo.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -139,6 +140,18 @@ QString fl_ItoI_Model::ParameterComment(int parameter) const
 {
     Q_UNUSED(parameter)
     return QString("Reaction: A + B &#8652; AB");
+}
+
+QString fl_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
+{
+
+    QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
+
+    if (!forceAll)
+        return result;
+
+    QString bc = Thermo::Statistic2BC50_1(GlobalParameter(0), object);
+    return bc + result;
 }
 
 #include "fl_1_1_Model.moc"
