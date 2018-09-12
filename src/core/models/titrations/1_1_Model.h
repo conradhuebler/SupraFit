@@ -74,6 +74,7 @@ public:
     virtual QString ModelInfo() const override;
 
     QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const;
+    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
 protected:
     virtual void CalculateVariables() override;

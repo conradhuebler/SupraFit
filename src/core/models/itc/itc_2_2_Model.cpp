@@ -21,7 +21,7 @@
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
-#include "src/core/thermo.h"
+#include "src/core/statistic.h"
 #include "src/core/toolset.h"
 
 #include <QDebug>
@@ -326,11 +326,11 @@ QString itc_IItoII_Model::AdditionalOutput() const
 
     auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
         result += "<p>Reaction: A + B &#8652; AB</p>";
-        result += Thermo::Statistic2Thermo(GlobalParameter(1), LocalTable()->data(1, 0), getT(), object);
+        result += Statistic::MonteCarlo2Thermo(GlobalParameter(1), LocalTable()->data(1, 0), getT(), object);
         result += "<p>Reaction: AB + A &#8652; A<sub>2</sub>B</p>";
-        result += Thermo::Statistic2Thermo(GlobalParameter(0), LocalTable()->data(0, 0), getT(), object);
+        result += Statistic::MonteCarlo2Thermo(GlobalParameter(0), LocalTable()->data(0, 0), getT(), object);
         result += "<p>Reaction: AB + B &#8652; AB<sub>2</sub></p>";
-        result += Thermo::Statistic2Thermo(GlobalParameter(2), LocalTable()->data(2, 0), getT(), object);
+        result += Statistic::MonteCarlo2Thermo(GlobalParameter(2), LocalTable()->data(2, 0), getT(), object);
     };
 
     conf2therm();
@@ -385,7 +385,7 @@ QString itc_IItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forc
     if (!forceAll)
         return result;
 
-    QString bc = Thermo::Statistic2BC50_2_2(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2), object);
+    QString bc = Statistic::MonteCarlo2BC50_2_2(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2), object);
 
     return bc + result;
 }

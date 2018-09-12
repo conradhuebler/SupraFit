@@ -60,7 +60,7 @@ public:
     inline int ParameterId() const { return m_index; }
     inline QList<qreal> XSeries() const { return m_x; }
     inline QList<qreal> YSeries() const { return m_y; }
-    inline QHash<qreal, QJsonObject> IntermediateResults() const { return m_models; }
+    inline QList<QJsonObject> IntermediateResults() const { return m_models; }
     inline QJsonObject Result() const { return m_result; }
     inline bool Converged() const { return m_converged; }
     inline qreal Last() const { return m_last; }
@@ -72,7 +72,7 @@ private:
     double m_last;
     int m_index, m_steps;
     float m_direction;
-    QHash<double, QJsonObject> m_models;
+    QList<QJsonObject> m_models;
     QList<qreal> m_x, m_y;
     WGSConfig m_config;
     QJsonObject m_result;

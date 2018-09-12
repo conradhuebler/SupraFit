@@ -106,7 +106,7 @@ void WGSearchThread::Calculate()
             m_stationary = qAbs(new_error - error) < m_config.error_conv;
             upcount++;
         }
-
+        m_models << model;
         if (m_direction == 1) {
             m_x.append(value);
             m_y.append(new_error);
@@ -198,7 +198,7 @@ bool WeakenedGridSearch::ConfidenceAssesment()
     for (int i = 0; i < threads.size(); ++i) {
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair = threads[i];
         int index = pair.first->ParameterId();
-
+        m_models << pair.second->IntermediateResults();
         QList<qreal> x, y;
         x << pair.second->XSeries() << pair.first->XSeries();
         y << pair.second->YSeries() << pair.first->YSeries();

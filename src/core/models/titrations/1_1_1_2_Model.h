@@ -83,6 +83,8 @@ public:
 
     virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
+    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+
     virtual QString AdditionalOutput() const override;
 
     virtual QString ParameterComment(int parameter) const override;

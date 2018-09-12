@@ -20,7 +20,7 @@
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/models.h"
-#include "src/core/thermo.h"
+#include "src/core/statistic.h"
 #include "src/core/toolset.h"
 
 #include <QtCore/QDateTime>
@@ -178,7 +178,7 @@ QString IItoI_ItoI_Model::AdditionalOutput() const
 {
     QString result = tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
     result += "<h4>without statistical data:</h4>";
-
+    /*
     auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
         result += "<p>Reaction: A + B &#8652; AB</p>";
         result += Thermo::Statistic2Thermo(GlobalParameter(1), 0, getT(), object);
@@ -209,7 +209,7 @@ QString IItoI_ItoI_Model::AdditionalOutput() const
         result += tr("<h4>Weakend Grid Search %1:</h4>").arg(i);
         conf2therm(getStatistic(SupraFit::Statistic::WeakenedGridSearch, i));
     }
-
+    */
     return result;
 }
 
@@ -237,8 +237,19 @@ QString IItoI_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forc
     if (!forceAll)
         return result;
 
-    QString bc = Thermo::Statistic2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
+    QString bc = Statistic::MonteCarlo2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
     return bc + result;
 }
 
+QString IItoI_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
+{
+
+    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
+
+    if (!forceAll)
+        return result;
+
+    QString bc = Statistic::GridSearch2BC50_2_1(GlobalParameter(0), GlobalParameter(1), object);
+    return bc + result;
+}
 #include "2_1_1_1_Model.moc"

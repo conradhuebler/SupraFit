@@ -88,6 +88,8 @@ public:
 
     virtual QString ModelInfo() const override;
 
+    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+
 protected:
     virtual void CalculateVariables() override;
 };

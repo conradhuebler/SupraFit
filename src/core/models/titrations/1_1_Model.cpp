@@ -21,7 +21,7 @@
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 #include "src/core/models.h"
-#include "src/core/thermo.h"
+#include "src/core/statistic.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -120,7 +120,7 @@ QString ItoI_Model::AdditionalOutput() const
 
     auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
         result += "<p>Reaction: A + B &#8652; AB</p>";
-        result += Thermo::Statistic2Thermo(GlobalParameter(0), 0, getT(), object);
+        result += Statistic::MonteCarlo2Thermo(GlobalParameter(0), 0, getT(), object);
     };
 
     conf2therm();
@@ -172,7 +172,19 @@ QString ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) 
     if (!forceAll)
         return result;
 
-    QString bc = Thermo::Statistic2BC50_1(GlobalParameter(0), object);
+    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
+    return bc + result;
+}
+
+QString ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
+{
+
+    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
+
+    if (!forceAll)
+        return result;
+
+    QString bc = Statistic::GridSearch2BC50_1(GlobalParameter(0), object);
     return bc + result;
 }
 

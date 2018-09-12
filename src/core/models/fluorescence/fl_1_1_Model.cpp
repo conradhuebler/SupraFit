@@ -21,7 +21,7 @@
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
-#include "src/core/thermo.h"
+#include "src/core/statistic.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -150,7 +150,7 @@ QString fl_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAl
     if (!forceAll)
         return result;
 
-    QString bc = Thermo::Statistic2BC50_1(GlobalParameter(0), object);
+    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
     return bc + result;
 }
 

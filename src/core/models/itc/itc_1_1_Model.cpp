@@ -20,7 +20,7 @@
 #include "src/core/AbstractItcModel.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
-#include "src/core/thermo.h"
+#include "src/core/statistic.h"
 #include "src/core/toolset.h"
 
 #include <QtMath>
@@ -143,7 +143,7 @@ QString itc_ItoI_Model::AdditionalOutput() const
 
     auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
         result += "<p>Reaction: A + B &#8652; AB</p>";
-        result += Thermo::Statistic2Thermo(GlobalParameter(0), LocalTable()->data(0, 0), getT(), object);
+        result += Statistic::MonteCarlo2Thermo(GlobalParameter(0), LocalTable()->data(0, 0), getT(), object);
     };
 
     conf2therm();
@@ -195,7 +195,7 @@ QString itc_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceA
     if (!forceAll)
         return result;
 
-    QString bc = Thermo::Statistic2BC50_1(GlobalParameter(0), object);
+    QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
     return bc + result;
 }
 

@@ -21,6 +21,7 @@
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
+#include "src/core/statistic.h"
 
 #include <QtMath>
 

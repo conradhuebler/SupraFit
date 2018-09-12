@@ -96,6 +96,7 @@ public:
     virtual QString ParameterComment(int parameter) const override;
 
     virtual QString ModelInfo() const override;
+    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;
