@@ -26,6 +26,12 @@
 
 namespace Statistic {
 
+
+bool FuzzyCompare(qreal a, qreal b, int prec = 3)
+{
+    return qAbs(a - b) < qPow(10, -prec);
+}
+
 QString MonteCarlo2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
 {
     QString result;
@@ -39,14 +45,14 @@ QString MonteCarlo2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
         const QStringList keys = object.keys();
         for (int i = 0; i < keys.size(); ++i) {
             QJsonObject confidence = object[keys[i]].toObject()["confidence"].toObject();
-            if (qFuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K)) {
+            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K)) {
                 K11u = confidence["upper"].toDouble();
                 K11l = confidence["lower"].toDouble();
                 index_global = object[keys[i]].toObject()["index"].toString().toInt();
                 error = 100 - confidence["error"].toDouble();
             }
 
-            if (qFuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), H)) {
+            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), H)) {
                 dH11u = confidence["upper"].toDouble();
                 dH11l = confidence["lower"].toDouble();
                 index_local = object[keys[i]].toObject()["index"].toString().split("|")[0].toInt();
@@ -80,7 +86,7 @@ QString MonteCarlo2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
     if (!object.isEmpty())
         result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>kJ/mol</td></tr>").arg(dGl / 1000.0).arg(dGu / 1000.0);
 
-    if (!qFuzzyCompare(H, 0)) {
+    if (!FuzzyCompare(H, 0)) {
 
         QStringList models = object["controller"].toObject()["raw"].toObject().keys();
         QList<qreal> s;
@@ -274,30 +280,31 @@ QString GridSearch2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
 
     int index_global = 0;
     int index_local = 0;
-    qreal error;
+
     if (!object.isEmpty()) {
         const QStringList keys = object.keys();
         for (int i = 0; i < keys.size(); ++i) {
             QJsonObject confidence = object[keys[i]].toObject()["confidence"].toObject();
-            if (qFuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K)) {
+            qDebug() << i << keys[i] << K << object[keys[i]].toObject()["value"].toDouble() << FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K);
+            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K)) {
                 K11u = confidence["upper"].toDouble();
                 K11l = confidence["lower"].toDouble();
-                K11u_gs = confidence["upper"].toDouble();
-                K11l_gs = confidence["lower"].toDouble();
+                K11u_gs = K;
+                K11l_gs = K;
+                qDebug() << object[keys[i]].toObject()["index"].toString();
                 index_global = object[keys[i]].toObject()["index"].toString().toInt();
-                error = 100 - confidence["error"].toDouble();
             }
 
-            if (qFuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), H)) {
+            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), H)) {
                 dH11u = confidence["upper"].toDouble();
                 dH11l = confidence["lower"].toDouble();
-                dH11u_gs = confidence["upper"].toDouble();
-                dH11l_gs = confidence["lower"].toDouble();
+                dH11u_gs = H;
+                dH11l_gs = H;
                 index_local = object[keys[i]].toObject()["index"].toString().split("|")[0].toInt();
             }
         }
     }
-
+    qDebug() << index_global;
     dGu_gs = ToolSet::K2G(K, T);
     dGl_gs = ToolSet::K2G(K, T);
     dSu_gs = ToolSet::GHE(ToolSet::K2G(K, T), H, T);
@@ -338,17 +345,17 @@ QString GridSearch2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
     result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K)) + "</td>";
 
     if (!object.isEmpty())
-        result += "<td> (+" + Print::printDouble(qPow(10, K11u) - qPow(10, K)) + "/-" + Print::printDouble(qPow(10, K) - qPow(10, K11l)) + ")</td>";
+        result += "<td> (+" + Print::printDouble( K11u - K) + "/-" + Print::printDouble( K - K11l) + ")</td>";
     result += "<td> M</td></tr>";
 
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(qPow(10, K11l)).arg(qPow(10, K11u));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg( K11l).arg( K11u);
     if (!object.isEmpty()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-        result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K)) + "</td>";
-        result += "<td> (+" + Print::printDouble(qPow(10, K11u_gs) - qPow(10, K)) + "/-" + Print::printDouble(qPow(10, K) - qPow(10, K11l_gs)) + ")</td>";
+        result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble( K) + "</td>";
+        result += "<td> (+" + Print::printDouble( K11u_gs -  K) + "/-" + Print::printDouble(K -  K11l_gs) + ")</td>";
         result += "<td> M</td></tr>";
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(qPow(10, K11l_gs)).arg(qPow(10, K11u_gs));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg( K11l_gs).arg( K11u_gs);
     }
 
     result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "</td>";
@@ -360,22 +367,22 @@ QString GridSearch2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
 
     if (!object.isEmpty()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + Print::printDouble(qPow(10, dG)) + "</td>";
+        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + Print::printDouble(dG/1000, 3) + "</td>";
         result += "<td> (+" + Print::printDouble(dGu_gs - dG) + "/-" + Print::printDouble(dG - dGl_gs) + ")</td>";
         result += "<td> M</td></tr>";
         result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dGl_gs).arg(dGu_gs);
     }
 
-    if (!qFuzzyCompare(H, 0)) {
+    if (!FuzzyCompare(H, 0)) {
 
         result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0) + "</td>";
 
         if (!object.isEmpty())
-            result += "<td>(" + Print::printDouble(dH11u_gs / 1000.0, 3) + "/-" + Print::printDouble(dH11l_gs / 1000.0, 3) + ")</td>";
+            result += "<td>(" + Print::printDouble((dH11u - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l) / 1000.0, 3) + ")</td>";
         result += "<td>kJ/mol</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>J/(molK)</td></tr>").arg(dH11l_gs / 1000.0).arg(dH11u_gs / 1000.0);
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>J/(molK)</td></tr>").arg(dH11l / 1000.0).arg(dH11u / 1000.0);
 
         if (!object.isEmpty()) {
             result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");

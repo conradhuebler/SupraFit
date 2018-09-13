@@ -390,4 +390,24 @@ QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object, bool forc
     return result;
 }
 
+QString AbstractItcModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
+{
+
+    QString result;
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+
+    auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
+        result += tr("<p>%1</p>").arg(ParameterComment(i));
+        result += Statistic::GridSearch2Thermo(GlobalParameter(i),  LocalTable()->data(i, 0), getT(), object);
+    };
+
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        conf2therm(i, object);
+
+    result += AbstractModel::AnalyseGridSearch(object, forceAll);
+
+    return result;
+}
+
 #include "AbstractItcModel.moc"

@@ -124,6 +124,9 @@ public:
     /*! \brief Calculate standard type of monte carlo statistics */
     virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
+    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+
+
     virtual QString ParameterComment(int parameter) const = 0;
 
 public slots:

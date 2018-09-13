@@ -234,7 +234,7 @@ QString AbstractTitrationModel::AnalyseGridSearch(const QJsonObject& object, boo
     for (int i = 0; i < GlobalParameterSize(); ++i)
         conf2therm(i, object);
 
-    result += AbstractModel::AnalyseMonteCarlo(object, forceAll);
+    result += AbstractModel::AnalyseGridSearch(object, forceAll);
 
     return result;
 }
