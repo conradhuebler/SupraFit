@@ -151,7 +151,6 @@ private:
     bool m_statistic, m_val_readonly;
     Charts m_charts;
     QString m_logging;
-    QList<QJsonObject> m_local_fits;
     QPointer<QCheckBox> m_toggled_box, m_global_box, m_local_box;
     QPointer<LocalParameterWidget> m_local_parameter;
     QJsonObject m_last_model;

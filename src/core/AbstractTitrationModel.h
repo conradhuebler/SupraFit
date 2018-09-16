@@ -137,6 +137,9 @@ public:
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QString ParameterComment(int parameter) const = 0;
+
+    //  virtual QVector<QJsonObject> PostGridSearch(const QList<QJsonObject> &models) const override;
+
 public slots:
     virtual void UpdateParameter() override;
 

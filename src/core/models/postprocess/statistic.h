@@ -32,6 +32,7 @@ QString MonteCarlo2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonO
 QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
 
 QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object = QJsonObject(), bool heat = false);
+QJsonObject PostGridSearch(const QList<QJsonObject>& models, qreal K, qreal T, int index, qreal H = 0);
 QString GridSearch2BC50_1(const qreal logK11, const QJsonObject& object);
 QString GridSearch2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
 QString GridSearch2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);

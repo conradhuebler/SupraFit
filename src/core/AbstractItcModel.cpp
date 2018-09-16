@@ -410,4 +410,10 @@ QString AbstractItcModel::AnalyseGridSearch(const QJsonObject& object, bool forc
     return result;
 }
 
+/*
+QVector<QJsonObject> AbstractItcModel::PostGridSearch(const QList<QJsonObject> &models) const
+{
+
+}*/
+
 #include "AbstractItcModel.moc"

@@ -240,6 +240,12 @@ QString AbstractTitrationModel::AnalyseGridSearch(const QJsonObject& object, boo
     return result;
 }
 
+/*
+QVector<QJsonObject> AbstractTitrationModel::PostGridSearch(const QList<QJsonObject> &models) const
+{
+
+}*/
+
 qreal AbstractTitrationModel::Guess_1_1() const
 {
     qreal K11 = 0;

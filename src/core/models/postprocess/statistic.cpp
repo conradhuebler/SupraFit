@@ -339,20 +339,19 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGl = dG - dGl;
 
     result += "<table>";
-    result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K)) + "</td>";
+    result += QString("<tr><td><b>Complexation Constant K</b></td><td> %1</td>").arg(qPow(10, K));
 
     if (!object.isEmpty())
-        result += "<td> (+" + Print::printDouble( K11u - K) + "/-" + Print::printDouble( K - K11l) + ")</td>";
+        result += QString("<td> (+ %1 /- %2)</td>").arg(qPow(10, K11u) - qPow(10, K)).arg(qPow(10, K) - qPow(10, K11l));
     result += "<td> M</td></tr>";
 
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg( K11l).arg( K11u);
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(qPow(10, K11l)).arg(qPow(10, K11u));
     if (!object.isEmpty()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-        result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble( K) + "</td>";
-        result += "<td> (+" + Print::printDouble( K11u_gs -  K) + "/-" + Print::printDouble(K -  K11l_gs) + ")</td>";
-        result += "<td> M</td></tr>";
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg( K11l_gs).arg( K11u_gs);
+        result += QString("<tr><td><b>Complexation Constant K </b></td><td>%1</td>").arg(qPow(10, K));
+        result += QString("<td> (+ %1 /- %2 )</td><td> M</td></tr>").arg(qPow(10, K11u_gs) - qPow(10, K)).arg(qPow(10, K) - qPow(10, K11l_gs));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(qPow(10, K11l_gs)).arg(qPow(10, K11u_gs));
     }
 
     result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "</td>";
@@ -365,9 +364,9 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     if (!object.isEmpty()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
         result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + Print::printDouble(dG/1000, 3) + "</td>";
-        result += "<td> (+" + Print::printDouble(dGu_gs - dG) + "/-" + Print::printDouble(dG - dGl_gs) + ")</td>";
+        result += "<td> (+" + Print::printDouble((dGu_gs - dG) / 1000.0, 3) + "/-" + Print::printDouble((dG - dGl_gs) / 1000.0, 3) + ")</td>";
         result += "<td> M</td></tr>";
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dGl_gs).arg(dGu_gs);
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dGl_gs / 1000.0, 3).arg(dGu_gs / 1000.0, 3);
     }
 
     if (heat) {
@@ -383,10 +382,10 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
 
         if (!object.isEmpty()) {
             result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + Print::printDouble(H) + "</td>";
-            result += "<td> (+" + Print::printDouble(dH11u_gs - H) + "/-" + Print::printDouble(H - dH11l_gs) + ")</td>";
+            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + Print::printDouble(H / 1000.0, 3) + "</td>";
+            result += "<td> (+" + Print::printDouble((dH11u_gs - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l_gs) / 1000.0, 3) + ")</td>";
             result += "<td> M</td></tr>";
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dH11u_gs).arg(dH11l_gs);
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dH11u_gs / 1000.0, 3).arg(dH11l_gs / 1000.0, 3);
         }
 
         result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS) + "</td>";
@@ -406,6 +405,63 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     }
     result += "</table>";
 
+    return result;
+}
+
+QJsonObject PostGridSearch(const QList<QJsonObject>& models, qreal K, qreal T, int index, qreal H)
+{
+    qreal K11u_gs = 0, K11l_gs = 0, dH11l_gs = 0, dH11u_gs = 0;
+    qreal dGu_gs = 0, dGl_gs = 0, dSu_gs = 0, dSl_gs = 0;
+
+    dGu_gs = ToolSet::K2G(K, T);
+    dGl_gs = ToolSet::K2G(K, T);
+    dSu_gs = ToolSet::GHE(ToolSet::K2G(K, T), H, T);
+    dSl_gs = ToolSet::GHE(ToolSet::K2G(K, T), H, T);
+
+    for (const QJsonObject& model : qAsConst(models)) {
+        qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index];
+
+        K11l_gs = qMin(K11l_gs, K);
+        K11u_gs = qMax(K11u_gs, K);
+        QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
+        qreal H = local[index];
+
+        dH11l_gs = qMin(dH11l_gs, H);
+        dH11u_gs = qMax(dH11u_gs, H);
+
+        dGl_gs = qMin(dGl_gs, ToolSet::K2G(K, T));
+        dGu_gs = qMax(dGu_gs, ToolSet::K2G(K, T));
+
+        dSl_gs = qMin(dSl_gs, ToolSet::GHE(ToolSet::K2G(K, T), H, T));
+        dSu_gs = qMax(dSu_gs, ToolSet::GHE(ToolSet::K2G(K, T), H, T));
+    }
+
+    qreal dG = ToolSet::K2G(K, T);
+    qreal dS = ToolSet::GHE(dG, H, T);
+
+    QJsonObject result;
+    /*
+    QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
+    if (index_pair.second == 0) {
+        result["name"] = m_model.data()->GlobalParameterName(index_pair.first);
+        result["type"] = "Global Parameter";
+    } else if (index_pair.second == 1) {
+        result["name"] = m_model.data()->LocalParameterName(index_pair.first);
+        result["type"] = "Local Parameter";
+        result["index"] = QString::number(0) + "|" + QString::number(index_pair.first);
+    }
+    result["value"] = parameter[index];
+
+    QJsonObject confidence;
+    confidence["upper"] = upper;
+    confidence["lower"] = lower;
+    confidence["error"] = m_config.confidence;
+
+    result["confidence"] = confidence;
+    QJsonObject data;
+    data["x"] = ToolSet::DoubleList2String(x);
+    data["y"] = ToolSet::DoubleList2String(y);
+    result["data"] = data;*/
     return result;
 }
 

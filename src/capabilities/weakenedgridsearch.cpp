@@ -82,7 +82,9 @@ void WGSearchThread::Calculate()
     double value = param[m_index];
     m_last = value;
     NonLinearFitThread* thread = new NonLinearFitThread(false);
+
     while (m_steps < m_config.maxsteps && lowcount < 50 && upcount < 5) {
+
         value += (increment * m_direction);
         param[m_index] = value;
 
@@ -91,22 +93,26 @@ void WGSearchThread::Calculate()
         thread->setModel(m_model, false);
         thread->run();
         bool converged = thread->Converged();
+
         QJsonObject model;
+
         if (converged)
             model = thread->ConvergedParameter();
         else
             model = thread->BestIntermediateParameter();
         qreal new_error = thread->SumOfError();
 
-        if (!upcount)
-            m_last = value;
+        //        if (!upcount)
+        //            m_last = value;
 
         if (new_error > m_config.maxerror) {
             m_finished = new_error > m_config.maxerror;
             m_stationary = qAbs(new_error - error) < m_config.error_conv;
             upcount++;
+        } else {
+            m_models << model;
+            m_last = value;
         }
-        m_models << model;
         if (m_direction == 1) {
             m_x.append(value);
             m_y.append(new_error);
@@ -199,11 +205,8 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair = threads[i];
         int index = pair.first->ParameterId();
 
-        if(m_config.intermediate)
-        {
-            m_models << pair.second->IntermediateResults();
-            m_models << pair.first->IntermediateResults();
-        }
+        m_models << pair.second->IntermediateResults();
+        m_models << pair.first->IntermediateResults();
 
         QList<qreal> x, y;
         x << pair.second->XSeries() << pair.first->XSeries();
@@ -240,6 +243,10 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         delete pair.first;
         delete pair.second;
     }
+
+    if (!m_config.intermediate)
+        m_models.clear();
+
     return converged;
 }
 

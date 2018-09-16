@@ -573,6 +573,10 @@ public:
     /*! \brief Calculate standard type of grid search statistics */
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const;
 
+    /*! \brief Calculate standard type of grid search statistics */
+    virtual QVector<QJsonObject> PostGridSearch(QList<QJsonObject>& models) const { Q_UNUSED(models)
+        return QVector<QJsonObject>(); }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

@@ -696,7 +696,6 @@ void ModelWidget::LocalMinimize()
         return;
     Waiter wait;
     CollectParameters();
-    m_local_fits.clear();
     int result = 0;
     for (int i = 0; i < m_model->SeriesCount(); ++i) {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -715,7 +714,6 @@ void ModelWidget::LocalMinimize()
         result += m_minimizer->Minimize();
         QJsonObject json = m_minimizer->Parameter();
         emit AddModel(json);
-        m_local_fits << json;
     }
 
     if (result < m_model->SeriesCount())
