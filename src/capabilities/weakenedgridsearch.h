@@ -41,6 +41,7 @@ public:
     qreal error_conv = 1e-10;
     bool relax = true;
     bool fisher_statistic = false;
+    bool intermediate = false;
     QList<int> global_param, local_param;
 };
 

@@ -198,7 +198,13 @@ bool WeakenedGridSearch::ConfidenceAssesment()
     for (int i = 0; i < threads.size(); ++i) {
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair = threads[i];
         int index = pair.first->ParameterId();
-        m_models << pair.second->IntermediateResults();
+
+        if(m_config.intermediate)
+        {
+            m_models << pair.second->IntermediateResults();
+            m_models << pair.first->IntermediateResults();
+        }
+
         QList<qreal> x, y;
         x << pair.second->XSeries() << pair.first->XSeries();
         y << pair.second->YSeries() << pair.first->YSeries();

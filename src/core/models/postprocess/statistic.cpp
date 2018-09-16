@@ -32,30 +32,31 @@ bool FuzzyCompare(qreal a, qreal b, int prec = 3)
     return qAbs(a - b) < qPow(10, -prec);
 }
 
-QString MonteCarlo2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
+QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool heat)
 {
     QString result;
-
+    qreal K = 0, H = 0;
     qreal K11u = 0, K11l = 0, dH11l = 0, dH11u = 0;
 
-    int index_global = 0;
-    int index_local = 0;
+
     qreal error;
     if (!object.isEmpty()) {
         const QStringList keys = object.keys();
         for (int i = 0; i < keys.size(); ++i) {
             QJsonObject confidence = object[keys[i]].toObject()["confidence"].toObject();
-            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K)) {
+
+            if(QString::number(index) == keys[i])
+            {
                 K11u = confidence["upper"].toDouble();
                 K11l = confidence["lower"].toDouble();
-                index_global = object[keys[i]].toObject()["index"].toString().toInt();
                 error = 100 - confidence["error"].toDouble();
+                K = object[keys[i]].toObject()["value"].toDouble();
             }
 
-            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), H)) {
+            if (object[keys[i]].toObject()["index"].toString() == QString("0|%1").arg(index)) {
+                H = object[keys[i]].toObject()["value"].toDouble();
                 dH11u = confidence["upper"].toDouble();
                 dH11l = confidence["lower"].toDouble();
-                index_local = object[keys[i]].toObject()["index"].toString().split("|")[0].toInt();
             }
         }
     }
@@ -86,16 +87,16 @@ QString MonteCarlo2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
     if (!object.isEmpty())
         result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>kJ/mol</td></tr>").arg(dGl / 1000.0).arg(dGu / 1000.0);
 
-    if (!FuzzyCompare(H, 0)) {
+    if (heat) {
 
         QStringList models = object["controller"].toObject()["raw"].toObject().keys();
         QList<qreal> s;
 
         for (int i = 0; i < models.size(); ++i) {
             QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-            qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index_global];
+            qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index];
             QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
-            qreal H = local[index_local];
+            qreal H = local[index];
             s << ToolSet::GHE(ToolSet::K2G(K, T), H, T);
         }
 
@@ -270,41 +271,38 @@ QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
     return result;
 }
 
-QString GridSearch2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
+QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool heat)
 {
     QString result;
+    qreal K = 0, H = 0;
 
     qreal K11u = 0, K11l = 0, dH11l = 0, dH11u = 0;
     qreal K11u_gs = 0, K11l_gs = 0, dH11l_gs = 0, dH11u_gs = 0;
     qreal dGu_gs = 0, dGl_gs = 0, dSu_gs = 0, dSl_gs = 0;
 
-    int index_global = 0;
-    int index_local = 0;
-
     if (!object.isEmpty()) {
         const QStringList keys = object.keys();
         for (int i = 0; i < keys.size(); ++i) {
             QJsonObject confidence = object[keys[i]].toObject()["confidence"].toObject();
-            qDebug() << i << keys[i] << K << object[keys[i]].toObject()["value"].toDouble() << FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K);
-            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), K)) {
+            if(QString::number(index) == keys[i])
+            {
+                K = object[keys[i]].toObject()["value"].toDouble();
+
                 K11u = confidence["upper"].toDouble();
                 K11l = confidence["lower"].toDouble();
                 K11u_gs = K;
                 K11l_gs = K;
-                qDebug() << object[keys[i]].toObject()["index"].toString();
-                index_global = object[keys[i]].toObject()["index"].toString().toInt();
             }
 
-            if (FuzzyCompare(object[keys[i]].toObject()["value"].toDouble(), H)) {
+              if (object[keys[i]].toObject()["index"].toString() == QString("0|%1").arg(index)) {
+                H = object[keys[i]].toObject()["value"].toDouble();
                 dH11u = confidence["upper"].toDouble();
                 dH11l = confidence["lower"].toDouble();
                 dH11u_gs = H;
                 dH11l_gs = H;
-                index_local = object[keys[i]].toObject()["index"].toString().split("|")[0].toInt();
             }
         }
     }
-    qDebug() << index_global;
     dGu_gs = ToolSet::K2G(K, T);
     dGl_gs = ToolSet::K2G(K, T);
     dSu_gs = ToolSet::GHE(ToolSet::K2G(K, T), H, T);
@@ -314,13 +312,12 @@ QString GridSearch2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
 
     for (int i = 0; i < models.size(); ++i) {
         QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
-        qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index_global];
+        qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index];
 
         K11l_gs = qMin(K11l_gs, K);
         K11u_gs = qMax(K11u_gs, K);
-
         QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
-        qreal H = local[index_local];
+        qreal H = local[index];
 
         dH11l_gs = qMin(dH11l_gs, H);
         dH11u_gs = qMax(dH11u_gs, H);
@@ -373,7 +370,7 @@ QString GridSearch2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object)
         result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dGl_gs).arg(dGu_gs);
     }
 
-    if (!FuzzyCompare(H, 0)) {
+    if (heat) {
 
         result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0) + "</td>";
 

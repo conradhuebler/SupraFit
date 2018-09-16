@@ -172,6 +172,7 @@ set(models_SRC
                 src/core/models/titrations/ScriptModel.cpp
                 src/core/models/kinetics/mm_model.cpp
                 src/core/models/kinetics/monomolecularmodel.cpp
+                src/core/models/postprocess/statistic.cpp
 )
 
 add_library(models ${models_SRC})
@@ -188,7 +189,6 @@ set(utils_SRC
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp
                 src/core/toolset.cpp
-                src/core/statistic.cpp
                 src/global.cpp
 )
 

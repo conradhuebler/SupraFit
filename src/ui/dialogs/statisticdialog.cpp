@@ -247,6 +247,9 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_cv_f_value->setValue(m_f_value);
     m_cv_f_value->setDecimals(4);
     m_cv_f_value->setReadOnly(true);
+    m_store_wgsearch = new QCheckBox(tr("Store intermediate Models"));
+    m_store_wgsearch->setToolTip(tr("If checked, SupraFit will try to store ALL intermedate results. They are necessary to compute the confidence range for the single parameters \nAND dervied values, such as entropy. The downside are hugh files and sometimes data, that is to large to be handled resulting in an empty output!"));
+    layout->addWidget(m_store_wgsearch);
 
     connect(m_cv_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
     connect(m_cv_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
@@ -442,6 +445,7 @@ WGSConfig StatisticDialog::getWGSConfig()
     config.confidence = m_cv_maxerror->value();
     config.f_value = m_cv_f_value->value();
     config.error_conv = m_cv_err_conv->value();
+    config.intermediate = m_store_wgsearch->isChecked();
 
     QList<int> glob_param, local_param;
     int max = 0;

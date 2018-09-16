@@ -16,12 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/core/models/postprocess/statistic.h"
 
-#include "src/core/AbstractTitrationModel.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
-#include "src/core/statistic.h"
 
 #include <QDebug>
 #include <QtMath>

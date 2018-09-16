@@ -16,10 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
-#include "src/core/statistic.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -318,7 +318,7 @@ QString AbstractItcModel::ModelInfo() const
 
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::MonteCarlo2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT());
+        result += Statistic::MonteCarlo2Thermo(i, getT(), QJsonObject(), true);
     }
 
     return result;
@@ -379,7 +379,7 @@ QString AbstractItcModel::AnalyseMonteCarlo(const QJsonObject& object, bool forc
 
     auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::MonteCarlo2Thermo(GlobalParameter(i), LocalTable()->data(i, 0), getT(), object);
+        result += Statistic::MonteCarlo2Thermo(i, getT(), object, true);
     };
 
     for (int i = 0; i < GlobalParameterSize(); ++i)
@@ -399,7 +399,7 @@ QString AbstractItcModel::AnalyseGridSearch(const QJsonObject& object, bool forc
 
     auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::GridSearch2Thermo(GlobalParameter(i),  LocalTable()->data(i, 0), getT(), object);
+        result += Statistic::GridSearch2Thermo(i, getT(), object, true);
     };
 
     for (int i = 0; i < GlobalParameterSize(); ++i)

@@ -17,9 +17,10 @@
  * 
  */
 
+#include "src/core/models/postprocess/statistic.h"
+
 #include "libmath.h"
 #include "src/core/dataclass.h"
-#include "src/core/statistic.h"
 #include "src/core/toolset.h"
 
 #include <QtCore/QCollator>
@@ -183,7 +184,7 @@ QString AbstractTitrationModel::ModelInfo() const
 
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::MonteCarlo2Thermo(GlobalParameter(i), 0, getT());
+        result += Statistic::MonteCarlo2Thermo(i, getT());
     }
 
     return result;
@@ -208,7 +209,7 @@ QString AbstractTitrationModel::AnalyseMonteCarlo(const QJsonObject& object, boo
 
     auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::MonteCarlo2Thermo(GlobalParameter(i), 0, getT(), object);
+        result += Statistic::MonteCarlo2Thermo(i, getT(), object, false);
     };
 
     for (int i = 0; i < GlobalParameterSize(); ++i)
@@ -228,7 +229,7 @@ QString AbstractTitrationModel::AnalyseGridSearch(const QJsonObject& object, boo
 
     auto conf2therm = [&result, this](int i, const QJsonObject& object = QJsonObject()) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::GridSearch2Thermo(GlobalParameter(i), 0, getT(), object);
+        result += Statistic::GridSearch2Thermo(i, getT(), object, false);
     };
 
     for (int i = 0; i < GlobalParameterSize(); ++i)

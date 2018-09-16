@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/models.h"
-#include "src/core/statistic.h"
 #include "src/core/toolset.h"
 
 #include <QDebug>

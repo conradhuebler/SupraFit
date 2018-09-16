@@ -25,13 +25,13 @@
 
 namespace Statistic {
 
-QString MonteCarlo2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object = QJsonObject());
+QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object = QJsonObject(), bool heat = false);
 QString MonteCarlo2BC50_1(const qreal logK11, const QJsonObject& object);
 QString MonteCarlo2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
 QString MonteCarlo2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);
 QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
 
-QString GridSearch2Thermo(qreal K, qreal H, qreal T, const QJsonObject& object = QJsonObject());
+QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object = QJsonObject(), bool heat = false);
 QString GridSearch2BC50_1(const qreal logK11, const QJsonObject& object);
 QString GridSearch2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
 QString GridSearch2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);

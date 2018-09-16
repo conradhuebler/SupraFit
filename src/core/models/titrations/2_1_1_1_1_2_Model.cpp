@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+#include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/models.h"
-#include "src/core/statistic.h"
 #include "src/core/toolset.h"
 
 #include <Eigen/Dense>
@@ -293,7 +293,7 @@ QString IItoI_ItoI_ItoII_Model::AdditionalOutput() const
 {
     QString result = tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
     result += "<h4>without statistical data:</h4>";
-
+    /*
     auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
         result += "<p>Reaction: A + B &#8652; AB</p>";
         result += Statistic::MonteCarlo2Thermo(GlobalParameter(1), 0, getT(), object);
@@ -326,7 +326,7 @@ QString IItoI_ItoI_ItoII_Model::AdditionalOutput() const
         result += tr("<h4>Weakend Grid Search %1:</h4>").arg(i);
         conf2therm(getStatistic(SupraFit::Statistic::WeakenedGridSearch, i));
     }
-
+    */
     return result;
 }
 
