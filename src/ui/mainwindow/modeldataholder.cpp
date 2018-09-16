@@ -98,7 +98,7 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(hide);
     layout->addWidget(color);
-    QLabel* label = new QLabel("<html>" + modelwidget->Model()->Name() + "</html>");
+    QLabel* label = new QLabel("<html><pr>" + modelwidget->Model()->Name() + "</pre></html>");
     layout->addWidget(label);
     tools->setLayout(layout);
 

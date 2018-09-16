@@ -104,7 +104,7 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
         if (!model)
             data = dataclass->ProjectTitle();
         else {
-            data = Model2Name(qobject_cast<AbstractModel*>(dataclass)->SFModel());
+            data = qobject_cast<AbstractModel*>(dataclass)->Name();
         }
     }
     return data;

@@ -70,6 +70,7 @@ AbstractModel::AbstractModel(AbstractModel* model)
     , m_converged(model->m_converged)
     , m_locked_model(model->m_locked_model)
     , m_fast(true)
+    , m_name_cached(model->Name())
 {
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
     connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
@@ -107,6 +108,10 @@ void AbstractModel::PrepareParameter(int global, int local)
     DeclareOptions();
     LoadSystemParameter();
     UpdateParameter();
+    if (m_name_cached.isEmpty())
+        m_name = Model2Name(SFModel());
+    else
+        m_name = m_name_cached;
 }
 
 AbstractModel::~AbstractModel()
@@ -778,6 +783,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     toplevel["variance"] = m_variance;
     toplevel["standard_error"] = m_stderror;
     toplevel["converged"] = m_converged;
+    toplevel["name"] = m_name;
     if (m_locked_model || locked) {
 #ifdef _DEBUG
 //         qDebug() << "Writing calculated data to json file";
@@ -973,6 +979,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     m_variance = topjson["variance"].toInt();
     m_stderror = topjson["standard_error"].toInt();
     m_converged = topjson["converged"].toBool();
+    m_name = topjson["name"].toString();
 
     if (SFModel() != SupraFit::MetaModel)
         Calculate();

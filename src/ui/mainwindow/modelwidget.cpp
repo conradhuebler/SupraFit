@@ -317,9 +317,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     settings.endGroup();
     m_last_model = m_model->ExportModel(true, true);
-    QTimer::singleShot(1, this, SLOT(Repaint()));
-    emit m_model->Recalculated();
+
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
+    m_model->Calculate();
 }
 
 ModelWidget::~ModelWidget()
@@ -711,15 +711,11 @@ void ModelWidget::LocalMinimize()
         OptimizerConfig config = model->getOptimizerConfig();
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
-
+        model->setName(tr("%1 Series %2").arg(model->Name().remove("Model")).arg(i + 1));
         result += m_minimizer->Minimize();
-
         QJsonObject json = m_minimizer->Parameter();
+        emit AddModel(json);
         m_local_fits << json;
-
-        QSettings settings;
-        settings.beginGroup("minimizer");
-        settings.endGroup();
     }
 
     if (result < m_model->SeriesCount())

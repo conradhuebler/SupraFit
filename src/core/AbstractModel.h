@@ -121,7 +121,11 @@ public:
 
     /*! \brief Returns the name of the model
      */
-    inline QString Name() const { return Model2Name(SFModel()); }
+    inline QString Name() const { return m_name; }
+
+    /*! \brief Overrides the name of the model
+     */
+    inline void setName(const QString name) { m_name = name; }
 
     /*! \brief set the calculation style to bool fast
      * some useless loops will be omitted in AbstractModel::Calculation call
@@ -635,7 +639,7 @@ protected:
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
 
-    QString m_more_info;
+    QString m_more_info, m_name, m_name_cached;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished
