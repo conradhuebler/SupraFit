@@ -17,7 +17,8 @@
  * 
  */
 
-#include "src/client/console.h"
+#include "src/client/analyser.h"
+#include "src/client/simulator.h"
 
 #include "src/global.h"
 #include "src/global_config.h"
@@ -40,82 +41,173 @@ int main(int argc, char** argv)
     QCommandLineParser parser;
     Version(&app, &parser);
 
+    QCommandLineOption input(QStringList() << "i"
+                                           << "input",
+        QCoreApplication::translate("main", "Input file name"),
+        QCoreApplication::translate("main", "file"),
+        QCoreApplication::translate("main", ""));
+    parser.addOption(input);
+
+    QCommandLineOption output(QStringList() << "o"
+                                            << "output",
+        QCoreApplication::translate("main", "Output file name\nThis option can be used to convert files (*.json <-> *.suprafit) or to define a base name for simulated experiments."),
+        QCoreApplication::translate("main", "file"),
+        QCoreApplication::translate("main", ""));
+    parser.addOption(output);
+
+    parser.addOption({ { "l", "list" }, "List stored models." });
+
+    QCommandLineOption p(QStringList() << "p"
+                                       << "print",
+        QCoreApplication::translate("main", "Print model details. If empty print everything. Respects the statistic arguments\np - Project number\n m - Model number"),
+        QCoreApplication::translate("main", "p|m"),
+        QCoreApplication::translate("main", "0"));
+    parser.addOption(p);
+
+    QCommandLineOption t(QStringList() << "t"
+                                       << "task",
+        QCoreApplication::translate("main", "Define task to be done:\n a - Analyse Model \n g - Generate data\n o - Optimise Model \n s - Simulate experiments, optimise and analyse according to -s option"),
+        QCoreApplication::translate("main", "a g o s"),
+        QCoreApplication::translate("main", "o"));
+    parser.addOption(t);
+
+    QCommandLineOption statistic(QStringList() << "s"
+                                               << "statistic",
+        QCoreApplication::translate("main", "Statistical post processing to be done\n a - Akaike Information Criterion\n c - Cross Validation\n m - Monte Carlo Simulation\n o - Model Comparison\n r - Reduction Analyse\n w- Weakend Grid Search"),
+        QCoreApplication::translate("main", "a c m o r w"),
+        QCoreApplication::translate("main", "acmorw"));
+    parser.addOption(statistic);
+
     QCommandLineOption experiments(QStringList() << "e"
                                                  << "experiments",
-        QCoreApplication::translate("main", "Number of experiments"),
+        QCoreApplication::translate("main", "Number of experiments ( will only be evaluated if -t/--task s"),
         QCoreApplication::translate("main", "number"),
         QCoreApplication::translate("main", "1000"));
     parser.addOption(experiments);
 
-    QCommandLineOption threads(QStringList() << "t"
-                                             << "threads",
-        QCoreApplication::translate("main", "Number of threads"),
-        QCoreApplication::translate("main", "threads"),
-        QCoreApplication::translate("main", "4"));
-    parser.addOption(threads);
-
-    QCommandLineOption _std(QStringList() << "s"
-                                          << "std",
+    QCommandLineOption _std(QStringList() << "v"
+                                          << "variance",
         QCoreApplication::translate("main", "Standard deviation for the data generation"),
         QCoreApplication::translate("main", "standard deviation"),
         QCoreApplication::translate("main", "0.001"));
     parser.addOption(_std);
-    parser.addOption({ { "u", "reduction" }, "Enable Reduction analysis." });
-    parser.addOption({ { "c", "crossvalidation" }, "Enable Cross Validation analysis." });
-    parser.addOption({ { "m", "montecarlo" }, "Enable Monte Carlo analysis." });
-    parser.addOption({ { "o", "modelcomparison" }, "Enable Model Comparison analysis." });
-    parser.addOption({ { "w", "weakendgrid" }, "Enable Weakend Grid Search analysis." });
+
+    QCommandLineOption threads(QStringList() << "n"
+                                             << "nproc",
+        QCoreApplication::translate("main", "Number of process to be run"),
+        QCoreApplication::translate("main", "threads"),
+        QCoreApplication::translate("main", "4"));
+    parser.addOption(threads);
 
     parser.process(app);
 
-    const QStringList args = parser.positionalArguments();
+    std::cout << SupraFit::about().toStdString() << std::endl;
 
+    const QString infile = parser.value("i");
+
+    if (infile.isEmpty()) {
+        std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
+        std::cout << "The simplest task for SupraFit to be done is opening a file and writing a project to disk." << std::endl;
+        std::cout << "That would be like converting a *.json file to a *.suprafit file or vice versa :-)" << std::endl;
+        std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl;
+
+        parser.showHelp(0);
+    }
+
+    QString outfile = parser.value("o");
+
+    if (outfile.isEmpty())
+        outfile = infile;
+
+    const QString print = parser.value("print");
+    const QString task = parser.value("task");
+    std::cout << "Task is " << task.toStdString() << std::endl;
     int exp = parser.value("e").toInt();
-    qreal std = parser.value("s").toDouble();
-    bool reduction = parser.isSet("u");
-    bool crossvalidation = parser.isSet("c");
-    bool montecarlo = parser.isSet("m");
-    bool modelcomparison = parser.isSet("o");
-    bool weakendgrid = parser.isSet("w");
+    qreal std = parser.value("v").toDouble();
+
+    bool reduction = parser.value("statistic").contains("r");
+    bool crossvalidation = parser.value("statistic").contains("c");
+    bool montecarlo = parser.value("statistic").contains("m");
+    bool modelcomparison = parser.value("statistic").contains("o");
+    bool weakendgrid = parser.value("statistic").contains("w");
+
+    bool list = parser.isSet("l");
     qApp->instance()->setProperty("threads", parser.value("t").toInt());
     qApp->instance()->setProperty("series_confidence", true);
 
-    std::cout << SupraFit::about().toStdString() << std::endl;
-    std::cout << "No. Experiments to be simulated " << exp << std::endl;
-    std::cout << "Standard Deviation to be used " << std << std::endl;
-    std::cout << "Reduction Analysis is turn on: " << reduction << std::endl;
-    std::cout << "Cross Validation is turn on: " << crossvalidation << std::endl;
-    std::cout << "Monte Carlo Simulation is turn on: " << montecarlo << std::endl;
-    std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
-    std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
-    std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
+    if (task.isEmpty() || task.isNull()) {
+        list = parser.isSet("l");
+        if (infile == outfile && !list) {
+            /*
+            std::cout << "Input file and output file are the same AND nothing set to be done." << std::endl;
+            std::cout << "For conversation of files type something like: " << std::endl;
+            std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl;
+            */
 
-#ifdef _DEBUG
-    qDebug() << "Debug output enabled, good fun!";
-#endif
+            /* Lets take this as print model details */
 
-    int count = 0;
-
-    for (const QString& file : args) {
-        if (!file.isEmpty() && !file.isNull()) {
-            Console console(exp, std);
-
-            console.setReduction(reduction);
-            console.setCrossValidation(crossvalidation);
-            console.setModelComparison(modelcomparison);
-            console.setWeakendGridSearch(weakendgrid);
-            console.setMonteCarlo(montecarlo);
-
-            if (console.LoadFile(file)) {
-                ++count;
-                console.FullTest();
-            }
+            return app.exec();
         }
-    }
+        if (list) {
+            /* Here comes some simple json tree analyser */
 
-    if (!count) {
-        std::cout << "Nothing found to be done" << std::endl;
-        return 0;
-    } else
+            return app.exec();
+        }
+
+        if (infile != outfile) {
+            /* Lets load the file (if projects, load several and the save them to the new name */
+
+            return app.exec();
+        }
+
+    } else if (task == "a") {
+        std::cout << "Reduction Analysis is turn on: " << reduction << std::endl;
+        std::cout << "Cross Validation is turn on: " << crossvalidation << std::endl;
+        std::cout << "Monte Carlo Simulation is turn on: " << montecarlo << std::endl;
+        std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
+        std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
+        std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
+        Analyser analyse;
+
+        analyse.setReduction(reduction);
+        analyse.setCrossValidation(crossvalidation);
+        analyse.setModelComparison(modelcomparison);
+        analyse.setWeakendGridSearch(weakendgrid);
+        analyse.setMonteCarlo(montecarlo);
+        analyse.setInFile(infile);
+        analyse.setOutFile(outfile);
+        /* We need to adopt this to work on the models stored */
+
         return app.exec();
+    } else if (task == "g") {
+        /* Something completely different */
+
+        return app.exec();
+    } else if (task == "o") {
+
+        /* Load every model stored in this file and optimise it ... */
+
+        return app.exec();
+    } else if (task == "s") {
+        std::cout << "No. Experiments to be simulated " << exp << std::endl;
+        std::cout << "Standard Deviation to be used " << std << std::endl;
+        std::cout << "Reduction Analysis is turn on: " << reduction << std::endl;
+        std::cout << "Cross Validation is turn on: " << crossvalidation << std::endl;
+        std::cout << "Monte Carlo Simulation is turn on: " << montecarlo << std::endl;
+        std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
+        std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
+        std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
+        Simulator simulator(exp, std);
+
+        simulator.setReduction(reduction);
+        simulator.setCrossValidation(crossvalidation);
+        simulator.setModelComparison(modelcomparison);
+        simulator.setWeakendGridSearch(weakendgrid);
+        simulator.setMonteCarlo(montecarlo);
+        simulator.setInFile(infile);
+        simulator.setOutFile(outfile);
+        simulator.FullTest();
+
+        return app.exec();
+    }
 }

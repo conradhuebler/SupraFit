@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- Re-Enable local fits, results are stored in tree view
 - Formatted Monte Carlo Confidence output for thermodynamics and BC50 values
 - Scaling of x axis can be set in system parameters for several models
 - Removing models from meta models removes them from meta models, not only from UI

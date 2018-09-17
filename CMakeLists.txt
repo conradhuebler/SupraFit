@@ -248,7 +248,9 @@ endif(WIN32)
 
 set(suprafit_cli_SRCS
                 src/core/minimizer.cpp # whatsoever ...
-                src/client/console.cpp
+                src/client/suprafit_cli.cpp
+                src/client/analyser.cpp
+                src/client/simulator.cpp
                 src/client/main.cpp
           )
           

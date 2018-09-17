@@ -192,7 +192,6 @@ inline void Version(QCoreApplication* app, QCommandLineParser* parser)
     parser->setApplicationDescription("A Open Source Qt5 based fitting tool for supramolecular titration experiments.");
     parser->addHelpOption();
     parser->addVersionOption();
-    parser->addPositionalArgument("input file", QCoreApplication::translate("main", "File to open."));
 }
 
 inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)

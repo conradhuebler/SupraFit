@@ -37,6 +37,7 @@ int main(int argc, char** argv)
     QCommandLineParser parser;
 
     Version(&app, &parser);
+    parser.addPositionalArgument("input file", QCoreApplication::translate("main", "File to open."));
     parser.process(app);
 
     const QStringList args = parser.positionalArguments();

@@ -36,25 +36,25 @@
 #include "src/core/models.h"
 #include "src/core/toolset.h"
 
-#include "console.h"
+#include "simulator.h"
 
-Console::Console(int runs, double std)
+Simulator::Simulator(int runs, double std)
     : m_runs(runs)
     , m_std(std)
 {
 }
 
-Console::~Console()
+Simulator::~Simulator()
 {
     if (m_data)
         delete m_data;
 }
 
-bool Console::LoadFile(const QString& file)
+bool Simulator::LoadFile()
 {
-    m_file = file;
+
     QJsonObject m_toplevel;
-    if (JsonHandler::ReadJsonFile(m_toplevel, m_file)) {
+    if (JsonHandler::ReadJsonFile(m_toplevel, m_infile)) {
         m_data = new DataClass(m_toplevel["data"].toObject());
         if (m_data->DataPoints() != 0) {
 #ifdef _DEBUG
@@ -68,9 +68,12 @@ bool Console::LoadFile(const QString& file)
     return false;
 }
 
-bool Console::FullTest()
+bool Simulator::FullTest()
 {
-    quint64 seed = QDateTime::currentMSecsSinceEpoch();
+    if (!LoadFile())
+        return false;
+
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
     rng.seed(seed);
 #ifdef _DEBUG
@@ -97,6 +100,7 @@ bool Console::FullTest()
         data->DependentModel()->Debug();
 #endif
         QSharedPointer<AbstractModel> model_1to1 = Test11Model(data);
+
         Test(model_1to1);
 
         QSharedPointer<AbstractModel> model_2to1 = Test2111Model(data);
@@ -119,12 +123,10 @@ bool Console::FullTest()
 
         toplevel["model_3"] = model_2to2->ExportModel();
 
-
         toplevel["data"] = dataObject;
 
-
-        if (JsonHandler::WriteJsonFile(toplevel, m_file + "_" + QString::number(i) + ".suprafit"))
-            std::cout << QString(m_file + "_" + QString::number(i) + ".suprafit").toStdString() << " successfully written to disk" << std::endl;
+        if (JsonHandler::WriteJsonFile(toplevel, QString(m_outfile + "_" + QString::number(i) + m_extension)))
+            std::cout << QString(m_outfile + "_" + QString::number(i) + m_extension).toStdString() << " successfully written to disk" << std::endl;
 
         //         if(model_table)
         //             delete model_table;
@@ -134,7 +136,7 @@ bool Console::FullTest()
     return true;
 }
 
-void Console::Test(QSharedPointer<AbstractModel> model)
+void Simulator::Test(QSharedPointer<AbstractModel> model)
 {
 
     std::cout << "********************************************************************************************************" << std::endl;
@@ -196,7 +198,7 @@ void Console::Test(QSharedPointer<AbstractModel> model)
     }
 }
 
-void Console::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model)
+void Simulator::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model)
 {
     if (object.isEmpty())
         return;
@@ -205,7 +207,7 @@ void Console::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractM
     //     qDebug() << object;
 }
 
-QJsonObject Console::MonteCarlo(QSharedPointer<AbstractModel> model)
+QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
 {
     MCConfig config;
     config.maxsteps = 1000;
@@ -221,7 +223,7 @@ QJsonObject Console::MonteCarlo(QSharedPointer<AbstractModel> model)
     return result;
 }
 
-QJsonObject Console::MoCoAnalyse(QSharedPointer<AbstractModel> model)
+QJsonObject Simulator::MoCoAnalyse(QSharedPointer<AbstractModel> model)
 {
     MoCoConfig config;
     config.mc_steps = 1000;
@@ -231,7 +233,6 @@ QJsonObject Console::MoCoAnalyse(QSharedPointer<AbstractModel> model)
     qreal error = model.data()->SumofSquares();
 
     config.maxerror = error * (config.f_value * model.data()->Parameter() / (model.data()->Points() - model.data()->Parameter()) + 1);
-    ;
 
     ModelComparison* statistic = new ModelComparison(config, this);
     statistic->setModel(model);
@@ -244,7 +245,7 @@ QJsonObject Console::MoCoAnalyse(QSharedPointer<AbstractModel> model)
     return res;
 }
 
-QJsonObject Console::Reduction(QSharedPointer<AbstractModel> model)
+QJsonObject Simulator::Reduction(QSharedPointer<AbstractModel> model)
 {
     ReductionAnalyse* statistic = new ReductionAnalyse(model->getOptimizerConfig());
     statistic->setModel(model);
@@ -257,7 +258,7 @@ QJsonObject Console::Reduction(QSharedPointer<AbstractModel> model)
     return result;
 }
 
-QJsonObject Console::CrossValidation(QSharedPointer<AbstractModel> model)
+QJsonObject Simulator::CrossValidation(QSharedPointer<AbstractModel> model)
 {
     ReductionAnalyse* statistic = new ReductionAnalyse(model->getOptimizerConfig());
     statistic->setModel(model);
@@ -273,7 +274,7 @@ QJsonObject Console::CrossValidation(QSharedPointer<AbstractModel> model)
     return result;
 }
 
-QJsonObject Console::GridSearch(QSharedPointer<AbstractModel> model)
+QJsonObject Simulator::GridSearch(QSharedPointer<AbstractModel> model)
 {
     WGSConfig config;
     config.f_value = model->finv(0.95);

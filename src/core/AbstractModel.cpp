@@ -979,7 +979,9 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     m_variance = topjson["variance"].toInt();
     m_stderror = topjson["standard_error"].toInt();
     m_converged = topjson["converged"].toBool();
-    m_name = topjson["name"].toString();
+
+    if (topjson.contains("name"))
+        m_name = topjson["name"].toString();
 
     if (SFModel() != SupraFit::MetaModel)
         Calculate();

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "suprafit_cli.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
 
@@ -28,29 +30,21 @@ class DataClass;
 /**
  * @todo write docs
  */
-class Console : public QObject {
+class Simulator : public SupraFitCli {
     Q_OBJECT
 
 public:
-    Console(int runs, double std);
-    ~Console();
+    explicit Simulator(int runs, double std);
+    virtual ~Simulator();
 
     bool FullTest();
-    bool LoadFile(const QString& file);
 
-    inline void setReduction(bool val) { m_reduction = val; }
-    inline void setCrossValidation(bool val) { m_crossvalidation = val; }
-    inline void setMonteCarlo(bool val) { m_montecarlo = val; }
-    inline void setModelComparison(bool val) { m_modelcomparison = val; }
-    inline void setWeakendGridSearch(bool val) { m_weakendgrid = val; }
+    bool LoadFile();
 
 private:
     QJsonObject m_toplevel;
-    QString m_file;
     int m_runs;
     double m_std;
-
-    bool m_reduction, m_crossvalidation, m_montecarlo, m_modelcomparison, m_weakendgrid;
 
     inline QSharedPointer<AbstractModel> Test11Model(QPointer<DataClass> data)
     {
