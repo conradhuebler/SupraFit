@@ -58,7 +58,7 @@ bool Simulator::LoadFile()
         m_data = new DataClass(m_toplevel["data"].toObject());
         if (m_data->DataPoints() != 0) {
 #ifdef _DEBUG
-            qDebug() << m_file << " successfully loaded";
+            qDebug() << m_infile << " successfully loaded";
             qDebug() << m_toplevel;
 #endif
             return true;
@@ -283,7 +283,6 @@ QJsonObject Simulator::GridSearch(QSharedPointer<AbstractModel> model)
     qreal error = model.data()->SumofSquares();
 
     config.maxerror = error * (config.f_value * model.data()->Parameter() / (model.data()->Points() - model.data()->Parameter()) + 1);
-    ;
 
     WeakenedGridSearch* statistic = new WeakenedGridSearch(config, this);
     statistic->setModel(model);

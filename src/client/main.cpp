@@ -68,7 +68,7 @@ int main(int argc, char** argv)
                                        << "task",
         QCoreApplication::translate("main", "Define task to be done:\n a - Analyse Model \n g - Generate data\n o - Optimise Model \n s - Simulate experiments, optimise and analyse according to -s option"),
         QCoreApplication::translate("main", "a g o s"),
-        QCoreApplication::translate("main", "o"));
+        QCoreApplication::translate("main", ""));
     parser.addOption(t);
 
     QCommandLineOption statistic(QStringList() << "s"
@@ -85,9 +85,9 @@ int main(int argc, char** argv)
         QCoreApplication::translate("main", "1000"));
     parser.addOption(experiments);
 
-    QCommandLineOption _std(QStringList() << "v"
-                                          << "variance",
-        QCoreApplication::translate("main", "Standard deviation for the data generation"),
+    QCommandLineOption _std(QStringList() << "g"
+                                          << "gaussian",
+        QCoreApplication::translate("main", "Standard deviation for the gaussian error added in simulation."),
         QCoreApplication::translate("main", "standard deviation"),
         QCoreApplication::translate("main", "0.001"));
     parser.addOption(_std);
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     const QString task = parser.value("task");
     std::cout << "Task is " << task.toStdString() << std::endl;
     int exp = parser.value("e").toInt();
-    qreal std = parser.value("v").toDouble();
+    qreal std = parser.value("g").toDouble();
 
     bool reduction = parser.value("statistic").contains("r");
     bool crossvalidation = parser.value("statistic").contains("c");
@@ -132,10 +132,11 @@ int main(int argc, char** argv)
     bool weakendgrid = parser.value("statistic").contains("w");
 
     bool list = parser.isSet("l");
-    qApp->instance()->setProperty("threads", parser.value("t").toInt());
+    qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
 
     if (task.isEmpty() || task.isNull()) {
+        std::cout << "No task is not set, lets do the standard stuff ..." << std::endl;
         list = parser.isSet("l");
         if (infile == outfile && !list) {
             /*
@@ -146,20 +147,20 @@ int main(int argc, char** argv)
 
             /* Lets take this as print model details */
 
-            return app.exec();
+            return 0;
         }
         if (list) {
             /* Here comes some simple json tree analyser */
 
-            return app.exec();
+            return 0;
         }
 
         if (infile != outfile) {
             /* Lets load the file (if projects, load several and the save them to the new name */
 
-            return app.exec();
+            return 0;
         }
-
+        return 0;
     } else if (task == "a") {
         std::cout << "Reduction Analysis is turn on: " << reduction << std::endl;
         std::cout << "Cross Validation is turn on: " << crossvalidation << std::endl;
@@ -178,16 +179,16 @@ int main(int argc, char** argv)
         analyse.setOutFile(outfile);
         /* We need to adopt this to work on the models stored */
 
-        return app.exec();
+        return 0;
     } else if (task == "g") {
         /* Something completely different */
 
-        return app.exec();
+        return 0;
     } else if (task == "o") {
 
         /* Load every model stored in this file and optimise it ... */
 
-        return app.exec();
+        return 0;
     } else if (task == "s") {
         std::cout << "No. Experiments to be simulated " << exp << std::endl;
         std::cout << "Standard Deviation to be used " << std << std::endl;
@@ -208,6 +209,6 @@ int main(int argc, char** argv)
         simulator.setOutFile(outfile);
         simulator.FullTest();
 
-        return app.exec();
+        return 0;
     }
 }

@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+
 #include "suprafit_cli.h"
 
 SupraFitCli::SupraFitCli()
