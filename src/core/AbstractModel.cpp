@@ -1015,7 +1015,7 @@ QString AbstractModel::RandomInput(const QVector<double>& indep, const QVector<d
 
     QString input;
     QPointer<DataTable> indep_model = IndependentModel()->PrepareMC(indep, rng);
-    QPointer<DataTable> dep_model = DependentModel()->PrepareMC(dep, rng);
+    QPointer<DataTable> dep_model = ModelTable()->PrepareMC(dep, rng);
 
     QStringList x = indep_model->ExportAsStringList();
     QStringList y = dep_model->ExportAsStringList();

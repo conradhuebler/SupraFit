@@ -155,7 +155,8 @@ void Simulator::Test(QSharedPointer<AbstractModel> model)
     thread->setModel(model);
     thread->run();
     model->ImportModel(thread->Model());
-
+    model->setFast(false);
+    model->Calculate();
     /*
      * Then we should print out the model data
      */
@@ -211,6 +212,7 @@ QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
 {
     MCConfig config;
     config.maxsteps = 1000;
+    config.variance = model->StdDeviation();
     QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
     QJsonObject result;
     statistic->setModel(model);
