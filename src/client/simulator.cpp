@@ -81,6 +81,7 @@ bool Simulator::FullTest()
     m_data->IndependentModel()->Debug();
     m_data->DependentModel()->Debug();
 #endif
+    QJsonObject table = m_data->DependentModel()->ExportTable(true);
     for (int i = 0; i < m_runs; ++i) {
         std::cout << "########################################################################################################" << std::endl;
         std::cout << "########################################################################################################" << std::endl
@@ -89,12 +90,14 @@ bool Simulator::FullTest()
                   << std::endl;
         std::cout << "Generating new Data Table for Monte Carlo Simulation" << std::endl;
         std::normal_distribution<double> Phi = std::normal_distribution<double>(0, m_std);
+        m_data->DependentModel()->ImportTable(table);
         QPointer<DataTable> model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
 #ifdef _DEBUG
         model_table->Debug();
 #endif
         QPointer<DataClass> data = new DataClass(m_data);
         data->setDependentTable(model_table);
+        data->NewUUID();
 #ifdef _DEBUG
         data->IndependentModel()->Debug();
         data->DependentModel()->Debug();

@@ -34,7 +34,7 @@ public:
     inline void setOutFile(const QString& file)
     {
         m_outfile = file;
-        m_outfile.contains(".suprafit") ? m_extension = ".suprafit" : m_extension = ".json";
+        m_outfile.contains(".json") ? m_extension = ".json" : m_extension = ".suprafit";
         m_outfile.remove(".json").remove(".suprafit");
     }
 

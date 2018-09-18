@@ -229,6 +229,8 @@ public:
 
     inline QString UUID() const { return d->m_uuid; }
 
+    void NewUUID();
+
     virtual inline int Size() const { return DataPoints(); }
     virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
     virtual inline int DataPoints() const { return d->m_dependent_model->rowCount(); }

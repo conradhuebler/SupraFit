@@ -48,6 +48,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QGraphicsBlurEffect>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QListWidget>
@@ -213,7 +214,15 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
     Q_UNUSED(action)
 
     QString string = data->text();
-
+    qDebug() << string;
+    if (string.contains("file:///")) {
+        QStringList list = string.split("\n");
+        for (QString str : list) {
+            if (!str.isEmpty() && !str.isNull())
+                emit LoadFile(str.remove("file://"));
+        }
+        return true;
+    }
     if (row == -1 && column == -1 && !index.isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
         emit AddMetaModel(d->Index(), -1);
@@ -280,6 +289,7 @@ SupraFitGui::SupraFitGui()
     connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
+    connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
 
     m_project_view->setModel(m_project_tree);
     m_project_view->setDragEnabled(true);
@@ -287,7 +297,10 @@ SupraFitGui::SupraFitGui()
     m_project_view->setDropIndicatorShown(true);
     m_project_view->setDragDropMode(QAbstractItemView::DragDrop);
 
+    QLabel* logo = new QLabel;
+    logo->setPixmap(QPixmap(":/misc/logo_small.png"));
     m_stack_widget = new QStackedWidget;
+    m_stack_widget->addWidget(logo);
 
     m_filename_line = new QLineEdit;
     m_filename_line->setClearButtonEnabled(true);
@@ -384,7 +397,7 @@ SupraFitGui::SupraFitGui()
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeClicked);
 
-    m_mainsplitter->hide();
+    //m_mainsplitter->hide();
     setWindowIcon(QIcon(":/misc/suprafit.png"));
 }
 
@@ -397,21 +410,22 @@ SupraFitGui::~SupraFitGui()
 void SupraFitGui::LoadFile(const QString& file)
 {
     if (file.contains("json") || file.contains("suprafit")) {
-        m_splash->show();
-        m_mainsplitter->hide();
+        QTimer::singleShot(0, m_splash, &QSplashScreen::show);
+        m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
     }
     bool invalid_json = false;
     if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
         invalid_json = !LoadProject(file);
         if (!invalid_json) {
-            m_mainsplitter->show();
+            m_mainsplitter->setGraphicsEffect(NULL);
             QTimer::singleShot(1, m_splash, &QSplashScreen::close);
             return;
         }
     } else {
         ImportTable(file);
     }
-    m_mainsplitter->show();
+    m_mainsplitter->setGraphicsEffect(NULL);
+
     QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 
     if (invalid_json)
@@ -922,7 +936,10 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
     for (int i = m_meta_models.size() - 1; i >= 0; --i)
         if (!m_meta_models[i])
             m_meta_models.remove(i);
-
+    if (m_data_list.size() == 0) {
+        m_supr_file.clear();
+        m_filename_line->clear();
+    }
     UpdateTreeView(true);
 }
 
@@ -942,6 +959,7 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
     connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
+    connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
 
     if (m_project_list.size())
         m_project_list.first()->show();

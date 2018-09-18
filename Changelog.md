@@ -1,5 +1,7 @@
 # SupraFit 2.0 pre-Alpha
 
+- projects can be loaded by droping files in the tree view
+- add fancy blur effect while loading projects
 - Re-Enable local fits, results are stored in tree view
 - Formatted Monte Carlo Confidence output for thermodynamics and BC50 values
 - Scaling of x axis can be set in system parameters for several models

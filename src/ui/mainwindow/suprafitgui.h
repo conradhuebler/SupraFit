@@ -117,6 +117,7 @@ signals:
     void CopySystemParameter(const QModelIndex& source, int position);
     void UiMessage(const QString& str);
     void CopyModel(const QModelIndex& source, int data, int model);
+    void LoadFile(const QString& file);
 };
 
 class SupraFitGui : public QMainWindow {

@@ -766,6 +766,12 @@ DataClass::~DataClass()
 {
 }
 
+void DataClass::NewUUID()
+{
+    QUuid uuid;
+    d->m_uuid = uuid.createUuid().toString();
+}
+
 QList<double> DataClass::getSignals(QList<int> active_signal)
 {
     if (active_signal.size() < SeriesCount())
