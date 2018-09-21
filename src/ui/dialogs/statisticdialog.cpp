@@ -608,6 +608,7 @@ void StatisticDialog::HideWidget()
     m_progress->setMinimum(0);
     m_tab_widget->setDisabled(false);
     m_hidden = true;
+    QDialog::hide();
 }
 
 void StatisticDialog::Update()

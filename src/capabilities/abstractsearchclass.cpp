@@ -68,8 +68,9 @@ QJsonObject AbstractSearchClass::Result() const
     if (m_models.size()) {
         if (models["0"].toObject() == m_models[0])
             controller["raw"] = models;
-        result["controller"] = controller;
     }
+    result["controller"] = controller;
+
     return result;
 }
 

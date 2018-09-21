@@ -214,12 +214,15 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
     Q_UNUSED(action)
 
     QString string = data->text();
-    qDebug() << string;
     if (string.contains("file:///")) {
         QStringList list = string.split("\n");
         for (QString str : list) {
             if (!str.isEmpty() && !str.isNull())
+#ifdef _WIN32
+                emit LoadFile(str.remove("file:///"));
+#else
                 emit LoadFile(str.remove("file://"));
+#endif
         }
         return true;
     }
