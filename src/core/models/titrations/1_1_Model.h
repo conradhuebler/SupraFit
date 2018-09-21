@@ -67,14 +67,14 @@ public:
         else
             return i + 3;
     }
-    virtual QString AdditionalOutput() const override;
-
     virtual QString ParameterComment(int parameter) const override;
 
     virtual QString ModelInfo() const override;
 
     QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const;
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+
+    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
 protected:
     virtual void CalculateVariables() override;

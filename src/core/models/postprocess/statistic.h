@@ -37,4 +37,6 @@ QString GridSearch2BC50_1(const qreal logK11, const QJsonObject& object);
 QString GridSearch2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonObject& object);
 QString GridSearch2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonObject& object);
 QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal logK12, const QJsonObject& object);
+
+QString PseudoANOVA(const QPointer<const AbstractModel>& model);
 }

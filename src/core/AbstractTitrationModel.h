@@ -92,6 +92,9 @@ public:
     virtual MassResults MassBalance(qreal A, qreal B);
     inline QPointer<DataTable> getConcentrations() const { return m_concentrations; }
     inline QPointer<DataTable> getConcentrations() { return m_concentrations; }
+
+    inline Vector getConcentration(int row) const { return m_concentrations->Row(row); }
+
     /*! \brief we have two concentrations for all titration models, host and guest
      */
     virtual inline int InputParameterSize() const override { return 2; }
@@ -137,6 +140,8 @@ public:
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QString ParameterComment(int parameter) const = 0;
+
+    virtual QString AdditionalOutput() const override;
 
     //  virtual QVector<QJsonObject> PostGridSearch(const QList<QJsonObject> &models) const override;
 

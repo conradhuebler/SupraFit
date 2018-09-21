@@ -140,6 +140,31 @@ void IItoI_ItoI_Model::CalculateVariables()
     }
 }
 
+QVector<qreal> IItoI_ItoI_Model::DeCompose(int datapoint, int series) const
+{
+    QString method = getOption(Method);
+
+    QVector<qreal> vector;
+
+    qreal host_0 = InitialHostConcentration(datapoint);
+
+    Vector concentration = getConcentration(datapoint);
+
+    qreal host = concentration(1);
+
+    qreal complex_21 = concentration(3);
+    qreal complex_11 = concentration(4);
+
+    if (method == "UV/VIS")
+        host_0 = 1;
+
+    vector << host / host_0 * LocalTable()->data(0, series);
+    vector << 2 * complex_21 / host_0 * LocalTable()->data(1, series);
+    vector << complex_11 / host_0 * LocalTable()->data(2, series);
+
+    return vector;
+}
+
 QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
@@ -172,45 +197,6 @@ QSharedPointer<AbstractModel> IItoI_ItoI_Model::Clone()
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;
-}
-
-QString IItoI_ItoI_Model::AdditionalOutput() const
-{
-    QString result = tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
-    result += "<h4>without statistical data:</h4>";
-    /*
-    auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
-        result += "<p>Reaction: A + B &#8652; AB</p>";
-        result += Thermo::Statistic2Thermo(GlobalParameter(1), 0, getT(), object);
-        result += "<p>Reaction: AB + A &#8652; A<sub>2</sub>B</p>";
-        result += Thermo::Statistic2Thermo(GlobalParameter(0), 0, getT(), object);
-    };
-
-    conf2therm();
-
-    if (!m_fast_confidence.isEmpty()) {
-        result += "<h4>Statistics from Fast Confidence Calculation:</h4>";
-        conf2therm(m_fast_confidence);
-    }
-
-    for (int i = 0; i < getMCStatisticResult(); ++i) {
-        if (static_cast<SupraFit::Statistic>(getStatistic(SupraFit::Statistic::MonteCarlo, i)["controller"].toObject()["method"].toInt()) == SupraFit::Statistic::MonteCarlo) {
-            result += tr("<h4>Monte Carlo Simulation %1:</h4>").arg(i);
-            conf2therm(getStatistic(SupraFit::Statistic::MonteCarlo, i));
-        }
-    }
-
-    for (int i = 0; i < getMoCoStatisticResult(); ++i) {
-        result += tr("<h4>Model Comparison %1:</h4>").arg(i);
-        conf2therm(getStatistic(SupraFit::Statistic::ModelComparison, i));
-    }
-
-    for (int i = 0; i < getWGStatisticResult(); ++i) {
-        result += tr("<h4>Weakend Grid Search %1:</h4>").arg(i);
-        conf2therm(getStatistic(SupraFit::Statistic::WeakenedGridSearch, i));
-    }
-    */
-    return result;
 }
 
 QString IItoI_ItoI_Model::ParameterComment(int parameter) const

@@ -190,6 +190,26 @@ QString AbstractTitrationModel::ModelInfo() const
     return result;
 }
 
+QString AbstractTitrationModel::AdditionalOutput() const
+{
+    QString result = ModelInfo() + "\n";
+    result += "Idividual contribution to the signal";
+
+    for (int i = 0; i < SeriesCount(); ++i) {
+        result += QString("Series %1 ... Individual contributions ...\n").arg(i + 1);
+        for (int j = 0; j < DataPoints(); ++j) {
+            QVector<qreal> vector = DeCompose(j, i);
+            result += QString("%1\t%2").arg(j + 1).arg(ModelTable()->data(i, j));
+            for (int k = 0; k < vector.size(); ++k)
+                result += QString("\t%1").arg(vector[k]);
+            result += "\n";
+        }
+        result += QString("Series %1 ... Individual contributions done\n\n\n").arg(i);
+    }
+    result += Statistic::PseudoANOVA(this);
+    return result;
+}
+
 QString AbstractTitrationModel::AnalyseStatistic(bool forceAll) const
 {
     QString result;

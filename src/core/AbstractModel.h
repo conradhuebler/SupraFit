@@ -577,6 +577,7 @@ public:
     virtual QVector<QJsonObject> PostGridSearch(QList<QJsonObject>& models) const { Q_UNUSED(models)
         return QVector<QJsonObject>(); }
 
+    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const { return QVector<qreal>(); }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

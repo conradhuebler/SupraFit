@@ -611,4 +611,44 @@ QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
 
     return result;
 }
+
+QString PseudoANOVA(const QPointer<const AbstractModel>& model)
+{
+    QString result;
+
+    for (int i = 0; i < model->SeriesCount(); ++i) {
+        QVector<QVector<qreal>> values;
+        QVector<qreal> mean;
+        QVector<qreal> std;
+        for (int j = 0; j < model->DataPoints(); ++j) {
+            QVector<qreal> vector = QVector<qreal>() << model->ModelTable()->data(i, j) << model->DeCompose(j, i);
+            if (!mean.size())
+                mean = QVector<qreal>(vector.size(), 0);
+            values << vector;
+            for (int k = 0; k < vector.size(); ++k)
+                mean[k] += vector[k];
+        }
+
+        for (int k = 0; k < mean.size(); ++k)
+            mean[k] /= double(model->DataPoints());
+        std = QVector<qreal>(mean.size(), 0);
+        for (int j = 0; j < model->DataPoints(); ++j) {
+            for (int k = 0; k < mean.size(); ++k) {
+                values[j][k] -= mean[k];
+                std[k] += qPow(values[j][k], 2);
+            }
+        }
+        for (int k = 0; k < mean.size(); ++k)
+            std[k] = qSqrt(std[k] / (double(model->DataPoints() - 1)));
+        //qDebug() << mean;
+        //qDebug() << std;
+        result += QString("Series %1: Contribution:").arg(i);
+
+        for (int k = 1; k < std.size(); ++k)
+            result += QString("\t%1").arg(std[k] / std[0]);
+        result += "\n";
+    }
+
+    return result;
+}
 }

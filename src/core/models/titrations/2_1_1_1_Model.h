@@ -79,7 +79,6 @@ public:
         return i;
     }
 
-    virtual QString AdditionalOutput() const override;
 
     /*! \brief Calculate standard type of monte carlo statistics */
     virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
@@ -89,6 +88,8 @@ public:
     virtual QString ModelInfo() const override;
 
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+
+    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
 protected:
     virtual void CalculateVariables() override;

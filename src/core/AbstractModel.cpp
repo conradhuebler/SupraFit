@@ -688,6 +688,7 @@ QString AbstractModel::Model2Text() const
     text += "\n";
     text += ErrorTable()->ExportAsString();
     text += "\n\n";
+    text += AdditionalOutput();
     text += "###############################################################################################\n\n";
     text += AnalyseStatistic();
     text += "\n\n###############################################################################################";
