@@ -197,15 +197,23 @@ void AbstractModel::SetValue(int i, int j, qreal value)
         value = 0;
         m_corrupt = true;
     }
+    QVector<qreal> mean_series(SeriesCount(), 0);
+    QVector<int> used_series(SeriesCount(), 0);
     if (Type() != 3) {
         if (!m_locked_model)
             m_model_signal->data(j, i) = value;
         m_model_error->data(j, i) = m_model_signal->data(j, i) - DependentModel()->data(j, i);
         m_sum_absolute += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
         m_sum_squares += qPow(m_model_signal->data(j, i) - DependentModel()->data(j, i), 2);
+        // m_mean += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
         m_mean += m_model_signal->data(j, i) - DependentModel()->data(j, i);
+
+        mean_series[j] += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
+        used_series[j]++;
         m_used_variables++;
     }
+    m_used_series = used_series;
+    m_mean_series = mean_series;
 }
 
 void AbstractModel::Calculate()
@@ -235,6 +243,9 @@ void AbstractModel::Calculate()
     if (m_fast)
         return;
 
+    for (int i = 0; i < m_used_series.size(); ++i)
+        m_mean_series[i] /= double(m_used_series[i]);
+
     m_variance = CalculateVariance();
     m_stderror = qSqrt(m_variance) / qSqrt(m_used_variables);
     m_SEy = qSqrt(m_sum_squares / (m_used_variables - LocalParameterSize() - GlobalParameterSize()));
@@ -259,16 +270,21 @@ qreal AbstractModel::CalculateVariance()
 {
     qreal v = 0;
     int count = 0;
+    QVector<qreal> variance(SeriesCount(), 0);
     for (int i = 0; i < DataPoints(); ++i) {
         for (int j = 0; j < SeriesCount(); ++j) {
             if (!ActiveSignals(j))
                 continue;
             if (DependentModel()->isChecked(j, i)) {
                 v += qPow(m_model_error->data(j, i) - m_mean, 2);
+                variance[j] += qPow(m_model_error->data(j, i) - m_mean_series[j], 2);
                 count++;
             }
         }
     }
+    for (int i = 0; i < variance.size(); ++i)
+        variance[i] /= qSqrt(double(m_used_series[i] - 1));
+    m_variance_series = variance;
     return v / (count - 1);
 }
 /*

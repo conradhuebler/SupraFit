@@ -297,8 +297,10 @@ public:
     inline int Points() const { return m_used_variables; }
     inline int Parameter() const { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
-    inline qreal Variance() const { return m_variance; }
-    inline qreal StdDeviation() const { return qSqrt(m_variance); }
+    inline qreal Variance() const { return m_sum_squares / double(Points() - Parameter()); }
+    inline qreal StdDeviation() const { return qSqrt(m_sum_squares / double(Points() - Parameter())); }
+    inline qreal StdDeviation(int i) const { return qSqrt(SumOfErrors(i) / (double(DataPoints() - GlobalParameterSize() - LocalParameterSize(i)))); }
+
     inline qreal StdError() const { return m_stderror; }
     inline qreal SEy() const { return m_SEy; }
     inline qreal ChiSquared() const { return m_chisquared; }
@@ -314,7 +316,7 @@ public:
 
     /*! \brief Demand initial guess
      * An initial guess will be demanded, if it fails, the guess will be automatically calculated
-     * when all requirement are met
+     * when all requirements are met
      */
     inline void InitialGuess()
     {
@@ -624,7 +626,8 @@ protected:
     //FIXME more must be
     QVector<double*> m_opt_para;
     QVector<QPair<int, int>> m_local_index, m_global_index, m_opt_index;
-    QVector<qreal> m_parameter;
+    QVector<qreal> m_parameter, m_variance_series, m_mean_series;
+    QVector<int> m_used_series;
 
     QList<QJsonObject> m_mc_statistics;
     QList<QJsonObject> m_wg_statistics;

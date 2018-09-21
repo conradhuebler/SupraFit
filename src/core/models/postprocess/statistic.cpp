@@ -645,7 +645,7 @@ QString PseudoANOVA(const QPointer<const AbstractModel>& model)
         result += QString("Series %1: Contribution:").arg(i);
 
         for (int k = 1; k < std.size(); ++k)
-            result += QString("\t%1").arg(std[k] / std[0]);
+            result += QString("\t%1").arg(std[k] / model->StdDeviation(i));
         result += "\n";
     }
 
