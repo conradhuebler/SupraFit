@@ -151,7 +151,7 @@ QWidget* StatisticDialog::MonteCarloWidget()
     if (m_model) {
         m_varianz_box->setDecimals(5);
         m_varianz_box->setSingleStep(1e-2);
-        m_varianz_box->setValue(m_model.data()->StdDeviation());
+        m_varianz_box->setValue(m_model.data()->SEy());
     } else {
         m_varianz_box->setDisabled(true);
         m_varianz_box->setToolTip(tr("Standard Deviation of each model will be set automatically."));

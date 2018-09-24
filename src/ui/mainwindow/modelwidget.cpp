@@ -809,7 +809,7 @@ void ModelWidget::OpenAdvancedSearch()
 void ModelWidget::ExportSimModel()
 {
     bool ok;
-    qreal scatter = QInputDialog::getDouble(this, tr("Set Standard Deviation"), tr("Set Standard Deviation for scatter"), m_model->StdDeviation(), 0, 2147483647, 4, &ok);
+    qreal scatter = QInputDialog::getDouble(this, tr("Set Standard Deviation"), tr("Set Standard Deviation for scatter"), m_model->SEy(), 0, 2147483647, 4, &ok);
     if (ok) {
         QString content = m_model->RandomInput(0, scatter);
 

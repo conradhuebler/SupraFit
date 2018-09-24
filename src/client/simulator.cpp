@@ -215,7 +215,7 @@ QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
 {
     MCConfig config;
     config.maxsteps = 1000;
-    config.variance = model->StdDeviation();
+    config.variance = model->SEy();
     QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
     QJsonObject result;
     statistic->setModel(model);

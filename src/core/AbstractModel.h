@@ -297,12 +297,13 @@ public:
     inline int Points() const { return m_used_variables; }
     inline int Parameter() const { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
-    inline qreal Variance() const { return m_sum_squares / double(Points() - Parameter()); }
-    inline qreal StdDeviation() const { return qSqrt(m_sum_squares / double(Points() - Parameter())); }
-    inline qreal StdDeviation(int i) const { return qSqrt(SumOfErrors(i) / (double(DataPoints() - GlobalParameterSize() - LocalParameterSize(i)))); }
+    inline qreal Variance() const { return m_variance; }
+    inline qreal StdDeviation() const { return qSqrt(m_variance); }
 
     inline qreal StdError() const { return m_stderror; }
     inline qreal SEy() const { return m_SEy; }
+    inline qreal SEy(int i) const { return qSqrt(SumOfErrors(i) / (double(DataPoints() - GlobalParameterSize() - LocalParameterSize(i)))); }
+
     inline qreal ChiSquared() const { return m_chisquared; }
     inline qreal CovFit() const { return m_covfit; }
 

@@ -687,7 +687,7 @@ void ModelDataHolder::MCStatistic(MCConfig config)
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
 
-        config.variance = m_model_widgets[i]->Model()->StdDeviation();
+        config.variance = m_model_widgets[i]->Model()->SEy();
         m_model_widgets[i]->MCStatistic(config);
 
         if (!m_allow_loop)
