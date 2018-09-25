@@ -21,8 +21,14 @@
 
 #include <QtCore/QMutex>
 
+#include <QtGui/QPainter>
+#include <QtGui/QTextDocument>
+
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QRadioButton>
+#include <QtWidgets/QStyledItemDelegate>
 
 #include "src/capabilities/reductionanalyse.h"
 
@@ -42,13 +48,57 @@ class WGSConfig;
 class MCConfig;
 class MoCoConfig;
 
+class RadioButton : public QRadioButton {
+    Q_OBJECT
+
+public:
+    RadioButton(const QString& str)
+        : QRadioButton(str)
+    {
+    }
+
+protected:
+    void paint(QPainter* painter) const
+    {
+        /*
+        QStyleOptionViewItemV4 options = option;
+        initStyleOption();
+        */
+        painter->save();
+
+        QTextDocument doc;
+        doc.setHtml(text());
+
+        /* options.text = "";
+        options.widget->style()->drawControl(QStyle::CE_ItemViewItem, &options, painter);
+        options.widget->style()->drawControl(QStyle::CE_ComboBoxLabel, &options, painter);
+
+        painter->translate(options.rect.left(), options.rect.top());*/
+        QRect clip(0, 0, width(), height());
+        doc.drawContents(painter, clip);
+
+        painter->restore();
+    }
+
+    QSize sizeHint() const override
+    {
+        /*
+        QStyleOptionViewItemV4 options = option;
+        initStyleOption(&options);
+        */
+        QTextDocument doc;
+        doc.setHtml(text());
+        return QSize(doc.idealWidth(), doc.size().height());
+    }
+};
+
 class StatisticDialog : public QDialog {
     Q_OBJECT
 
 public:
     StatisticDialog(QSharedPointer<AbstractModel> m_model, QWidget* parent = 0);
     StatisticDialog(QWidget* parent = 0);
-    ~StatisticDialog();
+    virtual ~StatisticDialog();
 
     MCConfig getMCConfig();
     WGSConfig getWGSConfig();
@@ -58,6 +108,11 @@ public:
     inline void setRuns(int runs) { m_runs = runs; }
     virtual void setVisible(bool visible) override;
     inline bool UseChecked() const { return m_use_checked->isChecked(); }
+    inline bool isMCStd() const { return m_mc_std->isChecked(); }
+    inline bool isMCSEy() const { return m_mc_sey->isChecked(); }
+    inline bool isMCUser() const { return m_mc_user->isChecked(); }
+    inline qreal MCStd() const { return m_varianz_box->value(); }
+
     void updateUI();
 
 public slots:
@@ -89,6 +144,7 @@ private:
     QProgressBar* m_progress;
     QLabel *m_time_info, *m_cv_error_info, *m_moco_error_info;
     QRadioButton *m_cv_loo, *m_cv_l2o;
+    QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user;
     QMutex mutex;
 
     QWeakPointer<AbstractModel> m_model;

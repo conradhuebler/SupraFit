@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- improve monte carlos' standard deviation input (std, SEy, user defined)
 - projects can be loaded by droping files in the tree view
 - add fancy blur effect while loading projects
 - Re-Enable local fits, results are stored in tree view

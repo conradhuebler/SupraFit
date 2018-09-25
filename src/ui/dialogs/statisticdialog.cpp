@@ -147,27 +147,72 @@ QWidget* StatisticDialog::MonteCarloWidget()
     layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
     layout->addWidget(m_mc_steps, 0, 1);
 
+    m_mc_std = new QRadioButton; //(tr("<html>Input &sigma;</html>"));
+    m_mc_std->setMaximumWidth(30);
+    m_mc_sey = new QRadioButton; //(tr("<html>SE<sub>y</sub>"));
+    m_mc_sey->setMaximumWidth(30);
+    m_mc_user = new QRadioButton; //(tr("<html>User defined &sigma;</html>"));
+    m_mc_user->setMaximumWidth(30);
+
     m_varianz_box = new QDoubleSpinBox;
-    if (m_model) {
-        m_varianz_box->setDecimals(5);
-        m_varianz_box->setSingleStep(1e-2);
+    m_varianz_box->setDecimals(5);
+    m_varianz_box->setSingleStep(1e-2);
+
+    layout->addWidget(new QLabel(tr("<html>Standard Deviation &sigma;</html>")), 1, 0);
+    layout->addWidget(m_varianz_box, 1, 1);
+
+    QHBoxLayout* hlayout = new QHBoxLayout;
+
+    hlayout->addWidget(new QLabel(tr("is taken as:")));
+
+    hlayout->addWidget(m_mc_sey);
+    QLabel* txt = new QLabel(tr("<html>&sigma; from Model</html>"));
+    hlayout->addWidget(txt);
+    ;
+
+    hlayout->addWidget(m_mc_std);
+    txt = new QLabel(tr("<html>SE<sub>y</sub> from Model"));
+    hlayout->addWidget(txt);
+
+    hlayout->addWidget(m_mc_user);
+    txt = new QLabel(tr("<html>manually defined &sigma;</html>"));
+    hlayout->addWidget(txt);
+
+    m_mc_sey->setChecked(true);
+    m_varianz_box->setReadOnly(!m_mc_user->isChecked());
+    if (m_model)
         m_varianz_box->setValue(m_model.data()->SEy());
-    } else {
-        m_varianz_box->setDisabled(true);
-        m_varianz_box->setToolTip(tr("Standard Deviation of each model will be set automatically."));
-    }
-    if (m_model) {
-        layout->addWidget(new QLabel(tr("<html>Standard Deviation &sigma;</html>")), 1, 0);
-        layout->addWidget(m_varianz_box, 1, 1);
-    }
+
+    connect(m_mc_std, &QRadioButton::toggled, m_mc_std, [this]() {
+        if (m_mc_std->isChecked() && m_model) {
+            m_varianz_box->setValue(m_model.data()->StdDeviation());
+            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
+        }
+    });
+
+    connect(m_mc_sey, &QRadioButton::toggled, m_mc_sey, [this]() {
+        if (m_mc_sey->isChecked() && m_model) {
+            m_varianz_box->setValue(m_model.data()->SEy());
+            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
+        }
+    });
+
+    connect(m_mc_user, &QRadioButton::toggled, m_mc_user, [this]() {
+        if (m_mc_user->isChecked()) {
+            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
+            m_varianz_box->setValue(1e-3);
+        }
+    });
+
+    layout->addLayout(hlayout, 2, 0, 1, 2);
 
     m_original = new QCheckBox;
     m_original->setText(tr("Use Original Data"));
-    layout->addWidget(m_original, 2, 0);
+    layout->addWidget(m_original, 3, 0);
 
     m_bootstrap = new QCheckBox;
     m_bootstrap->setText(tr("Bootstrap"));
-    layout->addWidget(m_bootstrap, 2, 1);
+    layout->addWidget(m_bootstrap, 3, 1);
 
     QVBoxLayout* indep_layout = new QVBoxLayout;
     if (m_model.data()) {
@@ -187,9 +232,9 @@ QWidget* StatisticDialog::MonteCarloWidget()
             indep_layout->addLayout(layout);
         }
     }
-    layout->addLayout(indep_layout, 3, 0, 1, 2);
+    layout->addLayout(indep_layout, 4, 0, 1, 2);
     m_mc = new QPushButton(tr("Simulate"));
-    layout->addWidget(m_mc, 4, 0, 1, 2);
+    layout->addWidget(m_mc, 5, 0, 1, 2);
 
     connect(m_mc, &QPushButton::clicked, this, [this]() {
         emit MCStatistic(getMCConfig());
@@ -613,7 +658,10 @@ void StatisticDialog::HideWidget()
 
 void StatisticDialog::Update()
 {
-    m_varianz_box->setValue(m_model.data()->StdDeviation());
+    if (m_mc_sey->isChecked())
+        m_varianz_box->setValue(m_model.data()->SEy());
+    else if (m_mc_std->isChecked())
+        m_varianz_box->setValue(m_model.data()->StdDeviation());
     CalculateError();
 }
 

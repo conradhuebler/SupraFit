@@ -293,6 +293,7 @@ void MDHDockTitleBar::EnableBatch(bool enabled)
     m_close_all->setEnabled(enabled);
     m_statistics->setEnabled(enabled);
     m_optimize->setEnabled(enabled);
+    m_analyse->setEnabled(enabled);
 }
 
 void MDHDockTitleBar::PrepareAddModel()
@@ -339,6 +340,7 @@ ModelDataHolder::ModelDataHolder()
     });
 
     layout->addWidget(m_modelsWidget, 1, 0);
+    ActiveBatch();
 }
 
 ModelDataHolder::~ModelDataHolder()
@@ -687,7 +689,13 @@ void ModelDataHolder::MCStatistic(MCConfig config)
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
 
-        config.variance = m_model_widgets[i]->Model()->SEy();
+        if (m_statistic_dialog->isMCStd())
+            config.variance = m_model_widgets[i]->Model()->StdDeviation();
+        else if (m_statistic_dialog->isMCSEy())
+            config.variance = m_model_widgets[i]->Model()->SEy();
+        else
+            config.variance = m_statistic_dialog->MCStd();
+
         m_model_widgets[i]->MCStatistic(config);
 
         if (!m_allow_loop)
