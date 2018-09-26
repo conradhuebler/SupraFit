@@ -320,11 +320,13 @@ SupraFitGui::SupraFitGui()
     logo->setPixmap(QPixmap(":/misc/logo_small.png"));
     m_stack_widget = new QStackedWidget;
     m_stack_widget->addWidget(logo);
+    m_stack_widget->setObjectName("project_mainwindow");
 
     m_filename_line = new QLineEdit;
     m_filename_line->setClearButtonEnabled(true);
     connect(m_filename_line, &QLineEdit::textChanged, this, [this](const QString& str) { this->m_supr_file = str; });
     QWidget* widget = new QWidget;
+    widget->setObjectName("project_list");
     QGridLayout* layout = new QGridLayout;
 
     layout->addWidget(new QLabel(tr("Filename:")), 0, 0);
@@ -333,6 +335,7 @@ SupraFitGui::SupraFitGui()
     widget->setLayout(layout);
 
     m_mainsplitter = new QSplitter(Qt::Horizontal);
+    m_mainsplitter->setObjectName(tr("project_splitter"));
     m_mainsplitter->addWidget(widget);
     m_mainsplitter->addWidget(m_stack_widget);
 
@@ -382,13 +385,6 @@ SupraFitGui::SupraFitGui()
     m_main_toolbar->addAction(m_save_as);
     m_main_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     addToolBar(m_main_toolbar);
-
-    /*m_model_toolbar = new QToolBar;
-    m_model_toolbar->setObjectName(tr("model_toolbar"));
-    m_model_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    m_model_toolbar->addAction(m_importmodel);
-    m_model_toolbar->addAction(m_export);
-    addToolBar(m_model_toolbar);*/
 
     m_system_toolbar = new QToolBar;
     m_system_toolbar->setObjectName(tr("system_toolbar"));
@@ -478,7 +474,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
      * in it, prevents suprafit to crash while loading to many (2!) models in one mainwindow
      * lets fix it sometimes
      */
-    QPointer<MainWindow> window = new MainWindow(m_stack_widget);
+    QPointer<MainWindow> window = new MainWindow();
     if (object["data"].toObject().contains("model")) {
         m_cached_meta << object;
         return true;
@@ -986,8 +982,9 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
     connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
     connect(m_project_tree, &ProjectTree::LoadJsonObject, this, &SupraFitGui::LoadJson);
 
-    if (m_project_list.size())
-        m_project_list.first()->show();
+    if (m_project_list.size()) {
+        m_stack_widget->setCurrentWidget(m_project_list.first()); //->show();
+    }
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)

@@ -21,7 +21,6 @@
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/modeldataholder.h"
-#include "src/ui/mainwindow/modelhistorywidget.h"
 #include "src/ui/widgets/optimizerwidget.h"
 
 #include <QtCore/QFile>
@@ -44,7 +43,7 @@ class ModelDataHolder;
 
 struct OptimizerConfig;
 
-class MainWindow : public QWidget {
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
@@ -75,13 +74,14 @@ public slots:
     // void LoadFile(const QString& file);
 
 private:
+    void ReadGeometry();
+    void WriteSettings();
+
     void setActionEnabled(bool enabled);
-    void WriteSettings(bool ignore_window_state = true);
 
     QPointer<QSplitter> m_mainsplitter;
     QPointer<ChartWidget> m_charts;
     QPointer<ModelDataHolder> m_model_dataholder;
-    QPointer<ModelHistory> m_historywidget;
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QSharedPointer<DataClass> m_data;
     bool m_hasData, m_meta_model = false;
@@ -95,8 +95,6 @@ private:
     QFile m_file, m_stdout;
 
 private slots:
-    void InsertHistoryElement(const QJsonObject& model);
-    void InsertHistoryElement(const QJsonObject& model, int active);
     void EditData();
 
 signals:

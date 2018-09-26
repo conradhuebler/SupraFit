@@ -61,7 +61,7 @@
 #include "mainwindow.h"
 
 MainWindow::MainWindow(QWidget* parent)
-    : QWidget(parent)
+    : QMainWindow(parent)
 {
     m_model_dataholder = new ModelDataHolder;
     m_modeldock = new QDockWidget(tr("Workspace"), this);
@@ -79,44 +79,24 @@ MainWindow::MainWindow(QWidget* parent)
     m_chartdock->setWidget(m_charts);
     m_chartdock->setTitleBarWidget(m_charts->TitleBarWidget());
     m_chartdock->setToolTip(tr("This <strong>chart widget</strong> contains the charts for the calculated models and the model errors!"));
-    //connect(m_charts->TitleBarWidget(), &ChartDockTitleBar::close, m_chartdock, &QDockWidget::close);
 
-    /*m_historywidget = new ModelHistory(this);
-    QScrollArea* history_scroll = new QScrollArea(this);
-    history_scroll->setWidget(m_historywidget);
-    history_scroll->setWidgetResizable(true);
-    history_scroll->setAlignment(Qt::AlignTop);
-    m_history_dock = new QDockWidget("Models Stack");
-    m_history_dock->setObjectName(tr("history"));
-    m_history_dock->setWidget(history_scroll);
-    m_history_dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable);
-    m_history_dock->setMaximumWidth(240);
-    m_history_dock->setMinimumWidth(240);
-    m_history_dock->setToolTip(tr("This widget contains the <strong>stack</strong>, where <strong>models</strong> appear!"));
-    */
     m_mainsplitter = new QSplitter(Qt::Horizontal);
+    m_mainsplitter->setObjectName("model_splitter");
     m_mainsplitter->addWidget(m_modeldock);
     m_mainsplitter->addWidget(m_chartdock);
 
+    /*
     QGridLayout* layout = new QGridLayout;
 
     layout->addWidget(m_mainsplitter, 0, 0);
     setLayout(layout);
+    */
+    setCentralWidget(m_mainsplitter);
 
-    //addDockWidget(Qt::LeftDockWidgetArea, m_history_dock, Qt::Horizontal);
-#warning lets have sometimes something else than this history dock
-    //addDockWidget(Qt::LeftDockWidgetArea, m_modeldock, Qt::Horizontal);
-    //addDockWidget(Qt::RightDockWidgetArea, m_chartdock);
-
-    connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject, int)), this, SLOT(InsertHistoryElement(QJsonObject, int)), Qt::DirectConnection);
     // connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
-    connect(m_model_dataholder, SIGNAL(InsertModel(QJsonObject)), this, SLOT(InsertHistoryElement(QJsonObject)), Qt::DirectConnection);
-    //  connect(m_historywidget, SIGNAL(AddJson(QJsonObject)), m_model_dataholder, SLOT(AddToWorkspace(QJsonObject)));
-    //  connect(m_historywidget, SIGNAL(LoadJson(QJsonObject)), m_model_dataholder, SLOT(LoadCurrentProject(QJsonObject)));
     connect(m_model_dataholder, &ModelDataHolder::ModelAdded, this, &MainWindow::ModelsChanged);
     connect(m_model_dataholder, &ModelDataHolder::ModelRemoved, this, &MainWindow::ModelsChanged);
 
-    //setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AnimatedDocks | QMainWindow::VerticalTabs);
 
     setStyleSheet("QSplitter::handle:vertical {"
                   "background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
@@ -127,13 +107,15 @@ MainWindow::MainWindow(QWidget* parent)
                   "margin-bottom: 2px;"
                   "border-radius: 4px;"
                   "}");
-    // qApp->installEventFilter(this);
+    setWindowFlag(Qt::Widget);
+    ReadGeometry();
 }
 
 MainWindow::~MainWindow()
 {
     m_model_dataholder->CloseAllForced();
     m_data.clear();
+    WriteSettings();
 }
 
 QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
@@ -177,16 +159,6 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<Cha
 }
 
 
-void MainWindow::InsertHistoryElement(const QJsonObject& model)
-{
-    // m_historywidget->InsertElement(model);
-}
-
-void MainWindow::InsertHistoryElement(const QJsonObject& model, int active)
-{
-    // m_historywidget->InsertElement(model, active);
-}
-
 void MainWindow::EditData()
 {
     int version = m_data->ExportData()["SupraFit"].toInt();
@@ -210,6 +182,24 @@ void MainWindow::EditData()
 void MainWindow::setCurrentTab(int index)
 {
     m_model_dataholder->setCurrentTab(index);
+}
+
+void MainWindow::ReadGeometry()
+{
+    QSettings _settings;
+    _settings.beginGroup("model");
+    restoreGeometry(_settings.value("geometry").toByteArray());
+    restoreState(_settings.value("state").toByteArray());
+    _settings.endGroup();
+}
+
+void MainWindow::WriteSettings()
+{
+    QSettings _settings;
+    _settings.beginGroup("model");
+    _settings.setValue("geometry", saveGeometry());
+    _settings.setValue("state", saveState());
+    _settings.endGroup();
 }
 
 #include "mainwindow.moc"
