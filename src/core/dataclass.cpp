@@ -888,7 +888,12 @@ bool DataClass::ImportData(const QJsonObject& topjson)
         d->m_title = topjson["title"].toString();
     }
     if (fileversion > 1603) {
-        d->m_uuid = topjson["uuid"].toString();
+        if (!topjson["uuid"].toString().isEmpty())
+            d->m_uuid = topjson["uuid"].toString();
+        else {
+            QUuid uuid;
+            d->m_uuid = uuid.createUuid().toString();
+        }
     } else {
         QUuid uuid;
         d->m_uuid = uuid.createUuid().toString();

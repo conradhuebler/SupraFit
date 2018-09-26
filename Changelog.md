@@ -1,5 +1,7 @@
 # SupraFit 2.0 pre-Alpha
 
+- 'Click and Copy' Copy of SSE, SEy and standard deviation to ClipBoard
+- 'Drag and Drop' Model Simulation from calculated data
 - improve monte carlos' standard deviation input (std, SEy, user defined)
 - projects can be loaded by droping files in the tree view
 - add fancy blur effect while loading projects

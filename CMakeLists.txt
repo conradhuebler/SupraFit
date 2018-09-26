@@ -223,6 +223,7 @@ set(suprafit_SRCS
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
                 src/ui/widgets/chartview.cpp
+                src/ui/widgets/extwidget.cpp
                 src/ui/widgets/listchart.cpp
                 src/ui/widgets/buttons/spinbox.h
                 src/ui/widgets/buttons/scientificbox.h

@@ -44,6 +44,7 @@
 
 #include "src/ui/widgets/buttons/spinbox.h"
 #include "src/ui/widgets/chartview.h"
+#include "src/ui/widgets/extwidget.h"
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/modelelement.h"
@@ -216,6 +217,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         const_layout->addWidget(m_minimize_all);
 
     m_layout->addLayout(const_layout);
+    m_layout->addWidget(new extWidget(m_model, this));
 
     //    if (!m_val_readonly) {
     m_model_options_widget = new OptionsWidget(m_model);

@@ -118,6 +118,7 @@ signals:
     void UiMessage(const QString& str);
     void CopyModel(const QModelIndex& source, int data, int model);
     void LoadFile(const QString& file);
+    void LoadJsonObject(const QJsonObject& object);
 };
 
 class SupraFitGui : public QMainWindow {
@@ -132,7 +133,7 @@ public slots:
     void LoadFile(const QString& file);
 
 private:
-    void LoadJson(const QJsonObject& json);
+    void LoadJson(const QJsonObject& str);
     void setActionEnabled(bool enabled);
     void ReadSettings();
     void ReadGeometry();

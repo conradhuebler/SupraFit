@@ -426,7 +426,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
 
     for (int i = 0; i < int(peaks->size()); ++i) {
 
-        if (peaks->size() == m_baseline.baselines.size()) {
+        if (peaks->size() == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0) {
             baseline = m_baseline.baselines[i];
             for (int j = 0; j < int(m_baseline.x_grid_points[i].size()); ++j) {
                 m_base_grids->append(m_baseline.x_grid_points[i][j], m_baseline.y_grid_points[i][j]);
@@ -434,6 +434,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
         }
         (*peaks)[i].max = ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
         PeakPick::IntegrateNumerical(original, (*peaks)[i], baseline);
+
         (*peaks)[i].integ_num -= m_const_offset->value();
 
         for (int j = (*peaks)[i].start; j <= int((*peaks)[i].end); ++j)

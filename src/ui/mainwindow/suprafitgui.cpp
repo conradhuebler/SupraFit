@@ -36,6 +36,7 @@
 #include "src/ui/mainwindow/modelwidget.h"
 
 #include <QtCore/QDebug>
+#include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QMimeData>
 #include <QtCore/QSettings>
@@ -196,6 +197,8 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
     Q_UNUSED(action)
 
     QString string = data->text();
+    QString sprmodel = data->data("application/x-suprafitmodel");
+
     // const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
     if (row == -1 && column == -1)
@@ -214,6 +217,18 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
     Q_UNUSED(action)
 
     QString string = data->text();
+
+    QByteArray sprmodel = data->data("application/x-suprafitmodel");
+    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+
+    if (!doc.isEmpty()) {
+        emit LoadJsonObject(doc.object());
+        return true;
+    }
+
+    if (string.isEmpty() || string.isNull())
+        return false;
+
     if (string.contains("file:///")) {
         QStringList list = string.split("\n");
         for (QString str : list) {
@@ -293,6 +308,7 @@ SupraFitGui::SupraFitGui()
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
     connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
+    connect(m_project_tree, &ProjectTree::LoadJsonObject, this, &SupraFitGui::LoadJson);
 
     m_project_view->setModel(m_project_tree);
     m_project_view->setDragEnabled(true);
@@ -438,6 +454,11 @@ void SupraFitGui::LoadFile(const QString& file)
 void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
+}
+
+void SupraFitGui::LoadJson(const QJsonObject& str)
+{
+    SetData(str, "noname");
 }
 
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
@@ -963,6 +984,7 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
     connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
+    connect(m_project_tree, &ProjectTree::LoadJsonObject, this, &SupraFitGui::LoadJson);
 
     if (m_project_list.size())
         m_project_list.first()->show();

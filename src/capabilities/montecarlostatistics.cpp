@@ -137,6 +137,7 @@ void MonteCarloBatch::optimise()
     thread->run();
 
     m_finished = thread->Converged();
+
     m_model->setConverged(m_finished);
     m_models << thread->ConvergedParameter();
 
