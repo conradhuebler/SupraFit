@@ -327,11 +327,24 @@ SupraFitGui::SupraFitGui()
     connect(m_filename_line, &QLineEdit::textChanged, this, [this](const QString& str) { this->m_supr_file = str; });
     QWidget* widget = new QWidget;
     widget->setObjectName("project_list");
+
+    m_export_plain = new QPushButton(tr("Raw"));
+    m_export_plain->setFlat(true);
+    m_export_plain->setMaximumWidth(75);
+    connect(m_export_plain, &QPushButton::clicked, this, &SupraFitGui::ExportAllPlain);
+
+    m_export_suprafit = new QPushButton(tr("SupraFit"));
+    m_export_suprafit->setFlat(true);
+    m_export_suprafit->setMaximumWidth(75);
+    connect(m_export_suprafit, &QPushButton::clicked, this, &SupraFitGui::ExportAllSupraFit);
+
     QGridLayout* layout = new QGridLayout;
 
     layout->addWidget(new QLabel(tr("Filename:")), 0, 0);
     layout->addWidget(m_filename_line, 0, 1);
-    layout->addWidget(m_project_view, 1, 0, 1, 2);
+    layout->addWidget(m_export_plain, 1, 0);
+    layout->addWidget(m_export_suprafit, 1, 1);
+    layout->addWidget(m_project_view, 2, 0, 1, 2);
     widget->setLayout(layout);
 
     m_mainsplitter = new QSplitter(Qt::Horizontal);
@@ -459,6 +472,9 @@ void SupraFitGui::LoadJson(const QJsonObject& str)
 
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 {
+    if (object.isEmpty())
+        return false;
+
     QString uuid = object["data"].toObject()["uuid"].toString();
     if (m_hashed_data.keys().contains(uuid)) {
         QString name = m_hashed_data[uuid].data()->ProjectTitle();
@@ -1028,4 +1044,77 @@ void SupraFitGui::CopyModel(const QModelIndex& source, int data, int model)
         m_project_list[data]->Model(model)->ImportModel(m->ExportModel(true, true));
     } else
         qDebug() << "not found" << data << model;
+}
+
+void SupraFitGui::ExportAllPlain()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Choose directory"), getDir());
+    if (dir.isEmpty() || dir.isNull())
+        return;
+
+    for (int i = 0; i < m_data_list.size(); ++i) {
+        QString input, name = m_data_list[i].data()->ProjectTitle();
+        QPointer<DataTable> indep_model = m_data_list[i].data()->IndependentModel();
+        QPointer<DataTable> dep_model = m_data_list[i].data()->DependentModel();
+
+        QStringList x = indep_model->ExportAsStringList();
+        QStringList y = dep_model->ExportAsStringList();
+
+        if (x.size() == y.size()) {
+            for (int i = 0; i < x.size(); ++i)
+                input += x[i].replace(",", ".") + "\t" + y[i].replace(",", ".") + "\n";
+        }
+
+        delete indep_model;
+        delete dep_model;
+
+        QString filename = dir + "/" + name;
+        QFileInfo info(filename + ".dat");
+        if (info.exists()) {
+            int i = 1;
+            QFileInfo info(filename + "_" + QString::number(i) + ".dat");
+            while (info.exists()) {
+                ++i;
+                info = QFileInfo(filename + QString::number(i) + ".dat");
+            }
+            filename = filename + "_" + QString::number(i) + ".dat";
+        } else
+            filename = filename + ".dat";
+
+        QFile file(filename);
+        if (file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
+            QTextStream stream(&file);
+            stream << input;
+        }
+    }
+    setLastDir(dir);
+}
+
+void SupraFitGui::ExportAllSupraFit()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Choose directory"));
+    if (dir.isEmpty() || dir.isNull())
+        return;
+
+    for (int i = 0; i < m_data_list.size(); ++i) {
+        QString name = m_data_list[i].data()->ProjectTitle();
+        QJsonObject data;
+        data["data"] = m_data_list[i].data()->ExportData();
+
+        QString filename = dir + "/" + name;
+        QFileInfo info(filename + ".suprafit");
+        if (info.exists()) {
+            int i = 1;
+            QFileInfo info(filename + "_" + QString::number(i) + ".suprafit");
+            while (info.exists()) {
+                ++i;
+                info = QFileInfo(filename + QString::number(i) + ".suprafit");
+            }
+            filename = filename + "_" + QString::number(i) + ".suprafit";
+        } else
+            filename = filename + ".suprafit";
+
+        JsonHandler::WriteJsonFile(data, filename);
+    }
+    setLastDir(dir);
 }

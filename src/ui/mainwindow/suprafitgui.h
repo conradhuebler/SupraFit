@@ -35,6 +35,7 @@ class QGridLayout;
 class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
+class QPushButton;
 class QSplashScreen;
 class QSplitter;
 class QStackedWidget;
@@ -179,6 +180,7 @@ private:
     QVector<QJsonObject> m_cached_meta;
     QLineEdit* m_filename_line;
 
+    QPushButton *m_export_suprafit, *m_export_plain;
 private slots:
     void NewWindow();
     void NewTable();
@@ -201,6 +203,9 @@ private slots:
     void UpdateTreeView(bool regenerate = false);
     void TreeClicked(const QModelIndex& index);
     void TreeRemoveRequest(const QModelIndex& index);
+
+    void ExportAllPlain();
+    void ExportAllSupraFit();
 
 signals:
     void AppendPlainText(const QString& str);

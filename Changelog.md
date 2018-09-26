@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- Export all loaded projects indiviually as suprafit file or plain dat file
 - 'Click and Copy' Copy of SSE, SEy and standard deviation to ClipBoard
 - 'Drag and Drop' Model Simulation from calculated data
 - improve monte carlos' standard deviation input (std, SEy, user defined)
