@@ -24,6 +24,7 @@
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>
+#include <QtCore/QJsonDocument>
 #include <QtCore/QMimeData>
 #include <QtCore/QPointer>
 
@@ -122,6 +123,38 @@ signals:
     void LoadJsonObject(const QJsonObject& object);
 };
 
+class DropButton : public QPushButton {
+    Q_OBJECT
+public:
+    DropButton(const QString& str)
+        : QPushButton(str)
+    {
+        setAcceptDrops(true);
+    }
+
+protected:
+    void dropEvent(QDropEvent* event) override
+    {
+        const QMimeData* data = event->mimeData();
+        QByteArray sprmodel = data->data("application/x-suprafitmodel");
+        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+
+        if (!doc.isEmpty()) {
+            emit DataDropped(doc.object());
+            return;
+        }
+    }
+
+    void dragEnterEvent(QDragEnterEvent* event) override
+    {
+        if (event->mimeData()->hasFormat("application/x-suprafitmodel"))
+            event->acceptProposedAction();
+    }
+
+signals:
+    emit void DataDropped(const QJsonObject& data);
+};
+
 class SupraFitGui : public QMainWindow {
     Q_OBJECT
 public:
@@ -134,6 +167,11 @@ public slots:
     void LoadFile(const QString& file);
 
 private:
+    // This will become an improved data load mechanism somedays
+
+    // QVector<QJsonObject> ProjectFromFile(const QString& file);
+    // QVector<QJsonObject> ProjectFromFiles(const QStringList& files);
+
     void LoadJson(const QJsonObject& str);
     void setActionEnabled(bool enabled);
     void ReadSettings();
@@ -144,6 +182,8 @@ private:
     void ImportTable(const QString& file);
     void LoadMetaModels();
 
+    void AddScatter(const QJsonObject& data);
+
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
     QVector<QWeakPointer<DataClass>> m_data_list;
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
@@ -152,10 +192,10 @@ private:
     QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_save_as, *m_load;
     OptimizerConfig m_opt_config;
 
-    QString m_logfile, m_supr_file;
+    QString m_supr_file;
     int m_printlevel;
-    void LogFile();
-    QFile m_file, m_stdout;
+
+    QFile m_file;
     virtual void closeEvent(QCloseEvent* event);
     const QStringList m_properties = QStringList() << "threads"
                                                    << "chartanimation"
@@ -181,6 +221,8 @@ private:
     QLineEdit* m_filename_line;
 
     QPushButton *m_export_suprafit, *m_export_plain;
+    DropButton* m_add_scatter;
+
 private slots:
     void NewWindow();
     void NewTable();
@@ -190,8 +232,6 @@ private slots:
     void SaveAsProjectAction();
     void SettingsDialog();
     void about();
-    void WriteMessages(const QString& message, int priority);
-    void MessageBox(const QString& str, int priority);
     void FirstStart();
 
     void AddMetaModel(const QModelIndex& index, int position);
@@ -206,9 +246,7 @@ private slots:
 
     void ExportAllPlain();
     void ExportAllSupraFit();
-
-signals:
-    void AppendPlainText(const QString& str);
+    void AddScatter();
 
 protected:
     bool eventFilter(QObject* obj, QEvent* ev);

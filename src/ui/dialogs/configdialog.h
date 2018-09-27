@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef CONFIGDIALOG_H
-#define CONFIGDIALOG_H
+#pragma once
+
 #include "src/ui/widgets/optimizerwidget.h"
 
 #include <QtCore/QPointer>
@@ -55,20 +55,17 @@ class ConfigDialog : public QDialog {
     Q_OBJECT
 
 public:
-    ConfigDialog(OptimizerConfig config, int printlevel, const QString& logfile, QWidget* parent = 0);
+    ConfigDialog(OptimizerConfig config, QWidget* parent = 0);
     ~ConfigDialog();
     inline OptimizerConfig Config() const { return m_opt_widget->Config(); }
-    inline QString LogFile() const { return m_logfile; }
-    inline int PrintLevel() const { return m_printlevel; }
     virtual void accept();
 
 private:
-    QRadioButton *m_printlevel_0, *m_printlevel_1, *m_printlevel_2, *m_printlevel_3, *m_printlevel_4, *m_printlevel_5;
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
     QSpinBox* m_threads;
     QDoubleSpinBox* m_p_value;
-    QLineEdit *m_logfileButton, *m_working;
-    QPushButton *m_selectlogfile, *m_select_working;
+    QLineEdit* m_working;
+    QPushButton* m_select_working;
     QTabWidget* m_mainwidget;
     QDialogButtonBox* m_buttons;
     QComboBox* m_charttheme;
@@ -79,12 +76,9 @@ private:
     void createOptimTab();
     OptimizerConfig m_opt_config;
     OptimizerWidget* m_opt_widget;
-    int m_printlevel, m_dirlevel;
+    int m_dirlevel;
     QString m_logfile, m_working_string;
 
 private slots:
-    void SelectLogFile();
     void SelectWorkingDir();
 };
-
-#endif // CONFIGDIALOG_H

@@ -86,6 +86,9 @@ public:
     DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table);
     DataTable(DataTable* other);
     DataTable(DataTable& other);
+
+    DataTable(const QJsonObject& table);
+
     virtual ~DataTable();
 
     void clear(int columns = 0, int rows = 0);
@@ -152,6 +155,8 @@ public:
 
     QJsonObject ExportTable(bool checked, const QVector<int> checked_table = QVector<int>()) const;
     bool ImportTable(const QJsonObject& table);
+
+    inline Eigen::MatrixXd& Table() { return m_table; }
 
 private:
     Eigen::MatrixXd m_table, m_checked_table;

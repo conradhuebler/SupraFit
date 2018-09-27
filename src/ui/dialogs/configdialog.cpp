@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,10 +78,8 @@ void OptimizerDialog::createOptimTab()
     m_mainwidget->addTab(m_opt_widget, tr("Optimizer Settings"));
 }
 
-ConfigDialog::ConfigDialog(OptimizerConfig config, int printlevel, const QString& logfile, QWidget* parent)
+ConfigDialog::ConfigDialog(OptimizerConfig config, QWidget* parent)
     : m_opt_config(config)
-    , m_printlevel(printlevel)
-    , m_logfile(logfile)
     , QDialog(parent)
 {
     m_dirlevel = qApp->instance()->property("dirlevel").toInt();
@@ -121,25 +119,12 @@ void ConfigDialog::createGeneralTab()
     QWidget* generalTab = new QWidget;
     generalTab->setLayout(layout);
 
-    m_logfileButton = new QLineEdit;
-    m_logfileButton->setClearButtonEnabled(true);
-    m_logfileButton->setText(m_logfile);
-    m_selectlogfile = new QPushButton(this);
-    m_selectlogfile->setText(tr("Select file"));
-    connect(m_selectlogfile, SIGNAL(clicked()), this, SLOT(SelectLogFile()));
-
-    QHBoxLayout* h_layout = new QHBoxLayout;
-    h_layout->addWidget(new QLabel(tr("Logfile:")));
-    h_layout->addWidget(m_logfileButton);
-    h_layout->addWidget(m_selectlogfile);
-    layout->addLayout(h_layout);
-
     m_threads = new QSpinBox;
-    m_threads->setMaximum(QThread::idealThreadCount());
+    m_threads->setMaximum(2 * QThread::idealThreadCount());
     m_threads->setValue(qApp->instance()->property("threads").toInt());
     m_threads->setMinimum(1);
 
-    h_layout = new QHBoxLayout;
+    QHBoxLayout* h_layout = new QHBoxLayout;
     h_layout->addWidget(new QLabel(tr("Threads:")));
     h_layout->addWidget(m_threads);
     layout->addLayout(h_layout);
@@ -232,16 +217,6 @@ void ConfigDialog::createOptimTab()
     m_opt_widget->setLayout(layout);
 
     m_mainwidget->addTab(m_opt_widget, tr("Optimizer Settings"));
-}
-
-void ConfigDialog::SelectLogFile()
-{
-    QString filename = QFileDialog::getSaveFileName(this, "Select file", ".");
-    if (filename.isEmpty())
-        return;
-
-    m_logfileButton->setText(filename);
-    m_logfile = filename;
 }
 
 void ConfigDialog::SelectWorkingDir()

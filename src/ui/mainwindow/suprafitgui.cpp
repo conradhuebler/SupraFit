@@ -324,7 +324,7 @@ SupraFitGui::SupraFitGui()
 
     m_filename_line = new QLineEdit;
     m_filename_line->setClearButtonEnabled(true);
-    connect(m_filename_line, &QLineEdit::textChanged, this, [this](const QString& str) { this->m_supr_file = str; });
+    connect(m_filename_line, &QLineEdit::textChanged, this, [this](const QString& str) { this->m_supr_file = str; setWindowTitle(); });
     QWidget* widget = new QWidget;
     widget->setObjectName("project_list");
 
@@ -338,12 +338,27 @@ SupraFitGui::SupraFitGui()
     m_export_suprafit->setMaximumWidth(75);
     connect(m_export_suprafit, &QPushButton::clicked, this, &SupraFitGui::ExportAllSupraFit);
 
+    m_add_scatter = new DropButton(tr("Add Rand"));
+    m_add_scatter->setFlat(true);
+    m_add_scatter->setMaximumWidth(75);
+    connect(m_add_scatter, &QPushButton::clicked, this, qOverload<>(&SupraFitGui::AddScatter));
+    connect(m_add_scatter, &DropButton::DataDropped, this, [this](const QJsonObject& data) {
+        QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
+        if (!str.isEmpty()) {
+            JsonHandler::WriteJsonFile(data, str);
+        }
+        AddScatter(data);
+    });
+    QHBoxLayout* tools = new QHBoxLayout;
+    tools->addWidget(m_export_plain);
+    tools->addWidget(m_export_suprafit);
+    tools->addWidget(m_add_scatter);
+
     QGridLayout* layout = new QGridLayout;
 
     layout->addWidget(new QLabel(tr("Filename:")), 0, 0);
     layout->addWidget(m_filename_line, 0, 1);
-    layout->addWidget(m_export_plain, 1, 0);
-    layout->addWidget(m_export_suprafit, 1, 1);
+    layout->addLayout(tools, 1, 0, 1, 2);
     layout->addWidget(m_project_view, 2, 0, 1, 2);
     widget->setLayout(layout);
 
@@ -411,7 +426,7 @@ SupraFitGui::SupraFitGui()
     addToolBar(m_system_toolbar);
 
     ReadGeometry();
-    LogFile();
+
     setActionEnabled(false);
     setStyleSheet("QSplitter::handle:vertical {"
                   "background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
@@ -435,6 +450,42 @@ SupraFitGui::~SupraFitGui()
         delete m_instance;
 }
 
+// Will someday be improved
+/*
+QVector<QJsonObject> SupraFitGui::ProjectFromFile(const QString& file)
+{
+    if (file.contains("json") || file.contains("suprafit")) {
+        //QTimer::singleShot(0, m_splash, &QSplashScreen::show);
+        //m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
+    }
+    bool invalid_json = false;
+    if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
+        invalid_json = !LoadProject(file);
+        if (!invalid_json) {
+            m_mainsplitter->setGraphicsEffect(NULL);
+            QTimer::singleShot(1, m_splash, &QSplashScreen::close);
+            return;
+        }
+    } else {
+        ImportTable(file);
+    }
+    m_mainsplitter->setGraphicsEffect(NULL);
+
+    QTimer::singleShot(1, m_splash, &QSplashScreen::close);
+
+    if (invalid_json)
+        QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
+}
+
+QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
+{
+    QVector<QJsonObject> projects;
+    for(const QString &str : files)
+        projects << ProjectFromFile(str);
+
+    return projects;
+}
+*/
 void SupraFitGui::LoadFile(const QString& file)
 {
     if (file.contains("json") || file.contains("suprafit")) {
@@ -743,65 +794,25 @@ void SupraFitGui::SaveAsProjectAction()
 
 void SupraFitGui::SettingsDialog()
 {
-    ConfigDialog dialog(m_opt_config, m_printlevel, m_logfile, this);
+    ConfigDialog dialog(m_opt_config, this);
     if (dialog.exec() == QDialog::Accepted) {
         m_opt_config = dialog.Config();
         //m_model_dataholder->setSettings(m_opt_config);
-        m_printlevel = dialog.PrintLevel();
-        m_logfile = dialog.LogFile();
         WriteSettings();
-    }
-}
-
-void SupraFitGui::LogFile()
-{
-    if (m_logfile.isEmpty() && m_file.isOpen())
-        m_file.close();
-    else if (m_file.fileName() != m_logfile && m_file.isOpen()) {
-        m_file.close();
-        m_file.setFileName(m_logfile);
-        if (!m_file.open(QIODevice::WriteOnly | QIODevice::Text))
-            return;
-    } else if (!m_file.isOpen()) {
-        m_file.setFileName(m_logfile);
-        if (!m_file.open(QIODevice::WriteOnly | QIODevice::Text))
-            return;
-    }
-}
-
-void SupraFitGui::WriteMessages(const QString& message, int priority)
-{
-    //     QTextStream stdout_stream(&m_stdout);
-    //      stdout_stream << message << "\n";
-    emit AppendPlainText(message);
-    return;
-    if (priority <= m_printlevel) {
-        QTextStream fileout_stream(&m_file);
-        fileout_stream << message << "\n";
-
-        // QTimer::singleShot(0, m_logWidget, SLOT(appendPlainText(message)));
     }
 }
 
 void SupraFitGui::setWindowTitle()
 {
-    QMainWindow::setWindowTitle(QString("*" + qApp->instance()->property("projectname").toString() + "*"));
-}
-
-void SupraFitGui::MessageBox(const QString& str, int priority)
-{
-    if (priority == 0) {
-        QMessageBox::critical(this, tr("Optimizer Error."), str, QMessageBox::Ok | QMessageBox::Default);
-    } else if (priority == 1) {
-        QMessageBox::warning(this, tr("Optimizer warning."), str, QMessageBox::Ok | QMessageBox::Default);
-    }
+    QFileInfo info(m_filename_line->text());
+    QMainWindow::setWindowTitle(QString("SupraFit *" + info.baseName() + "*"));
 }
 
 void SupraFitGui::ReadSettings()
 {
     QSettings _settings;
     _settings.beginGroup("main");
-    m_logfile = _settings.value("logfile").toString();
+
     m_printlevel = _settings.value("printlevel", 3).toInt();
     for (const QString& str : qAsConst(m_properties))
         qApp->instance()->setProperty(qPrintable(str), _settings.value(str));
@@ -855,8 +866,6 @@ void SupraFitGui::WriteSettings(bool ignore_window_state)
     QSettings _settings;
 
     _settings.beginGroup("main");
-    _settings.setValue("logfile", m_logfile);
-    _settings.setValue("printlevel", m_printlevel);
 
     QStringList properties;
     for (const QString& str : qAsConst(m_properties))
@@ -919,8 +928,6 @@ void SupraFitGui::closeEvent(QCloseEvent* event)
             filename = filename + ".autosave.suprafit";
         // m_model_dataholder->SaveWorkspace(filename);
     }
-
-    m_stdout.close();
 
     WriteSettings(false);
 
@@ -1117,4 +1124,45 @@ void SupraFitGui::ExportAllSupraFit()
         JsonHandler::WriteJsonFile(data, filename);
     }
     setLastDir(dir);
+}
+
+void SupraFitGui::AddScatter()
+{
+    QString file = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)"));
+    if (file.isEmpty())
+        return;
+
+    QJsonObject data;
+
+    if (file.contains("json") || file.contains("jdat") || file.contains("suprafit")) {
+        QJsonObject toplevel;
+
+        if (JsonHandler::ReadJsonFile(toplevel, file)) {
+
+            QStringList keys = toplevel.keys();
+            if (keys.contains("data")) {
+                data = toplevel;
+            } else {
+                QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, couldn't handle this data!"), QMessageBox::Ok | QMessageBox::Default);
+                return;
+            }
+        }
+    } else {
+        ImportData dialog(file, this);
+
+        if (dialog.exec() == QDialog::Accepted) {
+            data = dialog.getProject();
+        } else
+            return;
+    }
+    AddScatter(data);
+}
+
+void SupraFitGui::AddScatter(const QJsonObject& object)
+{
+    DataTable* table = new DataTable(object["data"].toObject()["dependent"].toObject());
+    for (int i = 0; i < m_data_list.size(); ++i) {
+        m_data_list[i].data()->DependentModel()->Table() += table->Table();
+    }
+    delete table;
 }

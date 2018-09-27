@@ -91,6 +91,13 @@ DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table)
         m_header << QString::number(i + 1);
 }
 
+DataTable::DataTable(const QJsonObject& table)
+    : m_checkable(false)
+    , m_editable(false)
+{
+    ImportTable(table);
+}
+
 DataTable::~DataTable()
 {
 }
