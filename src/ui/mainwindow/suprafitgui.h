@@ -193,7 +193,6 @@ private:
     OptimizerConfig m_opt_config;
 
     QString m_supr_file;
-    int m_printlevel;
 
     QFile m_file;
     virtual void closeEvent(QCloseEvent* event);

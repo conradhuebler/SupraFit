@@ -740,7 +740,8 @@ DataClass::DataClass(QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate;
-    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
 }
 
 DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
@@ -752,21 +753,24 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
     if (d->m_independent_model->columnCount() != d->m_scaling.size())
         for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
             d->m_scaling << 1;
-    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
 }
 
 DataClass::DataClass(const DataClass& other)
     : QObject()
 {
     d = other.d;
-    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
 }
 
 DataClass::DataClass(const DataClass* other)
     : QObject()
 {
     d = other->d;
-    connect(d->m_info, &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
+    connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
 }
 
 DataClass::~DataClass()
@@ -1001,7 +1005,7 @@ void DataClass::setSystemParameter(const SystemParameter& parameter)
     int index = parameter.Index();
     if (d->m_system_parameter.contains(index))
         d->m_system_parameter[index] = parameter;
-    emit d->m_info->SystemParameterChanged();
+    emit Info()->SystemParameterChanged();
 }
 
 void DataClass::WriteSystemParameter()

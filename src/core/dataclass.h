@@ -174,6 +174,7 @@ public:
 signals:
     void SystemParameterChanged();
     void SystemParameterLoaded();
+    void Update();
 };
 
 class DataClassPrivate : public QSharedData {
@@ -254,6 +255,11 @@ public:
             for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
                 d->m_scaling << 1;
     }
+
+    DataClassPrivateObject* Info() const { return d->m_info; }
+
+    inline void Updated() const { emit Info()->Update(); }
+
     inline void setDependentTable(DataTable* table)
     {
         d->m_dependent_model = table;
@@ -318,7 +324,7 @@ public:
     inline void OverrideSystemParameter(const QMap<int, SystemParameter>& system_parameter)
     {
         d->m_system_parameter = system_parameter;
-        emit d->m_info->SystemParameterChanged();
+        emit Info()->SystemParameterChanged();
     }
 
     /*! \brief load previously cached system parameter
@@ -369,4 +375,5 @@ signals:
     void SystemParameterLoaded();
     void SystemParameterChanged();
     void NameChanged(const QString& name);
+    void Update();
 };

@@ -57,6 +57,7 @@ AbstractModel::AbstractModel(DataClass* data)
     m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
 
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+    connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
 }
 
 AbstractModel::AbstractModel(AbstractModel* model)
@@ -81,6 +82,7 @@ AbstractModel::AbstractModel(AbstractModel* model)
     m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
 
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+    connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
 }
 
 void AbstractModel::PrepareParameter(int global, int local)

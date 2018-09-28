@@ -813,7 +813,6 @@ void SupraFitGui::ReadSettings()
     QSettings _settings;
     _settings.beginGroup("main");
 
-    m_printlevel = _settings.value("printlevel", 3).toInt();
     for (const QString& str : qAsConst(m_properties))
         qApp->instance()->setProperty(qPrintable(str), _settings.value(str));
     _settings.endGroup();
@@ -1163,6 +1162,7 @@ void SupraFitGui::AddScatter(const QJsonObject& object)
     DataTable* table = new DataTable(object["data"].toObject()["dependent"].toObject());
     for (int i = 0; i < m_data_list.size(); ++i) {
         m_data_list[i].data()->DependentModel()->Table() += table->Table();
+        m_data_list[i].data()->Updated();
     }
     delete table;
 }
