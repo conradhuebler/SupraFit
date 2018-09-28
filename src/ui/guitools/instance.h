@@ -19,6 +19,7 @@
 #pragma once
 
 #include <QtCore/QObject>
+#include <QtCore/QUuid>
 
 #include <QtGui/QIcon>
 
@@ -41,8 +42,18 @@ class Instance : public QObject {
     Q_OBJECT
 
 public:
+    Instance()
+    {
+        QUuid uuid;
+        m_uuid = uuid.createUuid().toString();
+    }
     inline static void setInstance(QPointer<Instance> instance) { qApp->instance()->setProperty("InstanceHolder", InstancePointer<Instance>::asQVariant(instance)); }
     inline static Instance* GlobalInstance() { return InstancePointer<Instance>::asPtr(qApp->instance()->property("InstanceHolder")); }
+
+    inline QString UUid() const { return m_uuid; }
+
+private:
+    QString m_uuid;
 
 signals:
     void ConfigurationChanged();

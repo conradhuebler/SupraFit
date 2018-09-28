@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "src/global.h"
+
 #include <Eigen/Dense>
 
 #include <QtCore/QAbstractTableModel>
@@ -33,6 +35,8 @@
 #include <random>
 
 typedef Eigen::VectorXd Vector;
+
+class DataClass;
 
 class SystemParameter {
 public:
@@ -209,6 +213,8 @@ public:
     QList<qreal> m_scaling;
     QMap<int, SystemParameter> m_system_parameter;
     QPointer<DataClassPrivateObject> m_info;
+    QVector<QPointer<const DataClass>> m_children;
+
     QString m_title, m_uuid;
     void check();
 };
@@ -223,6 +229,8 @@ public:
     DataClass(const DataClass* other);
     DataClass(const DataClass& other);
     virtual ~DataClass();
+
+    virtual SupraFit::Model SFModel() const { return SupraFit::Data; }
 
     inline void addPoint(QVector<qreal> conc, QVector<qreal> data)
     {
@@ -363,11 +371,14 @@ public:
 
     void setSystemObject(const QJsonObject& object);
 
+    QJsonObject ExportChildren(bool statistics = true, bool locked = false);
+
 private:
     QMutex m_lock;
 
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate> d;
+    void AddChildren(QPointer<const DataClass> children);
 
 signals:
     void RowAdded();

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "src/ui/guitools/mime.h"
+
 #include <QtCore/QDebug>
 #include <QtCore/QMimeData>
 #include <QtCore/QTimer>
@@ -47,7 +49,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override
     {
 
-        QMimeData* mimeData = new QMimeData;
+        ModelMime* mimeData = new ModelMime;
         mimeData->setData("application/x-suprafitmodel", m_content);
 
         QDrag* drag = new QDrag(this);

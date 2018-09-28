@@ -1016,3 +1016,26 @@ void DataClass::WriteSystemParameter()
     }
     d->m_systemObject = systemObject;
 }
+
+QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
+{
+    QJsonObject models;
+    if (SFModel() == SupraFit::Data) {
+        for (int i = 0; i < d->m_children.size(); ++i) {
+            if (d->m_children[i]) {
+                AbstractModel* data = const_cast<AbstractModel*>(qobject_cast<const AbstractModel*>(d->m_children[i]));
+                models[tr("model_%1").arg(i)] = data->ExportModel(statistics, locked);
+            }
+        }
+    } else {
+        AbstractModel* data = qobject_cast<AbstractModel*>(this);
+        models[tr("model_0")] = data->ExportModel(statistics, locked);
+    }
+
+    return models;
+}
+
+void DataClass::AddChildren(QPointer<const DataClass> data)
+{
+    d->m_children << data;
+}

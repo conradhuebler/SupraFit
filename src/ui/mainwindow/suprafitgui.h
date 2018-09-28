@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "src/ui/guitools/mime.h"
 #include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/widgets/optimizerwidget.h"
 
@@ -27,6 +28,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QMimeData>
 #include <QtCore/QPointer>
+#include <QtCore/QUuid>
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
@@ -53,29 +55,15 @@ class ModelDataHolder;
 
 struct OptimizerConfig;
 
-class ModelMime : public QMimeData {
-
-    Q_OBJECT
-
-public:
-    inline void setData(DataClass* data) { m_data = data; }
-    inline DataClass* Data() const { return m_data; }
-    inline void setModel(bool model) { m_model = model; }
-    inline bool isModel() const { return m_model; }
-
-    inline void setModelIndex(const QModelIndex& index) { m_index = index; }
-    inline QModelIndex Index() const { return m_index; }
-
-private:
-    DataClass* m_data;
-    bool m_model = false;
-    QModelIndex m_index;
-};
-
 class ProjectTree : public QAbstractItemModel {
     Q_OBJECT
 public:
-    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list) { m_project_list = project_list; }
+    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list)
+    {
+        m_project_list = project_list;
+        QUuid uuid;
+        m_instance = uuid.createUuid().toString();
+    }
 
     inline ~ProjectTree() {}
 
@@ -114,6 +102,7 @@ public:
 private:
     QVector<QPointer<MainWindow>>* m_project_list;
 
+    QString m_instance;
 signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);
@@ -240,6 +229,7 @@ private slots:
     void CopyModel(const QModelIndex& source, int data, int model);
 
     void UpdateTreeView(bool regenerate = false);
+    void TreeDoubleClicked(const QModelIndex& index);
     void TreeClicked(const QModelIndex& index);
     void TreeRemoveRequest(const QModelIndex& index);
 

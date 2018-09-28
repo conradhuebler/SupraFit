@@ -58,6 +58,7 @@ AbstractModel::AbstractModel(DataClass* data)
 
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
+    AddChildren(this);
 }
 
 AbstractModel::AbstractModel(AbstractModel* model)
@@ -83,6 +84,7 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
+    AddChildren(this);
 }
 
 void AbstractModel::PrepareParameter(int global, int local)

@@ -175,7 +175,7 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
     ModelMime* mimeData = new ModelMime();
 
     QString data;
-
+    QJsonObject object;
     for (const QModelIndex& index : qAsConst(indexes)) {
         if (index.isValid()) {
             if (parent(index).isValid()) {
@@ -184,10 +184,18 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
             } else {
                 data = "Data: " + QString::number(index.row());
             }
-            mimeData->setData(static_cast<DataClass*>(index.internalPointer()));
+            mimeData->setDataPointer(static_cast<DataClass*>(index.internalPointer()));
             mimeData->setModelIndex(index);
+            QJsonObject d = static_cast<DataClass*>(index.internalPointer())->ExportData();
+            QJsonObject top = static_cast<DataClass*>(index.internalPointer())->ExportChildren(true, true);
+            top["data"] = d;
+
+            QJsonDocument document = QJsonDocument(top);
+            mimeData->setData("application/x-suprafitmodel", document.toBinaryData());
         }
     }
+
+    mimeData->setInstance(m_instance);
     mimeData->setText(data);
     return mimeData;
 }
@@ -218,17 +226,6 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
 
     QString string = data->text();
 
-    QByteArray sprmodel = data->data("application/x-suprafitmodel");
-    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-
-    if (!doc.isEmpty()) {
-        emit LoadJsonObject(doc.object());
-        return true;
-    }
-
-    if (string.isEmpty() || string.isNull())
-        return false;
-
     if (string.contains("file:///")) {
         QStringList list = string.split("\n");
         for (QString str : list) {
@@ -241,6 +238,24 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         }
         return true;
     }
+
+    if (!qobject_cast<const ModelMime*>(data))
+        return false;
+
+    const ModelMime* d = qobject_cast<const ModelMime*>(data);
+
+    QByteArray sprmodel = data->data("application/x-suprafitmodel");
+    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+
+    if (d->Instance() != m_instance) {
+        if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
+            emit LoadJsonObject(doc.object());
+            return true;
+        }
+    }
+    if (string.isEmpty() || string.isNull())
+        return false;
+
     if (row == -1 && column == -1 && !index.isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
         emit AddMetaModel(d->Index(), -1);
@@ -438,7 +453,8 @@ SupraFitGui::SupraFitGui()
                   "border-radius: 4px;"
                   "}");
     qApp->installEventFilter(this);
-    connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeClicked);
+    connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeDoubleClicked);
+    connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
 
     //m_mainsplitter->hide();
     setWindowIcon(QIcon(":/misc/suprafit.png"));
@@ -518,7 +534,28 @@ void SupraFitGui::setActionEnabled(bool enabled)
 
 void SupraFitGui::LoadJson(const QJsonObject& str)
 {
+    bool valid = true;
+    for (const QString& s : str.keys()) {
+        if (str[s].toObject()["model"].toInt() == 200) {
+            valid = false;
+            /* int size = str[s].toObject()["size"].toInt();
+            for(int i = 0; i < size; ++i)
+            {
+                valid = valid && m_hashed_data.contains(str[s].toObject()["uuids"].toObject()[QString::number(i)].toString());
+            }*/
+        }
+    }
+    if (!valid) {
+        QMessageBox::warning(this, tr("Loading Meta Models."), tr("Adding Meta Models without the corresponding data is not supported!"), QMessageBox::Ok | QMessageBox::Default);
+
+        return;
+    }
+    QTimer::singleShot(0, m_splash, &QSplashScreen::show);
+    m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
     SetData(str, "noname");
+    m_mainsplitter->setGraphicsEffect(NULL);
+
+    QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 }
 
 bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
@@ -558,9 +595,12 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         data.data()->setProjectTitle(name);
     }
 
+    // Lets add this on first demand, should increase loading speed of big projects
+
+    /*
     m_stack_widget->addWidget(window);
     m_stack_widget->setCurrentWidget(window);
-
+    */
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
         m_project_tree->layoutChanged();
     });
@@ -656,8 +696,10 @@ void SupraFitGui::LoadMetaModels()
         setActionEnabled(true);
         m_meta_models << model;
 
+        /*
         m_stack_widget->addWidget(window);
         m_stack_widget->setCurrentWidget(window);
+        */
     }
 
     m_cached_meta.clear();
@@ -941,6 +983,25 @@ bool SupraFitGui::eventFilter(QObject* obj, QEvent* event)
         return QMainWindow::eventFilter(obj, event);
 }
 
+void SupraFitGui::TreeDoubleClicked(const QModelIndex& index)
+{
+    int widget = 0;
+    int tab = -1;
+    if (m_project_tree->parent(index).isValid()) {
+        widget = m_project_tree->parent(index).row();
+        tab = index.row();
+    } else {
+        if (index.internalPointer() != NULL)
+            widget = index.row();
+        else
+            return;
+    }
+    if (m_stack_widget->indexOf(m_project_list[widget]) == -1)
+        m_stack_widget->addWidget(m_project_list[widget]);
+    m_stack_widget->setCurrentWidget(m_project_list[widget]);
+    m_project_list[widget]->setCurrentTab(tab + 1);
+}
+
 void SupraFitGui::TreeClicked(const QModelIndex& index)
 {
     int widget = 0;
@@ -954,8 +1015,9 @@ void SupraFitGui::TreeClicked(const QModelIndex& index)
         else
             return;
     }
-    m_stack_widget->setCurrentWidget(m_project_list[widget]);
-    m_project_list[widget]->setCurrentTab(tab + 1);
+
+    if (m_project_list[widget] == m_stack_widget->currentWidget())
+        m_project_list[widget]->setCurrentTab(tab + 1);
 }
 
 void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)

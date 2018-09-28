@@ -42,6 +42,7 @@ enum Statistic {
 };
 
 enum Model {
+    Data = 0,
     ItoI = 1,
     IItoI_ItoI = 2,
     ItoI_ItoII = 3,

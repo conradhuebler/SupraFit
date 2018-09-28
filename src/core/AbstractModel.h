@@ -72,7 +72,7 @@ public:
 
     virtual ~AbstractModel();
 
-    virtual SupraFit::Model SFModel() const = 0;
+    virtual SupraFit::Model SFModel() const override = 0;
 
     /*! \brief set the OptimizationType to type and returns the Parameters
      * 
