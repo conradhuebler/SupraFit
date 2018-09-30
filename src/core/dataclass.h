@@ -388,4 +388,5 @@ signals:
     void SystemParameterChanged();
     void NameChanged(const QString& name);
     void Update();
+    void Deleted();
 };

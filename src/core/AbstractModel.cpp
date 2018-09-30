@@ -120,6 +120,8 @@ void AbstractModel::PrepareParameter(int global, int local)
 
 AbstractModel::~AbstractModel()
 {
+    emit Deleted();
+
     if (m_model_signal)
         delete m_model_signal;
 

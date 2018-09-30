@@ -120,9 +120,11 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
         index = QModelIndex();
 
     if (!parent.isValid()) {
-        index = createIndex(row, column, (*m_project_list)[row]->Data());
+        if (row < m_project_list->size())
+            index = createIndex(row, column, (*m_project_list)[row]->Data());
     } else {
-        index = createIndex(row, column, (*m_project_list)[parent.row()]->Model(row));
+        if (parent.row() < m_project_list->size())
+            index = createIndex(row, column, (*m_project_list)[parent.row()]->Model(row));
     }
 
     return index;
@@ -602,7 +604,8 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_stack_widget->setCurrentWidget(window);
     */
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
-        m_project_tree->layoutChanged();
+        UpdateTreeView(false);
+        //m_project_tree->layoutChanged();
     });
 
     m_project_list.insert(m_project_list.size() - m_meta_models.size(), window);

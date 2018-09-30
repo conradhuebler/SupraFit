@@ -48,24 +48,33 @@ private:
 
     inline QSharedPointer<AbstractModel> Test11Model(QPointer<DataClass> data)
     {
-        QSharedPointer<AbstractModel> model = QSharedPointer<ItoI_Model>(new ItoI_Model(data), &QObject::deleteLater);
-        return model;
+        if (data->IndependentVariableSize() == 1)
+            return QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(data), &QObject::deleteLater);
+        else //(data->IndependentVariableSize() == 2)
+            return QSharedPointer<ItoI_Model>(new ItoI_Model(data), &QObject::deleteLater);
     }
     inline QSharedPointer<AbstractModel> Test2111Model(QPointer<DataClass> data)
     {
-        QSharedPointer<AbstractModel> model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(data), &QObject::deleteLater);
-        return model;
+
+        if (data->IndependentVariableSize() == 1)
+            return QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(data), &QObject::deleteLater);
+        else //(data->IndependentVariableSize() == 2)
+            return QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(data), &QObject::deleteLater);
     }
     inline QSharedPointer<AbstractModel> Test1112Model(QPointer<DataClass> data)
     {
-        QSharedPointer<AbstractModel> model = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(data), &QObject::deleteLater);
-        return model;
+        if (data->IndependentVariableSize() == 1)
+            return QSharedPointer<itc_ItoII_Model>(new itc_ItoII_Model(data), &QObject::deleteLater);
+        else //(data->IndependentVariableSize() == 2)
+            return QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(data), &QObject::deleteLater);
     }
 
     inline QSharedPointer<AbstractModel> Test22Model(QPointer<DataClass> data)
     {
-        QSharedPointer<AbstractModel> model = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(data), &QObject::deleteLater);
-        return model;
+        if (data->IndependentVariableSize() == 1)
+            return QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(data), &QObject::deleteLater);
+        else //(data->IndependentVariableSize() == 2)
+            return QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(data), &QObject::deleteLater);
     }
 
     void Test(QSharedPointer<AbstractModel> model);

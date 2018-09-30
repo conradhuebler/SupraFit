@@ -81,6 +81,7 @@ bool Simulator::FullTest()
     m_data->IndependentModel()->Debug();
     m_data->DependentModel()->Debug();
 #endif
+    qDebug() << m_data->ExportData();
     QJsonObject table = m_data->DependentModel()->ExportTable(true);
     for (int i = 0; i < m_runs; ++i) {
         std::cout << "########################################################################################################" << std::endl;
@@ -103,6 +104,7 @@ bool Simulator::FullTest()
         data->DependentModel()->Debug();
 #endif
         QSharedPointer<AbstractModel> model_1to1 = Test11Model(data);
+        model_1to1->OverrideSystemParameter(m_data->SysPar());
 
         Test(model_1to1);
 
