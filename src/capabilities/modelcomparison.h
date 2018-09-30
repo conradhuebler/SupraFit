@@ -50,7 +50,7 @@ public:
         , m_config(config)
     {
     }
-    inline ~MCThread() {}
+    inline virtual ~MCThread() {}
     void setModel(QSharedPointer<AbstractModel> model)
     {
         m_model = model->Clone();
@@ -79,10 +79,10 @@ public:
         , m_parameter(parameter)
     {
     }
-    ~FCThread() {}
+    virtual ~FCThread() override {}
 
     void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
-    void run();
+    virtual void run() override;
     inline qreal Lower() const { return m_lower; }
     inline qreal Upper() const { return m_upper; }
 
@@ -98,7 +98,8 @@ class ModelComparison : public AbstractSearchClass {
 
 public:
     ModelComparison(MoCoConfig config, QObject* parent = 0);
-    ~ModelComparison();
+    virtual ~ModelComparison() override;
+
     bool Confidence();
     bool FastConfidence(bool Series);
     inline qreal Area() const { return m_ellipsoid_area; }

@@ -80,6 +80,11 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     connect(m_model.data(), &AbstractModel::StatisticChanged, this, &ResultsDialog::UpdateList);
 }
 
+ResultsDialog::~ResultsDialog()
+{
+    m_model.clear();
+}
+
 void ResultsDialog::Attention()
 {
     show();
@@ -110,7 +115,7 @@ void ResultsDialog::UpdateList()
         }
     };
 
-    QStandardItemModel* model = new QStandardItemModel;
+    QStandardItemModel* model = new QStandardItemModel(this);
     for (int i = 0; i < m_model.data()->getMCStatisticResult(); ++i) {
         QJsonObject controller = m_model.data()->getStatistic(SupraFit::Statistic::MonteCarlo, i)["controller"].toObject();
 

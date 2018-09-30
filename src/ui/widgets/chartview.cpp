@@ -180,7 +180,7 @@ ChartView::ChartView()
 void ChartView::setUi()
 {
     QGridLayout* layout = new QGridLayout;
-    QMenu* menu = new QMenu;
+    QMenu* menu = new QMenu(this);
 
     QAction* plotsettings = new QAction(this);
     plotsettings->setText(tr("Plot Settings"));

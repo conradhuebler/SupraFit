@@ -33,6 +33,12 @@
 #include <QtWidgets/QStyledItemDelegate>
 
 class HTMLDelegate : public QStyledItemDelegate {
+public:
+    HTMLDelegate(QObject* parent)
+        : QStyledItemDelegate(parent)
+    {
+    }
+
 protected:
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
     {

@@ -36,7 +36,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
     : m_model(model)
 {
     QVBoxLayout* layout = new QVBoxLayout;
-    for (int i = 0; i < m_model->LocalParameterSize(); i++) {
+    for (int i = 0; i < m_model.data()->LocalParameterSize(); i++) {
         QWidget* widget = new QWidget;
         QHBoxLayout* hlayout = new QHBoxLayout;
         widget->setLayout(hlayout);
@@ -48,15 +48,15 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         QPointer<SpinBox> box = new SpinBox;
         box->setMinimum(-1e10);
         box->setMaximum(1e10);
-        box->setValue(m_model->LocalParameter(i, 0));
+        box->setValue(m_model.data()->LocalParameter(i, 0));
         connect(m_model.data(), &AbstractModel::Recalculated, box,
             [i, box, check, this, widget]() {
                 if (this->m_model && check) {
-                    box->setValue(m_model->LocalParameter(i, 0));
-                    if (this->m_model->LocalEnabled(i)) {
+                    box->setValue(m_model.data()->LocalParameter(i, 0));
+                    if (this->m_model.data()->LocalEnabled(i)) {
                         box->setStyleSheet("background-color: " + included());
                         check->setEnabled(true);
-                        check->setChecked(m_model->LocalTable()->isChecked(i, 0));
+                        check->setChecked(m_model.data()->LocalTable()->isChecked(i, 0));
                     } else {
                         box->setStyleSheet("background-color: " + excluded());
                         check->setEnabled(false);
@@ -66,19 +66,19 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         connect(box, &SpinBox::valueChangedNotBySet, box,
             [i, box, this]() {
                 if (this->m_model) {
-                    m_model->forceLocalParameter(box->value(), i, 0);
-                    m_model->Calculate();
+                    m_model.data()->forceLocalParameter(box->value(), i, 0);
+                    m_model.data()->Calculate();
                 }
 
             });
 
         connect(check, &QCheckBox::stateChanged, check, [i, this](int state) {
             if (this->m_model) {
-                m_model->LocalTable()->setChecked(i, 0, state);
+                m_model.data()->LocalTable()->setChecked(i, 0, state);
             }
 
         });
-        hlayout->addWidget(new QLabel(m_model->LocalParameterName(i)));
+        hlayout->addWidget(new QLabel(m_model.data()->LocalParameterName(i)));
         hlayout->addWidget(box);
         m_parameter << box;
         hlayout->addWidget(check);

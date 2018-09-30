@@ -40,7 +40,7 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, b
     m_boolbox = new QCheckBox;
     // m_boolbox->setDisabled(m_readonly);
     m_list = new QComboBox;
-    m_list->setItemDelegate(new HTMLDelegate());
+    m_list->setItemDelegate(new HTMLDelegate(this));
     // m_list->setDisabled(m_readonly);
 
     QLabel* label = new QLabel(parameter.Description());

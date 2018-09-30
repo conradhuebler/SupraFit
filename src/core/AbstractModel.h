@@ -70,7 +70,7 @@ public:
 
     AbstractModel(AbstractModel* model);
 
-    virtual ~AbstractModel();
+    virtual ~AbstractModel() override;
 
     virtual SupraFit::Model SFModel() const override = 0;
 

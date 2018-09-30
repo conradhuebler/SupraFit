@@ -151,8 +151,8 @@ QTableView* SearchResultWidget::BuildList()
         QVector<qreal> initial = ToolSet::String2DoubleVec(local_model["initial"].toString());
         QVector<qreal> optimised = ToolSet::String2DoubleVec(local_model["optimised"].toString());
 
-        for (int l = 0; l < m_model->GlobalParameterSize(); ++l) {
-            if (!m_model->GlobalTable()->isChecked(l, 0) || !m_model->GlobalEnabled(l))
+        for (int l = 0; l < m_model.data()->GlobalParameterSize(); ++l) {
+            if (!m_model.data()->GlobalTable()->isChecked(l, 0) || !m_model.data()->GlobalEnabled(l))
                 continue;
             QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
@@ -170,9 +170,9 @@ QTableView* SearchResultWidget::BuildList()
 
         int index = m_model.data()->GlobalParameterSize();
         int idx = 0;
-        for (int k = 0; k < m_model->SeriesCount(); ++k) {
-            for (int l = 0; l < m_model->LocalParameterSize(); ++l) {
-                if (!m_model->LocalTable()->isChecked(l, k) || !m_model->LocalEnabled(l)) {
+        for (int k = 0; k < m_model.data()->SeriesCount(); ++k) {
+            for (int l = 0; l < m_model.data()->LocalParameterSize(); ++l) {
+                if (!m_model.data()->LocalTable()->isChecked(l, k) || !m_model.data()->LocalEnabled(l)) {
                     index++;
                     idx++;
                     continue;
@@ -201,24 +201,24 @@ QTableView* SearchResultWidget::BuildList()
     }
 
     for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
-        if (!m_model->GlobalTable()->isChecked(i, 0) || !m_model->GlobalEnabled(i))
+        if (!m_model.data()->GlobalTable()->isChecked(i, 0) || !m_model.data()->GlobalEnabled(i))
             continue;
         header << tr("%1\n (before)").arg(m_model.data()->GlobalParameterName(i));
         header << tr("%1\n (after)").arg(m_model.data()->GlobalParameterName(i));
     }
 
     QString series;
-    for (int k = 0; k < m_model->SeriesCount(); ++k) {
-        if (m_model->SupportSeries())
+    for (int k = 0; k < m_model.data()->SeriesCount(); ++k) {
+        if (m_model.data()->SupportSeries())
             series = tr("Series %1, ").arg(k + 1);
         else
             series = QString();
 
-        for (int l = 0; l < m_model->LocalParameterSize(); ++l) {
-            if (!m_model->LocalTable()->isChecked(l, k) || !m_model->LocalEnabled(l))
+        for (int l = 0; l < m_model.data()->LocalParameterSize(); ++l) {
+            if (!m_model.data()->LocalTable()->isChecked(l, k) || !m_model.data()->LocalEnabled(l))
                 continue;
-            header << tr("%1 %2 \n (before)").arg(series).arg(m_model->LocalParameterName(l));
-            header << tr("%1 %2 \n (after)").arg(series).arg(m_model->LocalParameterName(l));
+            header << tr("%1 %2 \n (before)").arg(series).arg(m_model.data()->LocalParameterName(l));
+            header << tr("%1 %2 \n (after)").arg(series).arg(m_model.data()->LocalParameterName(l));
         }
     }
 

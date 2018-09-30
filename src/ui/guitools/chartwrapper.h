@@ -120,7 +120,8 @@ class ChartWrapper : public QObject {
 
 public:
     ChartWrapper(bool flipable, QObject* parent = 0);
-    ~ChartWrapper();
+    virtual ~ChartWrapper() override;
+
     void setData(QSharedPointer<DataClass> model);
     void addWrapper(const QWeakPointer<ChartWrapper>& wrapper);
 
@@ -147,7 +148,10 @@ public slots:
 private:
     QPointer<const DataTable> m_table;
     QList<QPointer<QtCharts::QXYSeries>> m_stored_series;
-    QSharedPointer<DataClass> m_model;
+    QWeakPointer<DataClass> m_stored_data;
+    QWeakPointer<DataClass> m_stored_model;
+    QWeakPointer<DataClass> m_working;
+
     bool m_blocked, m_transformed, m_flipable;
     void InitaliseSeries();
 

@@ -108,8 +108,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_model_widget = new QWidget;
     Data2Text();
     m_minimizer->setModel(m_model);
+
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
+    connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
     connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelWidget::MCStatistic);
@@ -118,7 +120,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelWidget::CVAnalyse);
     connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelWidget::DoReductionAnalyse);
 
-    connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
 
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper.data(), SLOT(SetBlocked(int)));
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper.data(), SLOT(SetBlocked(int)));
@@ -197,16 +198,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_minimize_all = new QPushButton(tr("Fit"));
 
-    QAction* minimize_normal = new QAction(tr("Tight"));
+    QAction* minimize_normal = new QAction(tr("Tight"), this);
     connect(minimize_normal, SIGNAL(triggered()), this, SLOT(GlobalMinimize()));
 
-    QAction* minimize_loose = new QAction(tr("Loose"));
+    QAction* minimize_loose = new QAction(tr("Loose"), this);
     connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
 
-    QAction* fast_conf = new QAction(tr("Confidence"));
+    QAction* fast_conf = new QAction(tr("Confidence"), this);
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
 
-    QMenu* menu = new QMenu;
+    QMenu* menu = new QMenu(this);
     menu->addAction(minimize_normal);
     menu->addAction(minimize_loose);
     menu->addAction(fast_conf);
@@ -326,13 +327,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
 ModelWidget::~ModelWidget()
 {
-    // delete m_charts.signal_wrapper;
-    // delete m_charts.error_wrapper;
 
-    m_model.clear();
+    m_charts.signal_wrapper.clear();
+    m_charts.error_wrapper.clear();
+    m_charts.data_wrapper.clear();
+
+    // m_minimizer.clear();
 
     m_statistic_dialog->hide();
     delete m_statistic_dialog;
+
+    m_model.clear();
+    delete m_model.data();
 }
 
 void ModelWidget::setColorList(const QString& str)
@@ -716,6 +722,7 @@ void ModelWidget::LocalMinimize()
         result += m_minimizer->Minimize();
         QJsonObject json = m_minimizer->Parameter();
         emit AddModel(json);
+        model.clear();
     }
 
     if (result < m_model->SeriesCount())

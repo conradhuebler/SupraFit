@@ -39,6 +39,7 @@ class ResultsDialog : public QDialog {
     Q_OBJECT
 public:
     ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* wrapper, QWidget* parent);
+    virtual ~ResultsDialog() override;
 
 public slots:
     void ShowResult(SupraFit::Statistic type, int index);

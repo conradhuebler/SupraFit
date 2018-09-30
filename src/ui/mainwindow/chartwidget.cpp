@@ -59,11 +59,11 @@ ChartDockTitleBar::ChartDockTitleBar()
     m_tools = new QPushButton(tr("Tools and Chart Settings"));
     m_tools->setFlat(true);
     m_tools->setIcon(QIcon::fromTheme("applications-system"));
-    QMenu* toolsmenu = new QMenu;
+    QMenu* toolsmenu = new QMenu(this);
 
     toolsmenu->addSeparator();
 
-    m_animation = new QAction(tr("Animation"));
+    m_animation = new QAction(tr("Animation"), this);
     m_animation->setCheckable(true);
     m_animation->setChecked(qApp->instance()->property("chartanimation").toBool());
 
@@ -72,59 +72,59 @@ ChartDockTitleBar::ChartDockTitleBar()
 
     m_theme = new QMenu("Chart Theme");
 
-    QAction* light = new QAction(tr("Light"));
+    QAction* light = new QAction(tr("Light"), this);
     light->setData(QtCharts::QChart::ChartThemeLight);
     m_theme->addAction(light);
 
-    QAction* blue = new QAction(tr("Blue Cerulean"));
+    QAction* blue = new QAction(tr("Blue Cerulean"), this);
     blue->setData(QtCharts::QChart::ChartThemeBlueCerulean);
     m_theme->addAction(blue);
 
-    QAction* dark = new QAction(tr("Dark"));
+    QAction* dark = new QAction(tr("Dark"), this);
     dark->setData(QtCharts::QChart::ChartThemeDark);
     m_theme->addAction(dark);
 
-    QAction* brown = new QAction(tr("Brown Sand"));
+    QAction* brown = new QAction(tr("Brown Sand"), this);
     brown->setData(QtCharts::QChart::ChartThemeBrownSand);
     m_theme->addAction(brown);
 
-    QAction* bluencs = new QAction(tr("Blue NCS"));
+    QAction* bluencs = new QAction(tr("Blue NCS"), this);
     bluencs->setData(QtCharts::QChart::ChartThemeBlueNcs);
     m_theme->addAction(bluencs);
 
-    QAction* high = new QAction(tr("High Contrast"));
+    QAction* high = new QAction(tr("High Contrast"), this);
     high->setData(QtCharts::QChart::ChartThemeHighContrast);
     m_theme->addAction(high);
 
-    QAction* icy = new QAction(tr("Blue Icy"));
+    QAction* icy = new QAction(tr("Blue Icy"), this);
     icy->setData(QtCharts::QChart::ChartThemeBlueIcy);
     m_theme->addAction(icy);
 
-    QAction* qt = new QAction(tr("Qt"));
+    QAction* qt = new QAction(tr("Qt"), this);
     qt->setData(QtCharts::QChart::ChartThemeQt);
     m_theme->addAction(qt);
 
     toolsmenu->addMenu(m_theme);
 
-    m_size = new QMenu("Chart Size");
+    m_size = new QMenu("Chart Size", this);
 
-    QAction* tiny = new QAction("Tiny");
+    QAction* tiny = new QAction("Tiny", this);
     tiny->setData(512);
     m_size->addAction(tiny);
 
-    QAction* small = new QAction("Small");
+    QAction* small = new QAction("Small", this);
     small->setData(650);
     m_size->addAction(small);
 
-    QAction* medium = new QAction("Medium");
+    QAction* medium = new QAction("Medium", this);
     medium->setData(850);
     m_size->addAction(medium);
 
-    QAction* max = new QAction("Maximum");
+    QAction* max = new QAction("Maximum", this);
     max->setData(1024);
     m_size->addAction(max);
 
-    QAction* any = new QAction("Any");
+    QAction* any = new QAction("Any", this);
     any->setData(16777215);
     m_size->addAction(any);
 
@@ -191,6 +191,8 @@ ChartWidget::ChartWidget()
 
 ChartWidget::~ChartWidget()
 {
+    m_data_mapper.clear();
+    m_rawdata.clear();
 }
 
 QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> rawdata)
@@ -243,13 +245,14 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
 
 Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 {
-    m_models << model;
+    m_data_mapper->TransformModel(model);
+
+    m_empty = false;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
     QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper.data(), SLOT(showSeries(int)));
     signal_wrapper->setDataTable(model->ModelTable());
-    m_data_mapper->TransformModel(model);
     signal_wrapper->setData(model);
 
     QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
@@ -307,7 +310,7 @@ void ChartWidget::Repaint()
     if (!m_data_mapper)
         return;
 
-    if (m_models.size()) {
+    if (!m_empty) {
         m_signalview->setXAxis(m_signal_x);
         m_errorview->setXAxis(m_error_x);
 

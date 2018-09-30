@@ -53,7 +53,7 @@ public:
     {
         setAutoDelete(false);
     }
-    inline ~AbstractSearchThread() {}
+    inline ~AbstractSearchThread() { m_model.clear(); }
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
 
 public slots:

@@ -148,20 +148,20 @@ ChartConfigDialog::ChartConfigDialog()
     m_alignment->setMaximumSize(130, 30);
     m_alignment->setStyleSheet("background-color: #F3ECE0;");
 
-    QMenu* align = new QMenu;
-    QAction* left = new QAction(tr("Left"));
+    QMenu* align = new QMenu(this);
+    QAction* left = new QAction(tr("Left"), this);
     left->setData(Qt::AlignLeft);
     align->addAction(left);
 
-    QAction* right = new QAction(tr("Right"));
+    QAction* right = new QAction(tr("Right"), this);
     right->setData(Qt::AlignRight);
     align->addAction(right);
 
-    QAction* top = new QAction(tr("Top"));
+    QAction* top = new QAction(tr("Top"), this);
     top->setData(Qt::AlignTop);
     align->addAction(top);
 
-    QAction* bottom = new QAction(tr("Bottom"));
+    QAction* bottom = new QAction(tr("Bottom"), this);
     bottom->setData(Qt::AlignBottom);
     align->addAction(bottom);
     m_alignment->setMenu(align);

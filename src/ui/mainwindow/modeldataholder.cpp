@@ -261,7 +261,7 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
             menu->addAction(ptr);
     };
 
-    QMenu* menu = new QMenu;
+    QMenu* menu = new QMenu(this);
     if (IndependetCount == 1) {
         addMenu(m_kinetcs_model, menu);
         m_add_kinetics->setMenu(menu);
@@ -273,6 +273,7 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         action = menu->addSection(tr("Flexible Stoichiometry"));
         addMenu(m_itc_flex_model, menu);
     } else if (IndependetCount == 2) {
+#warning clean me
         QAction* action = menu->addSection(tr("NMR/UV VIS"));
         addMenu(m_nmr_model, menu);
         action = menu->addSection(tr("Fluorescence"));
@@ -352,6 +353,7 @@ ModelDataHolder::~ModelDataHolder()
             delete model;
         }
     }
+    m_wrapper.clear();
     m_data.clear();
 }
 
@@ -364,7 +366,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         m_datawidget = new DataWidget;
         m_datawidget->setData(m_data, wrapper);
         m_modelsWidget->setDataTab(m_datawidget);
-        m_TitleBarWidget->addToMenu(m_data->IndependentModel()->columnCount());
+        m_TitleBarWidget->addToMenu(m_data.data()->IndependentModel()->columnCount());
         connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
         connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     } else {
@@ -399,7 +401,7 @@ void ModelDataHolder::Json2Model(const QJsonObject& object)
 {
 
     if (object.contains("SupraFit"))
-        Json2Model(object, (SupraFit::Model)object["model"].toInt());
+        Json2Model(object, static_cast<SupraFit::Model>(object["model"].toInt()));
     else
         Json2Model(object, Name2Model(object["model"].toString()));
 }
@@ -474,12 +476,18 @@ void ModelDataHolder::RemoveTab(int i)
 {
     if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
-        AbstractModel* m = model->Model().data();
+        QPointer<AbstractModel> m = model->Model().data();
         m_modelsWidget->removeTab(i);
         m_models.remove(m_models.indexOf(model->Model()));
         delete model;
+#warning if some strange crashes occur, check this here
+
         if (qobject_cast<MetaModel*>(m_data))
             qobject_cast<MetaModel*>(m_data)->RemoveModel(m);
+        else {
+            if (m)
+                delete m;
+        }
         emit ModelRemoved();
     }
     ActiveBatch();
@@ -540,7 +548,7 @@ void ModelDataHolder::SaveCurrentModels(const QString& file)
 QJsonObject ModelDataHolder::SaveWorkspace()
 {
     QJsonObject toplevel, data;
-    data = m_data->ExportData();
+    data = m_data.data()->ExportData();
 
     if (m_datawidget) {
         for (int i = 1; i < m_modelsWidget->count(); i++) {
@@ -563,7 +571,7 @@ QJsonObject ModelDataHolder::SaveWorkspace()
 QJsonObject ModelDataHolder::SaveModel(int index)
 {
     QJsonObject toplevel, data;
-    data = m_data->ExportData();
+    data = m_data.data()->ExportData();
 
     if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(index))) {
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(index));
@@ -849,23 +857,23 @@ void ModelDataHolder::CompareAIC()
 
 void ModelDataHolder::EditData()
 {
-    int version = m_data->ExportData()["SupraFit"].toInt();
+    int version = m_data.data()->ExportData()["SupraFit"].toInt();
     if (version < 1602) {
         QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
-        m_data->IndependentModel()->setEditable(!m_data->IndependentModel()->isEditable());
-        m_data->DependentModel()->setEditable(!m_data->DependentModel()->isEditable());
+        m_data.data()->IndependentModel()->setEditable(!m_data.data()->IndependentModel()->isEditable());
+        m_data.data()->DependentModel()->setEditable(!m_data.data()->DependentModel()->isEditable());
     } else {
-        if (m_data->DataType() == DataClassPrivate::Thermogram) {
+        if (m_data.data()->DataType() == DataClassPrivate::Thermogram) {
             ImportData dialog(m_data);
             if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
                 {
-                    if (m_data->DataType() == DataClassPrivate::Thermogram)
-                        m_data->ImportData(dialog.getStoredData().ExportData());
+                    if (m_data.data()->DataType() == DataClassPrivate::Thermogram)
+                        m_data.data()->ImportData(dialog.getStoredData().ExportData());
                 }
             }
         } else {
-            m_data->IndependentModel()->setEditable(!m_data->IndependentModel()->isEditable());
-            m_data->DependentModel()->setEditable(!m_data->DependentModel()->isEditable());
+            m_data.data()->IndependentModel()->setEditable(!m_data.data()->IndependentModel()->isEditable());
+            m_data.data()->DependentModel()->setEditable(!m_data.data()->DependentModel()->isEditable());
         }
     }
 }

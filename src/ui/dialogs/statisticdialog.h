@@ -98,7 +98,7 @@ class StatisticDialog : public QDialog {
 public:
     StatisticDialog(QSharedPointer<AbstractModel> m_model, QWidget* parent = 0);
     StatisticDialog(QWidget* parent = 0);
-    virtual ~StatisticDialog();
+    virtual ~StatisticDialog() override;
 
     MCConfig getMCConfig();
     WGSConfig getWGSConfig();
@@ -151,7 +151,7 @@ private:
 
     int m_time, m_runs;
     quint64 m_time_0;
-    qreal m_f_value, m_moco_max, m_cv_max;
+    qreal m_f_value = 1, m_moco_max, m_cv_max;
     bool m_hidden;
 
 private slots:

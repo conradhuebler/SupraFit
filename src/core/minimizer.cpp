@@ -37,6 +37,7 @@ NonLinearFitThread::NonLinearFitThread(bool exchange_statistics)
 
 NonLinearFitThread::~NonLinearFitThread()
 {
+    m_model.clear();
 }
 
 void NonLinearFitThread::run()
@@ -104,6 +105,7 @@ Minimizer::Minimizer(bool exchange_statistics, QObject* parent)
 
 Minimizer::~Minimizer()
 {
+    // m_model.clear();
 }
 
 QString Minimizer::OptPara2String() const

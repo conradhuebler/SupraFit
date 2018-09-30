@@ -196,6 +196,7 @@ public:
     DataClassPrivate(const DataClassPrivate& other);
     ~DataClassPrivate();
 
+    void printReferenz() const;
     /*
      * Here are the datas
      */

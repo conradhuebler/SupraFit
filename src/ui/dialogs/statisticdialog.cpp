@@ -67,6 +67,7 @@ StatisticDialog::StatisticDialog(QWidget* parent)
 
 StatisticDialog::~StatisticDialog()
 {
+    m_model.clear();
 }
 
 void StatisticDialog::Attention()
@@ -286,7 +287,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_cv_maxerror->setSuffix("%");
     m_cv_f_test = new QCheckBox(tr("Use F-Statistic"));
     m_cv_f_test->setChecked(true);
-    m_cv_f_value = new QDoubleSpinBox;
+    m_cv_f_value = new QDoubleSpinBox(this);
     m_cv_f_value->setMaximum(1000);
     m_cv_f_value->setMinimum(0);
     m_cv_f_value->setValue(m_f_value);
@@ -402,7 +403,7 @@ QWidget* StatisticDialog::ModelComparison()
     m_moco_f_test = new QCheckBox(tr("Use F-Statistic"));
     m_moco_f_test->setChecked(true);
 
-    m_moco_f_value = new QDoubleSpinBox;
+    m_moco_f_value = new QDoubleSpinBox(this);
     m_moco_f_value->setMaximum(1000);
     m_moco_f_value->setMinimum(0);
     m_moco_f_value->setValue(m_f_value);
@@ -639,6 +640,7 @@ void StatisticDialog::ShowWidget()
     animation->start();
     m_tab_widget->setDisabled(true);
     m_hidden = false;
+    delete animation;
 }
 
 void StatisticDialog::HideWidget()
@@ -654,6 +656,7 @@ void StatisticDialog::HideWidget()
     m_tab_widget->setDisabled(false);
     m_hidden = true;
     QDialog::hide();
+    delete animation;
 }
 
 void StatisticDialog::Update()

@@ -126,6 +126,7 @@ AbstractModel::~AbstractModel()
     if (m_model_error)
         delete m_model_error;
 
+    std::cout << "Model to be deleted" << std::endl;
 }
 
 QVector<qreal> AbstractModel::OptimizeParameters()

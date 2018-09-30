@@ -318,7 +318,7 @@ SupraFitGui::SupraFitGui()
 
     m_project_view->addAction(action);
 
-    m_project_tree = new ProjectTree(&m_project_list);
+    m_project_tree = new ProjectTree(&m_project_list, this);
     connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
@@ -386,36 +386,36 @@ SupraFitGui::SupraFitGui()
 
     ReadSettings();
 
-    m_new_window = new QAction(Icon("window-new"), tr("New Window"));
+    m_new_window = new QAction(Icon("window-new"), tr("New Window"), this);
     connect(m_new_window, SIGNAL(triggered(bool)), this, SLOT(NewWindow()));
 
-    m_new_table = new QAction(Icon("document-new"), tr("New Table"));
+    m_new_table = new QAction(Icon("document-new"), tr("New Table"), this);
     connect(m_new_table, SIGNAL(triggered(bool)), this, SLOT(NewTable()));
     m_new_table->setShortcut(QKeySequence::New);
 
-    m_load = new QAction(Icon("document-open"), tr("Open Project"));
+    m_load = new QAction(Icon("document-open"), tr("Open Project"), this);
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
     m_load->setShortcut(QKeySequence::Open);
 
-    m_save = new QAction(Icon("document-save"), tr("&Save Project"));
+    m_save = new QAction(Icon("document-save"), tr("&Save Project"), this);
     m_save->setShortcuts(QKeySequence::Save);
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
 
-    m_save_as = new QAction(Icon("document-save-as"), tr("Save Project &As"));
+    m_save_as = new QAction(Icon("document-save-as"), tr("Save Project &As"), this);
     connect(m_save_as, SIGNAL(triggered(bool)), this, SLOT(SaveAsProjectAction()));
     m_save_as->setShortcut(QKeySequence::SaveAs);
 
-    m_config = new QAction(Icon("configure"), tr("Settings"));
+    m_config = new QAction(Icon("configure"), tr("Settings"), this);
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
     m_config->setShortcut(QKeySequence::Preferences);
 
-    m_about = new QAction(QIcon(":/misc/suprafit.png"), tr("Info"));
+    m_about = new QAction(QIcon(":/misc/suprafit.png"), tr("Info"), this);
     connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
 
-    m_aboutqt = new QAction(Icon("help-about"), tr("About Qt"));
+    m_aboutqt = new QAction(Icon("help-about"), tr("About Qt"), this);
     connect(m_aboutqt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 
-    m_close = new QAction(Icon("application-exit"), tr("Quit"));
+    m_close = new QAction(Icon("application-exit"), tr("Quit"), this);
     connect(m_close, SIGNAL(triggered()), SLOT(close()));
 
     m_main_toolbar = new QToolBar;
@@ -1056,7 +1056,7 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
 
     m_project_tree->disconnect();
 
-    ProjectTree* project_tree = new ProjectTree(&m_project_list);
+    ProjectTree* project_tree = new ProjectTree(&m_project_list, this);
     m_project_view->setModel(project_tree);
 
     m_project_tree = project_tree;

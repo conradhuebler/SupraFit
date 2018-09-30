@@ -62,6 +62,7 @@ ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractMod
 
 ResultsWidget::~ResultsWidget()
 {
+    m_model.clear();
     delete m_dialog;
 }
 
@@ -78,32 +79,32 @@ void ResultsWidget::setUi()
     switch (m_data["controller"].toObject()["method"].toInt()) {
     case SupraFit::Statistic::MonteCarlo:
         m_widget = MonteCarloWidget();
-        setObjectName("Monte Carlo Simulation for " + m_model->Name());
+        setObjectName("Monte Carlo Simulation for " + m_model.data()->Name());
         break;
 
     case SupraFit::Statistic::ModelComparison:
         m_widget = ModelComparisonWidget();
-        setObjectName("Model Comparison Confidence for " + m_model->Name());
+        setObjectName("Model Comparison Confidence for " + m_model.data()->Name());
         break;
 
     case SupraFit::Statistic::WeakenedGridSearch:
         m_widget = GridSearchWidget();
-        setObjectName("Weakend Grid Search Confidence for " + m_model->Name());
+        setObjectName("Weakend Grid Search Confidence for " + m_model.data()->Name());
         break;
 
     case SupraFit::Statistic::Reduction:
         m_widget = ReductionWidget();
-        setObjectName("Reduction Analysis for " + m_model->Name());
+        setObjectName("Reduction Analysis for " + m_model.data()->Name());
         break;
 
     case SupraFit::Statistic::CrossValidation:
         m_widget = MonteCarloWidget();
-        setObjectName("Cross Validation Estimation for " + m_model->Name());
+        setObjectName("Cross Validation Estimation for " + m_model.data()->Name());
         break;
 
     case SupraFit::Statistic::GlobalSearch:
         m_widget = SearchWidget();
-        setObjectName("Global Search for " + m_model->Name());
+        setObjectName("Global Search for " + m_model.data()->Name());
         break;
 
     default:
@@ -166,7 +167,7 @@ QWidget* ResultsWidget::ReductionWidget()
         QColor color;
         int index = 0, jndex = 0;
         if (data["type"].toString() == "Global Parameter")
-            color = ChartWrapper::ColorCode(m_model->Color(i));
+            color = ChartWrapper::ColorCode(m_model.data()->Color(i));
         else {
             if (data.contains("index")) {
                 QStringList lindex = data["index"].toString().split("|");
@@ -185,9 +186,9 @@ QWidget* ResultsWidget::ReductionWidget()
         serie->setDashDotLine(true);
         qreal value = 0;
         if (data["type"].toString() == "Global Parameter")
-            value = m_model->GlobalParameter(i);
+            value = m_model.data()->GlobalParameter(i);
         else
-            value = m_model->LocalParameter(jndex, index);
+            value = m_model.data()->LocalParameter(jndex, index);
 
         serie->append(QPointF(series.last().x(), value));
         serie->append(QPointF(series.first().x(), value));
@@ -269,16 +270,16 @@ QWidget* ResultsWidget::GridSearchWidget()
             series_int++;
             old_index = index;
         } else {
-            xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
+            xy_series->setColor(ChartWrapper::ColorCode(m_model.data()->Color(i)));
             name = name;
         }
 
         view->addSeries(xy_series, rank, xy_series->color(), name);
 
         LineSeries* current_constant = new LineSeries;
-        *current_constant << QPointF(x_0, m_model->SumofSquares()) << QPointF(x_0, m_model->SumofSquares() * 1.1);
+        *current_constant << QPointF(x_0, m_model.data()->SumofSquares()) << QPointF(x_0, m_model.data()->SumofSquares() * 1.1);
         current_constant->setColor(xy_series->color());
-        current_constant->setName(m_model->GlobalParameterName(i));
+        current_constant->setName(m_model.data()->GlobalParameterName(i));
         view->addSeries(current_constant, rank, xy_series->color(), name);
     }
     return view;
@@ -300,7 +301,7 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     if (controller["method"].toInt() == SupraFit::Statistic::GlobalSearch) {
         text += Print::TextFromStatistic(data, controller);
     } else {
-        text += m_model->AnalyseStatistic(m_data, false);
+        text += m_model.data()->AnalyseStatistic(m_data, false);
     }
     m_confidence_label->setText(text);
 }
@@ -308,7 +309,7 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
 void ResultsWidget::Detailed()
 {
     QTextEdit* text = new QTextEdit;
-    text->setText("<html><pre> " + m_text + "</br> " + m_model->AnalyseStatistic(m_data, true) + "</pre></html>");
+    text->setText("<html><pre> " + m_text + "</br> " + m_model.data()->AnalyseStatistic(m_data, true) + "</pre></html>");
     m_dialog->setWidget(text, tr("Details on Statistic Analysis"));
     m_dialog->show();
 }

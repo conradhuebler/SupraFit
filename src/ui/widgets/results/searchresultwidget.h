@@ -118,7 +118,7 @@ private:
     QTableView* m_table;
     ContourWidget* m_contour;
     QTabWidget* m_central_widget;
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QCheckBox *m_valid, *m_converged;
     ScientificBox* m_threshold;
     QPushButton* m_export;

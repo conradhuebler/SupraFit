@@ -54,7 +54,7 @@ public:
 
     AbstractTitrationModel(DataClass* data);
     AbstractTitrationModel(AbstractTitrationModel* other);
-    virtual ~AbstractTitrationModel();
+    virtual ~AbstractTitrationModel() override;
 
     inline int Size() const { return DataClass::Size(); }
 

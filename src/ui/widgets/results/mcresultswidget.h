@@ -73,7 +73,7 @@ private:
     SupraFit::Statistic m_type;
 
     ChartWrapper* m_wrapper;
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QJsonObject m_data;
 
 private slots:

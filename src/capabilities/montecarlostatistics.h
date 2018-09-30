@@ -46,8 +46,8 @@ class MonteCarloThread : public AbstractSearchThread {
 public:
     MonteCarloThread(const MCConfig& config);
     MonteCarloThread();
-    ~MonteCarloThread();
-    virtual void run();
+    virtual ~MonteCarloThread() override;
+    virtual void run() override;
     inline QJsonObject OptimizedParameter() const { return m_optimized; }
     void setDataTable(QPointer<DataTable> table);
     void setIndepTable(QPointer<DataTable> table);
@@ -70,7 +70,7 @@ class MonteCarloBatch : public AbstractSearchThread {
 
 public:
     MonteCarloBatch(const MCConfig& config, QPointer<AbstractSearchClass> parent);
-    ~MonteCarloBatch();
+    virtual ~MonteCarloBatch() override;
     virtual void run() override;
     inline QList<QJsonObject> Models() const { return m_models; }
     inline bool Finished() const { return m_finished; }

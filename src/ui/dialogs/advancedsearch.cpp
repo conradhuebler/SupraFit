@@ -121,6 +121,7 @@ AdvancedSearch::AdvancedSearch(QWidget* parent)
 
 AdvancedSearch::~AdvancedSearch()
 {
+    m_model.clear();
 }
 
 double AdvancedSearch::MaxX() const
@@ -229,16 +230,19 @@ void AdvancedSearch::SetUi()
         }
     }
 
+    /*
     m_initial_guess = new QCheckBox(tr("Apply initial Guess"));
     m_initial_guess->setChecked(true);
     connect(m_initial_guess, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));
-    m_optim = new QCheckBox(tr("Optimise"));
+    */
+    /*m_optim = new QCheckBox(tr("Optimise"));
     m_optim->setChecked(true);
     connect(m_optim, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));
-    QHBoxLayout* options = new QHBoxLayout;
+    */
+    /* QHBoxLayout* options = new QHBoxLayout;
 
     options->addWidget(m_optim);
-    options->addWidget(m_initial_guess);
+    options->addWidget(m_initial_guess);*/
 
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));

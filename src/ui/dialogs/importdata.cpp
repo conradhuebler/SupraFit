@@ -114,7 +114,7 @@ void ImportData::setUi(bool single)
     QGridLayout* layout = new QGridLayout;
 
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    m_switch_concentration = new QCheckBox;
+    m_switch_concentration = new QCheckBox(this);
     m_switch_concentration->setText("Switch Host/Guest");
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);

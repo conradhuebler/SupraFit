@@ -115,17 +115,24 @@ ChartWrapper::~ChartWrapper()
         m_stored_series[i]->clear();
         delete m_stored_series[i];
     }
+
+    m_stored_data.clear();
+    m_stored_model.clear();
+    m_working.clear();
+
+    qDebug() << "Deleting chartwrapper";
 }
 
 
 void ChartWrapper::setData(QSharedPointer<DataClass> model)
 {
-    m_model = model;
+    m_stored_data = model;
+    m_working = m_stored_data;
     // can we make this more compact ?
-    if (qobject_cast<AbstractModel*>(m_model))
-        connect(qobject_cast<AbstractModel*>(m_model.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
-    else if (qobject_cast<DataClass*>(m_model))
-        connect(m_model.data(), &DataClass::Update, this, &ChartWrapper::UpdateModel);
+    if (qobject_cast<AbstractModel*>(m_stored_data))
+        connect(qobject_cast<AbstractModel*>(m_stored_data.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
+    else if (qobject_cast<DataClass*>(m_stored_data))
+        connect(m_stored_data.data(), &DataClass::Update, this, &ChartWrapper::UpdateModel);
 
     InitaliseSeries();
     UpdateModel();
@@ -164,13 +171,18 @@ void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 
 void ChartWrapper::InitaliseSeries()
 {
+    if (!m_working) {
+        m_working = m_stored_data;
+        m_transformed = false;
+    }
+
     if (m_stored_series.isEmpty()) {
 
-        int serie = m_model->SeriesCount();
+        int serie = m_working.data()->SeriesCount();
 
         for (int j = 0; j < serie; ++j) {
             QPointer<QtCharts::QXYSeries> series;
-            if (qobject_cast<AbstractModel*>(m_model))
+            if (qobject_cast<AbstractModel*>(m_working.data()))
                 series = new LineSeries;
             else
                 series = new ScatterSeries;
@@ -181,6 +193,11 @@ void ChartWrapper::InitaliseSeries()
 
 void ChartWrapper::UpdateModel()
 {
+    if (!m_working) {
+        m_working = m_stored_data;
+        m_transformed = false;
+    }
+
     MakeSeries();
     emit ModelChanged();
 }
@@ -192,13 +209,13 @@ void ChartWrapper::MakeSeries()
     for (int j = 0; j < m_stored_series.size(); ++j)
         m_stored_series[j]->clear();
 
-    int rows = m_model->DataPoints();
-    int cols = m_model->SeriesCount();
+    int rows = m_working.data()->DataPoints();
+    int cols = m_working.data()->SeriesCount();
 
     for (int i = 0; i < rows; ++i) {
-        double x = m_model->PrintOutIndependent(i);
+        double x = m_working.data()->PrintOutIndependent(i);
         for (int j = 0; j < cols; ++j) {
-            if (m_model->DependentModel()->isChecked(j, i)) {
+            if (m_working.data()->DependentModel()->isChecked(j, i)) {
                 if (j >= m_stored_series.size())
                     continue;
                 m_stored_series[j]->append(x, m_table->data(j, i));
@@ -253,11 +270,14 @@ bool ChartWrapper::setColorList(const QString& str)
 
 void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
 {
+    m_stored_model = model;
+    /*
     if (!m_transformed)
-        m_model = model;
+        m_stored_model = model;
     else
-        return;
-    connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
+        return;*/
+    connect(m_stored_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
+    m_working = m_stored_model;
     m_transformed = true;
     MakeSeries();
     emit ModelTransformed();

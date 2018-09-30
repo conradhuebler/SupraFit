@@ -257,6 +257,11 @@ MetaModelParameter::MetaModelParameter(QSharedPointer<AbstractModel> model)
     setUi();
 }
 
+MetaModelParameter::~MetaModelParameter()
+{
+    m_model.clear();
+}
+
 void MetaModelParameter::setUi()
 {
     m_layout = new QGridLayout;

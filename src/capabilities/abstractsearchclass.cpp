@@ -31,6 +31,7 @@ AbstractSearchClass::AbstractSearchClass(QObject* parent)
 
 AbstractSearchClass::~AbstractSearchClass()
 {
+    m_model.clear();
 }
 
 void AbstractSearchClass::Interrupt()

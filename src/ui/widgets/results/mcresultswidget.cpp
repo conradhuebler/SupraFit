@@ -192,7 +192,7 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, boxplot](const QColor& color) {if(boxplot) boxplot->setColor(i, color); });
         } else
-            series->setBrush(ChartWrapper::ColorCode(m_model->Color(i)));
+            series->setBrush(ChartWrapper::ColorCode(m_model.data()->Color(i)));
 
         boxplot->addSeries(series, i, series->color(), data["name"].toString());
         boxplot->setColor(i, series->color());
@@ -259,7 +259,7 @@ void MCResultsWidget::UpdateBoxes()
 
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
-            area_series->setName(m_model->GlobalParameterName(i));
+            area_series->setName(m_model.data()->GlobalParameterName(i));
 #warning why is this always a global parameter?
         }
     }
@@ -327,7 +327,7 @@ void MCResultsWidget::GenerateConfidence(double error)
         m_data[QString::number(i)] = data;
     }
     UpdateBoxes();
-    m_model->UpdateStatistic(m_data);
+    m_model.data()->UpdateStatistic(m_data);
     emit ConfidenceUpdated(m_data);
 }
 

@@ -46,7 +46,7 @@ private:
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
     QCheckBox* m_include;
     HoverCheckBox* m_show;
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QPointer<LineSeries> m_error_series, m_signal_series;
     QPointer<QLineEdit> m_name;
 

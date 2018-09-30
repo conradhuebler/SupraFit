@@ -50,7 +50,7 @@ class WGSearchThread : public AbstractSearchThread {
 
 public:
     WGSearchThread(const WGSConfig& config);
-    ~WGSearchThread();
+    virtual ~WGSearchThread() override;
 
     inline void setParameterId(int index) { m_index = index; }
 
@@ -86,7 +86,7 @@ class WeakenedGridSearch : public AbstractSearchClass {
 
 public:
     WeakenedGridSearch(const WGSConfig& config, QObject* parent = 0);
-    ~WeakenedGridSearch();
+    virtual ~WeakenedGridSearch() override;
     inline void setConfig(const WGSConfig& config) { m_config = config; }
     inline bool CV() { return m_cv; }
     bool ConfidenceAssesment();

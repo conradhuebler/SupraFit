@@ -184,7 +184,7 @@ private:
     QPointer<MDHDockTitleBar> m_TitleBarWidget;
     QPointer<ChartWidget> m_charts;
     QWeakPointer<ChartWrapper> m_wrapper;
-    QSharedPointer<DataClass> m_data;
+    QWeakPointer<DataClass> m_data;
     QVector<QWeakPointer<AbstractModel>> m_models;
     QPointer<StatisticDialog> m_statistic_dialog;
     QPointer<CompareDialog> m_compare_dialog;
@@ -194,7 +194,7 @@ private:
 
     OptimizerConfig m_config;
 
-    int m_last_tab;
+    int m_last_tab = 0;
 
     void Json2Model(const QJsonObject& object);
     void Json2Model(const QJsonObject& object, SupraFit::Model model);

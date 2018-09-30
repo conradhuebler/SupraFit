@@ -38,6 +38,7 @@ ReductionAnalyse::ReductionAnalyse(OptimizerConfig config)
 
 ReductionAnalyse::~ReductionAnalyse()
 {
+    // m_model.clear();
 }
 
 void ReductionAnalyse::addThread(QPointer<MonteCarloThread> thread)

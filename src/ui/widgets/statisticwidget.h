@@ -42,7 +42,7 @@ public slots:
     void Update();
 
 private:
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QPushButton* m_show;
     QWidget* m_subwidget;
     QTextEdit* m_overview;

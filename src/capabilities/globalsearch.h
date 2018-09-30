@@ -53,7 +53,7 @@ class SearchBatch : public AbstractSearchThread {
 
 public:
     SearchBatch(const GSConfig& config, QPointer<GlobalSearch> parent);
-    ~SearchBatch() {}
+    virtual ~SearchBatch() override {}
 
     virtual void run() override;
     inline QList<QJsonObject> Result() { return m_result; }
@@ -72,7 +72,9 @@ private:
     QList<QJsonObject> m_result;
     GSConfig m_config;
     bool m_finished, m_checked;
-    QSharedPointer<AbstractModel> m_model;
+    /*
+protected:
+    QSharedPointer<AbstractModel> m_model; */
 };
 
 class GlobalSearch : public AbstractSearchClass {
@@ -80,7 +82,7 @@ class GlobalSearch : public AbstractSearchClass {
 
 public:
     GlobalSearch( QObject* parent = 0);
-    ~GlobalSearch();
+    virtual ~GlobalSearch() override;
 
     inline void setConfig(const GSConfig& config) { m_config = config; }
     inline QVector<QVector<qreal>> InputList() const { return m_full_list; }

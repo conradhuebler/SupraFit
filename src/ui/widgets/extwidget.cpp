@@ -104,18 +104,24 @@ void extWidget::Update()
     qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng(seed);
 
-    data["dependent"] = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->StdDeviation(), rng)->ExportTable(true);
+    DataTable* table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->StdDeviation(), rng);
+    data["dependent"] = table->ExportTable(true);
     top["data"] = data;
     document = QJsonDocument(top);
     m_mc_std->setContent(document.toBinaryData());
+    delete table;
 
-    data["dependent"] = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->SEy(), rng)->ExportTable(true);
+    table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->SEy(), rng);
+    data["dependent"] = table->ExportTable(true);
     top["data"] = data;
     document = QJsonDocument(top);
     m_mc_sey->setContent(document.toBinaryData());
+    delete table;
 
-    data["dependent"] = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_variance->value(), rng)->ExportTable(true);
+    table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_variance->value(), rng);
+    data["dependent"] = table->ExportTable(true);
     top["data"] = data;
     document = QJsonDocument(top);
     m_mc_user->setContent(document.toBinaryData());
+    delete table;
 }

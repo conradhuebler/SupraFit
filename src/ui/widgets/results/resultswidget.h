@@ -37,7 +37,7 @@ class ResultsWidget : public QWidget {
 
 public:
     ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractModel> model, ChartWrapper* wrapper);
-    ~ResultsWidget();
+    virtual ~ResultsWidget() override;
 
 private:
     QWidget* MonteCarloWidget();
@@ -55,7 +55,7 @@ private:
     QList<QJsonObject> m_models;
     QWidget* m_widget;
     QLabel* m_confidence_label;
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QString m_text;
     QPushButton* m_detailed;
     ModalDialog* m_dialog;

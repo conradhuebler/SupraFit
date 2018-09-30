@@ -37,7 +37,7 @@ public:
     ~OptionsWidget();
 
 private:
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QHash<int, QPointer<QComboBox>> m_options;
 
 private slots:

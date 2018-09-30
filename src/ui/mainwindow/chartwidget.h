@@ -90,10 +90,11 @@ public:
 private:
     qreal max_shift, min_shift;
 
+    bool m_empty = true;
+
     QPointer<ChartView> m_signalview, m_errorview;
     QPointer<QtCharts::QChart> m_signalchart, m_errorchart;
     QPointer<QtCharts::QValueAxis> m_x_chart, m_y_chart, m_x_error, m_y_error;
-    QVector<QWeakPointer<AbstractModel>> m_models;
     QWeakPointer<DataClass> m_rawdata;
     ChartDockTitleBar* m_TitleBarWidget;
     QVector<QVector<int>> m_titration_curve, m_model_curve, m_error_curve;

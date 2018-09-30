@@ -103,6 +103,7 @@ class MetaModelParameter : public QWidget {
     Q_OBJECT
 public:
     MetaModelParameter(QSharedPointer<AbstractModel> model);
+    ~MetaModelParameter();
 
 signals:
 

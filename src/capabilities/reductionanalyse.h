@@ -35,7 +35,7 @@ class ReductionAnalyse : public AbstractSearchClass {
 
 public:
     ReductionAnalyse(OptimizerConfig config);
-    ~ReductionAnalyse();
+    virtual ~ReductionAnalyse() override;
 
     enum CVType {
         LeaveOneOut = 1,

@@ -70,7 +70,7 @@ QWidget* ContourWidget::VariWidget()
 
     int index = 0;
     QHBoxLayout* hlayout = new QHBoxLayout;
-    for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
+    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
         QCheckBox* box = new QCheckBox;
         connect(box, &QCheckBox::stateChanged, box, [index, box, this](int state) {
             CheckBox(index, state);
@@ -88,8 +88,8 @@ QWidget* ContourWidget::VariWidget()
                 box->setChecked(true);
         });
 
-        QLabel* label = new QLabel("<html>" + m_model->GlobalParameterName(i) + "</html>");
-        m_names << m_model->GlobalParameterName(i);
+        QLabel* label = new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>");
+        m_names << m_model.data()->GlobalParameterName(i);
         hlayout->addWidget(box);
         hlayout->addWidget(label, Qt::AlignLeft);
 
@@ -103,9 +103,9 @@ QWidget* ContourWidget::VariWidget()
     }
     layout->addLayout(hlayout);
 
-    for (int i = 0; i < m_model->SeriesCount(); ++i) {
+    for (int i = 0; i < m_model.data()->SeriesCount(); ++i) {
         QHBoxLayout* hlayout = new QHBoxLayout;
-        for (int j = 0; j < m_model->LocalParameterSize(); ++j) {
+        for (int j = 0; j < m_model.data()->LocalParameterSize(); ++j) {
             QCheckBox* box = new QCheckBox;
             connect(box, &QCheckBox::stateChanged, box, [index, box, this](int state) {
                 CheckBox(index, state);
@@ -123,8 +123,8 @@ QWidget* ContourWidget::VariWidget()
                     box->setChecked(true);
             });
 
-            QLabel* label = new QLabel("<html>" + QString::number(i + 1) + " - " + (m_model->LocalParameterName(j)) + "</html>");
-            m_names << QString::number(i + 1) + " - " + (m_model->LocalParameterName(j));
+            QLabel* label = new QLabel("<html>" + QString::number(i + 1) + " - " + (m_model.data()->LocalParameterName(j)) + "</html>");
+            m_names << QString::number(i + 1) + " - " + (m_model.data()->LocalParameterName(j));
             hlayout->addWidget(box);
             hlayout->addWidget(label, Qt::AlignLeft);
 
@@ -182,21 +182,21 @@ void ContourWidget::MakePlot(int var_1, int var_2)
     m_var_2 = var_2;
     Waiter wait;
     view->Clear();
-    QColor color = ChartWrapper::ColorCode(m_model->Color(1)).lighter(50);
+    QColor color = ChartWrapper::ColorCode(m_model.data()->Color(1)).lighter(50);
     m_xy_series = new QtCharts::QScatterSeries;
 
     QList<qreal> x, y;
     for (int i = 0; i < m_models.size(); ++i) {
-        m_model->ImportModel(m_models[i]);
+        m_model.data()->ImportModel(m_models[i]);
 
-        if (m_converged && !m_model->isConverged())
+        if (m_converged && !m_model.data()->isConverged())
             continue;
-        if (m_valid && m_model->isCorrupt())
+        if (m_valid && m_model.data()->isCorrupt())
             continue;
 
-        x << m_model->AllParameter()[var_1];
-        y << m_model->AllParameter()[var_2];
-        m_linked_models.insert(QPointF(m_model->AllParameter()[var_1], m_model->AllParameter()[var_2]), i);
+        x << m_model.data()->AllParameter()[var_1];
+        y << m_model.data()->AllParameter()[var_2];
+        m_linked_models.insert(QPointF(m_model.data()->AllParameter()[var_1], m_model.data()->AllParameter()[var_2]), i);
     }
 
     if (x.size() > 1e4)

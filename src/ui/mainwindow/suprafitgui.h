@@ -58,7 +58,8 @@ struct OptimizerConfig;
 class ProjectTree : public QAbstractItemModel {
     Q_OBJECT
 public:
-    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list)
+    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list, QObject* parent)
+        : QAbstractItemModel(parent)
     {
         m_project_list = project_list;
         QUuid uuid;

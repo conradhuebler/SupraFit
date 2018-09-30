@@ -40,7 +40,7 @@ public slots:
     void setReadOnly(bool readonly);
 
 private:
-    QSharedPointer<AbstractModel> m_model;
+    QWeakPointer<AbstractModel> m_model;
     QList<QPointer<SpinBox>> m_parameter;
     QList<QPointer<QCheckBox>> m_locked;
 };

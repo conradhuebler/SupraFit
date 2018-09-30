@@ -56,6 +56,7 @@ DataTable::DataTable(int columns, int rows, QObject* parent)
     , m_checkable(false)
     , m_editable(false)
 {
+    // std::cout << "new table with ptr" << this << std::endl;
     m_table = Eigen::MatrixXd::Zero(rows, columns);
     m_checked_table = Eigen::MatrixXd::Ones(rows, columns);
     for (int i = 0; i < columns; ++i)
@@ -74,6 +75,8 @@ DataTable::DataTable(DataTable& other)
 
 DataTable::DataTable(DataTable* other) //: QAbstractTableModel(other) FIXME whatever
 {
+    //  std::cout << "copying by pointer" << this << std::endl;
+
     m_table = Eigen::MatrixXd(other->m_table);
     m_header = other->m_header;
     m_checked_table = Eigen::MatrixXd(other->m_checked_table);
@@ -100,6 +103,7 @@ DataTable::DataTable(const QJsonObject& table)
 
 DataTable::~DataTable()
 {
+    std::cout << "deleting table " << this << std::endl;
 }
 
 void DataTable::clear(int columns, int rows)
@@ -656,6 +660,7 @@ DataClassPrivate::DataClassPrivate()
             m_scaling << 1;
     m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(): " << m_ref_counter << this << std::endl;
 }
 
 DataClassPrivate::DataClassPrivate(int type)
@@ -677,6 +682,7 @@ DataClassPrivate::DataClassPrivate(int type)
             m_scaling << 1;
     m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host"), Qt::DisplayPropertyRole);
     m_independent_model->setHeaderData(1, Qt::Horizontal, ("Guest"), Qt::DisplayPropertyRole);
+    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(): " << m_ref_counter << this  << std::endl;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
@@ -695,6 +701,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_datatype = other.m_datatype;
     m_title = other.m_title;
     m_ref_counter++;
+    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(const DataClassPrivate& other): " << m_ref_counter << this  << std::endl;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
@@ -712,6 +719,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_datatype = other->m_datatype;
     m_title = other->m_title;
     m_ref_counter++;
+    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(const DataClassPrivate* other): " << m_ref_counter << this  << std::endl;
 }
 
 DataClassPrivate::~DataClassPrivate()
@@ -725,8 +733,14 @@ DataClassPrivate::~DataClassPrivate()
             delete m_dependent_model;
         if (m_info)
             delete m_info;
-        qDebug() << "got away with it ...";
-    }
+        std::cout << "got away with it ..." << this << std::endl;
+    } else
+        std::cout << "still someone having data: " << m_ref_counter << this << std::endl;
+}
+
+void DataClassPrivate::printReferenz() const
+{
+    std::cout << this << " has " << m_ref_counter << " instances?" << std::endl;
 }
 
 void DataClassPrivate::check()
@@ -775,6 +789,8 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
+    std::cout << "delete dataclass" << std::endl;
+    d->printReferenz();
 }
 
 void DataClass::NewUUID()
@@ -1023,8 +1039,11 @@ QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
     if (SFModel() == SupraFit::Data) {
         for (int i = 0; i < d->m_children.size(); ++i) {
             if (d->m_children[i]) {
-                AbstractModel* data = const_cast<AbstractModel*>(qobject_cast<const AbstractModel*>(d->m_children[i]));
-                models[tr("model_%1").arg(i)] = data->ExportModel(statistics, locked);
+                if (qobject_cast<const AbstractModel*>(d->m_children[i])) {
+                    QPointer<AbstractModel> data = const_cast<AbstractModel*>(qobject_cast<const AbstractModel*>(d->m_children[i]));
+                    if (data)
+                        models[tr("model_%1").arg(i)] = data->ExportModel(statistics, locked);
+                }
             }
         }
     } else {
