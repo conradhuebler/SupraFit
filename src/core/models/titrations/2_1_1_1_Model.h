@@ -91,6 +91,8 @@ public:
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
+    virtual QString AdditionalOutput() const override;
+
 protected:
     virtual void CalculateVariables() override;
 };

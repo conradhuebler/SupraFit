@@ -98,6 +98,8 @@ public:
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
+    virtual QString AdditionalOutput() const override;
+
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;
     QList<qreal> m_constants_pow;

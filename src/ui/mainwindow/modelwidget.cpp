@@ -444,10 +444,10 @@ void ModelWidget::Repaint()
 
     m_converged_label->setText("<html><p>" + converged + "</p><p>" + corrupt + "</p></html>");
 
-    Model2Text();
+    /* Model2Text();
     QTextDocument doc;
     doc.setHtml(m_statistic_widget->Overview());
-    m_logging += "\n\n" + doc.toPlainText();
+    m_logging += "\n\n" + doc.toPlainText();*/
 }
 
 void ModelWidget::recalculate()

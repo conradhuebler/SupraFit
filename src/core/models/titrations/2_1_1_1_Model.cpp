@@ -215,6 +215,53 @@ QString IItoI_ItoI_Model::ModelInfo() const
     return result;
 }
 
+QString IItoI_ItoI_Model::AdditionalOutput() const
+{
+    QString result;
+
+    double max = 1e3;
+    double delta = 1e-3;
+    qreal host_0 = 1e-1;
+    qreal host = 0;
+    qreal diff = host_0 - host;
+    Vector integral(4);
+    qreal end = delta;
+
+    qreal K21 = qPow(10, GlobalParameter(0));
+    qreal K11 = qPow(10, GlobalParameter(1));
+
+    for (end = delta; diff > 1e-5; end += delta) {
+        qreal guest_0 = end;
+
+        host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);
+
+        qreal guest = guest_0 / (K11 * host + K11 * K21 * host * host + 1);
+        qreal complex_11 = K11 * host * guest;
+        qreal complex_21 = K11 * K21 * host * host * guest;
+
+        integral(0) += host * delta;
+        integral(1) += guest * delta;
+        integral(2) += complex_21 * delta;
+        integral(3) += complex_11 * delta;
+
+        diff = host;
+        // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
+        //std::cout << host << " "
+        //    << " " << guest << " " << " "  << complex_21 << " " << complex_11<< std::endl;
+        //std::cout << integral.transpose() << std::endl;
+    }
+
+    integral(0) /= end;
+    integral(1) /= end;
+    integral(2) /= end;
+    integral(3) /= end;
+
+    std::cout << integral.transpose() << std::endl;
+
+    result += QString("A2B integ  ... %1\n\n").arg(integral(2));
+    return result;
+}
+
 QString IItoI_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
 

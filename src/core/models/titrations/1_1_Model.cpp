@@ -141,6 +141,13 @@ QString ItoI_Model::ModelInfo() const
     QString result = AbstractTitrationModel::ModelInfo();
     result += BC50::Format_ItoI_BC50(GlobalParameter(0));
 
+    return result;
+}
+
+QString ItoI_Model::AdditionalOutput() const
+{
+    QString result;
+
     double max = 1e3;
     double delta = 1e-3;
     qreal host_0 = 1.0;
@@ -148,7 +155,7 @@ QString ItoI_Model::ModelInfo() const
     qreal diff = host_0 - host;
     Vector integral(3);
     qreal end = delta;
-    for (end = delta; diff > 1e-6; end += delta) {
+    for (end = delta; diff > 1e-5; end += delta) {
         qreal guest_0 = end;
         host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
         qreal complex = host_0 - host;

@@ -221,6 +221,40 @@ QString ItoI_ItoII_Model::ModelInfo() const
     return result;
 }
 
+QString ItoI_ItoII_Model::AdditionalOutput() const
+{
+    QString result;
+
+    double max = 1e3;
+    double delta = 1e-3;
+    qreal host_0 = 1.0;
+    qreal host = 0;
+    qreal diff = host_0 - host;
+    Vector integral(3);
+    qreal end = delta;
+    for (end = delta; diff > 1e-5; end += delta) {
+        qreal guest_0 = end;
+        host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
+        qreal complex = host_0 - host;
+
+        integral(0) += host * delta;
+        integral(1) += (guest_0 - complex) * delta;
+        integral(2) += complex * delta;
+
+        diff = host_0 - complex;
+        // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
+        std::cout << host << " "
+                  << " " << guest_0 - complex << " " << complex << std::endl;
+        //std::cout << integral.transpose() << std::endl;
+    }
+    integral(0) /= end;
+    integral(1) /= end;
+    integral(2) /= end;
+    std::cout << integral.transpose() << std::endl;
+
+    return result;
+}
+
 QString ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
 

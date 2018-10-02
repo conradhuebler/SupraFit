@@ -19,6 +19,8 @@
 
 #include "src/core/AbstractModel.h"
 
+#include "src/core/toolset.h"
+
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QWeakPointer>
@@ -40,21 +42,21 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
     m_std = new ClickLabel;
     connect(m_std, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(tr("%1").arg(m_model.data()->StdDeviation()));
+        clipboard->setText(tr("%1").arg(Print::printDouble(m_model.data()->StdDeviation())));
         m_std->Clicked();
     });
 
     m_sse = new ClickLabel;
     connect(m_sse, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(tr("%1").arg(m_model.data()->SumofSquares()));
+        clipboard->setText(tr("%1").arg(Print::printDouble(m_model.data()->SumofSquares())));
         m_sse->Clicked();
     });
 
     m_sey = new ClickLabel;
     connect(m_sey, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(tr("%1").arg(m_model.data()->SEy()));
+        clipboard->setText(tr("%1").arg(Print::printDouble(m_model.data()->SEy())));
         m_sey->Clicked();
     });
 
@@ -89,9 +91,9 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
 
 void extWidget::Update()
 {
-    m_sse->setText(tr("<h4><i>CnP</i> Sum of Squares: %1</h4>").arg(m_model.data()->SumofSquares()));
-    m_std->setText(tr("<h4><i>CnP</i> Standard Deviation: %1</h4>").arg(m_model.data()->StdDeviation()));
-    m_sey->setText(tr("<h4><i>CnP</i> SE<sub>y</sub>: %1</h4>").arg(m_model.data()->SEy()));
+    m_sse->setText(tr("<h4><i>CnP</i> Sum of Squares: %1</h4>").arg(Print::printDouble(m_model.data()->SumofSquares())));
+    m_std->setText(tr("<h4><i>CnP</i> Standard Deviation: %1</h4>").arg(Print::printDouble(m_model.data()->StdDeviation())));
+    m_sey->setText(tr("<h4><i>CnP</i> SE<sub>y</sub>: %1</h4>").arg(Print::printDouble(m_model.data()->SEy())));
 
     QJsonObject data = m_model.data()->ExportData();
     data["dependent"] = m_model.data()->ModelTable()->ExportTable(true);
