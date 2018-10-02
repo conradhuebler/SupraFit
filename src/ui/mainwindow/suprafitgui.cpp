@@ -599,10 +599,10 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 
     // Lets add this on first demand, should increase loading speed of big projects
 
-    /*
-    m_stack_widget->addWidget(window);
-    m_stack_widget->setCurrentWidget(window);
-    */
+    int index = m_stack_widget->addWidget(window);
+    if (index == 1)
+        m_stack_widget->setCurrentWidget(window);
+
     connect(window, &MainWindow::ModelsChanged, this, [=]() {
         UpdateTreeView(false);
         //m_project_tree->layoutChanged();
@@ -699,10 +699,9 @@ void SupraFitGui::LoadMetaModels()
         setActionEnabled(true);
         m_meta_models << model;
 
-        /*
-        m_stack_widget->addWidget(window);
-        m_stack_widget->setCurrentWidget(window);
-        */
+        int index = m_stack_widget->addWidget(window);
+        if (index == 1)
+            m_stack_widget->setCurrentWidget(window);
     }
 
     m_cached_meta.clear();

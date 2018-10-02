@@ -1054,7 +1054,7 @@ QJsonObject DataClass::ExportChildren(bool statistics, bool locked)
     return models;
 }
 
-void DataClass::AddChildren(QPointer<const DataClass> data)
+void DataClass::AddChildren(QPointer<DataClass> data)
 {
     d->m_children << data;
     connect(data, &DataClass::Deleted, this, [this, data]() {

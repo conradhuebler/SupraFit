@@ -214,7 +214,7 @@ public:
     QList<qreal> m_scaling;
     QMap<int, SystemParameter> m_system_parameter;
     QPointer<DataClassPrivateObject> m_info;
-    QVector<QPointer<const DataClass>> m_children;
+    QVector<QPointer<DataClass>> m_children;
 
     QString m_title, m_uuid;
     void check();
@@ -374,12 +374,16 @@ public:
 
     QJsonObject ExportChildren(bool statistics = true, bool locked = false);
 
+    inline int StoredChildren() const { return d->m_children.size(); }
+
+    inline QPointer<DataClass> Children(int i) { return d->m_children[i]; }
+
 private:
     QMutex m_lock;
 
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate> d;
-    void AddChildren(QPointer<const DataClass> children);
+    void AddChildren(QPointer<DataClass> children);
 
 signals:
     void RowAdded();
