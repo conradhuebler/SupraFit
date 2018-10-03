@@ -581,6 +581,11 @@ public:
         return QVector<QJsonObject>(); }
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const { return QVector<qreal>(); }
+
+    inline virtual int ChildrenSize() const { return 0; }
+
+    inline QString ModelUUID() const { return m_model_uuid; }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -648,7 +653,8 @@ protected:
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
 
-    QString m_more_info, m_name, m_name_cached;
+    QString m_more_info, m_name, m_name_cached, m_model_uuid;
+
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

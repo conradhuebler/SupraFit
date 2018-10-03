@@ -31,6 +31,7 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QUuid>
 
 #include <iostream>
 
@@ -59,6 +60,9 @@ AbstractModel::AbstractModel(DataClass* data)
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
     AddChildren(this);
+
+    QUuid uuid;
+    m_model_uuid = uuid.createUuid().toString();
 }
 
 AbstractModel::AbstractModel(AbstractModel* model)
@@ -84,7 +88,10 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
-    AddChildren(this);
+    // AddChildren(this);
+
+    QUuid uuid;
+    m_model_uuid = uuid.createUuid().toString();
 }
 
 void AbstractModel::PrepareParameter(int global, int local)

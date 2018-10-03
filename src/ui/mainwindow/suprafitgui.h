@@ -27,6 +27,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QMimeData>
+#include <QtCore/QModelIndex>
 #include <QtCore/QPointer>
 #include <QtCore/QUuid>
 
@@ -58,17 +59,18 @@ struct OptimizerConfig;
 class ProjectTree : public QAbstractItemModel {
     Q_OBJECT
 public:
-    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list, QObject* parent)
+    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list, QVector<QWeakPointer<DataClass>>* data_list, QObject* parent)
         : QAbstractItemModel(parent)
     {
+        m_data_list = data_list;
         m_project_list = project_list;
         QUuid uuid;
         m_instance = uuid.createUuid().toString();
     }
 
-    inline ~ProjectTree() {}
+    inline virtual ~ProjectTree() override {}
 
-    Qt::ItemFlags flags(const QModelIndex& index) const override
+    virtual Qt::ItemFlags flags(const QModelIndex& index) const override
     {
         Q_UNUSED(index);
         Qt::ItemFlags flags;
@@ -79,9 +81,9 @@ public:
         return flags;
     }
 
-    virtual int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+    virtual int columnCount(const QModelIndex& p = QModelIndex()) const override;
 
-    virtual int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    virtual int rowCount(const QModelIndex& p = QModelIndex()) const override;
 
     virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 
@@ -94,16 +96,29 @@ public:
         return Qt::CopyAction | Qt::MoveAction;
     }
 
-    QMimeData* mimeData(const QModelIndexList& indexes) const override;
+    virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
     virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
 
     virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
 
+public slots:
+    void UpdateStructure();
+
 private:
     QVector<QPointer<MainWindow>>* m_project_list;
+    QVector<QWeakPointer<DataClass>>* m_data_list;
+
+    QStringList m_uuids;
+    QList<void*> m_ptr_uuids;
+
+    const QString none = "none";
+    mutable QHash<void*, QString> m_list;
 
     QString m_instance;
+
+    QString UUID(const QModelIndex& index) const;
+
 signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);

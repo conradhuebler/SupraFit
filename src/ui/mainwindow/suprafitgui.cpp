@@ -69,24 +69,63 @@
 
 #include "suprafitgui.h"
 
+void ProjectTree::UpdateStructure()
+{
+
+    for (int i = 0; i < m_data_list->size(); ++i) {
+        QString uuid = (*m_data_list)[i].data()->UUID();
+        if (!m_list.values().contains(uuid))
+            m_list[&uuid] = uuid;
+
+        if (!m_uuids.contains(uuid)) {
+            m_uuids << uuid;
+            m_ptr_uuids << &m_uuids.last();
+        }
+
+        for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
+            QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID();
+
+            if (!m_list.values().contains(sub_uuid))
+                m_list[&sub_uuid] = sub_uuid;
+
+            if (!m_uuids.contains(sub_uuid)) {
+                m_uuids << sub_uuid;
+                m_ptr_uuids << &m_uuids.last();
+            }
+        }
+    }
+    layoutChanged();
+}
+
+QString ProjectTree::UUID(const QModelIndex& index) const
+{
+    int i = m_ptr_uuids.indexOf(index.internalPointer());
+    if (i == -1)
+        return QString();
+
+    return m_uuids[i];
+}
+
 int ProjectTree::columnCount(const QModelIndex& parent) const
 {
     Q_UNUSED(parent)
     return 1;
 }
 
-int ProjectTree::rowCount(const QModelIndex& parent) const
+int ProjectTree::rowCount(const QModelIndex& p) const
 {
-    int count = m_project_list->size();
+    int count = m_data_list->size();
+    if (p.isValid()) {
 
-    QPointer<DataClass> data = static_cast<DataClass*>(parent.internalPointer());
+        QString uuid = UUID(p);
+        if (uuid.size() == 77) // Model Element
+        {
+            count = 0;
 
-    bool model = qobject_cast<AbstractModel*>(data);
-
-    if (parent.isValid()) {
-        if (!model)
-            count = (*m_project_list)[parent.row()]->ModelCount();
-        else
+        } else if (uuid.size() == 38) // DataClass Element
+        {
+            count = (*m_data_list)[p.row()].data()->ChildrenSize();
+        } else
             count = 0;
     }
     return count;
@@ -100,32 +139,47 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
 
     if (role == Qt::DisplayRole) {
 
-        QPointer<DataClass> dataclass = static_cast<DataClass*>(index.internalPointer());
-        bool model = qobject_cast<AbstractModel*>(dataclass);
+        QString uuid = m_list.value(index.internalPointer());
+        if (parent(index).isValid()) // Model Element
+        {
+            data = qobject_cast<AbstractModel*>((*m_data_list)[parent(index).row()].data()->Children(index.row()))->Name();
 
-        if (!model)
-            data = dataclass->ProjectTitle();
-        else {
-            data = qobject_cast<AbstractModel*>(dataclass)->Name();
+        } else // DataClass Element
+        {
+            data = (*m_data_list)[index.row()].data()->ProjectTitle();
         }
     }
+
     return data;
 }
 
 QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) const
 {
-
     QModelIndex index;
     if (!hasIndex(row, column, parent))
-        index = QModelIndex();
+        index = createIndex(-1, -1, none.toLatin1().data());
 
     if (!parent.isValid()) {
-        if (row < m_project_list->size())
-            index = createIndex(row, column, (*m_project_list)[row]->Data());
+
+        if (row == -1) {
+            return index;
+        }
+
+        if (row < m_data_list->size()) {
+            QString uuid = (*m_project_list)[row]->Data()->UUID();
+            index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(uuid)]);
+        }
     } else {
-        if (parent.row() < m_project_list->size())
-            index = createIndex(row, column, (*m_project_list)[parent.row()]->Model(row));
+        if (parent.row() < m_data_list->size()) {
+            if (row < (*m_data_list)[parent.row()].data()->ChildrenSize()) {
+                QString uuid = (*m_data_list)[parent.row()].data()->UUID();
+                QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>((*m_data_list)[parent.row()].data()->Children(row))->ModelUUID();
+                index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(sub_uuid)]);
+            }
+        }
     }
+
+    QString uuid = m_list.value(index.internalPointer());
 
     return index;
 }
@@ -137,37 +191,24 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
     if (!child.isValid())
         return index;
 
-    QPointer<DataClass> data = static_cast<DataClass*>(child.internalPointer());
+    QString uuid = UUID(child);
 
-    if (!data)
+    if (!(uuid.size() == 77 || uuid.size() == 38))
         return index;
 
-    bool model = qobject_cast<AbstractModel*>(data);
-
-    QPointer<DataClass> p;
-    int dataclass = -1, modelclass = -1;
-    int count1 = 0, count2 = 0;
-    for (int i = 0; i < m_project_list->size(); ++i) {
-        for (int j = 0; j < (*m_project_list)[i]->ModelCount(); ++j) {
-
-            if ((*m_project_list)[i]->Data() == data) {
-                dataclass = i;
-                count1++;
-            }
-            if (!model)
-                continue;
-
-            if ((*m_project_list)[i]->Model(j) == qobject_cast<AbstractModel*>(data)) {
-                modelclass = j;
-                dataclass = i;
-                p = (*m_project_list)[i]->Data();
-                count2++;
-                break;
+    QStringList uuids = uuid.split("|");
+    if (uuids.size() == 2) {
+        for (int i = 0; i < m_data_list->size(); ++i) {
+            if ((*m_data_list)[i].data()->UUID() == uuids[0]) {
+                for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
+                    if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == uuids[1]) {
+                        index = createIndex(i, 0, m_list.key(uuids[0]));
+                    }
+                }
             }
         }
-    }
-    if (modelclass != -1)
-        index = createIndex(dataclass, 0, p);
+    } else
+        return index;
 
     return index;
 }
@@ -175,7 +216,7 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
 QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
 {
     ModelMime* mimeData = new ModelMime();
-
+    /*
     QString data;
     QJsonObject object;
     for (const QModelIndex& index : qAsConst(indexes)) {
@@ -198,7 +239,7 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
     }
 
     mimeData->setInstance(m_instance);
-    mimeData->setText(data);
+    mimeData->setText(data);*/
     return mimeData;
 }
 
@@ -320,7 +361,7 @@ SupraFitGui::SupraFitGui()
 
     m_project_view->addAction(action);
 
-    m_project_tree = new ProjectTree(&m_project_list, this);
+    m_project_tree = new ProjectTree(&m_project_list, &m_data_list, this);
     connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
@@ -612,7 +653,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_data_list.insert(m_data_list.size() - m_meta_models.size(), data);
 
     m_hashed_data[data.data()->UUID()] = data;
-    m_project_tree->layoutChanged();
+    m_project_tree->UpdateStructure();
     setActionEnabled(true);
     return true;
 }
@@ -638,12 +679,12 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         m_stack_widget->addWidget(window);
 
         connect(window, &MainWindow::ModelsChanged, this, [=]() {
-            m_project_tree->layoutChanged();
+            m_project_tree->UpdateStructure();
         });
         m_project_list.append(window);
 
         m_data_list.append(model);
-        m_project_tree->layoutChanged();
+        m_project_tree->UpdateStructure();
         setActionEnabled(true);
         model.data()->addModel(qobject_cast<AbstractModel*>(data));
         m_meta_models.append(model);
@@ -688,14 +729,14 @@ void SupraFitGui::LoadMetaModels()
 
         m_stack_widget->addWidget(window);
 
-        connect(window, &MainWindow::ModelsChanged, this, [=]() {
-            m_project_tree->layoutChanged();
+        connect(window, &MainWindow::ModelsChanged, window, [=]() {
+            m_project_tree->UpdateStructure();
         });
 
         m_project_list << window;
 
         m_data_list << model;
-        m_project_tree->layoutChanged();
+        m_project_tree->UpdateStructure();
         setActionEnabled(true);
         m_meta_models << model;
 
@@ -1051,14 +1092,18 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
 
 void SupraFitGui::UpdateTreeView(bool regenerate)
 {
+    /*
     if (!regenerate) {
         m_project_tree->layoutChanged();
         return;
     }
+    */
+    m_project_tree->UpdateStructure();
 
+    /*
     m_project_tree->disconnect();
 
-    ProjectTree* project_tree = new ProjectTree(&m_project_list, this);
+    ProjectTree* project_tree = new ProjectTree(&m_project_list, &m_data_list, this);
     m_project_view->setModel(project_tree);
 
     m_project_tree = project_tree;
@@ -1070,7 +1115,7 @@ void SupraFitGui::UpdateTreeView(bool regenerate)
 
     if (m_project_list.size()) {
         m_stack_widget->setCurrentWidget(m_project_list.first()); //->show();
-    }
+    }*/
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)

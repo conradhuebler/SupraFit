@@ -374,9 +374,9 @@ public:
 
     QJsonObject ExportChildren(bool statistics = true, bool locked = false);
 
-    inline int StoredChildren() const { return d->m_children.size(); }
+    inline virtual int ChildrenSize() const { return d->m_children.size(); }
 
-    inline QPointer<DataClass> Children(int i) { return d->m_children[i]; }
+    virtual inline QPointer<DataClass> Children(int i) { return d->m_children[i]; }
 
 private:
     QMutex m_lock;

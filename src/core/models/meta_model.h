@@ -146,6 +146,10 @@ public:
 
     void RemoveModel(const AbstractModel* model);
 
+    inline virtual int ChildrenSize() const { return m_models.size(); }
+
+    virtual inline QPointer<DataClass> Children(int i) { return m_models[i].data(); }
+
 private slots:
     void UpdateCalculated();
 
