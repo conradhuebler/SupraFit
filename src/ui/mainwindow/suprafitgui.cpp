@@ -74,8 +74,6 @@ void ProjectTree::UpdateStructure()
 
     for (int i = 0; i < m_data_list->size(); ++i) {
         QString uuid = (*m_data_list)[i].data()->UUID();
-        if (!m_list.values().contains(uuid))
-            m_list[&uuid] = uuid;
 
         if (!m_uuids.contains(uuid)) {
             m_uuids << uuid;
@@ -84,9 +82,6 @@ void ProjectTree::UpdateStructure()
 
         for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
             QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID();
-
-            if (!m_list.values().contains(sub_uuid))
-                m_list[&sub_uuid] = sub_uuid;
 
             if (!m_uuids.contains(sub_uuid)) {
                 m_uuids << sub_uuid;
@@ -139,7 +134,6 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
 
     if (role == Qt::DisplayRole) {
 
-        QString uuid = m_list.value(index.internalPointer());
         if (parent(index).isValid()) // Model Element
         {
             data = qobject_cast<AbstractModel*>((*m_data_list)[parent(index).row()].data()->Children(index.row()))->Name();
@@ -157,7 +151,7 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
 {
     QModelIndex index;
     if (!hasIndex(row, column, parent))
-        index = createIndex(-1, -1, none.toLatin1().data());
+        index = QModelIndex();
 
     if (!parent.isValid()) {
 
@@ -166,7 +160,7 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
         }
 
         if (row < m_data_list->size()) {
-            QString uuid = (*m_project_list)[row]->Data()->UUID();
+            QString uuid = (*m_data_list)[row].data()->UUID();
             index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(uuid)]);
         }
     } else {
@@ -178,8 +172,6 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
             }
         }
     }
-
-    QString uuid = m_list.value(index.internalPointer());
 
     return index;
 }
@@ -202,7 +194,7 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
             if ((*m_data_list)[i].data()->UUID() == uuids[0]) {
                 for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
                     if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == uuids[1]) {
-                        index = createIndex(i, 0, m_list.key(uuids[0]));
+                        index = createIndex(i, 0, m_ptr_uuids[m_uuids.indexOf(uuids[0])]);
                     }
                 }
             }
@@ -216,30 +208,47 @@ QModelIndex ProjectTree::parent(const QModelIndex& child) const
 QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
 {
     ModelMime* mimeData = new ModelMime();
-    /*
+
     QString data;
     QJsonObject object;
     for (const QModelIndex& index : qAsConst(indexes)) {
         if (index.isValid()) {
+            QJsonObject d, top;
             if (parent(index).isValid()) {
                 data = "Model: " + QString::number(parent(index).row()) + "-" + QString::number(index.row());
                 mimeData->setModel(true);
+                QStringList uuids = UUID(index).split("|");
+                if (uuids.size() == 2) {
+                    mimeData->setDataUUID(uuids[0]);
+                    mimeData->setModelUUID(uuids[1]);
+                    for (int i = 0; i < m_data_list->size(); ++i) {
+                        if (mimeData->DataUUID() == (*m_data_list)[i].data()->UUID()) {
+                            for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
+                                if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == mimeData->ModelUUID())
+                                    top = qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ExportModel(true, true);
+                            }
+                        }
+                    }
+                }
             } else {
                 data = "Data: " + QString::number(index.row());
+                mimeData->setDataUUID(UUID(index));
+                for (int i = 0; i < m_data_list->size(); ++i) {
+                    if (mimeData->DataUUID() == (*m_data_list)[i].data()->UUID()) {
+                        d = (*m_data_list)[i].data()->ExportData();
+                        top = (*m_data_list)[i].data()->ExportChildren(true, true);
+                    }
+                }
+                top["data"] = d;
             }
-            mimeData->setDataPointer(static_cast<DataClass*>(index.internalPointer()));
             mimeData->setModelIndex(index);
-            QJsonObject d = static_cast<DataClass*>(index.internalPointer())->ExportData();
-            QJsonObject top = static_cast<DataClass*>(index.internalPointer())->ExportChildren(true, true);
-            top["data"] = d;
-
             QJsonDocument document = QJsonDocument(top);
             mimeData->setData("application/x-suprafitmodel", document.toBinaryData());
         }
     }
 
     mimeData->setInstance(m_instance);
-    mimeData->setText(data);*/
+    mimeData->setText(data);
     return mimeData;
 }
 
@@ -266,6 +275,8 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
 bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
     Q_UNUSED(action)
+
+    qDebug() << action;
 
     QString string = data->text();
 
@@ -308,7 +319,7 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         int r = index.row();
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
-        if ((*m_project_list)[r]->isMetaModel() && index.isValid()) {
+        if (qobject_cast<MetaModel*>((*m_data_list)[r].data()) && index.isValid()) {
             if (d->Index().parent().isValid())
                 emit AddMetaModel(d->Index(), r);
             else
@@ -322,7 +333,7 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         return true;
     } else if (index.isValid() && parent(index).isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
-        emit CopyModel(d->Index(), parent(index).row(), index.row());
+        emit CopyModel(d, parent(index).row(), index.row());
     } else
         return true;
     return true;
@@ -361,7 +372,7 @@ SupraFitGui::SupraFitGui()
 
     m_project_view->addAction(action);
 
-    m_project_tree = new ProjectTree(&m_project_list, &m_data_list, this);
+    m_project_tree = new ProjectTree(&m_data_list, this);
     connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
     connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
     connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
@@ -644,9 +655,8 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     if (index == 1)
         m_stack_widget->setCurrentWidget(window);
 
-    connect(window, &MainWindow::ModelsChanged, this, [=]() {
-        UpdateTreeView(false);
-        //m_project_tree->layoutChanged();
+    connect(window, &MainWindow::ModelsChanged, m_project_tree, [=]() {
+        m_project_tree->UpdateStructure();
     });
 
     m_project_list.insert(m_project_list.size() - m_meta_models.size(), window);
@@ -684,6 +694,7 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         m_project_list.append(window);
 
         m_data_list.append(model);
+        m_hashed_data.insert(model.data()->UUID(), model);
         m_project_tree->UpdateStructure();
         setActionEnabled(true);
         model.data()->addModel(qobject_cast<AbstractModel*>(data));
@@ -729,7 +740,7 @@ void SupraFitGui::LoadMetaModels()
 
         m_stack_widget->addWidget(window);
 
-        connect(window, &MainWindow::ModelsChanged, window, [=]() {
+        connect(window, &MainWindow::ModelsChanged, m_project_tree, [=]() {
             m_project_tree->UpdateStructure();
         });
 
@@ -1026,19 +1037,36 @@ bool SupraFitGui::eventFilter(QObject* obj, QEvent* event)
         return QMainWindow::eventFilter(obj, event);
 }
 
+QPair<int, int> SupraFitGui::UUID2Widget(const QModelIndex& index)
+{
+    int widget = 0;
+    int tab = -1;
+    QStringList uuids = m_project_tree->UUID(index).split("|");
+    if (uuids.size() == 1) {
+        for (int i = 0; i < m_project_list.size(); ++i)
+            if (m_project_list[i]->UUID() == uuids[0])
+                widget = i;
+    } else if (uuids.size() == 2) {
+        for (int i = 0; i < m_project_list.size(); ++i)
+            if (m_project_list[i]->UUID() == uuids[0]) {
+                widget = i;
+                for (int j = 0; j < m_project_list[i]->ModelCount(); ++j) {
+                    if (m_project_list[i]->Model(j)->ModelUUID() == uuids[1])
+                        tab = j;
+                }
+            }
+    }
+    return QPair<int, int>(widget, tab);
+}
+
 void SupraFitGui::TreeDoubleClicked(const QModelIndex& index)
 {
     int widget = 0;
     int tab = -1;
-    if (m_project_tree->parent(index).isValid()) {
-        widget = m_project_tree->parent(index).row();
-        tab = index.row();
-    } else {
-        if (index.internalPointer() != NULL)
-            widget = index.row();
-        else
-            return;
-    }
+    QPair<int, int> pair = UUID2Widget(index);
+    widget = pair.first;
+    tab = pair.second;
+
     if (m_stack_widget->indexOf(m_project_list[widget]) == -1)
         m_stack_widget->addWidget(m_project_list[widget]);
     m_stack_widget->setCurrentWidget(m_project_list[widget]);
@@ -1049,15 +1077,9 @@ void SupraFitGui::TreeClicked(const QModelIndex& index)
 {
     int widget = 0;
     int tab = -1;
-    if (m_project_tree->parent(index).isValid()) {
-        widget = m_project_tree->parent(index).row();
-        tab = index.row();
-    } else {
-        if (index.internalPointer() != NULL)
-            widget = index.row();
-        else
-            return;
-    }
+    QPair<int, int> pair = UUID2Widget(index);
+    widget = pair.first;
+    tab = pair.second;
 
     if (m_project_list[widget] == m_stack_widget->currentWidget())
         m_project_list[widget]->setCurrentTab(tab + 1);
@@ -1068,18 +1090,20 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
 
     int widget = 0;
     int tab = -1;
-    if (m_project_tree->parent(index).isValid()) {
-        widget = m_project_tree->parent(index).row();
-        tab = index.row();
+    QPair<int, int> pair = UUID2Widget(index);
+    widget = pair.first;
+    tab = pair.second;
+
+    if (tab != -1) {
         m_project_list[widget]->RemoveTab(tab + 1);
     } else {
-        widget = index.row();
         MainWindow* mainwindow = m_project_list.takeAt(widget);
         m_stack_widget->removeWidget(mainwindow);
         m_data_list.remove(widget);
         m_hashed_data.remove(mainwindow->Data()->UUID());
         delete mainwindow;
     }
+
     for (int i = m_meta_models.size() - 1; i >= 0; --i)
         if (!m_meta_models[i])
             m_meta_models.remove(i);
@@ -1087,35 +1111,7 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
         m_supr_file.clear();
         m_filename_line->clear();
     }
-    UpdateTreeView(true);
-}
-
-void SupraFitGui::UpdateTreeView(bool regenerate)
-{
-    /*
-    if (!regenerate) {
-        m_project_tree->layoutChanged();
-        return;
-    }
-    */
     m_project_tree->UpdateStructure();
-
-    /*
-    m_project_tree->disconnect();
-
-    ProjectTree* project_tree = new ProjectTree(&m_project_list, &m_data_list, this);
-    m_project_view->setModel(project_tree);
-
-    m_project_tree = project_tree;
-    connect(m_project_tree, &ProjectTree::AddMetaModel, this, &SupraFitGui::AddMetaModel);
-    connect(m_project_tree, &ProjectTree::CopySystemParameter, this, &SupraFitGui::CopySystemParameter);
-    connect(m_project_tree, &ProjectTree::CopyModel, this, &SupraFitGui::CopyModel);
-    connect(m_project_tree, &ProjectTree::LoadFile, this, &SupraFitGui::LoadFile);
-    connect(m_project_tree, &ProjectTree::LoadJsonObject, this, &SupraFitGui::LoadJson);
-
-    if (m_project_list.size()) {
-        m_stack_widget->setCurrentWidget(m_project_list.first()); //->show();
-    }*/
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)
@@ -1127,14 +1123,15 @@ void SupraFitGui::SaveData(const QModelIndex& index)
     QJsonObject object;
     int widget = 0;
     int tab = -1;
-    if (m_project_tree->parent(index).isValid()) {
-        widget = m_project_tree->parent(index).row();
-        tab = index.row();
-        object = m_project_list[widget]->SaveModel(tab + 1);
-    } else {
-        widget = index.row();
+    QPair<int, int> pair = UUID2Widget(index);
+    widget = pair.first;
+    tab = pair.second;
+
+    if (tab != -1)
         object = m_project_list[widget]->SaveProject();
-    }
+    else
+        object = m_project_list[widget]->SaveModel(tab + 1);
+
     JsonHandler::WriteJsonFile(object, str);
     setLastDir(str);
 }
@@ -1144,19 +1141,27 @@ void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)
     if (position >= m_data_list.size())
         return;
 
-    QPointer<DataClass> data = static_cast<DataClass*>(source.internalPointer());
+    QStringList uuids = m_project_tree->UUID(source).split("|");
+    if (uuids.size() != 1)
+        return;
+
+    QPointer<DataClass> data = m_hashed_data[uuids[0]].data();
+
     for (int i = 0; i < m_meta_models.size(); ++i) {
-        if (m_meta_models[i].data()->UUID() == data.data()->UUID())
+        if (m_meta_models[i].data()->UUID() == data->UUID())
             return;
     }
     m_data_list[position].data()->OverrideSystemParameter(data->SysPar());
 }
 
-void SupraFitGui::CopyModel(const QModelIndex& source, int data, int model)
+void SupraFitGui::CopyModel(const ModelMime* d, int data, int model)
 {
-    QPointer<AbstractModel> m = static_cast<AbstractModel*>(source.internalPointer());
+    QByteArray sprmodel = d->data("application/x-suprafitmodel");
+    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+    QJsonObject object = doc.object();
+
     if (data < m_project_list.size()) {
-        m_project_list[data]->Model(model)->ImportModel(m->ExportModel(true, true));
+        m_project_list[data]->Model(model)->ImportModel(object);
     } else
         qDebug() << "not found" << data << model;
 }

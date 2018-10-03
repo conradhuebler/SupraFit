@@ -59,11 +59,10 @@ struct OptimizerConfig;
 class ProjectTree : public QAbstractItemModel {
     Q_OBJECT
 public:
-    inline ProjectTree(QVector<QPointer<MainWindow>>* project_list, QVector<QWeakPointer<DataClass>>* data_list, QObject* parent)
+    inline ProjectTree(QVector<QWeakPointer<DataClass>>* data_list, QObject* parent)
         : QAbstractItemModel(parent)
     {
         m_data_list = data_list;
-        m_project_list = project_list;
         QUuid uuid;
         m_instance = uuid.createUuid().toString();
     }
@@ -102,28 +101,25 @@ public:
 
     virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
 
+    QString UUID(const QModelIndex& index) const;
+
 public slots:
     void UpdateStructure();
 
 private:
-    QVector<QPointer<MainWindow>>* m_project_list;
     QVector<QWeakPointer<DataClass>>* m_data_list;
 
     QStringList m_uuids;
     QList<void*> m_ptr_uuids;
 
-    const QString none = "none";
-    mutable QHash<void*, QString> m_list;
-
     QString m_instance;
 
-    QString UUID(const QModelIndex& index) const;
 
 signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);
     void UiMessage(const QString& str);
-    void CopyModel(const QModelIndex& source, int data, int model);
+    void CopyModel(const ModelMime* d, int data, int model);
     void LoadFile(const QString& file);
     void LoadJsonObject(const QJsonObject& object);
 };
@@ -187,6 +183,8 @@ private:
     void ImportTable(const QString& file);
     void LoadMetaModels();
 
+    QPair<int, int> UUID2Widget(const QModelIndex& index);
+
     void AddScatter(const QJsonObject& data);
 
     QToolBar *m_main_toolbar, *m_model_toolbar, *m_system_toolbar;
@@ -242,9 +240,8 @@ private slots:
     void CopySystemParameter(const QModelIndex& source, int position);
 
     void SaveData(const QModelIndex& index);
-    void CopyModel(const QModelIndex& source, int data, int model);
+    void CopyModel(const ModelMime* d, int data, int model);
 
-    void UpdateTreeView(bool regenerate = false);
     void TreeDoubleClicked(const QModelIndex& index);
     void TreeClicked(const QModelIndex& index);
     void TreeRemoveRequest(const QModelIndex& index);

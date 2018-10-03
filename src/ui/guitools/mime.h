@@ -28,8 +28,11 @@ class ModelMime : public QMimeData {
 public:
     virtual ~ModelMime() {}
 
-    inline void setDataPointer(DataClass* data) { m_data = data; }
-    inline DataClass* DataPointer() const { return m_data; }
+    inline void setDataUUID(const QString& str) { m_data_uuid = str; }
+    inline void setModelUUID(const QString& str) { m_model_uuid = str; }
+
+    inline QString DataUUID() const { return m_data_uuid; }
+    inline QString ModelUUID() const { return m_model_uuid; }
 
     inline void setModel(bool model) { m_model = model; }
     inline bool isModel() const { return m_model; }
@@ -41,8 +44,8 @@ public:
     inline QString Instance() const { return m_instance; }
 
 private:
-    DataClass* m_data;
     bool m_model = false;
     QModelIndex m_index;
-    QString m_instance;
+    QString m_instance, m_data_uuid, m_model_uuid;
+    QJsonObject m_data;
 };

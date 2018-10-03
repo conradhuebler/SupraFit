@@ -70,6 +70,8 @@ public:
 
     inline bool isMetaModel() const { return m_meta_model; }
 
+    inline QString UUID() const { return m_data.data()->UUID(); }
+
 public slots:
     // void LoadFile(const QString& file);
 
