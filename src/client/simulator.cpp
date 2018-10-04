@@ -95,6 +95,7 @@ bool Simulator::FullTest()
         QPointer<DataTable> model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
 #ifdef _DEBUG
         model_table->Debug();
+        m_data->DependentModel()->Debug();
 #endif
         QPointer<DataClass> data = new DataClass(m_data);
         data->setDependentTable(model_table);

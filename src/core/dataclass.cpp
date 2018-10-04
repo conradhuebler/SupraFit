@@ -103,7 +103,9 @@ DataTable::DataTable(const QJsonObject& table)
 
 DataTable::~DataTable()
 {
+#ifdef _DEBUG
     std::cout << "deleting table " << this << std::endl;
+#endif
 }
 
 void DataTable::clear(int columns, int rows)
@@ -733,9 +735,14 @@ DataClassPrivate::~DataClassPrivate()
             delete m_dependent_model;
         if (m_info)
             delete m_info;
+#ifdef _DEBUG
         std::cout << "got away with it ..." << this << std::endl;
-    } else
+#endif
+    }
+#ifdef _DEBUG
+    else
         std::cout << "still someone having data: " << m_ref_counter << this << std::endl;
+#endif
 }
 
 void DataClassPrivate::printReferenz() const
@@ -789,8 +796,10 @@ DataClass::DataClass(const DataClass* other)
 
 DataClass::~DataClass()
 {
+#ifdef _DEBUG
     std::cout << "delete dataclass" << std::endl;
     d->printReferenz();
+#endif
 }
 
 void DataClass::NewUUID()
