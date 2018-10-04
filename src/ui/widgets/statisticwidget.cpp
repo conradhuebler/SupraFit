@@ -95,7 +95,7 @@ void StatisticWidget::Update()
             QJsonObject data = result.value(QString::number(i)).toObject();
             if (data.isEmpty())
                 continue;
-            moco += Print::TextFromConfidence(data, m_model.data(), result["controller"].toObject());
+            moco += Print::TextFromConfidence(data, result["controller"].toObject());
         }
         moco += "</table>\n";
         overview += moco;

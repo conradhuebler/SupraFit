@@ -680,7 +680,7 @@ qreal GHE(qreal G, qreal H, qreal T)
 
 namespace Print {
 
-QString TextFromConfidence(const QJsonObject& result, const AbstractModel* model, const QJsonObject& controller)
+QString TextFromConfidence(const QJsonObject& result, const QJsonObject& controller)
 {
     int type = controller["method"].toInt();
     qreal value = result["value"].toDouble();

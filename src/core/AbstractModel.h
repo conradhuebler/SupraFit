@@ -580,7 +580,8 @@ public:
     virtual QVector<QJsonObject> PostGridSearch(QList<QJsonObject>& models) const { Q_UNUSED(models)
         return QVector<QJsonObject>(); }
 
-    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const { return QVector<qreal>(); }
+    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const { Q_UNUSED(datapoint)
+        Q_UNUSED(series) return QVector<qreal>(); }
 
     inline virtual int ChildrenSize() const { return 0; }
 

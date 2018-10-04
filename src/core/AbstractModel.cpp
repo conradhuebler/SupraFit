@@ -1163,7 +1163,7 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
         break;
 
     case SupraFit::Statistic::Reduction:
-        return Print::TextFromConfidence(object, this, controller);
+        return Print::TextFromConfidence(object, controller);
         break;
 
     case SupraFit::Statistic::MonteCarlo:
@@ -1189,6 +1189,8 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
 
 QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
+    Q_UNUSED(forceAll)
+
     QString result;
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
@@ -1196,7 +1198,7 @@ QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAl
     for (const QString& key : qAsConst(keys)) {
         if (key == "controller")
             continue;
-        result += Print::TextFromConfidence(object[key].toObject(), this, controller);
+        result += Print::TextFromConfidence(object[key].toObject(), controller);
     }
 
     return result;
@@ -1204,6 +1206,8 @@ QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAl
 
 QString AbstractModel::AnalyseModelComparison(const QJsonObject& object, bool forceAll) const
 {
+    Q_UNUSED(forceAll)
+
     QString result;
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
@@ -1211,13 +1215,15 @@ QString AbstractModel::AnalyseModelComparison(const QJsonObject& object, bool fo
     for (const QString& key : qAsConst(keys)) {
         if (key == "controller")
             continue;
-        result += Print::TextFromConfidence(object[key].toObject(), this, controller);
+        result += Print::TextFromConfidence(object[key].toObject(), controller);
     }
     return result;
 }
 
 QString AbstractModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
+    Q_UNUSED(forceAll)
+
     QString result;
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
@@ -1225,7 +1231,7 @@ QString AbstractModel::AnalyseGridSearch(const QJsonObject& object, bool forceAl
     for (const QString& key : qAsConst(keys)) {
         if (key == "controller")
             continue;
-        result += Print::TextFromConfidence(object[key].toObject(), this, controller);
+        result += Print::TextFromConfidence(object[key].toObject(), controller);
     }
 
     return result;

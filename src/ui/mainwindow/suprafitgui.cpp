@@ -72,6 +72,9 @@
 void ProjectTree::UpdateStructure()
 {
 
+    // m_uuids.clear();
+    // m_ptr_uuids.clear();
+
     for (int i = 0; i < m_data_list->size(); ++i) {
         QString uuid = (*m_data_list)[i].data()->UUID();
 
@@ -293,8 +296,17 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         return true;
     }
 
-    if (!qobject_cast<const ModelMime*>(data))
+    if (!qobject_cast<const ModelMime*>(data)) {
+        /* This could be from suprafit but a different main instance */
+
+        QByteArray sprmodel = data->data("application/x-suprafitmodel");
+        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+        if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
+            emit LoadJsonObject(doc.object());
+            return true;
+        }
         return false;
+    }
 
     const ModelMime* d = qobject_cast<const ModelMime*>(data);
 

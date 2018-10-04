@@ -102,8 +102,7 @@ void BoxPlotSeries::setColor(const QColor& color)
 }
 
 ChartWrapper::ChartWrapper(bool flipable, QObject* parent)
-    : m_flipable(flipable)
-    , QObject(parent)
+    : QObject(parent)
     , m_blocked(false)
     , m_transformed(false)
 {
@@ -119,8 +118,9 @@ ChartWrapper::~ChartWrapper()
     m_stored_data.clear();
     m_stored_model.clear();
     m_working.clear();
-
+#ifdef _DEBUG
     qDebug() << "Deleting chartwrapper";
+#endif
 }
 
 

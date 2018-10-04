@@ -204,6 +204,7 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
 qreal& DataTable::operator[](int column)
 {
     QReadLocker locker(&mutex);
+#ifdef _DEBUG
     m_empty = 0;
 
     if (column < m_table.cols()) {
@@ -212,12 +213,16 @@ qreal& DataTable::operator[](int column)
         qDebug() << "Column exceeds size of table!";
         return m_empty;
     }
+#else
+    return m_table.operator()(0, column);
+#endif
 }
 
 qreal& DataTable::operator()(int column, int row)
 {
     QReadLocker locker(&mutex);
     m_empty = 0;
+#ifdef _DEBUG
     if (row < m_table.rows())
         if (column < m_table.cols()) {
             return m_table.operator()(row, column);
@@ -229,6 +234,9 @@ qreal& DataTable::operator()(int column, int row)
         qDebug() << "Row exceeds size of table!";
         return m_empty;
     }
+#else
+    return m_table.operator()(row, column);
+#endif
 }
 
 bool DataTable::setData(const QModelIndex& index, const QVariant& value, int role)
@@ -298,6 +306,7 @@ void DataTable::PrintCheckedRows() const
 
 bool DataTable::isChecked(int column, int row) const
 {
+#ifdef _DEBUG
     if (row < m_checked_table.rows())
         if (column < m_checked_table.cols()) {
             return m_checked_table(row, column);
@@ -309,10 +318,14 @@ bool DataTable::isChecked(int column, int row) const
         qDebug() << "Row exceeds size of table!";
         return 0;
     }
+#else
+    return m_checked_table(row, column);
+#endif
 }
 
 void DataTable::setChecked(int column, int row, bool checked)
 {
+#ifdef _DEBUG
     if (row < m_checked_table.rows())
         if (column < m_checked_table.cols()) {
             m_checked_table(row, column) = checked;
@@ -322,11 +335,14 @@ void DataTable::setChecked(int column, int row, bool checked)
     else {
         qDebug() << "Row exceeds size of table!";
     }
+#else
+    m_checked_table(row, column) = checked;
+#endif
 }
 
 qreal DataTable::data(int column, int row) const
 {
-
+#ifdef _DEBUG
     if (row < m_table.rows())
         if (column < m_table.cols()) {
             return m_table(row, column);
@@ -338,11 +354,15 @@ qreal DataTable::data(int column, int row) const
         qDebug() << "Row exceeds size of table!";
         return 0;
     }
+#else
+    return m_table(row, column);
+#endif
 }
 
 qreal& DataTable::data(int column, int row)
 {
     QReadLocker locker(&mutex);
+#ifdef _DEBUG
     m_empty = 0;
     if (row < m_table.rows())
         if (column < m_table.cols()) {
@@ -355,6 +375,9 @@ qreal& DataTable::data(int column, int row)
         qDebug() << "Row exceeds size of table!";
         return m_empty;
     }
+#else
+    return m_table.operator()(row, column);
+#endif
 }
 
 QPointer<DataTable> DataTable::Block(int row_begin, int column_begin, int row_end, int column_end) const
@@ -1068,6 +1091,8 @@ void DataClass::AddChildren(QPointer<DataClass> data)
     d->m_children << data;
     connect(data, &DataClass::Deleted, this, [this, data]() {
         d->m_children.removeAll(data);
+#ifdef _DEBUG
         qDebug() << d->m_children.size();
+#endif
     });
 }

@@ -81,7 +81,6 @@ bool Simulator::FullTest()
     m_data->IndependentModel()->Debug();
     m_data->DependentModel()->Debug();
 #endif
-    qDebug() << m_data->ExportData();
     QJsonObject table = m_data->DependentModel()->ExportTable(true);
     for (int i = 0; i < m_runs; ++i) {
         std::cout << "########################################################################################################" << std::endl;
