@@ -104,7 +104,7 @@ bool Simulator::FullTest()
         data->DependentModel()->Debug();
 #endif
         QSharedPointer<AbstractModel> model_1to1 = Test11Model(data);
-        model_1to1->OverrideSystemParameter(m_data->SysPar());
+        // model_1to1->OverrideSystemParameter(m_data->SysPar());
 
         Test(model_1to1);
 
@@ -213,15 +213,50 @@ void Simulator::PrintStatistic(const QJsonObject& object, QSharedPointer<Abstrac
     //     qDebug() << object;
 }
 
+void Simulator::Progress(int i, int max)
+{
+    m_current += 1;
+    double percentage = m_current / 1000.0;
+
+    if ((int(percentage) % 10) != 0) {
+        return;
+    }
+
+    int barWidth = 70;
+
+    std::cout << "[";
+    int pos = barWidth * percentage;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos)
+            std::cout << "=";
+        else if (i == pos)
+            std::cout << ">";
+        else
+            std::cout << " ";
+    }
+    std::cout << "] " << int(percentage * 100.0) << " %\r";
+    std::cout.flush();
+}
+
 QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
 {
+    int maxsteps = 1000;
+    m_current = 0;
     MCConfig config;
-    config.maxsteps = 1000;
+    config.maxsteps = maxsteps;
     config.variance = model->SEy();
     QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
+
+    connect(statistic, &AbstractSearchClass::IncrementProgress, this, [this, maxsteps](int i) {
+        this->Progress(i, maxsteps);
+    });
+
     QJsonObject result;
     statistic->setModel(model);
     if (statistic->Evaluate()) {
+        std::cout.flush();
+        std::cout << "\nMonteCarlo Simulation done ..." << std::endl;
+
         model->UpdateStatistic(statistic->Result());
         result = statistic->Result();
     } else

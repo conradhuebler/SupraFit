@@ -88,4 +88,8 @@ private:
     QJsonObject GridSearch(QSharedPointer<AbstractModel> model);
 
     void PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model);
+
+    void Progress(int i, int max);
+
+    double m_current = 0.0;
 };

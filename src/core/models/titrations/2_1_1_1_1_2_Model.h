@@ -47,7 +47,7 @@ public:
 
     virtual ~IItoI_ItoI_ItoII_Model() override;
 
-    virtual inline SupraFit::Model SFModel() const { return SupraFit::IItoI_ItoI_ItoII; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::IItoI_ItoI_ItoII; }
 
     virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 3; }

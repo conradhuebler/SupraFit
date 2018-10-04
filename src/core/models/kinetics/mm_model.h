@@ -35,7 +35,7 @@ public:
 
     virtual ~Michaelis_Menten_Model() override;
 
-    virtual inline SupraFit::Model SFModel() const { return SupraFit::Michaelis_Menten; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::Michaelis_Menten; }
 
     virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 2; }
@@ -64,7 +64,6 @@ public:
         return IndependentModel()->data(0, i);
     }
 
-    //  virtual inline QString Name() const override { return tr("Michaelis Menten"); }
     virtual inline bool SupportSeries() const override { return false; }
 
     /*! \brief Define the x axis label for charts

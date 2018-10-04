@@ -44,7 +44,7 @@ public:
         Custom = 2
     };
 
-    virtual inline SupraFit::Model SFModel() const { return SupraFit::MetaModel; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::MetaModel; }
 
     virtual inline void setConnectType(ConnectType type)
     {

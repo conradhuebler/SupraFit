@@ -49,7 +49,7 @@ public:
     ScriptModel(DataClass* data, const QJsonObject& json);
     virtual ~ScriptModel() override;
 
-    virtual inline SupraFit::Model SFModel() const { return SupraFit::ScriptedModel; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::ScriptedModel; }
 
     virtual QVector<qreal> OptimizeParameters_Private(OptimizationType type);
     inline int ConstantSize() const { return Constants().size(); }

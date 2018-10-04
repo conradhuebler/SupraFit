@@ -45,7 +45,7 @@ public:
 
     virtual ~MonoMolecularModel() override;
 
-    virtual inline SupraFit::Model SFModel() const { return SupraFit::MonoMolecularModel; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::MonoMolecularModel; }
 
     virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 2; }
@@ -76,7 +76,7 @@ public:
     virtual QString YLabel() const override { return "c"; }
 
 public slots:
-    virtual void UpdateParameter();
+    virtual void UpdateParameter() override;
 
 private:
     void virtual DeclareSystemParameter() override;

@@ -45,7 +45,7 @@ public:
 
     virtual ~itc_IItoII_Model() override;
 
-    virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_IItoII; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::itc_IItoII; }
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
 

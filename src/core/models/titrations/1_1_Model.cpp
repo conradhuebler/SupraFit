@@ -148,7 +148,7 @@ QString ItoI_Model::AdditionalOutput() const
 {
     QString result;
 
-    double max = 1e3;
+    // double max = 1e3;
     double delta = 1e-3;
     qreal host_0 = 1.0;
     qreal host = 0;
