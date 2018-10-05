@@ -77,6 +77,7 @@ struct BoxWhisker {
     qreal upper_quantile = 0;
     qreal median = 0;
     qreal mean = 0;
+    qreal stddev = 0;
     int count = 0;
 
     inline qreal UpperNotch() const { return median + (1.58 * (upper_quantile - lower_quantile) / sqrt(count)); }

@@ -30,6 +30,7 @@
 #include "src/ui/widgets/results/contourwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
+#include <QtCore/QHash>
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QDoubleSpinBox>
@@ -95,11 +96,22 @@ void MCResultsWidget::setUi()
     m_error->setMaximum(100);
     connect(m_error, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &MCResultsWidget::GenerateConfidence);
 
+    m_bins = new QSpinBox;
+    m_bins->setMinimum(1);
+    m_bins->setMaximum(1e3);
+    m_bins->setValue(200);
+    m_bins->setSingleStep(50);
+    connect(m_bins, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MCResultsWidget::GenerateHistogram);
+
     layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
     layout->addWidget(m_error, 1, 1);
 
+    layout->addWidget(new QLabel(tr("Bins in Histogram")), 1, 2);
+    layout->addWidget(m_bins, 1, 3);
+
+    /*
     if (m_models.size())
-        layout->addWidget(m_save, 1, 2);
+        layout->addWidget(m_save, 1, 2);*/
 
     widget->setLayout(layout);
 
@@ -122,8 +134,11 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         qreal x_0 = data["value"].toDouble();
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
 
-        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, 500);
+        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, 200);
+        ToolSet::Normalise(histogram);
         LineSeries* xy_series = new LineSeries;
+        m_linked_data.insert(xy_series, list);
+
         if (data["type"] == "Local Parameter") {
             if (!data.contains("index"))
                 continue;
@@ -141,6 +156,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         }
         if (histogram.size())
             has_histogram = true;
+        xy_series->setName(name);
         view->addSeries(xy_series, i, xy_series->color(), name);
         view->setColor(i, xy_series->color());
         if (!formated)
@@ -209,28 +225,6 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
 
 QPointer<QWidget> MCResultsWidget::MakeContour()
 {
-    /*
-    QtCharts::QChart* chart_ellipsoid = new QtCharts::QChart;
-    QPointer<ChartView> view = new ChartView(chart_ellipsoid);
-    if (qApp->instance()->property("chartanimation").toBool())
-        chart_ellipsoid->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    chart_ellipsoid->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
-    QList<QPointF> data = ToolSet::fromModelsList(m_models, "globalParameter");
-    if (data.size())
-        has_contour = true;
-    QWidget* resultwidget_ellipsoid = new QWidget;
-    QGridLayout* layout_ellipsoid = new QGridLayout;
-    resultwidget_ellipsoid->setLayout(layout_ellipsoid);
-
-    layout_ellipsoid->addWidget(view, 0, 0, 1, 7);
-    QtCharts::QScatterSeries* xy_series = new QtCharts::QScatterSeries(this);
-    xy_series->append(data);
-    xy_series->setMarkerSize(8);
-    view->addSeries(xy_series);
-    view->setXAxis(m_model->GlobalParameterName(0));
-    view->setYAxis(m_model->GlobalParameterName(1));
-    return view;*/
-
     ContourWidget* widget = new ContourWidget;
     widget->setData(m_models, m_model);
     QJsonObject controller = m_data["controller"].toObject();
@@ -329,6 +323,30 @@ void MCResultsWidget::GenerateConfidence(double error)
     UpdateBoxes();
     m_model.data()->UpdateStatistic(m_data);
     emit ConfidenceUpdated(m_data);
+}
+
+void MCResultsWidget::GenerateHistogram()
+{
+
+    QHash<LineSeries*, QVector<qreal>>::iterator i = m_linked_data.begin();
+
+    while (i != m_linked_data.end()) {
+        LineSeries* xy_series = i.key();
+
+        QVector<qreal> list = i.value();
+        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, m_bins->value());
+        ToolSet::Normalise(histogram);
+
+        QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
+
+        qDebug() << pair << pair.first / pair.second << xy_series->name();
+        xy_series->clear();
+        for (int j = 0; j < histogram.size(); ++j) {
+            xy_series->append(QPointF(histogram[j].first, histogram[j].second));
+        }
+        ++i;
+    }
+    GenerateConfidence(m_error->value());
 }
 
 #include "mcresultswidget.moc"

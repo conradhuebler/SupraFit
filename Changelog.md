@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- introduce entropy for histograms and variable bin counts
 - 'Drag and Drop' adding the same error matrix to all open models (inclusive saving and reusing the vector)
 - Export all loaded projects indiviually as suprafit file or plain dat file
 - 'Click and Copy' Copy of SSE, SEy and standard deviation to ClipBoard

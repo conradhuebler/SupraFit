@@ -63,8 +63,11 @@ qreal floor(qreal value);
 qreal scale(qreal value, qreal& pow);
 qreal scale(qreal value);
 
-void Normalise(const QVector<QPair<qreal, qreal>>& hist);
+void Normalise(QVector<QPair<qreal, qreal>>& hist);
 QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bins = 0, qreal min = 0, qreal max = 0);
+/*! \brief Calculate the Entropy of a histogram, bin with is already defined */
+QPair<qreal, qreal> Entropy(const QVector<QPair<qreal, qreal>>& histogram);
+
 SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error);
 SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal>& list);
 QJsonObject Box2Object(const SupraFit::BoxWhisker& box);

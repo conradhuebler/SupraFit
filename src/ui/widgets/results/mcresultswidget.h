@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QtCore/QHash>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointer>
 
@@ -35,9 +36,11 @@ class MonteCarloStatistics;
 class AbstractModel;
 class QPushButton;
 class QDoubleSpinBox;
+class QSpinBox;
 class QLabel;
 class ChartView;
 class ListChart;
+class LineSeries;
 
 class QJsonObject;
 
@@ -64,6 +67,7 @@ private:
     void setAreaColor(int index, const QColor& color);
 
     QtCharts::QAreaSeries* AreaSeries(const QColor& color) const;
+    QSpinBox* m_bins;
     QPointer<ListChart> MakeHistogram();
     QPointer<QWidget> MakeContour();
     QPointer<ListChart> MakeBoxPlot();
@@ -76,9 +80,12 @@ private:
     QWeakPointer<AbstractModel> m_model;
     QJsonObject m_data;
 
+    QHash<LineSeries*, QVector<qreal>> m_linked_data;
+
 private slots:
     void ExportResults();
     void GenerateConfidence(double error);
+    void GenerateHistogram();
 
 signals:
     void ConfidenceUpdated(QJsonObject data);
