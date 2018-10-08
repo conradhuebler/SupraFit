@@ -40,6 +40,12 @@ IItoI_ItoI_Model::IItoI_ItoI_Model(DataClass* data)
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
+IItoI_ItoI_Model::IItoI_ItoI_Model(AbstractTitrationModel* data)
+    : AbstractTitrationModel(data)
+{
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+}
+
 IItoI_ItoI_Model::~IItoI_ItoI_Model()
 {
 }

@@ -49,6 +49,16 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(DataClass* data)
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
+IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(AbstractTitrationModel* data)
+    : AbstractTitrationModel(data)
+{
+    m_threadpool = new QThreadPool(this);
+    for (int i = 0; i < DataPoints(); ++i)
+        m_solvers << new IItoI_ItoI_ItoII_Solver();
+
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+}
+
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
 {
     qDeleteAll(m_solvers);

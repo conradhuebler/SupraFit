@@ -42,6 +42,7 @@ public:
     };
 
     MonoMolecularModel(DataClass* data);
+    MonoMolecularModel(AbstractModel* data);
 
     virtual ~MonoMolecularModel() override;
 

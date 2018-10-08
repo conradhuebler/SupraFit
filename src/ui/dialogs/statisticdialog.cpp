@@ -123,6 +123,7 @@ void StatisticDialog::setUi()
     m_hide_widget->setLayout(hLayout);
     layout->addWidget(m_hide_widget);
     m_hide_widget->setMaximumHeight(100);
+    layout->addWidget(m_hide_widget);
     layout->addWidget(m_hide);
     connect(m_hide, SIGNAL(clicked()), this, SLOT(reject()));
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));

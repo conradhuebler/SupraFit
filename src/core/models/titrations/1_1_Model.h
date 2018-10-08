@@ -33,6 +33,7 @@ class ItoI_Model : public AbstractTitrationModel {
 
 public:
     ItoI_Model(DataClass* data);
+    ItoI_Model(AbstractTitrationModel* data);
 
     virtual ~ItoI_Model() override;
 

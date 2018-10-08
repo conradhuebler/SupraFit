@@ -208,10 +208,13 @@ private:
                                                    << "p_value"
                                                    << "charttheme"
                                                    << "ask_on_exit"
-                                                   << "tooltips";
+                                                   << "tooltips"
+                                                   << "recent";
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
+    QWidget *m_blank_widget;
+    QListWidget *m_recent_documents;
     QVector<QPointer<MainWindow>> m_project_list;
     QTreeView* m_project_view;
     QPointer<ProjectTree> m_project_tree;
@@ -222,7 +225,7 @@ private:
     QVector<QJsonObject> m_cached_meta;
     QLineEdit* m_filename_line;
 
-    QPushButton *m_export_suprafit, *m_export_plain;
+    QPushButton *m_export_suprafit, *m_export_plain, *m_clear_recent, *m_close_all;
     DropButton* m_add_scatter;
 
 private slots:
@@ -235,7 +238,7 @@ private slots:
     void SettingsDialog();
     void about();
     void FirstStart();
-
+    void UpdateRecentList();
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);
 
@@ -245,6 +248,7 @@ private slots:
     void TreeDoubleClicked(const QModelIndex& index);
     void TreeClicked(const QModelIndex& index);
     void TreeRemoveRequest(const QModelIndex& index);
+    void CloseProjects();
 
     void ExportAllPlain();
     void ExportAllSupraFit();

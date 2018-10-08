@@ -39,6 +39,14 @@ MonoMolecularModel::MonoMolecularModel(DataClass* data)
     DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
 }
 
+MonoMolecularModel::MonoMolecularModel(AbstractModel* data)
+    : AbstractModel(data)
+{
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    IndependentModel()->setHeaderData(0, Qt::Horizontal, "t", Qt::DisplayRole);
+    DependentModel()->setHeaderData(0, Qt::Horizontal, "c(A)", Qt::DisplayRole);
+}
+
 MonoMolecularModel::~MonoMolecularModel()
 {
 }

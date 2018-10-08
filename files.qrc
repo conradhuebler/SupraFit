@@ -28,5 +28,7 @@
         <file>misc/suprafit.ico</file>
         <file>misc/suprafit.png</file>
         <file>icons/document-save-as.png</file>
+        <file>icons/document-close.png</file>
+        <file>icons/edit-clear-history.png</file>
     </qresource>
 </RCC>

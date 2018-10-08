@@ -45,6 +45,7 @@ public:
     };
 
     fl_IItoI_ItoI_ItoII_Model(DataClass* data);
+    fl_IItoI_ItoI_ItoII_Model(AbstractTitrationModel* data);
 
     virtual ~fl_IItoI_ItoI_ItoII_Model() override;
 

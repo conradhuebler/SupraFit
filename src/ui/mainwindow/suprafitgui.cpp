@@ -397,10 +397,34 @@ SupraFitGui::SupraFitGui()
     m_project_view->setDropIndicatorShown(true);
     m_project_view->setDragDropMode(QAbstractItemView::DragDrop);
 
+    m_blank_widget = new QWidget;
+
+    m_recent_documents = new QListWidget;
+    connect(m_recent_documents, &QListWidget::itemDoubleClicked, m_recent_documents, [this](const QListWidgetItem *item){
+       LoadFile(item->text());
+    });
+
     QLabel* logo = new QLabel;
     logo->setPixmap(QPixmap(":/misc/logo_small.png"));
+
+    m_clear_recent = new QPushButton(tr("Clear list"));
+    connect(m_clear_recent, &QPushButton::clicked, m_clear_recent, [this]()
+    {
+        qApp->instance()->setProperty("recent", QStringList());
+        this->UpdateRecentList();
+    });
+    m_clear_recent->setFlat(true);
+    m_clear_recent->setIcon(Icon("edit-clear-history"));
+
+    QGridLayout *blank_layout = new QGridLayout;
+    blank_layout->addWidget(logo, 0, 0, 2, 1);
+    blank_layout->addWidget(new QLabel(tr("<h3>Recent documents</h3>")), 0, 1);
+    blank_layout->addWidget(m_clear_recent, 0, 2);
+    blank_layout->addWidget(m_recent_documents, 1, 1, 1, 3);
+    m_blank_widget->setLayout(blank_layout);
+
     m_stack_widget = new QStackedWidget;
-    m_stack_widget->addWidget(logo);
+    m_stack_widget->addWidget(m_blank_widget);
     m_stack_widget->setObjectName("project_mainwindow");
 
     m_filename_line = new QLineEdit;
@@ -430,10 +454,17 @@ SupraFitGui::SupraFitGui()
         }
         AddScatter(data);
     });
+
+    m_close_all = new QPushButton(tr("Close"));
+    m_close_all->setFlat(true);
+    m_close_all->setIcon(Icon("document-close"));
+    connect(m_close_all, &QPushButton::clicked, this, &SupraFitGui::CloseProjects);
+
     QHBoxLayout* tools = new QHBoxLayout;
     tools->addWidget(m_export_plain);
     tools->addWidget(m_export_suprafit);
     tools->addWidget(m_add_scatter);
+    tools->addWidget(m_close_all);
 
     QGridLayout* layout = new QGridLayout;
 
@@ -524,6 +555,7 @@ SupraFitGui::SupraFitGui()
 
     //m_mainsplitter->hide();
     setWindowIcon(QIcon(":/misc/suprafit.png"));
+    UpdateRecentList();
 }
 
 SupraFitGui::~SupraFitGui()
@@ -596,6 +628,13 @@ void SupraFitGui::LoadFile(const QString& file)
 void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
+}
+
+void SupraFitGui::UpdateRecentList()
+{
+    const QStringList recent = qApp->instance()->property("recent").toStringList();
+    m_recent_documents->clear();
+    m_recent_documents->addItems(recent);
 }
 
 void SupraFitGui::LoadJson(const QJsonObject& str)
@@ -682,18 +721,26 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 
 void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
 {
-    QPointer<DataClass> data = static_cast<DataClass*>(index.internalPointer());
+    QStringList uuids = m_project_tree->UUID(index).split("|");
+
+    if(uuids.size() != 2)
+        return;
+
+    QPointer<DataClass> data;
+    for(int i = 0; i < m_hashed_data[uuids.first()].data()->ChildrenSize(); ++i)
+    {
+        if(qobject_cast<AbstractModel *>(m_hashed_data[uuids.first()].data()->Children(i))->ModelUUID() == uuids[1])
+            data = m_hashed_data[uuids.first()].data()->Children(i);
+    }
+
+    if(!data)
+        return;
+
     if (position == -1) {
         MainWindow* window = new MainWindow;
 
         QWeakPointer<MetaModel> model = qobject_cast<MetaModel*>(window->CreateMetaModel(m_hashed_wrapper[data->UUID()]));
         if (!model) {
-            delete window;
-            return;
-        }
-
-        bool is_model = qobject_cast<AbstractModel*>(data);
-        if (!is_model) {
             delete window;
             return;
         }
@@ -715,7 +762,7 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         m_meta_models[position - (m_data_list.size() - m_meta_models.size())].data()->addModel(qobject_cast<AbstractModel*>(data));
 
         QWeakPointer<ChartWrapper> wrapper = m_project_list[position]->getChartWrapper();
-        wrapper.data()->addWrapper(m_hashed_wrapper[data->UUID()]);
+        wrapper.data()->addWrapper(m_hashed_wrapper[uuids.first()]);
     }
 }
 
@@ -1124,6 +1171,19 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
         m_filename_line->clear();
     }
     m_project_tree->UpdateStructure();
+}
+
+void SupraFitGui::CloseProjects()
+{
+    for(int i = m_data_list.size() -1; i >= 0; --i)
+    {
+        MainWindow* mainwindow = m_project_list.takeAt(i);
+        m_stack_widget->removeWidget(mainwindow);
+        m_data_list.remove(i);
+        m_hashed_data.remove(mainwindow->Data()->UUID());
+        delete mainwindow;
+        m_project_tree->UpdateStructure();
+    }
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)

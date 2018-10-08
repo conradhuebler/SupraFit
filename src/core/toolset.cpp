@@ -268,9 +268,6 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
         }
     }
 
-    min = std::floor(min);
-    max = std::ceil(max);
-
     if (bins == 0) {
         if (vector.size() > 1e5)
             bins = vector.size() / 1e4;
@@ -283,7 +280,6 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
     QVector<QPair<qreal, int>> hist;
     double h = (max - min) / bins;
     QVector<double> x(bins, 0);
-    QVector<int> counter(bins, 0);
 
     for (int j = 0; j < bins; j++) {
         x[j] = min + h / 2. + j * h;
@@ -296,13 +292,11 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
         int jStar = std::floor((vector[i] - min) / h); // use the floor function to get j* for the nearest point to x_j* to phi
         if (jStar >= bins || jStar < 0)
             continue; // if you are outside the grid continue
-        counter[jStar]++;
         hist[jStar].second++;
     }
     QVector<QPair<qreal, qreal>> histogram;
 
     for (int i = 0; i < hist.size(); ++i)
-        if (hist[i].second)
             histogram << QPair<qreal, qreal>(hist[i].first, hist[i].second);
 
     return histogram;
@@ -310,19 +304,23 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
 
 QPair<qreal, qreal> Entropy(const QVector<QPair<qreal, qreal>>& histogram)
 {
-
     qreal entropy = 0.0;
-    int j = 0;
+    qreal sum = 0.0;
+
+    for (int i = 0; i < histogram.size(); ++i) {
+        sum += histogram[i].second ;
+    }
+
     qreal lower = 1 / double(histogram.size());
 
     for (int i = 0; i < histogram.size(); ++i) {
         if (histogram[i].second < lower)
             continue;
-        j++;
-        entropy += histogram[i].second * log2(histogram[i].second);
+        const qreal value = histogram[i].second/sum;
+        entropy +=  value* log2(value);
     }
 
-    return QPair<qreal, qreal>(-1 * entropy, log2(j));
+    return QPair<qreal, qreal>(-1 * entropy, log2(histogram.size()));
 }
 
 SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error)
@@ -411,11 +409,7 @@ SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal>& list)
     }
     bw.mean /= double(count);
 
-    bw.stddev = 0;
-
-    for (int i = 0; i < list.size(); ++i)
-        bw.stddev += qPow(list[i] - bw.mean, 2);
-    bw.stddev = qSqrt(bw.stddev / (list.size() - 1));
+    bw.stddev = Stddev(list.toVector());
 
     return bw;
 }
@@ -757,7 +751,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += "<tr><td colspan='2'>Analyse of the Monte Carlo Histogram</td></tr>\n";
         text += "<tr><td>Median: </td><td> <b>" + QString::number(box.median, 'f', 4) + "</b></td></tr>\n";
         text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) + " - " + QString::number(box.UpperNotch(), 'f', 4) + "</b></td></tr>";
-        text += QString("<tr><td>Entropy H(X):</td><td>%1<td></tr>").arg(pair.first / pair.second);
+        text += QString("<tr><td>Entropy H(X):</td><td>%1<td></tr>").arg(pair.first);
         text += QString("<tr><td>Standard deviation from mean:</td><td>%1<td></tr>").arg(box.stddev);
 
         if (value > box.UpperNotch() || value < box.LowerNotch()) {

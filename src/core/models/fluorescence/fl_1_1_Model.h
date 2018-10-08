@@ -33,6 +33,7 @@ class fl_ItoI_Model : public AbstractTitrationModel {
 
 public:
     fl_ItoI_Model(DataClass* data);
+    fl_ItoI_Model(AbstractTitrationModel* data);
 
     virtual ~fl_ItoI_Model() override;
 

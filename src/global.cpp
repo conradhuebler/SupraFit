@@ -19,6 +19,7 @@
 
 #include <QCoreApplication>
 
+#include <QtCore/QSettings>
 #include <QtCore/QFileInfo>
 #include <QtCore/QString>
 #include <QtCore/QVariant>
@@ -46,4 +47,22 @@ void setLastDir(const QString& str)
 {
     QFileInfo info(str);
     qApp->instance()->setProperty("lastdir", info.absolutePath());
+    QStringList recent = qApp->instance()->property("recent").toStringList();
+
+    recent.removeOne(str);
+    recent.prepend(str);
+
+    if(recent.size() > 30)
+        recent.removeLast();
+
+    qApp->instance()->setProperty("recent", recent);
+
+    QSettings _settings;
+    _settings.beginGroup("main");
+
+    _settings.setValue("recent", qApp->instance()->property("recent"));
+    _settings.setValue("lastdir", qApp->instance()->property("lastdir"));
+
+    _settings.endGroup();
+
 }

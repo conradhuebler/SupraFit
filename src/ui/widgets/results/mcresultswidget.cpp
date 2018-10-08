@@ -69,6 +69,12 @@ MCResultsWidget::~MCResultsWidget()
 
 void MCResultsWidget::setUi()
 {
+    m_bins = new QSpinBox;
+    m_bins->setMinimum(1);
+    m_bins->setMaximum(1e3);
+    m_bins->setValue(30);
+    m_bins->setSingleStep(50);
+
     QWidget* widget = new QWidget;
     QTabWidget* tabs = new QTabWidget;
     tabs->setTabPosition(QTabWidget::South);
@@ -96,11 +102,7 @@ void MCResultsWidget::setUi()
     m_error->setMaximum(100);
     connect(m_error, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &MCResultsWidget::GenerateConfidence);
 
-    m_bins = new QSpinBox;
-    m_bins->setMinimum(1);
-    m_bins->setMaximum(1e3);
-    m_bins->setValue(200);
-    m_bins->setSingleStep(50);
+
     connect(m_bins, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MCResultsWidget::GenerateHistogram);
 
     layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
@@ -126,6 +128,12 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     view->setYAxis("relative rate");
     view->setMinimumSize(300, 400);
     bool formated = false;
+
+
+    QJsonObject controller = m_data["controller"].toObject();
+    int bins = controller["bins"].toInt(30);
+    m_bins->setValue(bins);
+
     for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if (data.isEmpty())
@@ -134,7 +142,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         qreal x_0 = data["value"].toDouble();
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
 
-        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, 200);
+        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
         ToolSet::Normalise(histogram);
         LineSeries* xy_series = new LineSeries;
         m_linked_data.insert(xy_series, list);
@@ -151,9 +159,14 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         } else {
             //xy_series->setColor(ChartWrapper::ColorCode(m_model->Color(i)));
         }
+
+        qreal diff = (histogram.last().first-histogram.first().first)/double(histogram.size());
+        xy_series->append(QPointF(histogram.first().first - diff, 0));
         for (int j = 0; j < histogram.size(); ++j) {
             xy_series->append(QPointF(histogram[j].first, histogram[j].second));
         }
+        xy_series->append(QPointF(histogram.last().first + diff, 0));
+
         if (histogram.size())
             has_histogram = true;
         xy_series->setName(name);
@@ -337,16 +350,24 @@ void MCResultsWidget::GenerateHistogram()
         QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, m_bins->value());
         ToolSet::Normalise(histogram);
 
-        QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
-
-        qDebug() << pair << pair.first / pair.second << xy_series->name();
         xy_series->clear();
+
+        qreal diff = (histogram.last().first-histogram.first().first)/double(histogram.size());
+
+        xy_series->append(QPointF(histogram.first().first - diff, 0));
         for (int j = 0; j < histogram.size(); ++j) {
             xy_series->append(QPointF(histogram[j].first, histogram[j].second));
         }
+        xy_series->append(QPointF(histogram.last().first + diff, 0));
+
+
         ++i;
     }
-    GenerateConfidence(m_error->value());
+    QJsonObject controller = m_data["controller"].toObject();
+    controller["bins"] = m_bins->value();
+    m_data["controller"] = controller;
+
+    emit ConfidenceUpdated(m_data);
 }
 
 #include "mcresultswidget.moc"

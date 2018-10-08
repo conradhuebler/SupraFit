@@ -40,6 +40,12 @@ fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(DataClass* data)
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
+fl_ItoI_ItoII_Model::fl_ItoI_ItoII_Model(AbstractTitrationModel* data)
+    : AbstractTitrationModel(data)
+{
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+}
+
 fl_ItoI_ItoII_Model::~fl_ItoI_ItoII_Model()
 {
 }

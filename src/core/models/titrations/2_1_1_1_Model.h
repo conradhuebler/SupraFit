@@ -37,6 +37,7 @@ public:
     };
 
     IItoI_ItoI_Model(DataClass* data);
+    IItoI_ItoI_Model(AbstractTitrationModel* data);
 
     virtual ~IItoI_ItoI_Model() override;
 

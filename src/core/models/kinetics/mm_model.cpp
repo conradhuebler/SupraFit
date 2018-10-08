@@ -44,6 +44,14 @@ Michaelis_Menten_Model::Michaelis_Menten_Model(DataClass* data)
     DependentModel()->setHeaderData(0, Qt::Horizontal, "v", Qt::DisplayRole);
 }
 
+Michaelis_Menten_Model::Michaelis_Menten_Model(AbstractModel* data)
+    : AbstractModel(data)
+{
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    IndependentModel()->setHeaderData(0, Qt::Horizontal, "S0", Qt::DisplayRole);
+    DependentModel()->setHeaderData(0, Qt::Horizontal, "v", Qt::DisplayRole);
+}
+
 Michaelis_Menten_Model::~Michaelis_Menten_Model()
 {
 }

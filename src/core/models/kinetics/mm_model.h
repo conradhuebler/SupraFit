@@ -32,6 +32,7 @@ class Michaelis_Menten_Model : public AbstractModel {
 
 public:
     Michaelis_Menten_Model(DataClass* data);
+    Michaelis_Menten_Model(AbstractModel* data);
 
     virtual ~Michaelis_Menten_Model() override;
 
