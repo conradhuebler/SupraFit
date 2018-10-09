@@ -25,8 +25,8 @@
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QtGlobal>
-
 #include <QtCore/QVector>
+#include <QtCore/QtMath>
 
 #include <cmath>
 namespace SupraFit {
@@ -337,6 +337,25 @@ inline QString Model2Name(SupraFit::Model model)
         return "Meta Model";
     else
         return "Unknown";
+}
+
+inline bool FuzzyCompare(qreal a, qreal b, int prec = 3)
+{
+    return qAbs(a - b) < qPow(10, -prec);
+}
+
+
+inline int sgn(qreal val) {
+    /* Nice solution taken from here
+     * https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c - but not as template, only for double
+     */
+    return (0 < val) - (val < 0);
+}
+
+
+inline QString Bool2YesNo(bool value)
+{
+    return (value ? QString("Yes") : QString("No"));
 }
 
 inline const QString included() { return QString("#77d740;"); }

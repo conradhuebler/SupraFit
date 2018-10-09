@@ -263,6 +263,16 @@ QString itc_ItoII_Model::ModelInfo() const
     QString result = AbstractItcModel::ModelInfo();
     result += BC50::Format_ItoII_BC50(GlobalParameter(0), GlobalParameter(1));
 
+    /*
+    const QJsonObject& object = QJsonObject();
+
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+    result += "<h4>without statistical data:</h4>";
+    result += "<p>Reaction: A + B &#8652; AB</p>";
+    result += Statistic::MonteCarlo2Thermo(i, getT(), object, true);
+    result += "<p>Reaction: AB + B &#8652; AB<sub>2</sub></p>";
+    result += Statistic::MonteCarlo2Thermo(i, getT(), object, true);
+    */
     return result;
 }
 

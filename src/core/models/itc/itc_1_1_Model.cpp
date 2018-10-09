@@ -141,14 +141,14 @@ QString itc_ItoI_Model::AdditionalOutput() const
 {
     QString result = tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
     result += "<h4>without statistical data:</h4>";
-/*
+
     auto conf2therm = [&result, this](const QJsonObject& object = QJsonObject()) {
         result += "<p>Reaction: A + B &#8652; AB</p>";
-        result += Statistic::MonteCarlo2Thermo(i, getT(), object, true;
+        result += Statistic::MonteCarlo2Thermo(0, getT(), object);
     };
 
     conf2therm();
-
+    /*
     if (!m_fast_confidence.isEmpty()) {
         result += "<h4>Statistics from Fast Confidence Calculation:</h4>";
         conf2therm(m_fast_confidence);
@@ -159,8 +159,8 @@ QString itc_ItoI_Model::AdditionalOutput() const
             result += tr("<h4>Monte Carlo Simulation %1:</h4>").arg(i);
             conf2therm(getStatistic(SupraFit::Statistic::MonteCarlo, i));
         }
-    }
-
+    }*/
+    /*
     for (int i = 0; i < getMoCoStatisticResult(); ++i) {
         result += tr("<h4>Model Comparison %1:</h4>").arg(i);
         conf2therm(getStatistic(SupraFit::Statistic::ModelComparison, i));
@@ -178,6 +178,12 @@ QString itc_ItoI_Model::ModelInfo() const
 {
     QString result = AbstractItcModel::ModelInfo();
     result += BC50::Format_ItoI_BC50(GlobalParameter(0));
+
+    /*
+    result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
+    result += "<h4>without statistical data:</h4>";
+    result += "<p>Reaction: A + B &#8652; AB</p>";
+    result += Statistic::MonteCarlo2Thermo(0, getT(), QJsonObject());*/
 
     return result;
 }

@@ -39,7 +39,7 @@
 WGSearchThread::WGSearchThread(const WGSConfig& config)
     : m_config(config)
     , m_stationary(false)
-    , m_finished(false)
+    , m_finished(true)
     , m_converged(false)
 {
     setUp();
@@ -66,6 +66,7 @@ void WGSearchThread::run()
 void WGSearchThread::Calculate()
 {
     double increment;
+    bool interrupt = false;
     if (m_config.increment == 0)
         increment = m_increment;
     else
@@ -83,7 +84,10 @@ void WGSearchThread::Calculate()
     m_last = value;
     NonLinearFitThread* thread = new NonLinearFitThread(false);
 
-    while (m_steps < m_config.maxsteps && lowcount < 50 && upcount < 5) {
+    int error_conv = 0;
+    while (m_steps < m_config.maxsteps && lowcount < 50 && upcount < 5 && error_conv < 10) {
+
+        m_steps++;
 
         value += (increment * m_direction);
         param[m_index] = value;
@@ -106,29 +110,45 @@ void WGSearchThread::Calculate()
         //            m_last = value;
 
         if (new_error > m_config.maxerror) {
-            m_finished = new_error > m_config.maxerror;
-            m_stationary = qAbs(new_error - error) < m_config.error_conv;
+            //m_finished = new_error > m_config.maxerror;
+            //m_stationary = qAbs(new_error - error) < m_config.error_conv;
             upcount++;
         } else {
             m_models << model;
             m_last = value;
-        }
-        if (m_direction == 1) {
-            m_x.append(value);
-            m_y.append(new_error);
-        } else {
-            m_x.prepend(value);
-            m_y.prepend(new_error);
+
+            if (m_direction == 1) {
+                m_x.append(value);
+                m_y.append(new_error);
+            } else {
+                m_x.prepend(value);
+                m_y.prepend(new_error);
+            }
         }
 
-        if (new_error < m_error || qAbs(new_error - error) < m_config.error_conv || qAbs(new_error - m_error) < m_config.error_conv)
+
+        if (new_error < m_error)
             lowcount++;
+
+        //qDebug() << qAbs(new_error - error) << m_steps;
+
+        if(qAbs(new_error - error) < m_config.error_conv)
+            error_conv++;
 
         error = new_error;
         if (m_interrupt)
+        {
+            interrupt = true;
             break;
+        }
     }
-    m_converged = lowcount > 50;
+    if(interrupt)
+        m_finished = false;
+    else
+        m_finished = m_steps < m_config.maxsteps;
+
+    m_converged = lowcount < 50;
+    m_stationary = error_conv >= 10;
     delete thread;
 }
 
@@ -227,6 +247,13 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         }
         result["value"] = parameter[index];
 
+        result["converged"] = pair.first->Converged() && pair.second->Converged();
+        result["stationary"] = pair.first->Stationary() && pair.second->Stationary();
+        result["finished"] = pair.first->Finished() && pair.second->Finished();
+        result["steps"] = pair.first->Steps() + pair.second->Steps();
+
+        bool local = pair.first->Converged() && pair.second->Converged() && pair.first->Finished() && pair.second->Finished() && !(pair.first->Stationary() && pair.second->Stationary());
+
         QJsonObject confidence;
         confidence["upper"] = upper;
         confidence["lower"] = lower;
@@ -239,7 +266,8 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         result["data"] = data;
 
         m_results << result;
-        // converged = converged && threads[i]->Converged();
+        converged = converged && local;
+
         delete pair.first;
         delete pair.second;
     }

@@ -34,7 +34,7 @@ class QPointF;
 class WGSConfig : public AbstractConfig {
 public:
     qreal increment = 0;
-    int maxsteps = 1e4;
+    int maxsteps = 1e3;
     qreal maxerror = 0;
     qreal confidence = 95;
     qreal f_value = 0;
@@ -63,7 +63,12 @@ public:
     inline QList<qreal> YSeries() const { return m_y; }
     inline QList<QJsonObject> IntermediateResults() const { return m_models; }
     inline QJsonObject Result() const { return m_result; }
+
     inline bool Converged() const { return m_converged; }
+    inline bool Finished() const { return m_finished; }
+    inline bool Stationary() const { return m_stationary; }
+    inline int Steps() const { return m_steps; }
+
     inline qreal Last() const { return m_last; }
     inline void setIncrement(qreal increment) { m_increment = increment; }
     void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }

@@ -173,6 +173,7 @@ set(models_SRC
                 src/core/models/kinetics/mm_model.cpp
                 src/core/models/kinetics/monomolecularmodel.cpp
                 src/core/models/postprocess/statistic.cpp
+                src/core/models/postprocess/thermo.cpp
 )
 
 add_library(models ${models_SRC})

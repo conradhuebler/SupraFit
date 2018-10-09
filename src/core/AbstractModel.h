@@ -521,7 +521,14 @@ public:
 
     inline virtual void EvaluateOptions() {}
 
+    /*! \brief Implement ModelInfo() const for output, that is printed after each recalculation
+     * (or optimisation) - If there are demanding task, they should NOT go here */
     inline virtual QString ModelInfo() const { return QString(); }
+
+    /*! \brief Implement AdditionalOutput() const for more optional calculation done on top of
+     * the current model parameter, demaninding task (if any) should go here.
+     * The output will be printed out in an extra dialog in the gui */
+    virtual QString AdditionalOutput() const { return QString(); }
 
     inline bool isLocked() const { return m_locked_model; }
 
@@ -558,8 +565,6 @@ public:
     virtual QString RandomInput(const QVector<double>& indep, const QVector<double>& dep) const;
 
     inline virtual QString RandomExportSuffix() const { return QString("*.dat (*.dat)"); }
-
-    virtual QString AdditionalOutput() const { return QString(); }
 
     /*! \brief Calculate standard type statistics for stored statistic results */
     virtual QString AnalyseStatistic(bool forceAll = false) const;

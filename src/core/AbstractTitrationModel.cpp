@@ -18,6 +18,7 @@
  */
 
 #include "src/core/models/postprocess/statistic.h"
+#include "src/core/models/postprocess/thermo.h"
 
 #include "libmath.h"
 #include "src/core/dataclass.h"
@@ -184,7 +185,7 @@ QString AbstractTitrationModel::ModelInfo() const
 
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::MonteCarlo2Thermo(i, getT());
+         result += Thermo::FormatThermo(GlobalParameter(i), getT());
     }
 
     return result;

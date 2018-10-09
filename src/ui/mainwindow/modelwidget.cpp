@@ -645,7 +645,9 @@ void ModelWidget::WGStatistic(WGSConfig config)
     statistic->setParameter(json);
 
     if (!statistic->ConfidenceAssesment()) {
-        emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
+        const QString string = "Odd results obtained during Grid Search. Please check individual parameters!.";
+        QMessageBox::information(this, tr("Not done"), string);
+        emit Warning(string, 1);
     }
 
     LoadStatistic(statistic->Result(), statistic->Models());

@@ -123,7 +123,6 @@ void StatisticDialog::setUi()
     m_hide_widget->setLayout(hLayout);
     layout->addWidget(m_hide_widget);
     m_hide_widget->setMaximumHeight(100);
-    layout->addWidget(m_hide_widget);
     layout->addWidget(m_hide);
     connect(m_hide, SIGNAL(clicked()), this, SLOT(reject()));
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
@@ -170,7 +169,7 @@ QWidget* StatisticDialog::MonteCarloWidget()
     hlayout->addWidget(m_mc_sey);
     QLabel* txt = new QLabel(tr("<html>&sigma; from Model</html>"));
     hlayout->addWidget(txt);
-    ;
+
 
     hlayout->addWidget(m_mc_std);
     txt = new QLabel(tr("<html>SE<sub>y</sub> from Model"));
@@ -331,7 +330,7 @@ QWidget* StatisticDialog::GridSearchWidget()
 
     m_cv_steps = new QSpinBox;
     m_cv_steps->setMaximum(1e7);
-    m_cv_steps->setValue(5000);
+    m_cv_steps->setValue(2e3);
     m_cv_steps->setSingleStep(100);
 
     hlayout = new QHBoxLayout;
@@ -340,9 +339,9 @@ QWidget* StatisticDialog::GridSearchWidget()
     hlayout->addWidget(m_cv_steps);
 
     m_cv_err_conv = new ScientificBox;
-    m_cv_err_conv->setDecimals(14);
-    m_cv_err_conv->setValue(1E-10);
-    m_cv_err_conv->setSingleStep(1e-10);
+    m_cv_err_conv->setDecimals(10);
+    m_cv_err_conv->setValue(1E-9);
+    m_cv_err_conv->setSingleStep(1e-9);
 
     hlayout->addWidget(new QLabel(tr("Error Convergence:")));
     hlayout->addWidget(m_cv_err_conv);
@@ -604,6 +603,8 @@ void StatisticDialog::MaximumSteps(int steps)
 void StatisticDialog::IncrementProgress(int time)
 {
     QMutexLocker locker(&mutex);
+    if (m_hidden)
+        ShowWidget();
 
     m_time += time;
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
@@ -633,6 +634,7 @@ QString StatisticDialog::FOutput() const
 
 void StatisticDialog::ShowWidget()
 {
+    return;
     QPropertyAnimation* animation = new QPropertyAnimation(m_hide_widget, "maximumHeight");
     animation->setEasingCurve(QEasingCurve::InOutCubic);
     animation->setDuration(200);
@@ -646,6 +648,7 @@ void StatisticDialog::ShowWidget()
 
 void StatisticDialog::HideWidget()
 {
+    return;
     QPropertyAnimation* animation = new QPropertyAnimation(m_hide_widget, "maximumHeight");
     animation->setEasingCurve(QEasingCurve::InOutCubic);
     animation->setDuration(200);

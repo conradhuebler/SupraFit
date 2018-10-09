@@ -17,6 +17,7 @@
  * 
  */
 #include "src/core/models/postprocess/statistic.h"
+#include "src/core/models/postprocess/thermo.h"
 
 #include "src/core/AbstractModel.h"
 #include "src/core/libmath.h"
@@ -318,7 +319,7 @@ QString AbstractItcModel::ModelInfo() const
 
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-        result += Statistic::MonteCarlo2Thermo(i, getT(), QJsonObject(), true);
+        result += Thermo::FormatThermo(GlobalParameter(i), getT(), LocalParameter(i, 0));
     }
 
     return result;

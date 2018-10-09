@@ -276,6 +276,7 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
         else
             bins = 10;
     }
+    /* I have forgotten where I found that piece of code ... - so no link here*/
 
     QVector<QPair<qreal, int>> hist;
     double h = (max - min) / bins;
@@ -758,6 +759,34 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
             text += "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>";
         }
     }
+
+    if (type == SupraFit::Statistic::WeakenedGridSearch)
+    {
+        bool converged = result["converged"].toBool();
+        bool finished = result["finished"].toBool();
+        bool stationary = result["stationary"].toBool();
+        bool fine = converged&&finished&&!stationary;
+
+        QString color_start, color_end;
+        if(!fine)
+        {
+            color_start = "<font color='red'>";
+            color_end = "</font>";
+        }
+
+        text += "<tr><td colspan='2'>Analyse of the Grid Search Outcome</td></tr>\n";
+        text += QString("<tr><td>%1 Steps: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( result["steps"].toInt() ).arg(color_end);
+        text += QString("<tr><td>%1 Converged: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(converged)).arg(color_end);
+        text += QString("<tr><td>%1 Stationary: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(stationary)).arg(color_end);
+        text += QString("<tr><td>%1 Finished: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(finished)).arg(color_end);
+        text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(fine)).arg(color_end);
+
+        /*
+        text += "<tr><td>Finished: </td><td> <b>" + Bool2YesNo(finished) + "</b></td></tr>\n";
+        text += "<tr><td>Stationary: </td><td> <b>" + Bool2YesNo(stationary) + "</b></td></tr>\n";
+        text += "<tr><td>Fine: </td><td> <b>" + Bool2YesNo(fine) + "</b></td></tr>\n";*/
+    }
+
     if (type == SupraFit::Statistic::Reduction) {
         qreal value = 0, sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0;
         value = result["value"].toDouble();
@@ -821,8 +850,8 @@ QString printDouble(double number, int prec)
             string += local.toString(number, 'e', 2);
         else if (qAbs(number) < 1e-4)
             string += local.toString(number, 'e', 3);
-        else if (qAbs(number) > 1e3)
-            string += local.toString(number, 'f', 2);
+        else if (qAbs(number) >= 1e5)
+            string += local.toString(number, 'e', 3);
         else
             string += local.toString(number, 'f', 6);
     } else {
@@ -834,8 +863,8 @@ QString printDouble(double number, int prec)
             string += local.toString(number, 'e', prec);
         else if (qAbs(number) < 1e-4)
             string += local.toString(number, 'e', prec);
-        else if (qAbs(number) > 1e3)
-            string += local.toString(number, 'f', prec);
+        else if (qAbs(number) >= 1e5)
+            string += local.toString(number, 'e', prec);
         else
             string += local.toString(number, 'f', prec);
     }

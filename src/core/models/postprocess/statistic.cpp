@@ -20,17 +20,13 @@
 #include "src/core/models.h"
 #include "src/core/toolset.h"
 
+#include "src/global.h"
+
 #include <QtCore/QJsonObject>
 
 #include "statistic.h"
 
 namespace Statistic {
-
-
-bool FuzzyCompare(qreal a, qreal b, int prec = 3)
-{
-    return qAbs(a - b) < qPow(10, -prec);
-}
 
 QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool heat)
 {
@@ -53,7 +49,7 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
                 K = object[keys[i]].toObject()["value"].toDouble();
             }
 
-            if (object[keys[i]].toObject()["index"].toString() == QString("0|%1").arg(index)) {
+            if (object[keys[i]].toObject()["index"].toString() == QString("%1|0").arg(index)) {
                 H = object[keys[i]].toObject()["value"].toDouble();
                 dH11u = confidence["upper"].toDouble();
                 dH11l = confidence["lower"].toDouble();
@@ -71,21 +67,27 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGl = dG - dGl;
 
     result += "<table>";
-    result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K)) + "</td>";
+    result += "<tr><td><b>Complexation Constant K </b></td><td>" + Print::printDouble(qPow(10, K), 3) + "";
 
     if (!object.isEmpty())
-        result += "<td> (+" + Print::printDouble(qPow(10, K11u) - qPow(10, K)) + "/-" + Print::printDouble(qPow(10, K) - qPow(10, K11l)) + ")</td>";
+        result += " (+" + Print::printDouble(qPow(10, K11u) - qPow(10, K), 3) + "/-" + Print::printDouble(qPow(10, K) - qPow(10, K11l), 3) + ")</td>";
     result += "<td> M</td></tr>";
 
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(qPow(10, K11l)).arg(qPow(10, K11u));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>M</td></tr>").arg(Print::printDouble(qPow(10, K11l), 3)).arg(Print::printDouble(qPow(10, K11u), 3));
 
-    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "</td>";
+    result += "<tr><td></td></tr>";
+    result += "<tr><td></td></tr>";
+
+    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "";
     if (!object.isEmpty())
-        result += "<td> (+" + Print::printDouble(conf_dGu / 1000, 3) + "/-" + Print::printDouble(conf_dGl / 1000, 3) + ")</td>";
-    result += "<td>kJ/mol</td></tr>";
+        result += " (+" + Print::printDouble(conf_dGu / 1000, 3) + "/-" + Print::printDouble(conf_dGl / 1000, 3) + ")";
+    result += "</td><td>kJ/mol</td></tr>";
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>kJ/mol</td></tr>").arg(dGl / 1000.0).arg(dGu / 1000.0);
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGl / 1000.0, 3)).arg(Print::printDouble(dGu / 1000.0, 3));
+
+    result += "<tr><td></td></tr>";
+    result += "<tr><td></td></tr>";
 
     if (heat) {
 
@@ -110,21 +112,25 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
         qreal conf_dSu = conf.upper - dS;
         qreal conf_dSl = dS - conf.lower;
 
-        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0) + "</td>";
+        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0, 3) + "";
 
         if (!object.isEmpty())
-            result += "<td>(" + Print::printDouble(conf_dH11u / 1000.0, 3) + "/-" + Print::printDouble(conf_dH11l / 1000.0, 3) + ")</td>";
-        result += "<td>kJ/mol</td></tr>";
+            result += "(" + Print::printDouble(conf_dH11u / 1000.0, 3) + "/-" + Print::printDouble(conf_dH11l / 1000.0, 3) + ")";
+        result += "</td><td>kJ/mol</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>J/(molK)</td></tr>").arg(dH11l / 1000.0).arg(dH11u / 1000.0);
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(dH11l / 1000.0, 3)).arg(Print::printDouble(dH11u / 1000.0, 3));
 
-        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS) + "</td>";
+
+        result += "<tr><td></td></tr>";
+        result += "<tr><td></td></tr>";
+
+        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS, 3) + "";
         if (!object.isEmpty())
-            result += "<td>(+" + Print::printDouble(conf_dSu, 3) + "/-" + Print::printDouble(conf_dSl, 3) + ")</td>";
-        result += "<td>J/(molK)</td></tr>";
+            result += "(+" + Print::printDouble(conf_dSu, 3) + "/-" + Print::printDouble(conf_dSl, 3) + ")";
+        result += "</td><td>J/(molK)</td></tr>";
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>J/(molK)</td></tr>").arg(conf.lower).arg(conf.upper);
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(conf.lower, 3)).arg(Print::printDouble(conf.upper, 3));
     }
     result += "</table>";
 
@@ -313,20 +319,31 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     for (int i = 0; i < models.size(); ++i) {
         QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
         qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index];
-
         K11l_gs = qMin(K11l_gs, K);
         K11u_gs = qMax(K11u_gs, K);
         QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
         qreal H = local[index];
 
-        dH11l_gs = qMin(dH11l_gs, H);
-        dH11u_gs = qMax(dH11u_gs, H);
+        const qreal G = ToolSet::K2G(K, T);
+        const qreal S = ToolSet::GHE(G, H, T);
 
-        dGl_gs = qMin(dGl_gs, ToolSet::K2G(K, T));
-        dGu_gs = qMax(dGu_gs, ToolSet::K2G(K, T));
+        const qreal absG = qAbs(G);
+        const qreal absS = qAbs(S);
+        const qreal absH = qAbs(H);
+#warning how do two different signs ( for H and dH11 etc ) work, I will take only for now
+        /* Using signless comparison, because H, G and S can be negative and positive */
 
-        dSl_gs = qMin(dSl_gs, ToolSet::GHE(ToolSet::K2G(K, T), H, T));
-        dSu_gs = qMax(dSu_gs, ToolSet::GHE(ToolSet::K2G(K, T), H, T));
+        int sign = sgn(dH11l_gs);
+        dH11l_gs = sign*qMin(qAbs(dH11l_gs), absH);
+        dH11u_gs = sign*qMax(qAbs(dH11u_gs), absH);
+
+        sign = sgn(dGl_gs);
+        dGl_gs = sign*qMin(qAbs(dGl_gs), absG);
+        dGu_gs = sign*qMax(qAbs(dGu_gs), absG);
+
+        sign = sgn(S);
+        dSl_gs = sign*qMin(qAbs(dSl_gs), absS);
+        dSu_gs = sign*qMax(qAbs(dSu_gs), absS);
     }
 
     qreal dG = ToolSet::K2G(K, T);
@@ -339,69 +356,68 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal conf_dGl = dG - dGl;
 
     result += "<table>";
-    result += QString("<tr><td><b>Complexation Constant K</b></td><td> %1</td>").arg(qPow(10, K));
+    result += QString("<tr><td><b>Complexation Constant K</b></td><td> %1 ").arg(Print::printDouble(qPow(10, K), 3));
 
     if (!object.isEmpty())
-        result += QString("<td> (+ %1 /- %2)</td>").arg(qPow(10, K11u) - qPow(10, K)).arg(qPow(10, K) - qPow(10, K11l));
+        result += QString(" (+ %1 /- %2)</td>").arg(Print::printDouble(qPow(10, K11u) - qPow(10, K), 3)).arg(Print::printDouble(qPow(10, K) - qPow(10, K11l), 3));
     result += "<td> M</td></tr>";
 
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(qPow(10, K11l)).arg(qPow(10, K11u));
-    if (!object.isEmpty()) {
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>M</td></tr>").arg(Print::printDouble(qPow(10, K11l), 3)).arg(Print::printDouble(qPow(10, K11u), 3));
+    if (models.size()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-        result += QString("<tr><td><b>Complexation Constant K </b></td><td>%1</td>").arg(qPow(10, K));
-        result += QString("<td> (+ %1 /- %2 )</td><td> M</td></tr>").arg(qPow(10, K11u_gs) - qPow(10, K)).arg(qPow(10, K) - qPow(10, K11l_gs));
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(qPow(10, K11l_gs)).arg(qPow(10, K11u_gs));
+        result += QString("<tr><td><b>Complexation Constant K </b></td><td>%1   ").arg(qPow(10, K));
+        result += QString(" (+ %1 /- %2 )</td><td> M</td></tr>").arg(Print::printDouble(qPow(10, K11u_gs) - qPow(10, K), 3)).arg(Print::printDouble(qPow(10, K) - qPow(10, K11l_gs), 3));
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>M</td></tr>").arg(Print::printDouble(qPow(10, K11l_gs), 3)).arg(Print::printDouble(qPow(10, K11u_gs), 3));
     }
+    result += "<tr><td></td></tr>";
+    result += "<tr><td></td></tr>";
 
-    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "</td>";
+    result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G </b></td><td>" + Print::printDouble(dG / 1000.0, 3) + "  ";
     if (!object.isEmpty())
-        result += "<td> (+" + Print::printDouble(conf_dGu / 1000, 3) + "/-" + Print::printDouble(conf_dGl / 1000, 3) + ")</td>";
+        result += " (+" + Print::printDouble(conf_dGu / 1000.0, 3) + "/-" + Print::printDouble(conf_dGl / 1000.0, 3) + ")</td>";
     result += "<td>kJ/mol</td></tr>";
     if (!object.isEmpty())
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>kJ/mol</td></tr>").arg(dGl / 1000.0).arg(dGu / 1000.0);
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGl / 1000.0, 3)).arg(Print::printDouble(dGu / 1000.0, 3));
 
-    if (!object.isEmpty()) {
+    if (models.size()) {
         result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + Print::printDouble(dG/1000, 3) + "</td>";
-        result += "<td> (+" + Print::printDouble((dGu_gs - dG) / 1000.0, 3) + "/-" + Print::printDouble((dG - dGl_gs) / 1000.0, 3) + ")</td>";
-        result += "<td> M</td></tr>";
-        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dGl_gs / 1000.0, 3).arg(dGu_gs / 1000.0, 3);
+        result += "<tr><td><b>Free Enthalpy of Complexation &Delta;G  </b></td><td>" + Print::printDouble(dG/1000, 3) + "";
+        result += " (+" + Print::printDouble((dGu_gs - dG) / 1000.0, 3) + "/-" + Print::printDouble((dG - dGl_gs) / 1000.0, 3) + ")</td>";
+        result += "<td> kJ/mol</td></tr>";
+        result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dGu_gs / 1000.0, 3)).arg(Print::printDouble(dGl_gs / 1000.0, 3));
     }
+    result += "<tr><td></td></tr>";
+    result += "<tr><td></td></tr>";
 
     if (heat) {
 
-        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0) + "</td>";
+        result += "<tr><td><b>Enthalpy of Complexation &Delta;H</b></td><td>" + Print::printDouble(H / 1000.0, 3) + "  ";
 
         if (!object.isEmpty())
-            result += "<td>(" + Print::printDouble((dH11u - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l) / 1000.0, 3) + ")</td>";
+            result += "(" + Print::printDouble((dH11u - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l) / 1000.0, 3) + ")</td>";
         result += "<td>kJ/mol</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>J/(molK)</td></tr>").arg(dH11l / 1000.0).arg(dH11u / 1000.0);
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg( Print::printDouble(dH11l / 1000.0, 3)).arg( Print::printDouble(dH11u / 1000.0, 3));
 
-        if (!object.isEmpty()) {
+        if (models.size()) {
             result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + Print::printDouble(H / 1000.0, 3) + "</td>";
-            result += "<td> (+" + Print::printDouble((dH11u_gs - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l_gs) / 1000.0, 3) + ")</td>";
-            result += "<td> M</td></tr>";
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dH11u_gs / 1000.0, 3).arg(dH11l_gs / 1000.0, 3);
+            result += "<tr><td><b>Enthalpy of Complexation &Delta;H  </b></td><td>" + Print::printDouble(H / 1000.0, 3) + "";
+            result += " (+" + Print::printDouble((dH11u_gs - H) / 1000.0, 3) + "/-" + Print::printDouble((H - dH11l_gs) / 1000.0, 3) + ")</td>";
+            result += "<td> kJ/mol</td></tr>";
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dH11u_gs / 1000.0, 3)).arg(Print::printDouble(dH11l_gs / 1000.0, 3));
         }
 
-        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS) + "</td>";
+        result += "<tr><td></td></tr>";
+        result += "<tr><td></td></tr>";
+
+        result += "<tr><td><b>Entropy of Complexation &Delta;S</b></td><td>" + Print::printDouble(dS, 3) + "";
         if (!object.isEmpty())
-            result += "<td>(+" + Print::printDouble(dSu_gs, 3) + "/-" + Print::printDouble(dSl_gs, 3) + ")</td>";
+            result += " (+" + Print::printDouble(dSu_gs - dS, 3) + "/-" + Print::printDouble(dS - dSl_gs, 3) + ")</td>";
         result += "<td>J/(molK)</td></tr>";
-        if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>J/(molK)</td></tr>").arg(dSu_gs).arg(dSl_gs);
-
-        if (!object.isEmpty()) {
-            result += QString("<tr><td colspan'2'>Using all data provided by Weakend Grid Search</td></tr>");
-            result += "<tr><td><b>>Entropy of Complexation &Delta;S </b></td><td>" + Print::printDouble(dS) + "</td>";
-            result += "<td> (+" + Print::printDouble(dSu_gs - dS) + "/-" + Print::printDouble(dS - dSl_gs) + ")</td>";
-            result += "<td> M</td></tr>";
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td></td><td>M</td></tr>").arg(dSu_gs).arg(dSl_gs);
-        }
+        if (models.size())
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(dSl_gs, 3)).arg(Print::printDouble(dSu_gs, 3));
     }
     result += "</table>";
 
