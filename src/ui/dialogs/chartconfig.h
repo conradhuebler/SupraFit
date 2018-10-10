@@ -39,6 +39,7 @@ struct ChartConfig {
     qreal y_min = 0;
     qreal y_max = 7;
     int y_step = 5;
+    int Theme = 0;
     bool m_legend = false, m_lock_scaling = false;
     QFont m_label, m_ticks, m_keys, m_title;
     Qt::Alignment align;
@@ -60,6 +61,7 @@ private:
     QSpinBox *m_x_step, *m_y_step;
     ChartConfig m_chartconfig;
     QCheckBox *m_legend, *m_lock_scaling;
+    QComboBox* m_theme;
 
 private slots:
     void Changed();

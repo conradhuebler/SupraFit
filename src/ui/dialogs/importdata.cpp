@@ -255,12 +255,19 @@ void ImportData::WriteData(const DataTable* model, int independent)
 void ImportData::accept()
 {
     DataTable* model = qobject_cast<DataTable*>(m_table->model());
+
+    if (model->rowCount() == 0 && model->columnCount() == 0) {
+        delete model;
+        QDialog::reject();
+        return;
+    }
     WriteData(model);
     QJsonObject object, data;
     data = m_storeddata->ExportData();
     data["system"] = m_systemparameter;
     object["data"] = data;
     m_project = object;
+    delete model;
     QDialog::accept();
 }
 

@@ -43,6 +43,7 @@ public slots:
 private:
     QVector<SpinBox*> m_constants;
     QLabel* m_error;
+    QVector<QLabel*> m_labels;
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
     QCheckBox* m_include;
     HoverCheckBox* m_show;

@@ -24,6 +24,7 @@
 #include "src/ui/dialogs/chartconfig.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
+#include <QtCharts/QAreaSeries>
 #include <QtCharts/QChart>
 #include <QtCharts/QLegendMarker>
 #include <QtCharts/QLineSeries>
@@ -260,13 +261,14 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series)
         }
         m_chart->addSeries(series);
         m_chart->createDefaultAxes();
+        m_series << series;
     }
-    connect(series, &QtCharts::QAbstractSeries::nameChanged, [this, series]() {
+    connect(series, &QtCharts::QAbstractSeries::nameChanged, series, [this, series]() {
         if (series) {
             this->m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty());
         }
     });
-    m_chart->legend()->markers(series).first()->setVisible(true);
+    m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty());
     connect(series, SIGNAL(visibleChanged()), this, SLOT(forceformatAxis()));
     if (!connected)
         if (connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))
@@ -292,10 +294,12 @@ void ChartView::forceformatAxis()
     if (m_lock_scaling)
         return;
     m_pending = true;
-    qreal x_min = 1000;
+
+    qreal x_min = 0;
     qreal x_max = 0;
     qreal y_max = 0;
-    qreal y_min = 1000;
+    qreal y_min = 0;
+    int start = 0;
     for (QtCharts::QAbstractSeries* series : m_chart->series()) {
         QPointer<QtCharts::QXYSeries> serie = qobject_cast<QtCharts::QXYSeries*>(series);
         if (!serie)
@@ -304,6 +308,14 @@ void ChartView::forceformatAxis()
             continue;
 
         QVector<QPointF> points = serie->pointsVector();
+        if (start == 0) {
+            y_min = points.first().y();
+            y_max = points.first().y();
+
+            x_min = points.first().x();
+            x_max = points.first().x();
+            start = 1;
+        }
         for (int i = 0; i < points.size(); ++i) {
             y_min = qMin(y_min, points[i].y());
             y_max = qMax(y_max, points[i].y());
@@ -315,16 +327,28 @@ void ChartView::forceformatAxis()
     int x_mean = (x_max + x_min) / 2;
     int y_mean = (y_max + y_min) / 2;
 
-    x_max = ToolSet::ceil(x_max - x_mean) + x_mean;
-    y_max = ToolSet::ceil(y_max - y_mean) + y_mean;
-
-    if (x_min)
-        x_min = ToolSet::floor(x_min - x_mean) + x_mean;
-    if (y_min)
-        y_min = ToolSet::floor(y_min - y_mean) + y_mean;
 
     int x_ticks = ToolSet::scale(x_max - x_min) / int(ToolSet::scale(x_max - x_min) / 5) + 1;
     int y_ticks = 6; //scale(y_max-y_min)/int(scale(y_max-y_min)/ 5) + 1;
+
+    if (1 < x_mean && x_mean < 10) {
+        x_max = std::ceil(x_max);
+        x_min = std::floor(x_min);
+    } else {
+        x_max = ToolSet::ceil(x_max - x_mean) + x_mean;
+        if (x_min)
+            x_min = ToolSet::floor(x_min - x_mean) + x_mean;
+    }
+
+    if (1 < y_mean && y_mean < 10) {
+        y_max = std::ceil(y_max);
+        y_min = std::floor(y_min);
+        y_ticks = (y_max - y_min + 1);
+    } else {
+        y_max = ToolSet::ceil(y_max - y_mean) + y_mean;
+        if (y_min)
+            y_min = ToolSet::floor(y_min - y_mean) + y_mean;
+    }
 
     QPointer<QtCharts::QValueAxis> y_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
     if (!y_axis) {
@@ -403,6 +427,41 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
     }
     setTitle(chartconfig.title);
     m_chart->setTitleFont(chartconfig.m_title);
+
+    int Theme = chartconfig.Theme;
+    if (Theme < 8)
+        m_chart->setTheme(static_cast<QtCharts::QChart::ChartTheme>(Theme));
+    else {
+        for (int i = 0; i < m_series.size(); ++i) {
+            if (!m_series[i])
+                continue;
+
+            if (qobject_cast<QtCharts::QXYSeries*>(m_series[i])) {
+                QtCharts::QXYSeries* series = qobject_cast<QtCharts::QXYSeries*>(m_series[i]);
+                series->setColor(QColor("black"));
+            } else if (qobject_cast<QtCharts::QAreaSeries*>(m_series[i])) {
+                QtCharts::QAreaSeries* series = qobject_cast<QtCharts::QAreaSeries*>(m_series[i]);
+                QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
+                gradient.setColorAt(0.0, QColor("darkGray"));
+                gradient.setColorAt(1.0, QColor("lightGray"));
+                gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+                series->setBrush(gradient);
+                series->setOpacity(0.4);
+                QPen pen(QColor("darkGray"));
+                pen.setWidth(3);
+                series->setPen(pen);
+            }
+        }
+        QFont font = chartconfig.m_title;
+        font.setPointSize(12);
+        m_chart->setTitleFont(font);
+        y_axis->setLabelsFont(font);
+        x_axis->setLabelsFont(font);
+        x_axis->setTitleFont(font);
+        y_axis->setTitleFont(font);
+
+        m_chart->legend()->setFont(font);
+    }
 }
 
 void ChartView::setTitle(const QString& str)

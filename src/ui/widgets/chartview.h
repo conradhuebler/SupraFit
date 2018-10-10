@@ -166,6 +166,7 @@ private:
     ChartConfigDialog m_chartconfigdialog;
     bool m_pending, m_lock_scaling, m_latex_supported, m_modal = true;
     qreal m_ymax, m_ymin, m_xmin, m_xmax;
+    QVector<QPointer<QtCharts::QAbstractSeries>> m_series;
 
 private slots:
     void PlotSettings();

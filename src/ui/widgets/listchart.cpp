@@ -16,7 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QDebug>
+#include <QtCore/QDebug>
+#include <QtCore/QPointer>
 
 #include <QtCharts/QBoxPlotSeries>
 
@@ -74,18 +75,26 @@ void ListChart::setYAxis(const QString& str)
 
 void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QColor& color, const QString& name)
 {
+    QListWidgetItem* item = NULL;
     if (index >= m_list->count()) {
-        QListWidgetItem* item = new QListWidgetItem(name);
+        item = new QListWidgetItem(name);
         item->setData(Qt::UserRole, index);
         item->setBackgroundColor(color);
         m_list->addItem(item);
     }
 
     if (!m_names_list->findItems(name, Qt::MatchExactly).size()) {
-        QListWidgetItem* item = new QListWidgetItem(name);
+        item = new QListWidgetItem(name);
         item->setData(Qt::UserRole, name);
         m_names_list->addItem(item);
     }
+
+    QtCharts::QXYSeries* s = qobject_cast<QtCharts::QXYSeries*>(series);
+    if (s && item != NULL)
+        connect(s, &QtCharts::QXYSeries::colorChanged, this, [item](const QColor& color) {
+            item->setBackgroundColor(color);
+        });
+
     m_list->setItemDelegate(new HTMLListItem(m_list));
     m_names_list->setItemDelegate(new HTMLListItem(m_names_list));
     m_chartview->addSeries(series);

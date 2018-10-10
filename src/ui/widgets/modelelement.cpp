@@ -93,8 +93,10 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         widget->setLayout(vlayout);
         vlayout->addWidget(constant, 0, 0);
         vlayout->addWidget(check, 0, 1);
-        vlayout->addWidget(new QLabel(m_model.data()->LocalParameterName(i)), 1, 0, 1, 2);
+        QLabel* label = new QLabel(m_model.data()->LocalParameterName(i));
+        vlayout->addWidget(label, 1, 0, 1, 2);
         shifts->addWidget(widget, 0);
+        m_labels << label;
     }
 
     if (m_model.data()->Type() != 3) {
@@ -235,6 +237,13 @@ void ModelElement::ChangeColor(const QColor& color)
 {
     m_signal_series->setColor(color);
     m_error_series->setColor(color);
+    int lightness = color.lightness();
+
+    if (lightness < 50)
+        setStyleSheet("color:lightGray;");
+    else
+        setStyleSheet("color:darkRed;");
+
 #ifdef _WIN32
     setStyleSheet("background-color:" + color.name() + ";");
 #else
@@ -242,6 +251,7 @@ void ModelElement::ChangeColor(const QColor& color)
     pal.setColor(QPalette::Background, color);
     setPalette(pal);
 #endif
+
     m_color = color;
     emit ColorChanged(m_color);
 }

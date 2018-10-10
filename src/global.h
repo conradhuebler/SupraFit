@@ -352,11 +352,11 @@ inline int sgn(qreal val) {
     return (0 < val) - (val < 0);
 }
 
-
+/*
 inline QString Bool2YesNo(bool value)
 {
     return (value ? QString("Yes") : QString("No"));
-}
+}*/
 
 inline const QString included() { return QString("#77d740;"); }
 inline const QString excluded() { return QString("#e17f7f;"); }

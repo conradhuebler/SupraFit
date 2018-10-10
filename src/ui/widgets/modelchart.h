@@ -23,8 +23,6 @@
 
 #include <QtWidgets/QWidget>
 
-class QtCharts::QXYSeries;
-
 class AbstractModel;
 
 class ListChart;

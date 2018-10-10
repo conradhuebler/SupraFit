@@ -193,10 +193,7 @@ QString Points2String(const QList<QPointF>& points)
 
 QString bool2YesNo(bool var)
 {
-    if (var)
-        return QString("Yes");
-    else
-        return QString("No");
+    return (var ? QString("Yes") : QString("No"));
 }
 
 qreal scale(qreal value)
@@ -223,8 +220,12 @@ qreal scale(qreal value, qreal& pow)
 
 qreal ceil(qreal value)
 {
+    if (1 < qAbs(value) && qAbs(value) < 10)
+        return std::ceil(value);
+
     double pot = 1;
     value = scale(value, pot);
+
     int integer = int(value) + 1;
     if (value < 0)
         integer -= 1;
@@ -233,10 +234,14 @@ qreal ceil(qreal value)
 
 qreal floor(qreal value)
 {
+    if (1 < qAbs(value) && qAbs(value) < 10)
+        return std::floor(value);
+
     double pot = 1;
     value = scale(value, pot);
 
     int integer = int(value);
+
     if (value < 0)
         integer -= 1;
     return qreal(integer) * pot;
@@ -776,10 +781,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
         text += "<tr><td colspan='2'>Analyse of the Grid Search Outcome</td></tr>\n";
         text += QString("<tr><td>%1 Steps: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( result["steps"].toInt() ).arg(color_end);
-        text += QString("<tr><td>%1 Converged: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(converged)).arg(color_end);
-        text += QString("<tr><td>%1 Stationary: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(stationary)).arg(color_end);
-        text += QString("<tr><td>%1 Finished: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(finished)).arg(color_end);
-        text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( Bool2YesNo(fine)).arg(color_end);
+        text += QString("<tr><td>%1 Converged: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(converged)).arg(color_end);
+        text += QString("<tr><td>%1 Stationary: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(stationary)).arg(color_end);
+        text += QString("<tr><td>%1 Finished: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(finished)).arg(color_end);
+        text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(fine)).arg(color_end);
 
         /*
         text += "<tr><td>Finished: </td><td> <b>" + Bool2YesNo(finished) + "</b></td></tr>\n";

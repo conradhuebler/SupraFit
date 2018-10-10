@@ -65,6 +65,8 @@
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QTreeView>
 
+#include <QtCharts/QChartView>
+
 #include <stdio.h>
 
 #include "suprafitgui.h"

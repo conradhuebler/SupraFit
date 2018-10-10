@@ -19,6 +19,7 @@
 
 #include <QtWidgets/QAction>
 #include <QtWidgets/QCheckBox>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QFontDialog>
@@ -29,6 +30,8 @@
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
+
+#include <QtCharts/QChartView>
 
 #include "chartconfig.h"
 
@@ -94,9 +97,23 @@ ChartConfigDialog::ChartConfigDialog()
 
     m_lock_scaling = new QCheckBox(tr("Lock Scaling"));
     connect(m_lock_scaling, &QCheckBox::stateChanged, this, &ChartConfigDialog::Changed);
+
+    m_theme = new QComboBox;
+    m_theme->addItem("Light", QtCharts::QChart::ChartThemeLight);
+    m_theme->addItem("Blue Cerulean", QtCharts::QChart::ChartThemeBlueCerulean);
+    m_theme->addItem("Dark", QtCharts::QChart::ChartThemeDark);
+    m_theme->addItem("Brown Sand", QtCharts::QChart::ChartThemeBrownSand);
+    m_theme->addItem("Blue NCS", QtCharts::QChart::ChartThemeBlueNcs);
+    m_theme->addItem("High Contrast", QtCharts::QChart::ChartThemeHighContrast);
+    m_theme->addItem("Blue Icy", QtCharts::QChart::ChartThemeBlueIcy);
+    m_theme->addItem("Qt", QtCharts::QChart::ChartThemeQt);
+    m_theme->addItem("Black 'n' White", 8);
+    connect(m_theme, qOverload<int>(&QComboBox::currentIndexChanged), this, &ChartConfigDialog::Changed);
+
     layout->addWidget(new QLabel(tr("<h4>Chart Title</h4>")), 0, 0);
-    layout->addWidget(m_title, 0, 1, 1, 2);
-    layout->addWidget(m_titlefont, 0, 3, Qt::AlignRight);
+    layout->addWidget(m_title, 0, 1);
+    layout->addWidget(m_titlefont, 0, 2, Qt::AlignRight);
+    layout->addWidget(m_theme, 0, 3, Qt::AlignRight);
 
     QGroupBox* box = new QGroupBox(tr("X Axis"));
     QGridLayout* grid = new QGridLayout;
@@ -204,6 +221,8 @@ void ChartConfigDialog::setConfig(const ChartConfig& chartconfig)
     m_legend->setChecked(chartconfig.m_legend);
     m_lock_scaling->setChecked(chartconfig.m_lock_scaling);
 
+    m_theme->setCurrentIndex(chartconfig.Theme);
+
     m_title->setText(chartconfig.title);
 }
 
@@ -222,6 +241,8 @@ void ChartConfigDialog::Changed()
     m_chartconfig.y_step = m_y_step->value();
     m_chartconfig.m_legend = m_legend->isChecked();
     m_chartconfig.m_lock_scaling = m_lock_scaling->isChecked();
+
+    m_chartconfig.Theme = m_theme->currentIndex();
 
     emit ConfigChanged(Config());
 }
