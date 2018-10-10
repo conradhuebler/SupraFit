@@ -48,6 +48,9 @@ AbstractTitrationModel::AbstractTitrationModel(DataClass* data)
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     m_ylabel = "&delta; [ppm]";
     LoadSystemParameter();
+    connect(this, &AbstractModel::Recalculated, this, [this]() {
+        emit this->ChartUpdated("concentration");
+    });
 }
 
 AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel* other)
@@ -57,6 +60,9 @@ AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel* other)
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     m_ylabel = "&delta; [ppm]";
     m_T = other->m_T;
+    connect(this, &AbstractModel::Recalculated, this, [this]() {
+        emit this->ChartUpdated("concentration");
+    });
 }
 
 AbstractTitrationModel::~AbstractTitrationModel()
@@ -113,7 +119,11 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
         for (int i = 0; i < GlobalParameterSize(); ++i)
             m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
     }
+
     m_concentrations->setRow(equilibrium, i);
+    QStringList names = m_concentrations->header();
+    names.removeFirst();
+    addPoints("concentration", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
 }
 
 /*

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 -2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ private:
     void setUi();
     void resizeButtons();
     PushButton *m_switch, *m_minimize_single, *m_new_guess, *m_optim_config, *m_export, *m_import, *m_advanced;
-    PushButton *m_statistics, *m_save, *m_simulate, *m_plots, *m_restore, *m_detailed;
+    PushButton *m_statistics, *m_save, *m_simulate, *m_plots, *m_restore, *m_detailed, *m_charts;
     QPushButton* m_toggle;
     QWidget* m_second;
     bool m_hidden;
@@ -69,4 +69,5 @@ signals:
     void ExportSimModel();
     void Restore();
     void Detailed();
+    void Charts();
 };

@@ -221,6 +221,7 @@ set(suprafit_SRCS
                 src/ui/widgets/optionswidget.cpp
                 src/ui/widgets/systemparameterwidget.cpp
                 src/ui/widgets/modelactions.cpp
+                src/ui/widgets/modelchart.cpp
                 src/ui/widgets/modelelement.cpp
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp

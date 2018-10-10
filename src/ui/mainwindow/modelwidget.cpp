@@ -47,6 +47,7 @@
 #include "src/ui/widgets/extwidget.h"
 #include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/modelactions.h"
+#include "src/ui/widgets/modelchart.h"
 #include "src/ui/widgets/modelelement.h"
 #include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/parameterwidget.h"
@@ -323,6 +324,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
     m_model->Calculate();
+
+    m_charts_dialogs = new ModalDialog(this);
+    for (const QString& str : m_model->Charts()) {
+        ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
+        m_charts_dialogs->setWidget(w, str);
+    }
 }
 
 ModelWidget::~ModelWidget()
@@ -388,6 +395,9 @@ void ModelWidget::DiscreteUI()
     connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
+    connect(m_actions, &ModelActions::Charts, this, [this]() {
+        this->m_charts_dialogs->Attention();
+    });
 
     m_layout->addWidget(m_actions);
     m_actions->LocalEnabled(m_model->SupportSeries());

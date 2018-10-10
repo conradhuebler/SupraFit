@@ -31,6 +31,7 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QPointF>
 #include <QtCore/QUuid>
 
 #include <iostream>
@@ -134,6 +135,9 @@ AbstractModel::~AbstractModel()
 
     if (m_model_error)
         delete m_model_error;
+
+    qDeleteAll(m_model_charts);
+
 #ifdef _DEBUG
     std::cout << "Model to be deleted" << std::endl;
 #endif
@@ -245,6 +249,9 @@ void AbstractModel::Calculate()
     m_covfit = 0;
     m_sum_squares = 0;
     m_sum_absolute = 0;
+
+    for (const QString& str : Charts())
+        clearChart(str);
 
     EvaluateOptions();
     CalculateVariables();
@@ -1235,6 +1242,36 @@ QString AbstractModel::AnalyseGridSearch(const QJsonObject& object, bool forceAl
     }
 
     return result;
+}
+
+void AbstractModel::clearChart(const QString& str)
+{
+    if (m_model_charts.contains(str)) {
+        for (int i = 0; i < m_model_charts[str]->m_series.size(); ++i)
+            m_model_charts[str]->m_series[i].m_values.clear();
+    }
+}
+
+void AbstractModel::addPoints(const QString& str, qreal x, const Vector& vector, const QStringList& names)
+{
+
+    if (!m_model_charts.contains(str)) {
+        ModelChart* chart = new ModelChart;
+        chart->title = QString(str);
+        for (int i = 0; i < vector.size(); ++i) {
+            ModelSeries series;
+
+            if (i < names.size())
+                series.name = names[i];
+            chart->m_series << series;
+        }
+        m_model_charts[str] = chart;
+    }
+    if (vector.size() == m_model_charts[str]->m_series.size()) {
+        for (int i = 0; i < m_model_charts[str]->m_series.size(); ++i) {
+            m_model_charts[str]->m_series[i].m_values << QPointF(x, vector(i));
+        }
+    }
 }
 
 #include "AbstractModel.moc"

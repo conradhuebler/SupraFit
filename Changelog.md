@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- add custom charts for model (nmr titration models already got concentration chart)
 - add recent files list and close all open projects to gui
 - some changes in histograms
 - introduce entropy for histograms and variable bin counts

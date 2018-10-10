@@ -145,7 +145,7 @@ private:
     QWidget* m_model_widget;
     QSplitter* m_splitter;
     StatisticWidget* m_statistic_widget;
-    ModalDialog* m_dialogs;
+    ModalDialog *m_dialogs, *m_charts_dialogs;
     ResultsDialog* m_results;
 
     bool m_statistic, m_val_readonly;

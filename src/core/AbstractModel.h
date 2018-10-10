@@ -36,6 +36,19 @@ struct ModelOption {
     QString name;
 };
 
+struct ModelSeries {
+    QString name;
+    QString x_axis;
+    QString y_axis;
+    QList<QPointF> m_values;
+};
+
+/* Many things can be plotted, therefor let several series form a chart, where more than one chart can be managed by a model */
+struct ModelChart {
+    QVector<ModelSeries> m_series;
+    QString title;
+};
+
 class AbstractModelPrivate : public QSharedData {
 
 public:
@@ -588,9 +601,19 @@ public:
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const { Q_UNUSED(datapoint)
         Q_UNUSED(series) return QVector<qreal>(); }
 
-    inline virtual int ChildrenSize() const { return 0; }
+    inline virtual int ChildrenSize() const override { return 0; }
 
     inline QString ModelUUID() const { return m_model_uuid; }
+
+    inline const ModelChart* Chart(const QString& str) const
+    {
+        if (m_model_charts.contains(str))
+            return m_model_charts[str];
+        else
+            return NULL;
+    }
+
+    inline QStringList Charts() const { return m_model_charts.keys(); }
 
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
@@ -632,6 +655,10 @@ protected:
      */
     virtual qreal CalculateCovarianceFit();
 
+    void clearChart(const QString& hash);
+
+    void addPoints(const QString& hash, qreal x, const Vector& y, const QStringList& names = QStringList());
+
     void PrepareParameter(int global, int local);
 
     // #warning to do as well
@@ -661,6 +688,10 @@ protected:
 
     QString m_more_info, m_name, m_name_cached, m_model_uuid;
 
+    /* Let models store additional charts, where anything can be plotted, e.g concentration curves or anything else
+      BUT since abstractmodels should not depend on anything graphics related, they will be no series, but simple structs
+      that can be worked with */
+    QHash<QString, ModelChart*> m_model_charts;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished
@@ -670,4 +701,5 @@ signals:
     void Warning(const QString& str, int priority = 1);
     void StatisticChanged();
     void OptionChanged(int index, const QString& value);
+    void ChartUpdated(const QString& chart);
 };

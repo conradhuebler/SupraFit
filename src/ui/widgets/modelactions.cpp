@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 -2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ void ModelActions::setUi()
     //m_plots->setEnabled(false);
     m_detailed = new PushButton(tr("Detailed"));
     m_restore = new PushButton(tr("Restore"));
-
+    m_charts = new PushButton(tr("Charts"));
     m_toggle = new QPushButton(tr("..more.."));
     m_toggle->setFlat(true);
 
@@ -66,7 +66,7 @@ void ModelActions::setUi()
     h_layout->addWidget(m_detailed);
     h_layout->addWidget(m_new_guess);
     h_layout->addWidget(m_restore);
-    h_layout->addWidget(m_optim_config);
+    h_layout->addWidget(m_charts);
     h_layout->addStretch();
     h_layout->addWidget(m_toggle);
     h_layout->setAlignment(Qt::AlignLeft);
@@ -81,6 +81,7 @@ void ModelActions::setUi()
     h_layout->addWidget(m_import);
     h_layout->addWidget(m_export);
     h_layout->addWidget(m_simulate);
+    h_layout->addWidget(m_optim_config);
     h_layout->addStretch();
     h_layout->setAlignment(Qt::AlignLeft);
     m_second->setLayout(h_layout);
@@ -98,6 +99,7 @@ void ModelActions::setUi()
     connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
     connect(m_restore, &PushButton::clicked, this, &ModelActions::Restore);
     connect(m_detailed, &PushButton::clicked, this, &ModelActions::Detailed);
+    connect(m_charts, &PushButton::clicked, this, &ModelActions::Charts);
 
     m_second->setMaximumHeight(0);
     setLayout(layout);
