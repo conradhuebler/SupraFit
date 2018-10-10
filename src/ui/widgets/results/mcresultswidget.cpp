@@ -181,7 +181,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);
-        view->addSeries(current_constant, i, xy_series->color(), name);
+        view->addSeries(current_constant, i, xy_series->color(), name, true);
 
         QJsonObject confidenceObject = data["confidence"].toObject();
         if (view) {

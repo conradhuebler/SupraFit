@@ -93,7 +93,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         widget->setLayout(vlayout);
         vlayout->addWidget(constant, 0, 0);
         vlayout->addWidget(check, 0, 1);
-        QLabel* label = new QLabel(m_model.data()->LocalParameterName(i));
+        QLabel* label = new QLabel(tr("<html>%1</html>").arg(m_model.data()->LocalParameterName(i)));
         vlayout->addWidget(label, 1, 0, 1, 2);
         shifts->addWidget(widget, 0);
         m_labels << label;

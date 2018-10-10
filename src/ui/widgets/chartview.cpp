@@ -20,6 +20,7 @@
 #include "src/core/toolset.h"
 
 #include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/peakcallout.h"
 
 #include "src/ui/dialogs/chartconfig.h"
 #include "src/ui/mainwindow/modelwidget.h"
@@ -178,6 +179,11 @@ ChartView::ChartView()
     setUi();
 }
 
+ChartView::~ChartView()
+{
+    qDeleteAll(m_peak_anno);
+}
+
 void ChartView::setUi()
 {
     QGridLayout* layout = new QGridLayout;
@@ -251,13 +257,27 @@ QtCharts::QLineSeries* ChartView::addLinearSeries(qreal m, qreal n, qreal min, q
     return series;
 }
 
-void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series)
+void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callout)
 {
     if (!m_chart->series().contains(series) || !series) {
         QPointer<QtCharts::QXYSeries> serie = qobject_cast<QtCharts::QXYSeries*>(series);
         if (serie) {
             if (serie->points().size() > 5e3)
                 serie->setUseOpenGL(true);
+            if (callout) {
+                QPointF point(serie->points().last());
+
+                PeakCallOut* annotation = new PeakCallOut(m_chart);
+                annotation->setText(series->name(), point);
+                annotation->setAnchor(point);
+                annotation->setZValue(11);
+                //annotation->updateGeometry();
+                annotation->show();
+                connect(series, &QtCharts::QAbstractSeries::visibleChanged, series, [series, annotation]() {
+                    annotation->setVisible(series->isVisible());
+                });
+                m_peak_anno.append(annotation);
+            }
         }
         m_chart->addSeries(series);
         m_chart->createDefaultAxes();
@@ -422,6 +442,8 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
         else
             m_chart->legend()->setAlignment(Qt::AlignRight);
         m_chart->legend()->setFont(chartconfig.m_keys);
+        for (PeakCallOut* call : m_peak_anno)
+            call->setFont(chartconfig.m_keys);
     } else {
         m_chart->legend()->setVisible(false);
     }
@@ -461,6 +483,8 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
         y_axis->setTitleFont(font);
 
         m_chart->legend()->setFont(font);
+        for (PeakCallOut* call : m_peak_anno)
+            call->setFont(font);
     }
 }
 

@@ -70,14 +70,14 @@ public:
         if (i == 0)
             return "Shift of the pure - non silent substrat";
         else
-            return tr("Shift of the pure %1 complex").arg(GlobalParameterName(i - 1)).remove("lg");
+            return tr("Shift of the pure %1 complex").arg(SpeciesName(i - 1));
     }
     inline virtual QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return "Pure Component Shift";
+            return tr("&delta; A");
         else
-            return tr("%1 Complex Shift").arg(GlobalParameterName(i - 1)).remove("lg");
+            return tr("&delta; %1").arg(SpeciesName(i - 1));
     }
 
     // virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;

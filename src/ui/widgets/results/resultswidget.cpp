@@ -233,7 +233,7 @@ QWidget* ResultsWidget::ModelComparisonWidget()
 QWidget* ResultsWidget::GridSearchWidget()
 {
     ListChart* view = new ListChart;
-    view->setXAxis("constant");
+    view->setXAxis("Parameter");
     view->setYAxis("Sum of Squares");
     int series_int = 0;
     int old_index = 0;
@@ -257,8 +257,11 @@ QWidget* ResultsWidget::GridSearchWidget()
             if (!data.contains("index"))
                 continue;
 
-            int index = data["index"].toString().split("|")[1].toInt();
-            rank = series_int + 2;
+            qDebug() << data["index"].toString();
+            int index = data["index"].toString().split("|")[1].toInt() + m_model.data()->GlobalParameterSize();
+            rank = data["index"].toString().split("|")[1].toInt() + m_model.data()->GlobalParameterSize();
+
+            //rank = series_int + 2;
             if (index != old_index)
                 series_int = 0;
             if (m_model.data()->SupportSeries())
@@ -269,18 +272,18 @@ QWidget* ResultsWidget::GridSearchWidget()
             connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, this, [series_int, view]( const QColor &color ) { view->setColor(series_int, color); });*/
             series_int++;
             old_index = index;
+            name = tr("%1 (%2)").arg(name).arg(series_int);
         } else {
             xy_series->setColor(ChartWrapper::ColorCode(m_model.data()->Color(i)));
-            name = name;
         }
 
-        view->addSeries(xy_series, rank, xy_series->color(), name);
+        view->addSeries(xy_series, rank, xy_series->color(), name, true);
 
         LineSeries* current_constant = new LineSeries;
         *current_constant << QPointF(x_0, m_model.data()->SumofSquares()) << QPointF(x_0, m_model.data()->SumofSquares() * 1.1);
         current_constant->setColor(xy_series->color());
-        current_constant->setName(m_model.data()->GlobalParameterName(i));
-        view->addSeries(current_constant, rank, xy_series->color(), name);
+        current_constant->setName(name);
+        view->addSeries(current_constant, rank, xy_series->color(), name, true);
     }
     return view;
 }

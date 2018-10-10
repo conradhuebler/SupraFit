@@ -26,8 +26,11 @@
 #include <QtCharts/QValueAxis>
 
 #include <QtCore/QPointer>
+
 class QPushButton;
 class QChart;
+
+class PeakCallOut;
 
 struct ChartConfig;
 struct PgfPlotConfig {
@@ -73,8 +76,8 @@ class ChartView : public QWidget {
 public:
     ChartView(QtCharts::QChart* chart, bool latex_supported = false);
     ChartView();
-    inline ~ChartView() {}
-    void addSeries(QPointer<QtCharts::QAbstractSeries>);
+    ~ChartView();
+    void addSeries(QPointer<QtCharts::QAbstractSeries>, bool callout = false);
     qreal YMax() const { return m_ymax; }
     inline void removeSeries(QtCharts::QAbstractSeries* series) { m_chart->removeSeries(series); }
     inline QList<QtCharts::QAbstractSeries*> series() const { return m_chart->series(); }
@@ -167,6 +170,7 @@ private:
     bool m_pending, m_lock_scaling, m_latex_supported, m_modal = true;
     qreal m_ymax, m_ymin, m_xmin, m_xmax;
     QVector<QPointer<QtCharts::QAbstractSeries>> m_series;
+    QVector<PeakCallOut*> m_peak_anno;
 
 private slots:
     void PlotSettings();

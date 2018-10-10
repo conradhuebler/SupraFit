@@ -330,7 +330,7 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
         const qreal absG = qAbs(G);
         const qreal absS = qAbs(S);
         const qreal absH = qAbs(H);
-#warning how do two different signs ( for H and dH11 etc ) work, I will take only for now
+#warning how do two different signs ( for H and dH11 etc ) work, I will take only one for now
         /* Using signless comparison, because H, G and S can be negative and positive */
 
         int sign = sgn(dH11l_gs);

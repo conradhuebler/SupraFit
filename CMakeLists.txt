@@ -200,6 +200,7 @@ target_link_libraries(utils Qt5::Core)
 set(suprafit_SRCS
                 src/ui/guitools/chartwrapper.cpp
                 src/ui/guitools/instance.h
+                src/ui/guitools/peakcallout.cpp
                 src/ui/guitools/mime.h
                 src/ui/dialogs/regressionanalysisdialog.cpp
                 src/ui/dialogs/statisticdialog.cpp

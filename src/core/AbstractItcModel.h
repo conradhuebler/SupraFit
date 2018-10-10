@@ -74,7 +74,7 @@ public:
     /*! \brief Calculates the initial guess for the heat of formation
      * Defined for 1:1 system, but works for more complex systems as well
      * If not enough system parameter are defined, the function will fail
-     * and be called after all parameter are defined
+     * and be called after all parameter had been defined
      */
     qreal GuessdH();
 
@@ -82,7 +82,7 @@ public:
      * Defined for 1:1 system, but works for more complex systems as well
      * This correction or stoichiometry factor defines the number of binding sites
      * If not enough system parameter are defined, the function will fail
-     * and be called after all parameter are defined
+     * and be called after all parameter had been defined
      */
     qreal GuessFx();
 
@@ -90,7 +90,7 @@ public:
      * Defined for 1:1 system, but works for more complex systems as well
      *
      * If not enough system parameter are defined, the function will fail
-     * and be called after all parameter are defined
+     * and be called after all parameter had been defined
      */
     qreal GuessK(int index = 0);
 
