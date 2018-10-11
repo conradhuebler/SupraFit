@@ -182,9 +182,6 @@ void itc_ItoII_Model::CalculateVariables()
         vector(3) = complex_11;
         vector(4) = complex_12;
 
-        if (!m_fast)
-            SetConcentration(i, vector);
-
         qreal q_ab = (complex_11 - complex_11_prev * dv) * dH1 * V;
         qreal q_ab2 = (complex_12 - complex_12_prev * dv) * dH2 * V;
         qreal q_ab_ = ((complex_11 - complex_11_prev * dv) + (complex_12 - complex_12_prev * dv)) * dH1 * V;
@@ -196,6 +193,21 @@ void itc_ItoII_Model::CalculateVariables()
         SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;
+        if (!m_fast) {
+            QStringList header_1 = QStringList() << qAB << qAB2 << qsolv << q;
+            QStringList header_2 = QStringList() << qAB_ << qAB2_ << qsolv << q;
+
+            SetConcentration(i, vector);
+            Vector(4);
+            vector(0) = q_ab;
+            vector(1) = q_ab2;
+            vector(2) = dilution;
+            vector(3) = value + dilution;
+            addPoints("heat_1", PrintOutIndependent(i), vector, header_1);
+            vector(0) = q_ab_;
+            vector(1) = q_ab2_;
+            addPoints("heat_2", PrintOutIndependent(i), vector, header_2);
+        }
     }
     m_more_info = more_info + "\n" + more_info_2;
 }

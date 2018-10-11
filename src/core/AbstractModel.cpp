@@ -60,6 +60,8 @@ AbstractModel::AbstractModel(DataClass* data)
 
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
+
+    /* This function call as to be only in this constructor */
     AddChildren(this);
 
     QUuid uuid;
@@ -89,7 +91,6 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
-    // AddChildren(this);
 
     QUuid uuid;
     m_model_uuid = uuid.createUuid().toString();

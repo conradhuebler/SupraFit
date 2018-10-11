@@ -43,12 +43,14 @@ struct ModelSeries {
     QList<QPointF> m_values;
 };
 
-/* Many things can be plotted, therefor let several series form a chart, where more than one chart can be managed by a model */
+/* Many things can be plotted, therefore let several series form a chart, where more than one chart can be managed by a model */
 struct ModelChart {
     QVector<ModelSeries> m_series;
     QString title;
 };
 
+/*! \brief AbstractModelPrivate provides the shared data to have thread-safe
+ * data exchange for models */
 class AbstractModelPrivate : public QSharedData {
 
 public:
@@ -67,9 +69,13 @@ public:
 
 
     }
-
+    /* Model Option such as Cooperativity can be defined */
     QMap<int, ModelOption> m_model_options;
+
+    /* Lock parameters temporary and prevent them from being optimised without changed the model definition
+     * This is used for Grid Search, where single parameters are locked temporary */
     QList<int> m_locked_parameters;
+
     QVector<int> m_enabled_local, m_enabled_global;
 };
 
@@ -79,12 +85,28 @@ class AbstractModel : public DataClass {
 public:
     enum { PlotMode = 1024 };
 
+    /*! \brief Constructor with the DataClass as argument
+     * Constructor, which should be used when a model is assigned to a dataclass
+     * The parent dataclass "takes care" of this model
+     *
+     * The model tree in the main window collects all models, that are constructed via this way
+     */
     AbstractModel(DataClass* data);
 
+    /*! \brief Constructor with the class type as argument
+     * Constructor, which is be used when a model should not be assigned to a dataclass
+     * The parent dataclass doesn't know about this model
+     *
+     * If only the above constructor is implemented, the project and model tree view for example would not work correctly
+     * When both are implemented, the correct constructor will be choosen (at least with gcc) */
     AbstractModel(AbstractModel* model);
 
+    /*! \brief Destructor
+     *  virtual destructor should be all around */
     virtual ~AbstractModel() override;
 
+    /*! \brief Define the identification of that specific model
+     *  Reimplement this function and provide the correspondig enum in global.h */
     virtual SupraFit::Model SFModel() const override = 0;
 
     /*! \brief set the OptimizationType to type and returns the Parameters

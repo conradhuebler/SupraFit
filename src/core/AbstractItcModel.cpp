@@ -48,6 +48,11 @@ AbstractItcModel::AbstractItcModel(DataClass* data)
     m_c0->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     m_c0->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
     LoadSystemParameter();
+    connect(this, &AbstractModel::Recalculated, this, [this]() {
+        emit this->ChartUpdated("concentration");
+        emit this->ChartUpdated("heat_1");
+        emit this->ChartUpdated("heat_2");
+    });
 }
 
 AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
@@ -63,6 +68,11 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
     m_cell_concentration = data->m_cell_concentration;
     m_syringe_concentration = data->m_syringe_concentration;
     m_T = data->m_T;
+    connect(this, &AbstractModel::Recalculated, this, [this]() {
+        emit this->ChartUpdated("concentration");
+        emit this->ChartUpdated("heat_1");
+        emit this->ChartUpdated("heat_2");
+    });
 }
 
 AbstractItcModel::~AbstractItcModel()
@@ -248,6 +258,9 @@ void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
             m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
     }
     m_concentrations->setRow(equilibrium, i);
+    QStringList names = m_concentrations->header();
+    names.removeFirst();
+    addPoints("concentration", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
 }
 
 QString AbstractItcModel::Model2Text_Private() const
