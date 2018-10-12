@@ -600,10 +600,13 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
     AbstractModel::ImportModel(topjson, override);
 
     int size = topjson["size"].toInt();
-
+    if (size != m_models.size()) {
+        qDebug() << QString("Stored models in json file (%1) and available models in memory (%2) dont fit").arg(size).arg(m_models.size());
+        qDebug() << "Unique Identification for this model" << UUID();
+    }
     QJsonObject raw = topjson["raw"].toObject();
     bool result = true;
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < size && i < m_models.size(); ++i) {
         bool import = m_models[i]->ImportModel(raw[QString::number(i)].toObject(), override);
         result = result && import;
     }

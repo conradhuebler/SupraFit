@@ -24,8 +24,9 @@
 
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
-#include <QtCore/QtGlobal>
+#include <QtCore/QVariant>
 #include <QtCore/QVector>
+#include <QtCore/QtGlobal>
 #include <QtCore/QtMath>
 
 #include <cmath>
@@ -178,9 +179,11 @@ struct OptimizerConfig {
 
 class QString;
 
-extern int printLevel;
+extern QString collective_messages;
 
-void PrintMessage(const QString& str, int Level);
+//extern int printLevel;
+
+//void PrintMessage(const QString& str, int Level);
 QString getDir();
 void setLastDir(const QString& str);
 
@@ -199,6 +202,11 @@ inline void Version(QCoreApplication* app, QCommandLineParser* parser)
 inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
+
+    QString recent = qApp->instance()->property("messages").toString();
+    recent += msg + "\n";
+    qApp->instance()->setProperty("messages", recent);
+
     switch (type) {
     case QtDebugMsg:
         fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);

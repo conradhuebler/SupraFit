@@ -127,7 +127,7 @@ public:
 
     /*! \brief Locks Parameter not to be optimised during Levenberg-Marquadt
      */
-    inline void setLockedParameter(const QList<int>& lock) { d->m_locked_parameters = lock; }
+    inline void setLockedParameter(const QList<int>& lock) { private_d->m_locked_parameters = lock; }
 
     /*! \brief Clear the list of to be optimised Parameters
      */
@@ -135,7 +135,7 @@ public:
 
     /*! \brief returns the locked Parameters
      */
-    inline QList<int> LockedParameters() const { return d->m_locked_parameters; }
+    inline QList<int> LockedParameters() const { return private_d->m_locked_parameters; }
 
     /*
      * function to create a new instance of the model, this way was quite easier than
@@ -502,50 +502,50 @@ public:
 
     inline void addOption(int index, const QString& name, const QStringList& values)
     {
-        if (d->m_model_options.contains(index))
+        if (private_d->m_model_options.contains(index))
             return;
         ModelOption option;
         option.values = values;
         option.value = values.first();
         option.name = name;
-        d->m_model_options[index] = option;
+        private_d->m_model_options[index] = option;
     }
 
     void setOption(int index, const QString& value);
 
     inline QString getOption(int index) const
     {
-        if (!d->m_model_options.contains(index))
+        if (!private_d->m_model_options.contains(index))
             return QString("unset");
-        ModelOption option = d->m_model_options[index];
+        ModelOption option = private_d->m_model_options[index];
         return option.value;
     }
 
     inline QString getOptionName(int index) const
     {
-        if (!d->m_model_options.contains(index))
+        if (!private_d->m_model_options.contains(index))
             return QString("unset");
-        ModelOption option = d->m_model_options[index];
+        ModelOption option = private_d->m_model_options[index];
         return option.name;
     }
 
     inline int getOptionIndex(int index) const
     {
-        if (!d->m_model_options.contains(index))
+        if (!private_d->m_model_options.contains(index))
             return -1;
-        ModelOption option = d->m_model_options[index];
+        ModelOption option = private_d->m_model_options[index];
         QStringList values = option.values;
         return values.indexOf(option.value);
     }
 
     void DebugOptions() const;
 
-    inline QList<int> getAllOptions() const { return d->m_model_options.keys(); }
+    inline QList<int> getAllOptions() const { return private_d->m_model_options.keys(); }
 
     inline const QStringList getSingleOptionValues(int index) const
     {
-        if (d->m_model_options.contains(index))
-            return d->m_model_options[index].values;
+        if (private_d->m_model_options.contains(index))
+            return private_d->m_model_options[index].values;
         else
             return QStringList();
     }
@@ -567,9 +567,9 @@ public:
 
     inline bool isLocked() const { return m_locked_model; }
 
-    inline virtual bool LocalEnabled(int i) const { return d->m_enabled_local[i]; }
+    inline virtual bool LocalEnabled(int i) const { return private_d->m_enabled_local[i]; }
 
-    inline virtual bool GlobalEnabled(int i) const { return d->m_enabled_global[i]; }
+    inline virtual bool GlobalEnabled(int i) const { return private_d->m_enabled_global[i]; }
 
     virtual bool SupportSeries() const = 0;
 
@@ -585,9 +585,9 @@ public:
 
     virtual QVector<qreal> AllParameter() const;
 
-    inline QVector<int> LocalEnabled() const { return d->m_enabled_local; }
+    inline QVector<int> LocalEnabled() const { return private_d->m_enabled_local; }
 
-    inline void RemoveOption(int key) { d->m_model_options.remove(key); }
+    inline void RemoveOption(int key) { private_d->m_model_options.remove(key); }
 
     inline void addSearchResult(const QJsonObject& search) { m_search_results << search; }
 
@@ -647,7 +647,7 @@ public slots:
         Q_UNUSED(str) }
 
 private:
-    QSharedDataPointer<AbstractModelPrivate> d;
+    QSharedDataPointer<AbstractModelPrivate> private_d;
 
 protected:
     /*

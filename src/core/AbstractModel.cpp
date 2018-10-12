@@ -52,7 +52,7 @@ AbstractModel::AbstractModel(DataClass* data)
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
 
     connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
-    d = new AbstractModelPrivate;
+    private_d = new AbstractModelPrivate;
     setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
 
     m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
@@ -70,7 +70,7 @@ AbstractModel::AbstractModel(DataClass* data)
 
 AbstractModel::AbstractModel(AbstractModel* model)
     : DataClass(model)
-    , d(new AbstractModelPrivate(*model->d))
+    , private_d(new AbstractModelPrivate(*model->private_d))
     , m_last_p(model->m_last_p)
     , m_f_value(model->m_f_value)
     , m_last_parameter(model->m_last_parameter)
@@ -113,8 +113,8 @@ void AbstractModel::PrepareParameter(int global, int local)
         header << GlobalParameterName(i);
     GlobalTable()->setHeader(header);
 
-    d->m_enabled_global = QVector<int>(global, 0);
-    d->m_enabled_local = QVector<int>(local, 0);
+    private_d->m_enabled_global = QVector<int>(global, 0);
+    private_d->m_enabled_local = QVector<int>(local, 0);
 
     addGlobalParameter();
     DeclareSystemParameter();
@@ -163,9 +163,9 @@ QVector<qreal> AbstractModel::OptimizeParameters()
             m_opt_index.removeAt(j);
         }
     }*/
-    d->m_locked_parameters.clear();
+    private_d->m_locked_parameters.clear();
     for (int i = 0; i < variables.size(); ++i)
-        d->m_locked_parameters << 1;
+        private_d->m_locked_parameters << 1;
     m_parameter = variables;
     return variables;
 }
@@ -185,11 +185,11 @@ void AbstractModel::clearOptParameter()
     m_global_index.clear();
     m_local_index.clear();
     m_opt_index.clear();
-    for (int i = 0; i < d->m_enabled_local.size(); ++i)
-        d->m_enabled_local[i] = 0;
+    for (int i = 0; i < private_d->m_enabled_local.size(); ++i)
+        private_d->m_enabled_local[i] = 0;
 
-    for (int i = 0; i < d->m_enabled_global.size(); ++i)
-        d->m_enabled_global[i] = 0;
+    for (int i = 0; i < private_d->m_enabled_global.size(); ++i)
+        private_d->m_enabled_global[i] = 0;
 }
 
 void AbstractModel::setGlobalParameter(double value, int parameter)
@@ -450,7 +450,7 @@ void AbstractModel::setParameter(const QVector<qreal>& parameter)
     if (parameter.size() != m_opt_para.size())
         return;
     for (int i = 0; i < parameter.size(); ++i)
-        if (d->m_locked_parameters[i])
+        if (private_d->m_locked_parameters[i])
             *m_opt_para[i] = parameter[i];
 }
 
@@ -529,7 +529,7 @@ void AbstractModel::addGlobalParameter()
 {
     for (int i = 0; i < GlobalTable()->columnCount(); ++i) {
         /* We enable this parameter, since it is used in model calculation, but */
-        d->m_enabled_global[i] = 1;
+        private_d->m_enabled_global[i] = 1;
         /* we allow to break, if this is unchecked for optimisation*/
         if (!GlobalTable()->isChecked(i, 0))
             continue;
@@ -542,7 +542,7 @@ void AbstractModel::addGlobalParameter()
 void AbstractModel::addGlobalParameter(int i)
 {
     if (i < GlobalTable()->columnCount()) {
-        d->m_enabled_global[i] = 1;
+        private_d->m_enabled_global[i] = 1;
         /* see above comment */
         if (!GlobalTable()->isChecked(i, 0))
             return;
@@ -563,7 +563,7 @@ void AbstractModel::addLocalParameter(int i)
         m_local_index << QPair<int, int>(i, j);
         m_opt_index << QPair<int, int>(i, 1);
     }
-    d->m_enabled_local[i] = 1;
+    private_d->m_enabled_local[i] = 1;
 }
 
 int AbstractModel::UpdateStatistic(const QJsonObject& object)
@@ -788,7 +788,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     QJsonObject json, toplevel;
     QJsonObject optionObject;
 
-    json["globalParameter"] = GlobalTable()->ExportTable(true, d->m_enabled_global);
+    json["globalParameter"] = GlobalTable()->ExportTable(true, private_d->m_enabled_global);
 
     if (statistics) {
         QJsonObject statisticObject;
@@ -814,9 +814,9 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         json["statistics"] = statisticObject;
     }
 
-    json["localParameter"] = LocalTable()->ExportTable(true, d->m_enabled_local);
+    json["localParameter"] = LocalTable()->ExportTable(true, private_d->m_enabled_local);
 
-    json["locked"] = ToolSet::IntVec2String(d->m_locked_parameters.toVector());
+    json["locked"] = ToolSet::IntVec2String(private_d->m_locked_parameters.toVector());
     for (int index : getAllOptions())
         optionObject[QString::number(index)] = getOption(index);
 
@@ -950,7 +950,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
 
     if (fileversion >= 1601) {
-        d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
+        private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
     }
     if (fileversion < 1601) {
         if (json.contains("localParameter")) {
@@ -1050,9 +1050,9 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
 void AbstractModel::setOption(int index, const QString& value)
 {
-    if (!d->m_model_options.contains(index) || value.isEmpty() || value.isNull())
+    if (!private_d->m_model_options.contains(index) || value.isEmpty() || value.isNull())
         return;
-    d->m_model_options[index].value = value;
+    private_d->m_model_options[index].value = value;
     OptimizeParameters();
     emit OptionChanged(index, value);
 }
@@ -1093,7 +1093,7 @@ AbstractModel& AbstractModel::operator=(const AbstractModel& other)
     m_model_error = other.m_model_error;
 
     m_active_signals = other.m_active_signals;
-    d = other.d;
+    private_d = other.private_d;
 
     m_mc_statistics = other.m_mc_statistics;
     m_wg_statistics = other.m_wg_statistics;
@@ -1122,7 +1122,7 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
     m_model_error = other->m_model_error;
 
     m_active_signals = other->m_active_signals;
-    d = other->d;
+    private_d = other->private_d;
 
     m_mc_statistics = other->m_mc_statistics;
     m_wg_statistics = other->m_wg_statistics;

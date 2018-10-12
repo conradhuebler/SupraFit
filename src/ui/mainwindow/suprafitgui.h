@@ -192,7 +192,7 @@ private:
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_save_as, *m_load;
+    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_save_as, *m_load, *m_message;
     OptimizerConfig m_opt_config;
 
     QString m_supr_file;
@@ -237,6 +237,7 @@ private slots:
     void SaveAsProjectAction();
     void SettingsDialog();
     void about();
+    void Messages();
     void FirstStart();
     void UpdateRecentList();
     void AddMetaModel(const QModelIndex& index, int position);

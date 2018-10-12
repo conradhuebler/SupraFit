@@ -508,6 +508,9 @@ SupraFitGui::SupraFitGui()
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
     m_config->setShortcut(QKeySequence::Preferences);
 
+    m_message = new QAction(Icon("help-hint"), tr("Messages"), this);
+    connect(m_message, &QAction::triggered, this, &SupraFitGui::Messages);
+
     m_about = new QAction(QIcon(":/misc/suprafit.png"), tr("Info"), this);
     connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
 
@@ -533,6 +536,7 @@ SupraFitGui::SupraFitGui()
 
     m_system_toolbar->addSeparator();
     m_system_toolbar->addAction(m_config);
+    m_system_toolbar->addAction(m_message);
     m_system_toolbar->addAction(m_about);
     m_system_toolbar->addAction(m_aboutqt);
     m_system_toolbar->addAction(m_close);
@@ -1353,4 +1357,16 @@ void SupraFitGui::AddScatter(const QJsonObject& object)
         m_data_list[i].data()->Updated();
     }
     delete table;
+}
+
+void SupraFitGui::Messages()
+{
+    QPlainTextEdit* text = new QPlainTextEdit;
+    QHBoxLayout* layout = new QHBoxLayout;
+    layout->addWidget(text);
+    text->appendPlainText(qApp->instance()->property("messages").toString());
+    QDialog dialog;
+    dialog.setLayout(layout);
+    dialog.resize(800, 600);
+    dialog.exec();
 }
