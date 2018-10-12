@@ -871,6 +871,8 @@ void ModelDataHolder::EditData()
                         m_data.data()->ImportData(dialog.getStoredData().ExportData());
                 }
             }
+            emit m_data.data()->Update();
+
         } else {
             m_data.data()->IndependentModel()->setEditable(!m_data.data()->IndependentModel()->isEditable());
             m_data.data()->DependentModel()->setEditable(!m_data.data()->DependentModel()->isEditable());

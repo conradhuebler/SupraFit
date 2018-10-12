@@ -309,6 +309,8 @@ void ImportData::ImportThermogram()
 
     thermogram->setExperimentFile(experiment["file"].toString());
     thermogram->setExperimentFit(experiment["fit"].toObject());
+    if (m_raw.keys().contains("scaling"))
+        thermogram->setScaling(m_raw["scaling"].toString());
 
     thermogram->show();
 

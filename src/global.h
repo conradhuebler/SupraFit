@@ -203,13 +203,16 @@ inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 {
     QByteArray localMsg = msg.toLocal8Bit();
 
-    QString recent = qApp->instance()->property("messages").toString();
-    recent += msg + "\n";
-    qApp->instance()->setProperty("messages", recent);
+    QString recent;
 
     switch (type) {
     case QtDebugMsg:
         fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+
+        recent = qApp->instance()->property("messages").toString();
+        recent += msg + "\n";
+        qApp->instance()->setProperty("messages", recent);
+
         break;
     case QtInfoMsg:
         fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);

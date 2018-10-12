@@ -204,6 +204,11 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     return original;
 }
 
+void Thermogram::setScaling(const QString& str)
+{
+    m_scale->setCurrentText(str);
+}
+
 PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
 {
     QPair<Vector, Vector> experiment = ToolSet::LoadXYFile(filename);
@@ -426,7 +431,7 @@ QJsonObject Thermogram::Raw() const
         block["file"] = m_dil_file->text();
         raw["dilution"] = block;
     }
-
+    raw["scaling"] = m_scale->currentText();
     return raw;
 }
 

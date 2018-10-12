@@ -96,8 +96,9 @@ private:
     void LogFile();
     QFile m_file, m_stdout;
 
+    /*
 private slots:
-    void EditData();
+    void EditData();*/
 
 signals:
     void AppendPlainText(const QString& str);

@@ -654,7 +654,7 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
     m_peaks_time->setValue(fit["peak_time"].toDouble());
 
     m_block = false;
-    Update();
+    UpdatePeaks();
 }
 
 QJsonObject ThermogramWidget::Fit() const

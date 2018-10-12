@@ -166,6 +166,8 @@ QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) c
 
         if (row < m_data_list->size()) {
             QString uuid = (*m_data_list)[row].data()->UUID();
+            if (m_uuids.indexOf(uuid) == -1)
+                return index;
             index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(uuid)]);
         }
     } else {

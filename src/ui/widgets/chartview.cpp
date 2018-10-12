@@ -328,7 +328,7 @@ void ChartView::forceformatAxis()
             continue;
 
         QVector<QPointF> points = serie->pointsVector();
-        if (start == 0) {
+        if (start == 0 && points.size()) {
             y_min = points.first().y();
             y_max = points.first().y();
 

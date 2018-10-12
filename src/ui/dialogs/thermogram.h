@@ -64,6 +64,7 @@ public:
     void setDilutionFile(QString str);
     void setExperimentFit(const QJsonObject& json);
     void setDilutionFit(const QJsonObject& json);
+    void setScaling(const QString& str);
 
 private:
     void setUi();
