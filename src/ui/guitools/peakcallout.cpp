@@ -35,6 +35,7 @@ PeakCallOut::PeakCallOut(QPointer<QtCharts::QChart> chart)
     : QGraphicsTextItem(chart)
     , m_chart(chart)
 {
+    m_color = QColor("black");
 }
 
 QRectF PeakCallOut::boundingRect() const
@@ -64,6 +65,12 @@ void PeakCallOut::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     QGraphicsTextItem::paint(painter, option, widget);
 }
 
+void PeakCallOut::setColor(const QColor& color)
+{
+    m_color = color;
+    Update();
+}
+
 void PeakCallOut::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     event->setAccepted(true);
@@ -82,11 +89,17 @@ void PeakCallOut::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 void PeakCallOut::setText(const QString& text, const QPointF& point)
 {
     m_anchor = point;
-    m_text = tr("<h4>%1</h4>").arg(text);
-    setHtml(m_text);
+    m_text = text;
+    Update();
+}
+
+void PeakCallOut::Update()
+{
+    m_htmltext = tr("<h4><font color='%2'>%1</font></h4>").arg(m_text).arg(m_color.name());
+    setHtml(m_htmltext);
     QFontMetrics metrics(m_font);
     QTextDocument doc;
-    doc.setHtml(m_text);
+    doc.setHtml(m_htmltext);
     m_textRect = metrics.boundingRect(QRect(0, 0, 250, 250), Qt::AlignLeft, m_text);
     prepareGeometryChange();
     m_rect = m_textRect.adjusted(0, 0, 0, 0);

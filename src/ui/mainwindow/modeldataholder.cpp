@@ -868,7 +868,7 @@ void ModelDataHolder::EditData()
             if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
                 {
                     if (m_data.data()->DataType() == DataClassPrivate::Thermogram)
-                        m_data.data()->ImportData(dialog.getStoredData().ExportData());
+                        m_data.data()->ImportData(dialog.getStoredData().ExportData(), false);
                 }
             }
             emit m_data.data()->Update();

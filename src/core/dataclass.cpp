@@ -888,7 +888,7 @@ const QJsonObject DataClass::ExportData() const
     return json;
 }
 
-bool DataClass::ImportData(const QJsonObject& topjson)
+bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
 {
     int fileversion = topjson["SupraFit"].toInt();
 
@@ -946,7 +946,7 @@ bool DataClass::ImportData(const QJsonObject& topjson)
         d->m_raw_data = topjson["raw"].toObject();
         d->m_title = topjson["title"].toString();
     }
-    if (d->m_uuid.isEmpty()) {
+    if (forceUUID) {
         if (fileversion > 1603) {
             if (!topjson["uuid"].toString().isEmpty())
                 d->m_uuid = topjson["uuid"].toString();

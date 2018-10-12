@@ -79,6 +79,7 @@ public:
     ~ListChart();
     void setXAxis(const QString& str);
     void setYAxis(const QString& str);
+    inline void setTitle(const QString& str) { m_chartview->setTitle(str); }
     inline qreal YMax() const { return m_chartview->YMax(); }
 
     void addSeries(QtCharts::QAbstractSeries* series, int index, const QColor& color, const QString& name = QString(), bool callout = false);

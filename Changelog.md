@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- some more colors and titles in statistics output
 - add optional in chart annotation as legend
 - add custom charts for model (nmr titration models already got concentration chart)
 - add recent files list and close all open projects to gui

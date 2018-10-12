@@ -178,6 +178,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 
         LineSeries* current_constant = new LineSeries;
         connect(xy_series, &QtCharts::QXYSeries::colorChanged, current_constant, &LineSeries::setColor);
+        current_constant->setDashDotLine(true);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);

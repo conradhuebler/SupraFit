@@ -59,7 +59,6 @@ void ReductionAnalyse::CrossValidation(CVType type)
 
     m_controller["method"] = SupraFit::Statistic::CrossValidation;
     m_controller["CVType"] = type;
-
     QVector<Pair> block;
     int blocksize;
     int maxthreads = qApp->instance()->property("threads").toInt();
@@ -139,6 +138,7 @@ void ReductionAnalyse::PlainReduction()
 
     config.optimizer_config = m_config.optimizer_config;
     m_controller["method"] = SupraFit::Statistic::Reduction;
+    m_controller["xlabel"] = m_model.data()->XLabel();
 
     emit MaximumSteps(m_model->DataPoints());
     int maxthreads = qApp->instance()->property("threads").toInt();

@@ -202,6 +202,9 @@ QWidget* ResultsWidget::ReductionWidget()
         m_text += string + "\n";
 
     m_text += "\n" + parameter_text;
+    view->setTitle(QString("Reduction Analysis for %1").arg(m_data["controller"].toObject()["title"].toString()));
+    view->setXAxis(m_data["controller"].toObject()["xlabel"].toString());
+    view->setYAxis("parameter value");
     return view;
 }
 
@@ -281,6 +284,7 @@ QWidget* ResultsWidget::GridSearchWidget()
 
         LineSeries* current_constant = new LineSeries;
         *current_constant << QPointF(x_0, m_model.data()->SumofSquares()) << QPointF(x_0, m_model.data()->SumofSquares() * 1.1);
+        current_constant->setDashDotLine(true);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);
         view->addSeries(current_constant, rank, xy_series->color(), name, true);

@@ -276,6 +276,10 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
                 connect(series, &QtCharts::QAbstractSeries::visibleChanged, series, [series, annotation]() {
                     annotation->setVisible(series->isVisible());
                 });
+                connect(serie, &QtCharts::QXYSeries::colorChanged, serie, [this, serie, annotation]() {
+                    annotation->setColor(serie->color());
+                });
+                annotation->setColor(serie->color());
                 m_peak_anno.append(annotation);
             }
         }
