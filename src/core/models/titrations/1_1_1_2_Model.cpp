@@ -114,7 +114,7 @@ void ItoI_ItoII_Model::InitialGuess_Private()
     Calculate();
 }
 
-QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private()
+void ItoI_ItoII_Model::OptimizeParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
     QString host = getOption(Host);
@@ -131,11 +131,6 @@ QVector<qreal> ItoI_ItoII_Model::OptimizeParameters_Private()
 
     if (!(coop12 == "additive" || coop12 == "statistical"))
         addLocalParameter(2);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 void ItoI_ItoII_Model::CalculateVariables()

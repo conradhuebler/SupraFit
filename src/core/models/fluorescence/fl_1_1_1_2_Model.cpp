@@ -112,7 +112,7 @@ void fl_ItoI_ItoII_Model::InitialGuess_Private()
     AbstractTitrationModel::Calculate();
 }
 
-QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private()
+void fl_ItoI_ItoII_Model::OptimizeParameters_Private()
 {
     QString coop12 = getOption(Cooperativity);
         addGlobalParameter(0);
@@ -124,11 +124,6 @@ QVector<qreal> fl_ItoI_ItoII_Model::OptimizeParameters_Private()
         addLocalParameter(1);
         if (!(coop12 == "additive" || coop12 == "statistical"))
             addLocalParameter(2);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 void fl_ItoI_ItoII_Model::CalculateVariables()

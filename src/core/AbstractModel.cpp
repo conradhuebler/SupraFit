@@ -147,7 +147,13 @@ AbstractModel::~AbstractModel()
 QVector<qreal> AbstractModel::OptimizeParameters()
 {
     clearOptParameter();
-    QVector<qreal> variables = OptimizeParameters_Private();
+
+    OptimizeParameters_Private();
+
+    QVector<qreal> variables;
+    for (int i = 0; i < m_opt_para.size(); ++i)
+        variables << *m_opt_para[i];
+
     /* I really hope, this is old und already obsolete stuff, can remember right now */
     /*qDebug() << m_opt_para;
     for (int j = m_opt_para.size() - 1; j >= 0; --j) {
@@ -162,6 +168,15 @@ QVector<qreal> AbstractModel::OptimizeParameters()
         d->m_locked_parameters << 1;
     m_parameter = variables;
     return variables;
+}
+
+void AbstractModel::OptimizeParameters_Private()
+{
+    for (int i = 0; i < GlobalParameterSize(); ++i)
+        addGlobalParameter(i);
+
+    for (int i = 0; i < LocalParameterSize(); ++i)
+        addLocalParameter(i);
 }
 
 void AbstractModel::clearOptParameter()

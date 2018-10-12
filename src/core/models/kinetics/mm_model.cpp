@@ -73,17 +73,6 @@ void Michaelis_Menten_Model::InitialGuess_Private()
     Calculate();
 }
 
-QVector<qreal> Michaelis_Menten_Model::OptimizeParameters_Private()
-{
-        addGlobalParameter(0);
-        addGlobalParameter(1);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
-}
-
 void Michaelis_Menten_Model::CalculateVariables()
 {
     for (int i = 0; i < DataPoints(); ++i) {

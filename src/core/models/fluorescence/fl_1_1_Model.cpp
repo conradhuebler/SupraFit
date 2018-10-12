@@ -80,17 +80,12 @@ void fl_ItoI_Model::EvaluateOptions()
     }*/
 }
 
-QVector<qreal> fl_ItoI_Model::OptimizeParameters_Private()
+void fl_ItoI_Model::OptimizeParameters_Private()
 {
         addGlobalParameter(0);
 
         addLocalParameter(0);
         addLocalParameter(1);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 void fl_ItoI_Model::CalculateVariables()

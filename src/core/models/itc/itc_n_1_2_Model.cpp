@@ -75,7 +75,7 @@ void itc_n_ItoII_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-QVector<qreal> itc_n_ItoII_Model::OptimizeParameters_Private()
+void itc_n_ItoII_Model::OptimizeParameters_Private()
 {
         addGlobalParameter(0);
         addGlobalParameter(1);
@@ -89,11 +89,6 @@ QVector<qreal> itc_n_ItoII_Model::OptimizeParameters_Private()
             addLocalParameter(4);
             addLocalParameter(5);
         }
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 void itc_n_ItoII_Model::CalculateVariables()

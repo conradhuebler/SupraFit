@@ -164,7 +164,7 @@ void itc_IItoII_Model::InitialGuess_Private()
     AbstractModel::Calculate();
 }
 
-QVector<qreal> itc_IItoII_Model::OptimizeParameters_Private()
+void itc_IItoII_Model::OptimizeParameters_Private()
 {
     QString coop21 = getOption(Cooperativity2_1);
     QString coop12 = getOption(Cooperativity1_2);
@@ -189,11 +189,6 @@ QVector<qreal> itc_IItoII_Model::OptimizeParameters_Private()
     }
 
     addLocalParameter(5);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 void itc_IItoII_Model::CalculateVariables()

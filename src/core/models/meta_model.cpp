@@ -203,7 +203,7 @@ void MetaModel::ApplyConnectType()
     }
 }
 
-QVector<qreal> MetaModel::OptimizeParameters_Private()
+void MetaModel::OptimizeParameters_Private()
 {
     m_local_index.clear();
     m_global_index.clear();
@@ -216,7 +216,7 @@ QVector<qreal> MetaModel::OptimizeParameters_Private()
 
     ApplyConnectType();
 
-    return CollectParameter();
+    CollectParameter();
 }
 
 QVector<qreal> MetaModel::CollectParameter()

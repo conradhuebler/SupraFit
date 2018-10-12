@@ -54,7 +54,7 @@ public:
         emit Recalculated();
     }
 
-    virtual QVector<qreal> OptimizeParameters_Private() override;
+    virtual void OptimizeParameters_Private() override;
 
     QVector<qreal> CollectParameter();
 

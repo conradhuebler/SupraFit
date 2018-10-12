@@ -171,7 +171,7 @@ QVector<qreal> IItoI_ItoI_Model::DeCompose(int datapoint, int series) const
     return vector;
 }
 
-QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private()
+void IItoI_ItoI_Model::OptimizeParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
     QString host = getOption(Host);
@@ -188,11 +188,6 @@ QVector<qreal> IItoI_ItoI_Model::OptimizeParameters_Private()
         addLocalParameter(1);
 
     addLocalParameter(2);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 QSharedPointer<AbstractModel> IItoI_ItoI_Model::Clone()

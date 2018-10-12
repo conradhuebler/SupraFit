@@ -77,18 +77,13 @@ void MonoMolecularModel::InitialGuess_Private()
     Calculate();
 }
 
-QVector<qreal> MonoMolecularModel::OptimizeParameters_Private()
+void MonoMolecularModel::OptimizeParameters_Private()
 {
     QString order = getOption(Order);
         if (order == "First") // || order == "Mixed")
             addGlobalParameter(0);
         if (order == "Second") // || order == "Mixed")
             addGlobalParameter(1);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 void MonoMolecularModel::CalculateVariables()

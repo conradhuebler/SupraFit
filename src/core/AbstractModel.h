@@ -657,7 +657,7 @@ protected:
      * @return QVector<qreal>
      * 
      */
-    virtual QVector<qreal> OptimizeParameters_Private() = 0;
+    virtual void OptimizeParameters_Private();
 
     /* 
      * @param int i, in j and qreal value

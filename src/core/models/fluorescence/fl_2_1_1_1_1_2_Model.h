@@ -51,7 +51,7 @@ public:
 
     virtual inline SupraFit::Model SFModel() const override { return SupraFit::fl_IItoI_ItoI_ItoII; }
 
-    virtual QVector<qreal> OptimizeParameters_Private() override;
+    virtual void OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 3; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone() override;

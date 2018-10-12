@@ -73,7 +73,7 @@ void Blank::InitialGuess_Private()
 
     AbstractModel::Calculate();
 }
-
+/*
 QVector<qreal> Blank::OptimizeParameters_Private()
 {
     addLocalParameter(0);
@@ -83,7 +83,7 @@ QVector<qreal> Blank::OptimizeParameters_Private()
     for (int i = 0; i < m_opt_para.size(); ++i)
         parameter << *m_opt_para[i];
     return parameter;
-}
+}*/
 
 void Blank::CalculateVariables()
 {

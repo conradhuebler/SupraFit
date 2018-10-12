@@ -152,7 +152,7 @@ void fl_IItoI_ItoI_Model::CalculateVariables()
     }
 }
 
-QVector<qreal> fl_IItoI_ItoI_Model::OptimizeParameters_Private()
+void fl_IItoI_ItoI_Model::OptimizeParameters_Private()
 {
     QString coop21 = getOption(Cooperativity);
 
@@ -165,11 +165,6 @@ QVector<qreal> fl_IItoI_ItoI_Model::OptimizeParameters_Private()
         if (coop21 != "additive" && coop21 != "statistical")
             addLocalParameter(1);
         addLocalParameter(2);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 QSharedPointer<AbstractModel> fl_IItoI_ItoI_Model::Clone()

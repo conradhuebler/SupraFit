@@ -223,7 +223,7 @@ QSharedPointer<AbstractModel> fl_IItoI_ItoI_ItoII_Model::Clone()
     return model;
 }
 
-QVector<qreal> fl_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private()
+void fl_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private()
 {
     QString coop21 = getOption(Cooperativity2_1);
     QString coop12 = getOption(Cooperativity1_2);
@@ -241,11 +241,6 @@ QVector<qreal> fl_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private()
         addLocalParameter(1);
         addLocalParameter(2);
         addLocalParameter(3);
-
-    QVector<qreal> parameter;
-    for (int i = 0; i < m_opt_para.size(); ++i)
-        parameter << *m_opt_para[i];
-    return parameter;
 }
 
 MassResults fl_IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
