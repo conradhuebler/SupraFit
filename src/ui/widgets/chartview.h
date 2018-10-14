@@ -88,56 +88,55 @@ public:
 
     inline qreal YMaxRange() const
     {
-        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-        if (axis)
-            return axis->max();
+        if (m_hasAxis)
+            return m_YAxis->max();
         else
             return 0;
     }
     inline qreal YMinRange() const
     {
-        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-        if (axis)
-            return axis->min();
+        if (m_hasAxis)
+            return m_YAxis->min();
         else
             return 0;
     }
 
     inline qreal XMaxRange() const
     {
-        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
-        if (axis)
-            return axis->max();
+        if (m_hasAxis)
+            return m_XAxis->max();
         else
             return 0;
     }
     inline qreal XMinRange() const
     {
-        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
-        if (axis)
-            return axis->min();
+        if (m_hasAxis)
+            return m_XAxis->min();
         else
             return 0;
     }
 
     inline void setXRange(qreal xmin, qreal xmax)
     {
-        QPointer<QtCharts::QValueAxis> x_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
-        if (x_axis) {
-            x_axis->setMin(xmin);
-            x_axis->setMax(xmax);
+        if (m_hasAxis) {
+            m_XAxis->setMin(xmin);
+            m_XAxis->setMax(xmax);
         }
     }
 
     inline void setYRange(qreal ymin, qreal ymax)
     {
-        QPointer<QtCharts::QValueAxis> axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-        if (axis) {
-            axis->setMin(ymin);
-            axis->setMax(ymax);
+        if (m_hasAxis) {
+            m_YAxis->setMin(ymin);
+            m_YAxis->setMax(ymax);
         }
     }
 
+    inline void setName(const QString& name)
+    {
+        m_name = name;
+        ReadSettings();
+    }
 public slots:
     void formatAxis();
 
@@ -159,7 +158,7 @@ private:
     QPointer<QtCharts::QChart> m_chart;
     QPushButton* m_config;
     void setUi();
-    bool has_legend, connected;
+    bool has_legend, connected, m_hasAxis = false;
     QString m_x_axis, m_y_axis;
     ChartConfig getChartConfig() const;
     PgfPlotConfig getScatterTable() const;
@@ -172,6 +171,11 @@ private:
     QVector<QPointer<QtCharts::QAbstractSeries>> m_series;
     QVector<PeakCallOut*> m_peak_anno;
 
+    ChartConfig m_last_config;
+    void WriteSettings(const ChartConfig& chartconfig);
+    ChartConfig ReadSettings();
+    QString m_name;
+    QPointer<QtCharts::QValueAxis> m_XAxis, m_YAxis;
 private slots:
     void PlotSettings();
     void PrintPlot();

@@ -164,7 +164,10 @@ ChartWidget::ChartWidget()
     m_errorchart = new QtCharts::QChart;
 
     m_signalview = new ChartView(m_signalchart, true);
+    m_signalview->setName("signalview");
+
     m_errorview = new ChartView(m_errorchart, true);
+    m_errorview->setName("errorview");
 
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(m_signalview, 1, 0);

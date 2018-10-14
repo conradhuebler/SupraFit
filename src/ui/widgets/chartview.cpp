@@ -36,6 +36,7 @@
 #include <QtCore/QBuffer>
 #include <QtCore/QDebug>
 #include <QtCore/QMimeData>
+#include <QtCore/QSettings>
 #include <QtCore/QTextStream>
 
 #include <QtGui/QDrag>
@@ -181,11 +182,14 @@ ChartView::ChartView()
 
 ChartView::~ChartView()
 {
+    WriteSettings(m_last_config);
+
     qDeleteAll(m_peak_anno);
 }
 
 void ChartView::setUi()
 {
+    m_name = "chart";
     QGridLayout* layout = new QGridLayout;
     QMenu* menu = new QMenu(this);
 
@@ -244,6 +248,7 @@ void ChartView::setUi()
     connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
     ConfigurationChanged();
+    // setChartConfig(ReadSettings());
 }
 
 QtCharts::QLineSeries* ChartView::addLinearSeries(qreal m, qreal n, qreal min, qreal max)
@@ -276,7 +281,7 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
                 connect(series, &QtCharts::QAbstractSeries::visibleChanged, series, [series, annotation]() {
                     annotation->setVisible(series->isVisible());
                 });
-                connect(serie, &QtCharts::QXYSeries::colorChanged, serie, [this, serie, annotation]() {
+                connect(serie, &QtCharts::QXYSeries::colorChanged, serie, [serie, annotation]() {
                     annotation->setColor(serie->color());
                 });
                 annotation->setColor(serie->color());
@@ -284,7 +289,16 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
             }
         }
         m_chart->addSeries(series);
-        m_chart->createDefaultAxes();
+        if (!m_hasAxis) {
+            m_chart->createDefaultAxes();
+            m_XAxis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
+            m_YAxis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
+            m_hasAxis = true;
+            ReadSettings();
+        } else {
+            series->attachAxis(m_XAxis);
+            series->attachAxis(m_YAxis);
+        }
         m_series << series;
     }
     connect(series, &QtCharts::QAbstractSeries::nameChanged, series, [this, series]() {
@@ -315,7 +329,7 @@ void ChartView::formatAxis()
 
 void ChartView::forceformatAxis()
 {
-    if (m_lock_scaling)
+    if (m_lock_scaling || m_chart->series().size() == 0)
         return;
     m_pending = true;
 
@@ -374,26 +388,16 @@ void ChartView::forceformatAxis()
             y_min = ToolSet::floor(y_min - y_mean) + y_mean;
     }
 
-    QPointer<QtCharts::QValueAxis> y_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-    if (!y_axis) {
-        m_chart->createDefaultAxes();
-        y_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-    }
-    y_axis->setMax(y_max);
-    y_axis->setMin(y_min);
-    y_axis->setTickCount(y_ticks);
-    y_axis->setTitleText(m_y_axis);
+    m_YAxis->setMax(y_max);
+    m_YAxis->setMin(y_min);
+    m_YAxis->setTickCount(y_ticks);
+    m_YAxis->setTitleText(m_y_axis);
 
-    QPointer<QtCharts::QValueAxis> x_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
-    if (!x_axis) {
-        m_chart->createDefaultAxes();
-        x_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-    }
-    x_axis->setMax(x_max);
-    x_axis->setMin(x_min);
-    x_axis->setTickCount(x_ticks);
+    m_XAxis->setMax(x_max);
+    m_XAxis->setMin(x_min);
+    m_XAxis->setTickCount(x_ticks);
 
-    x_axis->setTitleText(m_x_axis);
+    m_XAxis->setTitleText(m_x_axis);
     m_pending = false;
     m_ymax = y_max;
     m_ymin = y_min;
@@ -414,26 +418,30 @@ void ChartView::PlotSettings()
 
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
 {
+    m_last_config = chartconfig;
+
+    qDebug() << m_last_config.m_keys << m_last_config.m_title << this;
+
     m_lock_scaling = chartconfig.m_lock_scaling;
     m_lock_action->setChecked(m_lock_scaling);
 
-    QPointer<QtCharts::QValueAxis> x_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
-    if (x_axis) {
-        x_axis->setTitleText(chartconfig.x_axis);
-        x_axis->setTickCount(chartconfig.x_step);
-        x_axis->setMin(chartconfig.x_min);
-        x_axis->setMax(chartconfig.x_max);
-        x_axis->setTitleFont(chartconfig.m_label);
-        x_axis->setLabelsFont(chartconfig.m_ticks);
+    QPointer<QtCharts::QValueAxis> m_XAxis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
+    if (m_XAxis) {
+        m_XAxis->setTitleText(chartconfig.x_axis);
+        m_XAxis->setTickCount(chartconfig.x_step);
+        m_XAxis->setMin(chartconfig.x_min);
+        m_XAxis->setMax(chartconfig.x_max);
+        m_XAxis->setTitleFont(chartconfig.m_label);
+        m_XAxis->setLabelsFont(chartconfig.m_ticks);
     }
-    QPointer<QtCharts::QValueAxis> y_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-    if (y_axis) {
-        y_axis->setTitleText(chartconfig.y_axis);
-        y_axis->setTickCount(chartconfig.y_step);
-        y_axis->setMin(chartconfig.y_min);
-        y_axis->setMax(chartconfig.y_max);
-        y_axis->setTitleFont(chartconfig.m_label);
-        y_axis->setLabelsFont(chartconfig.m_ticks);
+    QPointer<QtCharts::QValueAxis> m_YAxis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
+    if (m_YAxis) {
+        m_YAxis->setTitleText(chartconfig.y_axis);
+        m_YAxis->setTickCount(chartconfig.y_step);
+        m_YAxis->setMin(chartconfig.y_min);
+        m_YAxis->setMax(chartconfig.y_max);
+        m_YAxis->setTitleFont(chartconfig.m_label);
+        m_YAxis->setLabelsFont(chartconfig.m_ticks);
     }
 
     if (chartconfig.m_legend) {
@@ -477,19 +485,53 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
                 pen.setWidth(3);
                 series->setPen(pen);
             }
+            QBrush brush;
+            brush.setColor(Qt::white);
+            m_chart->setBackgroundBrush(brush);
         }
-        QFont font = chartconfig.m_title;
+        /* QFont font = chartconfig.m_title;
         font.setPointSize(12);
         m_chart->setTitleFont(font);
-        y_axis->setLabelsFont(font);
-        x_axis->setLabelsFont(font);
-        x_axis->setTitleFont(font);
-        y_axis->setTitleFont(font);
+        m_YAxis->setLabelsFont(font);
+        m_XAxis->setLabelsFont(font);
+        m_XAxis->setTitleFont(font);
+        m_YAxis->setTitleFont(font);
 
         m_chart->legend()->setFont(font);
         for (PeakCallOut* call : m_peak_anno)
             call->setFont(font);
+        */
     }
+}
+
+void ChartView::WriteSettings(const ChartConfig& chartconfig)
+{
+    QSettings _settings;
+    _settings.beginGroup(m_name);
+    _settings.setValue("labels", chartconfig.m_label);
+    _settings.setValue("ticks", chartconfig.m_ticks);
+    _settings.setValue("title", chartconfig.m_title);
+    _settings.setValue("legend  ", chartconfig.m_keys);
+    _settings.endGroup();
+    if (m_name == "signalview")
+        qDebug() << this << "writting" << chartconfig.m_label << chartconfig.m_ticks << chartconfig.m_title << chartconfig.m_keys;
+}
+
+ChartConfig ChartView::ReadSettings()
+{
+    ChartConfig chartconfig;
+    QSettings _settings;
+    _settings.beginGroup(m_name);
+    chartconfig.m_label = _settings.value("labels").value<QFont>();
+    chartconfig.m_ticks = _settings.value("ticks").value<QFont>();
+    chartconfig.m_title = _settings.value("title").value<QFont>();
+    chartconfig.m_keys = _settings.value("legend").value<QFont>();
+    _settings.endGroup();
+    if (m_name == "signalview")
+        qDebug() << chartconfig.m_label << chartconfig.m_ticks << chartconfig.m_title << chartconfig.m_keys;
+    m_last_config = chartconfig;
+    setChartConfig(chartconfig);
+    return chartconfig;
 }
 
 void ChartView::setTitle(const QString& str)
@@ -499,24 +541,20 @@ void ChartView::setTitle(const QString& str)
 
 ChartConfig ChartView::getChartConfig() const
 {
-    QPointer<QtCharts::QValueAxis> x_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
-    QPointer<QtCharts::QValueAxis> y_axis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
-
     ChartConfig chartconfig;
-    if (x_axis) {
-        chartconfig.x_axis = x_axis->titleText();
-        chartconfig.x_min = x_axis->min();
-        chartconfig.x_max = x_axis->max();
-        chartconfig.x_step = x_axis->tickCount();
-        chartconfig.m_label = x_axis->titleFont();
-        chartconfig.m_ticks = x_axis->labelsFont();
+    if (m_hasAxis) {
+
+        chartconfig.x_axis = m_XAxis->titleText();
+        chartconfig.x_min = m_XAxis->min();
+        chartconfig.x_max = m_XAxis->max();
+        chartconfig.x_step = m_XAxis->tickCount();
+        chartconfig.m_label = m_XAxis->titleFont();
+        chartconfig.m_ticks = m_XAxis->labelsFont();
+        chartconfig.y_axis = m_YAxis->titleText();
+        chartconfig.y_min = m_YAxis->min();
+        chartconfig.y_max = m_YAxis->max();
+        chartconfig.y_step = m_YAxis->tickCount();
     }
-
-    chartconfig.y_axis = y_axis->titleText();
-    chartconfig.y_min = y_axis->min();
-    chartconfig.y_max = y_axis->max();
-    chartconfig.y_step = y_axis->tickCount();
-
     chartconfig.m_legend = m_chart->legend()->isVisible();
     chartconfig.m_lock_scaling = m_lock_scaling;
 
@@ -657,7 +695,7 @@ void ChartView::WriteTable(const QString& str)
             << "\n";
         out << "\\tikzstyle{every node}=[font=\\footnotesize]"
             << "\n";
-        out << "\\begin{axis}[title={" + m_chart->title() + "}, legend style={at={(1.08,0.9))},anchor=north,legend cell align=left},x tick label style={at={(1,10)},anchor=north},xlabel={\\begin{footnotesize}" + m_x_axis + "\\end{footnotesize}}, xlabel near ticks, ylabel={\\begin{footnotesize}" + m_y_axis + "\\end{footnotesize}},ylabel near ticks]"
+        out << "\\begin{axis}[title={" + m_chart->title() + "}, legend style={at={(1.08,0.9))},anchor=north,legend cell align=left},x tick label style={at={(1,10)},anchor=north},xlabel={\\begin{footnotesize}" + m_x_axis + "\\end{footnotesize}}, xlabel near ticks, ylabel={\\begin{footnotesize}" + m_x_axis + "\\end{footnotesize}},ylabel near ticks]"
             << "\n";
         out << scatter_table.plots;
         out << line_table.plots;
