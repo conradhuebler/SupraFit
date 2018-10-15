@@ -49,8 +49,10 @@ void setLastDir(const QString& str)
     qApp->instance()->setProperty("lastdir", info.absolutePath());
     QStringList recent = qApp->instance()->property("recent").toStringList();
 
-    recent.removeOne(str);
-    recent.prepend(str);
+    if (info.completeSuffix().contains(("suprafit")) || info.completeSuffix().contains(("json")) || info.completeSuffix().contains(("dH")) || info.completeSuffix().contains(("itc")) || info.completeSuffix().contains(("txt")) || info.completeSuffix().contains(("dat"))) {
+        recent.removeOne(str);
+        recent.prepend(str);
+    }
 
     if(recent.size() > 30)
         recent.removeLast();

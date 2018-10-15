@@ -273,7 +273,11 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
             if (serie->points().size() > 5e3)
                 serie->setUseOpenGL(true);
             if (callout) {
-                QPointF point(serie->points().last());
+                qreal x = 0;
+                for (const QPointF& point : serie->points())
+                    x += point.x();
+                x /= double(serie->points().size());
+                QPointF point(x, 1.5);
 
                 PeakCallOut* annotation = new PeakCallOut(m_chart);
                 annotation->setText(series->name(), point);
@@ -482,8 +486,9 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
                 series->setPen(pen);
             }
             QBrush brush;
-            brush.setColor(Qt::white);
+            brush.setColor(Qt::transparent);
             m_chart->setBackgroundBrush(brush);
+            //m_chart->setStyleSheet("background-color: transparent;");
         }
         /* QFont font = chartconfig.m_title;
         font.setPointSize(12);
@@ -498,6 +503,8 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
             call->setFont(font);
         */
     }
+    for (PeakCallOut* call : m_peak_anno)
+        call->setVisible(chartconfig.m_annotation);
 }
 
 void ChartView::WriteSettings(const ChartConfig& chartconfig)

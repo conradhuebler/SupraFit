@@ -119,7 +119,6 @@ signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);
     void UiMessage(const QString& str);
-    //void CopyModel(const ModelMime* d, int data, int model);
     void CopyModel(const QJsonObject& m, int data, int model);
     void LoadFile(const QString& file);
     void LoadJsonObject(const QJsonObject& object);

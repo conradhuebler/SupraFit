@@ -124,6 +124,7 @@ void MCResultsWidget::setUi()
 QPointer<ListChart> MCResultsWidget::MakeHistogram()
 {
     QPointer<ListChart> view = new ListChart;
+
     view->setXAxis("parameter");
     view->setYAxis("relative rate");
     view->setName("montecarlochart");
@@ -171,7 +172,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         if (histogram.size())
             has_histogram = true;
         xy_series->setName(name);
-        view->addSeries(xy_series, i, xy_series->color(), name);
+        view->addSeries(xy_series, i, xy_series->color(), name, true);
         view->setColor(i, xy_series->color());
         if (!formated)
             view->formatAxis();
@@ -183,7 +184,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);
-        view->addSeries(current_constant, i, xy_series->color(), name, true);
+        view->addSeries(current_constant, i, xy_series->color(), name, false);
 
         QJsonObject confidenceObject = data["confidence"].toObject();
         if (view) {
@@ -194,12 +195,15 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         m_colors << xy_series->color();
     }
 
+    view->setTitle(QString("Monte Carlo Simulation (Histogram) for %1").arg(m_data["controller"].toObject()["title"].toString()));
+
     return view;
 }
 
 QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
 {
     QPointer<ListChart> boxplot = new ListChart;
+
     double min = 10, max = 0;
 
     for (int i = 0; i < m_data.count() - 1; ++i) {
@@ -235,6 +239,8 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
         y_axis->setMin(min * 0.99);
         y_axis->setMax(max * 1.01);
     }
+
+    boxplot->setTitle(QString("Monte Carlo Simulation (BoxPlot) for %1").arg(m_data["controller"].toObject()["title"].toString()));
     return boxplot;
 }
 

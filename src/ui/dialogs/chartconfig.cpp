@@ -55,29 +55,29 @@ ChartConfigDialog::ChartConfigDialog()
 
     m_x_min = new QDoubleSpinBox;
     connect(m_x_min, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
-    m_x_min->setMinimum(-1 * 1e7);
-    m_x_min->setMaximum(1e7);
+    m_x_min->setMinimum(-1 * 1e14);
+    m_x_min->setMaximum(1e17);
     m_x_min->setDecimals(5);
 
     m_x_max = new QDoubleSpinBox;
     connect(m_x_max, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
-    m_x_max->setMinimum(-1 * 1e7);
-    m_x_max->setMaximum(1e7);
+    m_x_max->setMinimum(-1 * 1e14);
+    m_x_max->setMaximum(1e17);
     m_x_max->setDecimals(5);
 
     m_x_step = new QSpinBox;
     connect(m_x_step, SIGNAL(valueChanged(int)), this, SLOT(Changed()));
 
     m_y_min = new QDoubleSpinBox;
-    m_y_min->setMinimum(-1 * 1e7);
-    m_y_min->setMaximum(1e7);
+    m_y_min->setMinimum(-1 * 1e14);
+    m_y_min->setMaximum(1e17);
     m_y_min->setSingleStep(1);
     m_y_min->setDecimals(5);
     connect(m_y_min, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
 
     m_y_max = new QDoubleSpinBox;
-    m_y_max->setMinimum(-1 * 1e7);
-    m_y_max->setMaximum(1 * 1e7);
+    m_y_max->setMinimum(-1 * 1e14);
+    m_y_max->setMaximum(1 * 1e17);
     m_y_max->setDecimals(5);
     connect(m_y_max, SIGNAL(valueChanged(qreal)), this, SLOT(Changed()));
 
@@ -97,6 +97,10 @@ ChartConfigDialog::ChartConfigDialog()
 
     m_lock_scaling = new QCheckBox(tr("Lock Scaling"));
     connect(m_lock_scaling, &QCheckBox::stateChanged, this, &ChartConfigDialog::Changed);
+
+    m_annotation = new QCheckBox(tr("In Chart Annotation"));
+    m_annotation->setChecked(true);
+    connect(m_annotation, &QCheckBox::stateChanged, this, &ChartConfigDialog::Changed);
 
     m_theme = new QComboBox;
     m_theme->addItem("Light", QtCharts::QChart::ChartThemeLight);
@@ -196,6 +200,7 @@ ChartConfigDialog::ChartConfigDialog()
     actions->addWidget(m_keys);
     actions->addWidget(m_alignment);
     actions->addWidget(m_legend);
+    actions->addWidget(m_annotation);
     layout->addLayout(actions, 6, 0, 1, 3);
 
     layout->addWidget(m_buttons, 10, 0, 1, 3);
@@ -244,6 +249,7 @@ void ChartConfigDialog::Changed()
     m_chartconfig.y_step = m_y_step->value();
     m_chartconfig.m_legend = m_legend->isChecked();
     m_chartconfig.m_lock_scaling = m_lock_scaling->isChecked();
+    m_chartconfig.m_annotation = m_annotation->isChecked();
 
     m_chartconfig.Theme = m_theme->currentIndex();
 

@@ -167,12 +167,12 @@ QWidget* StatisticDialog::MonteCarloWidget()
     hlayout->addWidget(new QLabel(tr("is taken as:")));
 
     hlayout->addWidget(m_mc_sey);
-    QLabel* txt = new QLabel(tr("<html>&sigma; from Model</html>"));
+    QLabel* txt = new QLabel(tr("<html>SE<sub>y</sub> from Model</html>"));
     hlayout->addWidget(txt);
 
 
     hlayout->addWidget(m_mc_std);
-    txt = new QLabel(tr("<html>SE<sub>y</sub> from Model"));
+    txt = new QLabel(tr("<html>&sigma; from Model"));
     hlayout->addWidget(txt);
 
     hlayout->addWidget(m_mc_user);
