@@ -205,8 +205,8 @@ QWidget* ResultsWidget::ReductionWidget()
     m_text += "\n" + parameter_text;
     view->setTitle(QString("Reduction Analysis for %1").arg(m_data["controller"].toObject()["title"].toString()));
     view->setXAxis(m_data["controller"].toObject()["xlabel"].toString());
+    // qDebug() << m_data["controller"].toObject();
     view->setYAxis("parameter value");
-    //view->Chart()->setXRange(0, view->Chart()->XMaxRange());
     return view;
 }
 

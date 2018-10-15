@@ -232,7 +232,7 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
                         if (mimeData->DataUUID() == (*m_data_list)[i].data()->UUID()) {
                             for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
                                 if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == mimeData->ModelUUID())
-                                    top = qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ExportModel(true, true);
+                                    top = qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ExportModel(true, false);
                             }
                         }
                     }
@@ -243,7 +243,7 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
                 for (int i = 0; i < m_data_list->size(); ++i) {
                     if (mimeData->DataUUID() == (*m_data_list)[i].data()->UUID()) {
                         d = (*m_data_list)[i].data()->ExportData();
-                        top = (*m_data_list)[i].data()->ExportChildren(true, true);
+                        top = (*m_data_list)[i].data()->ExportChildren(true, false);
                     }
                 }
                 top["data"] = d;
@@ -305,9 +305,19 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
 
         QByteArray sprmodel = data->data("application/x-suprafitmodel");
         QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-        if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
-            emit LoadJsonObject(doc.object());
-            return true;
+        QJsonObject mod = doc.object();
+        if (mod["model"].toInt() == 0) {
+            if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
+                emit LoadJsonObject(mod);
+                return true;
+            }
+            return false;
+        } else {
+            qDebug() << row << index.row() << parent(index).row();
+            if (index.isValid() && parent(index).isValid()) {
+                emit CopyModel(mod, parent(index).row(), index.row());
+                return true;
+            }
         }
         return false;
     }
@@ -349,7 +359,10 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         return true;
     } else if (index.isValid() && parent(index).isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
-        emit CopyModel(d, parent(index).row(), index.row());
+        QByteArray sprmodel = d->data("application/x-suprafitmodel");
+        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+        QJsonObject mod = doc.object();
+        emit CopyModel(mod, parent(index).row(), index.row());
     } else
         return true;
     return true;
@@ -1233,7 +1246,7 @@ void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)
     }
     m_data_list[position].data()->OverrideSystemParameter(data->SysPar());
 }
-
+/*
 void SupraFitGui::CopyModel(const ModelMime* d, int data, int model)
 {
     QByteArray sprmodel = d->data("application/x-suprafitmodel");
@@ -1242,6 +1255,15 @@ void SupraFitGui::CopyModel(const ModelMime* d, int data, int model)
 
     if (data < m_project_list.size()) {
         m_project_list[data]->Model(model)->ImportModel(object);
+    } else
+        qDebug() << "not found" << data << model;
+}*/
+
+void SupraFitGui::CopyModel(const QJsonObject& object, int data, int model)
+{
+    if (data < m_project_list.size()) {
+        m_project_list[data]->Model(model)->ImportModel(object);
+        m_project_list[data]->Model(model)->Calculate();
     } else
         qDebug() << "not found" << data << model;
 }

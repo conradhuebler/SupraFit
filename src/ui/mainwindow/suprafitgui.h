@@ -119,7 +119,8 @@ signals:
     void AddMetaModel(const QModelIndex& index, int position);
     void CopySystemParameter(const QModelIndex& source, int position);
     void UiMessage(const QString& str);
-    void CopyModel(const ModelMime* d, int data, int model);
+    //void CopyModel(const ModelMime* d, int data, int model);
+    void CopyModel(const QJsonObject& m, int data, int model);
     void LoadFile(const QString& file);
     void LoadJsonObject(const QJsonObject& object);
 };
@@ -244,7 +245,7 @@ private slots:
     void CopySystemParameter(const QModelIndex& source, int position);
 
     void SaveData(const QModelIndex& index);
-    void CopyModel(const ModelMime* d, int data, int model);
+    void CopyModel(const QJsonObject& o, int data, int model);
 
     void TreeDoubleClicked(const QModelIndex& index);
     void TreeClicked(const QModelIndex& index);

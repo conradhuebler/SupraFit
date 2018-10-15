@@ -25,7 +25,9 @@
 #include "src/core/toolset.h"
 
 #include <QCoreApplication>
+
 #include <QtCore/QDateTime>
+#include <QtCore/QTimer>
 
 #include "minimizer.h"
 NonLinearFitThread::NonLinearFitThread(bool exchange_statistics)
@@ -40,14 +42,22 @@ NonLinearFitThread::~NonLinearFitThread()
     m_model.clear();
 }
 
+void NonLinearFitThread::start()
+{
+    m_running = true;
+    QTimer::singleShot(0, this, &NonLinearFitThread::run);
+}
+
 void NonLinearFitThread::run()
 {
+    m_running = true;
     m_steps = 0;
     m_converged = false;
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     NonLinearFit();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit finished(t1 - t0);
+    m_running = false;
 }
 
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, bool clone)
@@ -150,7 +160,10 @@ int Minimizer::Minimize()
     connect(thread, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
-    thread->run();
+    //thread->run();
+    thread->start();
+    while (thread->Running())
+        QCoreApplication::processEvents();
     bool converged = thread->Converged();
     if (converged)
         m_last_parameter = thread->ConvergedParameter();

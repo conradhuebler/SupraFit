@@ -48,6 +48,11 @@ public:
     inline bool Converged() const { return m_converged; }
     inline qreal SumOfError() const { return m_sum_error; }
 
+    inline bool Running() const { return m_running; }
+
+public slots:
+    void start();
+
 private:
     QSharedPointer<AbstractModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
@@ -55,7 +60,7 @@ private:
     OptimizerConfig m_opt_config;
     bool m_converged;
     int m_steps;
-    bool m_exc_statistics;
+    bool m_exc_statistics, m_running = false;
     qreal m_sum_error;
 
 signals:

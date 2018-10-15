@@ -1020,7 +1020,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             QVector<qreal> concentrationsVector, signalVector;
             concentrationsVector = ToolSet::String2DoubleVec(resultObject[str].toString());
             int row = str.toInt();
-            ModelTable()->setRow(concentrationsVector, row);
+            if (ModelTable()->columnCount() == concentrationsVector.size())
+                ModelTable()->setRow(concentrationsVector, row);
         }
     }
 #ifdef _DEBUG

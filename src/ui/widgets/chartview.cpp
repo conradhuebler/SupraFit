@@ -346,6 +346,7 @@ void ChartView::ScaleAxis(QPointer<QtCharts::QValueAxis> axis, qreal& min, qreal
     }
 
     int ticks = ToolSet::scale(max - min) / int(ToolSet::scale(max - min) / 5) + 1;
+    //ticks = 2*(max-min)-1;
     if (ticks < 10) {
         axis->setTickCount(ticks);
         axis->setRange(min, max);
@@ -391,6 +392,9 @@ void ChartView::forceformatAxis()
 
     ScaleAxis(m_XAxis, x_min, x_max);
     ScaleAxis(m_YAxis, y_min, y_max);
+
+    m_XAxis->setTitleText(m_x_axis);
+    m_YAxis->setTitleText(m_y_axis);
 
     m_pending = false;
     m_ymax = y_max;
