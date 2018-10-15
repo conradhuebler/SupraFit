@@ -54,6 +54,7 @@ void ContourWidget::setUi()
 {
     QGridLayout* layout = new QGridLayout;
     view = new ListChart;
+    view->setName("contourchart");
     m_xy_series = new QtCharts::QScatterSeries;
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(view);

@@ -85,10 +85,15 @@ public:
     void addSeries(QtCharts::QAbstractSeries* series, int index, const QColor& color, const QString& name = QString(), bool callout = false);
     void Clear();
     QtCharts::QLineSeries* addLinearSeries(qreal m, qreal n, qreal min, qreal max, int index);
-    QtCharts::QChart* Chart() { return m_chart; }
 
     inline void setAnimationOptions(QtCharts::QChart::AnimationOption option) { m_chart->setAnimationOptions(option); }
     inline void setTheme(QtCharts::QChart::ChartTheme theme) { m_chart->setTheme(theme); }
+    inline void setName(const QString& name)
+    {
+        m_chartview->setName(name);
+    }
+
+    inline ChartView* Chart() { return m_chartview; }
 
 public slots:
     inline void formatAxis() { m_chartview->formatAxis(); }

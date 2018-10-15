@@ -139,6 +139,7 @@ QWidget* ResultsWidget::ReductionWidget()
     QStringList text;
     QString parameter_text;
     QPointer<ListChart> view = new ListChart;
+    view->setName("reductionchart");
 
     QVector<qreal> x = ToolSet::String2DoubleVec(m_data["controller"].toObject()["x"].toString());
     text << "  X";
@@ -205,6 +206,7 @@ QWidget* ResultsWidget::ReductionWidget()
     view->setTitle(QString("Reduction Analysis for %1").arg(m_data["controller"].toObject()["title"].toString()));
     view->setXAxis(m_data["controller"].toObject()["xlabel"].toString());
     view->setYAxis("parameter value");
+    //view->Chart()->setXRange(0, view->Chart()->XMaxRange());
     return view;
 }
 
@@ -238,6 +240,8 @@ QWidget* ResultsWidget::GridSearchWidget()
     ListChart* view = new ListChart;
     view->setXAxis("Parameter");
     view->setYAxis("Sum of Squares");
+    view->setName("gridchart");
+
     int series_int = 0;
     int old_index = 0;
     int rank = 0;

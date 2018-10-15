@@ -182,7 +182,7 @@ ChartView::ChartView()
 
 ChartView::~ChartView()
 {
-    WriteSettings(m_last_config);
+    //WriteSettings(m_last_config);
 
     qDeleteAll(m_peak_anno);
 }
@@ -244,7 +244,10 @@ void ChartView::setUi()
     layout->addWidget(m_config, 0, 4, Qt::AlignTop);
     setLayout(layout);
 
-    connect(&m_chartconfigdialog, SIGNAL(ConfigChanged(ChartConfig)), this, SLOT(setChartConfig(ChartConfig)));
+    connect(&m_chartconfigdialog, &ChartConfigDialog::ConfigChanged, this, [this](const ChartConfig& config) {
+        this->setChartConfig(config);
+        this->WriteSettings(config);
+    });
     connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
     ConfigurationChanged();
@@ -327,6 +330,29 @@ void ChartView::formatAxis()
     forceformatAxis();
 }
 
+void ChartView::ScaleAxis(QPointer<QtCharts::QValueAxis> axis, qreal& min, qreal& max)
+{
+    int mean = (max + min) / 2;
+
+    if (1 < mean && mean < 10) {
+        max = std::ceil(max);
+        min = std::floor(min);
+    } else {
+        max = ToolSet::ceil(max - mean) + mean;
+        if (min && !(0 < min && min < 1))
+            min = ToolSet::floor(min - mean) + mean;
+        else
+            min = 0;
+    }
+
+    int ticks = ToolSet::scale(max - min) / int(ToolSet::scale(max - min) / 5) + 1;
+    if (ticks < 10) {
+        axis->setTickCount(ticks);
+        axis->setRange(min, max);
+    } else
+        axis->applyNiceNumbers();
+}
+
 void ChartView::forceformatAxis()
 {
     if (m_lock_scaling || m_chart->series().size() == 0)
@@ -362,42 +388,10 @@ void ChartView::forceformatAxis()
             x_max = qMax(x_max, points[i].x());
         }
     }
-    int x_mean = (x_max + x_min) / 2;
-    int y_mean = (y_max + y_min) / 2;
 
+    ScaleAxis(m_XAxis, x_min, x_max);
+    ScaleAxis(m_YAxis, y_min, y_max);
 
-    int x_ticks = ToolSet::scale(x_max - x_min) / int(ToolSet::scale(x_max - x_min) / 5) + 1;
-    int y_ticks = 6; //scale(y_max-y_min)/int(scale(y_max-y_min)/ 5) + 1;
-
-    if (1 < x_mean && x_mean < 10) {
-        x_max = std::ceil(x_max);
-        x_min = std::floor(x_min);
-    } else {
-        x_max = ToolSet::ceil(x_max - x_mean) + x_mean;
-        if (x_min)
-            x_min = ToolSet::floor(x_min - x_mean) + x_mean;
-    }
-
-    if (1 < y_mean && y_mean < 10) {
-        y_max = std::ceil(y_max);
-        y_min = std::floor(y_min);
-        y_ticks = (y_max - y_min + 1);
-    } else {
-        y_max = ToolSet::ceil(y_max - y_mean) + y_mean;
-        if (y_min)
-            y_min = ToolSet::floor(y_min - y_mean) + y_mean;
-    }
-
-    m_YAxis->setMax(y_max);
-    m_YAxis->setMin(y_min);
-    m_YAxis->setTickCount(y_ticks);
-    m_YAxis->setTitleText(m_y_axis);
-
-    m_XAxis->setMax(x_max);
-    m_XAxis->setMin(x_min);
-    m_XAxis->setTickCount(x_ticks);
-
-    m_XAxis->setTitleText(m_x_axis);
     m_pending = false;
     m_ymax = y_max;
     m_ymin = y_min;
@@ -419,8 +413,6 @@ void ChartView::PlotSettings()
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
 {
     m_last_config = chartconfig;
-
-    qDebug() << m_last_config.m_keys << m_last_config.m_title << this;
 
     m_lock_scaling = chartconfig.m_lock_scaling;
     m_lock_action->setChecked(m_lock_scaling);
@@ -513,8 +505,6 @@ void ChartView::WriteSettings(const ChartConfig& chartconfig)
     _settings.setValue("title", chartconfig.m_title);
     _settings.setValue("legend  ", chartconfig.m_keys);
     _settings.endGroup();
-    if (m_name == "signalview")
-        qDebug() << this << "writting" << chartconfig.m_label << chartconfig.m_ticks << chartconfig.m_title << chartconfig.m_keys;
 }
 
 ChartConfig ChartView::ReadSettings()
@@ -527,10 +517,11 @@ ChartConfig ChartView::ReadSettings()
     chartconfig.m_title = _settings.value("title").value<QFont>();
     chartconfig.m_keys = _settings.value("legend").value<QFont>();
     _settings.endGroup();
-    if (m_name == "signalview")
-        qDebug() << chartconfig.m_label << chartconfig.m_ticks << chartconfig.m_title << chartconfig.m_keys;
+
     m_last_config = chartconfig;
     setChartConfig(chartconfig);
+    m_chartconfigdialog.setConfig(chartconfig);
+
     return chartconfig;
 }
 

@@ -209,6 +209,7 @@ ChartConfigDialog::~ChartConfigDialog()
 
 void ChartConfigDialog::setConfig(const ChartConfig& chartconfig)
 {
+    const QSignalBlocker blocker(this);
     m_x_min->setValue(chartconfig.x_min);
     m_x_max->setValue(chartconfig.x_max);
     m_x_step->setValue(chartconfig.x_step);
@@ -224,6 +225,8 @@ void ChartConfigDialog::setConfig(const ChartConfig& chartconfig)
     m_theme->setCurrentIndex(chartconfig.Theme);
 
     m_title->setText(chartconfig.title);
+
+    m_chartconfig = chartconfig;
 }
 
 void ChartConfigDialog::Changed()

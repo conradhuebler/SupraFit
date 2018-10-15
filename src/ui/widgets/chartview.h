@@ -137,6 +137,10 @@ public:
         m_name = name;
         ReadSettings();
     }
+
+    QPointer<QtCharts::QValueAxis> axisY() const { return m_YAxis; }
+    QPointer<QtCharts::QValueAxis> axisX() const { return m_XAxis; }
+
 public slots:
     void formatAxis();
 
@@ -176,6 +180,9 @@ private:
     ChartConfig ReadSettings();
     QString m_name;
     QPointer<QtCharts::QValueAxis> m_XAxis, m_YAxis;
+
+    void ScaleAxis(QPointer<QtCharts::QValueAxis> axis, qreal& min, qreal& max);
+
 private slots:
     void PlotSettings();
     void PrintPlot();

@@ -126,6 +126,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     QPointer<ListChart> view = new ListChart;
     view->setXAxis("parameter");
     view->setYAxis("relative rate");
+    view->setName("montecarlochart");
     view->setMinimumSize(300, 400);
     bool formated = false;
 
