@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- exported charts have now a transparent background and are croped to the opaque are (remove transparent bounding box)
 - some more colors and titles in statistics output
 - add optional in chart annotation as legend
 - add custom charts for model (nmr titration models already got concentration chart)

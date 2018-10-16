@@ -742,8 +742,42 @@ void ChartView::ExportPNG()
     image.fill(Qt::transparent);
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
+    QBrush brush_backup = m_chart->backgroundBrush();
+    QBrush brush;
+    brush.setColor(Qt::transparent);
+    m_chart->setBackgroundBrush(brush);
     m_chart->scene()->render(&painter, QRectF(0, 0, scale * w, scale * h), m_chart->rect());
-    QPixmap pixmap = QPixmap::fromImage(image);
+
+    auto border = [](const QImage& tmp) -> QImage {
+        int l = tmp.width(), r = 0, t = tmp.height(), b = 0;
+        for (int y = 0; y < tmp.height(); ++y) {
+            QRgb* row = (QRgb*)tmp.scanLine(y);
+            bool rowFilled = false;
+            for (int x = 0; x < tmp.width(); ++x) {
+                if (qAlpha(row[x])) {
+                    rowFilled = true;
+                    r = std::max(r, x);
+                    if (l > x) {
+                        l = x;
+                        x = r; // shortcut to only search for new right bound from here
+                    }
+                }
+            }
+            if (rowFilled) {
+                t = std::min(t, y);
+                b = y;
+            }
+        }
+        return tmp.copy(l, t, r, b);
+    };
+#warning stupid things
+    /* dont unterstand that in particular, but it works somehow, and it is not to slow */
+
+    QImage mirrored = border(border(image.mirrored(true, true)).mirrored(true, true).mirrored(true, true)).mirrored(true, true);
+    QPixmap pixmap = QPixmap::fromImage(border(mirrored));
+
+    m_chart->setBackgroundBrush(brush_backup);
+
     QByteArray itemData;
 
     QFile file(str);

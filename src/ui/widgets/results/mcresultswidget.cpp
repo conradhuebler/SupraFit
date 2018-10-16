@@ -144,7 +144,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         qreal x_0 = data["value"].toDouble();
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
 
-        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
+        auto histogram = ToolSet::List2Histogram(list, bins);
         ToolSet::Normalise(histogram);
         LineSeries* xy_series = new LineSeries;
         m_linked_data.insert(xy_series, list);
@@ -349,13 +349,13 @@ void MCResultsWidget::GenerateConfidence(double error)
 void MCResultsWidget::GenerateHistogram()
 {
 
-    QHash<LineSeries*, QVector<qreal>>::iterator i = m_linked_data.begin();
+    auto i = m_linked_data.begin();
 
     while (i != m_linked_data.end()) {
         LineSeries* xy_series = i.key();
 
         QVector<qreal> list = i.value();
-        QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, m_bins->value());
+        auto histogram = ToolSet::List2Histogram(list, m_bins->value());
         ToolSet::Normalise(histogram);
 
         xy_series->clear();
