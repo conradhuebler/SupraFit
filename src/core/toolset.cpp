@@ -317,12 +317,18 @@ QPair<qreal, qreal> Entropy(const QVector<QPair<qreal, qreal>>& histogram)
         sum += histogram[i].second ;
     }
 
+    /* Since we approximate the real integral
+     * int_(-inf)^(+inf) f(x) log2(f(x)) dx
+     * with sum, I think, we need the d
+     * sum_i^n f(x_i) log2(f(x_i)) d
+     */
+    qreal d = (histogram.last().first - histogram.first().first) / double(histogram.size());
     qreal lower = 1 / double(histogram.size());
 
     for (int i = 0; i < histogram.size(); ++i) {
         if (histogram[i].second < lower)
             continue;
-        const qreal value = histogram[i].second/sum;
+        const qreal value = histogram[i].second / sum * d;
         entropy +=  value* log2(value);
     }
 
