@@ -173,7 +173,7 @@ private:
     bool m_pending, m_lock_scaling, m_latex_supported, m_modal = true;
     qreal m_ymax, m_ymin, m_xmin, m_xmax;
     QVector<QPointer<QtCharts::QAbstractSeries>> m_series;
-    QVector<PeakCallOut*> m_peak_anno;
+    QVector<QPointer<PeakCallOut>> m_peak_anno;
 
     ChartConfig m_last_config;
     void WriteSettings(const ChartConfig& chartconfig);
@@ -196,4 +196,7 @@ private slots:
 signals:
     void AxisChanged();
     void ChartCleared();
+
+protected:
+    virtual void resizeEvent(QResizeEvent* event) override;
 };

@@ -1025,6 +1025,18 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("p_value") == QVariant())
         qApp->instance()->setProperty("p_value", 0.95);
+
+    if (qApp->instance()->property("markerSize") == QVariant())
+        qApp->instance()->setProperty("markerSize", 8);
+
+    if (qApp->instance()->property("chartScaling") == QVariant())
+        qApp->instance()->setProperty("chartScaling", 4);
+
+    if (qApp->instance()->property("transparentChart") == QVariant())
+        qApp->instance()->setProperty("transparentChart", true);
+
+    if (qApp->instance()->property("cropedChart") == QVariant())
+        qApp->instance()->setProperty("cropedChart", true);
 }
 
 void SupraFitGui::ReadGeometry()

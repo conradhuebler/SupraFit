@@ -38,6 +38,7 @@ public:
 
     virtual QRectF boundingRect() const override;
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    inline void setSeries(const QPointer<QtCharts::QAbstractSeries> serie) { m_serie = serie; }
 
 public slots:
     void setColor(const QColor& color);
@@ -51,10 +52,10 @@ private:
     QRectF m_textRect;
     QRectF m_rect;
     QPointF m_anchor, m_text_position;
-    QFont m_font;
     QPointer<QtCharts::QChart> m_chart;
     bool flip = false;
     QColor m_color;
 
     void Update();
+    QPointer<QtCharts::QAbstractSeries> m_serie;
 };

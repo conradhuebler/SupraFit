@@ -55,7 +55,7 @@ void PeakCallOut::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     int height = -100;
     if (!flip) {
         QFontMetrics fm = painter->fontMetrics();
-        width = fm.width(m_text) - 54;
+        width = fm.width(m_text) - fm.width(m_text) / 2;
         height = -50;
     }
     qreal x = m_chart->mapToPosition(m_anchor).x() - width / 4;
@@ -63,6 +63,9 @@ void PeakCallOut::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     setPos(x, y);
 
     QGraphicsTextItem::paint(painter, option, widget);
+
+    if (m_serie)
+        setVisible(m_serie->isVisible());
 }
 
 void PeakCallOut::setColor(const QColor& color)
@@ -97,7 +100,7 @@ void PeakCallOut::Update()
 {
     m_htmltext = tr("<h4><font color='%2'>%1</font></h4>").arg(m_text).arg(m_color.name());
     setHtml(m_htmltext);
-    QFontMetrics metrics(m_font);
+    QFontMetrics metrics(font());
     QTextDocument doc;
     doc.setHtml(m_htmltext);
     m_textRect = metrics.boundingRect(QRect(0, 0, 250, 250), Qt::AlignLeft, m_text);

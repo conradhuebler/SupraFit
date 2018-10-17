@@ -63,17 +63,21 @@ public:
 private:
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
     QSpinBox* m_threads;
-    QDoubleSpinBox* m_p_value;
+    QDoubleSpinBox *m_p_value, *m_markerSize, *m_chartScaling;
+    QCheckBox *m_transparentChart, *m_cropedChart;
     QLineEdit* m_working;
     QPushButton* m_select_working;
     QTabWidget* m_mainwidget;
     QDialogButtonBox* m_buttons;
     QComboBox* m_charttheme;
     QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit, *m_series_confidence;
+
     void setUi();
     void createGeneralTab();
+    void createChartTab();
     void createStandardCalTab();
     void createOptimTab();
+
     OptimizerConfig m_opt_config;
     OptimizerWidget* m_opt_widget;
     int m_dirlevel;

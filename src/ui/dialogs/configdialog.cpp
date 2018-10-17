@@ -101,6 +101,7 @@ void ConfigDialog::setUi()
     mainlayout->addWidget(m_mainwidget);
 
     createGeneralTab();
+    createChartTab();
     createStandardCalTab();
     createOptimTab();
 
@@ -111,6 +112,7 @@ void ConfigDialog::setUi()
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     mainlayout->addWidget(m_buttons);
+    setMinimumSize(600, 400);
 }
 
 void ConfigDialog::createGeneralTab()
@@ -219,6 +221,53 @@ void ConfigDialog::createOptimTab()
     m_mainwidget->addTab(m_opt_widget, tr("Optimizer Settings"));
 }
 
+void ConfigDialog::createChartTab()
+{
+    QVBoxLayout* layout = new QVBoxLayout;
+    QWidget* chartTab = new QWidget;
+    chartTab->setLayout(layout);
+
+    layout->addWidget(new QLabel(tr("Configure Chart Export Settings:")));
+
+    m_markerSize = new QDoubleSpinBox;
+    m_markerSize->setMinimum(0);
+    m_markerSize->setMaximum(30);
+    m_markerSize->setValue(qApp->instance()->property("markerSize").toDouble());
+
+    QHBoxLayout* hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel(tr("Define marker size for exported charts:")));
+    hbox->addWidget(m_markerSize);
+    layout->addLayout(hbox);
+
+    m_chartScaling = new QDoubleSpinBox;
+    m_chartScaling->setMinimum(0);
+    m_chartScaling->setMaximum(30);
+    m_chartScaling->setValue(qApp->instance()->property("chartScaling").toDouble());
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel(tr("Define the chart scaling ration :")));
+    hbox->addWidget(m_chartScaling);
+    layout->addLayout(hbox);
+
+    m_transparentChart = new QCheckBox;
+    m_transparentChart->setText(tr("Transparent Charts"));
+    m_transparentChart->setChecked(qApp->instance()->property("transparentChart").toBool());
+    layout->addWidget(m_transparentChart);
+
+    m_cropedChart = new QCheckBox;
+    m_cropedChart->setText(tr("Remove Transparent Border from Charts"));
+    m_cropedChart->setChecked(qApp->instance()->property("cropedChart").toBool());
+
+    layout->addWidget(m_cropedChart);
+
+    connect(m_transparentChart, &QCheckBox::stateChanged, m_transparentChart, [this](bool state) {
+        m_cropedChart->setEnabled(state);
+    });
+    m_cropedChart->setEnabled(m_transparentChart->isChecked());
+
+    m_mainwidget->addTab(chartTab, tr("Chart Settings"));
+}
+
 void ConfigDialog::SelectWorkingDir()
 {
     QString filename = QFileDialog::getExistingDirectory(this, "Choose Working Directory", qApp->instance()->property("workingdir").toString());
@@ -246,6 +295,11 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("ask_on_exit", m_ask_on_exit->isChecked());
     qApp->instance()->setProperty("save_on_exit", m_save_on_exit->isChecked());
     qApp->instance()->setProperty("tooltips", m_tooltips->isChecked());
+    qApp->instance()->setProperty("markerSize", m_markerSize->value());
+    qApp->instance()->setProperty("chartScaling", m_chartScaling->value());
+    qApp->instance()->setProperty("transparentChart", m_transparentChart->isChecked());
+    qApp->instance()->setProperty("cropedChart", m_cropedChart->isChecked());
+
     QDialog::accept();
 }
 

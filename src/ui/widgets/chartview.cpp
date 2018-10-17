@@ -279,7 +279,8 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
                 x /= double(serie->points().size());
                 QPointF point(x, 1.5);
 
-                PeakCallOut* annotation = new PeakCallOut(m_chart);
+                QPointer<PeakCallOut> annotation = new PeakCallOut(m_chart);
+                annotation->setSeries(series);
                 annotation->setText(series->name(), point);
                 annotation->setAnchor(point);
                 annotation->setZValue(11);
@@ -503,8 +504,12 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
             call->setFont(font);
         */
     }
-    for (PeakCallOut* call : m_peak_anno)
+    for (QPointer<PeakCallOut> call : m_peak_anno) {
+        if (!call)
+            continue;
         call->setVisible(chartconfig.m_annotation);
+        call->setFont(chartconfig.m_keys);
+    }
 }
 
 void ChartView::WriteSettings(const ChartConfig& chartconfig)
@@ -737,16 +742,39 @@ void ChartView::ExportPNG()
     Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();
-    int scale = 4;
+    double scale = qApp->instance()->property("chartScaling").toDouble();
     QImage image(QSize(scale * w, scale * h), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::TextAntialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+
     QBrush brush_backup = m_chart->backgroundBrush();
     QBrush brush;
     brush.setColor(Qt::transparent);
-    m_chart->setBackgroundBrush(brush);
+    if (qApp->instance()->property("transparentChart").toBool() == true)
+        m_chart->setBackgroundBrush(brush);
+
+    QList<QColor> colors;
+    QList<int> size;
+    for (QtCharts::QAbstractSeries* serie : m_chart->series()) {
+        if (qobject_cast<QtCharts::QScatterSeries*>(serie)) {
+            colors << qobject_cast<QtCharts::QScatterSeries*>(serie)->borderColor();
+            qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(Qt::transparent);
+            size << qobject_cast<QtCharts::QScatterSeries*>(serie)->markerSize();
+            qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(qApp->instance()->property("markerSize").toDouble());
+        }
+    }
+
     m_chart->scene()->render(&painter, QRectF(0, 0, scale * w, scale * h), m_chart->rect());
+
+    /*
+     * copyied from here:
+     *
+     * https://stackoverflow.com/questions/3720947/does-qt-have-a-way-to-find-bounding-box-of-an-image
+     *
+     */
 
     auto border = [](const QImage& tmp) -> QImage {
         int l = tmp.width(), r = 0, t = tmp.height(), b = 0;
@@ -770,13 +798,43 @@ void ChartView::ExportPNG()
         }
         return tmp.copy(l, t, r, b);
     };
-#warning stupid things
-    /* dont unterstand that in particular, but it works somehow, and it is not to slow */
 
-    QImage mirrored = border(border(image.mirrored(true, true)).mirrored(true, true).mirrored(true, true)).mirrored(true, true);
-    QPixmap pixmap = QPixmap::fromImage(border(mirrored));
+    QPixmap pixmap;
+
+    if (qApp->instance()->property("cropedChart").toBool() == true) {
+#warning stupid things
+        /* dont unterstand that in particular, but it works somehow, and it is not to slow */
+
+        QImage mirrored = border(border(image.mirrored(true, true)).mirrored(true, true).mirrored(true, true)).mirrored(true, true);
+        pixmap = QPixmap::fromImage(border(mirrored));
+    } else
+        pixmap = QPixmap::fromImage(image);
+
+    /*
+    if(qApp->instance()->property("transparentChart").toBool() == false)
+    {
+             int x, y;
+             for(x = 0; x <= mirrored.width() - 1; x++)
+             {
+                 for(y = 0; y <= mirrored.height() - 1; y++)
+                 {
+                     qDebug() << QColor(mirrored.pixel(x, y)).rgba64().isTransparent() << QColor(0,0,0,1);
+                     if(QColor(mirrored.pixel(x, y)) == QColor(0,0,0,1)) //::transparent) //mFColor is
+                     {                                               //Foregournd
+                         mirrored.setPixel(x, y, Qt::white);       //Ccolor.
+                     }
+                 }
+             }
+    }*/
 
     m_chart->setBackgroundBrush(brush_backup);
+
+    for (QtCharts::QAbstractSeries* serie : m_chart->series()) {
+        if (qobject_cast<QtCharts::QScatterSeries*>(serie)) {
+            qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(colors.takeFirst());
+            qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(size.takeFirst());
+        }
+    }
 
     QByteArray itemData;
 
@@ -794,6 +852,17 @@ void ChartView::ConfigurationChanged()
         m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
 
     m_chart->setTheme(QtCharts::QChart::ChartTheme(qApp->instance()->property("charttheme").toInt()));
+}
+
+void ChartView::resizeEvent(QResizeEvent* event)
+{
+    event->accept();
+    /*
+    if(event->size().width() > event->size().height()){
+        QWidget::resize(event->size().height(),event->size().height());
+    }else{
+        QWidget::resize(event->size().width(),event->size().width());
+    }*/
 }
 
 #include "chartview.moc"

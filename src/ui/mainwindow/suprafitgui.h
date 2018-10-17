@@ -209,7 +209,11 @@ private:
                                                    << "charttheme"
                                                    << "ask_on_exit"
                                                    << "tooltips"
-                                                   << "recent";
+                                                   << "recent"
+                                                   << "markerSize"
+                                                   << "transparentChart"
+                                                   << "cropedChart"
+                                                   << "chartScaling";
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
