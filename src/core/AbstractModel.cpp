@@ -1191,22 +1191,10 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
         break;
 
     case SupraFit::Statistic::MonteCarlo:
+    case SupraFit::Statistic::CrossValidation:
+
         return AnalyseMonteCarlo(object, forceAll);
         break;
-        /*
-    case SupraFit::Statistic::CrossValidation:
-        bool duplicate = false;
-        for (int i = 0; i < m_mc_statistics.size(); ++i) {
-            QJsonObject control = m_mc_statistics[i]["controller"].toObject();
-            if (controller == control) {
-                duplicate = true;
-                m_mc_statistics[i] = object;
-            }
-        }
-        if (!duplicate)
-            m_mc_statistics << object;
-        index = m_mc_statistics.lastIndexOf(object);
-        break;*/
     }
     return QString();
 }
@@ -1219,10 +1207,8 @@ QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAl
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
 
-    for (const QString& key : qAsConst(keys)) {
-        if (key == "controller")
-            continue;
-        result += Print::TextFromConfidence(object[key].toObject(), controller);
+    for (int i = 0; i < keys.size() - 1; ++i) {
+        result += Print::TextFromConfidence(object[QString::number(i)].toObject(), controller);
     }
 
     return result;

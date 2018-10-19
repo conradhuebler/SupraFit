@@ -156,7 +156,7 @@ QWidget* StatisticDialog::MonteCarloWidget()
     m_mc_user->setMaximumWidth(30);
 
     m_varianz_box = new QDoubleSpinBox;
-    m_varianz_box->setDecimals(5);
+    m_varianz_box->setDecimals(6);
     m_varianz_box->setSingleStep(1e-2);
 
     layout->addWidget(new QLabel(tr("<html>Standard Deviation &sigma;</html>")), 1, 0);

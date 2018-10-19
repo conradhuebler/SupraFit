@@ -42,21 +42,21 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
     m_std = new ClickLabel;
     connect(m_std, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(tr("%1").arg(Print::printDouble(m_model.data()->StdDeviation())));
+        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->StdDeviation()))).simplified());
         m_std->Clicked();
     });
 
     m_sse = new ClickLabel;
     connect(m_sse, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(tr("%1").arg(Print::printDouble(m_model.data()->SumofSquares())));
+        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->SumofSquares()))).simplified());
         m_sse->Clicked();
     });
 
     m_sey = new ClickLabel;
     connect(m_sey, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(tr("%1").arg(Print::printDouble(m_model.data()->SEy())));
+        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->SEy()))).simplified());
         m_sey->Clicked();
     });
 

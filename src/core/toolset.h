@@ -91,6 +91,7 @@ qreal GHE(qreal G, qreal H, qreal T);
 }
 
 namespace Print {
+QString Html2Tex(const QString& str);
 QString TextFromConfidence(const QJsonObject& result, const QJsonObject& controller);
 QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller);
 

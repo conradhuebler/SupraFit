@@ -726,6 +726,19 @@ qreal GHE(qreal G, qreal H, qreal T)
 
 namespace Print {
 
+QString Html2Tex(const QString& str)
+{
+    QString result;
+
+    result = str;
+    result.replace("<sub>", "_{");
+    result.replace("</sub>", "}");
+    result.replace("<sup>", "^{");
+    result.replace("</sup>", "}");
+
+    return "$" + result + "$";
+}
+
 QString TextFromConfidence(const QJsonObject& result, const QJsonObject& controller)
 {
     int type = controller["method"].toInt();
@@ -735,13 +748,15 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
     QString text = QString("<p> --- statistic block --- </p><p>%1</p>").arg(result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value));
 
+    QJsonObject confidence = result["confidence"].toObject();
+    qreal upper = confidence["upper"].toDouble();
+    qreal lower = confidence["lower"].toDouble();
+    qreal conf = confidence["error"].toDouble();
+
     QString const_name;
     //text += "<table><tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch || type == SupraFit::Statistic::FastConfidence) {
-        QJsonObject confidence = result["confidence"].toObject();
-        qreal upper = confidence["upper"].toDouble();
-        qreal lower = confidence["lower"].toDouble();
-        qreal conf = confidence["error"].toDouble();
+
         text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td>" + QString::number(value) + " [+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "]</td></tr>";
         text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[" + QString::number(lower) + " - " + QString::number(upper) + "]</td></tr>";
     }
@@ -769,6 +784,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         if (value > box.UpperNotch() || value < box.LowerNotch()) {
             text += "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>";
         }
+
+        text += "<tr><td colspan=2></th></tr>";
+        text += QString("<tr><td colspan='2'>%9 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5 & %6  & %7 & %8\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Print::printDouble(box.median, 4)).arg(Print::printDouble(box.stddev, 6)).arg(Print::printDouble(pair.first, 6)).arg(Html2Tex(result["name"].toString()));
+        text += "<tr><td colspan=2></th></tr>";
     }
 
     if (type == SupraFit::Statistic::WeakenedGridSearch)
