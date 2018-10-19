@@ -96,18 +96,21 @@ long double MaxQuadraticRoot(long double a, long double b, long double c)
     return (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
 }
 
-qreal Stddev(const QVector<qreal>& vector, int end)
+qreal Stddev(const QVector<qreal>& vector, int end, double average)
 {
     if (!end || end == 1)
         end = vector.size();
-    qreal average = 0;
-    for (int i = 0; i < end; ++i)
-        average += vector[i];
-    average /= double(end);
+    double size = end;
+    if (qFuzzyCompare(average, 0)) {
+        for (int i = 0; i < end; ++i)
+            average += vector[i];
+        average /= double(end);
+        size = end - 1;
+    }
     qreal stdev = 0;
     for (int i = 0; i < end; ++i)
         stdev += (vector[i] - average) * (vector[i] - average);
-    return sqrt(stdev / double(end - 1));
+    return sqrt(stdev / size);
 }
 
 QPair<long double, long double> QuadraticRoot(long double a, long double b, long double c)

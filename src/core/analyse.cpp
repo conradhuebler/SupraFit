@@ -35,14 +35,19 @@ namespace StatisticTool {
 QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>> models, double cutoff)
 {
     QMultiMap<qreal, QString> concl;
+    QMultiMap<qreal, QString> concl_corr;
+    QMap<qreal, QString> mean_std_orderd, mean_std_corr_orderd;
+
     QString result = QString("<table>");
     QVector<qreal> X;
-    qreal all_std = 0;
+    qreal all_partial_std = 0;
+    qreal all_partial_std_corr = 0;
     int cut = 0;
     int index = 0;
     int j = 0;
-    for (const QPair<QJsonObject, QVector<int>>& model : models) {
+    for (const auto& model : models) {
         index++;
+        qreal mean_std = 0, mean_corr_std = 0;
         bool skip = false;
         QJsonObject reduction = model.first["data"].toObject()["statistics"].toObject()[QString::number(SupraFit::Statistic::Reduction)].toObject();
         QVector<int> parameter = model.second;
@@ -68,7 +73,7 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             result += "<tr><th>Skipping model " + QString::number(index) + " - Something missing?</th></tr>";
             continue;
         }
-        result += "<tr><th>Analysing Model " + QString::number(index) + " - " + Model2Name((SupraFit::Model)model.first["model"].toInt()) + "</th></tr>";
+        result += "<tr><th>Analysing Model " + QString::number(index) + " - " + Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())) + "</th></tr>";
 
         for (int key : parameter) {
             if (key == -1)
@@ -81,7 +86,7 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             qreal val = element["value"].toDouble();
             result += "<tr><th colspan='3'> " + element["name"].toString() + " of type " + element["type"].toString() + ": optimal value = " + Print::printDouble(val) + "</th></tr>";
 
-            qreal value = 0, sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0;
+            qreal value = 0, sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0, stdev_corr = 0;
             value = element["value"].toDouble();
             QVector<qreal> vector = ToolSet::String2DoubleVec(element["data"].toObject()["raw"].toString());
             for (int i = 0; i < cut; ++i) {
@@ -93,32 +98,86 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             aver /= double(cut);
             aver_err = sqrt(sum_err) / double(cut);
             stdev = Stddev(vector, cut);
-            all_std += stdev;
+            stdev_corr = Stddev(vector, cut, value);
+
+            mean_std += stdev;
+            mean_corr_std += stdev_corr;
+
+            all_partial_std += stdev;
+            all_partial_std_corr += stdev_corr;
+
             result += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
             result += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
             result += "<tr><td></td></tr>";
-            concl.insert(stdev, QString("<p> " + Model2Name((SupraFit::Model)model.first["model"].toInt()) + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " stddev: " + Print::printDouble(stdev)) + "</p>");
+            concl.insert(stdev, QString("<p> " + Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())) + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>pt</sub>: " + Print::printDouble(stdev)) + "</p>");
+            concl_corr.insert(stdev_corr, QString("<p> " + Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())) + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>ptc</sub>: " + Print::printDouble(stdev_corr)) + "</p>");
         }
+
+        mean_std /= double(parameter.size());
+        mean_corr_std /= double(parameter.size());
+
+        mean_std_orderd.insert(mean_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
+        mean_std_corr_orderd.insert(mean_corr_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
+
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
     }
-    all_std /= double(j);
+    all_partial_std /= double(j);
+    all_partial_std_corr /= double(j);
+
     result += "</table></br >";
-    result += "<p> Summary: Ordered list of all partial standard deviations for each parameter </p>";
-    result += "<p> Mean standard deviations " + Print::printDouble(all_std) + "</p>";
+
+    result += "<p> Best fitting models according to the partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+
+    auto l = mean_std_orderd.constBegin();
+    while (l != mean_std_orderd.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(l.value()).arg(l.key());
+        ++l;
+    }
+
+    result += "</br>\n\n";
+    result += "<p> Best fitting models according to the corrected partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+    l = mean_std_corr_orderd.constBegin();
+    while (l != mean_std_corr_orderd.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(l.value()).arg(l.key());
+        ++l;
+    }
+    result += "</br>\n\n";
+    result += "</br>\n\n";
+
+    result += "<p> Individual parameters </p>";
+    result += "<p> Ordered list of all partial standard deviations for each parameter (&sigma;<sub>pt</sub>) </p>";
+    result += "<p> Mean partial standard deviation " + Print::printDouble(all_partial_std) + "</p>";
     qreal old_std = 0;
-    QMap<qreal, QString>::iterator i = concl.begin();
+    auto i = concl.begin();
     int indx = 0;
     while (i != concl.constEnd()) {
         if (indx - 1 < concl.size() / 2 && indx >= concl.size() / 2)
             result += "<p>------------------------- Median Line --------------------------------</p>";
-        if (old_std < all_std && all_std < i.key())
+        if (old_std < all_partial_std && all_partial_std < i.key())
             result += "<p>------------------------- Average Line -------------------------------</p>";
         result += i.value();
         old_std = i.key();
         indx++;
         ++i;
     }
+    result += "</br>\n\n";
+    result += "<p> Ordered list of all corrected partial standard deviations for each parameter (&sigma;<sub>ptc</sub>)</p>";
+    result += "<p> Mean corrected partial standard deviation " + Print::printDouble(all_partial_std_corr) + "</p>";
+
+    auto k = concl_corr.begin();
+    indx = 0;
+    while (k != concl_corr.constEnd()) {
+        if (indx - 1 < concl.size() / 2 && indx >= concl_corr.size() / 2)
+            result += "<p>------------------------- Median Line --------------------------------</p>";
+        if (old_std < all_partial_std_corr && all_partial_std_corr < k.key())
+            result += "<p>------------------------- Average Line -------------------------------</p>";
+        result += k.value();
+        old_std = k.key();
+        indx++;
+        ++k;
+    }
+
     return result;
 }
 
@@ -137,7 +196,7 @@ QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
     result += "</table>\n";
     result += "<p>List ordered by 2nd AIC Value (corrected AIC)</p>";
 
-    QMap<qreal, QString>::iterator i = list_second.begin();
+    auto i = list_second.begin();
     qreal first = 0;
     while (i != list_second.constEnd()) {
 

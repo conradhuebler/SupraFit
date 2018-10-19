@@ -311,7 +311,8 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
     }
     connect(series, &QtCharts::QAbstractSeries::nameChanged, series, [this, series]() {
         if (series) {
-            this->m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty());
+            bool show = series->name().isEmpty() || series->name().isNull() || series->name().simplified() == QString(" ");
+            this->m_chart->legend()->markers(series).first()->setVisible(!show);
         }
     });
     m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty());
