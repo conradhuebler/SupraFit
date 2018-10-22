@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- compare single parameters in reduction analysis
 - latex table snippets for monte carlo analysis
 - add some more comparison to reduction analysis
 - exported charts have now a transparent background and are croped to the opaque are (remove transparent bounding box)

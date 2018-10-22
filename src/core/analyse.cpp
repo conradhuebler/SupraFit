@@ -37,6 +37,8 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
     QMultiMap<qreal, QString> concl;
     QMultiMap<qreal, QString> concl_corr;
     QMap<qreal, QString> mean_std_orderd, mean_std_corr_orderd;
+    QHash<QString, qreal> parameters, parameters_corr;
+    QHash<QString, int> parameters_count;
 
     QString result = QString("<table>");
     QVector<qreal> X;
@@ -103,6 +105,19 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             mean_std += stdev;
             mean_corr_std += stdev_corr;
 
+            if(parameters.contains(element["name"].toString()))
+            {
+                parameters[element["name"].toString()] += stdev;
+                parameters_corr[element["name"].toString()] += stdev_corr;
+
+                parameters_count[element["name"].toString()]++;
+            }else{
+                parameters.insert(element["name"].toString(), stdev);
+                parameters_corr.insert(element["name"].toString(), stdev_corr);
+
+                parameters_count.insert(element["name"].toString(), 1);
+            }
+
             all_partial_std += stdev;
             all_partial_std_corr += stdev_corr;
 
@@ -116,12 +131,23 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         mean_std /= double(parameter.size());
         mean_corr_std /= double(parameter.size());
 
+
+
         mean_std_orderd.insert(mean_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
         mean_std_corr_orderd.insert(mean_corr_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";
     }
+
+    QMap<qreal, QString> parameters_orderd, parameters_orderd_corr;
+
+    for(const QString &str : parameters.keys())
+    {
+        parameters_orderd.insert(parameters[str]/double(parameters_count[str]), str);
+        parameters_orderd_corr.insert(parameters_corr[str]/double(parameters_count[str]), str);
+    }
+
     all_partial_std /= double(j);
     all_partial_std_corr /= double(j);
 
@@ -141,6 +167,24 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
     while (l != mean_std_corr_orderd.constEnd()) {
         result += QString("<p> %1 : %2</p>").arg(l.value()).arg(l.key());
         ++l;
+    }
+    result += "</br>\n\n";
+    result += "</br>\n\n";
+
+    result += "<p> Best fitting parameters according to the partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+
+    auto param = parameters_orderd.constBegin();
+    while (param != parameters_orderd.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(param.value()).arg(param.key());
+        ++param;
+    }
+
+    result += "</br>\n\n";
+    result += "<p> Best fitting parameters according to the corrected partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+    param = parameters_orderd_corr.constBegin();
+    while (param != parameters_orderd_corr.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(param.value()).arg(param.key());
+        ++param;
     }
     result += "</br>\n\n";
     result += "</br>\n\n";
