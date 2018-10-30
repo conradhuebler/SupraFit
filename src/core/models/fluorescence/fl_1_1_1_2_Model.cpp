@@ -188,7 +188,7 @@ QString fl_ItoI_ItoII_Model::ParameterComment(int parameter) const
 QString fl_ItoI_ItoII_Model::ModelInfo() const
 {
     QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::Format_ItoII_BC50(GlobalParameter(0), GlobalParameter(1));
+    result += BC50::ItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1));
     return result;
 }
 

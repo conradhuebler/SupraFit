@@ -35,6 +35,11 @@
 
 #include "libmath.h"
 
+#pragma omp declare reduction(vec_double_plus                                                                                          \
+                              : std::vector <double>                                                                                   \
+                              : std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus <double>())) \
+    initializer(omp_priv = omp_orig)
+
 namespace Cubic {
 qreal f(qreal x, qreal a, qreal b, qreal c, qreal d)
 {
@@ -203,10 +208,9 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
     }
 }
 
-qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter)
+qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter, qreal delta)
 {
     qreal integ = 0;
-    qreal delta = 1E-4;
     int increments = (upper - lower) / delta;
 #pragma omp parallel for reduction(+ \
                                    : integ)
@@ -216,4 +220,23 @@ qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, cons
         integ += (b - x) / 6 * (function(x, parameter) + 4 * function((x + b) / 2, parameter) + function(b, parameter));
     }
     return integ;
+}
+
+std::vector<double> SimpsonIntegrate(qreal lower, qreal upper, const std::vector<std::function<qreal(qreal, const QVector<qreal>)>*>& functions, const QVector<qreal>& parameter, qreal delta)
+{
+    std::vector<double> integs;
+    for (unsigned int k = 0; k < functions.size(); ++k)
+        integs.push_back(0);
+
+    int increments = (upper - lower) / delta;
+#pragma omp parallel for reduction(vec_double_plus \
+                                   : integs)
+    for (int i = 0; i < increments - 1; ++i) {
+        double x = lower + i / double(increments);
+        qreal b = x + delta;
+        for (unsigned int k = 0; k < functions.size(); ++k) {
+            integs[k] += (b - x) / 6 * ((*functions[k])(x, parameter) + 4 * (*functions[k])((x + b) / 2, parameter) + (*functions[k])(b, parameter));
+        }
+    }
+    return integs;
 }

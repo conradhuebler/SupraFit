@@ -18,6 +18,7 @@
  */
 #include "src/core/models/postprocess/statistic.h"
 
+#include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/models.h"
@@ -324,7 +325,7 @@ MassResults IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
 QString IItoI_ItoI_ItoII_Model::ModelInfo() const
 {
     QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::Format_IItoII_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2));
+    result += BC50::IItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2));
 
     return result;
 }

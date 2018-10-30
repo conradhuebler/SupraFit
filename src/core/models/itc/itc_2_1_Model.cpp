@@ -19,6 +19,7 @@
 #include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/AbstractItcModel.h"
+#include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
@@ -274,7 +275,7 @@ QString itc_IItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool force
 QString itc_IItoI_Model::ModelInfo() const
 {
     QString result = AbstractItcModel::ModelInfo();
-    result += BC50::Format_IItoI_BC50(GlobalParameter(0), GlobalParameter(1));
+    result += BC50::IItoI::Format_BC50(GlobalParameter(0), GlobalParameter(1));
 
     return result;
 }

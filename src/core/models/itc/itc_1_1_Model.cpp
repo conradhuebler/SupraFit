@@ -20,6 +20,7 @@
 #include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/AbstractItcModel.h"
+#include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
@@ -173,7 +174,7 @@ QString itc_ItoI_Model::AdditionalOutput() const
 QString itc_ItoI_Model::ModelInfo() const
 {
     QString result = AbstractItcModel::ModelInfo();
-    result += BC50::Format_ItoI_BC50(GlobalParameter(0));
+    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
 
     /*
     result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());

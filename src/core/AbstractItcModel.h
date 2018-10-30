@@ -52,9 +52,10 @@ public:
 
     inline virtual void ReleaseLocks() override { m_lock_concentrations = false; }
 
+    /*
     virtual qreal BC50() const { return 0; }
     virtual inline qreal BC50SF() const { return BC50(); }
-
+    */
     virtual qreal PrintOutIndependent(int i) const override;
 
     inline qreal InitialHostConcentration(int i) const { return m_c0->data(1, i); }

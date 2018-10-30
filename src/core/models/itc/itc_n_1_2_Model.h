@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "src/core/bc50.h"
 #include "src/global.h"
 
 #include <QtCore/QObject>
@@ -45,8 +44,9 @@ public:
     virtual QSharedPointer<AbstractModel> Clone() override;
     virtual bool SupportThreads() const override { return false; }
 
-    virtual inline qreal BC50() const override { return BC50::ItoI_BC50(GlobalParameter(0)); }
-    virtual inline qreal BC50SF() const override { return BC50(); }
+    /*
+    virtual inline qreal BC50() const override { return 0; }
+    virtual inline qreal BC50SF() const override { return BC50(); }*/
 
     virtual inline QString GlobalParameterName(int i = 0) const override
     {

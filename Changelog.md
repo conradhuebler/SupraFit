@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- introduce binding concentration descriptor for mixed complexes
 - compare single parameters in reduction analysis
 - latex table snippets for monte carlo analysis
 - add some more comparison to reduction analysis

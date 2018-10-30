@@ -22,6 +22,7 @@
 #include "src/core/models.h"
 
 #include <fisher/fisher_dist.h>
+#include <libpeakpick/libpeakpick/peakpick.h>
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
@@ -96,4 +97,5 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller);
 
 QString printDouble(double number, int prec = -1);
+QString printConcentration(double concentration, int prec = 3);
 }

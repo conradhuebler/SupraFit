@@ -18,6 +18,7 @@
  */
 
 #include "src/core/AbstractItcModel.h"
+#include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"

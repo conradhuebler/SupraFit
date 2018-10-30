@@ -18,6 +18,7 @@
  */
 #include "src/core/models/postprocess/statistic.h"
 
+#include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
@@ -131,7 +132,7 @@ QSharedPointer<AbstractModel> fl_ItoI_Model::Clone()
 QString fl_ItoI_Model::ModelInfo() const
 {
     QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::Format_ItoI_BC50(GlobalParameter(0));
+    result += BC50::ItoI::Format_BC50(GlobalParameter(0));
 
     return result;
 }

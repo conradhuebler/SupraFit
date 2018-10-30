@@ -19,6 +19,7 @@
 
 #include "src/core/models/postprocess/statistic.h"
 
+#include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/models.h"
@@ -188,7 +189,7 @@ QString fl_IItoI_ItoI_Model::ParameterComment(int parameter) const
 QString fl_IItoI_ItoI_Model::ModelInfo() const
 {
     QString result = AbstractTitrationModel::ModelInfo();
-    result += BC50::Format_IItoI_BC50(GlobalParameter(0), GlobalParameter(1));
+    result += BC50::IItoI::Format_BC50(GlobalParameter(0), GlobalParameter(1));
 
     return result;
 }

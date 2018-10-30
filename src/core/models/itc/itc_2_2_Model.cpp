@@ -19,6 +19,7 @@
 #include "src/core/models/postprocess/statistic.h"
 
 #include "src/core/AbstractItcModel.h"
+#include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
@@ -368,7 +369,7 @@ QString itc_IItoII_Model::ParameterComment(int parameter) const
 QString itc_IItoII_Model::ModelInfo() const
 {
     QString result = AbstractItcModel::ModelInfo();
-    result += BC50::Format_IItoII_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2));
+    result += BC50::IItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2));
 
     return result;
 }

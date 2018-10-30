@@ -778,7 +778,7 @@ void ModelDataHolder::OptimizeAll()
 {
     for (int i = 1; i < m_modelsWidget->count(); i++) {
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
-            if(!m_model_widgets[i - 1]->isChecked())
+            if (!m_model_widgets[i - 1]->isChecked())
                 continue;
             ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
             model->GlobalMinimize();
@@ -805,7 +805,7 @@ void ModelDataHolder::CompareReduction()
 
     QVector<QPair<QJsonObject, QVector<int>>> models;
     for (int i = 1; i < m_modelsWidget->count(); i++) {
-        if(!m_model_widgets[i - 1]->isChecked())
+        if (!m_model_widgets[i - 1]->isChecked())
             continue;
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
             ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
@@ -841,7 +841,7 @@ void ModelDataHolder::CompareAIC()
 {
     QVector<QWeakPointer<AbstractModel>> models;
     for (int i = 1; i < m_modelsWidget->count(); i++) {
-        if(!m_model_widgets[i - 1]->isChecked())
+        if (!m_model_widgets[i - 1]->isChecked())
             continue;
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
             ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));

@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "src/core/bc50.h"
 #include "src/global.h"
 
 #include <QtCore/QObject>

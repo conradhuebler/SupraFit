@@ -105,13 +105,12 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             mean_std += stdev;
             mean_corr_std += stdev_corr;
 
-            if(parameters.contains(element["name"].toString()))
-            {
+            if (parameters.contains(element["name"].toString())) {
                 parameters[element["name"].toString()] += stdev;
                 parameters_corr[element["name"].toString()] += stdev_corr;
 
                 parameters_count[element["name"].toString()]++;
-            }else{
+            } else {
                 parameters.insert(element["name"].toString(), stdev);
                 parameters_corr.insert(element["name"].toString(), stdev_corr);
 
@@ -131,8 +130,6 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         mean_std /= double(parameter.size());
         mean_corr_std /= double(parameter.size());
 
-
-
         mean_std_orderd.insert(mean_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
         mean_std_corr_orderd.insert(mean_corr_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
 
@@ -142,10 +139,9 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
 
     QMap<qreal, QString> parameters_orderd, parameters_orderd_corr;
 
-    for(const QString &str : parameters.keys())
-    {
-        parameters_orderd.insert(parameters[str]/double(parameters_count[str]), str);
-        parameters_orderd_corr.insert(parameters_corr[str]/double(parameters_count[str]), str);
+    for (const QString& str : parameters.keys()) {
+        parameters_orderd.insert(parameters[str] / double(parameters_count[str]), str);
+        parameters_orderd_corr.insert(parameters_corr[str] / double(parameters_count[str]), str);
     }
 
     all_partial_std /= double(j);
