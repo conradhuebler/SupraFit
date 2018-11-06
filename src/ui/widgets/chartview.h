@@ -27,6 +27,9 @@
 
 #include <QtCore/QPointer>
 
+#include <QtWidgets/QScrollArea>
+
+class QGridLayout;
 class QPushButton;
 class QChart;
 
@@ -71,7 +74,7 @@ protected:
 private:
 };
 
-class ChartView : public QWidget {
+class ChartView : public QScrollArea {
     Q_OBJECT
 public:
     ChartView(QtCharts::QChart* chart, bool latex_supported = false);
@@ -157,6 +160,8 @@ public slots:
     void setTitle(const QString& str);
 
 private:
+    QWidget* mCentralHolder;
+
     QAction* m_lock_action;
     ChartViewPrivate* m_chart_private;
     QPointer<QtCharts::QChart> m_chart;
@@ -182,6 +187,7 @@ private:
     QPointer<QtCharts::QValueAxis> m_XAxis, m_YAxis;
 
     void ScaleAxis(QPointer<QtCharts::QValueAxis> axis, qreal& min, qreal& max);
+    QGridLayout* mCentralLayout;
 
 private slots:
     void PlotSettings();

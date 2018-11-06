@@ -190,7 +190,7 @@ ChartView::~ChartView()
 void ChartView::setUi()
 {
     m_name = "chart";
-    QGridLayout* layout = new QGridLayout;
+    mCentralLayout = new QGridLayout;
     QMenu* menu = new QMenu(this);
 
     QAction* plotsettings = new QAction(this);
@@ -240,9 +240,12 @@ void ChartView::setUi()
     m_config->setStyleSheet("QPushButton {background-color: #A3C1DA; color: black;}");
     m_config->setMenu(menu);
 
-    layout->addWidget(m_chart_private, 0, 0, 1, 5);
-    layout->addWidget(m_config, 0, 4, Qt::AlignTop);
-    setLayout(layout);
+    mCentralLayout->addWidget(m_chart_private, 0, 0, 1, 5);
+    mCentralLayout->addWidget(m_config, 0, 4, Qt::AlignTop);
+
+    mCentralHolder = new QWidget;
+    mCentralHolder->setLayout(mCentralLayout);
+    setWidget(mCentralHolder);
 
     connect(&m_chartconfigdialog, &ChartConfigDialog::ConfigChanged, this, [this](const ChartConfig& config) {
         this->setChartConfig(config);
@@ -740,10 +743,21 @@ void ChartView::ExportPNG()
     if (str.isEmpty() || str.isNull())
         return;
     setLastDir(str);
+
+    m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+
+    QSize widgetSize = mCentralHolder->size();
+
+    mCentralHolder->resize(450, 450);
+    //hide();
+    //QApplication::processEvents();
+
     Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();
     double scale = qApp->instance()->property("chartScaling").toDouble();
+    scale = 4;
+
     QImage image(QSize(scale * w, scale * h), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
@@ -857,6 +871,8 @@ void ChartView::ExportPNG()
 
     m_XAxis->setLinePen(xPen);
     m_YAxis->setLinePen(yPen);
+    //show();
+    mCentralHolder->resize(widgetSize);
 
     QByteArray itemData;
 
@@ -879,6 +895,7 @@ void ChartView::ConfigurationChanged()
 void ChartView::resizeEvent(QResizeEvent* event)
 {
     event->accept();
+    mCentralHolder->resize(0.99 * size());
     /*
     if(event->size().width() > event->size().height()){
         QWidget::resize(event->size().height(),event->size().height());
