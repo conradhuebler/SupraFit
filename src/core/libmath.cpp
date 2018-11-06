@@ -217,7 +217,7 @@ qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, cons
     for (int i = 0; i < increments - 1; ++i) {
         double x = lower + i / double(increments);
         qreal b = x + delta;
-        integ += (b - x) / 6 * (function(x, parameter) + 4 * function((x + b) / 2, parameter) + function(b, parameter));
+        integ += (b - x) / 6.0 * (function(x, parameter) + 4 * function((x + b) / 2.0, parameter) + function(b, parameter));
     }
     return integ;
 }
@@ -235,7 +235,7 @@ std::vector<double> SimpsonIntegrate(qreal lower, qreal upper, const std::vector
         double x = lower + i / double(increments);
         qreal b = x + delta;
         for (unsigned int k = 0; k < functions.size(); ++k) {
-            integs[k] += (b - x) / 6 * ((*functions[k])(x, parameter) + 4 * (*functions[k])((x + b) / 2, parameter) + (*functions[k])(b, parameter));
+            integs[k] += (b - x) / 6.0 * ((*functions[k])(x, parameter) + 4 * (*functions[k])((x + b) / 2, parameter) + (*functions[k])(b, parameter));
         }
     }
     return integs;

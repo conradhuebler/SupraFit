@@ -703,7 +703,7 @@ void ChartView::WriteTable(const QString& str)
             << "\n";
         out << "\\tikzstyle{every node}=[font=\\footnotesize]"
             << "\n";
-        out << "\\begin{axis}[title={" + m_chart->title() + "}, legend style={at={(1.08,0.9))},anchor=north,legend cell align=left},x tick label style={at={(1,10)},anchor=north},xlabel={\\begin{footnotesize}" + m_x_axis + "\\end{footnotesize}}, xlabel near ticks, ylabel={\\begin{footnotesize}" + m_x_axis + "\\end{footnotesize}},ylabel near ticks]"
+        out << "\\begin{axis}[title={" + m_chart->title() + "}, legend style={at={(1.08,0.9))},anchor=north,legend cell align=left},x tick label style={at={(1,10)},anchor=north},xlabel={\\begin{footnotesize}" + m_x_axis + "\\end{footnotesize}}, xlabel near ticks, ylabel={\\begin{footnotesize}" + m_y_axis + "\\end{footnotesize}},ylabel near ticks]"
             << "\n";
         out << scatter_table.plots;
         out << line_table.plots;
@@ -750,6 +750,21 @@ void ChartView::ExportPNG()
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setRenderHint(QPainter::TextAntialiasing);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+    bool xGrid = m_XAxis->isGridLineVisible();
+    bool yGrid = m_YAxis->isGridLineVisible();
+    m_XAxis->setGridLineVisible(false);
+    m_YAxis->setGridLineVisible(false);
+
+    QPen xPen = m_XAxis->linePen();
+    QPen yPen = m_YAxis->linePen();
+
+    QPen pen = m_XAxis->linePen();
+    pen.setColor(Qt::black);
+    pen.setWidth(2);
+
+    m_XAxis->setLinePen(pen);
+    m_YAxis->setLinePen(pen);
 
     QBrush brush_backup = m_chart->backgroundBrush();
     QBrush brush;
@@ -836,6 +851,12 @@ void ChartView::ExportPNG()
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(size.takeFirst());
         }
     }
+
+    m_XAxis->setGridLineVisible(xGrid);
+    m_YAxis->setGridLineVisible(yGrid);
+
+    m_XAxis->setLinePen(xPen);
+    m_YAxis->setLinePen(yPen);
 
     QByteArray itemData;
 

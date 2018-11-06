@@ -226,9 +226,10 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
 
-        if (!m_fast)
+        if (!m_fast) {
             SetConcentration(i, vector);
-
+            // qDebug() << log10(complex_12/complex_11/guest) << log10(K12) << log10(complex_21/complex_11/host) << log10(K21) << log10(complex_11/host/guest) << log10(K11);
+        }
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
             if (method == "NMR")

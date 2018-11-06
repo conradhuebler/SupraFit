@@ -1,4 +1,4 @@
-/*
+﻿/*
  * <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
@@ -100,16 +100,16 @@ namespace IItoI {
         qreal b21 = qPow(10, logK21 + logK11);
         qreal b11 = qPow(10, logK11);
 
-        /*auto ABfunction = [](qreal A, qreal B, const QVector<qreal> &parameter)->qreal {
+        /*
+        auto ABfunctionA = [](qreal A, qreal B, const QVector<qreal> &parameter)->qreal {
             qreal b11 = parameter[1];
             return b11 * A * B;
-        };*/
-        /*
-        auto A2Bfunction = [](qreal A, qreal B, const QVector<qreal> &parameter)->qreal {
+        };
+
+        auto A2BfunctionA = [](qreal A, qreal B, const QVector<qreal> &parameter)->qreal {
             qreal b21 = parameter[0];
             return b21 * A * A * B;
-        };
-        */
+        };*/
 
         qreal B = 0, AB = 0, A2B = 0, bc50_num = 0;
 
@@ -180,8 +180,11 @@ namespace IItoI {
         A2B = SimpsonIntegrate(0, upper, function, parameter);
 
         function = BCfunction;
+        qreal A = 1 / 2.0 / SimpsonIntegrate(0, upper, function, parameter);
+        result += QString("<p>BC50<sub>0</sub> = %1</p>").arg(Print::printConcentration(A, 3));
 
-        result += QString("<p>BC50<sub>0</sub> = %1</p>").arg(Print::printConcentration(1 / 2.0 / SimpsonIntegrate(0, upper, function, parameter), 3));
+        result += QString("<p>BC(A0)<sub>0</sub> = %1 </p>").arg(Print::printConcentration(A + AB + 2 * A2B, 3));
+        result += QString("<p>BC(B0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B + AB + A2B, 3));
 
         result += QString("<p>BC(B)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B, 3));
         result += QString("<p>BC(AB)<sub>0</sub> = %1</p>").arg(Print::printConcentration(AB));
@@ -302,35 +305,37 @@ namespace ItoII {
         parameter << b11 << b12;
 
         qreal bc50 = 0, bc50_sf = 0;
-
-        auto bc50Function = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
-            const qreal A = pair.first;
-            const qreal B = pair.second;
-            qreal b11 = parameter[0];
-            qreal b12 = parameter[1];
-            return 1.0 / (A + b11 * A * B + b12 * A * B * B);
-        };
-
-        auto ABFunction = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
-            const qreal A = pair.first;
-            const qreal B = pair.second;
-            qreal b11 = parameter[0];
-            return b11 * A * B;
-        };
-
-        auto AB2Function = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
-            const qreal A = pair.first;
-            const qreal B = pair.second;
-            qreal b12 = parameter[1];
-            return b12 * A * B * B;
-        };
-
         qreal lower = 0, upper = 1;
 
         qreal integ = 0, A = 0;
         qreal delta = 1E-5;
         int increments = (upper - lower) / delta;
         qreal B = 0, AB = 0, AB2 = 0, bc50_num = 0;
+
+        {
+            auto bc50Function = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
+                const qreal A = pair.first;
+                const qreal B = pair.second;
+                qreal b11 = parameter[0];
+                qreal b12 = parameter[1];
+                return 1.0 / (A + b11 * A * B + b12 * A * B * B);
+            };
+
+            auto ABFunction = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
+                const qreal A = pair.first;
+                const qreal B = pair.second;
+                qreal b11 = parameter[0];
+                return b11 * A * B;
+            };
+
+            auto AB2Function = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
+                const qreal A = pair.first;
+                const qreal B = pair.second;
+                qreal b12 = parameter[1];
+                return b12 * A * B * B;
+            };
+
+
 #pragma omp parallel for reduction(+ \
                                    : integ, AB, AB2, B, A)
         for (int i = 0; i < increments - 1; ++i) {
@@ -345,13 +350,14 @@ namespace ItoII {
 
             A += (b - x) / 6 * (c.first + 4 * cb.first + d.first);
         }
+        }
         bc50 = 1.0 / 2.0 / integ;
 
         //result += QString("<p>BC50<sub>0</sub> =  %1 %2M ... ").arg(BC50(logK11, logK12) * 1e6).arg(mu);
         //result += QString("BC50<sub>0</sub>(SF) = %1 %2M</p>").arg(ItoI_ItoII_BC50_SF(logK11, logK12) * 1e6).arg(mu);
 
-        delta = 1e-6;
-        upper = 1;
+        //delta = 1e-6;
+        //upper = 1;
         /*
         std::vector< std::function<qreal(qreal, const QVector<qreal>&)> *> functions;
         std::function<qreal(qreal, const QVector<qreal>&)> functionB = BFunction;
@@ -370,7 +376,8 @@ namespace ItoII {
         AB = integs[1];
         AB2 = integs[2];*/
 
-        /*
+        qDebug() << A << B << AB << AB2;
+
         std::function<qreal(qreal, const QVector<qreal>&)> function = BFunction;
         B = SimpsonIntegrate(0, upper, function, parameter, delta);
 
@@ -379,7 +386,14 @@ namespace ItoII {
 
         function = AB2Function;
         AB2 = SimpsonIntegrate(0, upper, function, parameter, delta);
-        */
+
+        function = AFunction;
+        A = SimpsonIntegrate(0, upper, function, parameter, delta);
+
+        qDebug() << A + AB + AB2 << B + AB + 2 * AB2;
+
+        qDebug() << A << B << AB << AB2;
+        qDebug() << AB2 / AB / B << AB / A / B;
 
         //std::cout << BFunction(1, parameter) << " " << ABFunction(1, parameter) << " " << AB2Function(1, parameter) <<std::endl;
 
@@ -388,6 +402,8 @@ namespace ItoII {
         //result += QString("<p>BC50<sub>0</sub> = %1</p>").arg(Print::printConcentration(1/2.0/SimpsonIntegrate(0, upper, function, parameter),3));
 
         result += QString("<p>BC50<sub>0</sub> =  %1 </p> ").arg(Print::printConcentration(bc50, 3));
+        result += QString("<p>BC(A0)<sub>0</sub> = %1 </p>").arg(Print::printConcentration(A + AB + AB2, 3));
+        result += QString("<p>BC(B0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B + AB + 2 * AB2, 3));
         result += QString("<p>BC(A)<sub>0</sub> = %1 </p>").arg(Print::printConcentration(A, 3));
         result += QString("<p>BC(B)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B, 3));
         result += QString("<p>BC(AB)<sub>0</sub> = %1</p>").arg(Print::printConcentration(AB, 3));
@@ -563,12 +579,19 @@ namespace IItoII {
             if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
                 break;
         }
-#ifdef _DEBUG
-        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
-        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
-        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
-        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
-#endif
+        //ifdef _DEBUG
+        qreal AB = b11 * A * B;
+        qreal AB2 = b12 * A * B * B;
+        qreal A2B = b21 * A * A * B;
+        //std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
+        //std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
+        //std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
+        //std::cout << "A0=" << A + AB + AB2 + 2*A2B << " ....... B0=" << A + AB + 2*AB2 + A2B << std::endl;
+
+        //        std::cout << AB2/AB/B << " " << " " << A2B/AB/A << " " << AB/B/A << std::endl;
+        //std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
+        //std::cout << std::endl;
+        //endif
         return QPair<qreal, qreal>(A, B);
     }
 
@@ -599,57 +622,49 @@ namespace IItoII {
         QVector<qreal> parameter;
         parameter << b21 << b11 << b12;
 
-        qreal bc50 = 0, bc50_sf = 0;
-
-        auto bc50Function = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
-            const qreal A = pair.first;
-            const qreal B = pair.second;
-            qreal b21 = parameter[0];
-            qreal b11 = parameter[1];
-            qreal b12 = parameter[2];
-            return 1.0 / (A + b11 * A * B + b12 * A * B * B + 2 * b21 * A * A * B);
-        };
-
-        auto A2BFunction = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
-            const qreal A = pair.first;
-            const qreal B = pair.second;
-            qreal b21 = parameter[0];
-            return b21 * A * A * B;
-        };
-
-        auto ABFunction = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
-            const qreal A = pair.first;
-            const qreal B = pair.second;
-            qreal b11 = parameter[1];
-            return b11 * A * B;
-        };
-
-        auto AB2Function = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
-            const qreal A = pair.first;
-            const qreal B = pair.second;
-            qreal b12 = parameter[2];
-            return b12 * A * B * B;
-        };
+        qreal bc50 = 0;
 
         qreal lower = 0, upper = 0.9999;
 
         qreal integ = 0, A = 0, B = 0, AB = 0, A2B = 0, AB2 = 0;
         qreal delta = 1E-5;
         int increments = (upper - lower) / delta;
-#pragma omp parallel for reduction(+ \
-                                   : integ, AB, AB2, B, A, A2B)
+        //#pragma omp parallel for reduction(+ \
+//                                   : integ, AB, AB2, B, A, A2B)
         for (int i = 0; i < increments - 1; ++i) {
             double x = lower + i / double(increments);
             qreal b = x + delta;
-            QPair<qreal, qreal> c = concentrations_211112(x, parameter), cb = concentrations_211112((x + b) / 2, parameter), d = concentrations_211112(b, parameter);
+            QPair<qreal, qreal> c = concentrations_211112(x, parameter), cb = concentrations_211112((x + b) / 2.0, parameter), d = concentrations_211112(b, parameter);
 
-            integ += (b - x) / 6 * (bc50Function(c, parameter) + 4 * bc50Function(cb, parameter) + bc50Function(d, parameter));
-            A += (b - x) / 6 * (c.first + 4 * cb.first + d.first);
-            B += (b - x) / 6 * (c.second + 4 * cb.second + d.second);
+            //   integ += (b - x) / 6 * (bc50Function(c, parameter) + 4 * bc50Function(cb, parameter) + bc50Function(d, parameter));
+            qreal A_ = (b - x) / 6.0 * (c.first + 4 * cb.first + d.first);
+            qreal B_ = (b - x) / 6.0 * (c.second + 4 * cb.second + d.second);
+            // std::cout << c.first << " " << c.second << " " << A_ << std::endl;
 
+            A += A_;
+            B += B_;
+
+            qreal AB_ = b11 * A_ * B_;
+            qreal AB2_ = b12 * A_ * B_ * B_;
+            qreal A2B_ = b21 * A_ * A_ * B_;
+            /*
+            qreal AB_ = b11*A_*B_;
+            qreal A2B_ = b21*A_*A_*B_;
+            qreal AB2_ = b12*A_*B_*B_;*/
+            /*
             A2B += (b - x) / 6 * (A2BFunction(c, parameter) + 4 * A2BFunction(cb, parameter) + A2BFunction(d, parameter));
             AB += (b - x) / 6 * (ABFunction(c, parameter) + 4 * ABFunction(cb, parameter) + ABFunction(d, parameter));
             AB2 += (b - x) / 6 * (AB2Function(c, parameter) + 4 * AB2Function(cb, parameter) + AB2Function(d, parameter));
+            */
+
+            AB += AB_;
+            A2B += A2B_;
+            AB2 += AB2_;
+            integ += 1 / (A_ + AB_ + AB2_ + 2 * A2B_);
+            //std::cout << AB2/AB/B << " " << " " << A2B/AB/A << " " << AB/B/A << std::endl;
+            // std::cout << "A0(" << x << ")=" << A_ + AB_ + AB2_ + 2*A2B_ << " ... B0(" << x << ")=" << A_ + AB_ + 2*AB2_ + A2B_ << " " << AB2_/AB_/B_ << " " << A2B_/AB_/A_ << " " << AB_/B_/A_  << std::endl;
+
+            //std::cout << log10(AB2/AB/B) << " " << logK12 << " " << log10(A2B/AB/A) << " " << logK21 << " " << log10(AB/B/A) << " " << logK11 << std::endl;
         }
         bc50 = 1.0 / 2.0 / integ;
 

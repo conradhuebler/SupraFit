@@ -906,13 +906,13 @@ QString printConcentration(double concentration, int prec)
 {
     QString result;
 
-    if (concentration < 1e-3)
-        result = QString("%1 %2M").arg(concentration * 1e6, prec).arg(QChar(956));
-    else if (concentration < 1e-1)
+    // if (concentration < 1e-3)
+    result = QString("%1 %2M").arg(concentration * 1e6, prec).arg(QChar(956));
+    /* else if (concentration < 1e-1)
         result = QString("%1 mM").arg(concentration * 1e3, prec);
     else
         result = QString("%1 M").arg(concentration, prec);
-
+    */
     return result;
 }
 }
