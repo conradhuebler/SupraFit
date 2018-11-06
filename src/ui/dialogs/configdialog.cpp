@@ -239,6 +239,26 @@ void ConfigDialog::createChartTab()
     hbox->addWidget(m_markerSize);
     layout->addLayout(hbox);
 
+    m_XScale = new QSpinBox;
+    m_XScale->setMinimum(0);
+    m_XScale->setMaximum(1e5);
+    m_XScale->setValue(qApp->instance()->property("xSize").toInt());
+
+    m_YScale = new QSpinBox;
+    m_YScale->setMinimum(0);
+    m_YScale->setMaximum(1e5);
+    m_YScale->setValue(qApp->instance()->property("ySize").toInt());
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel(tr("Size of Chart x-Axis :")));
+    hbox->addWidget(m_XScale);
+    layout->addLayout(hbox);
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel(tr("Size of Chart y-Axis :")));
+    hbox->addWidget(m_YScale);
+    layout->addLayout(hbox);
+
     m_chartScaling = new QDoubleSpinBox;
     m_chartScaling->setMinimum(0);
     m_chartScaling->setMaximum(30);
@@ -257,6 +277,16 @@ void ConfigDialog::createChartTab()
     m_cropedChart = new QCheckBox;
     m_cropedChart->setText(tr("Remove Transparent Border from Charts"));
     m_cropedChart->setChecked(qApp->instance()->property("cropedChart").toBool());
+
+    m_RemoveGrid = new QCheckBox;
+    m_RemoveGrid->setText(tr("Remove Grid in exported Charts"));
+    m_RemoveGrid->setChecked(qApp->instance()->property("noGrid").toBool());
+    layout->addWidget(m_RemoveGrid);
+
+    m_EmphAxis = new QCheckBox;
+    m_EmphAxis->setText(tr("Stronger Axis"));
+    m_EmphAxis->setChecked(qApp->instance()->property("empAxis").toBool());
+    layout->addWidget(m_EmphAxis);
 
     layout->addWidget(m_cropedChart);
 
@@ -296,9 +326,13 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("save_on_exit", m_save_on_exit->isChecked());
     qApp->instance()->setProperty("tooltips", m_tooltips->isChecked());
     qApp->instance()->setProperty("markerSize", m_markerSize->value());
-    qApp->instance()->setProperty("chartScaling", m_chartScaling->value());
+    qApp->instance()->setProperty("xSize", m_XScale->value());
+    qApp->instance()->setProperty("ySize", m_YScale->value());
     qApp->instance()->setProperty("transparentChart", m_transparentChart->isChecked());
     qApp->instance()->setProperty("cropedChart", m_cropedChart->isChecked());
+    qApp->instance()->setProperty("noGrid", m_RemoveGrid->isChecked());
+    qApp->instance()->setProperty("empAxis", m_EmphAxis->isChecked());
+    qApp->instance()->setProperty("chartScaling", m_chartScaling->value());
 
     QDialog::accept();
 }

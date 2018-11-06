@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- variable chart size (x and y) on export, stronger axis, optional grid
 - introduce binding concentration descriptor for mixed complexes
 - compare single parameters in reduction analysis
 - latex table snippets for monte carlo analysis

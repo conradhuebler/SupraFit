@@ -1037,6 +1037,18 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("cropedChart") == QVariant())
         qApp->instance()->setProperty("cropedChart", true);
+
+    if (qApp->instance()->property("noGrid") == QVariant())
+        qApp->instance()->setProperty("noGrid", true);
+
+    if (qApp->instance()->property("empAxis") == QVariant())
+        qApp->instance()->setProperty("empAxis", true);
+
+    if (qApp->instance()->property("xSize") == QVariant())
+        qApp->instance()->setProperty("xSize", 600);
+
+    if (qApp->instance()->property("ySize") == QVariant())
+        qApp->instance()->setProperty("ySize", 600);
 }
 
 void SupraFitGui::ReadGeometry()

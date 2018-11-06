@@ -213,6 +213,10 @@ private:
                                                    << "markerSize"
                                                    << "transparentChart"
                                                    << "cropedChart"
+                                                   << "noGrid"
+                                                   << "empAxis"
+                                                   << "xSize"
+                                                   << "ySize"
                                                    << "chartScaling";
 
     QPointer<Instance> m_instance;

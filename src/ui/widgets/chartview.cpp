@@ -523,7 +523,7 @@ void ChartView::WriteSettings(const ChartConfig& chartconfig)
     _settings.setValue("labels", chartconfig.m_label);
     _settings.setValue("ticks", chartconfig.m_ticks);
     _settings.setValue("title", chartconfig.m_title);
-    _settings.setValue("legend  ", chartconfig.m_keys);
+    _settings.setValue("legend", chartconfig.m_keys);
     _settings.endGroup();
 }
 
@@ -746,17 +746,18 @@ void ChartView::ExportPNG()
 
     m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
 
+    // first cache the original size, within SupraFit
     QSize widgetSize = mCentralHolder->size();
 
-    mCentralHolder->resize(450, 450);
-    //hide();
-    //QApplication::processEvents();
+    // and resize as set in settings
+    mCentralHolder->resize(qApp->instance()->property("xSize").toInt(), qApp->instance()->property("ySize").toInt());
 
     Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();
+
+    // scaling is important for good resolution
     double scale = qApp->instance()->property("chartScaling").toDouble();
-    scale = 4;
 
     QImage image(QSize(scale * w, scale * h), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
@@ -767,8 +768,12 @@ void ChartView::ExportPNG()
 
     bool xGrid = m_XAxis->isGridLineVisible();
     bool yGrid = m_YAxis->isGridLineVisible();
-    m_XAxis->setGridLineVisible(false);
-    m_YAxis->setGridLineVisible(false);
+
+    // hide grid lines
+    if (qApp->instance()->property("noGrid").toBool() == true) {
+        m_XAxis->setGridLineVisible(false);
+        m_YAxis->setGridLineVisible(false);
+    }
 
     QPen xPen = m_XAxis->linePen();
     QPen yPen = m_YAxis->linePen();
@@ -777,14 +782,20 @@ void ChartView::ExportPNG()
     pen.setColor(Qt::black);
     pen.setWidth(2);
 
-    m_XAxis->setLinePen(pen);
-    m_YAxis->setLinePen(pen);
-
+    // make axis stronger
+    if (qApp->instance()->property("empAxis").toBool() == true) {
+        m_XAxis->setLinePen(pen);
+        m_YAxis->setLinePen(pen);
+    }
     QBrush brush_backup = m_chart->backgroundBrush();
     QBrush brush;
     brush.setColor(Qt::transparent);
+
+    // remove background of chart
     if (qApp->instance()->property("transparentChart").toBool() == true)
         m_chart->setBackgroundBrush(brush);
+
+    // cache all individual series size and border colors and remove border colors and resize series
 
     QList<QColor> colors;
     QList<int> size;
@@ -796,6 +807,8 @@ void ChartView::ExportPNG()
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(qApp->instance()->property("markerSize").toDouble());
         }
     }
+
+    // do the painting!!
 
     m_chart->scene()->render(&painter, QRectF(0, 0, scale * w, scale * h), m_chart->rect());
 
@@ -831,6 +844,8 @@ void ChartView::ExportPNG()
 
     QPixmap pixmap;
 
+    // remove transparent border of resulting image
+
     if (qApp->instance()->property("cropedChart").toBool() == true) {
 #warning stupid things
         /* dont unterstand that in particular, but it works somehow, and it is not to slow */
@@ -840,25 +855,10 @@ void ChartView::ExportPNG()
     } else
         pixmap = QPixmap::fromImage(image);
 
-    /*
-    if(qApp->instance()->property("transparentChart").toBool() == false)
-    {
-             int x, y;
-             for(x = 0; x <= mirrored.width() - 1; x++)
-             {
-                 for(y = 0; y <= mirrored.height() - 1; y++)
-                 {
-                     qDebug() << QColor(mirrored.pixel(x, y)).rgba64().isTransparent() << QColor(0,0,0,1);
-                     if(QColor(mirrored.pixel(x, y)) == QColor(0,0,0,1)) //::transparent) //mFColor is
-                     {                                               //Foregournd
-                         mirrored.setPixel(x, y, Qt::white);       //Ccolor.
-                     }
-                 }
-             }
-    }*/
-
+    // restore background brush
     m_chart->setBackgroundBrush(brush_backup);
 
+    // restore series colors and size
     for (QtCharts::QAbstractSeries* serie : m_chart->series()) {
         if (qobject_cast<QtCharts::QScatterSeries*>(serie)) {
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(colors.takeFirst());
@@ -866,14 +866,18 @@ void ChartView::ExportPNG()
         }
     }
 
+    // bring back the grids
     m_XAxis->setGridLineVisible(xGrid);
     m_YAxis->setGridLineVisible(yGrid);
 
+    // bring back the old and weak axis
     m_XAxis->setLinePen(xPen);
     m_YAxis->setLinePen(yPen);
-    //show();
+
+    // restore old size
     mCentralHolder->resize(widgetSize);
 
+    // and nothing ever happens -> Lemon Tree
     QByteArray itemData;
 
     QFile file(str);

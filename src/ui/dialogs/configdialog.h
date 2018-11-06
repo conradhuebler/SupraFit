@@ -62,7 +62,7 @@ public:
 
 private:
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
-    QSpinBox* m_threads;
+    QSpinBox *m_threads, *m_XScale, *m_YScale, *m_FontSize;
     QDoubleSpinBox *m_p_value, *m_markerSize, *m_chartScaling;
     QCheckBox *m_transparentChart, *m_cropedChart;
     QLineEdit* m_working;
@@ -70,7 +70,7 @@ private:
     QTabWidget* m_mainwidget;
     QDialogButtonBox* m_buttons;
     QComboBox* m_charttheme;
-    QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit, *m_series_confidence;
+    QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit, *m_series_confidence, *m_RemoveGrid, *m_EmphAxis;
 
     void setUi();
     void createGeneralTab();
