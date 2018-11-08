@@ -314,11 +314,20 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
     }
     connect(series, &QtCharts::QAbstractSeries::nameChanged, series, [this, series]() {
         if (series) {
-            bool show = series->name().isEmpty() || series->name().isNull() || series->name().simplified() == QString(" ");
+#warning this can be compressed due to logic gatters
+            bool show = series->name().isEmpty() || series->name().isNull() || series->name() == QString(" ");
             this->m_chart->legend()->markers(series).first()->setVisible(!show);
         }
     });
-    m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty());
+    connect(series, &QtCharts::QAbstractSeries::visibleChanged, series, [this, series]() {
+        if (series) {
+#warning this can be compressed due to logic gatters
+            bool show = series->name().isEmpty() || series->name().isNull() || series->name() == QString(" ");
+            if (series->isVisible())
+                this->m_chart->legend()->markers(series).first()->setVisible(!show);
+        }
+    });
+    m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty() || series->name().isNull() || series->name() == QString(" "));
     connect(series, SIGNAL(visibleChanged()), this, SLOT(forceformatAxis()));
     if (!connected)
         if (connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))

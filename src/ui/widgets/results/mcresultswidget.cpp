@@ -183,19 +183,20 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         current_constant->setDashDotLine(true);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
-        current_constant->setName(name);
+        current_constant->setName(" ");
         view->addSeries(current_constant, i, xy_series->color(), name, false);
 
         QJsonObject confidenceObject = data["confidence"].toObject();
         if (view) {
             QtCharts::QAreaSeries* area_series = AreaSeries(xy_series->color());
             view->addSeries(area_series, i, area_series->color(), name);
+            area_series->setName(" ");
             m_area_series << area_series;
         }
         m_colors << xy_series->color();
     }
 
-    view->setTitle(QString("Monte Carlo Simulation (Histogram) for %1").arg(m_data["controller"].toObject()["title"].toString()));
+    view->setTitle(QString("Histogram for %1").arg(m_data["controller"].toObject()["title"].toString()));
 
     return view;
 }
@@ -274,7 +275,7 @@ void MCResultsWidget::UpdateBoxes()
 
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
-            area_series->setName(m_model.data()->GlobalParameterName(i));
+            area_series->setName(" ");
 #warning why is this always a global parameter?
         }
     }
