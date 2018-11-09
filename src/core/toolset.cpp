@@ -804,6 +804,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
             color_start = "<font color='red'>";
             color_end = "</font>";
         }
+        QVector<qreal> x = ToolSet::String2DoubleVec(result["data"].toObject()["x"].toString());
+        QVector<qreal> y = ToolSet::String2DoubleVec(result["data"].toObject()["y"].toString());
+        qreal integral = DiscreteIntegrate(x, y);
+        text += QString("<tr><td>Integral below curve:</td><td> %1 <b></td></tr>\n").arg(Print::printDouble(integral)); //.arg( result["steps"].toInt() ).arg(color_end);
 
         text += "<tr><td colspan='2'>Analyse of the Grid Search Outcome</td></tr>\n";
         text += QString("<tr><td>%1 Steps: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( result["steps"].toInt() ).arg(color_end);

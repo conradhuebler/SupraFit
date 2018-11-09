@@ -575,11 +575,11 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const { return QString(); }
+    virtual QString XLabel() const override { return QString(); }
 
     /*! \brief Define the y axis for charts
      */
-    virtual QString YLabel() const { return QString(); }
+    virtual QString YLabel() const override { return QString(); }
 
     virtual inline int MaxParameter() { return GlobalParameterSize() + LocalParameterSize(); }
 

@@ -1,5 +1,7 @@
 # SupraFit 2.0 pre-Alpha
 
+- grid search integral below error curve
+- one more latex snippet (regression analysis) + some adaptions
 - variable chart size (x and y) on export, stronger axis, optional grid
 - introduce binding concentration descriptor for mixed complexes
 - compare single parameters in reduction analysis

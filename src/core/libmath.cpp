@@ -240,3 +240,19 @@ std::vector<double> SimpsonIntegrate(qreal lower, qreal upper, const std::vector
     }
     return integs;
 }
+
+qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y)
+{
+    qreal integral = 0;
+
+    std::vector<double> _x;
+    std::vector<double> _y;
+
+    for (int i = 0; i < x.size(); ++i) {
+        _x.push_back(x[i]);
+        _y.push_back(y[i]);
+    }
+    integral = PeakPick::IntegrateNumerical(_x, _y);
+
+    return integral;
+}

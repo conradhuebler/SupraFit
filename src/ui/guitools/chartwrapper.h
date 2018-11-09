@@ -139,6 +139,10 @@ public:
 
     static QColor ColorCode(int i);
 
+    inline QString XLabel() const { return m_working.data()->XLabel(); }
+
+    inline QString YLabel() const { return m_working.data()->YLabel(); }
+
 public slots:
     void UpdateModel();
     void MakeSeries();

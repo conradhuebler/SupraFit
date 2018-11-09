@@ -105,9 +105,12 @@ void RegressionAnalysisDialog::UpdatePlots()
     for (int i = 0; i < m_series.size(); ++i) {
         m_chart->addSeries(m_series[i], i, m_series[i]->color(), Print::printDouble(i + 1));
         m_series[i]->setBorderColor(m_series[i]->color());
-        m_series[i]->setMarkerSize(1);
+        m_series[i]->setMarkerSize(4);
     }
     m_functions->setRange(1, m_series.first()->points().size() / 2);
+    m_chart->setXAxis(m_wrapper.data()->XLabel());
+    m_chart->setYAxis(m_wrapper.data()->YLabel());
+
     // TestPeaks();
 }
 
@@ -229,23 +232,29 @@ void RegressionAnalysisDialog::LoadRegression(int index)
     }
 
     for (int i = 0; i < m_series.size(); ++i) {
-
+        QString latex = QString::number(i + 1) + "&";
+        QString intersec = QString();
         PeakPick::MultiRegression regression = m_result[i].value(m_result[i].keys()[index]);
         output += "<h4>Series " + Print::printDouble(i + 1) + "</h4>";
+        //qDebug() << regression.start;
         for (unsigned int m = 0; m < regression.regressions.size(); ++m) {
             QtCharts::QLineSeries* series = m_chart->addLinearSeries(regression.regressions[m].m, regression.regressions[m].n, x[regression.start[2 * m - m]], x[regression.start[2 * m + regression.regressions.size() - m]], i);
             series->setColor(m_series[i]->color());
             m_linear_series.insert(i, series);
             output += "<p>y(" + QString::number(m) + ") = " + Print::printDouble(regression.regressions[m].m) + "x + " + Print::printDouble(regression.regressions[m].n) + " ( R<sup>2</sup>=" + Print::printDouble(regression.regressions[m].R) + ", SSE = " + Print::printDouble(regression.regressions[m].sum_err) + ")</ p>";
-            output += "<p> x<sub>0</sub> = " + Print::printDouble((0 - regression.regressions[m].n) / (regression.regressions[m].m)) + "<p>";
+            output += QString("<p> x<sub>0</sub> = %1 Points: %2 ... %3</p>").arg(Print::printDouble((0 - regression.regressions[m].n) / (regression.regressions[m].m))).arg(regression.start[2 * m] + 1).arg(regression.start[2 * m + 1] + 1); //" + Print::printDouble((0 - regression.regressions[m].n) / (regression.regressions[m].m)) + "<p>";
+            latex += QString("%1x +%2 & %3 & %4 & %5...%6&").arg(Print::printDouble(regression.regressions[m].m, 3)).arg(Print::printDouble(regression.regressions[m].n, 3)).arg(Print::printDouble(regression.regressions[m].R, 3)).arg(Print::printDouble(regression.regressions[m].sum_err)).arg(regression.start[2 * m] + 1).arg(regression.start[2 * m + 1] + 1);
+            //output += QString("<p>Points from %1 to %2</p>").arg(regression.start[2*m] + 1).arg(regression.start[2*m+1] + 1);
             if (regression.regressions.size() >= 2 && m < regression.regressions.size() - 1) {
                 qreal x = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
                 qreal y = regression.regressions[m + 1].m * x + regression.regressions[m + 1].n;
-                output += "<p>Intersection of function " + Print::printDouble(m) + " and function " + Print::printDouble(m + 1) + " at (<font color='red'>" + Print::printDouble(x) + "," + Print::printDouble(y) + "</font>)</p>";
+                output += "<p>Intersection of function " + Print::printDouble(m) + " and function " + Print::printDouble(m + 1) + " at (<font color='red'>" + Print::printDouble(x) + ";" + Print::printDouble(y) + "</font>)</p>";
+                intersec += QString("(%1;%2)").arg(Print::printDouble(x, 3)).arg(Print::printDouble(y, 3));
             }
         }
         if (regression.regressions.size() != 1)
             output += "<p>Sum of SSE for all function = " + Print::printDouble(regression.sum_err) + "<p>";
+        output += QString("<p>%1 %2 \\\\</p>").arg(latex).arg(intersec);
     }
     m_output->append(output);
 }

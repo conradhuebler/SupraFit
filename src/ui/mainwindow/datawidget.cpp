@@ -132,9 +132,13 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));
     m_signals_count->setText(tr("<html><h4>Columns of dependent variables: %1</h4><html>").arg(m_data.data()->SeriesCount()));
 
+    dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+    dialog->UpdatePlots();
+
     QVBoxLayout* vlayout = new QVBoxLayout;
     for (int i = 0; i < m_wrapper.data()->SeriesSize(); ++i) {
         QPointer<SignalElement> el = new SignalElement(m_data, m_wrapper, i, this);
+        connect(m_wrapper.data()->Series(i), &QtCharts::QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
         vlayout->addWidget(el);
         m_signal_elements << el;
     }
@@ -164,8 +168,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         if (m_data.data()->IndependentVariableSize() == 1)
             m_switch->hide();
         m_splitter->addWidget(m_tables);
-        dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
-        dialog->UpdatePlots();
+
         QSettings settings;
         settings.beginGroup("overview");
         m_splitter->restoreState(settings.value("splitterSizes").toByteArray());

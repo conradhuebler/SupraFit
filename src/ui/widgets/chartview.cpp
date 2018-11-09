@@ -813,7 +813,8 @@ void ChartView::ExportPNG()
             colors << qobject_cast<QtCharts::QScatterSeries*>(serie)->borderColor();
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(Qt::transparent);
             size << qobject_cast<QtCharts::QScatterSeries*>(serie)->markerSize();
-            qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(qApp->instance()->property("markerSize").toDouble());
+            if (qobject_cast<QtCharts::QScatterSeries*>(serie)->markerSize() > qApp->instance()->property("markerSize").toDouble())
+                qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(qApp->instance()->property("markerSize").toDouble());
         }
     }
 

@@ -46,6 +46,7 @@ QMap<qreal, PeakPick::MultiRegression> LeastSquares(const QVector<qreal>& x, con
 qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter, qreal delta = 1e-4);
 std::vector<qreal> SimpsonIntegrate(qreal lower, qreal upper, const std::vector<std::function<qreal(qreal, const QVector<qreal>)>*>& functions, const QVector<qreal>& parameter, qreal delta = 1e-4);
 
+qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y);
 qreal Stddev(const QVector<qreal>& vector, int end = 0, double average = 0);
 
 namespace Cubic {

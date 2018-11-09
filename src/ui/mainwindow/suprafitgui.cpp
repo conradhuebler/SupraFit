@@ -916,6 +916,7 @@ bool SupraFitGui::LoadProject(const QString& filename)
 void SupraFitGui::SaveProjectAction()
 {
 
+    Waiter wait;
     if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
         QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
         if (str.isEmpty())

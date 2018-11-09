@@ -378,6 +378,14 @@ public:
 
     virtual inline QPointer<DataClass> Children(int i) { return d->m_children[i]; }
 
+    /*! \brief Define the x axis label for charts
+     */
+    virtual QString XLabel() const { return QString("X"); }
+
+    /*! \brief Define the y axis for charts
+     */
+    virtual QString YLabel() const { return QString("Y"); }
+
 private:
     QMutex m_lock;
 
