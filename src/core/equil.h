@@ -17,6 +17,8 @@
  *
  */
 
+#pragma once
+
 #include "libmath.h"
 
 #include <QtCore/QObject>
