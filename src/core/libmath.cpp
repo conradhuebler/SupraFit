@@ -243,6 +243,9 @@ std::vector<double> SimpsonIntegrate(qreal lower, qreal upper, const std::vector
 
 qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y)
 {
+    if (x.size() == 0 || x.size() != y.size())
+        return 0;
+
     qreal integral = 0;
 
     std::vector<double> _x;
@@ -252,6 +255,7 @@ qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y)
         _x.push_back(x[i]);
         _y.push_back(y[i]);
     }
+
     integral = PeakPick::IntegrateNumerical(_x, _y);
 
     return integral;

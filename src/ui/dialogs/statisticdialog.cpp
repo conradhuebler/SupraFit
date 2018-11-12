@@ -248,6 +248,8 @@ QWidget* StatisticDialog::MonteCarloWidget()
 
 QWidget* StatisticDialog::GridSearchWidget()
 {
+    WGSConfig config;
+
     QWidget* cv_widget = new QWidget;
     QVBoxLayout* layout = new QVBoxLayout;
 
@@ -317,36 +319,71 @@ QWidget* StatisticDialog::GridSearchWidget()
         layout->addWidget(m_cv_error_info);
     }
 
+    /*
     m_cv_increment = new QDoubleSpinBox;
     m_cv_increment->setDecimals(6);
     m_cv_increment->setValue(0);
     m_cv_increment->setSingleStep(1e-3);
+    */
+
+    m_gridScalingFactor = new QSpinBox;
+    m_gridScalingFactor->setMinimum(-10);
+    m_gridScalingFactor->setMaximum(10);
+    m_gridScalingFactor->setValue(config.ScalingFactor);
 
     hlayout = new QHBoxLayout;
-    hlayout->addWidget(new QLabel(tr("Increment per Step:")));
-    hlayout->addWidget(m_cv_increment);
-
-    layout->addLayout(hlayout);
+    hlayout->addWidget(new QLabel(tr("Scaling Factor for Single Steps:")));
+    hlayout->addWidget(m_gridScalingFactor);
 
     m_cv_steps = new QSpinBox;
     m_cv_steps->setMaximum(1e7);
     m_cv_steps->setValue(2e3);
     m_cv_steps->setSingleStep(100);
 
-    hlayout = new QHBoxLayout;
-
     hlayout->addWidget(new QLabel(tr("Maximal steps:")));
     hlayout->addWidget(m_cv_steps);
+
+    layout->addLayout(hlayout);
+
+    hlayout = new QHBoxLayout;
 
     m_cv_err_conv = new ScientificBox;
     m_cv_err_conv->setDecimals(10);
     m_cv_err_conv->setValue(1E-9);
     m_cv_err_conv->setSingleStep(1e-9);
 
+    m_gridErrorConvergencyCounter = new QSpinBox;
+    m_gridErrorConvergencyCounter->setRange(1, 1e8);
+    m_gridErrorConvergencyCounter->setSingleStep(10);
+    m_gridErrorConvergencyCounter->setValue(config.ErrorConvergencyCounter);
+
     hlayout->addWidget(new QLabel(tr("Error Convergence:")));
     hlayout->addWidget(m_cv_err_conv);
+    hlayout->addWidget(new QLabel(tr("Error Convergency MaxCounter")));
+    hlayout->addWidget(m_gridErrorConvergencyCounter);
 
     layout->addLayout(hlayout);
+
+    hlayout = new QHBoxLayout;
+
+    m_gridOvershotCounter = new QSpinBox;
+    m_gridOvershotCounter->setRange(1, 1e8);
+    m_gridOvershotCounter->setSingleStep(10);
+    m_gridOvershotCounter->setValue(config.OvershotCounter);
+
+    m_gridErrorDecreaseCounter = new QSpinBox;
+    m_gridErrorDecreaseCounter->setRange(1, 1e8);
+    m_gridErrorDecreaseCounter->setSingleStep(10);
+    m_gridErrorDecreaseCounter->setValue(config.ErrorDecreaseCounter);
+
+    hlayout->addWidget(new QLabel(tr("SSE Max Overshot:")));
+    hlayout->addWidget(m_gridOvershotCounter);
+    hlayout->addWidget(new QLabel(tr("SSE Max Undercut:")));
+    hlayout->addWidget(m_gridErrorDecreaseCounter);
+
+    layout->addLayout(hlayout);
+
+    hlayout = new QHBoxLayout;
 
     m_cv = new QPushButton(tr("Calculate"));
     layout->addWidget(m_cv);
@@ -483,14 +520,20 @@ QWidget* StatisticDialog::CVWidget()
 WGSConfig StatisticDialog::getWGSConfig()
 {
     WGSConfig config;
-    config.increment = m_cv_increment->value();
+    //config.increment = m_cv_increment->value();
     config.maxsteps = m_cv_steps->value();
     config.maxerror = m_cv_max;
     config.relax = true;
     config.fisher_statistic = m_cv_f_test->isChecked();
     config.confidence = m_cv_maxerror->value();
     config.f_value = m_cv_f_value->value();
-    config.error_conv = m_cv_err_conv->value();
+
+    config.ErrorConvergency = m_cv_err_conv->value();
+    config.ErrorConvergencyCounter = m_gridErrorConvergencyCounter->value();
+    config.ErrorDecreaseCounter = m_gridErrorDecreaseCounter->value();
+    config.OvershotCounter = m_gridOvershotCounter->value();
+    config.ScalingFactor = m_gridScalingFactor->value();
+
     config.intermediate = m_store_wgsearch->isChecked();
 
     QList<int> glob_param, local_param;

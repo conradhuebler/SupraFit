@@ -33,14 +33,44 @@ class QPointF;
 
 class WGSConfig : public AbstractConfig {
 public:
+    /* Step length for numerical evaluation */
     qreal increment = 0;
+
+    /* Maximal number of steps to be evaluated */
     int maxsteps = 1e3;
+
+    /* SSE threshold defined by f-Statistics */
     qreal maxerror = 0;
+
+    /* Confidence in % */
     qreal confidence = 95;
+
+    /* Corresponding f Value */
     qreal f_value = 0;
-    qreal error_conv = 1e-10;
+
+    /* Threshold for convergency in SSE */
+    qreal ErrorConvergency = 1e-10;
+
+    /* Maximal steps which are allowed to be above the SSE threshold, while continueing the evaluation */
+    int OvershotCounter = 5;
+
+    /* Maximal number of steps, where the error is allowed to decrease, analyse not-converged systems, flat surfaces */
+    int ErrorDecreaseCounter = 50;
+
+    /* Amount for all error changes below the threshold error_conv, while keeping the evaluation running */
+    int ErrorConvergencyCounter = 5;
+
+    /* Set scaling factor single step size */
+    /* The factor determines the step length as follows:
+     * delta = 10^(ceil(log10(parameter) + (-4) ))
+     * this ensures correct scaling and always something like 10^(N)
+     */
+    int ScalingFactor = -4;
+
     bool relax = true;
     bool fisher_statistic = false;
+
+    /* Store intermediate results, may result in large json blocks */
     bool intermediate = false;
     QList<int> global_param, local_param;
 };

@@ -65,13 +65,13 @@ void WGSearchThread::run()
 
 void WGSearchThread::Calculate()
 {
-    double increment;
     bool interrupt = false;
+    /*
     if (m_config.increment == 0)
         increment = m_increment;
     else
         increment = m_config.increment;
-
+    */
     QList<int> locked = m_model->LockedParameters();
     QVector<qreal> param = m_model->OptimizeParameters();
 
@@ -79,13 +79,16 @@ void WGSearchThread::Calculate()
 
     qreal error = m_error;
     m_steps = 0;
-    int lowcount = 0, upcount = 0;
+    int ErrorDecreaseCounter = 0, OvershotCounter = 0;
     double value = param[m_index];
+
+    double increment = qPow(10, ceil(log10(qAbs(value))) + m_config.ScalingFactor);
+
     m_last = value;
     NonLinearFitThread* thread = new NonLinearFitThread(false);
 
-    int error_conv = 0;
-    while (m_steps < m_config.maxsteps && lowcount < 50 && upcount < 5 && error_conv < 10) {
+    int ErrorConvergencyCounter = 0;
+    while (m_steps < m_config.maxsteps && ErrorDecreaseCounter < m_config.ErrorDecreaseCounter && OvershotCounter < m_config.OvershotCounter && ErrorConvergencyCounter < m_config.ErrorConvergencyCounter) {
 
         m_steps++;
 
@@ -112,7 +115,7 @@ void WGSearchThread::Calculate()
         if (new_error > m_config.maxerror) {
             //m_finished = new_error > m_config.maxerror;
             //m_stationary = qAbs(new_error - error) < m_config.error_conv;
-            upcount++;
+            OvershotCounter++;
         } else {
             m_models << model;
             m_last = value;
@@ -128,12 +131,12 @@ void WGSearchThread::Calculate()
 
 
         if (new_error < m_error)
-            lowcount++;
+            ErrorDecreaseCounter++;
 
         //qDebug() << qAbs(new_error - error) << m_steps;
 
-        if(qAbs(new_error - error) < m_config.error_conv)
-            error_conv++;
+        if (qAbs(new_error - error) < m_config.ErrorConvergency)
+            ErrorConvergencyCounter++;
 
         error = new_error;
         if (m_interrupt)
@@ -147,8 +150,9 @@ void WGSearchThread::Calculate()
     else
         m_finished = m_steps < m_config.maxsteps;
 
-    m_converged = lowcount < 50;
-    m_stationary = error_conv >= 10;
+    m_converged = ErrorDecreaseCounter < m_config.ErrorDecreaseCounter;
+    m_stationary = ErrorConvergencyCounter > m_config.ErrorConvergencyCounter;
+
     delete thread;
 }
 
@@ -169,7 +173,7 @@ QPointer<WGSearchThread> WeakenedGridSearch::CreateThread(int index, bool direct
     connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
     thread->setModel(m_model);
     thread->setParameterId(index);
-    thread->setIncrement(qAbs(m_model->OptimizeParameters()[index] * 1e-4));
+    //thread->setIncrement(qAbs(m_model->OptimizeParameters()[index] * 1e-4));
     if (!direction)
         thread->setDown();
 
@@ -292,7 +296,10 @@ QJsonObject WeakenedGridSearch::Controller() const
     controller["fisher"] = m_config.fisher_statistic;
     controller["f-value"] = m_config.f_value;
     controller["method"] = SupraFit::Statistic::WeakenedGridSearch;
-
+    controller["ErrorConvergency"] = m_config.ErrorConvergency;
+    controller["OverShotCounter"] = m_config.OvershotCounter;
+    controller["ErrorDecreaseCounter"] = m_config.ErrorDecreaseCounter;
+    controller["ErrorConvergencyCounter"] = m_config.ErrorConvergencyCounter;
     return controller;
 }
 
