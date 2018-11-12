@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- more tweaks for Grid Search method
 - grid search integral below error curve
 - one more latex snippet (regression analysis) + some adaptions
 - variable chart size (x and y) on export, stronger axis, optional grid
