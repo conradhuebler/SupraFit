@@ -212,6 +212,8 @@ qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, cons
 {
     qreal integ = 0;
     int increments = (upper - lower) / delta;
+
+    omp_set_num_threads(qApp->instance()->property("threads").toInt());
 #pragma omp parallel for reduction(+ \
                                    : integ)
     for (int i = 0; i < increments - 1; ++i) {
@@ -229,6 +231,7 @@ std::vector<double> SimpsonIntegrate(qreal lower, qreal upper, const std::vector
         integs.push_back(0);
 
     int increments = (upper - lower) / delta;
+    omp_set_num_threads(qApp->instance()->property("threads").toInt());
 #pragma omp parallel for reduction(vec_double_plus \
                                    : integs)
     for (int i = 0; i < increments - 1; ++i) {

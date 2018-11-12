@@ -62,6 +62,19 @@ namespace IItoI {
         return alpha / (b11 + 2.0 * b21 * A);
     }
 
+    inline qreal A0Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b21 = parameter[0];
+        qreal b11 = parameter[1];
+        qreal A = -b11 / b21 / 2.0 + sqrt(qPow(b11 / 2.0 / b21, 2) + 1 / b21);
+        qreal alpha = x / (1 - x);
+
+        qreal B = alpha / (b11 + 2.0 * b21 * A);
+        //std::cout << x << " " << B << std::endl;
+
+        return A + b11 * A * B + 2 * b21 * A * A * B;
+    }
+
     inline qreal ABfunction(qreal x, const QVector<qreal>& parameter)
     {
         qreal B = BFunction(x, parameter);
@@ -185,6 +198,10 @@ namespace IItoI {
         result += QString("<p>BC50<sub>0</sub> = %1</p>").arg(Print::printConcentration(A, 3));
 
         result += QString("<p>BC(A0)<sub>0</sub> = %1 </p>").arg(Print::printConcentration(A + AB + 2 * A2B, 3));
+
+        function = A0Function;
+        result += QString("<p>BC(A0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(SimpsonIntegrate(0, 1.1, function, parameter, 1e-5)));
+
         result += QString("<p>BC(B0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B + AB + A2B, 3));
 
         result += QString("<p>BC(B)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B, 3));
@@ -226,6 +243,32 @@ namespace ItoII {
         return double(1) / double(2) / integ;
     }
 
+    inline qreal BC50_XA(qreal x, const QVector<qreal>& parameter)
+    {
+        if (2 != parameter.size())
+            return 0;
+        qreal alpha = x / (1 - x);
+        qreal b11 = parameter[0];
+        qreal b12 = parameter[1];
+        qreal B = -b11 / (2.0 * b12) + sqrt(b11 * b11 / (b12 * b12 * 4.0) + alpha / b12);
+
+        qreal A = 1 / (b11 + 2.0 * b12 * B);
+        std::cout << x << " " << alpha << " " << B << " " << A << std::endl;
+        return A + b11 * A * B + b12 * A * B * B;
+    }
+
+    inline qreal BC50_A(const qreal logK11, const qreal logK12)
+    {
+        qreal b11 = qPow(10, logK11);
+        qreal b12 = qPow(10, logK11 + logK12);
+
+        QVector<qreal> parameter;
+        parameter << b11 << b12;
+        std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_XA;
+        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        return integ;
+    }
+
     inline qreal BC50_Y_B(qreal x, const QVector<qreal>& parameter)
     {
         if (2 != parameter.size())
@@ -239,7 +282,7 @@ namespace ItoII {
 
         // std::cout << B << " " << b11 * A * B + 2 * b12 * A * B * B << " " << B/(b11 * A * B + 2 * b12 * A * B * B) << std::endl;
 
-        return B + b11 * A * B + 2 * b12 * A * B * B;
+        return B; // + b11 * A * B + 2 * b12 * A * B * B;
     }
 
     inline qreal BC50_B0(const qreal logK11, const qreal logK12)
@@ -345,20 +388,23 @@ namespace ItoII {
         int increments = (upper - lower) / delta;
         qreal B = 0, AB = 0, AB2 = 0, bc50_num = 0;
 
-        qreal B0 = BC50_B0(logK11, logK12);
+        qreal B0 = BC50_B0(logK11, logK12) * 2;
         B = B0 / 2.0;
         A = 1 / (b11 + 2.0 * b12 * B);
         qreal A0 = A + A * B * b11 + A * B * B * b12;
-        qDebug() << A0 << B0;
+        bc50 = BC50(logK11, logK12);
+        qDebug() << A0 << B0 << bc50;
+        qDebug() << BC50_A(logK11, logK12) << A << A0;
+
         // A = ItoI_ItoII::HostConcentration(A0, B0, QList<qreal>() << b11 << b12/b11);
         // B =ItoI_ItoII::GuestConcentration(A0, B0, QList<qreal>() << b11 << b12/b11);
         AB = A * B * b11;
         AB2 = A * B * B * b12;
-        qDebug() << AB / A / B << AB2 / AB / B;
+        //qDebug() << AB / A / B << AB2 / AB / B;
         // A0 = A + AB + AB2;
         // B0 = B + AB + 2*AB2;
-        qDebug() << B / B0;
-        qDebug() << ItoI_ItoII::HostConcentration(A0, B0, QList<qreal>() << b11 << b12 / b11) << A << ItoI_ItoII::GuestConcentration(A0, B0, QList<qreal>() << b11 << b12 / b11) << B;
+        //qDebug() << B / B0;
+        //qDebug() << ItoI_ItoII::HostConcentration(A0, B0, QList<qreal>() << b11 << b12 / b11) << A << ItoI_ItoII::GuestConcentration(A0, B0, QList<qreal>() << b11 << b12 / b11) << B;
         //{
         /*
             auto bc50Function = [](const QPair<qreal, qreal>& pair, const QVector<qreal>& parameter) -> qreal {
@@ -1094,9 +1140,9 @@ namespace IItoII {
         delete solver;
         A = pair.first;
         B = pair.second;*/
-        qDebug() << b11 << A << B;
+        //qDebug() << b11 << A << B;
         AB = b11 * A * B;
-        qDebug() << AB << AB / A / B;
+        //qDebug() << AB << AB / A / B;
         AB2 = b12 * A * B * B;
 
         A2B = b21 * A * A * B;
