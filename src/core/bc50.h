@@ -253,7 +253,7 @@ namespace ItoII {
         qreal B = -b11 / (2.0 * b12) + sqrt(b11 * b11 / (b12 * b12 * 4.0) + alpha / b12);
 
         qreal A = 1 / (b11 + 2.0 * b12 * B);
-        std::cout << x << " " << alpha << " " << B << " " << A << std::endl;
+        //std::cout << x << " " << alpha << " " << B << " " << A << std::endl;
         return A + b11 * A * B + b12 * A * B * B;
     }
 

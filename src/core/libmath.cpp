@@ -211,7 +211,7 @@ qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d)
 qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter, qreal delta)
 {
     qreal integ = 0;
-    int increments = (upper - lower) / delta;
+    int increments = (upper - lower) / delta + 1;
 
     omp_set_num_threads(qApp->instance()->property("threads").toInt());
 #pragma omp parallel for reduction(+ \
@@ -230,7 +230,7 @@ std::vector<double> SimpsonIntegrate(qreal lower, qreal upper, const std::vector
     for (unsigned int k = 0; k < functions.size(); ++k)
         integs.push_back(0);
 
-    int increments = (upper - lower) / delta;
+    int increments = (upper - lower) / delta + 1;
     omp_set_num_threads(qApp->instance()->property("threads").toInt());
 #pragma omp parallel for reduction(vec_double_plus \
                                    : integs)
