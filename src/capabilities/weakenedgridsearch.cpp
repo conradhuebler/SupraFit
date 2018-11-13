@@ -39,7 +39,7 @@
 WGSearchThread::WGSearchThread(const WGSConfig& config)
     : m_config(config)
     , m_stationary(false)
-    , m_finished(true)
+    , m_finished(false)
     , m_converged(false)
 {
     setUp();
@@ -66,12 +66,7 @@ void WGSearchThread::run()
 void WGSearchThread::Calculate()
 {
     bool interrupt = false;
-    /*
-    if (m_config.increment == 0)
-        increment = m_increment;
-    else
-        increment = m_config.increment;
-    */
+
     QList<int> locked = m_model->LockedParameters();
     QVector<qreal> param = m_model->OptimizeParameters();
 
@@ -79,7 +74,6 @@ void WGSearchThread::Calculate()
 
     qreal error = m_error;
     m_steps = 0;
-    int ErrorDecreaseCounter = 0, OvershotCounter = 0;
     double value = param[m_index];
 
     double increment = qPow(10, ceil(log10(qAbs(value))) + m_config.ScalingFactor);
@@ -87,8 +81,7 @@ void WGSearchThread::Calculate()
     m_last = value;
     NonLinearFitThread* thread = new NonLinearFitThread(false);
 
-    int ErrorConvergencyCounter = 0;
-    while (m_steps < m_config.maxsteps && ErrorDecreaseCounter < m_config.ErrorDecreaseCounter && OvershotCounter < m_config.OvershotCounter && ErrorConvergencyCounter < m_config.ErrorConvergencyCounter) {
+    while (m_steps < m_config.maxsteps && m_ErrorDecreaseCounter < m_config.ErrorDecreaseCounter && m_OvershotCounter < m_config.OvershotCounter && m_ErrorConvergencyCounter < m_config.ErrorConvergencyCounter) {
 
         m_steps++;
 
@@ -109,13 +102,9 @@ void WGSearchThread::Calculate()
             model = thread->BestIntermediateParameter();
         qreal new_error = thread->SumOfError();
 
-        //        if (!upcount)
-        //            m_last = value;
-
         if (new_error > m_config.maxerror) {
-            //m_finished = new_error > m_config.maxerror;
-            //m_stationary = qAbs(new_error - error) < m_config.error_conv;
-            OvershotCounter++;
+            m_OvershotCounter++;
+            m_finished = true;
         } else {
             m_models << model;
             m_last = value;
@@ -131,12 +120,10 @@ void WGSearchThread::Calculate()
 
 
         if (new_error < m_error)
-            ErrorDecreaseCounter++;
-
-        //qDebug() << qAbs(new_error - error) << m_steps;
+            m_ErrorDecreaseCounter++;
 
         if (qAbs(new_error - error) < m_config.ErrorConvergency)
-            ErrorConvergencyCounter++;
+            m_ErrorConvergencyCounter++;
 
         error = new_error;
         if (m_interrupt)
@@ -147,11 +134,9 @@ void WGSearchThread::Calculate()
     }
     if(interrupt)
         m_finished = false;
-    else
-        m_finished = m_steps < m_config.maxsteps;
 
-    m_converged = ErrorDecreaseCounter < m_config.ErrorDecreaseCounter;
-    m_stationary = ErrorConvergencyCounter > m_config.ErrorConvergencyCounter;
+    m_converged = m_ErrorDecreaseCounter < m_config.ErrorDecreaseCounter;
+    m_stationary = m_ErrorConvergencyCounter > m_config.ErrorConvergencyCounter;
 
     delete thread;
 }
@@ -173,7 +158,6 @@ QPointer<WGSearchThread> WeakenedGridSearch::CreateThread(int index, bool direct
     connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
     thread->setModel(m_model);
     thread->setParameterId(index);
-    //thread->setIncrement(qAbs(m_model->OptimizeParameters()[index] * 1e-4));
     if (!direction)
         thread->setDown();
 
@@ -202,14 +186,17 @@ bool WeakenedGridSearch::ConfidenceAssesment()
 
     for (int i = 0; i < parameter.size(); ++i) {
         bool step = true;
+
         QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
         if (index_pair.second == 0) {
             step = m_config.global_param[index_pair.first];
         } else if (index_pair.second == 1) {
             step = m_config.local_param[index_pair.first];
         }
+
         if (!step)
             continue;
+
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair;
         pair.first = CreateThread(i, 1);
         pair.second = CreateThread(i, 0);
@@ -240,9 +227,9 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         qreal lower = pair.second->Last();
 
         QJsonObject result;
-        QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
+        QPair<int, int> index_pair = m_model.data()->IndexParameters(index);
         if (index_pair.second == 0) {
-            result["name"] = m_model.data()->GlobalParameterName(index_pair.first);
+            result["name"] = m_model.data()->GlobalParameterName(index);
             result["type"] = "Global Parameter";
         } else if (index_pair.second == 1) {
             result["name"] = m_model.data()->LocalParameterName(index_pair.first);
@@ -255,6 +242,9 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         result["stationary"] = pair.first->Stationary() && pair.second->Stationary();
         result["finished"] = pair.first->Finished() && pair.second->Finished();
         result["steps"] = pair.first->Steps() + pair.second->Steps();
+        result["OvershotCounter"] = pair.first->OvershotCounter() + pair.second->OvershotCounter();
+        result["ErrorDecreaseCounter"] = pair.first->ErrorDecreaseCounter() + pair.second->ErrorDecreaseCounter();
+        result["ErrorConvergencyCounter"] = pair.first->ErrorConvergencyCounter() + pair.second->ErrorConvergencyCounter();
 
         bool local = pair.first->Converged() && pair.second->Converged() && pair.first->Finished() && pair.second->Finished() && !(pair.first->Stationary() && pair.second->Stationary());
 

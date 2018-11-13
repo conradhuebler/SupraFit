@@ -319,13 +319,6 @@ QWidget* StatisticDialog::GridSearchWidget()
         layout->addWidget(m_cv_error_info);
     }
 
-    /*
-    m_cv_increment = new QDoubleSpinBox;
-    m_cv_increment->setDecimals(6);
-    m_cv_increment->setValue(0);
-    m_cv_increment->setSingleStep(1e-3);
-    */
-
     m_gridScalingFactor = new QSpinBox;
     m_gridScalingFactor->setMinimum(-10);
     m_gridScalingFactor->setMaximum(10);
@@ -357,9 +350,9 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridErrorConvergencyCounter->setSingleStep(10);
     m_gridErrorConvergencyCounter->setValue(config.ErrorConvergencyCounter);
 
-    hlayout->addWidget(new QLabel(tr("Error Convergence:")));
+    hlayout->addWidget(new QLabel(tr("SSE Convergence:")));
     hlayout->addWidget(m_cv_err_conv);
-    hlayout->addWidget(new QLabel(tr("Error Convergency MaxCounter")));
+    hlayout->addWidget(new QLabel(tr("Max SSE Convergency Counter")));
     hlayout->addWidget(m_gridErrorConvergencyCounter);
 
     layout->addLayout(hlayout);
@@ -376,9 +369,9 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridErrorDecreaseCounter->setSingleStep(10);
     m_gridErrorDecreaseCounter->setValue(config.ErrorDecreaseCounter);
 
-    hlayout->addWidget(new QLabel(tr("SSE Max Overshot:")));
+    hlayout->addWidget(new QLabel(tr("Max SSE Overshot Counter:")));
     hlayout->addWidget(m_gridOvershotCounter);
-    hlayout->addWidget(new QLabel(tr("SSE Max Undercut:")));
+    hlayout->addWidget(new QLabel(tr("Max SSE Decrease Counter:")));
     hlayout->addWidget(m_gridErrorDecreaseCounter);
 
     layout->addLayout(hlayout);
@@ -520,7 +513,6 @@ QWidget* StatisticDialog::CVWidget()
 WGSConfig StatisticDialog::getWGSConfig()
 {
     WGSConfig config;
-    //config.increment = m_cv_increment->value();
     config.maxsteps = m_cv_steps->value();
     config.maxerror = m_cv_max;
     config.relax = true;

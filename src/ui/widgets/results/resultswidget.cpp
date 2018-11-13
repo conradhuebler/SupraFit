@@ -244,12 +244,10 @@ QWidget* ResultsWidget::GridSearchWidget()
 
     int series_int = 0;
     int old_index = 0;
-    int rank = 0;
     for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if (data.isEmpty())
             continue;
-        rank = i;
         QString name = data["name"].toString();
         qreal x_0 = data["value"].toDouble();
 
@@ -264,11 +262,7 @@ QWidget* ResultsWidget::GridSearchWidget()
             if (!data.contains("index"))
                 continue;
 
-            qDebug() << data["index"].toString();
             int index = data["index"].toString().split("|")[1].toInt() + m_model.data()->GlobalParameterSize();
-            rank = data["index"].toString().split("|")[1].toInt() + m_model.data()->GlobalParameterSize();
-
-            //rank = series_int + 2;
             if (index != old_index)
                 series_int = 0;
             if (m_model.data()->SupportSeries())
@@ -279,19 +273,18 @@ QWidget* ResultsWidget::GridSearchWidget()
             connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, this, [series_int, view]( const QColor &color ) { view->setColor(series_int, color); });*/
             series_int++;
             old_index = index;
-            name = tr("%1 (%2)").arg(name).arg(series_int);
         } else {
             xy_series->setColor(ChartWrapper::ColorCode(m_model.data()->Color(i)));
         }
 
-        view->addSeries(xy_series, rank, xy_series->color(), name, true);
+        view->addSeries(xy_series, i, xy_series->color(), name, true);
 
         LineSeries* current_constant = new LineSeries;
         *current_constant << QPointF(x_0, m_model.data()->SumofSquares()) << QPointF(x_0, m_model.data()->SumofSquares() * 1.1);
         current_constant->setDashDotLine(true);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);
-        view->addSeries(current_constant, rank, xy_series->color(), name, true);
+        view->addSeries(current_constant, i, xy_series->color(), name, true);
     }
     return view;
 }

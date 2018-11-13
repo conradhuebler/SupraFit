@@ -100,8 +100,11 @@ public:
     inline int Steps() const { return m_steps; }
 
     inline qreal Last() const { return m_last; }
-    inline void setIncrement(qreal increment) { m_increment = increment; }
     void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+
+    inline int OvershotCounter() const { return m_OvershotCounter; }
+    inline int ErrorDecreaseCounter() const { return m_ErrorDecreaseCounter; }
+    inline int ErrorConvergencyCounter() const { return m_ErrorConvergencyCounter; }
 
 private:
     void Calculate();
@@ -112,7 +115,8 @@ private:
     QList<qreal> m_x, m_y;
     WGSConfig m_config;
     QJsonObject m_result;
-    qreal m_error, m_increment;
+    qreal m_error;
+    int m_OvershotCounter = 0, m_ErrorDecreaseCounter = 0, m_ErrorConvergencyCounter = 0;
     bool m_stationary, m_finished, m_converged;
 };
 

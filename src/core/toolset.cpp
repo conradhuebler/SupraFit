@@ -798,6 +798,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         bool stationary = result["stationary"].toBool();
         bool fine = converged&&finished&&!stationary;
 
+        int OvershotCounter = result["OvershotCounter"].toInt();
+        int ErrorDecreaseCounter = result["ErrorDecreaseCounter"].toInt();
+        int ErrorConvergencyCounter = result["ErrorConvergencyCounter"].toInt();
+
         QString color_start, color_end;
         if(!fine)
         {
@@ -814,6 +818,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += QString("<tr><td>%1 Converged: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(converged)).arg(color_end);
         text += QString("<tr><td>%1 Stationary: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(stationary)).arg(color_end);
         text += QString("<tr><td>%1 Finished: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(finished)).arg(color_end);
+        text += QString("<tr><td>%1 OvershotCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(OvershotCounter).arg(color_end);
+        text += QString("<tr><td>%1 ErrorDecreaseCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ErrorDecreaseCounter).arg(color_end);
+        text += QString("<tr><td>%1 ErrorConvergencyCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ErrorConvergencyCounter).arg(color_end);
+
         text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(fine)).arg(color_end);
 
         /*
