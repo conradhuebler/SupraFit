@@ -241,7 +241,6 @@ QWidget* ResultsWidget::GridSearchWidget()
     view->setXAxis("Parameter");
     view->setYAxis("Sum of Squares");
     view->setName("gridchart");
-
     int series_int = 0;
     int old_index = 0;
     for (int i = 0; i < m_data.count() - 1; ++i) {
@@ -286,6 +285,9 @@ QWidget* ResultsWidget::GridSearchWidget()
         current_constant->setName(name);
         view->addSeries(current_constant, i, xy_series->color(), name, true);
     }
+
+    view->setTitle(tr("Grid Search for %1").arg(m_model.data()->Name()));
+
     return view;
 }
 

@@ -824,10 +824,9 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
         text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(fine)).arg(color_end);
 
-        /*
-        text += "<tr><td>Finished: </td><td> <b>" + Bool2YesNo(finished) + "</b></td></tr>\n";
-        text += "<tr><td>Stationary: </td><td> <b>" + Bool2YesNo(stationary) + "</b></td></tr>\n";
-        text += "<tr><td>Fine: </td><td> <b>" + Bool2YesNo(fine) + "</b></td></tr>\n";*/
+        text += "<tr><td colspan=2></th></tr>";
+        text += QString("<tr><td colspan='2'>%8 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5 & %6 & %7\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Print::printDouble(integral, 4)).arg(ToolSet::bool2YesNo(fine)).arg(Html2Tex(result["name"].toString()));
+        text += "<tr><td colspan=2></th></tr>";
     }
 
     if (type == SupraFit::Statistic::Reduction) {

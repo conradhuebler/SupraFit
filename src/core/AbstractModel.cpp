@@ -1222,11 +1222,10 @@ QString AbstractModel::AnalyseModelComparison(const QJsonObject& object, bool fo
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
 
-    for (const QString& key : qAsConst(keys)) {
-        if (key == "controller")
-            continue;
-        result += Print::TextFromConfidence(object[key].toObject(), controller);
+    for (int i = 0; i < keys.size() - 1; ++i) {
+        result += Print::TextFromConfidence(object[QString::number(i)].toObject(), controller);
     }
+
     return result;
 }
 
@@ -1238,10 +1237,8 @@ QString AbstractModel::AnalyseGridSearch(const QJsonObject& object, bool forceAl
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
 
-    for (const QString& key : qAsConst(keys)) {
-        if (key == "controller")
-            continue;
-        result += Print::TextFromConfidence(object[key].toObject(), controller);
+    for (int i = 0; i < keys.size() - 1; ++i) {
+        result += Print::TextFromConfidence(object[QString::number(i)].toObject(), controller);
     }
 
     return result;
