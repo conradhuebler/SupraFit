@@ -60,13 +60,17 @@ public:
     QList<QJsonObject> Results() const { return m_results; }
     inline void setMaxSteps(int steps) { m_maxsteps = steps; }
     inline void setBox(const QVector<QVector<qreal>>& box) { m_box = box; }
+    inline void setError(qreal error) { m_effective_error = error; }
+    inline int Steps() const { return m_steps; }
 
 private:
     QSharedPointer<AbstractModel> m_model;
     QList<QJsonObject> m_results;
-    int m_maxsteps;
+    int m_maxsteps, m_steps = 0;
+
     QVector<QVector<qreal>> m_box;
     MoCoConfig m_config;
+    qreal m_effective_error;
 };
 
 class FCThread : public AbstractSearchThread {
@@ -114,7 +118,7 @@ private:
     void MCSearch(const QVector<QVector<qreal>>& box);
     double SingleLimit(int parameter_id, int direction = 1);
     virtual QJsonObject Controller() const override;
-
+    int m_steps = 0;
     QVector<QVector<qreal>> MakeBox();
     MoCoConfig m_config;
     QJsonObject m_box, m_controller;

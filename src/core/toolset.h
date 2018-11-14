@@ -64,6 +64,8 @@ qreal floor(qreal value);
 qreal scale(qreal value, qreal& pow);
 qreal scale(qreal value);
 
+QPair<qreal, qreal> MinMax(const QList<qreal>& vector);
+
 void Normalise(QVector<QPair<qreal, qreal>>& hist);
 QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bins = 0, qreal min = 0, qreal max = 0);
 /*! \brief Calculate the Entropy of a histogram, bin with is already defined */

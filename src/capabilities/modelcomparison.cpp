@@ -61,7 +61,9 @@ void MCThread::run()
         }
         m_model->setParameter(consts);
         m_model->Calculate();
-        m_results << m_model->ExportModel(false);
+        if (m_model->SumofSquares() <= m_effective_error)
+            m_results << m_model->ExportModel(false);
+        m_steps++;
         if (step % update_intervall == 0) {
             emit IncrementProgress(QDateTime::currentMSecsSinceEpoch() - t0);
             t0 = QDateTime::currentMSecsSinceEpoch();
@@ -256,6 +258,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
         MCThread* thread = new MCThread(m_config);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
+        thread->setError(m_effective_error);
         thread->setMaxSteps(maxsteps / thread_count);
         thread->setBox(box);
         threads << thread;
@@ -267,6 +270,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     QList<QJsonObject> results;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
+            m_steps += threads[i]->Steps();
             results << threads[i]->Results();
             delete threads[i];
         }
@@ -276,6 +280,9 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
 
 void ModelComparison::StripResults(const QList<QJsonObject>& results)
 {
+    /* This can one day be made faster, but not today
+     * Actually just move this to the individual thread and collect only the vectors */
+
     QVector<QPair<qreal, qreal>> confidence_global(m_model->GlobalParameterSize(), QPair<qreal, qreal>(0, 0));
     QVector<QPair<qreal, qreal>> confidence_local(m_model->LocalParameterSize() * m_model->SeriesCount(), QPair<qreal, qreal>(0, 0));
     int inner = 0;
@@ -284,60 +291,27 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     QVector<QList<qreal>> data_local = QVector<QList<qreal>>(m_model->LocalParameterSize() * m_model->SeriesCount());
     QVector<QPair<qreal, qreal>> local_values = QVector<QPair<qreal, qreal>>(m_model->LocalParameterSize() * m_model->SeriesCount());
     for (const QJsonObject& object : qAsConst(results)) {
-        all++;
-        if (object["sum_of_squares"].toDouble() <= m_effective_error) {
-            inner++;
             m_models << object;
             QJsonObject constants;
+            constants = object["data"].toObject()["globalParameter"].toObject();
+            QVector<qreal> param = ToolSet::String2DoubleVec(constants["data"].toObject()["0"].toString());
             for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
-
-                constants = object["data"].toObject()["globalParameter"].toObject();
-
-                data_global[i] << constants[QString::number(i)].toString().toDouble();
-
-                qreal min = confidence_global[i].first;
-                qreal max = confidence_global[i].second;
-
-                if (min != 0)
-                    confidence_global[i].first = qMin(min, constants[QString::number(i)].toString().toDouble());
-                else
-                    confidence_global[i].first = constants[QString::number(i)].toString().toDouble();
-
-                if (max != 0)
-                    confidence_global[i].second = qMax(max, constants[QString::number(i)].toString().toDouble());
-                else
-                    confidence_global[i].second = constants[QString::number(i)].toString().toDouble();
+                data_global[i] << param[i];
             }
 
             constants = object["data"].toObject()["localParameter"].toObject();
 
             for (int i = 0; i < m_model->SeriesCount(); ++i) {
-
-
-                QVector<qreal> param = ToolSet::String2DoubleVec(constants[QString::number(i)].toString());
-
+                QVector<qreal> param = ToolSet::String2DoubleVec(constants["data"].toObject()[QString::number(i)].toString());
                 for (int j = 0; j < param.size(); ++j) {
                     data_local[i + m_model->SeriesCount() * j] << param[j];
-
-                    qreal min = confidence_local[i + m_model->SeriesCount() * j].first;
-                    qreal max = confidence_local[i + m_model->SeriesCount() * j].second;
-
-                    if (min != 0)
-                        confidence_local[i + m_model->SeriesCount() * j].first = qMin(min, param[j]);
-                    else
-                        confidence_local[i + m_model->SeriesCount() * j].first = param[j];
-
-                    if (max != 0)
-                        confidence_local[i + m_model->SeriesCount() * j].second = qMax(max, param[j]);
-                    else
-                        confidence_local[i + m_model->SeriesCount() * j].second = param[j];
                     local_values[i + m_model->SeriesCount() * j] = QPair<int, int>(j, i);
                 }
             }
-        }
         QCoreApplication::processEvents();
     }
-    m_ellipsoid_area = double(inner) / double(all) * m_box_area;
+
+    m_ellipsoid_area = double(results.size()) / double(m_steps) * m_box_area;
     m_results.clear();
 
     for (int i = 0; i < confidence_global.size(); ++i) {
@@ -345,8 +319,9 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         if (!m_config.global_param[i])
             continue;
         QJsonObject conf;
-        conf["lower"] = confidence_global[i].first;
-        conf["upper"] = confidence_global[i].second;
+        QPair<qreal, qreal> minmax = ToolSet::MinMax(data_global[i]);
+        conf["lower"] = minmax.first;
+        conf["upper"] = minmax.second;
         conf["error"] = m_config.confidence;
 
         QJsonObject result;
@@ -366,8 +341,10 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
             continue;
 
         QJsonObject conf;
-        conf["lower"] = confidence_local[i].first;
-        conf["upper"] = confidence_local[i].second;
+        QPair<qreal, qreal> minmax = ToolSet::MinMax(data_local[i]);
+
+        conf["lower"] = minmax.first;
+        conf["upper"] = minmax.second;
         conf["error"] = m_config.confidence;
 
         QJsonObject result;
@@ -382,6 +359,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     }
 
     m_controller["steps"] = m_config.mc_steps;
+    m_controller["steps_taken"] = m_steps;
     m_controller["fisher"] = m_config.fisher_statistic;
     m_controller["maxerror"] = m_config.maxerror;
     m_controller["f-value"] = m_config.f_value;

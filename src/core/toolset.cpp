@@ -577,6 +577,20 @@ qreal finv(qreal p, int m, int n)
     }
     return f_value;
 }
+QPair<qreal, qreal> MinMax(const QList<qreal>& vector)
+{
+    if (vector.size() == 0)
+        return QPair<qreal, qreal>(0, 0);
+
+    qreal min = vector.first();
+    qreal max = vector.first();
+
+    for (int i = 0; i < vector.size(); ++i) {
+        min = qMin(min, vector[i]);
+        max = qMax(max, vector[i]);
+    }
+    return QPair<qreal, qreal>(min, max);
+}
 
 QList<int> InvertLockedList(const QList<int>& locked)
 {
