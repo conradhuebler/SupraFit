@@ -344,7 +344,7 @@ QString IItoI_ItoI_ItoII_Model::ParameterComment(int parameter) const
 QString IItoI_ItoI_ItoII_Model::AdditionalOutput() const
 {
     QString result;
-
+/*
     // double max = 1e3;
     double delta = 1e-3;
     qreal host_0 = 1.0;
@@ -371,7 +371,7 @@ QString IItoI_ItoI_ItoII_Model::AdditionalOutput() const
     integral(1) /= end;
     integral(2) /= end;
     std::cout << integral.transpose() << std::endl;
-
+    */
     return result;
 }
 

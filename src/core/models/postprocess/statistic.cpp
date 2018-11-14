@@ -249,7 +249,7 @@ QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
         qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[2];
 
-        s << BC50::IItoII::BC50(logK21, logK11, logK12) * 1e6;
+        s << BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
         //s_sf << BC50::IItoII::BC50_SF(logK21, logK11, logK12) * 1e6;
     }
 
@@ -259,7 +259,7 @@ QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
     SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
     SupraFit::ConfidenceBar conf_sf = ToolSet::Confidence(s_sf, error);
 
-    qreal BC50 = BC50::IItoII::BC50(logK21, logK11, logK12) * 1e6;
+    qreal BC50 = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
     //  qreal BC50_sf = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
 
     qreal conf_dSl = conf.upper - BC50;
@@ -589,9 +589,9 @@ QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
     QStringList models = object["controller"].toObject()["raw"].toObject().keys();
     QList<qreal> s, s_sf;
 
-    qreal BC50 = BC50::IItoII::BC50(logK21, logK11, logK12) * 1e6;
-    qreal BC50u = BC50::IItoII::BC50(logK21, logK11, logK12) * 1e6;
-    qreal BC50l = BC50::IItoII::BC50(logK21, logK11, logK12) * 1e6;
+    qreal BC50 = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
+    qreal BC50u = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
+    qreal BC50l = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
     /*
     qreal BC50_sf = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
     qreal BC50_sf_u = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
@@ -604,7 +604,7 @@ QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
         qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[2];
 
-        qreal BC50 = BC50::IItoII::BC50(logK21, logK11, logK12) * 1e6;
+        qreal BC50 = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
         //qreal BC50_sf = BC50::IItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
 
         BC50l = qMin(BC50, BC50l);
