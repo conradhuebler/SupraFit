@@ -583,6 +583,7 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
 
     case SupraFit::Statistic::FastConfidence:
         m_fast_confidence = object;
+        ParseFastConfidence(object);
         index = 0;
         break;
 
@@ -691,6 +692,21 @@ bool AbstractModel::RemoveStatistic(SupraFit::Statistic type, int index)
         break;
     }
     return true;
+}
+
+void AbstractModel::ParseFastConfidence(const QJsonObject& data)
+{
+    const QString str = "Fast Confidence";
+    if (m_model_charts.keys().contains(str))
+        m_model_charts[str]->m_series.clear();
+    for (int i = 0; i < data.keys().size() - 1; ++i) {
+        QJsonObject block = data[QString::number(i)].toObject();
+        QString name = block["name"].toString();
+
+        QList<QPointF> points = ToolSet::String2Points(block["points"].toString());
+        addSeries(str, name, points, "value", "SSE");
+    }
+    emit ChartUpdated(str);
 }
 
 QString AbstractModel::Data2Text() const
@@ -937,6 +953,9 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
     m_reduction = statisticObject[QString::number(SupraFit::Statistic::Reduction)].toObject();
     m_fast_confidence = statisticObject[QString::number(SupraFit::Statistic::FastConfidence)].toObject();
+
+    if (!m_fast_confidence.isEmpty())
+        ParseFastConfidence(m_fast_confidence);
 
     for (const QString& str : qAsConst(keys)) {
         if (str.contains(QString::number(SupraFit::Statistic::MonteCarlo) + ":"))
@@ -1272,6 +1291,30 @@ void AbstractModel::addPoints(const QString& str, qreal x, const Vector& vector,
             m_model_charts[str]->m_series[i].m_values << QPointF(x, vector(i));
         }
     }
+}
+
+void AbstractModel::addSeries(const QString& str, const QString& name, const QList<QPointF>& points, const QString& x_label, const QString& y_label)
+{
+    if (!m_model_charts.contains(str)) {
+        ModelChart* chart = new ModelChart;
+        chart->title = QString(str);
+        m_model_charts[str] = chart;
+    }
+
+    ModelSeries series;
+    series.m_values = points;
+    series.x_axis = x_label;
+    series.y_axis = y_label;
+    series.name = name;
+
+    m_model_charts[str]->m_series << series;
+}
+
+qreal AbstractModel::ErrorfTestThreshold(qreal pvalue)
+{
+    qreal f_value = finv(pvalue);
+    qreal error = SumofSquares();
+    return error * (f_value * Parameter() / (Points() - Parameter()) + 1);
 }
 
 #include "AbstractModel.moc"

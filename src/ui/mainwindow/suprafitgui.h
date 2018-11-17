@@ -217,7 +217,9 @@ private:
                                                    << "empAxis"
                                                    << "xSize"
                                                    << "ySize"
-                                                   << "chartScaling";
+                                                   << "chartScaling"
+                                                   << "FastConfidenceScaling"
+                                                   << "FastConfidenceSteps";
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;

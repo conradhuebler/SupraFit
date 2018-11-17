@@ -1050,6 +1050,12 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("ySize") == QVariant())
         qApp->instance()->setProperty("ySize", 600);
+
+    if (qApp->instance()->property("FastConfidenceScaling") == QVariant())
+        qApp->instance()->setProperty("FastConfidenceScaling", -4);
+
+    if (qApp->instance()->property("FastConfidenceSteps") == QVariant())
+        qApp->instance()->setProperty("FastConfidenceSteps", 1000);
 }
 
 void SupraFitGui::ReadGeometry()

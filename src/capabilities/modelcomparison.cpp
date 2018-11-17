@@ -77,10 +77,11 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
     double param = parameter[parameter_id];
     double old_param = param;
     int iter = 0;
-    int maxiter = 1000;
-    double step = param / 2.0;
+    int maxiter = m_config.FastConfidenceSteps;
+    double step = qPow(10, ceil(log10(qAbs(param))) - m_config.FastConfidenceScaling);
     param += direction * step;
     double error = m_model.data()->SumofSquares();
+
     int shrink = 0;
     while (qAbs(error - m_config.maxerror) > 1e-7) {
         parameter[parameter_id] = param;
@@ -107,6 +108,14 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
         m_model.data()->setParameter(parameter);
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
+        if (error < m_config.maxerror)
+            m_list_points[param] = error;
+        /*
+        if(direction == 1)
+            m_points.append(QPointF(param, error));
+        else
+            m_points.append(QPointF(param, error));
+        */
         iter++;
 
         if (iter >= maxiter) {
@@ -119,16 +128,25 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
 #ifdef _DEBUG
     qDebug() << "Final Error " << error << " after " << iter << " steps, value:" << parameter[parameter_id];
 #endif
+
     return param;
 }
 
 void FCThread::run()
 {
     QVector<double> parameter = m_model.data()->OptimizeParameters();
+    double param = parameter[m_parameter];
+    m_list_points[param] = m_model.data()->SumofSquares();
+
     m_upper = SingleLimit(m_parameter, +1);
     m_model.data()->setParameter(parameter);
     m_model.data()->Calculate();
     m_lower = SingleLimit(m_parameter, -1);
+    auto i = m_list_points.constBegin();
+    while (i != m_list_points.constEnd()) {
+        m_points << QPointF(i.key(), i.value()); // << endl;
+        ++i;
+    }
 }
 
 ModelComparison::ModelComparison(MoCoConfig config, QObject* parent)
@@ -186,6 +204,8 @@ bool ModelComparison::FastConfidence(bool Series)
             result["type"] = "Local Parameter";
         }
         result["value"] = parameter[i];
+        result["points"] = ToolSet::Points2String(threads[i]->Points());
+
         QJsonObject confidence;
         confidence["upper"] = threads[i]->Upper();
         confidence["lower"] = threads[i]->Lower();
@@ -285,8 +305,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
 
     QVector<QPair<qreal, qreal>> confidence_global(m_model->GlobalParameterSize(), QPair<qreal, qreal>(0, 0));
     QVector<QPair<qreal, qreal>> confidence_local(m_model->LocalParameterSize() * m_model->SeriesCount(), QPair<qreal, qreal>(0, 0));
-    int inner = 0;
-    int all = 0;
+
     QVector<QList<qreal>> data_global = QVector<QList<qreal>>(m_model->GlobalParameterSize());
     QVector<QList<qreal>> data_local = QVector<QList<qreal>>(m_model->LocalParameterSize() * m_model->SeriesCount());
     QVector<QPair<qreal, qreal>> local_values = QVector<QPair<qreal, qreal>>(m_model->LocalParameterSize() * m_model->SeriesCount());

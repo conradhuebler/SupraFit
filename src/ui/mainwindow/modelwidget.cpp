@@ -576,11 +576,17 @@ void ModelWidget::MCStatistic(MCConfig config)
 
 void ModelWidget::FastConfidence()
 {
+    Waiter wait;
     MoCoConfig config;
+    config.FastConfidenceSteps = qApp->instance()->property("FastConfidenceSteps").toInt();
+    config.FastConfidenceScaling = qApp->instance()->property("FastConfidenceScaling").toInt();
 
+    config.maxerror = m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble() / 100);
+    /*
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble() / 100);
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    */
     config.optimizer_config = m_model->getOptimizerConfig();
     config.fisher_statistic = true;
     config.confidence = qApp->instance()->property("p_value").toDouble();

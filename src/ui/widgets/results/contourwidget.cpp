@@ -56,6 +56,7 @@ void ContourWidget::setUi()
     view = new ListChart;
     view->setName("contourchart");
     m_xy_series = new QtCharts::QScatterSeries;
+    m_xy_series->setBorderColor(m_xy_series->color());
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(view);
     splitter->addWidget(VariWidget());
@@ -213,6 +214,7 @@ void ContourWidget::MakePlot(int var_1, int var_2)
     view->setXAxis(m_names[var_1]);
     view->setYAxis(m_names[var_2]);
     m_xy_series->setColor(color);
+    m_xy_series->setBorderColor(m_xy_series->color());
 }
 
 void ContourWidget::PointClicked(const QPointF& point)

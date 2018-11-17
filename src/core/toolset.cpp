@@ -175,7 +175,7 @@ QList<QPointF> String2Points(const QString& str)
     QStringList list = str.split(" ");
     for (const QString& point : qAsConst(list)) {
         double x = 0, y = 0;
-        QStringList l = point.split(",");
+        QStringList l = point.split(";");
         if (l.size() != 2)
             continue;
         x = l[0].remove("(").toDouble();
@@ -188,7 +188,7 @@ QString Points2String(const QList<QPointF>& points)
 {
     QString string;
     for (int i = 0; i < points.size(); ++i)
-        string += "(" + Print::printDouble(points[i].x()) + "," + Print::printDouble(points[i].y()) + ") ";
+        string += "(" + QString::number(points[i].x()) + ";" + QString::number(points[i].y()) + ") ";
     return string;
 }
 
@@ -840,6 +840,12 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
         text += "<tr><td colspan=2></th></tr>";
         text += QString("<tr><td colspan='2'>%8 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5 & %6 & %7\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Print::printDouble(integral, 4)).arg(ToolSet::bool2YesNo(fine)).arg(Html2Tex(result["name"].toString()));
+        text += "<tr><td colspan=2></th></tr>";
+    }
+
+    if (type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::FastConfidence) {
+        text += "<tr><td colspan=2></th></tr>";
+        text += QString("<tr><td colspan='2'>%6 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Html2Tex(result["name"].toString()));
         text += "<tr><td colspan=2></th></tr>";
     }
 

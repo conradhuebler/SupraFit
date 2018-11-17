@@ -209,6 +209,28 @@ void ConfigDialog::createStandardCalTab()
     h_layout->addWidget(m_p_value);
     layout->addLayout(h_layout);
 
+    m_FastConfidenceSteps = new QSpinBox;
+    m_FastConfidenceSteps->setMinimum(1);
+    m_FastConfidenceSteps->setMaximum(100000);
+    m_FastConfidenceSteps->setValue(qApp->instance()->property("FastConfidenceSteps").toInt());
+
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("Maximal Steps")));
+    h_layout->addWidget(m_FastConfidenceSteps);
+
+    layout->addLayout(h_layout);
+
+    m_FastConfidenceScaling = new QSpinBox;
+    m_FastConfidenceScaling->setMinimum(-10);
+    m_FastConfidenceScaling->setMaximum(1);
+    m_FastConfidenceScaling->setValue(qApp->instance()->property("FastConfidenceScaling").toInt());
+
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("Single Steps Length")));
+    h_layout->addWidget(m_FastConfidenceScaling);
+
+    layout->addLayout(h_layout);
+
     m_mainwidget->addTab(calcTab, tr("Standard Calculation"));
 }
 
@@ -333,6 +355,8 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("noGrid", m_RemoveGrid->isChecked());
     qApp->instance()->setProperty("empAxis", m_EmphAxis->isChecked());
     qApp->instance()->setProperty("chartScaling", m_chartScaling->value());
+    qApp->instance()->setProperty("FastConfidenceScaling", m_FastConfidenceScaling->value());
+    qApp->instance()->setProperty("FastConfidenceSteps", m_FastConfidenceSteps->value());
 
     QDialog::accept();
 }
