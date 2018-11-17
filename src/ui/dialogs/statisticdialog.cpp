@@ -455,9 +455,9 @@ QWidget* StatisticDialog::ModelComparison()
     }
 
     m_moco_box_multi = new QDoubleSpinBox;
-    m_moco_box_multi->setMaximum(20);
+    m_moco_box_multi->setMaximum(1000);
     m_moco_box_multi->setSingleStep(0.5);
-    m_moco_box_multi->setValue(1.25);
+    m_moco_box_multi->setValue(4);
     m_moco_box_multi->setDecimals(2);
     global_layout->addWidget(new QLabel(tr("Box Scaling")), 3, 0);
     global_layout->addWidget(m_moco_box_multi, 3, 1);
@@ -469,7 +469,7 @@ QWidget* StatisticDialog::ModelComparison()
 
     m_moco_mc_steps = new QSpinBox;
     m_moco_mc_steps->setMaximum(1e7);
-    m_moco_mc_steps->setValue(10000);
+    m_moco_mc_steps->setValue(20000);
     m_moco_mc_steps->setSingleStep(100);
 
     monte_layout->addWidget(new QLabel(tr("Max. Steps")), 1, 0);
@@ -642,7 +642,7 @@ void StatisticDialog::IncrementProgress(int time)
         ShowWidget();
 
     m_time += time;
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     int val = m_progress->value() + 1;
     qreal aver = double(m_time) / val;
     int remain = double(m_progress->maximum() - val) * aver / qAbs(QThreadPool::globalInstance()->maxThreadCount()) / 1000;

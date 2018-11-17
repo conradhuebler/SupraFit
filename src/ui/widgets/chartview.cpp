@@ -808,6 +808,7 @@ void ChartView::ExportPNG()
 
     QList<QColor> colors;
     QList<int> size;
+    QList<bool> openGl;
     for (QtCharts::QAbstractSeries* serie : m_chart->series()) {
         if (qobject_cast<QtCharts::QScatterSeries*>(serie)) {
             colors << qobject_cast<QtCharts::QScatterSeries*>(serie)->borderColor();
@@ -816,6 +817,8 @@ void ChartView::ExportPNG()
             if (qobject_cast<QtCharts::QScatterSeries*>(serie)->markerSize() > qApp->instance()->property("markerSize").toDouble())
                 qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(qApp->instance()->property("markerSize").toDouble());
         }
+        openGl << serie->useOpenGL();
+        serie->setUseOpenGL(false);
     }
 
     // do the painting!!
@@ -874,6 +877,7 @@ void ChartView::ExportPNG()
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(colors.takeFirst());
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(size.takeFirst());
         }
+        serie->setUseOpenGL(openGl.takeFirst());
     }
 
     // bring back the grids

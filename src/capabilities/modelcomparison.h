@@ -31,6 +31,8 @@ class MoCoConfig : public AbstractConfig {
 public:
     WGSConfig cv_config;
     int mc_steps = 10000;
+    int FastConfidenceSteps = 1000;
+    int FastConfidenceScaling = -4;
     qreal box_multi = 1.5;
     qreal maxerror = 0;
     qreal confidence = 95;
@@ -89,11 +91,14 @@ public:
     virtual void run() override;
     inline qreal Lower() const { return m_lower; }
     inline qreal Upper() const { return m_upper; }
+    inline QList<QPointF> Points() const { return m_points; }
 
 private:
     qreal m_lower, m_upper;
     int m_parameter;
     qreal SingleLimit(int parameter_id, int direction);
+    QList<QPointF> m_points;
+    QMap<qreal, qreal> m_list_points;
     MoCoConfig m_config;
 };
 

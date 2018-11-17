@@ -67,6 +67,7 @@ void StatisticWidget::Update()
     overview += "<tr><td>Number of used Points:</t><td><b>" + Print::printDouble(m_model.data()->Points()) + "</b></td></tr>\n";
     overview += "<tr><td>Degrees of Freedom:</t><td><b>" + Print::printDouble(m_model.data()->Points() - m_model.data()->Parameter()) + "</b></td></tr>\n";
     overview += "<tr><td>Error: (squared / absolute)</td><td><b>" + Print::printDouble(m_model.data()->SumofSquares()) + "/" + Print::printDouble(m_model.data()->SumofAbsolute()) + "</b></td></tr>\n";
+    overview += "<tr><td>Error Threshold (f-Test)</td><td><b>" + Print::printDouble(m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble() / 100)) + "</b></td></tr>\n";
     overview += "<tr><td>Mean Error in Model:</td><td><b> " + Print::printDouble(m_model.data()->MeanError()) + "</b></td></tr>\n";
     overview += "<tr><td>Variance of Error:</td><td><b>" + Print::printDouble(m_model.data()->Variance()) + "</b></td></tr>\n";
     overview += "<tr><td>Standard deviation &sigma;:</td><td><b>" + Print::printDouble(m_model.data()->StdDeviation()) + "</b></td></tr>\n";

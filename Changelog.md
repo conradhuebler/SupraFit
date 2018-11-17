@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- Charts representing Fast Confidence results added
 - more tweaks for Grid Search method
 - grid search integral below error curve
 - one more latex snippet (regression analysis) + some adaptions

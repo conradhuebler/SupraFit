@@ -150,7 +150,7 @@ private:
     QWeakPointer<AbstractModel> m_model;
 
     int m_time, m_runs;
-    quint64 m_time_0;
+    qint64 m_time_0;
     qreal m_f_value = 1, m_moco_max, m_cv_max;
     bool m_hidden;
 

@@ -97,7 +97,7 @@ inline QString Statistic2Name(SupraFit::Statistic type)
         break;
 
     case SupraFit::Statistic::FastConfidence:
-        return ("Fast Confidence");
+        return ("Simplified Model Comparison");
         break;
 
     case SupraFit::Statistic::Reduction:

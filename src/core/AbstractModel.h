@@ -637,6 +637,8 @@ public:
 
     inline QStringList Charts() const { return m_model_charts.keys(); }
 
+    qreal ErrorfTestThreshold(qreal pvalue);
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -648,6 +650,8 @@ public slots:
 
 private:
     QSharedDataPointer<AbstractModelPrivate> private_d;
+
+    void ParseFastConfidence(const QJsonObject& object);
 
 protected:
     /*
@@ -680,6 +684,8 @@ protected:
     void clearChart(const QString& hash);
 
     void addPoints(const QString& hash, qreal x, const Vector& y, const QStringList& names = QStringList());
+
+    void addSeries(const QString& hash, const QString& name, const QList<QPointF>& points, const QString& x_label = "x", const QString& y_label = "y");
 
     void PrepareParameter(int global, int local);
 
