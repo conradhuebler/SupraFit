@@ -581,7 +581,7 @@ void ModelWidget::FastConfidence()
     config.FastConfidenceSteps = qApp->instance()->property("FastConfidenceSteps").toInt();
     config.FastConfidenceScaling = qApp->instance()->property("FastConfidenceScaling").toInt();
 
-    config.maxerror = m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble() / 100);
+    config.maxerror = m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble());
     /*
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble() / 100);
     qreal error = m_model.data()->SumofSquares();

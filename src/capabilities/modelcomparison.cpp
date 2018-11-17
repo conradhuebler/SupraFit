@@ -42,10 +42,10 @@ void MCThread::run()
         int upper = factors[i] * m_box[i][1];
         dist << std::uniform_int_distribution<int>(lower, upper);
     }
-    quint64 seed = QDateTime::currentMSecsSinceEpoch();
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
     rng.seed(seed);
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     for (int step = 0; step < m_maxsteps; ++step) {
         if (m_interrupt)
             return;
@@ -61,8 +61,11 @@ void MCThread::run()
         }
         m_model->setParameter(consts);
         m_model->Calculate();
-        if (m_model->SumofSquares() <= m_effective_error)
+
+        if (m_model->SumofSquares() <= m_effective_error) {
+            std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
             m_results << m_model->ExportModel(false);
+        }
         m_steps++;
         if (step % update_intervall == 0) {
             emit IncrementProgress(QDateTime::currentMSecsSinceEpoch() - t0);
@@ -78,7 +81,7 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
     double old_param = param;
     int iter = 0;
     int maxiter = m_config.FastConfidenceSteps;
-    double step = qPow(10, ceil(log10(qAbs(param))) - m_config.FastConfidenceScaling);
+    double step = qPow(10, ceil(log10(qAbs(param))) + m_config.FastConfidenceScaling);
     param += direction * step;
     double error = m_model.data()->SumofSquares();
 
@@ -108,14 +111,10 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
         m_model.data()->setParameter(parameter);
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
+
         if (error < m_config.maxerror)
             m_list_points[param] = error;
-        /*
-        if(direction == 1)
-            m_points.append(QPointF(param, error));
-        else
-            m_points.append(QPointF(param, error));
-        */
+
         iter++;
 
         if (iter >= maxiter) {
