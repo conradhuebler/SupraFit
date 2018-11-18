@@ -222,7 +222,7 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_B0_X;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
+        qreal integ = SimpsonIntegrate(0, 1, function, parameter, 1e-6);
         return integ;
     }
 
@@ -247,54 +247,6 @@ namespace ItoII {
         qreal integ = SimpsonIntegrate(0, 1, function, parameter);
         return integ;
     }
-/*
-    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
-    {
-        qreal b11 = parameter[0];
-        qreal b12 = parameter[1];
-        qreal alpha = x / (1.0 - x);
-        return -b11 / (2.0 * b12) + sqrt(b11 * b11 / (b12 * b12 * 4.0) + alpha / b12);
-    }
-
-    inline qreal AFunction(qreal x, const QVector<qreal>& parameter)
-    {
-        qreal b11 = parameter[0];
-        qreal b12 = parameter[1];
-        qreal alpha = x / (1.0 - x);
-        qreal B = -b11 / (2.0 * b12) + sqrt(b11 * b11 / (b12 * b12 * 4.0) + alpha / b12);
-        return 1 / (b11 + 2.0 * b12 * B);
-    }
-
-    inline qreal ABFunction(qreal x, const QVector<qreal>& parameter)
-    {
-        qreal B = BFunction(x, parameter);
-        qreal b11 = parameter[0];
-        qreal b12 = parameter[1];
-        qreal A = AFunction(x, parameter);
-        return b11 * A * B;
-    }
-
-    inline qreal AB2Function(qreal x, const QVector<qreal>& parameter)
-    {
-        qreal B = BFunction(x, parameter);
-        qreal b11 = parameter[0];
-        qreal b12 = parameter[1];
-        qreal A = AFunction(x, parameter);
-        return b12 * A * B * B;
-    }
-
-    inline QPair<qreal, qreal> c12(qreal x, const QVector<qreal>& parameter)
-    {
-        if (2 != parameter.size())
-            return QPair<qreal, qreal>(0, 0);
-        qreal alpha = x / (1 - x);
-
-        qreal b11 = parameter[0];
-        qreal b12 = parameter[1];
-        qreal B = BFunction(x, parameter);
-        qreal A = 1 / (b11 + 2.0 * b12 * B);
-        return QPair<qreal, qreal>(A, B);
-    }*/
 
     inline QString Format_BC50(const qreal logK11, const qreal logK12)
     {
@@ -353,12 +305,13 @@ namespace IItoII {
             return MaxQuadraticRoot(x1, x2, x3);
         };
 
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
+        auto calc_b = [](double a, double b11, double b21, double b12, double alpha) {
             double x1 = b12;
             double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
+            double x3 = -alpha;
             return MaxQuadraticRoot(x1, x2, x3);
         };
+        qreal alpha = x / (1 - x);
 
         qreal A = x / 2;
         qreal B = 0;
@@ -367,7 +320,7 @@ namespace IItoII {
         for (i = 0; i < 150; ++i) {
             a_1 = A;
             b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
+            B = calc_b(A, b11, b21, b12, alpha);
             if (B < 0)
                 B *= -1;
 
@@ -418,21 +371,23 @@ namespace IItoII {
             return MaxQuadraticRoot(x1, x2, x3);
         };
 
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
+        auto calc_b = [](double a, double b11, double b21, double b12, double alpha) {
             double x1 = b12;
             double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
+            double x3 = -alpha;
             return MaxQuadraticRoot(x1, x2, x3);
         };
 
         qreal A = x / 2;
+        qreal alpha = x / (1 - x);
+
         qreal B = 0;
         qreal a_1 = 0, b_1 = 0;
         int i;
         for (i = 0; i < 150; ++i) {
             a_1 = A;
             b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
+            B = calc_b(A, b11, b21, b12, alpha);
             if (B < 0)
                 B *= -1;
 
@@ -465,374 +420,7 @@ namespace IItoII {
         qreal integ = SimpsonIntegrate(0, 1, function, parameter);
         return integ;
     }
-    /*
-    inline qreal BC50_IItoI_ItoI_ItoII_SF_Y_0(qreal x, const QVector<qreal>& parameter)
-    {
-        if (3 != parameter.size())
-            return 0;
-        qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal b12 = parameter[2];
 
-        qreal epsilon = 1e-12;
-
-        auto calc_a = [](double b, double b11, double b21, double b12) {
-            double x1 = b21;
-            double x2 = 2 * b12 * b + b11;
-            double x3 = -1;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
-            double x1 = b12;
-            double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        qreal A = x / 2;
-        qreal B = 0;
-        qreal a_1 = 0, b_1 = 0;
-        int i;
-        for (i = 0; i < 150; ++i) {
-            a_1 = A;
-            b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
-            if (B < 0)
-                B *= -1;
-
-            A = calc_a(B, b11, b21, b12);
-            if (A < 0)
-                A *= -1;
-
-            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
-                break;
-        }
-#ifdef _DEBUG
-        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
-        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
-        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
-        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
-#endif
-        return A;
-    }
-
-    inline qreal AFunction(qreal x, const QVector<qreal>& parameter)
-    {
-        if (3 != parameter.size())
-            return 0;
-        qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal b12 = parameter[2];
-
-        qreal epsilon = 1e-12;
-
-        auto calc_a = [](double b, double b11, double b21, double b12) {
-            double x1 = b21;
-            double x2 = 2 * b12 * b + b11;
-            double x3 = -1;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
-            double x1 = b12;
-            double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        qreal A = x / 2;
-        qreal B = 0;
-        qreal a_1 = 0, b_1 = 0;
-        int i;
-        for (i = 0; i < 150; ++i) {
-            a_1 = A;
-            b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
-            if (B < 0)
-                B *= -1;
-
-            A = calc_a(B, b11, b21, b12);
-            if (A < 0)
-                A *= -1;
-
-            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
-                break;
-        }
-#ifdef _DEBUG
-        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
-        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
-        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
-        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
-#endif
-        return A;
-    }
-
-    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
-    {
-        if (3 != parameter.size())
-            return 0;
-        qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal b12 = parameter[2];
-
-        qreal epsilon = 1e-12;
-
-        auto calc_a = [](double b, double b11, double b21, double b12) {
-            double x1 = b21;
-            double x2 = 2 * b12 * b + b11;
-            double x3 = -1;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
-            double x1 = b12;
-            double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        qreal A = x / 2;
-        qreal B = 0;
-        qreal a_1 = 0, b_1 = 0;
-        int i;
-        for (i = 0; i < 150; ++i) {
-            a_1 = A;
-            b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
-            if (B < 0)
-                B *= -1;
-
-            A = calc_a(B, b11, b21, b12);
-            if (A < 0)
-                A *= -1;
-
-            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
-                break;
-        }
-#ifdef _DEBUG
-        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
-        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
-        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
-        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
-#endif
-        return B;
-    }*/
-    /*
-    inline qreal ABFunction(qreal x, const QVector<qreal>& parameter)
-    {
-        if (3 != parameter.size())
-            return 0;
-        qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal b12 = parameter[2];
-
-        qreal epsilon = 1e-12;
-
-        auto calc_a = [](double b, double b11, double b21, double b12) {
-            double x1 = b21;
-            double x2 = 2 * b12 * b + b11;
-            double x3 = -1;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
-            double x1 = b12;
-            double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        qreal A = x / 2;
-        qreal B = 0;
-        qreal a_1 = 0, b_1 = 0;
-        int i;
-        for (i = 0; i < 150; ++i) {
-            a_1 = A;
-            b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
-            if (B < 0)
-                B *= -1;
-
-            A = calc_a(B, b11, b21, b12);
-            if (A < 0)
-                A *= -1;
-
-            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
-                break;
-        }
-#ifdef _DEBUG
-        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
-        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
-        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
-        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
-#endif
-        return b11 * A * B;
-    }
-    */
-    /*
-    inline qreal A2BFunction(qreal x, const QVector<qreal>& parameter)
-    {
-        if (3 != parameter.size())
-            return 0;
-        qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal b12 = parameter[2];
-
-        qreal epsilon = 1e-12;
-
-        auto calc_a = [](double b, double b11, double b21, double b12) {
-            double x1 = b21;
-            double x2 = 2 * b12 * b + b11;
-            double x3 = -1;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
-            double x1 = b12;
-            double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        qreal A = x / 2;
-        qreal B = 0;
-        qreal a_1 = 0, b_1 = 0;
-        int i;
-        for (i = 0; i < 150; ++i) {
-            a_1 = A;
-            b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
-            if (B < 0)
-                B *= -1;
-
-            A = calc_a(B, b11, b21, b12);
-            if (A < 0)
-                A *= -1;
-
-            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
-                break;
-        }
-#ifdef _DEBUG
-        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
-        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
-        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
-        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
-#endif
-        return b21 * A * A * B;
-    }
-    */
-    /*
-    inline qreal AB2Function(qreal x, const QVector<qreal>& parameter)
-    {
-        if (3 != parameter.size())
-            return 0;
-        qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal b12 = parameter[2];
-
-        qreal epsilon = 1e-12;
-
-        auto calc_a = [](double b, double b11, double b21, double b12) {
-            double x1 = b21;
-            double x2 = 2 * b12 * b + b11;
-            double x3 = -1;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
-            double x1 = b12;
-            double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        qreal A = x / 2;
-        qreal B = 0;
-        qreal a_1 = 0, b_1 = 0;
-        int i;
-        for (i = 0; i < 150; ++i) {
-            a_1 = A;
-            b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
-            if (B < 0)
-                B *= -1;
-
-            A = calc_a(B, b11, b21, b12);
-            if (A < 0)
-                A *= -1;
-
-            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
-                break;
-        }
-#ifdef _DEBUG
-        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
-        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
-        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 - b11 * A * B) << std::endl;
-        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
-#endif
-        return b12 * A * B * B;
-    }
-    */
-    /*
-    inline QPair<qreal, qreal> concentrations_211112(qreal x, const QVector<qreal>& parameter)
-    {
-        if (3 != parameter.size())
-            return QPair<qreal, qreal>(0, 0);
-        qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal b12 = parameter[2];
-
-        qreal epsilon = 1e-12;
-
-        auto calc_a = [](double b, double b11, double b21, double b12) {
-            double x1 = b21;
-            double x2 = 2 * b12 * b + b11;
-            double x3 = -1;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        auto calc_b = [](double a, double b11, double b21, double b12, double x) {
-            double x1 = b12;
-            double x2 = 2 * b21 * a + b11;
-            double x3 = -x;
-            return MaxQuadraticRoot(x1, x2, x3);
-        };
-
-        qreal A = x / 2;
-        qreal B = 0;
-        qreal a_1 = 0, b_1 = 0;
-        int i;
-        for (i = 0; i < 150; ++i) {
-            a_1 = A;
-            b_1 = B;
-            B = calc_b(A, b11, b21, b12, x);
-            if (B < 0)
-                B *= -1;
-
-            A = calc_a(B, b11, b21, b12);
-            if (A < 0)
-                A *= -1;
-
-            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
-                break;
-        }
-        return QPair<qreal, qreal>(A, B);
-    }
-    */
-    /*
-    inline qreal IItoI_ItoI_ItoII_BC50_SF(const qreal logK21, const qreal logK11, const qreal logK12)
-    {
-        qreal b21 = qPow(10, logK21 + logK11);
-        qreal b11 = qPow(10, logK11);
-        qreal b12 = qPow(10, logK11 + logK12);
-
-        QVector<qreal> parameter;
-        parameter << b21 << b11 << b12;
-        std::function<qreal(qreal, const QVector<qreal>&)> function = BC50_IItoI_ItoI_ItoII_SF_Y_0;
-        qreal integ = SimpsonIntegrate(0, 1, function, parameter);
-        return integ;
-    }*/
 
     inline QString Format_BC50(const qreal logK21, const qreal logK11, const qreal logK12)
     {
