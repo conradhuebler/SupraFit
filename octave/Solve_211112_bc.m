@@ -1,17 +1,23 @@
 function [A B A2B AB AB2] = Solve_211112_bc(x, b21, b11, b12, DEBUG = false)
   
+ 
   epsilon = 1e-12;
   
   a = x/2;
   b = 0;
   a_1 = 0;
   b_1 = 0;
+  if(x == 1)
+    alpha = 10^10
+    else
+    alpha = x./(1-x);
+  end
   
   for(i = 0:1:1000)
 
   a_1 = a;
   b_1 = b;
-  b = Solve_211112_b_bc(a, x, b21, b11, b12);
+  b = Solve_211112_b_bc(a, alpha, b21, b11, b12);
   if(b < 0)
     b = -1 * b;
   end
@@ -21,8 +27,7 @@ function [A B A2B AB AB2] = Solve_211112_bc(x, b21, b11, b12, DEBUG = false)
   if(a < 0)
     a = -1 * a;
   end
-
-  if(abs(b21 * a_1 * a_1 * b_1 - b21 * a * a * b) < epsilon && abs(b12 * a_1 * b_1 * b_1 - b12 * a * b * b) < epsilon && abs(b11 * a_1 * b_1 - b11 * a * b) < epsilon)
+  if(abs(b21.*a_1.*a_1.*b_1 - b21.*a.*a.*b) < epsilon && abs(b12.*a_1.*b_1.*b_1 - b12.*a.*b.*b) < epsilon && abs(b11.*a_1.*b_1 - b11.*a.*b) < epsilon)
     break;
   end
 end

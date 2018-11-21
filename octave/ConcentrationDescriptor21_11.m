@@ -12,14 +12,18 @@ function [bc50] = ConcentrationDescriptor21_11(logK21, logK11)
   bc50 = -b11/2/b21 + sqrt((-b11/2/b21)^2 + 1/b21);
   printf("The BC50 is as follows: %d mu M\n", bc50*10^6);
     
-  B = quadcc("BFunction21_11", lower_limit, upper_limit);
-  AB = quadcc("ABFunction21_11", lower_limit, upper_limit);
-  A2B = quadcc("A2BFunction21_11", lower_limit, upper_limit);
+  B = quad("BFunction21_11", lower_limit, upper_limit);
+  AB = quad("ABFunction21_11", lower_limit, upper_limit);
+  A2B = quad("A2BFunction21_11", lower_limit, upper_limit);
   printf("The normal way round ... \n");
   printf("B in Solution: %d\n", B*10^6);
   printf("AB in Solution: %d\n", AB*10^6);
   printf("A2B in Solution: %d\n", A2B*10^6);
-
+ B0 = B + AB + A2B;
+   printf("Lets calculate the relative concentrations from the approximated soluation\n");
+  printf("B in Solution: %d\n", B/B0);
+  printf("AB in Solution: %d\n", AB/B0);
+  printf("A2B in Solution: %d\n", A2B/B0);
   printf("Lets do it the inverse way \n");
   
   factor = 2;
@@ -32,7 +36,7 @@ function [bc50] = ConcentrationDescriptor21_11(logK21, logK11)
   printf("AB in Solution: %d\n", AB*10^6);
   printf("A2B in Solution: %d\n", A2B*10^6);
   
-  printf("Lets calculate the relative concentrations\n");
+  printf("Lets calculate the relative concentrations from the correct soluation\n");
   qut = (1 + b11*bc50 +b21*bc50^2);
   
   printf("B in Solution: %d\n", 1/qut);
