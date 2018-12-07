@@ -1236,6 +1236,8 @@ void SupraFitGui::CloseProjects()
         delete mainwindow;
         m_project_tree->UpdateStructure();
     }
+    m_supr_file.clear();
+    m_filename_line->clear();
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)

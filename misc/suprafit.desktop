@@ -1,13 +1,14 @@
-#!/usr/bin/env xdg-open
+#!/usr/bin/xdg-open
 [Desktop Entry]
 Comment[de_DE]=SupraFit - Supramolekulare Titrationen Auswerten mit nichtlinearer Regression
 Comment=SupraFit - Fitting tools for supramolecular titration experiments
 Exec=suprafit
 GenericName[de_DE]=SupraFit
 GenericName=SupraFit
-Icon=../icons/pixmaps/suprafit.png
+Icon=suprafit
 MimeType=
 Name[de_DE]=SupraFit
 Name=SupraFit
 Terminal=false
 Type=Application
+Categories=Education;Chemistry;
