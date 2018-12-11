@@ -1,4 +1,4 @@
-function [A B A2B AB AB2] = ConcentrationDescriptor21_11_12(logK21, logK11, logK12)
+function [rB rA2B rAB rAB2] = ConcentrationDescriptor21_11_12(logK21, logK11, logK12, upper_limit = 0.9999)
   %this function calculates all concentrational descriptors for any given logK21 and logK11 pairs
   
   global b11;
@@ -6,7 +6,6 @@ function [A B A2B AB AB2] = ConcentrationDescriptor21_11_12(logK21, logK11, logK
   global b12;
   
   lower_limit = 0;
-  upper_limit = 1;
   
   b11 = 10^(logK11);
   b21 = 10^(logK21 + logK11);
@@ -45,6 +44,32 @@ function [A B A2B AB AB2] = ConcentrationDescriptor21_11_12(logK21, logK11, logK
   printf("AB in Solution: %d\n", AB/B0);
   printf("A2B in Solution: %d\n", A2B/B0);
   printf("AB2 in Solution: %d\n", 2*AB2/B0);
+  
+  A2B = quad("A2BFunction21_11_12", lower_limit, upper_limit);
+  AB = quad("ABFunction21_11_12", lower_limit, upper_limit);
+  AB2 = quad("AB2Function21_11_12", lower_limit, upper_limit);
+  AAB2 = quad("AAB2Function21_11_12", lower_limit, upper_limit)
 
+  B = AAB2;
+  (AAB2-AB-A2B)/2
+  printf("The normal way round ... \n");
+  %printf("A in Solution: %d\n", A*10^6);
+  printf("B in Solution: %d\n", B*10^6);
+  printf("A2B in Solution: %d\n", A2B*10^6);
+  printf("AB in Solution: %d\n", AB*10^6);
+  printf("AB2 in Solution: %d\n", AB2*10^6);
+  
+  B0 = AAB2*2;
+   printf("Lets calculate the relative concentrations from the approximated soluation\n");
+  printf("B in Solution: %d\n", B/B0);
+  printf("A2B in Solution: %d\n", A2B/B0);
+  printf("AB in Solution: %d\n", AB/B0);
+  printf("A2B in Solution: %d\n", 2*AB2/B0);
+  printf("Lets do it the inverse way \n");
+
+  rB = B/B0;
+  rA2B = A2B/B0;
+  rAB = AB/B0;
+  rAB2 = AB2/B0;
   
 endfunction

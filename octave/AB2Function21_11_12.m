@@ -1,4 +1,4 @@
-function [AB2] = ABFunction21_11_12(x)
+function [AB2] = AB2Function21_11_12(x)
     
   global b11;
   global b21;

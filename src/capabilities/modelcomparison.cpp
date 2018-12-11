@@ -63,7 +63,7 @@ void MCThread::run()
         m_model->Calculate();
 
         if (m_model->SumofSquares() <= m_effective_error) {
-            std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
+         //   std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
             m_results << m_model->ExportModel(false);
         }
         m_steps++;

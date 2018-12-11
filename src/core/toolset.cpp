@@ -777,6 +777,16 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
     }
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation) {
 
+        if(type == SupraFit::Statistic::CrossValidation)
+        {
+            if(controller["CVType"].toInt() == 1)
+                text += "<p>Leave-One-Out Cross Validation</p>";
+            else
+                text += "<p>Leave-Two-Out Cross Validation</p>";
+        }else
+        {
+            text += QString("<p>Input variance is %1</p>").arg(controller["variance"].toDouble());
+        }
         QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
         QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
         ToolSet::Normalise(histogram);
