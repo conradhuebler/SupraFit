@@ -50,6 +50,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <unistd.h>
 
 #include "chartview.h"
 
@@ -761,6 +762,12 @@ void ChartView::ExportPNG()
     // and resize as set in settings
     mCentralHolder->resize(qApp->instance()->property("xSize").toInt(), qApp->instance()->property("ySize").toInt());
 
+    for (PeakCallOut* call : m_peak_anno) {
+        call->update();
+    }
+    m_chart->scene()->update();
+    QApplication::processEvents();
+
     Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();
@@ -822,7 +829,6 @@ void ChartView::ExportPNG()
     }
 
     // do the painting!!
-
     m_chart->scene()->render(&painter, QRectF(0, 0, scale * w, scale * h), m_chart->rect());
 
     /*
@@ -891,8 +897,13 @@ void ChartView::ExportPNG()
     // restore old size
     mCentralHolder->resize(widgetSize);
 
+    for (PeakCallOut* call : m_peak_anno)
+        call->Update();
+
     // and nothing ever happens -> Lemon Tree
     QByteArray itemData;
+
+    ConfigurationChanged();
 
     QFile file(str);
     file.open(QIODevice::WriteOnly);
