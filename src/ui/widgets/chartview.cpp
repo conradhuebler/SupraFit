@@ -315,20 +315,23 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
     }
     connect(series, &QtCharts::QAbstractSeries::nameChanged, series, [this, series]() {
         if (series) {
+            //qDebug() << series->name();
 #warning this can be compressed due to logic gatters
-            bool show = series->name().isEmpty() || series->name().isNull() || series->name() == QString(" ");
+            bool show = series->name().isEmpty() || series->name().isNull() || series->name().simplified() == QString(" ");
             this->m_chart->legend()->markers(series).first()->setVisible(!show);
         }
     });
     connect(series, &QtCharts::QAbstractSeries::visibleChanged, series, [this, series]() {
         if (series) {
+            //qDebug() << series->name();
 #warning this can be compressed due to logic gatters
-            bool show = series->name().isEmpty() || series->name().isNull() || series->name() == QString(" ");
+            bool show = series->name().isEmpty() || series->name().isNull() || series->name().simplified() == QString(" ");
             if (series->isVisible())
                 this->m_chart->legend()->markers(series).first()->setVisible(!show);
         }
     });
-    m_chart->legend()->markers(series).first()->setVisible(!series->name().isEmpty() || series->name().isNull() || series->name() == QString(" "));
+    //qDebug() << series->name();
+    m_chart->legend()->markers(series).first()->setVisible(!(series->name().isEmpty() || series->name().isNull() || series->name().simplified() == QString(" ")));
     connect(series, SIGNAL(visibleChanged()), this, SLOT(forceformatAxis()));
     if (!connected)
         if (connect(this, SIGNAL(AxisChanged()), this, SLOT(forceformatAxis())))
