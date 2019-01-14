@@ -355,8 +355,8 @@ GSConfig AdvancedSearch::Config() const
     GSConfig config;
     config.parameter = m_parameter;
     config.ignored_parameter = m_ignored_parameter;
-    config.initial_guess = m_initial_guess->isChecked();
-    config.optimize = m_optim->isChecked();
+    //config.initial_guess = m_initial_guess->isChecked();
+    //  config.optimize = m_optim->isChecked();
     return config;
 }
 
