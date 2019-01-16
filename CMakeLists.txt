@@ -33,6 +33,9 @@ option (Kinetic_Models
 option (Fluorescence_Models
     "Enable Fluorescence Models" ON)
  
+option (legacy
+    "Enable Legacy Concentration Handling - For benchmark purpose (only)" OFF)
+
 # Get the current working branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD
@@ -136,7 +139,6 @@ if(experimental)
 endif(experimental)
 
 set(libmath_SRC
-                src/core/equal_system.cpp
                 src/core/equil.cpp
                 src/core/optimizer/eigen_levenberg.cpp
                 src/core/libmath.cpp

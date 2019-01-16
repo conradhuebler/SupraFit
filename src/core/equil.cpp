@@ -1,6 +1,6 @@
 /*
   * Tools to calculate Equilibrium Concentrations for different models
-  * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+  * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
   *
   * This program is free software: you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,40 @@
   *
   */
 
+#include <QtCore/QDateTime>
+
 #include <iostream>
 
+#include "src/global_config.h"
 #include "equil.h"
+
+#ifdef legacy
+
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/NonLinearOptimization>
+
+int MyScripteEqualSystem::operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const
+{
+    qreal A = parameter(0);
+    qreal B = parameter(1);
+
+    Vector balance(2);
+
+    qreal complex_21 = K11 * K21 * A * A * B;
+    qreal complex_11 = K11 * A * B;
+    qreal complex_12 = K11 * K12 * A * B * B;
+
+    balance(0) = (2 * complex_21 + complex_11 + complex_12);
+    balance(1) = (complex_21 + complex_11 + 2 * complex_12);
+
+    fvec = parameter + balance - Concen_0;
+
+    return 0;
+}
+
+#endif
+
 
 IItoI_ItoI_ItoII_Solver::IItoI_ItoI_ItoII_Solver()
     : m_ok(false)
@@ -45,6 +76,8 @@ void IItoI_ItoI_ItoII_Solver::run()
     else
         m_ok = true;
 }
+
+#ifndef legacy
 
 QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, double b0)
 {
@@ -113,3 +146,57 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
 
     return QPair<double, double>(a, b);
 }
+
+#endif
+
+#ifdef legacy
+
+QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, double b0)
+{
+    if (!a0 || !b0)
+        return QPair<double, double>(a0, b0);
+
+    qreal K21 = m_parameter[0];
+    qreal K11 = m_parameter[1];
+    qreal K12 = m_parameter[2];
+
+    Eigen::VectorXd parameter(2);
+    parameter(0) = a0;
+    parameter(1) = b0;
+
+    Eigen::VectorXd Concen_0(2);
+    Concen_0(0) = a0;
+    Concen_0(1) = b0;
+
+    MyScripteEqualSystem functor;
+
+    functor.Concen_0 = Concen_0;
+
+    functor.K11 = K11;
+    functor.K21 = K21;
+    functor.K12 = K12;
+
+    Eigen::NumericalDiff<MyScripteEqualSystem> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyScripteEqualSystem>> lm(numDiff);
+    int iter = 0;
+    Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
+    do {
+        for (int i = 0; i < 2; ++i)
+            if (parameter(i) < 0) {
+     //           std::cout << "numeric error (below zero): " << i << std::endl;
+                parameter(i) = qAbs(parameter(i));
+            } else if (parameter(i) > Concen_0(i)) {
+     //           std::cout << "numeric error (above init): " << i << std::endl;
+                qreal diff = (parameter(i) - Concen_0(i));
+                parameter(i) = diff;
+            }
+        status = lm.minimizeOneStep(parameter);
+        iter++;
+    } while (status == -1);
+   // for (int i = 0; i < 2; ++i)
+   //     if (parameter(i) < 0 || parameter(i) > Concen_0(i))
+   //         std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
+    return QPair<qreal,qreal>(double(parameter(0)), double(parameter(1)));
+}
+
+#endif

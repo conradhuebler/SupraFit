@@ -178,6 +178,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
 
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
+
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
@@ -193,6 +194,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
 
     while (m_threadpool->activeThreadCount()) { /*QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);*/
     }
+
 
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);

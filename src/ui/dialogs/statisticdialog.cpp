@@ -641,7 +641,11 @@ void StatisticDialog::IncrementProgress(int time)
     if (m_hidden)
         ShowWidget();
 
+    QTime timer(0,0);
+
     m_time += time;
+    timer = timer.addMSecs(m_time);
+
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     int val = m_progress->value() + 1;
     qreal aver = double(m_time) / val;
@@ -651,7 +655,7 @@ void StatisticDialog::IncrementProgress(int time)
     if (m_progress->maximum() == -1) {
         m_time_info->setText(tr("Nobody knows when this will end.\nBut you hold the door for %2 sec. .").arg(used));
     } else {
-        m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
+        m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 . .").arg(remain).arg(timer.toString("mm:ss.zzz")));
         m_progress->setValue(val);
     }
 }
