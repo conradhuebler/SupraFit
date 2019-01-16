@@ -1,6 +1,6 @@
 /*
- * Tools to calculate Equilibrium Concentrations for different models
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Tools to calculate Equilibrium Concentrations for 2:1/1:1/1:2 models
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,57 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
+
+
+#ifdef legacy
+
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/NonLinearOptimization>
+
+typedef Eigen::VectorXd Vector;
+
+template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
+struct ScriptedEqualSystem {
+    typedef _Scalar Scalar;
+    enum {
+        InputsAtCompileTime = NX,
+        ValuesAtCompileTime = NY
+    };
+    typedef Eigen::Matrix<Scalar, InputsAtCompileTime, 1> InputType;
+    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
+    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime> JacobianType;
+
+
+    inline ScriptedEqualSystem()
+    {
+    }
+
+    inline int inputs() const { return 2; }
+    inline int values() const { return 2; }
+};
+
+struct MyScripteEqualSystem : ScriptedEqualSystem<double> {
+    inline MyScripteEqualSystem()
+        : ScriptedEqualSystem()
+    {
+    }
+    int operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const;
+    Eigen::VectorXd Concen_0;
+
+    double K21 = 0, K11 = 0, K12 = 0;
+
+    inline int inputs() const { return 2; } // There are two parameters of the model
+    inline int values() const { return 2; } // The number of observations
+};
+
+struct MyScripteEqualSystemNumericalDiff : Eigen::NumericalDiff<MyScripteEqualSystem> {
+};
+
+
+#endif
+
+
 
 namespace ItoI {
 

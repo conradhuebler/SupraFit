@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QtCore/QMutex>
+#include <QtCore/QTime>
 
 #include <QtGui/QPainter>
 #include <QtGui/QTextDocument>

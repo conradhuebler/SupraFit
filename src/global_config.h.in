@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #cmakedefine BENCHMARK_LEVEL
 #cmakedefine experimental
@@ -9,5 +8,4 @@
 #cmakedefine ITC_Models
 #cmakedefine Kinetic_Models
 #cmakedefine Fluorescence_Models
-
-#endif
+#cmakedefine legacy
