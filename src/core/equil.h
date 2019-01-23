@@ -25,8 +25,6 @@
 #include <QtCore/QRunnable>
 
 
-#ifdef legacy
-
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/NonLinearOptimization>
@@ -71,7 +69,6 @@ struct MyScripteEqualSystemNumericalDiff : Eigen::NumericalDiff<MyScripteEqualSy
 };
 
 
-#endif
 
 
 
@@ -146,17 +143,27 @@ public:
     IItoI_ItoI_ItoII_Solver();
     ~IItoI_ItoI_ItoII_Solver();
     virtual void run();
-    void setInput(double A_0, double B_0);
+    void RunTest();
+    void setInput(double A0, double B0);
     inline void setConstants(const QList<qreal>& parameter) { m_parameter = parameter; }
     inline void setConfig(OptimizerConfig opt_config) { m_opt_config = opt_config; }
     inline QPair<double, double> Concentrations() const { return m_concentration; }
-    bool Ok() const { return m_ok; }
+    inline QPair<double, double> ConcentrationsLegacy() const { return m_concentration_legacy; }
+
+    inline bool Ok() const { return m_ok; }
+    inline bool LOk() const { return m_lok; }
+
+    inline qreal Time() const { return m_t; }
+    inline qreal LTime() const { return m_lt; }
 
 private:
     QList<qreal> m_parameter;
-    qreal m_A_0, m_B_0;
+    qreal m_A0, m_B0;
     QPair<double, double> HostConcentration(double a0, double b0);
-    QPair<double, double> m_concentration;
-    bool m_ok;
+    QPair<double, double> LegacyHostConcentration(double a0, double b0);
+
+    QPair<double, double> m_concentration, m_concentration_legacy;
+    bool m_ok = true, m_lok = true;
+    int m_t = 0, m_lt = 0;
     OptimizerConfig m_opt_config;
 };

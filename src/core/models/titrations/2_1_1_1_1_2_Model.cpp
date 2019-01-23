@@ -63,6 +63,7 @@ IItoI_ItoI_ItoII_Model::IItoI_ItoI_ItoII_Model(AbstractTitrationModel* data)
 IItoI_ItoI_ItoII_Model::~IItoI_ItoI_ItoII_Model()
 {
     qDeleteAll(m_solvers);
+    qDebug() << "time for calculation" << m_time << "in" << Description();
 }
 
 void IItoI_ItoI_ItoII_Model::DeclareOptions()
@@ -198,6 +199,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
 
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
+        m_time += m_solvers[i]->Time() + m_solvers[i]->LTime();
         if (!m_solvers[i]->Ok()) {
 #ifdef _DEBUG
             qDebug() << "Numeric didn't work out well, mark model as corrupt! - Dont panic. Not everything is lost ...";

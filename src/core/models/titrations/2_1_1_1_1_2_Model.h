@@ -104,6 +104,7 @@ private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;
     QList<qreal> m_constants_pow;
     QThreadPool* m_threadpool;
+    int m_time = 0;
 
 protected:
     virtual void CalculateVariables() override;

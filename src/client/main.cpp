@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 #include "src/client/analyser.h"
 #include "src/client/simulator.h"
 
+#include "src/core/equil.h"
+
 #include "src/global.h"
 #include "src/global_config.h"
 #include "src/version.h"
@@ -28,6 +30,8 @@
 
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
+
+#include <QtCore/QRandomGenerator>
 
 #include <QCoreApplication>
 
@@ -66,8 +70,8 @@ int main(int argc, char** argv)
 
     QCommandLineOption t(QStringList() << "t"
                                        << "task",
-        QCoreApplication::translate("main", "Define task to be done:\n a - Analyse Model \n g - Generate data\n o - Optimise Model \n s - Simulate experiments, optimise and analyse according to -s option"),
-        QCoreApplication::translate("main", "a g o s"),
+        QCoreApplication::translate("main", "Define task to be done:\n a - Analyse Model \n c - Concentration solver test \n g - Generate data\n o - Optimise Model \n s - Simulate experiments, optimise and analyse according to -s option"),
+        QCoreApplication::translate("main", "a c g o s"),
         QCoreApplication::translate("main", ""));
     parser.addOption(t);
 
@@ -80,7 +84,7 @@ int main(int argc, char** argv)
 
     QCommandLineOption experiments(QStringList() << "e"
                                                  << "experiments",
-        QCoreApplication::translate("main", "Number of experiments ( will only be evaluated if -t/--task s"),
+        QCoreApplication::translate("main", "Number of experiments ( will only be evaluated if -t/--task s or -t/--task c)!"),
         QCoreApplication::translate("main", "number"),
         QCoreApplication::translate("main", "1000"));
     parser.addOption(experiments);
@@ -105,7 +109,10 @@ int main(int argc, char** argv)
 
     const QString infile = parser.value("i");
 
-    if (infile.isEmpty()) {
+    const QString print = parser.value("print");
+    const QString task = parser.value("task");
+
+    if (infile.isEmpty() && (task != "c")) {
         std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
         std::cout << "The simplest task for SupraFit to be done is opening a file and writing a project to disk." << std::endl;
         std::cout << "That would be like converting a *.json file to a *.suprafit file or vice versa :-)" << std::endl;
@@ -119,8 +126,6 @@ int main(int argc, char** argv)
     if (outfile.isEmpty())
         outfile = infile;
 
-    const QString print = parser.value("print");
-    const QString task = parser.value("task");
     std::cout << "Task is " << task.toStdString() << std::endl;
     int exp = parser.value("e").toInt();
     qreal std = parser.value("g").toDouble();
@@ -180,6 +185,64 @@ int main(int argc, char** argv)
         /* We need to adopt this to work on the models stored */
 
         return 0;
+    } else if (task == "c") {
+        std::cout << "Concentration solver 2:1/1:1/1:2 test!" << std::endl
+                  << std::endl;
+        IItoI_ItoI_ItoII_Solver* solver = new IItoI_ItoI_ItoII_Solver();
+        OptimizerConfig opt_config;
+        opt_config.concen_convergency = 10E-13;
+        opt_config.single_iter = 1500;
+        solver->setConfig(opt_config);
+
+        qreal all_diff_1 = 0, all_diff_2 = 0;
+        int fine = 0, lfine = 0;
+        for (int i = 0; i < exp; ++i) {
+            qreal K11 = qPow(10, 1 + QRandomGenerator::global()->bounded(4.0));
+            qreal K21 = qPow(10, 1 + QRandomGenerator::global()->bounded(4.0));
+            qreal K12 = qPow(10, 1 + QRandomGenerator::global()->bounded(4.0));
+
+            qreal A = QRandomGenerator::global()->bounded(1e-4);
+            qreal B = QRandomGenerator::global()->bounded(1e-4);
+
+            qreal AB = K11 * A * B;
+            qreal A2B = K21 * A * AB;
+            qreal AB2 = K12 * AB * B;
+
+            qreal A0 = 2 * A2B + AB + AB2;
+            qreal B0 = A2B + AB + 2 * AB2;
+
+            solver->setConstants(QList<qreal>() << K21 << K11 << K12);
+            solver->setInput(A0, B0);
+
+            solver->RunTest();
+
+            qreal diff_1 = qAbs(A - solver->Concentrations().first) + qAbs(B - solver->Concentrations().second);
+            qreal diff_2 = qAbs(A - solver->ConcentrationsLegacy().first) + qAbs(B - solver->ConcentrationsLegacy().second);
+
+            if (solver->Ok())
+                all_diff_1 += diff_1;
+            if (solver->LOk())
+                all_diff_2 += diff_2;
+
+            std::cout << log10(K21) << "\t"
+                      << log10(K11) << "\t"
+                      << log10(K12) << "\t"
+                      << A << "\t"
+                      << B << "\t"
+                      << solver->Concentrations().first << "\t"
+                      << solver->Concentrations().second << "\t"
+                      << diff_1 << "\t" << solver->Ok() << "\t"
+                      << solver->ConcentrationsLegacy().first << "\t"
+                      << solver->ConcentrationsLegacy().second << "\t"
+                      << diff_2 << "\t" << solver->LOk() << std::endl;
+            fine += solver->Ok();
+            lfine += solver->LOk();
+        }
+        std::cout << "Mean errors for standard method " << all_diff_1 / double(fine) << "\t and for legacy solver " << all_diff_2 / double(lfine) << std::endl;
+        std::cout << "Time for Solver " << solver->Time() << " Fine Calculation = " << fine << std::endl;
+        std::cout << "Time for Solver " << solver->LTime() << " Fine Calculation = " << lfine << std::endl;
+
+        delete solver;
     } else if (task == "g") {
         /* Something completely different */
 

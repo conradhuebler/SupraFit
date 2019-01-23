@@ -62,9 +62,10 @@ void NonLinearFitThread::run()
 
 void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, bool clone)
 {
-    if (clone)
+    if (clone) {
         m_model = model->Clone();
-    else
+        m_model->setDescription("Optimiser Model");
+    } else
         m_model = model;
 
     m_model->Calculate();

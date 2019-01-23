@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- add some benchmark stuff for 2:1/1:1/1:2 concentration solver
 - add the legacy concentration solver for 2:1/1:1/1:2 systems for benchmark/comparison
 - Charts representing Fast Confidence results added
 - more tweaks for Grid Search method

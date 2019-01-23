@@ -18,13 +18,13 @@
   */
 
 #include <QtCore/QDateTime>
+#include <QtCore/QThread>
 
 #include <iostream>
 
 #include "src/global_config.h"
 #include "equil.h"
 
-#ifdef legacy
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -49,8 +49,6 @@ int MyScripteEqualSystem::operator()(const Eigen::VectorXd& parameter, Eigen::Ve
     return 0;
 }
 
-#endif
-
 
 IItoI_ItoI_ItoII_Solver::IItoI_ItoI_ItoII_Solver()
     : m_ok(false)
@@ -62,28 +60,38 @@ IItoI_ItoI_ItoII_Solver::~IItoI_ItoI_ItoII_Solver()
 {
 }
 
-void IItoI_ItoI_ItoII_Solver::setInput(double A_0, double B_0)
+void IItoI_ItoI_ItoII_Solver::setInput(double A0, double B0)
 {
-    m_A_0 = A_0;
-    m_B_0 = B_0;
-    m_concentration = QPair<double, double>(A_0, B_0);
+    m_A0 = A0;
+    m_B0 = B0;
+    m_concentration = QPair<double, double>(A0, B0);
 }
 
 void IItoI_ItoI_ItoII_Solver::run()
 {
-    if (m_A_0 && m_B_0)
-        m_concentration = HostConcentration(m_A_0, m_B_0);
+    if (m_A0 && m_B0)
+#ifndef legacy
+        m_concentration = HostConcentration(m_A0, m_B0);
+#else
+        m_concentration = LegacyHostConcentration(m_A0, m_B0);
+#endif
     else
         m_ok = true;
 }
 
-#ifndef legacy
+void IItoI_ItoI_ItoII_Solver::RunTest()
+{
+    m_concentration = HostConcentration(m_A0, m_B0);
+
+    m_concentration_legacy = LegacyHostConcentration(m_A0, m_B0);
+}
 
 QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, double b0)
 {
     if (!a0 || !b0)
         return QPair<double, double>(a0, b0);
 
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     qreal K21 = m_parameter[0];
     qreal K11 = m_parameter[1];
     qreal K12 = m_parameter[2];
@@ -138,23 +146,24 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
             break;
     }
 #ifdef _DEBUG
+    std::cout << std::endl
+              << std::endl;
     std::cout << a_1 << " " << b_1 << " " << K11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
     std::cout << a << " " << b << " " << K11 * a * b << " " << b21 * a * a * b << " " << b12 * a * b * b << std::endl;
     std::cout << "Guess A: " << qMin(a0, b0) / K11 * 100 << " .. Final A: " << a << " .. Iterations:" << i << std::endl;
 #endif
-    m_ok = (a < m_A_0) && (b < m_B_0) && (a > 0) && (b > 0) && i < m_opt_config.single_iter;
+    m_ok = (a < m_A0) && (b < m_B0) && (a > 0) && (b > 0) && i < m_opt_config.single_iter;
+    m_t += QDateTime::currentMSecsSinceEpoch() - t0;
 
     return QPair<double, double>(a, b);
 }
 
-#endif
-
-#ifdef legacy
-
-QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, double b0)
+QPair<double, double> IItoI_ItoI_ItoII_Solver::LegacyHostConcentration(double a0, double b0)
 {
     if (!a0 || !b0)
         return QPair<double, double>(a0, b0);
+
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     qreal K21 = m_parameter[0];
     qreal K11 = m_parameter[1];
@@ -183,20 +192,21 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
     do {
         for (int i = 0; i < 2; ++i)
             if (parameter(i) < 0) {
-     //           std::cout << "numeric error (below zero): " << i << std::endl;
+                //  std::cout << "numeric error (below zero): " << i << std::endl;
                 parameter(i) = qAbs(parameter(i));
             } else if (parameter(i) > Concen_0(i)) {
-     //           std::cout << "numeric error (above init): " << i << std::endl;
+                //  std::cout << "numeric error (above init): " << i << std::endl;
                 qreal diff = (parameter(i) - Concen_0(i));
                 parameter(i) = diff;
             }
         status = lm.minimizeOneStep(parameter);
         iter++;
     } while (status == -1);
-   // for (int i = 0; i < 2; ++i)
-   //     if (parameter(i) < 0 || parameter(i) > Concen_0(i))
-   //         std::cout << "final numeric error " << i << " " << parameter(i) << " " << Concen_0(i) << std::endl;
+    for (int i = 0; i < 2; ++i)
+        if (parameter(i) < 0 || parameter(i) > Concen_0(i))
+            m_lok = false;
+    m_lt += QDateTime::currentMSecsSinceEpoch() - t0;
+
     return QPair<qreal,qreal>(double(parameter(0)), double(parameter(1)));
 }
 
-#endif

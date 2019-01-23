@@ -639,6 +639,10 @@ public:
 
     qreal ErrorfTestThreshold(qreal pvalue);
 
+    inline void setDescription(const QString& str) { m_desc = str; }
+
+    inline QString Description() const { return m_desc; }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -714,7 +718,7 @@ protected:
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
 
-    QString m_more_info, m_name, m_name_cached, m_model_uuid;
+    QString m_more_info, m_name, m_name_cached, m_model_uuid, m_desc;
 
     /* Let models store additional charts, where anything can be plotted, e.g concentration curves or anything else
       BUT since abstractmodels should not depend on anything graphics related, they will be no series, but simple structs
