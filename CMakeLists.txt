@@ -97,15 +97,7 @@ else()
 	message(SEND_ERROR "You are on an unsupported platform! (Not Win32, Mac OS X or Unix)")
 endif(WIN32)
 
-configure_file (
-  "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
-  "${PROJECT_BINARY_DIR}/src/global_config.h"
-)
 
-configure_file(
-  "${CMAKE_SOURCE_DIR}/src/version.h.in"
-  "${CMAKE_BINARY_DIR}/src/version.h"
-)
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -pedantic \
@@ -127,12 +119,25 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-
 find_package(Qt5PrintSupport CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 
+if(Qt5Widgets_VERSION GREATER 5.9)
+    set(Qt5_10 ON)
+endif()
+
 include_directories(SYSTEM ${QT_INCLUDES} eigen/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} fisher_dist/ libpeakpick/)
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
+  "${PROJECT_BINARY_DIR}/src/global_config.h"
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/src/version.h.in"
+  "${CMAKE_BINARY_DIR}/src/version.h"
+)
 
 if(experimental)
     include_directories(SYSTEM ChaiScript/include)

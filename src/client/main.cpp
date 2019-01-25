@@ -31,8 +31,9 @@
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
 
+#ifdef Qt5_10
 #include <QtCore/QRandomGenerator>
-
+#endif
 #include <QCoreApplication>
 
 #include <iostream>
@@ -188,6 +189,7 @@ int main(int argc, char** argv)
     } else if (task == "c") {
         std::cout << "Concentration solver 2:1/1:1/1:2 test!" << std::endl
                   << std::endl;
+#ifdef Qt5_10
         IItoI_ItoI_ItoII_Solver* solver = new IItoI_ItoI_ItoII_Solver();
         OptimizerConfig opt_config;
         opt_config.concen_convergency = 10E-13;
@@ -243,6 +245,9 @@ int main(int argc, char** argv)
         std::cout << "Time for Solver " << solver->LTime() << " Fine Calculation = " << lfine << std::endl;
 
         delete solver;
+#else
+        std::cout << "Sorry, but this functions need Qt 5.10 or newer ... " << std::endl;
+#endif
     } else if (task == "g") {
         /* Something completely different */
 
