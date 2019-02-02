@@ -25,6 +25,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QTextEdit>
 
 #include "comparedialog.h"
 
@@ -37,6 +38,10 @@ CompareDialog::CompareDialog(QWidget* parent)
 
 void CompareDialog::setUi()
 {
+
+    m_overview = new QTextEdit;
+    m_overview->setReadOnly(true);
+
     QGroupBox* reduction = new QGroupBox(tr("Reduction Analysis"));
     QGridLayout* layout = new QGridLayout;
     m_reduction = new QPushButton(tr("Compare Reduction Analysis"));
@@ -64,12 +69,18 @@ void CompareDialog::setUi()
     aic->setLayout(layout);
 
     layout = new QGridLayout;
-    layout->addWidget(reduction, 0, 0, 1, 2);
-    layout->addWidget(aic, 1, 0, 1, 2);
+    //layout->addWidget(reduction, 0, 0, 1, 2);
+    //layout->addWidget(aic, 1, 0, 1, 2);
+
+    QHBoxLayout* hlayout = new QHBoxLayout;
+    hlayout->addWidget(reduction);
+    hlayout->addWidget(aic);
 
     m_hide = new QPushButton(tr("Hide Dialog"));
     connect(m_hide, &QPushButton::clicked, this, &QDialog::hide);
-    layout->addWidget(m_hide, 2, 1);
+    layout->addWidget(m_overview, 0, 0);
+    layout->addLayout(hlayout, 1, 0);
+    layout->addWidget(m_hide, 2, 0);
 
     setLayout(layout);
 }

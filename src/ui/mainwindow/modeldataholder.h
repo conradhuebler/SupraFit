@@ -154,6 +154,9 @@ public:
     void addMetaModel(QSharedPointer<AbstractModel> t);
 
     inline QWeakPointer<ChartWrapper> getChartWrapper() const { return m_wrapper; }
+
+    QString Compare() const;
+
 public slots:
     /*
      * Add a new model to the workspace

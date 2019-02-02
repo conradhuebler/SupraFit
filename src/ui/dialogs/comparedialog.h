@@ -24,8 +24,10 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QTextEdit>
 
 class QPushButton;
+class QTextEdit;
 
 class CompareDialog : public QDialog {
     Q_OBJECT
@@ -34,6 +36,7 @@ public:
     void setCutoff(qreal cutoff);
     inline qreal CutOff() const { return m_cutoff_box->value(); }
     inline bool Local() const { return m_local->isChecked(); }
+    inline void SetComparison(const QString& text) { m_overview->setHtml(text); }
 
 private:
     void setUi();
@@ -43,6 +46,8 @@ private:
     QCheckBox* m_local;
 
     qreal m_cutoff;
+
+    QTextEdit* m_overview;
 
 signals:
     void CompareReduction();
