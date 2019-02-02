@@ -93,6 +93,8 @@ public:
 
     virtual QString AdditionalOutput() const override;
 
+    inline double ReductionCutOff() const { return 2; }
+
 protected:
     virtual void CalculateVariables() override;
 };

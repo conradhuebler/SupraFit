@@ -139,7 +139,7 @@ void ReductionAnalyse::PlainReduction()
     config.optimizer_config = m_config.optimizer_config;
     m_controller["method"] = SupraFit::Statistic::Reduction;
     m_controller["xlabel"] = m_model.data()->XLabel();
-
+    m_controller["cutoff"] = m_model.data()->ReductionCutOff();
     emit MaximumSteps(m_model->DataPoints());
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);

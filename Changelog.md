@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- Models with defined Reduction Analysis Cutoff (NMR Titration so far) automatically evaluate the Reduction Results
 - add some benchmark stuff for 2:1/1:1/1:2 concentration solver
 - add the legacy concentration solver for 2:1/1:1/1:2 systems for benchmark/comparison
 - Charts representing Fast Confidence results added

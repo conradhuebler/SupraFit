@@ -860,19 +860,51 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
     }
 
     if (type == SupraFit::Statistic::Reduction) {
-        qreal value = 0, sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0;
+
+        auto CalculateReduction = [&text](qreal value, const QVector<qreal>& vector) -> qreal {
+            qreal sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0;
+            for (int i = 0; i < vector.size(); ++i) {
+                aver += vector[i];
+                sum_err += (value - vector[i]) * (value - vector[i]);
+                max_err = qMax(qAbs(value - vector[i]), max_err);
+            }
+            aver /= double(vector.size());
+            aver_err = sqrt(sum_err) / double(vector.size());
+            stdev = Stddev(vector);
+            text += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
+            text += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
+            return stdev;
+        };
+
+        qreal value = 0;
         value = result["value"].toDouble();
+
         QVector<qreal> vector = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
-        for (int i = 0; i < vector.size(); ++i) {
-            aver += vector[i];
-            sum_err += (value - vector[i]) * (value - vector[i]);
-            max_err = qMax(qAbs(value - vector[i]), max_err);
+        text += "<tr><th colspan='2'>Post-Processing the Reduction Analysis without applied cutoff!</th></tr>";
+
+        qreal stdev_full = CalculateReduction(value, vector);
+
+        double cutoff = controller["cutoff"].toDouble();
+        QVector<qreal> vector_1, vector_2;
+        QVector<qreal> x = ToolSet::String2DoubleVec(controller["x"].toString());
+        if (cutoff != -1) {
+            text += QString("<tr><th colspan='2'>Post-Processing the Reduction Analysis applied cutoff of %1!</th></tr>").arg(cutoff);
+
+            for (int i = 0; i < vector.size(); ++i) {
+                if (x[i] > cutoff)
+                    vector_1 << vector[i];
+                else
+                    vector_2 << vector[i];
+            }
+
+            text += QString("<tr><th colspan='2'>Incooperating points above %1!</th></tr>").arg(cutoff);
+            qreal stdev_good = CalculateReduction(value, vector_1);
+
+            text += QString("<tr><th colspan='2'>Incooperating points below %1!</th></tr>").arg(cutoff);
+            qreal stdev_bad = CalculateReduction(value, vector_2);
+
+            text += QString("<tr><th colspan='2'>Ratio of the Standard deviation is %1, compared to the original %2!</th></tr>").arg(stdev_good / stdev_bad).arg(stdev_full);
         }
-        aver /= double(vector.size());
-        aver_err = sqrt(sum_err) / double(vector.size());
-        stdev = Stddev(vector);
-        text += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
-        text += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
     }
     text += "<tr><td></td></tr></table><p> ... done ...</p>";
     return text;

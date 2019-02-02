@@ -201,7 +201,7 @@ private:
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
     int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
-
+    double m_ReductionCutoff = 0;
 private slots:
     void AddModel();
 

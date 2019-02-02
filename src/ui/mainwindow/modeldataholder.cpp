@@ -335,7 +335,7 @@ ModelDataHolder::ModelDataHolder()
     connect(m_TitleBarWidget, &MDHDockTitleBar::EditData, this, &ModelDataHolder::EditData);
     connect(m_TitleBarWidget, &MDHDockTitleBar::Compare, this, [this]() {
         if (this->m_compare_dialog) {
-            m_compare_dialog->setCutoff(1.8);
+            m_compare_dialog->setCutoff(this->m_ReductionCutoff);
             m_compare_dialog->show();
         }
     });
@@ -459,6 +459,9 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     else
         m_history = true;
     ActiveBatch();
+
+    m_ReductionCutoff = qMax(m_ReductionCutoff, t->ReductionCutOff());
+
     emit ModelAdded();
 }
 

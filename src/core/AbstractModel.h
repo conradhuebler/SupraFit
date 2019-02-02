@@ -643,6 +643,10 @@ public:
 
     inline QString Description() const { return m_desc; }
 
+    /*! \brief Define the cut off for reduction analysis 
+     * Cut offs are model specific parameters, that have the be determined seperatly */
+    inline virtual double ReductionCutOff() const { return -1; }
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

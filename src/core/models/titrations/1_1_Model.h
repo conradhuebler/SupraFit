@@ -78,6 +78,8 @@ public:
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
+    inline double ReductionCutOff() const { return 1; }
+
 protected:
     virtual void CalculateVariables() override;
 };

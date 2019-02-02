@@ -1192,6 +1192,8 @@ QString AbstractModel::AnalyseStatistic(bool forceAll) const
 QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll) const
 {
     QJsonObject controller = object["controller"].toObject();
+    QString text;
+
     switch (controller["method"].toInt()) {
     case SupraFit::Statistic::WeakenedGridSearch:
         return AnalyseGridSearch(object, forceAll);
@@ -1206,7 +1208,13 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
         break;
 
     case SupraFit::Statistic::Reduction:
-        return Print::TextFromConfidence(object, controller);
+
+        for (int i = 0; i < object.count() - 1; ++i) {
+            QJsonObject data = object.value(QString::number(i)).toObject();
+            if (data.isEmpty())
+                continue;
+            text += Print::TextFromConfidence(data, object["controller"].toObject());
+        }
         break;
 
     case SupraFit::Statistic::MonteCarlo:
@@ -1215,7 +1223,7 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
         return AnalyseMonteCarlo(object, forceAll);
         break;
     }
-    return QString();
+    return text;
 }
 
 QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
