@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -327,6 +327,7 @@ ModelDataHolder::ModelDataHolder()
     m_compare_dialog = new CompareDialog(this);
     connect(m_compare_dialog, &CompareDialog::CompareReduction, this, &ModelDataHolder::CompareReduction);
     connect(m_compare_dialog, &CompareDialog::CompareAIC, this, &ModelDataHolder::CompareAIC);
+    connect(m_compare_dialog, &CompareDialog::CompareCV, this, &ModelDataHolder::CompareCV);
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
@@ -799,6 +800,61 @@ void ModelDataHolder::HideSubWindows(int index)
     }
 }
 
+void ModelDataHolder::CompareAIC()
+{
+    QVector<QWeakPointer<AbstractModel>> models;
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (!m_model_widgets[i - 1]->isChecked())
+            continue;
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+            models << modelwidget->Model();
+        }
+    }
+
+    QString result = StatisticTool::CompareAIC(models);
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    QTextEdit* text = new QTextEdit;
+    text->setText("<html><pre>" + result + "</pre></html>");
+    layout->addWidget(text);
+    QDialog dialog(this);
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
+}
+
+void ModelDataHolder::CompareCV()
+{
+
+    if (!m_compare_dialog)
+        return;
+
+    int cvtype = m_compare_dialog->CVType();
+
+    QVector<QJsonObject> models;
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (!m_model_widgets[i - 1]->isChecked())
+            continue;
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+            QJsonObject model = modelwidget->Model()->ExportModel();
+            models << model;
+        }
+    }
+
+    QString result = StatisticTool::CompareCV(models, cvtype);
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    QTextEdit* text = new QTextEdit;
+    text->setText("<html><pre>" + result + "</pre></html>");
+    layout->addWidget(text);
+    QDialog dialog(this);
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
+}
+
 void ModelDataHolder::CompareReduction()
 {
     if (!m_compare_dialog)
@@ -841,29 +897,7 @@ void ModelDataHolder::CompareReduction()
     dialog.exec();
 }
 
-void ModelDataHolder::CompareAIC()
-{
-    QVector<QWeakPointer<AbstractModel>> models;
-    for (int i = 1; i < m_modelsWidget->count(); i++) {
-        if (!m_model_widgets[i - 1]->isChecked())
-            continue;
-        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
-            ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
-            models << modelwidget->Model();
-        }
-    }
 
-    QString result = StatisticTool::CompareAIC(models);
-
-    QHBoxLayout* layout = new QHBoxLayout;
-    QTextEdit* text = new QTextEdit;
-    text->setText("<html><pre>" + result + "</pre></html>");
-    layout->addWidget(text);
-    QDialog dialog(this);
-    dialog.setLayout(layout);
-    dialog.resize(1024, 800);
-    dialog.exec();
-}
 
 void ModelDataHolder::EditData()
 {
@@ -900,7 +934,7 @@ QString ModelDataHolder::Compare() const
 {
     QString compare;
 
-    compare += "<h4>Models OVerview - Some important information right away</h4>";
+    compare += "<h4>Models Overview - Some important information right away</h4>";
     compare += "<table>";
     compare += "<tr><th>model name</th><th># parameter</th><th>SSE</th><th>SE<sub>y</sub></th><th>&sigma;</th></tr>";
 

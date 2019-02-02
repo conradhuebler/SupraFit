@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,4 +29,5 @@ namespace StatisticTool {
 
 QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>> models, double cutoff = 0);
 QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models);
+QString CompareCV(const QVector<QJsonObject> models, int cvtype = 1, int bins = 30, bool local = true);
 }

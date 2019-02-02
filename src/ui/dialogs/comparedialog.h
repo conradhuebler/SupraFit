@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QRadioButton>
 #include <QtWidgets/QTextEdit>
 
 class QPushButton;
@@ -38,18 +39,22 @@ public:
     inline bool Local() const { return m_local->isChecked(); }
     inline void SetComparison(const QString& text) { m_overview->setHtml(text); }
 
+    int CVType() const { return m_cvtype; }
+
 private:
     void setUi();
 
-    QPushButton *m_reduction, *m_aic, *m_hide;
-    QPointer<QDoubleSpinBox> m_cutoff_box;
+    QPushButton *m_reduction, *m_aic, *m_hide, *m_crossvalidation;
+    QDoubleSpinBox* m_cutoff_box;
     QCheckBox* m_local;
-
+    QRadioButton *m_cv_loo, *m_cv_l2o;
     qreal m_cutoff;
+    int m_cvtype = 1;
 
     QTextEdit* m_overview;
 
 signals:
     void CompareReduction();
     void CompareAIC();
+    void CompareCV();
 };

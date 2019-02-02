@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,9 +41,9 @@ void CompareDialog::setUi()
 
     m_overview = new QTextEdit;
     m_overview->setReadOnly(true);
+    QGridLayout* layout = new QGridLayout;
 
     QGroupBox* reduction = new QGroupBox(tr("Reduction Analysis"));
-    QGridLayout* layout = new QGridLayout;
     m_reduction = new QPushButton(tr("Compare Reduction Analysis"));
     connect(m_reduction, &QPushButton::clicked, this, &CompareDialog::CompareReduction);
 
@@ -54,7 +54,6 @@ void CompareDialog::setUi()
     m_cutoff_box->setValue(m_cutoff);
 
     m_local = new QCheckBox(tr("Include local Parameter"));
-
     reduction->setLayout(layout);
     layout->addWidget(m_cutoff_box, 0, 0);
     layout->addWidget(m_local, 0, 1);
@@ -64,17 +63,34 @@ void CompareDialog::setUi()
     QGroupBox* aic = new QGroupBox(tr("Akaike’s Information Criterion"));
     m_aic = new QPushButton(tr("Compare AIC"));
     connect(m_aic, &QPushButton::clicked, this, &CompareDialog::CompareAIC);
-
     layout->addWidget(m_aic, 0, 0);
     aic->setLayout(layout);
 
     layout = new QGridLayout;
-    //layout->addWidget(reduction, 0, 0, 1, 2);
-    //layout->addWidget(aic, 1, 0, 1, 2);
+    QGroupBox* crossvalidation = new QGroupBox(tr("Cross Validation"));
+    m_crossvalidation = new QPushButton(tr("Compare Cross Validation"));
+    m_cv_loo = new QRadioButton(tr("LOO CV"));
+    connect(m_cv_loo, &QPushButton::clicked, this, [this]() {
+        this->m_cvtype = 1;
+    });
+    m_cv_l2o = new QRadioButton(tr("L2O CV"));
+    connect(m_cv_l2o, &QPushButton::clicked, this, [this]() {
+        this->m_cvtype = 2;
+    });
+    m_cv_loo->setChecked(true);
+
+    connect(m_crossvalidation, &QPushButton::clicked, this, &CompareDialog::CompareCV);
+    layout->addWidget(m_cv_loo, 0, 0);
+    layout->addWidget(m_cv_l2o, 0, 1);
+    layout->addWidget(m_crossvalidation, 1, 0, 1, 2);
+    crossvalidation->setLayout(layout);
+
+    layout = new QGridLayout;
 
     QHBoxLayout* hlayout = new QHBoxLayout;
     hlayout->addWidget(reduction);
     hlayout->addWidget(aic);
+    hlayout->addWidget(crossvalidation);
 
     m_hide = new QPushButton(tr("Hide Dialog"));
     connect(m_hide, &QPushButton::clicked, this, &QDialog::hide);

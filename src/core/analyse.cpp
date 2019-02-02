@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+#include <QDebug>
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QMultiMap>
@@ -221,6 +223,78 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
     return result;
 }
 
+QString CompareCV(const QVector<QJsonObject> models, int cvtype, int bins, bool local)
+{
+
+    QMultiMap<qreal, QString> individual, model_wise;
+
+    QMultiMap<qreal, QString> concl_corr;
+    QMap<qreal, QString> mean_std_orderd, mean_std_corr_orderd;
+    QHash<QString, qreal> parameters, parameters_corr;
+    QHash<QString, int> parameters_count;
+
+    QString result = QString("<table>");
+
+    for (const auto& model : models) {
+
+        QJsonObject statistics = model["data"].toObject()["statistics"].toObject();
+        QStringList keys = statistics.keys();
+
+        for (const QString& str : qAsConst(keys)) {
+            QJsonObject obj = model["data"].toObject()["statistics"].toObject()[str].toObject();
+            QJsonObject controller = model["data"].toObject()["statistics"].toObject()[str].toObject()["controller"].toObject();
+            int method = controller["method"].toInt();
+            int type = controller["CVType"].toInt();
+            if (method != 4 || type != cvtype)
+                continue;
+
+            QStringList k = obj.keys();
+            qreal hx = 0;
+
+            for (const QString& element : qAsConst(k)) {
+                if (element == "controller")
+                    continue;
+
+                QJsonObject result = obj[element].toObject();
+
+                QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
+                QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
+                ToolSet::Normalise(histogram);
+                QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
+
+                QString name = result["name"].toString() + " - " + model["name"].toString();
+                hx += pair.first;
+                if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter")
+                    individual.insert(pair.first, name);
+            }
+            model_wise.insert(hx / double(k.size() - 1), model["name"].toString());
+        }
+    }
+
+    {
+        auto i = model_wise.begin();
+        qreal first = 0;
+        while (i != model_wise.constEnd()) {
+
+            if (i == model_wise.begin())
+                first = i.key();
+            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+            ++i;
+        }
+    }
+    {
+        auto i = individual.begin();
+        qreal first = 0;
+        while (i != individual.constEnd()) {
+
+            if (i == individual.begin())
+                first = i.key();
+            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+            ++i;
+        }
+    }
+    return result;
+}
 QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
 {
     QString result = "Akaike's Information Criterion AIC";
