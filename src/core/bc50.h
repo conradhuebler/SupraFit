@@ -277,6 +277,47 @@ namespace ItoII {
         return integ;
     }
 
+    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b11 = parameter[0];
+        qreal b12 = parameter[1];
+
+        qreal alpha = x/(1.0-x);
+        qreal B = -b11 / (2.0 * b12) + sqrt(b11 * b11 / (b12 * b12 * 4.0) + alpha / b12);
+        return B;
+    }
+
+    inline qreal AFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b11 = parameter[0];
+        qreal b12 = parameter[1];
+
+        qreal B = BFunction(x, parameter);
+        qreal A = 1/(b11+2*b12*B);
+        return A;
+    }
+
+    inline qreal ABFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b11 = parameter[0];
+
+        qreal A = AFunction(x, parameter);
+        qreal B = BFunction(x, parameter);
+
+        return A*B*b11;
+    }
+
+
+    inline qreal AB2Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b12 = parameter[1];
+
+        qreal A = AFunction(x, parameter);
+        qreal B = BFunction(x, parameter);
+
+        return A*B*B*b12;
+    }
+
     inline QString Format_BC50(const qreal logK11, const qreal logK12)
     {
         QString result = QString();
@@ -288,20 +329,31 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
 
-        qreal A = 0;
-        qreal B = 0, AB = 0, AB2 = 0;
+        qreal upper = 1;
+        qreal prec = 1e-5;
+        std::function<qreal(qreal, const QVector<qreal>&)> function = AFunction;
+        qreal A = SimpsonIntegrate(0, upper, function, parameter, prec);
+        function = BFunction;
+        qreal  B = SimpsonIntegrate(0, upper, function, parameter, prec);
+        function = ABFunction;
+
+        qreal AB = SimpsonIntegrate(0, upper, function, parameter, prec);
+        function = AB2Function;
+
+        qreal AB2 =SimpsonIntegrate(0, upper, function, parameter, prec);
 
         /*
         qreal B0 = BC50_B0(logK11, logK12) * 2;
         B = B0 / 2.0;
         A = 1 / (b11 + 2.0 * b12 * B);
         */
-        A = BC50_A(logK11, logK12);
-        B = (1-b11*A)/(2*b12*A);
+        //A = BC50_A(logK11, logK12);
+        //B =
+        //B = (1-b11*A)/(2*b12*A);
         //qreal A0 = A + A * B * b11 + A * B * B * b12;
 
-        AB = A * B * b11;
-        AB2 = A * B * B * b12;
+        //AB = A * B * b11;
+        //AB2 = A * B * B * b12;
         qreal A0 = A + AB + AB2;
         qreal B0 = B + AB + 2 * AB2;
 
@@ -442,6 +494,59 @@ namespace IItoII {
         return A;
     }
 
+    inline QPair<qreal, qreal> ABConcentration(qreal x, const QVector<qreal>& parameter)
+    {
+        if (3 != parameter.size())
+            return QPair<qreal, qreal>(0,0);
+        qreal b21 = parameter[0];
+        qreal b11 = parameter[1];
+        qreal b12 = parameter[2];
+
+        qreal epsilon = 1e-12;
+
+        auto calc_a = [](double b, double b11, double b21, double b12) {
+            double x1 = b21;
+            double x2 = 2 * b12 * b + b11;
+            double x3 = -1;
+            return MaxQuadraticRoot(x1, x2, x3);
+        };
+
+        auto calc_b = [](double a, double b11, double b21, double b12, double alpha) {
+            double x1 = b12;
+            double x2 = 2 * b21 * a + b11;
+            double x3 = -alpha;
+            return MaxQuadraticRoot(x1, x2, x3);
+        };
+        qreal alpha = x / (1 - x);
+
+        qreal A = x / 2;
+        qreal B = 0;
+        qreal a_1 = 0, b_1 = 0;
+        int i;
+        for (i = 0; i < 350; ++i) {
+            a_1 = A;
+            b_1 = B;
+            B = calc_b(A, b11, b21, b12, alpha);
+            if (B < 0)
+                B *= -1;
+
+            A = calc_a(B, b11, b21, b12);
+            if (A < 0)
+                A *= -1;
+
+            if (qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) < epsilon && qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) < epsilon && qAbs(b11 * a_1 * b_1 - b11 * A * B) < epsilon)
+                break;
+        }
+#ifdef _DEBUG
+        std::cout << a_1 << " " << b_1 << " " << b11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
+        std::cout << A << " " << B << " " << b11 * A * B << " " << b21 * A * A * B << " " << b12 * A * B * B << std::endl;
+        std::cout << "last Change: " << qAbs(b21 * a_1 * a_1 * b_1 - b21 * A * A * B) << " " << qAbs(b12 * a_1 * b_1 * b_1 - b12 * A * B * B) << " " << qAbs(b11 * a_1 * b_1 * b11 * A * B) << std::endl;
+        std::cout << "Guess A: " << x / 2 << " .. Final A: " << A << " .. Iterations:" << i << std::endl;
+#endif
+        return QPair<qreal, qreal>(A, B);
+    }
+
+
 
     inline qreal BC50_A(const qreal logK21, const qreal logK11, const qreal logK12)
     {
@@ -464,7 +569,7 @@ namespace IItoII {
         qreal b11 = parameter[1];
         qreal b12 = parameter[2];
 
-        qreal epsilon = 1e-12;
+        qreal epsilon = 1e-14;
 
         auto calc_a = [](double b, double b11, double b21, double b12) {
             double x1 = b21;
@@ -523,7 +628,49 @@ namespace IItoII {
         return integ;
     }
 
+    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        QPair<qreal, qreal> pair = ABConcentration(x, parameter);
+        return pair.second;
+    }
 
+    inline qreal AFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        QPair<qreal, qreal> pair = ABConcentration(x, parameter);
+        return pair.first;
+    }
+
+
+    inline qreal A2BFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b21 = parameter[0];
+        QPair<qreal, qreal> pair = ABConcentration(x, parameter);
+        qreal A = pair.first;
+        qreal B = pair.second;
+
+        return A*A*B*b21;
+    }
+
+    inline qreal ABFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b11 = parameter[1];
+        QPair<qreal, qreal> pair = ABConcentration(x, parameter);
+        qreal A = pair.first;
+        qreal B = pair.second;
+
+        return A*B*b11;
+    }
+
+
+    inline qreal AB2Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b12 = parameter[2];
+        QPair<qreal, qreal> pair = ABConcentration(x, parameter);
+        qreal A = pair.first;
+        qreal B = pair.second;
+
+        return A*B*B*b12;
+    }
     inline QString Format_BC50(const qreal logK21, const qreal logK11, const qreal logK12)
     {
         QString result = QString();
@@ -538,19 +685,38 @@ namespace IItoII {
         parameter << b21 << b11 << b12;
 
         qreal A = 0, B = 0, AB = 0, A2B = 0, AB2 = 0;
-        A = BC50_A(logK21, logK11, logK12);
-        B = (1-(b11*A+b21*A*A))/(2*b12*A);
+        //A = BC50_A(logK21, logK11, logK12);
+        //B = (1-(b11*A+b21*A*A))/(2*b12*A);
         /*
         double B0 = BC50_B0(logK21, logK11, logK12);
         B = B0 / 2.0;
         qreal q = (b11 + 2 * b12 * B) / (2 * b21);
         A = -q + sqrt(q * q + 1 / b21);        */
 
+        qreal upper = 1;
+        qreal prec = 1e-5;
 
-        AB = b11 * A * B;
+        std::function<qreal(qreal, const QVector<qreal>&)> function = AFunction;
+        A = SimpsonIntegrate(0, upper, function, parameter, prec);
+
+        function = BFunction;
+        B = SimpsonIntegrate(0, upper, function, parameter, prec);
+
+        function = A2BFunction;
+        A2B = SimpsonIntegrate(0, upper, function, parameter, prec);
+
+        function = ABFunction;
+        AB = SimpsonIntegrate(0, upper, function, parameter, prec);
+
+        function = AB2Function;
+        AB2 =SimpsonIntegrate(0, upper, function, parameter, prec);
+
+
+
+       /* AB = b11 * A * B;
         AB2 = b12 * A * B * B;
         A2B = b21 * A * A * B;
-
+*/
         double A0 = A + AB + 2*A2B + AB2;
         double B0 = B + AB + A2B + 2*AB2;
 
