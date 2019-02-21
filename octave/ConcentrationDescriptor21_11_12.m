@@ -46,11 +46,11 @@ function [rB rA2B rAB rAB2] = ConcentrationDescriptor21_11_12(logK21, logK11, lo
 %  printf("A2B in Solution: %d\n", A2B/B0);
 %  printf("AB2 in Solution: %d\n", 2*AB2/B0);
 
-  B = quadcc("BFunction21_11_12", lower_limit, upper_limit);
-  A2B = quadcc("A2BFunction21_11_12", lower_limit, upper_limit);
-  AB = quadcc("ABFunction21_11_12", lower_limit, upper_limit);
-  AB2 = quadcc("AB2Function21_11_12", lower_limit, upper_limit);
-  AAB2 = quadcc("AAB2Function21_11_12", lower_limit, upper_limit)
+  B = quad("BFunction21_11_12", lower_limit, upper_limit);
+  A2B = quad("A2BFunction21_11_12", lower_limit, upper_limit);
+  AB = quad("ABFunction21_11_12", lower_limit, upper_limit);
+  AB2 = quad("AB2Function21_11_12", lower_limit, upper_limit);
+  AAB2 = quad("AAB2Function21_11_12", lower_limit, upper_limit)
 
   %B = AAB2;
   %(AAB2-AB-A2B)/2

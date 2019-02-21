@@ -684,18 +684,39 @@ namespace IItoII {
         QVector<qreal> parameter;
         parameter << b21 << b11 << b12;
 
-        qreal A = 0, B = 0, AB = 0, A2B = 0, AB2 = 0;
-        //A = BC50_A(logK21, logK11, logK12);
-        //B = (1-(b11*A+b21*A*A))/(2*b12*A);
-        /*
-        double B0 = BC50_B0(logK21, logK11, logK12);
-        B = B0 / 2.0;
-        qreal q = (b11 + 2 * b12 * B) / (2 * b21);
-        A = -q + sqrt(q * q + 1 / b21);        */
+        qreal A = 0, B = 0, AB = 0, A2B = 0, AB2 = 0, A0 = 0, B0 = 0;
 
         qreal upper = 1;
-        qreal prec = 1e-5;
+        qreal delta = 1e-5;
 
+        qreal integ = 0;
+        int increments = (upper - 0) / delta + 1;
+
+        omp_set_num_threads(qApp->instance()->property("threads").toInt());
+    #pragma omp parallel for reduction(+ \
+                                       : A, B, AB, A2B, AB2, A0, B0)
+        for (int i = 0; i < increments - 1; ++i)
+        {
+            double x = 0 + i / double(increments);
+            qreal b = x + delta;
+            const qreal quot = (b - x) / 6.0 ;
+            QPair<qreal, qreal> x0 = ABConcentration(x, parameter);
+            QPair<qreal, qreal> xy = ABConcentration((x + b)/2, parameter);
+            QPair<qreal, qreal> y0 = ABConcentration(b, parameter);
+            qreal c_a = (x0.first + 4 * xy.first + y0.first);
+            qreal c_b = (x0.second + 4 * xy.second + y0.second);
+
+            A += quot * c_a;
+            B +=  quot * c_b;
+            AB += quot/6.0 * c_a*c_b*b11;
+            A2B += quot *quot/6.0 * c_a * c_a*c_b*b21/delta;
+            AB2 += quot * quot/6.0*c_a*c_b*c_b*b12/delta;
+
+            A0 += quot * (c_a + c_a*c_b*b11/6.0 + 2*c_a * quot/6.0*c_a*c_b*b21/delta +   quot/6.0/delta*c_a*c_b*c_b*b12);
+            B0 += quot * (c_b + c_a*c_b*b11/6.0 +   c_a * quot/6.0*c_a*c_b*b21/delta + 2*quot/6.0/delta*c_a*c_b*c_b*b12);
+
+        }
+    /*
         std::function<qreal(qreal, const QVector<qreal>&)> function = AFunction;
         A = SimpsonIntegrate(0, upper, function, parameter, prec);
 
@@ -712,13 +733,7 @@ namespace IItoII {
         AB2 =SimpsonIntegrate(0, upper, function, parameter, prec);
 
 
-
-       /* AB = b11 * A * B;
-        AB2 = b12 * A * B * B;
-        A2B = b21 * A * A * B;
 */
-        double A0 = A + AB + 2*A2B + AB2;
-        double B0 = B + AB + A2B + 2*AB2;
 
         qreal bc50 = BC50_A0(logK21, logK11, logK12);
         result += QString("<p>BC50<sub>0</sub> =  %1 </p> ").arg(Print::printConcentration(bc50, 3));
