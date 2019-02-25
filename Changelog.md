@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- Some adjustments for charts export as png
 - Implement Concentrational Descriptor in SupraFit
 - Models with defined Reduction Analysis Cutoff (NMR Titration so far) automatically evaluate the Reduction Results
 - add some benchmark stuff for 2:1/1:1/1:2 concentration solver

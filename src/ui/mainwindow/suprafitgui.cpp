@@ -1028,7 +1028,10 @@ void SupraFitGui::ReadSettings()
         qApp->instance()->setProperty("p_value", 0.95);
 
     if (qApp->instance()->property("markerSize") == QVariant())
-        qApp->instance()->setProperty("markerSize", 8);
+        qApp->instance()->setProperty("markerSize", 2);
+
+    if (qApp->instance()->property("lineWidth") == QVariant())
+        qApp->instance()->setProperty("lineWidth", 12);
 
     if (qApp->instance()->property("chartScaling") == QVariant())
         qApp->instance()->setProperty("chartScaling", 4);

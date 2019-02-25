@@ -211,6 +211,7 @@ private:
                                                    << "tooltips"
                                                    << "recent"
                                                    << "markerSize"
+                                                   << "lineWidth"
                                                    << "transparentChart"
                                                    << "cropedChart"
                                                    << "noGrid"

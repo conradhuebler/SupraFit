@@ -86,10 +86,13 @@ void ChartViewPrivate::mousePressEvent(QMouseEvent* event)
 
 void ChartViewPrivate::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::RightButton)
+    if (event->button() == Qt::RightButton) {
         chart()->zoomReset();
-    else
+        emit UnLockZoom();
+    } else {
         QChartView::mouseReleaseEvent(event);
+        emit LockZoom();
+    }
 }
 
 void ChartViewPrivate::dragEnterEvent(QDragEnterEvent* event)
@@ -256,6 +259,22 @@ void ChartView::setUi()
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
     ConfigurationChanged();
     // setChartConfig(ReadSettings());
+
+    connect(m_chart_private, &ChartViewPrivate::LockZoom, this, [this]() {
+        this->m_lock_scaling = true;
+        this->m_lock_action->setChecked(true);
+    });
+
+    connect(m_chart_private, &ChartViewPrivate::UnLockZoom, this, [this]() {
+        this->m_lock_scaling = false;
+        this->m_lock_action->setChecked(false);
+    });
+
+    m_x_size = (qApp->instance()->property("xSize").toInt());
+    m_y_size = (qApp->instance()->property("ySize").toInt());
+    m_scaling = (qApp->instance()->property("chartScaling").toInt());
+    m_lineWidth = (qApp->instance()->property("chartScaling").toDouble());
+    m_markerSize = (qApp->instance()->property("markerSize").toDouble());
 }
 
 QtCharts::QLineSeries* ChartView::addLinearSeries(qreal m, qreal n, qreal min, qreal max)
@@ -443,6 +462,13 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
     m_lock_scaling = chartconfig.m_lock_scaling;
     m_lock_action->setChecked(m_lock_scaling);
 
+    m_x_size = chartconfig.x_size;
+    m_y_size = chartconfig.y_size;
+    m_scaling = chartconfig.scaling;
+
+    m_markerSize = chartconfig.markerSize;
+    m_lineWidth = chartconfig.lineWidth;
+
     QPointer<QtCharts::QValueAxis> m_XAxis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisX());
     if (m_XAxis) {
         m_XAxis->setTitleText(chartconfig.x_axis);
@@ -451,6 +477,7 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
         m_XAxis->setMax(chartconfig.x_max);
         m_XAxis->setTitleFont(chartconfig.m_label);
         m_XAxis->setLabelsFont(chartconfig.m_ticks);
+        m_XAxis->setVisible(chartconfig.showAxis);
     }
     QPointer<QtCharts::QValueAxis> m_YAxis = qobject_cast<QtCharts::QValueAxis*>(m_chart->axisY());
     if (m_YAxis) {
@@ -460,6 +487,7 @@ void ChartView::setChartConfig(const ChartConfig& chartconfig)
         m_YAxis->setMax(chartconfig.y_max);
         m_YAxis->setTitleFont(chartconfig.m_label);
         m_YAxis->setLabelsFont(chartconfig.m_ticks);
+        m_YAxis->setVisible(chartconfig.showAxis);
     }
 
     if (chartconfig.m_legend) {
@@ -757,13 +785,19 @@ void ChartView::ExportPNG()
         return;
     setLastDir(str);
 
+    QtCharts::QChart::AnimationOptions animation = m_chart->animationOptions();
+
     m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
     // first cache the original size, within SupraFit
     QSize widgetSize = mCentralHolder->size();
 
     // and resize as set in settings
-    mCentralHolder->resize(qApp->instance()->property("xSize").toInt(), qApp->instance()->property("ySize").toInt());
+    m_chart->resize(m_x_size, m_y_size);
+    mCentralHolder->resize(m_x_size, m_y_size);
 
     for (PeakCallOut* call : m_peak_anno) {
         call->update();
@@ -774,11 +808,10 @@ void ChartView::ExportPNG()
     Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();
-
+    qDebug() << m_x_size << m_y_size << w << h << m_scaling;
     // scaling is important for good resolution
-    double scale = qApp->instance()->property("chartScaling").toDouble();
+    QImage image(QSize(m_scaling * w, m_scaling * h), QImage::Format_ARGB32);
 
-    QImage image(QSize(scale * w, scale * h), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -817,22 +850,29 @@ void ChartView::ExportPNG()
     // cache all individual series size and border colors and remove border colors and resize series
 
     QList<QColor> colors;
-    QList<int> size;
+    QList<int> size, width;
     QList<bool> openGl;
     for (QtCharts::QAbstractSeries* serie : m_chart->series()) {
+
         if (qobject_cast<QtCharts::QScatterSeries*>(serie)) {
+
             colors << qobject_cast<QtCharts::QScatterSeries*>(serie)->borderColor();
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(Qt::transparent);
             size << qobject_cast<QtCharts::QScatterSeries*>(serie)->markerSize();
-            if (qobject_cast<QtCharts::QScatterSeries*>(serie)->markerSize() > qApp->instance()->property("markerSize").toDouble())
-                qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(qApp->instance()->property("markerSize").toDouble());
+
+            if (qobject_cast<QtCharts::QScatterSeries*>(serie)->markerSize() > m_markerSize)
+                qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(m_markerSize);
+
+        } else if (qobject_cast<LineSeries*>(serie)) {
+
+            width << qobject_cast<LineSeries*>(serie)->LineWidth();
+            qobject_cast<LineSeries*>(serie)->setSize(m_lineWidth / 10.0);
         }
         openGl << serie->useOpenGL();
         serie->setUseOpenGL(false);
     }
-
     // do the painting!!
-    m_chart->scene()->render(&painter, QRectF(0, 0, scale * w, scale * h), m_chart->rect());
+    m_chart->scene()->render(&painter, QRectF(0, 0, m_scaling * w, m_scaling * h), m_chart->rect());
 
     /*
      * copyied from here:
@@ -885,6 +925,8 @@ void ChartView::ExportPNG()
         if (qobject_cast<QtCharts::QScatterSeries*>(serie)) {
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(colors.takeFirst());
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(size.takeFirst());
+        } else if (qobject_cast<LineSeries*>(serie)) {
+            qobject_cast<LineSeries*>(serie)->setSize(width.takeFirst());
         }
         serie->setUseOpenGL(openGl.takeFirst());
     }
@@ -897,6 +939,9 @@ void ChartView::ExportPNG()
     m_XAxis->setLinePen(xPen);
     m_YAxis->setLinePen(yPen);
 
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
     // restore old size
     mCentralHolder->resize(widgetSize);
 
@@ -904,9 +949,7 @@ void ChartView::ExportPNG()
         call->Update();
 
     // and nothing ever happens -> Lemon Tree
-    QByteArray itemData;
-
-    ConfigurationChanged();
+    m_chart->setAnimationOptions(animation);
 
     QFile file(str);
     file.open(QIODevice::WriteOnly);

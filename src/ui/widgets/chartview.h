@@ -72,6 +72,9 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 private:
+signals:
+    void LockZoom();
+    void UnLockZoom();
 };
 
 class ChartView : public QScrollArea {
@@ -188,6 +191,9 @@ private:
 
     void ScaleAxis(QPointer<QtCharts::QValueAxis> axis, qreal& min, qreal& max);
     QGridLayout* mCentralLayout;
+
+    int m_x_size = 0, m_y_size = 0, m_scaling = 0;
+    qreal m_lineWidth = 4, m_markerSize = 8;
 
 private slots:
     void PlotSettings();
