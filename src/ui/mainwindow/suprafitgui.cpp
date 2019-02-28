@@ -278,12 +278,11 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
     else
         return true;
 }
-
+// TODO We want to synchronise these behaviour to get a instant feedback if the drag and drop action is supported
+#warning before release resolve the this
 bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
     Q_UNUSED(action)
-
-    qDebug() << action;
 
     QString string = data->text();
 
@@ -328,7 +327,7 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
     QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
 
     if (d->Instance() != m_instance) {
-        if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
+        if (!doc.isEmpty() && string.contains("Data")) {
             emit LoadJsonObject(doc.object());
             return true;
         }
@@ -1011,6 +1010,9 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("threads") == QVariant())
         qApp->instance()->setProperty("threads", QThread::idealThreadCount());
+
+    if (qApp->instance()->property("ColorFullSearch") == QVariant())
+        qApp->instance()->setProperty("ColorFullSearch", true);
 
     if (qApp->instance()->property("auto_confidence") == QVariant())
         qApp->instance()->setProperty("auto_confidence", true);

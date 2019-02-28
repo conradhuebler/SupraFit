@@ -220,7 +220,8 @@ private:
                                                    << "ySize"
                                                    << "chartScaling"
                                                    << "FastConfidenceScaling"
-                                                   << "FastConfidenceSteps";
+                                                   << "FastConfidenceSteps"
+                                                   << "ColorFullSearch";
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;

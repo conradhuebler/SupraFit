@@ -71,11 +71,11 @@ SearchResultWidget::SearchResultWidget(const QJsonObject& results, const QShared
     m_threshold->setValue(1);
     //connect(m_threshold, &ScientificBox::valueChanged, this, &SearchResultWidget::ApplyFilter);
 
-    layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 0);
-    layout->addWidget(m_threshold, 0, 1);
+    //layout->addWidget(new QLabel(tr("Threshold SSE")), 0, 0);
+    //layout->addWidget(m_threshold, 0, 1);
     layout->addWidget(m_valid, 0, 2);
     layout->addWidget(m_converged, 0, 3);
-    layout->addWidget(m_export, 0, 4);
+    //layout->addWidget(m_export, 0, 4);
 
     if (!m_model)
         throw 1;
@@ -94,7 +94,7 @@ SearchResultWidget::SearchResultWidget(const QJsonObject& results, const QShared
     layout->addWidget(m_central_widget, 3, 0, 1, 5);
 
     m_central_widget->addTab(m_table, tr("Result List"));
-    m_central_widget->addTab(m_contour, tr("Contour Plot"));
+    m_central_widget->addTab(m_contour, tr("Scatter Plot"));
 
     setLayout(layout);
 }
@@ -127,7 +127,7 @@ QTableView* SearchResultWidget::BuildList()
 
     QStandardItemModel* model = new QStandardItemModel;
 
-    QStringList header = QStringList() << "Sum of Squares";
+    QStringList header = QStringList() << "SSE";
     int size = m_results["controller"].toObject()["size"].toInt();
     for (int i = 0; i < size; ++i) {
         QJsonObject local_model = m_results[QString::number(i)].toObject();
@@ -140,11 +140,20 @@ QTableView* SearchResultWidget::BuildList()
         item->setData(QString::number(local_model["valid"].toBool()), Qt::UserRole + 3);
         item->setData(QString::number(local_model["valid"].toBool() && local_model["converged"].toBool()), Qt::UserRole + 4);
         item->setData(1, Qt::UserRole + 5);
-        QBrush brush;
-        if (local_model["valid"].toBool() && local_model["converged"].toBool()) {
-            brush.setColor(Qt::green);
-        }
-        item->setData(brush, Qt::BackgroundRole);
+        QColor color;
+        if (local_model["valid"].toBool() && local_model["converged"].toBool())
+            color = Qt::green;
+        else if (local_model["valid"].toBool() && !local_model["converged"].toBool())
+            color = Qt::yellow;
+        else
+            color = Qt::red;
+
+        color = color.lighter();
+
+        if (!qApp->instance()->property("ColorFullSearch").toBool())
+            color = Qt::white;
+
+        item->setData(color, Qt::BackgroundRole);
 
         model->setItem(i, 0, item);
         int j = 1;
@@ -157,13 +166,13 @@ QTableView* SearchResultWidget::BuildList()
             QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
             item->setData(initial[l], Qt::UserRole + 1);
-            item->setData(brush, Qt::BackgroundRole);
+            item->setData(color, Qt::BackgroundRole);
             model->setItem(i, j, item);
             j++;
             item = new QStandardItem(QString::number(optimised[l]));
             item->setData(i, Qt::UserRole);
             item->setData(optimised[l], Qt::UserRole + 1);
-            item->setData(brush, Qt::BackgroundRole);
+            item->setBackground(color);
             model->setItem(i, j, item);
             j++;
         }
@@ -180,7 +189,7 @@ QTableView* SearchResultWidget::BuildList()
                 QStandardItem* item = new QStandardItem(QString::number(initial[index]));
                 item->setData(i, Qt::UserRole);
                 item->setData(initial[index], Qt::UserRole + 1);
-                item->setData(brush, Qt::BackgroundRole);
+                item->setBackground(color);
                 model->setItem(i, j, item);
 
                 j++;
@@ -188,7 +197,7 @@ QTableView* SearchResultWidget::BuildList()
                 item = new QStandardItem(QString::number(optimised[index]));
                 item->setData(i, Qt::UserRole);
                 item->setData(optimised[index], Qt::UserRole + 1);
-                item->setData(brush, Qt::BackgroundRole);
+                item->setBackground(color);
                 model->setItem(i, j, item);
 
                 index++;
@@ -226,7 +235,6 @@ QTableView* SearchResultWidget::BuildList()
 
     m_proxyModel = new QSortFilterProxyModel(this);
     table->setModel(m_proxyModel);
-    table->resizeColumnsToContents();
 
     m_proxyModel->setSourceModel(model);
     m_proxyModel->setSortRole(Qt::UserRole + 1);

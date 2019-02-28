@@ -90,7 +90,7 @@ void MCResultsWidget::setUi()
     //     tabs->addTab(m_box, tr("Boxplot"));
 
     m_contour = MakeContour();
-    tabs->addTab(m_contour, tr("Contour Plot"));
+    tabs->addTab(m_contour, tr("Scatter Plot"));
 
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));

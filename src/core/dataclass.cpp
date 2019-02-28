@@ -192,9 +192,9 @@ QVariant DataTable::data(const QModelIndex& index, int role) const
 {
     if (role == Qt::DisplayRole || role == Qt::EditRole)
         if (m_editable)
-            return QString::number(data(index.column(), index.row()), 'f', 4);
+            return Print::printDouble(data(index.column(), index.row()), 8);
         else
-            return data(index.column(), index.row());
+            return Print::printDouble(data(index.column(), index.row()), 8);
     else if (role == Qt::CheckStateRole && m_checkable)
         return isChecked(index.column(), index.row());
     else
