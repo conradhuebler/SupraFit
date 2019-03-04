@@ -161,7 +161,13 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(m_select_working);
     layout->addLayout(h_layout);
 
+    m_ColorFullSearch = new QCheckBox(tr("Colorfull global search table"));
+    m_ColorFullSearch->setToolTip(tr("Indicate fully optimised models in global search with light green backgroud color, not-fully optimised models with light yellow background color and invalid models with a light red background color."));
+    m_ColorFullSearch->setChecked(qApp->instance()->property("ColorFullSearch").toBool());
+    layout->addWidget(m_ColorFullSearch);
+
     m_tooltips = new QCheckBox(tr("Show Tooltips as quick help on selected widgets."));
+    m_tooltips->setToolTip(tr("If this checkbox were not checked, you would not see this tooltip.\nAnd now for something complete different:\nIf three witches had three watches, which witch would watch which watch?"));
     m_tooltips->setChecked(qApp->instance()->property("tooltips").toBool());
     layout->addWidget(m_tooltips);
 
@@ -261,6 +267,16 @@ void ConfigDialog::createChartTab()
     hbox->addWidget(m_markerSize);
     layout->addLayout(hbox);
 
+    m_lineWidth = new QDoubleSpinBox;
+    m_lineWidth->setMinimum(0);
+    m_lineWidth->setMaximum(30);
+    m_lineWidth->setValue(qApp->instance()->property("lineWidth").toDouble());
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel(tr("Define line width for exported charts:")));
+    hbox->addWidget(m_lineWidth);
+    layout->addLayout(hbox);
+
     m_XScale = new QSpinBox;
     m_XScale->setMinimum(0);
     m_XScale->setMaximum(1e5);
@@ -345,9 +361,11 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("series_confidence", m_series_confidence->isChecked());
     qApp->instance()->setProperty("p_value", m_p_value->value());
     qApp->instance()->setProperty("ask_on_exit", m_ask_on_exit->isChecked());
+    qApp->instance()->setProperty("ColorFullSearch", m_ColorFullSearch->isChecked());
     qApp->instance()->setProperty("save_on_exit", m_save_on_exit->isChecked());
     qApp->instance()->setProperty("tooltips", m_tooltips->isChecked());
     qApp->instance()->setProperty("markerSize", m_markerSize->value());
+    qApp->instance()->setProperty("lineWidth", m_lineWidth->value());
     qApp->instance()->setProperty("xSize", m_XScale->value());
     qApp->instance()->setProperty("ySize", m_YScale->value());
     qApp->instance()->setProperty("transparentChart", m_transparentChart->isChecked());

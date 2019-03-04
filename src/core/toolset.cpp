@@ -645,8 +645,9 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename)
     return QPair<Vector, Vector>(x, y);
 }
 
-PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, qreal& freq, QVector<qreal>& inject)
+QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, qreal& freq, QVector<qreal>& inject)
 {
+    QJsonObject systemparameter;
 
     Vector x, y;
 
@@ -676,7 +677,7 @@ PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* p
     qreal last_x = 0;
     offset = 0;
     PeakPick::Peak floating_peak;
-    int i_offset = 0;
+    int i_offset = 0, sytemcounter = 0;
     for (const QString& str : filecontent) {
         if (str.contains("$") || str.contains("#") || str.contains("?") || str.contains("%")) {
             if (str.contains("%")) {
@@ -686,6 +687,23 @@ PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* p
                     double val = str.simplified().split(" ").last().toDouble();
                     freq = val;
                 }
+            }
+            if (str.contains("#")) {
+                double val = QString(str).remove("#").toDouble();
+                if (qFuzzyCompare(val, 0)) {
+                    sytemcounter++;
+                    continue;
+                }
+                if (sytemcounter == 4)
+                    systemparameter[QString::number(AbstractItcModel::Temperature)] = QString::number(val + 273.15);
+                if (sytemcounter == 2)
+                    systemparameter[QString::number(AbstractItcModel::CellConcentration)] = QString::number(val);
+                if (sytemcounter == 1)
+                    systemparameter[QString::number(AbstractItcModel::SyringeConcentration)] = QString::number(val);
+                if (sytemcounter == 3)
+                    systemparameter[QString::number(AbstractItcModel::CellVolume)] = QString::number(val * 1000);
+
+                sytemcounter++;
             }
         } else if (str.contains("@")) {
             skip = (str.contains("@0"));
@@ -725,7 +743,7 @@ PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* p
     x = Vector::Map(&entries_x[0], entries_x.size());
     y = Vector::Map(&entries_y[0], entries_y.size());
 
-    return PeakPick::spectrum(y, x[0], x[x.size() - 1]);
+    return QPair<PeakPick::spectrum, QJsonObject>(PeakPick::spectrum(y, x[0], x[x.size() - 1]), systemparameter);
 }
 
 qreal K2G(qreal logK, qreal T)

@@ -91,6 +91,7 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
 
 void extWidget::Update()
 {
+    //TODO Move the random table generation into an on-demand generation upon click, drag n drop and not after every recalculation
     m_sse->setText(tr("<h4><i>CnP</i> Sum of Squares: %1</h4>").arg(Print::printDouble(m_model.data()->SumofSquares())));
     m_std->setText(tr("<h4><i>CnP</i> Standard Deviation: %1</h4>").arg(Print::printDouble(m_model.data()->StdDeviation())));
     m_sey->setText(tr("<h4><i>CnP</i> SE<sub>y</sub>: %1</h4>").arg(Print::printDouble(m_model.data()->SEy())));

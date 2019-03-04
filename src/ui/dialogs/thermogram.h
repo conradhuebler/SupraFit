@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,10 @@ class Thermogram : public QDialog {
 public:
     Thermogram();
 
-    inline QString Content() { return m_content; }
+    inline QString Content() const { return m_content; }
+    inline QJsonObject SystemParamter() const { return m_systemparameter; }
+    inline bool ParameterUsed() const { return m_ParameterUsed; }
+
     QJsonObject Raw() const;
     QString ProjectName() const;
 
@@ -76,8 +79,8 @@ private:
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit;
-    QCheckBox* m_remove_offset;
-    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base;
+    QCheckBox *m_remove_offset, *m_UseParameter;
+    QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
     QComboBox* m_scale;
     QLabel *m_message, *m_offset;
     QTabWidget* m_mainwidget;
@@ -96,8 +99,9 @@ private:
     QDialogButtonBox* m_buttonbox;
 
     QString m_content;
+    QJsonObject m_systemparameter;
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
-    bool m_forceInject = false, m_injection = false, m_forceStep = false;
+    bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;
     qreal m_heat_offset = 0, m_dil_offset = 0;
     qreal PeakAt(int i);
 

@@ -1,6 +1,11 @@
 # SupraFit 2.0 pre-Alpha
 
 - add some model overview to compare dialog
+- temperature, concentrations and volume will be read from \*.itc file
+- add Scatter Plot for Weakend Grid Search results
+- Global search results table can now have a colorfull background (green - ok, yellow - not optimised, red - invalid)
+- Some adjustments for charts export as png
+- Implement Concentrational Descriptor in SupraFit
 - Models with defined Reduction Analysis Cutoff (NMR Titration so far) automatically evaluate the Reduction Results
 - add some benchmark stuff for 2:1/1:1/1:2 concentration solver
 - add the legacy concentration solver for 2:1/1:1/1:2 systems for benchmark/comparison

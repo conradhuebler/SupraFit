@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -114,8 +114,8 @@ void ImportData::setUi(bool single)
     QGridLayout* layout = new QGridLayout;
 
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    m_switch_concentration = new QCheckBox(this);
-    m_switch_concentration->setText("Switch Host/Guest");
+    //m_switch_concentration = new QCheckBox(this);
+    //m_switch_concentration->setText("Switch Host/Guest");
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
@@ -279,6 +279,8 @@ void ImportData::ImportThermogram(const QString& filename)
     thermogram->show();
 
     if (thermogram->exec() == QDialog::Accepted) {
+        if (thermogram->ParameterUsed())
+            m_systemparameter = thermogram->SystemParamter();
         FileHandler* handler = new FileHandler(this);
         handler->setFileContent(thermogram->Content());
         DataTable* model = handler->getData();
@@ -315,6 +317,8 @@ void ImportData::ImportThermogram()
     thermogram->show();
 
     if (thermogram->exec() == QDialog::Accepted) {
+        if (thermogram->ParameterUsed())
+            m_systemparameter = thermogram->SystemParamter();
         FileHandler* handler = new FileHandler(this);
         handler->setFileContent(thermogram->Content());
         DataTable* model = handler->getData();

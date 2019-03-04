@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@
 
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/listchart.h"
-#include "src/ui/widgets/results/contourwidget.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
+#include "src/ui/widgets/results/scatterwidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
@@ -212,7 +212,7 @@ QWidget* ResultsWidget::ReductionWidget()
 
 QWidget* ResultsWidget::ModelComparisonWidget()
 {
-    ContourWidget* widget = new ContourWidget;
+    ScatterWidget* widget = new ScatterWidget;
     widget->setData(m_models, m_model);
     QJsonObject controller = m_data["controller"].toObject();
     QVector<int> global = ToolSet::String2IntVec(controller["global_parameter"].toString());
@@ -237,7 +237,17 @@ QWidget* ResultsWidget::ModelComparisonWidget()
 
 QWidget* ResultsWidget::GridSearchWidget()
 {
+    QTabWidget* tabwidget = new QTabWidget;
+
     ListChart* view = new ListChart;
+    tabwidget->addTab(view, "Grid Search Result");
+
+    /* If we have intermediate models available, lets plot them as scatter plot */
+    if (m_models.size() != 0) {
+        ScatterWidget* scatterwidget = new ScatterWidget;
+        scatterwidget->setData(m_models, m_model);
+        tabwidget->addTab(scatterwidget, "Scatter Plot");
+    }
     view->setXAxis("Parameter");
     view->setYAxis("Sum of Squares");
     view->setName("gridchart");
@@ -288,7 +298,7 @@ QWidget* ResultsWidget::GridSearchWidget()
 
     view->setTitle(tr("Grid Search for %1").arg(m_model.data()->Name()));
 
-    return view;
+    return tabwidget;
 }
 
 QWidget* ResultsWidget::SearchWidget()

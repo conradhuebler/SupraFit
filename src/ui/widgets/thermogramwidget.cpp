@@ -682,6 +682,7 @@ void ThermogramWidget::CreateSeries()
 {
     m_thermogram_series = new LineSeries;
     m_baseline_series = new LineSeries;
+    //m_baseline_series->setDashDotLine(true);
     m_upper = new LineSeries;
     m_lower = new LineSeries;
     m_left = new LineSeries;

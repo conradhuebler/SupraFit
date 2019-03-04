@@ -32,7 +32,7 @@ class GlobalSearch;
 
 class ChartView;
 class ScientificBox;
-class ContourWidget;
+class ScatterWidget;
 
 class QCheckBox;
 class QSortFilterProxyModel;
@@ -112,11 +112,11 @@ public:
 
 private:
     QTableView* BuildList();
-    ContourWidget* BuildContour();
+    ScatterWidget* BuildScatter();
 
     QList<QJsonObject> m_models;
     QTableView* m_table;
-    ContourWidget* m_contour;
+    ScatterWidget* m_contour;
     QTabWidget* m_central_widget;
     QWeakPointer<AbstractModel> m_model;
     QCheckBox *m_valid, *m_converged;

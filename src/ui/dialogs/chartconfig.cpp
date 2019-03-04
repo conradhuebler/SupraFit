@@ -18,6 +18,7 @@
  */
 
 #include <QtWidgets/QAction>
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialogButtonBox>
@@ -90,6 +91,7 @@ ChartConfigDialog::ChartConfigDialog()
     m_scaleaxis->setStyleSheet("background-color: #F3ECE0;");
 
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok);
+    connect(m_buttons, &QDialogButtonBox::accepted, this, &ChartConfigDialog::Changed);
     connect(m_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
 
     m_legend = new QCheckBox(tr("Show Legend"));
@@ -126,8 +128,17 @@ ChartConfigDialog::ChartConfigDialog()
 
     grid->addWidget(new QLabel(tr("<div align='center'><h5>Axis Range</h5></div>")), 1, 0, 1, 3);
     grid->addWidget(m_x_min, 2, 0);
+    connect(m_x_min, qOverload<double>(&QDoubleSpinBox::valueChanged), m_lock_scaling, [this]() {
+        this->m_lock_scaling->setChecked(true);
+    });
     grid->addWidget(m_x_step, 2, 1);
+    connect(m_x_step, qOverload<int>(&QSpinBox::valueChanged), m_lock_scaling, [this]() {
+        this->m_lock_scaling->setChecked(true);
+    });
     grid->addWidget(m_x_max, 2, 2);
+    connect(m_x_max, qOverload<double>(&QDoubleSpinBox::valueChanged), m_lock_scaling, [this]() {
+        this->m_lock_scaling->setChecked(true);
+    });
 
     box->setLayout(grid);
 
@@ -140,9 +151,17 @@ ChartConfigDialog::ChartConfigDialog()
 
     grid->addWidget(new QLabel(tr("<div align='center'><h5>Axis Range</h5></div>")), 1, 0, 1, 3);
     grid->addWidget(m_y_min, 2, 0);
+    connect(m_y_min, qOverload<double>(&QDoubleSpinBox::valueChanged), m_lock_scaling, [this]() {
+        this->m_lock_scaling->setChecked(true);
+    });
     grid->addWidget(m_y_step, 2, 1);
+    connect(m_y_step, qOverload<int>(&QSpinBox::valueChanged), m_lock_scaling, [this]() {
+        this->m_lock_scaling->setChecked(true);
+    });
     grid->addWidget(m_y_max, 2, 2);
-
+    connect(m_y_max, qOverload<double>(&QDoubleSpinBox::valueChanged), m_lock_scaling, [this]() {
+        this->m_lock_scaling->setChecked(true);
+    });
     box->setLayout(grid);
 
     layout->addWidget(box, 3, 0, 1, 4);
@@ -168,6 +187,9 @@ ChartConfigDialog::ChartConfigDialog()
     m_alignment = new QPushButton(tr("Align Legend"));
     m_alignment->setMaximumSize(130, 30);
     m_alignment->setStyleSheet("background-color: #F3ECE0;");
+
+    m_show_axis = new QCheckBox(tr("Show Axis"));
+    m_show_axis->setChecked(true);
 
     QMenu* align = new QMenu(this);
     QAction* left = new QAction(tr("Left"), this);
@@ -201,7 +223,46 @@ ChartConfigDialog::ChartConfigDialog()
     actions->addWidget(m_alignment);
     actions->addWidget(m_legend);
     actions->addWidget(m_annotation);
+    actions->addWidget(m_show_axis);
     layout->addLayout(actions, 6, 0, 1, 3);
+
+    m_x_size = new QSpinBox;
+    m_x_size->setRange(0, 1e6);
+    m_x_size->setValue(qApp->instance()->property("xSize").toInt());
+
+    m_y_size = new QSpinBox;
+    m_y_size->setRange(0, 1e6);
+    m_y_size->setValue(qApp->instance()->property("ySize").toInt());
+
+    m_scaling = new QSpinBox;
+    m_scaling->setRange(0, 1e6);
+    m_scaling->setValue(qApp->instance()->property("chartScaling").toInt());
+
+    m_markerSize = new QDoubleSpinBox;
+    m_markerSize->setRange(0, 30);
+    m_markerSize->setValue(qApp->instance()->property("markerSize").toDouble());
+
+    m_lineWidth = new QDoubleSpinBox;
+    m_lineWidth->setRange(0, 30);
+    m_lineWidth->setValue(qApp->instance()->property("lineWidth").toDouble());
+
+    actions = new QHBoxLayout;
+    actions->addWidget(new QLabel(tr("X Size:")));
+    actions->addWidget(m_x_size);
+
+    actions->addWidget(new QLabel(tr("Y Size:")));
+    actions->addWidget(m_y_size);
+
+    actions->addWidget(new QLabel(tr("Scaling:")));
+    actions->addWidget(m_scaling);
+
+    actions->addWidget(new QLabel(tr("Marker Size:")));
+    actions->addWidget(m_markerSize);
+
+    actions->addWidget(new QLabel(tr("Line Width:")));
+    actions->addWidget(m_lineWidth);
+
+    layout->addLayout(actions, 7, 0, 1, 3);
 
     layout->addWidget(m_buttons, 10, 0, 1, 3);
     setLayout(layout);
@@ -250,6 +311,14 @@ void ChartConfigDialog::Changed()
     m_chartconfig.m_legend = m_legend->isChecked();
     m_chartconfig.m_lock_scaling = m_lock_scaling->isChecked();
     m_chartconfig.m_annotation = m_annotation->isChecked();
+
+    m_chartconfig.x_size = m_x_size->value();
+    m_chartconfig.y_size = m_y_size->value();
+    m_chartconfig.scaling = m_scaling->value();
+    m_chartconfig.lineWidth = m_lineWidth->value();
+    m_chartconfig.markerSize = m_markerSize->value();
+
+    m_chartconfig.showAxis = m_show_axis->isChecked();
 
     m_chartconfig.Theme = m_theme->currentIndex();
 

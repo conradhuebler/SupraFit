@@ -51,6 +51,10 @@ printf("AB/A/B = %f\n", AB/A/B);
 printf("A2B/A/AB = %f\n", A2B/A/AB);
 printf("AB2/AB/B = %f\n", AB2/AB/B);
 
+printf("Ratio B/B0 = %f ...\n", B/B0);
+printf("Ratio A2B/B0 = %f ...\n", A2B/B0);
+printf("Ratio AB/B0 = %f ...\n", AB/B0);
+printf("Ratio AB2/B0 = %f ...\n", 2*AB2/B0);
 
 
 endfunction

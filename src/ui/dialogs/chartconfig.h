@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QDialog>
 
 class QCheckBox;
@@ -38,9 +39,15 @@ struct ChartConfig {
     int x_step = 5;
     qreal y_min = 0;
     qreal y_max = 7;
+    int x_size = qApp->instance()->property("xSize").toInt();
+    int y_size = qApp->instance()->property("ySize").toInt();
+    int scaling = qApp->instance()->property("chartScaling").toInt();
+    int markerSize = qApp->instance()->property("markerSize").toDouble();
+    int lineWidth = qApp->instance()->property("lineWidth").toDouble();
+
     int y_step = 5;
     int Theme = 0;
-    bool m_legend = false, m_lock_scaling = false, m_annotation = true;
+    bool m_legend = false, m_lock_scaling = false, m_annotation = true, showAxis = true;
     QFont m_label, m_ticks, m_keys, m_title;
     Qt::Alignment align;
 };
@@ -57,10 +64,10 @@ public:
 private:
     QPushButton *m_scaleaxis, *m_keys, *m_labels, *m_ticks, *m_alignment, *m_titlefont;
     QLineEdit *m_x_axis, *m_y_axis, *m_title;
-    QDoubleSpinBox *m_x_min, *m_x_max, *m_y_min, *m_y_max;
-    QSpinBox *m_x_step, *m_y_step;
+    QDoubleSpinBox *m_x_min, *m_x_max, *m_y_min, *m_y_max, *m_markerSize, *m_lineWidth;
+    QSpinBox *m_x_step, *m_y_step, *m_scaling, *m_x_size, *m_y_size;
     ChartConfig m_chartconfig;
-    QCheckBox *m_legend, *m_lock_scaling, *m_annotation;
+    QCheckBox *m_legend, *m_lock_scaling, *m_annotation, *m_show_axis;
     QComboBox* m_theme;
 
 private slots:

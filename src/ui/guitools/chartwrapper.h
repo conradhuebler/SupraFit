@@ -51,28 +51,46 @@ public slots:
     virtual void setColor(const QColor& color)
     {
         m_color = color;
-        Update();
+        QPen pen = QtCharts::QLineSeries::pen();
+        pen.setColor(color);
+        setPen(pen);
     }
     inline void setDashDotLine(bool dashdot)
     {
         m_dashdot = dashdot;
-        Update();
+        QPen pen = QtCharts::QLineSeries::pen();
+        if (m_dashdot)
+            pen.setStyle(Qt::DashDotLine);
+        else
+            pen.setStyle(Qt::SolidLine);
+        setPen(pen);
     }
     inline void setSize(int size)
     {
         m_size = size;
-        Update();
+        QPen pen = QtCharts::QLineSeries::pen();
+        pen.setWidth(m_size);
+        setPen(pen);
     }
+
+    inline qreal LineWidth() const { return m_size; }
+
     void ShowLine(int state);
     void ShowLine(bool state);
     virtual void setName(const QString& name);
+
+    inline QColor Color() const { return m_color; }
 
 private:
     inline void Update()
     {
         QPen pen = QtCharts::QLineSeries::pen();
+
         if (m_dashdot)
             pen.setStyle(Qt::DashDotLine);
+        else
+            pen.setStyle(Qt::SolidLine);
+
         pen.setWidth(m_size);
         pen.setColor(m_color);
         setPen(pen);

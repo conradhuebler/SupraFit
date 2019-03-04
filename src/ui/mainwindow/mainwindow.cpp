@@ -158,28 +158,6 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<Cha
     return model;
 }
 
-/*
-void MainWindow::EditData()
-{
-    int version = m_data->ExportData()["SupraFit"].toInt();
-    if (version < 1602) {
-        //QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
-        //bool check = !m_edit->isCheckable();
-        //m_edit->setCheckable(check);
-        //m_model_dataholder->EditTableAction(!m_edit->isChecked());
-        //m_edit->setChecked(!m_edit->isChecked());
-    } else {
-        ImportData dialog(m_data);
-        if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
-            {
-                if (m_data->DataType() == DataClassPrivate::Thermogram)
-                    m_data->ImportData(dialog.getStoredData().ExportData());
-                emit m_data->Update();
-            }
-        }
-    }
-}*/
-
 void MainWindow::setCurrentTab(int index)
 {
     m_model_dataholder->setCurrentTab(index);
