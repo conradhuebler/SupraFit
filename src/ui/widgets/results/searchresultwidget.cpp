@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 #include "src/ui/widgets/buttons/scientificbox.h"
 #include "src/ui/widgets/chartview.h"
-#include "src/ui/widgets/results/contourwidget.h"
+#include "src/ui/widgets/results/scatterwidget.h"
 
 #include <QtCharts/QChart>
 #include <QtCharts/QScatterSeries>
@@ -80,8 +80,8 @@ SearchResultWidget::SearchResultWidget(const QJsonObject& results, const QShared
     if (!m_model)
         throw 1;
 
-    m_contour = BuildContour();
-    connect(m_contour, &ContourWidget::ModelClicked, this, &SearchResultWidget::ModelClicked);
+    m_contour = BuildScatter();
+    connect(m_contour, &ScatterWidget::ModelClicked, this, &SearchResultWidget::ModelClicked);
     m_table = BuildList();
     m_table->setSortingEnabled(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -251,9 +251,9 @@ void SearchResultWidget::ModelClicked(int model)
         emit LoadModel(m_models[model]);
 }
 
-ContourWidget* SearchResultWidget::BuildContour()
+ScatterWidget* SearchResultWidget::BuildScatter()
 {
-    ContourWidget* widget = new ContourWidget();
+    ScatterWidget* widget = new ScatterWidget();
     return widget;
 }
 

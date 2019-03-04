@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,12 +33,12 @@ inline uint qHash(const QPointF& key)
     return qHash(QPair<int, int>(key.x(), key.y()));
 }
 
-class ContourWidget : public QWidget {
+class ScatterWidget : public QWidget {
 
     Q_OBJECT
 
 public:
-    ContourWidget();
+    ScatterWidget();
     void MakePlot(int var_1, int var_2);
     void setData(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model);
 public slots:

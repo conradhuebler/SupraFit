@@ -27,7 +27,7 @@
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/listchart.h"
-#include "src/ui/widgets/results/contourwidget.h"
+#include "src/ui/widgets/results/scatterwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
 #include <QtCore/QHash>
@@ -247,7 +247,7 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
 
 QPointer<QWidget> MCResultsWidget::MakeContour()
 {
-    ContourWidget* widget = new ContourWidget;
+    ScatterWidget* widget = new ScatterWidget;
     widget->setData(m_models, m_model);
     QJsonObject controller = m_data["controller"].toObject();
 

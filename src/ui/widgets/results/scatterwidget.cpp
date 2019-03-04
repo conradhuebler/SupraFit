@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,21 +36,21 @@
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QWidget>
 
-#include "contourwidget.h"
+#include "scatterwidget.h"
 
-ContourWidget::ContourWidget()
+ScatterWidget::ScatterWidget()
 
 {
 }
 
-void ContourWidget::setData(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model)
+void ScatterWidget::setData(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model)
 {
     m_models = models;
     m_model = model->Clone();
     setUi();
 }
 
-void ContourWidget::setUi()
+void ScatterWidget::setUi()
 {
     QGridLayout* layout = new QGridLayout;
     view = new ListChart;
@@ -65,7 +65,7 @@ void ContourWidget::setUi()
     setLayout(layout);
 }
 
-QWidget* ContourWidget::VariWidget()
+QWidget* ScatterWidget::VariWidget()
 {
     QWidget* widget = new QWidget;
     QVBoxLayout* layout = new QVBoxLayout;
@@ -78,14 +78,14 @@ QWidget* ContourWidget::VariWidget()
             CheckBox(index, state);
         });
 
-        connect(this, &ContourWidget::Checked, box, [index, box, this](int var_1, int var_2) {
+        connect(this, &ScatterWidget::Checked, box, [index, box, this](int var_1, int var_2) {
             if (var_1 == -1 || var_2 == -1)
                 box->setEnabled(true);
             else
                 box->setEnabled(var_1 == index || var_2 == index);
         });
 
-        connect(this, &ContourWidget::CheckParameterBox, box, [index, box, this](int parameter) {
+        connect(this, &ScatterWidget::CheckParameterBox, box, [index, box, this](int parameter) {
             if (parameter == index)
                 box->setChecked(true);
         });
@@ -95,7 +95,7 @@ QWidget* ContourWidget::VariWidget()
         hlayout->addWidget(box);
         hlayout->addWidget(label, Qt::AlignLeft);
 
-        connect(this, &ContourWidget::HideBox, box, [index, box, label](int parameter) {
+        connect(this, &ScatterWidget::HideBox, box, [index, box, label](int parameter) {
             if (parameter == index) {
                 box->setHidden(true);
                 label->setHidden(true);
@@ -113,14 +113,14 @@ QWidget* ContourWidget::VariWidget()
                 CheckBox(index, state);
             });
 
-            connect(this, &ContourWidget::Checked, box, [index, box, this](int var_1, int var_2) {
+            connect(this, &ScatterWidget::Checked, box, [index, box, this](int var_1, int var_2) {
                 if (var_1 == -1 || var_2 == -1)
                     box->setEnabled(true);
                 else
                     box->setEnabled(var_1 == index || var_2 == index);
             });
 
-            connect(this, &ContourWidget::CheckParameterBox, box, [index, box, this](int parameter) {
+            connect(this, &ScatterWidget::CheckParameterBox, box, [index, box, this](int parameter) {
                 if (parameter == index)
                     box->setChecked(true);
             });
@@ -130,7 +130,7 @@ QWidget* ContourWidget::VariWidget()
             hlayout->addWidget(box);
             hlayout->addWidget(label, Qt::AlignLeft);
 
-            connect(this, &ContourWidget::HideBox, box, [index, box, label](int parameter) {
+            connect(this, &ScatterWidget::HideBox, box, [index, box, label](int parameter) {
                 if (parameter == index) {
                     box->setHidden(true);
                     label->setHidden(true);
@@ -145,7 +145,7 @@ QWidget* ContourWidget::VariWidget()
     return widget;
 }
 
-void ContourWidget::CheckBox(int variable, int state)
+void ScatterWidget::CheckBox(int variable, int state)
 {
     /* delete assigment */
     if (m_var_1 == variable && !state) {
@@ -169,12 +169,12 @@ void ContourWidget::CheckBox(int variable, int state)
     MakePlot(m_var_1, m_var_2);
 }
 
-void ContourWidget::Update()
+void ScatterWidget::Update()
 {
     MakePlot(m_var_1, m_var_2);
 }
 
-void ContourWidget::MakePlot(int var_1, int var_2)
+void ScatterWidget::MakePlot(int var_1, int var_2)
 {
     if (var_1 == -1 || var_2 == -1)
         return;
@@ -206,7 +206,7 @@ void ContourWidget::MakePlot(int var_1, int var_2)
     for (int j = 0; j < x.size(); ++j)
         m_xy_series->append(QPointF(x[j], y[j]));
 
-    connect(m_xy_series, &QtCharts::QXYSeries::clicked, this, &ContourWidget::PointClicked);
+    connect(m_xy_series, &QtCharts::QXYSeries::clicked, this, &ScatterWidget::PointClicked);
 
     m_xy_series->setMarkerSize(7);
     m_xy_series->setName(m_names[var_1] + " vs. " + m_names[var_2]);
@@ -217,7 +217,7 @@ void ContourWidget::MakePlot(int var_1, int var_2)
     m_xy_series->setBorderColor(m_xy_series->color());
 }
 
-void ContourWidget::PointClicked(const QPointF& point)
+void ScatterWidget::PointClicked(const QPointF& point)
 {
     QList<int> values = m_linked_models.values(point);
     if (values.isEmpty())
