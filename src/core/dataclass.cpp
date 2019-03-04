@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -872,14 +872,11 @@ qreal DataClass::InitialHostConcentration(int i) const
 
 const QJsonObject DataClass::ExportData() const
 {
-    QJsonObject json, systemObject;
-    for (const int index : getSystemParameterList()) {
-        systemObject[QString::number(index)] = getSystemParameter(index).value().toString();
-    }
+    QJsonObject json;
 
     json["independent"] = d->m_independent_model->ExportTable(true);
     json["dependent"] = d->m_dependent_model->ExportTable(true);
-    json["system"] = systemObject;
+    json["system"] = d->m_systemObject;
     json["DataType"] = d->m_datatype;
     json["SupraFit"] = qint_version;
     json["raw"] = d->m_raw_data;

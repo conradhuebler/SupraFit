@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- temperature, concentrations and volume will be read from \*.itc file
 - add Scatter Plot for Weakend Grid Search results
 - Global search results table can now have a colorfull background (green - ok, yellow - not optimised, red - invalid)
 - Some adjustments for charts export as png

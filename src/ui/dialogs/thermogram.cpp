@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,6 +81,31 @@ void Thermogram::setUi()
     m_exp_file->setClearButtonEnabled(true);
     connect(m_exp_file, &QLineEdit::textChanged, this, &Thermogram::clearExperiment);
 
+    m_UseParameter = new QCheckBox(tr("Use Parameter"));
+    connect(m_UseParameter, &QCheckBox::stateChanged, this, [this]() {
+        this->m_ParameterUsed = this->m_UseParameter->isChecked();
+    });
+
+    m_CellVolume = new QLineEdit;
+    connect(m_CellVolume, &QLineEdit::textChanged, m_CellVolume, [this](const QString& str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::CellVolume)] = str;
+    });
+
+    m_CellConcentration = new QLineEdit;
+    connect(m_CellConcentration, &QLineEdit::textChanged, m_CellConcentration, [this](const QString& str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::CellConcentration)] = str;
+    });
+
+    m_SyringeConcentration = new QLineEdit;
+    connect(m_SyringeConcentration, &QLineEdit::textChanged, m_SyringeConcentration, [this](const QString& str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)] = str;
+    });
+
+    m_Temperature = new QLineEdit;
+    connect(m_Temperature, &QLineEdit::textChanged, m_Temperature, [this](const QString& str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::Temperature)] = str;
+    });
+
     m_dil_file = new QLineEdit;
     m_dil_file->setClearButtonEnabled(true);
     connect(m_dil_file, &QLineEdit::textChanged, this, &Thermogram::clearDilution);
@@ -128,16 +153,35 @@ void Thermogram::setUi()
         UpdateTable();
     });
 
-    layout->addWidget(m_exp_button, 0, 0);
-    layout->addWidget(m_exp_file, 0, 1);
-    layout->addWidget(m_dil_button, 0, 2);
-    layout->addWidget(m_dil_file, 0, 3);
-
-    layout->addWidget(new QLabel(tr("Inject Volume")), 1, 0);
-    layout->addWidget(m_injct, 1, 1);
-    layout->addWidget(m_message, 1, 2, 1, 2);
-
     QHBoxLayout* hlayout = new QHBoxLayout;
+
+    hlayout->addWidget(m_exp_button);
+    hlayout->addWidget(m_exp_file);
+    hlayout->addWidget(m_UseParameter);
+    hlayout->addWidget(m_dil_button);
+    hlayout->addWidget(m_dil_file);
+    layout->addLayout(hlayout, 0, 0, 1, 4);
+
+    hlayout = new QHBoxLayout;
+    hlayout->addWidget(new QLabel(tr("Cell Volume")));
+    hlayout->addWidget(m_CellVolume);
+
+    hlayout->addWidget(new QLabel(tr("Cell Concentration")));
+    hlayout->addWidget(m_CellConcentration);
+
+    hlayout->addWidget(new QLabel(tr("Syringe Concentration")));
+    hlayout->addWidget(m_SyringeConcentration);
+
+    hlayout->addWidget(new QLabel(tr("Temperatur")));
+    hlayout->addWidget(m_Temperature);
+
+    layout->addLayout(hlayout, 1, 0, 1, 4);
+
+    layout->addWidget(new QLabel(tr("Inject Volume")), 2, 0);
+    layout->addWidget(m_injct, 2, 1);
+    layout->addWidget(m_message, 2, 2, 1, 2);
+
+    hlayout = new QHBoxLayout;
     hlayout->addWidget(new QLabel(tr("Freq:")));
     hlayout->addWidget(m_freq);
     hlayout->addWidget(new QLabel(tr("cal->J")));
@@ -148,7 +192,7 @@ void Thermogram::setUi()
     hlayout->addWidget(m_dil_base);
     hlayout->addWidget(m_refit);
 
-    layout->addLayout(hlayout, 2, 0, 1, 4);
+    layout->addLayout(hlayout, 3, 0, 1, 4);
 
     m_mainwidget = new QTabWidget;
 
@@ -198,7 +242,16 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     m_forceInject = true;
     m_injection = true;
     qreal freq = 0;
-    PeakPick::spectrum original = ToolSet::LoadITCFile(filename, peaks, offset, freq, m_inject);
+    QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(filename, peaks, offset, freq, m_inject);
+    PeakPick::spectrum original = pair.first;
+    m_systemparameter = pair.second;
+
+    m_Temperature->setText(m_systemparameter[QString::number(AbstractItcModel::Temperature)].toString());
+    m_CellConcentration->setText(m_systemparameter[QString::number(AbstractItcModel::CellConcentration)].toString());
+    m_SyringeConcentration->setText(m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)].toString());
+    m_CellVolume->setText(m_systemparameter[QString::number(AbstractItcModel::CellVolume)].toString());
+
+    m_UseParameter->setChecked(m_systemparameter.size() != 0);
     QSignalBlocker block(m_freq);
     m_freq->setValue(freq);
     return original;
