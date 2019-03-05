@@ -482,6 +482,11 @@ void ModelDataHolder::RemoveTab(int i)
     if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
         QPointer<AbstractModel> m = model->Model().data();
+        for (int j = 0; j < m_model_widgets.size(); ++j) {
+            qDebug() << m_model_widgets[j] << model;
+            if (m_model_widgets[j] == model)
+                m_model_widgets.remove(j);
+        }
         m_modelsWidget->removeTab(i);
         m_models.remove(m_models.indexOf(model->Model()));
         delete model;
@@ -696,8 +701,8 @@ void ModelDataHolder::MCStatistic(MCConfig config)
     m_allow_loop = true;
 
     for (int i = 0; i < m_model_widgets.size(); ++i) {
-        if (!m_model_widgets[i])
-            continue;
+        // if (!m_model_widgets[i])
+        //     continue;
 
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
@@ -723,8 +728,8 @@ void ModelDataHolder::ReductionStatistic()
     m_allow_loop = true;
 
     for (int i = 0; i < m_model_widgets.size(); ++i) {
-        if (!m_model_widgets[i])
-            continue;
+        //  if (!m_model_widgets[i])
+        //      continue;
 
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
@@ -743,8 +748,8 @@ void ModelDataHolder::CVStatistic(ReductionAnalyse::CVType type)
     m_allow_loop = true;
 
     for (int i = 0; i < m_model_widgets.size(); ++i) {
-        if (!m_model_widgets[i])
-            continue;
+        //  if (!m_model_widgets[i])
+        //      continue;
 
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
@@ -764,8 +769,8 @@ void ModelDataHolder::MoCoStatistic(MoCoConfig config)
 
     config.maxerror = 0;
     for (int i = 0; i < m_model_widgets.size(); ++i) {
-        if (!m_model_widgets[i])
-            continue;
+        //  if (!m_model_widgets[i])
+        //      continue;
 
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
@@ -783,6 +788,8 @@ void ModelDataHolder::OptimizeAll()
 {
     for (int i = 1; i < m_modelsWidget->count(); i++) {
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            //if (!m_model_widgets[i - 1])
+            //    continue;
             if (!m_model_widgets[i - 1]->isChecked())
                 continue;
             ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));

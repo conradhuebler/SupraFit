@@ -318,7 +318,8 @@ QWidget* StatisticDialog::GridSearchWidget()
 
         m_cv_error_info = new QLabel;
         layout->addWidget(m_cv_error_info);
-    }
+    } else
+        m_cv_f_value->hide();
 
     m_gridScalingFactor = new QSpinBox;
     m_gridScalingFactor->setMinimum(-10);
@@ -453,7 +454,8 @@ QWidget* StatisticDialog::ModelComparison()
         global_layout->addWidget(m_moco_f_value, 1, 1);
         m_moco_error_info = new QLabel;
         global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
-    }
+    } else
+        m_moco_f_value->hide();
 
     m_moco_box_multi = new QDoubleSpinBox;
     m_moco_box_multi->setMaximum(1000);
@@ -688,6 +690,8 @@ void StatisticDialog::ShowWidget()
 
 void StatisticDialog::HideWidget()
 {
+    hide();
+
     return;
     QPropertyAnimation* animation = new QPropertyAnimation(m_hide_widget, "maximumHeight");
     animation->setEasingCurve(QEasingCurve::InOutCubic);
@@ -699,7 +703,6 @@ void StatisticDialog::HideWidget()
     m_progress->setMinimum(0);
     m_tab_widget->setDisabled(false);
     m_hidden = true;
-    QDialog::hide();
     delete animation;
 }
 
