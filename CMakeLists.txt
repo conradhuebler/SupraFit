@@ -36,6 +36,9 @@ option (Fluorescence_Models
 option (legacy
     "Enable Legacy Concentration Handling - For benchmark purpose (only)" OFF)
 
+option (conservative
+    "Enable conservative calculations, slower and not better" OFF)
+
 # Get the current working branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD

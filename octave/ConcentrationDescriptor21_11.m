@@ -20,16 +20,20 @@ function [bc50] = ConcentrationDescriptor21_11(logK21, logK11)
   printf("AB in Solution: %d\n", AB*10^6);
   printf("A2B in Solution: %d\n", A2B*10^6);
   A = bc50;
+  
   %1-(b11*A+b21*A*A)
- B0 = B + AB + A2B;
-   printf("Lets calculate the relative concentrations from the approximated soluation\n");
+  A0 = A + AB +2*A2B
+  B0 = B + AB + A2B
+  
+  printf("Lets calculate the relative concentrations from the approximated soluation\n");
   printf("B in Solution: %d\n", B/B0);
   printf("AB in Solution: %d\n", AB/B0);
   printf("A2B in Solution: %d\n", A2B/B0);
   printf("Lets do it the inverse way \n");
   
   factor = 2;
-  
+  upper_limit = 0.9999;
+
   B = 1/factor/quadcc("IBFunction21_11", lower_limit, upper_limit);
   AB = 1/factor/quadcc("IABFunction21_11", lower_limit, upper_limit);
   A2B = 1/factor/quadcc("IA2BFunction21_11", lower_limit, upper_limit);

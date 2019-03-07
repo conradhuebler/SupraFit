@@ -1,4 +1,4 @@
-﻿/*
+/*
  * <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
@@ -50,42 +50,77 @@ namespace IItoI {
         return -b11 / b21 / 2.0 + sqrt(qPow(b11 / 2.0 / b21, 2) + 1 / b21);
     }
 
-    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
+    inline QPair<qreal, qreal> ABPair(qreal x, const QVector<qreal>& parameter)
     {
         qreal b21 = parameter[0];
         qreal b11 = parameter[1];
-        qreal A = -b11 / b21 / 2.0 + sqrt(qPow(b11 / 2.0 / b21, 2) + 1 / b21);
+        qreal quot = b11 / 2.0 / b21;
+        qreal A = -b11 / b21 / 2.0 + sqrt(quot * quot + 1 / b21);
         qreal alpha = x / (1 - x);
 
-        return alpha / (b11 + 2.0 * b21 * A);
+        qreal B = alpha / (b11 + 2.0 * b21 * A);
+        return QPair<qreal, qreal>(A,B);
+    }
+
+    inline qreal AFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        QPair<qreal, qreal> AB = ABPair(x, parameter);
+        return AB.first;
+    }
+
+    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        QPair<qreal, qreal> AB = ABPair(x, parameter);
+        return AB.second;
     }
 
     inline qreal A0Function(qreal x, const QVector<qreal>& parameter)
     {
         qreal b21 = parameter[0];
         qreal b11 = parameter[1];
-        qreal A = -b11 / b21 / 2.0 + sqrt(qPow(b11 / 2.0 / b21, 2) + 1 / b21);
-        qreal alpha = x / (1 - x);
 
-        qreal B = alpha / (b11 + 2.0 * b21 * A);
+        QPair<qreal, qreal> AB = ABPair(x, parameter);
+
+        qreal A  = AB.first;
+        qreal B  = AB.second;
+
         return A + b11 * A * B + 2 * b21 * A * A * B;
+    }
+
+    inline qreal B0Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b21 = parameter[0];
+        qreal b11 = parameter[1];
+
+        QPair<qreal, qreal> AB = ABPair(x, parameter);
+
+        qreal A  = AB.first;
+        qreal B  = AB.second;
+
+        return B + b11 * A * B + b21 * A * A * B;
     }
 
     inline qreal ABfunction(qreal x, const QVector<qreal>& parameter)
     {
-        qreal B = BFunction(x, parameter);
-        qreal b21 = parameter[0];
         qreal b11 = parameter[1];
-        qreal A = -b11 / b21 / 2.0 + sqrt(qPow(b11 / 2.0 / b21, 2) + 1 / b21);
+
+        QPair<qreal, qreal> AB = ABPair(x, parameter);
+
+        qreal A  = AB.first;
+        qreal B  = AB.second;
+
         return b11 * A * B;
     }
 
     inline qreal A2Bfunction(qreal x, const QVector<qreal>& parameter)
     {
-        qreal B = BFunction(x, parameter);
         qreal b21 = parameter[0];
-        qreal b11 = parameter[1];
-        qreal A = -b11 / b21 / 2.0 + sqrt(qPow(b11 / 2.0 / b21, 2) + 1 / b21);
+
+        QPair<qreal, qreal> AB = ABPair(x, parameter);
+
+        qreal A  = AB.first;
+        qreal B  = AB.second;
+
         return b21 * A * A * B;
     }
 
@@ -105,46 +140,63 @@ namespace IItoI {
 
         qreal bc50 = BC50(logK21, logK11);
 
-        result += QString("<p>BC50<sub>0</sub> = %1 %2M</p>").arg(bc50 * 1e6).arg(mu);
+        /* the next line is outdate with still included, historical stuff */
+//        result += QString("<p>BC50<sub>0</sub> = %1 %2M</p>").arg(bc50 * 1e6).arg(mu);
 
         qreal b21 = qPow(10, logK21 + logK11);
         qreal b11 = qPow(10, logK11);
 
 
-
-        qreal B = 0, AB = 0, A2B = 0;
-
+        qreal A = 0, B = 0, AB = 0, A2B = 0, A0 = 0, B0 = 0;
+        qreal rCD_B = 0, rCD_A2B = 0, rCD_AB = 0;
         QVector<qreal> parameter;
         parameter << b21 << b11;
 
 
-        qreal upper = 0.9999;
+        qreal upper = 1;
+        qreal prec = 1e-4;
         std::function<qreal(qreal, const QVector<qreal>&)> function = BFunction;
-        B = SimpsonIntegrate(0, upper, function, parameter);
+        B = SimpsonIntegrate(0, upper, function, parameter, prec);
+
+        function = AFunction;
+        A = SimpsonIntegrate(0, upper, function, parameter, prec);
 
         function = ABfunction;
-        AB = SimpsonIntegrate(0, upper, function, parameter);
+        AB = SimpsonIntegrate(0, upper, function, parameter, prec);
 
         function = A2Bfunction;
-        A2B = SimpsonIntegrate(0, upper, function, parameter);
+        A2B = SimpsonIntegrate(0, upper, function, parameter, prec);
 
-        function = BCfunction;
-        qreal A = 1 / 2.0 / SimpsonIntegrate(0, upper, function, parameter);
-        result += QString("<p>BC50<sub>0</sub> = %1</p>").arg(Print::printConcentration(A, 3));
-
-        result += QString("<p>BC(A0)<sub>0</sub> = %1 </p>").arg(Print::printConcentration(A + AB + 2 * A2B, 3));
-
+#ifdef conservative
         function = A0Function;
-        result += QString("<p>BC(A0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(SimpsonIntegrate(0, 1.1, function, parameter, 1e-5)));
+        A0 = SimpsonIntegrate(0, upper, function, parameter, prec);
 
-        result += QString("<p>BC(B0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B + AB + A2B, 3));
+        function = B0Function;
+        B0 = SimpsonIntegrate(0, upper, function, parameter, prec);
 
+        rCD_B = B/B0;
+        rCD_A2B = A2B/B0;
+        rCD_AB = AB/B0;
+#else
+        A0 = A + 2*A2B + AB;
+        B0 = B + A2B + AB;
+
+        rCD_B = 1-(b11*A/2.0 + b21*A*A/2.0);
+        rCD_A2B = b21*A*A/2.0;
+        rCD_AB = b11*A/2.0;
+#endif
+
+
+        result += QString("<p>BC50<sub>0</sub> = %1</p>").arg(Print::printConcentration(A, 3));
+        result += QString("<p>BC(A0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(A0));
+        result += QString("<p>BC(B0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B0, 3));
+        result += QString("<p>BC(A)<sub>0</sub> = %1</p>").arg(Print::printConcentration(A, 3));
         result += QString("<p>BC(B)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B, 3));
-        result += QString("<p>BC(AB)<sub>0</sub> = %1</p>").arg(Print::printConcentration(AB));
         result += QString("<p>BC(A2B)<sub>0</sub> = %1</p>").arg(Print::printConcentration(A2B));
-        result += QString("<p>CR(B)<sub>0</sub> = %1 </p>").arg(1- (b11*A/2.0 + b21*A*A/2.0));
-        result += QString("<p>CR(AB)<sub>0</sub> = %1 </p>").arg(b11*A/2.0);
-        result += QString("<p>CR(A2B)<sub>0</sub> = %1 </p>").arg(b21*A*A/2.0);
+        result += QString("<p>BC(AB)<sub>0</sub> = %1</p>").arg(Print::printConcentration(AB));
+        result += QString("<p>CR(B)<sub>0</sub> = %1 </p>").arg(rCD_B);
+        result += QString("<p>CR(A2B)<sub>0</sub> = %1 </p>").arg(rCD_A2B);
+        result += QString("<p>CR(AB)<sub>0</sub> = %1 </p>").arg(rCD_AB);
 
         return result;
     }
@@ -175,7 +227,7 @@ namespace ItoII {
         qreal integ = SimpsonIntegrate(0, 1, function, parameter);
         return double(1) / double(2) / integ;
     }
-
+/*
     inline qreal BC50_A0_X(qreal x, const QVector<qreal>& parameter)
     {
         if (2 != parameter.size())
@@ -276,46 +328,76 @@ namespace ItoII {
         qreal integ = SimpsonIntegrate(0, 1, function, parameter);
         return integ;
     }
-
-    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
+*/
+    inline QPair<qreal, qreal> ABPair(qreal x, const QVector<qreal>& parameter)
     {
         qreal b11 = parameter[0];
         qreal b12 = parameter[1];
 
         qreal alpha = x/(1.0-x);
         qreal B = -b11 / (2.0 * b12) + sqrt(b11 * b11 / (b12 * b12 * 4.0) + alpha / b12);
-        return B;
+        qreal A = 1/(b11+2*b12*B);
+        return QPair<qreal, qreal>(A,B);
+    }
+
+    inline qreal BFunction(qreal x, const QVector<qreal>& parameter)
+    {
+        return ABPair(x, parameter).second;
     }
 
     inline qreal AFunction(qreal x, const QVector<qreal>& parameter)
     {
-        qreal b11 = parameter[0];
-        qreal b12 = parameter[1];
-
-        qreal B = BFunction(x, parameter);
-        qreal A = 1/(b11+2*b12*B);
-        return A;
+        return ABPair(x, parameter).first;
     }
 
     inline qreal ABFunction(qreal x, const QVector<qreal>& parameter)
     {
+        QPair<qreal, qreal> pair = ABPair(x, parameter);
+
         qreal b11 = parameter[0];
 
-        qreal A = AFunction(x, parameter);
-        qreal B = BFunction(x, parameter);
+        qreal A = pair.first;
+        qreal B = pair.second;
 
         return A*B*b11;
     }
-
 
     inline qreal AB2Function(qreal x, const QVector<qreal>& parameter)
     {
         qreal b12 = parameter[1];
 
-        qreal A = AFunction(x, parameter);
-        qreal B = BFunction(x, parameter);
+        QPair<qreal, qreal> pair = ABPair(x, parameter);
+
+        qreal A = pair.first;
+        qreal B = pair.second;
 
         return A*B*B*b12;
+    }
+
+    inline qreal A0Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b12 = parameter[1];
+        qreal b11 = parameter[0];
+
+        QPair<qreal, qreal> pair = ABPair(x, parameter);
+
+        qreal A = pair.first;
+        qreal B = pair.second;
+
+        return A + A*B*b11 + A*B*B*b12;
+    }
+
+    inline qreal B0Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b12 = parameter[1];
+        qreal b11 = parameter[0];
+
+        QPair<qreal, qreal> pair = ABPair(x, parameter);
+
+        qreal A = pair.first;
+        qreal B = pair.second;
+
+        return B + A*B*b11 + 2*A*B*B*b12;
     }
 
     inline QString Format_BC50(const qreal logK11, const qreal logK12)
@@ -329,34 +411,31 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
 
+        qreal A = 0, B = 0, AB = 0, AB2 = 0, A0 = 0, B0 = 0;
+
         qreal upper = 1;
         qreal prec = 1e-5;
         std::function<qreal(qreal, const QVector<qreal>&)> function = AFunction;
-        qreal A = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A = SimpsonIntegrate(0, upper, function, parameter, prec);
         function = BFunction;
-        qreal  B = SimpsonIntegrate(0, upper, function, parameter, prec);
+        B = SimpsonIntegrate(0, upper, function, parameter, prec);
         function = ABFunction;
 
-        qreal AB = SimpsonIntegrate(0, upper, function, parameter, prec);
+        AB = SimpsonIntegrate(0, upper, function, parameter, prec);
         function = AB2Function;
 
-        qreal AB2 =SimpsonIntegrate(0, upper, function, parameter, prec);
+        AB2 =SimpsonIntegrate(0, upper, function, parameter, prec);
 
-        /*
-        qreal B0 = BC50_B0(logK11, logK12) * 2;
-        B = B0 / 2.0;
-        A = 1 / (b11 + 2.0 * b12 * B);
-        */
-        //A = BC50_A(logK11, logK12);
-        //B =
-        //B = (1-b11*A)/(2*b12*A);
-        //qreal A0 = A + A * B * b11 + A * B * B * b12;
+#ifdef conservative
+        function = A0Function;
+        A0 = SimpsonIntegrate(0, upper, function, parameter, prec);
 
-        //AB = A * B * b11;
-        //AB2 = A * B * B * b12;
-        qreal A0 = A + AB + AB2;
-        qreal B0 = B + AB + 2 * AB2;
-
+        function = B0Function;
+        B0 = SimpsonIntegrate(0, upper, function, parameter, prec);
+#else
+        A0 = A + AB + AB2;
+        B0 = B + AB +2*AB2;
+#endif
         result += QString("<p>BC50<sub>0</sub> =  %1 </p> ").arg(Print::printConcentration(BC50(logK11, logK12), 3));
         result += QString("<p>BC(A0)<sub>0</sub> = %1 </p>").arg(Print::printConcentration(A + AB + AB2, 3));
         result += QString("<p>BC(B0)<sub>0</sub> = %1</p>").arg(Print::printConcentration(B + AB + 2 * AB2, 3));
@@ -671,6 +750,31 @@ namespace IItoII {
 
         return A*B*B*b12;
     }
+
+    inline qreal A0Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b21 = parameter[0];
+        qreal b11 = parameter[1];
+        qreal b12 = parameter[2];
+        QPair<qreal, qreal> pair = ABConcentration(x, parameter);
+        qreal A = pair.first;
+        qreal B = pair.second;
+
+        return A + 2*A*A*B*b21 +  A*B*b11 + A*B*B*b12;
+    }
+
+    inline qreal B0Function(qreal x, const QVector<qreal>& parameter)
+    {
+        qreal b21 = parameter[0];
+        qreal b11 = parameter[1];
+        qreal b12 = parameter[2];
+        QPair<qreal, qreal> pair = ABConcentration(x, parameter);
+        qreal A = pair.first;
+        qreal B = pair.second;
+
+        return B + A*A*B*b21 +  A*B*b11 + 2*A*B*B*b12;
+    }
+
     inline QString Format_BC50(const qreal logK21, const qreal logK11, const qreal logK12)
     {
         QString result = QString();
@@ -691,7 +795,7 @@ namespace IItoII {
 
         qreal integ = 0;
         int increments = (upper - 0) / delta + 1;
-
+#ifndef conservative
         omp_set_num_threads(qApp->instance()->property("threads").toInt());
     #pragma omp parallel for reduction(+ \
                                        : A, B, AB, A2B, AB2, A0, B0)
@@ -716,24 +820,30 @@ namespace IItoII {
             B0 += quot * (c_b + c_a*c_b*b11/6.0 +   c_a * quot/6.0*c_a*c_b*b21/delta + 2*quot/6.0/delta*c_a*c_b*c_b*b12);
 
         }
-    /*
+
+#else
+        /* this block contains the slower integration of each single species - this results are nearly identical to the above */
         std::function<qreal(qreal, const QVector<qreal>&)> function = AFunction;
-        A = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A = SimpsonIntegrate(0, upper, function, parameter, delta);
 
         function = BFunction;
-        B = SimpsonIntegrate(0, upper, function, parameter, prec);
+        B = SimpsonIntegrate(0, upper, function, parameter, delta);
 
         function = A2BFunction;
-        A2B = SimpsonIntegrate(0, upper, function, parameter, prec);
+        A2B = SimpsonIntegrate(0, upper, function, parameter, delta);
 
         function = ABFunction;
-        AB = SimpsonIntegrate(0, upper, function, parameter, prec);
+        AB = SimpsonIntegrate(0, upper, function, parameter, delta);
 
         function = AB2Function;
-        AB2 =SimpsonIntegrate(0, upper, function, parameter, prec);
+        AB2 =SimpsonIntegrate(0, upper, function, parameter, delta);
 
+        function = A0Function;
+        A0 =SimpsonIntegrate(0, upper, function, parameter, delta);
 
-*/
+        function = B0Function;
+        B0 =SimpsonIntegrate(0, upper, function, parameter, delta);
+#endif
 
         qreal bc50 = BC50_A0(logK21, logK11, logK12);
         result += QString("<p>BC50<sub>0</sub> =  %1 </p> ").arg(Print::printConcentration(bc50, 3));

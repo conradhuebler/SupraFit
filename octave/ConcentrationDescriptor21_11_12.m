@@ -61,8 +61,8 @@ function [rB rA2B rAB rAB2] = ConcentrationDescriptor21_11_12(logK21, logK11, lo
   printf("AB in Solution: %d\n", AB*10^6);
   printf("AB2 in Solution: %d\n", AB2*10^6);
   
+  A0 = A + 2*A2B + AB +   AB2  
   B0 = B +   A2B + AB + 2*AB2
-  A0 = A + 2*A2B + AB +   AB2
    
   printf("Lets calculate the relative concentrations from the approximated soluation\n");
   printf("B in Solution: %d\n", B/B0);

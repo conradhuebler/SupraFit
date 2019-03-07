@@ -9,4 +9,5 @@
 #cmakedefine Kinetic_Models
 #cmakedefine Fluorescence_Models
 #cmakedefine legacy
+#cmakedefine conservative
 #cmakedefine Qt5_10
