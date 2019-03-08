@@ -182,10 +182,10 @@ private:
     qreal m_ymax, m_ymin, m_xmin, m_xmax;
     QVector<QPointer<QtCharts::QAbstractSeries>> m_series;
     QVector<QPointer<PeakCallOut>> m_peak_anno;
+    ChartConfig ReadSettings();
 
     ChartConfig m_last_config;
     void WriteSettings(const ChartConfig& chartconfig);
-    ChartConfig ReadSettings();
     QString m_name;
     QPointer<QtCharts::QValueAxis> m_XAxis, m_YAxis;
 
@@ -203,7 +203,7 @@ private slots:
     void ExportPNG();
     void setChartConfig(const ChartConfig& chartconfig);
     void forceformatAxis();
-    void ConfigurationChanged();
+    void ConfigurationChanged(const QString& str = "noname");
 
 signals:
     void AxisChanged();

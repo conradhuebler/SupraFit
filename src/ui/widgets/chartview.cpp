@@ -254,6 +254,7 @@ void ChartView::setUi()
     connect(&m_chartconfigdialog, &ChartConfigDialog::ConfigChanged, this, [this](const ChartConfig& config) {
         this->setChartConfig(config);
         this->WriteSettings(config);
+        emit Instance::GlobalInstance()->ConfigurationChanged(m_name);
     });
     connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
@@ -570,7 +571,7 @@ void ChartView::WriteSettings(const ChartConfig& chartconfig)
 
 ChartConfig ChartView::ReadSettings()
 {
-    ChartConfig chartconfig;
+    ChartConfig chartconfig = m_last_config;
     QSettings _settings;
     _settings.beginGroup(m_name);
     chartconfig.m_label = _settings.value("labels").value<QFont>();
@@ -926,7 +927,7 @@ void ChartView::ExportPNG()
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setBorderColor(colors.takeFirst());
             qobject_cast<QtCharts::QScatterSeries*>(serie)->setMarkerSize(size.takeFirst());
         } else if (qobject_cast<LineSeries*>(serie)) {
-            qobject_cast<LineSeries*>(serie)->setSize(width.takeFirst());
+            qobject_cast<LineSeries*>(serie)->setSize(width.takeFirst() / 10.0);
         }
         serie->setUseOpenGL(openGl.takeFirst());
     }
@@ -956,15 +957,19 @@ void ChartView::ExportPNG()
     pixmap.save(&file, "PNG");
 }
 
-void ChartView::ConfigurationChanged()
+void ChartView::ConfigurationChanged(const QString& str)
 {
-    bool animation = qApp->instance()->property("chartanimation").toBool();
-    if (animation)
-        m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-    else
-        m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+    if (str == m_name)
+        ReadSettings();
+    else {
+        bool animation = qApp->instance()->property("chartanimation").toBool();
+        if (animation)
+            m_chart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        else
+            m_chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
 
-    m_chart->setTheme(QtCharts::QChart::ChartTheme(qApp->instance()->property("charttheme").toInt()));
+        m_chart->setTheme(QtCharts::QChart::ChartTheme(qApp->instance()->property("charttheme").toInt()));
+    }
 }
 
 void ChartView::resizeEvent(QResizeEvent* event)

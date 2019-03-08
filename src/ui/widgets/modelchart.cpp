@@ -62,7 +62,7 @@ void ModelChartWidget::setUI()
     view->setXAxis(chart->x_axis);
     view->setYAxis(chart->y_axis);
     view->setMinimumSize(300, 400);
-
+    view->setName(m_chart);
     layout->addWidget(view);
 
     for (int i = 0; i < chart->m_series.size(); ++i) {

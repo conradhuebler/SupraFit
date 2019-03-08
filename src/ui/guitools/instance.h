@@ -56,7 +56,7 @@ private:
     QString m_uuid;
 
 signals:
-    void ConfigurationChanged();
+    void ConfigurationChanged(const QString& instance = "null");
 };
 
 inline QIcon Icon(const QString& str)
