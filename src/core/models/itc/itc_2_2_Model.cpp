@@ -280,9 +280,6 @@ void itc_IItoII_Model::CalculateVariables()
         qreal v = IndependentModel()->data(0, i);
         qreal dv = (1 - v / V);
 
-        if (!m_fast)
-            SetConcentration(i, vector);
-
         qreal q_a2b = (complex_21 - complex_21_prev * dv) * dH21 * V;
         qreal q_ab = (complex_11 - complex_11_prev * dv) * dH11 * V;
         qreal q_ab2 = (complex_12 - complex_12_prev * dv) * dH12 * V;
@@ -296,7 +293,26 @@ void itc_IItoII_Model::CalculateVariables()
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_a2b) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(q_ab2) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
         more_info_2 += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_a2b_) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(q_ab2_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
-        SetValue(i, 0, value + dilution);
+        bool usage = SetValue(i, 0, value + dilution);
+
+        if (!m_fast && usage) {
+            SetConcentration(i, vector);
+
+            QStringList header_1 = QStringList() << qA2B << qAB << qAB2 << qsolv << q;
+            QStringList header_2 = QStringList() << qA2B_ << qAB_ << qAB2_ << qsolv << q;
+
+            vector = Vector(5);
+            vector(0) = q_a2b;
+            vector(1) = q_ab;
+            vector(2) = q_ab2;
+            vector(3) = dilution;
+            vector(4) = value + dilution;
+            addPoints("Heat Chart I", PrintOutIndependent(i), vector, header_1);
+            vector(0) = q_a2b_;
+            vector(1) = q_ab_;
+            vector(2) = q_ab2_;
+            addPoints("Heat Chart II", PrintOutIndependent(i), vector, header_2);
+        }
         complex_21_prev = complex_21;
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;

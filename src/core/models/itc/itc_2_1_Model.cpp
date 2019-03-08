@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -184,9 +184,6 @@ void itc_IItoI_Model::CalculateVariables()
         vector(3) = complex_21;
         vector(4) = complex_11;
 
-        if (!m_fast)
-            SetConcentration(i, vector);
-
         qreal q_a2b = (complex_21 - complex_21_prev * dv) * dH2 * V;
         qreal q_ab = (complex_11 - complex_11_prev * dv) * dH1 * V;
         qreal q_ab_ = ((complex_21 - complex_21_prev * dv) + (complex_11 - complex_11_prev * dv)) * dH1 * V;
@@ -196,7 +193,23 @@ void itc_IItoI_Model::CalculateVariables()
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_a2b) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
         more_info_2 += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_a2b_) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
-        SetValue(i, 0, value + dilution);
+        bool usage = SetValue(i, 0, value + dilution);
+
+        if (!m_fast && usage) {
+            SetConcentration(i, vector);
+            QStringList header_1 = QStringList() << qA2B << qAB << qsolv << q;
+            QStringList header_2 = QStringList() << qA2B_ << qAB_ << qsolv << q;
+
+            vector = Vector(4);
+            vector(0) = q_a2b;
+            vector(1) = q_ab;
+            vector(2) = dilution;
+            vector(3) = value + dilution;
+            addPoints("Heat Chart I", PrintOutIndependent(i), vector, header_1);
+            vector(0) = q_a2b_;
+            vector(1) = q_ab_;
+            addPoints("Heat Chart II", PrintOutIndependent(i), vector, header_2);
+        }
         complex_11_prev = complex_11;
         complex_21_prev = complex_21;
     }

@@ -34,7 +34,7 @@
 
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"
-#include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/dialogs/modaldialog.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
@@ -323,6 +323,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_last_model = m_model->ExportModel(true, true);
 
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
+    connect(m_model.data(), &AbstractModel::ChartUpdated, this, &ModelWidget::ChartUpdated);
+
     m_model->Calculate();
 
     m_charts_dialogs = new ModalDialog(this);
@@ -330,6 +332,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
         m_charts_dialogs->setWidget(w, str);
     }
+    m_SetUpFinished = true;
 }
 
 ModelWidget::~ModelWidget()
@@ -427,6 +430,8 @@ void ModelWidget::setParameter()
 
 void ModelWidget::Repaint()
 {
+    if (!m_SetUpFinished)
+        return;
 
     if (m_model->Type() == 3)
         return;
@@ -944,6 +949,17 @@ QString ModelWidget::Keys() const
     }
     label.chop(1);
     return label;
+}
+
+void ModelWidget::ChartUpdated(const QString& str)
+{
+    if (!m_SetUpFinished)
+        return;
+
+    if (m_charts_dialogs->contains(str))
+        return;
+    ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
+    m_charts_dialogs->setWidget(w, str);
 }
 
 #include "modelwidget.moc"

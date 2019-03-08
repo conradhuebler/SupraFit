@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -221,16 +221,18 @@ void AbstractModel::setGlobalParameter(const QList<qreal>& list)
         (*GlobalTable())[i] = list[i];
 }
 
-void AbstractModel::SetValue(int i, int j, qreal value)
+bool AbstractModel::SetValue(int i, int j, qreal value)
 {
     if (!ActiveSignals(j) || !DependentModel()->isChecked(j, i)) {
         m_model_error->data(j, i) = 0;
         m_model_signal->data(j, i) = DependentModel()->data(j, i);
-        return;
+        return false;
     }
+    bool return_value = true;
     if (std::isnan(value) || std::isinf(value)) {
         value = 0;
         m_corrupt = true;
+        return_value = false;
     }
     QVector<qreal> mean_series(SeriesCount(), 0);
     QVector<int> used_series(SeriesCount(), 0);
@@ -249,6 +251,7 @@ void AbstractModel::SetValue(int i, int j, qreal value)
     }
     m_used_series = used_series;
     m_mean_series = mean_series;
+    return return_value;
 }
 
 void AbstractModel::Calculate()
@@ -1301,6 +1304,17 @@ void AbstractModel::addPoints(const QString& str, qreal x, const Vector& vector,
     }
 }
 
+void AbstractModel::UpdateChart(const QString& str, const QString& x_label, const QString& y_label)
+{
+
+    if (!m_model_charts.contains(str)) {
+        return;
+    }
+
+    m_model_charts[str]->x_axis = x_label;
+    m_model_charts[str]->y_axis = y_label;
+}
+
 void AbstractModel::addSeries(const QString& str, const QString& name, const QList<QPointF>& points, const QString& x_label, const QString& y_label)
 {
     if (!m_model_charts.contains(str)) {
@@ -1311,11 +1325,11 @@ void AbstractModel::addSeries(const QString& str, const QString& name, const QLi
 
     ModelSeries series;
     series.m_values = points;
-    series.x_axis = x_label;
-    series.y_axis = y_label;
     series.name = name;
 
     m_model_charts[str]->m_series << series;
+    m_model_charts[str]->x_axis = x_label;
+    m_model_charts[str]->y_axis = y_label;
 }
 
 qreal AbstractModel::ErrorfTestThreshold(qreal pvalue)

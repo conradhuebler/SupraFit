@@ -29,7 +29,7 @@
 #include "src/core/dataclass.h"
 #include "src/core/minimizer.h"
 
-#include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/dialogs/modaldialog.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/mainwindow/chartwidget.h"
 
@@ -148,7 +148,7 @@ private:
     ModalDialog *m_dialogs, *m_charts_dialogs;
     ResultsDialog* m_results;
 
-    bool m_statistic, m_val_readonly;
+    bool m_statistic, m_val_readonly, m_SetUpFinished = false;
     Charts m_charts;
     QString m_logging;
     QPointer<QCheckBox> m_toggled_box, m_global_box, m_local_box;
@@ -173,6 +173,7 @@ private slots:
     void SplitterResized();
     void Restore();
     void Detailed();
+    void ChartUpdated(const QString& str);
 
 public slots:
     void recalculate();

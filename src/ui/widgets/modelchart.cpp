@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,21 +50,24 @@ ModelChartWidget::~ModelChartWidget()
 
 void ModelChartWidget::setUI()
 {
+    const ModelChart* chart = m_model.data()->Chart(m_chart);
+
+    if (chart == NULL)
+        return;
+
     QHBoxLayout* layout = new QHBoxLayout;
     setLayout(layout);
 
     view = new ListChart;
-    view->setXAxis("parameter");
-    view->setYAxis("relative rate");
+    view->setXAxis(chart->x_axis);
+    view->setYAxis(chart->y_axis);
     view->setMinimumSize(300, 400);
 
     layout->addWidget(view);
 
-    const ModelChart* chart = m_model.data()->Chart(m_chart);
-    if (chart == NULL)
-        return;
     for (int i = 0; i < chart->m_series.size(); ++i) {
         LineSeries* series = new LineSeries;
+        series->setName(chart->m_series[i].name);
         series->append(chart->m_series[i].m_values);
         view->addSeries(series, i, QColor("green"), chart->m_series[i].name);
         m_series << series;
@@ -78,8 +81,25 @@ void ModelChartWidget::UpdateChart()
     if (chart == NULL)
         return;
 
-    for (int i = 0; i < m_series.size(); ++i) {
-        m_series[i]->clear();
-        m_series[i]->append(chart->m_series[i].m_values);
+    view->setXAxis(chart->x_axis);
+    view->setYAxis(chart->y_axis);
+
+    if (m_series.size() != chart->m_series.size()) {
+        view->Clear();
+        m_series.clear();
+
+        for (int i = 0; i < chart->m_series.size(); ++i) {
+            LineSeries* series = new LineSeries;
+            series->setName(chart->m_series[i].name);
+            series->append(chart->m_series[i].m_values);
+            view->addSeries(series, i, QColor("green"), chart->m_series[i].name);
+            m_series << series;
+        }
+    } else {
+        for (int i = 0; i < m_series.size(); ++i) {
+            m_series[i]->clear();
+            m_series[i]->append(chart->m_series[i].m_values);
+        }
     }
+    view->Chart()->formatAxis();
 }

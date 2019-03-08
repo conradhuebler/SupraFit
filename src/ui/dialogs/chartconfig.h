@@ -42,8 +42,8 @@ struct ChartConfig {
     int x_size = qApp->instance()->property("xSize").toInt();
     int y_size = qApp->instance()->property("ySize").toInt();
     int scaling = qApp->instance()->property("chartScaling").toInt();
-    int markerSize = qApp->instance()->property("markerSize").toDouble();
-    int lineWidth = qApp->instance()->property("lineWidth").toDouble();
+    double markerSize = qApp->instance()->property("markerSize").toDouble();
+    double lineWidth = qApp->instance()->property("lineWidth").toDouble();
 
     int y_step = 5;
     int Theme = 0;

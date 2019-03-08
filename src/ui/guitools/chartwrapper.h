@@ -42,7 +42,7 @@ class LineSeries : public QtCharts::QLineSeries {
 public:
     inline LineSeries()
         : m_dashdot(false)
-        , m_size(2)
+        , m_size(20)
     {
     }
     inline ~LineSeries() {}

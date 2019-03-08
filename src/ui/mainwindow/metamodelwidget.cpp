@@ -31,7 +31,7 @@
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
-#include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/dialogs/modaldialog.h"
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/metamodelparameter.h"

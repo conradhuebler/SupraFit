@@ -34,6 +34,8 @@ public:
     QWidget* Widget() { return m_widget; }
     inline int Count() const { return m_tab->count(); }
 
+    inline bool contains(const QString& str) { return m_tabNames.contains(str); }
+
 public slots:
     void Attention();
 
@@ -41,8 +43,8 @@ private:
     QGridLayout* layout;
     QPointer<QWidget> m_widget;
     QTabWidget* m_tab;
+    QStringList m_tabNames;
 
 private slots:
     void RemoveTab(int i);
 };
-

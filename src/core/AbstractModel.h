@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,7 @@ struct ModelOption {
 
 struct ModelSeries {
     QString name;
-    QString x_axis;
-    QString y_axis;
+
     QList<QPointF> m_values;
 };
 
@@ -47,6 +46,8 @@ struct ModelSeries {
 struct ModelChart {
     QVector<ModelSeries> m_series;
     QString title;
+    QString x_axis;
+    QString y_axis;
 };
 
 /*! \brief AbstractModelPrivate provides the shared data to have thread-safe
@@ -427,7 +428,7 @@ public:
 
     virtual qreal ModelError() const;
 
-    /*! \brief set the values of the global parameter to const QPointer<DataTable> list
+    /*! \brief set the values of the global parameter to const QPointer< DataTable > list
      */
     virtual void setGlobalParameter(const QPointer<DataTable> list);
 
@@ -672,10 +673,12 @@ protected:
     virtual void OptimizeParameters_Private();
 
     /* 
-     * @param int i, in j and qreal value
+     * @param int i, int j and qreal value
      * of the model value - DataTable 
+     * returns true if value was used
+     * returns false if value was not intended for usage (excluded by series, datatable etc)
      */
-    void SetValue(int i, int j, qreal value);
+    bool SetValue(int i, int j, qreal value);
 
     /*! \brief This function defines how the model values are to be calculated
      */
@@ -694,6 +697,8 @@ protected:
     void addPoints(const QString& hash, qreal x, const Vector& y, const QStringList& names = QStringList());
 
     void addSeries(const QString& hash, const QString& name, const QList<QPointF>& points, const QString& x_label = "x", const QString& y_label = "y");
+
+    void UpdateChart(const QString& hash, const QString& x_label, const QString& y_label);
 
     void PrepareParameter(int global, int local);
 
@@ -727,7 +732,7 @@ protected:
     /* Let models store additional charts, where anything can be plotted, e.g concentration curves or anything else
       BUT since abstractmodels should not depend on anything graphics related, they will be no series, but simple structs
       that can be worked with */
-    QHash<QString, ModelChart*> m_model_charts;
+    QMap<QString, ModelChart*> m_model_charts;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

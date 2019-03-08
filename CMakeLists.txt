@@ -214,7 +214,7 @@ set(suprafit_SRCS
                 src/ui/guitools/mime.h
                 src/ui/dialogs/regressionanalysisdialog.cpp
                 src/ui/dialogs/statisticdialog.cpp
-                src/ui/dialogs/modeldialog.cpp
+                src/ui/dialogs/modaldialog.cpp
                 src/ui/dialogs/advancedsearch.cpp
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp

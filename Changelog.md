@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- fix additional charts for concentrations, fast confidence and enthalpies/heats
 - add some model overview to compare dialog
 - temperature, concentrations and volume will be read from \*.itc file
 - add Scatter Plot for Weakend Grid Search results

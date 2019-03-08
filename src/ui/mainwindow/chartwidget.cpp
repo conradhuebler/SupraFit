@@ -249,6 +249,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
 Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 {
     m_data_mapper->TransformModel(model);
+    double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
 
     m_empty = false;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
@@ -273,6 +274,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             model_series->setName(m_data_mapper.data()->Series(i)->name());
             model_series->setColor(m_data_mapper->color(i));
             connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
+            model_series->setSize(lineWidth);
             m_signalview->addSeries(model_series);
         }
         if (model->Type() != 3) {
@@ -282,6 +284,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             error_series->setColor(m_data_mapper->color(i));
             connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
             connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), error_series, SLOT(ShowLine(int)));
+            error_series->setSize(lineWidth);
             m_errorview->addSeries(error_series);
         }
     }

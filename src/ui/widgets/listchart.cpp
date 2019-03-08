@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,11 +75,16 @@ void ListChart::setYAxis(const QString& str)
 
 void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QColor& color, const QString& name, bool callout)
 {
+    m_chartview->addSeries(series, callout);
+
     QListWidgetItem* item = NULL;
     if (index >= m_list->count()) {
         item = new QListWidgetItem(name);
         item->setData(Qt::UserRole, index);
-        item->setBackgroundColor(color);
+        if (qobject_cast<QtCharts::QXYSeries*>(series))
+            item->setBackgroundColor(qobject_cast<QtCharts::QXYSeries*>(series)->color());
+        else
+            item->setBackgroundColor(color);
         m_list->addItem(item);
     }
 
@@ -97,7 +102,6 @@ void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QC
 
     m_list->setItemDelegate(new HTMLListItem(m_list));
     m_names_list->setItemDelegate(new HTMLListItem(m_names_list));
-    m_chartview->addSeries(series, callout);
     m_hidden[index] = true;
     m_series.insert(index, series);
     m_chartview->formatAxis();

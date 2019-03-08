@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ AbstractTitrationModel::AbstractTitrationModel(DataClass* data)
     m_ylabel = "&delta; [ppm]";
     LoadSystemParameter();
     connect(this, &AbstractModel::Recalculated, this, [this]() {
-        emit this->ChartUpdated("concentration");
+        emit this->ChartUpdated("Concentration Chart");
     });
 }
 
@@ -61,7 +61,7 @@ AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel* other)
     m_ylabel = "&delta; [ppm]";
     m_T = other->m_T;
     connect(this, &AbstractModel::Recalculated, this, [this]() {
-        emit this->ChartUpdated("concentration");
+        emit this->ChartUpdated("Concentration Chart");
     });
 }
 
@@ -86,6 +86,7 @@ void AbstractTitrationModel::UpdateParameter()
 {
     m_T = getSystemParameter(Temperature).Double();
     m_plotMode = getSystemParameter(PlotMode).getString();
+    UpdateChart("concentration", m_plotMode, "c [mol/L]");
 }
 
 void AbstractTitrationModel::DeclareOptions()
@@ -123,19 +124,9 @@ void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
     m_concentrations->setRow(equilibrium, i);
     QStringList names = m_concentrations->header();
     names.removeFirst();
-    addPoints("concentration", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
+    addPoints("Concentration Chart", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
+    UpdateChart("Concentration Chart", m_plotMode, "c [mol/L]");
 }
-
-/*
-qreal AbstractTitrationModel::BC50() const
-{
-    return 0;
-}
-
-qreal AbstractTitrationModel::BC50SF() const
-{
-    return 0;
-}*/
 
 MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
 {
@@ -147,14 +138,6 @@ MassResults AbstractTitrationModel::MassBalance(qreal A, qreal B)
     result.MassBalance = values;
     return result;
 }
-/*
-QString AbstractTitrationModel::formatedGlobalParameter(qreal value, int globalParameter) const
-{
-    Q_UNUSED(globalParameter)
-    QString string;
-    string = QString::number(qPow(10, value));
-    return string;
-}*/
 
 QString AbstractTitrationModel::Model2Text_Private() const
 {

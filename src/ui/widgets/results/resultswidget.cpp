@@ -22,7 +22,7 @@
 #include "src/core/toolset.h"
 #include "src/ui/guitools/chartwrapper.h"
 
-#include "src/ui/dialogs/modeldialog.h"
+#include "src/ui/dialogs/modaldialog.h"
 
 #include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/listchart.h"

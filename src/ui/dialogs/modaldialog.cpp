@@ -21,7 +21,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTabWidget>
 
-#include "modeldialog.h"
+#include "modaldialog.h"
 
 ModalDialog::ModalDialog(QWidget* widget, const QString& str)
     : QDialog(widget)
@@ -53,13 +53,15 @@ void ModalDialog::setWidget(QWidget* widget, QString str)
         setWindowTitle(str);
     int i = m_tab->addTab(m_widget, str);
     m_tab->setCurrentIndex(i);
+    m_tabNames << str;
 }
 
 void ModalDialog::RemoveTab(int tab)
 {
     QWidget* model = qobject_cast<QWidget*>(m_tab->widget(tab));
     m_tab->removeTab(tab);
+    m_tabNames.removeAt(tab);
     delete model;
 }
 
-#include "modeldialog.moc"
+#include "modaldialog.moc"

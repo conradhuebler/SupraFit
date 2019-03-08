@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -110,14 +110,20 @@ void itc_ItoI_Model::CalculateVariables()
         vector(2) = guest_0 - complex;
         vector(3) = complex;
 
-        if (!m_fast)
-            SetConcentration(i, vector);
-
         qreal q_ab = V * (complex - complex_prev * (1 - v / V)) * dH;
         qreal value = q_ab;
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
-        SetValue(i, 0, value + dilution);
+        bool usage = SetValue(i, 0, value + dilution);
+        if (!m_fast && usage) {
+            SetConcentration(i, vector);
+            QStringList header = QStringList() << qAB << qsolv << q;
+            vector = Vector(3);
+            vector(0) = q_ab;
+            vector(1) = dilution;
+            vector(2) = value + dilution;
+            addPoints("Heat Chart I", PrintOutIndependent(i), vector, header);
+        }
         complex_prev = complex;
     }
     m_more_info = more_info;

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -186,23 +186,24 @@ void itc_ItoII_Model::CalculateVariables()
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(q_ab2) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
         more_info_2 += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab_) + "\t" + Print::printDouble(q_ab2_) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 
-        SetValue(i, 0, value + dilution);
+        bool usage = SetValue(i, 0, value + dilution);
         complex_11_prev = complex_11;
         complex_12_prev = complex_12;
-        if (!m_fast) {
+
+        if (!m_fast && usage) {
             QStringList header_1 = QStringList() << qAB << qAB2 << qsolv << q;
             QStringList header_2 = QStringList() << qAB_ << qAB2_ << qsolv << q;
 
             SetConcentration(i, vector);
-            Vector(4);
+            vector = Vector(4);
             vector(0) = q_ab;
             vector(1) = q_ab2;
             vector(2) = dilution;
             vector(3) = value + dilution;
-            addPoints("heat_1", PrintOutIndependent(i), vector, header_1);
+            addPoints("Heat Chart I", PrintOutIndependent(i), vector, header_1);
             vector(0) = q_ab_;
             vector(1) = q_ab2_;
-            addPoints("heat_2", PrintOutIndependent(i), vector, header_2);
+            addPoints("Heat Chart II", PrintOutIndependent(i), vector, header_2);
         }
     }
     m_more_info = more_info + "\n" + more_info_2;
