@@ -17,6 +17,8 @@
  *
  */
 
+#include "src/global_config.h"
+
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -29,6 +31,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 
@@ -36,7 +39,8 @@
 
 #include "chartconfig.h"
 
-ChartConfigDialog::ChartConfigDialog()
+ChartConfigDialog::ChartConfigDialog(QWidget* widget)
+    : QDialog(widget)
 {
     setModal(false);
     QGridLayout* layout = new QGridLayout;
@@ -89,6 +93,22 @@ ChartConfigDialog::ChartConfigDialog()
     connect(m_scaleaxis, SIGNAL(clicked()), this, SIGNAL(ScaleAxis()));
     m_scaleaxis->setMaximumSize(100, 30);
     m_scaleaxis->setStyleSheet("background-color: #F3ECE0;");
+
+    m_resetFontConfig = new QPushButton(tr("Reset Font Config"));
+    m_resetFontConfig->setStyleSheet("background-color: #F3ECE0;");
+    connect(m_resetFontConfig, &QPushButton::clicked, m_resetFontConfig, [this]() {
+        QMessageBox::StandardButton replay;
+        QString message;
+#ifdef noto_font
+        message = "Fonts will be set Google Noto Font!";
+#else
+        message = "Fonts will be set to your systems standard font configuration!";
+#endif
+        replay = QMessageBox::information(this, tr("Reset Font Config."), tr("Do you really want to reset the current font config?\n%1").arg(message), QMessageBox::Yes | QMessageBox::No);
+        if (replay == QMessageBox::Yes) {
+            emit this->ResetFontConfig();
+        }
+    });
 
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok);
     connect(m_buttons, &QDialogButtonBox::accepted, this, &ChartConfigDialog::Changed);
@@ -264,7 +284,9 @@ ChartConfigDialog::ChartConfigDialog()
 
     layout->addLayout(actions, 7, 0, 1, 3);
 
-    layout->addWidget(m_buttons, 10, 0, 1, 3);
+    layout->addWidget(m_resetFontConfig, 10, 0);
+
+    layout->addWidget(m_buttons, 10, 1, 1, 2);
     setLayout(layout);
     setWindowTitle("Configure charts ...");
 }

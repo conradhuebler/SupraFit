@@ -90,7 +90,7 @@ public:
 
     QtCharts::QLineSeries* addLinearSeries(qreal m, qreal n, qreal min, qreal max);
     void ClearChart();
-    inline void setModal(bool modal) { m_chartconfigdialog.setModal(modal); }
+    inline void setModal(bool modal) { m_chartconfigdialog->setModal(modal); }
 
     inline qreal YMaxRange() const
     {
@@ -177,7 +177,7 @@ private:
     PgfPlotConfig getLineTable() const;
     QString Color2RGB(const QColor& color) const;
     void WriteTable(const QString& str);
-    ChartConfigDialog m_chartconfigdialog;
+    ChartConfigDialog* m_chartconfigdialog;
     bool m_pending, m_lock_scaling, m_latex_supported, m_modal = true;
     qreal m_ymax, m_ymin, m_xmin, m_xmax;
     QVector<QPointer<QtCharts::QAbstractSeries>> m_series;
@@ -204,6 +204,7 @@ private slots:
     void setChartConfig(const ChartConfig& chartconfig);
     void forceformatAxis();
     void ConfigurationChanged(const QString& str = "noname");
+    void ResetFontConfig();
 
 signals:
     void AxisChanged();

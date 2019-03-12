@@ -39,6 +39,9 @@ option (legacy
 option (conservative
     "Enable conservative calculations, slower and not better" OFF)
 
+option (noto_font
+    "Enable and Use Google Noto Fonts" OFF)
+    
 # Get the current working branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD
@@ -251,7 +254,13 @@ set(suprafit_SRCS
                 src/ui/mainwindow/mainwindow.cpp
                 src/ui/mainwindow/suprafitgui.cpp
                 src/main.cpp)
+                
 qt5_add_resources(suprafit_SRCS files.qrc)
+
+if(noto_font)
+    qt5_add_resources(suprafit_SRCS fonts.qrc)
+endif(noto_font)
+
 target_link_libraries(utils Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport Qt5::Charts)
 
 if(WIN32) # Check if we are on Windows

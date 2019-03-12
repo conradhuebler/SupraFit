@@ -30,5 +30,6 @@
         <file>icons/document-save-as.png</file>
         <file>icons/document-close.png</file>
         <file>icons/edit-clear-history.png</file>
+        <file>./LICENSE.md</file>
     </qresource>
 </RCC>

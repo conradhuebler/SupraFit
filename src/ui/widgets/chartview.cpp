@@ -17,6 +17,8 @@
  *
  */
 
+#include "src/global_config.h"
+
 #include "src/core/toolset.h"
 
 #include "src/ui/guitools/instance.h"
@@ -251,15 +253,18 @@ void ChartView::setUi()
     mCentralHolder->setLayout(mCentralLayout);
     setWidget(mCentralHolder);
 
-    connect(&m_chartconfigdialog, &ChartConfigDialog::ConfigChanged, this, [this](const ChartConfig& config) {
+    m_chartconfigdialog = new ChartConfigDialog(this);
+
+    connect(m_chartconfigdialog, &ChartConfigDialog::ConfigChanged, this, [this](const ChartConfig& config) {
         this->setChartConfig(config);
         this->WriteSettings(config);
         emit Instance::GlobalInstance()->ConfigurationChanged(m_name);
     });
-    connect(&m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
+    connect(m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
+    connect(m_chartconfigdialog, SIGNAL(ResetFontConfig()), this, SLOT(ResetFontConfig()));
+
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
     ConfigurationChanged();
-    // setChartConfig(ReadSettings());
 
     connect(m_chart_private, &ChartViewPrivate::LockZoom, this, [this]() {
         this->m_lock_scaling = true;
@@ -445,15 +450,17 @@ void ChartView::forceformatAxis()
     m_xmax = x_max;
 
     if (connected)
-        m_chartconfigdialog.setConfig(getChartConfig());
+        m_chartconfigdialog->setConfig(getChartConfig());
 }
 
 void ChartView::PlotSettings()
 {
     if (!connected)
         return;
-    m_chartconfigdialog.setConfig(getChartConfig());
-    m_chartconfigdialog.show();
+    m_chartconfigdialog->setConfig(getChartConfig());
+    m_chartconfigdialog->show();
+    m_chartconfigdialog->raise();
+    m_chartconfigdialog->activateWindow();
 }
 
 void ChartView::setChartConfig(const ChartConfig& chartconfig)
@@ -573,16 +580,27 @@ ChartConfig ChartView::ReadSettings()
 {
     ChartConfig chartconfig = m_last_config;
     QSettings _settings;
-    _settings.beginGroup(m_name);
-    chartconfig.m_label = _settings.value("labels").value<QFont>();
-    chartconfig.m_ticks = _settings.value("ticks").value<QFont>();
-    chartconfig.m_title = _settings.value("title").value<QFont>();
-    chartconfig.m_keys = _settings.value("legend").value<QFont>();
-    _settings.endGroup();
+    if (!_settings.contains(m_name)) {
+#ifdef noto_font
+        QFont font("Noto Sans SemBd", 11);
+        chartconfig.m_label = font;
+        chartconfig.m_ticks = font;
+        chartconfig.m_keys = font;
 
+        font.setPixelSize(font.pixelSize() + 1);
+        chartconfig.m_title = font;
+#endif
+    } else {
+        _settings.beginGroup(m_name);
+        chartconfig.m_label = _settings.value("labels").value<QFont>();
+        chartconfig.m_ticks = _settings.value("ticks").value<QFont>();
+        chartconfig.m_title = _settings.value("title").value<QFont>();
+        chartconfig.m_keys = _settings.value("legend").value<QFont>();
+        _settings.endGroup();
+    }
     m_last_config = chartconfig;
     setChartConfig(chartconfig);
-    m_chartconfigdialog.setConfig(chartconfig);
+    m_chartconfigdialog->setConfig(chartconfig);
 
     return chartconfig;
 }
@@ -809,7 +827,6 @@ void ChartView::ExportPNG()
     Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();
-    qDebug() << m_x_size << m_y_size << w << h << m_scaling;
     // scaling is important for good resolution
     QImage image(QSize(m_scaling * w, m_scaling * h), QImage::Format_ARGB32);
 
@@ -982,6 +999,28 @@ void ChartView::resizeEvent(QResizeEvent* event)
     }else{
         QWidget::resize(event->size().width(),event->size().width());
     }*/
+}
+
+void ChartView::ResetFontConfig()
+{
+    ChartConfig chartconfig = m_last_config;
+    QFont font;
+#ifdef noto_font
+    font = QFont("Noto Sans SemBd");
+    font.setPointSize(11);
+#else
+    font.setPointSize(11);
+#endif
+
+    chartconfig.m_label = font;
+    chartconfig.m_ticks = font;
+    chartconfig.m_keys = font;
+    font.setPointSize(12);
+
+    chartconfig.m_title = font;
+    m_last_config = chartconfig;
+    setChartConfig(chartconfig);
+    m_chartconfigdialog->setConfig(chartconfig);
 }
 
 #include "chartview.moc"

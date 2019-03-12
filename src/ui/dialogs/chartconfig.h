@@ -55,14 +55,14 @@ struct ChartConfig {
 class ChartConfigDialog : public QDialog {
     Q_OBJECT
 public:
-    ChartConfigDialog();
+    ChartConfigDialog(QWidget* widget);
     ~ChartConfigDialog();
     void setConfig(const ChartConfig& chartconfig);
     inline ChartConfig Config() const { return m_chartconfig; }
     QDialogButtonBox* m_buttons;
 
 private:
-    QPushButton *m_scaleaxis, *m_keys, *m_labels, *m_ticks, *m_alignment, *m_titlefont;
+    QPushButton *m_scaleaxis, *m_keys, *m_labels, *m_ticks, *m_alignment, *m_titlefont, *m_resetFontConfig;
     QLineEdit *m_x_axis, *m_y_axis, *m_title;
     QDoubleSpinBox *m_x_min, *m_x_max, *m_y_min, *m_y_max, *m_markerSize, *m_lineWidth;
     QSpinBox *m_x_step, *m_y_step, *m_scaling, *m_x_size, *m_y_size;
@@ -80,4 +80,5 @@ private slots:
 signals:
     void ConfigChanged(ChartConfig chartconfig);
     void ScaleAxis();
+    void ResetFontConfig();
 };

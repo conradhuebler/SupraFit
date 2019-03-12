@@ -26,6 +26,8 @@
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
 
+#include <QtGui/QFontDatabase>
+
 #include <QtWidgets/QApplication>
 
 int main(int argc, char** argv)
@@ -44,6 +46,29 @@ int main(int argc, char** argv)
 
 #ifdef _DEBUG
     qDebug() << "Debug output enabled, good fun!";
+#endif
+
+#ifdef noto_font
+    QFontDatabase database;
+    QStringList fontfamilies = database.families();
+    if (!fontfamilies.contains("Noto Sans SemBd")) {
+        qDebug() << "Loading font: Noto Sans SemBd" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-SemiBold.ttf");
+    }
+
+    if (!fontfamilies.contains("Noto Sans Med")) {
+        qDebug() << "Loading font: Noto Sans Med" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-Medium.ttf");
+    }
+
+    if (!fontfamilies.contains("Noto Sans Light")) {
+        qDebug() << "Loading font: Noto Sans Light" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-Light.ttf");
+    }
+
+    if (!fontfamilies.contains("Noto Sans")) {
+        qDebug() << "Loading font: Noto Sans" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-Regular.ttf");
+    }
+    QFont mainfont("Noto Sans Med");
+    mainfont.setPointSize(10);
+    app.setFont(mainfont);
 #endif
 
     SupraFitGui mainwindow;

@@ -528,6 +528,9 @@ SupraFitGui::SupraFitGui()
     m_about = new QAction(QIcon(":/misc/suprafit.png"), tr("Info"), this);
     connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
 
+    m_license = new QAction(Icon("license"), tr("License Info"), this);
+    connect(m_license, SIGNAL(triggered()), this, SLOT(LicenseInfo()));
+
     m_aboutqt = new QAction(Icon("help-about"), tr("About Qt"), this);
     connect(m_aboutqt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 
@@ -552,6 +555,7 @@ SupraFitGui::SupraFitGui()
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_message);
     m_system_toolbar->addAction(m_about);
+    m_system_toolbar->addAction(m_license);
     m_system_toolbar->addAction(m_aboutqt);
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -1427,6 +1431,36 @@ void SupraFitGui::Messages()
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(text);
     text->appendPlainText(qApp->instance()->property("messages").toString());
+    QDialog dialog;
+    dialog.setLayout(layout);
+    dialog.resize(800, 600);
+    dialog.exec();
+}
+
+void SupraFitGui::LicenseInfo()
+{
+
+    QPlainTextEdit* text = new QPlainTextEdit;
+    QHBoxLayout* layout = new QHBoxLayout;
+    layout->addWidget(text);
+
+    QString content("License Information for SupraFit\n");
+    QFile file(":/LICENSE.md");
+    if (file.open(QIODevice::ReadOnly)) {
+        content += QString(file.readAll());
+    }
+
+#ifdef noto_font
+    content += "\n\nLicense Information for Google Noto Fonts\nhttps://github.com/googlei18n/noto-fonts\n\n";
+
+    QFile file2(":/fonts/LICENSE");
+    if (file2.open(QIODevice::ReadOnly)) {
+        content += QString(file2.readAll());
+    } else
+        qDebug() << file2.errorString() << file2.fileName();
+#endif
+    text->setPlainText(content);
+
     QDialog dialog;
     dialog.setLayout(layout);
     dialog.resize(800, 600);

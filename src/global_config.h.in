@@ -11,3 +11,4 @@
 #cmakedefine legacy
 #cmakedefine conservative
 #cmakedefine Qt5_10
+#cmakedefine noto_font

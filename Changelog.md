@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- add optional Google Noto Fonts as default application and chart font (cmake option!)
 - fix additional charts for concentrations, fast confidence and enthalpies/heats
 - add some model overview to compare dialog
 - temperature, concentrations and volume will be read from \*.itc file
