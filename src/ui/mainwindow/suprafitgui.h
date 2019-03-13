@@ -221,7 +221,8 @@ private:
                                                    << "chartScaling"
                                                    << "FastConfidenceScaling"
                                                    << "FastConfidenceSteps"
-                                                   << "ColorFullSearch";
+                                                   << "ColorFullSearch"
+                                                   << "series_confidence";
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;

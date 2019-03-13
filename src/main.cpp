@@ -51,23 +51,26 @@ int main(int argc, char** argv)
 #ifdef noto_font
     QFontDatabase database;
     QStringList fontfamilies = database.families();
+    int smbd = 0, med = 0, light = 0, regular = 0;
     if (!fontfamilies.contains("Noto Sans SemBd")) {
-        qDebug() << "Loading font: Noto Sans SemBd" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-SemiBold.ttf");
+        smbd = QFontDatabase::addApplicationFont(":/fonts/NotoSans-SemiBold.ttf");
     }
 
     if (!fontfamilies.contains("Noto Sans Med")) {
-        qDebug() << "Loading font: Noto Sans Med" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-Medium.ttf");
+        med = QFontDatabase::addApplicationFont(":/fonts/NotoSans-Medium.ttf");
     }
 
     if (!fontfamilies.contains("Noto Sans Light")) {
-        qDebug() << "Loading font: Noto Sans Light" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-Light.ttf");
+        light = QFontDatabase::addApplicationFont(":/fonts/NotoSans-Light.ttf");
     }
 
     if (!fontfamilies.contains("Noto Sans")) {
-        qDebug() << "Loading font: Noto Sans" << QFontDatabase::addApplicationFont(":/fonts/NotoSans-Regular.ttf");
+        regular = QFontDatabase::addApplicationFont(":/fonts/NotoSans-Regular.ttf");
     }
-    QFont mainfont("Noto Sans Med");
+
+    QFont mainfont("Noto Sans");
     mainfont.setPointSize(10);
+    mainfont.setWeight(QFont::Medium);
     app.setFont(mainfont);
 #endif
 

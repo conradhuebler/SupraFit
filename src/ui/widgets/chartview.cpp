@@ -582,12 +582,15 @@ ChartConfig ChartView::ReadSettings()
     QSettings _settings;
     if (!_settings.contains(m_name)) {
 #ifdef noto_font
-        QFont font("Noto Sans SemBd", 11);
+        QFont font("Noto Sans", 11);
+        font.setPointSize(11);
+        font.setWeight(QFont::DemiBold);
+
         chartconfig.m_label = font;
         chartconfig.m_ticks = font;
         chartconfig.m_keys = font;
 
-        font.setPixelSize(font.pixelSize() + 1);
+        font.setPointSize(11);
         chartconfig.m_title = font;
 #endif
     } else {
@@ -1006,11 +1009,11 @@ void ChartView::ResetFontConfig()
     ChartConfig chartconfig = m_last_config;
     QFont font;
 #ifdef noto_font
-    font = QFont("Noto Sans SemBd");
-    font.setPointSize(11);
-#else
-    font.setPointSize(11);
+    font = QFont("Noto Sans");
 #endif
+
+    font.setPointSize(11);
+    font.setWeight(QFont::DemiBold);
 
     chartconfig.m_label = font;
     chartconfig.m_ticks = font;

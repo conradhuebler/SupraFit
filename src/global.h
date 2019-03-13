@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -133,7 +133,7 @@ inline QString aboutHtml()
     info += "<p>Special thanks to <strong>Prof. M. Mazik</strong>, TU Bergakademie Freiberg for her support.</p>";
     info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;rster</strong> and <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
-    info += "<p>Built-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org/</p>";
+    info += "<p>Built-in Icon Theme taken from Oxygens Icon : <a href='http://www.oxygen-icons.org'>http://www.oxygen-icons.org</a></p>";
     info += "<p>SupraFit website on GitHub: <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/conradhuebler/SupraFit</a></p>";
     info += "<p>SupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n";
 #ifdef noto_font
@@ -153,7 +153,6 @@ inline QString about()
     info += "\tSpecial thanks to Prof. M. Mazik, TU Bergakademie Freiberg for her support.\n\n";
     info += "\tSpecial thanks to \t Dr. Sebastian Förster \t  and \t Stefan Kaiser \t for finding bugs and constructive feedback.\n\n";
     info += "\tThanks to all encouraged me writing the application.\n\n";
-    info += "\tBuilt-in Icon Theme taken from Oxygens Icon : http://www.oxygen-icons.org\n";
     info += "\tSupraFit website on GitHub: https://github.com/conradhuebler/SupraFit\n\n";
     info += "\tSupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n\n";
     info += "\t*********************************************************************************************************\n\n";
