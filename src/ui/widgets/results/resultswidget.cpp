@@ -248,8 +248,8 @@ QWidget* ResultsWidget::GridSearchWidget()
         scatterwidget->setData(m_models, m_model);
         tabwidget->addTab(scatterwidget, "Scatter Plot");
     }
-    view->setXAxis("Parameter");
-    view->setYAxis("Sum of Squares");
+    view->setXAxis("value");
+    view->setYAxis("Sum of Squares (SSE)");
     view->setName("gridchart");
     int series_int = 0;
     int old_index = 0;

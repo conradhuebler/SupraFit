@@ -919,7 +919,7 @@ void ChartView::ExportPNG()
                 b = y;
             }
         }
-        return tmp.copy(l, t, r, b);
+        return tmp.copy(l + 1, t + 1, r + 1, b + 1);
     };
 
     QPixmap pixmap;
