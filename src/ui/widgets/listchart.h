@@ -110,6 +110,9 @@ private:
 private slots:
     inline void SeriesListClicked(QListWidgetItem* item) { HideSeries(item->data(Qt::UserRole).toInt()); };
     void NamesListClicked(QListWidgetItem* item);
+    void ContextMenu(const QPoint& pos);
+    void RenameSeries();
+    void ChangeColor();
 
 signals:
     void itemDoubleClicked(QListWidgetItem* item);

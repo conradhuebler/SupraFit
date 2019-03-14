@@ -321,6 +321,9 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
                 connect(serie, &QtCharts::QXYSeries::colorChanged, serie, [serie, annotation]() {
                     annotation->setColor(serie->color());
                 });
+                connect(serie, &QtCharts::QXYSeries::nameChanged, serie, [serie, annotation, point]() {
+                    annotation->setText(serie->name(), point);
+                });
                 annotation->setColor(serie->color());
                 m_peak_anno.append(annotation);
             }

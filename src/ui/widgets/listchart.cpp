@@ -21,8 +21,10 @@
 
 #include <QtCharts/QBoxPlotSeries>
 
+#include <QtWidgets/QColorDialog>
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QMenu>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QWidget>
 
@@ -41,6 +43,9 @@ ListChart::ListChart()
 
     m_list = new QListWidget;
     m_list->setMaximumWidth(200);
+
+    m_list->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_list, &QListWidget::customContextMenuRequested, this, &ListChart::ContextMenu);
 
     m_names_list = new QListWidget;
     m_names_list->setMaximumWidth(200);
@@ -86,6 +91,7 @@ void ListChart::addSeries(QtCharts::QAbstractSeries* series, int index, const QC
         else
             item->setBackgroundColor(color);
         m_list->addItem(item);
+        item->setData(Qt::UserRole + 1, QVariant::fromValue(series));
     }
 
     if (!m_names_list->findItems(name, Qt::MatchExactly).size()) {
@@ -149,5 +155,55 @@ void ListChart::HideSeries(int index)
             qobject_cast<BoxPlotSeries*>(series[j])->setVisible(m_hidden[index]);
         else
             series[j]->setVisible(m_hidden[index]);
+    }
+}
+
+void ListChart::ContextMenu(const QPoint& pos)
+{
+    // Handle global position
+    QPoint globalPos = m_list->mapToGlobal(pos);
+
+    QListWidgetItem* item = m_list->item(m_list->currentRow());
+
+    // Create menu and insert some actions
+    QMenu myMenu;
+    if (item->flags().testFlag(Qt::ItemIsEditable) == false)
+        myMenu.addAction("Rename", this, SLOT(RenameSeries()));
+    else
+        myMenu.addAction("Save", this, SLOT(RenameSeries()));
+
+    myMenu.addAction("Change Color", this, SLOT(ChangeColor()));
+
+    // Show context menu at handling position
+    myMenu.exec(globalPos);
+}
+
+void ListChart::RenameSeries()
+{
+    QListWidgetItem* item = m_list->item(m_list->currentRow());
+    QtCharts::QAbstractSeries* series = item->data(Qt::UserRole + 1).value<QtCharts::QAbstractSeries*>();
+    //if()
+    if (item->flags().testFlag(Qt::ItemIsEditable) == false) {
+        item->setFlags(item->flags() | Qt::ItemIsEditable);
+        m_list->editItem(item);
+    } else {
+        item->setFlags(item->flags() ^ Qt::ItemIsEditable);
+        m_list->editItem(item);
+        if (qobject_cast<QtCharts::QXYSeries*>(series)) {
+            qobject_cast<QtCharts::QXYSeries*>(series)->setName(item->text());
+        }
+    }
+}
+
+void ListChart::ChangeColor()
+{
+    QListWidgetItem* item = m_list->item(m_list->currentRow());
+    QtCharts::QAbstractSeries* series = item->data(Qt::UserRole + 1).value<QtCharts::QAbstractSeries*>();
+
+    QColor color = QColorDialog::getColor(tr("Choose Color for Series"));
+
+    if (qobject_cast<QtCharts::QXYSeries*>(series)) {
+        item->setBackgroundColor(color);
+        qobject_cast<QtCharts::QXYSeries*>(series)->setColor(color);
     }
 }
