@@ -779,7 +779,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
     qreal value = result["value"].toDouble();
 
-    QString text = QString("<p> --- statistic block --- </p><p>%1</p>").arg(result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value));
+    QString text = QString("<p> --- statistic block --- </p><p>%1</p>").arg(result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value, 4));
 
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper"].toDouble();
@@ -790,8 +790,8 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
     //text += "<table><tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch || type == SupraFit::Statistic::FastConfidence) {
 
-        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td>" + QString::number(value) + " [+ " + QString::number(upper - value, 'g', 3) + " / " + QString::number(lower - value, 'g', 3) + "]</td></tr>";
-        text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[" + QString::number(lower) + " - " + QString::number(upper) + "]</td></tr>";
+        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td>" + Print::printDouble(value, 4) + " [+ " + Print::printDouble(upper - value, 4) + " / " + Print::printDouble(lower - value, 4) + "]</td></tr>";
+        text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[" + Print::printDouble(lower, 4) + " - " + Print::printDouble(upper, 4) + "]</td></tr>";
     }
     if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation) {
 
@@ -803,7 +803,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
                 text += "<p>Leave-Two-Out Cross Validation</p>";
         }else
         {
-            text += QString("<p>Input variance is %1</p>").arg(controller["variance"].toDouble());
+            text += QString("<p>Input variance is %1</p>").arg(Print::printDouble(controller["variance"].toDouble(), 6));
         }
         QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
         QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
@@ -819,14 +819,14 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
             box = ToolSet::BoxWhiskerPlot(list.toList());
 
         text += "<tr><td colspan='2'>Analyse of the Monte Carlo Histogram</td></tr>\n";
-        text += "<tr><td>Median: </td><td> <b>" + QString::number(box.median, 'f', 4) + "</b></td></tr>\n";
-        text += "<tr><td>Notches: </td><td> <b>" + QString::number(box.LowerNotch(), 'f', 4) + " - " + QString::number(box.UpperNotch(), 'f', 4) + "</b></td></tr>";
-        text += QString("<tr><td>Entropy H(X):</td><td>%1<td></tr>").arg(pair.first);
-        text += QString("<tr><td>Standard deviation from mean:</td><td>%1<td></tr>").arg(box.stddev);
+        text += "<tr><td>Median: </td><td> <b>" + Print::printDouble(box.median, 4) + "</b></td></tr>\n";
+        text += "<tr><td>Notches: </td><td> <b>" + Print::printDouble(box.LowerNotch(), 4) + " - " + Print::printDouble(box.UpperNotch(), 4) + "</b></td></tr>";
+        text += QString("<tr><td>Entropy H(X):</td><td>%1<td></tr>").arg(Print::printDouble(pair.first, 6));
+        text += QString("<tr><td>Standard deviation from mean:</td><td>%1<td></tr>").arg(Print::printDouble(box.stddev, 6));
 
-        if (value > box.UpperNotch() || value < box.LowerNotch()) {
-            text += "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>";
-        }
+        //   if (value > box.UpperNotch() || value < box.LowerNotch()) {
+        //       text += "<tr><th colspan=2><font color='red'>Estimated value exceeds notch of BoxPlot!</font></th></tr>";
+        //   }
 
         text += "<tr><td colspan=2></th></tr>";
         text += QString("<tr><td colspan='2'>%9 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5 & %6  & %7 & %8\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Print::printDouble(box.median, 4)).arg(Print::printDouble(box.stddev, 6)).arg(Print::printDouble(pair.first, 6)).arg(Html2Tex(result["name"].toString()));

@@ -218,9 +218,11 @@ QWidget* StatisticDialog::MonteCarloWidget()
 
     QVBoxLayout* indep_layout = new QVBoxLayout;
     if (m_model.data()) {
+        QStringList header = m_model.data()->IndependentModel()->header();
         indep_layout->addWidget(new QLabel(tr("Create random scatter of independent\nvariables, eg. input concentrations etc!")));
         for (int i = 0; i < m_model.data()->IndependentVariableSize(); ++i) {
-            QCheckBox* checkbox = new QCheckBox("Independent Variable " + QString::number(i + 1));
+
+            QCheckBox* checkbox = new QCheckBox(header[i]);
             QDoubleSpinBox* var = new QDoubleSpinBox;
             var->setDecimals(5);
             var->setSingleStep(1e-4);

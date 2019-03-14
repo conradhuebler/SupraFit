@@ -213,6 +213,8 @@ QWidget* ResultsWidget::ReductionWidget()
 QWidget* ResultsWidget::ModelComparisonWidget()
 {
     ScatterWidget* widget = new ScatterWidget;
+    widget->setConverged(false);
+    widget->setValid(false);
     widget->setData(m_models, m_model);
     QJsonObject controller = m_data["controller"].toObject();
     QVector<int> global = ToolSet::String2IntVec(controller["global_parameter"].toString());

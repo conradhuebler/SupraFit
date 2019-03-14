@@ -52,14 +52,14 @@ public:
     ~MCResultsWidget();
 
     void setModels(const QList<QJsonObject>& models) { m_models = models; }
-    inline bool hasData() const { return has_boxplot || has_contour || has_histogram; }
+    inline bool hasData() const { return has_boxplot || has_scatter || has_histogram; }
     void setUi();
 
 private:
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox* m_error;
     QPointer<ListChart> m_histgram, m_box;
-    QPointer<QWidget> m_contour;
+    QPointer<QWidget> m_scatter;
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries*> m_area_series;
 
@@ -69,11 +69,11 @@ private:
     QtCharts::QAreaSeries* AreaSeries(const QColor& color) const;
     QSpinBox* m_bins;
     QPointer<ListChart> MakeHistogram();
-    QPointer<QWidget> MakeContour();
+    QPointer<QWidget> MakeScatter();
     QPointer<ListChart> MakeBoxPlot();
     QList<QJsonObject> m_box_object;
     QList<QJsonObject> m_models;
-    bool has_histogram, has_contour, has_boxplot;
+    bool has_histogram, has_scatter, has_boxplot;
     SupraFit::Statistic m_type;
 
     ChartWrapper* m_wrapper;

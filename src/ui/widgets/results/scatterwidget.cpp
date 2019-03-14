@@ -54,7 +54,7 @@ void ScatterWidget::setUi()
 {
     QGridLayout* layout = new QGridLayout;
     view = new ListChart;
-    view->setName("contourchart");
+    view->setName("scatterwidget");
     m_xy_series = new QtCharts::QScatterSeries;
     m_xy_series->setBorderColor(m_xy_series->color());
     QSplitter* splitter = new QSplitter(Qt::Vertical);
@@ -213,6 +213,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     view->addSeries(m_xy_series, 0, color, m_names[var_1] + " vs. " + m_names[var_2]);
     view->setXAxis(m_names[var_1]);
     view->setYAxis(m_names[var_2]);
+    view->setTitle(QString("Scatter Plot %1 vs %2").arg(m_names[var_2]).arg(m_names[var_1]));
     m_xy_series->setColor(color);
     m_xy_series->setBorderColor(m_xy_series->color());
 }

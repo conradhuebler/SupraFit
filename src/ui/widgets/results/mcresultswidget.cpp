@@ -60,7 +60,7 @@ MCResultsWidget::MCResultsWidget(const QJsonObject& data, QSharedPointer<Abstrac
 
     has_boxplot = false;
     has_histogram = false;
-    has_contour = false;
+    has_scatter = false;
 }
 
 MCResultsWidget::~MCResultsWidget()
@@ -89,8 +89,8 @@ void MCResultsWidget::setUi()
     // if (has_boxplot)
     //     tabs->addTab(m_box, tr("Boxplot"));
 
-    m_contour = MakeContour();
-    tabs->addTab(m_contour, tr("Scatter Plot"));
+    m_scatter = MakeScatter();
+    tabs->addTab(m_scatter, tr("Scatter Plot"));
 
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
@@ -245,10 +245,12 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
     return boxplot;
 }
 
-QPointer<QWidget> MCResultsWidget::MakeContour()
+QPointer<QWidget> MCResultsWidget::MakeScatter()
 {
     ScatterWidget* widget = new ScatterWidget;
     widget->setData(m_models, m_model);
+    widget->setConverged(false);
+    widget->setValid(false);
     QJsonObject controller = m_data["controller"].toObject();
 
     return widget;
