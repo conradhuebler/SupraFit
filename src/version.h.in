@@ -2,9 +2,23 @@
 
 #include <QtCore/QString>
     
-const QString git_branch = "@GIT_BRANCH@";      /*! Current name of the branch     */
 const QString git_commit_hash = "@GIT_COMMIT_HASH@"; /*! Current hash of the git branch */
-const QString git_date = "@GIT_COMMIT_DATE@"; /*! Current date of the git branch */
+const QString git_branch = "@GIT_BRANCH@";      /*! Current name of the branch as printable string    */
+
+#ifdef _UNIX
+const QString git_date = "Commit Date: @GIT_COMMIT_DATE@"; /*! Current date of the git branch branch as printable string*/
+#else
+const QString git_date = ""; /*! Current date of the git branch branch as printable string*/
+#endif
+
+const QString branch = " Git Branch: @GIT_BRANCH@ -- ";      /*! Current name of the branch as printable string    */
+const QString commit_hash = "Commit: @GIT_COMMIT_HASH@ --"; /*! Current hash of the git branch branch as printable string*/
+
+#ifdef _UNIX
+const QString date = "Commit Date: @GIT_COMMIT_DATE@"; /*! Current date of the git branch branch as printable string*/
+#else
+const QString date = "Forever young."; /*! Current date of the git branch branch as printable string*/
+#endif
 
 #ifdef _DEBUG
 const QString conf_mode = "DEBUG Mode"; /*! Last compilation mode used */
@@ -12,6 +26,6 @@ const QString conf_mode = "DEBUG Mode"; /*! Last compilation mode used */
 const QString conf_mode = "RELEASE Mode"; /*! Last compilation mode used */
 #endif
 
-const QString version = "Suprafit 2 v-1.6 Alpha \n\t Git Branch: @GIT_BRANCH@ -- Commit: @GIT_COMMIT_HASH@  -- Commit Date : @GIT_COMMIT_DATE@ - " + conf_mode; /*! Version name */
+const QString version = QString("Suprafit 2 v-1.6 Alpha \n\t%1 %2 %3 -  %4").arg(branch).arg(commit_hash).arg(date).arg(conf_mode); /*! Version name */
 
-const int qint_version = 1605;
+const int qint_version = 1606;

@@ -63,6 +63,7 @@ void ModelChartWidget::setUI()
     view->setYAxis(chart->y_axis);
     view->setMinimumSize(300, 400);
     view->setName(m_chart);
+    view->setTitle(QString("%1 for %2").arg(m_chart).arg(m_model.data()->Name()));
     layout->addWidget(view);
 
     for (int i = 0; i < chart->m_series.size(); ++i) {
@@ -101,5 +102,6 @@ void ModelChartWidget::UpdateChart()
             m_series[i]->append(chart->m_series[i].m_values);
         }
     }
+    view->setTitle(QString("%1 for %2").arg(m_chart).arg(m_model.data()->Name()));
     view->Chart()->formatAxis();
 }

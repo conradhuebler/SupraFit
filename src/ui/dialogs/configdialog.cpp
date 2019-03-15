@@ -174,7 +174,7 @@ void ConfigDialog::createGeneralTab()
     m_save_on_exit = new QCheckBox(tr("Automatic save data on exit"));
     m_save_on_exit->setToolTip(tr("Save data automatically on exit. The file will be called 'projectname'.autosave#.json, where # is a natural number. No older files will be overwritten."));
     m_save_on_exit->setChecked(qApp->instance()->property("save_on_exit").toBool());
-    layout->addWidget(m_save_on_exit);
+    //layout->addWidget(m_save_on_exit);
 
     m_ask_on_exit = new QCheckBox(tr("Confirm quit of SupraFit"));
     m_ask_on_exit->setToolTip(tr("Confirm quit of SupraFit"));
