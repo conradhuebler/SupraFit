@@ -882,6 +882,7 @@ const QJsonObject DataClass::ExportData() const
     json["raw"] = d->m_raw_data;
     json["title"] = d->m_title;
     json["uuid"] = d->m_uuid;
+    json["git_commit"] = git_commit_hash;
     return json;
 }
 

@@ -1025,7 +1025,7 @@ void SupraFitGui::ReadSettings()
         qApp->instance()->setProperty("series_confidence", false);
 
     if (qApp->instance()->property("charttheme") == QVariant())
-        qApp->instance()->setProperty("charttheme", 1);
+        qApp->instance()->setProperty("charttheme", 0);
 
     if (qApp->instance()->property("dirlevel") == QVariant())
         qApp->instance()->setProperty("dirlevel", 1);
@@ -1034,10 +1034,10 @@ void SupraFitGui::ReadSettings()
         qApp->instance()->setProperty("p_value", 0.95);
 
     if (qApp->instance()->property("markerSize") == QVariant())
-        qApp->instance()->setProperty("markerSize", 2);
+        qApp->instance()->setProperty("markerSize", 6);
 
     if (qApp->instance()->property("lineWidth") == QVariant())
-        qApp->instance()->setProperty("lineWidth", 12);
+        qApp->instance()->setProperty("lineWidth", 20);
 
     if (qApp->instance()->property("chartScaling") == QVariant())
         qApp->instance()->setProperty("chartScaling", 4);
@@ -1058,7 +1058,7 @@ void SupraFitGui::ReadSettings()
         qApp->instance()->setProperty("xSize", 600);
 
     if (qApp->instance()->property("ySize") == QVariant())
-        qApp->instance()->setProperty("ySize", 600);
+        qApp->instance()->setProperty("ySize", 400);
 
     if (qApp->instance()->property("FastConfidenceScaling") == QVariant())
         qApp->instance()->setProperty("FastConfidenceScaling", -4);
@@ -1104,11 +1104,7 @@ void SupraFitGui::FirstStart()
 {
     QString info;
     info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramoleculare NMR titration experiments.< /p>";
-    info += "<p>The main window of SupraFit is arranged via dock widgets:";
-    info += "<ul><li>Workspace Widget</li><li>Chart Dock</li><li>Models Stack</li><li>Log Dock</li></ul></p>";
-    info += "<p>Short information about them can be found as tooltips by hovering over the widget.</p>";
-    info += "<p>All dock widgets can be dragged around using the mouse, hidden via toolbar or by clicking the <em>close button</em> on the dock widget.</p>";
-    info += "<p>The log widget is hidden on first startup.</p>";
+    info += "<p>SupraFit User Interface is divided into three parts:<li>The <strong>project list </strong>on the left side,</li> <li> the <strong>Workspacein</strong> the middle and</li> <li> the <strong>Chart Widget</strong> the left hand side!</li></p>";
     info += "<p><strong>All</strong> tooltips can globally disabled in the config dialog.</p>";
     QMessageBox::about(this, tr("First Start Information"), info);
 }
@@ -1441,6 +1437,7 @@ void SupraFitGui::LicenseInfo()
 {
 
     QPlainTextEdit* text = new QPlainTextEdit;
+    text->setReadOnly(true);
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(text);
 

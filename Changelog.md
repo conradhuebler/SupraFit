@@ -1,6 +1,7 @@
 # SupraFit 2.0 pre-Alpha
 
 - make series names and color changeable in listchart
+- git commit hash is stored in project files
 - add optional Google Noto Fonts as default application and chart font (cmake option!)
 - fix additional charts for concentrations, fast confidence and enthalpies/heats
 - add some model overview to compare dialog

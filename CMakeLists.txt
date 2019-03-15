@@ -58,12 +58,14 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-execute_process(
-  COMMAND git log -1 --format=%aD
-   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE GIT_COMMIT_DATE
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if(UNIX) # dont work on windows systems, compilation fails unfortranatly ...
+    execute_process(
+        COMMAND git log -1 --format=%aD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_DATE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+endif(UNIX)
 
 add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
 add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")

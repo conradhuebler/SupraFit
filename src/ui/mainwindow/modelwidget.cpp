@@ -328,6 +328,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_model->Calculate();
 
     m_charts_dialogs = new ModalDialog(this);
+    m_charts_dialogs->setWindowTitle("Collected Charts for " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
     for (const QString& str : m_model->Charts()) {
         ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
         m_charts_dialogs->setWidget(w, str);
