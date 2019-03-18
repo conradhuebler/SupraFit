@@ -277,11 +277,10 @@ public:
     }
     void SwitchConentrations();
     virtual QList<qreal> getSignals(QList<int> dealing_signals = QVector<int>(1, 0).toList());
-    qreal InitialHostConcentration(int i) const;
-    qreal InitialGuestConcentration(int i) const;
+
     inline int HostAssignment() const { return d->m_host_assignment; }
 
-    qreal XValue(int i) const;
+    inline qreal XValue(int i) const { return PrintOutIndependent(i); }
     /*
      * !\brief Export data to json
      */

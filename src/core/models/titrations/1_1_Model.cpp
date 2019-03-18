@@ -53,7 +53,6 @@ ItoI_Model::~ItoI_Model()
 
 void ItoI_Model::InitialGuess_Private()
 {
-    (*GlobalTable())[0] = Guess_1_1();
 
     qreal factor = 1;
     if (getOption(Method) == "UV/VIS") {
@@ -62,6 +61,8 @@ void ItoI_Model::InitialGuess_Private()
 
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 1);
+
+    (*GlobalTable())[0] = GuessK(0);
 
     Calculate();
 }

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,8 @@ std::vector<qreal> SimpsonIntegrate(qreal lower, qreal upper, const std::vector<
 
 qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y);
 qreal Stddev(const QVector<qreal>& vector, int end = 0, double average = 0);
+
+qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end);
 
 namespace Cubic {
 qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);

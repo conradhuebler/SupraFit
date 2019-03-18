@@ -149,22 +149,30 @@ void IItoI_ItoI_ItoII_Model::EvaluateOptions()
 
 void IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 {
-    qreal K11 = Guess_1_1();
-    //GlobalTable() = QList<qreal>() << 1 << K11 << 1;
-    (*GlobalTable())[0] = K11 / 2;
-    (*GlobalTable())[1] = Guess_1_1();
-    (*GlobalTable())[2] = K11 / 2;
     qreal factor = 1;
 
     if (getOption(Method) == "UV/VIS") {
         factor = 1 / InitialHostConcentration(0);
     }
 
+    int index_21 = 0, index_11;
+
+    for (int i = 0; i < DataPoints(); ++i) {
+        if (XValue(i) <= 0.5)
+            index_21 = i;
+        if (XValue(i) <= 1)
+            index_11 = i;
+    }
+
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
-    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
-    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
+    LocalTable()->setColumn(DependentModel()->Row(index_21) * factor, 1);
+    LocalTable()->setColumn(DependentModel()->Row(index_11) * factor, 2);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
 
+    qreal K11 = GuessK(1);
+    (*GlobalTable())[0] = K11 / 2;
+    (*GlobalTable())[1] = K11;
+    (*GlobalTable())[2] = K11 / 2;
     Calculate();
 }
 

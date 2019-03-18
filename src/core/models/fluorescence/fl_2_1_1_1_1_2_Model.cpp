@@ -126,11 +126,6 @@ void fl_IItoI_ItoI_ItoII_Model::EvaluateOptions()
 
 void fl_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 {
-    qreal K11 = Guess_1_1();
-    (*GlobalTable())[0] = 2;
-    (*GlobalTable())[1] = K11;
-    (*GlobalTable())[2] = 2;
-
     qreal factor = 1;
 
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
@@ -138,6 +133,12 @@ void fl_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 4);
+
+    qreal K11 = GuessK(1);
+
+    (*GlobalTable())[0] = 2;
+    (*GlobalTable())[1] = K11;
+    (*GlobalTable())[2] = 2;
 
     Calculate();
 }

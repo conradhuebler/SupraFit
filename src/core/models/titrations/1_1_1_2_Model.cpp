@@ -99,18 +99,26 @@ void ItoI_ItoII_Model::EvaluateOptions()
 
 void ItoI_ItoII_Model::InitialGuess_Private()
 {
-    qreal K11 = Guess_1_1();
-    (*GlobalTable())[0] = Guess_1_1();
-    (*GlobalTable())[1] = K11 / 2;
 
     qreal factor = 1;
     if (getOption(Method) == "UV/VIS") {
         factor = 1 / InitialHostConcentration(0);
     }
+    int index_11;
+
+    for (int i = 0; i < DataPoints(); ++i)
+        if (XValue(i) <= 1)
+            index_11 = i;
 
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
-    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
+    LocalTable()->setColumn(DependentModel()->Row(index_11) * factor, 1);
+    //LocalTable()->setColumn(DependentModel()->lastRow() * factor, 1);
+
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
+
+    qreal K11 = GuessK(0);
+    (*GlobalTable())[0] = K11;
+    (*GlobalTable())[1] = K11 / 2.0;
 
     Calculate();
 }
@@ -228,6 +236,7 @@ QString ItoI_ItoII_Model::AdditionalOutput() const
     QString result;
 
     // double max = 1e3;
+    /*
     double delta = 1e-3;
     qreal host_0 = 1.0;
     qreal host = 0;
@@ -253,7 +262,7 @@ QString ItoI_ItoII_Model::AdditionalOutput() const
     integral(1) /= end;
     integral(2) /= end;
     std::cout << integral.transpose() << std::endl;
-
+    */
     return result;
 }
 

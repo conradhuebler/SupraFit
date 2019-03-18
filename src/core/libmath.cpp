@@ -263,3 +263,36 @@ qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y)
 
     return integral;
 }
+
+qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end)
+{
+    QVector<qreal> param = model.data()->OptimizeParameters();
+
+    qreal mean = end;
+    for (int i = 0; i < 30; ++i) {
+
+        if (qAbs(start - end) < 1e-4)
+            break;
+
+        param[index] = start;
+        model.data()->setParameter(param);
+        model.data()->Calculate();
+        qreal SSE_0 = model.data()->SumofSquares();
+
+        param[index] = end;
+        model.data()->setParameter(param);
+        model.data()->Calculate();
+        qreal SSE_1 = model.data()->SumofSquares();
+
+        mean = (start + end) / 2;
+#ifdef _DEBUG
+        qDebug() << SSE_0 << SSE_1 << start << end << mean;
+#endif
+        if (SSE_0 < SSE_1) {
+            end = (start + end) / 2.0;
+        } else {
+            start = (start + end) / 2.0;
+        }
+    }
+    return mean;
+}

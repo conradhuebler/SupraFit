@@ -50,13 +50,14 @@ fl_ItoI_Model::~fl_ItoI_Model()
 
 void fl_ItoI_Model::InitialGuess_Private()
 {
-    (*GlobalTable())[0] = Guess_1_1();
-
     qreal factor = InitialHostConcentration(0);
 
     LocalTable()->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
     LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e3, 1);
     LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e3, 2);
+
+    qreal K11 = GuessK(0);
+    (*GlobalTable())[0] = K11;
 
     Calculate();
 }

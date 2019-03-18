@@ -99,8 +99,6 @@ void fl_ItoI_ItoII_Model::EvaluateOptions()
 
 void fl_ItoI_ItoII_Model::InitialGuess_Private()
 {
-    (*GlobalTable())[0] = 4;
-    (*GlobalTable())[1] = 2;
 
     qreal factor = InitialHostConcentration(0);
 
@@ -108,6 +106,10 @@ void fl_ItoI_ItoII_Model::InitialGuess_Private()
     LocalTable()->setColumn(DependentModel()->firstRow() / factor / 1e4, 1);
     LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e4, 2);
     LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e4, 3);
+
+    qreal K11 = GuessK(0);
+    (*GlobalTable())[0] = K11;
+    (*GlobalTable())[1] = K11 / 2.0;
 
     AbstractTitrationModel::Calculate();
 }

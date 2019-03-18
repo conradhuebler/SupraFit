@@ -174,17 +174,9 @@ qreal AbstractItcModel::GuessFx()
 qreal AbstractItcModel::GuessK(int index)
 {
 
-    /* For now, this is really a crude method
-     */
-
-    QMap<qreal, qreal> vals;
-
-    for (double i = 1; i < 10; i += 0.5) {
-        (*GlobalTable())[index] = i;
-        Calculate();
-        vals[SumofSquares()] = i;
-    }
-    return vals.first();
+    QSharedPointer<AbstractModel> test = Clone();
+    qreal K = BisectParameter(test, index, 1, 10);
+    return K;
 }
 
 void AbstractItcModel::CalculateConcentrations()

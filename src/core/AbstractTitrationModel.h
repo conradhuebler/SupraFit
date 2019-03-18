@@ -160,9 +160,12 @@ protected:
      */
     void SetConcentration(int i, const Vector& equlibrium);
 
+    qreal InitialHostConcentration(int i) const;
+    qreal InitialGuestConcentration(int i) const;
+
     double m_T;
 
-    qreal Guess_1_1() const;
+    qreal GuessK(int index = 0);
 
     QString m_ylabel, m_plotMode;
 

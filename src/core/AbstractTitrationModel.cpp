@@ -260,25 +260,22 @@ QVector<QJsonObject> AbstractTitrationModel::PostGridSearch(const QList<QJsonObj
 
 }*/
 
-qreal AbstractTitrationModel::Guess_1_1() const
+qreal AbstractTitrationModel::InitialGuestConcentration(int i) const
 {
-    qreal K11 = 0;
-    QVector<qreal> x;
-    QVector<QVector<qreal>> y(SeriesCount());
-    for (int i = 1; i < DataPoints(); ++i) {
-        if (!(InitialHostConcentration(i) && InitialGuestConcentration(i)))
-            continue;
-        x << (1 / InitialHostConcentration(i) / InitialGuestConcentration(i));
-        for (int j = 0; j < SeriesCount(); ++j) {
-            y[j] << 1 / (DependentModel()->data(j, i) - DependentModel()->data(j, 0));
-        }
-    }
-    for (int i = 0; i < SeriesCount(); ++i) {
-        PeakPick::LinearRegression regress = LeastSquares(x, y[i]);
-        K11 += qLn(qAbs(1 / regress.m)) / 2.3;
-    }
-    K11 /= double(SeriesCount());
-    return K11;
+    return d->m_independent_model->data(!HostAssignment(), i) * d->m_scaling[!HostAssignment()];
+}
+
+qreal AbstractTitrationModel::InitialHostConcentration(int i) const
+{
+    return d->m_independent_model->data(HostAssignment(), i) * d->m_scaling[HostAssignment()];
+}
+
+qreal AbstractTitrationModel::GuessK(int index)
+{
+
+    QSharedPointer<AbstractModel> test = Clone();
+    qreal K = BisectParameter(test, index, 1, 6);
+    return K;
 }
 
 #include "AbstractTitrationModel.moc"

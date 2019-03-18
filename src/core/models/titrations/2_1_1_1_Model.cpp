@@ -97,17 +97,25 @@ void IItoI_ItoI_Model::EvaluateOptions()
 
 void IItoI_ItoI_Model::InitialGuess_Private()
 {
-    (*GlobalTable())[1] = Guess_1_1();
-    (*GlobalTable())[0] = (*GlobalTable())[1] / 2;
-
     qreal factor = 1;
     if (getOption(Method) == "UV/VIS") {
         factor = 1 / InitialHostConcentration(0);
     }
 
+    int index_21 = 0;
+
+    for (int i = 0; i < DataPoints(); ++i)
+        if (XValue(i) < 0.5)
+            index_21 = i;
+
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
-    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
+    LocalTable()->setColumn(DependentModel()->Row(index_21) * factor, 1);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
+
+    qreal K11 = GuessK(1);
+    (*GlobalTable())[1] = K11;
+    (*GlobalTable())[0] = K11 / 2;
+
     Calculate();
 }
 
@@ -219,9 +227,11 @@ QString IItoI_ItoI_Model::ModelInfo() const
 
 QString IItoI_ItoI_Model::AdditionalOutput() const
 {
+
     QString result;
 
     // double max = 1e3;
+    /*
     double delta = 1e-3;
     qreal host_0 = 1e-1;
     qreal host = 0;
@@ -261,6 +271,7 @@ QString IItoI_ItoI_Model::AdditionalOutput() const
     std::cout << integral.transpose() << std::endl;
 
     result += QString("A2B integ  ... %1\n\n").arg(integral(2));
+    */
     return result;
 }
 
