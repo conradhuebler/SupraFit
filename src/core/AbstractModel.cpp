@@ -1195,6 +1195,7 @@ QString AbstractModel::AnalyseStatistic(bool forceAll) const
 QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll) const
 {
     QJsonObject controller = object["controller"].toObject();
+
     QString text;
 
     switch (controller["method"].toInt()) {

@@ -274,7 +274,7 @@ qreal AbstractTitrationModel::GuessK(int index)
 {
 
     QSharedPointer<AbstractModel> test = Clone();
-    qreal K = BisectParameter(test, index, 1, 6);
+    qreal K = BisectParameter(test, index, 1, 5);
     return K;
 }
 

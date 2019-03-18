@@ -112,13 +112,11 @@ void ItoI_ItoII_Model::InitialGuess_Private()
 
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
     LocalTable()->setColumn(DependentModel()->Row(index_11) * factor, 1);
-    //LocalTable()->setColumn(DependentModel()->lastRow() * factor, 1);
-
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
+    qreal K = GuessK(0);
+    (*GlobalTable())[0] = 0.8 * K;
 
-    qreal K11 = GuessK(0);
-    (*GlobalTable())[0] = K11;
-    (*GlobalTable())[1] = K11 / 2.0;
+    (*GlobalTable())[1] = 0.5 * K;
 
     Calculate();
 }
