@@ -96,6 +96,8 @@ private:
     void LogFile();
     QFile m_file, m_stdout;
 
+    ModelWidget* m_last_modelwidget;
+
     /*
 private slots:
     void EditData();*/

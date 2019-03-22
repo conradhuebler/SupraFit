@@ -429,7 +429,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     t->setFast(false);
 
     Charts charts = m_charts->addModel(t);
-    ModelWidget* modelwidget = new ModelWidget(t, charts, readonly);
+    QPointer<ModelWidget> modelwidget = new ModelWidget(t, charts, readonly);
     modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
     t->setOptimizerConfig(m_config);
@@ -463,7 +463,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     ActiveBatch();
 
     m_ReductionCutoff = qMax(m_ReductionCutoff, t->ReductionCutOff());
-
+    m_last_modelwidget = modelwidget;
     emit ModelAdded();
 }
 

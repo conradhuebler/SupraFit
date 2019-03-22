@@ -157,6 +157,7 @@ public:
 
     QString Compare() const;
 
+    inline QPointer<ModelWidget> RecentModel() { return m_last_modelwidget; }
 public slots:
     /*
      * Add a new model to the workspace
@@ -205,6 +206,8 @@ private:
     int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
     double m_ReductionCutoff = 0;
+
+    QPointer<ModelWidget> m_last_modelwidget;
 private slots:
     void AddModel();
 

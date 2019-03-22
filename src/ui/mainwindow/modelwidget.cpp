@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -638,12 +638,6 @@ void ModelWidget::DoReductionAnalyse()
     emit IncrementProgress(1);
     delete statistic;
 }
-/*
-void ModelWidget::WGStatistic()
-{
-    WGSConfig config = m_statistic_dialog->getWGSConfig();
-    WGStatistic(config);
-}*/
 
 void ModelWidget::WGStatistic(WGSConfig config)
 {
@@ -676,13 +670,7 @@ void ModelWidget::WGStatistic(WGSConfig config)
     emit IncrementProgress(1);
     delete statistic;
 }
-/*
-void ModelWidget::MoCoStatistic()
-{
-    MoCoConfig config = m_statistic_dialog->getMoCoConfig();
-    MoCoStatistic(config);
-}
-*/
+
 void ModelWidget::MoCoStatistic(MoCoConfig config)
 {
     Waiter wait;
@@ -924,6 +912,14 @@ void ModelWidget::setColor(const QColor& color)
         m_charts.error_wrapper->Series(0)->setColor(color);
     }
     emit ColorChanged(color);
+}
+
+QColor ModelWidget::ActiveColor() const
+{
+    if (!m_model->SupportSeries())
+        return m_charts.signal_wrapper->Series(0)->color();
+    else
+        QColor();
 }
 
 void ModelWidget::Restore()

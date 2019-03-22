@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,6 +86,7 @@ public:
     QSharedPointer<ChartWrapper> setRawWrapper(const QWeakPointer<ChartWrapper>& wrapper);
     Charts addModel(QSharedPointer<AbstractModel> model);
     inline ChartDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
+    inline QColor RecentColor() const { return m_recent_color; }
 
 private:
     qreal max_shift, min_shift;
@@ -101,6 +102,7 @@ private:
     QSharedPointer<ChartWrapper> m_data_mapper;
     QString m_signal_x, m_signal_y, m_error_x, m_error_y;
 
+    QColor m_recent_color;
 private slots:
     void formatAxis();
     void Repaint();

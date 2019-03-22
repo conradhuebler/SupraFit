@@ -93,7 +93,6 @@ void MetaModelWidget::setUi()
     connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
     connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
     connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
-    //connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(MonteCarlo()));
     //  connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
     //connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
     //connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);

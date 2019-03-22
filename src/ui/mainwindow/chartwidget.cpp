@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019  Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -212,6 +212,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
         m_data_mapper->setSeries(signal_series, i);
         m_signalview->addSeries(signal_series);
     }
+    m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
 
     m_signalview->formatAxis();
 
@@ -237,6 +238,8 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
     connect(m_data_mapper.data(), &ChartWrapper::SeriesAdded, m_data_mapper.data(), [this](int series) {
         m_signalview->addSeries(qobject_cast<ScatterSeries*>(m_data_mapper.data()->Series(series)));
     });
+
+    m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
 
     m_signalview->formatAxis();
 
@@ -288,6 +291,8 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             m_errorview->addSeries(error_series);
         }
     }
+
+    m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
 
     Charts charts;
     charts.error_wrapper = error_wrapper;

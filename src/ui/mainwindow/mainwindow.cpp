@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -153,6 +153,18 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<Cha
     m_model_dataholder->setData(model, w);
 
     connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, m_model_dataholder, &ModelDataHolder::addMetaModel);
+
+    /* lets connect the meta model, that when ever a new model is added 
+     * when then connect the associated model widget after the color changed with something about changing the scater series color */
+
+    connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, this, [this]() {
+        int series = this->m_model_dataholder->getChartWrapper().data()->SeriesSize();
+        if (qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1))) {
+            connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ColorChanged, qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1)), &ScatterSeries::setColor);
+
+            qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1))->setColor(this->m_model_dataholder->RecentModel()->ActiveColor());
+        }
+    });
     m_meta_model = true;
 
     return model;

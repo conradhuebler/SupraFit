@@ -783,10 +783,10 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         model.data()->addModel(qobject_cast<AbstractModel*>(data));
         m_meta_models.append(model);
     } else if ((position - (m_data_list.size() - m_meta_models.size())) < m_meta_models.size()) {
-        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].data()->addModel(qobject_cast<AbstractModel*>(data));
-
         QWeakPointer<ChartWrapper> wrapper = m_project_list[position]->getChartWrapper();
         wrapper.data()->addWrapper(m_hashed_wrapper[uuids.first()]);
+
+        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].data()->addModel(qobject_cast<AbstractModel*>(data));
     }
 }
 

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -140,28 +140,31 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
 
 void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 {
+    if (m_stored_wrapper.contains(wrapper))
+        return;
+
     m_stored_wrapper << wrapper;
 
     for (int i = 0; i < wrapper.data()->SeriesSize(); ++i) {
         ScatterSeries* series = new ScatterSeries;
-        for (const QPointF& point : wrapper.data()->Series(i)->points()) {
+        for (const QPointF& point : wrapper.data()->Series(i)->points())
             series->append(point);
-            series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize());
-            series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
-            series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
-            series->setBorderColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->borderColor());
-            series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
-        }
+
+        series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize() * 0.75);
+        series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
+        //series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
+        //series->setBorderColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->borderColor());
+        //series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
 
         connect(wrapper.data(), &ChartWrapper::ModelChanged, wrapper.data()->Series(i), [series, wrapper, i]() {
             series->clear();
             for (const QPointF& point : wrapper.data()->Series(i)->points())
                 series->append(point);
 
-            series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize());
-            series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
-            series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
-            series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
+            // series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize()*0.75);
+            // series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
+            //series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
+            //series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
         });
 
         m_stored_series << series;
