@@ -865,11 +865,13 @@ void SupraFitGui::NewTable()
 
 void SupraFitGui::OpenFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)"));
-    if (filename.isEmpty())
+    QStringList filenames = QFileDialog::getOpenFileNames(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)"));
+    if (filenames.isEmpty())
         return;
-    setLastDir(filename);
-    LoadFile(filename);
+    for (const QString& filename : qAsConst(filenames)) {
+        setLastDir(filename);
+        LoadFile(filename);
+    }
     setActionEnabled(true);
 }
 
