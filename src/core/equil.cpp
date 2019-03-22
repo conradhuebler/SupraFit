@@ -107,7 +107,7 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
             return a;
         else {
 #ifdef _DEBUG
-            std::cout << "a: " << a << " a0 " << a0 << std::endl;
+        //  std::cout << "a: " << a << " a0 " << a0 << std::endl;
 #endif
             return MinQuadraticRoot(x1, x2, x3);
         }
@@ -122,7 +122,7 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
             return b;
         else {
 #ifdef _DEBUG
-            std::cout << "b: " << b << " b0: " << b0 << std::endl;
+        //   std::cout << "b: " << b << " b0: " << b0 << std::endl;
 #endif
             return MinQuadraticRoot(x1, x2, x3);
         }
@@ -146,11 +146,13 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
             break;
     }
 #ifdef _DEBUG
+/*
     std::cout << std::endl
               << std::endl;
     std::cout << a_1 << " " << b_1 << " " << K11 * a_1 * b_1 << " " << b21 * a_1 * a_1 * b_1 << " " << b12 * a_1 * b_1 * b_1 << std::endl;
     std::cout << a << " " << b << " " << K11 * a * b << " " << b21 * a * a * b << " " << b12 * a * b * b << std::endl;
     std::cout << "Guess A: " << qMin(a0, b0) / K11 * 100 << " .. Final A: " << a << " .. Iterations:" << i << std::endl;
+    */
 #endif
     m_ok = (a < m_A0) && (b < m_B0) && (a > 0) && (b > 0) && i < m_opt_config.single_iter;
     m_t += QDateTime::currentMSecsSinceEpoch() - t0;

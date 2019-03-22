@@ -160,9 +160,12 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<Cha
     connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, this, [this]() {
         int series = this->m_model_dataholder->getChartWrapper().data()->SeriesSize();
         if (qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1))) {
-            connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ColorChanged, qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1)), &ScatterSeries::setColor);
-
-            qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1))->setColor(this->m_model_dataholder->RecentModel()->ActiveColor());
+            ScatterSeries* serie = qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1));
+            connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ColorChanged, serie, &ScatterSeries::setColor);
+            connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ToggleSeries, serie, [serie]() {
+                serie->setVisible(!serie->isVisible());
+            });
+            serie->setColor(this->m_model_dataholder->RecentModel()->ActiveColor());
         }
     });
     m_meta_model = true;

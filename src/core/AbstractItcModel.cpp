@@ -43,6 +43,8 @@ AbstractItcModel::AbstractItcModel(DataClass* data)
     : AbstractModel(data)
     , m_lock_concentrations(false)
 {
+    IndependentModel()->setHeaderData(0, Qt::Horizontal, "Inject Volume", Qt::DisplayRole);
+
     m_c0 = new DataTable(3, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "V (cell)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
@@ -59,6 +61,9 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
     : AbstractModel(data)
     , m_lock_concentrations(false)
 {
+
+    IndependentModel()->setHeaderData(0, Qt::Horizontal, "Inject Volume", Qt::DisplayRole);
+
     m_c0 = new DataTable(3, DataPoints(), this);
     m_c0->setHeaderData(0, Qt::Horizontal, "V (cell)", Qt::DisplayRole);
     m_c0->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);

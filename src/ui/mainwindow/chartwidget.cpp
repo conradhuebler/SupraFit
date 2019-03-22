@@ -238,8 +238,10 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<Chart
     connect(m_data_mapper.data(), &ChartWrapper::SeriesAdded, m_data_mapper.data(), [this](int series) {
         m_signalview->addSeries(qobject_cast<ScatterSeries*>(m_data_mapper.data()->Series(series)));
     });
-
-    m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
+    if (m_data_mapper->SeriesSize())
+        m_recent_color = m_data_mapper->Series(m_data_mapper->SeriesSize() - 1)->color();
+    else
+        m_recent_color = QColor();
 
     m_signalview->formatAxis();
 

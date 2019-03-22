@@ -636,6 +636,7 @@ void SupraFitGui::LoadFile(const QString& file)
         if (!invalid_json) {
             m_mainsplitter->setGraphicsEffect(NULL);
             QTimer::singleShot(1, m_splash, &QSplashScreen::close);
+
             return;
         }
     } else {
@@ -726,9 +727,9 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
 
     // Lets add this on first demand, should increase loading speed of big projects
 
-    int index = m_stack_widget->addWidget(window);
-    if (index == 1)
-        m_stack_widget->setCurrentWidget(window);
+    m_last_index = m_stack_widget->addWidget(window);
+    //if (index == 1)
+    m_stack_widget->setCurrentWidget(window);
 
     connect(window, &MainWindow::ModelsChanged, m_project_tree, [=]() {
         m_project_tree->UpdateStructure();

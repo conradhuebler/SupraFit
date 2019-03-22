@@ -252,7 +252,7 @@ public:
     virtual inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
     inline int Type() const { return d->m_type; }
     inline void setType(int type) { d->m_type = type; }
-    inline DataTable* IndependentModel() { return d->m_independent_model; }
+    virtual inline DataTable* IndependentModel() { return d->m_independent_model; }
     inline DataTable* DependentModel() { return d->m_dependent_model; }
     inline DataTable* IndependentModel() const { return d->m_independent_model; }
     inline DataTable* DependentModel() const { return d->m_dependent_model; }
@@ -293,10 +293,10 @@ public:
     inline void setScaling(const QList<qreal>& scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList& strlist);
 
-    void OverrideInDependentTable(DataTable* table);
+    virtual void OverrideInDependentTable(DataTable* table);
     virtual void IndependentModelOverride() {}
 
-    void OverrideDependentTable(DataTable* table);
+    virtual void OverrideDependentTable(DataTable* table);
 
     virtual void DependentModelOverride() {}
 

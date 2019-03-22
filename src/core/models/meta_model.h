@@ -150,6 +150,10 @@ public:
 
     virtual inline QPointer<DataClass> Children(int i) { return m_models[i].data(); }
 
+    DataTable* IndependentModel() override;
+
+    void OverrideInDependentTable(DataTable* table) override;
+
 private slots:
     void UpdateCalculated();
 
@@ -158,6 +162,7 @@ private:
 
     QVector<QSharedPointer<AbstractModel>> m_models;
     int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0, m_unique_global = 0, m_unique_local = 0, m_unique_series = 0;
+    int m_max_indep_var = 0;
     QVector<QVector<QPair<int, int>>> m_global_index, m_local_index;
     QStringList m_global_names, m_local_names;
 
@@ -169,6 +174,9 @@ private:
 
     SupraFit::Model m_model_type;
     ConnectType m_connect_type = ConnectType::None;
+
+    QPointer<DataTable> m_sliced_table;
+    void UpdateSlicedTable();
 
 protected:
     virtual void CalculateVariables() override;

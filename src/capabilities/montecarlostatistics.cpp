@@ -234,6 +234,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         }
 
         QPointer<DataTable> indep_table = new DataTable(m_model->IndependentModel());
+        indep_table->Debug();
         m_ptr_table << indep_table;
         for (int i = 0; i < m_config.indep_variance.size(); ++i) {
             QVector<int> cols(m_config.indep_variance.size(), 0);

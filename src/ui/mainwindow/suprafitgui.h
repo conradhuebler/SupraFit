@@ -195,6 +195,8 @@ private:
     QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_save_as, *m_load, *m_message, *m_license;
     OptimizerConfig m_opt_config;
 
+    int m_last_index = -1;
+
     QString m_supr_file;
 
     QFile m_file;

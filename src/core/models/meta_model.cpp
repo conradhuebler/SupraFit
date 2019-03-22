@@ -417,8 +417,9 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_global_names.removeDuplicates();
     m_local_names.removeDuplicates();
 
-    IndependentModel()->append(model->IndependentModel());
-    DependentModel()->append(model->DependentModel());
+    /* We shall not use the derived functions but the base functions of DataClass since at the moment, we dont have real data yet */
+    DataClass::IndependentModel()->append(model->IndependentModel());
+    DataClass::DependentModel()->append(model->DependentModel());
     ModelTable()->append(model->ModelTable());
 
     m_models << t;
@@ -429,8 +430,10 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_size += model->Size();
     m_indep_var += model->IndependentVariableSize();
     m_dep_var += model->DataPoints();
+    m_max_indep_var = qMax(m_max_indep_var, model->DataPoints());
     m_series_count += model->SeriesCount();
     OptimizeParameters_Private();
+    UpdateSlicedTable();
     DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     emit ModelAdded(t);
 }
@@ -468,11 +471,15 @@ void MetaModel::RemoveModel(const AbstractModel* model)
         m_loc_param += models[l].data()->LocalParameterSize();
         m_size += models[l].data()->Size();
         m_indep_var += models[l].data()->IndependentVariableSize();
+        m_max_indep_var = qMax(m_max_indep_var, model->DataPoints());
+
         m_dep_var += models[l].data()->DataPoints();
         m_series_count += models[l].data()->SeriesCount();
     }
 
     OptimizeParameters_Private();
+    UpdateSlicedTable();
+
     DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
 }
 
@@ -512,6 +519,11 @@ void MetaModel::CalculateVariables()
         qreal value = parameter.first;
         for (int j = 0; j < parameter.second.size(); ++j) {
             QVector<int> vector = parameter.second[j];
+#warning FIXME strange
+            if (vector.isEmpty()) {
+                qDebug() << "what happend here?";
+                continue;
+            }
             if (vector[1] == 0)
                 m_models[vector[0]].data()->setGlobalParameter(value, vector[2]);
             else if (vector[1] == 1)
@@ -709,6 +721,42 @@ int MetaModel::LocalParameterSize(int i) const
         return m_local_par.size();
     else
         return 0;
+}
+
+void MetaModel::UpdateSlicedTable()
+{
+    if (m_sliced_table)
+        delete m_sliced_table;
+
+    m_sliced_table = new DataTable(m_indep_var, m_max_indep_var, this);
+    QStringList header;
+    for (int i = 0; i < ModelSize(); ++i) {
+        for (const QString& name : m_models[i]->IndependentModel()->header())
+            header << QString("%1 | %2").arg(m_models[i]->ProjectTitle()).arg(name);
+
+        for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
+            for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
+                m_sliced_table->operator()(i + j, k) = m_models[i]->IndependentModel()->operator()(j, k);
+            }
+        }
+    }
+    m_sliced_table->setHeader(header);
+}
+
+DataTable* MetaModel::IndependentModel()
+{
+    return m_sliced_table;
+}
+
+void MetaModel::OverrideInDependentTable(DataTable* table)
+{
+    for (int i = 0; i < ModelSize(); ++i) {
+        for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
+            for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
+                m_models[i]->IndependentModel()->operator()(j, k) = table->operator()(i + j, k);
+            }
+        }
+    }
 }
 
 #include "meta_model.moc"
