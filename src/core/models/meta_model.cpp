@@ -737,6 +737,7 @@ void MetaModel::UpdateSlicedTable()
         for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
             for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
                 m_sliced_table->operator()(i + j, k) = m_models[i]->IndependentModel()->operator()(j, k);
+                m_sliced_table->setChecked(j, k, m_models[i]->IndependentModel()->isChecked(j, k));
             }
         }
     }
@@ -751,9 +752,11 @@ DataTable* MetaModel::IndependentModel()
 void MetaModel::OverrideInDependentTable(DataTable* table)
 {
     for (int i = 0; i < ModelSize(); ++i) {
+        m_models[i]->detach();
         for (int j = 0; j < m_models[i]->IndependentVariableSize(); ++j) {
             for (int k = 0; k < m_models[i]->DataPoints(); ++k) {
                 m_models[i]->IndependentModel()->operator()(j, k) = table->operator()(i + j, k);
+                m_models[i]->IndependentModel()->setChecked(j, k, table->isChecked(j, k));
             }
         }
     }
