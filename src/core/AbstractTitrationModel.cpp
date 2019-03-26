@@ -46,7 +46,7 @@ AbstractTitrationModel::AbstractTitrationModel(DataClass* data)
 {
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
-    m_ylabel = "&delta; [ppm]";
+    m_ylabel = "&delta; /ppm";
     LoadSystemParameter();
     connect(this, &AbstractModel::Recalculated, this, [this]() {
         emit this->ChartUpdated("Concentration Chart");
@@ -58,7 +58,7 @@ AbstractTitrationModel::AbstractTitrationModel(AbstractTitrationModel* other)
 {
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
-    m_ylabel = "&delta; [ppm]";
+    m_ylabel = "&delta; /ppm";
     m_T = other->m_T;
     connect(this, &AbstractModel::Recalculated, this, [this]() {
         emit this->ChartUpdated("Concentration Chart");

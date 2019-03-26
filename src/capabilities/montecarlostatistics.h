@@ -28,8 +28,9 @@
 #include <QtCore/QSharedPointer>
 
 class Minimizer;
-class QThreadPool;
 class MonteCarloStatistics;
+class NonLinearFitThread;
+class QThreadPool;
 
 class MCConfig : public AbstractConfig {
 public:
@@ -78,10 +79,11 @@ public:
 
 private:
     void optimise();
+    NonLinearFitThread* m_fit_thread; // = new NonLinearFitThread(false);
 
     QPointer<AbstractSearchClass> m_parent;
     bool m_finished, m_checked;
-    QSharedPointer<Minimizer> m_minimizer;
+    //QSharedPointer<Minimizer> m_minimizer;
     MCConfig m_config;
     QList<QJsonObject> m_models;
 };

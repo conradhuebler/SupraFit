@@ -189,18 +189,28 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
 
     QList<qreal> x, y;
     for (int i = 0; i < m_models.size(); ++i) {
-        m_model.data()->ImportModel(m_models[i]);
+        qDebug() << m_models[i];
 
+        QJsonObject model;
+        //if(!m_models[i].contains("initial"))
+        model = m_models[i]; //["data"].toObject();
+        //else
+        //    model = m_models[i];
+
+        m_model.data()->ImportModel(model);
+        m_model.data()->Calculate();
+        qDebug() << model;
+        /*
         if (m_converged && !m_model.data()->isConverged())
             continue;
         if (m_valid && m_model.data()->isCorrupt())
             continue;
-
+*/
         x << m_model.data()->AllParameter()[var_1];
         y << m_model.data()->AllParameter()[var_2];
         m_linked_models.insert(QPointF(m_model.data()->AllParameter()[var_1], m_model.data()->AllParameter()[var_2]), i);
     }
-
+    qDebug() << x << y;
     if (x.size() > 1e4)
         m_xy_series->setUseOpenGL(true);
     for (int j = 0; j < x.size(); ++j)

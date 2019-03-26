@@ -130,7 +130,6 @@ private:
 private slots:
     void rowSelected(const QModelIndex& index);
     void ExportModels();
-    void SwitchView();
     void ApplyFilter();
     void ModelClicked(int model);
 

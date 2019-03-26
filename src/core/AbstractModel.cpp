@@ -851,12 +851,13 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     toplevel["options"] = optionObject;
     toplevel["model"] = SFModel();
     toplevel["SupraFit"] = qint_version;
-    toplevel["sum_of_squares"] = m_sum_squares;
-    toplevel["sum_of_absolute"] = m_sum_absolute;
+    toplevel["SSE"] = m_sum_squares;
+    toplevel["SAE"] = m_sum_absolute;
     toplevel["mean_error"] = m_mean;
     toplevel["variance"] = m_variance;
     toplevel["standard_error"] = m_stderror;
     toplevel["converged"] = m_converged;
+    toplevel["valid"] = !isCorrupt();
     toplevel["name"] = m_name;
     if (m_locked_model || locked) {
 #ifdef _DEBUG
@@ -1051,8 +1052,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     qDebug() << "model imported within" << t1 - t0 << " msecs";
 #endif
 
-    m_sum_squares = topjson["sum_of_squares"].toInt();
-    m_sum_absolute = topjson["sum_of_absolute"].toInt();
+    m_sum_squares = topjson["SSE"].toInt();
+    m_sum_absolute = topjson["SAE"].toInt();
     m_mean = topjson["mean_error"].toInt();
     m_variance = topjson["variance"].toInt();
     m_stderror = topjson["standard_error"].toInt();

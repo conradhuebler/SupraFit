@@ -936,16 +936,28 @@ QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controll
 
     double min_error = 1e10, max_error = 0;
 
-    int size = controller["size"].toInt();
+    /* One entry is the controller, we dont count them */
+    int size = result.keys().size();
+
+    if (result.contains("controller"))
+        size--;
+
     for (int i = 0; i < size; ++i) {
-        QJsonObject local_model = result[QString::number(i)].toObject();
-        min_error = qMin(min_error, local_model["SSE"].toDouble());
-        max_error = qMax(max_error, local_model["SSE"].toDouble());
+        QJsonObject local_model;
+
+        if (result[QString::number(i)].toObject().contains("initial"))
+            local_model = result[QString::number(i)].toObject()["model"].toObject();
+        else
+            local_model = result[QString::number(i)].toObject();
+
+        qreal SSE = local_model["SSE"].toDouble();
+        min_error = qMin(min_error, SSE);
+        max_error = qMax(max_error, SSE);
 
         converged += local_model["converged"].toBool();
         invalid += local_model["valid"].toBool();
     }
-    QString text = QString("<html><h3>Global Search Result Overview</h3>");
+    QString text = QString("<html><h3>General Result Overview</h3>");
     text += "<p>Models tested: <b>" + QString::number(size) + "</b> </p>";
     text += "<p>Models converged: <b>" + QString::number(converged) + "</b> </p>";
     text += "<p>Models invalid: <b>" + QString::number(size - invalid) + "</b> </p>";

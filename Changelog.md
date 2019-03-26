@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- Input variable randomisation for meta models enabled
 - data points colors in meta models follow the series color definition
 - biscetion like single parameter optimisation for initial guess of K for NMR and ITC parameters
 - make series names and color changeable in listchart

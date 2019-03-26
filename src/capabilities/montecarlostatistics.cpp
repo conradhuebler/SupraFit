@@ -83,8 +83,7 @@ void MonteCarloThread::run()
 }
 
 MonteCarloBatch::MonteCarloBatch(const MCConfig& config, QPointer<AbstractSearchClass> parent)
-    : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
-    , m_config(config)
+    : m_config(config)
     , m_finished(false)
     , m_parent(parent)
     , m_checked(false)
@@ -97,6 +96,9 @@ MonteCarloBatch::~MonteCarloBatch()
 
 void MonteCarloBatch::run()
 {
+
+    m_fit_thread = new NonLinearFitThread(false);
+
     while (true) {
         if (m_interrupt)
             break;
@@ -118,6 +120,7 @@ void MonteCarloBatch::run()
         if (!counter)
             break;
     }
+    delete m_fit_thread;
 }
 
 void MonteCarloBatch::optimise()
@@ -131,17 +134,17 @@ void MonteCarloBatch::optimise()
 //         qDebug() <<  "started!";
 #endif
 
-    NonLinearFitThread* thread = new NonLinearFitThread(false);
+    m_fit_thread->setModel(m_model, false);
+    m_fit_thread->run();
 
-    thread->setModel(m_model, false);
-    thread->run();
+    m_finished = m_fit_thread->Converged();
 
-    m_finished = thread->Converged();
+    m_model->ImportModel(m_fit_thread->ConvergedParameter());
+    m_model->setFast(false);
+    m_model->Calculate();
 
     m_model->setConverged(m_finished);
-    m_models << thread->ConvergedParameter();
-
-    delete thread;
+    m_models << m_model->ExportModel(false, false); //;
 
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);

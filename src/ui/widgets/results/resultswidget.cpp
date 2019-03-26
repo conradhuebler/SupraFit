@@ -51,7 +51,7 @@ ResultsWidget::ResultsWidget(const QJsonObject& data, QSharedPointer<AbstractMod
     QJsonObject temp = model->ExportModel(false, false);
     for (int i = 0; i < controller["raw"].toObject().size(); ++i) {
         temp["data"] = controller["raw"].toObject()[QString::number(i)];
-        m_models << temp;
+        m_models << controller["raw"].toObject()[QString::number(i)].toObject();
     }
     m_wrapper = wrapper;
     m_dialog = new ModalDialog;
@@ -319,6 +319,7 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     if (controller["method"].toInt() == SupraFit::Statistic::GlobalSearch) {
         text += Print::TextFromStatistic(data, controller);
     } else {
+        text += Print::TextFromStatistic(controller["raw"].toObject(), controller);
         text += m_model.data()->AnalyseStatistic(m_data, false);
     }
     m_confidence_label->setText(text);

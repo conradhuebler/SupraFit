@@ -83,9 +83,6 @@ void SearchBatch::run()
 
         result["optimised"] = ToolSet::DoubleVec2String(m_model->AllParameter());
         result["model"] = m_model->ExportModel(false, false);
-        result["SSE"] = m_model->SumofSquares();
-        result["valid"] = !m_model->isCorrupt();
-        result["converged"] = m_model->isConverged();
         m_result << result;
     }
     delete m_thread;

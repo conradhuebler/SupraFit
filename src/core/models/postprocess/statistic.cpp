@@ -96,7 +96,13 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
         QList<qreal> s;
 
         for (int i = 0; i < models.size(); ++i) {
-            QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
+            QJsonObject model;
+
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+            if (model.isEmpty())
+                model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
             qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index];
             QVector<qreal> local = ToolSet::String2DoubleVec(model["localParameter"].toObject()["data"].toObject()["0"].toString());
             qreal H = local[index];
@@ -146,7 +152,13 @@ QString MonteCarlo2BC50_1(const qreal logK11, const QJsonObject& object)
     QList<qreal> s;
 
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         s << BC50::ItoI::BC50(logK11) * 1e6;
     }
@@ -173,7 +185,13 @@ QString MonteCarlo2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonO
     qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
 
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
 
@@ -216,7 +234,13 @@ QString MonteCarlo2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonO
     qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
 
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
 
@@ -244,7 +268,13 @@ QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
     qreal error = 100 - object["0"].toObject()["confidence"].toObject()["error"].toDouble();
 
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
         qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[2];
@@ -318,7 +348,12 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
     QStringList models = object["controller"].toObject()["raw"].toObject().keys();
 
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal K = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[index];
         K11l_gs = qMin(K11l_gs, K);
         K11u_gs = qMax(K11u_gs, K);
@@ -491,7 +526,12 @@ QString GridSearch2BC50_1(const qreal logK11, const QJsonObject& object)
     qreal BC50u = BC50::ItoI::BC50(logK11) * 1e6;
 
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         qreal BC50 = BC50::ItoI::BC50(logK11) * 1e6;
         BC50l = qMin(BC50, BC50l);
@@ -523,7 +563,12 @@ QString GridSearch2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonO
     qreal BC50_sf_l = BC50::ItoII::BC50_SF(logK11, logK12) * 1e6;
 */
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
 
@@ -565,7 +610,13 @@ QString GridSearch2BC50_2_1(const qreal logK21, const qreal logK11, const QJsonO
     qreal BC50l = BC50::IItoI::BC50(logK21, logK11) * 1e6;
 
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
 
@@ -599,7 +650,13 @@ QString GridSearch2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
 
   */
     for (int i = 0; i < models.size(); ++i) {
-        QJsonObject model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
+        QJsonObject model;
+
+        model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject()["data"].toObject();
+        if (model.isEmpty())
+            model = object["controller"].toObject()["raw"].toObject()[models[i]].toObject();
+
         qreal logK21 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[0];
         qreal logK11 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[1];
         qreal logK12 = ToolSet::String2DoubleVec(model["globalParameter"].toObject()["data"].toObject()["0"].toString())[2];

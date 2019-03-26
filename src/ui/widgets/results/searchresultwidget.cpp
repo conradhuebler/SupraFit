@@ -130,7 +130,13 @@ QTableView* SearchResultWidget::BuildList()
     QStringList header = QStringList() << "SSE";
     int size = m_results["controller"].toObject()["size"].toInt();
     for (int i = 0; i < size; ++i) {
+
         QJsonObject local_model = m_results[QString::number(i)].toObject();
+
+        QVector<qreal> initial = ToolSet::String2DoubleVec(local_model["initial"].toString());
+        QVector<qreal> optimised = ToolSet::String2DoubleVec(local_model["optimised"].toString());
+        local_model = m_results[QString::number(i)].toObject()["model"].toObject();
+
         double error = local_model["SSE"].toDouble();
 
         QStandardItem* item = new QStandardItem(QString::number(error));
@@ -157,8 +163,6 @@ QTableView* SearchResultWidget::BuildList()
 
         model->setItem(i, 0, item);
         int j = 1;
-        QVector<qreal> initial = ToolSet::String2DoubleVec(local_model["initial"].toString());
-        QVector<qreal> optimised = ToolSet::String2DoubleVec(local_model["optimised"].toString());
 
         for (int l = 0; l < m_model.data()->GlobalParameterSize(); ++l) {
             if (!m_model.data()->GlobalTable()->isChecked(l, 0) || !m_model.data()->GlobalEnabled(l))
@@ -205,8 +209,8 @@ QTableView* SearchResultWidget::BuildList()
                 j++;
             }
         }
-
-        m_models << local_model["model"].toObject();
+        qDebug() << local_model;
+        m_models << local_model; //["model"].toObject();
     }
 
     for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
@@ -276,12 +280,6 @@ void SearchResultWidget::ExportModels()
     //m_globalsearch->ExportResults(str, threshold, allow_invalid);
 }
 
-void SearchResultWidget::SwitchView()
-{
-    bool histogram = m_table->isHidden();
-    m_table->setHidden(!histogram);
-    m_contour->setHidden(histogram);
-}
 
 void SearchResultWidget::ApplyFilter()
 {
