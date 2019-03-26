@@ -101,6 +101,12 @@ public:
     StatisticDialog(QWidget* parent = 0);
     virtual ~StatisticDialog() override;
 
+    QJsonObject RunMonteCarlo() const;
+    QJsonObject RunGridSearch() const;
+    QJsonObject RunModelComparison() const;
+    QJsonObject RunReductionAnalyse() const;
+    QJsonObject RunCrossValidation() const;
+
     MCConfig getMCConfig();
     WGSConfig getWGSConfig();
     MoCoConfig getMoCoConfig();
@@ -134,17 +140,17 @@ private:
 
     QWidget *m_hide_widget, *m_moco_widget;
     QTabWidget* m_tab_widget;
-    QDoubleSpinBox *m_varianz_box, *m_cv_increment, *m_cv_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_cv_f_value;
-    ScientificBox* m_cv_err_conv;
-    QSpinBox *m_mc_steps, *m_cv_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
-    QCheckBox *m_original, *m_bootstrap, *m_cv_f_test, *m_moco_f_test, *m_use_checked, *m_store_wgsearch;
+    QDoubleSpinBox *m_varianz_box, *m_wgs_increment, *m_wgs_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_wgs_f_value;
+    ScientificBox* m_wgs_err_conv;
+    QSpinBox *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
+    QCheckBox *m_original, *m_bootstrap, *m_use_checked, *m_store_wgsearch;
     QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
     QVector<QDoubleSpinBox*> m_indepdent_variance;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
     QProgressBar* m_progress;
-    QLabel *m_time_info, *m_cv_error_info, *m_moco_error_info;
-    QRadioButton *m_cv_loo, *m_cv_l2o;
+    QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info;
+    QRadioButton *m_wgs_loo, *m_wgs_l2o;
     QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user;
     QMutex mutex;
 
@@ -152,7 +158,7 @@ private:
 
     int m_time, m_runs;
     qint64 m_time_0;
-    qreal m_f_value = 1, m_moco_max, m_cv_max;
+    qreal m_f_value = 1, m_moco_max, m_wgs_max;
     bool m_hidden;
 
 private slots:
@@ -165,6 +171,7 @@ signals:
     void MCStatistic(const MCConfig& config);
     void MoCoStatistic(const MoCoConfig& config);
     void CrossValidation(ReductionAnalyse::CVType type);
+    void RunCalculation(const QJsonObject& controller);
     void Reduction();
     void Interrupt();
     void setMaximumSteps(int steps);

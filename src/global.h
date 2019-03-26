@@ -24,6 +24,7 @@
 
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QJsonObject>
 #include <QtCore/QVariant>
 #include <QtCore/QVector>
 #include <QtCore/QtGlobal>
@@ -164,9 +165,6 @@ struct OptimizerConfig {
     int MaxIter = 75;
     qreal Constant_Convergence = 1E-3;
     qreal Error_Convergence = 5E-7;
-
-    int LevMar_Constants_PerIter = 1;
-    int LevMar_Shifts_PerIter = 1;
 
     qreal LevMar_Factor = 100;
     qreal LevMar_Xtol = 1E-10;
@@ -373,6 +371,25 @@ inline QString Bool2YesNo(bool value)
 
 inline const QString included() { return QString("#77d740;"); }
 inline const QString excluded() { return QString("#e17f7f;"); }
+
+const QJsonObject OptimConfigBlock{
+    /* This are the specific definitions, that work around Levenberg-Marquardt */
+    { "MaxLevMarInter", 75 },
+    { "ErrorConvergence", 5E-7 },
+    { "DeltaParameter", 1E-4 },
+
+    /* This definitions control Levenberg-Marquardt routine itself */
+    { "LevMar_Factor", 100 },
+    { "LevMar_Xtol", 1E-10 },
+    { "LevMar_Gtol", 1E-10 },
+    { "LevMar_Ftol", 1E-10 },
+    { "LevMar_epsfcn", 1E-8 },
+
+    /* This settings apply to numeric concentration calculation */
+    { "Skip_not_Converged_Concentrations", false },
+    { "MaxIterConcentrations", 1500 },
+    { "ConcentrationConvergence", 1e-13 }
+};
 
 /*
  * Define the names/strings of the

@@ -87,9 +87,9 @@ void StatisticDialog::updateUI()
 {
     if (!m_model)
         return;
-    m_cv_f_value->setToolTip(FOutput());
+    m_wgs_f_value->setToolTip(FOutput());
     m_moco_f_value->setToolTip(FOutput());
-    m_cv_f_value->setValue(m_model.data()->finv(m_cv_maxerror->value() / 100));
+    m_wgs_f_value->setValue(m_model.data()->finv(m_wgs_maxerror->value() / 100));
     m_moco_f_value->setValue(m_model.data()->finv(m_moco_maxerror->value() / 100));
 }
 
@@ -286,44 +286,41 @@ QWidget* StatisticDialog::GridSearchWidget()
     }
     layout->addWidget(parameter);
 
-    m_cv_maxerror = new QDoubleSpinBox;
-    m_cv_maxerror->setMaximum(100);
-    m_cv_maxerror->setSingleStep(0.5);
-    m_cv_maxerror->setValue(95);
-    m_cv_maxerror->setDecimals(1);
-    m_cv_maxerror->setSuffix("%");
-    m_cv_f_test = new QCheckBox(tr("Use F-Statistic"));
-    m_cv_f_test->setChecked(true);
-    m_cv_f_value = new QDoubleSpinBox(this);
-    m_cv_f_value->setMaximum(1000);
-    m_cv_f_value->setMinimum(0);
-    m_cv_f_value->setValue(m_f_value);
-    m_cv_f_value->setDecimals(4);
-    m_cv_f_value->setReadOnly(true);
+    m_wgs_maxerror = new QDoubleSpinBox;
+    m_wgs_maxerror->setMaximum(100);
+    m_wgs_maxerror->setSingleStep(0.5);
+    m_wgs_maxerror->setValue(95);
+    m_wgs_maxerror->setDecimals(1);
+    m_wgs_maxerror->setSuffix("%");
+
+    m_wgs_f_value = new QDoubleSpinBox(this);
+    m_wgs_f_value->setMaximum(1000);
+    m_wgs_f_value->setMinimum(0);
+    m_wgs_f_value->setValue(m_f_value);
+    m_wgs_f_value->setDecimals(4);
+    m_wgs_f_value->setReadOnly(true);
     m_store_wgsearch = new QCheckBox(tr("Store intermediate Models"));
     m_store_wgsearch->setToolTip(tr("If checked, SupraFit will try to store ALL intermedate results. They are necessary to compute the confidence range for the single parameters \nAND dervied values, such as entropy. The downside are hugh files and sometimes data, that is to large to be handled resulting in an empty output!"));
     layout->addWidget(m_store_wgsearch);
 
-    connect(m_cv_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
-    connect(m_cv_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
+    connect(m_wgs_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
 
     QHBoxLayout* hlayout = new QHBoxLayout;
 
     hlayout->addWidget(new QLabel(tr("Define Confidence Interval")));
-    hlayout->addWidget(m_cv_maxerror);
-    hlayout->addWidget(m_cv_f_test);
+    hlayout->addWidget(m_wgs_maxerror);
 
     layout->addLayout(hlayout);
     if (m_model) {
         hlayout = new QHBoxLayout;
         hlayout->addWidget(new QLabel(tr("F-Value:")));
-        hlayout->addWidget(m_cv_f_value);
+        hlayout->addWidget(m_wgs_f_value);
         layout->addLayout(hlayout);
 
-        m_cv_error_info = new QLabel;
-        layout->addWidget(m_cv_error_info);
+        m_wgs_error_info = new QLabel;
+        layout->addWidget(m_wgs_error_info);
     } else
-        m_cv_f_value->hide();
+        m_wgs_f_value->hide();
 
     m_gridScalingFactor = new QSpinBox;
     m_gridScalingFactor->setMinimum(-10);
@@ -334,22 +331,22 @@ QWidget* StatisticDialog::GridSearchWidget()
     hlayout->addWidget(new QLabel(tr("Scaling Factor for Single Steps:")));
     hlayout->addWidget(m_gridScalingFactor);
 
-    m_cv_steps = new QSpinBox;
-    m_cv_steps->setMaximum(1e7);
-    m_cv_steps->setValue(2e3);
-    m_cv_steps->setSingleStep(100);
+    m_wgs_steps = new QSpinBox;
+    m_wgs_steps->setMaximum(1e7);
+    m_wgs_steps->setValue(2e3);
+    m_wgs_steps->setSingleStep(100);
 
     hlayout->addWidget(new QLabel(tr("Maximal steps:")));
-    hlayout->addWidget(m_cv_steps);
+    hlayout->addWidget(m_wgs_steps);
 
     layout->addLayout(hlayout);
 
     hlayout = new QHBoxLayout;
 
-    m_cv_err_conv = new ScientificBox;
-    m_cv_err_conv->setDecimals(10);
-    m_cv_err_conv->setValue(1E-9);
-    m_cv_err_conv->setSingleStep(1e-9);
+    m_wgs_err_conv = new ScientificBox;
+    m_wgs_err_conv->setDecimals(10);
+    m_wgs_err_conv->setValue(1E-9);
+    m_wgs_err_conv->setSingleStep(1e-9);
 
     m_gridErrorConvergencyCounter = new QSpinBox;
     m_gridErrorConvergencyCounter->setRange(1, 1e8);
@@ -357,7 +354,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridErrorConvergencyCounter->setValue(config.ErrorConvergencyCounter);
 
     hlayout->addWidget(new QLabel(tr("SSE Convergence:")));
-    hlayout->addWidget(m_cv_err_conv);
+    hlayout->addWidget(m_wgs_err_conv);
     hlayout->addWidget(new QLabel(tr("Max SSE Convergency Counter")));
     hlayout->addWidget(m_gridErrorConvergencyCounter);
 
@@ -436,8 +433,6 @@ QWidget* StatisticDialog::ModelComparison()
     m_moco_maxerror->setValue(95);
     m_moco_maxerror->setDecimals(1);
     m_moco_maxerror->setSuffix("%");
-    m_moco_f_test = new QCheckBox(tr("Use F-Statistic"));
-    m_moco_f_test->setChecked(true);
 
     m_moco_f_value = new QDoubleSpinBox(this);
     m_moco_f_value->setMaximum(1000);
@@ -447,11 +442,9 @@ QWidget* StatisticDialog::ModelComparison()
     m_moco_f_value->setReadOnly(true);
 
     connect(m_moco_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
-    connect(m_moco_f_test, SIGNAL(stateChanged(int)), this, SLOT(CalculateError()));
 
     global_layout->addWidget(new QLabel(tr("Confidence Intervall")), 0, 0);
     global_layout->addWidget(m_moco_maxerror, 0, 1);
-    global_layout->addWidget(m_moco_f_test, 0, 2);
 
     if (m_model) {
         global_layout->addWidget(new QLabel(tr("F-Value:")), 1, 0);
@@ -498,11 +491,11 @@ QWidget* StatisticDialog::CVWidget()
 {
     QWidget* widget = new QWidget;
     QGridLayout* layout = new QGridLayout;
-    m_cv_loo = new QRadioButton(tr("Leave-One-Out"));
-    m_cv_l2o = new QRadioButton(tr("Leave-Two-Out"));
-    m_cv_loo->setChecked(true);
-    layout->addWidget(m_cv_loo, 0, 0);
-    layout->addWidget(m_cv_l2o, 1, 0);
+    m_wgs_loo = new QRadioButton(tr("Leave-One-Out"));
+    m_wgs_l2o = new QRadioButton(tr("Leave-Two-Out"));
+    m_wgs_loo->setChecked(true);
+    layout->addWidget(m_wgs_loo, 0, 0);
+    layout->addWidget(m_wgs_l2o, 1, 0);
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
 
@@ -517,23 +510,24 @@ QWidget* StatisticDialog::CVWidget()
     return widget;
 }
 
-WGSConfig StatisticDialog::getWGSConfig()
+QJsonObject StatisticDialog::RunGridSearch() const
 {
-    WGSConfig config;
-    config.maxsteps = m_cv_steps->value();
-    config.maxerror = m_cv_max;
-    config.relax = true;
-    config.fisher_statistic = m_cv_f_test->isChecked();
-    config.confidence = m_cv_maxerror->value();
-    config.f_value = m_cv_f_value->value();
+    QJsonObject controller;
 
-    config.ErrorConvergency = m_cv_err_conv->value();
-    config.ErrorConvergencyCounter = m_gridErrorConvergencyCounter->value();
-    config.ErrorDecreaseCounter = m_gridErrorDecreaseCounter->value();
-    config.OvershotCounter = m_gridOvershotCounter->value();
-    config.ScalingFactor = m_gridScalingFactor->value();
+    controller["MaxSteps"] = m_wgs_steps->value();
+    //controller["increment"] = m_config.increment;
+    controller["maxerror"] = m_wgs_max;
+    controller["f-value"] = m_wgs_f_value->value();
+    controller["method"] = SupraFit::Statistic::WeakenedGridSearch;
+    controller["confidence"] = m_wgs_maxerror->value();
 
-    config.intermediate = m_store_wgsearch->isChecked();
+    controller["ErrorConvergency"] = m_wgs_err_conv->value();
+    controller["OverShotCounter"] = m_gridOvershotCounter->value();
+    controller["ErrorDecreaseCounter"] = m_gridErrorDecreaseCounter->value();
+    controller["ErrorConvergencyCounter"] = m_gridErrorConvergencyCounter->value();
+    controller["StepScalingFactor"] = m_gridScalingFactor->value();
+
+    controller["StoreIntermediate"] = m_store_wgsearch->isChecked();
 
     QList<int> glob_param, local_param;
     int max = 0;
@@ -547,29 +541,37 @@ WGSConfig StatisticDialog::getWGSConfig()
         max += m_model.data()->SeriesCount() * m_grid_local[i]->isChecked();
     }
 
-    config.global_param = glob_param;
-    config.local_param = local_param;
-
+    controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
+    controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
+    /*  
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(2 * max);
     m_progress->setValue(0);
+    
     ShowWidget();
+*/
+    return controller;
+}
+
+WGSConfig StatisticDialog::getWGSConfig()
+{
+    WGSConfig config;
+
     return config;
 }
 
-MoCoConfig StatisticDialog::getMoCoConfig()
+QJsonObject StatisticDialog::RunModelComparison() const
 {
-    MoCoConfig config;
-    WGSConfig cv_config;
-    config.mc_steps = m_moco_mc_steps->value();
-    config.box_multi = m_moco_box_multi->value();
-    config.maxerror = m_moco_max;
-    config.confidence = m_moco_maxerror->value();
-    cv_config.relax = true;
-    config.cv_config = cv_config;
-    config.fisher_statistic = m_moco_f_test->isChecked();
-    config.f_value = m_moco_f_value->value();
+    QJsonObject controller;
+
+    controller["MaxSteps"] = m_moco_mc_steps->value();
+    controller["maxerror"] = m_moco_max;
+    controller["f-value"] = m_moco_f_value->value();
+    controller["method"] = SupraFit::Statistic::ModelComparison;
+    controller["confidence"] = m_moco_maxerror->value();
+
+    controller["BoxMultiplier"] = m_moco_box_multi->value();
 
     QList<int> glob_param, local_param;
     int max = 0;
@@ -584,15 +586,63 @@ MoCoConfig StatisticDialog::getMoCoConfig()
         max += m_model.data()->SeriesCount() * m_moco_local[i]->isChecked();
     }
 
-    config.global_param = glob_param;
-    config.local_param = local_param;
-
+    controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
+    controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
+    /*
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(m_runs * (1 + m_moco_mc_steps->value() / update_intervall));
     m_progress->setValue(0);
     ShowWidget();
+    */
+    return controller;
+}
+
+MoCoConfig StatisticDialog::getMoCoConfig()
+{
+    MoCoConfig config;
+    WGSConfig cv_config;
+    cv_config.relax = true;
+    config.cv_config = cv_config;
+
     return config;
+}
+
+QJsonObject StatisticDialog::RunMonteCarlo() const
+{
+    QJsonObject controller;
+    controller["MaxSteps"] = m_mc_steps->value();
+    controller["Variance"] = m_varianz_box->value();
+
+    if (m_mc_std->isChecked())
+        controller["VarianceSource"] = "sigma";
+    else if (m_mc_sey->isChecked())
+        controller["VarianceSource"] = "SEy";
+    else
+        controller["VarianceSource"] = "UserDefined";
+
+    controller["OriginalError"] = m_original->isChecked();
+    controller["Bootstrap"] = m_bootstrap->isChecked();
+    controller["method"] = SupraFit::Statistic::MonteCarlo;
+
+    QVector<qreal> indep_variance;
+    for (int i = 0; i < m_indepdent_checkboxes.size(); ++i) {
+        if (m_indepdent_checkboxes[i]->isChecked())
+            indep_variance << m_indepdent_variance[i]->value();
+        else
+            indep_variance << 0;
+    }
+
+    controller["IndependentRowVariance"] = ToolSet::DoubleVec2String(indep_variance);
+
+    /*    
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setMaximum(m_runs * (m_mc_steps->value() + m_mc_steps->value() / 100));
+    m_progress->setValue(0);
+    ShowWidget();
+    */
+    return controller;
 }
 
 MCConfig StatisticDialog::getMCConfig()
@@ -610,25 +660,51 @@ MCConfig StatisticDialog::getMCConfig()
             indep_variance << 0;
     }
     config.indep_variance = indep_variance;
-    m_time = 0;
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(m_runs * (m_mc_steps->value() + m_mc_steps->value() / 100));
-    m_progress->setValue(0);
-    ShowWidget();
+
     return config;
 }
 
-ReductionAnalyse::CVType StatisticDialog::CrossValidationType()
+QJsonObject StatisticDialog::RunReductionAnalyse() const
 {
+    QJsonObject controller;
+
+    controller["method"] = SupraFit::Statistic::Reduction;
+    /*
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setMaximum(0);
     m_progress->setValue(0);
     ShowWidget();
+    */
+    return controller;
+}
 
-    if (m_cv_loo->isChecked())
+QJsonObject StatisticDialog::RunCrossValidation() const
+{
+    QJsonObject controller;
+
+    controller["method"] = SupraFit::Statistic::CrossValidation;
+    if (m_wgs_loo->isChecked())
+        controller["CVType"] = ReductionAnalyse::LeaveOneOut;
+    else
+        controller["CVType"] = ReductionAnalyse::LeaveTwoOut;
+
+    /*
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setMaximum(0);
+    m_progress->setValue(0);
+    ShowWidget();
+    */
+    return controller;
+}
+
+ReductionAnalyse::CVType StatisticDialog::CrossValidationType()
+{
+
+    if (m_wgs_loo->isChecked())
         return ReductionAnalyse::LeaveOneOut;
-    else //if (m_cv_l2o->isChecked())
+    else //if (m_wgs_l2o->isChecked())
         return ReductionAnalyse::LeaveTwoOut;
 }
 
@@ -730,27 +806,19 @@ void StatisticDialog::CalculateError()
         return;
     updateUI();
     qreal error = m_model.data()->SumofSquares();
-    qreal max_moco_error, max_cv_error;
-    QString cv_message, moco_message;
-    if (m_cv_f_test->isChecked()) {
-        max_cv_error = error * (m_cv_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-        cv_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_cv_error) + ".";
-    } else {
-        max_cv_error = error + error * m_cv_maxerror->value() / double(100);
-        cv_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_cv_error) + ". F-Statistic is not used!";
-    }
+    qreal max_moco_error, max_wgs_error;
+    QString wgs_message, moco_message;
 
-    if (m_moco_f_test->isChecked()) {
-        max_moco_error = error * (m_moco_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-        moco_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ".";
-    } else {
-        max_moco_error = error + error * m_moco_maxerror->value() / double(100);
-        moco_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ". F-Statistic is not used!";
-    }
+    max_wgs_error = error * (m_wgs_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    wgs_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_wgs_error) + ".";
+
+    max_moco_error = error * (m_moco_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    moco_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ".";
+
     m_moco_max = max_moco_error;
-    m_cv_max = max_cv_error;
+    m_wgs_max = max_wgs_error;
 
-    m_cv_error_info->setText(cv_message);
+    m_wgs_error_info->setText(wgs_message);
     m_moco_error_info->setText(moco_message);
 }
 

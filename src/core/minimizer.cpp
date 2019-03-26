@@ -122,6 +122,7 @@ Minimizer::~Minimizer()
 QString Minimizer::OptPara2String() const
 {
     QString result;
+    /*
     result += "\n";
     result += "|***********************************************************************************|\n";
     result += "|********************General Config for Optimization********************************|\n";
@@ -136,7 +137,7 @@ QString Minimizer::OptPara2String() const
     result += "|Minipack Ftol" + QString::number(m_opt_config.LevMar_Ftol) + "|\n";
     result += "|Minipack epsfcn" + QString::number(m_opt_config.LevMar_epsfcn) + "|\n";
     result += "|********************LevenbergMarquadt Configuration********************************|\n";
-    result += "\n";
+    result += "\n";*/
     return result;
 }
 
