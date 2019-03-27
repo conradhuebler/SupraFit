@@ -70,7 +70,7 @@ class MonteCarloBatch : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    MonteCarloBatch(const MCConfig& config, QPointer<AbstractSearchClass> parent);
+    MonteCarloBatch(QPointer<AbstractSearchClass> parent);
     virtual ~MonteCarloBatch() override;
     virtual void run() override;
     inline QList<QJsonObject> Models() const { return m_models; }
@@ -84,18 +84,20 @@ private:
     QPointer<AbstractSearchClass> m_parent;
     bool m_finished, m_checked;
     //QSharedPointer<Minimizer> m_minimizer;
-    MCConfig m_config;
+    QJsonObject m_controller;
     QList<QJsonObject> m_models;
 };
 
 class MonteCarloStatistics : public AbstractSearchClass {
     Q_OBJECT
 public:
-    MonteCarloStatistics(const MCConfig& config, QObject* parent = 0);
+    MonteCarloStatistics(QObject* parent = 0);
     ~MonteCarloStatistics();
 
-    inline void setConfig(const MCConfig& config) { m_config = config; }
+    inline void setConfig(const QJsonObject& config) { m_controller = config; }
     bool Evaluate();
+
+    void clear();
 
 public slots:
     void Interrupt() override;
@@ -109,7 +111,7 @@ private:
     std::normal_distribution<double> Phi;
     std::uniform_int_distribution<int> Uni;
     DataTable* m_table;
-    MCConfig m_config;
+    QJsonObject m_controller;
     bool m_generate;
     int m_steps;
 

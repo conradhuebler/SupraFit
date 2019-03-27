@@ -146,7 +146,7 @@ public:
     void RunTest();
     void setInput(double A0, double B0);
     inline void setConstants(const QList<qreal>& parameter) { m_parameter = parameter; }
-    inline void setConfig(OptimizerConfig opt_config) { m_opt_config = opt_config; }
+    inline void setConfig(QJsonObject opt_config) { m_opt_config = opt_config; }
     inline QPair<double, double> Concentrations() const { return m_concentration; }
     inline QPair<double, double> ConcentrationsLegacy() const { return m_concentration_legacy; }
 
@@ -165,5 +165,5 @@ private:
     QPair<double, double> m_concentration, m_concentration_legacy;
     bool m_ok = true, m_lok = true;
     int m_t = 0, m_lt = 0;
-    OptimizerConfig m_opt_config;
+    QJsonObject m_opt_config;
 };

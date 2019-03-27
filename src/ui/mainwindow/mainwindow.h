@@ -88,7 +88,7 @@ private:
     QSharedPointer<DataClass> m_data;
     bool m_hasData, m_meta_model = false;
     QAction *m_new, *m_edit, *m_config, *m_about, *m_aboutqt, *m_close, *m_export, *m_save, *m_load, *m_importmodel;
-    OptimizerConfig m_opt_config;
+    QJsonObject m_opt_config;
 
     QDockWidget *m_modeldock, *m_chartdock, *m_history_dock;
     QString m_logfile;

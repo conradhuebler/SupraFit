@@ -34,7 +34,7 @@ class ReductionAnalyse : public AbstractSearchClass {
     Q_OBJECT
 
 public:
-    ReductionAnalyse(OptimizerConfig config);
+    ReductionAnalyse(QJsonObject config);
     virtual ~ReductionAnalyse() override;
 
     enum CVType {

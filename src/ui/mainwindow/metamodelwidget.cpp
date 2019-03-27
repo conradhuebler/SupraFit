@@ -204,7 +204,7 @@ void MetaModelWidget::MCStatistic(MCConfig config)
 {
     Waiter wait;
 
-    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
+    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(this);
     connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
     connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
 

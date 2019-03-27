@@ -412,8 +412,8 @@ public:
      */
     inline DataTable* LocalTable() const { return m_local_parameter; }
 
-    inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
-    inline void setOptimizerConfig(const OptimizerConfig& config)
+    inline QJsonObject getOptimizerConfig() const { return m_opt_config; }
+    inline void setOptimizerConfig(const QJsonObject& config)
     {
         m_opt_config = config;
     }
@@ -723,7 +723,7 @@ protected:
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
     bool m_corrupt, m_converged, m_locked_model, m_fast, m_guess_failed = true, m_demand_guess = false;
-    OptimizerConfig m_opt_config;
+    QJsonObject m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
 

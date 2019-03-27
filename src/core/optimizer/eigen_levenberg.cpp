@@ -96,7 +96,12 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
 
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
-    OptimizerConfig config = model.data()->getOptimizerConfig();
+    QJsonObject config = model.data()->getOptimizerConfig();
+
+    int MaxIter = config["MaxLevMarInter"].toInt();
+    double ErrorConvergence = config["ErrorConvergence"].toDouble();
+    double DeltaParameter = config["DeltaParameter"].toDouble();
+
     Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
     model.data()->setFast();
     if (ModelSignals.size() == 0 || ModelSignals.size() < param.size())
@@ -119,30 +124,32 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor>> lm(numDiff);
     int iter = 0;
-    lm.parameters.factor = config.LevMar_Factor; //step bound for the diagonal shift, is this related to damping parameter, lambda?
-    lm.parameters.maxfev = config.MaxIter; //max number of function evaluations
-    lm.parameters.xtol = config.LevMar_Xtol; //tolerance for the norm of the solution vector
-    lm.parameters.ftol = config.LevMar_Ftol; //tolerance for the norm of the vector function
-    lm.parameters.gtol = config.LevMar_Gtol; // tolerance for the norm of the gradient of the error vector
-    lm.parameters.epsfcn = config.LevMar_epsfcn; //error precision
+
+    lm.parameters.factor = config["LevMar_Factor"].toInt(); //step bound for the diagonal shift, is this related to damping parameter, lambda?
+    lm.parameters.maxfev = config["LevMar_MaxFEv"].toDouble(); //max number of function evaluations
+    lm.parameters.xtol = config["LevMar_Xtol"].toDouble(); //tolerance for the norm of the solution vector
+    lm.parameters.ftol = config["LevMar_Ftol"].toDouble(); //tolerance for the norm of the vector function
+    lm.parameters.gtol = config["LevMar_Gtol"].toDouble(); // tolerance for the norm of the gradient of the error vector
+    lm.parameters.epsfcn = config["LevMar_epsfcn"].toDouble(); //error precision
+
     Eigen::LevenbergMarquardtSpace::Status status = lm.minimizeInit(parameter);
     qreal error_0 = 0;
     qreal error_2 = 1;
     qreal norm = 1;
-    QList<qreal> globalConstants;
-    for (; iter < config.MaxIter && ((qAbs(error_0 - error_2) > config.Error_Convergence) || norm > config.Constant_Convergence); ++iter) {
+    QVector<qreal> globalConstants;
+    for (; iter < MaxIter && ((qAbs(error_0 - error_2) > ErrorConvergence) || norm > DeltaParameter); ++iter) {
         globalConstants.clear();
-        for (int i = 0; i < model.data()->GlobalParameterSize(); ++i)
-            globalConstants << model.data()->GlobalParameter(i);
+        globalConstants = model.data()->OptimizeParameters();
 
         error_0 = model.data()->SumofSquares();
-
         status = lm.minimizeOneStep(parameter);
         error_2 = model.data()->SumofSquares();
+        auto constants = model.data()->OptimizeParameters();
         norm = 0;
         for (int i = 0; i < globalConstants.size(); ++i)
-            norm += qAbs(globalConstants[i] - model.data()->GlobalParameter(i));
+            norm += qAbs(globalConstants[i] - constants[i]);
     }
+
     QString result;
     result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
     result += "Last Sum of Changes in complexation constants was " + QString::number(norm) + "\n";
@@ -155,6 +162,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 
     for (int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
-    model.data()->setConverged(iter < config.MaxIter);
+    model.data()->setConverged(iter < MaxIter);
     return iter;
 }

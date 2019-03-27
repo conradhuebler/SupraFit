@@ -37,7 +37,7 @@ class NonLinearFitThread;
 
 class GSConfig : public AbstractConfig {
 public:
-    inline GSConfig(OptimizerConfig config)
+    inline GSConfig(QJsonObject config)
         : AbstractConfig(config)
     {
     }

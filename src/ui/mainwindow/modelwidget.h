@@ -58,6 +58,7 @@ class QVBoxLayout;
 
 class AdvancedSearch;
 class ChartView;
+class JobManager;
 class LineSeries;
 class LocalParameterWidget;
 class ModelActions;
@@ -138,7 +139,7 @@ private:
     void CollectParameters();
     void Data2Text();
     void Model2Text();
-    void MinimizeModel(const OptimizerConfig& config);
+    void MinimizeModel(const QJsonObject& config);
     void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models = QList<QJsonObject>());
 
     QVBoxLayout* m_sign_layout;
@@ -157,6 +158,7 @@ private:
     QJsonObject m_last_model;
     QList<QJsonObject> m_fast_confidence;
 
+    JobManager* m_jobmanager;
 private slots:
     void Repaint();
     void CollectActiveSignals();

@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,11 +23,12 @@
 #include "src/global_config.h"
 
 #include "src/core/AbstractModel.h"
+
+#include <QtCore/QJsonObject>
+
 #include <QLocale>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QWidget>
-
-struct OptimizerConfig;
 
 class QValidator;
 class QSpinBox;
@@ -38,19 +39,19 @@ class ScientificBox;
 class OptimizerWidget : public QWidget {
     Q_OBJECT
 public:
-    OptimizerWidget(OptimizerConfig config, QWidget* parent = 0);
+    OptimizerWidget(QJsonObject config, QWidget* parent = 0);
 
     ~OptimizerWidget();
-    OptimizerConfig Config() const;
+    QJsonObject Config() const;
 
 private:
     QWidget* GeneralWidget();
     QWidget* LevmarWidget();
     QWidget* AdvancedWidget();
 
-    OptimizerConfig m_config;
+    QJsonObject m_config;
     QTabWidget* m_tabwidget;
-    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_sum_convergence, *m_levmar_factor, *m_single_iter;
+    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_sum_convergence, *m_levmar_factor, *m_single_iter, *m_levmar_maxfev;
     QCheckBox* m_skip_corrupt_concentrations;
     ScientificBox *m_concen_convergency, *m_constant_convergence, *m_error_convergence;
     ScientificBox *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;

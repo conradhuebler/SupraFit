@@ -191,6 +191,8 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
 
+    bool skip = m_opt_config["Skip_not_Converged_Concentrations"].toBool();
+
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
@@ -217,7 +219,7 @@ void IItoI_ItoI_ItoII_Model::CalculateVariables()
             qDebug() << m_solvers[i]->Ok() << InitialHostConcentration(i) << InitialGuestConcentration(i);
 #endif
             m_corrupt = true;
-            if (m_opt_config.skip_not_converged_concentrations) {
+            if (skip) {
 #ifdef _DEBUG
                 qDebug() << "Ok, I skip the current result ...";
 #endif

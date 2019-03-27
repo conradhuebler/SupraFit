@@ -201,6 +201,7 @@ set(utils_SRC
                 src/capabilities/montecarlostatistics.cpp
                 src/capabilities/globalsearch.cpp
                 src/capabilities/weakenedgridsearch.cpp
+                src/capabilities/jobmanager.cpp
                 src/core/analyse.cpp
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp

@@ -49,6 +49,7 @@ AbstractModel::AbstractModel(DataClass* data)
     , m_locked_model(false)
     , m_fast(true)
 {
+    m_opt_config = OptimConfigBlock;
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
 
     connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
@@ -81,6 +82,7 @@ AbstractModel::AbstractModel(AbstractModel* model)
     , m_fast(true)
     , m_name_cached(model->Name())
 {
+    m_opt_config = OptimConfigBlock;
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
     connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
 

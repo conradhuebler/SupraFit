@@ -197,6 +197,8 @@ void itc_IItoII_Model::CalculateVariables()
     if (!m_threadpool)
         return;
 
+    bool skip = m_opt_config["Skip_not_Converged_Concentrations"].toBool();
+
     QString more_info = QString("Inject\t" + qA2B + "\t" + qAB + "\t" + qAB2 + "\t" + qsolv + "\t" + q + "\n");
     QString more_info_2 = QString("\nInject\t" + qA2B_ + "\t" + qAB_ + "\t" + qAB2_ + "\t" + qsolv + "\t" + q + "\n");
 
@@ -246,7 +248,7 @@ void itc_IItoII_Model::CalculateVariables()
             qDebug() << m_solvers[i]->Ok() << InitialHostConcentration(i) << InitialGuestConcentration(i);
 #endif
             m_corrupt = true;
-            if (m_opt_config.skip_not_converged_concentrations) {
+            if (skip) {
 #ifdef _DEBUG
                 qDebug() << "Ok, I skip the current result ...";
 #endif

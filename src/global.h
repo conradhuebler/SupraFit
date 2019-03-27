@@ -160,7 +160,7 @@ inline QString about()
     return info;
 }
 }
-
+/*
 struct OptimizerConfig {
     int MaxIter = 75;
     qreal Constant_Convergence = 1E-3;
@@ -176,7 +176,7 @@ struct OptimizerConfig {
     int single_iter = 1500;
     double concen_convergency = 1e-13;
 };
-
+*/
 class QString;
 
 extern QString collective_messages;
@@ -380,6 +380,7 @@ const QJsonObject OptimConfigBlock{
 
     /* This definitions control Levenberg-Marquardt routine itself */
     { "LevMar_Factor", 100 },
+    { "LevMar_MaxFEv", 100 },
     { "LevMar_Xtol", 1E-10 },
     { "LevMar_Gtol", 1E-10 },
     { "LevMar_Ftol", 1E-10 },

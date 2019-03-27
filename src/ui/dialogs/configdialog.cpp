@@ -39,7 +39,7 @@
 
 #include "configdialog.h"
 
-OptimizerDialog::OptimizerDialog(OptimizerConfig config, QWidget* parent)
+OptimizerDialog::OptimizerDialog(QJsonObject config, QWidget* parent)
     : QDialog(parent)
     , m_opt_config(config)
 {
@@ -78,7 +78,7 @@ void OptimizerDialog::createOptimTab()
     m_mainwidget->addTab(m_opt_widget, tr("Optimizer Settings"));
 }
 
-ConfigDialog::ConfigDialog(OptimizerConfig config, QWidget* parent)
+ConfigDialog::ConfigDialog(QJsonObject config, QWidget* parent)
     : m_opt_config(config)
     , QDialog(parent)
 {

@@ -243,7 +243,8 @@ QWidget* StatisticDialog::MonteCarloWidget()
     layout->addWidget(m_mc, 5, 0, 1, 2);
 
     connect(m_mc, &QPushButton::clicked, this, [this]() {
-        emit MCStatistic(getMCConfig());
+        //emit MCStatistic(getMCConfig());
+        emit RunCalculation(RunMonteCarlo());
     });
 
     connect(m_bootstrap, SIGNAL(stateChanged(int)), this, SLOT(EnableWidgets()));
@@ -385,7 +386,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     layout->addWidget(m_cv);
 
     connect(m_cv, &QPushButton::clicked, this, [this]() {
-        emit WGStatistic(getWGSConfig());
+        emit RunCalculation(RunGridSearch());
     });
     cv_widget->setLayout(layout);
     return cv_widget;
@@ -481,7 +482,7 @@ QWidget* StatisticDialog::ModelComparison()
     layout->addWidget(m_moco, 5, 0, 1, 3);
 
     connect(m_moco, &QPushButton::clicked, this, [this]() {
-        emit MoCoStatistic(getMoCoConfig());
+        emit RunCalculation(RunModelComparison());
     });
     mo_widget->setLayout(layout);
     return mo_widget;
@@ -502,7 +503,7 @@ QWidget* StatisticDialog::CVWidget()
     layout->addWidget(m_cross_validate, 2, 0);
     layout->addWidget(m_reduction, 3, 0);
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
-        emit CrossValidation(CrossValidationType());
+        emit RunCalculation(RunCrossValidation());
     });
     connect(m_reduction, &QPushButton::clicked, this, &StatisticDialog::Reduction);
 

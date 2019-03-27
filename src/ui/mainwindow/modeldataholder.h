@@ -132,7 +132,7 @@ public:
     void setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper);
     inline void setChartWidget(const QPointer<ChartWidget> chart) { m_charts = chart; }
 
-    void setSettings(const OptimizerConfig& config);
+    void setSettings(const QJsonObject& config);
     /*
      * Export currently open models to file
      */
@@ -196,7 +196,7 @@ private:
     void AddModel(int model);
     void ActiveBatch();
 
-    OptimizerConfig m_config;
+    QJsonObject m_config;
 
     int m_last_tab = 0;
 

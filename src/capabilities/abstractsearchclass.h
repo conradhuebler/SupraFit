@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,12 +36,12 @@ class AbstractModel;
 class AbstractConfig {
 
 public:
-    inline AbstractConfig(OptimizerConfig config = OptimizerConfig())
+    inline AbstractConfig(QJsonObject config = OptimConfigBlock)
         : optimizer_config(config)
     {
     }
     inline ~AbstractConfig() {}
-    OptimizerConfig optimizer_config;
+    QJsonObject optimizer_config;
 };
 
 class AbstractSearchThread : public QObject, public QRunnable {

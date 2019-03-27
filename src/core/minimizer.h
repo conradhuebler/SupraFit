@@ -44,7 +44,7 @@ public:
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
     inline QJsonObject BestIntermediateParameter() const { return m_best_intermediate; }
     void setParameter(const QJsonObject& json);
-    inline void setOptimizerConfig(const OptimizerConfig& config) { m_opt_config = config; }
+    inline void setOptimizerConfig(const QJsonObject& config) { m_opt_config = config; }
     inline bool Converged() const { return m_converged; }
     inline qreal SumOfError() const { return m_sum_error; }
 
@@ -57,7 +57,7 @@ private:
     QSharedPointer<AbstractModel> m_model;
     QJsonObject m_last_parameter, m_best_intermediate;
     int NonLinearFit();
-    OptimizerConfig m_opt_config;
+    QJsonObject m_opt_config;
     bool m_converged;
     int m_steps;
     bool m_exc_statistics, m_running = false;
@@ -81,12 +81,12 @@ public:
     void setModelCloned(const QSharedPointer<AbstractModel> model);
     int Minimize();
     int Minimize(const QList<int>& locked);
-    void setOptimizerConfig(const OptimizerConfig& config)
+    void setOptimizerConfig(const QJsonObject& config)
     {
         m_opt_config = config;
         m_inform_config_changed = true;
     }
-    inline OptimizerConfig getOptimizerConfig() const { return m_opt_config; }
+    inline QJsonObject getOptimizerConfig() const { return m_opt_config; }
     void addToHistory();
     inline QJsonObject Parameter() const { return m_last_parameter; }
     void setParameter(const QJsonObject& json, const QList<int>& locked);
@@ -97,7 +97,7 @@ public:
 
 private:
     QSharedPointer<AbstractModel> m_model;
-    OptimizerConfig m_opt_config;
+    QJsonObject m_opt_config;
     bool m_inform_config_changed;
     QString OptPara2String() const;
     QJsonObject m_last_parameter;

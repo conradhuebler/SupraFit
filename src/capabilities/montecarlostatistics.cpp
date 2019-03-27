@@ -82,9 +82,8 @@ void MonteCarloThread::run()
 #endif
 }
 
-MonteCarloBatch::MonteCarloBatch(const MCConfig& config, QPointer<AbstractSearchClass> parent)
-    : m_config(config)
-    , m_finished(false)
+MonteCarloBatch::MonteCarloBatch(QPointer<AbstractSearchClass> parent)
+    : m_finished(false)
     , m_parent(parent)
     , m_checked(false)
 {
@@ -153,13 +152,9 @@ void MonteCarloBatch::optimise()
 #endif
 }
 
-MonteCarloStatistics::MonteCarloStatistics(const MCConfig& config, QObject* parent)
+MonteCarloStatistics::MonteCarloStatistics(QObject* parent)
     : AbstractSearchClass(parent)
-    , m_config(config)
 {
-    qint64 seed = QDateTime::currentMSecsSinceEpoch();
-    rng.seed(seed);
-    Phi = std::normal_distribution<double>(0, m_config.variance);
 }
 
 MonteCarloStatistics::~MonteCarloStatistics()
@@ -185,18 +180,23 @@ bool MonteCarloStatistics::Evaluate()
 
 QJsonObject MonteCarloStatistics::Controller() const
 {
+    /*
     QJsonObject controller;
     controller["steps"] = m_steps;
     controller["variance"] = m_config.variance;
     controller["original"] = m_config.original;
     controller["bootstrap"] = m_config.bootstrap;
     controller["method"] = SupraFit::Statistic::MonteCarlo;
-    controller["indep_variance"] = ToolSet::DoubleVec2String(m_config.indep_variance);
-    return controller;
+    controller["indep_variance"] = ToolSet::DoubleVec2String(m_config.indep_variance);*/
+    return m_controller;
 }
 
 QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 {
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    rng.seed(seed);
+    Phi = std::normal_distribution<double>(0, m_controller["Variance"].toDouble());
+
     int maxthreads = qApp->instance()->property("threads").toInt();
     int blocksize = maxthreads / maxthreads / 10;
     if (blocksize < 1)
@@ -209,24 +209,32 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     m_generate = true;
     QVector<qreal> vector = m_model->ErrorTable()->toList();
     Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
+
+    bool original = m_controller["original"].toBool();
+    bool bootstrap = m_controller["bootstrap"].toBool();
+    int MaxSteps = m_controller["MaxSteps"].toInt();
+
+    QVector<qreal> indep_variance = ToolSet::String2DoubleVec(m_controller["IndependentRowVariance"].toString());
+
     QVector<std::normal_distribution<double>> indep_phi;
-    for (int i = 0; i < m_config.indep_variance.size(); ++i) {
-        std::normal_distribution<double> phi = std::normal_distribution<double>(0, m_config.indep_variance[i]);
+    for (int i = 0; i < indep_variance.size(); ++i) {
+        std::normal_distribution<double> phi = std::normal_distribution<double>(0, indep_variance[i]);
         indep_phi << phi;
     }
+
 #ifdef _DEBUG
-    qDebug() << "Starting MC Simulation with" << m_config.maxsteps << "steps";
+    qDebug() << "Starting MC Simulation with" << MaxSteps << "steps";
 #endif
 
     QVector<Pair> block;
-    for (int step = 0; step < m_config.maxsteps; ++step) {
+    for (int step = 0; step < MaxSteps; ++step) {
         QPointer<DataTable> dep_table;
-        if (m_config.original)
+        if (original)
             dep_table = new DataTable(m_model->DependentModel());
         else
             dep_table = m_model->ModelTable();
         m_ptr_table << dep_table;
-        if (m_config.bootstrap) {
+        if (bootstrap) {
             QPointer<DataTable> tmp = dep_table->PrepareBootStrap(Uni, rng, vector);
             m_ptr_table << tmp;
             dep_table = tmp;
@@ -238,9 +246,9 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 
         QPointer<DataTable> indep_table = new DataTable(m_model->IndependentModel());
         m_ptr_table << indep_table;
-        for (int i = 0; i < m_config.indep_variance.size(); ++i) {
-            QVector<int> cols(m_config.indep_variance.size(), 0);
-            if (m_config.indep_variance[i] > 0) {
+        for (int i = 0; i < indep_variance.size(); ++i) {
+            QVector<int> cols(indep_variance.size(), 0);
+            if (indep_variance[i] > 0) {
                 cols[i] = 1;
                 QPointer<DataTable> tmp = indep_table->PrepareMC(indep_phi[i], rng, cols);
                 m_ptr_table << tmp;
@@ -255,7 +263,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         }
     }
     for (int i = 0; i < maxthreads; ++i) {
-        QPointer<MonteCarloBatch> thread = new MonteCarloBatch(m_config, this);
+        QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
         thread->setChecked(false);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         connect(this, &MonteCarloStatistics::InterruptAll, thread, &MonteCarloBatch::Interrupt);
@@ -271,10 +279,6 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& thr
     m_steps = 0;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
-            if (!threads[i]->Finished()) {
-                delete threads[i];
-                continue;
-            }
             m_models << threads[i]->Models();
             m_steps++;
             delete threads[i];
@@ -284,6 +288,11 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& thr
     for (int i = 0; i < m_ptr_table.size(); ++i)
         if (m_ptr_table[i])
             delete m_ptr_table[i];
+}
+
+void MonteCarloStatistics::clear()
+{
+    m_models.clear();
 }
 
 void MonteCarloStatistics::Interrupt()

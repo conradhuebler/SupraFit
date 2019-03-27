@@ -245,7 +245,7 @@ QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
     MCConfig config;
     config.maxsteps = maxsteps;
     config.variance = model->SEy();
-    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
+    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(this);
 
     connect(statistic, &AbstractSearchClass::IncrementProgress, this, [this, maxsteps](int i) {
         this->Progress(i, maxsteps);

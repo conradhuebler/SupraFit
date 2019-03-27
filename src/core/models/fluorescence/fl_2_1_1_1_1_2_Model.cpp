@@ -151,6 +151,8 @@ void fl_IItoI_ItoI_ItoII_Model::CalculateVariables()
     qreal K12 = qPow(10, GlobalParameter(2));
     m_constants_pow = QList<qreal>() << K21 << K11 << K12;
 
+    bool skip = m_opt_config["Skip_not_Converged_Concentrations"].toBool();
+
     QVector<qreal> F0(SeriesCount());
 
     int maxthreads = qApp->instance()->property("threads").toInt();
@@ -175,7 +177,7 @@ void fl_IItoI_ItoI_ItoII_Model::CalculateVariables()
             qDebug() << m_solvers[i]->Ok() << InitialHostConcentration(i) << InitialGuestConcentration(i);
 #endif
             m_corrupt = true;
-            if (m_opt_config.skip_not_converged_concentrations) {
+            if (skip) {
 #ifdef _DEBUG
                 qDebug() << "Ok, I skip the current result ...";
 #endif

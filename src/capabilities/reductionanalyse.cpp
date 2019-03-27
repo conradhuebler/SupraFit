@@ -31,7 +31,7 @@
 
 #include "reductionanalyse.h"
 
-ReductionAnalyse::ReductionAnalyse(OptimizerConfig config)
+ReductionAnalyse::ReductionAnalyse(QJsonObject config)
     : m_config(config)
 {
 }
@@ -105,7 +105,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
     }
 
     for (int i = 0; i < maxthreads; ++i) {
-        QPointer<MonteCarloBatch> thread = new MonteCarloBatch(config, this);
+        QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
         thread->setChecked(true);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         connect(this, &ReductionAnalyse::InterruptAll, thread, &MonteCarloBatch::Interrupt);

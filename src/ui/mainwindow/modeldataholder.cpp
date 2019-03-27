@@ -432,7 +432,7 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     QPointer<ModelWidget> modelwidget = new ModelWidget(t, charts, readonly);
     modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
-    t->setOptimizerConfig(m_config);
+    //t->setOptimizerConfig(m_config);
     connect(modelwidget, &ModelWidget::AddModel, this, [this](const QJsonObject& object) { this->Json2Model(object); });
     connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
@@ -503,7 +503,7 @@ void ModelDataHolder::RemoveTab(int i)
     ActiveBatch();
 }
 
-void ModelDataHolder::setSettings(const OptimizerConfig& config)
+void ModelDataHolder::setSettings(const QJsonObject& config)
 {
     for (int i = 0; i < m_modelsWidget->count(); ++i) {
         ModelWidget* w = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));

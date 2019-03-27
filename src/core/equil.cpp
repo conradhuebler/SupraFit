@@ -127,12 +127,13 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
             return MinQuadraticRoot(x1, x2, x3);
         }
     };
-    long double epsilon = m_opt_config.concen_convergency;
+    long double epsilon = m_opt_config["ConcentrationConvergence"].toDouble();
+    int MaxIter = m_opt_config["MaxIterConcentrations"].toInt();
     long double a = qMin(a0, b0) / K11 * 10;
     long double b = 0;
     long double a_1 = 0, b_1 = 0;
     int i = 0;
-    for (i = 0; i < m_opt_config.single_iter; ++i) {
+    for (i = 0; i < MaxIter; ++i) {
         a_1 = a;
         b_1 = b;
         b = calc_b(b0, a, K11, b21, b12);
@@ -154,7 +155,7 @@ QPair<double, double> IItoI_ItoI_ItoII_Solver::HostConcentration(double a0, doub
     std::cout << "Guess A: " << qMin(a0, b0) / K11 * 100 << " .. Final A: " << a << " .. Iterations:" << i << std::endl;
     */
 #endif
-    m_ok = (a < m_A0) && (b < m_B0) && (a > 0) && (b > 0) && i < m_opt_config.single_iter;
+    m_ok = (a < m_A0) && (b < m_B0) && (a > 0) && (b > 0) && i < MaxIter;
     m_t += QDateTime::currentMSecsSinceEpoch() - t0;
 
     return QPair<double, double>(a, b);

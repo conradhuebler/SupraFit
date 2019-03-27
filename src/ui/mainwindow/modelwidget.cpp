@@ -21,6 +21,7 @@
 #include "src/version.h"
 
 #include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/reductionanalyse.h"
@@ -333,6 +334,24 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         ModelChartWidget* w = new ModelChartWidget(m_model, str, this);
         m_charts_dialogs->setWidget(w, str);
     }
+    m_jobmanager = new JobManager(this);
+    m_jobmanager->setModel(m_model);
+
+    connect(m_jobmanager, &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps);
+    connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress);
+    connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
+    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
+
+    connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
+    connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->RunJobs();
+    });
+    connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Statistic type, int index) {
+        this->m_results->Attention();
+        this->m_results->ShowResult(type, index);
+    });
+
     m_SetUpFinished = true;
 }
 
@@ -496,18 +515,18 @@ void ModelWidget::CollectParameters()
 
 void ModelWidget::GlobalMinimizeLoose()
 {
-    OptimizerConfig config = m_model->getOptimizerConfig();
-    config.Constant_Convergence = 1E-1;
+    QJsonObject config = m_model->getOptimizerConfig();
+    config["DeltaParameter"] = 1E-1;
     MinimizeModel(config);
 }
 
 void ModelWidget::GlobalMinimize()
 {
-    OptimizerConfig config = m_model->getOptimizerConfig();
+    QJsonObject config = m_model->getOptimizerConfig();
     MinimizeModel(config);
 }
 
-void ModelWidget::MinimizeModel(const OptimizerConfig& config)
+void ModelWidget::MinimizeModel(const QJsonObject& config)
 {
     Waiter wait;
     if (m_pending)
@@ -555,7 +574,7 @@ void ModelWidget::MCStatistic(MCConfig config)
 
     config.optimizer_config = m_model->getOptimizerConfig();
 
-    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(config, this);
+    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(this);
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
@@ -727,7 +746,7 @@ void ModelWidget::LocalMinimize()
         QList<int> active_signals = QVector<int>(m_model_elements.size(), 0).toList();
         active_signals[i] = 1;
         model->setActiveSignals(active_signals);
-        OptimizerConfig config = model->getOptimizerConfig();
+        QJsonObject config = model->getOptimizerConfig();
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
         model->setName(tr("%1 Series %2").arg(model->Name().remove("Model")).arg(i + 1));

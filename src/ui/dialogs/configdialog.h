@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QLineEdit>
 
-struct OptimizerConfig;
-
 class QRadioButton;
 class QTabWidget;
 class QDialogButtonBox;
@@ -38,16 +36,16 @@ class OptimizerDialog : public QDialog {
     Q_OBJECT
 
 public:
-    OptimizerDialog(OptimizerConfig config, QWidget* parent = 0);
+    OptimizerDialog(QJsonObject config, QWidget* parent = 0);
     ~OptimizerDialog();
-    OptimizerConfig Config() const { return m_opt_widget->Config(); }
+    QJsonObject Config() const { return m_opt_widget->Config(); }
 
 private:
     void setUi();
     void createOptimTab();
     QTabWidget* m_mainwidget;
     QDialogButtonBox* m_buttons;
-    OptimizerConfig m_opt_config;
+    QJsonObject m_opt_config;
     OptimizerWidget* m_opt_widget;
 };
 
@@ -55,9 +53,9 @@ class ConfigDialog : public QDialog {
     Q_OBJECT
 
 public:
-    ConfigDialog(OptimizerConfig config, QWidget* parent = 0);
+    ConfigDialog(QJsonObject config, QWidget* parent = 0);
     ~ConfigDialog();
-    inline OptimizerConfig Config() const { return m_opt_widget->Config(); }
+    inline QJsonObject Config() const { return m_opt_widget->Config(); }
     virtual void accept();
 
 private:
@@ -78,7 +76,7 @@ private:
     void createStandardCalTab();
     void createOptimTab();
 
-    OptimizerConfig m_opt_config;
+    QJsonObject m_opt_config;
     OptimizerWidget* m_opt_widget;
     int m_dirlevel;
     QString m_logfile, m_working_string;
