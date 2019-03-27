@@ -29,7 +29,7 @@ const int update_intervall = 100;
 
 class MoCoConfig : public AbstractConfig {
 public:
-    WGSConfig cv_config;
+    //WGSConfig cv_config;
     int mc_steps = 10000;
     int FastConfidenceSteps = 1000;
     int FastConfidenceScaling = -4;

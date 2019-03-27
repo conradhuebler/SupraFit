@@ -128,15 +128,16 @@ void MetaModelWidget::Minimize()
 
     delete thread;
 
-    if (qApp->instance()->property("auto_confidence").toBool())
-        FastConfidence();
-    else
-        m_statistic_widget->Update();
+    //    if (qApp->instance()->property("auto_confidence").toBool())
+    //        FastConfidence();
+    //    else
+    m_statistic_widget->Update();
 }
 
 void MetaModelWidget::ToggleStatisticDialog()
 {
     StatisticDialog* statistic_dialog = new StatisticDialog(m_model, this);
+    /*
     connect(statistic_dialog, &StatisticDialog::MCStatistic, this, &MetaModelWidget::MCStatistic);
     connect(statistic_dialog, &StatisticDialog::WGStatistic, this, &MetaModelWidget::WGStatistic);
     connect(statistic_dialog, &StatisticDialog::MoCoStatistic, this, &MetaModelWidget::MoCoStatistic);
@@ -148,7 +149,7 @@ void MetaModelWidget::ToggleStatisticDialog()
     connect(this, &MetaModelWidget::Finished, statistic_dialog, &StatisticDialog::accept);
 
     statistic_dialog->exec();
-
+    */
     delete statistic_dialog;
 }
 
@@ -181,6 +182,7 @@ void MetaModelWidget::LoadStatistic(const QJsonObject& data)
     m_results->ShowResult(type, index);
 }
 
+/*
 void MetaModelWidget::FastConfidence()
 {
     MoCoConfig config;
@@ -305,7 +307,7 @@ void MetaModelWidget::WGStatistic(WGSConfig config)
     emit Finished();
     delete statistic;
 }
-
+*/
 void MetaModelWidget::ImportConstants()
 {
     QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));

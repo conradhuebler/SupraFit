@@ -228,7 +228,7 @@ QVector<QVector<qreal>> ModelComparison::MakeBox()
         qreal value = object["value"].toDouble();
         constant << value - m_config.box_multi * (value - lower);
         constant << value + m_config.box_multi * (upper - value);
-        constant << m_config.cv_config.increment;
+        //constant << m_config.cv_config.increment;
         parameter << constant;
         m_box_area *= double(m_config.box_multi * (upper - value) + m_config.box_multi * (value - lower));
         QList<QPointF> points;

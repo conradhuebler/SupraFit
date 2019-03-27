@@ -154,9 +154,7 @@ void Simulator::Test(QSharedPointer<AbstractModel> model)
     /*
      * First we fit the current model
      */
-    MCConfig config;
-
-    QPointer<MonteCarloThread> thread = new MonteCarloThread(config);
+    QPointer<MonteCarloThread> thread = new MonteCarloThread();
     thread->setModel(model);
     thread->run();
     model->ImportModel(thread->Model());
@@ -240,8 +238,10 @@ void Simulator::Progress(int i, int max)
 
 QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
 {
+    /*
     int maxsteps = 1000;
     m_current = 0;
+    
     MCConfig config;
     config.maxsteps = maxsteps;
     config.variance = model->SEy();
@@ -263,6 +263,7 @@ QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
         std::cout << "MonteCarlo Simulation failed, sorry ..." << std::endl;
     delete statistic;
     return result;
+    */
 }
 
 QJsonObject Simulator::MoCoAnalyse(QSharedPointer<AbstractModel> model)
@@ -318,7 +319,7 @@ QJsonObject Simulator::CrossValidation(QSharedPointer<AbstractModel> model)
 
 QJsonObject Simulator::GridSearch(QSharedPointer<AbstractModel> model)
 {
-    WGSConfig config;
+    /*WGSConfig config;
     config.f_value = model->finv(0.95);
     config.fisher_statistic = true;
 
@@ -335,5 +336,5 @@ QJsonObject Simulator::GridSearch(QSharedPointer<AbstractModel> model)
     QJsonObject result = statistic->Result();
 
     delete statistic;
-    return result;
+    return result;*/
 }

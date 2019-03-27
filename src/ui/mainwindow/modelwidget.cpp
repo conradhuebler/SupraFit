@@ -116,12 +116,12 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
-    connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelWidget::MCStatistic);
+    /*connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelWidget::MCStatistic);
     connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, &ModelWidget::WGStatistic);
     connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, &ModelWidget::MoCoStatistic);
     connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelWidget::CVAnalyse);
     connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelWidget::DoReductionAnalyse);
-
+    */
 
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper.data(), SLOT(SetBlocked(int)));
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper.data(), SLOT(SetBlocked(int)));
@@ -567,7 +567,7 @@ void ModelWidget::ToggleStatisticDialog()
     m_statistic_dialog->Attention();
 }
 
-
+/*
 void ModelWidget::MCStatistic(MCConfig config)
 {
     Waiter wait;
@@ -598,7 +598,7 @@ void ModelWidget::MCStatistic(MCConfig config)
 
     m_logging += "\n\n" + doc.toPlainText();
 }
-
+*/
 void ModelWidget::FastConfidence()
 {
     Waiter wait;
@@ -657,7 +657,7 @@ void ModelWidget::DoReductionAnalyse()
     emit IncrementProgress(1);
     delete statistic;
 }
-
+/*
 void ModelWidget::WGStatistic(WGSConfig config)
 {
     Waiter wait;
@@ -689,7 +689,7 @@ void ModelWidget::WGStatistic(WGSConfig config)
     emit IncrementProgress(1);
     delete statistic;
 }
-
+*/
 void ModelWidget::MoCoStatistic(MoCoConfig config)
 {
     Waiter wait;

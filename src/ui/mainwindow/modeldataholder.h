@@ -115,11 +115,13 @@ signals:
     void Compare();
     void EditData();
 
+    /*
     void WGStatistic(const WGSConfig& config);
     void MCStatistic(MCConfig config);
     void MoCoStatistic(MoCoConfig config);
     void ReductionStatistic();
     void CVStatistic(ReductionAnalyse::CVType type);
+    */
 };
 
 class ModelDataHolder : public QWidget {
@@ -214,11 +216,13 @@ private slots:
     void CreateCrashFile();
     void RemoveCrashFile();
     void SetProjectTabName();
+    /*
     void WGStatistic(const WGSConfig& config);
     void MCStatistic(MCConfig config);
     void MoCoStatistic(MoCoConfig config);
     void ReductionStatistic();
     void CVStatistic(ReductionAnalyse::CVType type);
+    */
     void OptimizeAll();
 
     void CompareAIC();

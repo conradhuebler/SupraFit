@@ -318,12 +318,12 @@ ModelDataHolder::ModelDataHolder()
     connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
 
     m_statistic_dialog = new StatisticDialog(this);
-    connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelDataHolder::MCStatistic);
+    /*connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelDataHolder::MCStatistic);
     connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, &ModelDataHolder::WGStatistic);
     connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, &ModelDataHolder::MoCoStatistic);
     connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelDataHolder::ReductionStatistic);
     connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelDataHolder::CVStatistic);
-
+    */
     m_compare_dialog = new CompareDialog(this);
     connect(m_compare_dialog, &CompareDialog::CompareReduction, this, &ModelDataHolder::CompareReduction);
     connect(m_compare_dialog, &CompareDialog::CompareAIC, this, &ModelDataHolder::CompareAIC);
@@ -675,7 +675,7 @@ int ModelDataHolder::Runs(bool moco) const
     }
     return run;
 }
-
+/*
 void ModelDataHolder::WGStatistic(const WGSConfig& config)
 {
     m_statistic_dialog->setRuns(Runs());
@@ -783,7 +783,7 @@ void ModelDataHolder::MoCoStatistic(MoCoConfig config)
     }
     m_statistic_dialog->HideWidget();
 }
-
+*/
 void ModelDataHolder::OptimizeAll()
 {
     for (int i = 1; i < m_modelsWidget->count(); i++) {

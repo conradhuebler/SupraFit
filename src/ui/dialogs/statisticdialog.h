@@ -107,8 +107,6 @@ public:
     QJsonObject RunReductionAnalyse() const;
     QJsonObject RunCrossValidation() const;
 
-    MCConfig getMCConfig();
-    WGSConfig getWGSConfig();
     MoCoConfig getMoCoConfig();
     ReductionAnalyse::CVType CrossValidationType();
 

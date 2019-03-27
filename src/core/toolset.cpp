@@ -158,6 +158,17 @@ QVector<int> String2IntVec(const QString& str)
     return vector;
 }
 
+QList<int> String2IntList(const QString& str)
+{
+    QList<int> vector;
+    if (str.isEmpty())
+        return vector;
+    QStringList nums = str.split(" ");
+    for (const QString& string : qAsConst(nums))
+        vector << string.toInt();
+    return vector;
+}
+
 QList<qreal> String2DoubleList(const QString& str)
 {
     QList<qreal> vector;

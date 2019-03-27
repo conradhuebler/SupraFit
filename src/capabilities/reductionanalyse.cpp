@@ -54,9 +54,6 @@ bool ReductionAnalyse::Pending() const
 
 void ReductionAnalyse::CrossValidation(CVType type)
 {
-    MCConfig config;
-    config.optimizer_config = m_config.optimizer_config;
-
     m_controller["method"] = SupraFit::Statistic::CrossValidation;
     m_controller["CVType"] = type;
     QVector<Pair> block;
@@ -134,9 +131,6 @@ void ReductionAnalyse::CrossValidation(CVType type)
 
 void ReductionAnalyse::PlainReduction()
 {
-    MCConfig config;
-
-    config.optimizer_config = m_config.optimizer_config;
     m_controller["method"] = SupraFit::Statistic::Reduction;
     m_controller["xlabel"] = m_model.data()->XLabel();
     m_controller["cutoff"] = m_model.data()->ReductionCutOff();
@@ -148,7 +142,7 @@ void ReductionAnalyse::PlainReduction()
     for (int i = m_model->DataPoints() - 1; i > 3; --i) { /*
     for(int i = 1; i <m_model->DataPoints() - 3; ++i)
     {*/
-        QPointer<MonteCarloThread> thread = new MonteCarloThread(config);
+        QPointer<MonteCarloThread> thread = new MonteCarloThread();
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setIndex(i);
         QSharedPointer<AbstractModel> model = m_model->Clone();

@@ -50,6 +50,7 @@ QString Int2DVec2String(const QVector<QVector<int>>& vector);
 
 QVector<qreal> String2DoubleVec(const QString& str);
 QVector<int> String2IntVec(const QString& str);
+QList<int> String2IntList(const QString& str);
 
 QVector<QVector<int>> String2Int2DVec(const QString& str);
 

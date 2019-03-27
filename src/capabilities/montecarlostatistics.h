@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,20 +32,11 @@ class MonteCarloStatistics;
 class NonLinearFitThread;
 class QThreadPool;
 
-class MCConfig : public AbstractConfig {
-public:
-    int maxsteps = 1000;
-    double variance = 1e-2;
-    bool original = false;
-    bool bootstrap = false;
-    QVector<qreal> indep_variance;
-};
-
 class MonteCarloThread : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    MonteCarloThread(const MCConfig& config);
+    MonteCarloThread(const QJsonObject& config);
     MonteCarloThread();
     virtual ~MonteCarloThread() override;
     virtual void run() override;
@@ -60,7 +51,7 @@ public:
 private:
     QSharedPointer<Minimizer> m_minimizer;
     QJsonObject m_optimized;
-    MCConfig m_config;
+    QJsonObject m_config;
     //QList<qreal> m_constants;
     bool m_finished;
     int m_index;

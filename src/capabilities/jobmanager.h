@@ -23,6 +23,9 @@
 
 class AbstractModel;
 class MonteCarloStatistics;
+class ModelComparison;
+class WeakenedGridSearch;
+class ReductionAnalyse;
 
 class JobManager : public QObject {
     Q_OBJECT
@@ -50,6 +53,9 @@ private:
     QJsonObject RunFastConfidence(const QJsonObject& job);
 
     QPointer<MonteCarloStatistics> m_montecarlo_handler;
+    QPointer<WeakenedGridSearch> m_gridsearch_handler;
+    QPointer<ModelComparison> m_modelcomparison_handler;
+    QPointer<ReductionAnalyse> m_reduction_handler;
 
 signals:
     void started();

@@ -106,9 +106,9 @@ public:
 public slots:
     void LoadJson(const QJsonObject& object);
 
-    void WGStatistic(WGSConfig config);
+    //void WGStatistic(WGSConfig config);
     void MoCoStatistic(MoCoConfig config);
-    void MCStatistic(MCConfig config);
+    // void MCStatistic(MCConfig config);
     void CVAnalyse(ReductionAnalyse::CVType type);
 
     void GlobalMinimize();

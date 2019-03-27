@@ -31,55 +31,53 @@
 class Minimizer;
 class QPointF;
 
-class WGSConfig : public AbstractConfig {
-public:
-    /* Step length for numerical evaluation */
-    qreal increment = 0;
+const QJsonObject GridSearchConfigBlock{
 
     /* Maximal number of steps to be evaluated */
-    int maxsteps = 1e3;
+    { "MaxSteps", 1e3 }, // int
 
     /* SSE threshold defined by f-Statistics */
-    qreal maxerror = 0;
+    { "MaxError", 0 }, //double
 
     /* Confidence in % */
-    qreal confidence = 95;
+    { "confidence", 95 }, //double
 
     /* Corresponding f Value */
-    qreal f_value = 0;
+    { "f_value", 0 }, // double
 
     /* Threshold for convergency in SSE */
-    qreal ErrorConvergency = 1e-10;
+    { "ErrorConvergency", 1e-10 }, // double
 
     /* Maximal steps which are allowed to be above the SSE threshold, while continueing the evaluation */
-    int OvershotCounter = 5;
+    { "OvershotCounter", 5 }, // int
 
     /* Maximal number of steps, where the error is allowed to decrease, analyse not-converged systems, flat surfaces */
-    int ErrorDecreaseCounter = 50;
+    { "ErrorDecreaseCounter", 50 }, // int
 
     /* Amount for all error changes below the threshold error_conv, while keeping the evaluation running */
-    int ErrorConvergencyCounter = 5;
+    { "ErrorConvergencyCounter", 5 }, // int
 
     /* Set scaling factor single step size */
     /* The factor determines the step length as follows:
      * delta = 10^(ceil(log10(parameter) + (-4) ))
      * this ensures correct scaling and always something like 10^(N)
      */
-    int ScalingFactor = -4;
-
-    bool relax = true;
-    bool fisher_statistic = false;
+    { "ScalingFactor", -4 }, // int
 
     /* Store intermediate results, may result in large json blocks */
-    bool intermediate = false;
-    QList<int> global_param, local_param;
+    { "intermediate", false }, //bool
+
+    /* Define the global and local parameter to be tested - this list should not be empty 
+     * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
+    { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
+    { "LocalParameterList", "" } // strings, to be converted to QList<int>
 };
 
 class WGSearchThread : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    WGSearchThread(const WGSConfig& config);
+    WGSearchThread(const QJsonObject& controller);
     virtual ~WGSearchThread() override;
 
     inline void setParameterId(int index) { m_index = index; }
@@ -113,10 +111,11 @@ private:
     float m_direction;
     QList<QJsonObject> m_models;
     QList<qreal> m_x, m_y;
-    WGSConfig m_config;
+    QJsonObject m_controller;
     QJsonObject m_result;
-    qreal m_error;
+    qreal m_ModelError, m_MaxError, m_ErrorConvergency;
     int m_OvershotCounter = 0, m_ErrorDecreaseCounter = 0, m_ErrorConvergencyCounter = 0;
+    int m_MaxSteps, m_MaxOvershotCounter, m_MaxErrorDecreaseCounter, m_MaxErrorConvergencyCounter, m_ScalingFactor;
     bool m_stationary, m_finished, m_converged;
 };
 
@@ -124,9 +123,13 @@ class WeakenedGridSearch : public AbstractSearchClass {
     Q_OBJECT
 
 public:
-    WeakenedGridSearch(const WGSConfig& config, QObject* parent = 0);
+    WeakenedGridSearch(QObject* parent = 0);
     virtual ~WeakenedGridSearch() override;
-    inline void setConfig(const WGSConfig& config) { m_config = config; }
+    inline void setConfig(const QJsonObject& controller)
+    {
+        m_controller = controller;
+        m_StoreIntermediate = controller["StoreIntermediate"].toBool();
+    }
     inline bool CV() { return m_cv; }
     bool ConfidenceAssesment();
     void setParameter(const QJsonObject& json);
@@ -136,8 +139,8 @@ public slots:
 
 private:
     QPointer<WGSearchThread> CreateThread(int index, bool direction);
-    WGSConfig m_config;
-    bool allow_break, m_cv;
+    QJsonObject m_controller;
+    bool allow_break, m_cv, m_StoreIntermediate = false;
     QVector<QVector<qreal>> MakeBox() const;
     void MCSearch(const QVector<QVector<qreal>>& box);
     void Search(const QVector<QVector<qreal>>& box);

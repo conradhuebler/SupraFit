@@ -73,13 +73,13 @@ private:
 
 private slots:
     void Minimize();
-
+    /*
     void WGStatistic(WGSConfig config);
     void MoCoStatistic(MoCoConfig config);
     void MCStatistic(MCConfig config);
     void CVAnalyse(ReductionAnalyse::CVType type);
     void Reduction();
-
+    */
     void OpenAdvancedSearch();
     void NewGuess();
     void ImportConstants();

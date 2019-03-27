@@ -254,8 +254,6 @@ QWidget* StatisticDialog::MonteCarloWidget()
 
 QWidget* StatisticDialog::GridSearchWidget()
 {
-    WGSConfig config;
-
     QWidget* cv_widget = new QWidget;
     QVBoxLayout* layout = new QVBoxLayout;
 
@@ -326,7 +324,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridScalingFactor = new QSpinBox;
     m_gridScalingFactor->setMinimum(-10);
     m_gridScalingFactor->setMaximum(10);
-    m_gridScalingFactor->setValue(config.ScalingFactor);
+    m_gridScalingFactor->setValue(-4);
 
     hlayout = new QHBoxLayout;
     hlayout->addWidget(new QLabel(tr("Scaling Factor for Single Steps:")));
@@ -352,7 +350,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridErrorConvergencyCounter = new QSpinBox;
     m_gridErrorConvergencyCounter->setRange(1, 1e8);
     m_gridErrorConvergencyCounter->setSingleStep(10);
-    m_gridErrorConvergencyCounter->setValue(config.ErrorConvergencyCounter);
+    m_gridErrorConvergencyCounter->setValue(5);
 
     hlayout->addWidget(new QLabel(tr("SSE Convergence:")));
     hlayout->addWidget(m_wgs_err_conv);
@@ -366,12 +364,12 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridOvershotCounter = new QSpinBox;
     m_gridOvershotCounter->setRange(1, 1e8);
     m_gridOvershotCounter->setSingleStep(10);
-    m_gridOvershotCounter->setValue(config.OvershotCounter);
+    m_gridOvershotCounter->setValue(5);
 
     m_gridErrorDecreaseCounter = new QSpinBox;
     m_gridErrorDecreaseCounter->setRange(1, 1e8);
     m_gridErrorDecreaseCounter->setSingleStep(10);
-    m_gridErrorDecreaseCounter->setValue(config.ErrorDecreaseCounter);
+    m_gridErrorDecreaseCounter->setValue(50);
 
     hlayout->addWidget(new QLabel(tr("Max SSE Overshot Counter:")));
     hlayout->addWidget(m_gridOvershotCounter);
@@ -517,7 +515,7 @@ QJsonObject StatisticDialog::RunGridSearch() const
 
     controller["MaxSteps"] = m_wgs_steps->value();
     //controller["increment"] = m_config.increment;
-    controller["maxerror"] = m_wgs_max;
+    controller["MaxError"] = m_wgs_max;
     controller["f-value"] = m_wgs_f_value->value();
     controller["method"] = SupraFit::Statistic::WeakenedGridSearch;
     controller["confidence"] = m_wgs_maxerror->value();
@@ -555,19 +553,12 @@ QJsonObject StatisticDialog::RunGridSearch() const
     return controller;
 }
 
-WGSConfig StatisticDialog::getWGSConfig()
-{
-    WGSConfig config;
-
-    return config;
-}
-
 QJsonObject StatisticDialog::RunModelComparison() const
 {
     QJsonObject controller;
 
     controller["MaxSteps"] = m_moco_mc_steps->value();
-    controller["maxerror"] = m_moco_max;
+    controller["MaxError"] = m_moco_max;
     controller["f-value"] = m_moco_f_value->value();
     controller["method"] = SupraFit::Statistic::ModelComparison;
     controller["confidence"] = m_moco_maxerror->value();
@@ -602,9 +593,6 @@ QJsonObject StatisticDialog::RunModelComparison() const
 MoCoConfig StatisticDialog::getMoCoConfig()
 {
     MoCoConfig config;
-    WGSConfig cv_config;
-    cv_config.relax = true;
-    config.cv_config = cv_config;
 
     return config;
 }
@@ -645,7 +633,7 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
     */
     return controller;
 }
-
+/*
 MCConfig StatisticDialog::getMCConfig()
 {
     MCConfig config;
@@ -663,7 +651,7 @@ MCConfig StatisticDialog::getMCConfig()
     config.indep_variance = indep_variance;
 
     return config;
-}
+}*/
 
 QJsonObject StatisticDialog::RunReductionAnalyse() const
 {

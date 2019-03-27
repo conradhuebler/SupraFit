@@ -35,9 +35,12 @@ JobManager::JobManager(QObject* parent)
     : QObject(parent)
 {
     m_montecarlo_handler = new MonteCarloStatistics(this);
-
     connect(this, SIGNAL(Interrupt()), m_montecarlo_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_montecarlo_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+
+    m_gridsearch_handler = new WeakenedGridSearch(this);
+    connect(this, SIGNAL(Interrupt()), m_gridsearch_handler, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_gridsearch_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
 }
 
 JobManager::~JobManager()
