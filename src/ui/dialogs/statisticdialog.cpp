@@ -503,8 +503,9 @@ QWidget* StatisticDialog::CVWidget()
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
         emit RunCalculation(RunCrossValidation());
     });
-    connect(m_reduction, &QPushButton::clicked, this, &StatisticDialog::Reduction);
-
+    connect(m_reduction, &QPushButton::clicked, this, [this]() {
+        emit RunCalculation(RunReductionAnalyse());
+    });
     widget->setLayout(layout);
     return widget;
 }

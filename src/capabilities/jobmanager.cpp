@@ -41,6 +41,10 @@ JobManager::JobManager(QObject* parent)
     m_gridsearch_handler = new WeakenedGridSearch(this);
     connect(this, SIGNAL(Interrupt()), m_gridsearch_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_gridsearch_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+
+    m_reduction_handler = new ReductionAnalyse();
+    connect(this, SIGNAL(Interrupt()), m_reduction_handler, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_reduction_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
 }
 
 JobManager::~JobManager()
@@ -50,6 +54,7 @@ JobManager::~JobManager()
 void JobManager::RunJobs()
 {
     for (const QJsonObject& object : m_jobs) {
+        qDebug() << object;
         SupraFit::Statistic method = static_cast<SupraFit::Statistic>(object["method"].toInt());
         QJsonObject result;
 
@@ -104,8 +109,13 @@ QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
 
 QJsonObject JobManager::RunCrossValidation(const QJsonObject& job)
 {
+    m_reduction_handler->setModel(m_model);
+    m_reduction_handler->setController(job);
+    m_reduction_handler->CrossValidation();
 
-    return QJsonObject();
+    QJsonObject result = m_reduction_handler->Result();
+    m_reduction_handler->clear();
+    return result;
 }
 
 QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
@@ -121,7 +131,11 @@ QJsonObject JobManager::RunFastConfidence(const QJsonObject& job)
 
 QJsonObject JobManager::RunReduction(const QJsonObject& job)
 {
-    return QJsonObject();
+    m_reduction_handler->setModel(m_model);
+    m_reduction_handler->PlainReduction();
+    QJsonObject result = m_reduction_handler->Result();
+    m_reduction_handler->clear();
+    return result;
 }
 
 #include "jobmanager.moc"

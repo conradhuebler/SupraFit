@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ class ReductionAnalyse : public AbstractSearchClass {
     Q_OBJECT
 
 public:
-    ReductionAnalyse(QJsonObject config);
+    ReductionAnalyse();
     virtual ~ReductionAnalyse() override;
 
     enum CVType {
@@ -43,7 +43,7 @@ public:
         LeaveManyOut = 3
     };
 
-    void CrossValidation(CVType type = CVType::LeaveOneOut);
+    void CrossValidation();
     void PlainReduction();
     QJsonObject ModelData() const { return m_model_data; }
     /* Since we change the checked rows of the model, we have to detach the data table from the global model */
@@ -53,6 +53,8 @@ public:
         m_model->detach();
     }
 
+    void setController(const QJsonObject& controller) { m_controller = controller; }
+    void clear();
 public slots:
     void Interrupt() override;
 

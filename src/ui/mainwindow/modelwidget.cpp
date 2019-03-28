@@ -627,14 +627,14 @@ void ModelWidget::FastConfidence()
 void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 {
     Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
+    ReductionAnalyse* statistic = new ReductionAnalyse();
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(statistic, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
     connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
     statistic->setModel(m_model);
-    statistic->CrossValidation(type);
+    statistic->CrossValidation();
     LoadStatistic(statistic->Result(), statistic->Models());
     emit IncrementProgress(1);
     delete statistic;
@@ -643,7 +643,7 @@ void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 void ModelWidget::DoReductionAnalyse()
 {
     Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
+    ReductionAnalyse* statistic = new ReductionAnalyse();
 
     connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
     connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);

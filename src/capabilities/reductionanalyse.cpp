@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,8 +31,7 @@
 
 #include "reductionanalyse.h"
 
-ReductionAnalyse::ReductionAnalyse(QJsonObject config)
-    : m_config(config)
+ReductionAnalyse::ReductionAnalyse()
 {
 }
 
@@ -52,10 +51,9 @@ bool ReductionAnalyse::Pending() const
     return m_threadpool->activeThreadCount();
 }
 
-void ReductionAnalyse::CrossValidation(CVType type)
+void ReductionAnalyse::CrossValidation()
 {
-    m_controller["method"] = SupraFit::Statistic::CrossValidation;
-    m_controller["CVType"] = type;
+    CVType type = static_cast<CVType>(m_controller["CVType"].toInt());
     QVector<Pair> block;
     int blocksize;
     int maxthreads = qApp->instance()->property("threads").toInt();
@@ -82,7 +80,7 @@ void ReductionAnalyse::CrossValidation(CVType type)
         emit MaximumSteps(m_model->DataPoints() * (m_model->DataPoints() - 1) / 2);
         blocksize = 25;
         for (int i = 0; i < m_model->DataPoints(); ++i)
-            for (int j = i + 1; j < m_model->DataPoints(); ++j) {
+            for (int j = 0; j < m_model->DataPoints(); ++j) {
                 QPointer<DataTable> dep_table = new DataTable(table);
                 dep_table->DisableRow(i);
                 dep_table->DisableRow(j);
@@ -175,4 +173,10 @@ void ReductionAnalyse::PlainReduction()
 void ReductionAnalyse::Interrupt()
 {
     emit InterruptAll();
+}
+
+void ReductionAnalyse::clear()
+{
+    m_models.clear();
+    m_model.clear();
 }

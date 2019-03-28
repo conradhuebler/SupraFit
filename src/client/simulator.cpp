@@ -290,7 +290,7 @@ QJsonObject Simulator::MoCoAnalyse(QSharedPointer<AbstractModel> model)
 
 QJsonObject Simulator::Reduction(QSharedPointer<AbstractModel> model)
 {
-    ReductionAnalyse* statistic = new ReductionAnalyse(model->getOptimizerConfig());
+    ReductionAnalyse* statistic = new ReductionAnalyse();
     statistic->setModel(model);
     statistic->PlainReduction();
     model->UpdateStatistic(statistic->Result());
@@ -303,14 +303,15 @@ QJsonObject Simulator::Reduction(QSharedPointer<AbstractModel> model)
 
 QJsonObject Simulator::CrossValidation(QSharedPointer<AbstractModel> model)
 {
-    ReductionAnalyse* statistic = new ReductionAnalyse(model->getOptimizerConfig());
+    ReductionAnalyse* statistic = new ReductionAnalyse();
     statistic->setModel(model);
+    /*
     statistic->CrossValidation(ReductionAnalyse::CVType::LeaveOneOut);
     model->UpdateStatistic(statistic->Result());
 
     statistic->CrossValidation(ReductionAnalyse::CVType::LeaveTwoOut);
     model->UpdateStatistic(statistic->Result());
-
+    */
     QJsonObject result = statistic->Result();
 
     delete statistic;
