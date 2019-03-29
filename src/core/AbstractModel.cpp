@@ -1060,7 +1060,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     m_variance = topjson["variance"].toInt();
     m_stderror = topjson["standard_error"].toInt();
     m_converged = topjson["converged"].toBool();
-
+    // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
     if (topjson.contains("name"))
         m_name = topjson["name"].toString();
 

@@ -87,7 +87,6 @@ public:
         m_inform_config_changed = true;
     }
     inline QJsonObject getOptimizerConfig() const { return m_opt_config; }
-    void addToHistory();
     inline QJsonObject Parameter() const { return m_last_parameter; }
     void setParameter(const QJsonObject& json, const QList<int>& locked);
     void setParameter(const QJsonObject& json);

@@ -47,8 +47,8 @@ WGSearchThread::WGSearchThread(const QJsonObject& controller)
     m_MaxErrorDecreaseCounter = m_controller["ErrorDecreaseCounter"].toInt();
     m_MaxErrorConvergencyCounter = m_controller["ErrorConvergencyCounter"].toInt();
     m_ScalingFactor = m_controller["StepScalingFactor"].toInt();
-    m_MaxError = m_controller["MaxError"].toInt();
-
+    m_MaxError = m_controller["MaxError"].toDouble();
+    qDebug() << m_controller;
     setUp();
 }
 
@@ -94,8 +94,8 @@ void WGSearchThread::Calculate()
 
         value += (increment * m_direction);
         param[m_index] = value;
-
         m_model.data()->SetSingleParameter(value, m_index);
+
         m_model->setLockedParameter(locked);
         thread->setModel(m_model, false);
         thread->run();
@@ -107,6 +107,7 @@ void WGSearchThread::Calculate()
             model = thread->ConvergedParameter();
         else
             model = thread->BestIntermediateParameter();
+
         qreal new_error = thread->SumOfError();
 
         if (new_error > m_MaxError) {
@@ -250,7 +251,7 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         result["converged"] = pair.first->Converged() && pair.second->Converged();
         result["stationary"] = pair.first->Stationary() && pair.second->Stationary();
         result["finished"] = pair.first->Finished() && pair.second->Finished();
-        result["steps"] = pair.first->Steps() + pair.second->Steps();
+        result["StepsTaken"] = pair.first->Steps() + pair.second->Steps();
         result["OvershotCounter"] = pair.first->OvershotCounter() + pair.second->OvershotCounter();
         result["ErrorDecreaseCounter"] = pair.first->ErrorDecreaseCounter() + pair.second->ErrorDecreaseCounter();
         result["ErrorConvergencyCounter"] = pair.first->ErrorConvergencyCounter() + pair.second->ErrorConvergencyCounter();
@@ -310,6 +311,11 @@ void WeakenedGridSearch::Interrupt()
     emit StopSubThreads();
     m_interrupt = true;
     m_threadpool->clear();
+}
+
+void WeakenedGridSearch::clear()
+{
+    m_results.clear();
 }
 
 #include "weakenedgridsearch.moc"

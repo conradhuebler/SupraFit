@@ -137,11 +137,13 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     qreal error_2 = 1;
     qreal norm = 1;
     QVector<qreal> globalConstants;
+    QList<int> locked = model.data()->LockedParameters();
     for (; iter < MaxIter && ((qAbs(error_0 - error_2) > ErrorConvergence) || norm > DeltaParameter); ++iter) {
         globalConstants.clear();
         globalConstants = model.data()->OptimizeParameters();
-
         error_0 = model.data()->SumofSquares();
+#warning this used to be not here before restructuring
+        model.data()->setLockedParameter(locked);
         status = lm.minimizeOneStep(parameter);
         error_2 = model.data()->SumofSquares();
         auto constants = model.data()->OptimizeParameters();

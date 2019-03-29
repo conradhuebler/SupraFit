@@ -133,6 +133,7 @@ public:
     inline bool CV() { return m_cv; }
     bool ConfidenceAssesment();
     void setParameter(const QJsonObject& json);
+    void clear();
 
 public slots:
     virtual void Interrupt() override;

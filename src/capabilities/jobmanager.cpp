@@ -120,7 +120,14 @@ QJsonObject JobManager::RunCrossValidation(const QJsonObject& job)
 
 QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 {
-    return QJsonObject();
+
+    m_gridsearch_handler->setModel(m_model);
+    m_gridsearch_handler->setConfig(job);
+
+    m_gridsearch_handler->ConfidenceAssesment();
+    QJsonObject result = m_gridsearch_handler->Result();
+    m_gridsearch_handler->clear();
+    return result;
 }
 
 QJsonObject JobManager::RunFastConfidence(const QJsonObject& job)

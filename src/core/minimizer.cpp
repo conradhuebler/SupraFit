@@ -67,7 +67,6 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, boo
         m_model->setDescription("Optimiser Model");
     } else
         m_model = model;
-
     m_model->Calculate();
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
@@ -175,7 +174,6 @@ int Minimizer::Minimize()
     delete thread;
     m_model->ImportModel(m_last_parameter);
     emit RequestRemoveCrashFile();
-    addToHistory();
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit Message("Full calculation took  " + QString::number(t1 - t0) + " msecs", 3);
     return converged;
@@ -211,15 +209,6 @@ void Minimizer::setParameter(const QJsonObject& json, const QList<int>& locked)
 void Minimizer::setParameter(const QJsonObject& json)
 {
     m_model->ImportModel(json);
-}
-
-void Minimizer::addToHistory()
-{
-    QJsonObject model = m_model->ExportModel();
-    int active = 0;
-    for (int i = 0; i < m_model->ActiveSignals().size(); ++i)
-        active += m_model->ActiveSignals()[i];
-    emit InsertModel(model, active);
 }
 
 #include "minimizer.moc"

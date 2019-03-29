@@ -685,8 +685,7 @@ void ModelWidget::WGStatistic(WGSConfig config)
         emit Warning(string, 1);
     }
 
-    LoadStatistic(statistic->Result(), statistic->Models());
-    emit IncrementProgress(1);
+   m_gridsearch_handler
     delete statistic;
 }
 */
