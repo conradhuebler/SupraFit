@@ -27,6 +27,43 @@
 
 const int update_intervall = 100;
 
+const QJsonObject ModelComparisonConfigBlock{
+
+    /* Maximal number of steps to be evaluated */
+    { "MaxSteps", 1e4 }, // int
+
+    /* Fast Confidence Maximal steps */
+    { "MaxStepsFastConfidence", 1e4 }, // int
+
+    /* Set scaling factor single step size */
+    /* The factor determines the step length as follows:
+     * delta = 10^(ceil(log10(parameter) + (-4) ))
+     * this ensures correct scaling and always something like 10^(N)
+     */
+    { "ScalingFactor", -4 }, // int
+
+    /* SSE threshold defined by f-Statistics */
+    { "MaxError", 0 }, //double
+
+    /* Confidence in % */
+    { "confidence", 95 }, //double
+
+    /* Corresponding f Value */
+    { "f_value", 0 }, // double
+
+    /* Threshold for convergency in SSE */
+    { "ErrorConvergency", 1e-10 }, // double
+
+    /* Box Scaling Factor */
+    { "BoxScalingFactor", 1.5 }, // double
+
+    /* Define the global and local parameter to be tested - this list should not be empty 
+     * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
+    { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
+    { "LocalParameterList", "" } // strings, to be converted to QList<int>
+};
+
+/*
 class MoCoConfig : public AbstractConfig {
 public:
     //WGSConfig cv_config;
@@ -40,16 +77,15 @@ public:
     bool fisher_statistic = false;
     QList<int> global_param, local_param;
 };
-
+*/
 class AbstractModel;
 
 class MCThread : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    inline MCThread(MoCoConfig config)
+    inline MCThread(QJsonObject controller)
         : AbstractSearchThread()
-        , m_config(config)
     {
     }
     inline virtual ~MCThread() {}
@@ -71,7 +107,6 @@ private:
     int m_maxsteps, m_steps = 0;
 
     QVector<QVector<qreal>> m_box;
-    MoCoConfig m_config;
     qreal m_effective_error;
 };
 
@@ -79,9 +114,8 @@ class FCThread : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    FCThread(MoCoConfig config, int parameter)
+    FCThread(int parameter)
         : AbstractSearchThread()
-        , m_config(config)
         , m_parameter(parameter)
     {
     }
@@ -99,16 +133,16 @@ private:
     qreal SingleLimit(int parameter_id, int direction);
     QList<QPointF> m_points;
     QMap<qreal, qreal> m_list_points;
-    MoCoConfig m_config;
 };
 
 class ModelComparison : public AbstractSearchClass {
     Q_OBJECT
 
 public:
-    ModelComparison(MoCoConfig config, QObject* parent = 0);
+    ModelComparison(QObject* parent = 0);
     virtual ~ModelComparison() override;
 
+    // void setController(const QJsonObject &controller) { m_controller = controller; }
     bool Confidence();
     bool FastConfidence(bool Series);
     inline qreal Area() const { return m_ellipsoid_area; }
@@ -125,7 +159,6 @@ private:
     virtual QJsonObject Controller() const override;
     int m_steps = 0;
     QVector<QVector<qreal>> MakeBox();
-    MoCoConfig m_config;
     QJsonObject m_box, m_controller;
     double m_effective_error, m_box_area, m_ellipsoid_area;
     QVector<QList<qreal>> m_data_global, m_data_local;

@@ -602,19 +602,24 @@ void ModelWidget::MCStatistic(MCConfig config)
 void ModelWidget::FastConfidence()
 {
     Waiter wait;
+    /*
     MoCoConfig config;
     config.FastConfidenceSteps = qApp->instance()->property("FastConfidenceSteps").toInt();
     config.FastConfidenceScaling = qApp->instance()->property("FastConfidenceScaling").toInt();
 
     config.maxerror = m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble());
+    */
     /*
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble() / 100);
     qreal error = m_model.data()->SumofSquares();
     config.maxerror = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
     */
+    /*
     config.optimizer_config = m_model->getOptimizerConfig();
     config.fisher_statistic = true;
     config.confidence = qApp->instance()->property("p_value").toDouble();
+    */
+    /*
     ModelComparison* statistic = new ModelComparison(config, this);
     statistic->setModel(m_model);
     bool series = qApp->instance()->property("series_confidence").toBool();
@@ -622,8 +627,9 @@ void ModelWidget::FastConfidence()
     m_model->UpdateStatistic(statistic->Result());
     m_fast_confidence = statistic->Results();
     delete statistic;
+    */
 }
-
+/*
 void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
 {
     Waiter wait;
@@ -639,7 +645,8 @@ void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
     emit IncrementProgress(1);
     delete statistic;
 }
-
+*/
+/*
 void ModelWidget::DoReductionAnalyse()
 {
     Waiter wait;
@@ -657,6 +664,7 @@ void ModelWidget::DoReductionAnalyse()
     emit IncrementProgress(1);
     delete statistic;
 }
+*/
 /*
 void ModelWidget::WGStatistic(WGSConfig config)
 {
@@ -689,6 +697,7 @@ void ModelWidget::WGStatistic(WGSConfig config)
     delete statistic;
 }
 */
+/*
 void ModelWidget::MoCoStatistic(MoCoConfig config)
 {
     Waiter wait;
@@ -717,7 +726,7 @@ void ModelWidget::MoCoStatistic(MoCoConfig config)
     m_statistic_dialog->HideWidget();
     delete statistic;
 }
-
+*/
 void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models)
 {
     int index = m_model->UpdateStatistic(data);

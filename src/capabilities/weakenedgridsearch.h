@@ -125,11 +125,12 @@ class WeakenedGridSearch : public AbstractSearchClass {
 public:
     WeakenedGridSearch(QObject* parent = 0);
     virtual ~WeakenedGridSearch() override;
+    /*
     inline void setConfig(const QJsonObject& controller)
     {
         m_controller = controller;
         m_StoreIntermediate = controller["StoreIntermediate"].toBool();
-    }
+    }*/
     inline bool CV() { return m_cv; }
     bool ConfidenceAssesment();
     void setParameter(const QJsonObject& json);

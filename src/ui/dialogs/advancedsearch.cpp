@@ -324,6 +324,7 @@ void AdvancedSearch::Finished()
 
 void AdvancedSearch::SearchGlobal()
 {
+    /*
     Waiter wait;
     MaxSteps();
     m_search->setModel(m_model);
@@ -335,6 +336,7 @@ void AdvancedSearch::SearchGlobal()
     Finished();
     emit MultiScanFinished();
     QDialog::accept();
+    */
 }
 
 void AdvancedSearch::IncrementProgress(int time)
@@ -349,7 +351,7 @@ void AdvancedSearch::IncrementProgress(int time)
     m_max_steps->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
     emit setValue(val);
 }
-
+/*
 GSConfig AdvancedSearch::Config() const
 {
     GSConfig config;
@@ -359,5 +361,5 @@ GSConfig AdvancedSearch::Config() const
     //  config.optimize = m_optim->isChecked();
     return config;
 }
-
+*/
 #include "advancedsearch.moc"

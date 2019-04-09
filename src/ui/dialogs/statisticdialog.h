@@ -165,10 +165,12 @@ private slots:
     void CalculateError();
 
 signals:
+    /*
     void WGStatistic(const WGSConfig& config);
     void MCStatistic(const MCConfig& config);
     void MoCoStatistic(const MoCoConfig& config);
-    void CrossValidation(ReductionAnalyse::CVType type);
+    void CrossValidation(ReductionAnalyse::CVType type); 
+    */
     void RunCalculation(const QJsonObject& controller);
     void Reduction();
     void Interrupt();

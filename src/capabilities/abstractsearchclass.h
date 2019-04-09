@@ -32,7 +32,7 @@
 typedef QPair<QPointer<DataTable>, QPointer<DataTable>> Pair;
 
 class AbstractModel;
-
+/*
 class AbstractConfig {
 
 public:
@@ -43,7 +43,7 @@ public:
     inline ~AbstractConfig() {}
     QJsonObject optimizer_config;
 };
-
+*/
 class AbstractSearchThread : public QObject, public QRunnable {
     Q_OBJECT
 
@@ -55,6 +55,7 @@ public:
     }
     inline ~AbstractSearchThread() { m_model.clear(); }
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    inline void setController(const QJsonObject& controller) { m_controller = controller; }
 
 public slots:
     inline virtual void Interrupt() { m_interrupt = true; }
@@ -62,6 +63,7 @@ public slots:
 protected:
     QSharedPointer<AbstractModel> m_model;
     bool m_interrupt;
+    QJsonObject m_controller;
 
 signals:
     void IncrementProgress(int msecs);
@@ -79,6 +81,8 @@ public:
         m_model = model->Clone();
     }
 
+    inline void setController(const QJsonObject& controller) { m_controller = controller; }
+
     inline QList<QList<QPointF>> Series() const { return m_series; }
     inline QList<QJsonObject> Models() const { return m_models; }
     inline QList<QJsonObject> Results() const { return m_results; }
@@ -92,6 +96,7 @@ public slots:
 
 protected:
     QSharedPointer<AbstractModel> m_model;
+    QJsonObject m_controller;
     QThreadPool* m_threadpool;
     QList<QList<QPointF>> m_series;
     QList<QJsonObject> m_models;

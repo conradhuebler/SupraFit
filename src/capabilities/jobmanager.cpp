@@ -45,6 +45,10 @@ JobManager::JobManager(QObject* parent)
     m_reduction_handler = new ReductionAnalyse();
     connect(this, SIGNAL(Interrupt()), m_reduction_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_reduction_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+
+    m_modelcomparison_handler = new ModelComparison(this);
+    connect(this, SIGNAL(Interrupt()), m_modelcomparison_handler, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_modelcomparison_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
 }
 
 JobManager::~JobManager()
@@ -97,7 +101,7 @@ QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
 {
     int MaxSteps = job["MaxSteps"].toInt();
     emit prepare(MaxSteps);
-    m_montecarlo_handler->setConfig(job);
+    m_montecarlo_handler->setController(job);
 
     m_montecarlo_handler->setModel(m_model);
     m_montecarlo_handler->Evaluate();
@@ -122,7 +126,7 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 {
 
     m_gridsearch_handler->setModel(m_model);
-    m_gridsearch_handler->setConfig(job);
+    m_gridsearch_handler->setController(job);
 
     m_gridsearch_handler->ConfidenceAssesment();
     QJsonObject result = m_gridsearch_handler->Result();

@@ -268,16 +268,12 @@ QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
 
 QJsonObject Simulator::MoCoAnalyse(QSharedPointer<AbstractModel> model)
 {
-    MoCoConfig config;
-    config.mc_steps = 1000;
-    config.f_value = model->finv(0.95);
-    config.fisher_statistic = true;
 
     qreal error = model.data()->SumofSquares();
 
-    config.maxerror = error * (config.f_value * model.data()->Parameter() / (model.data()->Points() - model.data()->Parameter()) + 1);
+    //config.maxerror = error * (config.f_value * model.data()->Parameter() / (model.data()->Points() - model.data()->Parameter()) + 1);
 
-    ModelComparison* statistic = new ModelComparison(config, this);
+    ModelComparison* statistic = new ModelComparison(this);
     statistic->setModel(model);
     bool result = statistic->Confidence();
     QJsonObject res = statistic->Result();

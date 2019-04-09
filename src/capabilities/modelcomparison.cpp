@@ -33,6 +33,10 @@
 
 void MCThread::run()
 {
+    QList<int> global_param, local_param;
+    global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
+    local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
+
     QVector<std::uniform_int_distribution<int>> dist;
     QVector<qreal> parameters = m_model.data()->OptimizeParameters();
     QVector<double> factors(parameters.size(), 1);
@@ -53,9 +57,9 @@ void MCThread::run()
         QVector<qreal> consts = parameters;
         for (int i = 0; i < m_model.data()->OptimizeParameters().size(); ++i) {
             if (i < m_model.data()->GlobalParameterSize()) {
-                if (!m_config.global_param[i])
+                if (!global_param[i])
                     continue;
-            } else if (!m_config.local_param[i - m_model.data()->GlobalParameterSize()])
+            } else if (!local_param[i - m_model.data()->GlobalParameterSize()])
                 continue;
             consts[i] = dist[i](rng) / factors[i];
         }
@@ -80,18 +84,19 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
     double param = parameter[parameter_id];
     double old_param = param;
     int iter = 0;
-    int maxiter = m_config.FastConfidenceSteps;
-    double step = qPow(10, ceil(log10(qAbs(param))) + m_config.FastConfidenceScaling);
+    int maxiter = m_controller["MaxStepsFastConfidence"].toInt();
+    double step = qPow(10, ceil(log10(qAbs(param))) + m_controller["ScalingFactor"].toDouble()); //FastConfidenceScaling);
+    double MaxError = m_controller["MaxError"].toDouble();
     param += direction * step;
     double error = m_model.data()->SumofSquares();
 
     int shrink = 0;
-    while (qAbs(error - m_config.maxerror) > 1e-7) {
+    while (qAbs(error - MaxError) > 1e-7) {
         parameter[parameter_id] = param;
         m_model.data()->setParameter(parameter);
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
-        if (error < m_config.maxerror) {
+        if (error < MaxError) {
             old_param = param;
             param += step * direction;
             shrink = 0;
@@ -112,14 +117,14 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
         m_model.data()->Calculate();
         error = m_model.data()->SumofSquares();
 
-        if (error < m_config.maxerror)
+        if (error < MaxError)
             m_list_points[param] = error;
 
         iter++;
 
         if (iter >= maxiter) {
 #ifdef _DEBUG
-            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id] << qAbs(error - m_config.maxerror);
+            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id] << qAbs(error - MaxError);
 #endif
             break;
         }
@@ -148,9 +153,9 @@ void FCThread::run()
     }
 }
 
-ModelComparison::ModelComparison(MoCoConfig config, QObject* parent)
+ModelComparison::ModelComparison(QObject* parent)
     : AbstractSearchClass(parent)
-    , m_config(config)
+    // , m_config(config)
     , m_fast_finished(false)
 {
 }
@@ -167,12 +172,12 @@ bool ModelComparison::FastConfidence(bool Series)
         m_series[i].clear();
     m_series.clear();
     m_results.clear();
-
+    /*
     m_controller["method"] = SupraFit::Statistic::FastConfidence;
     m_controller["fisher"] = m_config.fisher_statistic;
     m_controller["maxerror"] = m_config.maxerror;
     m_controller["f-value"] = m_config.f_value;
-
+*/
     QVector<double> parameter = m_model.data()->OptimizeParameters();
     QVector<QPointer<FCThread>> threads;
     for (int i = 0; i < parameter.size(); ++i) {
@@ -180,7 +185,7 @@ bool ModelComparison::FastConfidence(bool Series)
         if (!Series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
             continue;
 
-        QPointer<FCThread> thread = new FCThread(m_config, i);
+        QPointer<FCThread> thread = new FCThread(i);
         thread->setModel(m_model);
         if (!m_model.data()->SupportThreads())
             m_threadpool->start(thread);
@@ -208,7 +213,7 @@ bool ModelComparison::FastConfidence(bool Series)
         QJsonObject confidence;
         confidence["upper"] = threads[i]->Upper();
         confidence["lower"] = threads[i]->Lower();
-        confidence["error"] = m_config.confidence;
+        confidence["error"] = m_controller["confidence"].toDouble();
         result["confidence"] = confidence;
         delete threads[i];
         m_results << result;
@@ -226,11 +231,12 @@ QVector<QVector<qreal>> ModelComparison::MakeBox()
         qreal lower = object["confidence"].toObject()["lower"].toDouble();
         qreal upper = object["confidence"].toObject()["upper"].toDouble();
         qreal value = object["value"].toDouble();
-        constant << value - m_config.box_multi * (value - lower);
-        constant << value + m_config.box_multi * (upper - value);
+        double BoxScalingFactor = m_controller["BoxScalingFactor"].toDouble();
+        constant << value - BoxScalingFactor * (value - lower);
+        constant << value + BoxScalingFactor * (upper - value);
         //constant << m_config.cv_config.increment;
         parameter << constant;
-        m_box_area *= double(m_config.box_multi * (upper - value) + m_config.box_multi * (value - lower));
+        m_box_area *= double(BoxScalingFactor * (upper - value) + BoxScalingFactor * (value - lower));
         QList<QPointF> points;
         points << QPointF(lower, upper);
         m_series.append(points);
@@ -248,7 +254,8 @@ bool ModelComparison::Confidence()
         return false;
     // We make an initial guess to estimate the dimension
     m_model.data()->Calculate();
-    m_effective_error = m_config.maxerror;
+    // m_effective_error =     double MaxError = m_controller["MaxError"].toDouble();
+
     //if(!m_fast_finished)
     //{
     //   qDebug() << "automatic perform guess";
@@ -269,12 +276,12 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
 {
     QVector<QPointer<MCThread>> threads;
 
-    int maxsteps = m_config.mc_steps;
+    int maxsteps = m_controller["MaxSteps"].toInt(); //m_config.mc_steps;
     emit setMaximumSteps(1 + maxsteps / update_intervall);
     int thread_count = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);
     for (int i = 0; i < thread_count; ++i) {
-        MCThread* thread = new MCThread(m_config);
+        MCThread* thread = new MCThread(m_controller);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->setError(m_effective_error);
@@ -332,15 +339,19 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     m_ellipsoid_area = double(results.size()) / double(m_steps) * m_box_area;
     m_results.clear();
 
+    QList<int> global_param, local_param;
+    global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
+    local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
+
     for (int i = 0; i < confidence_global.size(); ++i) {
 
-        if (!m_config.global_param[i])
+        if (!global_param[i])
             continue;
         QJsonObject conf;
         QPair<qreal, qreal> minmax = ToolSet::MinMax(data_global[i]);
         conf["lower"] = minmax.first;
         conf["upper"] = minmax.second;
-        conf["error"] = m_config.confidence;
+        conf["error"] = m_controller["confidence"].toDouble(); //m_config.confidence;
 
         QJsonObject result;
         result["confidence"] = conf;
@@ -355,7 +366,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
 
     for (int i = 0; i < confidence_local.size(); ++i) {
 
-        if (!m_config.local_param[i])
+        if (!local_param[i])
             continue;
 
         QJsonObject conf;
@@ -363,7 +374,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
 
         conf["lower"] = minmax.first;
         conf["upper"] = minmax.second;
-        conf["error"] = m_config.confidence;
+        conf["error"] = m_controller["confidence"].toDouble();
 
         QJsonObject result;
         result["confidence"] = conf;
@@ -376,16 +387,16 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         m_results << result;
     }
 
-    m_controller["steps"] = m_config.mc_steps;
+    //m_controller["steps"] = m_config.mc_steps;
     m_controller["steps_taken"] = m_steps;
-    m_controller["fisher"] = m_config.fisher_statistic;
-    m_controller["maxerror"] = m_config.maxerror;
-    m_controller["f-value"] = m_config.f_value;
-    m_controller["method"] = SupraFit::Statistic::ModelComparison;
+    //m_controller["fisher"] = m_config.fisher_statistic;
+    //m_controller["maxerror"] = m_config.maxerror;
+    //m_controller["f-value"] = m_config.f_value;
+    //m_controller["method"] = SupraFit::Statistic::ModelComparison;
     m_controller["moco_area"] = m_ellipsoid_area;
-    m_controller["local_parameter"] = ToolSet::IntVec2String(m_config.local_param.toVector());
-    m_controller["global_parameter"] = ToolSet::IntVec2String(m_config.global_param.toVector());
-    m_controller["box"] = m_box;
+    //m_controller["local_parameter"] = ToolSet::IntVec2String(m_config.local_param.toVector());
+    //m_controller["global_parameter"] = ToolSet::IntVec2String(m_config.global_param.toVector());
+    //m_controller["box"] = m_box;
 }
 
 QJsonObject ModelComparison::Controller() const

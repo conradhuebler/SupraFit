@@ -96,7 +96,7 @@ public:
     QList<QList<QPointF>> Series() const { return m_series; }
     QList<QJsonObject> ModelList() const { return m_models_list; }
     QPointer<GlobalSearch> globalSearch() const { return m_search; }
-    GSConfig Config() const;
+    //GSConfig Config() const;
 
 private:
     void SetUi();

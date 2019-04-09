@@ -590,14 +590,14 @@ QJsonObject StatisticDialog::RunModelComparison() const
     */
     return controller;
 }
-
+/*
 MoCoConfig StatisticDialog::getMoCoConfig()
 {
     MoCoConfig config;
 
     return config;
 }
-
+*/
 QJsonObject StatisticDialog::RunMonteCarlo() const
 {
     QJsonObject controller;

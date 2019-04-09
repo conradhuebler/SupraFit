@@ -53,7 +53,7 @@ public:
         m_model->detach();
     }
 
-    void setController(const QJsonObject& controller) { m_controller = controller; }
+    // void setController(const QJsonObject& controller) { m_controller = controller; }
     void clear();
 public slots:
     void Interrupt() override;
@@ -64,7 +64,6 @@ private:
     inline virtual QJsonObject Controller() const override { return m_controller; }
 
     QVector<QPointer<MonteCarloThread>> m_threads;
-    AbstractConfig m_config;
     QJsonObject m_model_data;
     QJsonObject m_controller;
 

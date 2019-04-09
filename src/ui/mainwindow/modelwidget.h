@@ -107,15 +107,15 @@ public slots:
     void LoadJson(const QJsonObject& object);
 
     //void WGStatistic(WGSConfig config);
-    void MoCoStatistic(MoCoConfig config);
+    // void MoCoStatistic(MoCoConfig config);
     // void MCStatistic(MCConfig config);
-    void CVAnalyse(ReductionAnalyse::CVType type);
+    // void CVAnalyse(ReductionAnalyse::CVType type);
 
     void GlobalMinimize();
     void GlobalMinimizeLoose();
     void LocalMinimize();
     void HideAllWindows();
-    void DoReductionAnalyse();
+    // void DoReductionAnalyse();
 
 private:
     QSharedPointer<AbstractModel> m_model;

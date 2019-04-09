@@ -37,9 +37,8 @@
 
 #include "globalsearch.h"
 
-SearchBatch::SearchBatch(const GSConfig& config, QPointer<GlobalSearch> parent)
+SearchBatch::SearchBatch(QPointer<GlobalSearch> parent)
     : m_parent(parent)
-    , m_config(config)
     , m_finished(false)
     , m_checked(false)
 {
@@ -126,14 +125,18 @@ QVector<QVector<double>> GlobalSearch::ParamList()
 {
     m_max_count = 1;
 
+    int ParameterSize = m_controller["ParameterSize"].toInt();
     m_time = 0;
     QVector<QVector<double>> full_list;
-    for (int i = 0; i < m_config.parameter.size(); ++i) {
-        QVector<double> list;
+    for (int i = 0; i < ParameterSize; ++i) {
+        QVector<double> parameter, list;
+        parameter = ToolSet::String2DoubleVec(m_controller[QString::number(i)].toString());
+
         double min = 0, max = 0, step = 0;
-        min = m_config.parameter[i][0];
-        max = m_config.parameter[i][1];
-        step = m_config.parameter[i][2];
+        min = parameter[0];
+        max = parameter[1];
+        step = parameter[2];
+
         if (max > min)
             m_max_count *= std::ceil((max - min) / step);
         for (double s = min; s <= max; s += step)
@@ -166,8 +169,10 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_allow_break = false;
 
+    /*
     if (m_config.initial_guess)
         m_model->InitialGuess();
+    */
 
     QVector<double> parameter = m_model->AllParameter();
 
@@ -209,7 +214,8 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
     QVector<QPointer<SearchBatch>> threads;
 
     for (int i = 0; i < maxthreads; ++i) {
-        QPointer<SearchBatch> thread = new SearchBatch(m_config, this);
+        QPointer<SearchBatch> thread = new SearchBatch(this);
+        thread->setController(m_controller);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         connect(this, &GlobalSearch::InterruptAll, thread, &SearchBatch::Interrupt);
         thread->setModel(m_model);

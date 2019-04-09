@@ -85,7 +85,7 @@ public:
     MonteCarloStatistics(QObject* parent = 0);
     ~MonteCarloStatistics();
 
-    inline void setConfig(const QJsonObject& config) { m_controller = config; }
+    // inline void setConfig(const QJsonObject& config) { m_controller = config; }
     bool Evaluate();
 
     void clear();

@@ -276,7 +276,7 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         delete pair.second;
     }
 
-    if (!m_StoreIntermediate)
+    if (!m_controller["StoreIntermediate"].toBool())
         m_models.clear();
 
     return converged;
