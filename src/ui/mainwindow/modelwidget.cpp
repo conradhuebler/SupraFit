@@ -344,12 +344,15 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         this->m_jobmanager->AddJob(job);
         this->m_jobmanager->RunJobs();
     });
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Statistic type, int index) {
+        this->m_statistic_dialog->hide();
         this->m_results->Attention();
         this->m_results->ShowResult(type, index);
+        QApplication::restoreOverrideCursor();
     });
 
     m_SetUpFinished = true;

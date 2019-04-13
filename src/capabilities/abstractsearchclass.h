@@ -97,10 +97,11 @@ public slots:
 protected:
     QSharedPointer<AbstractModel> m_model;
     QJsonObject m_controller;
-    QThreadPool* m_threadpool;
-    QList<QList<QPointF>> m_series;
     QList<QJsonObject> m_models;
     QList<QJsonObject> m_results;
+
+    QThreadPool* m_threadpool;
+    QList<QList<QPointF>> m_series;
     bool m_interrupt;
     QQueue<QVector<Pair>> m_batch;
 

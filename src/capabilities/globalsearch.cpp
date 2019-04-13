@@ -162,7 +162,7 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
 void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 {
     m_full_list.clear();
-    m_result = QJsonObject();
+    // m_result = QJsonObject();
     m_results.clear();
 
     QVector<int> position(full_list.size(), 0);

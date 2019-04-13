@@ -41,10 +41,12 @@ JobManager::JobManager(QObject* parent)
     m_gridsearch_handler = new WeakenedGridSearch(this);
     connect(this, SIGNAL(Interrupt()), m_gridsearch_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_gridsearch_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+    connect(m_gridsearch_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 
     m_reduction_handler = new ReductionAnalyse();
     connect(this, SIGNAL(Interrupt()), m_reduction_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_reduction_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+    connect(m_reduction_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 
     m_modelcomparison_handler = new ModelComparison(this);
     connect(this, SIGNAL(Interrupt()), m_modelcomparison_handler, SLOT(Interrupt()), Qt::DirectConnection);
@@ -86,7 +88,7 @@ void JobManager::RunJobs()
         case SupraFit::Statistic::CrossValidation:
             result = RunCrossValidation(object);
             break;
-        };
+        }
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);
     }

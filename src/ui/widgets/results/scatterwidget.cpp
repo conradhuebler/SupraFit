@@ -199,7 +199,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
 
         m_model.data()->ImportModel(model);
         m_model.data()->Calculate();
-        qDebug() << model;
+        //        qDebug() << model;
         /*
         if (m_converged && !m_model.data()->isConverged())
             continue;
@@ -210,7 +210,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
         y << m_model.data()->AllParameter()[var_2];
         m_linked_models.insert(QPointF(m_model.data()->AllParameter()[var_1], m_model.data()->AllParameter()[var_2]), i);
     }
-    qDebug() << x << y;
+    // qDebug() << x << y;
     if (x.size() > 1e4)
         m_xy_series->setUseOpenGL(true);
     for (int j = 0; j < x.size(); ++j)

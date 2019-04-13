@@ -159,7 +159,7 @@ private:
     virtual QJsonObject Controller() const override;
     int m_steps = 0;
     QVector<QVector<qreal>> MakeBox();
-    QJsonObject m_box, m_controller;
+    QJsonObject m_box;
     double m_effective_error, m_box_area, m_ellipsoid_area;
     QVector<QList<qreal>> m_data_global, m_data_local;
     bool m_fast_finished;

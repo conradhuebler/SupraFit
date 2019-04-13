@@ -214,6 +214,7 @@ bool WeakenedGridSearch::ConfidenceAssesment()
         if (m_interrupt)
             break;
     }
+    emit setMaximumSteps(2 * threads.size());
 
     if (!m_model.data()->SupportThreads()) {
         while (m_threadpool->activeThreadCount()) {

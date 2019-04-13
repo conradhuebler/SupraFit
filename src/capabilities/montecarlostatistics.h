@@ -85,7 +85,6 @@ public:
     MonteCarloStatistics(QObject* parent = 0);
     ~MonteCarloStatistics();
 
-    // inline void setConfig(const QJsonObject& config) { m_controller = config; }
     bool Evaluate();
 
     void clear();
@@ -102,7 +101,6 @@ private:
     std::normal_distribution<double> Phi;
     std::uniform_int_distribution<int> Uni;
     DataTable* m_table;
-    QJsonObject m_controller;
     bool m_generate;
     int m_steps;
 

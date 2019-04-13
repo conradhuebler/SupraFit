@@ -141,7 +141,6 @@ public slots:
 
 private:
     QPointer<WGSearchThread> CreateThread(int index, bool direction);
-    QJsonObject m_controller;
     bool allow_break, m_cv, m_StoreIntermediate = false;
     QVector<QVector<qreal>> MakeBox() const;
     void MCSearch(const QVector<QVector<qreal>>& box);

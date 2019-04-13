@@ -62,7 +62,7 @@ void ReductionAnalyse::CrossValidation()
 
     switch (type) {
     case CVType::LeaveOneOut:
-        emit MaximumSteps(m_model->DataPoints());
+        emit setMaximumSteps(m_model->DataPoints());
         blocksize = 1;
         for (int i = m_model->DataPoints() - 1; i >= 0; --i) {
             QPointer<DataTable> dep_table = new DataTable(table);
@@ -77,10 +77,10 @@ void ReductionAnalyse::CrossValidation()
         }
         break;
     case CVType::LeaveTwoOut:
-        emit MaximumSteps(m_model->DataPoints() * (m_model->DataPoints() - 1) / 2);
+        emit setMaximumSteps(m_model->DataPoints() * (m_model->DataPoints() - 1) / 2);
         blocksize = 25;
         for (int i = 0; i < m_model->DataPoints(); ++i)
-            for (int j = 0; j < m_model->DataPoints(); ++j) {
+            for (int j = i + 1; j < m_model->DataPoints(); ++j) {
                 QPointer<DataTable> dep_table = new DataTable(table);
                 dep_table->DisableRow(i);
                 dep_table->DisableRow(j);
@@ -98,6 +98,8 @@ void ReductionAnalyse::CrossValidation()
 
         break;
     }
+    qDebug() << m_batch.size();
+    //emit setMaximumSteps(m_batch.size());
 
     for (int i = 0; i < maxthreads; ++i) {
         QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
@@ -132,11 +134,10 @@ void ReductionAnalyse::PlainReduction()
     m_controller["method"] = SupraFit::Statistic::Reduction;
     m_controller["xlabel"] = m_model.data()->XLabel();
     m_controller["cutoff"] = m_model.data()->ReductionCutOff();
-    emit MaximumSteps(m_model->DataPoints());
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     QPointer<DataTable> table = m_model->DependentModel();
-
+    emit setMaximumSteps(m_model->DataPoints() - 4);
     for (int i = m_model->DataPoints() - 1; i > 3; --i) { /*
     for(int i = 1; i <m_model->DataPoints() - 3; ++i)
     {*/
@@ -151,6 +152,7 @@ void ReductionAnalyse::PlainReduction()
         addThread(thread);
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
+
     while (Pending()) {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }

@@ -97,14 +97,12 @@ private:
     QVector<QVector<double>> ParamList();
     void ConvertList(const QVector<QVector<double>>& full_list);
     virtual QJsonObject Controller() const override;
-    QJsonObject m_result;
 
     quint64 m_time_0;
     int m_time, m_max_count;
     QVector<QVector<double>> m_full_list;
     double error_max;
     bool m_allow_break;
-    //GSConfig m_config;
     QQueue<QVector<qreal>> m_input;
 
 signals:
