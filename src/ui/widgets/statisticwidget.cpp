@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,9 +89,6 @@ void StatisticWidget::Update()
     if (!m_model.data()->getFastConfidence().isEmpty()) {
         moco += "<p><b>Fast Confidence Results:</b></p>\n";
         moco += "<table>\n";
-
-        if (!result["controller"].toObject()["fisher"].toBool())
-            moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
 
         for (int i = 0; i < result.count() - 1; ++i) {
             QJsonObject data = result.value(QString::number(i)).toObject();

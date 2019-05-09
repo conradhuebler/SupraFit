@@ -60,7 +60,10 @@ const QJsonObject ModelComparisonConfigBlock{
     /* Define the global and local parameter to be tested - this list should not be empty 
      * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
     { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
-    { "LocalParameterList", "" } // strings, to be converted to QList<int>
+    { "LocalParameterList", "" }, // strings, to be converted to QList<int>
+
+    /* Series in FastConfidence */
+    { "IncludeSeries", true }
 };
 
 /*
@@ -142,9 +145,8 @@ public:
     ModelComparison(QObject* parent = 0);
     virtual ~ModelComparison() override;
 
-    // void setController(const QJsonObject &controller) { m_controller = controller; }
     bool Confidence();
-    bool FastConfidence(bool Series);
+    bool FastConfidence();
     inline qreal Area() const { return m_ellipsoid_area; }
     inline void setResults(const QList<QJsonObject> results)
     {

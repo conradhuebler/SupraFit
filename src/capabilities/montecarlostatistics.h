@@ -87,7 +87,7 @@ public:
 
     bool Evaluate();
 
-    void clear();
+    void clear() override;
 
 public slots:
     void Interrupt() override;

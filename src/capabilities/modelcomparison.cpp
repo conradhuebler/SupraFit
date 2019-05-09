@@ -155,7 +155,6 @@ void FCThread::run()
 
 ModelComparison::ModelComparison(QObject* parent)
     : AbstractSearchClass(parent)
-    // , m_config(config)
     , m_fast_finished(false)
 {
 }
@@ -164,7 +163,7 @@ ModelComparison::~ModelComparison()
 {
 }
 
-bool ModelComparison::FastConfidence(bool Series)
+bool ModelComparison::FastConfidence()
 {
     if (!m_model)
         return false;
@@ -172,20 +171,18 @@ bool ModelComparison::FastConfidence(bool Series)
         m_series[i].clear();
     m_series.clear();
     m_results.clear();
-    /*
-    m_controller["method"] = SupraFit::Statistic::FastConfidence;
-    m_controller["fisher"] = m_config.fisher_statistic;
-    m_controller["maxerror"] = m_config.maxerror;
-    m_controller["f-value"] = m_config.f_value;
-*/
+
+    bool series = m_controller["IncludeSeries"].toBool();
+
     QVector<double> parameter = m_model.data()->OptimizeParameters();
     QVector<QPointer<FCThread>> threads;
     for (int i = 0; i < parameter.size(); ++i) {
 
-        if (!Series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
+        if (!series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
             continue;
 
         QPointer<FCThread> thread = new FCThread(i);
+        thread->setController(m_controller);
         thread->setModel(m_model);
         if (!m_model.data()->SupportThreads())
             m_threadpool->start(thread);
@@ -259,7 +256,7 @@ bool ModelComparison::Confidence()
     //if(!m_fast_finished)
     //{
     //   qDebug() << "automatic perform guess";
-    FastConfidence(true);
+    FastConfidence();
     //}
     //   if (m_model.data()->GlobalParameterSize() == 1)
     //       return true;

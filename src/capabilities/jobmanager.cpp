@@ -88,6 +88,10 @@ void JobManager::RunJobs()
         case SupraFit::Statistic::CrossValidation:
             result = RunCrossValidation(object);
             break;
+
+        case SupraFit::Statistic::GlobalSearch:
+            result = RunGlobalSearch(object);
+            break;
         }
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);
@@ -138,8 +142,14 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 
 QJsonObject JobManager::RunFastConfidence(const QJsonObject& job)
 {
+    m_modelcomparison_handler->setModel(m_model);
+    m_modelcomparison_handler->setController(job);
+    m_modelcomparison_handler->FastConfidence();
 
-    return QJsonObject();
+    QJsonObject result = m_modelcomparison_handler->Result();
+    m_modelcomparison_handler->clear();
+
+    return result;
 }
 
 QJsonObject JobManager::RunReduction(const QJsonObject& job)
@@ -149,6 +159,10 @@ QJsonObject JobManager::RunReduction(const QJsonObject& job)
     QJsonObject result = m_reduction_handler->Result();
     m_reduction_handler->clear();
     return result;
+}
+
+QJsonObject JobManager::RunGlobalSearch(const QJsonObject& job)
+{
 }
 
 #include "jobmanager.moc"

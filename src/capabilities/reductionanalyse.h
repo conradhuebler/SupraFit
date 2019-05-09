@@ -54,7 +54,7 @@ public:
     }
 
     // void setController(const QJsonObject& controller) { m_controller = controller; }
-    void clear();
+    void clear() override;
 public slots:
     void Interrupt() override;
 

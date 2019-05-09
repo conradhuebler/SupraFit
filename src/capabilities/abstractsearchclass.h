@@ -91,6 +91,7 @@ public:
 
     QVector<Pair> DemandCalc();
 
+    virtual void clear() {}
 public slots:
     virtual void Interrupt();
 

@@ -116,12 +116,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
-    /*connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelWidget::MCStatistic);
-    connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, &ModelWidget::WGStatistic);
-    connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, &ModelWidget::MoCoStatistic);
-    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelWidget::CVAnalyse);
-    connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelWidget::DoReductionAnalyse);
-    */
 
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.error_wrapper.data(), SLOT(SetBlocked(int)));
     connect(this, SIGNAL(ToggleSeries(int)), m_charts.signal_wrapper.data(), SLOT(SetBlocked(int)));
@@ -349,9 +343,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         this->m_jobmanager->RunJobs();
     });
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Statistic type, int index) {
-        this->m_statistic_dialog->hide();
-        this->m_results->Attention();
-        this->m_results->ShowResult(type, index);
+        if (type != SupraFit::Statistic::FastConfidence) {
+            this->m_statistic_dialog->hide();
+            this->m_results->Attention();
+            this->m_results->ShowResult(type, index);
+        }
         QApplication::restoreOverrideCursor();
     });
 
@@ -605,101 +601,25 @@ void ModelWidget::MCStatistic(MCConfig config)
 void ModelWidget::FastConfidence()
 {
     Waiter wait;
-    /*
-    MoCoConfig config;
-    config.FastConfidenceSteps = qApp->instance()->property("FastConfidenceSteps").toInt();
-    config.FastConfidenceScaling = qApp->instance()->property("FastConfidenceScaling").toInt();
 
-    config.maxerror = m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble());
-    */
-    /*
-    qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble() / 100);
+    QJsonObject job(ModelComparisonConfigBlock);
+
+    job["FastConfidenceSteps"] = qApp->instance()->property("FastConfidenceSteps").toInt();
+    job["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
+    qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble());
     qreal error = m_model.data()->SumofSquares();
-    config.maxerror = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-    */
-    /*
-    config.optimizer_config = m_model->getOptimizerConfig();
-    config.fisher_statistic = true;
-    config.confidence = qApp->instance()->property("p_value").toDouble();
-    */
-    /*
-    ModelComparison* statistic = new ModelComparison(config, this);
-    statistic->setModel(m_model);
-    bool series = qApp->instance()->property("series_confidence").toBool();
-    statistic->FastConfidence(series);
-    m_model->UpdateStatistic(statistic->Result());
-    m_fast_confidence = statistic->Results();
-    delete statistic;
-    */
+    qDebug() << qApp->instance()->property("p_value").toDouble() << f_value << error << error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+
+    job["MaxError"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    job["confidence"] = qApp->instance()->property("p_value").toDouble();
+    job["f_value"] = f_value;
+    job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
+    job["method"] = SupraFit::Statistic::FastConfidence;
+
+    this->m_jobmanager->AddJob(job);
+    this->m_jobmanager->RunJobs();
 }
-/*
-void ModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
-{
-    Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse();
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(statistic, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    statistic->setModel(m_model);
-    statistic->CrossValidation();
-    LoadStatistic(statistic->Result(), statistic->Models());
-    emit IncrementProgress(1);
-    delete statistic;
-}
-*/
-/*
-void ModelWidget::DoReductionAnalyse()
-{
-    Waiter wait;
-    ReductionAnalyse* statistic = new ReductionAnalyse();
 
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(statistic, SIGNAL(MaximumSteps(int)), m_statistic_dialog, SLOT(MaximumSteps(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-
-    statistic->setModel(m_model);
-    statistic->PlainReduction();
-    LoadStatistic(statistic->Result(), statistic->Models());
-    emit IncrementProgress(1);
-    delete statistic;
-}
-*/
-/*
-void ModelWidget::WGStatistic(WGSConfig config)
-{
-    Waiter wait;
-
-    config.optimizer_config = m_model->getOptimizerConfig();
-
-    if (config.maxerror < 1E-8)
-        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
-
-    WeakenedGridSearch* statistic = new WeakenedGridSearch(config, this);
-
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-
-    QJsonObject json = m_model->ExportModel(false);
-    statistic->setModel(m_model);
-    statistic->setParameter(json);
-
-    if (!statistic->ConfidenceAssesment()) {
-        const QString string = "Odd results obtained during Grid Search. Please check individual parameters!.";
-        QMessageBox::information(this, tr("Not done"), string);
-        emit Warning(string, 1);
-    }
-
-   m_gridsearch_handler
-    delete statistic;
-}
-*/
 /*
 void ModelWidget::MoCoStatistic(MoCoConfig config)
 {

@@ -51,6 +51,7 @@ private:
     QJsonObject RunCrossValidation(const QJsonObject& job);
     QJsonObject RunModelComparison(const QJsonObject& job);
     QJsonObject RunFastConfidence(const QJsonObject& job);
+    QJsonObject RunGlobalSearch(const QJsonObject& job);
 
     QPointer<MonteCarloStatistics> m_montecarlo_handler;
     QPointer<WeakenedGridSearch> m_gridsearch_handler;
