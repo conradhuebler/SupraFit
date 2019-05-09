@@ -564,7 +564,7 @@ QJsonObject StatisticDialog::RunModelComparison() const
     controller["method"] = SupraFit::Statistic::ModelComparison;
     controller["confidence"] = m_moco_maxerror->value();
 
-    controller["BoxMultiplier"] = m_moco_box_multi->value();
+    controller["BoxScalingFactor"] = m_moco_box_multi->value();
 
     QList<int> glob_param, local_param;
     int max = 0;

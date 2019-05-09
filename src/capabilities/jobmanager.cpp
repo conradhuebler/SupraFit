@@ -51,6 +51,7 @@ JobManager::JobManager(QObject* parent)
     m_modelcomparison_handler = new ModelComparison(this);
     connect(this, SIGNAL(Interrupt()), m_modelcomparison_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_modelcomparison_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+    connect(m_modelcomparison_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 }
 
 JobManager::~JobManager()
@@ -101,6 +102,14 @@ void JobManager::RunJobs()
 
 QJsonObject JobManager::RunModelComparison(const QJsonObject& job)
 {
+    m_modelcomparison_handler->setModel(m_model);
+    m_modelcomparison_handler->setController(job);
+    m_modelcomparison_handler->Confidence();
+
+    QJsonObject result = m_modelcomparison_handler->Result();
+    m_modelcomparison_handler->clear();
+
+    return result;
 }
 
 QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)

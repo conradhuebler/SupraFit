@@ -177,19 +177,6 @@ bool MonteCarloStatistics::Evaluate()
     return true;
 }
 
-QJsonObject MonteCarloStatistics::Controller() const
-{
-    /*
-    QJsonObject controller;
-    controller["steps"] = m_steps;
-    controller["variance"] = m_config.variance;
-    controller["original"] = m_config.original;
-    controller["bootstrap"] = m_config.bootstrap;
-    controller["method"] = SupraFit::Statistic::MonteCarlo;
-    controller["indep_variance"] = ToolSet::DoubleVec2String(m_config.indep_variance);*/
-    return m_controller;
-}
-
 QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 {
     qint64 seed = QDateTime::currentMSecsSinceEpoch();

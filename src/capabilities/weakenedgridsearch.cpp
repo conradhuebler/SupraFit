@@ -288,25 +288,6 @@ void WeakenedGridSearch::setParameter(const QJsonObject& json)
     m_model.data()->ImportModel(json);
 }
 
-QJsonObject WeakenedGridSearch::Controller() const
-{
-    /*
-    QJsonObject controller;
-    controller["steps"] = m_config.maxsteps;
-    controller["increment"] = m_config.increment;
-    controller["maxerror"] = m_config.maxerror;
-    controller["fisher"] = m_config.fisher_statistic;
-    controller["f-value"] = m_config.f_value;
-    controller["method"] = SupraFit::Statistic::WeakenedGridSearch;
-    controller["ErrorConvergency"] = m_config.ErrorConvergency;
-    controller["OverShotCounter"] = m_config.OvershotCounter;
-    controller["ErrorDecreaseCounter"] = m_config.ErrorDecreaseCounter;
-    controller["ErrorConvergencyCounter"] = m_config.ErrorConvergencyCounter;
-    return controller;*/
-
-    return m_controller;
-}
-
 void WeakenedGridSearch::Interrupt()
 {
     emit StopSubThreads();

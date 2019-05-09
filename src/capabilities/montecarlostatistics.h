@@ -96,7 +96,7 @@ private:
     QVector<QPointer<MonteCarloBatch>> GenerateData();
     QVector<QPointer<DataTable>> m_ptr_table;
     void Collect(const QVector<QPointer<MonteCarloBatch>>& threads);
-    virtual QJsonObject Controller() const override;
+
     std::mt19937 rng;
     std::normal_distribution<double> Phi;
     std::uniform_int_distribution<int> Uni;

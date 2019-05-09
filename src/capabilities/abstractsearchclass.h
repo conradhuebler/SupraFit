@@ -106,7 +106,7 @@ protected:
     bool m_interrupt;
     QQueue<QVector<Pair>> m_batch;
 
-    virtual QJsonObject Controller() const = 0;
+    virtual QJsonObject Controller() const { return m_controller; }
     QMutex mutex;
 
 signals:

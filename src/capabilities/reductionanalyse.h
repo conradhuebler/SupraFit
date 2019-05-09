@@ -61,7 +61,6 @@ public slots:
 private:
     void addThread(QPointer<MonteCarloThread> thread);
     bool Pending() const;
-    inline virtual QJsonObject Controller() const override { return m_controller; }
 
     QVector<QPointer<MonteCarloThread>> m_threads;
     QJsonObject m_model_data;

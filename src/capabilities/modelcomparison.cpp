@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,12 +40,27 @@ void MCThread::run()
     QVector<std::uniform_int_distribution<int>> dist;
     QVector<qreal> parameters = m_model.data()->OptimizeParameters();
     QVector<double> factors(parameters.size(), 1);
-    for (int i = 0; i < m_model.data()->OptimizeParameters().size(); ++i) {
+
+    for (int i = 0; i < global_param.size(); ++i) {
+        if (!global_param[i])
+            continue;
+
         factors[i] = qPow(10, log10(qAbs(1e7 / parameters[i])));
         int lower = factors[i] * m_box[i][0];
         int upper = factors[i] * m_box[i][1];
         dist << std::uniform_int_distribution<int>(lower, upper);
     }
+
+    for (int i = 0; i < local_param.size(); ++i) {
+        if (!local_param[i])
+            continue;
+
+        factors[i] = qPow(10, log10(qAbs(1e7 / parameters[i])));
+        int lower = factors[i] * m_box[i][0];
+        int upper = factors[i] * m_box[i][1];
+        dist << std::uniform_int_distribution<int>(lower, upper);
+    }
+
     qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
     rng.seed(seed);
@@ -65,9 +80,8 @@ void MCThread::run()
         }
         m_model->setParameter(consts);
         m_model->Calculate();
-
-        if (m_model->SumofSquares() <= m_effective_error) {
-         //   std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
+        if (m_model->SumofSquares() <= m_controller["MaxError"].toDouble()) {
+            //   std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
             m_results << m_model->ExportModel(false);
         }
         m_steps++;
@@ -84,8 +98,9 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
     double param = parameter[parameter_id];
     double old_param = param;
     int iter = 0;
+    //qDebug() << m_controller;
     int maxiter = m_controller["MaxStepsFastConfidence"].toInt();
-    double step = qPow(10, ceil(log10(qAbs(param))) + m_controller["ScalingFactor"].toDouble()); //FastConfidenceScaling);
+    double step = qPow(10, ceil(log10(qAbs(param))) + m_controller["FastConfidenceScaling"].toDouble());
     double MaxError = m_controller["MaxError"].toDouble();
     param += direction * step;
     double error = m_model.data()->SumofSquares();
@@ -231,7 +246,6 @@ QVector<QVector<qreal>> ModelComparison::MakeBox()
         double BoxScalingFactor = m_controller["BoxScalingFactor"].toDouble();
         constant << value - BoxScalingFactor * (value - lower);
         constant << value + BoxScalingFactor * (upper - value);
-        //constant << m_config.cv_config.increment;
         parameter << constant;
         m_box_area *= double(BoxScalingFactor * (upper - value) + BoxScalingFactor * (value - lower));
         QList<QPointF> points;
@@ -256,10 +270,11 @@ bool ModelComparison::Confidence()
     //if(!m_fast_finished)
     //{
     //   qDebug() << "automatic perform guess";
+    m_controller["IncludeSeries"] = true;
+    m_controller["FastConfidenceSteps"] = qApp->instance()->property("FastConfidenceSteps").toInt();
+    m_controller["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
     FastConfidence();
     //}
-    //   if (m_model.data()->GlobalParameterSize() == 1)
-    //       return true;
 
     QVector<QVector<qreal>> box = MakeBox();
     if (box.size() > 1) {
@@ -274,13 +289,14 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     QVector<QPointer<MCThread>> threads;
 
     int maxsteps = m_controller["MaxSteps"].toInt(); //m_config.mc_steps;
-    emit setMaximumSteps(1 + maxsteps / update_intervall);
+    emit setMaximumSteps(maxsteps / update_intervall);
     int thread_count = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);
     for (int i = 0; i < thread_count; ++i) {
         MCThread* thread = new MCThread(m_controller);
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
+        thread->setController(m_controller);
         thread->setError(m_effective_error);
         thread->setMaxSteps(maxsteps / thread_count);
         thread->setBox(box);
@@ -380,23 +396,7 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["name"] = m_model->LocalParameterName(local_values[i].first);
         result["type"] = "Local Parameter";
         result["data"] = ToolSet::DoubleList2String(data_local[i]);
-
-        m_results << result;
     }
-
-    //m_controller["steps"] = m_config.mc_steps;
     m_controller["steps_taken"] = m_steps;
-    //m_controller["fisher"] = m_config.fisher_statistic;
-    //m_controller["maxerror"] = m_config.maxerror;
-    //m_controller["f-value"] = m_config.f_value;
-    //m_controller["method"] = SupraFit::Statistic::ModelComparison;
     m_controller["moco_area"] = m_ellipsoid_area;
-    //m_controller["local_parameter"] = ToolSet::IntVec2String(m_config.local_param.toVector());
-    //m_controller["global_parameter"] = ToolSet::IntVec2String(m_config.global_param.toVector());
-    //m_controller["box"] = m_box;
-}
-
-QJsonObject ModelComparison::Controller() const
-{
-    return m_controller;
 }

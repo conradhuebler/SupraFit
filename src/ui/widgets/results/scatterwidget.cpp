@@ -189,7 +189,6 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
 
     QList<qreal> x, y;
     for (int i = 0; i < m_models.size(); ++i) {
-        qDebug() << m_models[i];
 
         QJsonObject model;
         //if(!m_models[i].contains("initial"))

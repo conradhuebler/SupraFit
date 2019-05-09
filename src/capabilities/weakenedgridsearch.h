@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -125,12 +125,6 @@ class WeakenedGridSearch : public AbstractSearchClass {
 public:
     WeakenedGridSearch(QObject* parent = 0);
     virtual ~WeakenedGridSearch() override;
-    /*
-    inline void setConfig(const QJsonObject& controller)
-    {
-        m_controller = controller;
-        m_StoreIntermediate = controller["StoreIntermediate"].toBool();
-    }*/
     inline bool CV() { return m_cv; }
     bool ConfidenceAssesment();
     void setParameter(const QJsonObject& json);
@@ -146,7 +140,6 @@ private:
     void MCSearch(const QVector<QVector<qreal>>& box);
     void Search(const QVector<QVector<qreal>>& box);
     void StripResults(const QList<QJsonObject>& results);
-    virtual QJsonObject Controller() const override;
 
 signals:
     void StopSubThreads();

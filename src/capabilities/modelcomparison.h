@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ const QJsonObject ModelComparisonConfigBlock{
      * delta = 10^(ceil(log10(parameter) + (-4) ))
      * this ensures correct scaling and always something like 10^(N)
      */
-    { "ScalingFactor", -4 }, // int
+    { "FastConfidenceScaling", -4 }, // int
 
     /* SSE threshold defined by f-Statistics */
     { "MaxError", 0 }, //double
@@ -66,21 +66,6 @@ const QJsonObject ModelComparisonConfigBlock{
     { "IncludeSeries", true }
 };
 
-/*
-class MoCoConfig : public AbstractConfig {
-public:
-    //WGSConfig cv_config;
-    int mc_steps = 10000;
-    int FastConfidenceSteps = 1000;
-    int FastConfidenceScaling = -4;
-    qreal box_multi = 1.5;
-    qreal maxerror = 0;
-    qreal confidence = 95;
-    qreal f_value = 0;
-    bool fisher_statistic = false;
-    QList<int> global_param, local_param;
-};
-*/
 class AbstractModel;
 
 class MCThread : public AbstractSearchThread {
@@ -158,7 +143,6 @@ private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal>>& box);
     double SingleLimit(int parameter_id, int direction = 1);
-    virtual QJsonObject Controller() const override;
     int m_steps = 0;
     QVector<QVector<qreal>> MakeBox();
     QJsonObject m_box;
