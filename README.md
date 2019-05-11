@@ -7,10 +7,10 @@
 A Open Source Qt5 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry) and Michaelis Menten Kinetics
 
 ## Download and requirements
-git clones automatically Eigen, ChaiScript, fisher_dist and libpeakpick. Eigen is used as non-linear optimimization tool and ChaiScript is for now only for experimental stuff in use. Fisher_dist provides suprafit with a f-value for a given critical p-value. LibPeakPick provides rudimentary methods for peak picking, peak integration and some kind of linear regression methods.
+git clones automatically Eigen, ChaiScript, fisher_dist and libpeakpick. Eigen is used as non-linear optimimization tool and ChaiScript had been used for some experimental stuff. Fisher_dist provides a F-value for a given critical p-value. LibPeakPick provides rudimentary methods for peak picking, peak integration and some kind of linear regression methods.
 
 ## Compiling
-To compile SupraFit you will need CMake 3 or newer and a C++11-capable compiler.
+To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and a recent Qt version. Soon, Qt 5.12 LTS will be focused.
 
 SupraFit has been successfully compilied with: 
 - gcc 5.2, gcc 6.3 and gcc 7.3
@@ -18,16 +18,19 @@ SupraFit has been successfully compilied with:
 on linux systems and 
 - mingw 5.3 on windows systems
 
-> Windows 7 or higher is recommended if Qt is compilied without ICU support.
+> Windows 7 or higher is mandatory.
+> MacOS has not been tested yet.
 
-For SupraFit 1
-```sh
-git clone -b suprafit-v1 --recursive git@github.com:conradhuebler/SupraFit.git
-```
-or for SupraFit 2 (devel version)
+To obtain the most recent development version use
 ```sh
 git clone --recursive git@github.com:conradhuebler/SupraFit.git
 ```
+
+The deprecated, not recommended version SupraFit 1 can be obtained with
+```sh
+git clone -b suprafit-v1 --recursive git@github.com:conradhuebler/SupraFit.git
+```
+
 Compile it as follows:
 ```sh
 cd suprafit
@@ -37,8 +40,10 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make
 ```
 
+>Please note, that the current development version is still in alpha stage. Some features are not ready yet and some changes might break compatibility of the SupraFit file format.
+
 ## Running
-Start suprafit executable from the build directory. Suprafit handles tables that are composed as follows:
+Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:
 
 ### Titration experiments (NMR, UV-VIS)
 | host | guest | signal1 | signal2 | signal3 |
@@ -46,7 +51,7 @@ Start suprafit executable from the build directory. Suprafit handles tables that
 | 0.1 | 0 | 1 | 2 | 3 |
 | 0.1 | 0.01 | 1.1 | 2.1 | 3.3|
 
-The first two columns contain the concentrations of host and guest, the following columns should contain the NMR or UV/VIS signal.
+The first two columns contain the concentrations of host (fixed concentration) and guest (variable concentration, silent component), the following columns should contain the NMR or UV/VIS signal.
 
 ### ITC data
 | v | q |
@@ -68,4 +73,17 @@ The first column contains the substrat concentration while the second columns ha
 
 Copy such a table from any spreadsheet application and paste it in the **New table** dialog or load such a table as `semicolon` or `tabulator seperated file` with **Open File**. 
 
-Suprafit loads and saves tables and calculated models as `json files *.json` or compressed json files `*.suprafit`.
+SupraFit loads and saves tables and calculated models as `json files *.json` or compressed json files `*.suprafit`.
+
+## Statistcs
+SupraFit provides some statistical analysis, which will be described an not yet finished article. Implemented methods are based on the following approaches:
+- Monte Carlo simulation
+- Error-Based analysis
+- Resampling methods
+
+A detailed handbook will be provided as soon as possbile.
+
+## Citation
+If you obtain results with SupraFit, please cite for now:
+
+After release of the detailed articles describing the used methods, please refer to them as well.
