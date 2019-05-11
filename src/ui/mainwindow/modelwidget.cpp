@@ -20,12 +20,8 @@
 #include "src/global.h"
 #include "src/version.h"
 
-#include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
-#include "src/capabilities/montecarlostatistics.h"
-#include "src/capabilities/reductionanalyse.h"
-#include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
@@ -113,7 +109,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_advancedsearch = new AdvancedSearch(this);
     m_advancedsearch->setModel(m_model);
-    connect(m_advancedsearch, SIGNAL(MultiScanFinished()), this, SLOT(MultiScanFinished()));
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
 
@@ -333,6 +328,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_jobmanager, &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps);
     connect(m_jobmanager, &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress);
+
+    connect(m_jobmanager, &JobManager::prepare, m_advancedsearch, &AdvancedSearch::MaximumSteps);
+    connect(m_jobmanager, &JobManager::incremented, m_advancedsearch, &AdvancedSearch::IncrementProgress);
+
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
 
@@ -344,11 +343,23 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     });
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Statistic type, int index) {
         if (type != SupraFit::Statistic::FastConfidence) {
-            this->m_statistic_dialog->hide();
+            if (type != SupraFit::Statistic::GlobalSearch)
+                this->m_statistic_dialog->hide();
+            else
+                this->m_advancedsearch->hide();
+
             this->m_results->Attention();
             this->m_results->ShowResult(type, index);
         }
+
         QApplication::restoreOverrideCursor();
+    });
+
+    //connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
+    connect(m_advancedsearch, &AdvancedSearch::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->RunJobs();
     });
 
     m_SetUpFinished = true;
@@ -566,38 +577,6 @@ void ModelWidget::ToggleStatisticDialog()
     m_statistic_dialog->Attention();
 }
 
-/*
-void ModelWidget::MCStatistic(MCConfig config)
-{
-    Waiter wait;
-
-    config.optimizer_config = m_model->getOptimizerConfig();
-
-    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(this);
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-    statistic->setModel(m_model);
-    statistic->Evaluate();
-
-    LoadStatistic(statistic->Result(), statistic->Models());
-    delete statistic;
-
-    QString buff = m_statistic_widget->Statistic();
-    buff.remove("<tr>");
-    buff.remove("<table>");
-    buff.remove("</tr>");
-    buff.remove("</table>");
-    buff.replace("</td>", "\t");
-    buff.replace("<td>", "\t");
-
-    QTextDocument doc;
-    doc.setHtml(buff);
-
-    m_logging += "\n\n" + doc.toPlainText();
-}
-*/
 void ModelWidget::FastConfidence()
 {
     Waiter wait;
@@ -616,40 +595,10 @@ void ModelWidget::FastConfidence()
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
     job["method"] = SupraFit::Statistic::FastConfidence;
 
-    this->m_jobmanager->AddJob(job);
-    this->m_jobmanager->RunJobs();
+    m_jobmanager->AddJob(job);
+    m_jobmanager->RunJobs();
 }
 
-/*
-void ModelWidget::MoCoStatistic(MoCoConfig config)
-{
-    Waiter wait;
-
-    config.optimizer_config = m_model->getOptimizerConfig();
-
-    if (config.maxerror < 1E-8)
-        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
-
-    ModelComparison* statistic = new ModelComparison(config, this);
-    if (m_fast_confidence.size())
-        statistic->setResults(m_fast_confidence);
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(this, SIGNAL(Interrupt()), statistic, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(setMaximumSteps(int)), m_statistic_dialog, SIGNAL(setMaximumSteps(int)), Qt::DirectConnection);
-    connect(statistic, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)), Qt::DirectConnection);
-
-    QJsonObject json = m_model->ExportModel(false);
-    statistic->setModel(m_model);
-    bool result = statistic->Confidence();
-    if (result)
-        LoadStatistic(statistic->Result(), statistic->Models());
-    else
-        QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
-    m_statistic_dialog->HideWidget();
-    delete statistic;
-}
-*/
 void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models)
 {
     int index = m_model->UpdateStatistic(data);

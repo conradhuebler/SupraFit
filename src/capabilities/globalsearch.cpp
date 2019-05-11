@@ -146,7 +146,7 @@ QVector<QVector<double>> GlobalSearch::ParamList()
     return full_list;
 }
 
-QList<QJsonObject> GlobalSearch::SearchGlobal()
+void GlobalSearch::SearchGlobal()
 {
     QVector<QVector<double>> full_list = ParamList();
     m_models.clear();
@@ -156,7 +156,12 @@ QList<QJsonObject> GlobalSearch::SearchGlobal()
     ConvertList(full_list);
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     std::cout << "time for scanning: " << t1 - t0 << " msecs." << std::endl;
-    return m_models;
+}
+
+void GlobalSearch::clear()
+{
+    m_full_list.clear();
+    m_results.clear();
 }
 
 void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
@@ -254,8 +259,7 @@ void GlobalSearch::ExportResults(const QString& filename, double threshold, bool
 
 QJsonObject GlobalSearch::Controller() const
 {
-    QJsonObject controller;
-    controller["method"] = SupraFit::Statistic::GlobalSearch;
+    QJsonObject controller = m_controller;
     controller["size"] = m_results.size();
     return controller;
 }

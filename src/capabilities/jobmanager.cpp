@@ -52,6 +52,11 @@ JobManager::JobManager(QObject* parent)
     connect(this, SIGNAL(Interrupt()), m_modelcomparison_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_modelcomparison_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_modelcomparison_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
+
+    m_globalsearch = new GlobalSearch(this);
+    connect(this, SIGNAL(Interrupt()), m_globalsearch, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_globalsearch, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+    connect(m_globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 }
 
 JobManager::~JobManager()
@@ -172,6 +177,13 @@ QJsonObject JobManager::RunReduction(const QJsonObject& job)
 
 QJsonObject JobManager::RunGlobalSearch(const QJsonObject& job)
 {
+    m_globalsearch->setController(job);
+    m_globalsearch->setModel(m_model);
+    m_globalsearch->SearchGlobal();
+
+    QJsonObject result = m_globalsearch->Result();
+    m_globalsearch->clear();
+    return result;
 }
 
 #include "jobmanager.moc"

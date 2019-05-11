@@ -35,20 +35,6 @@ class GlobalSearch;
 class Minimizer;
 class NonLinearFitThread;
 
-/*
-class GSConfig : public AbstractConfig {
-public:
-    inline GSConfig(QJsonObject config)
-        : AbstractConfig(config)
-    {
-    }
-    inline GSConfig() {}
-    bool initial_guess = true;
-    bool optimize = true;
-    QVector<QVector<qreal>> parameter;
-    QList<int> ignored_parameter;
-};
-*/
 class SearchBatch : public AbstractSearchThread {
     Q_OBJECT
 
@@ -84,11 +70,11 @@ public:
     GlobalSearch( QObject* parent = 0);
     virtual ~GlobalSearch() override;
 
-    //inline void setConfig(const GSConfig& config) { m_config = config; }
     inline QVector<QVector<qreal>> InputList() const { return m_full_list; }
-    QList<QJsonObject> SearchGlobal();
+    void SearchGlobal();
     void ExportResults(const QString& filename, double threshold, bool allow_invalid);
     QVector<qreal> DemandParameter();
+    void clear() override;
 
 public slots:
     virtual void Interrupt() override;

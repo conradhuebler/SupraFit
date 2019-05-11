@@ -17,11 +17,14 @@
  *
  */
 
+#include "src/global.h"
+
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
 #include <QtCore/QSharedPointer>
 
 class AbstractModel;
+class GlobalSearch;
 class MonteCarloStatistics;
 class ModelComparison;
 class WeakenedGridSearch;
@@ -57,6 +60,7 @@ private:
     QPointer<WeakenedGridSearch> m_gridsearch_handler;
     QPointer<ModelComparison> m_modelcomparison_handler;
     QPointer<ReductionAnalyse> m_reduction_handler;
+    QPointer<GlobalSearch> m_globalsearch;
 
 signals:
     void started();

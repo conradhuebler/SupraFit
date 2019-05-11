@@ -19,12 +19,6 @@
 
 #pragma once
 
-#include "src/capabilities/abstractsearchclass.h"
-#include "src/capabilities/modelcomparison.h"
-#include "src/capabilities/montecarlostatistics.h"
-#include "src/capabilities/reductionanalyse.h"
-#include "src/capabilities/weakenedgridsearch.h"
-
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 #include "src/core/minimizer.h"

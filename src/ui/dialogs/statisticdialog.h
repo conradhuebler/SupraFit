@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -165,12 +165,6 @@ private slots:
     void CalculateError();
 
 signals:
-    /*
-    void WGStatistic(const WGSConfig& config);
-    void MCStatistic(const MCConfig& config);
-    void MoCoStatistic(const MoCoConfig& config);
-    void CrossValidation(ReductionAnalyse::CVType type); 
-    */
     void RunCalculation(const QJsonObject& controller);
     void Reduction();
     void Interrupt();

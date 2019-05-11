@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -230,20 +230,6 @@ void AdvancedSearch::SetUi()
         }
     }
 
-    /*
-    m_initial_guess = new QCheckBox(tr("Apply initial Guess"));
-    m_initial_guess->setChecked(true);
-    connect(m_initial_guess, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));
-    */
-    /*m_optim = new QCheckBox(tr("Optimise"));
-    m_optim->setChecked(true);
-    connect(m_optim, SIGNAL(stateChanged(int)), this, SLOT(setOptions()));
-    */
-    /* QHBoxLayout* options = new QHBoxLayout;
-
-    options->addWidget(m_optim);
-    options->addWidget(m_initial_guess);*/
-
     m_scan = new QPushButton(tr("Scan"));
     m_interrupt = new QPushButton(tr("Interrupt"));
 
@@ -271,13 +257,9 @@ void AdvancedSearch::SetUi()
     connect(this, SIGNAL(setValue(int)), m_progress, SLOT(setValue(int)));
 
     setLayout(mlayout);
-    MaxSteps();
-    setOptions();
+    //MaxSteps();
 }
 
-void AdvancedSearch::setOptions()
-{
-}
 
 void AdvancedSearch::MaxSteps()
 {
@@ -285,17 +267,17 @@ void AdvancedSearch::MaxSteps()
     m_ignored_parameter.clear();
     int max_count = 1;
     for (int i = 0; i < m_parameter_list.size(); ++i) {
-        double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = 1;
+        double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = m_parameter_list[i]->Optimise();
         if(m_parameter_list[i]->Variable())
         {
             if (!m_parameter_list[i]->isEnabled()) {
                 min = m_parameter_list[i]->Value();
                 max = m_parameter_list[i]->Value();
-                step = 1;
             } else {
                 min = m_parameter_list[i]->Min();
                 max = m_parameter_list[i]->Max();
-                step = m_parameter_list[i]->Step();
+                if (m_parameter_list[i]->Optimise())
+                    step = m_parameter_list[i]->Step();
             }
         }
         m_parameter.append(QVector<qreal>() << min << max << step);
@@ -324,19 +306,15 @@ void AdvancedSearch::Finished()
 
 void AdvancedSearch::SearchGlobal()
 {
-    /*
-    Waiter wait;
     MaxSteps();
-    m_search->setModel(m_model);
-    PrepareProgress();
-    m_search->setConfig(Config());
-    m_models_list.clear();
-    QVector<double> error;
-    m_models_list = m_search->SearchGlobal();
-    Finished();
-    emit MultiScanFinished();
-    QDialog::accept();
-    */
+    QJsonObject job;
+
+    job["ParameterSize"] = m_parameter.size();
+    job["method"] = SupraFit::Statistic::GlobalSearch;
+    for (int i = 0; i < m_parameter.size(); ++i) {
+        job[QString::number(i)] = ToolSet::DoubleVec2String(m_parameter[i]);
+    }
+    emit RunCalculation(job);
 }
 
 void AdvancedSearch::IncrementProgress(int time)
@@ -351,15 +329,13 @@ void AdvancedSearch::IncrementProgress(int time)
     m_max_steps->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
     emit setValue(val);
 }
-/*
-GSConfig AdvancedSearch::Config() const
+
+void AdvancedSearch::MaximumSteps(int steps)
 {
-    GSConfig config;
-    config.parameter = m_parameter;
-    config.ignored_parameter = m_ignored_parameter;
-    //config.initial_guess = m_initial_guess->isChecked();
-    //  config.optimize = m_optim->isChecked();
-    return config;
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setValue(0);
+    m_progress->setMaximum(steps);
 }
-*/
+
 #include "advancedsearch.moc"

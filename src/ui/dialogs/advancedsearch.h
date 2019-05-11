@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,7 +96,6 @@ public:
     QList<QList<QPointF>> Series() const { return m_series; }
     QList<QJsonObject> ModelList() const { return m_models_list; }
     QPointer<GlobalSearch> globalSearch() const { return m_search; }
-    //GSConfig Config() const;
 
 private:
     void SetUi();
@@ -124,14 +123,15 @@ private:
     void PrepareProgress();
     void Finished();
 
+public slots:
+    void MaximumSteps(int steps);
+    void IncrementProgress(int time);
+
 private slots:
     void SearchGlobal();
-    void IncrementProgress(int time);
     void MaxSteps();
-    void setOptions();
 
 signals:
-    void PlotFinished(int runtype);
-    void MultiScanFinished();
+    void RunCalculation(const QJsonObject& controller);
     void setValue(int value);
 };

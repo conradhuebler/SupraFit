@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,11 +17,8 @@
  *
  */
 
-#include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
-#include "src/capabilities/montecarlostatistics.h"
-#include "src/capabilities/reductionanalyse.h"
-#include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
@@ -85,6 +82,9 @@ void MetaModelWidget::setUi()
     m_metamodelparameter = new MetaModelParameter(m_model);
     layout->addWidget(m_metamodelparameter, 1, 0, 1, 2);
 
+    m_jobmanager = new JobManager(this);
+    m_jobmanager->setModel(m_model);
+
     connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
     //connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
     //connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
@@ -137,20 +137,55 @@ void MetaModelWidget::Minimize()
 void MetaModelWidget::ToggleStatisticDialog()
 {
     StatisticDialog* statistic_dialog = new StatisticDialog(m_model, this);
-    /*
-    connect(statistic_dialog, &StatisticDialog::MCStatistic, this, &MetaModelWidget::MCStatistic);
-    connect(statistic_dialog, &StatisticDialog::WGStatistic, this, &MetaModelWidget::WGStatistic);
-    connect(statistic_dialog, &StatisticDialog::MoCoStatistic, this, &MetaModelWidget::MoCoStatistic);
-    connect(statistic_dialog, &StatisticDialog::CrossValidation, this, &MetaModelWidget::CVAnalyse);
-    connect(statistic_dialog, &StatisticDialog::Reduction, this, &MetaModelWidget::Reduction);
-    connect(statistic_dialog, &StatisticDialog::Reduction, this, &MetaModelWidget::Interrupt);
-    connect(this, &MetaModelWidget::IncrementProgress, statistic_dialog, &StatisticDialog::IncrementProgress);
-    connect(this, &MetaModelWidget::MaximumSteps, statistic_dialog, &StatisticDialog::MaximumSteps);
-    connect(this, &MetaModelWidget::Finished, statistic_dialog, &StatisticDialog::accept);
 
+    connect(m_jobmanager, &JobManager::prepare, statistic_dialog, &StatisticDialog::MaximumSteps);
+    connect(m_jobmanager, &JobManager::incremented, statistic_dialog, &StatisticDialog::IncrementProgress);
+
+    connect(m_jobmanager, &JobManager::started, statistic_dialog, &StatisticDialog::ShowWidget);
+    connect(m_jobmanager, &JobManager::finished, statistic_dialog, &StatisticDialog::HideWidget);
+
+    connect(statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
+    connect(statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->RunJobs();
+    });
+    connect(m_jobmanager, &JobManager::ShowResult, this, [this, statistic_dialog](SupraFit::Statistic type, int index) {
+        if (type != SupraFit::Statistic::FastConfidence) {
+            if (type != SupraFit::Statistic::GlobalSearch)
+                statistic_dialog->hide();
+
+            this->m_results->Attention();
+            this->m_results->ShowResult(type, index);
+        }
+
+        QApplication::restoreOverrideCursor();
+    });
     statistic_dialog->exec();
-    */
+
     delete statistic_dialog;
+}
+
+void MetaModelWidget::FastConfidence()
+{
+    Waiter wait;
+
+    QJsonObject job(ModelComparisonConfigBlock);
+
+    job["FastConfidenceSteps"] = qApp->instance()->property("FastConfidenceSteps").toInt();
+    job["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
+    qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble());
+    qreal error = m_model.data()->SumofSquares();
+    qDebug() << qApp->instance()->property("p_value").toDouble() << f_value << error << error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+
+    job["MaxError"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    job["confidence"] = qApp->instance()->property("p_value").toDouble();
+    job["f_value"] = f_value;
+    job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
+    job["method"] = SupraFit::Statistic::FastConfidence;
+
+    m_jobmanager->AddJob(job);
+    m_jobmanager->RunJobs();
 }
 
 void MetaModelWidget::OpenAdvancedSearch()
@@ -182,132 +217,6 @@ void MetaModelWidget::LoadStatistic(const QJsonObject& data)
     m_results->ShowResult(type, index);
 }
 
-/*
-void MetaModelWidget::FastConfidence()
-{
-    MoCoConfig config;
-
-    qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble() / 100);
-    qreal error = m_model.data()->SumofSquares();
-    config.maxerror = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-    config.optimizer_config = m_model->getOptimizerConfig();
-    config.fisher_statistic = true;
-    config.confidence = qApp->instance()->property("p_value").toDouble();
-    ModelComparison* statistic = new ModelComparison(config, this);
-    statistic->setModel(m_model);
-    bool series = qApp->instance()->property("series_confidence").toBool();
-    statistic->FastConfidence(series);
-    m_model->UpdateStatistic(statistic->Result());
-    m_fast_confidence = statistic->Results();
-    delete statistic;
-}
-
-void MetaModelWidget::MCStatistic(MCConfig config)
-{
-    Waiter wait;
-
-    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(this);
-    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
-    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
-
-    statistic->setModel(m_model);
-    statistic->Evaluate();
-
-    LoadStatistic(statistic->Result());
-    emit Finished();
-    delete statistic;
-}
-
-void MetaModelWidget::Reduction()
-{
-    Waiter wait;
-
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
-
-    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
-    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
-    connect(statistic, &AbstractSearchClass::setMaximumSteps, this, &MetaModelWidget::MaximumSteps);
-
-    statistic->setModel(m_model);
-    statistic->PlainReduction();
-    LoadStatistic(statistic->Result());
-
-    emit Finished();
-    delete statistic;
-}
-
-void MetaModelWidget::CVAnalyse(ReductionAnalyse::CVType type)
-{
-    Waiter wait;
-
-    ReductionAnalyse* statistic = new ReductionAnalyse(m_model->getOptimizerConfig());
-    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
-    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
-    connect(statistic, &AbstractSearchClass::setMaximumSteps, this, &MetaModelWidget::MaximumSteps, Qt::DirectConnection);
-
-    statistic->setModel(m_model);
-    statistic->CrossValidation(type);
-    LoadStatistic(statistic->Result());
-    emit Finished();
-
-    delete statistic;
-}
-
-void MetaModelWidget::MoCoStatistic(MoCoConfig config)
-{
-    Waiter wait;
-
-    config.optimizer_config = m_model->getOptimizerConfig();
-
-    if (config.maxerror < 1E-8)
-        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
-
-    ModelComparison* statistic = new ModelComparison(config, this);
-    if (m_fast_confidence.size())
-        statistic->setResults(m_fast_confidence);
-    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
-    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
-
-    QJsonObject json = m_model->ExportModel(false);
-    statistic->setModel(m_model);
-    bool result = statistic->Confidence();
-    if (result)
-        LoadStatistic(statistic->Result());
-    // else
-    //     QMessageBox::information(this, tr("Not done"), tr("No calculation where done, because there is only one parameter of interest."));
-    //m_statistic_dialog->HideWidget();
-    emit Finished();
-    delete statistic;
-}
-
-void MetaModelWidget::WGStatistic(WGSConfig config)
-{
-    Waiter wait;
-
-    config.optimizer_config = m_model->getOptimizerConfig();
-
-    if (config.maxerror < 1E-8)
-        config.maxerror = m_model->Error(config.confidence, config.fisher_statistic);
-
-    WeakenedGridSearch* statistic = new WeakenedGridSearch(config, this);
-
-    connect(this, &MetaModelWidget::Interrupt, statistic, &AbstractSearchClass::Interrupt);
-    connect(statistic, &AbstractSearchClass::IncrementProgress, this, &MetaModelWidget::IncrementProgress);
-
-    QJsonObject json = m_model->ExportModel(false);
-    statistic->setModel(m_model);
-    statistic->setParameter(json);
-
-    if (!statistic->ConfidenceAssesment()) {
-        // emit Warning("The optimization seems not to be converged with respect to at least one constants!\nShowing the results anyway.", 1);
-    }
-
-    LoadStatistic(statistic->Result());
-
-    emit Finished();
-    delete statistic;
-}
-*/
 void MetaModelWidget::ImportConstants()
 {
     QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), tr("Json File (*.json);;Binary (*.suprafit);;All files (*.*)"));

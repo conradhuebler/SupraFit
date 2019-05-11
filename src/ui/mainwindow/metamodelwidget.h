@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +19,13 @@
 
 #pragma once
 
-#include "src/capabilities/abstractsearchclass.h"
-#include "src/capabilities/modelcomparison.h"
-#include "src/capabilities/montecarlostatistics.h"
-#include "src/capabilities/reductionanalyse.h"
-#include "src/capabilities/weakenedgridsearch.h"
-
 #include <QtCore/QSharedPointer>
 
 #include <QtWidgets/QWidget>
 
 #include "src/core/models.h"
 
+class JobManager;
 class MetaModelParameter;
 class ModalDialog;
 class ModelActions;
@@ -67,19 +62,13 @@ private:
     ResultsDialog* m_results;
     MetaModelParameter* m_metamodelparameter;
     QList<QJsonObject> m_fast_confidence;
+    JobManager* m_jobmanager;
 
     void LoadStatistic(const QJsonObject& data);
     void FastConfidence();
 
 private slots:
     void Minimize();
-    /*
-    void WGStatistic(WGSConfig config);
-    void MoCoStatistic(MoCoConfig config);
-    void MCStatistic(MCConfig config);
-    void CVAnalyse(ReductionAnalyse::CVType type);
-    void Reduction();
-    */
     void OpenAdvancedSearch();
     void NewGuess();
     void ImportConstants();
