@@ -318,12 +318,11 @@ ModelDataHolder::ModelDataHolder()
     connect(m_modelsWidget, SIGNAL(currentChanged(int)), this, SLOT(HideSubWindows(int)));
 
     m_statistic_dialog = new StatisticDialog(this);
-    /*connect(m_statistic_dialog, &StatisticDialog::MCStatistic, this, &ModelDataHolder::MCStatistic);
-    connect(m_statistic_dialog, &StatisticDialog::WGStatistic, this, &ModelDataHolder::WGStatistic);
-    connect(m_statistic_dialog, &StatisticDialog::MoCoStatistic, this, &ModelDataHolder::MoCoStatistic);
-    connect(m_statistic_dialog, &StatisticDialog::Reduction, this, &ModelDataHolder::ReductionStatistic);
-    connect(m_statistic_dialog, &StatisticDialog::CrossValidation, this, &ModelDataHolder::CVStatistic);
-    */
+    connect(m_statistic_dialog, &StatisticDialog::RunCalculation, this, &ModelDataHolder::RunJobs);
+    connect(m_statistic_dialog, &StatisticDialog::Interrupt, this, [this]() {
+        this->m_allow_loop = false;
+    });
+
     m_compare_dialog = new CompareDialog(this);
     connect(m_compare_dialog, &CompareDialog::CompareReduction, this, &ModelDataHolder::CompareReduction);
     connect(m_compare_dialog, &CompareDialog::CompareAIC, this, &ModelDataHolder::CompareAIC);
@@ -443,9 +442,9 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(QJsonObject, int)), this, SIGNAL(InsertModel(QJsonObject, int)), Qt::DirectConnection);
 
-    connect(modelwidget, SIGNAL(IncrementProgress(int)), m_statistic_dialog, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), modelwidget, SIGNAL(Interrupt()));
-    connect(m_statistic_dialog, SIGNAL(Interrupt()), this, SLOT(Interrupt()));
+    connect(modelwidget, &ModelWidget::IncrementProgress, m_statistic_dialog, &StatisticDialog::IncrementProgress);
+    connect(modelwidget, &ModelWidget::MaximumSteps, m_statistic_dialog, &StatisticDialog::MaximumSteps);
+    connect(m_statistic_dialog, &StatisticDialog::Interrupt, modelwidget, &ModelWidget::Interrupt);
 
     m_modelsWidget->addModelsTab(modelwidget);
     m_last_tab = m_modelsWidget->currentIndex();
@@ -484,7 +483,6 @@ void ModelDataHolder::RemoveTab(int i)
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
         QPointer<AbstractModel> m = model->Model().data();
         for (int j = 0; j < m_model_widgets.size(); ++j) {
-            qDebug() << m_model_widgets[j] << model;
             if (m_model_widgets[j] == model)
                 m_model_widgets.remove(j);
         }
@@ -662,25 +660,20 @@ void ModelDataHolder::CloseAllForced()
         RemoveTab(i);
 }
 
-int ModelDataHolder::Runs(bool moco) const
+void ModelDataHolder::RunJobs(const QJsonObject& job)
 {
+
     int run = 0;
     for (int i = 0; i < m_model_widgets.size(); ++i) {
         if (!m_model_widgets[i])
             continue;
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
-        if (moco && m_model_widgets[i]->Model()->GlobalParameterSize() != 2)
-            continue;
         run++;
     }
-    return run;
-}
-/*
-void ModelDataHolder::WGStatistic(const WGSConfig& config)
-{
-    m_statistic_dialog->setRuns(Runs());
-    m_statistic_dialog->setRuns(m_models.size());
+    m_statistic_dialog->MaximumMainSteps(run);
+
+    m_allow_loop = true;
     for (int i = 0; i < m_model_widgets.size(); ++i) {
         if (!m_model_widgets[i])
             continue;
@@ -688,103 +681,15 @@ void ModelDataHolder::WGStatistic(const WGSConfig& config)
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
 
-        m_model_widgets[i]->WGStatistic(config);
-
+        Waiter wait;
+        m_model_widgets[i]->setJob(job);
+        m_statistic_dialog->IncrementMainProgress();
         if (!m_allow_loop)
             break;
     }
     m_statistic_dialog->HideWidget();
 }
 
-void ModelDataHolder::MCStatistic(MCConfig config)
-{
-    m_statistic_dialog->setRuns(Runs());
-    m_allow_loop = true;
-
-    for (int i = 0; i < m_model_widgets.size(); ++i) {
-        // if (!m_model_widgets[i])
-        //     continue;
-
-        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
-            continue;
-
-        if (m_statistic_dialog->isMCStd())
-            config.variance = m_model_widgets[i]->Model()->StdDeviation();
-        else if (m_statistic_dialog->isMCSEy())
-            config.variance = m_model_widgets[i]->Model()->SEy();
-        else
-            config.variance = m_statistic_dialog->MCStd();
-
-        m_model_widgets[i]->MCStatistic(config);
-
-        if (!m_allow_loop)
-            break;
-    }
-    m_statistic_dialog->HideWidget();
-}
-
-void ModelDataHolder::ReductionStatistic()
-{
-    m_statistic_dialog->setRuns(Runs());
-    m_allow_loop = true;
-
-    for (int i = 0; i < m_model_widgets.size(); ++i) {
-        //  if (!m_model_widgets[i])
-        //      continue;
-
-        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
-            continue;
-
-        m_model_widgets[i]->DoReductionAnalyse();
-
-        if (!m_allow_loop)
-            break;
-    }
-    m_statistic_dialog->HideWidget();
-}
-
-void ModelDataHolder::CVStatistic(ReductionAnalyse::CVType type)
-{
-    m_statistic_dialog->setRuns(Runs());
-    m_allow_loop = true;
-
-    for (int i = 0; i < m_model_widgets.size(); ++i) {
-        //  if (!m_model_widgets[i])
-        //      continue;
-
-        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
-            continue;
-
-        m_model_widgets[i]->CVAnalyse(type);
-
-        if (!m_allow_loop)
-            break;
-    }
-    m_statistic_dialog->HideWidget();
-}
-
-void ModelDataHolder::MoCoStatistic(MoCoConfig config)
-{
-    m_allow_loop = true;
-    m_statistic_dialog->setRuns(Runs(true));
-
-    config.maxerror = 0;
-    for (int i = 0; i < m_model_widgets.size(); ++i) {
-        //  if (!m_model_widgets[i])
-        //      continue;
-
-        if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
-            continue;
-
-        if (m_model_widgets[i]->Model()->GlobalParameterSize() == 2)
-            m_model_widgets[i]->MoCoStatistic(config);
-
-        if (!m_allow_loop)
-            break;
-    }
-    m_statistic_dialog->HideWidget();
-}
-*/
 void ModelDataHolder::OptimizeAll()
 {
     for (int i = 1; i < m_modelsWidget->count(); i++) {

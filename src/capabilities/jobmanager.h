@@ -67,6 +67,6 @@ signals:
     void finished();
     void incremented(int t);
     void prepare(int count);
-    void ShowResult(SupraFit::Statistic type, int index);
+    void ShowResult(SupraFit::Method type, int index);
     void Interrupt();
 };

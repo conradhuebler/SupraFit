@@ -799,21 +799,19 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
     QString const_name;
     //text += "<table><tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
-    if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::WeakenedGridSearch || type == SupraFit::Statistic::FastConfidence) {
+    if (type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::ModelComparison || type == SupraFit::Method::WeakenedGridSearch || type == SupraFit::Method::FastConfidence) {
 
         text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td>" + Print::printDouble(value, 4) + " [+ " + Print::printDouble(upper - value, 4) + " / " + Print::printDouble(lower - value, 4) + "]</td></tr>";
         text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[" + Print::printDouble(lower, 4) + " - " + Print::printDouble(upper, 4) + "]</td></tr>";
     }
-    if (type == SupraFit::Statistic::MonteCarlo || type == SupraFit::Statistic::CrossValidation) {
+    if (type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::CrossValidation) {
 
-        if(type == SupraFit::Statistic::CrossValidation)
-        {
+        if (type == SupraFit::Method::CrossValidation) {
             if(controller["CVType"].toInt() == 1)
                 text += "<p>Leave-One-Out Cross Validation</p>";
             else
                 text += "<p>Leave-Two-Out Cross Validation</p>";
-        }else
-        {
+        } else {
             text += QString("<p>Input variance is %1</p>").arg(Print::printDouble(controller["variance"].toDouble(), 6));
         }
         QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
@@ -844,8 +842,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += "<tr><td colspan=2></th></tr>";
     }
 
-    if (type == SupraFit::Statistic::WeakenedGridSearch)
-    {
+    if (type == SupraFit::Method::WeakenedGridSearch) {
         bool converged = result["converged"].toBool();
         bool finished = result["finished"].toBool();
         bool stationary = result["stationary"].toBool();
@@ -882,13 +879,13 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += "<tr><td colspan=2></th></tr>";
     }
 
-    if (type == SupraFit::Statistic::ModelComparison || type == SupraFit::Statistic::FastConfidence) {
+    if (type == SupraFit::Method::ModelComparison || type == SupraFit::Method::FastConfidence) {
         text += "<tr><td colspan=2></th></tr>";
         text += QString("<tr><td colspan='2'>%6 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Html2Tex(result["name"].toString()));
         text += "<tr><td colspan=2></th></tr>";
     }
 
-    if (type == SupraFit::Statistic::Reduction) {
+    if (type == SupraFit::Method::Reduction) {
 
         auto CalculateReduction = [&text](qreal value, const QVector<qreal>& vector) -> qreal {
             qreal sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0;

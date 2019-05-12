@@ -66,36 +66,35 @@ JobManager::~JobManager()
 void JobManager::RunJobs()
 {
     for (const QJsonObject& object : m_jobs) {
-        qDebug() << object;
-        SupraFit::Statistic method = static_cast<SupraFit::Statistic>(object["method"].toInt());
+        SupraFit::Method method = static_cast<SupraFit::Method>(object["method"].toInt());
         QJsonObject result;
-
+        qDebug() << object;
         switch (method) {
-        case SupraFit::Statistic::WeakenedGridSearch:
+        case SupraFit::Method::WeakenedGridSearch:
             result = RunGridSearch(object);
             break;
 
-        case SupraFit::Statistic::ModelComparison:
+        case SupraFit::Method::ModelComparison:
             result = RunModelComparison(object);
             break;
 
-        case SupraFit::Statistic::FastConfidence:
+        case SupraFit::Method::FastConfidence:
             result = RunFastConfidence(object);
             break;
 
-        case SupraFit::Statistic::Reduction:
+        case SupraFit::Method::Reduction:
             result = RunReduction(object);
             break;
 
-        case SupraFit::Statistic::MonteCarlo:
+        case SupraFit::Method::MonteCarlo:
             result = RunMonteCarlo(object);
             break;
 
-        case SupraFit::Statistic::CrossValidation:
+        case SupraFit::Method::CrossValidation:
             result = RunCrossValidation(object);
             break;
 
-        case SupraFit::Statistic::GlobalSearch:
+        case SupraFit::Method::GlobalSearch:
             result = RunGlobalSearch(object);
             break;
         }

@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,10 +92,10 @@ void ResultsDialog::Attention()
     activateWindow();
 }
 
-void ResultsDialog::ShowResult(SupraFit::Statistic type, int index)
+void ResultsDialog::ShowResult(SupraFit::Method type, int index)
 {
     ResultsWidget* results = new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper);
-    int tab = m_tabs->addTab(results, SupraFit::Statistic2Name(type));
+    int tab = m_tabs->addTab(results, SupraFit::Method2Name(type));
     connect(results, &ResultsWidget::LoadModel, this, &ResultsDialog::LoadModel);
     connect(results, &ResultsWidget::AddModel, this, &ResultsDialog::AddModel);
 
@@ -117,10 +117,10 @@ void ResultsDialog::UpdateList()
 
     QStandardItemModel* model = new QStandardItemModel(this);
     for (int i = 0; i < m_model.data()->getMCStatisticResult(); ++i) {
-        QJsonObject controller = m_model.data()->getStatistic(SupraFit::Statistic::MonteCarlo, i)["controller"].toObject();
+        QJsonObject controller = m_model.data()->getStatistic(SupraFit::Method::MonteCarlo, i)["controller"].toObject();
 
-        QStandardItem* item = new QStandardItem(SupraFit::Statistic2Name(controller["method"].toInt()));
-        item->setData(SupraFit::Statistic2Name(controller["method"].toInt()), Qt::DisplayRole);
+        QStandardItem* item = new QStandardItem(SupraFit::Method2Name(controller["method"].toInt()));
+        item->setData(SupraFit::Method2Name(controller["method"].toInt()), Qt::DisplayRole);
         item->setData(controller["method"].toInt(), Qt::UserRole);
         item->setData(i, Qt::UserRole + 1);
         makeItem(item);
@@ -130,7 +130,7 @@ void ResultsDialog::UpdateList()
     for (int i = 0; i < m_model.data()->getWGStatisticResult(); ++i) {
         QStandardItem* item = new QStandardItem(tr("Weakend Grid Search"));
         item->setData(tr("Weakend Grid Search"), Qt::DisplayRole);
-        item->setData(SupraFit::Statistic::WeakenedGridSearch, Qt::UserRole);
+        item->setData(SupraFit::Method::WeakenedGridSearch, Qt::UserRole);
         item->setData(i, Qt::UserRole + 1);
         makeItem(item);
         model->appendRow(item);
@@ -139,7 +139,7 @@ void ResultsDialog::UpdateList()
     for (int i = 0; i < m_model.data()->getMoCoStatisticResult(); ++i) {
         QStandardItem* item = new QStandardItem(tr("Model Comparison"));
         item->setData(tr("Model Comparison"), Qt::DisplayRole);
-        item->setData(SupraFit::Statistic::ModelComparison, Qt::UserRole);
+        item->setData(SupraFit::Method::ModelComparison, Qt::UserRole);
         item->setData(i, Qt::UserRole + 1);
         makeItem(item);
         model->appendRow(item);
@@ -149,7 +149,7 @@ void ResultsDialog::UpdateList()
     if (!statistic.isEmpty()) {
         QStandardItem* item = new QStandardItem(tr("Reduction Analysis"));
         item->setData(tr("Reduction Analysis"), Qt::DisplayRole);
-        item->setData(SupraFit::Statistic::Reduction, Qt::UserRole);
+        item->setData(SupraFit::Method::Reduction, Qt::UserRole);
         item->setData(0, Qt::UserRole + 1);
         makeItem(item);
         model->appendRow(item);
@@ -158,7 +158,7 @@ void ResultsDialog::UpdateList()
     for (int i = 0; i < m_model.data()->SearchSize(); ++i) {
         QStandardItem* item = new QStandardItem(tr("Global Search"));
         item->setData(tr("Global Search"), Qt::DisplayRole);
-        item->setData(SupraFit::Statistic::GlobalSearch, Qt::UserRole);
+        item->setData(SupraFit::Method::GlobalSearch, Qt::UserRole);
         item->setData(i, Qt::UserRole + 1);
         makeItem(item);
         model->appendRow(item);
@@ -173,10 +173,10 @@ void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
     QStandardItem* item = m_itemmodel->itemFromIndex(index);
 
     if (-1 == m_indices[Index(item)]) {
-        SupraFit::Statistic type = SupraFit::Statistic(item->data(Qt::UserRole).toInt());
+        SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
         int index = item->data(Qt::UserRole + 1).toInt();
         ResultsWidget* results = new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper);
-        int tab = m_tabs->addTab(results, SupraFit::Statistic2Name(type));
+        int tab = m_tabs->addTab(results, SupraFit::Method2Name(type));
         connect(results, &ResultsWidget::LoadModel, this, &ResultsDialog::LoadModel);
         connect(results, &ResultsWidget::AddModel, this, &ResultsDialog::AddModel);
         item->setData(tab, Qt::UserRole + 2);
@@ -192,7 +192,7 @@ void ResultsDialog::RemoveItem(const QModelIndex& index)
         // m_tabs->removeTab(m_indices[Index(item)]);
     }
 
-    SupraFit::Statistic type = SupraFit::Statistic(item->data(Qt::UserRole).toInt());
+    SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
     int i = item->data(Qt::UserRole + 1).toInt();
     m_model.data()->RemoveStatistic(type, i);
     UpdateList();

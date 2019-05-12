@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
+
 #include "src/global_config.h"
 
 #include "src/core/jsonhandler.h"
@@ -181,14 +182,39 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 {
     qint64 seed = QDateTime::currentMSecsSinceEpoch();
     rng.seed(seed);
-    Phi = std::normal_distribution<double>(0, m_controller["Variance"].toDouble());
+    m_model->setFast(false);
+    m_model->Calculate();
+    m_model->setFast(true);
+
+    qreal sigma = 0;
+
+    bool ok;
+
+    int source = m_controller["VarianceSource"].toVariant().toInt(&ok);
+    if (ok) {
+        if (source == 1)
+            sigma = m_controller["Variance"].toDouble();
+        else if (source == 2)
+            sigma = m_model->SEy();
+        else if (source == 3)
+            sigma = m_model->StdDeviation();
+    } else {
+        if (m_controller["VarianceSource"].toString() == "custom")
+            sigma = m_controller["Variance"].toDouble();
+        else if (m_controller["VarianceSource"].toString() == "SEy")
+            sigma = m_model->SEy();
+        else if (m_controller["VarianceSource"].toString() == "sigma")
+            sigma = m_model->StdDeviation();
+    }
+    qDebug() << sigma;
+    Phi = std::normal_distribution<double>(0, sigma);
 
     int maxthreads = qApp->instance()->property("threads").toInt();
     int blocksize = maxthreads / maxthreads / 10;
     if (blocksize < 1)
         blocksize = 1;
     m_threadpool->setMaxThreadCount(maxthreads);
-    m_model->Calculate();
+
     m_table = new DataTable(m_model->ModelTable());
     m_ptr_table << m_table;
     QVector<QPointer<MonteCarloBatch>> threads;
@@ -196,8 +222,8 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     QVector<qreal> vector = m_model->ErrorTable()->toList();
     Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
 
-    bool original = m_controller["original"].toBool();
-    bool bootstrap = m_controller["bootstrap"].toBool();
+    bool original = m_controller["OriginalData"].toBool();
+    bool bootstrap = m_controller["Bootstrap"].toBool();
     int MaxSteps = m_controller["MaxSteps"].toInt();
 
     QVector<qreal> indep_variance = ToolSet::String2DoubleVec(m_controller["IndependentRowVariance"].toString());

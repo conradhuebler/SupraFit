@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ StatisticDialog::StatisticDialog(QSharedPointer<AbstractModel> model, QWidget* p
     , m_hidden(false)
 {
     setUi();
+    m_main_progress->hide();
     HideWidget();
     connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
 }
@@ -106,6 +107,7 @@ void StatisticDialog::setUi()
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
     m_progress = new QProgressBar;
+    m_main_progress = new QProgressBar;
     layout->addWidget(m_time_info);
 
     m_use_checked = new QCheckBox(tr("Consider Only Checked Tabs."));
@@ -117,7 +119,10 @@ void StatisticDialog::setUi()
     m_hide = new QPushButton(tr("Hide"));
     m_interrupt = new QPushButton(tr("Interrupt"));
     QHBoxLayout* hLayout = new QHBoxLayout;
-    hLayout->addWidget(m_progress);
+    QVBoxLayout* progress_layout = new QVBoxLayout;
+    progress_layout->addWidget(m_progress);
+    progress_layout->addWidget(m_main_progress);
+    hLayout->addLayout(progress_layout);
     hLayout->addWidget(m_interrupt);
     m_hide_widget = new QWidget;
     m_hide_widget->setLayout(hLayout);
@@ -515,10 +520,9 @@ QJsonObject StatisticDialog::RunGridSearch() const
     QJsonObject controller;
 
     controller["MaxSteps"] = m_wgs_steps->value();
-    //controller["increment"] = m_config.increment;
     controller["MaxError"] = m_wgs_max;
     controller["f-value"] = m_wgs_f_value->value();
-    controller["method"] = SupraFit::Statistic::WeakenedGridSearch;
+    controller["method"] = SupraFit::Method::WeakenedGridSearch;
     controller["confidence"] = m_wgs_maxerror->value();
 
     controller["ErrorConvergency"] = m_wgs_err_conv->value();
@@ -543,14 +547,6 @@ QJsonObject StatisticDialog::RunGridSearch() const
 
     controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
     controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
-    /*  
-    m_time = 0;
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(2 * max);
-    m_progress->setValue(0);
-    
-    ShowWidget();
-*/
     return controller;
 }
 
@@ -561,7 +557,7 @@ QJsonObject StatisticDialog::RunModelComparison() const
     controller["MaxSteps"] = m_moco_mc_steps->value();
     controller["MaxError"] = m_moco_max;
     controller["f-value"] = m_moco_f_value->value();
-    controller["method"] = SupraFit::Statistic::ModelComparison;
+    controller["method"] = SupraFit::Method::ModelComparison;
     controller["confidence"] = m_moco_maxerror->value();
 
     controller["BoxScalingFactor"] = m_moco_box_multi->value();
@@ -581,23 +577,9 @@ QJsonObject StatisticDialog::RunModelComparison() const
 
     controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
     controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
-    /*
-    m_time = 0;
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(m_runs * (1 + m_moco_mc_steps->value() / update_intervall));
-    m_progress->setValue(0);
-    ShowWidget();
-    */
     return controller;
 }
-/*
-MoCoConfig StatisticDialog::getMoCoConfig()
-{
-    MoCoConfig config;
 
-    return config;
-}
-*/
 QJsonObject StatisticDialog::RunMonteCarlo() const
 {
     QJsonObject controller;
@@ -609,11 +591,11 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
     else if (m_mc_sey->isChecked())
         controller["VarianceSource"] = "SEy";
     else
-        controller["VarianceSource"] = "UserDefined";
+        controller["VarianceSource"] = "custom";
 
-    controller["OriginalError"] = m_original->isChecked();
+    controller["OriginalData"] = m_original->isChecked();
     controller["Bootstrap"] = m_bootstrap->isChecked();
-    controller["method"] = SupraFit::Statistic::MonteCarlo;
+    controller["method"] = SupraFit::Method::MonteCarlo;
 
     QVector<qreal> indep_variance;
     for (int i = 0; i < m_indepdent_checkboxes.size(); ++i) {
@@ -624,48 +606,15 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
     }
 
     controller["IndependentRowVariance"] = ToolSet::DoubleVec2String(indep_variance);
-
-    /*    
-    m_time = 0;
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(m_runs * (m_mc_steps->value() + m_mc_steps->value() / 100));
-    m_progress->setValue(0);
-    ShowWidget();
-    */
     return controller;
 }
-/*
-MCConfig StatisticDialog::getMCConfig()
-{
-    MCConfig config;
-    config.variance = m_varianz_box->value();
-    config.maxsteps = m_mc_steps->value();
-    config.original = m_original->isChecked();
-    config.bootstrap = m_bootstrap->isChecked();
-    QVector<qreal> indep_variance;
-    for (int i = 0; i < m_indepdent_checkboxes.size(); ++i) {
-        if (m_indepdent_checkboxes[i]->isChecked())
-            indep_variance << m_indepdent_variance[i]->value();
-        else
-            indep_variance << 0;
-    }
-    config.indep_variance = indep_variance;
 
-    return config;
-}*/
 
 QJsonObject StatisticDialog::RunReductionAnalyse() const
 {
     QJsonObject controller;
 
-    controller["method"] = SupraFit::Statistic::Reduction;
-    /*
-    m_time = 0;
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(0);
-    m_progress->setValue(0);
-    ShowWidget();
-    */
+    controller["method"] = SupraFit::Method::Reduction;
     return controller;
 }
 
@@ -673,19 +622,12 @@ QJsonObject StatisticDialog::RunCrossValidation() const
 {
     QJsonObject controller;
 
-    controller["method"] = SupraFit::Statistic::CrossValidation;
+    controller["method"] = SupraFit::Method::CrossValidation;
     if (m_wgs_loo->isChecked())
         controller["CVType"] = ReductionAnalyse::LeaveOneOut;
     else
         controller["CVType"] = ReductionAnalyse::LeaveTwoOut;
 
-    /*
-    m_time = 0;
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setMaximum(0);
-    m_progress->setValue(0);
-    ShowWidget();
-    */
     return controller;
 }
 
@@ -708,6 +650,12 @@ void StatisticDialog::MaximumSteps(int steps)
     m_progress->setMaximum(steps);
 }
 
+void StatisticDialog::MaximumMainSteps(int steps)
+{
+    m_main_progress->setMaximum(steps);
+    m_main_progress->setValue(0);
+}
+
 void StatisticDialog::IncrementProgress(int time)
 {
     QMutexLocker locker(&mutex);
@@ -723,14 +671,20 @@ void StatisticDialog::IncrementProgress(int time)
     int val = m_progress->value() + 1;
     qreal aver = double(m_time) / val;
     int remain = double(m_progress->maximum() - val) * aver / qAbs(QThreadPool::globalInstance()->maxThreadCount()) / 1000;
-    int used = (t0 - m_time_0) / 1000;
-
+    int sec = (t0 - m_time_0) / 1000;
+    double msec = ((t0 - m_time_0) / 1000.0 - sec) * 1000;
     if (m_progress->maximum() == -1) {
-        m_time_info->setText(tr("Nobody knows when this will end.\nBut you hold the door for %2 sec. .").arg(used));
+        m_time_info->setText(tr("Nobody knows when this will end.\nBut you hold the door for %2 sec, %3 msec. .").arg(sec).arg(msec));
     } else {
-        m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 . .").arg(remain).arg(timer.toString("mm:ss.zzz")));
+        // m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 . .").arg(remain).arg(timer.toString("mm:ss.zzz")));
+        m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec, %3 msec .").arg(remain).arg(sec).arg(msec));
         m_progress->setValue(val);
     }
+}
+
+void StatisticDialog::IncrementMainProgress()
+{
+    m_main_progress->setValue(m_main_progress->value() + 1);
 }
 
 QString StatisticDialog::FOutput() const

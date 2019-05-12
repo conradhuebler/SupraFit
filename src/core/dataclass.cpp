@@ -361,7 +361,7 @@ qreal DataTable::data(int column, int row) const
 
 qreal& DataTable::data(int column, int row)
 {
-    QReadLocker locker(&mutex);
+    QMutexLocker locker(&m_lock);
 #ifdef _DEBUG
     m_empty = 0;
     if (row < m_table.rows())

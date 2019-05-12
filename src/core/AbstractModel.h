@@ -287,9 +287,9 @@ public:
     /*! \brief Load statistic defined by type
      * If more than results can be stored, define index
      */
-    QJsonObject getStatistic(SupraFit::Statistic type, int index = 0) const;
+    QJsonObject getStatistic(SupraFit::Method type, int index = 0) const;
 
-    bool RemoveStatistic(SupraFit::Statistic type, int index = 0);
+    bool RemoveStatistic(SupraFit::Method type, int index = 0);
 
     virtual QList<qreal> getCalculatedModel();
 
@@ -690,7 +690,7 @@ protected:
 
     /*! \brief Calculated the variance of the raw data
      */
-    virtual qreal CalculateCovarianceFit();
+    virtual qreal CalculateCovarianceFit() const;
 
     void clearChart(const QString& hash);
 

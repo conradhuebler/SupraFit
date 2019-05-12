@@ -53,7 +53,7 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         index++;
         qreal mean_std = 0, mean_corr_std = 0;
         bool skip = false;
-        QJsonObject reduction = model.first["data"].toObject()["statistics"].toObject()[QString::number(SupraFit::Statistic::Reduction)].toObject();
+        QJsonObject reduction = model.first["data"].toObject()["statistics"].toObject()[QString::number(SupraFit::Method::Reduction)].toObject();
         QVector<int> parameter = model.second;
 
         if (reduction.isEmpty()) {

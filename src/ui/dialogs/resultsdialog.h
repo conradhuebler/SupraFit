@@ -42,7 +42,7 @@ public:
     virtual ~ResultsDialog() override;
 
 public slots:
-    void ShowResult(SupraFit::Statistic type, int index);
+    void ShowResult(SupraFit::Method type, int index);
     void Attention();
 
 private:

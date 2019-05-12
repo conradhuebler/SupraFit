@@ -33,7 +33,7 @@
 #include <cmath>
 namespace SupraFit {
 
-enum Statistic {
+enum Method {
     MonteCarlo = 1,
     WeakenedGridSearch = 2,
     ModelComparison = 3,
@@ -86,42 +86,42 @@ struct BoxWhisker {
     inline qreal LowerNotch() const { return median - (1.58 * (upper_quantile - lower_quantile) / sqrt(count)); }
 };
 
-inline QString Statistic2Name(SupraFit::Statistic type)
+inline QString Method2Name(SupraFit::Method type)
 {
     switch (type) {
-    case SupraFit::Statistic::WeakenedGridSearch:
+    case SupraFit::Method::WeakenedGridSearch:
         return ("Weakend Grid Search");
         break;
 
-    case SupraFit::Statistic::ModelComparison:
+    case SupraFit::Method::ModelComparison:
         return ("Model Comparison");
         break;
 
-    case SupraFit::Statistic::FastConfidence:
+    case SupraFit::Method::FastConfidence:
         return ("Simplified Model Comparison");
         break;
 
-    case SupraFit::Statistic::Reduction:
+    case SupraFit::Method::Reduction:
         return ("Reduction Analysis");
         break;
 
-    case SupraFit::Statistic::MonteCarlo:
+    case SupraFit::Method::MonteCarlo:
         return ("Monte Carlo Simulation");
         break;
-    case SupraFit::Statistic::CrossValidation:
+    case SupraFit::Method::CrossValidation:
         return ("Cross Validation");
         break;
 
-    case SupraFit::Statistic::GlobalSearch:
+    case SupraFit::Method::GlobalSearch:
         return ("Global Search");
         break;
     }
     return QString();
 }
 
-inline QString Statistic2Name(int type)
+inline QString Method2Name(int type)
 {
-    return Statistic2Name(SupraFit::Statistic(type));
+    return Method2Name(SupraFit::Method(type));
 }
 
 inline QString aboutHtml()

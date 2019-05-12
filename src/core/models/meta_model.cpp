@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -221,7 +221,6 @@ void MetaModel::OptimizeParameters_Private()
 
 QVector<qreal> MetaModel::CollectParameter()
 {
-
     m_opt_para.clear();
     m_global_par.clear();
     m_local_par.clear();
@@ -333,7 +332,7 @@ qreal MetaModel::CalculateVariance()
     return v / (count - 1);
 }
 
-qreal MetaModel::CalculateCovarianceFit()
+qreal MetaModel::CalculateCovarianceFit() const
 {
     qreal model = 0, data = 0;
     int count = 0;
@@ -549,6 +548,7 @@ QSharedPointer<AbstractModel> MetaModel::Clone()
     for (const QSharedPointer<AbstractModel>& m : Models())
         model.data()->addModel(m->Clone().data());
     model.data()->setConnectType(m_connect_type);
+    model.data()->m_mmparameter = m_mmparameter;
     model.data()->OptimizeParameters_Private();
 
     return model;
@@ -635,7 +635,10 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
             m_mmparameter << MMParameter(value, parm);
         }
     }
+    ApplyConnectType();
+    CollectParameter();
     OptimizeParameters_Private();
+    Calculate();
     emit ParameterMoved();
     return result;
 }

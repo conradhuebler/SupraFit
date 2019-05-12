@@ -293,7 +293,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     int thread_count = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);
     for (int i = 0; i < thread_count; ++i) {
-        MCThread* thread = new MCThread(m_controller);
+        MCThread* thread = new MCThread();
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
         thread->setModel(m_model);
         thread->setController(m_controller);

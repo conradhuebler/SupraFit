@@ -131,7 +131,7 @@ void ReductionAnalyse::CrossValidation()
 
 void ReductionAnalyse::PlainReduction()
 {
-    m_controller["method"] = SupraFit::Statistic::Reduction;
+    m_controller["method"] = SupraFit::Method::Reduction;
     m_controller["xlabel"] = m_model.data()->XLabel();
     m_controller["cutoff"] = m_model.data()->ReductionCutOff();
     int maxthreads = qApp->instance()->property("threads").toInt();

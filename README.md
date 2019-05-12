@@ -75,8 +75,8 @@ Copy such a table from any spreadsheet application and paste it in the **New tab
 
 SupraFit loads and saves tables and calculated models as `json files *.json` or compressed json files `*.suprafit`.
 
-## Statistcs
-SupraFit provides some statistical analysis, which will be described an not yet finished article. Implemented methods are based on the following approaches:
+## Statistics
+SupraFit provides some statistical analysis, which will be described in an not yet finished article. Implemented methods are based on the following approaches:
 - Monte Carlo simulation
 - Error-Based analysis
 - Resampling methods

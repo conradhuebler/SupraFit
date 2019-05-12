@@ -44,6 +44,8 @@ public:
     {
         m_model = model;
         setUi();
+        Model()->setFast(false);
+        Model()->Calculate();
     }
     inline QPointer<MetaModel> Model() { return qobject_cast<MetaModel*>(m_model.data()); }
 

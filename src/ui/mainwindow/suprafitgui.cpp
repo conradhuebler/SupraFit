@@ -1244,6 +1244,9 @@ void SupraFitGui::CloseProjects()
         delete mainwindow;
         m_project_tree->UpdateStructure();
     }
+    for (int i = m_meta_models.size() - 1; i >= 0; --i)
+        m_meta_models.remove(i);
+
     m_supr_file.clear();
     m_filename_line->clear();
 }

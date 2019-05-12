@@ -72,7 +72,7 @@ class MCThread : public AbstractSearchThread {
     Q_OBJECT
 
 public:
-    inline MCThread(QJsonObject controller)
+    inline MCThread()
         : AbstractSearchThread()
     {
     }

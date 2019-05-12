@@ -122,7 +122,9 @@ public:
 
 public slots:
     void MaximumSteps(int steps);
+    void MaximumMainSteps(int steps);
     void IncrementProgress(int time);
+    void IncrementMainProgress();
     void HideWidget();
     void ShowWidget();
     void Attention();
@@ -146,7 +148,7 @@ private:
     QVector<QDoubleSpinBox*> m_indepdent_variance;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
-    QProgressBar* m_progress;
+    QProgressBar *m_progress, *m_main_progress;
     QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info;
     QRadioButton *m_wgs_loo, *m_wgs_l2o;
     QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user;

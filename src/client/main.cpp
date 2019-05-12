@@ -17,10 +17,15 @@
  * 
  */
 
+#include "src/capabilities/jobmanager.h"
+
+#include "src/core/models.h"
+
 #include "src/client/analyser.h"
 #include "src/client/simulator.h"
 
 #include "src/core/equil.h"
+#include "src/core/jsonhandler.h"
 
 #include "src/global.h"
 #include "src/global_config.h"
@@ -76,6 +81,13 @@ int main(int argc, char** argv)
         QCoreApplication::translate("main", ""));
     parser.addOption(t);
 
+    QCommandLineOption jobfile(QStringList() << "j"
+                                             << "job",
+        QCoreApplication::translate("main", "Run Content of a Jobfile"),
+        QCoreApplication::translate("main", "jobfile"),
+        QCoreApplication::translate("main", ""));
+    parser.addOption(jobfile);
+
     QCommandLineOption statistic(QStringList() << "s"
                                                << "statistic",
         QCoreApplication::translate("main", "Statistical post processing to be done\n a - Akaike Information Criterion\n c - Cross Validation\n m - Monte Carlo Simulation\n o - Model Comparison\n r - Reduction Analyse\n w- Weakend Grid Search"),
@@ -112,6 +124,7 @@ int main(int argc, char** argv)
 
     const QString print = parser.value("print");
     const QString task = parser.value("task");
+    const QString job = parser.value("j");
 
     if (infile.isEmpty() && (task != "c")) {
         std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
@@ -127,7 +140,7 @@ int main(int argc, char** argv)
     if (outfile.isEmpty())
         outfile = infile;
 
-    std::cout << "Task is " << task.toStdString() << std::endl;
+    std::cout << "Task is " << job.toStdString() << std::endl;
     int exp = parser.value("e").toInt();
     qreal std = parser.value("g").toDouble();
 
@@ -140,6 +153,40 @@ int main(int argc, char** argv)
     bool list = parser.isSet("l");
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
+
+    if (parser.isSet("j") && parser.isSet("i")) {
+        QPointer<DataClass> data;
+        QJsonObject m_toplevel;
+        if (!JsonHandler::ReadJsonFile(m_toplevel, parser.value("i")))
+            return 0;
+        data = new DataClass(m_toplevel["data"].toObject());
+        QStringList keys = m_toplevel.keys();
+        QJsonObject toplevel, dataObject;
+        dataObject = data->ExportData();
+
+        for (const QString& key : keys) {
+            if (key == "data")
+                continue;
+
+            SupraFit::Model model = static_cast<SupraFit::Model>(m_toplevel[key].toObject()["model"].toInt());
+            QSharedPointer<AbstractModel> t = CreateModel(model, data);
+            t->ImportModel(m_toplevel[key].toObject());
+
+            JobManager* manager = new JobManager;
+            manager->setModel(t);
+            int i = 0;
+            for (const QString& str : parser.values("j")) {
+                QJsonObject job;
+                JsonHandler::ReadJsonFile(job, str);
+                manager->AddJob(job);
+            }
+            manager->RunJobs();
+            toplevel["model_" + QString::number(i)] = t->ExportModel(true, false);
+            i++;
+        }
+        toplevel["data"] = dataObject;
+        JsonHandler::WriteJsonFile(toplevel, parser.value("i"));
+    }
 
     if (task.isEmpty() || task.isNull()) {
         std::cout << "No task is not set, lets do the standard stuff ..." << std::endl;

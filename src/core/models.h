@@ -38,7 +38,7 @@
 #include "models/kinetics/mm_model.h"
 #include "models/kinetics/monomolecularmodel.h"
 
-inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataClass> data)
+inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> data)
 {
     QSharedPointer<AbstractModel> t;
 
@@ -103,4 +103,9 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataCla
         t.clear();
     };
     return t;
+}
+
+inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataClass> data)
+{
+    return CreateModel(model, data.data());
 }

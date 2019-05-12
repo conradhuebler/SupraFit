@@ -77,32 +77,32 @@ void ResultsWidget::setUi()
     m_confidence_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     switch (m_data["controller"].toObject()["method"].toInt()) {
-    case SupraFit::Statistic::MonteCarlo:
+    case SupraFit::Method::MonteCarlo:
         m_widget = MonteCarloWidget();
         setObjectName("Monte Carlo Simulation for " + m_model.data()->Name());
         break;
 
-    case SupraFit::Statistic::ModelComparison:
+    case SupraFit::Method::ModelComparison:
         m_widget = ModelComparisonWidget();
         setObjectName("Model Comparison Confidence for " + m_model.data()->Name());
         break;
 
-    case SupraFit::Statistic::WeakenedGridSearch:
+    case SupraFit::Method::WeakenedGridSearch:
         m_widget = GridSearchWidget();
         setObjectName("Weakend Grid Search Confidence for " + m_model.data()->Name());
         break;
 
-    case SupraFit::Statistic::Reduction:
+    case SupraFit::Method::Reduction:
         m_widget = ReductionWidget();
         setObjectName("Reduction Analysis for " + m_model.data()->Name());
         break;
 
-    case SupraFit::Statistic::CrossValidation:
+    case SupraFit::Method::CrossValidation:
         m_widget = MonteCarloWidget();
         setObjectName("Cross Validation Estimation for " + m_model.data()->Name());
         break;
 
-    case SupraFit::Statistic::GlobalSearch:
+    case SupraFit::Method::GlobalSearch:
         m_widget = SearchWidget();
         setObjectName("Global Search for " + m_model.data()->Name());
         break;
@@ -316,7 +316,7 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     QString text;
     m_data = data;
     QJsonObject controller = m_data["controller"].toObject();
-    if (controller["method"].toInt() == SupraFit::Statistic::GlobalSearch) {
+    if (controller["method"].toInt() == SupraFit::Method::GlobalSearch) {
         text += Print::TextFromStatistic(data, controller);
     } else {
         text += Print::TextFromStatistic(controller["raw"].toObject(), controller);

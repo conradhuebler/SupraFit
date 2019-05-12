@@ -205,7 +205,6 @@ private:
     void Json2Model(const QJsonObject& object);
     void Json2Model(const QJsonObject& object, SupraFit::Model model);
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
-    int Runs(bool moco = false) const;
     bool m_history, m_allow_loop;
     double m_ReductionCutoff = 0;
 
@@ -216,6 +215,8 @@ private slots:
     void CreateCrashFile();
     void RemoveCrashFile();
     void SetProjectTabName();
+    void RunJobs(const QJsonObject& job);
+
     /*
     void WGStatistic(const WGSConfig& config);
     void MCStatistic(MCConfig config);

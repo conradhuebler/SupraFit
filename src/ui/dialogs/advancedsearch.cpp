@@ -267,7 +267,7 @@ void AdvancedSearch::MaxSteps()
     m_ignored_parameter.clear();
     int max_count = 1;
     for (int i = 0; i < m_parameter_list.size(); ++i) {
-        double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = m_parameter_list[i]->Optimise();
+        double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = 1, optimise = m_parameter_list[i]->Optimise();
         if(m_parameter_list[i]->Variable())
         {
             if (!m_parameter_list[i]->isEnabled()) {
@@ -276,11 +276,10 @@ void AdvancedSearch::MaxSteps()
             } else {
                 min = m_parameter_list[i]->Min();
                 max = m_parameter_list[i]->Max();
-                if (m_parameter_list[i]->Optimise())
-                    step = m_parameter_list[i]->Step();
+                step = m_parameter_list[i]->Step();
             }
         }
-        m_parameter.append(QVector<qreal>() << min << max << step);
+        m_parameter.append(QVector<qreal>() << min << max << step << optimise);
 
         if (max > min)
             max_count *= std::ceil((max - min) / step);
@@ -310,7 +309,7 @@ void AdvancedSearch::SearchGlobal()
     QJsonObject job;
 
     job["ParameterSize"] = m_parameter.size();
-    job["method"] = SupraFit::Statistic::GlobalSearch;
+    job["method"] = SupraFit::Method::GlobalSearch;
     for (int i = 0; i < m_parameter.size(); ++i) {
         job[QString::number(i)] = ToolSet::DoubleVec2String(m_parameter[i]);
     }

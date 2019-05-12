@@ -96,20 +96,15 @@ public:
     QString Keys() const;
     void setKeys(const QString& str);
     QColor ActiveColor() const;
+    void setJob(const QJsonObject& job);
 
 public slots:
     void LoadJson(const QJsonObject& object);
-
-    //void WGStatistic(WGSConfig config);
-    // void MoCoStatistic(MoCoConfig config);
-    // void MCStatistic(MCConfig config);
-    // void CVAnalyse(ReductionAnalyse::CVType type);
 
     void GlobalMinimize();
     void GlobalMinimizeLoose();
     void LocalMinimize();
     void HideAllWindows();
-    // void DoReductionAnalyse();
 
 private:
     QSharedPointer<AbstractModel> m_model;
@@ -134,7 +129,7 @@ private:
     void Data2Text();
     void Model2Text();
     void MinimizeModel(const QJsonObject& config);
-    void LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models = QList<QJsonObject>());
+    void LoadStatistic(const QJsonObject& data);
 
     QVBoxLayout* m_sign_layout;
 
@@ -153,6 +148,7 @@ private:
     QList<QJsonObject> m_fast_confidence;
 
     JobManager* m_jobmanager;
+
 private slots:
     void Repaint();
     void CollectActiveSignals();
@@ -177,6 +173,7 @@ public slots:
     void OptimizerSettings();
     void ChangeColor();
     void setColor(const QColor& color);
+    void Interrupt();
 
 signals:
     void Update();
@@ -184,6 +181,6 @@ signals:
     void AddModel(const QJsonObject& json);
     void ToggleSeries(int);
     void IncrementProgress(int value);
-    void Interrupt();
+    void MaximumSteps(int value);
     void ColorChanged(const QColor& color);
 };

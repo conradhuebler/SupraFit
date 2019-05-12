@@ -74,7 +74,7 @@ private:
     QList<QJsonObject> m_box_object;
     QList<QJsonObject> m_models;
     bool has_histogram, has_scatter, has_boxplot;
-    SupraFit::Statistic m_type;
+    SupraFit::Method m_type;
 
     ChartWrapper* m_wrapper;
     QWeakPointer<AbstractModel> m_model;

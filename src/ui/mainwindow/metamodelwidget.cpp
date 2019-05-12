@@ -74,7 +74,7 @@ void MetaModelWidget::setUi()
         this->Model()->setConnectType(static_cast<MetaModel::ConnectType>(index));
     });
 
-    Model()->setConnectType(static_cast<MetaModel::ConnectType>(m_type->currentIndex()));
+    //Model()->setConnectType(static_cast<MetaModel::ConnectType>(m_type->currentIndex()));
 
     layout->addWidget(m_type, 0, 1);
 
@@ -85,8 +85,16 @@ void MetaModelWidget::setUi()
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
 
+    connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
+        if (type != SupraFit::Method::FastConfidence) {
+            this->m_results->Attention();
+            this->m_results->ShowResult(type, index);
+        }
+
+        QApplication::restoreOverrideCursor();
+    });
+
     connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
-    //connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
     //connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
     connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
     connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
@@ -111,10 +119,11 @@ void MetaModelWidget::Minimize()
 
     NonLinearFitThread* thread = new NonLinearFitThread(false);
     thread->setModel(m_model, false);
-
     thread->run();
+
     bool converged = thread->Converged();
     QJsonObject model;
+
     if (converged)
         model = thread->ConvergedParameter();
     else
@@ -128,9 +137,9 @@ void MetaModelWidget::Minimize()
 
     delete thread;
 
-    //    if (qApp->instance()->property("auto_confidence").toBool())
-    //        FastConfidence();
-    //    else
+    if (qApp->instance()->property("auto_confidence").toBool())
+        FastConfidence();
+
     m_statistic_widget->Update();
 }
 
@@ -144,23 +153,13 @@ void MetaModelWidget::ToggleStatisticDialog()
     connect(m_jobmanager, &JobManager::started, statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, statistic_dialog, &StatisticDialog::HideWidget);
 
-    connect(statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
+    connect(statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt);
     connect(statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         this->m_jobmanager->AddJob(job);
         this->m_jobmanager->RunJobs();
     });
-    connect(m_jobmanager, &JobManager::ShowResult, this, [this, statistic_dialog](SupraFit::Statistic type, int index) {
-        if (type != SupraFit::Statistic::FastConfidence) {
-            if (type != SupraFit::Statistic::GlobalSearch)
-                statistic_dialog->hide();
 
-            this->m_results->Attention();
-            this->m_results->ShowResult(type, index);
-        }
-
-        QApplication::restoreOverrideCursor();
-    });
     statistic_dialog->exec();
 
     delete statistic_dialog;
@@ -176,13 +175,11 @@ void MetaModelWidget::FastConfidence()
     job["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble());
     qreal error = m_model.data()->SumofSquares();
-    qDebug() << qApp->instance()->property("p_value").toDouble() << f_value << error << error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-
     job["MaxError"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
     job["confidence"] = qApp->instance()->property("p_value").toDouble();
     job["f_value"] = f_value;
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
-    job["method"] = SupraFit::Statistic::FastConfidence;
+    job["method"] = SupraFit::Method::FastConfidence;
 
     m_jobmanager->AddJob(job);
     m_jobmanager->RunJobs();
@@ -192,8 +189,15 @@ void MetaModelWidget::OpenAdvancedSearch()
 {
     AdvancedSearch* advancedsearch = new AdvancedSearch(this);
     advancedsearch->setModel(m_model);
+
+    connect(advancedsearch, &AdvancedSearch::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
+        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->RunJobs();
+    });
+
     advancedsearch->exec();
-    LoadStatistic(advancedsearch->globalSearch()->Result());
+    delete advancedsearch;
 }
 
 void MetaModelWidget::Detailed()
@@ -213,7 +217,7 @@ void MetaModelWidget::LoadStatistic(const QJsonObject& data)
 {
     int index = m_model->UpdateStatistic(data);
     m_results->Attention();
-    SupraFit::Statistic type = SupraFit::Statistic(data["controller"].toObject()["method"].toInt());
+    SupraFit::Method type = SupraFit::Method(data["controller"].toObject()["method"].toInt());
     m_results->ShowResult(type, index);
 }
 

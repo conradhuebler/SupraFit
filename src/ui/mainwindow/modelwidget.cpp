@@ -332,6 +332,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_jobmanager, &JobManager::prepare, m_advancedsearch, &AdvancedSearch::MaximumSteps);
     connect(m_jobmanager, &JobManager::incremented, m_advancedsearch, &AdvancedSearch::IncrementProgress);
 
+    connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress);
+    connect(m_jobmanager, &JobManager::prepare, this, &ModelWidget::MaximumSteps);
+
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
 
@@ -341,9 +344,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         this->m_jobmanager->AddJob(job);
         this->m_jobmanager->RunJobs();
     });
-    connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Statistic type, int index) {
-        if (type != SupraFit::Statistic::FastConfidence) {
-            if (type != SupraFit::Statistic::GlobalSearch)
+    connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
+        if (type != SupraFit::Method::FastConfidence) {
+            if (type != SupraFit::Method::GlobalSearch)
                 this->m_statistic_dialog->hide();
             else
                 this->m_advancedsearch->hide();
@@ -587,24 +590,34 @@ void ModelWidget::FastConfidence()
     job["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble());
     qreal error = m_model.data()->SumofSquares();
-    qDebug() << qApp->instance()->property("p_value").toDouble() << f_value << error << error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-
     job["MaxError"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
     job["confidence"] = qApp->instance()->property("p_value").toDouble();
     job["f_value"] = f_value;
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
-    job["method"] = SupraFit::Statistic::FastConfidence;
+    job["method"] = SupraFit::Method::FastConfidence;
 
     m_jobmanager->AddJob(job);
     m_jobmanager->RunJobs();
 }
 
-void ModelWidget::LoadStatistic(const QJsonObject& data, const QList<QJsonObject>& models)
+void ModelWidget::setJob(const QJsonObject& job)
+{
+    Waiter wait;
+    m_jobmanager->AddJob(job);
+    m_jobmanager->RunJobs();
+}
+
+void ModelWidget::Interrupt()
+{
+    m_jobmanager->Interrupt();
+}
+
+void ModelWidget::LoadStatistic(const QJsonObject& data)
 {
     int index = m_model->UpdateStatistic(data);
     m_results->Attention();
     m_statistic_dialog->HideWidget();
-    SupraFit::Statistic type = SupraFit::Statistic(data["controller"].toObject()["method"].toInt());
+    SupraFit::Method type = SupraFit::Method(data["controller"].toObject()["method"].toInt());
     m_results->ShowResult(type, index);
 }
 
@@ -817,8 +830,8 @@ QColor ModelWidget::ActiveColor() const
 {
     if (!m_model->SupportSeries())
         return m_charts.signal_wrapper->Series(0)->color();
-    else
-        QColor();
+
+    return QColor();
 }
 
 void ModelWidget::Restore()

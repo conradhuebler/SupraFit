@@ -167,6 +167,8 @@ private:
     QStringList m_header;
     qreal m_empty;
     QReadWriteLock mutex;
+    QMutex m_lock;
+
     bool m_checkable, m_editable;
 };
 

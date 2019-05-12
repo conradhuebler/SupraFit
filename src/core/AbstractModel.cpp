@@ -293,7 +293,8 @@ void AbstractModel::Calculate()
     m_stderror = qSqrt(m_variance) / qSqrt(m_used_variables);
     m_SEy = qSqrt(m_sum_squares / (m_used_variables - LocalParameterSize() - GlobalParameterSize()));
     m_chisquared = qSqrt(m_sum_squares / (m_used_variables - LocalParameterSize() - GlobalParameterSize() - 1));
-    m_covfit = CalculateCovarianceFit();
+    //FIXME sometimes ...
+    m_covfit = 0; //CalculateCovarianceFit();
 
     emit Recalculated();
 }
@@ -361,7 +362,7 @@ qreal AbstractModel::CalculateVarianceData()
     return v/(count -1 );
 }*/
 
-qreal AbstractModel::CalculateCovarianceFit()
+qreal AbstractModel::CalculateCovarianceFit() const
 {
     qreal model = 0, data = 0;
     int count = 0;
@@ -576,34 +577,34 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
     int index;
     QJsonObject controller = object["controller"].toObject();
     switch (controller["method"].toInt()) {
-    case SupraFit::Statistic::WeakenedGridSearch:
+    case SupraFit::Method::WeakenedGridSearch:
         m_wg_statistics << object;
         index = m_wg_statistics.lastIndexOf(object);
         break;
 
-    case SupraFit::Statistic::ModelComparison:
+    case SupraFit::Method::ModelComparison:
         m_moco_statistics << object;
         index = m_moco_statistics.lastIndexOf(object);
         break;
 
-    case SupraFit::Statistic::FastConfidence:
+    case SupraFit::Method::FastConfidence:
         m_fast_confidence = object;
         ParseFastConfidence(object);
         index = 0;
         break;
 
-    case SupraFit::Statistic::Reduction:
+    case SupraFit::Method::Reduction:
         m_reduction = object;
         index = 0;
         break;
 
-    case SupraFit::Statistic::GlobalSearch:
+    case SupraFit::Method::GlobalSearch:
         m_search_results << object;
         index = m_search_results.lastIndexOf(object);
         break;
 
-    case SupraFit::Statistic::MonteCarlo:
-    case SupraFit::Statistic::CrossValidation:
+    case SupraFit::Method::MonteCarlo:
+    case SupraFit::Method::CrossValidation:
         bool duplicate = false;
         for (int i = 0; i < m_mc_statistics.size(); ++i) {
             QJsonObject control = m_mc_statistics[i]["controller"].toObject();
@@ -621,34 +622,34 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
     return index;
 }
 
-QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index) const
+QJsonObject AbstractModel::getStatistic(SupraFit::Method type, int index) const
 {
     switch (type) {
-    case SupraFit::Statistic::WeakenedGridSearch:
+    case SupraFit::Method::WeakenedGridSearch:
         if (index < m_wg_statistics.size())
             return m_wg_statistics[index];
         break;
 
-    case SupraFit::Statistic::ModelComparison:
+    case SupraFit::Method::ModelComparison:
         if (index < m_moco_statistics.size())
             return m_moco_statistics[index];
         break;
 
-    case SupraFit::Statistic::FastConfidence:
+    case SupraFit::Method::FastConfidence:
         return m_fast_confidence;
         break;
 
-    case SupraFit::Statistic::Reduction:
+    case SupraFit::Method::Reduction:
         return m_reduction;
         break;
 
-    case SupraFit::Statistic::MonteCarlo:
-    case SupraFit::Statistic::CrossValidation:
+    case SupraFit::Method::MonteCarlo:
+    case SupraFit::Method::CrossValidation:
         if (index < m_mc_statistics.size())
             return m_mc_statistics[index];
         break;
 
-    case SupraFit::Statistic::GlobalSearch:
+    case SupraFit::Method::GlobalSearch:
         if (index < m_search_results.size())
             return m_search_results[index];
         break;
@@ -656,40 +657,40 @@ QJsonObject AbstractModel::getStatistic(SupraFit::Statistic type, int index) con
     return QJsonObject();
 }
 
-bool AbstractModel::RemoveStatistic(SupraFit::Statistic type, int index)
+bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
 {
     switch (type) {
-    case SupraFit::Statistic::WeakenedGridSearch:
+    case SupraFit::Method::WeakenedGridSearch:
         if (index < m_wg_statistics.size())
             m_wg_statistics.takeAt(index);
         else
             return false;
         break;
 
-    case SupraFit::Statistic::ModelComparison:
+    case SupraFit::Method::ModelComparison:
         if (index < m_moco_statistics.size())
             m_moco_statistics.takeAt(index);
         else
             return false;
         break;
 
-    case SupraFit::Statistic::FastConfidence:
+    case SupraFit::Method::FastConfidence:
         m_fast_confidence = QJsonObject();
         break;
 
-    case SupraFit::Statistic::Reduction:
+    case SupraFit::Method::Reduction:
         m_reduction = QJsonObject();
         break;
 
-    case SupraFit::Statistic::MonteCarlo:
-    case SupraFit::Statistic::CrossValidation:
+    case SupraFit::Method::MonteCarlo:
+    case SupraFit::Method::CrossValidation:
         if (index < m_mc_statistics.size())
             m_mc_statistics.takeAt(index);
         else
             return false;
         break;
 
-    case SupraFit::Statistic::GlobalSearch:
+    case SupraFit::Method::GlobalSearch:
         if (index < m_search_results.size())
             m_search_results.takeAt(index);
         else
@@ -815,23 +816,23 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         QJsonObject statisticObject;
 
         for (int i = 0; i < m_mc_statistics.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Statistic::MonteCarlo) + ":" + QString::number(i)] = m_mc_statistics[i];
+            statisticObject[QString::number(SupraFit::Method::MonteCarlo) + ":" + QString::number(i)] = m_mc_statistics[i];
         }
 
         for (int i = 0; i < m_moco_statistics.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Statistic::ModelComparison) + ":" + QString::number(i)] = m_moco_statistics[i];
+            statisticObject[QString::number(SupraFit::Method::ModelComparison) + ":" + QString::number(i)] = m_moco_statistics[i];
         }
 
         for (int i = 0; i < m_wg_statistics.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Statistic::WeakenedGridSearch) + ":" + QString::number(i)] = m_wg_statistics[i];
+            statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch) + ":" + QString::number(i)] = m_wg_statistics[i];
         }
 
         for (int i = 0; i < m_search_results.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Statistic::GlobalSearch) + ":" + QString::number(i)] = m_search_results[i];
+            statisticObject[QString::number(SupraFit::Method::GlobalSearch) + ":" + QString::number(i)] = m_search_results[i];
         }
 
-        statisticObject[QString::number(SupraFit::Statistic::Reduction)] = m_reduction;
-        statisticObject[QString::number(SupraFit::Statistic::FastConfidence)] = m_fast_confidence;
+        statisticObject[QString::number(SupraFit::Method::Reduction)] = m_reduction;
+        statisticObject[QString::number(SupraFit::Method::FastConfidence)] = m_fast_confidence;
         json["statistics"] = statisticObject;
     }
 
@@ -953,24 +954,24 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
 
     if (fileversion < 1600) {
-        m_moco_statistics << statisticObject[QString::number(SupraFit::Statistic::ModelComparison)].toObject();
-        m_wg_statistics << statisticObject[QString::number(SupraFit::Statistic::WeakenedGridSearch)].toObject();
+        m_moco_statistics << statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject();
+        m_wg_statistics << statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject();
     }
 
-    m_reduction = statisticObject[QString::number(SupraFit::Statistic::Reduction)].toObject();
-    m_fast_confidence = statisticObject[QString::number(SupraFit::Statistic::FastConfidence)].toObject();
+    m_reduction = statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
+    m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
 
     if (!m_fast_confidence.isEmpty())
         ParseFastConfidence(m_fast_confidence);
 
     for (const QString& str : qAsConst(keys)) {
-        if (str.contains(QString::number(SupraFit::Statistic::MonteCarlo) + ":"))
+        if (str.contains(QString::number(SupraFit::Method::MonteCarlo) + ":"))
             m_mc_statistics << statisticObject[str].toObject();
-        else if (str.contains(QString::number(SupraFit::Statistic::ModelComparison) + ":"))
+        else if (str.contains(QString::number(SupraFit::Method::ModelComparison) + ":"))
             m_moco_statistics << statisticObject[str].toObject();
-        else if (str.contains(QString::number(SupraFit::Statistic::WeakenedGridSearch) + ":"))
+        else if (str.contains(QString::number(SupraFit::Method::WeakenedGridSearch) + ":"))
             m_wg_statistics << statisticObject[str].toObject();
-        else if (str.contains(QString::number(SupraFit::Statistic::GlobalSearch) + ":"))
+        else if (str.contains(QString::number(SupraFit::Method::GlobalSearch) + ":"))
             m_search_results << statisticObject[str].toObject();
     }
 
@@ -1202,19 +1203,19 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
     QString text;
 
     switch (controller["method"].toInt()) {
-    case SupraFit::Statistic::WeakenedGridSearch:
+    case SupraFit::Method::WeakenedGridSearch:
         return AnalyseGridSearch(object, forceAll);
         break;
 
-    case SupraFit::Statistic::ModelComparison:
+    case SupraFit::Method::ModelComparison:
         return AnalyseModelComparison(object, forceAll);
         break;
 
-    case SupraFit::Statistic::FastConfidence:
+    case SupraFit::Method::FastConfidence:
         return AnalyseModelComparison(object, forceAll);
         break;
 
-    case SupraFit::Statistic::Reduction:
+    case SupraFit::Method::Reduction:
 
         for (int i = 0; i < object.count() - 1; ++i) {
             QJsonObject data = object.value(QString::number(i)).toObject();
@@ -1224,8 +1225,8 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
         }
         break;
 
-    case SupraFit::Statistic::MonteCarlo:
-    case SupraFit::Statistic::CrossValidation:
+    case SupraFit::Method::MonteCarlo:
+    case SupraFit::Method::CrossValidation:
 
         return AnalyseMonteCarlo(object, forceAll);
         break;
