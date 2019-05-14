@@ -134,8 +134,8 @@ if(Qt5Widgets_VERSION GREATER 5.9)
     set(Qt5_10 ON)
 endif()
 
-include_directories(SYSTEM ${QT_INCLUDES} eigen/)
-include_directories(${CMAKE_CURRENT_BINARY_DIR} fisher_dist/ libpeakpick/)
+include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/eigen/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
@@ -146,10 +146,6 @@ configure_file(
   "${CMAKE_SOURCE_DIR}/src/version.h.in"
   "${CMAKE_BINARY_DIR}/src/version.h"
 )
-
-if(experimental)
-    include_directories(SYSTEM ChaiScript/include)
-endif(experimental)
 
 set(libmath_SRC
                 src/core/equil.cpp
