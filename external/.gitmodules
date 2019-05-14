@@ -1,6 +1,3 @@
-[submodule "eigen"]
-	path = eigen
-	url = https://github.com/eigenteam/eigen-git-mirror
 [submodule "fisher_dist"]
 	path = fisher_dist
 	url = git@github.com:conradhuebler/fisher_dist.git

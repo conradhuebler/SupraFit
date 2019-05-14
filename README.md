@@ -7,13 +7,15 @@
 A Open Source Qt5 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry) and Michaelis Menten Kinetics
 
 ## Download and requirements
-git clones automatically Eigen, ChaiScript, fisher_dist and libpeakpick. Eigen is used as non-linear optimimization tool and ChaiScript had been used for some experimental stuff. Fisher_dist provides a F-value for a given critical p-value. LibPeakPick provides rudimentary methods for peak picking, peak integration and some kind of linear regression methods.
+git clones automatically fisher_dist and libpeakpick.
+- [fisher_dis] (https://github.com/conradhuebler/fisher_dist) provides the finv-function like in octave to calculate the quantiles of the F distribution
+- [libpeakpick] (https://github.com/conradhuebler/libpeakpick) provides some basic peak picking, peak integration and regression tools. It retrives a copy of eigen from official git mirror, that is used by SupraFit as well.
 
 ## Compiling
 To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and a recent Qt version. Soon, Qt 5.12 LTS will be focused.
 
 SupraFit has been successfully compilied with: 
-- gcc 5.2, gcc 6.3 and gcc 7.3
+- gcc 5.2, gcc 6.3, gcc 7.3 and gcc 8.3
 - clang 3.9 
 on linux systems and 
 - mingw 5.3 on windows systems

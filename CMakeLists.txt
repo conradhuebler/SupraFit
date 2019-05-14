@@ -134,7 +134,7 @@ if(Qt5Widgets_VERSION GREATER 5.9)
     set(Qt5_10 ON)
 endif()
 
-include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/eigen/)
+include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/)
 
 configure_file (
