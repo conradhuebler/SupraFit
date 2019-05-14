@@ -1,0 +1,9 @@
+[submodule "external/fisher_dist"]
+	path = external/fisher_dist
+	url = git@github.com:conradhuebler/fisher_dist.git
+[submodule "external/libpeakpick"]
+	path = external/libpeakpick
+	url = https://github.com/conradhuebler/libpeakpick
+[submodule "external/eigen"]
+	path = external/eigen
+	url = https://github.com/eigenteam/eigen-git-mirror
