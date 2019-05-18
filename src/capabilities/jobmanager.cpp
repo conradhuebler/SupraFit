@@ -123,7 +123,7 @@ QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
     m_montecarlo_handler->setController(job);
 
     m_montecarlo_handler->setModel(m_model);
-    m_montecarlo_handler->Evaluate();
+    m_montecarlo_handler->Run();
     emit finished();
     QJsonObject result = m_montecarlo_handler->Result();
     m_montecarlo_handler->clear();
@@ -134,7 +134,7 @@ QJsonObject JobManager::RunCrossValidation(const QJsonObject& job)
 {
     m_reduction_handler->setModel(m_model);
     m_reduction_handler->setController(job);
-    m_reduction_handler->CrossValidation();
+    m_reduction_handler->Run();
 
     QJsonObject result = m_reduction_handler->Result();
     m_reduction_handler->clear();
@@ -147,7 +147,7 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
     m_gridsearch_handler->setModel(m_model);
     m_gridsearch_handler->setController(job);
 
-    m_gridsearch_handler->ConfidenceAssesment();
+    m_gridsearch_handler->Run();
     QJsonObject result = m_gridsearch_handler->Result();
     m_gridsearch_handler->clear();
     return result;
@@ -157,7 +157,7 @@ QJsonObject JobManager::RunFastConfidence(const QJsonObject& job)
 {
     m_modelcomparison_handler->setModel(m_model);
     m_modelcomparison_handler->setController(job);
-    m_modelcomparison_handler->FastConfidence();
+    m_modelcomparison_handler->Run();
 
     QJsonObject result = m_modelcomparison_handler->Result();
     m_modelcomparison_handler->clear();
@@ -169,7 +169,7 @@ QJsonObject JobManager::RunReduction(const QJsonObject& job)
 {
     Q_UNUSED(job)
     m_reduction_handler->setModel(m_model);
-    m_reduction_handler->PlainReduction();
+    m_reduction_handler->Run();
     QJsonObject result = m_reduction_handler->Result();
     m_reduction_handler->clear();
     return result;
@@ -179,7 +179,7 @@ QJsonObject JobManager::RunGlobalSearch(const QJsonObject& job)
 {
     m_globalsearch->setController(job);
     m_globalsearch->setModel(m_model);
-    m_globalsearch->SearchGlobal();
+    m_globalsearch->Run();
 
     QJsonObject result = m_globalsearch->Result();
     m_globalsearch->clear();

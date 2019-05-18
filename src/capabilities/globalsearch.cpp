@@ -121,6 +121,20 @@ void GlobalSearch::Interrupt()
     emit InterruptAll();
 }
 
+bool GlobalSearch::Run()
+{
+    QVector<QVector<double>> full_list = ParamList();
+    m_models.clear();
+    QVector<double> error;
+    std::cout << "starting the scanning ..." << m_max_count << " steps approx." << std::endl;
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    ConvertList(full_list);
+    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    std::cout << "time for scanning: " << t1 - t0 << " msecs." << std::endl;
+
+    return true;
+}
+
 QVector<QVector<double>> GlobalSearch::ParamList()
 {
     m_max_count = 1;
@@ -146,18 +160,6 @@ QVector<QVector<double>> GlobalSearch::ParamList()
     return full_list;
 }
 
-void GlobalSearch::SearchGlobal()
-{
-    QVector<QVector<double>> full_list = ParamList();
-    m_models.clear();
-    QVector<double> error;
-    std::cout << "starting the scanning ..." << m_max_count << " steps approx." << std::endl;
-    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    ConvertList(full_list);
-    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << "time for scanning: " << t1 - t0 << " msecs." << std::endl;
-}
-
 void GlobalSearch::clear()
 {
     m_full_list.clear();
@@ -167,17 +169,11 @@ void GlobalSearch::clear()
 void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 {
     m_full_list.clear();
-    // m_result = QJsonObject();
     m_results.clear();
 
     QVector<int> position(full_list.size(), 0);
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_allow_break = false;
-
-    /*
-    if (m_config.initial_guess)
-        m_model->InitialGuess();
-    */
 
     QVector<double> parameter = m_model->AllParameter();
 

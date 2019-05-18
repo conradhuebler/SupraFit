@@ -139,7 +139,8 @@ void MonteCarloBatch::optimise()
     m_finished = m_fit_thread->Converged();
 
     m_model->ImportModel(m_fit_thread->ConvergedParameter());
-    m_model->setFast(false);
+    m_model->setFast(true);
+    m_model->CalculateStatistics(true);
     m_model->Calculate();
 
     m_model->setConverged(m_finished);
@@ -161,7 +162,7 @@ MonteCarloStatistics::~MonteCarloStatistics()
 {
 }
 
-bool MonteCarloStatistics::Evaluate()
+bool MonteCarloStatistics::Run()
 {
     m_models.clear();
     QVector<QPointer<MonteCarloBatch>> threads = GenerateData();

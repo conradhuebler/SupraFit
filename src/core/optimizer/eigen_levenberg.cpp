@@ -96,6 +96,8 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
 
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
+    model.data()->CalculateStatistics(false);
+
     QJsonObject config = model.data()->getOptimizerConfig();
 
     int MaxIter = config["MaxLevMarInter"].toInt();

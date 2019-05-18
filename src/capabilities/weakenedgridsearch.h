@@ -126,9 +126,9 @@ public:
     WeakenedGridSearch(QObject* parent = 0);
     virtual ~WeakenedGridSearch() override;
     inline bool CV() { return m_cv; }
-    bool ConfidenceAssesment();
     void setParameter(const QJsonObject& json);
     void clear() override;
+    virtual bool Run() override;
 
 public slots:
     virtual void Interrupt() override;

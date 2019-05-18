@@ -283,7 +283,7 @@ void AbstractModel::Calculate()
 
     m_mean /= qreal(m_used_variables);
 
-    if (m_fast)
+    if (!m_statistics)
         return;
 
     for (int i = 0; i < m_used_series.size(); ++i)

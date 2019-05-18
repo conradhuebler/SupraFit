@@ -75,7 +75,6 @@ private:
     QSharedPointer<Minimizer> m_minimizer;
     QJsonObject m_optimized;
     QJsonObject m_config;
-    //QList<qreal> m_constants;
     bool m_finished;
     int m_index;
 };
@@ -93,11 +92,10 @@ public:
 
 private:
     void optimise();
-    NonLinearFitThread* m_fit_thread; // = new NonLinearFitThread(false);
+    NonLinearFitThread* m_fit_thread;
 
     QPointer<AbstractSearchClass> m_parent;
     bool m_finished, m_checked;
-    //QSharedPointer<Minimizer> m_minimizer;
     QJsonObject m_controller;
     QList<QJsonObject> m_models;
 };
@@ -108,9 +106,8 @@ public:
     MonteCarloStatistics(QObject* parent = 0);
     ~MonteCarloStatistics();
 
-    bool Evaluate();
-
     void clear() override;
+    virtual bool Run() override;
 
 public slots:
     void Interrupt() override;

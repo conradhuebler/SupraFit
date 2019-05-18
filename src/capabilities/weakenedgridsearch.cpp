@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019  Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -174,7 +174,7 @@ QPointer<WGSearchThread> WeakenedGridSearch::CreateThread(int index, bool direct
     return thread;
 }
 
-bool WeakenedGridSearch::ConfidenceAssesment()
+bool WeakenedGridSearch::Run()
 {
     m_cv = true;
     if (!m_model)

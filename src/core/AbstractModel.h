@@ -165,9 +165,14 @@ public:
 
     /*! \brief set the calculation style to bool fast
      * some useless loops will be omitted in AbstractModel::Calculation call
-     * Variance, CovFit etc
      */
     inline void setFast(bool fast = true) { m_fast = fast; }
+
+    /*! \brief set the calculation style to bool fast
+     * some useless loops will be omitted in AbstractModel::Calculation call
+     * Variance, CovFit etc
+     */
+    inline void CalculateStatistics(bool statistics = true) { m_statistics = statistics; }
 
     /*! \brief get the Name of the ith GlobalParameter
      */
@@ -722,7 +727,7 @@ protected:
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
-    bool m_corrupt, m_converged, m_locked_model, m_fast, m_guess_failed = true, m_demand_guess = false;
+    bool m_corrupt, m_converged, m_locked_model, m_fast, m_statistics = true, m_guess_failed = true, m_demand_guess = false;
     QJsonObject m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;

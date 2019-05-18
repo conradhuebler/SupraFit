@@ -178,6 +178,14 @@ ModelComparison::~ModelComparison()
 {
 }
 
+bool ModelComparison::Run()
+{
+    if (static_cast<SupraFit::Method>(m_controller["method"].toInt()) == SupraFit::Method::FastConfidence)
+        return FastConfidence();
+    else
+        return Confidence();
+}
+
 bool ModelComparison::FastConfidence()
 {
     if (!m_model)

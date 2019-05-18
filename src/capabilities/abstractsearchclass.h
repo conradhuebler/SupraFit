@@ -81,6 +81,7 @@ public:
         m_model = model->Clone();
     }
 
+    virtual bool Run() = 0;
     inline void setController(const QJsonObject& controller) { m_controller = controller; }
 
     inline QList<QList<QPointF>> Series() const { return m_series; }

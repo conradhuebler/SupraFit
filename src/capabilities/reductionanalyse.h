@@ -43,6 +43,8 @@ public:
         LeaveManyOut = 3
     };
 
+    virtual bool Run() override;
+
     void CrossValidation();
     void PlainReduction();
     QJsonObject ModelData() const { return m_model_data; }

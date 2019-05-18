@@ -138,6 +138,7 @@ public:
         m_results = results;
         m_fast_finished = true;
     }
+    virtual bool Run() override;
 
 private:
     void StripResults(const QList<QJsonObject>& results);

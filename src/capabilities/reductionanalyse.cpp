@@ -40,6 +40,17 @@ ReductionAnalyse::~ReductionAnalyse()
     // m_model.clear();
 }
 
+bool ReductionAnalyse::Run()
+{
+    if (static_cast<SupraFit::Method>(m_controller["method"].toInt()) == SupraFit::Method::Reduction) {
+        PlainReduction();
+        return true;
+    } else {
+        CrossValidation();
+        return true;
+    }
+}
+
 void ReductionAnalyse::addThread(QPointer<MonteCarloThread> thread)
 {
     m_threads << thread;

@@ -71,10 +71,10 @@ public:
     virtual ~GlobalSearch() override;
 
     inline QVector<QVector<qreal>> InputList() const { return m_full_list; }
-    void SearchGlobal();
     void ExportResults(const QString& filename, double threshold, bool allow_invalid);
     QVector<qreal> DemandParameter();
     void clear() override;
+    virtual bool Run() override;
 
 public slots:
     virtual void Interrupt() override;
