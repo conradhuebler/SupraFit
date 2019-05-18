@@ -137,7 +137,7 @@ class ChartWrapper : public QObject {
     Q_OBJECT
 
 public:
-    ChartWrapper(bool flipable, QObject* parent = 0);
+    ChartWrapper(QObject* parent = 0);
     virtual ~ChartWrapper() override;
 
     void setData(QSharedPointer<DataClass> model);

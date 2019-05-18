@@ -54,7 +54,7 @@ void MetaModelWidget::setUi()
     m_dialogs = new ModalDialog;
     m_dialogs->setWindowTitle("Information " + m_model->Name() + " | " + qApp->instance()->property("projectname").toString());
 
-    m_results = new ResultsDialog(m_model, new ChartWrapper(false), this);
+    m_results = new ResultsDialog(m_model, new ChartWrapper(this), this);
     connect(m_results, &ResultsDialog::LoadModel, this, &MetaModelWidget::LoadJson);
 
     m_statistic_widget = new StatisticWidget(m_model, this);

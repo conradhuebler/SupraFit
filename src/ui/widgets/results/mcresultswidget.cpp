@@ -152,7 +152,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         if (data["type"] == "Local Parameter") {
             if (!data.contains("index"))
                 continue;
-            int index = data["index"].toString().split("|")[1].toInt();
+            //int index = data["index"].toString().split("|")[1].toInt();
             /*xy_series->setColor(m_wrapper->Series(index)->color());
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
@@ -278,7 +278,7 @@ void MCResultsWidget::UpdateBoxes()
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
             area_series->setName(" ");
-#warning why is this always a global parameter?
+#pragma message("why is this always a global parameter?")
         }
     }
 }

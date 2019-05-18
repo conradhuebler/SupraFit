@@ -101,7 +101,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_val_readonly(readonly)
 {
     // m_model->SystemParameterChanged();
-#warning might have been important
+#pragma message("might have been important")
 
     m_model_widget = new QWidget;
     Data2Text();

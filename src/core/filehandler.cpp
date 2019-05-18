@@ -119,7 +119,7 @@ void FileHandler::ReadGeneric()
 bool FileHandler::CheckForTable()
 {
     // int size = 0;
-#warning rethink about it
+#pragma message("rethink about it")
     for (int i = 0; i < m_lines; ++i) {
         // qDebug() << m_filecontent[i];
         if (m_filecontent[i].isEmpty())

@@ -142,7 +142,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         globalConstants.clear();
         globalConstants = model.data()->OptimizeParameters();
         error_0 = model.data()->SumofSquares();
-#warning this used to be not here before restructuring
+#pragma message("this used to be not here before restructuring")
         model.data()->setLockedParameter(locked);
         status = lm.minimizeOneStep(parameter);
         error_2 = model.data()->SumofSquares();

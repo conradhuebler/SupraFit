@@ -518,7 +518,7 @@ void MetaModel::CalculateVariables()
         qreal value = parameter.first;
         for (int j = 0; j < parameter.second.size(); ++j) {
             QVector<int> vector = parameter.second[j];
-#warning FIXME strange
+#pragma message("FIXME strange")
             if (vector.isEmpty()) {
                 qDebug() << "what happend here?";
                 continue;

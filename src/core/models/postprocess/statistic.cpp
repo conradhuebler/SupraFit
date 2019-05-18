@@ -203,7 +203,7 @@ QString MonteCarlo2BC50_1_2(const qreal logK11, const qreal logK12, const QJsonO
     std::sort(s_sf.begin(), s_sf.end());
 
     SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
-    SupraFit::ConfidenceBar conf_sf = ToolSet::Confidence(s_sf, error);
+    // SupraFit::ConfidenceBar conf_sf = ToolSet::Confidence(s_sf, error);
 
     qreal BC50 = BC50::ItoII::BC50(logK11, logK12) * 1e6;
     //   qreal BC50_sf = BC50::ItoII::BC50_SF(logK11, logK12) * 1e6;
@@ -287,7 +287,7 @@ QString MonteCarlo2BC50_2_2(const qreal logK21, const qreal logK11, const qreal 
     std::sort(s_sf.begin(), s_sf.end());
 
     SupraFit::ConfidenceBar conf = ToolSet::Confidence(s, error);
-    SupraFit::ConfidenceBar conf_sf = ToolSet::Confidence(s_sf, error);
+    // SupraFit::ConfidenceBar conf_sf = ToolSet::Confidence(s_sf, error);
 
     qreal BC50 = BC50::IItoII::BC50_A0(logK21, logK11, logK12) * 1e6;
     //  qreal BC50_sf = BC50::IItoI_ItoI_ItoII_BC50_SF(logK21, logK11, logK12) * 1e6;
@@ -366,7 +366,7 @@ QString GridSearch2Thermo(int index, qreal T, const QJsonObject& object, bool he
         const qreal absG = qAbs(G);
         const qreal absS = qAbs(S);
         const qreal absH = qAbs(H);
-#warning how do two different signs ( for H and dH11 etc ) work, I will take only one for now
+#pragma message("how do two different signs ( for H and dH11 etc ) work, I will take only one for now")
         /* Using signless comparison, because H, G and S can be negative and positive */
 
         int sign = sgn(dH11l_gs);
@@ -489,7 +489,7 @@ QJsonObject PostGridSearch(const QList<QJsonObject>& models, qreal K, qreal T, i
     }
 
     qreal dG = ToolSet::K2G(K, T);
-    qreal dS = ToolSet::GHE(dG, H, T);
+    // qreal dS = ToolSet::GHE(dG, H, T);
 
     QJsonObject result;
     /*

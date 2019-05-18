@@ -273,7 +273,7 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         action = menu->addSection(tr("Flexible Stoichiometry"));
         addMenu(m_itc_flex_model, menu);
     } else if (IndependetCount == 2) {
-#warning clean me
+#pragma message("clean me")
         QAction* action = menu->addSection(tr("NMR/UV VIS"));
         addMenu(m_nmr_model, menu);
         action = menu->addSection(tr("Fluorescence"));
@@ -489,7 +489,7 @@ void ModelDataHolder::RemoveTab(int i)
         m_modelsWidget->removeTab(i);
         m_models.remove(m_models.indexOf(model->Model()));
         delete model;
-#warning if some strange crashes occur, check this here
+#pragma message("if some strange crashes occur, check this here")
 
         if (qobject_cast<MetaModel*>(m_data))
             qobject_cast<MetaModel*>(m_data)->RemoveModel(m);
@@ -603,7 +603,7 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
     /*
      * Dont load to many models to the workspace, this is slow and confusing
      */
-    int i = m_models.size();
+    // int i = m_models.size();
     for (const QString& key : qAsConst(keys)) {
         if (key == "data")
             continue;

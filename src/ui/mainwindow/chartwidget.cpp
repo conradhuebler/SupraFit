@@ -202,7 +202,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
 {
     m_rawdata = rawdata;
 
-    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
+    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
     m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
     m_data_mapper->setData(m_rawdata);
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
@@ -224,7 +224,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
 
 QSharedPointer<ChartWrapper> ChartWidget::setRawWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 {
-    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
+    m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
 
     if (wrapper)
         m_data_mapper->addWrapper(wrapper);
@@ -258,13 +258,13 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
 
     m_empty = false;
     connect(model.data(), SIGNAL(Recalculated()), this, SLOT(Repaint()));
-    QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
+    QSharedPointer<ChartWrapper> signal_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), signal_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), signal_wrapper.data(), SLOT(showSeries(int)));
     signal_wrapper->setDataTable(model->ModelTable());
     signal_wrapper->setData(model);
 
-    QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(false, this), &QObject::deleteLater);
+    QSharedPointer<ChartWrapper> error_wrapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
     connect(m_data_mapper.data(), SIGNAL(ModelChanged()), error_wrapper.data(), SLOT(UpdateModel()));
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper.data(), SLOT(showSeries(int)));
     error_wrapper->setDataTable(model->ErrorTable());

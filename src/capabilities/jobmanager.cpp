@@ -167,6 +167,7 @@ QJsonObject JobManager::RunFastConfidence(const QJsonObject& job)
 
 QJsonObject JobManager::RunReduction(const QJsonObject& job)
 {
+    Q_UNUSED(job)
     m_reduction_handler->setModel(m_model);
     m_reduction_handler->PlainReduction();
     QJsonObject result = m_reduction_handler->Result();

@@ -286,7 +286,6 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, int bins, bool 
         auto i = individual.begin();
         qreal first = 0;
         while (i != individual.constEnd()) {
-
             if (i == individual.begin())
                 first = i.key();
             result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";

@@ -936,7 +936,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
     return text;
 }
 
-QString TextFromStatistic(const QJsonObject& result, const QJsonObject& controller)
+QString TextFromStatistic(const QJsonObject& result)
 {
 
     int converged = 0;

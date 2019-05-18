@@ -317,9 +317,9 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     m_data = data;
     QJsonObject controller = m_data["controller"].toObject();
     if (controller["method"].toInt() == SupraFit::Method::GlobalSearch) {
-        text += Print::TextFromStatistic(data, controller);
+        text += Print::TextFromStatistic(data);
     } else {
-        text += Print::TextFromStatistic(controller["raw"].toObject(), controller);
+        text += Print::TextFromStatistic(controller["raw"].toObject());
         text += m_model.data()->AnalyseStatistic(m_data, false);
     }
     m_confidence_label->setText(text);

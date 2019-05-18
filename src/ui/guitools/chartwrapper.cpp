@@ -101,7 +101,7 @@ void BoxPlotSeries::setColor(const QColor& color)
     setBrush(brush);
 }
 
-ChartWrapper::ChartWrapper(bool flipable, QObject* parent)
+ChartWrapper::ChartWrapper(QObject* parent)
     : QObject(parent)
     , m_blocked(false)
     , m_transformed(false)

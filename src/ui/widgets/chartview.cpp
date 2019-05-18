@@ -344,7 +344,7 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
     connect(series, &QtCharts::QAbstractSeries::nameChanged, series, [this, series]() {
         if (series) {
             //qDebug() << series->name();
-#warning this can be compressed due to logic gatters
+#pragma message("this can be compressed due to logic gatters")
             bool show = series->name().isEmpty() || series->name().isNull() || series->name().simplified() == QString(" ");
             this->m_chart->legend()->markers(series).first()->setVisible(!show);
         }
@@ -352,7 +352,7 @@ void ChartView::addSeries(QPointer<QtCharts::QAbstractSeries> series, bool callo
     connect(series, &QtCharts::QAbstractSeries::visibleChanged, series, [this, series]() {
         if (series) {
             //qDebug() << series->name();
-#warning this can be compressed due to logic gatters
+#pragma message("this can be compressed due to logic gatters")
             bool show = series->name().isEmpty() || series->name().isNull() || series->name().simplified() == QString(" ");
             if (series->isVisible())
                 this->m_chart->legend()->markers(series).first()->setVisible(!show);
@@ -933,7 +933,7 @@ void ChartView::ExportPNG()
     // remove transparent border of resulting image
 
     if (qApp->instance()->property("cropedChart").toBool() == true) {
-#warning stupid things
+#pragma message("stupid things")
         /* dont unterstand that in particular, but it works somehow, and it is not to slow */
 
         QImage mirrored = border(border(image.mirrored(true, true)).mirrored(true, true).mirrored(true, true)).mirrored(true, true);

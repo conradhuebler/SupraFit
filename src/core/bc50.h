@@ -136,9 +136,9 @@ namespace IItoI {
     inline QString Format_BC50(const qreal logK21, const qreal logK11)
     {
         QString result = QString();
-        QChar mu = QChar(956);
+        // QChar mu = QChar(956);
 
-        qreal bc50 = BC50(logK21, logK11);
+        // qreal bc50 = BC50(logK21, logK11);
 
         /* the next line is outdate with still included, historical stuff */
 //        result += QString("<p>BC50<sub>0</sub> = %1 %2M</p>").arg(bc50 * 1e6).arg(mu);
@@ -411,7 +411,7 @@ namespace ItoII {
         QVector<qreal> parameter;
         parameter << b11 << b12;
 
-        qreal A = 0, B = 0, AB = 0, AB2 = 0, A0 = 0, B0 = 0;
+        qreal A = 0, B = 0, AB = 0, AB2 = 0, /*A0 = 0, */ B0 = 0;
 
         qreal upper = 1;
         qreal prec = 1e-5;
@@ -433,7 +433,7 @@ namespace ItoII {
         function = B0Function;
         B0 = SimpsonIntegrate(0, upper, function, parameter, prec);
 #else
-        A0 = A + AB + AB2;
+        //A0 = A + AB + AB2;
         B0 = B + AB +2*AB2;
 #endif
         result += QString("<p>BC50<sub>0</sub> =  %1 </p> ").arg(Print::printConcentration(BC50(logK11, logK12), 3));
@@ -801,7 +801,7 @@ namespace IItoII {
         qreal upper = 1;
         qreal delta = 1e-5;
 
-        qreal integ = 0;
+        // qreal integ = 0;
         int increments = (upper - 0) / delta + 1;
 #ifndef conservative
         omp_set_num_threads(qApp->instance()->property("threads").toInt());

@@ -279,7 +279,7 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
         return true;
 }
 // TODO We want to synchronise these behaviour to get a instant feedback if the drag and drop action is supported
-#warning before release resolve the this
+#pragma message("before release resolve the this")
 bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
     Q_UNUSED(action)

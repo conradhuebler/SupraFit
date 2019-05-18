@@ -8,8 +8,8 @@ A Open Source Qt5 based fitting tool for supramolecular titration experiments (N
 
 ## Download and requirements
 git clones automatically fisher_dist and libpeakpick.
-- [fisher_dis] (https://github.com/conradhuebler/fisher_dist) provides the finv-function like in octave to calculate the quantiles of the F distribution
-- [libpeakpick] (https://github.com/conradhuebler/libpeakpick) provides some basic peak picking, peak integration and regression tools. It retrives a copy of eigen from official git mirror, that is used by SupraFit as well.
+- [fisher_dis](https://github.com/conradhuebler/fisher_dist) provides the finv-function like in octave to calculate the quantiles of the F distribution
+- [libpeakpick](https://github.com/conradhuebler/libpeakpick) provides some basic peak picking, peak integration and regression tools. It retrives a copy of eigen from official git mirror, that is used by SupraFit as well.
 
 ## Compiling
 To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and a recent Qt version. Soon, Qt 5.12 LTS will be focused.
