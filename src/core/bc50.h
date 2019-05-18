@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "src/global_config.h"
+
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
@@ -804,9 +806,11 @@ namespace IItoII {
         // qreal integ = 0;
         int increments = (upper - 0) / delta + 1;
 #ifndef conservative
+#ifdef openMP
         omp_set_num_threads(qApp->instance()->property("threads").toInt());
-    #pragma omp parallel for reduction(+ \
-                                       : A, B, AB, A2B, AB2, A0, B0)
+#endif
+#pragma omp parallel for reduction(+ \
+                                   : A, B, AB, A2B, AB2, A0, B0)
         for (int i = 0; i < increments - 1; ++i)
         {
             double x = 0 + i / double(increments);

@@ -833,7 +833,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
 
         statisticObject[QString::number(SupraFit::Method::Reduction)] = m_reduction;
         statisticObject[QString::number(SupraFit::Method::FastConfidence)] = m_fast_confidence;
-        json["statistics"] = statisticObject;
+        json["methods"] = statisticObject;
     }
 
     json["localParameter"] = LocalTable()->ExportTable(true, private_d->m_enabled_local);
@@ -931,9 +931,16 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     optionObject = topjson["options"].toObject();
     for (int index : getAllOptions())
         setOption(index, topjson["options"].toObject()[QString::number(index)].toString());
+    QStringList keys;
+    QJsonObject statisticObject;
 
-    QStringList keys = json["statistics"].toObject().keys();
-    QJsonObject statisticObject = json["statistics"].toObject();
+    if (fileversion < 1607) {
+        keys = json["statistics"].toObject().keys();
+        statisticObject = json["statistics"].toObject();
+    } else {
+        keys = json["methods"].toObject().keys();
+        statisticObject = json["methods"].toObject();
+    }
     if (keys.size() > 9) {
         QCollator collator;
         collator.setNumericMode(true);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "src/global_config.h"
+
 #include <QtCore/QString>
     
 const QString git_commit_hash = "@GIT_COMMIT_HASH@"; /*! Current hash of the git branch */
@@ -28,4 +30,4 @@ const QString conf_mode = "RELEASE Mode"; /*! Last compilation mode used */
 
 const QString version = QString("Suprafit 2 v-1.6 Alpha \n\t%1 %2 %3 -  %4").arg(branch).arg(commit_hash).arg(date).arg(conf_mode); /*! Version name */
 
-const int qint_version = 1606;
+const int qint_version = 1607;
