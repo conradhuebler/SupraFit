@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/conradhuebler/SupraFit.svg?token=kbszubggsBRpbhwmvtTL&branch=master)](https://travis-ci.com/conradhuebler/SupraFit)
+[![Build status](https://ci.appveyor.com/api/projects/status/ddbg2ua547s9t2fw?svg=true)](https://ci.appveyor.com/project/conradhuebler/suprafit)
 
 ![SupraFit Logo](https://github.com/conradhuebler/SupraFit/raw/master/misc/logo_small.png)
 
