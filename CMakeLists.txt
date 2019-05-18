@@ -76,46 +76,13 @@ if (CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 endif(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 
 
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+if(UNIX)
+    find_package(OpenMP)
+    if (OPENMP_FOUND)
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
 endif()
-
-# generate proper GUI program on specified platform
-if(WIN32) # Check if we are on Windows
-	if(MSVC) # Check if we are using the Visual Studio compiler
-		set_target_properties(${PROJECT_NAME} PROPERTIES
-			WIN32_EXECUTABLE YES
-			LINK_FLAGS "/ENTRY:mainCRTStartup"
-		)
-	elseif(CMAKE_COMPILER_IS_GNUCXX)
-			 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
-                         find_package(OpenMP)
-                         if (OPENMP_FOUND)
-                             set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-                             set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-                         endif()
-	else()
-		message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
-	endif(MSVC)
-elseif(APPLE)
-	set_target_properties(${PROJECT_NAME} PROPERTIES
-			MACOSX_BUNDLE YES
-	)
-elseif(UNIX)
-	# Nothing special required
-        find_package(OpenMP)
-        if (OPENMP_FOUND)
-            set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-        endif()
-	set (_Theme ON)
-else()
-	message(SEND_ERROR "You are on an unsupported platform! (Not Win32, Mac OS X or Unix)")
-endif(WIN32)
-
-
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -pedantic \
@@ -277,6 +244,30 @@ if(WIN32) # Check if we are on Windows
 else()
     add_executable(suprafit ${suprafit_SRCS})
 endif(WIN32)
+
+# generate proper GUI program on specified platform
+if(WIN32) # Check if we are on Windows
+        if(MSVC) # Check if we are using the Visual Studio compiler
+                set_target_properties(suprafit PROPERTIES
+                        WIN32_EXECUTABLE YES
+                        LINK_FLAGS "/ENTRY:mainCRTStartup"
+                )
+        elseif(CMAKE_COMPILER_IS_GNUCXX)
+                         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
+        else()
+                message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
+        endif(MSVC)
+elseif(APPLE)
+        set_target_properties(suprafit PROPERTIES
+                        MACOSX_BUNDLE YES
+        )
+elseif(UNIX)
+        # Nothing special required
+        set (_Theme ON)
+else()
+        message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
+endif(WIN32)
+
 
 set(suprafit_cli_SRCS
                 src/core/minimizer.cpp # whatsoever ...

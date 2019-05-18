@@ -1,6 +1,6 @@
 [submodule "fisher_dist"]
-	path = fisher_dist
+	path = external/fisher_dist
 	url =  https://github.com/conradhuebler/fisher_dist
 [submodule "libpeakpick"]
-	path = libpeakpick
+	path = external/libpeakpick
 	url = https://github.com/conradhuebler/libpeakpick
