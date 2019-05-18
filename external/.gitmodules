@@ -1,6 +1,6 @@
 [submodule "fisher_dist"]
 	path = fisher_dist
-	url = git@github.com:conradhuebler/fisher_dist.git
+	url =  https://github.com/conradhuebler/fisher_dist
 [submodule "libpeakpick"]
 	path = libpeakpick
 	url = https://github.com/conradhuebler/libpeakpick
