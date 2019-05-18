@@ -183,6 +183,7 @@ int main(int argc, char** argv)
             manager->RunJobs();
             toplevel["model_" + QString::number(i)] = t->ExportModel(true, false);
             i++;
+            delete manager;
         }
         toplevel["data"] = dataObject;
         JsonHandler::WriteJsonFile(toplevel, parser.value("i"));

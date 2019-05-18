@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,11 +81,6 @@ private:
 
     QPointer<const DataClass> m_data;
 
-    QJsonObject MonteCarlo(QSharedPointer<AbstractModel> model);
-    QJsonObject MoCoAnalyse(QSharedPointer<AbstractModel> model);
-    QJsonObject Reduction(QSharedPointer<AbstractModel> model);
-    QJsonObject CrossValidation(QSharedPointer<AbstractModel> model);
-    QJsonObject GridSearch(QSharedPointer<AbstractModel> model);
 
     void PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model);
 

@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019  Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <QtCore/QTimer>
 
 #include "src/capabilities/abstractsearchclass.h"
+#include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/reductionanalyse.h"
@@ -169,37 +170,27 @@ void Simulator::Test(QSharedPointer<AbstractModel> model)
     /*
      * We start with statistics
      */
+    /*
     QJsonObject statistic;
+    QJsonObject toplevel, dataObject;
+    JobManager* manager = new JobManager;
+    manager->setModel(model);
 
-    if (m_reduction) {
-        std::cout << "Reduction Analysis" << std::endl;
-        statistic = Reduction(model);
-        PrintStatistic(statistic, model);
-    }
+        QJsonObject job;
+        JsonHandler::ReadJsonFile(job, str);
+        manager->AddJob(job);
 
-    if (m_crossvalidation) {
-        std::cout << "Cross Validation" << std::endl;
-        statistic = CrossValidation(model);
-        PrintStatistic(statistic, model);
-    }
+    manager->RunJobs();
+    toplevel["model_" + QString::number(i)] = model->ExportModel(true, false);
+    i++;
+    delete manager;
 
-    if (m_montecarlo) {
-        std::cout << "Monte Carlo Simulation" << std::endl;
-        statistic = MonteCarlo(model);
-        PrintStatistic(statistic, model);
-    }
-
-    if (m_modelcomparison) {
-        std::cout << "Model Comparison" << std::endl;
-        statistic = MoCoAnalyse(model);
-        PrintStatistic(statistic, model);
-    }
 
     if (m_weakendgrid) {
         std::cout << "Weakend Grid Search" << std::endl;
         statistic = GridSearch(model);
         PrintStatistic(statistic, model);
-    }
+    }*/
 }
 
 void Simulator::PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model)
@@ -234,104 +225,4 @@ void Simulator::Progress(int i, int max)
     }
     std::cout << "] " << int(percentage * 100.0) << " %\r";
     std::cout.flush();
-}
-
-QJsonObject Simulator::MonteCarlo(QSharedPointer<AbstractModel> model)
-{
-    /*
-    int maxsteps = 1000;
-    m_current = 0;
-    
-    MCConfig config;
-    config.maxsteps = maxsteps;
-    config.variance = model->SEy();
-    QPointer<MonteCarloStatistics> statistic = new MonteCarloStatistics(this);
-
-    connect(statistic, &AbstractSearchClass::IncrementProgress, this, [this, maxsteps](int i) {
-        this->Progress(i, maxsteps);
-    });
-
-    QJsonObject result;
-    statistic->setModel(model);
-    if (statistic->Evaluate()) {
-        std::cout.flush();
-        std::cout << "\nMonteCarlo Simulation done ..." << std::endl;
-
-        model->UpdateStatistic(statistic->Result());
-        result = statistic->Result();
-    } else
-        std::cout << "MonteCarlo Simulation failed, sorry ..." << std::endl;
-    delete statistic;
-    return result;
-    */
-}
-
-QJsonObject Simulator::MoCoAnalyse(QSharedPointer<AbstractModel> model)
-{
-
-    qreal error = model.data()->SumofSquares();
-
-    //config.maxerror = error * (config.f_value * model.data()->Parameter() / (model.data()->Points() - model.data()->Parameter()) + 1);
-
-    ModelComparison* statistic = new ModelComparison(this);
-    statistic->setModel(model);
-    bool result = statistic->Confidence();
-    QJsonObject res = statistic->Result();
-    if (!result)
-        res = QJsonObject();
-
-    delete statistic;
-    return res;
-}
-
-QJsonObject Simulator::Reduction(QSharedPointer<AbstractModel> model)
-{
-    ReductionAnalyse* statistic = new ReductionAnalyse();
-    statistic->setModel(model);
-    statistic->PlainReduction();
-    model->UpdateStatistic(statistic->Result());
-
-    QJsonObject result = statistic->Result();
-
-    delete statistic;
-    return result;
-}
-
-QJsonObject Simulator::CrossValidation(QSharedPointer<AbstractModel> model)
-{
-    ReductionAnalyse* statistic = new ReductionAnalyse();
-    statistic->setModel(model);
-    /*
-    statistic->CrossValidation(ReductionAnalyse::CVType::LeaveOneOut);
-    model->UpdateStatistic(statistic->Result());
-
-    statistic->CrossValidation(ReductionAnalyse::CVType::LeaveTwoOut);
-    model->UpdateStatistic(statistic->Result());
-    */
-    QJsonObject result = statistic->Result();
-
-    delete statistic;
-    return result;
-}
-
-QJsonObject Simulator::GridSearch(QSharedPointer<AbstractModel> model)
-{
-    /*WGSConfig config;
-    config.f_value = model->finv(0.95);
-    config.fisher_statistic = true;
-
-    qreal error = model.data()->SumofSquares();
-
-    config.maxerror = error * (config.f_value * model.data()->Parameter() / (model.data()->Points() - model.data()->Parameter()) + 1);
-
-    WeakenedGridSearch* statistic = new WeakenedGridSearch(config, this);
-    statistic->setModel(model);
-    statistic->setParameter(model->ExportModel(false));
-
-    statistic->ConfidenceAssesment();
-
-    QJsonObject result = statistic->Result();
-
-    delete statistic;
-    return result;*/
 }
