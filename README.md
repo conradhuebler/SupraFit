@@ -18,11 +18,13 @@ To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and
 SupraFit has been successfully compilied with: 
 - gcc 5.2, gcc 6.3, gcc 7.3 and gcc 8.3
 - clang 3.9 
-on linux systems and 
-- mingw 5.3 on windows systems
-
+on linux systems and windows systems using
+- mingw 5.3
+- MSVC 2015
 > Windows 7 or higher is mandatory.
 > MacOS has not been tested yet.
+
+Prebuild development binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases). They are built using Microsoft Visual Studio, so please provide [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145). Qt 5.12 dlls are shipped with SupraFit.
 
 To obtain the most recent development version use
 ```sh
@@ -88,5 +90,5 @@ A detailed handbook will be provided as soon as possbile.
 
 ## Citation
 If you obtain results with SupraFit, please cite for now:
-
+... coming soon ...
 After release of the detailed articles describing the used methods, please refer to them as well.
