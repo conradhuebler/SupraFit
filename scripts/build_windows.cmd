@@ -7,7 +7,7 @@ git submodule update --init --recursive
 git pull --recurse-submodules
 mkdir build
 cd build
-cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release ..
+cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true ..
 cmake --build . --config Release
 
 
@@ -18,7 +18,7 @@ copy suprafit.exe SupraFit
 copy suprafit_cli.exe SupraFit
 
 cd SupraFit
-windeployqt --release SupraFit.exe
+windeployqt --release suprafit.exe
 
 echo Copying project files for archival...
 copy "%project_dir%\README.md" "%project_dir%\build\Release\SupraFit\README.md"

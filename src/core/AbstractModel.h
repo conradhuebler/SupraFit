@@ -280,7 +280,8 @@ public:
 
     int UpdateStatistic(const QJsonObject& object);
 
-    QJsonObject getReduction() const { return m_reduction; }
+    int getReductionStatisticResults() const { return m_reduction.size(); }
+
     QJsonObject getFastConfidence() const { return m_fast_confidence; }
 
     int getMoCoStatisticResult() const { return m_moco_statistics.size(); }
@@ -718,8 +719,8 @@ protected:
     QList<QJsonObject> m_wg_statistics;
     QList<QJsonObject> m_moco_statistics;
     QList<QJsonObject> m_search_results;
+    QList<QJsonObject> m_reduction;
 
-    QJsonObject m_reduction;
     QJsonObject m_fast_confidence;
 
     qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
@@ -743,8 +744,6 @@ signals:
      * Signal is emitted whenever void Calculate() is finished
      */
     void Recalculated();
-    void Message(const QString& str, int priority = 3);
-    void Warning(const QString& str, int priority = 1);
     void StatisticChanged();
     void OptionChanged(int index, const QString& value);
     void ChartUpdated(const QString& chart);

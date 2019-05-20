@@ -31,7 +31,7 @@
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QStyledItemDelegate>
 
-#include "src/capabilities/reductionanalyse.h"
+#include "src/capabilities/resampleanalyse.h"
 
 class QCheckBox;
 class QGroupBox;
@@ -106,9 +106,6 @@ public:
     QJsonObject RunModelComparison() const;
     QJsonObject RunReductionAnalyse() const;
     QJsonObject RunCrossValidation() const;
-
-    MoCoConfig getMoCoConfig();
-    ReductionAnalyse::CVType CrossValidationType();
 
     inline void setRuns(int runs) { m_runs = runs; }
     virtual void setVisible(bool visible) override;

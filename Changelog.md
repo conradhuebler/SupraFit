@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- add foreward reduction analysis to input keywords
 - add command line option for suprafit_cli for execute jobfile
 - Input variable randomisation for meta models enabled
 - data points colors in meta models follow the series color definition

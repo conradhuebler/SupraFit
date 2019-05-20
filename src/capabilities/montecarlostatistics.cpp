@@ -207,7 +207,6 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         else if (m_controller["VarianceSource"].toString() == "sigma")
             sigma = m_model->StdDeviation();
     }
-    qDebug() << sigma;
     Phi = std::normal_distribution<double>(0, sigma);
 
     int maxthreads = qApp->instance()->property("threads").toInt();

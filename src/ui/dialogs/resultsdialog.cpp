@@ -145,12 +145,11 @@ void ResultsDialog::UpdateList()
         model->appendRow(item);
     }
 
-    QJsonObject statistic = m_model.data()->getReduction();
-    if (!statistic.isEmpty()) {
+    for (int i = 0; i < m_model.data()->getReductionStatisticResults(); ++i) {
         QStandardItem* item = new QStandardItem(tr("Reduction Analysis"));
         item->setData(tr("Reduction Analysis"), Qt::DisplayRole);
         item->setData(SupraFit::Method::Reduction, Qt::UserRole);
-        item->setData(0, Qt::UserRole + 1);
+        item->setData(i, Qt::UserRole + 1);
         makeItem(item);
         model->appendRow(item);
     }

@@ -30,24 +30,18 @@ class AbstractModel;
 class MonteCarloThread;
 class Minimizer;
 
-class ReductionAnalyse : public AbstractSearchClass {
+class ResampleAnalyse : public AbstractSearchClass {
     Q_OBJECT
 
 public:
-    ReductionAnalyse();
-    virtual ~ReductionAnalyse() override;
-
-    enum CVType {
-        LeaveOneOut = 1,
-        LeaveTwoOut = 2,
-        LeaveManyOut = 3
-    };
-
+    ResampleAnalyse();
+    virtual ~ResampleAnalyse() override;
     virtual bool Run() override;
 
     void CrossValidation();
     void PlainReduction();
     QJsonObject ModelData() const { return m_model_data; }
+
     /* Since we change the checked rows of the model, we have to detach the data table from the global model */
     virtual inline void setModel(const QSharedPointer<AbstractModel> model) override
     {
@@ -55,8 +49,8 @@ public:
         m_model->detach();
     }
 
-    // void setController(const QJsonObject& controller) { m_controller = controller; }
     void clear() override;
+
 public slots:
     void Interrupt() override;
 

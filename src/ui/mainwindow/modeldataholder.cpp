@@ -22,7 +22,7 @@
 
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
-#include "src/capabilities/reductionanalyse.h"
+#include "src/capabilities/resampleanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/analyse.h"
@@ -415,7 +415,11 @@ void ModelDataHolder::Json2Model(const QJsonObject& object, SupraFit::Model mode
     if (object.isEmpty())
         return;
     QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
-    t->ImportModel(object);
+    connect(t.data(), &AbstractModel::Warning, this, &ModelDataHolder::Message);
+    if (!t->ImportModel(object)) {
+        t.clear();
+        return;
+    }
     ActiveModel(t, object);
 #ifdef _DEBUG
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();

@@ -575,6 +575,7 @@ void AbstractModel::addLocalParameter(int i)
 int AbstractModel::UpdateStatistic(const QJsonObject& object)
 {
     int index;
+    int match = 0;
     QJsonObject controller = object["controller"].toObject();
     switch (controller["method"].toInt()) {
     case SupraFit::Method::WeakenedGridSearch:
@@ -594,8 +595,19 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
         break;
 
     case SupraFit::Method::Reduction:
-        m_reduction = object;
-        index = 0;
+        index = match;
+        for (int i = 0; i < m_reduction.size(); ++i) {
+            int RunType = m_reduction[i]["controller"].toObject()["ReductionRuntype"].toInt();
+            if (RunType == object["controller"].toObject()["ReductionRuntype"].toInt()) {
+                m_reduction[i] = object;
+                index = i;
+                match++;
+            }
+        }
+
+        if (match == 0)
+            m_reduction << object;
+
         break;
 
     case SupraFit::Method::GlobalSearch:
@@ -640,7 +652,8 @@ QJsonObject AbstractModel::getStatistic(SupraFit::Method type, int index) const
         break;
 
     case SupraFit::Method::Reduction:
-        return m_reduction;
+        if (index < m_reduction.size())
+            return m_reduction[index];
         break;
 
     case SupraFit::Method::MonteCarlo:
@@ -679,7 +692,8 @@ bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
         break;
 
     case SupraFit::Method::Reduction:
-        m_reduction = QJsonObject();
+        if (index < m_reduction.size())
+            m_reduction.takeAt(index);
         break;
 
     case SupraFit::Method::MonteCarlo:
@@ -831,7 +845,10 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
             statisticObject[QString::number(SupraFit::Method::GlobalSearch) + ":" + QString::number(i)] = m_search_results[i];
         }
 
-        statisticObject[QString::number(SupraFit::Method::Reduction)] = m_reduction;
+        for (int i = 0; i < m_reduction.size(); ++i) {
+            statisticObject[QString::number(SupraFit::Method::Reduction) + ":" + QString::number(i)] = m_reduction[i];
+        }
+
         statisticObject[QString::number(SupraFit::Method::FastConfidence)] = m_fast_confidence;
         json["methods"] = statisticObject;
     }
@@ -897,17 +914,26 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
     if (topjson[Name()].isNull()) {
+        emit Warning("Sorry, this file doesn't contain any " + Name() + " model.", 1);
         qWarning() << "file doesn't contain any " + Name();
         return false;
     }
     int fileversion = topjson["SupraFit"].toInt();
     if (static_cast<SupraFit::Model>(topjson["model"].toInt()) != SFModel()) {
         if (fileversion >= qint_version) {
+            emit Warning("Sorry, I suppose I do not support this data. " + Name(), 1);
             qWarning() << "No old data, but models dont fit, sorry";
             return false;
         }
         qWarning() << "Models don't fit! But that seems to be ok, because it is an old SupraFit file.";
     }
+
+    if (fileversion > qint_version) {
+        emit Warning(QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion), 1);
+        qWarning() << QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion);
+        return false;
+    }
+
     QJsonObject json = topjson["data"].toObject();
 
     QList<int> active_signals;
@@ -964,8 +990,9 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         m_moco_statistics << statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject();
         m_wg_statistics << statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject();
     }
+    if (fileversion < 1608)
+        m_reduction << statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
 
-    m_reduction = statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
     m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
 
     if (!m_fast_confidence.isEmpty())
@@ -980,6 +1007,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             m_wg_statistics << statisticObject[str].toObject();
         else if (str.contains(QString::number(SupraFit::Method::GlobalSearch) + ":"))
             m_search_results << statisticObject[str].toObject();
+        else if (str.contains(QString::number(SupraFit::Method::Reduction) + ":"))
+            m_reduction << statisticObject[str].toObject();
     }
 
     if (fileversion >= 1601) {

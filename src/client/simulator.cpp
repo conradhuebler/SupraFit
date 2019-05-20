@@ -28,7 +28,7 @@
 #include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
-#include "src/capabilities/reductionanalyse.h"
+#include "src/capabilities/resampleanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/dataclass.h"

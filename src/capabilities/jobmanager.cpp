@@ -20,7 +20,7 @@
 #include "globalsearch.h"
 #include "modelcomparison.h"
 #include "montecarlostatistics.h"
-#include "reductionanalyse.h"
+#include "resampleanalyse.h"
 #include "weakenedgridsearch.h"
 
 #include "src/core/models.h"
@@ -43,10 +43,10 @@ JobManager::JobManager(QObject* parent)
     connect(m_gridsearch_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_gridsearch_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 
-    m_reduction_handler = new ReductionAnalyse();
-    connect(this, SIGNAL(Interrupt()), m_reduction_handler, SLOT(Interrupt()), Qt::DirectConnection);
-    connect(m_reduction_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
-    connect(m_reduction_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
+    m_resample_handler = new ResampleAnalyse();
+    connect(this, SIGNAL(Interrupt()), m_resample_handler, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_resample_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
+    connect(m_resample_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 
     m_modelcomparison_handler = new ModelComparison(this);
     connect(this, SIGNAL(Interrupt()), m_modelcomparison_handler, SLOT(Interrupt()), Qt::DirectConnection);
@@ -68,30 +68,26 @@ void JobManager::RunJobs()
     for (const QJsonObject& object : m_jobs) {
         SupraFit::Method method = static_cast<SupraFit::Method>(object["method"].toInt());
         QJsonObject result;
-        qDebug() << object;
+        // qDebug() << object;
         switch (method) {
         case SupraFit::Method::WeakenedGridSearch:
             result = RunGridSearch(object);
             break;
 
         case SupraFit::Method::ModelComparison:
+        case SupraFit::Method::FastConfidence:
+
             result = RunModelComparison(object);
             break;
 
-        case SupraFit::Method::FastConfidence:
-            result = RunFastConfidence(object);
-            break;
 
         case SupraFit::Method::Reduction:
-            result = RunReduction(object);
+        case SupraFit::Method::CrossValidation:
+            result = RunResample(object);
             break;
 
         case SupraFit::Method::MonteCarlo:
             result = RunMonteCarlo(object);
-            break;
-
-        case SupraFit::Method::CrossValidation:
-            result = RunCrossValidation(object);
             break;
 
         case SupraFit::Method::GlobalSearch:
@@ -108,7 +104,7 @@ QJsonObject JobManager::RunModelComparison(const QJsonObject& job)
 {
     m_modelcomparison_handler->setModel(m_model);
     m_modelcomparison_handler->setController(job);
-    m_modelcomparison_handler->Confidence();
+    m_modelcomparison_handler->Run();
 
     QJsonObject result = m_modelcomparison_handler->Result();
     m_modelcomparison_handler->clear();
@@ -130,17 +126,6 @@ QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
     return result;
 }
 
-QJsonObject JobManager::RunCrossValidation(const QJsonObject& job)
-{
-    m_reduction_handler->setModel(m_model);
-    m_reduction_handler->setController(job);
-    m_reduction_handler->Run();
-
-    QJsonObject result = m_reduction_handler->Result();
-    m_reduction_handler->clear();
-    return result;
-}
-
 QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 {
 
@@ -153,25 +138,13 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
     return result;
 }
 
-QJsonObject JobManager::RunFastConfidence(const QJsonObject& job)
+QJsonObject JobManager::RunResample(const QJsonObject& job)
 {
-    m_modelcomparison_handler->setModel(m_model);
-    m_modelcomparison_handler->setController(job);
-    m_modelcomparison_handler->Run();
-
-    QJsonObject result = m_modelcomparison_handler->Result();
-    m_modelcomparison_handler->clear();
-
-    return result;
-}
-
-QJsonObject JobManager::RunReduction(const QJsonObject& job)
-{
-    m_reduction_handler->setModel(m_model);
-    m_reduction_handler->setController(job);
-    m_reduction_handler->Run();
-    QJsonObject result = m_reduction_handler->Result();
-    m_reduction_handler->clear();
+    m_resample_handler->setModel(m_model);
+    m_resample_handler->setController(job);
+    m_resample_handler->Run();
+    QJsonObject result = m_resample_handler->Result();
+    m_resample_handler->clear();
     return result;
 }
 

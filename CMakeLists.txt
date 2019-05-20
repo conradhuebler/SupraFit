@@ -172,7 +172,7 @@ add_library(models ${models_SRC})
 
 target_link_libraries(models Qt5::Core)
 set(utils_SRC
-                src/capabilities/reductionanalyse.cpp
+                src/capabilities/resampleanalyse.cpp
                 src/capabilities/abstractsearchclass.cpp
                 src/capabilities/modelcomparison.cpp
                 src/capabilities/montecarlostatistics.cpp

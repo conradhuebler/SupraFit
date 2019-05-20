@@ -31,48 +31,6 @@
 class Minimizer;
 class QPointF;
 
-const QJsonObject GridSearchConfigBlock{
-
-    /* Maximal number of steps to be evaluated */
-    { "MaxSteps", 1e3 }, // int
-
-    /* SSE threshold defined by f-Statistics */
-    { "MaxError", 0 }, //double
-
-    /* Confidence in % */
-    { "confidence", 95 }, //double
-
-    /* Corresponding f Value */
-    { "f_value", 0 }, // double
-
-    /* Threshold for convergency in SSE */
-    { "ErrorConvergency", 1e-10 }, // double
-
-    /* Maximal steps which are allowed to be above the SSE threshold, while continueing the evaluation */
-    { "OvershotCounter", 5 }, // int
-
-    /* Maximal number of steps, where the error is allowed to decrease, analyse not-converged systems, flat surfaces */
-    { "ErrorDecreaseCounter", 50 }, // int
-
-    /* Amount for all error changes below the threshold error_conv, while keeping the evaluation running */
-    { "ErrorConvergencyCounter", 5 }, // int
-
-    /* Set scaling factor single step size */
-    /* The factor determines the step length as follows:
-     * delta = 10^(ceil(log10(parameter) + (-4) ))
-     * this ensures correct scaling and always something like 10^(N)
-     */
-    { "ScalingFactor", -4 }, // int
-
-    /* Store intermediate results, may result in large json blocks */
-    { "intermediate", false }, //bool
-
-    /* Define the global and local parameter to be tested - this list should not be empty 
-     * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
-    { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
-    { "LocalParameterList", "" } // strings, to be converted to QList<int>
-};
-
 class WGSearchThread : public AbstractSearchThread {
     Q_OBJECT
 

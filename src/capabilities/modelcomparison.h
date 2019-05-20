@@ -27,45 +27,6 @@
 
 const int update_intervall = 100;
 
-const QJsonObject ModelComparisonConfigBlock{
-
-    /* Maximal number of steps to be evaluated */
-    { "MaxSteps", 1e4 }, // int
-
-    /* Fast Confidence Maximal steps */
-    { "MaxStepsFastConfidence", 1e4 }, // int
-
-    /* Set scaling factor single step size */
-    /* The factor determines the step length as follows:
-     * delta = 10^(ceil(log10(parameter) + (-4) ))
-     * this ensures correct scaling and always something like 10^(N)
-     */
-    { "FastConfidenceScaling", -4 }, // int
-
-    /* SSE threshold defined by f-Statistics */
-    { "MaxError", 0 }, //double
-
-    /* Confidence in % */
-    { "confidence", 95 }, //double
-
-    /* Corresponding f Value */
-    { "f_value", 0 }, // double
-
-    /* Threshold for convergency in SSE */
-    { "ErrorConvergency", 1e-10 }, // double
-
-    /* Box Scaling Factor */
-    { "BoxScalingFactor", 1.5 }, // double
-
-    /* Define the global and local parameter to be tested - this list should not be empty 
-     * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
-    { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
-    { "LocalParameterList", "" }, // strings, to be converted to QList<int>
-
-    /* Series in FastConfidence */
-    { "IncludeSeries", true }
-};
-
 class AbstractModel;
 
 class MCThread : public AbstractSearchThread {

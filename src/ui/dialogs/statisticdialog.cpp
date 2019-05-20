@@ -17,10 +17,7 @@
  * 
  */
 
-#include "src/capabilities/modelcomparison.h"
-#include "src/capabilities/montecarlostatistics.h"
-#include "src/capabilities/reductionanalyse.h"
-#include "src/capabilities/weakenedgridsearch.h"
+#include "src/capabilities/jobmanager.h"
 
 #include "src/core/models.h"
 #include "src/core/toolset.h"
@@ -517,7 +514,7 @@ QWidget* StatisticDialog::CVWidget()
 
 QJsonObject StatisticDialog::RunGridSearch() const
 {
-    QJsonObject controller;
+    QJsonObject controller = GridSearchConfigBlock;
 
     controller["MaxSteps"] = m_wgs_steps->value();
     controller["MaxError"] = m_wgs_max;
@@ -552,7 +549,7 @@ QJsonObject StatisticDialog::RunGridSearch() const
 
 QJsonObject StatisticDialog::RunModelComparison() const
 {
-    QJsonObject controller;
+    QJsonObject controller = ModelComparisonConfigBlock;
 
     controller["MaxSteps"] = m_moco_mc_steps->value();
     controller["MaxError"] = m_moco_max;
@@ -582,7 +579,7 @@ QJsonObject StatisticDialog::RunModelComparison() const
 
 QJsonObject StatisticDialog::RunMonteCarlo() const
 {
-    QJsonObject controller;
+    QJsonObject controller = MonteCarloConfigBlock;
     controller["MaxSteps"] = m_mc_steps->value();
     controller["Variance"] = m_varianz_box->value();
 
@@ -612,7 +609,7 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
 
 QJsonObject StatisticDialog::RunReductionAnalyse() const
 {
-    QJsonObject controller;
+    QJsonObject controller = ResampleConfigBlock;
 
     controller["method"] = SupraFit::Method::Reduction;
     return controller;
@@ -620,24 +617,15 @@ QJsonObject StatisticDialog::RunReductionAnalyse() const
 
 QJsonObject StatisticDialog::RunCrossValidation() const
 {
-    QJsonObject controller;
+    QJsonObject controller = ResampleConfigBlock;
 
     controller["method"] = SupraFit::Method::CrossValidation;
     if (m_wgs_loo->isChecked())
-        controller["CVType"] = ReductionAnalyse::LeaveOneOut;
+        controller["CXO"] = 1;
     else
-        controller["CVType"] = ReductionAnalyse::LeaveTwoOut;
+        controller["CXO"] = 2;
 
     return controller;
-}
-
-ReductionAnalyse::CVType StatisticDialog::CrossValidationType()
-{
-
-    if (m_wgs_loo->isChecked())
-        return ReductionAnalyse::LeaveOneOut;
-    else //if (m_wgs_l2o->isChecked())
-        return ReductionAnalyse::LeaveTwoOut;
 }
 
 void StatisticDialog::MaximumSteps(int steps)

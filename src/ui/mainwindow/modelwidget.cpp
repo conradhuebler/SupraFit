@@ -21,7 +21,6 @@
 #include "src/version.h"
 
 #include "src/capabilities/jobmanager.h"
-#include "src/capabilities/modelcomparison.h"
 
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"

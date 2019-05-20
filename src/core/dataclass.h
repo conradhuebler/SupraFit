@@ -402,4 +402,6 @@ signals:
     void NameChanged(const QString& name);
     void Update();
     void Deleted();
+    void Message(const QString& str, int priority = 3);
+    void Warning(const QString& str, int priority = 1);
 };

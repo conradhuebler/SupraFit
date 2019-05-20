@@ -40,7 +40,8 @@ enum Method {
     CrossValidation = 4,
     Reduction = 5,
     FastConfidence = 6,
-    GlobalSearch = 7
+    GlobalSearch = 7,
+    DataCreation = 8
 };
 
 enum Model {
@@ -115,6 +116,9 @@ inline QString Method2Name(SupraFit::Method type)
     case SupraFit::Method::GlobalSearch:
         return ("Global Search");
         break;
+
+    case SupraFit::Method::DataCreation:
+        return ("Simulation and Data Creation");
     }
     return QString();
 }
@@ -160,30 +164,11 @@ inline QString about()
     return info;
 }
 }
-/*
-struct OptimizerConfig {
-    int MaxIter = 75;
-    qreal Constant_Convergence = 1E-3;
-    qreal Error_Convergence = 5E-7;
 
-    qreal LevMar_Factor = 100;
-    qreal LevMar_Xtol = 1E-10;
-    qreal LevMar_Gtol = 1E-10;
-    qreal LevMar_Ftol = 1E-10;
-    qreal LevMar_epsfcn = 1E-8;
-
-    bool skip_not_converged_concentrations = false;
-    int single_iter = 1500;
-    double concen_convergency = 1e-13;
-};
-*/
 class QString;
 
 extern QString collective_messages;
 
-//extern int printLevel;
-
-//void PrintMessage(const QString& str, int Level);
 QString getDir();
 void setLastDir(const QString& str);
 

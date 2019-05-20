@@ -28,7 +28,142 @@ class GlobalSearch;
 class MonteCarloStatistics;
 class ModelComparison;
 class WeakenedGridSearch;
-class ReductionAnalyse;
+class ResampleAnalyse;
+
+/* Standard Settings for Task are given here */
+
+/* Model Comparison Settings */
+
+const QJsonObject ModelComparisonConfigBlock{
+
+    /* Set method */
+    { "method", SupraFit::Method::ModelComparison }, // int, either SupraFit::Method::ModelComparison or SupraFit::Method::FastConfidence
+
+    /* Maximal number of steps to be evaluated */
+    { "MaxSteps", 1e4 }, // int
+
+    /* Fast Confidence Maximal steps */
+    { "MaxStepsFastConfidence", 1e4 }, // int
+
+    /* Set scaling factor single step size */
+    /* The factor determines the step length as follows:
+     * delta = 10^(ceil(log10(parameter) + (-4) ))
+     * this ensures correct scaling and always something like 10^(N)
+     */
+    { "FastConfidenceScaling", -4 }, // int
+
+    /* SSE threshold defined by f-Statistics */
+    { "MaxError", 0 }, //double
+
+    /* Confidence in % */
+    { "confidence", 95 }, //double
+
+    /* Corresponding f Value */
+    { "f_value", 0 }, // double
+
+    /* Threshold for convergency in SSE */
+    { "ErrorConvergency", 1e-10 }, // double
+
+    /* Box Scaling Factor */
+    { "BoxScalingFactor", 1.5 }, // double
+
+    /* Define the global and local parameter to be tested - this list should not be empty
+     * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
+    { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
+    { "LocalParameterList", "" }, // strings, to be converted to QList<int>
+
+    /* Series in FastConfidence */
+    { "IncludeSeries", true }
+};
+
+/* Monte Carlo Settings */
+
+const QJsonObject MonteCarloConfigBlock{
+
+    /* Set method */
+    { "method", SupraFit::Method::MonteCarlo }, // int
+
+    /* Maximal number of Monte Carlo steps to be performed*/
+    { "MaxSteps", 1e3 }, // int
+
+    /* Variance to used */
+    { "Variance", 1e-3 }, // double
+
+    /* Source of variance */
+    { "VarianceSource", 1 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma"
+
+    /* Choose newly added error randomly from the original error vector  -> Bootstrapping */
+    { "Bootstrap", false }, // bool
+
+    /* Use original data instead of the re-fitted data for monte carlo simulation  */
+    { "OriginalData", false }, // bool
+
+    /* Apply random numbers to the input vector/matrix
+     * [0] - first row
+       [1] - second row etc ... */
+    { "IndependentRowVariance", "" } // strings, to be converted to QVecotr<double>
+
+};
+
+/* Resample Methods Settings */
+const QJsonObject ResampleConfigBlock{
+
+    /* Set method */
+    { "method", SupraFit::Method::CrossValidation }, // int either SupraFit::Method::CrossValidation or SupraFit::Method::ReductionAnalyse
+
+    /* Leave X-Out Cross Validation */
+    { "CXO", 1 }, // int
+
+    /* Set Runtype for Reduction Analysis */
+    { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards
+
+};
+
+/* Grid Search Settings */
+const QJsonObject GridSearchConfigBlock{
+
+    /* Set method */
+    { "method", SupraFit::Method::WeakenedGridSearch }, // int
+
+    /* Maximal number of steps to be evaluated */
+    { "MaxSteps", 1e3 }, // int
+
+    /* SSE threshold defined by f-Statistics */
+    { "MaxError", 0 }, //double
+
+    /* Confidence in % */
+    { "confidence", 95 }, //double
+
+    /* Corresponding f Value */
+    { "f_value", 0 }, // double
+
+    /* Threshold for convergency in SSE */
+    { "ErrorConvergency", 1e-10 }, // double
+
+    /* Maximal steps which are allowed to be above the SSE threshold, while continueing the evaluation */
+    { "OvershotCounter", 5 }, // int
+
+    /* Maximal number of steps, where the error is allowed to decrease, analyse not-converged systems, flat surfaces */
+    { "ErrorDecreaseCounter", 50 }, // int
+
+    /* Amount for all error changes below the threshold error_conv, while keeping the evaluation running */
+    { "ErrorConvergencyCounter", 5 }, // int
+
+    /* Set scaling factor single step size */
+    /* The factor determines the step length as follows:
+     * delta = 10^(ceil(log10(parameter) + (-4) ))
+     * this ensures correct scaling and always something like 10^(N)
+     */
+    { "ScalingFactor", -4 }, // int
+
+    /* Store intermediate results, may result in large json blocks */
+    { "intermediate", false }, //bool
+
+    /* Define the global and local parameter to be tested - this list should not be empty
+     * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
+    { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
+    { "LocalParameterList", "" } // strings, to be converted to QList<int>
+};
 
 class JobManager : public QObject {
     Q_OBJECT
@@ -50,16 +185,14 @@ private:
 
     QJsonObject RunMonteCarlo(const QJsonObject& job);
     QJsonObject RunGridSearch(const QJsonObject& job);
-    QJsonObject RunReduction(const QJsonObject& job);
-    QJsonObject RunCrossValidation(const QJsonObject& job);
+    QJsonObject RunResample(const QJsonObject& job);
     QJsonObject RunModelComparison(const QJsonObject& job);
-    QJsonObject RunFastConfidence(const QJsonObject& job);
     QJsonObject RunGlobalSearch(const QJsonObject& job);
 
     QPointer<MonteCarloStatistics> m_montecarlo_handler;
     QPointer<WeakenedGridSearch> m_gridsearch_handler;
     QPointer<ModelComparison> m_modelcomparison_handler;
-    QPointer<ReductionAnalyse> m_reduction_handler;
+    QPointer<ResampleAnalyse> m_resample_handler;
     QPointer<GlobalSearch> m_globalsearch;
 
 signals:

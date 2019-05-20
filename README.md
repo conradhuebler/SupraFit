@@ -12,15 +12,20 @@ git clones automatically fisher_dist and libpeakpick.
 - [fisher_dis](https://github.com/conradhuebler/fisher_dist) provides the finv-function like in octave to calculate the quantiles of the F distribution
 - [libpeakpick](https://github.com/conradhuebler/libpeakpick) provides some basic peak picking, peak integration and regression tools. It retrives a copy of eigen from official git mirror, that is used by SupraFit as well.
 
+SupraFit comes with the some selected [Google Noto Fonts](https://github.com/googlei18n/noto-fonts). They are optional and can be included into the binary during compile-time (set `-Dnoto_font=true\false` as cmake argument).
+
 ## Compiling
 To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and a recent Qt version. Soon, Qt 5.12 LTS will be focused.
 
 SupraFit has been successfully compilied with: 
 - gcc 5.2, gcc 6.3, gcc 7.3 and gcc 8.3
 - clang 3.9 
+
 on linux systems and windows systems using
 - mingw 5.3
 - MSVC 2015
+
+
 > Windows 7 or higher is mandatory.
 > MacOS has not been tested yet.
 
@@ -36,13 +41,38 @@ The deprecated, not recommended version SupraFit 1 can be obtained with
 git clone -b suprafit-v1 --recursive git@github.com:conradhuebler/SupraFit.git
 ```
 
-Compile it as follows:
+Compile it as follows on Unix Platform:
 ```sh
 cd suprafit
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release  -Dnoto_font=true/false
 make
+```
+
+On Windows Systems use for example
+```sh
+cd suprafit
+mkdir build
+cd build
+```
+For Visual Studio use
+```sh
+cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true/false ..
+```
+
+
+> openMP is disabled when compiling with Visual Studio
+
+
+or for MinGW (openMP is enabled, libgomp-1.dll is expected) use
+
+```sh
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true/false ..
+```
+
+```sh
+cmake --build . --config Release
 ```
 
 >Please note, that the current development version is still in alpha stage. Some features are not ready yet and some changes might break compatibility of the SupraFit file format.
@@ -90,5 +120,7 @@ A detailed handbook will be provided as soon as possbile.
 
 ## Citation
 If you obtain results with SupraFit, please cite for now:
+
 ... coming soon ...
+
 After release of the detailed articles describing the used methods, please refer to them as well.

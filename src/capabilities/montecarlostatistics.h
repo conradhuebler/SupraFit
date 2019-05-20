@@ -32,30 +32,6 @@ class MonteCarloStatistics;
 class NonLinearFitThread;
 class QThreadPool;
 
-const QJsonObject MonteCarloConfigBlock{
-
-    /* Maximal number of Monte Carlo steps to be performed*/
-    { "MaxSteps", 1e3 }, // int
-
-    /* Variance to used */
-    { "Variance", 1e-3 }, // double
-
-    /* Source of variance */
-    { "VarianceSource", 1 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma"
-
-    /* Choose newly added error randomly from the original error vector  -> Bootstrapping */
-    { "Bootstrap", false }, // bool
-
-    /* Use original data instead of the re-fitted data for monte carlo simulation  */
-    { "OriginalData", false }, // bool
-
-    /* Apply random numbers to the input vector/matrix
-     * [0] - first row
-       [1] - second row etc ... */
-    { "IndependentRowVariance", "" } // strings, to be converted to QVecotr<double>
-
-};
-
 class MonteCarloThread : public AbstractSearchThread {
     Q_OBJECT
 

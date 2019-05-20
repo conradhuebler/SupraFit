@@ -882,6 +882,12 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
 {
     int fileversion = topjson["SupraFit"].toInt();
 
+    if (fileversion > qint_version) {
+        emit Warning(QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion), 1);
+        qWarning() << QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion);
+        //return false;
+    }
+
     d->m_systemObject = topjson["system"].toObject();
 
     if (fileversion >= 1601) {
