@@ -77,8 +77,8 @@ void ResampleAnalyse::CrossValidation()
         blocksize = 1;
         for (int i = m_model->DataPoints() - 1; i >= 0; --i) {
             QPointer<DataTable> dep_table = new DataTable(table);
-            dep_table->DisableRow(i);
-
+            Vector vector = dep_table->DisableRow(i);
+            std::cout << vector.transpose() << " " << i << std::endl;
             block << Pair(m_model->IndependentModel(), dep_table);
             if (block.size() == blocksize) {
                 m_batch.enqueue(block);

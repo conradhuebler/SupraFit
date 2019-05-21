@@ -31,3 +31,4 @@ deploy:
     secure: lNrwOGAylXafSwJAAwEbYBFGbpGjy7aYSCyAWl9jikP22ykJ1BqwKPKhKjo+f1JT
   prerelease: true
   artifact: portable
+  skip_tags: true

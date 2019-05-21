@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,6 @@ NonLinearFitThread::NonLinearFitThread(bool exchange_statistics)
     : m_exc_statistics(exchange_statistics)
 {
     setAutoDelete(false);
-    connect(this, SIGNAL(Message(QString, int)), this, SLOT(Print(QString)));
 }
 
 NonLinearFitThread::~NonLinearFitThread()
@@ -53,10 +52,10 @@ void NonLinearFitThread::run()
     m_running = true;
     m_steps = 0;
     m_converged = false;
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    //quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     NonLinearFit();
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    emit finished(t1 - t0);
+    //quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+
     m_running = false;
 }
 
@@ -71,8 +70,6 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, boo
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_model->setLockedParameter(model->LockedParameters());
-    connect(m_model.data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
-    connect(m_model.data(), SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
 }
 
 void NonLinearFitThread::setParameter(const QJsonObject& json)
@@ -108,8 +105,9 @@ void NonLinearFitThread::Print(const QString& message)
 
 Minimizer::Minimizer(bool exchange_statistics, QObject* parent)
     : QObject(parent)
-    , m_exc_statistics(exchange_statistics)
     , m_inform_config_changed(true)
+    , m_exc_statistics(exchange_statistics)
+
 {
 }
 
@@ -118,27 +116,6 @@ Minimizer::~Minimizer()
     // m_model.clear();
 }
 
-QString Minimizer::OptPara2String() const
-{
-    QString result;
-    /*
-    result += "\n";
-    result += "|***********************************************************************************|\n";
-    result += "|********************General Config for Optimization********************************|\n";
-    result += "|Maximal number of Iteration: " + QString::number(m_opt_config.MaxIter) + "|\n";
-    result += "|No. of LevenbergMarquadt Steps to optimize constants each Optimization Step: " + QString::number(m_opt_config.LevMar_Constants_PerIter) + "|\n";
-    result += "|No. of LevenbergMarquadt Steps to optimize shifts each Optimization Step: " + QString::number(m_opt_config.LevMar_Shifts_PerIter) + "|\n";
-    result += "\n";
-    result += "|********************LevenbergMarquadt Configuration********************************|\n";
-    result += "|Minipack Factor " + QString::number(m_opt_config.LevMar_Factor) + "|\n";
-    result += "|Minipack XTol" + QString::number(m_opt_config.LevMar_Xtol) + "|\n";
-    result += "|Minipack Gtol" + QString::number(m_opt_config.LevMar_Gtol) + "|\n";
-    result += "|Minipack Ftol" + QString::number(m_opt_config.LevMar_Ftol) + "|\n";
-    result += "|Minipack epsfcn" + QString::number(m_opt_config.LevMar_epsfcn) + "|\n";
-    result += "|********************LevenbergMarquadt Configuration********************************|\n";
-    result += "\n";*/
-    return result;
-}
 
 int Minimizer::Minimize(const QList<int>& locked)
 {
@@ -150,16 +127,8 @@ int Minimizer::Minimize()
 {
     emit RequestCrashFile();
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    QString OptPara;
-    OptPara += "Starting Optimization Run for " + m_model->Name() + "\n";
-    if (m_inform_config_changed) {
-        OptPara += OptPara2String();
-        m_inform_config_changed = false;
-    }
-    emit Message(OptPara, 2);
+
     NonLinearFitThread* thread = new NonLinearFitThread(m_exc_statistics);
-    connect(thread, SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
-    connect(thread, SIGNAL(Warning(QString, int)), this, SIGNAL(Warning(QString, int)), Qt::DirectConnection);
     thread->setModel(m_model);
     //thread->run();
     thread->start();
@@ -174,8 +143,6 @@ int Minimizer::Minimize()
     delete thread;
     m_model->ImportModel(m_last_parameter);
     emit RequestRemoveCrashFile();
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    emit Message("Full calculation took  " + QString::number(t1 - t0) + " msecs", 3);
     return converged;
 }
 

@@ -24,7 +24,6 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QTimer>
 
-#include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"

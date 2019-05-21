@@ -112,7 +112,7 @@ public:
     qreal& operator()(int column, int row);
 
     void CheckRow(int row);
-    void DisableRow(int row);
+    Vector DisableRow(int row);
     void PrintCheckedRows() const;
     void EnableAllRows();
     void setCheckedAll(bool checked);

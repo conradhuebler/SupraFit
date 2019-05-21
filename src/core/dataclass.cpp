@@ -279,11 +279,12 @@ void DataTable::CheckRow(int row)
     emit layoutChanged();
 }
 
-void DataTable::DisableRow(int row)
+Vector DataTable::DisableRow(int row)
 {
     for (int i = 0; i < columnCount(); ++i)
         m_checked_table(row, i) = 0;
     emit layoutChanged();
+    return Row(row);
 }
 
 void DataTable::EnableAllRows()

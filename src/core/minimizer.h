@@ -1,6 +1,6 @@
 /*
  * This file handles all optimization functions
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,7 +98,6 @@ private:
     QSharedPointer<AbstractModel> m_model;
     QJsonObject m_opt_config;
     bool m_inform_config_changed;
-    QString OptPara2String() const;
     QJsonObject m_last_parameter;
     bool m_exc_statistics;
     qreal m_sum_error;
@@ -108,5 +107,4 @@ signals:
     void Warning(const QString& str, int priority);
     void RequestCrashFile();
     void RequestRemoveCrashFile();
-    void InsertModel(const QJsonObject& model, int active);
 };
