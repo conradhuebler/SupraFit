@@ -155,8 +155,27 @@ int main(int argc, char** argv)
     qApp->instance()->setProperty("series_confidence", true);
 
     if (parser.isSet("j") && parser.isSet("i")) {
+
+        for (const QString& str : parser.values("j")) {
+            QStringList data_files;
+            QJsonObject job;
+            JsonHandler::ReadJsonFile(job, str);
+
+            if (job.keys().contains("main")) {
+
+                Simulator* simulator = new Simulator;
+                simulator->setInFile(parser.value("i"));
+                simulator->setMainJson(job["main"].toObject());
+                simulator->setModelsJson(job["model"].toObject());
+                simulator->setJobsJson(job["jobs"].toObject());
+                data_files = simulator->Generate();
+            }
+        }
+
+        return 0;
+
+        /*
         QPointer<DataClass> data;
-        QJsonObject m_toplevel;
         if (!JsonHandler::ReadJsonFile(m_toplevel, parser.value("i")))
             return 0;
         data = new DataClass(m_toplevel["data"].toObject());
@@ -187,6 +206,7 @@ int main(int argc, char** argv)
         }
         toplevel["data"] = dataObject;
         JsonHandler::WriteJsonFile(toplevel, parser.value("i"));
+        */
     }
 
     if (task.isEmpty() || task.isNull()) {
@@ -314,6 +334,7 @@ int main(int argc, char** argv)
         std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
         std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
         std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
+        /*
         Simulator simulator(exp, std);
 
         simulator.setReduction(reduction);
@@ -324,7 +345,7 @@ int main(int argc, char** argv)
         simulator.setInFile(infile);
         simulator.setOutFile(outfile);
         simulator.FullTest();
-
+        */
         return 0;
     }
 }

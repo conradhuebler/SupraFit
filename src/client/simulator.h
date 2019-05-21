@@ -34,8 +34,18 @@ class Simulator : public SupraFitCli {
     Q_OBJECT
 
 public:
-    explicit Simulator(int runs, double std);
+    explicit Simulator();
     virtual ~Simulator();
+
+    void setMainJson(const QJsonObject& mainjson) { m_mainjson = mainjson; }
+    void setTopLevel(const QJsonObject& toplevel) { m_toplevel = toplevel; }
+
+    void setModelsJson(const QJsonObject& modelsjson) { m_modelsjson = modelsjson; }
+    void setJobsJson(const QJsonObject& jobsjson) { m_jobsjson = jobsjson; }
+
+    QStringList Generate();
+
+    QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
     bool FullTest();
 
@@ -87,4 +97,6 @@ private:
     void Progress(int i, int max);
 
     double m_current = 0.0;
+
+    QJsonObject m_mainjson, m_modelsjson, m_jobsjson;
 };
