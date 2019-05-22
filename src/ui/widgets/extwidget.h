@@ -51,6 +51,7 @@ protected:
 
         ModelMime* mimeData = new ModelMime;
         mimeData->setData("application/x-suprafitmodel", m_content);
+        mimeData->setText("SupraFitSimulation");
 
         QDrag* drag = new QDrag(this);
         drag->setPixmap(QPixmap(":/misc/suprafit.png"));

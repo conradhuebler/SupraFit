@@ -415,7 +415,6 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     QPointer<ModelWidget> modelwidget = new ModelWidget(t, charts, readonly);
     modelwidget->setColorList(object["colors"].toString());
     modelwidget->setKeys(object["keys"].toString());
-    //t->setOptimizerConfig(m_config);
     connect(modelwidget, &ModelWidget::AddModel, this, [this](const QJsonObject& object) { this->Json2Model(object); });
     connect(modelwidget->getMinimizer().data(), SIGNAL(Message(QString, int)), this, SIGNAL(Message(QString, int)), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
@@ -424,7 +423,6 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
 
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()), Qt::DirectConnection);
     connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
-    connect(modelwidget->getMinimizer().data(), SIGNAL(InsertModel(QJsonObject, int)), this, SIGNAL(InsertModel(QJsonObject, int)), Qt::DirectConnection);
 
     connect(modelwidget, &ModelWidget::IncrementProgress, m_statistic_dialog, &StatisticDialog::IncrementProgress);
     connect(modelwidget, &ModelWidget::MaximumSteps, m_statistic_dialog, &StatisticDialog::MaximumSteps);
@@ -435,15 +433,6 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     m_models << t;
     m_model_widgets << modelwidget;
 
-    /*
-     * Some models are loaded from history, this should no be added again
-     * after not adding them, we allow the next models to be added to history again
-     */
-    /*
-    if (m_history)
-        modelwidget->getMinimizer()->addToHistory();
-    else
-        m_history = true;*/
     ActiveBatch();
 
     m_ReductionCutoff = qMax(m_ReductionCutoff, t->ReductionCutOff());

@@ -332,6 +332,12 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
             return true;
         }
     }
+
+    if (string == "SupraFitSimulation") {
+        emit LoadJsonObject(doc.object());
+        return true;
+    }
+
     if (string.isEmpty() || string.isNull())
         return false;
 
