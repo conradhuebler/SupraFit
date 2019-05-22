@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,13 @@
 
 #include <iostream>
 
+#include <QtCore/QJsonObject>
+
+#include "src/core/dataclass.h"
+#include "src/core/jsonhandler.h"
+#include "src/core/models.h"
+#include "src/core/toolset.h"
+
 #include "suprafit_cli.h"
 
 SupraFitCli::SupraFitCli()
@@ -26,4 +33,58 @@ SupraFitCli::SupraFitCli()
 
 SupraFitCli::~SupraFitCli()
 {
+}
+
+bool SupraFitCli::LoadFile()
+{
+    if (!JsonHandler::ReadJsonFile(m_toplevel, m_infile))
+        return false;
+    return true;
+}
+
+bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
+{
+    if (JsonHandler::WriteJsonFile(data, file)) {
+        std::cout << file.toStdString() << " successfully written to disk" << std::endl;
+        return true;
+    }
+    return false;
+}
+
+bool SupraFitCli::SaveFile()
+{
+    if (JsonHandler::WriteJsonFile(m_toplevel, m_outfile)) {
+        std::cout << m_outfile.toStdString() << " successfully written to disk" << std::endl;
+        return true;
+    }
+    return false;
+}
+
+void SupraFitCli::PrintFileContent(int index)
+{
+    int i = 1;
+    DataClass* data = new DataClass(m_toplevel["data"].toObject());
+
+    if (data->DataPoints() == 0)
+        return;
+
+    std::cout << data->Data2Text().toStdString() << std::endl;
+
+    for (const QString& key : m_toplevel.keys()) {
+        if (key.contains("model")) {
+            QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(m_toplevel[key].toObject(), data);
+            if (index == 0 || i == index) {
+                std::cout << model->ModelInfo().toStdString() << std::endl;
+                std::cout << model->AnalyseStatistic().toStdString() << std::endl;
+            }
+        }
+        ++i;
+    }
+}
+
+void SupraFitCli::PrintFileStructure()
+{
+    for (const QString& key : m_toplevel.keys()) {
+        std::cout << key.toStdString() << std::endl;
+    }
 }

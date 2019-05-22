@@ -47,56 +47,12 @@ public:
 
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
-    bool FullTest();
-
-    bool LoadFile();
-
 private:
-    QJsonObject m_toplevel;
-    int m_runs;
-    double m_std;
-
-    inline QSharedPointer<AbstractModel> Test11Model(QPointer<DataClass> data)
-    {
-        if (data->IndependentVariableSize() == 1)
-            return QSharedPointer<itc_ItoI_Model>(new itc_ItoI_Model(data), &QObject::deleteLater);
-        else //(data->IndependentVariableSize() == 2)
-            return QSharedPointer<ItoI_Model>(new ItoI_Model(data), &QObject::deleteLater);
-    }
-    inline QSharedPointer<AbstractModel> Test2111Model(QPointer<DataClass> data)
-    {
-
-        if (data->IndependentVariableSize() == 1)
-            return QSharedPointer<itc_IItoI_Model>(new itc_IItoI_Model(data), &QObject::deleteLater);
-        else //(data->IndependentVariableSize() == 2)
-            return QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(data), &QObject::deleteLater);
-    }
-    inline QSharedPointer<AbstractModel> Test1112Model(QPointer<DataClass> data)
-    {
-        if (data->IndependentVariableSize() == 1)
-            return QSharedPointer<itc_ItoII_Model>(new itc_ItoII_Model(data), &QObject::deleteLater);
-        else //(data->IndependentVariableSize() == 2)
-            return QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(data), &QObject::deleteLater);
-    }
-
-    inline QSharedPointer<AbstractModel> Test22Model(QPointer<DataClass> data)
-    {
-        if (data->IndependentVariableSize() == 1)
-            return QSharedPointer<itc_IItoII_Model>(new itc_IItoII_Model(data), &QObject::deleteLater);
-        else //(data->IndependentVariableSize() == 2)
-            return QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(data), &QObject::deleteLater);
-    }
-
-    void Test(QSharedPointer<AbstractModel> model);
-
     QPointer<const DataClass> m_data;
 
-
-    void PrintStatistic(const QJsonObject& object, QSharedPointer<AbstractModel> model);
-
+    /*
     void Progress(int i, int max);
-
     double m_current = 0.0;
-
+    */
     QJsonObject m_mainjson, m_modelsjson, m_jobsjson;
 };

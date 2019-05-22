@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,14 @@
 
 #pragma once
 
+#include <QtCore/QSharedPointer>
+
+#include "src/core/models.h"
+
+#include "src/global.h"
+
+class AbstractModel;
+class DataClass;
 class QJsonObject;
 class QString;
 class JsonHandler {
@@ -28,4 +36,7 @@ public:
     static bool WriteJsonFile(const QJsonObject& json, const QString& file);
     static bool AppendJsonFile(const QJsonObject& json, const QString& filee);
     static bool ReadJsonFile(QJsonObject& json, const QString& file);
+
+    static QSharedPointer<AbstractModel> Json2Model(const QJsonObject& object, SupraFit::Model model, DataClass* data);
+    static QSharedPointer<AbstractModel> Json2Model(const QJsonObject& object, DataClass* data);
 };

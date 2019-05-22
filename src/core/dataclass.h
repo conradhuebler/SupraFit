@@ -258,6 +258,15 @@ public:
     inline DataTable* DependentModel() { return d->m_dependent_model; }
     inline DataTable* IndependentModel() const { return d->m_independent_model; }
     inline DataTable* DependentModel() const { return d->m_dependent_model; }
+
+    /*! \brief return text of stored data
+     */
+    QString Data2Text() const;
+
+    /*! \brief reimplment, if more model specfic raw data information should be printed out
+     */
+    virtual QString Data2Text_Private() const { return QString(); }
+
     inline void setIndependentTable(DataTable* table)
     {
         d->m_independent_model = table;

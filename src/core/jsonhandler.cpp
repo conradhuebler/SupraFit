@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,16 @@
  * 
  */
 
-#include "jsonhandler.h"
-
 #include <QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+
+#include "src/core/models.h"
+
+#include "src/global.h"
+
+#include "jsonhandler.h"
 
 bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
 {
@@ -76,6 +80,27 @@ bool JsonHandler::AppendJsonFile(const QJsonObject& json, const QString& file)
     else if (file.contains("jdat") || file.contains("suprafit"))
         saveFile.write(qCompress(saveDoc.toJson(QJsonDocument::Compact), 9));
     return true;
+}
+
+QSharedPointer<AbstractModel> JsonHandler::Json2Model(const QJsonObject& object, SupraFit::Model model, DataClass* data)
+{
+    if (object.isEmpty())
+        return NULL;
+
+    QSharedPointer<AbstractModel> t = CreateModel(model, data);
+    if (!t->ImportModel(object)) {
+        t.clear();
+        return NULL;
+    }
+    return t;
+}
+
+QSharedPointer<AbstractModel> JsonHandler::Json2Model(const QJsonObject& object, DataClass* data)
+{
+    if (object.contains("SupraFit"))
+        return Json2Model(object, static_cast<SupraFit::Model>(object["model"].toInt()), data);
+    else
+        return Json2Model(object, Name2Model(object["model"].toString()), data);
 }
 
 #include "jsonhandler.moc"

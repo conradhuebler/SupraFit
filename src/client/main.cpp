@@ -74,40 +74,12 @@ int main(int argc, char** argv)
         QCoreApplication::translate("main", "0"));
     parser.addOption(p);
 
-    QCommandLineOption t(QStringList() << "t"
-                                       << "task",
-        QCoreApplication::translate("main", "Define task to be done:\n a - Analyse Model \n c - Concentration solver test \n g - Generate data\n o - Optimise Model \n s - Simulate experiments, optimise and analyse according to -s option"),
-        QCoreApplication::translate("main", "a c g o s"),
-        QCoreApplication::translate("main", ""));
-    parser.addOption(t);
-
     QCommandLineOption jobfile(QStringList() << "j"
                                              << "job",
         QCoreApplication::translate("main", "Run Content of a Jobfile"),
         QCoreApplication::translate("main", "jobfile"),
         QCoreApplication::translate("main", ""));
     parser.addOption(jobfile);
-
-    QCommandLineOption statistic(QStringList() << "s"
-                                               << "statistic",
-        QCoreApplication::translate("main", "Statistical post processing to be done\n a - Akaike Information Criterion\n c - Cross Validation\n m - Monte Carlo Simulation\n o - Model Comparison\n r - Reduction Analyse\n w- Weakend Grid Search"),
-        QCoreApplication::translate("main", "a c m o r w"),
-        QCoreApplication::translate("main", "acmorw"));
-    parser.addOption(statistic);
-
-    QCommandLineOption experiments(QStringList() << "e"
-                                                 << "experiments",
-        QCoreApplication::translate("main", "Number of experiments ( will only be evaluated if -t/--task s or -t/--task c)!"),
-        QCoreApplication::translate("main", "number"),
-        QCoreApplication::translate("main", "1000"));
-    parser.addOption(experiments);
-
-    QCommandLineOption _std(QStringList() << "g"
-                                          << "gaussian",
-        QCoreApplication::translate("main", "Standard deviation for the gaussian error added in simulation."),
-        QCoreApplication::translate("main", "standard deviation"),
-        QCoreApplication::translate("main", "0.001"));
-    parser.addOption(_std);
 
     QCommandLineOption threads(QStringList() << "n"
                                              << "nproc",
@@ -123,38 +95,32 @@ int main(int argc, char** argv)
     const QString infile = parser.value("i");
 
     const QString print = parser.value("print");
-    const QString task = parser.value("task");
     const QString job = parser.value("j");
 
-    if (infile.isEmpty() && (task != "c")) {
+    if (infile.isEmpty()) {
         std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
         std::cout << "The simplest task for SupraFit to be done is opening a file and writing a project to disk." << std::endl;
         std::cout << "That would be like converting a *.json file to a *.suprafit file or vice versa :-)" << std::endl;
-        std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl;
+        std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl
+                  << std::endl
+                  << std::endl;
 
+        std::cout << "To run a jobfile on a specific input file, run " << std::endl;
+        std::cout << "suprafit_cli -i file.suprafit -j jobfile.json " << std::endl
+                  << std::endl;
+
+        std::cout << "To print the content of a file just type" << std::endl;
+        std::cout << "suprafit_cli -i file.suprafit " << std::endl;
         parser.showHelp(0);
     }
 
     QString outfile = parser.value("o");
 
-    if (outfile.isEmpty())
-        outfile = infile;
-
-    std::cout << "Task is " << job.toStdString() << std::endl;
-    int exp = parser.value("e").toInt();
-    qreal std = parser.value("g").toDouble();
-
-    bool reduction = parser.value("statistic").contains("r");
-    bool crossvalidation = parser.value("statistic").contains("c");
-    bool montecarlo = parser.value("statistic").contains("m");
-    bool modelcomparison = parser.value("statistic").contains("o");
-    bool weakendgrid = parser.value("statistic").contains("w");
-
     bool list = parser.isSet("l");
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
 
-    if (parser.isSet("j") && parser.isSet("i")) {
+    if (parser.isSet("j")) {
 
         for (const QString& str : parser.values("j")) {
             QStringList data_files;
@@ -173,88 +139,52 @@ int main(int argc, char** argv)
         }
 
         return 0;
-
-        /*
-        QPointer<DataClass> data;
-        if (!JsonHandler::ReadJsonFile(m_toplevel, parser.value("i")))
-            return 0;
-        data = new DataClass(m_toplevel["data"].toObject());
-        QStringList keys = m_toplevel.keys();
-        QJsonObject toplevel, dataObject;
-        dataObject = data->ExportData();
-
-        for (const QString& key : keys) {
-            if (key == "data")
-                continue;
-
-            SupraFit::Model model = static_cast<SupraFit::Model>(m_toplevel[key].toObject()["model"].toInt());
-            QSharedPointer<AbstractModel> t = CreateModel(model, data);
-            t->ImportModel(m_toplevel[key].toObject());
-
-            JobManager* manager = new JobManager;
-            manager->setModel(t);
-            int i = 0;
-            for (const QString& str : parser.values("j")) {
-                QJsonObject job;
-                JsonHandler::ReadJsonFile(job, str);
-                manager->AddJob(job);
-            }
-            manager->RunJobs();
-            toplevel["model_" + QString::number(i)] = t->ExportModel(true, false);
-            i++;
-            delete manager;
-        }
-        toplevel["data"] = dataObject;
-        JsonHandler::WriteJsonFile(toplevel, parser.value("i"));
-        */
     }
 
-    if (task.isEmpty() || task.isNull()) {
+    {
+        SupraFitCli* suprafitcli = new SupraFitCli;
+        suprafitcli->setInFile(infile);
+        if (!suprafitcli->LoadFile()) {
+            std::cout << "Can not open file " << infile.toStdString() << std::endl
+                      << "Sorry, going home." << std::endl;
+            return 1;
+        }
+        suprafitcli->setOutFile(outfile);
         std::cout << "No task is not set, lets do the standard stuff ..." << std::endl;
         list = parser.isSet("l");
-        if (infile == outfile && !list) {
-            /*
+        if (!list) {
+
             std::cout << "Input file and output file are the same AND nothing set to be done." << std::endl;
             std::cout << "For conversation of files type something like: " << std::endl;
             std::cout << "suprafit_cli -i file.suprafit -o file.json" << std::endl;
-            */
 
             /* Lets take this as print model details */
-
+            std::cout << "Print file content." << std::endl;
+            suprafitcli->PrintFileContent();
             return 0;
         }
         if (list) {
             /* Here comes some simple json tree analyser */
-
+            std::cout << "Print file strucuture." << std::endl;
+            suprafitcli->PrintFileStructure();
             return 0;
         }
 
         if (infile != outfile) {
             /* Lets load the file (if projects, load several and the save them to the new name */
 
-            return 0;
+            if (suprafitcli->LoadFile())
+                if (suprafitcli->SaveFile())
+                    return 0;
+                else
+                    return 2; // Cannot save file
+            else
+                return 1; // cannot load file
         }
         return 0;
-    } else if (task == "a") {
-        std::cout << "Reduction Analysis is turn on: " << reduction << std::endl;
-        std::cout << "Cross Validation is turn on: " << crossvalidation << std::endl;
-        std::cout << "Monte Carlo Simulation is turn on: " << montecarlo << std::endl;
-        std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
-        std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
-        std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
-        Analyser analyse;
+    }
 
-        analyse.setReduction(reduction);
-        analyse.setCrossValidation(crossvalidation);
-        analyse.setModelComparison(modelcomparison);
-        analyse.setWeakendGridSearch(weakendgrid);
-        analyse.setMonteCarlo(montecarlo);
-        analyse.setInFile(infile);
-        analyse.setOutFile(outfile);
-        /* We need to adopt this to work on the models stored */
-
-        return 0;
-    } else if (task == "c") {
+    /*
         std::cout << "Concentration solver 2:1/1:1/1:2 test!" << std::endl
                   << std::endl;
 #ifdef Qt5_10
@@ -316,36 +246,6 @@ int main(int argc, char** argv)
 #else
         std::cout << "Sorry, but this functions need Qt 5.10 or newer ... " << std::endl;
 #endif
-    } else if (task == "g") {
-        /* Something completely different */
-
-        return 0;
-    } else if (task == "o") {
-
-        /* Load every model stored in this file and optimise it ... */
-
-        return 0;
-    } else if (task == "s") {
-        std::cout << "No. Experiments to be simulated " << exp << std::endl;
-        std::cout << "Standard Deviation to be used " << std << std::endl;
-        std::cout << "Reduction Analysis is turn on: " << reduction << std::endl;
-        std::cout << "Cross Validation is turn on: " << crossvalidation << std::endl;
-        std::cout << "Monte Carlo Simulation is turn on: " << montecarlo << std::endl;
-        std::cout << "Model Comparison is turn on: " << modelcomparison << std::endl;
-        std::cout << "Weakend Grid Search is turn on: " << weakendgrid << std::endl;
-        std::cout << "Number of threads: " << qApp->instance()->property("threads").toInt() << std::endl;
-        /*
-        Simulator simulator(exp, std);
-
-        simulator.setReduction(reduction);
-        simulator.setCrossValidation(crossvalidation);
-        simulator.setModelComparison(modelcomparison);
-        simulator.setWeakendGridSearch(weakendgrid);
-        simulator.setMonteCarlo(montecarlo);
-        simulator.setInFile(infile);
-        simulator.setOutFile(outfile);
-        simulator.FullTest();
-        */
-        return 0;
-    }
+*/
+    return 0;
 }

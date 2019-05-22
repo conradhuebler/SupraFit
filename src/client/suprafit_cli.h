@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +18,21 @@
 
 #pragma once
 
-#include <QObject>
+#include <QtCore/QJsonObject>
+#include <QtCore/QObject>
 
 class SupraFitCli : public QObject {
     Q_OBJECT
 public:
     explicit SupraFitCli();
     ~SupraFitCli();
+
+    bool LoadFile();
+    bool SaveFile();
+    bool SaveFile(const QString& file, const QJsonObject& data);
+
+    void PrintFileContent(int index = 0);
+    void PrintFileStructure();
 
     inline void setInFile(const QString& file)
     {
@@ -38,17 +46,11 @@ public:
         m_outfile.remove(".json").remove(".suprafit");
     }
 
-    inline void setReduction(bool val) { m_reduction = val; }
-    inline void setCrossValidation(bool val) { m_crossvalidation = val; }
-    inline void setMonteCarlo(bool val) { m_montecarlo = val; }
-    inline void setModelComparison(bool val) { m_modelcomparison = val; }
-    inline void setWeakendGridSearch(bool val) { m_weakendgrid = val; }
-
 signals:
 
 public slots:
 
 protected:
-    bool m_reduction = false, m_crossvalidation = false, m_montecarlo = false, m_modelcomparison = false, m_weakendgrid = false;
     QString m_infile = QString(), m_outfile = QString(), m_extension = ".suprafit";
+    QJsonObject m_toplevel;
 };

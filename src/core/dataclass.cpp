@@ -1095,3 +1095,25 @@ void DataClass::AddChildren(QPointer<DataClass> data)
 #endif
     });
 }
+
+QString DataClass::Data2Text() const
+{
+    QString text;
+    text += "#### Begin of Data Description ####\n";
+    text += "Independent Data Structure :   " + QString::number(DataPoints()) + "\n";
+    for (int i = 0; i < IndependentModel()->columnCount(); ++i)
+        text += " " + IndependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += IndependentModel()->ExportAsString();
+    text += "\n";
+    text += "Dependent Data Structure :          " + QString::number(SeriesCount()) + "\n";
+    for (int i = 0; i < DependentModel()->columnCount(); ++i)
+        text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
+    text += "\n";
+    text += DependentModel()->ExportAsString();
+    text += "\n";
+    text += Data2Text_Private();
+    text += "#### End of Data Description #####\n";
+    text += "******************************************************************************************************\n";
+    return text;
+}
