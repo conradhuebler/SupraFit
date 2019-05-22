@@ -115,13 +115,6 @@ signals:
     void Compare();
     void EditData();
 
-    /*
-    void WGStatistic(const WGSConfig& config);
-    void MCStatistic(MCConfig config);
-    void MoCoStatistic(MoCoConfig config);
-    void ReductionStatistic();
-    void CVStatistic(ReductionAnalyse::CVType type);
-    */
 };
 
 class ModelDataHolder : public QWidget {
@@ -203,7 +196,6 @@ private:
     int m_last_tab = 0;
 
     void Json2Model(const QJsonObject& object);
-    void Json2Model(const QJsonObject& object, SupraFit::Model model);
     void ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object = QJsonObject(), bool readonly = false);
     bool m_history, m_allow_loop;
     double m_ReductionCutoff = 0;
@@ -217,13 +209,6 @@ private slots:
     void SetProjectTabName();
     void RunJobs(const QJsonObject& job);
 
-    /*
-    void WGStatistic(const WGSConfig& config);
-    void MCStatistic(MCConfig config);
-    void MoCoStatistic(MoCoConfig config);
-    void ReductionStatistic();
-    void CVStatistic(ReductionAnalyse::CVType type);
-    */
     void OptimizeAll();
 
     void CompareAIC();

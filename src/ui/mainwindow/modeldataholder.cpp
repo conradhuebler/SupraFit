@@ -361,6 +361,7 @@ ModelDataHolder::~ModelDataHolder()
 void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
 {
     m_data = data;
+    connect(m_data.data(), &DataClass::Warning, this, &ModelDataHolder::Message);
     m_TitleBarWidget->setEnabled(true);
     m_wrapper = wrapper;
     if (!qobject_cast<MetaModel*>(data)) {
@@ -400,31 +401,10 @@ void ModelDataHolder::AddModel(int model)
 
 void ModelDataHolder::Json2Model(const QJsonObject& object)
 {
-
-    if (object.contains("SupraFit"))
-        Json2Model(object, static_cast<SupraFit::Model>(object["model"].toInt()));
-    else
-        Json2Model(object, Name2Model(object["model"].toString()));
-}
-
-void ModelDataHolder::Json2Model(const QJsonObject& object, SupraFit::Model model)
-{
-#ifdef _DEBUG
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#endif
-    if (object.isEmpty())
-        return;
-    QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
-    connect(t.data(), &AbstractModel::Warning, this, &ModelDataHolder::Message);
-    if (!t->ImportModel(object)) {
-        t.clear();
-        return;
+    QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(object, m_data.data());
+    if (model) {
+        ActiveModel(model, object);
     }
-    ActiveModel(t, object);
-#ifdef _DEBUG
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "model loaded within" << t1 - t0 << " msecs";
-#endif
 }
 
 void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonObject& object, bool readonly)
@@ -604,23 +584,14 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
     QStringList keys = object.keys();
     setEnabled(false);
     m_wrapper.data()->stopAnimiation();
-    /*
-     * Dont load to many models to the workspace, this is slow and confusing
-     */
-    // int i = m_models.size();
+
     for (const QString& key : qAsConst(keys)) {
         if (key == "data")
             continue;
 
         QApplication::processEvents();
-        /*
-     * We cannot stick with that for now, we have no old models stack
-     */
         QJsonObject model = object[key].toObject();
-        //if (i++ < 5)
         Json2Model(model);
-        //else
-        //  emit InsertModel(model);
     }
 
     setEnabled(true);
