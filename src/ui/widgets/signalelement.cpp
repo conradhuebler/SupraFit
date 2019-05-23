@@ -17,6 +17,8 @@
  * 
  */
 
+#include <charts.h>
+
 #include "src/core/dataclass.h"
 
 #include "src/ui/guitools/chartwrapper.h"

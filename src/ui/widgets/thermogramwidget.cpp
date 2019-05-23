@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+#include <charts.h>
 
 #include <Eigen/Dense>
 
@@ -41,8 +43,8 @@
 #include "libpeakpick/peakpick.h"
 
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/instance.h"
 #include "src/ui/guitools/waiter.h"
-#include "src/ui/widgets/chartview.h"
 
 #include "src/core/toolset.h"
 #include "src/global.h"
@@ -58,8 +60,11 @@ ThermogramWidget::ThermogramWidget(QWidget* parent)
 
 void ThermogramWidget::setUi()
 {
-    m_data = new QtCharts::QChart();
-    m_thermogram = new ChartView(m_data);
+    m_thermogram = new ChartView;
+    connect(m_thermogram, &ChartView::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_thermogram, &ChartView::ConfigurationChanged);
     m_thermogram->setModal(true);
     m_thermogram->setMinimumSize(600, 450);
     m_table = new QTableWidget;

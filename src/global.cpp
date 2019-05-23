@@ -58,13 +58,12 @@ void setLastDir(const QString& str)
         recent.removeLast();
 
     qApp->instance()->setProperty("recent", recent);
-
+    qApp->instance()->setProperty("lastDir", getDir());
     QSettings _settings;
     _settings.beginGroup("main");
 
     _settings.setValue("recent", qApp->instance()->property("recent"));
     _settings.setValue("lastdir", qApp->instance()->property("lastdir"));
-
     _settings.endGroup();
 
 }

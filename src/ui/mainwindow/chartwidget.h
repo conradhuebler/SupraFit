@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <charts.h>
+
 #include "src/ui/guitools/chartwrapper.h"
 
 #include <QtCharts/QChart>
@@ -32,7 +34,6 @@
 
 #include <QtWidgets/QWidget>
 
-#include "src/ui/widgets/chartview.h"
 
 class AbstractModel;
 
@@ -94,7 +95,6 @@ private:
     bool m_empty = true;
 
     QPointer<ChartView> m_signalview, m_errorview;
-    QPointer<QtCharts::QChart> m_signalchart, m_errorchart;
     QPointer<QtCharts::QValueAxis> m_x_chart, m_y_chart, m_x_error, m_y_error;
     QWeakPointer<DataClass> m_rawdata;
     ChartDockTitleBar* m_TitleBarWidget;

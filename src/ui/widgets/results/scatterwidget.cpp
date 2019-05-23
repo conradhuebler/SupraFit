@@ -16,14 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+#include <charts.h>
+
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
+
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/instance.h"
 #include "src/ui/guitools/waiter.h"
 
-#include "src/ui/widgets/chartview.h"
-
-#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
@@ -54,7 +56,12 @@ void ScatterWidget::setUi()
 {
     QGridLayout* layout = new QGridLayout;
     view = new ListChart;
+    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
     view->setName("scatterwidget");
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+
     m_xy_series = new QtCharts::QScatterSeries;
     m_xy_series->setBorderColor(m_xy_series->color());
     QSplitter* splitter = new QSplitter(Qt::Vertical);

@@ -17,11 +17,12 @@
  *
  */
 
+#include <charts.h>
+
 #include "src/core/AbstractModel.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-
-#include "src/ui/widgets/listchart.h"
+#include "src/ui/guitools/instance.h"
 
 #include <QtCore/QWeakPointer>
 
@@ -59,6 +60,11 @@ void ModelChartWidget::setUI()
     setLayout(layout);
 
     view = new ListChart;
+    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+
     view->setXAxis(chart->x_axis);
     view->setYAxis(chart->y_axis);
     view->setMinimumSize(300, 400);

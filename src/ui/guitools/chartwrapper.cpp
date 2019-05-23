@@ -17,6 +17,8 @@
  * 
  */
 
+#include <charts.h>
+
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 #include "src/core/toolset.h"
@@ -28,78 +30,6 @@
 
 #include "chartwrapper.h"
 
-void LineSeries::ShowLine(bool state)
-{
-    setVisible(state);
-}
-
-void LineSeries::ShowLine(int state)
-{
-    if (state == Qt::Unchecked)
-        setVisible(false);
-    else if (state == Qt::Checked)
-        setVisible(true);
-}
-
-void LineSeries::setName(const QString& str)
-{
-    QtCharts::QLineSeries::setName(str);
-}
-
-void ScatterSeries::setColor(const QColor& color)
-{
-    QPen pen = QtCharts::QScatterSeries::pen();
-    //      pen.setStyle(Qt::DashDotLine);
-    pen.setWidth(2);
-    //      pen.setColor(color);
-    QScatterSeries::setColor(color);
-    setPen(pen);
-}
-
-void ScatterSeries::ShowLine(int state)
-{
-    if (state == Qt::Unchecked)
-        setVisible(false);
-    else if (state == Qt::Checked)
-        setVisible(true);
-    emit visibleChanged(state);
-}
-
-BoxPlotSeries::BoxPlotSeries(const SupraFit::BoxWhisker& boxwhisker)
-    : m_boxwhisker(boxwhisker)
-{
-    LoadBoxWhisker();
-    m_visible = true;
-}
-
-void BoxPlotSeries::LoadBoxWhisker()
-{
-    QtCharts::QBoxSet* box = new QtCharts::QBoxSet;
-    box->setValue(QtCharts::QBoxSet::LowerExtreme, m_boxwhisker.lower_whisker);
-    box->setValue(QtCharts::QBoxSet::UpperExtreme, m_boxwhisker.upper_whisker);
-    box->setValue(QtCharts::QBoxSet::Median, m_boxwhisker.median);
-    box->setValue(QtCharts::QBoxSet::LowerQuartile, m_boxwhisker.lower_quantile);
-    box->setValue(QtCharts::QBoxSet::UpperQuartile, m_boxwhisker.upper_quantile);
-    append(box);
-}
-
-void BoxPlotSeries::setVisible(bool visible)
-{
-    if (m_visible == visible)
-        return;
-    if (visible)
-        LoadBoxWhisker();
-    else
-        clear();
-    m_visible = visible;
-}
-
-void BoxPlotSeries::setColor(const QColor& color)
-{
-    QBrush brush;
-    brush.setColor(color);
-    setBrush(brush);
-}
 
 ChartWrapper::ChartWrapper(QObject* parent)
     : QObject(parent)

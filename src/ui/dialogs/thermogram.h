@@ -89,7 +89,7 @@ private:
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
     ChartView* m_data_view;
-    QtCharts::QChart* m_data;
+    // QtCharts::QChart* m_data;
     LineSeries* fromSpectrum(const PeakPick::spectrum original);
 
     std::vector<PeakPick::Peak> PickPeaks(const PeakPick::spectrum, QTableWidget* widget);

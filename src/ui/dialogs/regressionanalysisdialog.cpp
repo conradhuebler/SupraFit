@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <charts.h>
 
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
@@ -41,7 +42,7 @@
 #include "src/core/libmath.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-#include "src/ui/widgets/listchart.h"
+#include "src/ui/guitools/instance.h"
 
 #include "regressionanalysisdialog.h"
 
@@ -65,6 +66,10 @@ void RegressionAnalysisDialog::setUI()
     m_functions->setRange(1, 1);
 
     m_chart = new ListChart;
+    connect(m_chart, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_chart, &ListChart::ApplyConfigurationChange);
 
     m_output = new QTextEdit;
     m_lists = new QListWidget;

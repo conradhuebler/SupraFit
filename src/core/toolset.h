@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <boxwhisker.h>
+
 #include "src/core/models.h"
 
 #include <fisher/fisher_dist.h>
@@ -73,9 +75,9 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
 QPair<qreal, qreal> Entropy(const QVector<QPair<qreal, qreal>>& histogram);
 
 SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error);
-SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal>& list);
-QJsonObject Box2Object(const SupraFit::BoxWhisker& box);
-SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object);
+BoxWhisker BoxWhiskerPlot(const QList<qreal>& list);
+QJsonObject Box2Object(const BoxWhisker& box);
+BoxWhisker Object2Whisker(const QJsonObject& object);
 QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort = true);
 void Parameter2Statistic(QList<QJsonObject>& parameter, const QPointer<AbstractModel> model);
 

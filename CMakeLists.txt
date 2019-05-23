@@ -116,7 +116,7 @@ if(Qt5Widgets_VERSION GREATER 5.9)
 endif()
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/)
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
@@ -127,6 +127,9 @@ configure_file(
   "${CMAKE_SOURCE_DIR}/src/version.h.in"
   "${CMAKE_BINARY_DIR}/src/version.h"
 )
+
+# include the charts, which where formerly part of SupraFit
+add_subdirectory(external/CuteChart)
 
 set(libmath_SRC
                 src/core/equil.cpp
@@ -193,7 +196,6 @@ target_link_libraries(utils Qt5::Core)
 set(suprafit_SRCS
                 src/ui/guitools/chartwrapper.cpp
                 src/ui/guitools/instance.h
-                src/ui/guitools/peakcallout.cpp
                 src/ui/guitools/mime.h
                 src/ui/dialogs/regressionanalysisdialog.cpp
                 src/ui/dialogs/statisticdialog.cpp
@@ -202,7 +204,6 @@ set(suprafit_SRCS
                 src/ui/dialogs/importdata.cpp
                 src/ui/dialogs/configdialog.cpp
                 src/ui/dialogs/comparedialog.cpp
-                src/ui/dialogs/chartconfig.cpp
                 src/ui/dialogs/resultsdialog.cpp
                 src/ui/dialogs/thermogram.cpp
                 src/ui/widgets/metamodelparameter.cpp
@@ -219,9 +220,7 @@ set(suprafit_SRCS
                 src/ui/widgets/modelelement.cpp
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
-                src/ui/widgets/chartview.cpp
                 src/ui/widgets/extwidget.cpp
-                src/ui/widgets/listchart.cpp
                 src/ui/widgets/buttons/spinbox.h
                 src/ui/widgets/buttons/scientificbox.h
                 src/ui/widgets/buttons/hovercheckbox.h
@@ -241,7 +240,7 @@ if(noto_font)
     qt5_add_resources(suprafit_SRCS fonts.qrc)
 endif(noto_font)
 
-target_link_libraries(utils Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport Qt5::Charts)
+target_link_libraries(utils Qt5::Core)
 
 if(WIN32) # Check if we are on Windows
     add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
@@ -288,7 +287,7 @@ set_property(TARGET math models utils PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
 
-target_link_libraries(suprafit models math utils)
+target_link_libraries(suprafit models math utils cutechart)
 
 target_link_libraries(suprafit_cli models math utils)
 

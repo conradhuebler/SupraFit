@@ -17,6 +17,8 @@
  *
  */
 
+#include <boxwhisker.h>
+
 #include "jsonhandler.h"
 #include "libmath.h"
 
@@ -389,9 +391,9 @@ SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error)
     return result;
 }
 
-SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal>& list)
+BoxWhisker BoxWhiskerPlot(const QList<qreal>& list)
 {
-    SupraFit::BoxWhisker bw;
+    BoxWhisker bw;
     int count = list.size();
     if (count == 0)
         return bw;
@@ -438,7 +440,7 @@ SupraFit::BoxWhisker BoxWhiskerPlot(const QList<qreal>& list)
     return bw;
 }
 
-QJsonObject Box2Object(const SupraFit::BoxWhisker& box)
+QJsonObject Box2Object(const BoxWhisker& box)
 {
     QJsonObject object;
     object["lower_whisker"] = box.lower_whisker;
@@ -454,9 +456,9 @@ QJsonObject Box2Object(const SupraFit::BoxWhisker& box)
     return object;
 }
 
-SupraFit::BoxWhisker Object2Whisker(const QJsonObject& object)
+BoxWhisker Object2Whisker(const QJsonObject& object)
 {
-    SupraFit::BoxWhisker box;
+    BoxWhisker box;
     box.lower_whisker = object["lower_whisker"].toDouble();
     box.upper_whisker = object["upper_whisker"].toDouble();
     box.lower_quantile = object["lower_quantile"].toDouble();
@@ -819,7 +821,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         ToolSet::Normalise(histogram);
         QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
 
-        SupraFit::BoxWhisker box;
+        BoxWhisker box;
 
         /* If old results are used, that don't contain stddev in their json object, recalculate box-plot */
         if (result["boxplot"].toObject().contains("stddev"))

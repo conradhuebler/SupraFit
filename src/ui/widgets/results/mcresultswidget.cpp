@@ -17,6 +17,8 @@
  * 
  */
 
+#include <charts.h>
+
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/montecarlostatistics.h"
 
@@ -24,9 +26,9 @@
 #include "src/core/toolset.h"
 
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/instance.h"
 #include "src/ui/guitools/waiter.h"
-#include "src/ui/widgets/chartview.h"
-#include "src/ui/widgets/listchart.h"
+
 #include "src/ui/widgets/results/scatterwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
@@ -124,6 +126,10 @@ void MCResultsWidget::setUi()
 QPointer<ListChart> MCResultsWidget::MakeHistogram()
 {
     QPointer<ListChart> view = new ListChart;
+    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
 
     view->setXAxis("value");
     view->setYAxis("relative rate");
@@ -204,6 +210,10 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
 {
     QPointer<ListChart> boxplot = new ListChart;
+    connect(boxplot, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, boxplot, &ListChart::ApplyConfigurationChange);
 
     double min = 10, max = 0;
 
@@ -214,7 +224,7 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
 
         has_boxplot = true;
 
-        SupraFit::BoxWhisker bw = ToolSet::Object2Whisker(data["boxplot"].toObject());
+        BoxWhisker bw = ToolSet::Object2Whisker(data["boxplot"].toObject());
         min = qMin(bw.lower_whisker, min);
         max = qMax(bw.upper_whisker, max);
         BoxPlotSeries* series = new BoxPlotSeries(bw);

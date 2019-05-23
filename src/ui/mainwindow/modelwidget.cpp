@@ -17,6 +17,8 @@
  *
  */
 
+#include <charts.h>
+
 #include "src/global.h"
 #include "src/version.h"
 
@@ -39,9 +41,7 @@
 #include "src/ui/mainwindow/chartwidget.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"
-#include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/extwidget.h"
-#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/modelchart.h"
 #include "src/ui/widgets/modelelement.h"

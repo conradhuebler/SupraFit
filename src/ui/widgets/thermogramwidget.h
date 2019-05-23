@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ private:
     QCheckBox *m_limits, *m_smooth, *m_poly_slow;
     QTableWidget* m_table;
     ChartView* m_thermogram;
-    QtCharts::QChart* m_data;
+    //QtCharts::QChart* m_data;
     QPlainTextEdit* m_baseline_polynom;
 
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right;

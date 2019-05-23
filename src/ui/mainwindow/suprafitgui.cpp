@@ -1074,6 +1074,8 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("FastConfidenceSteps") == QVariant())
         qApp->instance()->setProperty("FastConfidenceSteps", 1000);
+
+    qApp->instance()->setProperty("lastDir", getDir());
 }
 
 void SupraFitGui::ReadGeometry()

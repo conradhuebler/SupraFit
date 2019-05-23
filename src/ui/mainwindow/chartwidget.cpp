@@ -17,12 +17,13 @@
  *
  */
 
+#include <charts.h>
+
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/instance.h"
-#include "src/ui/widgets/chartview.h"
 
 #include <QtCharts/QCategoryAxis>
 #include <QtCharts/QChart>
@@ -159,22 +160,26 @@ void ChartDockTitleBar::ThemeChange(QAction* action)
 ChartWidget::ChartWidget()
     : m_TitleBarWidget(new ChartDockTitleBar)
 {
-
-    m_signalchart = new QtCharts::QChart;
-    m_errorchart = new QtCharts::QChart;
-
-    m_signalview = new ChartView(m_signalchart);
+    m_signalview = new ChartView;
     m_signalview->setName("signalview");
+    connect(m_signalview, &ChartView::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_signalview, &ChartView::ApplyConfigurationChange);
 
-    m_errorview = new ChartView(m_errorchart);
+    m_errorview = new ChartView;
     m_errorview->setName("errorview");
+    connect(m_errorview, &ChartView::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_errorview, &ChartView::ApplyConfigurationChange);
 
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(m_signalview, 1, 0);
     layout->addWidget(m_errorview, 2, 0);
 
-    m_signalchart->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
-    m_errorchart->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
+    m_signalview->Chart()->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
+    m_errorview->Chart()->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
 
     restartAnimation();
     setLayout(layout);
@@ -363,15 +368,15 @@ void ChartWidget::updateUI()
 
 void ChartWidget::stopAnimiation()
 {
-    m_signalchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
-    m_errorchart->setAnimationOptions(QtCharts::QChart::NoAnimation);
+    m_signalview->Chart()->setAnimationOptions(QtCharts::QChart::NoAnimation);
+    m_errorview->Chart()->setAnimationOptions(QtCharts::QChart::NoAnimation);
 }
 
 void ChartWidget::restartAnimation()
 {
     if (qApp->instance()->property("chartanimation").toBool()) {
-        m_signalchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        m_errorchart->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        m_signalview->Chart()->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        m_errorview->Chart()->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
     }
 }
 

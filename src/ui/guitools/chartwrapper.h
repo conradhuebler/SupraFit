@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <charts.h>
+
 #include "src/core/toolset.h"
 
 #include <QtCore/QList>
@@ -36,102 +38,6 @@ class DataTable;
 class QStandardItemModel;
 class AbstractModel;
 
-class LineSeries : public QtCharts::QLineSeries {
-    Q_OBJECT
-
-public:
-    inline LineSeries()
-        : m_dashdot(false)
-        , m_size(20)
-    {
-    }
-    inline ~LineSeries() {}
-
-public slots:
-    virtual void setColor(const QColor& color)
-    {
-        m_color = color;
-        QPen pen = QtCharts::QLineSeries::pen();
-        pen.setColor(color);
-        setPen(pen);
-    }
-    inline void setDashDotLine(bool dashdot)
-    {
-        m_dashdot = dashdot;
-        QPen pen = QtCharts::QLineSeries::pen();
-        if (m_dashdot)
-            pen.setStyle(Qt::DashDotLine);
-        else
-            pen.setStyle(Qt::SolidLine);
-        setPen(pen);
-    }
-    inline void setSize(int size)
-    {
-        m_size = size;
-        QPen pen = QtCharts::QLineSeries::pen();
-        pen.setWidth(m_size);
-        setPen(pen);
-    }
-
-    inline qreal LineWidth() const { return m_size; }
-
-    void ShowLine(int state);
-    void ShowLine(bool state);
-    virtual void setName(const QString& name);
-
-    inline QColor Color() const { return m_color; }
-
-private:
-    inline void Update()
-    {
-        QPen pen = QtCharts::QLineSeries::pen();
-
-        if (m_dashdot)
-            pen.setStyle(Qt::DashDotLine);
-        else
-            pen.setStyle(Qt::SolidLine);
-
-        pen.setWidth(m_size);
-        pen.setColor(m_color);
-        setPen(pen);
-    }
-    bool m_dashdot;
-    int m_size;
-    QColor m_color;
-};
-
-class ScatterSeries : public QtCharts::QScatterSeries {
-    Q_OBJECT
-
-public:
-    inline ScatterSeries() {}
-    inline ~ScatterSeries() {}
-
-public slots:
-    virtual void setColor(const QColor& color);
-    void ShowLine(int state);
-
-signals:
-    void NameChanged(const QString& str);
-    void visibleChanged(int state);
-};
-
-class BoxPlotSeries : public QtCharts::QBoxPlotSeries {
-    Q_OBJECT
-
-public:
-    BoxPlotSeries(const SupraFit::BoxWhisker& boxwhisker);
-    inline QColor color() const { return brush().color(); }
-
-public slots:
-    void setColor(const QColor& color);
-    virtual void setVisible(bool visible);
-
-private:
-    void LoadBoxWhisker();
-    SupraFit::BoxWhisker m_boxwhisker;
-    bool m_visible;
-};
 
 class ChartWrapper : public QObject {
     Q_OBJECT

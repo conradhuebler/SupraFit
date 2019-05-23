@@ -17,6 +17,8 @@
  *
  */
 
+#include <charts.h>
+
 #include <Eigen/Dense>
 
 #include <QtWidgets/QCheckBox>
@@ -37,7 +39,6 @@
 #include "libpeakpick/peakpick.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-#include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/thermogramwidget.h"
 
 #include "src/core/toolset.h"
@@ -206,10 +207,12 @@ void Thermogram::setUi()
     m_dil_series = new ScatterSeries;
     m_dil_series->setName(tr("Dilution Data"));
 
-    m_data = new QtCharts::QChart();
-    m_data_view = new ChartView(m_data);
+    m_data_view = new ChartView;
     m_data_view->setModal(true);
     m_data_view->setMinimumSize(400, 300);
+    connect(m_data_view, &ChartView::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
 
     QWidget* widget = new QWidget;
     hlayout = new QHBoxLayout;

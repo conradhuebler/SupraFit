@@ -17,15 +17,16 @@
  * 
  */
 
+#include <charts.h>
+
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/core/AbstractModel.h"
 #include "src/core/toolset.h"
-#include "src/ui/guitools/chartwrapper.h"
 
 #include "src/ui/dialogs/modaldialog.h"
+#include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/instance.h"
 
-#include "src/ui/widgets/chartview.h"
-#include "src/ui/widgets/listchart.h"
 #include "src/ui/widgets/results/mcresultswidget.h"
 #include "src/ui/widgets/results/scatterwidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
@@ -140,6 +141,10 @@ QWidget* ResultsWidget::ReductionWidget()
     QString parameter_text;
     QPointer<ListChart> view = new ListChart;
     view->setName("reductionchart");
+    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
 
     QVector<qreal> x = ToolSet::String2DoubleVec(m_data["controller"].toObject()["x"].toString());
     text << "  X";
@@ -242,6 +247,11 @@ QWidget* ResultsWidget::GridSearchWidget()
     QTabWidget* tabwidget = new QTabWidget;
 
     ListChart* view = new ListChart;
+    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+
     tabwidget->addTab(view, "Grid Search Result");
 
     /* If we have intermediate models available, lets plot them as scatter plot */

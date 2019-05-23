@@ -17,13 +17,14 @@
  *
  */
 
+#include <charts.h>
+
 #include "src/capabilities/globalsearch.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 #include "src/core/toolset.h"
 
 #include "src/ui/widgets/buttons/scientificbox.h"
-#include "src/ui/widgets/chartview.h"
 #include "src/ui/widgets/results/scatterwidget.h"
 
 #include <QtCharts/QChart>
