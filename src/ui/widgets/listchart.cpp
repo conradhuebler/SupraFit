@@ -37,7 +37,7 @@ ListChart::ListChart()
 {
     m_chart = new QtCharts::QChart;
 
-    m_chartview = new ChartView(m_chart, true);
+    m_chartview = new ChartView(m_chart);
     m_chartview->setYAxis("Y");
     m_chartview->setXAxis("X");
 

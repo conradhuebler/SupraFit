@@ -815,7 +815,7 @@ QString ModelDataHolder::Compare() const
     compare += "<table>";
     compare += "<tr><th>model name</th><th># parameter</th><th>SSE</th><th>SE<sub>y</sub></th><th>&sigma;</th></tr>";
 
-    for (const QWeakPointer<AbstractModel> model : m_models) {
+    for (const QWeakPointer<AbstractModel>& model : m_models) {
         compare += tr("<tr><td>%1</td><td align='center'>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>").arg(model.data()->Name()).arg(model.data()->Parameter()).arg(Print::printDouble(model.data()->SumofSquares(), 6)).arg(Print::printDouble(model.data()->StdDeviation(), 6)).arg(Print::printDouble(model.data()->SEy(), 6));
     }
     compare += "</table>";

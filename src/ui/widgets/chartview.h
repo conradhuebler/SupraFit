@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ signals:
 class ChartView : public QScrollArea {
     Q_OBJECT
 public:
-    ChartView(QtCharts::QChart* chart, bool latex_supported = false);
+    ChartView(QtCharts::QChart* chart);
     ChartView();
     ~ChartView();
     void addSeries(QPointer<QtCharts::QAbstractSeries>, bool callout = false);
@@ -162,6 +162,8 @@ public slots:
     }
     void setTitle(const QString& str);
 
+    void ApplyConfigurationChange(const QString& str = "noname");
+
 private:
     QWidget* mCentralHolder;
 
@@ -178,7 +180,7 @@ private:
     QString Color2RGB(const QColor& color) const;
     void WriteTable(const QString& str);
     ChartConfigDialog* m_chartconfigdialog;
-    bool m_pending, m_lock_scaling, m_latex_supported, m_modal = true;
+    bool m_pending, m_lock_scaling, m_modal = true;
     qreal m_ymax, m_ymin, m_xmin, m_xmax;
     QVector<QPointer<QtCharts::QAbstractSeries>> m_series;
     QVector<QPointer<PeakCallOut>> m_peak_anno;
@@ -197,18 +199,15 @@ private:
 
 private slots:
     void PlotSettings();
-    void PrintPlot();
-    void ExportLatex();
-    //     void ExportGnuplot();
     void ExportPNG();
     void setChartConfig(const ChartConfig& chartconfig);
     void forceformatAxis();
-    void ConfigurationChanged(const QString& str = "noname");
     void ResetFontConfig();
 
 signals:
     void AxisChanged();
     void ChartCleared();
+    void ConfigurationChanged();
 
 protected:
     virtual void resizeEvent(QResizeEvent* event) override;

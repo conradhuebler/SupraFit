@@ -17,15 +17,10 @@
  *
  */
 
-#include "src/global_config.h"
-
-#include "src/core/toolset.h"
-
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/peakcallout.h"
 
 #include "src/ui/dialogs/chartconfig.h"
-#include "src/ui/mainwindow/modelwidget.h"
 
 #include <QtCharts/QAreaSeries>
 #include <QtCharts/QChart>
@@ -151,7 +146,7 @@ void ChartViewPrivate::keyPressEvent(QKeyEvent* event)
     }
 }
 
-ChartView::ChartView(QtCharts::QChart* chart, bool latex_supported)
+ChartView::ChartView(QtCharts::QChart* chart)
     : m_chart_private(new ChartViewPrivate(chart, this))
     , m_chart(chart)
     , has_legend(false)
@@ -160,7 +155,6 @@ ChartView::ChartView(QtCharts::QChart* chart, bool latex_supported)
     , m_y_axis(QString())
     , m_pending(false)
     , m_lock_scaling(false)
-    , m_latex_supported(latex_supported)
     , m_ymax(0)
 {
     m_chart->legend()->setVisible(false);
@@ -174,7 +168,6 @@ ChartView::ChartView()
     , m_x_axis(QString())
     , m_y_axis(QString())
     , m_pending(false)
-    , m_latex_supported(false)
     , m_lock_scaling(false)
 {
     m_chart = new QtCharts::QChart();
@@ -221,23 +214,6 @@ void ChartView::setUi()
     connect(exportpng, SIGNAL(triggered()), this, SLOT(ExportPNG()));
     menu->addAction(exportpng);
 
-    /*QAction *printplot = new QAction(this);
-    printplot->setText(tr("Print Diagram"));
-    connect(printplot, SIGNAL(triggered()), this, SLOT(PlotSettings()));
-    menu->addAction(printplot);*/
-
-    if (m_latex_supported) {
-        QAction* exportlatex = new QAction(this);
-        exportlatex->setText(tr("Export to Latex (tikz)"));
-        connect(exportlatex, SIGNAL(triggered()), this, SLOT(ExportLatex()));
-        menu->addAction(exportlatex);
-    }
-    /*
-    QAction *exportgnuplot = new QAction(this);
-    exportgnuplot->setText(tr("Export to Latex (tikz)"));
-    connect(exportgnuplot, SIGNAL(triggered()), this, SLOT(ExportGnuplot()));
-    menu->addAction(exportgnuplot);
-  */
     m_config = new QPushButton(tr("Tools"));
     m_config->setFlat(true);
     m_config->setIcon(QIcon::fromTheme("applications-system"));
@@ -257,13 +233,13 @@ void ChartView::setUi()
     connect(m_chartconfigdialog, &ChartConfigDialog::ConfigChanged, this, [this](const ChartConfig& config) {
         this->setChartConfig(config);
         this->WriteSettings(config);
-        emit Instance::GlobalInstance()->ConfigurationChanged(m_name);
+        emit ConfigurationChanged(); // Instance::GlobalInstance()->ConfigurationChanged(m_name);
     });
     connect(m_chartconfigdialog, SIGNAL(ScaleAxis()), this, SLOT(forceformatAxis()));
     connect(m_chartconfigdialog, SIGNAL(ResetFontConfig()), this, SLOT(ResetFontConfig()));
 
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
-    ConfigurationChanged();
+    //connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ChartView::ConfigurationChanged);
+    ApplyConfigurationChange();
 
     connect(m_chart_private, &ChartViewPrivate::LockZoom, this, [this]() {
         this->m_lock_scaling = true;
@@ -642,9 +618,6 @@ ChartConfig ChartView::getChartConfig() const
     return chartconfig;
 }
 
-void ChartView::PrintPlot()
-{
-}
 
 QString ChartView::Color2RGB(const QColor& color) const
 {
@@ -715,91 +688,6 @@ PgfPlotConfig ChartView::getLineTable() const
     return config;
 }
 
-void ChartView::WriteTable(const QString& str)
-{
-    const QString dir = QFileDialog::getExistingDirectory(this, tr("Save File"),
-        getDir());
-    if (dir.isEmpty() || dir.isNull())
-        return;
-    setLastDir(dir);
-
-    QFile data(dir + "/" + str + "_scatter.dat");
-
-    PgfPlotConfig scatter_table = getScatterTable();
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        for (const QString& str : qAsConst(scatter_table.table))
-            out << str << "\n";
-    }
-
-    data.setFileName(dir + "/" + str + "_line.dat");
-    PgfPlotConfig line_table = getLineTable();
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        for (const QString& str : qAsConst(line_table.table))
-            out << str << "\n";
-    }
-
-    data.setFileName(dir + "/" + str + ".tex");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        out << "\\documentclass{standalone}"
-            << "\n";
-        out << "\\usepackage[latin1]{inputenc}"
-            << "\n";
-        out << "\\usepackage{tikz}"
-            << "\n";
-        out << "\\usepackage{xcolor}"
-            << "\n";
-        out << "\\usepackage{pgfplots} % LaTeX"
-            << "\n";
-        out << "\\renewcommand\\familydefault{\\sfdefault}"
-            << "\n";
-        out << "\\usepackage{pgfplotstable} "
-            << "\n";
-        out << scatter_table.colordefinition;
-        out << line_table.colordefinition;
-        out << "\\begin{document}"
-            << "\n";
-        out << "\\pagestyle{empty}"
-            << "\n";
-        out << "\\pgfplotstableread{" + str + "_scatter.dat}{\\scatter}"
-            << "\n";
-        out << "\\pgfplotstableread{" + str + "_line.dat}{\\lines}"
-            << "\n";
-        out << "\\begin{tikzpicture}"
-            << "\n";
-        out << "\\tikzstyle{every node}=[font=\\footnotesize]"
-            << "\n";
-        out << "\\begin{axis}[title={" + m_chart->title() + "}, legend style={at={(1.08,0.9))},anchor=north,legend cell align=left},x tick label style={at={(1,10)},anchor=north},xlabel={\\begin{footnotesize}" + m_x_axis + "\\end{footnotesize}}, xlabel near ticks, ylabel={\\begin{footnotesize}" + m_y_axis + "\\end{footnotesize}},ylabel near ticks]"
-            << "\n";
-        out << scatter_table.plots;
-        out << line_table.plots;
-        out << "\\end{axis}"
-            << "\n";
-        out << "\\end{tikzpicture}"
-            << "\n";
-        out << "\\end{document}"
-            << "\n";
-    }
-}
-
-void ChartView::ExportLatex()
-{
-    bool ok;
-    QString str = QInputDialog::getText(this, tr("Select output file"),
-        tr("Please specify the base name of the files.\nA tex file, file for scatter and line table data will be created."), QLineEdit::Normal,
-        qApp->instance()->property("projectname").toString(), &ok);
-
-    if (ok)
-        WriteTable(str);
-}
-/*
-void ChartView::ExportGnuplot()
-{
-    WriteTable("table");
-}
-*/
 void ChartView::ExportPNG()
 {
     const QString str = QFileDialog::getSaveFileName(this, tr("Save File"),
@@ -829,7 +717,7 @@ void ChartView::ExportPNG()
     m_chart->scene()->update();
     QApplication::processEvents();
 
-    Waiter wait;
+    // Waiter wait;
     int w = m_chart->rect().size().width();
     int h = m_chart->rect().size().height();
     // scaling is important for good resolution
@@ -979,7 +867,7 @@ void ChartView::ExportPNG()
     pixmap.save(&file, "PNG");
 }
 
-void ChartView::ConfigurationChanged(const QString& str)
+void ChartView::ApplyConfigurationChange(const QString& str)
 {
     if (str == m_name)
         ReadSettings();
