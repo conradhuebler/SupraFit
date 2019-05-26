@@ -64,6 +64,10 @@ void ThermogramWidget::setUi()
     connect(m_thermogram, &ChartView::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
+
+    m_thermogram->setVerticalLineEnabled(true);
+    //m_thermogram->setSelectionStrategie(2);
+
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_thermogram, &ChartView::ConfigurationChanged);
     m_thermogram->setModal(true);
     m_thermogram->setMinimumSize(600, 450);

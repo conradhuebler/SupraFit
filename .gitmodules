@@ -6,4 +6,4 @@
 	url = https://github.com/conradhuebler/libpeakpick
 [submodule "external/CuteChart"]
 	path = external/CuteChart
-	url = https://github.com/conradhuebler/CuteChart/
+	url = https://github.com/conradhuebler/CuteChart
