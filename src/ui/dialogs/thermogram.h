@@ -22,6 +22,7 @@
 #include <Eigen/Dense>
 
 #include <QtWidgets/QDialog>
+#include <QtWidgets/QTabWidget>
 
 #include <QtCharts/QChart>
 
@@ -56,11 +57,16 @@ public:
     QJsonObject Raw() const;
     QString ProjectName() const;
 
-    virtual void keyPressEvent(QKeyEvent* evt) override
+    virtual void keyPressEvent(QKeyEvent* event) override
     {
-        if (evt->key() == Qt::Key_Enter || evt->key() == Qt::Key_Return)
+        if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)
             return;
-        QDialog::keyPressEvent(evt);
+        if (event->key() == Qt::Key_Escape) {
+            /* Let ESC only work, if we are not on any thermogram widget, thus that ESC only acts on the chartview */
+            if (m_mainwidget->currentIndex())
+                return;
+        }
+        QDialog::keyPressEvent(event);
     }
 
     void setExperimentFile(QString str);
@@ -68,6 +74,9 @@ public:
     void setExperimentFit(const QJsonObject& json);
     void setDilutionFit(const QJsonObject& json);
     void setScaling(const QString& str);
+
+public slots:
+    //virtual void reject() override();
 
 private:
     void setUi();
@@ -85,7 +94,6 @@ private:
     QLabel *m_message, *m_offset;
     QTabWidget* m_mainwidget;
     QDoubleSpinBox* m_freq;
-
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
     ChartView* m_data_view;

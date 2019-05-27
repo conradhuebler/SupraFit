@@ -131,6 +131,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     });
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
 
+    view->Chart()->setZoomStrategy(ZoomStrategy::Z_Horizontal);
     view->setXAxis("value");
     view->setYAxis("relative rate");
     view->setName("montecarlochart");

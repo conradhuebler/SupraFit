@@ -39,6 +39,7 @@
 
 #include <QtCharts/QChart>
 
+#include "libpeakpick/analyse.h"
 #include "libpeakpick/baseline.h"
 #include "libpeakpick/peakpick.h"
 
@@ -64,6 +65,7 @@ void ThermogramWidget::setUi()
     connect(m_thermogram, &ChartView::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
+    connect(m_thermogram, &ChartView::AddRect, this, &ThermogramWidget::AddRectanglePeak);
 
     m_thermogram->setVerticalLineEnabled(true);
     //m_thermogram->setSelectionStrategie(2);
@@ -195,20 +197,41 @@ void ThermogramWidget::setUi()
 
     m_peaks_start = new QDoubleSpinBox;
     m_peaks_start->setMinimum(0);
-    m_peaks_start->setMaximum(1e4);
+    m_peaks_start->setMaximum(1e8);
     m_peaks_time = new QDoubleSpinBox;
     m_peaks_time->setMinimum(0);
-    m_peaks_time->setMaximum(1e4);
+    m_peaks_time->setMaximum(1e8);
     m_peak_apply = new QPushButton(tr("Apply and Update"));
     connect(m_peak_apply, &QPushButton::clicked, this, &ThermogramWidget::UpdatePeaks);
+
+    m_get_peaks_start = new QPushButton(tr("Select Start"));
+    connect(m_get_peaks_start, &QPushButton::clicked, this, [this]() {
+        connect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
+    });
+
+    m_get_peaks_range = new QPushButton(tr("Select Peak Range"));
+    connect(m_get_peaks_range, &QPushButton::clicked, this, [this]() {
+        m_thermogram->setSelectStrategy(SelectStrategy::S_Horizontal);
+    });
+
+    m_peak_count = new QSpinBox;
+    m_peak_count->setRange(0, 1e9);
+
+    m_auto_pick = new QPushButton(tr("Auto Picking"));
+    connect(m_auto_pick, &QPushButton::clicked, this, &ThermogramWidget::PickPeaks);
 
     QHBoxLayout* peak_layout = new QHBoxLayout;
     peak_layout->addWidget(new QLabel(tr("Remove constant")));
     peak_layout->addWidget(m_const_offset);
+    peak_layout->addWidget(m_auto_pick);
+    peak_layout->addWidget(new QLabel(tr("Peak Count")));
+    peak_layout->addWidget(m_peak_count);
     peak_layout->addWidget(new QLabel(tr("Thermogram starts (s)")));
     peak_layout->addWidget(m_peaks_start);
+    peak_layout->addWidget(m_get_peaks_start);
     peak_layout->addWidget(new QLabel(tr("Time between injects (s)")));
     peak_layout->addWidget(m_peaks_time);
+    peak_layout->addWidget(m_get_peaks_range);
     peak_layout->addWidget(m_peak_apply);
 
     QVBoxLayout* layout = new QVBoxLayout;
@@ -253,6 +276,14 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
 
+    PeakPick::spectrum sign = PeakPick::spectrum(m_spec);
+    sign.InvertSgn();
+
+    std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&sign, 0, qPow(2, 1));
+    std::vector<PeakPick::Peak> max_peak = PeakPick::PickPeaks(&m_spec, 0, qPow(2, 1));
+
+    m_peak_count->setValue(peaks.size() + max_peak.size());
+
     UpdatePlot();
     m_stdev->setText(QString::number(spec->StdDev()));
     m_constant->setText(QString::number(spec->Mean()));
@@ -265,7 +296,7 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
         m_peaks_start->setValue(m_peak_list[0].start * m_spec.Step() - m_spec.Step());
         m_peaks_time->setValue(m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step());
     }
-
+    m_peak_count->setValue(m_peak_list.size());
     Update();
 }
 
@@ -376,9 +407,7 @@ void ThermogramWidget::PickPeaks()
         PeakPick::IntegrateNumerical(&m_spec, max_peak[i]);
     }
     peaks.insert(peaks.end(), max_peak.begin(), max_peak.end());
-    m_peak_list = peaks;
-
-    //CreateTable();
+    setPeakList(peaks);
 }
 
 void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeries* series)
@@ -730,4 +759,19 @@ void ThermogramWidget::UpdatePeaks()
     Update();
     emit PeaksChanged();
     emit IntegrationChanged();
+}
+
+void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& point2)
+{
+    m_thermogram->setSelectStrategy(SelectStrategy::S_None);
+    qDebug() << point1 << point2;
+    qDebug() << point2.x() - point1.x();
+}
+
+void ThermogramWidget::PointDoubleClicked(const QPointF& point)
+{
+    disconnect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
+    m_peaks_start->setValue(point.x());
+    std::vector<PeakPick::Peak> peaks = PeakPick::Divide2Peaks(&m_spec, point.x(), m_peak_count->value());
+    setPeakList(peaks);
 }

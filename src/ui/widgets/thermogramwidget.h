@@ -81,11 +81,11 @@ private:
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
 
     QComboBox *m_baseline_type, *m_fit_type;
-    QSpinBox *m_coeffs, *m_filter, *m_peak_box;
+    QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count;
     QDoubleSpinBox *m_peaks_start, *m_peaks_time, *m_const_offset;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
-    QPushButton *m_fit_button, *m_peak_apply;
+    QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_range, *m_auto_pick;
     QCheckBox *m_limits, *m_smooth, *m_poly_slow;
     QTableWidget* m_table;
     ChartView* m_thermogram;
@@ -110,4 +110,6 @@ private slots:
     void PeakDoubleClicked(int peak);
     void PeakChanged(int row, int column, int value);
     void UpdatePeaks();
+    void AddRectanglePeak(const QPointF& point1, const QPointF& point2);
+    void PointDoubleClicked(const QPointF& point);
 };
