@@ -211,8 +211,12 @@ void ImportData::LoadFile()
                 m_systemparameter = filehandler->SystemParameter();
             model->setEditable(true);
             m_table->setModel(model);
-            if (model->columnCount() == 2 && model->rowCount() > 100)
-                QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
+            if (model->columnCount() == 2 && model->rowCount() > 100) {
+                if (qApp->instance()->property("auto_thermo_dialog").toBool())
+                    ImportThermogram(m_filename);
+                else
+                    QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
+            }
             NoChanged();
         } else {
             QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));

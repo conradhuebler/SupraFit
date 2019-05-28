@@ -1063,6 +1063,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("empAxis") == QVariant())
         qApp->instance()->setProperty("empAxis", true);
 
+    if (qApp->instance()->property("auto_thermo_dialog") == QVariant())
+        qApp->instance()->setProperty("auto_thermo_dialog", false);
+
     if (qApp->instance()->property("xSize") == QVariant())
         qApp->instance()->setProperty("xSize", 600);
 

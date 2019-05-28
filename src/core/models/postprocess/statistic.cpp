@@ -126,8 +126,7 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
         result += "</td><td>kJ/mol</td></tr>";
 
         if (!object.isEmpty())
-            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>J/(molK)</td></tr>").arg(Print::printDouble(dH11l / 1000.0, 3)).arg(Print::printDouble(dH11u / 1000.0, 3));
-
+            result += QString("<tr><td><b></b></td><td>[%1 - %2]  </td><td>kJ/mol</td></tr>").arg(Print::printDouble(dH11l / 1000.0, 3)).arg(Print::printDouble(dH11u / 1000.0, 3));
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";

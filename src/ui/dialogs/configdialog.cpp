@@ -161,6 +161,11 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(m_select_working);
     layout->addLayout(h_layout);
 
+    m_auto_thermo_dialog = new QCheckBox(tr("Automatic open Thermogram Dialog"));
+    m_auto_thermo_dialog->setToolTip(tr("Open automatically the thermogram dialog, if the loaded or imported data look like a thermogram."));
+    m_auto_thermo_dialog->setChecked(qApp->instance()->property("auto_thermo_dialog").toBool());
+    layout->addWidget(m_auto_thermo_dialog);
+
     m_ColorFullSearch = new QCheckBox(tr("Colorfull global search table"));
     m_ColorFullSearch->setToolTip(tr("Indicate fully optimised models in global search with light green backgroud color, not-fully optimised models with light yellow background color and invalid models with a light red background color."));
     m_ColorFullSearch->setChecked(qApp->instance()->property("ColorFullSearch").toBool());
@@ -375,6 +380,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("chartScaling", m_chartScaling->value());
     qApp->instance()->setProperty("FastConfidenceScaling", m_FastConfidenceScaling->value());
     qApp->instance()->setProperty("FastConfidenceSteps", m_FastConfidenceSteps->value());
+    qApp->instance()->setProperty("auto_thermo_dialog", m_auto_thermo_dialog->isChecked());
 
     QDialog::accept();
 }

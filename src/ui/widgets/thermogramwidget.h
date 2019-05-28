@@ -81,11 +81,11 @@ private:
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
 
     QComboBox *m_baseline_type, *m_fit_type;
-    QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count;
-    QDoubleSpinBox *m_peaks_start, *m_peaks_time, *m_const_offset;
+    QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity;
+    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
-    QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_range, *m_auto_pick;
+    QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick;
     QCheckBox *m_limits, *m_smooth, *m_poly_slow;
     QTableWidget* m_table;
     ChartView* m_thermogram;
@@ -98,6 +98,11 @@ private:
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     bool m_spectrum = false, m_block = false;
+
+    /* 1 - get start
+     * 2 - get end */
+    int m_get_time_from_thermogram = 0;
+
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
     qreal m_offset = 0, m_frequency = 1;
@@ -112,4 +117,5 @@ private slots:
     void UpdatePeaks();
     void AddRectanglePeak(const QPointF& point1, const QPointF& point2);
     void PointDoubleClicked(const QPointF& point);
+    void Divide2Peaks();
 };
