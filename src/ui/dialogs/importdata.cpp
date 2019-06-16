@@ -207,17 +207,22 @@ void ImportData::LoadFile()
                 delete filehandler;
                 return;
             }
-            if (filehandler->Type() == FileHandler::FileType::dH)
-                m_systemparameter = filehandler->SystemParameter();
-            model->setEditable(true);
-            m_table->setModel(model);
-            if (model->columnCount() == 2 && model->rowCount() > 100) {
-                if (qApp->instance()->property("auto_thermo_dialog").toBool())
-                    ImportThermogram(m_filename);
-                else
-                    QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
+            if (model->columnCount() == 0 && model->rowCount() == 0 && qApp->instance()->property("auto_thermo_dialog").toBool()) {
+                ImportThermogram(m_filename);
+
+            } else {
+                if (filehandler->Type() == FileHandler::FileType::dH)
+                    m_systemparameter = filehandler->SystemParameter();
+                model->setEditable(true);
+                m_table->setModel(model);
+                if (model->columnCount() == 2 && model->rowCount() > 100) {
+                    if (qApp->instance()->property("auto_thermo_dialog").toBool())
+                        ImportThermogram(m_filename);
+                    else
+                        QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
+                }
+                NoChanged();
             }
-            NoChanged();
         } else {
             QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
             return;
@@ -303,7 +308,7 @@ void ImportData::ImportThermogram(const QString& filename)
 void ImportData::ImportThermogram()
 {
     Thermogram* thermogram = new Thermogram;
-
+    thermogram->setRaw(m_raw);
     QJsonObject experiment = m_raw["experiment"].toObject();
 
     if (m_raw.keys().contains("dilution")) {

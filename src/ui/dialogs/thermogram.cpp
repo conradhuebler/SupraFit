@@ -233,8 +233,8 @@ void Thermogram::setUi()
 
     layout->addWidget(m_buttonbox, 5, 0, 1, 4);
 
-    connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateData);
-    connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateData);
+    connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateExpTable);
+    connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateDilTable);
 
     setLayout(layout);
 }
@@ -299,6 +299,7 @@ void Thermogram::setExperimentFile(QString filename)
         m_exp_file->setText(filename);
         m_exp_file->setStyleSheet("background-color: " + included());
         m_exp_base->setText(QString::number(offset));
+        m_experiment->setFileType(ThermogramWidget::FileType::ITC);
         m_experiment->setThermogram(&original, offset);
         m_experiment->setPeakList(m_exp_peaks);
         m_exp_peaks = m_experiment->Peaks();
@@ -306,19 +307,20 @@ void Thermogram::setExperimentFile(QString filename)
         original = LoadXYFile(filename);
         QSignalBlocker block(m_freq);
         m_freq->setValue(original.Step());
+        m_experiment->setFileType(ThermogramWidget::FileType::RAW);
         m_experiment->setThermogram(&original);
     }
     m_exp_therm = original;
 
     m_exp_file->setText(filename);
     emit m_experiment->IntegrationChanged();
-    UpdateData();
+    //UpdateData();
     m_mainwidget->setCurrentIndex(1);
 }
 
 void Thermogram::setExperiment()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.txt *.dat *.itc *.ITC);;All files (*.*)"));
     if (filename.isEmpty()) {
         qDebug() << "no filename set " << filename;
         return;
@@ -385,10 +387,23 @@ void Thermogram::UpdateTable()
         m_data_view->addSeries(m_dil_series);
 }
 
+QString Thermogram::Content() const
+{
+    QString content("");
+
+    for (int i = 0; i < m_table->rowCount(); ++i) {
+        content += m_table->item(i, 0)->data(Qt::DisplayRole).toString() + "\t";
+        content += m_table->item(i, 3)->data(Qt::DisplayRole).toString() + "\t";
+        content += "\n";
+    }
+
+    return content;
+}
+
 void Thermogram::setDilution()
 {
     m_dil_heat.clear();
-    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir(), tr("Supported files (*.txt *.dat *.itc *.ITC);;All files (*.*)"));
     if (filename.isEmpty())
         return;
     setLastDir(filename);
@@ -420,12 +435,14 @@ void Thermogram::setDilutionFile(QString filename)
         }
         m_dil_file->setText(filename);
         m_dil_file->setStyleSheet("background-color: " + included());
+        m_dilution->setFileType(ThermogramWidget::FileType::ITC);
         m_dilution->setThermogram(&original, offset);
         m_dilution->setPeakList(m_exp_peaks);
         m_dil_base->setText(QString::number(offset));
         m_dil_peaks = m_dilution->Peaks();
     } else {
         original = LoadXYFile(filename);
+        m_dilution->setFileType(ThermogramWidget::FileType::RAW);
         m_dilution->setThermogram(&original);
         m_dilution->PickPeaks();
     }
@@ -433,7 +450,7 @@ void Thermogram::setDilutionFile(QString filename)
     m_dil_file->setText(filename);
 
     emit m_dilution->IntegrationChanged();
-    UpdateData();
+    //UpdateData();
     m_mainwidget->setCurrentIndex(2);
 }
 
@@ -458,10 +475,19 @@ void Thermogram::clearDilution()
     }
 }
 
-void Thermogram::UpdateData()
+void Thermogram::UpdateExpTable()
 {
     m_experiment->Update();
+    UpdateTable();
+}
+
+void Thermogram::UpdateDilTable()
+{
     m_dilution->Update();
+    UpdateTable();
+}
+void Thermogram::UpdateData()
+{
     //m_offset->setText(QString::number((m_heat_offset + m_dil_offset) * m_scale->currentText().toDouble()) + " = Heat: " + QString::number(m_heat_offset * m_scale->currentText().toDouble()) + "+ Dilution:" + QString::number(m_dil_offset * m_scale->currentText().toDouble()) + "  ");
     UpdateTable();
 }
@@ -488,7 +514,13 @@ QJsonObject Thermogram::Raw() const
         raw["dilution"] = block;
     }
     raw["scaling"] = m_scale->currentText();
+    raw["injectvolume"] = m_injct->text();
     return raw;
+}
+
+void Thermogram::setRaw(const QJsonObject& object)
+{
+    m_injct->setText(object["injectvolume"].toString());
 }
 
 QString Thermogram::ProjectName() const

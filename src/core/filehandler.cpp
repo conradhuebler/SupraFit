@@ -96,6 +96,9 @@ void FileHandler::ReadGeneric()
 
     m_stored_table = new DataTable;
     int i = 0;
+    qDebug() << m_filecontent.size();
+    if (m_filecontent.size() > 1e4 && qApp->instance()->property("auto_thermo_dialog").toBool())
+        return;
     for (const QString& line : qAsConst(m_filecontent)) {
         if (!line.isEmpty() && !line.isNull()) {
             QVector<qreal> row;

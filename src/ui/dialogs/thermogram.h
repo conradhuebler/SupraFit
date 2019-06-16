@@ -50,7 +50,7 @@ class Thermogram : public QDialog {
 public:
     Thermogram();
 
-    inline QString Content() const { return m_content; }
+    QString Content() const;
     inline QJsonObject SystemParamter() const { return m_systemparameter; }
     inline bool ParameterUsed() const { return m_ParameterUsed; }
 
@@ -74,6 +74,7 @@ public:
     void setExperimentFit(const QJsonObject& json);
     void setDilutionFit(const QJsonObject& json);
     void setScaling(const QString& str);
+    void setRaw(const QJsonObject& object);
 
 public slots:
     //virtual void reject() override();

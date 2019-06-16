@@ -42,6 +42,11 @@ class ThermogramWidget : public QWidget {
     Q_OBJECT
 
 public:
+    enum FileType {
+        ITC = 0,
+        RAW = 1
+    };
+
     ThermogramWidget(QWidget* parent = nullptr);
     ~ThermogramWidget();
 
@@ -60,6 +65,8 @@ public:
     QJsonObject Fit() const;
 
     inline std::vector<PeakPick::Peak> Peaks() const { return m_peak_list; }
+
+    inline void setFileType(const FileType filetype) { m_filetype = filetype; }
 signals:
     void IntegrationChanged();
     void PeaksChanged();
@@ -107,7 +114,7 @@ private:
     Vector m_initial_baseline = Vector(0);
     qreal m_offset = 0, m_frequency = 1;
     QString m_base, m_fit;
-
+    FileType m_filetype;
 private slots:
     void UpdateBaseLine(const QString& str);
     void UpdateFit(const QString& str);
