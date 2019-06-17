@@ -249,16 +249,24 @@ void ThermogramWidget::setUi()
     peak_layout->addWidget(m_auto_pick);
     peak_layout->addWidget(new QLabel(tr("Peak Count")));
     peak_layout->addWidget(m_peak_count);
-    peak_layout->addWidget(new QLabel(tr("Thermogram starts (s)")));
+    QVBoxLayout* vlayout = new QVBoxLayout;
+    vlayout->addWidget(new QLabel(tr("Thermogram starts (s)")));
+    vlayout->addWidget(m_get_peaks_start);
+    vlayout->addWidget(m_peaks_start);
+    peak_layout->addLayout(vlayout);
 
-    peak_layout->addWidget(m_peaks_start);
-    peak_layout->addWidget(m_get_peaks_start);
-    peak_layout->addWidget(new QLabel(tr("Thermogram ends (s)")));
-    peak_layout->addWidget(m_peaks_end);
-    peak_layout->addWidget(m_get_peaks_end);
-    peak_layout->addWidget(new QLabel(tr("Time between injects (s)")));
-    peak_layout->addWidget(m_peaks_time);
-    peak_layout->addWidget(m_get_peaks_range);
+    vlayout = new QVBoxLayout;
+    vlayout->addWidget(new QLabel(tr("Thermogram ends (s)")));
+    vlayout->addWidget(m_get_peaks_end);
+    vlayout->addWidget(m_peaks_end);
+    peak_layout->addLayout(vlayout);
+
+    vlayout = new QVBoxLayout;
+    vlayout->addWidget(new QLabel(tr("Time between injects (s)")));
+    vlayout->addWidget(m_peaks_time);
+    vlayout->addWidget(m_get_peaks_range);
+    peak_layout->addLayout(vlayout);
+
     peak_layout->addWidget(m_peak_apply);
 
     QVBoxLayout* layout = new QVBoxLayout;

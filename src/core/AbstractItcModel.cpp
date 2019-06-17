@@ -317,8 +317,8 @@ void AbstractItcModel::UpdateParameter()
     m_plotMode = getSystemParameter(PlotMode).getString();
 
     Concentration();
-    if (m_guess_failed && m_demand_guess)
-        InitialGuess();
+    //if (m_guess_failed && m_demand_guess)
+    //    InitialGuess();
 }
 
 QString AbstractItcModel::ModelInfo() const

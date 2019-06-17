@@ -97,23 +97,41 @@ void Thermogram::setUi()
     });
 
     m_CellVolume = new QLineEdit;
-    connect(m_CellVolume, &QLineEdit::textChanged, m_CellVolume, [this](const QString& str) {
+    //m_CellVolume->setMaximumWidth(100);
+
+    connect(m_CellVolume, &QLineEdit::textEdited, m_CellVolume, [this](const QString& str) {
         this->m_systemparameter[QString::number(AbstractItcModel::CellVolume)] = str;
+        this->m_UseParameter->setChecked(true);
     });
 
     m_CellConcentration = new QLineEdit;
-    connect(m_CellConcentration, &QLineEdit::textChanged, m_CellConcentration, [this](const QString& str) {
+    //m_CellConcentration->setMaximumWidth(100);
+
+    connect(m_CellConcentration, &QLineEdit::textEdited, m_CellConcentration, [this](const QString& str) {
         this->m_systemparameter[QString::number(AbstractItcModel::CellConcentration)] = str;
+        this->m_UseParameter->setChecked(true);
     });
 
     m_SyringeConcentration = new QLineEdit;
-    connect(m_SyringeConcentration, &QLineEdit::textChanged, m_SyringeConcentration, [this](const QString& str) {
+    //m_SyringeConcentration->setMaximumWidth(100);
+
+    connect(m_SyringeConcentration, &QLineEdit::textEdited, m_SyringeConcentration, [this](const QString& str) {
         this->m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)] = str;
+        this->m_UseParameter->setChecked(true);
     });
 
     m_Temperature = new QLineEdit;
-    connect(m_Temperature, &QLineEdit::textChanged, m_Temperature, [this](const QString& str) {
+    //m_Temperature->setMaximumWidth(100);
+
+    connect(m_Temperature, &QLineEdit::textEdited, m_Temperature, [this](const QString& str) {
         this->m_systemparameter[QString::number(AbstractItcModel::Temperature)] = str;
+        this->m_UseParameter->setChecked(true);
+    });
+
+    m_constantVolume = new QCheckBox(tr("Constant Volume"));
+    m_constantVolume->setChecked(true);
+    connect(m_constantVolume, &QCheckBox::stateChanged, m_constantVolume, [this]() {
+        this->m_systemparameter[QString::number(AbstractItcModel::Reservoir)] = this->m_constantVolume->isChecked();
     });
 
     m_dil_file = new QLineEdit;
@@ -134,9 +152,13 @@ void Thermogram::setUi()
         this->UpdateTable();
     });
     m_injct = new QLineEdit;
+    //m_injct->setMaximumWidth(100);
 
     m_exp_base = new QLineEdit;
+    //m_exp_base->setMaximumWidth(100);
+
     m_dil_base = new QLineEdit;
+    //m_dil_base->setMaximumWidth(100);
 
     m_freq = new QDoubleSpinBox;
     m_freq->setValue(1.0);
@@ -184,6 +206,7 @@ void Thermogram::setUi()
 
     hlayout->addWidget(new QLabel(tr("Temperatur")));
     hlayout->addWidget(m_Temperature);
+    hlayout->addWidget(m_constantVolume);
 
     layout->addLayout(hlayout, 1, 0, 1, 4);
 

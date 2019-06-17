@@ -89,7 +89,7 @@ private:
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
     QPushButton *m_exp_button, *m_dil_button, *m_refit;
-    QCheckBox *m_remove_offset, *m_UseParameter;
+    QCheckBox *m_remove_offset, *m_UseParameter, *m_constantVolume;
     QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
     QComboBox* m_scale;
     QLabel *m_message, *m_offset;

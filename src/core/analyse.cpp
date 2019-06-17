@@ -53,7 +53,9 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         index++;
         qreal mean_std = 0, mean_corr_std = 0;
         bool skip = false;
-        QJsonObject reduction = model.first["data"].toObject()["statistics"].toObject()[QString::number(SupraFit::Method::Reduction)].toObject();
+#pragma message("let us analyse more reduction, late ")
+        QJsonObject reduction = model.first["data"].toObject()["methods"].toObject()[QString::number(SupraFit::Method::Reduction) + ":0"].toObject();
+
         QVector<int> parameter = model.second;
 
         if (reduction.isEmpty()) {
@@ -237,12 +239,12 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, int bins, bool 
 
     for (const auto& model : models) {
 
-        QJsonObject statistics = model["data"].toObject()["statistics"].toObject();
+        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
         QStringList keys = statistics.keys();
 
         for (const QString& str : qAsConst(keys)) {
-            QJsonObject obj = model["data"].toObject()["statistics"].toObject()[str].toObject();
-            QJsonObject controller = model["data"].toObject()["statistics"].toObject()[str].toObject()["controller"].toObject();
+            QJsonObject obj = model["data"].toObject()["methods"].toObject()[str].toObject();
+            QJsonObject controller = model["data"].toObject()["methods"].toObject()[str].toObject()["controller"].toObject();
             int method = controller["method"].toInt();
             int type = controller["CVType"].toInt();
             if (method != 4 || type != cvtype)

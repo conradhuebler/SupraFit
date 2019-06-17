@@ -275,6 +275,8 @@ qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start,
     QVector<qreal> param = model.data()->OptimizeParameters();
 
     qreal mean = end;
+    if (param.size() == 0)
+        return mean;
     for (int i = 0; i < 30; ++i) {
 
         if (qAbs(start - end) < 1e-4)
