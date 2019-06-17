@@ -70,6 +70,7 @@ public:
 signals:
     void IntegrationChanged();
     void PeaksChanged();
+    void Offset();
 
 public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }

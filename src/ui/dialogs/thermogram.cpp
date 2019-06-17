@@ -62,8 +62,17 @@ void Thermogram::setUi()
         this->UpdateTable();
     });
 
+    connect(m_experiment, &ThermogramWidget::Offset, this, [this]() {
+        this->m_exp_peaks = this->m_experiment->Peaks();
+        this->UpdateTable();
+    });
+
     m_dilution = new ThermogramWidget(this);
     connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, [this]() {
+        this->m_dil_peaks = this->m_dilution->Peaks();
+        this->UpdateTable();
+    });
+    connect(m_dilution, &ThermogramWidget::Offset, this, [this]() {
         this->m_dil_peaks = this->m_dilution->Peaks();
         this->UpdateTable();
     });

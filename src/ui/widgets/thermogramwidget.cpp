@@ -521,6 +521,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
     m_base_grids->setMarkerSize(8);
     m_thermogram->addSeries(m_base_grids);
     m_thermogram->addSeries(m_baseline_series);
+    emit Offset();
 }
 
 void ThermogramWidget::UpdateBaseLine(const QString& str)
