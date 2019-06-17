@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <QtCore/QRunnable>
+
 #include <QtWidgets/QWidget>
 
 #include <QtCharts/QChart>
@@ -38,6 +40,18 @@ class ChartView;
 class LineSeries;
 class ScatterSeries;
 
+/*
+class BaseLineWorker : public QRunnable
+{
+public:
+    inline BaseLineWorker(){ setAutoDelete(false); }
+    virtual void run() override();
+    void setSpectrum();
+    void setBaseLineRange();
+    void setNoCoeffs(int coeffs);
+private:
+};
+*/
 class ThermogramWidget : public QWidget {
     Q_OBJECT
 

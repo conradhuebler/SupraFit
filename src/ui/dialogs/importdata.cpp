@@ -310,6 +310,7 @@ void ImportData::ImportThermogram()
     Thermogram* thermogram = new Thermogram;
     thermogram->setRaw(m_raw);
     QJsonObject experiment = m_raw["experiment"].toObject();
+    thermogram->show();
 
     if (m_raw.keys().contains("dilution")) {
         QJsonObject experiment = m_raw["dilution"].toObject();
@@ -323,7 +324,6 @@ void ImportData::ImportThermogram()
     if (m_raw.keys().contains("scaling"))
         thermogram->setScaling(m_raw["scaling"].toString());
 
-    thermogram->show();
 
     if (thermogram->exec() == QDialog::Accepted) {
         if (thermogram->ParameterUsed())

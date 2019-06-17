@@ -21,6 +21,7 @@
 
 #include <Eigen/Dense>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QSettings>
 #include <QtCore/QtMath>
 
@@ -487,16 +488,21 @@ void ThermogramWidget::clear()
 
 void ThermogramWidget::Update()
 {
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
     if (m_smooth->isChecked())
         SmoothFunction(spectrum, m_filter->value());
     Integrate(&m_peak_list, spectrum);
+    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << " for integration" << this;
+    t0 = QDateTime::currentMSecsSinceEpoch();
     delete spectrum;
     UpdateTable();
+    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << " for remaining part" << this;
 }
 
 void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original)
 {
+    Waiter wait;
     m_base_grids->clear();
     m_baseline_series->clear();
 
@@ -505,7 +511,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
         baseline = m_baseline.baselines[0];
 
     for (int i = 0; i < int(peaks->size()); ++i) {
-
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         if (peaks->size() == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0) {
             baseline = m_baseline.baselines[i];
             for (int j = 0; j < int(m_baseline.x_grid_points[i].size()); ++j) {
@@ -536,6 +542,7 @@ void ThermogramWidget::UpdateBaseLine(const QString& str)
 {
     //if (str == m_base || m_block)
     //return;
+    //m_thermogram->zoo
     Vector coeff;
 
     if (str == "none") {
@@ -644,7 +651,7 @@ void ThermogramWidget::FitBaseLine()
 
     baseline.setInitialBaseLine(m_initial_baseline);
 
-    m_baseline = baseline.Fit();
+    /* QThread *thread = QThread::create([this, baseline]{ */ m_baseline = baseline.Fit(); /*});*/
 
     if (m_baseline.baselines.size() == 1) {
         m_initial_baseline = m_baseline.baselines[0];
@@ -653,7 +660,7 @@ void ThermogramWidget::FitBaseLine()
 
     delete spectrum;
 
-    emit IntegrationChanged();
+    // emit IntegrationChanged();
 }
 
 void ThermogramWidget::PeakDoubleClicked(const QModelIndex& index)
@@ -774,6 +781,7 @@ void ThermogramWidget::CreateSeries()
 
 void ThermogramWidget::UpdatePeaks()
 {
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     qreal offset;
     int off = 0;
     double start = m_peaks_start->value();
@@ -813,10 +821,17 @@ void ThermogramWidget::UpdatePeaks()
     m_offset = offset / double(off);
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
+    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for generating";
+    t0 = QDateTime::currentMSecsSinceEpoch();
+
     FitBaseLine();
+    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for baseline";
+    t0 = QDateTime::currentMSecsSinceEpoch();
     Update();
+    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "to update the reminder";
+
     emit PeaksChanged();
-    emit IntegrationChanged();
+    // emit IntegrationChanged();
 }
 
 void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& point2)
