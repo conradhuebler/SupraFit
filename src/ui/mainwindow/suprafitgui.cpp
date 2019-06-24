@@ -1042,6 +1042,12 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("p_value") == QVariant())
         qApp->instance()->setProperty("p_value", 0.95);
 
+    if (qApp->instance()->property("calibration_start") == QVariant())
+        qApp->instance()->setProperty("calibration_start", 0);
+
+    if (qApp->instance()->property("calibration_heat") == QVariant())
+        qApp->instance()->setProperty("calibration_heat", 0);
+
     if (qApp->instance()->property("markerSize") == QVariant())
         qApp->instance()->setProperty("markerSize", 6);
 

@@ -225,7 +225,9 @@ private:
                                                    << "FastConfidenceSteps"
                                                    << "ColorFullSearch"
                                                    << "series_confidence"
-                                                   << "auto_thermo_dialog";
+                                                   << "auto_thermo_dialog"
+                                                   << "calibration_start"
+                                                   << "calibration_heat";
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;

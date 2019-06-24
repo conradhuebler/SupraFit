@@ -225,6 +225,30 @@ void ThermogramWidget::setUi()
     m_peaks_time = new QDoubleSpinBox;
     m_peaks_time->setMinimum(0);
     m_peaks_time->setMaximum(1e8);
+
+    m_calibration_start = new QDoubleSpinBox;
+    m_calibration_start->setMinimum(0);
+    m_calibration_start->setMaximum(1e8);
+    m_calibration_start->setValue(qApp->instance()->property("calibration_start").toDouble());
+    connect(m_calibration_start, qOverload<double>(&QDoubleSpinBox::valueChanged), m_calibration_start, [this](double value) {
+        qApp->instance()->setProperty("calibration_start", value);
+        m_peaks_end->setValue(m_spec.XMax() - value);
+        CalibrateSystem();
+    });
+
+    m_calibration_heat = new QDoubleSpinBox;
+    m_calibration_heat->setMinimum(-1e8);
+    m_calibration_heat->setMaximum(1e8);
+    m_calibration_heat->setDecimals(5);
+    m_calibration_heat->setSingleStep(1e-2);
+    m_calibration_heat->setValue(qApp->instance()->property("calibration_heat").toDouble());
+    connect(m_calibration_heat, qOverload<double>(&QDoubleSpinBox::valueChanged), m_calibration_heat, [this](double value) {
+        qApp->instance()->setProperty("calibration_heat", value);
+        CalibrateSystem();
+    });
+
+    m_calibration_label = new QLabel(tr("Calibration (0)"));
+
     m_peak_apply = new QPushButton(tr("Apply and Update"));
     connect(m_peak_apply, &QPushButton::clicked, this, &ThermogramWidget::UpdatePeaks);
 
@@ -244,12 +268,15 @@ void ThermogramWidget::setUi()
     connect(m_auto_pick, &QPushButton::clicked, this, &ThermogramWidget::PickPeaks);
 
     QHBoxLayout* peak_layout = new QHBoxLayout;
+    /*
     peak_layout->addWidget(new QLabel(tr("Remove constant")));
     peak_layout->addWidget(m_const_offset);
     peak_layout->addWidget(m_peak_sensitivity);
     peak_layout->addWidget(m_auto_pick);
     peak_layout->addWidget(new QLabel(tr("Peak Count")));
     peak_layout->addWidget(m_peak_count);
+    */
+
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->addWidget(new QLabel(tr("Thermogram starts (s)")));
     vlayout->addWidget(m_get_peaks_start);
@@ -266,6 +293,12 @@ void ThermogramWidget::setUi()
     vlayout->addWidget(new QLabel(tr("Time between injects (s)")));
     vlayout->addWidget(m_peaks_time);
     vlayout->addWidget(m_get_peaks_range);
+    peak_layout->addLayout(vlayout);
+
+    vlayout = new QVBoxLayout;
+    vlayout->addWidget(m_calibration_label);
+    vlayout->addWidget(m_calibration_start);
+    vlayout->addWidget(m_calibration_heat);
     peak_layout->addLayout(vlayout);
 
     peak_layout->addWidget(m_peak_apply);
@@ -321,10 +354,10 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
     m_peak_count->setValue(peaks.size() + max_peak.size());
 
     m_peaks_start->setMaximum(m_spec.XMax());
-    m_peaks_end->setMaximum(m_spec.XMax());
+    m_peaks_end->setMaximum(m_spec.XMax() - m_calibration_start->value());
 
     m_peaks_start->setValue(m_spec.XMin());
-    m_peaks_end->setValue(m_spec.XMax());
+    m_peaks_end->setValue(m_spec.XMax() - m_calibration_start->value());
 
     UpdatePlot();
     m_stdev->setText(QString::number(spec->StdDev()));
@@ -502,6 +535,8 @@ void ThermogramWidget::Update()
 
 void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original)
 {
+    CalibrateSystem();
+
     Waiter wait;
     m_base_grids->clear();
     m_baseline_series->clear();
@@ -520,6 +555,8 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
         }
         (*peaks)[i].max = ((*peaks)[i].end + (*peaks)[i].start) / 2.0;
         PeakPick::IntegrateNumerical(original, (*peaks)[i], baseline);
+        if (m_calibration_heat->value() != 0)
+            (*peaks)[i].integ_num *= m_calibration_heat->value() / m_calibration_peak.integ_num;
 
         (*peaks)[i].integ_num -= m_const_offset->value();
 
@@ -776,7 +813,9 @@ void ThermogramWidget::CreateSeries()
     m_lower = new LineSeries;
     m_left = new LineSeries;
     m_right = new LineSeries;
+    //m_calibration_line = new LineSeries;
     m_base_grids = new ScatterSeries;
+    //m_calibration_grid = new ScatterSeries;
 }
 
 void ThermogramWidget::UpdatePeaks()
@@ -796,7 +835,7 @@ void ThermogramWidget::UpdatePeaks()
                 offset += m_spec.Y(i);
             } else {
                 qreal mod = m_spec.X(i) - int(start) - m_spec.X(1);
-                qDebug() << mod << m_peaks_time->value();
+                // qDebug() << mod << m_peaks_time->value();
                 if (std::fmod(mod, m_peaks_time->value()) == 0) {
                     qDebug() << m_peaks_time->value() << mod / m_peaks_time->value();
                     if (!(qFuzzyCompare(mod / m_peaks_time->value(), 0))) {
@@ -859,4 +898,37 @@ void ThermogramWidget::Divide2Peaks()
         std::vector<PeakPick::Peak> peaks = PeakPick::Divide2Peaks(&m_spec, m_peaks_start->value(), m_peak_count->value(), m_peaks_end->value());
         setPeakList(peaks);
     }
+}
+
+void ThermogramWidget::CalibrateSystem()
+{
+    m_calibration_peak.start = m_spec.XtoIndex(m_spec.XMax() - m_calibration_start->value());
+    m_calibration_peak.end = m_spec.XtoIndex(m_spec.XMax());
+
+    std::vector<PeakPick::Peak> list;
+    list.push_back(m_calibration_peak);
+
+    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
+
+    PeakPick::BaseLine baseline(spectrum);
+
+    baseline.setBaseLineRange(PeakPick::BaseLine::BLR::PeakWise);
+    baseline.setNoCoeffs(2);
+    baseline.setPeaks(&list);
+    baseline.setInitialBaseLine(Vector(0));
+
+    PeakPick::BaseLineResult baseline_result = baseline.Fit();
+    // std::cout << baseline_result.baselines[0] << std::endl;
+    /*
+    m_calibration_grid->clear();
+    for(int i = 0; i < baseline_result.baselines[0].size(); ++i)
+        m_calibration_grid->append(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j]);
+
+        m_baseline_series->append(QPointF(m_spec.X(j + 1), PeakPick::Polynomial(m_spec.X(j + 1), baseline)));
+    m_calibration_line->clear(),
+    */
+    m_calibration_peak.integ_num = PeakPick::IntegrateNumerical(spectrum, m_calibration_peak.start, m_calibration_peak.end, baseline_result.baselines[0]);
+    // qDebug() << m_calibration_peak.integ_num<< m_calibration_peak.start<< m_calibration_peak.end;
+    delete spectrum;
+    m_calibration_label->setText(tr("Calibration (%1)").arg(m_calibration_peak.integ_num));
 }

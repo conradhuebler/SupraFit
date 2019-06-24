@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- add calibration peak for ITC
 - input file structure for data generation, adding models, and running jobs
 - add foreward reduction analysis to input keywords
 - add command line option for suprafit_cli for execute jobfile

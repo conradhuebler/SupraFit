@@ -101,10 +101,11 @@ private:
     void fromPolynomial(const Vector& coeff, LineSeries* series);
 
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
+    void CalibrateSystem();
 
     QComboBox *m_baseline_type, *m_fit_type;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity;
-    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset;
+    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
     QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick;
@@ -113,12 +114,14 @@ private:
     ChartView* m_thermogram;
     //QtCharts::QChart* m_data;
     QPlainTextEdit* m_baseline_polynom;
+    QLabel* m_calibration_label;
 
-    LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right;
-    ScatterSeries* m_base_grids;
+    LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right, *m_calibration_line;
+    ScatterSeries *m_base_grids, *m_calibration_grid;
 
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
+    PeakPick::Peak m_calibration_peak;
     bool m_spectrum = false, m_block = false;
 
     /* 1 - get start
@@ -130,6 +133,7 @@ private:
     qreal m_offset = 0, m_frequency = 1;
     QString m_base, m_fit;
     FileType m_filetype;
+
 private slots:
     void UpdateBaseLine(const QString& str);
     void UpdateFit(const QString& str);
