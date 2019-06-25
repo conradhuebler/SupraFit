@@ -102,6 +102,7 @@ private:
 
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
     void CalibrateSystem();
+    void ApplyCalibration();
 
     QComboBox *m_baseline_type, *m_fit_type;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity;
@@ -119,6 +120,7 @@ private:
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right, *m_calibration_line;
     ScatterSeries *m_base_grids, *m_calibration_grid;
 
+    QVector<qreal> m_integrals_raw;
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     PeakPick::Peak m_calibration_peak;
