@@ -21,6 +21,8 @@
 
 #include <Eigen/Dense>
 
+#include <QtCore/QSettings>
+
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
@@ -32,6 +34,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableWidget>
 
 #include <QtCharts/QChart>
@@ -230,7 +233,7 @@ void Thermogram::setUi()
     m_mainwidget = new QTabWidget;
 
     m_table = new QTableWidget;
-    m_table->setFixedWidth(250);
+    //m_table->setFixedWidth(250);
 
     m_thm_series = new ScatterSeries;
     m_thm_series->setName(tr("Thermogram"));
@@ -246,11 +249,25 @@ void Thermogram::setUi()
         setLastDir(str);
     });
 
-    QWidget* widget = new QWidget;
+    m_export_data = new QPushButton(tr("Export Table"));
+    connect(m_export_data, &QPushButton::clicked, this, &Thermogram::ExportData);
+
+    m_splitter = new QSplitter(Qt::Horizontal);
+    QWidget* table_holder = new QWidget;
+    QVBoxLayout* vlayout = new QVBoxLayout;
+
+    vlayout->addWidget(m_export_data);
+    vlayout->addWidget(m_table);
+    table_holder->setLayout(vlayout);
+
+    m_splitter->addWidget(m_data_view);
+    m_splitter->addWidget(table_holder);
+
     hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_splitter);
+
+    QWidget* widget = new QWidget;
     widget->setLayout(hlayout);
-    hlayout->addWidget(m_data_view);
-    hlayout->addWidget(m_table);
     m_mainwidget->addTab(widget, tr("Data Table"));
 
     m_mainwidget->addTab(m_experiment, tr("Experiment"));
@@ -269,6 +286,17 @@ void Thermogram::setUi()
     connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateDilTable);
 
     setLayout(layout);
+
+    QSettings settings;
+    settings.beginGroup("thermogram_dialog");
+    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
+}
+
+Thermogram::~Thermogram()
+{
+    QSettings settings;
+    settings.beginGroup("thermogram_dialog");
+    settings.setValue("splitterSizes", m_splitter->saveState());
 }
 
 PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
@@ -364,7 +392,7 @@ void Thermogram::setExperiment()
 void Thermogram::UpdateTable()
 {
     m_content.clear();
-
+    m_all_rows.clear();
     m_thm_series->clear();
     m_raw_series->clear();
     m_dil_series->clear();
@@ -376,7 +404,7 @@ void Thermogram::UpdateTable()
     m_table->clear();
     m_table->setRowCount(m_exp_peaks.size());
     m_table->setColumnCount(4);
-
+    QChar mu = QChar(956);
     for (unsigned int j = 0; j < m_exp_peaks.size(); ++j) {
         QTableWidgetItem* newItem;
         if (j < m_inject.size()) {
@@ -388,10 +416,13 @@ void Thermogram::UpdateTable()
             newItem = new QTableWidgetItem(m_injct->text());
         }
         m_content += newItem->data(Qt::DisplayRole).toString() + "\t";
+        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
         m_table->setItem(j, 0, newItem);
 
         m_raw << m_exp_peaks[j].integ_num;
         newItem = new QTableWidgetItem(QString::number(m_raw.last()));
+        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
+        newItem->setBackgroundColor(m_raw_series->color().lighter());
         m_raw_series->append(QPointF(j, m_raw.last()));
 
         m_table->setItem(j, 1, newItem);
@@ -402,15 +433,26 @@ void Thermogram::UpdateTable()
             dil = m_dil_heat.last();
         }
         newItem = new QTableWidgetItem(QString::number(dil));
+        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
+
+        if (m_dil_peaks.size())
+            newItem->setBackground(m_dil_series->color().lighter());
         m_table->setItem(j, 2, newItem);
         m_dil_series->append(QPointF(j, dil));
 
         newItem = new QTableWidgetItem(QString::number(PeakAt(j)));
+        m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\n";
         m_content += newItem->data(Qt::DisplayRole).toString() + "\n";
+        newItem->setBackgroundColor(m_thm_series->color().lighter());
         m_table->setItem(j, 3, newItem);
 
         m_thm_series->append(QPointF(j, PeakAt(j)));
     }
+
+    QStringList header = QStringList() << QString("Volume\n[%1L]").arg(mu) << " exp. heat \n[raw]"
+                                       << "dil. heat \n[raw]"
+                                       << "joined heat \n[J]";
+    m_table->setHorizontalHeaderLabels(header);
     m_table->resizeColumnsToContents();
 
     m_data_view->addSeries(m_thm_series);
@@ -569,4 +611,25 @@ void Thermogram::setExperimentFit(const QJsonObject& json)
 void Thermogram::setDilutionFit(const QJsonObject& json)
 {
     m_dilution->setFit(json);
+}
+
+void Thermogram::ExportData()
+{
+    QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
+    if (filename.isEmpty())
+        return;
+
+    setLastDir(filename);
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadWrite))
+        return;
+
+    QChar mu = QChar(956);
+
+    QTextStream stream(&file);
+    stream << QString("#Volume") + "\t" + " exp. heat " + "\t" + "dil. heat" + "\t" + "joined heat" + "\n";
+    stream << QString("#[%1L]").arg(mu) + "\t" + "[raw]" + "\t" + "[raw]" + "\t" + "[J]" + "\n";
+
+    stream << m_all_rows;
 }

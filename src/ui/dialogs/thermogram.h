@@ -35,6 +35,7 @@ class QLabel;
 class QLineEdit;
 class QDoubleSpinBox;
 class QPushButton;
+class QSplitter;
 class QTableWidget;
 class QTabWidget;
 
@@ -49,6 +50,7 @@ class Thermogram : public QDialog {
     Q_OBJECT
 public:
     Thermogram();
+    virtual ~Thermogram();
 
     QString Content() const;
     inline QJsonObject SystemParamter() const { return m_systemparameter; }
@@ -84,11 +86,12 @@ private:
     void UpdateTable();
     void UpdateExpTable();
     void UpdateDilTable();
+    void ExportData();
 
     PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset);
     PeakPick::spectrum LoadXYFile(const QString& filename);
 
-    QPushButton *m_exp_button, *m_dil_button, *m_refit;
+    QPushButton *m_exp_button, *m_dil_button, *m_refit, *m_export_data;
     QCheckBox *m_remove_offset, *m_UseParameter, *m_constantVolume;
     QLineEdit *m_exp_file, *m_dil_file, *m_injct, *m_exp_base, *m_dil_base, *m_CellVolume, *m_CellConcentration, *m_SyringeConcentration, *m_Temperature;
     QComboBox* m_scale;
@@ -98,6 +101,7 @@ private:
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
     ChartView* m_data_view;
+    QSplitter* m_splitter;
     // QtCharts::QChart* m_data;
     LineSeries* fromSpectrum(const PeakPick::spectrum original);
 
@@ -107,7 +111,7 @@ private:
     ScatterSeries *m_thm_series, *m_raw_series, *m_dil_series;
     QDialogButtonBox* m_buttonbox;
 
-    QString m_content;
+    QString m_content, m_all_rows;
     QJsonObject m_systemparameter;
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
     bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;

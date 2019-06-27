@@ -1,5 +1,7 @@
 # SupraFit 2.0 pre-Alpha
 
+- export integrated peaks from thermogram dialog directly to txt file
+- add splitter widgets into thermogram dialog, make chart and table resizable, stores last geometry
 - add calibration peak for ITC
 - input file structure for data generation, adding models, and running jobs
 - add foreward reduction analysis to input keywords

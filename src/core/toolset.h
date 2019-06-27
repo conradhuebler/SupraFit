@@ -37,6 +37,7 @@
 typedef Eigen::VectorXd Vector;
 
 namespace ToolSet {
+double String2Double(QString str);
 
 QString DoubleVec2String(const QVector<qreal>& vector, const QString& str = " ");
 QString IntVec2String(const QVector<int>& vector, const QString& str = " ");
