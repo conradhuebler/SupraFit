@@ -866,6 +866,17 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
     m_peaks_start->setValue(fit["start_time"].toDouble());
     m_peaks_time->setValue(fit["peak_time"].toDouble());
     m_peaks_end->setValue(fit["end_time"].toDouble());
+
+    QList<QPointF> points = ToolSet::String2Points(fit["rules_list"].toString()); // = ToolSet::Points2String(points);;
+    m_peak_rule_list->setRowCount(points.size());
+    for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
+        QTableWidgetItem* item = new QTableWidgetItem(QString::number(points[i].x()));
+        m_peak_rule_list->setItem(i, 0, item);
+
+        item = new QTableWidgetItem(QString::number(points[i].y()));
+        m_peak_rule_list->setItem(i, 1, item);
+    }
+
     m_block = false;
     UpdatePeaks();
 }
@@ -889,6 +900,11 @@ QJsonObject ThermogramWidget::Fit() const
     fit["start_time"] = m_peaks_start->value();
     fit["end_time"] = m_peaks_end->value();
     fit["peak_time"] = m_peaks_time->value();
+    QList<QPointF> points;
+    for (int i = 0; i < m_peak_rule_list->rowCount(); ++i)
+        points << QPointF(m_peak_rule_list->item(i, 0)->data(Qt::DisplayRole).toDouble(), m_peak_rule_list->item(i, 1)->data(Qt::DisplayRole).toDouble());
+    fit["rules_list"] = ToolSet::Points2String(points);
+
     return fit;
 }
 
@@ -950,8 +966,6 @@ void ThermogramWidget::UpdatePeaks()
             else
                 index_end = m_peak_rule_list->item(j + 1, 0)->data(Qt::DisplayRole).toDouble();
 
-            qDebug() << index_start << timestep << index_end;
-
             for (int i = index_start; i + (timestep)-1 < m_spec.XtoIndex(index_end); i += (timestep)) {
                 peak = PeakPick::Peak();
                 peak.start = i;
@@ -959,14 +973,6 @@ void ThermogramWidget::UpdatePeaks()
                 m_peak_list.push_back(peak);
             }
         }
-
-        /*
-        for (int i = index_start; i + (m_peaks_time->value()) / m_spec.Step() - 1 < m_spec.XtoIndex(end); i += (m_peaks_time->value()) / m_spec.Step()) {
-            peak = PeakPick::Peak();
-            peak.start = i;
-            peak.end = i + (m_peaks_time->value()) / m_spec.Step() - 1;
-            m_peak_list.push_back(peak);
-        }*/
     }
 
     m_offset = offset / double(off);
