@@ -25,6 +25,7 @@
 #include <QtCore/QSettings>
 #include <QtCore/QtMath>
 
+#include <QtWidgets/QAction>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
@@ -78,16 +79,53 @@ void ThermogramWidget::setUi()
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_thermogram, &ChartView::ConfigurationChanged);
     m_thermogram->setModal(true);
     m_thermogram->setMinimumSize(600, 450);
+
     m_table = new QTableWidget;
-    //m_table->setFixedWidth(250);
     connect(m_table, &QTableWidget::doubleClicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakDoubleClicked));
+
+    m_peak_rule_list = new QTableWidget;
+    m_peak_rule_list->setRowCount(1);
+    m_peak_rule_list->setColumnCount(2);
+    m_peak_rule_list->setContextMenuPolicy(Qt::ActionsContextMenu);
+    QAction* action = new QAction("Add Rule");
+    action->setIcon(Icon("list-add"));
+    connect(action, &QAction::triggered, m_peak_rule_list, [this]() {
+        int rows = m_peak_rule_list->rowCount();
+        m_peak_rule_list->setRowCount(m_peak_rule_list->rowCount() + 1);
+        QTableWidgetItem* item = new QTableWidgetItem(QString::number(m_peaks_start->value()));
+        m_peak_rule_list->setItem(rows, 0, item);
+        item = new QTableWidgetItem(QString::number(m_peaks_time->value()));
+        m_peak_rule_list->setItem(rows, 1, item);
+        m_current_peaks_rule = rows;
+    });
+    m_peak_rule_list->addAction(action);
+
+    action = new QAction("Remove (last) Rule");
+    connect(action, &QAction::triggered, m_peak_rule_list, [this]() {
+        if (m_peak_rule_list->rowCount() > 1) {
+            //int rows = m_peak_rule_list->rowCount() -2;
+            m_peak_rule_list->setRowCount(m_peak_rule_list->rowCount() - 1);
+            m_current_peaks_rule = 0;
+        }
+    });
+    m_peak_rule_list->addAction(action);
+
+    connect(m_peak_rule_list, &QTableWidget::doubleClicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakRuleDoubleClicked));
+
+    QStringList header = QStringList() << "start"
+                                       << "interval";
+    m_peak_rule_list->setHorizontalHeaderLabels(header);
+
+    QTabWidget* peaks_tab = new QTabWidget;
+    peaks_tab->addTab(m_table, tr("Peak List"));
+    peaks_tab->addTab(m_peak_rule_list, tr("Peak-Pick Rules"));
 
     QHBoxLayout* hlayout = new QHBoxLayout;
 
     m_splitter = new QSplitter(Qt::Horizontal);
     m_splitter->tr("thermogram_splitter");
     m_splitter->addWidget(m_thermogram);
-    m_splitter->addWidget(m_table);
+    m_splitter->addWidget(peaks_tab);
     hlayout->addWidget(m_splitter);
 
     QWidget* chart = new QWidget;
@@ -337,6 +375,10 @@ void ThermogramWidget::setUi()
     m_peaks_start->setValue(settings.value("peaks_start", 60).toDouble());
     m_peaks_time->setValue(settings.value("peaks_time", 150).toDouble());
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
+    QTableWidgetItem* item = new QTableWidgetItem(QString::number(m_peaks_start->value()));
+    m_peak_rule_list->setItem(m_current_peaks_rule, 0, item);
+    item = new QTableWidgetItem(QString::number(m_peaks_time->value()));
+    m_peak_rule_list->setItem(m_current_peaks_rule, 1, item);
 }
 
 ThermogramWidget::~ThermogramWidget()
@@ -551,11 +593,11 @@ void ThermogramWidget::Update()
     if (m_smooth->isChecked())
         SmoothFunction(spectrum, m_filter->value());
     Integrate(&m_peak_list, spectrum);
-    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << " for integration" << this;
+    //qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << " for integration" << this;
     t0 = QDateTime::currentMSecsSinceEpoch();
     delete spectrum;
     UpdateTable();
-    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << " for remaining part" << this;
+    //qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << " for remaining part" << this;
 }
 
 void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original)
@@ -736,9 +778,19 @@ void ThermogramWidget::FitBaseLine()
     //emit IntegrationChanged();
 }
 
+void ThermogramWidget::PeakRuleDoubleClicked(const QModelIndex& index)
+{
+    int peak = index.row();
+    m_current_peaks_rule = peak;
+    QTableWidgetItem* item = m_peak_rule_list->item(index.row(), 0);
+    m_peaks_start->setValue(item->data(Qt::DisplayRole).toDouble());
+    // PeakDoubleClicked(peak);
+}
+
 void ThermogramWidget::PeakDoubleClicked(const QModelIndex& index)
 {
     int peak = index.row();
+    return;
     PeakDoubleClicked(peak);
 }
 
@@ -859,7 +911,9 @@ void ThermogramWidget::UpdatePeaks()
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     qreal offset;
     int off = 0;
-    double start = m_peaks_start->value();
+    //double start = m_peaks_start->value();
+    int rules_size = m_peak_rule_list->rowCount();
+    double start = m_peak_rule_list->item(0, 0)->data(Qt::UserRole).toDouble();
     double end = m_peaks_end->value();
     m_peak_list.clear();
     PeakPick::Peak peak;
@@ -884,26 +938,48 @@ void ThermogramWidget::UpdatePeaks()
             }
         }
     } else {
-        int index_start = m_spec.XtoIndex(start);
+        for (int j = 0; j < rules_size; ++j) {
+            QTableWidgetItem* item = (m_peak_rule_list->item(j, 0));
+            double index_start = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble()); //m_spec.XtoIndex(m_peak_rule_list->item(j, 0)->data(Qt::UserRole).toDouble());
+            item = m_peak_rule_list->item(j, 1);
+            double timestep = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble()); //m_spec.XtoIndex(m_peak_rule_list->item(j, 1)->data(Qt::UserRole).toDouble());
+            double index_end;
+
+            if (j == rules_size - 1)
+                index_end = end;
+            else
+                index_end = m_peak_rule_list->item(j + 1, 0)->data(Qt::DisplayRole).toDouble();
+
+            qDebug() << index_start << timestep << index_end;
+
+            for (int i = index_start; i + (timestep)-1 < m_spec.XtoIndex(index_end); i += (timestep)) {
+                peak = PeakPick::Peak();
+                peak.start = i;
+                peak.end = i + (timestep)-1;
+                m_peak_list.push_back(peak);
+            }
+        }
+
+        /*
         for (int i = index_start; i + (m_peaks_time->value()) / m_spec.Step() - 1 < m_spec.XtoIndex(end); i += (m_peaks_time->value()) / m_spec.Step()) {
             peak = PeakPick::Peak();
             peak.start = i;
             peak.end = i + (m_peaks_time->value()) / m_spec.Step() - 1;
             m_peak_list.push_back(peak);
-        }
+        }*/
     }
 
     m_offset = offset / double(off);
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
-    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for generating";
+    // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for generating";
     t0 = QDateTime::currentMSecsSinceEpoch();
 
     FitBaseLine();
-    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for baseline";
+    // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for baseline";
     t0 = QDateTime::currentMSecsSinceEpoch();
     Update();
-    qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "to update the reminder";
+    // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "to update the reminder";
 
     emit PeaksChanged();
     // emit IntegrationChanged();
@@ -919,9 +995,10 @@ void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& po
 void ThermogramWidget::PointDoubleClicked(const QPointF& point)
 {
     disconnect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
-    if (m_get_time_from_thermogram == 1)
+    if (m_get_time_from_thermogram == 1) {
         m_peaks_start->setValue(point.x());
-    else if (m_get_time_from_thermogram == 2)
+        m_peak_rule_list->item(m_current_peaks_rule, 0)->setData(Qt::DisplayRole, point.x());
+    } else if (m_get_time_from_thermogram == 2)
         m_peaks_end->setValue(point.x());
     Divide2Peaks();
     m_get_time_from_thermogram = 0;

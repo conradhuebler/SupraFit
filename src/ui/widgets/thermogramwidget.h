@@ -112,7 +112,7 @@ private:
     QRadioButton *m_peak_wise, *m_full_spec;
     QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick;
     QCheckBox *m_limits, *m_smooth, *m_poly_slow;
-    QTableWidget* m_table;
+    QTableWidget *m_table, *m_peak_rule_list;
     ChartView* m_thermogram;
     //QtCharts::QChart* m_data;
     QPlainTextEdit* m_baseline_polynom;
@@ -129,7 +129,7 @@ private:
 
     /* 1 - get start
      * 2 - get end */
-    int m_get_time_from_thermogram = 0;
+    int m_get_time_from_thermogram = 0, m_current_peaks_rule = 0;
 
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
@@ -141,6 +141,7 @@ private slots:
     void UpdateBaseLine(const QString& str);
     void UpdateFit(const QString& str);
     void PeakDoubleClicked(const QModelIndex& index);
+    void PeakRuleDoubleClicked(const QModelIndex& index);
     void PeakDoubleClicked(int peak);
     void PeakChanged(int row, int column, int value);
     void UpdatePeaks();
