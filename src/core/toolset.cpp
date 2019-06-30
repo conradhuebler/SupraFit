@@ -40,6 +40,15 @@ typedef Eigen::VectorXd Vector;
 
 namespace ToolSet {
 
+double String2Double(QString str)
+{
+    double result = 0;
+    bool ok;
+    str.replace(",", ".");
+    result = str.toDouble(&ok);
+    return result;
+}
+
 QString DoubleVec2String(const QVector<qreal>& vector, const QString& str)
 {
     QString string;
@@ -638,8 +647,11 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename)
         qDebug() << file.errorString();
         return QPair<Vector, Vector>(x, y);
     }
+    QByteArray blob = file.readAll();
 
-    QStringList filecontent = QString(file.readAll()).split("\n");
+    QStringList filecontent;
+
+    filecontent = QString(blob).split("\n");
 
     std::vector<double> entries_x, entries_y;
     for (const QString& str : filecontent) {
@@ -647,7 +659,7 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename)
             QStringList elements = str.simplified().split(" ");
             if (elements.size() == 2) {
                 entries_x.push_back(elements[0].toDouble());
-                entries_y.push_back(elements[1].toDouble());
+                entries_y.push_back(String2Double(elements[1]));
             }
         }
     }

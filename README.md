@@ -33,12 +33,12 @@ Prebuild development binaries for Windows (x64) can be downloaded on [SupraFit R
 
 To obtain the most recent development version use
 ```sh
-git clone --recursive git@github.com:conradhuebler/SupraFit.git
+git clone --recursive https://github.com/conradhuebler/SupraFit.git
 ```
 
 The deprecated, not recommended version SupraFit 1 can be obtained with
 ```sh
-git clone -b suprafit-v1 --recursive git@github.com:conradhuebler/SupraFit.git
+git clone -b suprafit-v1 --recursive https://github.com/conradhuebler/SupraFit.git
 ```
 
 Compile it as follows on Unix Platform:

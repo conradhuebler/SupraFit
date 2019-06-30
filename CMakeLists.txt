@@ -75,10 +75,14 @@ if (CMAKE_BUILD_TYPE STREQUAL "DEBUG")
     set (_DEBUG ON)
 endif(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 
+if(WIN32) # Check if we are on Windows
+    set (_Theme OFF)
+else()
+    set (_Theme ON)
+endif(WIN32)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set (_UNIX  ON)
-    set (_Theme ON)
 
     find_package(OpenMP)
     if (OPENMP_FOUND)

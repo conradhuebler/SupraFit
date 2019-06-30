@@ -37,6 +37,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
 #include <QtWidgets/QSpinBox>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableWidget>
 
 #include <QtCharts/QChart>
@@ -78,13 +79,16 @@ void ThermogramWidget::setUi()
     m_thermogram->setModal(true);
     m_thermogram->setMinimumSize(600, 450);
     m_table = new QTableWidget;
-    m_table->setFixedWidth(250);
+    //m_table->setFixedWidth(250);
     connect(m_table, &QTableWidget::doubleClicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakDoubleClicked));
 
     QHBoxLayout* hlayout = new QHBoxLayout;
 
-    hlayout->addWidget(m_thermogram);
-    hlayout->addWidget(m_table);
+    m_splitter = new QSplitter(Qt::Horizontal);
+    m_splitter->tr("thermogram_splitter");
+    m_splitter->addWidget(m_thermogram);
+    m_splitter->addWidget(m_table);
+    hlayout->addWidget(m_splitter);
 
     QWidget* chart = new QWidget;
 
@@ -332,6 +336,7 @@ void ThermogramWidget::setUi()
     settings.beginGroup("thermogram");
     m_peaks_start->setValue(settings.value("peaks_start", 60).toDouble());
     m_peaks_time->setValue(settings.value("peaks_time", 150).toDouble());
+    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
 }
 
 ThermogramWidget::~ThermogramWidget()
@@ -340,6 +345,7 @@ ThermogramWidget::~ThermogramWidget()
     settings.beginGroup("thermogram");
     settings.setValue("peaks_start", m_peaks_start->value());
     settings.setValue("peaks_time", m_peaks_time->value());
+    settings.setValue("splitterSizes", m_splitter->saveState());
 }
 
 void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
@@ -395,30 +401,39 @@ void ThermogramWidget::UpdateTable()
         QTableWidgetItem* newItem;
 
         newItem = new QTableWidgetItem(QString::number(m_peak_list[j].integ_num));
+        newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         m_table->setItem(j, 0, newItem);
 
         newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].start)));
-        QSpinBox* box = new QSpinBox(m_table);
+        newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+
+        /*QSpinBox* box = new QSpinBox(m_table);
         box->setMaximum(1e9);
         box->setMinimum(-1e9);
-        box->setValue(m_spec.X(m_peak_list[j].start));
-        connect(box, &QSpinBox::editingFinished, this, [this, j, box]() {
+        box->setValue(m_spec.X(m_peak_list[j].start));*/
+        /*connect(box, &QSpinBox::editingFinished, this, [this, j, box]() {
             PeakChanged(j, 1, box->value() / m_frequency); //FIXME hack
-        });
-        m_table->setCellWidget(j, 1, box);
+        });*/
+        //m_table->setCellWidget(j, 1, box);
         m_table->setItem(j, 1, newItem);
 
         newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].end)));
-        box = new QSpinBox(m_table);
+        newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+
+        /*box = new QSpinBox(m_table);
         box->setMaximum(1e9);
         box->setMinimum(-1e9);
-        box->setValue(m_spec.X(m_peak_list[j].end));
-        connect(box, &QSpinBox::editingFinished, this, [this, j, box]() {
+        box->setValue(m_spec.X(m_peak_list[j].end));*/
+        /*connect(box, &QSpinBox::editingFinished, this, [this, j, box]() {
             PeakChanged(j, 2, box->value() / m_frequency); //FIXME hack
-        });
-        m_table->setCellWidget(j, 2, box);
+        });*/
+        //m_table->setCellWidget(j, 2, box);
         m_table->setItem(j, 2, newItem);
     }
+    QStringList header = QStringList() << "heat\n[raw]"
+                                       << "peak start\n[s]"
+                                       << "peak end\n[s]";
+    m_table->setHorizontalHeaderLabels(header);
     m_table->resizeColumnsToContents();
 
     if (m_baseline.baselines.size() == 1) {

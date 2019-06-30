@@ -30,6 +30,7 @@
 class QComboBox;
 class QLineEdit;
 class QSpinBox;
+class QSplitter;
 class QRadioButton;
 class QPushButton;
 class QTableWidget;
@@ -116,7 +117,7 @@ private:
     //QtCharts::QChart* m_data;
     QPlainTextEdit* m_baseline_polynom;
     QLabel* m_calibration_label;
-
+    QSplitter* m_splitter;
     LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right, *m_calibration_line;
     ScatterSeries *m_base_grids, *m_calibration_grid;
 
