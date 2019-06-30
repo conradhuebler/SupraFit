@@ -118,7 +118,7 @@ private:
     QPlainTextEdit* m_baseline_polynom;
     QLabel* m_calibration_label;
     QSplitter* m_splitter;
-    LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_left, *m_right, *m_calibration_line;
+    LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_calibration_line, *m_peak_start_line, *m_peak_end_line;
     ScatterSeries *m_base_grids, *m_calibration_grid;
 
     QVector<qreal> m_integrals_raw;
@@ -129,7 +129,7 @@ private:
 
     /* 1 - get start
      * 2 - get end */
-    int m_get_time_from_thermogram = 0, m_current_peaks_rule = 0;
+    int m_get_time_from_thermogram = 0, m_current_peaks_rule = 0, m_current_peak = 0;
 
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
