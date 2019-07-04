@@ -975,7 +975,7 @@ void ThermogramWidget::UpdatePeaks()
     double end = m_peaks_end->value();
     m_peak_list.clear();
     PeakPick::Peak peak;
-
+    /*
     if (m_filetype == FileType::ITC) {
         for (unsigned int i = 1; i <= m_spec.size(); ++i) {
             if (m_spec.X(i) < start) {
@@ -995,42 +995,42 @@ void ThermogramWidget::UpdatePeaks()
                 }
             }
         }
-    } else {
-        for (int j = 0; j < rules_size; ++j) {
-            QTableWidgetItem* item = (m_peak_rule_list->item(j, 0));
-            double index_start = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble()); //m_spec.XtoIndex(m_peak_rule_list->item(j, 0)->data(Qt::UserRole).toDouble());
-            item = m_peak_rule_list->item(j, 1);
-            double timestep = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble()); //m_spec.XtoIndex(m_peak_rule_list->item(j, 1)->data(Qt::UserRole).toDouble());
-            double index_end;
+    } else {*/
+    for (int j = 0; j < rules_size; ++j) {
+        QTableWidgetItem* item = (m_peak_rule_list->item(j, 0));
+        double index_start = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble()); //m_spec.XtoIndex(m_peak_rule_list->item(j, 0)->data(Qt::UserRole).toDouble());
+        item = m_peak_rule_list->item(j, 1);
+        double timestep = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble()); //m_spec.XtoIndex(m_peak_rule_list->item(j, 1)->data(Qt::UserRole).toDouble());
+        double index_end;
 
-            if (j == rules_size - 1)
-                index_end = end;
-            else
-                index_end = m_peak_rule_list->item(j + 1, 0)->data(Qt::DisplayRole).toDouble();
+        if (j == rules_size - 1)
+            index_end = end;
+        else
+            index_end = m_peak_rule_list->item(j + 1, 0)->data(Qt::DisplayRole).toDouble();
 
-            for (int i = index_start; i + (timestep)-1 < m_spec.XtoIndex(index_end); i += (timestep)) {
-                peak = PeakPick::Peak();
-                peak.setPeakStart(i);
-                peak.setPeakEnd(i + (timestep)-1);
-                m_peak_list.push_back(peak);
-            }
+        for (int i = index_start; i + (timestep)-1 < m_spec.XtoIndex(index_end); i += (timestep)) {
+            peak = PeakPick::Peak();
+            peak.setPeakStart(i);
+            peak.setPeakEnd(i + (timestep)-1);
+            m_peak_list.push_back(peak);
         }
-    }
+        }
+        //}
 
-    m_offset = offset / double(off);
-    m_baseline.baselines.push_back(Vector(1));
-    m_baseline.baselines[0](0) = m_offset;
-    // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for generating";
-    t0 = QDateTime::currentMSecsSinceEpoch();
+        m_offset = offset / double(off);
+        m_baseline.baselines.push_back(Vector(1));
+        m_baseline.baselines[0](0) = m_offset;
+        // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for generating";
+        t0 = QDateTime::currentMSecsSinceEpoch();
 
-    FitBaseLine();
-    // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for baseline";
-    t0 = QDateTime::currentMSecsSinceEpoch();
-    Update();
-    // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "to update the reminder";
+        FitBaseLine();
+        // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "for baseline";
+        t0 = QDateTime::currentMSecsSinceEpoch();
+        Update();
+        // qDebug() << QDateTime::currentMSecsSinceEpoch() - t0 << "to update the reminder";
 
-    emit PeaksChanged();
-    // emit IntegrationChanged();
+        emit PeaksChanged();
+        // emit IntegrationChanged();
 }
 
 void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& point2)
