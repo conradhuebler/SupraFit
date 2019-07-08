@@ -105,9 +105,9 @@ private:
     void CalibrateSystem();
     void ApplyCalibration();
 
-    QComboBox *m_baseline_type, *m_fit_type;
+    QComboBox *m_baseline_type, *m_fit_type, *m_integration_range;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity;
-    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat;
+    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
     QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick;
@@ -118,8 +118,8 @@ private:
     QPlainTextEdit* m_baseline_polynom;
     QLabel* m_calibration_label;
     QSplitter* m_splitter;
-    LineSeries *m_thermogram_series, *m_baseline_series, *m_lower, *m_upper, *m_calibration_line, *m_peak_start_line, *m_peak_end_line;
-    ScatterSeries *m_base_grids, *m_calibration_grid;
+    LineSeries *m_thermogram_series, *m_lower, *m_upper, *m_calibration_line, *m_peak_start_line, *m_peak_end_line;
+    ScatterSeries *m_base_grids, *m_calibration_grid, *m_baseline_series;
 
     QVector<qreal> m_integrals_raw;
     PeakPick::spectrum m_spec;
@@ -138,6 +138,7 @@ private:
     FileType m_filetype;
 
 private slots:
+    bool CutAllLimits();
     void UpdateBaseLine(const QString& str);
     void UpdateFit(const QString& str);
     void PeakDoubleClicked(const QModelIndex& index);
