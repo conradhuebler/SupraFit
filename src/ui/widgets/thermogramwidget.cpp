@@ -56,7 +56,7 @@
 
 #include "thermogramwidget.h"
 
-static int baseline_step_size = 2;
+static int baseline_step_size = 50;
 
 ThermogramWidget::ThermogramWidget(QWidget* parent)
     : QWidget(parent)
@@ -330,6 +330,8 @@ void ThermogramWidget::setUi()
     m_integration_range_threshold->setMaximum(1e5);
     m_integration_range_threshold->setDecimals(10);
 
+    //connect(m_integration_range_threshold, &QDoubleSpinBox::editingFinished, this, &ThermogramWidget::CutAllLimits);
+
     QHBoxLayout* peak_layout = new QHBoxLayout;
     /*
     peak_layout->addWidget(new QLabel(tr("Remove constant")));
@@ -439,6 +441,7 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
 
 void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
 {
+    return;
     m_peak_list = peak_list;
     if (m_peak_list.size()) {
         m_peaks_start->setValue(m_peak_list[0].start * m_spec.Step() - m_spec.Step());
@@ -621,7 +624,9 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
     m_base_grids->clear();
     m_baseline_series->clear();
     m_integrals_raw.clear();
+    m_baseline_series->hide();
     Vector baseline;
+    int steps = 1;
     if (m_baseline.baselines.size() > 0)
         baseline = m_baseline.baselines[0];
 
@@ -633,20 +638,26 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
                 m_base_grids->append(m_baseline.x_grid_points[i][j], m_baseline.y_grid_points[i][j]);
             }
         }
+
         (*peaks)[i].max = ((*peaks)[i].start + (*peaks)[i].start + (*peaks)[i].end + (*peaks)[i].start) / 4.0;
         PeakPick::IntegrateNumerical(original, (*peaks)[i], baseline);
         m_integrals_raw << (*peaks)[i].integ_num;
 
-        for (int j = (*peaks)[i].int_start; j < int((*peaks)[i].int_end); j += baseline_step_size)
+        steps = ((*peaks)[i].end - int((*peaks)[i].start)) / baseline_step_size;
+
+        for (int j = (*peaks)[i].int_start; j < int((*peaks)[i].int_end) - 1; j += steps)
             m_baseline_series->append(QPointF(m_spec.X(j), PeakPick::Polynomial(m_spec.X(j), baseline)));
+
+        m_baseline_series->append(QPointF(m_spec.X(int((*peaks)[i].int_end) - 1), PeakPick::Polynomial(m_spec.X(int((*peaks)[i].int_end) - 1), baseline)));
     }
 
     if (m_baseline.x_grid_points.size() == 1) {
-        for (int j = 0; j < int(m_baseline.x_grid_points[0].size()); j += baseline_step_size) {
+        for (int j = 0; j < int(m_baseline.x_grid_points[0].size()); j += steps) {
             m_base_grids->append(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j]);
         }
     }
     ApplyCalibration();
+    m_baseline_series->show();
     m_base_grids->setMarkerSize(8);
     m_thermogram->addSeries(m_base_grids);
     m_thermogram->addSeries(m_baseline_series);
@@ -887,6 +898,9 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
     m_const_offset->setValue(fit["constants"].toDouble());
     m_stdev->setText(fit["stddev"].toString());
     m_mult->setText(fit["multiplier"].toString());
+    m_integration_range_threshold->setValue(fit["integration_range_threshold"].toDouble());
+    m_integration_range->setCurrentText(fit["integration_range"].toString());
+
     if (fit.contains("smooth")) {
         m_smooth->setChecked(true);
         m_filter->setValue(fit["SV"].toInt());
@@ -963,7 +977,7 @@ void ThermogramWidget::CreateSeries()
     m_baseline_series = new ScatterSeries;
     //m_baseline_series->setUseOpenGL(true);
     m_baseline_series->setMarkerSize(2.5);
-    m_baseline_series->setBorderColor(Qt::green);
+    m_baseline_series->setBorderColor(QColor(Qt::green).lighter());
     //m_baseline_series->setDashDotLine(true);
     m_upper = new LineSeries;
     m_lower = new LineSeries;
@@ -1113,9 +1127,11 @@ bool ThermogramWidget::CutAllLimits()
     for (int i = 0; i < m_peak_list.size(); ++i) {
         if (m_peak_list.size() == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0)
             baseline = m_baseline.baselines[i];
-        qDebug() << i << m_peak_list[i].start << m_peak_list[i].int_start << m_peak_list[i].max << m_peak_list[i].end << m_peak_list[i].int_end;
         PeakPick::ResizeIntegrationRange(&m_spec, &m_peak_list[i], baseline, m_peak_list[i].max, m_integration_range_threshold->value(), 1);
-        qDebug() << i << m_peak_list[i].end << m_peak_list[i].int_end;
+        if (m_integration_range_threshold->value() > 0) {
+            m_peak_list[i].setPeakStart(m_peak_list[i].int_start);
+            m_peak_list[i].setPeakEnd(m_peak_list[i].int_end);
+        }
     }
     FitBaseLine();
     Update();
