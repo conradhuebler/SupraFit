@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- automatic resize of integration range (change in sign or threshold (iterative - fix point problem) )
 - variable integration range within peaks
 - add variable peak time for integration in thermogram dialog
 - export integrated peaks from thermogram dialog directly to txt file

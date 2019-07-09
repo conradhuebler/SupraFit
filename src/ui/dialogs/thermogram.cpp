@@ -536,6 +536,8 @@ void Thermogram::clearExperiment()
         m_exp_peaks.clear();
         UpdateData();
         m_exp_file->setStyleSheet("background-color: white");
+    } else {
+        setExperimentFile(m_exp_file->text());
     }
 }
 
@@ -546,6 +548,8 @@ void Thermogram::clearDilution()
         m_dil_peaks.clear();
         UpdateData();
         m_dil_file->setStyleSheet("background-color: white");
+    } else {
+        setDilutionFile(m_dil_file->text());
     }
 }
 

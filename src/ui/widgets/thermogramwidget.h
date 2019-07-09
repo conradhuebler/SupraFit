@@ -133,9 +133,12 @@ private:
 
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
-    qreal m_offset = 0, m_frequency = 1;
+    qreal m_offset = 0, m_frequency = 1, m_initial_threshold = 0;
     QString m_base, m_fit;
     FileType m_filetype;
+    QStringList m_Peak_Cut_Options = QStringList() << "Custom"
+                                                   << "Zero"
+                                                   << "Threshold";
 
 private slots:
     bool CutAllLimits();
