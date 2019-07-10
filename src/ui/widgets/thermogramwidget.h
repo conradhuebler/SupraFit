@@ -90,6 +90,7 @@ signals:
 public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }
     void FitBaseLine();
+    void UpdatePeaks();
 
 private:
     void setUi();
@@ -97,6 +98,7 @@ private:
     void UpdatePlot();
     void UpdateLimits();
     void CreateSeries();
+    void UpdateSeries();
 
     void fromSpectrum(const PeakPick::spectrum* original, LineSeries* series);
     void fromPolynomial(const Vector& coeff, LineSeries* series);
@@ -129,7 +131,7 @@ private:
 
     /* 1 - get start
      * 2 - get end */
-    int m_get_time_from_thermogram = 0, m_current_peaks_rule = 0, m_current_peak = 0;
+    int m_get_time_from_thermogram = 0, m_current_peaks_rule = 0, m_current_peak = 0, m_last_iteration_max = 0;
 
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
@@ -148,7 +150,6 @@ private slots:
     void PeakRuleDoubleClicked(const QModelIndex& index);
     void PeakDoubleClicked(int peak);
     void PeakChanged(int row, int column, int value);
-    void UpdatePeaks();
     void AddRectanglePeak(const QPointF& point1, const QPointF& point2);
     void PointDoubleClicked(const QPointF& point);
     void Divide2Peaks();
