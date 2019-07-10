@@ -329,6 +329,10 @@ void ThermogramWidget::setUi()
     m_integration_range_threshold->setMaximum(1e5);
     m_integration_range_threshold->setDecimals(10);
 
+    m_iterations = new QSpinBox;
+    m_iterations->setMinimum(1);
+    m_iterations->setMaximum(1e3);
+    m_iterations->setValue(15);
     //connect(m_integration_range_threshold, &QDoubleSpinBox::editingFinished, this, &ThermogramWidget::CutAllLimits);
 
     QHBoxLayout* peak_layout = new QHBoxLayout;
@@ -366,7 +370,12 @@ void ThermogramWidget::setUi()
     peak_layout->addLayout(vlayout);
 
     vlayout = new QVBoxLayout;
-    vlayout->addWidget(m_integration_range_threshold);
+    QHBoxLayout* iterlayout = new QHBoxLayout;
+
+    iterlayout->addWidget(m_integration_range_threshold);
+    iterlayout->addWidget(new QLabel(tr("Iterations")));
+    iterlayout->addWidget(m_iterations);
+    vlayout->addLayout(iterlayout);
     vlayout->addWidget(m_integration_range);
     vlayout->addWidget(m_peak_apply);
     peak_layout->addLayout(vlayout);
@@ -1150,7 +1159,8 @@ bool ThermogramWidget::CutAllLimits()
         return false;
     } else if (m_integration_range->currentText() == m_Peak_Cut_Options[2]) {
         threshold = m_integration_range_threshold->value();
-        maxiter = 20;
+        maxiter = m_iterations->value();
+        ;
     } else {
         m_integration_range_threshold->setValue(m_initial_threshold);
     }
@@ -1164,7 +1174,7 @@ bool ThermogramWidget::CutAllLimits()
             PeakPick::ResizeIntegrationRange(&m_spec, &m_peak_list[i], baseline, m_peak_list[i].max, threshold, 1);
         }
         FitBaseLine();
-        if (qAbs(old_threshold - m_integration_range_threshold->value()) < 1e-8)
+        if (qAbs(old_threshold - m_integration_range_threshold->value()) < 1e-10)
             break;
         old_threshold = m_integration_range_threshold->value();
     }
