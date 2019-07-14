@@ -73,6 +73,27 @@ void ThermogramWidget::setUi()
         setLastDir(str);
     });
     connect(m_thermogram, &ChartView::AddRect, this, &ThermogramWidget::AddRectanglePeak);
+    connect(m_thermogram, &ChartView::scaleUp, this, &ThermogramWidget::scaleUp);
+    connect(m_thermogram, &ChartView::scaleDown, this, &ThermogramWidget::scaleDown);
+
+    connect(m_thermogram, &ChartView::EscapeSelectMode, this, [this]() {
+        m_thermogram->setSelectStrategy(SelectStrategy::S_None);
+        m_thermogram->setZoomStrategy(ZoomStrategy::Z_Rectangular);
+
+        m_peak_start_line->hide();
+        m_peak_end_line->hide();
+        m_peak_edit_mode = false;
+    });
+
+    connect(m_thermogram, &ChartView::RightKey, this, [this]() {
+        if (m_peak_edit_mode)
+            PeakDoubleClicked(m_current_peak + 1);
+    });
+
+    connect(m_thermogram, &ChartView::LeftKey, this, [this]() {
+        if (m_peak_edit_mode)
+            PeakDoubleClicked(m_current_peak - 1);
+    });
 
     m_thermogram->setVerticalLineEnabled(true);
     //m_thermogram->setSelectionStrategie(2);
@@ -175,7 +196,7 @@ void ThermogramWidget::setUi()
     m_coeffs = new QSpinBox;
     m_coeffs->setMinimum(1);
     m_coeffs->setMaximum(120);
-    m_coeffs->setValue(3);
+    m_coeffs->setValue(2);
     connect(m_coeffs, QOverload<int>::of(&QSpinBox::valueChanged), this, &ThermogramWidget::FitBaseLine);
 
     m_constant = new QLineEdit(QString::number(m_offset));
@@ -253,7 +274,7 @@ void ThermogramWidget::setUi()
     m_peaks_start = new QDoubleSpinBox;
     m_peaks_start->setMinimum(0);
     m_peaks_start->setMaximum(1e8);
-    connect(m_peaks_start, &QDoubleSpinBox::editingFinished, this, &ThermogramWidget::Divide2Peaks);
+    //connect(m_peaks_start, &QDoubleSpinBox::editingFinished, this, &ThermogramWidget::Divide2Peaks);
 
     m_get_peaks_start = new QPushButton(tr("Select"));
     connect(m_get_peaks_start, &QPushButton::clicked, this, [this]() {
@@ -388,7 +409,7 @@ void ThermogramWidget::setUi()
     setLayout(layout);
 
     m_fit_type->setDisabled(true);
-    m_coeffs->setDisabled(true);
+    m_coeffs->setDisabled(false);
     m_constant->setDisabled(true);
 
     m_stdev->setEnabled(false);
@@ -407,6 +428,9 @@ void ThermogramWidget::setUi()
     m_peak_rule_list->setItem(m_current_peaks_rule, 1, item);
 
     connect(m_integration_range, &QComboBox::currentTextChanged, this, &ThermogramWidget::CutAllLimits);
+    connect(m_peaks_start, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {
+        m_peak_rule_list->item(m_current_peaks_rule, 0)->setData(Qt::DisplayRole, value);
+    });
 }
 
 ThermogramWidget::~ThermogramWidget()
@@ -454,16 +478,14 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
 
 void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
 {
-
-    return;
     m_peak_list = peak_list;
     if (m_peak_list.size()) {
         m_peaks_start->setValue(m_peak_list[0].start * m_spec.Step() - m_spec.Step());
-        //m_peaks_time->setValue(m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step());
+        m_peaks_time->setValue(m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step());
         m_peaks_end->setValue(m_peak_list[m_peak_list.size() - 1].end * m_spec.Step());
     }
     m_peak_count->setValue(m_peak_list.size());
-    Update();
+    FitBaseLine();
 }
 
 void ThermogramWidget::UpdateTable()
@@ -611,6 +633,7 @@ void ThermogramWidget::clear()
     m_table->clear();
     m_thermogram_series->clear();
     m_baseline_series->clear();
+    m_baseline_ignored_series->clear();
     m_upper->clear();
     m_lower->clear();
     m_base_grids->clear();
@@ -644,10 +667,11 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
 
     for (int i = 0; i < int(peaks->size()); ++i) {
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        if (peaks->size() == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0) {
+        if (peaks->size() == m_baseline.baselines.size()) // && m_baseline.x_grid_points.size() > 0)
+        {
             baseline = m_baseline.baselines[i];
         }
-        (*peaks)[i].max = ((*peaks)[i].start + (*peaks)[i].start + (*peaks)[i].end + (*peaks)[i].start) / 4.0;
+        // (*peaks)[i].max = ((*peaks)[i].start + (*peaks)[i].start + (*peaks)[i].end + (*peaks)[i].start) / 4.0;
         PeakPick::IntegrateNumerical(original, (*peaks)[i], baseline);
         m_integrals_raw << (*peaks)[i].integ_num;
 
@@ -683,8 +707,11 @@ void ThermogramWidget::UpdateSeries()
 
     Waiter wait;
     m_base_grids->clear();
+    m_base_grids->hide();
     m_baseline_series->clear();
     m_baseline_series->hide();
+    m_baseline_ignored_series->clear();
+    m_baseline_ignored_series->hide();
     Vector baseline;
 
     int steps = 1;
@@ -705,7 +732,11 @@ void ThermogramWidget::UpdateSeries()
         for (int j = m_peak_list[i].int_start; j < int(m_peak_list[i].int_end) - 1; j += steps)
             m_baseline_series->append(QPointF(m_spec.X(j), PeakPick::Polynomial(m_spec.X(j), baseline)));
 
+        for (int j = m_peak_list[i].int_end; j < int(m_peak_list[i].end) - 1; j += steps)
+            m_baseline_ignored_series->append(QPointF(m_spec.X(j), PeakPick::Polynomial(m_spec.X(j), baseline)));
+
         m_baseline_series->append(QPointF(m_spec.X(int(m_peak_list[i].int_end) - 1), PeakPick::Polynomial(m_spec.X(int(m_peak_list[i].int_end) - 1), baseline)));
+        m_baseline_ignored_series->append(QPointF(m_spec.X(int(m_peak_list[i].end) - 1), PeakPick::Polynomial(m_spec.X(int(m_peak_list[i].end) - 1), baseline)));
     }
 
     if (m_baseline.x_grid_points.size() == 1) {
@@ -713,11 +744,13 @@ void ThermogramWidget::UpdateSeries()
             m_base_grids->append(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j]);
         }
     }
-
+    m_base_grids->show();
     m_baseline_series->show();
+    m_baseline_ignored_series->show();
     m_base_grids->setMarkerSize(8);
     m_thermogram->addSeries(m_base_grids);
     m_thermogram->addSeries(m_baseline_series);
+    m_thermogram->addSeries(m_baseline_ignored_series);
 }
 
 void ThermogramWidget::ApplyCalibration()
@@ -876,6 +909,11 @@ void ThermogramWidget::PeakDoubleClicked(const QModelIndex& index)
 
 void ThermogramWidget::PeakDoubleClicked(int peak)
 {
+    if (peak < 0 || peak >= m_peak_list.size())
+        return;
+
+    m_peak_edit_mode = true;
+
     int lower = peak, upper = peak;
 
     if (peak == 0)
@@ -909,7 +947,6 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
     QPointF start = m_thermogram->Chart()->mapToPosition(QPointF(xmin, ymin));
     QPointF end = m_thermogram->Chart()->mapToPosition(QPointF(xmin, ymax));
 
-    qDebug() << xmin << xmax;
     m_peak_start_line->clear();
     m_peak_start_line->append(xmin, ymin);
     m_peak_start_line->append(xmin, ymax);
@@ -933,6 +970,7 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
     m_thermogram->setYRange(ymin, ymax);
 
     m_thermogram->setSelectBox(QPointF(xmin, ymax), QPointF(xmax, ymin));
+    //m_thermogram->setFocus(Qt::MouseFocusReason);
 }
 
 void ThermogramWidget::PeakChanged(int row, int column, int value)
@@ -1034,9 +1072,14 @@ void ThermogramWidget::CreateSeries()
     m_thermogram_series = new LineSeries;
     m_baseline_series = new ScatterSeries;
     //m_baseline_series->setUseOpenGL(true);
-    m_baseline_series->setMarkerSize(2.5);
+    m_baseline_series->setMarkerSize(3.5);
     m_baseline_series->setBorderColor(QColor(Qt::green).lighter());
     //m_baseline_series->setDashDotLine(true);
+
+    m_baseline_ignored_series = new ScatterSeries;
+    m_baseline_ignored_series->setMarkerSize(2.5);
+    m_baseline_ignored_series->setBorderColor(QColor(Qt::red).lighter(200));
+
     m_upper = new LineSeries;
     m_lower = new LineSeries;
     m_peak_start_line = new LineSeries;
@@ -1083,6 +1126,9 @@ void ThermogramWidget::UpdatePeaks()
             peak = PeakPick::Peak();
             peak.setPeakStart(i);
             peak.setPeakEnd(i + (timestep)-1);
+            peak.max = PeakPick::FindMaximum(&m_spec, peak);
+            peak.min = PeakPick::FindMinimum(&m_spec, peak);
+
             m_peak_list.push_back(peak);
         }
         }
@@ -1110,7 +1156,7 @@ void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& po
 
     m_peak_list[m_current_peak].int_start = m_spec.XtoIndex(point1.x());
     m_peak_list[m_current_peak].int_end = m_spec.XtoIndex(point2.x());
-
+    m_peak_edit_mode = false;
     //qDebug() << m_peak_list[m_current_peak].start << m_peak_list[m_current_peak].int_start << m_peak_list[m_current_peak].int_end << m_peak_list[m_current_peak].end;
     FitBaseLine();
     Update();
@@ -1207,11 +1253,21 @@ bool ThermogramWidget::CutAllLimits()
     if (m_baseline.baselines.size() > 0)
         baseline = m_baseline.baselines[0];
     int x = 0;
+    // int coeff = m_coeffs->value();
+    // m_coeffs->setValue(2);
+
     for (x = 0; x < maxiter; ++x) {
         for (int i = 0; i < m_peak_list.size(); ++i) {
-            if (m_peak_list.size() == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0)
+            if (m_peak_list.size() == m_baseline.baselines.size()) // && m_baseline.x_grid_points.size() > 0)
                 baseline = m_baseline.baselines[i];
-            PeakPick::ResizeIntegrationRange(&m_spec, &m_peak_list[i], baseline, m_peak_list[i].max, threshold, 1);
+
+            qreal start_end = (m_spec.Y(m_peak_list[i].start) + m_spec.Y(m_peak_list[i].end)) * 0.5;
+
+            int start_position = m_peak_list[i].max;
+            if (qAbs(qAbs(m_spec.Y(m_peak_list[i].min) - start_end)) > qAbs(qAbs(m_spec.Y(m_peak_list[i].max)) - start_end))
+                start_position = m_peak_list[i].min;
+
+            PeakPick::ResizeIntegrationRange(&m_spec, &m_peak_list[i], baseline, start_position, threshold, 1);
         }
         FitBaseLine();
         Integrate(&m_peak_list, spectrum);
@@ -1220,8 +1276,45 @@ bool ThermogramWidget::CutAllLimits()
         old_threshold = m_integration_range_threshold->value();
     }
     m_last_iteration_max = x;
+    // m_coeffs->setValue(coeff);
+    FitBaseLine();
+    Integrate(&m_peak_list, spectrum);
 
     delete spectrum;
     Update();
     return true;
+}
+
+void ThermogramWidget::scaleUp()
+{
+    qreal position = m_thermogram->Chart()->mapToValue(m_thermogram->currentMousePosition()).y();
+    qreal max = m_thermogram->YMaxRange();
+    qreal min = m_thermogram->YMinRange();
+    qreal next = (max - min) * 0.1;
+
+    qreal ratio = (position - min) / (max - min);
+
+    if (position > max)
+        m_thermogram->setYRange(min, max - next);
+    else if (position < min)
+        m_thermogram->setYRange(min - next, max);
+    else
+        m_thermogram->setYRange(min + (ratio)*next, max - (1 - ratio) * next);
+}
+
+void ThermogramWidget::scaleDown()
+{
+    qreal position = m_thermogram->Chart()->mapToValue(m_thermogram->currentMousePosition()).y();
+    qreal max = m_thermogram->YMaxRange();
+    qreal min = m_thermogram->YMinRange();
+    qreal next = (max - min) * 0.1;
+
+    qreal ratio = (position - min) / (max - min);
+
+    if (position > max)
+        m_thermogram->setYRange(min, max + next);
+    else if (position < min)
+        m_thermogram->setYRange(min + next, max);
+    else
+        m_thermogram->setYRange(min - (ratio)*next, max + (1 - ratio) * next);
 }

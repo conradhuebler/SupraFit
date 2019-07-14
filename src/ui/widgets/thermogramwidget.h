@@ -121,13 +121,13 @@ private:
     QLabel* m_calibration_label;
     QSplitter* m_splitter;
     LineSeries *m_thermogram_series, *m_lower, *m_upper, *m_calibration_line, *m_peak_start_line, *m_peak_end_line;
-    ScatterSeries *m_base_grids, *m_calibration_grid, *m_baseline_series;
+    ScatterSeries *m_base_grids, *m_calibration_grid, *m_baseline_series, *m_baseline_ignored_series;
 
     QVector<qreal> m_integrals_raw;
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     PeakPick::Peak m_calibration_peak;
-    bool m_spectrum = false, m_block = false;
+    bool m_spectrum = false, m_block = false, m_peak_edit_mode = false;
 
     /* 1 - get start
      * 2 - get end */
@@ -153,4 +153,6 @@ private slots:
     void AddRectanglePeak(const QPointF& point1, const QPointF& point2);
     void PointDoubleClicked(const QPointF& point);
     void Divide2Peaks();
+    void scaleUp();
+    void scaleDown();
 };
