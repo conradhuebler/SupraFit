@@ -24,8 +24,7 @@
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
 
-#include <QCoreApplication>
-
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
 #include <QtCore/QTimer>
 

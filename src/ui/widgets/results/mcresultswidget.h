@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ public:
 private:
     QPushButton *m_switch, *m_save;
     QDoubleSpinBox* m_error;
-    QPointer<ListChart> m_histgram, m_box;
+    QPointer<ListChart> m_histgram, m_box, m_series_chart;
     QPointer<QWidget> m_scatter;
     QVector<QColor> m_colors;
     QVector<QtCharts::QAreaSeries*> m_area_series;
@@ -71,6 +71,8 @@ private:
     QPointer<ListChart> MakeHistogram();
     QPointer<QWidget> MakeScatter();
     QPointer<ListChart> MakeBoxPlot();
+    QPointer<ListChart> MakeSeriesChart();
+
     QList<QJsonObject> m_box_object;
     QList<QJsonObject> m_models;
     bool has_histogram, has_scatter, has_boxplot;

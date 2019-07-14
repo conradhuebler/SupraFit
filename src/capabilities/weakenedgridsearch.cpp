@@ -23,8 +23,7 @@
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 
-#include <QCoreApplication>
-
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
 
 #include <QtCore/QObject>

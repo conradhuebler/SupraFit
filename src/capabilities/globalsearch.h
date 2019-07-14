@@ -58,9 +58,6 @@ private:
     QPointer<GlobalSearch> m_parent;
     QList<QJsonObject> m_result;
     bool m_finished, m_checked;
-    /*
-protected:
-    QSharedPointer<AbstractModel> m_model; */
 };
 
 class GlobalSearch : public AbstractSearchClass {

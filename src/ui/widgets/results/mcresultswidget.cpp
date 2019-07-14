@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -94,6 +94,11 @@ void MCResultsWidget::setUi()
     m_scatter = MakeScatter();
     tabs->addTab(m_scatter, tr("Scatter Plot"));
 
+    if (m_data["controller"].toObject().contains("chart")) {
+        m_series_chart = MakeSeriesChart();
+        tabs->addTab(m_series_chart, tr("Series Chart"));
+    }
+
     m_save = new QPushButton(tr("Export Results"));
     connect(m_save, SIGNAL(clicked()), this, SLOT(ExportResults()));
 
@@ -159,9 +164,9 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         if (data["type"] == "Local Parameter") {
             if (!data.contains("index"))
                 continue;
-            //int index = data["index"].toString().split("|")[1].toInt();
-            /*xy_series->setColor(m_wrapper->Series(index)->color());
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
+            int index = data["index"].toString().split("|")[1].toInt();
+            xy_series->setColor(m_wrapper->Series(index)->color());
+            /*connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this](const QColor& color) { this->setAreaColor(index, color); });
             */
@@ -265,6 +270,69 @@ QPointer<QWidget> MCResultsWidget::MakeScatter()
     QJsonObject controller = m_data["controller"].toObject();
 
     return widget;
+}
+
+QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
+{
+    QPointer<ListChart> view = new ListChart;
+    connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
+        setLastDir(str);
+    });
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+    QJsonObject controller = m_data["controller"].toObject();
+    QJsonObject chart_block = controller["chart"].toObject();
+
+    view->Chart()->setZoomStrategy(ZoomStrategy::Z_Rectangular);
+    view->setXAxis(controller["xlabel"].toString());
+    view->setYAxis(controller["ylabel"].toString());
+    view->setName("serieschart");
+    view->setMinimumSize(300, 400);
+    QVector<qreal> x = ToolSet::String2DoubleVec(controller["x"].toString());
+
+    DataTable* table = new DataTable(controller["DependentModel"].toObject());
+    QVector<QList<QPointF>> points(controller["series_count"].toInt());
+
+    for (const QString& key : chart_block.keys()) {
+        QStringList values = chart_block.value(key).toString().split("|");
+        QVector<int> indicies = ToolSet::String2IntVec(key);
+
+        if (values.size() != indicies.size())
+            continue;
+
+        for (int j = 0; j < indicies.size(); ++j) {
+            QVector<qreal> y = ToolSet::String2DoubleVec(values[j]);
+            qreal x_0 = x[indicies[j]];
+            for (int i = 0; i < y.size(); ++i)
+                points[i] << QPointF(x_0, y[i]);
+        }
+    }
+
+    for (int i = 0; i < points.size(); ++i) {
+        QList<QPointF> pp;
+        for (int j = 0; j < table->rowCount(); ++j) {
+            pp << QPointF(x[j], table->data(i, j));
+        }
+        QColor color = (m_wrapper->Series(i)->color());
+
+        LineSeries* line = new LineSeries;
+        line->setColor(color);
+
+        ScatterSeries* scatter_series = new ScatterSeries;
+        scatter_series->setColor(color);
+        scatter_series->setBorderColor(color);
+
+        scatter_series->append(points[i]);
+        line->append(pp);
+
+        scatter_series->setMarkerSize(6);
+
+        view->addSeries(scatter_series, i, color, tr("Series %1").arg(i + 1));
+        view->addSeries(line, i, color, tr("Series %1").arg(i + 1));
+
+        view->setColor(i, color);
+    }
+    delete table;
+    return view;
 }
 
 void MCResultsWidget::UpdateBoxes()

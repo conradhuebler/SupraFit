@@ -101,7 +101,7 @@ void MonteCarloBatch::run()
     while (true) {
         if (m_interrupt)
             break;
-        QVector<QPair<QPointer<DataTable>, QPointer<DataTable>>> tables = m_parent->DemandCalc();
+        QHash<int, Pair> tables = m_parent->DemandCalc();
         int counter = 0;
         for (const QPair<QPointer<DataTable>, QPointer<DataTable>>& table : tables) {
             if (table.first && table.second) {
@@ -111,7 +111,7 @@ void MonteCarloBatch::run()
                 else
                     m_model->OverrideCheckedTable(table.second);
 
-                optimise();
+                optimise(tables.key(table));
                 counter++;
             } else
                 continue;
@@ -122,7 +122,7 @@ void MonteCarloBatch::run()
     delete m_fit_thread;
 }
 
-void MonteCarloBatch::optimise()
+void MonteCarloBatch::optimise(int key)
 {
     if (!m_model || m_interrupt) {
         qDebug() << "no model set";
@@ -144,7 +144,7 @@ void MonteCarloBatch::optimise()
     m_model->Calculate();
 
     m_model->setConverged(m_finished);
-    m_models << m_model->ExportModel(false, false); //;
+    m_models.insert(key, m_model->ExportModel(false, false)); //;
 
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
@@ -238,7 +238,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     qDebug() << "Starting MC Simulation with" << MaxSteps << "steps";
 #endif
 
-    QVector<Pair> block;
+    QHash<int, Pair> block;
     for (int step = 0; step < MaxSteps; ++step) {
         QPointer<DataTable> dep_table;
         if (original)
@@ -268,7 +268,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
             }
         }
 
-        block << Pair(indep_table, dep_table);
+        block.insert(step, Pair(indep_table, dep_table));
         if (block.size() == blocksize) {
             m_batch.enqueue(block);
             block.clear();
@@ -291,7 +291,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& thr
     m_steps = 0;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
-            m_models << threads[i]->Models();
+            m_models << threads[i]->Models().values();
             m_steps++;
             delete threads[i];
         }

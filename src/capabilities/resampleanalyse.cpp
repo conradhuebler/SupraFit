@@ -17,9 +17,9 @@
  * 
  */
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QHash>
 #include <QtCore/QMutexLocker>
-
-#include <QtWidgets/QApplication>
 
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
@@ -65,43 +65,58 @@ bool ResampleAnalyse::Pending() const
 void ResampleAnalyse::CrossValidation()
 {
     int type = m_controller["CXO"].toInt();
-    QVector<Pair> block;
+    QHash<int, Pair> block;
     int blocksize;
     int maxthreads = qApp->instance()->property("threads").toInt();
     QPointer<DataTable> table = new DataTable(m_model->DependentModel());
     QVector<QPointer<MonteCarloBatch>> threads;
+    QVector<QVector<qreal>> individual_results(m_model->DataPoints());
+    QList<qreal> x;
 
+    int index = 0;
     switch (type) {
     case 1:
         emit setMaximumSteps(m_model->DataPoints());
         blocksize = 1;
-        for (int i = m_model->DataPoints() - 1; i >= 0; --i) {
+        for (int i = 0; i < m_model->DataPoints(); ++i) {
             QPointer<DataTable> dep_table = new DataTable(table);
+            QVector<int> indicies = QVector<int>() << i;
             Vector vector = dep_table->DisableRow(i);
-            std::cout << vector.transpose() << " " << i << std::endl;
-            block << Pair(m_model->IndependentModel(), dep_table);
+            x << m_model->PrintOutIndependent(i);
+            // std::cout << vector.transpose() << " " << i << std::endl;
+
+            block.insert(index, Pair(m_model->IndependentModel(), dep_table));
+            m_job.insert(index, indicies);
             if (block.size() == blocksize) {
                 m_batch.enqueue(block);
                 block.clear();
             }
-            QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            index++;
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         }
         break;
     case 2:
         emit setMaximumSteps(m_model->DataPoints() * (m_model->DataPoints() - 1) / 2);
         blocksize = 25;
-        for (int i = 0; i < m_model->DataPoints(); ++i)
+        for (int i = 0; i < m_model->DataPoints(); ++i) {
+            x << m_model->PrintOutIndependent(i);
             for (int j = i + 1; j < m_model->DataPoints(); ++j) {
                 QPointer<DataTable> dep_table = new DataTable(table);
                 dep_table->DisableRow(i);
                 dep_table->DisableRow(j);
-                block << Pair(m_model->IndependentModel(), dep_table);
+                QVector<int> indicies = QVector<int>() << i << j;
+
+                block.insert(index, Pair(m_model->IndependentModel(), dep_table));
+                m_job.insert(index, indicies);
+
                 if (block.size() == blocksize) {
                     m_batch.enqueue(block);
                     block.clear();
                 }
-                QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+                index++;
+                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
             }
+        }
         break;
 
         // case CVType::LeaveManyOut:
@@ -123,14 +138,39 @@ void ResampleAnalyse::CrossValidation()
     }
 
     while (Pending()) {
-        QApplication::processEvents();
+        QCoreApplication::processEvents();
     }
+    QJsonObject chart_block;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
-            m_models << threads[i]->Models();
+
+            QHash<int, QJsonObject> models = threads[i]->Models();
+
+            for (const QJsonObject& model : models) {
+                int index = models.key(model);
+                QVector<int> indicies = m_job.value(index);
+
+                m_model->ImportModel(model);
+                m_model->Calculate();
+                QString points = QString();
+                for (int j : indicies) {
+                    points = points + ToolSet::DoubleList2String(m_model->ModelTable()->Row(j)) + "|";
+                }
+                points.truncate(points.size() - 1);
+                chart_block[ToolSet::IntVec2String(indicies)] = points;
+                m_models << model;
+            }
             delete threads[i];
         }
     }
+
+    m_controller["chart"] = chart_block;
+    m_controller["xlabel"] = m_model.data()->XLabel();
+    m_controller["ylabel"] = m_model.data()->YLabel();
+    m_controller["series_count"] = m_model->SeriesCount();
+    m_controller["x"] = ToolSet::DoubleList2String(x);
+    m_controller["DependentModel"] = m_model->DependentModel()->ExportTable(true);
+
     if (m_models.size()) {
         m_results = ToolSet::Model2Parameter(m_models);
         ToolSet::Parameter2Statistic(m_results, m_model.data());
@@ -160,7 +200,7 @@ void ResampleAnalyse::PlainReduction()
             model->detach();
             thread->setModel(model);
             addThread(thread);
-            QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         }
     } else if (m_controller["ReductionRuntype"].toInt() == 2 || m_controller["runtype"].toInt() == 3) {
         for (int i = 1; i < m_model->DataPoints() - 3; ++i) {
@@ -173,12 +213,12 @@ void ResampleAnalyse::PlainReduction()
             model->detach();
             thread->setModel(model);
             addThread(thread);
-            QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         }
     }
 
     while (Pending()) {
-        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
     QList<qreal> x;
     for (int i = 0; i < m_threads.size(); ++i) {

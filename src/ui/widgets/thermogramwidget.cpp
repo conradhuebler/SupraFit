@@ -485,7 +485,8 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
         m_peaks_end->setValue(m_peak_list[m_peak_list.size() - 1].end * m_spec.Step());
     }
     m_peak_count->setValue(m_peak_list.size());
-    FitBaseLine();
+    UpdatePeaks();
+    // FitBaseLine();
 }
 
 void ThermogramWidget::UpdateTable()

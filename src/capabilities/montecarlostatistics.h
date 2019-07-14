@@ -62,18 +62,16 @@ public:
     MonteCarloBatch(QPointer<AbstractSearchClass> parent);
     virtual ~MonteCarloBatch() override;
     virtual void run() override;
-    inline QList<QJsonObject> Models() const { return m_models; }
     inline bool Finished() const { return m_finished; }
     inline void setChecked(bool checked) { m_checked = checked; }
 
 private:
-    void optimise();
+    void optimise(int key = 0);
     NonLinearFitThread* m_fit_thread;
 
     QPointer<AbstractSearchClass> m_parent;
     bool m_finished, m_checked;
     QJsonObject m_controller;
-    QList<QJsonObject> m_models;
 };
 
 class MonteCarloStatistics : public AbstractSearchClass {

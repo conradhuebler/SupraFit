@@ -19,6 +19,9 @@
 
 #include "src/core/jsonhandler.h"
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QHash>
+
 #include "abstractsearchclass.h"
 
 AbstractSearchClass::AbstractSearchClass(QObject* parent)
@@ -76,12 +79,12 @@ QJsonObject AbstractSearchClass::Result() const
     return result;
 }
 
-QVector<Pair> AbstractSearchClass::DemandCalc()
+QHash<int, Pair> AbstractSearchClass::DemandCalc()
 {
     QMutexLocker lock(&mutex);
 
     if (m_batch.isEmpty())
-        return QVector<Pair>();
+        return QHash<int, Pair>();
     else
         return m_batch.dequeue();
 }

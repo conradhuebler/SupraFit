@@ -21,6 +21,7 @@
 
 #include "src/core/AbstractModel.h"
 
+#include <QtCore/QHash>
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
 #include <QtCore/QQueue>
@@ -32,18 +33,7 @@
 typedef QPair<QPointer<DataTable>, QPointer<DataTable>> Pair;
 
 class AbstractModel;
-/*
-class AbstractConfig {
 
-public:
-    inline AbstractConfig(QJsonObject config = OptimConfigBlock)
-        : optimizer_config(config)
-    {
-    }
-    inline ~AbstractConfig() {}
-    QJsonObject optimizer_config;
-};
-*/
 class AbstractSearchThread : public QObject, public QRunnable {
     Q_OBJECT
 
@@ -56,6 +46,7 @@ public:
     inline ~AbstractSearchThread() { m_model.clear(); }
     inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
     inline void setController(const QJsonObject& controller) { m_controller = controller; }
+    inline QHash<int, QJsonObject> Models() const { return m_models; }
 
 public slots:
     inline virtual void Interrupt() { m_interrupt = true; }
@@ -64,6 +55,7 @@ protected:
     QSharedPointer<AbstractModel> m_model;
     bool m_interrupt;
     QJsonObject m_controller;
+    QHash<int, QJsonObject> m_models;
 
 signals:
     void IncrementProgress(int msecs);
@@ -90,7 +82,7 @@ public:
     QJsonObject Result() const;
     void ExportResults(const QString& filename);
 
-    QVector<Pair> DemandCalc();
+    QHash<int, Pair> DemandCalc();
 
     virtual void clear() {}
 public slots:
@@ -105,7 +97,7 @@ protected:
     QThreadPool* m_threadpool;
     QList<QList<QPointF>> m_series;
     bool m_interrupt;
-    QQueue<QVector<Pair>> m_batch;
+    QQueue<QHash<int, Pair>> m_batch;
 
     virtual QJsonObject Controller() const { return m_controller; }
     QMutex mutex;

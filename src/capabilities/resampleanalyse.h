@@ -57,7 +57,7 @@ public slots:
 private:
     void addThread(QPointer<MonteCarloThread> thread);
     bool Pending() const;
-
+    QHash<int, QVector<int>> m_job;
     QVector<QPointer<MonteCarloThread>> m_threads;
     QJsonObject m_model_data;
 
