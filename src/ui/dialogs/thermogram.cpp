@@ -249,6 +249,8 @@ void Thermogram::setUi()
         setLastDir(str);
     });
 
+    m_data_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
+
     m_export_data = new QPushButton(tr("Export Table"));
     connect(m_export_data, &QPushButton::clicked, this, &Thermogram::ExportData);
 
@@ -459,6 +461,9 @@ void Thermogram::UpdateTable()
     m_data_view->addSeries(m_raw_series);
     if (m_dil_peaks.size())
         m_data_view->addSeries(m_dil_series);
+
+    m_data_view->setXAxis("Inject Number");
+    m_data_view->setYAxis("Heat q");
 }
 
 QString Thermogram::Content() const

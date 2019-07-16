@@ -69,6 +69,8 @@ ThermogramWidget::ThermogramWidget(QWidget* parent)
 void ThermogramWidget::setUi()
 {
     m_thermogram = new ChartView;
+    m_thermogram->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
+
     connect(m_thermogram, &ChartView::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
@@ -279,6 +281,7 @@ void ThermogramWidget::setUi()
     m_get_peaks_start = new QPushButton(tr("Select"));
     connect(m_get_peaks_start, &QPushButton::clicked, this, [this]() {
         m_get_time_from_thermogram = 1;
+        QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
         connect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
     });
 
@@ -290,6 +293,7 @@ void ThermogramWidget::setUi()
     m_get_peaks_end = new QPushButton(tr("Select"));
     connect(m_get_peaks_end, &QPushButton::clicked, this, [this]() {
         m_get_time_from_thermogram = 2;
+        QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
         connect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
     });
 
@@ -557,6 +561,8 @@ void ThermogramWidget::UpdatePlot()
 {
     fromSpectrum(&m_spec, m_thermogram_series);
     m_thermogram->addSeries(m_thermogram_series);
+    m_thermogram->setXAxis("time [s]");
+    m_thermogram->setYAxis("q [raw/s]");
 }
 
 void ThermogramWidget::UpdateLimits()
@@ -1149,6 +1155,9 @@ void ThermogramWidget::UpdatePeaks()
 
 void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& point2)
 {
+    if (!m_peak_edit_mode)
+        return;
+
     m_thermogram->setSelectStrategy(SelectStrategy::S_None);
     m_thermogram->setZoomStrategy(ZoomStrategy::Z_Rectangular);
 
@@ -1165,6 +1174,8 @@ void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& po
 
 void ThermogramWidget::PointDoubleClicked(const QPointF& point)
 {
+    QApplication::restoreOverrideCursor();
+
     disconnect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
     if (m_get_time_from_thermogram == 1) {
         m_peaks_start->setValue(point.x());
