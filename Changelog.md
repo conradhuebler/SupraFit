@@ -1,5 +1,7 @@
 # SupraFit 2.0 pre-Alpha
 
+- some cosmetic changes in thermogram widget
+- addition of some thermogram manipulation guidelines
 - thermogram zoom with mouse wheel
 - automatic resize of integration range (change in sign or threshold (iterative - fix point problem) )
 - variable integration range within peaks

@@ -166,6 +166,11 @@ void ConfigDialog::createGeneralTab()
     m_auto_thermo_dialog->setChecked(qApp->instance()->property("auto_thermo_dialog").toBool());
     layout->addWidget(m_auto_thermo_dialog);
 
+    m_thermogram_guideline = new QCheckBox(tr("Show guidelines in Thermogram Dialog"));
+    m_thermogram_guideline->setToolTip(tr("If checked, some guidelines in the Thermogram will be shown. Errors will shown regardless this option."));
+    m_thermogram_guideline->setChecked(qApp->instance()->property("thermogram_guidelines").toBool());
+    layout->addWidget(m_thermogram_guideline);
+
     m_ColorFullSearch = new QCheckBox(tr("Colorfull global search table"));
     m_ColorFullSearch->setToolTip(tr("Indicate fully optimised models in global search with light green backgroud color, not-fully optimised models with light yellow background color and invalid models with a light red background color."));
     m_ColorFullSearch->setChecked(qApp->instance()->property("ColorFullSearch").toBool());
@@ -381,6 +386,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("FastConfidenceScaling", m_FastConfidenceScaling->value());
     qApp->instance()->setProperty("FastConfidenceSteps", m_FastConfidenceSteps->value());
     qApp->instance()->setProperty("auto_thermo_dialog", m_auto_thermo_dialog->isChecked());
+    qApp->instance()->setProperty("thermogram_guidelines", m_thermogram_guideline->isChecked());
 
     QDialog::accept();
 }

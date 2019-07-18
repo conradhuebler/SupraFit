@@ -85,7 +85,7 @@ public:
 signals:
     void IntegrationChanged();
     void PeaksChanged();
-    void Offset();
+    void CalibrationChanged(double value);
 
 public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }
@@ -106,6 +106,9 @@ private:
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
     void CalibrateSystem();
     void ApplyCalibration();
+    void ResetGuideLabel();
+
+    void setGuideText(const QString& str);
 
     QComboBox *m_baseline_type, *m_fit_type, *m_integration_range;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity, *m_iterations;
@@ -118,7 +121,7 @@ private:
     ChartView* m_thermogram;
     //QtCharts::QChart* m_data;
     QPlainTextEdit* m_baseline_polynom;
-    QLabel* m_calibration_label;
+    QLabel *m_calibration_label, *m_guide_label;
     QSplitter* m_splitter;
     LineSeries *m_thermogram_series, *m_lower, *m_upper, *m_calibration_line, *m_peak_start_line, *m_peak_end_line;
     ScatterSeries *m_base_grids, *m_calibration_grid, *m_baseline_series, *m_baseline_ignored_series;
@@ -152,7 +155,6 @@ private slots:
     void PeakChanged(int row, int column, int value);
     void AddRectanglePeak(const QPointF& point1, const QPointF& point2);
     void PointDoubleClicked(const QPointF& point);
-    void Divide2Peaks();
     void scaleUp();
     void scaleDown();
 };

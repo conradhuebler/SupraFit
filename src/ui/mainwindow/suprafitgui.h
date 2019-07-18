@@ -227,7 +227,8 @@ private:
                                                    << "series_confidence"
                                                    << "auto_thermo_dialog"
                                                    << "calibration_start"
-                                                   << "calibration_heat";
+                                                   << "calibration_heat"
+                                                   << "thermogram_guidelines";
 
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;

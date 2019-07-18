@@ -1039,6 +1039,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("dirlevel") == QVariant())
         qApp->instance()->setProperty("dirlevel", 1);
 
+    if (qApp->instance()->property("thermogram_guidelines") == QVariant())
+        qApp->instance()->setProperty("thermogram_guidelines", true);
+
     if (qApp->instance()->property("p_value") == QVariant())
         qApp->instance()->setProperty("p_value", 0.95);
 

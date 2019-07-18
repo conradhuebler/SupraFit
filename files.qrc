@@ -30,6 +30,11 @@
         <file>icons/document-save-as.png</file>
         <file>icons/document-close.png</file>
         <file>icons/edit-clear-history.png</file>
+        <file>icons/dialog-ok-apply.png</file>
+        <file>icons/edit-select.png</file>
+        <file>icons/license.png</file>
         <file>./LICENSE.md</file>
+        <file>./README.md</file>
+        <file>./Changelog.md</file>
     </qresource>
 </RCC>

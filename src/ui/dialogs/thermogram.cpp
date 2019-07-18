@@ -42,6 +42,7 @@
 #include "libpeakpick/peakpick.h"
 
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/instance.h"
 #include "src/ui/widgets/thermogramwidget.h"
 
 #include "src/core/toolset.h"
@@ -65,17 +66,12 @@ void Thermogram::setUi()
         this->UpdateTable();
     });
 
-    connect(m_experiment, &ThermogramWidget::Offset, this, [this]() {
-        this->m_exp_peaks = this->m_experiment->Peaks();
-        this->UpdateTable();
-    });
-
     m_dilution = new ThermogramWidget(this);
     connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, [this]() {
         this->m_dil_peaks = this->m_dilution->Peaks();
         this->UpdateTable();
     });
-    connect(m_dilution, &ThermogramWidget::Offset, this, [this]() {
+    connect(m_dilution, &ThermogramWidget::CalibrationChanged, this, [this](double val) {
         this->m_dil_peaks = this->m_dilution->Peaks();
         this->UpdateTable();
     });
@@ -292,6 +288,15 @@ void Thermogram::setUi()
     QSettings settings;
     settings.beginGroup("thermogram_dialog");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
+
+    connect(m_experiment, &ThermogramWidget::CalibrationChanged, this, [this](double val) {
+        if (val == 0)
+            m_scale->setCurrentText(QString::number(cal2joule));
+        else
+            m_scale->setCurrentText("1");
+        this->m_exp_peaks = this->m_experiment->Peaks();
+        this->UpdateTable();
+    });
 }
 
 Thermogram::~Thermogram()
@@ -459,6 +464,7 @@ void Thermogram::UpdateTable()
 
     m_data_view->addSeries(m_thm_series);
     m_data_view->addSeries(m_raw_series);
+
     if (m_dil_peaks.size())
         m_data_view->addSeries(m_dil_series);
 
@@ -523,7 +529,7 @@ void Thermogram::setDilutionFile(QString filename)
         original = LoadXYFile(filename);
         m_dilution->setFileType(ThermogramWidget::FileType::RAW);
         m_dilution->setThermogram(&original);
-        m_dilution->PickPeaks();
+        //        m_dilution->PickPeaks();
     }
     m_dil_therm = original;
     m_dil_file->setText(filename);
