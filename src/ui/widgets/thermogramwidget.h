@@ -21,6 +21,7 @@
 
 #include <QtCore/QRunnable>
 
+#include <QtWidgets/QTableWidgetItem>
 #include <QtWidgets/QWidget>
 
 #include <QtCharts/QChart>
@@ -53,6 +54,21 @@ public:
 private:
 };
 */
+
+class PeakRule : public QTableWidgetItem {
+public:
+    PeakRule(const QString& str)
+        : QTableWidgetItem(str)
+    {
+    }
+
+    bool operator<(const QTableWidgetItem& other) const
+    {
+        //qDebug() << text().toDouble() <<  other.text().toDouble();
+        return (this->text().toDouble() < other.text().toDouble());
+    }
+};
+
 class ThermogramWidget : public QWidget {
     Q_OBJECT
 
@@ -115,7 +131,7 @@ private:
     QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
-    QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick;
+    QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick, *m_convert_rules, *m_load_rules, *m_write_rules;
     QCheckBox *m_limits, *m_smooth, *m_poly_slow;
     QTableWidget *m_table, *m_peak_rule_list;
     ChartView* m_thermogram;
@@ -157,4 +173,7 @@ private slots:
     void PointDoubleClicked(const QPointF& point);
     void scaleUp();
     void scaleDown();
+    void ConvertRules();
+    void LoadRules();
+    void WriteRules();
 };

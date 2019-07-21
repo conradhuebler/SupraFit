@@ -129,34 +129,68 @@ void ThermogramWidget::setUi()
     connect(action, &QAction::triggered, m_peak_rule_list, [this]() {
         int rows = m_peak_rule_list->rowCount();
         m_peak_rule_list->setRowCount(m_peak_rule_list->rowCount() + 1);
-        QTableWidgetItem* item = new QTableWidgetItem(QString::number(m_peaks_start->value()));
+        PeakRule* item = new PeakRule(QString::number(m_peaks_start->value()));
         m_peak_rule_list->setItem(rows, 0, item);
-        item = new QTableWidgetItem(QString::number(m_peaks_time->value()));
+        item = new PeakRule(QString::number(m_peaks_time->value()));
         m_peak_rule_list->setItem(rows, 1, item);
-        m_current_peaks_rule = rows;
+        //m_peak_rule_list->setSortingEnabled(true);
+        m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+        m_current_peaks_rule = m_peak_rule_list->row(item);
     });
     m_peak_rule_list->addAction(action);
 
-    action = new QAction("Remove (last) Rule");
+    action = new QAction("Remove Rule");
     action->setIcon(Icon("trash-empty"));
     connect(action, &QAction::triggered, m_peak_rule_list, [this]() {
         if (m_peak_rule_list->rowCount() > 1) {
-            //int rows = m_peak_rule_list->rowCount() -2;
-            m_peak_rule_list->setRowCount(m_peak_rule_list->rowCount() - 1);
-            m_current_peaks_rule = 0;
+            int peak = m_peak_rule_list->currentRow();
+            if (peak < m_peak_rule_list->rowCount())
+                m_peak_rule_list->removeRow(peak);
+            if (m_current_peaks_rule && peak > m_current_peaks_rule)
+                m_current_peaks_rule--;
         }
     });
     m_peak_rule_list->addAction(action);
 
-    connect(m_peak_rule_list, &QTableWidget::doubleClicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakRuleDoubleClicked));
+    connect(m_peak_rule_list, &QTableWidget::clicked, this, QOverload<const QModelIndex&>::of(&ThermogramWidget::PeakRuleDoubleClicked));
+    connect(m_peak_rule_list, &QTableWidget::itemChanged, m_peak_rule_list, [this]() {
+        m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+    });
 
     QStringList header = QStringList() << "Start Time\n[s]"
                                        << "Peak Duration\n[s]";
     m_peak_rule_list->setHorizontalHeaderLabels(header);
 
+    m_convert_rules = new QPushButton();
+    m_convert_rules->setFlat(true);
+    m_convert_rules->setToolTip(tr("Convert the current peak list into peak rules."));
+    m_convert_rules->setIcon(Icon("document-import"));
+    connect(m_convert_rules, &QPushButton::clicked, this, &ThermogramWidget::ConvertRules);
+
+    m_load_rules = new QPushButton;
+    m_load_rules->setFlat(true);
+    m_load_rules->setToolTip(tr("Load a peak rule list from file."));
+    m_load_rules->setIcon(Icon("document-open"));
+    connect(m_load_rules, &QPushButton::clicked, this, &ThermogramWidget::LoadRules);
+
+    m_write_rules = new QPushButton;
+    m_write_rules->setFlat(true);
+    m_write_rules->setToolTip(tr("Save the current peak rules to file."));
+    m_write_rules->setIcon(Icon("document-save-as"));
+    connect(m_write_rules, &QPushButton::clicked, this, &ThermogramWidget::WriteRules);
+
+    QGridLayout* grid = new QGridLayout;
+    grid->addWidget(m_convert_rules, 0, 0);
+    grid->addWidget(m_load_rules, 0, 1);
+    grid->addWidget(m_write_rules, 0, 2);
+    grid->addWidget(m_peak_rule_list, 1, 0, 1, 3);
+
+    QWidget* widget = new QWidget;
+    widget->setLayout(grid);
+
     QTabWidget* peaks_tab = new QTabWidget;
     peaks_tab->addTab(m_table, tr("Peak List"));
-    peaks_tab->addTab(m_peak_rule_list, tr("Peak-Pick Rules"));
+    peaks_tab->addTab(widget, tr("Peak  Rules"));
 
     QHBoxLayout* hlayout = new QHBoxLayout;
 
@@ -1022,6 +1056,8 @@ void ThermogramWidget::PeakRuleDoubleClicked(const QModelIndex& index)
     m_current_peaks_rule = peak;
     QTableWidgetItem* item = m_peak_rule_list->item(index.row(), 0);
     m_peaks_start->setValue(item->data(Qt::DisplayRole).toDouble());
+    m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+
     // PeakDoubleClicked(peak);
 }
 
@@ -1479,4 +1515,82 @@ void ThermogramWidget::ResetGuideLabel()
         m_guide_label->setText("You are in standard mode. In addition to the SupraFit chart interaction, the <b>mouse wheel</b> can be used to zoom in and out, where the ratio of zooming depends on the actual positon of the curser in the chart. See the SupraFit Handbook for details. And <b>double click</b> in the chart selects the peak in the table.\nRegarding the units in this tabulator: They are all in the units observed by your calorimeter. If they are originally for example in cal, please mind the scaling factor to convert them into J. If they are already in J, since you are using a calibration peak, set the scaling factor to 1 (this may have been done automatically, but always check).");
     else
         m_guide_label->clear();
+}
+
+void ThermogramWidget::ConvertRules()
+{
+    m_peak_rule_list->clear();
+    m_peak_rule_list->setRowCount(m_peak_list.size());
+
+    QStringList header = QStringList() << "Start Time\n[s]"
+                                       << "Peak Duration\n[s]";
+    m_peak_rule_list->setHorizontalHeaderLabels(header);
+
+    for (int i = 0; i < m_peak_list.size(); ++i) {
+        PeakRule* item = new PeakRule(QString::number((m_peak_list[i].start) * m_spec.Step()));
+        m_peak_rule_list->setItem(i, 0, item);
+        item = new PeakRule(QString::number((m_peak_list[i].end - m_peak_list[i].start + 1) * m_spec.Step()));
+        m_peak_rule_list->setItem(i, 1, item);
+    }
+    m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+}
+
+void ThermogramWidget::LoadRules()
+{
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
+    if (filename.isEmpty())
+        return;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadWrite))
+        return;
+
+    m_peak_rule_list->clear();
+    m_peak_rule_list->setRowCount(1);
+    QStringList header = QStringList() << "Start Time\n[s]"
+                                       << "Peak Duration\n[s]";
+    m_peak_rule_list->setHorizontalHeaderLabels(header);
+
+    QStringList blob = QString(file.readAll()).split("\n");
+    int rows = 0;
+    for (const QString& str : qAsConst(blob)) {
+        if (str.isEmpty() || str.isNull())
+            continue;
+
+        QStringList line = str.simplified().split(" ");
+        if (line.size() == 2 && !str.contains("#")) {
+            m_peak_rule_list->setRowCount(rows + 1);
+            PeakRule* item = new PeakRule(line[0]);
+            m_peak_rule_list->setItem(rows, 0, item);
+
+            item = new PeakRule(line[1]);
+            m_peak_rule_list->setItem(rows, 1, item);
+            rows++;
+        }
+    }
+    m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+}
+
+void ThermogramWidget::WriteRules()
+{
+    QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
+    if (filename.isEmpty())
+        return;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadWrite))
+        return;
+
+    QTextStream stream(&file);
+    stream << QString("#Start Time") + "\t" + " Peak Duration " + "\n";
+    stream << QString("#[s]") + "\t" + " [s] " + "\n";
+
+    for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
+        QTableWidgetItem* item = (m_peak_rule_list->item(i, 0));
+        stream << item->data(Qt::DisplayRole).toString() << "\t";
+        item = m_peak_rule_list->item(i, 1);
+        stream << item->data(Qt::DisplayRole).toString();
+        if (i < m_peak_rule_list->rowCount() - 1)
+            stream << "\n";
+    }
 }
