@@ -494,14 +494,20 @@ QWidget* StatisticDialog::CVWidget()
     QGridLayout* layout = new QGridLayout;
     m_wgs_loo = new QRadioButton(tr("Leave-One-Out"));
     m_wgs_l2o = new QRadioButton(tr("Leave-Two-Out"));
+    m_wgs_lxo = new QRadioButton(tr("Leave-Many-Out"));
+    m_cv_lxo = new QSpinBox;
+    m_cv_lxo->setMinimum(1);
+    m_cv_lxo->setMaximum(10);
     m_wgs_loo->setChecked(true);
     layout->addWidget(m_wgs_loo, 0, 0);
     layout->addWidget(m_wgs_l2o, 1, 0);
+    layout->addWidget(m_wgs_lxo, 2, 0);
+    layout->addWidget(m_cv_lxo, 2, 1);
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
 
-    layout->addWidget(m_cross_validate, 2, 0);
-    layout->addWidget(m_reduction, 3, 0);
+    layout->addWidget(m_cross_validate, 3, 0, 1, 2);
+    layout->addWidget(m_reduction, 4, 0, 1, 2);
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
         emit RunCalculation(RunCrossValidation());
     });
@@ -622,9 +628,12 @@ QJsonObject StatisticDialog::RunCrossValidation() const
     controller["method"] = SupraFit::Method::CrossValidation;
     if (m_wgs_loo->isChecked())
         controller["CXO"] = 1;
-    else
+    else if (m_wgs_l2o->isChecked())
         controller["CXO"] = 2;
-
+    else {
+        controller["CXO"] = 3;
+        controller["X"] = m_cv_lxo->value();
+    }
     return controller;
 }
 

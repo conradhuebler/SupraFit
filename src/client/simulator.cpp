@@ -65,7 +65,7 @@ QStringList Simulator::Generate()
             return filelist;
     }
 
-    if (LoadFile())
+    if (!LoadFile())
         return filelist;
 
     if (m_toplevel.isEmpty())

@@ -112,7 +112,13 @@ const QJsonObject ResampleConfigBlock{
     { "method", SupraFit::Method::CrossValidation }, // int either SupraFit::Method::CrossValidation or SupraFit::Method::ReductionAnalyse
 
     /* Leave X-Out Cross Validation */
-    { "CXO", 1 }, // int
+    { "CXO", 1 }, // int 1 - Leave One Out; 2 - Leave Two Out; 3 - Leave Many Out - Please define via
+
+    /* Leave X-Out */
+    { "X", 3 }, // int, define how many have to be omitted
+
+    /* Maximal number of steps to be evaluated, usefull for LXO CV, where many combination are possible */
+    { "MaxSteps", 0 }, // int, 0 -> every combinition will be tested
 
     /* Set Runtype for Reduction Analysis */
     { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards

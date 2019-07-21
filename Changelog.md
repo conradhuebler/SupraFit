@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- add leave-many-out cross validation
 - some cosmetic changes in thermogram widget
 - addition of some thermogram manipulation guidelines
 - thermogram zoom with mouse wheel
