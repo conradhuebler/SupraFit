@@ -18,11 +18,13 @@
  */
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDateTime>
 #include <QtCore/QHash>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QRandomGenerator>
 
 #include "src/core/AbstractModel.h"
+#include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 
@@ -129,12 +131,8 @@ void ResampleAnalyse::CrossValidation()
 
         auto IncreaseVector = [this](QVector<int>& vector, int points) {
             for (int i = vector.size() - 1; i >= 0; --i) {
-                if (vector.size() == 3) {
-                    if (vector[0] == 0 && vector[1] == 19 && vector[2] == 19)
-                        qDebug() << "lala";
-                }
-                if (vector[i] < points - 1) {
 
+                if (vector[i] < points - 1) {
                     int value = vector[i];
                     while (vector.contains(value) && value < points - 1)
                         value++;
@@ -150,8 +148,6 @@ void ResampleAnalyse::CrossValidation()
                             value++;
                         if (value + 1 < points)
                             vector[i] = value + 1;
-                        //else
-                        //        qDebug() << vector << value + 1;
                     } else
                         vector[i] = 0;
                 }
@@ -163,6 +159,7 @@ void ResampleAnalyse::CrossValidation()
         int points = m_model->DataPoints();
         int end = X * (points - 1);
         int factor = m_controller["MapSizeFactor"].toInt();
+        int maxsteps = Factorial(points) / (Factorial(X) * Factorial(points - X));
 
         if (X >= points - 1) {
             emit Message(tr("LXO exceeds DataPoints!"));
@@ -177,6 +174,52 @@ void ResampleAnalyse::CrossValidation()
             vector[i] = i;
 
         emit Message(tr("Map generation!"));
+        qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+        int run = 0;
+        while (/*run < steps && */ run < maxsteps) {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+            QVector<int> vector;
+            while (vector.size() < X) {
+                int index = QRandomGenerator::global()->bounded(0, points);
+                if (vector.contains(index))
+                    continue;
+                vector << index;
+            }
+            std::sort(vector.begin(), vector.end());
+            if (vector_block.contains(vector))
+                continue;
+            vector_block << vector;
+
+            run++;
+        }
+        qint64 t1 = QDateTime::currentMSecsSinceEpoch();
+        qDebug() << t1 - t0 << " msecs" << vector_block.size();
+
+        /*for (int i = 0; i < vector_block.size(); ++i) {
+            QVector<int> vector = vector_block[i];
+
+            QPointer<DataTable> dep_table = new DataTable(table);
+            QVector<int> indicies;
+            for (int i = 0; i < vector.size(); ++i) {
+                dep_table->DisableRow(vector[i]);
+                indicies << vector[i];
+            }
+
+            block.insert(index, Pair(m_model->IndependentModel(), dep_table));
+            m_job.insert(index, indicies);
+
+            if (block.size() == blocksize) {
+                m_batch.enqueue(block);
+                block.clear();
+            }
+            index++;
+        }
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);*/
+
+        vector_block.clear();
+
+        t0 = QDateTime::currentMSecsSinceEpoch();
         bool loop = true;
         while (loop) {
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -193,6 +236,10 @@ void ResampleAnalyse::CrossValidation()
             loop = sum < end && (vector_block.size() < factor * steps);
         }
 
+        t1 = QDateTime::currentMSecsSinceEpoch();
+        qDebug() << t1 - t0 << " msecs" << vector_block.size();
+
+        /*
         if (vector_block.size() < steps) {
 
             emit Message(tr("Running all jobs!"));
@@ -248,7 +295,7 @@ void ResampleAnalyse::CrossValidation()
                 index++;
             }
         }
-
+*/
         break;
     }
     emit setMaximumSteps(m_batch.size());

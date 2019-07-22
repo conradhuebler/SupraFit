@@ -51,7 +51,7 @@ qreal Stddev(const QVector<qreal>& vector, int end = 0, double average = 0);
 
 qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end);
 
-int Factorial(int n);
+qint64 Factorial(qint64 n);
 
 namespace Cubic {
 qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);

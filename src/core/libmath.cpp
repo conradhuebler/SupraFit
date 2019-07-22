@@ -270,6 +270,13 @@ qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y)
     return integral;
 }
 
+qint64 Factorial(qint64 n)
+{
+    if (n == 0)
+        return 1;
+    return n * Factorial(n - 1);
+}
+
 qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end)
 {
     QVector<qreal> param = model.data()->OptimizeParameters();
