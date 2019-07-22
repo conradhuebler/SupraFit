@@ -305,6 +305,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& thr
 void MonteCarloStatistics::clear()
 {
     m_models.clear();
+    AbstractSearchClass::clear();
 }
 
 void MonteCarloStatistics::Interrupt()

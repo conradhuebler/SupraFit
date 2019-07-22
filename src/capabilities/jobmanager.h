@@ -118,7 +118,10 @@ const QJsonObject ResampleConfigBlock{
     { "X", 3 }, // int, define how many have to be omitted
 
     /* Maximal number of steps to be evaluated, usefull for LXO CV, where many combination are possible */
-    { "MaxSteps", 0 }, // int, 0 -> every combinition will be tested
+    { "MaxSteps", 1e4 }, // int, 0 -> every combinition will be tested
+
+    /* Factor to define maximal map size: MapSize = MapSizeFactor*MaxSteps */
+    { "MapSizeFactor", 20 }, // int
 
     /* Set Runtype for Reduction Analysis */
     { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards
@@ -208,4 +211,5 @@ signals:
     void prepare(int count);
     void ShowResult(SupraFit::Method type, int index);
     void Interrupt();
+    void Message(const QString& str);
 };

@@ -125,9 +125,11 @@ public slots:
     void HideWidget();
     void ShowWidget();
     void Attention();
+    void Message(const QString& str);
 
 private:
     void setUi();
+    void clearMessages();
     QString FOutput() const;
 
     QWidget* MonteCarloWidget();
@@ -139,14 +141,14 @@ private:
     QTabWidget* m_tab_widget;
     QDoubleSpinBox *m_varianz_box, *m_wgs_increment, *m_wgs_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_wgs_f_value;
     ScientificBox* m_wgs_err_conv;
-    QSpinBox *m_cv_lxo, *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
+    QSpinBox *m_cv_map, *m_cv_runs, *m_cv_lxo, *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
     QCheckBox *m_original, *m_bootstrap, *m_use_checked, *m_store_wgsearch;
     QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
     QVector<QDoubleSpinBox*> m_indepdent_variance;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
     QProgressBar *m_progress, *m_main_progress;
-    QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info;
+    QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info, *m_message_box;
     QRadioButton *m_wgs_loo, *m_wgs_l2o, *m_wgs_lxo;
     QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user;
     QMutex mutex;

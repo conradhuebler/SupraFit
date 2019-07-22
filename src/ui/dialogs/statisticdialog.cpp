@@ -103,9 +103,11 @@ void StatisticDialog::setUi()
 
     layout->addWidget(m_tab_widget);
     m_time_info = new QLabel;
+    m_message_box = new QLabel;
     m_progress = new QProgressBar;
     m_main_progress = new QProgressBar;
     layout->addWidget(m_time_info);
+    layout->addWidget(m_message_box);
 
     m_use_checked = new QCheckBox(tr("Consider Only Checked Tabs."));
     m_use_checked->setChecked(false);
@@ -245,7 +247,7 @@ QWidget* StatisticDialog::MonteCarloWidget()
     layout->addWidget(m_mc, 5, 0, 1, 2);
 
     connect(m_mc, &QPushButton::clicked, this, [this]() {
-        //emit MCStatistic(getMCConfig());
+        clearMessages();
         emit RunCalculation(RunMonteCarlo());
     });
 
@@ -386,6 +388,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     layout->addWidget(m_cv);
 
     connect(m_cv, &QPushButton::clicked, this, [this]() {
+        clearMessages();
         emit RunCalculation(RunGridSearch());
     });
     cv_widget->setLayout(layout);
@@ -482,6 +485,7 @@ QWidget* StatisticDialog::ModelComparison()
     layout->addWidget(m_moco, 5, 0, 1, 3);
 
     connect(m_moco, &QPushButton::clicked, this, [this]() {
+        clearMessages();
         emit RunCalculation(RunModelComparison());
     });
     mo_widget->setLayout(layout);
@@ -494,28 +498,54 @@ QWidget* StatisticDialog::CVWidget()
     QGridLayout* layout = new QGridLayout;
     m_wgs_loo = new QRadioButton(tr("Leave-One-Out"));
     m_wgs_l2o = new QRadioButton(tr("Leave-Two-Out"));
-    m_wgs_lxo = new QRadioButton(tr("Leave-Many-Out"));
+    m_wgs_lxo = new QRadioButton(tr("Leave-X-Out"));
+
     m_cv_lxo = new QSpinBox;
     m_cv_lxo->setMinimum(1);
-    m_cv_lxo->setMaximum(10);
+    m_cv_lxo->setValue(3);
+    m_cv_lxo->setPrefix(tr("X = "));
+
+    m_cv_runs = new QSpinBox;
+    m_cv_runs->setMinimum(1);
+    m_cv_runs->setMaximum(1e10);
+    m_cv_runs->setValue(1e4);
+    m_cv_runs->setSuffix(tr(" steps"));
+
+    m_cv_map = new QSpinBox;
+    m_cv_map->setMinimum(1);
+    m_cv_map->setMaximum(1e3);
+    m_cv_map->setValue(20);
+    m_cv_map->setSuffix(tr(" Map Size Factor"));
+
     m_wgs_loo->setChecked(true);
+
     layout->addWidget(m_wgs_loo, 0, 0);
     layout->addWidget(m_wgs_l2o, 1, 0);
     layout->addWidget(m_wgs_lxo, 2, 0);
     layout->addWidget(m_cv_lxo, 2, 1);
+    layout->addWidget(m_cv_runs, 2, 2);
+    layout->addWidget(m_cv_map, 2, 3);
+
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
 
-    layout->addWidget(m_cross_validate, 3, 0, 1, 2);
-    layout->addWidget(m_reduction, 4, 0, 1, 2);
+    layout->addWidget(m_cross_validate, 3, 0, 1, 4);
+    layout->addWidget(m_reduction, 4, 0, 1, 4);
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
+        clearMessages();
         emit RunCalculation(RunCrossValidation());
     });
     connect(m_reduction, &QPushButton::clicked, this, [this]() {
+        clearMessages();
         emit RunCalculation(RunReductionAnalyse());
     });
     widget->setLayout(layout);
     return widget;
+}
+
+void StatisticDialog::clearMessages()
+{
+    m_message_box->clear();
 }
 
 QJsonObject StatisticDialog::RunGridSearch() const
@@ -633,6 +663,8 @@ QJsonObject StatisticDialog::RunCrossValidation() const
     else {
         controller["CXO"] = 3;
         controller["X"] = m_cv_lxo->value();
+        controller["MaxSteps"] = m_cv_runs->value();
+        controller["MapSizeFactor"] = m_cv_map->value();
     }
     return controller;
 }
@@ -711,6 +743,7 @@ void StatisticDialog::ShowWidget()
 
 void StatisticDialog::HideWidget()
 {
+    clearMessages();
     hide();
 
     return;
@@ -734,6 +767,11 @@ void StatisticDialog::Update()
     else if (m_mc_std->isChecked())
         m_varianz_box->setValue(m_model.data()->StdDeviation());
     CalculateError();
+}
+
+void StatisticDialog::Message(const QString& str)
+{
+    m_message_box->setText(str);
 }
 
 void StatisticDialog::EnableWidgets()

@@ -88,3 +88,14 @@ QHash<int, Pair> AbstractSearchClass::DemandCalc()
     else
         return m_batch.dequeue();
 }
+
+void AbstractSearchClass::clear()
+{
+    while (!m_batch.isEmpty()) {
+        QHash<int, Pair> stored = m_batch.dequeue();
+        for (auto i : stored) {
+            delete i.first;
+            delete i.second;
+        }
+    }
+}

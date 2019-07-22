@@ -20,6 +20,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QHash>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QRandomGenerator>
 
 #include "src/core/AbstractModel.h"
 #include "src/core/minimizer.h"
@@ -77,9 +78,10 @@ void ResampleAnalyse::CrossValidation()
     for (int i = 0; i < m_model->DataPoints(); ++i) {
         x << m_model->PrintOutIndependent(i);
     }
+    bool more_message = true;
     switch (type) {
     case 1:
-        emit setMaximumSteps(m_model->DataPoints());
+        //emit setMaximumSteps(m_model->DataPoints());
         blocksize = 1;
         for (int i = 0; i < m_model->DataPoints(); ++i) {
             QPointer<DataTable> dep_table = new DataTable(table);
@@ -98,8 +100,8 @@ void ResampleAnalyse::CrossValidation()
         }
         break;
     case 2:
-        emit setMaximumSteps(m_model->DataPoints() * (m_model->DataPoints() - 1) / 2);
-        blocksize = 25;
+        // emit setMaximumSteps(m_model->DataPoints() * (m_model->DataPoints() - 1) / 2);
+        blocksize = 1;
         for (int i = 0; i < m_model->DataPoints(); ++i) {
             //x << m_model->PrintOutIndependent(i);
             for (int j = i + 1; j < m_model->DataPoints(); ++j) {
@@ -127,7 +129,12 @@ void ResampleAnalyse::CrossValidation()
 
         auto IncreaseVector = [this](QVector<int>& vector, int points) {
             for (int i = vector.size() - 1; i >= 0; --i) {
+                if (vector.size() == 3) {
+                    if (vector[0] == 0 && vector[1] == 19 && vector[2] == 19)
+                        qDebug() << "lala";
+                }
                 if (vector[i] < points - 1) {
+
                     int value = vector[i];
                     while (vector.contains(value) && value < points - 1)
                         value++;
@@ -135,10 +142,16 @@ void ResampleAnalyse::CrossValidation()
                     break;
                 } else if (vector[i] == points - 1) {
                     if (i) {
-                        int value = 0;
+                        int back = 1;
+                        while (vector[i - back] == points - 1)
+                            back++;
+                        int value = vector[i - back];
                         while (vector.contains(value))
                             value++;
-                        vector[i] = value;
+                        if (value + 1 < points)
+                            vector[i] = value + 1;
+                        //else
+                        //        qDebug() << vector << value + 1;
                     } else
                         vector[i] = 0;
                 }
@@ -149,46 +162,96 @@ void ResampleAnalyse::CrossValidation()
         int steps = m_controller["MaxSteps"].toInt();
         int points = m_model->DataPoints();
         int end = X * (points - 1);
-        if (!steps) {
-            QVector<int> vector(X, 0);
-            for (int i = 0; i < X; ++i)
-                vector[i] = i;
-            // qDebug() << vector;
-            bool loop = true;
-            while (loop) {
-                IncreaseVector(vector, points);
+        int factor = m_controller["MapSizeFactor"].toInt();
 
-                int sum = 0;
-                for (int i = 0; i < vector.size(); ++i)
-                    sum += vector[i];
-                loop = sum < end;
+        if (X >= points - 1) {
+            emit Message(tr("LXO exceeds DataPoints!"));
+            more_message = false;
+            break;
+        }
+        QVector<QVector<int>> vector_block;
+        QVector<int> used_indicies;
 
-                if (vector.toList().toSet().size() == vector.size()) {
-                    //     qDebug() << vector;
-                    QPointer<DataTable> dep_table = new DataTable(table);
-                    QVector<int> indicies;
-                    for (int i = 0; i < vector.size(); ++i) {
-                        dep_table->DisableRow(vector[i]);
-                        indicies << vector[i];
-                    }
+        QVector<int> vector(X, 0);
+        for (int i = 0; i < X; ++i)
+            vector[i] = i;
 
-                    block.insert(index, Pair(m_model->IndependentModel(), dep_table));
-                    m_job.insert(index, indicies);
+        emit Message(tr("Map generation!"));
+        bool loop = true;
+        while (loop) {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                    if (block.size() == blocksize) {
-                        m_batch.enqueue(block);
-                        block.clear();
-                    }
-                    index++;
+            if (vector.toList().toSet().size() == vector.size()) {
+                vector_block << vector;
+            }
+
+            IncreaseVector(vector, points);
+
+            int sum = 0;
+            for (int i = 0; i < vector.size(); ++i)
+                sum += vector[i];
+            loop = sum < end && (vector_block.size() < factor * steps);
+        }
+
+        if (vector_block.size() < steps) {
+
+            emit Message(tr("Running all jobs!"));
+
+            for (int i = 0; i < vector_block.size(); ++i) {
+                QVector<int> vector = vector_block[i];
+
+                QPointer<DataTable> dep_table = new DataTable(table);
+                QVector<int> indicies;
+                for (int i = 0; i < vector.size(); ++i) {
+                    dep_table->DisableRow(vector[i]);
+                    indicies << vector[i];
                 }
+
+                block.insert(index, Pair(m_model->IndependentModel(), dep_table));
+                m_job.insert(index, indicies);
+
+                if (block.size() == blocksize) {
+                    m_batch.enqueue(block);
+                    block.clear();
+                }
+                index++;
+            }
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        } else {
+
+            emit Message(tr("Running %1 jobs!").arg(steps));
+
+            while (used_indicies.size() < steps) {
+                int index = QRandomGenerator::global()->bounded(0, vector_block.size());
+
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+                if (used_indicies.contains(index))
+                    continue;
+                used_indicies << index;
+                QVector<int> vector = vector_block[index];
+
+                QPointer<DataTable> dep_table = new DataTable(table);
+                QVector<int> indicies;
+                for (int i = 0; i < vector.size(); ++i) {
+                    dep_table->DisableRow(vector[i]);
+                    indicies << vector[i];
+                }
+
+                block.insert(index, Pair(m_model->IndependentModel(), dep_table));
+                m_job.insert(index, indicies);
+
+                if (block.size() == blocksize) {
+                    m_batch.enqueue(block);
+                    block.clear();
+                }
+                index++;
             }
         }
-        emit setMaximumSteps(m_batch.size());
+
         break;
     }
-    qDebug() << m_batch.size();
-
+    emit setMaximumSteps(m_batch.size());
     for (int i = 0; i < maxthreads; ++i) {
         QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
         thread->setChecked(true);
@@ -202,6 +265,13 @@ void ResampleAnalyse::CrossValidation()
     while (Pending()) {
         QCoreApplication::processEvents();
     }
+
+    if (more_message)
+        emit Message(tr("Final evaluation in progress!"));
+
+    QJsonObject old_param = m_model->ExportModel(false, false);
+
+    // TODO some times, I will parallise it at all
     QJsonObject chart_block;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
@@ -209,6 +279,8 @@ void ResampleAnalyse::CrossValidation()
             QHash<int, QJsonObject> models = threads[i]->Models();
 
             for (const QJsonObject& model : models) {
+                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
                 int index = models.key(model);
                 QVector<int> indicies = m_job.value(index);
 
@@ -232,6 +304,9 @@ void ResampleAnalyse::CrossValidation()
     m_controller["series_count"] = m_model->SeriesCount();
     m_controller["x"] = ToolSet::DoubleList2String(x);
     m_controller["DependentModel"] = m_model->DependentModel()->ExportTable(true);
+
+    m_model->ImportModel(old_param);
+    m_model->Calculate();
 
     if (m_models.size()) {
         m_results = ToolSet::Model2Parameter(m_models);
@@ -307,12 +382,5 @@ void ResampleAnalyse::clear()
 {
     m_models.clear();
     m_model.clear();
-
-    while (!m_batch.isEmpty()) {
-        QHash<int, Pair> stored = m_batch.dequeue();
-        for (auto i : stored) {
-            delete i.first;
-            delete i.second;
-        }
-    }
+    AbstractSearchClass::clear();
 }

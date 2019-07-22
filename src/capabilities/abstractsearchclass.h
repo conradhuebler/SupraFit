@@ -84,7 +84,7 @@ public:
 
     QHash<int, Pair> DemandCalc();
 
-    virtual void clear() {}
+    virtual void clear();
 public slots:
     virtual void Interrupt();
 
@@ -106,4 +106,5 @@ signals:
     void IncrementProgress(int msecs);
     void AnalyseFinished();
     void setMaximumSteps(int maxsteps);
+    void Message(const QString& str);
 };

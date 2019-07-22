@@ -823,8 +823,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         if (type == SupraFit::Method::CrossValidation) {
             if(controller["CVType"].toInt() == 1)
                 text += "<p>Leave-One-Out Cross Validation</p>";
-            else
+            else if (controller["CVType"].toInt() == 2)
                 text += "<p>Leave-Two-Out Cross Validation</p>";
+            else
+                text += QString("<p>Leave-%1-Out Cross Validation</p>").arg(controller["X"].toInt());
         } else {
             text += QString("<p>Input variance is %1</p>").arg(Print::printDouble(controller["variance"].toDouble(), 6));
         }
