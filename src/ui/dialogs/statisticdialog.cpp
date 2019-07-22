@@ -526,6 +526,9 @@ QWidget* StatisticDialog::CVWidget()
     layout->addWidget(m_cv_runs, 2, 2);
     layout->addWidget(m_cv_map, 2, 3);
 
+    connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
+    connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
+
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
 

@@ -30,6 +30,7 @@
 
 #include "src/capabilities/montecarlostatistics.h"
 
+#include <cmath>
 #include <iostream>
 
 #include "resampleanalyse.h"
@@ -159,7 +160,16 @@ void ResampleAnalyse::CrossValidation()
         int points = m_model->DataPoints();
         int end = X * (points - 1);
         int factor = m_controller["MapSizeFactor"].toInt();
-        int maxsteps = Factorial(points) / (Factorial(X) * Factorial(points - X));
+        long double maxsteps = tgammal(points + 1) / (tgammal(X + 1) * tgammal(points - X + 1));
+
+        double ratio = double(steps) / double(maxsteps);
+
+        /* There is an ongoing process here, in the end, an ideal algorithm selection should be placed here
+         *
+         * The short start is:
+         *  We can either precompute all combinations, which of course grows exponentionally and will for values bigger than 5e4 not usefull
+         *  Or we perform a random vector filling with the according condition, which might be good for a certain range
+         * For now, lets use the random algorithm for maxsteps >1e5 and steps/maxsteps < 0.75 */
 
         if (X >= points - 1) {
             emit Message(tr("LXO exceeds DataPoints!"));
@@ -174,77 +184,35 @@ void ResampleAnalyse::CrossValidation()
             vector[i] = i;
 
         emit Message(tr("Map generation!"));
-        qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-        int run = 0;
-        while (/*run < steps && */ run < maxsteps) {
-            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-            QVector<int> vector;
-            while (vector.size() < X) {
-                int index = QRandomGenerator::global()->bounded(0, points);
-                if (vector.contains(index))
+        if (maxsteps > 1e5 && ratio < 0.75) {
+            qDebug() << "Random filling method";
+            qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+            int run = 0;
+            while (run < steps && run < maxsteps) {
+                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+                QVector<int> vector;
+                while (vector.size() < X) {
+                    int index = QRandomGenerator::global()->bounded(0, points);
+                    if (vector.contains(index))
+                        continue;
+                    vector << index;
+                }
+                std::sort(vector.begin(), vector.end());
+                if (vector_block.contains(vector))
                     continue;
-                vector << index;
-            }
-            std::sort(vector.begin(), vector.end());
-            if (vector_block.contains(vector))
-                continue;
-            vector_block << vector;
-
-            run++;
-        }
-        qint64 t1 = QDateTime::currentMSecsSinceEpoch();
-        qDebug() << t1 - t0 << " msecs" << vector_block.size();
-
-        /*for (int i = 0; i < vector_block.size(); ++i) {
-            QVector<int> vector = vector_block[i];
-
-            QPointer<DataTable> dep_table = new DataTable(table);
-            QVector<int> indicies;
-            for (int i = 0; i < vector.size(); ++i) {
-                dep_table->DisableRow(vector[i]);
-                indicies << vector[i];
-            }
-
-            block.insert(index, Pair(m_model->IndependentModel(), dep_table));
-            m_job.insert(index, indicies);
-
-            if (block.size() == blocksize) {
-                m_batch.enqueue(block);
-                block.clear();
-            }
-            index++;
-        }
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);*/
-
-        vector_block.clear();
-
-        t0 = QDateTime::currentMSecsSinceEpoch();
-        bool loop = true;
-        while (loop) {
-            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-
-            if (vector.toList().toSet().size() == vector.size()) {
                 vector_block << vector;
+
+                run++;
             }
-
-            IncreaseVector(vector, points);
-
-            int sum = 0;
-            for (int i = 0; i < vector.size(); ++i)
-                sum += vector[i];
-            loop = sum < end && (vector_block.size() < factor * steps);
-        }
-
-        t1 = QDateTime::currentMSecsSinceEpoch();
-        qDebug() << t1 - t0 << " msecs" << vector_block.size();
-
-        /*
-        if (vector_block.size() < steps) {
-
-            emit Message(tr("Running all jobs!"));
+            qint64 t1 = QDateTime::currentMSecsSinceEpoch();
+            qDebug() << t1 - t0 << " msecs" << vector_block.size();
 
             for (int i = 0; i < vector_block.size(); ++i) {
+
+                emit Message(tr("Running %1 jobs!").arg(steps));
+
                 QVector<int> vector = vector_block[i];
 
                 QPointer<DataTable> dep_table = new DataTable(table);
@@ -262,40 +230,85 @@ void ResampleAnalyse::CrossValidation()
                     block.clear();
                 }
                 index++;
+                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
             }
-            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
         } else {
 
-            emit Message(tr("Running %1 jobs!").arg(steps));
+            qDebug() << "Full-Precomputing";
 
-            while (used_indicies.size() < steps) {
-                int index = QRandomGenerator::global()->bounded(0, vector_block.size());
-
+            bool loop = true;
+            while (loop) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                if (used_indicies.contains(index))
-                    continue;
-                used_indicies << index;
-                QVector<int> vector = vector_block[index];
-
-                QPointer<DataTable> dep_table = new DataTable(table);
-                QVector<int> indicies;
-                for (int i = 0; i < vector.size(); ++i) {
-                    dep_table->DisableRow(vector[i]);
-                    indicies << vector[i];
+                if (vector.toList().toSet().size() == vector.size()) {
+                    vector_block << vector;
                 }
 
-                block.insert(index, Pair(m_model->IndependentModel(), dep_table));
-                m_job.insert(index, indicies);
+                IncreaseVector(vector, points);
 
-                if (block.size() == blocksize) {
-                    m_batch.enqueue(block);
-                    block.clear();
+                int sum = 0;
+                for (int i = 0; i < vector.size(); ++i)
+                    sum += vector[i];
+                loop = sum < end; // && (vector_block.size() < factor * steps);
+            }
+
+            if (vector_block.size() < steps) {
+
+                emit Message(tr("Running all jobs!"));
+
+                for (int i = 0; i < vector_block.size(); ++i) {
+                    QVector<int> vector = vector_block[i];
+
+                    QPointer<DataTable> dep_table = new DataTable(table);
+                    QVector<int> indicies;
+                    for (int i = 0; i < vector.size(); ++i) {
+                        dep_table->DisableRow(vector[i]);
+                        indicies << vector[i];
+                    }
+
+                    block.insert(index, Pair(m_model->IndependentModel(), dep_table));
+                    m_job.insert(index, indicies);
+
+                    if (block.size() == blocksize) {
+                        m_batch.enqueue(block);
+                        block.clear();
+                    }
+                    index++;
                 }
-                index++;
+                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            } else {
+
+                emit Message(tr("Running %1 jobs!").arg(steps));
+
+                while (used_indicies.size() < steps) {
+                    int index = QRandomGenerator::global()->bounded(0, vector_block.size());
+
+                    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+                    if (used_indicies.contains(index))
+                        continue;
+                    used_indicies << index;
+                    QVector<int> vector = vector_block[index];
+
+                    QPointer<DataTable> dep_table = new DataTable(table);
+                    QVector<int> indicies;
+                    for (int i = 0; i < vector.size(); ++i) {
+                        dep_table->DisableRow(vector[i]);
+                        indicies << vector[i];
+                    }
+
+                    block.insert(index, Pair(m_model->IndependentModel(), dep_table));
+                    m_job.insert(index, indicies);
+
+                    if (block.size() == blocksize) {
+                        m_batch.enqueue(block);
+                        block.clear();
+                    }
+                    index++;
+                }
             }
         }
-*/
         break;
     }
     emit setMaximumSteps(m_batch.size());
