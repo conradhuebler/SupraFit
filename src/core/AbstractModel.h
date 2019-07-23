@@ -297,6 +297,13 @@ public:
      */
     QJsonObject getStatistic(SupraFit::Method type, int index = 0) const;
 
+    /*! \brief Export the current model and data inclusive the defined statistic */
+    QJsonObject ExportStatistic(SupraFit::Method type, int index = 0);
+
+    /*! \brief Removes raw data from result */
+    bool DropRawData(SupraFit::Method type, int index = 0);
+
+    /*! \brief Remove result */
     bool RemoveStatistic(SupraFit::Method type, int index = 0);
 
     virtual QList<qreal> getCalculatedModel();

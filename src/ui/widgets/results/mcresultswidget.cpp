@@ -90,10 +90,10 @@ void MCResultsWidget::setUi()
 
     // if (has_boxplot)
     //     tabs->addTab(m_box, tr("Boxplot"));
-
-    m_scatter = MakeScatter();
-    tabs->addTab(m_scatter, tr("Scatter Plot"));
-
+    if (m_data["controller"].toObject().contains("raw")) {
+        m_scatter = MakeScatter();
+        tabs->addTab(m_scatter, tr("Scatter Plot"));
+    }
     if (m_data["controller"].toObject().contains("chart")) {
         m_series_chart = MakeSeriesChart();
         tabs->addTab(m_series_chart, tr("Series Chart"));
@@ -322,6 +322,7 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
         scatter_series->setBorderColor(color);
 
         scatter_series->append(points[i]);
+        scatter_series->setUseOpenGL(true);
         line->append(pp);
 
         scatter_series->setMarkerSize(6);

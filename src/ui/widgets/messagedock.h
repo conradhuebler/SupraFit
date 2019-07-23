@@ -33,6 +33,7 @@ class MessageDock : public QWidget {
 public:
     MessageDock();
     virtual ~MessageDock();
+    QWidget* TitleBarWidget() { return m_titlebarwidget; }
 
 public slots:
     void Message(const QString& str);
@@ -42,6 +43,7 @@ private:
     QTextEdit* m_message;
     QPushButton* m_clear;
     QMutex m_mutex;
+    QWidget* m_titlebarwidget;
 
 private slots:
 };

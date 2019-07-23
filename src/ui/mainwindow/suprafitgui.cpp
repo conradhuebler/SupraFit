@@ -385,6 +385,7 @@ SupraFitGui::SupraFitGui()
     m_messages_widget = new MessageDock;
     m_message_dock->setWidget(m_messages_widget);
     m_message_dock->setAllowedAreas(Qt::BottomDockWidgetArea);
+    m_message_dock->setTitleBarWidget(m_messages_widget->TitleBarWidget());
     addDockWidget(Qt::BottomDockWidgetArea, m_message_dock);
 
     m_splash = new QSplashScreen(this, QPixmap(":/misc/logo_small.png"));

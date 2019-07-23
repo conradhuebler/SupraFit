@@ -103,7 +103,7 @@ void JobManager::RunJobs()
             break;
         }
         t1 = QDateTime::currentMSecsSinceEpoch();
-        emit m_model->Info()->Message(QString("%1 took %2 msecs for %3 in project %4").arg(Method2Name(method)).arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()));
+        emit m_model->Info()->Message(QString("%1 took %2 msecs for %3 in %4").arg(Method2Name(method)).arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()));
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);
     }

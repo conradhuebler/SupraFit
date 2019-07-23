@@ -59,12 +59,14 @@ private:
     ChartWrapper* m_wrapper;
     QHash<QString, int> m_indices;
     QHash<QString, ResultsWidget*> m_stored_widgets;
+    QAction *m_load, *m_save, *m_drop_data, *m_remove;
 
 private slots:
     void UpdateList();
     void itemDoubleClicked(const QModelIndex& index);
     void RemoveItem(const QModelIndex& index);
     void Save(const QModelIndex& index);
+    void DropRawData(const QModelIndex& index);
 
 signals:
     void LoadModel(const QJsonObject& object);

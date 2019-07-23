@@ -56,31 +56,41 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     m_results->setContextMenuPolicy(Qt::ActionsContextMenu);
     connect(m_results, &QListView::doubleClicked, this, &ResultsDialog::itemDoubleClicked);
 
-    QAction* action;
-    action = new QAction("Load Load", m_results);
-    action->setIcon(Icon("window-new"));
-    m_results->addAction(action);
-    connect(action, &QAction::triggered, action, [this]() {
-        itemDoubleClicked(m_results->currentIndex());
+    m_load = new QAction("Load Load", m_results);
+    m_load->setIcon(Icon("window-new"));
+    m_results->addAction(m_load);
+    connect(m_load, &QAction::triggered, m_load, [this]() {
+        if (m_results->selectionModel()->selectedIndexes().size())
+            itemDoubleClicked(m_results->selectionModel()->selectedIndexes().first());
     });
 
-    action = new QAction("Save data", m_results);
-    m_results->addAction(action);
-    action->setIcon(Icon("document-save-as"));
-    connect(action, &QAction::triggered, action, [this]() {
-        Save(m_results->currentIndex());
+    m_save = new QAction("Save data", m_results);
+    m_results->addAction(m_save);
+    m_save->setIcon(Icon("document-save-as"));
+    connect(m_save, &QAction::triggered, m_save, [this]() {
+        if (m_results->selectionModel()->selectedIndexes().size())
+            Save(m_results->selectionModel()->selectedIndexes().first());
     });
 
-    action = new QAction("Remove Item", m_results);
-    m_results->addAction(action);
-    action->setIcon(Icon("trash-empty"));
-    connect(action, &QAction::triggered, action, [this]() {
-        RemoveItem(m_results->currentIndex());
+    m_drop_data = new QAction("Drop raw data", m_results);
+    m_drop_data->setIcon(Icon("window-new"));
+    m_results->addAction(m_drop_data);
+    connect(m_drop_data, &QAction::triggered, m_drop_data, [this]() {
+        if (m_results->selectionModel()->selectedIndexes().size())
+            DropRawData(m_results->selectionModel()->selectedIndexes().first());
+    });
+
+    m_remove = new QAction("Remove Item", m_results);
+    m_results->addAction(m_remove);
+    m_remove->setIcon(Icon("trash-empty"));
+    connect(m_remove, &QAction::triggered, m_remove, [this]() {
+        if (m_results->selectionModel()->selectedIndexes().size())
+            RemoveItem(m_results->selectionModel()->selectedIndexes().first());
     });
 
     m_tabs = new QTabWidget;
     //m_tabs->setTabsClosable(true);
-    //m_tabs->setMovable(true);
+    m_tabs->setMovable(true);
 
     m_mainwidget->addWidget(m_results);
     m_mainwidget->addWidget(m_tabs);
@@ -90,6 +100,12 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     resize(1024, 800);
     UpdateList();
     connect(m_model.data(), &AbstractModel::StatisticChanged, this, &ResultsDialog::UpdateList);
+    connect(m_results->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
+        m_load->setEnabled(m_results->selectionModel()->selectedIndexes().size());
+        m_save->setEnabled(m_results->selectionModel()->selectedIndexes().size());
+        m_remove->setEnabled(m_results->selectionModel()->selectedIndexes().size());
+        m_drop_data->setEnabled(m_results->selectionModel()->selectedIndexes().size());
+    });
 }
 
 ResultsDialog::~ResultsDialog()
@@ -134,6 +150,12 @@ void ResultsDialog::UpdateList()
         QJsonObject controller = object["controller"].toObject();
         item->setData(tr("%1 # %2").arg(SupraFit::Method2Name(controller["method"].toInt())).arg(i + 1), Qt::DisplayRole);
         item->setData(controller["method"].toInt(), Qt::UserRole);
+
+        if (controller.contains("raw"))
+            item->setData(QIcon(":/icons/applications-education-science.png"), Qt::DecorationRole);
+        else
+            item->setData(QIcon(":/icons/battery-low.png"), Qt::DecorationRole);
+
         item->setData(i, Qt::UserRole + 1);
         makeItem(item);
     };
@@ -188,10 +210,17 @@ void ResultsDialog::UpdateList()
 
     m_itemmodel = model;
     m_results->setModel(m_itemmodel);
+    m_load->setEnabled(m_itemmodel->rowCount());
+    m_save->setEnabled(m_itemmodel->rowCount());
+    m_drop_data->setEnabled(m_itemmodel->rowCount());
+    m_remove->setEnabled(m_itemmodel->rowCount());
 }
 
 void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
 {
+    if (!index.isValid())
+        return;
+
     QStandardItem* item = m_itemmodel->itemFromIndex(index);
 
     if (-1 == m_indices[Index(item)]) {
@@ -205,12 +234,21 @@ void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
         m_stored_widgets[name] = results;
         item->setData(name, Qt::UserRole + 3);
         m_indices[Index(item)] = tab;
-    } else
-        m_tabs->setCurrentIndex(m_indices[Index(item)]);
+    } else {
+        QStandardItem* item = m_itemmodel->itemFromIndex(index);
+        QString name = item->data(Qt::DisplayRole).toString();
+        if (m_stored_widgets.contains(name)) {
+            ResultsWidget* results = m_stored_widgets[name];
+            m_tabs->setCurrentIndex(m_tabs->indexOf(results));
+        }
+    }
 }
 
 void ResultsDialog::RemoveItem(const QModelIndex& index)
 {
+    if (!index.isValid())
+        return;
+
     QStandardItem* item = m_itemmodel->itemFromIndex(index);
     QString name = item->data(Qt::DisplayRole).toString();
     if (m_stored_widgets.contains(name)) {
@@ -226,8 +264,24 @@ void ResultsDialog::RemoveItem(const QModelIndex& index)
     UpdateList();
 }
 
+void ResultsDialog::DropRawData(const QModelIndex& index)
+{
+    if (!index.isValid())
+        return;
+
+    QStandardItem* item = m_itemmodel->itemFromIndex(index);
+
+    SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
+    int idx = item->data(Qt::UserRole + 1).toInt();
+    m_model.data()->DropRawData(type, idx);
+    UpdateList();
+}
+
 void ResultsDialog::Save(const QModelIndex& index)
 {
+    if (!index.isValid())
+        return;
+
     QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
     if (filename.isEmpty())
         return;
@@ -236,10 +290,11 @@ void ResultsDialog::Save(const QModelIndex& index)
 
     SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
     int idx = item->data(Qt::UserRole + 1).toInt();
-    QJsonObject blob = m_model.data()->getStatistic(type, idx);
+    QJsonObject blob = m_model.data()->ExportStatistic(type, idx);
 
     if (blob.isEmpty())
         return;
+    /*
     QJsonObject toplevel;
     toplevel["data"] = m_model.data()->ExportData();
     QJsonObject model = m_model.data()->ExportModel(false, false);
@@ -249,8 +304,8 @@ void ResultsDialog::Save(const QModelIndex& index)
     datablob["methods"] = statisticObject;
     model["data"] = datablob;
     toplevel["model_0"] = model;
-
-    if (!JsonHandler::WriteJsonFile(toplevel, filename)) {
+    */
+    if (!JsonHandler::WriteJsonFile(blob, filename)) {
         qDebug() << "went wrong";
     }
 }

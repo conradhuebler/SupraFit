@@ -22,6 +22,7 @@
 #include <QtCore/QMutexLocker>
 
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
 
@@ -39,11 +40,18 @@ MessageDock::MessageDock()
     m_clear->setIcon(Icon("edit-clear-history"));
     connect(m_clear, &QPushButton::clicked, m_message, &QTextEdit::clear);
 
+    QLabel* label = new QLabel(tr("Message from SupraFit"));
+
+    QHBoxLayout* hlayout = new QHBoxLayout;
+    hlayout->addWidget(label);
+    hlayout->addWidget(m_clear);
+    m_titlebarwidget = new QWidget;
+    m_titlebarwidget->setLayout(hlayout);
+
     QGridLayout* layout = new QGridLayout;
-    layout->addWidget(m_message, 0, 0, 4, 1);
-    layout->addWidget(m_clear, 0, 1);
+    layout->addWidget(m_message, 0, 0);
     setLayout(layout);
-    m_message->append("<html><pre>");
+    m_message->append("<html>");
 }
 
 MessageDock::~MessageDock()
@@ -53,11 +61,11 @@ MessageDock::~MessageDock()
 void MessageDock::Message(const QString& str)
 {
     QMutexLocker locker(&m_mutex);
-    m_message->append(tr("<p>%1&emsp;<font color='green'> %2 </font></p>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    m_message->append(tr("<pre><p>%1&emsp;<font color='green'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
 }
 
 void MessageDock::Warning(const QString& str)
 {
     QMutexLocker locker(&m_mutex);
-    m_message->append(tr("<p>%1&emsp;<font color='red'> %2 </font></p>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    m_message->append(tr("<pre><p>%1&emsp;<font color='red'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
 }
