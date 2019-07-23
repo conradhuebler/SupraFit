@@ -81,8 +81,9 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
     hlayout->addWidget(m_mc_user);
     hlayout->addWidget(m_variance);
 
-    layout->addLayout(hlayout, 1, 0, 1, 3);
-
+    if (qApp->instance()->property("advanced_ui").toBool()) {
+        layout->addLayout(hlayout, 1, 0, 1, 3);
+    }
     setLayout(layout);
 
     connect(m_model.data(), &AbstractModel::Recalculated, this, &extWidget::Update);
@@ -95,6 +96,9 @@ void extWidget::Update()
     m_sse->setText(tr("<h4><i>CnP</i> Sum of Squares: %1</h4>").arg(Print::printDouble(m_model.data()->SumofSquares())));
     m_std->setText(tr("<h4><i>CnP</i> Standard Deviation: %1</h4>").arg(Print::printDouble(m_model.data()->StdDeviation())));
     m_sey->setText(tr("<h4><i>CnP</i> SE<sub>y</sub>: %1</h4>").arg(Print::printDouble(m_model.data()->SEy())));
+
+    if (!qApp->instance()->property("advanced_ui").toBool())
+        return;
 
     QJsonObject data = m_model.data()->ExportData();
     data["dependent"] = m_model.data()->ModelTable()->ExportTable(true);

@@ -120,8 +120,8 @@ const QJsonObject ResampleConfigBlock{
     /* Maximal number of steps to be evaluated, usefull for LXO CV, where many combination are possible */
     { "MaxSteps", 1e4 }, // int, 0 -> every combinition will be tested
 
-    /* Factor to define maximal map size: MapSize = MapSizeFactor*MaxSteps */
-    { "MapSizeFactor", 20 }, // int
+    /* Algorithm Selection, either Precomputation, Automatic or Random */
+    { "Algorithm", 2 }, // int 1 - Precomputation; 2 - Automatic; 3 - Random
 
     /* Set Runtype for Reduction Analysis */
     { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards

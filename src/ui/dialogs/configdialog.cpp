@@ -176,6 +176,11 @@ void ConfigDialog::createGeneralTab()
     m_ColorFullSearch->setChecked(qApp->instance()->property("ColorFullSearch").toBool());
     layout->addWidget(m_ColorFullSearch);
 
+    m_advanced_ui = new QCheckBox(tr("Show advanced options and simulation tools in GUI."));
+    m_advanced_ui->setToolTip(tr("If checked, some more advanced options and tools are available via Graphical User Interface. To apply, please restart the SupraFit."));
+    m_advanced_ui->setChecked(qApp->instance()->property("advanced_ui").toBool());
+    layout->addWidget(m_advanced_ui);
+
     m_tooltips = new QCheckBox(tr("Show Tooltips as quick help on selected widgets."));
     m_tooltips->setToolTip(tr("If this checkbox were not checked, you would not see this tooltip.\nAnd now for something complete different:\nIf three witches had three watches, which witch would watch which watch?"));
     m_tooltips->setChecked(qApp->instance()->property("tooltips").toBool());
@@ -387,6 +392,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("FastConfidenceSteps", m_FastConfidenceSteps->value());
     qApp->instance()->setProperty("auto_thermo_dialog", m_auto_thermo_dialog->isChecked());
     qApp->instance()->setProperty("thermogram_guidelines", m_thermogram_guideline->isChecked());
+    qApp->instance()->setProperty("advanced_ui", m_advanced_ui->isChecked());
 
     QDialog::accept();
 }

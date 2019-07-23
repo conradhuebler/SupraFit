@@ -84,13 +84,11 @@ void ResampleAnalyse::CrossValidation()
     bool more_message = true;
     switch (type) {
     case 1:
-        //emit setMaximumSteps(m_model->DataPoints());
         blocksize = 1;
         for (int i = 0; i < m_model->DataPoints(); ++i) {
             QPointer<DataTable> dep_table = new DataTable(table);
             QVector<int> indicies = QVector<int>() << i;
             Vector vector = dep_table->DisableRow(i);
-            // x << m_model->PrintOutIndependent(i);
 
             block.insert(index, Pair(m_model->IndependentModel(), dep_table));
             m_job.insert(index, indicies);
@@ -103,10 +101,8 @@ void ResampleAnalyse::CrossValidation()
         }
         break;
     case 2:
-        // emit setMaximumSteps(m_model->DataPoints() * (m_model->DataPoints() - 1) / 2);
         blocksize = 1;
         for (int i = 0; i < m_model->DataPoints(); ++i) {
-            //x << m_model->PrintOutIndependent(i);
             for (int j = i + 1; j < m_model->DataPoints(); ++j) {
                 QPointer<DataTable> dep_table = new DataTable(table);
                 dep_table->DisableRow(i);
@@ -130,36 +126,12 @@ void ResampleAnalyse::CrossValidation()
 
         blocksize = 1;
 
-        auto IncreaseVector = [this](QVector<int>& vector, int points) {
-            for (int i = vector.size() - 1; i >= 0; --i) {
-
-                if (vector[i] < points - 1) {
-                    int value = vector[i];
-                    while (vector.contains(value) && value < points - 1)
-                        value++;
-                    vector[i] = value;
-                    break;
-                } else if (vector[i] == points - 1) {
-                    if (i) {
-                        int back = 1;
-                        while (vector[i - back] == points - 1)
-                            back++;
-                        int value = vector[i - back];
-                        while (vector.contains(value))
-                            value++;
-                        if (value + 1 < points)
-                            vector[i] = value + 1;
-                    } else
-                        vector[i] = 0;
-                }
-            }
-        };
-
         int X = m_controller["X"].toInt();
         int steps = m_controller["MaxSteps"].toInt();
+        int algorithm = m_controller["Algorithm"].toInt();
+
         int points = m_model->DataPoints();
         int end = X * (points - 1);
-        int factor = m_controller["MapSizeFactor"].toInt();
         long double maxsteps = tgammal(points + 1) / (tgammal(X + 1) * tgammal(points - X + 1));
 
         double ratio = double(steps) / double(maxsteps);
@@ -185,9 +157,18 @@ void ResampleAnalyse::CrossValidation()
 
         emit Message(tr("Map generation!"));
 
-        if (maxsteps > 1e5 && ratio < 0.75) {
+        if (algorithm == 2) {
+            if (maxsteps > 1e5 && ratio < 0.75)
+                algorithm = 3;
+            else
+                algorithm = 1;
+        }
+
+        if (algorithm == 3) {
+
             qDebug() << "Random filling method";
             qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+
             int run = 0;
             while (run < steps && run < maxsteps) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -233,9 +214,34 @@ void ResampleAnalyse::CrossValidation()
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
             }
 
-        } else {
+        } else if (algorithm == 1) {
 
             qDebug() << "Full-Precomputing";
+
+            auto IncreaseVector = [this](QVector<int>& vector, int points) {
+                for (int i = vector.size() - 1; i >= 0; --i) {
+
+                    if (vector[i] < points - 1) {
+                        int value = vector[i];
+                        while (vector.contains(value) && value < points - 1)
+                            value++;
+                        vector[i] = value;
+                        break;
+                    } else if (vector[i] == points - 1) {
+                        if (i) {
+                            int back = 1;
+                            while (vector[i - back] == points - 1)
+                                back++;
+                            int value = vector[i - back];
+                            while (vector.contains(value))
+                                value++;
+                            if (value + 1 < points)
+                                vector[i] = value + 1;
+                        } else
+                            vector[i] = 0;
+                    }
+                }
+            };
 
             bool loop = true;
             while (loop) {
@@ -250,7 +256,7 @@ void ResampleAnalyse::CrossValidation()
                 int sum = 0;
                 for (int i = 0; i < vector.size(); ++i)
                     sum += vector[i];
-                loop = sum < end; // && (vector_block.size() < factor * steps);
+                loop = sum < end;
             }
 
             if (vector_block.size() < steps) {

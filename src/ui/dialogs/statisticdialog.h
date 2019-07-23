@@ -151,6 +151,7 @@ private:
     QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info, *m_message_box;
     QRadioButton *m_wgs_loo, *m_wgs_l2o, *m_wgs_lxo;
     QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user;
+    QRadioButton *m_cv_premap, *m_cv_automap, *m_cv_randmap;
     QMutex mutex;
 
     QWeakPointer<AbstractModel> m_model;

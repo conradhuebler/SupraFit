@@ -509,13 +509,29 @@ QWidget* StatisticDialog::CVWidget()
     m_cv_runs->setMinimum(1);
     m_cv_runs->setMaximum(1e10);
     m_cv_runs->setValue(1e4);
-    m_cv_runs->setSuffix(tr(" steps"));
+    m_cv_runs->setSuffix(tr(" # steps"));
 
-    m_cv_map = new QSpinBox;
-    m_cv_map->setMinimum(1);
-    m_cv_map->setMaximum(1e3);
-    m_cv_map->setValue(20);
-    m_cv_map->setSuffix(tr(" Map Size Factor"));
+    QGroupBox* cv_algo = new QGroupBox;
+
+    m_cv_premap = new QRadioButton(tr("Precalculation"));
+    m_cv_premap->setToolTip(tr("Precalculates the whole map systematically - more than # steps."));
+
+    m_cv_automap = new QRadioButton(tr("Automatic"));
+    m_cv_automap->setToolTip(tr("Automatically chooses between either full precalculation or random initialisation!"));
+
+    m_cv_randmap = new QRadioButton(tr("Random initialisation"));
+    m_cv_randmap->setToolTip(tr("Calculates only # steps of random LXO experiments!"));
+
+    cv_algo->setMaximumHeight(100);
+    QHBoxLayout* cv_algo_layout = new QHBoxLayout;
+    cv_algo->setTitle(tr("Map Calculation Strategy in LXO"));
+    cv_algo_layout->addWidget(m_cv_premap);
+    cv_algo_layout->addWidget(m_cv_automap);
+    cv_algo_layout->addWidget(m_cv_randmap);
+
+    m_cv_automap->setChecked(true);
+
+    cv_algo->setLayout(cv_algo_layout);
 
     m_wgs_loo->setChecked(true);
 
@@ -524,7 +540,8 @@ QWidget* StatisticDialog::CVWidget()
     layout->addWidget(m_wgs_lxo, 2, 0);
     layout->addWidget(m_cv_lxo, 2, 1);
     layout->addWidget(m_cv_runs, 2, 2);
-    layout->addWidget(m_cv_map, 2, 3);
+    if (qApp->instance()->property("advanced_ui").toBool())
+        layout->addWidget(cv_algo, 3, 1, 1, 2);
 
     connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
     connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
@@ -532,8 +549,8 @@ QWidget* StatisticDialog::CVWidget()
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
 
-    layout->addWidget(m_cross_validate, 3, 0, 1, 4);
-    layout->addWidget(m_reduction, 4, 0, 1, 4);
+    layout->addWidget(m_cross_validate, 4, 0, 1, 3);
+    layout->addWidget(m_reduction, 5, 0, 1, 3);
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunCrossValidation());
@@ -667,8 +684,14 @@ QJsonObject StatisticDialog::RunCrossValidation() const
         controller["CXO"] = 3;
         controller["X"] = m_cv_lxo->value();
         controller["MaxSteps"] = m_cv_runs->value();
-        controller["MapSizeFactor"] = m_cv_map->value();
     }
+    if (m_cv_automap->isChecked())
+        controller["Algorithm"] = 2;
+    else if (m_cv_premap->isChecked())
+        controller["Algorithm"] = 1;
+    else
+        controller["Algorithm"] = 3;
+
     return controller;
 }
 

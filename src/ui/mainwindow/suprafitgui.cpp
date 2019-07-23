@@ -377,6 +377,7 @@ SupraFitGui::SupraFitGui()
 {
     m_instance = new Instance;
     Instance::setInstance(m_instance);
+    ReadSettings();
 
     m_splash = new QSplashScreen(this, QPixmap(":/misc/logo_small.png"));
 
@@ -483,9 +484,12 @@ SupraFitGui::SupraFitGui()
     connect(m_close_all, &QPushButton::clicked, this, &SupraFitGui::CloseProjects);
 
     QHBoxLayout* tools = new QHBoxLayout;
-    tools->addWidget(m_export_plain);
-    tools->addWidget(m_export_suprafit);
-    tools->addWidget(m_add_scatter);
+    if (qApp->instance()->property("advanced_ui").toBool()) {
+        tools->addWidget(m_export_plain);
+        tools->addWidget(m_export_suprafit);
+        tools->addWidget(m_add_scatter);
+    } else
+        tools->addStretch();
     tools->addWidget(m_close_all);
 
     QGridLayout* layout = new QGridLayout;
@@ -502,8 +506,6 @@ SupraFitGui::SupraFitGui()
     m_mainsplitter->addWidget(m_stack_widget);
 
     setCentralWidget(m_mainsplitter);
-
-    ReadSettings();
 
     m_new_window = new QAction(Icon("window-new"), tr("New Window"), this);
     connect(m_new_window, SIGNAL(triggered(bool)), this, SLOT(NewWindow()));
@@ -1074,6 +1076,9 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("auto_thermo_dialog") == QVariant())
         qApp->instance()->setProperty("auto_thermo_dialog", false);
+
+    if (qApp->instance()->property("advanced_ui") == QVariant())
+        qApp->instance()->setProperty("advanced_ui", false);
 
     if (qApp->instance()->property("xSize") == QVariant())
         qApp->instance()->setProperty("xSize", 600);

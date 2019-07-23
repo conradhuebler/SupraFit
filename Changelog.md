@@ -1,5 +1,7 @@
 # SupraFit 2.0 pre-Alpha
 
+- option for CXO map calculation
+- add option for advanced ui tools
 - add leave-many-out cross validation
 - some cosmetic changes in thermogram widget
 - addition of some thermogram manipulation guidelines
