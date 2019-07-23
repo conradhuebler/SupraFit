@@ -144,7 +144,7 @@ void ResampleAnalyse::CrossValidation()
          * For now, lets use the random algorithm for maxsteps >1e5 and steps/maxsteps < 0.75 */
 
         if (X >= points - 1) {
-            emit Message(tr("LXO exceeds DataPoints!"));
+            emit m_model->Info()->Message(tr("LXO exceeds DataPoints!"));
             more_message = false;
             break;
         }
@@ -338,7 +338,7 @@ void ResampleAnalyse::CrossValidation()
     }
 
     if (more_message)
-        emit Message(tr("Final evaluation in progress!"));
+        qDebug() << (tr("Final evaluation in progress!"));
 
     QJsonObject old_param = m_model->ExportModel(false, false);
 

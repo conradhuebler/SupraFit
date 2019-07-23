@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ class QTreeView;
 
 class DataClass;
 class ChartWidget;
-
+class MessageDock;
 class Instance;
 class MainWindow;
 class ModelDataHolder;
@@ -192,7 +192,7 @@ private:
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_close, *m_save, *m_save_as, *m_load, *m_message, *m_license;
+    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_message, *m_license;
     QJsonObject m_opt_config;
 
     int m_last_index = -1;
@@ -231,6 +231,8 @@ private:
                                                    << "thermogram_guidelines"
                                                    << "advanced_ui";
 
+    QDockWidget* m_message_dock;
+    MessageDock* m_messages_widget;
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
     QWidget *m_blank_widget;

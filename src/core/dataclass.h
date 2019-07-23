@@ -181,8 +181,8 @@ signals:
     void SystemParameterChanged();
     void SystemParameterLoaded();
     void Update();
-    void Message(const QString& str, int level);
-    void Warning(const QString& str, int level);
+    void Message(const QString& str, int priority = 3);
+    void Warning(const QString& str, int priority = 1);
 };
 
 class DataClassPrivate : public QSharedData {
@@ -413,6 +413,6 @@ signals:
     void NameChanged(const QString& name);
     void Update();
     void Deleted();
-    void Message(const QString& str, int priority = 3);
-    void Warning(const QString& str, int priority = 1);
+    void Message(const QString& str, int priority);
+    void Warning(const QString& str, int priority);
 };

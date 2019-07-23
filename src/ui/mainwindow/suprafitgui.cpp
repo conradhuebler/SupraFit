@@ -35,6 +35,8 @@
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelwidget.h"
 
+#include "src/ui/widgets/messagedock.h"
+
 #include <QtCore/QDebug>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
@@ -379,6 +381,12 @@ SupraFitGui::SupraFitGui()
     Instance::setInstance(m_instance);
     ReadSettings();
 
+    m_message_dock = new QDockWidget;
+    m_messages_widget = new MessageDock;
+    m_message_dock->setWidget(m_messages_widget);
+    m_message_dock->setAllowedAreas(Qt::BottomDockWidgetArea);
+    addDockWidget(Qt::BottomDockWidgetArea, m_message_dock);
+
     m_splash = new QSplashScreen(this, QPixmap(":/misc/logo_small.png"));
 
     m_project_view = new QTreeView;
@@ -526,6 +534,10 @@ SupraFitGui::SupraFitGui()
     connect(m_save_as, SIGNAL(triggered(bool)), this, SLOT(SaveAsProjectAction()));
     m_save_as->setShortcut(QKeySequence::SaveAs);
 
+    m_message_dock_action = m_message_dock->toggleViewAction();
+    m_message_dock_action->setIcon(Icon("text-field"));
+    m_message_dock_action->setText(tr("Toggle Message"));
+
     m_config = new QAction(Icon("configure"), tr("Settings"), this);
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
     m_config->setShortcut(QKeySequence::Preferences);
@@ -558,7 +570,7 @@ SupraFitGui::SupraFitGui()
 
     m_system_toolbar = new QToolBar;
     m_system_toolbar->setObjectName(tr("system_toolbar"));
-
+    m_system_toolbar->addAction(m_message_dock_action);
     m_system_toolbar->addSeparator();
     m_system_toolbar->addAction(m_config);
     m_system_toolbar->addAction(m_message);
@@ -588,6 +600,7 @@ SupraFitGui::SupraFitGui()
     //m_mainsplitter->hide();
     setWindowIcon(QIcon(":/misc/suprafit.png"));
     UpdateRecentList();
+    m_messages_widget->Message("SupraFit is up and running");
 }
 
 SupraFitGui::~SupraFitGui()
@@ -749,6 +762,10 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_hashed_data[data.data()->UUID()] = data;
     m_project_tree->UpdateStructure();
     setActionEnabled(true);
+
+    connect(data.data(), &DataClass::Message, m_messages_widget, &MessageDock::Message);
+    connect(data.data(), &DataClass::Warning, m_messages_widget, &MessageDock::Warning);
+
     return true;
 }
 

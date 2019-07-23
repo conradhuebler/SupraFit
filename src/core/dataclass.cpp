@@ -787,6 +787,8 @@ DataClass::DataClass(QObject* parent)
     d = new DataClassPrivate;
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
+    connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
+    connect(Info(), &DataClassPrivateObject::Warning, this, &DataClass::Warning);
 }
 
 DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
@@ -800,6 +802,8 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
             d->m_scaling << 1;
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
+    connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
+    connect(Info(), &DataClassPrivateObject::Warning, this, &DataClass::Warning);
 }
 
 DataClass::DataClass(const DataClass& other)
@@ -808,6 +812,8 @@ DataClass::DataClass(const DataClass& other)
     d = other.d;
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
+    connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
+    connect(Info(), &DataClassPrivateObject::Warning, this, &DataClass::Warning);
 }
 
 DataClass::DataClass(const DataClass* other)
@@ -816,6 +822,8 @@ DataClass::DataClass(const DataClass* other)
     d = other->d;
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
+    connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
+    connect(Info(), &DataClassPrivateObject::Warning, this, &DataClass::Warning);
 }
 
 DataClass::~DataClass()
@@ -884,7 +892,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     int fileversion = topjson["SupraFit"].toInt();
 
     if (fileversion > qint_version) {
-        emit Warning(QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion), 1);
+        emit Info()->Warning(QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion));
         qWarning() << QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion);
         //return false;
     }
@@ -967,7 +975,7 @@ void DataClass::LoadSystemParameter()
         setSystemParameterValue(index, d->m_systemObject[QString::number(index)].toVariant());
     }
 
-    emit SystemParameterLoaded();
+    emit Info()->SystemParameterLoaded();
 }
 
 void DataClass::setSystemObject(const QJsonObject& object)

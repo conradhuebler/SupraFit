@@ -58,7 +58,8 @@ private:
     QGridLayout* m_layout;
     ChartWrapper* m_wrapper;
     QHash<QString, int> m_indices;
-    QList<ResultsWidget*> m_widget_list;
+    QHash<QString, ResultsWidget*> m_stored_widgets;
+
 private slots:
     void UpdateList();
     void itemDoubleClicked(const QModelIndex& index);

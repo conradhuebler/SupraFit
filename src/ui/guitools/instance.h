@@ -19,7 +19,9 @@
 #pragma once
 
 #include <QtCore/QObject>
+#include <QtCore/QPointer>
 #include <QtCore/QUuid>
+#include <QtCore/QVariant>
 
 #include <QtGui/QIcon>
 

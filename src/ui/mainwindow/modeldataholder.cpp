@@ -377,14 +377,6 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         m_modelsWidget->setMetaTab(m_metamodelwidget);
         m_TitleBarWidget->HideModelTools();
     }
-
-    connect(data.data(), &DataClass::Message, data.data(), [this](const QString& str, int level) {
-        QMessageBox::warning(this, tr("Not an exception ... ."), str, QMessageBox::Ok | QMessageBox::Default);
-    });
-
-    connect(data.data(), &DataClass::Warning, data.data(), [this](const QString& str, int level) {
-        QMessageBox::warning(this, tr("Not an exception ... ."), str, QMessageBox::Ok | QMessageBox::Default);
-    });
 }
 
 void ModelDataHolder::SetProjectTabName()
@@ -502,6 +494,7 @@ bool ModelDataHolder::CheckCrashFile()
 
 void ModelDataHolder::CreateCrashFile()
 {
+    return;
     RemoveCrashFile();
     QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
     for (int i = 0; i < m_models.size(); ++i) {

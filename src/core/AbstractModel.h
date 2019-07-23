@@ -290,6 +290,8 @@ public:
 
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
 
+    int getCVStatisticResult() const { return m_cv_statistics.size(); }
+
     /*! \brief Load statistic defined by type
      * If more than results can be stored, define index
      */
@@ -708,6 +710,7 @@ protected:
     QVector<int> m_used_series;
 
     QList<QJsonObject> m_mc_statistics;
+    QList<QJsonObject> m_cv_statistics;
     QList<QJsonObject> m_wg_statistics;
     QList<QJsonObject> m_moco_statistics;
     QList<QJsonObject> m_search_results;

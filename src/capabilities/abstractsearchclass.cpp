@@ -20,6 +20,7 @@
 #include "src/core/jsonhandler.h"
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDateTime>
 #include <QtCore/QHash>
 
 #include "abstractsearchclass.h"
@@ -67,6 +68,8 @@ QJsonObject AbstractSearchClass::Result() const
         result[QString::number(i)] = m_results[i];
     QJsonObject controller = Controller();
     controller["title"] = m_model->Name();
+    controller["timestap"] = QDateTime::currentMSecsSinceEpoch();
+
     QJsonObject models;
     for (int i = 0; i < m_models.size(); ++i)
         models[QString::number(i)] = m_models[i];
