@@ -158,7 +158,7 @@ void ResampleAnalyse::CrossValidation()
         emit Message(tr("Map generation!"));
 
         if (algorithm == 2) {
-            if (maxsteps > 1e5 && ratio < 0.75)
+            if ((maxsteps > 1e5 && ratio < 0.75) || X > 10)
                 algorithm = 3;
             else
                 algorithm = 1;
@@ -170,7 +170,7 @@ void ResampleAnalyse::CrossValidation()
             qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
             int run = 0;
-            while (run < steps && run < maxsteps) {
+            while (run < steps && qAbs(run - maxsteps) > 1e-5) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
                 QVector<int> vector;
@@ -187,6 +187,7 @@ void ResampleAnalyse::CrossValidation()
 
                 run++;
             }
+
             qint64 t1 = QDateTime::currentMSecsSinceEpoch();
             qDebug() << t1 - t0 << " msecs" << vector_block.size();
 
@@ -217,6 +218,7 @@ void ResampleAnalyse::CrossValidation()
         } else if (algorithm == 1) {
 
             qDebug() << "Full-Precomputing";
+            qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
             auto IncreaseVector = [this](QVector<int>& vector, int points) {
                 for (int i = vector.size() - 1; i >= 0; --i) {
@@ -259,6 +261,9 @@ void ResampleAnalyse::CrossValidation()
                 loop = sum < end;
             }
 
+            qint64 t1 = QDateTime::currentMSecsSinceEpoch();
+            qDebug() << t1 - t0 << " msecs" << vector_block.size();
+
             if (vector_block.size() < steps) {
 
                 emit Message(tr("Running all jobs!"));
@@ -281,8 +286,8 @@ void ResampleAnalyse::CrossValidation()
                         block.clear();
                     }
                     index++;
+                    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
                 }
-                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
             } else {
 
                 emit Message(tr("Running %1 jobs!").arg(steps));

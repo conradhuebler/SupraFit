@@ -181,6 +181,8 @@ signals:
     void SystemParameterChanged();
     void SystemParameterLoaded();
     void Update();
+    void Message(const QString& str, int level);
+    void Warning(const QString& str, int level);
 };
 
 class DataClassPrivate : public QSharedData {

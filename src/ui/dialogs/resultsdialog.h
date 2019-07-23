@@ -34,6 +34,7 @@ class QTabWidget;
 
 class AbstractModel;
 class ChartWrapper;
+class ResultsWidget;
 
 class ResultsDialog : public QDialog {
     Q_OBJECT
@@ -57,11 +58,12 @@ private:
     QGridLayout* m_layout;
     ChartWrapper* m_wrapper;
     QHash<QString, int> m_indices;
-
+    QList<ResultsWidget*> m_widget_list;
 private slots:
     void UpdateList();
     void itemDoubleClicked(const QModelIndex& index);
     void RemoveItem(const QModelIndex& index);
+    void Save(const QModelIndex& index);
 
 signals:
     void LoadModel(const QJsonObject& object);

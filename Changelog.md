@@ -1,5 +1,6 @@
 # SupraFit 2.0 pre-Alpha
 
+- option to save specific results from results dialog
 - option for CXO map calculation
 - add option for advanced ui tools
 - add leave-many-out cross validation

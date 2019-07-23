@@ -141,7 +141,7 @@ private:
     QTabWidget* m_tab_widget;
     QDoubleSpinBox *m_varianz_box, *m_wgs_increment, *m_wgs_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_wgs_f_value;
     ScientificBox* m_wgs_err_conv;
-    QSpinBox *m_cv_map, *m_cv_runs, *m_cv_lxo, *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
+    QSpinBox *m_cv_runs, *m_cv_lxo, *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
     QCheckBox *m_original, *m_bootstrap, *m_use_checked, *m_store_wgsearch;
     QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
     QVector<QDoubleSpinBox*> m_indepdent_variance;

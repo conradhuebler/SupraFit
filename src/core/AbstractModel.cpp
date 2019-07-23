@@ -803,31 +803,59 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     QJsonObject optionObject;
 
     json["globalParameter"] = GlobalTable()->ExportTable(true, private_d->m_enabled_global);
-
+    QJsonObject statisticObject;
+    bool storage_error = false;
     if (statistics) {
-        QJsonObject statisticObject;
-
         for (int i = 0; i < m_mc_statistics.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Method::MonteCarlo) + ":" + QString::number(i)] = m_mc_statistics[i];
+            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::MonteCarlo) + ":" + QString::number(i)] = m_mc_statistics[i];
+            if (ref.isNull()) {
+                qWarning() << "Critical warning, statistic data are to large to be stored in file";
+                storage_error = true;
+                statisticObject.remove(QString::number(SupraFit::Method::MonteCarlo) + ":" + QString::number(i));
+            }
         }
 
         for (int i = 0; i < m_moco_statistics.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Method::ModelComparison) + ":" + QString::number(i)] = m_moco_statistics[i];
+            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::ModelComparison) + ":" + QString::number(i)] = m_moco_statistics[i];
+            if (ref.isNull()) {
+                qWarning() << "Critical warning, statistic data are to large to be stored in file";
+                storage_error = true;
+                statisticObject.remove(QString::number(SupraFit::Method::ModelComparison) + ":" + QString::number(i));
+            }
         }
 
         for (int i = 0; i < m_wg_statistics.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch) + ":" + QString::number(i)] = m_wg_statistics[i];
+            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch) + ":" + QString::number(i)] = m_wg_statistics[i];
+            if (ref.isNull()) {
+                qWarning() << "Critical warning, statistic data are to large to be stored in file";
+                storage_error = true;
+                statisticObject.remove(QString::number(SupraFit::Method::WeakenedGridSearch) + ":" + QString::number(i));
+            }
         }
 
         for (int i = 0; i < m_search_results.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Method::GlobalSearch) + ":" + QString::number(i)] = m_search_results[i];
+            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::GlobalSearch) + ":" + QString::number(i)] = m_search_results[i];
+            if (ref.isNull()) {
+                qWarning() << "Critical warning, statistic data are to large to be stored in file";
+                storage_error = true;
+                statisticObject.remove(QString::number(SupraFit::Method::GlobalSearch) + ":" + QString::number(i));
+            }
         }
 
         for (int i = 0; i < m_reduction.size(); ++i) {
-            statisticObject[QString::number(SupraFit::Method::Reduction) + ":" + QString::number(i)] = m_reduction[i];
+            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::Reduction) + ":" + QString::number(i)] = m_reduction[i];
+            if (ref.isNull()) {
+                qWarning() << "Critical warning, statistic data are to large to be stored in file";
+                storage_error = true;
+                statisticObject.remove(QString::number(SupraFit::Method::Reduction) + ":" + QString::number(i));
+            }
         }
 
-        statisticObject[QString::number(SupraFit::Method::FastConfidence)] = m_fast_confidence;
+        QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::FastConfidence)] = m_fast_confidence;
+        if (ref.isUndefined()) {
+            qWarning() << "Critical warning, statistic data are to large to be stored in file";
+            storage_error = true;
+        }
         json["methods"] = statisticObject;
     }
 
@@ -845,6 +873,10 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     }
     json["active_series"] = ToolSet::IntVec2String(m_active_signals.toVector());
 
+    if (storage_error) {
+        qDebug() << "Connect and qwarning";
+        emit DataClass::Warning("Can not save all statistics. Please remove some unused results", 1);
+    }
     toplevel["data"] = json;
     toplevel["options"] = optionObject;
     toplevel["model"] = SFModel();
@@ -864,6 +896,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
         toplevel["locked_model"] = true;
         toplevel["result"] = resultObject;
     }
+
     return toplevel;
 }
 
