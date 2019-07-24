@@ -36,5 +36,9 @@
         <file>./LICENSE.md</file>
         <file>./README.md</file>
         <file>./Changelog.md</file>
+        <file>icons/help-hint-green.png</file>
+        <file>icons/help-hint-red.png</file>
+        <file>icons/applications-education-science.png</file>
+        <file>icons/battery-low.png</file>
     </qresource>
 </RCC>

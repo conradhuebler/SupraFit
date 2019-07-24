@@ -47,7 +47,7 @@ WGSearchThread::WGSearchThread(const QJsonObject& controller)
     m_MaxErrorConvergencyCounter = m_controller["ErrorConvergencyCounter"].toInt();
     m_ScalingFactor = m_controller["StepScalingFactor"].toInt();
     m_MaxError = m_controller["MaxError"].toDouble();
-    qDebug() << m_controller;
+
     setUp();
 }
 
@@ -194,6 +194,9 @@ bool WeakenedGridSearch::Run()
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
 
     for (int i = 0; i < parameter.size(); ++i) {
+
+        QCoreApplication::processEvents();
+
         bool step = true;
 
         QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
@@ -212,8 +215,15 @@ bool WeakenedGridSearch::Run()
         threads << pair;
         if (m_interrupt)
             break;
+
+        if (m_model.data()->SupportThreads()) {
+            emit setMaximumSteps(2 * threads.size());
+        }
     }
-    emit setMaximumSteps(2 * threads.size());
+
+    if (!m_model.data()->SupportThreads()) {
+        emit setMaximumSteps(2 * threads.size());
+    }
 
     if (!m_model.data()->SupportThreads()) {
         while (m_threadpool->activeThreadCount()) {

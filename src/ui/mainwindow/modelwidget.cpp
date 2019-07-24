@@ -335,10 +335,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_jobmanager, &JobManager::prepare, this, &ModelWidget::MaximumSteps);
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
-    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget);
+    connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
 
-    connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
-    connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message); //, Qt::DirectConnection);
+    connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));

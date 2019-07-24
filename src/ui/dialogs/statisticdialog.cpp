@@ -697,11 +697,6 @@ QJsonObject StatisticDialog::RunCrossValidation() const
 
 void StatisticDialog::MaximumSteps(int steps)
 {
-    if (m_hidden)
-        ShowWidget();
-    m_time = 0;
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_progress->setValue(0);
     m_progress->setMaximum(steps);
 }
 
@@ -755,35 +750,15 @@ QString StatisticDialog::FOutput() const
 
 void StatisticDialog::ShowWidget()
 {
-    return;
-    QPropertyAnimation* animation = new QPropertyAnimation(m_hide_widget, "maximumHeight");
-    animation->setEasingCurve(QEasingCurve::InOutCubic);
-    animation->setDuration(200);
-    animation->setStartValue(0);
-    animation->setEndValue(100);
-    animation->start();
-    m_tab_widget->setDisabled(true);
-    m_hidden = false;
-    delete animation;
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setValue(0);
 }
 
 void StatisticDialog::HideWidget()
 {
     clearMessages();
     hide();
-
-    return;
-    QPropertyAnimation* animation = new QPropertyAnimation(m_hide_widget, "maximumHeight");
-    animation->setEasingCurve(QEasingCurve::InOutCubic);
-    animation->setDuration(200);
-    animation->setStartValue(100);
-    animation->setEndValue(0);
-    animation->start();
-    m_progress->setMaximum(0);
-    m_progress->setMinimum(0);
-    m_tab_widget->setDisabled(false);
-    m_hidden = true;
-    delete animation;
 }
 
 void StatisticDialog::Update()

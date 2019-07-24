@@ -76,6 +76,8 @@ QJsonObject AbstractSearchClass::Result() const
     if (m_models.size()) {
         if (models["0"].toObject() == m_models[0])
             controller["raw"] = models;
+        else
+            emit m_model->Info()->Warning(tr("The results of %1 are too heavy. Dropping the raw data the most recent result in %2 of %3").arg(SupraFit::Method2Name(controller["method"].toInt())).arg(m_model->Name()).arg(m_model->ProjectTitle()));
     }
     result["controller"] = controller;
 

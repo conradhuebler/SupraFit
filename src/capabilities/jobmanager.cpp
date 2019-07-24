@@ -76,6 +76,7 @@ void JobManager::RunJobs()
         QJsonObject result;
         // qDebug() << object;
         qint64 t0 = 0, t1 = 0;
+        emit started();
         t0 = QDateTime::currentMSecsSinceEpoch();
 
         switch (method) {
@@ -104,6 +105,7 @@ void JobManager::RunJobs()
         }
         t1 = QDateTime::currentMSecsSinceEpoch();
         emit m_model->Info()->Message(QString("%1 took %2 msecs for %3 in %4").arg(Method2Name(method)).arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()));
+        emit finished();
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);
     }
@@ -130,7 +132,7 @@ QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
 
     m_montecarlo_handler->setModel(m_model);
     m_montecarlo_handler->Run();
-    emit finished();
+
     QJsonObject result = m_montecarlo_handler->Result();
     m_montecarlo_handler->clear();
     return result;
@@ -141,8 +143,8 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 
     m_gridsearch_handler->setModel(m_model);
     m_gridsearch_handler->setController(job);
-
     m_gridsearch_handler->Run();
+
     QJsonObject result = m_gridsearch_handler->Result();
     m_gridsearch_handler->clear();
     return result;
@@ -153,6 +155,7 @@ QJsonObject JobManager::RunResample(const QJsonObject& job)
     m_resample_handler->setModel(m_model);
     m_resample_handler->setController(job);
     m_resample_handler->Run();
+
     QJsonObject result = m_resample_handler->Result();
     m_resample_handler->clear();
     return result;

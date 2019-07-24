@@ -266,22 +266,61 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
     Q_UNUSED(action)
 
     QString string = data->text();
-    QString sprmodel = data->data("application/x-suprafitmodel");
 
-    // const ModelMime* d = qobject_cast<const ModelMime*>(data);
-
-    if (row == -1 && column == -1)
-        return true; //FIXME stranger things are going on here
-
-    if (string.contains("Data") && !parent(index).isValid())
+    if (string.contains("file:///")) {
         return true;
-    else if ((string.contains("Data") && parent(index).isValid()))
+    }
+
+    if (!qobject_cast<const ModelMime*>(data)) {
+        /* This could be from suprafit but a different main instance */
+
+        QByteArray sprmodel = data->data("application/x-suprafitmodel");
+        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+        QJsonObject mod = doc.object();
+        if (mod["model"].toInt() == 0) {
+            if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
+                return true;
+            }
+            return false;
+        } else {
+            if (index.isValid() && parent(index).isValid()) {
+                return true;
+            }
+        }
         return false;
-    else
+    }
+
+    const ModelMime* d = qobject_cast<const ModelMime*>(data);
+
+    QByteArray sprmodel = data->data("application/x-suprafitmodel");
+    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+
+    if (d->Instance() != m_instance) {
+        if (!doc.isEmpty() && string.contains("Data")) {
+            return true;
+        }
+    }
+
+    if (string == "SupraFitSimulation") {
         return true;
+    }
+
+    if (string.isEmpty() || string.isNull())
+        return false;
+
+    if (row == -1 && column == -1 && !index.isValid()) {
+
+        return true;
+    }
+    if (index.isValid() && !parent(index).isValid()) {
+        return true;
+    } else if (index.isValid() && parent(index).isValid()) {
+        return true;
+    } else
+        return true;
+    return true;
 }
-// TODO We want to synchronise these behaviour to get a instant feedback if the drag and drop action is supported
-#pragma message("before release resolve the this")
+
 bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
 {
     Q_UNUSED(action)
