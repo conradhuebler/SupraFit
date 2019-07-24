@@ -138,7 +138,6 @@ public:
     QJsonObject SaveWorkspace();
     QJsonObject SaveModel(int index);
 
-    bool CheckCrashFile();
     virtual QSize sizeHint() const { return QSize(800, 600); }
     MDHDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
 
@@ -203,9 +202,6 @@ private:
     QPointer<ModelWidget> m_last_modelwidget;
 private slots:
     void AddModel();
-
-    void CreateCrashFile();
-    void RemoveCrashFile();
     void SetProjectTabName();
     void RunJobs(const QJsonObject& job);
 

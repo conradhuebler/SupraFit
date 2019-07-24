@@ -421,9 +421,6 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(this, SIGNAL(recalculate()), modelwidget, SLOT(recalculate()));
 
-    connect(modelwidget->getMinimizer().data(), SIGNAL(RequestCrashFile()), this, SLOT(CreateCrashFile()), Qt::DirectConnection);
-    connect(modelwidget->getMinimizer().data(), SIGNAL(RequestRemoveCrashFile()), this, SLOT(RemoveCrashFile()), Qt::DirectConnection);
-
     connect(modelwidget, &ModelWidget::IncrementProgress, m_statistic_dialog, &StatisticDialog::IncrementProgress);
     connect(modelwidget, &ModelWidget::MaximumSteps, m_statistic_dialog, &StatisticDialog::MaximumSteps);
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, modelwidget, &ModelWidget::Interrupt);
@@ -483,33 +480,6 @@ void ModelDataHolder::setSettings(const QJsonObject& config)
             w->Model()->setOptimizerConfig(config);
             m_config = config;
         }
-    }
-}
-
-bool ModelDataHolder::CheckCrashFile()
-{
-    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
-    return QFile::exists(filename);
-}
-
-void ModelDataHolder::CreateCrashFile()
-{
-    return;
-    RemoveCrashFile();
-    QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
-    for (int i = 0; i < m_models.size(); ++i) {
-        if (!m_models[i].isNull()) {
-            QJsonObject obj = m_models[i].data()->ExportModel();
-            JsonHandler::AppendJsonFile(obj, filename);
-        }
-    }
-}
-
-void ModelDataHolder::RemoveCrashFile()
-{
-    if (CheckCrashFile()) {
-        QString filename = qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit";
-        QFile::remove(filename);
     }
 }
 

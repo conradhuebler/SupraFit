@@ -192,7 +192,7 @@ private:
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_message, *m_license;
+    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license;
     QJsonObject m_opt_config;
 
     int m_last_index = -1;
@@ -262,7 +262,6 @@ private slots:
     void about();
     void LicenseInfo();
 
-    void Messages();
     void FirstStart();
     void UpdateRecentList();
     void AddMetaModel(const QModelIndex& index, int position);

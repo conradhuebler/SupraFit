@@ -137,16 +137,6 @@ QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
     QJsonObject toplevel;
     m_model_dataholder->AddToWorkspace(object);
 
-    if (m_model_dataholder->CheckCrashFile()) {
-        QMessageBox::StandardButton replay;
-        QString app_name = QString(qApp->instance()->applicationName());
-        replay = QMessageBox::information(this, tr("Old Models found."), tr("It seems %1 crashed (unfortunately)!\nShall I recover the last models?").arg(app_name), QMessageBox::Yes | QMessageBox::No);
-        if (replay == QMessageBox::Yes) {
-            QJsonObject toplevel;
-            if (JsonHandler::ReadJsonFile(toplevel, qApp->instance()->property("projectpath").toString() + ".crashsave.suprafit"))
-                m_model_dataholder->AddToWorkspace(toplevel);
-        }
-    }
     return m_data;
 }
 
