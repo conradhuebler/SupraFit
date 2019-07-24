@@ -196,6 +196,7 @@ private:
     QJsonObject m_opt_config;
 
     int m_last_index = -1;
+    bool m_alert = false;
 
     QString m_supr_file;
 

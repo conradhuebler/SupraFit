@@ -106,4 +106,6 @@ signals:
     void AppendPlainText(const QString& str);
     void ModelAdded();
     void ModelsChanged();
+    void Message(const QString& str, int priority);
+    void Warning(const QString& str, int priority);
 };

@@ -46,4 +46,8 @@ private:
     QWidget* m_titlebarwidget;
 
 private slots:
+
+signals:
+    void Attention();
+    void Presence();
 };

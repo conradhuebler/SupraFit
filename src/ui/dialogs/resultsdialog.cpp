@@ -122,13 +122,15 @@ void ResultsDialog::Attention()
 
 void ResultsDialog::ShowResult(SupraFit::Method type, int index)
 {
-    ResultsWidget* results = new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper);
+    QJsonObject jsonobject = m_model.data()->getStatistic(type, index);
+    ResultsWidget* results = new ResultsWidget(jsonobject, m_model, m_wrapper);
     QString name = tr("%1 # %2").arg(SupraFit::Method2Name(type)).arg(index + 1);
     int tab = m_tabs->addTab(results, name);
+    double timestamp = jsonobject["controller"].toObject()["timestamp"].toDouble();
 
     connect(results, &ResultsWidget::LoadModel, this, &ResultsDialog::LoadModel);
     connect(results, &ResultsWidget::AddModel, this, &ResultsDialog::AddModel);
-    m_stored_widgets[name] = results;
+    m_stored_widgets[timestamp] = results;
 
     m_tabs->setCurrentIndex(tab);
     m_indices[Index(type, index)] = tab;
@@ -150,11 +152,17 @@ void ResultsDialog::UpdateList()
         QJsonObject controller = object["controller"].toObject();
         item->setData(tr("%1 # %2").arg(SupraFit::Method2Name(controller["method"].toInt())).arg(i + 1), Qt::DisplayRole);
         item->setData(controller["method"].toInt(), Qt::UserRole);
+        item->setData(controller["timestamp"].toDouble(), Qt::UserRole + 3);
 
         if (controller.contains("raw"))
             item->setData(QIcon(":/icons/applications-education-science.png"), Qt::DecorationRole);
         else
             item->setData(QIcon(":/icons/battery-low.png"), Qt::DecorationRole);
+
+        if (m_stored_widgets.contains(controller["timestamp"].toDouble())) {
+            ResultsWidget* results = m_stored_widgets[controller["timestamp"].toDouble()];
+            m_tabs->setTabText(m_tabs->indexOf(results), tr("%1 # %2").arg(SupraFit::Method2Name(controller["method"].toInt())).arg(i + 1));
+        }
 
         item->setData(i, Qt::UserRole + 1);
         makeItem(item);
@@ -226,19 +234,21 @@ void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
     if (-1 == m_indices[Index(item)]) {
         SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
         int index = item->data(Qt::UserRole + 1).toInt();
-        ResultsWidget* results = new ResultsWidget(m_model.data()->getStatistic(type, index), m_model, m_wrapper);
+        QJsonObject jsonobject = m_model.data()->getStatistic(type, index);
+        ResultsWidget* results = new ResultsWidget(jsonobject, m_model, m_wrapper);
         QString name = tr("%1 # %2").arg(SupraFit::Method2Name(type)).arg(index + 1);
         int tab = m_tabs->addTab(results, name);
+        double timestamp = jsonobject["controller"].toObject()["timestamp"].toDouble();
         connect(results, &ResultsWidget::LoadModel, this, &ResultsDialog::LoadModel);
         connect(results, &ResultsWidget::AddModel, this, &ResultsDialog::AddModel);
-        m_stored_widgets[name] = results;
-        item->setData(name, Qt::UserRole + 3);
+        m_stored_widgets[timestamp] = results;
+        item->setData(timestamp, Qt::UserRole + 3);
         m_indices[Index(item)] = tab;
     } else {
         QStandardItem* item = m_itemmodel->itemFromIndex(index);
-        QString name = item->data(Qt::DisplayRole).toString();
-        if (m_stored_widgets.contains(name)) {
-            ResultsWidget* results = m_stored_widgets[name];
+        double timestamp = item->data(Qt::UserRole + 3).toDouble();
+        if (m_stored_widgets.contains(timestamp)) {
+            ResultsWidget* results = m_stored_widgets[timestamp];
             m_tabs->setCurrentIndex(m_tabs->indexOf(results));
         }
     }
@@ -250,12 +260,12 @@ void ResultsDialog::RemoveItem(const QModelIndex& index)
         return;
 
     QStandardItem* item = m_itemmodel->itemFromIndex(index);
-    QString name = item->data(Qt::DisplayRole).toString();
-    if (m_stored_widgets.contains(name)) {
-        ResultsWidget* results = m_stored_widgets[name];
+    double timestamp = item->data(Qt::UserRole + 3).toDouble();
+    if (m_stored_widgets.contains(timestamp)) {
+        ResultsWidget* results = m_stored_widgets[timestamp];
         m_tabs->removeTab(m_tabs->indexOf(results));
         delete results;
-        m_stored_widgets.remove(name);
+        m_stored_widgets.remove(timestamp);
     }
 
     SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());

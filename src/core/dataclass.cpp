@@ -785,6 +785,7 @@ DataClass::DataClass(QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate;
+
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
     connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
@@ -796,14 +797,13 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
 {
     d = new DataClassPrivate();
     d->m_type = type;
-    ImportData(json);
-    if (d->m_independent_model->columnCount() != d->m_scaling.size())
-        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-            d->m_scaling << 1;
+
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
     connect(Info(), &DataClassPrivateObject::Message, this, &DataClass::Message);
     connect(Info(), &DataClassPrivateObject::Warning, this, &DataClass::Warning);
+
+    ImportData(json);
 }
 
 DataClass::DataClass(const DataClass& other)
@@ -894,7 +894,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     if (fileversion > qint_version) {
         emit Info()->Warning(QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion));
         qWarning() << QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion);
-        //return false;
+        return false;
     }
 
     d->m_systemObject = topjson["system"].toObject();
@@ -964,6 +964,11 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
             d->m_uuid = uuid.createUuid().toString();
         }
     }
+
+    if (d->m_independent_model->columnCount() != d->m_scaling.size())
+        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
+            d->m_scaling << 1;
+
     return true;
 }
 

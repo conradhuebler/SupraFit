@@ -386,6 +386,7 @@ SupraFitGui::SupraFitGui()
     m_message_dock->setWidget(m_messages_widget);
     m_message_dock->setAllowedAreas(Qt::BottomDockWidgetArea);
     m_message_dock->setTitleBarWidget(m_messages_widget->TitleBarWidget());
+    m_message_dock->setObjectName(tr("message_dock"));
     addDockWidget(Qt::BottomDockWidgetArea, m_message_dock);
 
     m_splash = new QSplashScreen(this, QPixmap(":/misc/logo_small.png"));
@@ -536,8 +537,31 @@ SupraFitGui::SupraFitGui()
     m_save_as->setShortcut(QKeySequence::SaveAs);
 
     m_message_dock_action = m_message_dock->toggleViewAction();
-    m_message_dock_action->setIcon(Icon("text-field"));
+    m_message_dock_action->setIcon(QIcon(":/icons/help-hint.png"));
+    m_message_dock_action->setToolTip(tr("No unread messages"));
     m_message_dock_action->setText(tr("Toggle Message"));
+    m_message_dock_action->setShortcut(QKeySequence(tr("F4")));
+
+    connect(m_messages_widget, &MessageDock::Presence, this, [this]() {
+        if (m_message_dock->isHidden() && !m_alert) {
+            m_message_dock_action->setIcon(QIcon(":/icons/help-hint-green.png"));
+            m_message_dock_action->setToolTip(tr("There are unread messages. But that is ok."));
+        }
+    });
+
+    connect(m_messages_widget, &MessageDock::Attention, this, [this]() {
+        if (m_message_dock->isHidden()) {
+            m_message_dock_action->setIcon(QIcon(":/icons/help-hint-red.png"));
+            m_message_dock_action->setToolTip(tr("There are unread ERRORs. Please don't not ignore them."));
+            m_alert = true;
+        }
+    });
+
+    connect(m_message_dock_action, &QAction::toggled, this, [this]() {
+        m_message_dock_action->setIcon(QIcon(":/icons/help-hint.png"));
+        m_message_dock_action->setToolTip(tr("No unread messages"));
+        m_alert = false;
+    });
 
     m_config = new QAction(Icon("configure"), tr("Settings"), this);
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
@@ -735,10 +759,21 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
         m_cached_meta << object;
         return true;
     }
+    connect(window, &MainWindow::Message, m_messages_widget, &MessageDock::Message);
+    connect(window, &MainWindow::Warning, m_messages_widget, &MessageDock::Warning);
 
     QWeakPointer<DataClass> data = window->SetData(object);
-    if (!data)
+    if (!data) {
+        disconnect(window);
+        delete window;
         return false;
+    }
+
+    if (!data.data()->Size()) {
+        disconnect(window);
+        delete window;
+        return false;
+    }
     m_hashed_wrapper.insert(data.data()->UUID(), window->getChartWrapper());
 
     QString name = data.data()->ProjectTitle();
@@ -764,8 +799,6 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_project_tree->UpdateStructure();
     setActionEnabled(true);
 
-    connect(data.data(), &DataClass::Message, m_messages_widget, &MessageDock::Message);
-    connect(data.data(), &DataClass::Warning, m_messages_widget, &MessageDock::Warning);
 
     return true;
 }

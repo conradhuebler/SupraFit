@@ -58,7 +58,7 @@ private:
     QGridLayout* m_layout;
     ChartWrapper* m_wrapper;
     QHash<QString, int> m_indices;
-    QHash<QString, ResultsWidget*> m_stored_widgets;
+    QHash<double, ResultsWidget*> m_stored_widgets;
     QAction *m_load, *m_save, *m_drop_data, *m_remove;
 
 private slots:

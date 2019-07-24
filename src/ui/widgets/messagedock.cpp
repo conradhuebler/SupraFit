@@ -18,6 +18,7 @@
  */
 
 #include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 
@@ -36,14 +37,27 @@
 MessageDock::MessageDock()
 {
     m_message = new QTextEdit;
+
+    m_message->setReadOnly(true);
+    QPalette p = m_message->palette();
+
+    p.setColor(QPalette::Active, QPalette::Base, Qt::lightGray);
+    p.setColor(QPalette::Inactive, QPalette::Base, Qt::lightGray);
+    p.setColor(QPalette::Inactive, QPalette::Text, Qt::black);
+    p.setColor(QPalette::Inactive, QPalette::Window, Qt::black);
+    m_message->setPalette(p);
+
     m_clear = new QPushButton(tr("Clear"));
     m_clear->setIcon(Icon("edit-clear-history"));
+    m_clear->setMaximumWidth(100);
+    m_clear->setFlat(true);
     connect(m_clear, &QPushButton::clicked, m_message, &QTextEdit::clear);
 
     QLabel* label = new QLabel(tr("Message from SupraFit"));
 
     QHBoxLayout* hlayout = new QHBoxLayout;
     hlayout->addWidget(label);
+    //hlayout->add();
     hlayout->addWidget(m_clear);
     m_titlebarwidget = new QWidget;
     m_titlebarwidget->setLayout(hlayout);
@@ -62,10 +76,12 @@ void MessageDock::Message(const QString& str)
 {
     QMutexLocker locker(&m_mutex);
     m_message->append(tr("<pre><p>%1&emsp;<font color='green'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    emit Presence();
 }
 
 void MessageDock::Warning(const QString& str)
 {
     QMutexLocker locker(&m_mutex);
     m_message->append(tr("<pre><p>%1&emsp;<font color='red'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    emit Attention();
 }

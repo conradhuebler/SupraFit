@@ -112,6 +112,7 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
+    disconnect(m_data.data());
     m_model_dataholder->CloseAllForced();
     m_data.clear();
     WriteSettings();
@@ -120,7 +121,14 @@ MainWindow::~MainWindow()
 QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
 {
     QString colors = object["data"].toObject()["colors"].toString();
-    m_data = QSharedPointer<DataClass>(new DataClass(object["data"].toObject()));
+    m_data = QSharedPointer<DataClass>(new DataClass());
+
+    connect(m_data.data(), &DataClass::Message, this, &MainWindow::Message);
+    connect(m_data.data(), &DataClass::Warning, this, &MainWindow::Warning);
+
+    if (!m_data->ImportData(object["data"].toObject()))
+        return m_data;
+
     QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(m_data);
     if (!colors.isEmpty() && !colors.isNull())
         wrapper->setColorList(colors);
