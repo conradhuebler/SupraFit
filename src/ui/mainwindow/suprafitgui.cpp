@@ -863,6 +863,8 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
             delete window;
             return;
         }
+        connect(model.data(), &MetaModel::Message, m_messages_widget, &MessageDock::Message);
+        connect(model.data(), &MetaModel::Warning, m_messages_widget, &MessageDock::Warning);
 
         m_stack_widget->addWidget(window);
 

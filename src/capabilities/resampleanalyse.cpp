@@ -164,6 +164,8 @@ void ResampleAnalyse::CrossValidation()
                 algorithm = 1;
         }
 
+        m_controller["Algorithm"] = algorithm;
+
         if (algorithm == 3) {
 
             qDebug() << "Random filling method";

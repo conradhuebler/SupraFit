@@ -333,6 +333,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress);
     connect(m_jobmanager, &JobManager::prepare, this, &ModelWidget::MaximumSteps);
+    connect(m_jobmanager, &JobManager::Message, this, &ModelWidget::Message, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::started, this, &ModelWidget::started);
+    connect(m_jobmanager, &JobManager::finished, this, &ModelWidget::finished, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);

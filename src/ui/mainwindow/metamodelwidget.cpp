@@ -110,6 +110,8 @@ void MetaModelWidget::setUi()
     layout->addWidget(m_statistic_widget, 3, 0, 1, 2);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
     connect(Model(), &MetaModel::ParameterMoved, this, [this]() { m_type->setCurrentIndex(this->Model()->ConnectionType()); });
+    connect(Model(), &DataClass::Message, this, &MetaModelWidget::Message);
+    connect(Model(), &DataClass::Warning, this, &MetaModelWidget::Warning);
     setLayout(layout);
 }
 
@@ -152,6 +154,7 @@ void MetaModelWidget::ToggleStatisticDialog()
 
     connect(m_jobmanager, &JobManager::started, statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, statistic_dialog, &StatisticDialog::HideWidget);
+    connect(m_jobmanager, &JobManager::Message, statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
 
     connect(statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt);
     connect(statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {

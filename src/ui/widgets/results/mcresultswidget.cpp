@@ -312,7 +312,11 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
         for (int j = 0; j < table->rowCount(); ++j) {
             pp << QPointF(x[j], table->data(i, j));
         }
-        QColor color = (m_wrapper->Series(i)->color());
+        QColor color;
+        if (m_wrapper->SeriesSize())
+            color = (m_wrapper->Series(i)->color());
+        else
+            color = m_wrapper->ColorCode(i);
 
         LineSeries* line = new LineSeries;
         line->setColor(color);

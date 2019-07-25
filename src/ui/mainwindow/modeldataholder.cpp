@@ -376,6 +376,9 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         m_metamodelwidget->setMetaModel(qobject_cast<MetaModel*>(data));
         m_modelsWidget->setMetaTab(m_metamodelwidget);
         m_TitleBarWidget->HideModelTools();
+
+        connect(m_metamodelwidget, &MetaModelWidget::Message, this, &ModelDataHolder::Message);
+        connect(m_metamodelwidget, &MetaModelWidget::Warning, this, &ModelDataHolder::Warning);
     }
 }
 
@@ -423,6 +426,10 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
 
     connect(modelwidget, &ModelWidget::IncrementProgress, m_statistic_dialog, &StatisticDialog::IncrementProgress);
     connect(modelwidget, &ModelWidget::MaximumSteps, m_statistic_dialog, &StatisticDialog::MaximumSteps);
+    connect(modelwidget, &ModelWidget::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
+    connect(modelwidget, &ModelWidget::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
+    connect(modelwidget, &ModelWidget::started, m_statistic_dialog, &StatisticDialog::ShowWidget, Qt::DirectConnection);
+
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, modelwidget, &ModelWidget::Interrupt);
 
     m_modelsWidget->addModelsTab(modelwidget);

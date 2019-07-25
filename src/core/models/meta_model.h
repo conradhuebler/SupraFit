@@ -72,7 +72,7 @@ public:
 
     virtual int InputParameterSize() const override { return m_inp_param; }
 
-    virtual int LocalParameterSize(int i = 0) const;
+    virtual int LocalParameterSize(int i = 0) const override;
 
     virtual inline int Size() const override { return m_size; }
     virtual inline int IndependentVariableSize() const override { return m_indep_var; }
@@ -146,9 +146,9 @@ public:
 
     void RemoveModel(const AbstractModel* model);
 
-    inline virtual int ChildrenSize() const { return m_models.size(); }
+    inline virtual int ChildrenSize() const override { return m_models.size(); }
 
-    virtual inline QPointer<DataClass> Children(int i) { return m_models[i].data(); }
+    virtual inline QPointer<DataClass> Children(int i) override { return m_models[i].data(); }
 
     DataTable* IndependentModel() override;
 

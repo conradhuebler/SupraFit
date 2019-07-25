@@ -183,4 +183,7 @@ signals:
     void IncrementProgress(int value);
     void MaximumSteps(int value);
     void ColorChanged(const QColor& color);
+    void started();
+    void finished();
+    void Message(const QString& str);
 };

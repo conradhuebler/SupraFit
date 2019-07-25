@@ -41,7 +41,10 @@ option (conservative
 
 option (noto_font
     "Enable and Use Google Noto Fonts" OFF)
-    
+
+option (_Theme
+    "Use Icon Theme from Desktop Environment, It does not work on Windows" OFF)
+
 # Get the current working branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD
@@ -77,8 +80,6 @@ endif(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
 
 if(WIN32) # Check if we are on Windows
     set (_Theme OFF)
-else()
-    set (_Theme ON)
 endif(WIN32)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -114,10 +115,6 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5PrintSupport CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
-
-if(Qt5Widgets_VERSION GREATER 5.9)
-    set(Qt5_10 ON)
-endif()
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
@@ -270,8 +267,7 @@ elseif(APPLE)
                         MACOSX_BUNDLE YES
         )
 elseif(UNIX)
-        # Nothing special required
-        set (_Theme ON)
+
 else()
         message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
 endif(WIN32)

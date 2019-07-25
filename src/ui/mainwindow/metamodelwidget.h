@@ -84,4 +84,6 @@ signals:
     void Finished();
     void IncrementProgress(int progess);
     void MaximumSteps(int steps);
+    void Message(const QString& str, int priority);
+    void Warning(const QString& str, int priority);
 };

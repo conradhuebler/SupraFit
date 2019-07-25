@@ -219,10 +219,11 @@ signals:
     // void ModelAdded(AbstractModel* model);
     void ModelAdded();
     void ModelRemoved();
-    void Message(const QString& str, int priority);
     void MessageBox(const QString& str, int priority);
     void InsertModel(const QJsonObject& model, int active);
     void InsertModel(const QJsonObject& model);
     void nameChanged();
     void recalculate();
+    void Message(const QString& str, int priority);
+    void Warning(const QString& str, int priority);
 };
