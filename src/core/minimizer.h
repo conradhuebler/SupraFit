@@ -105,6 +105,4 @@ private:
 signals:
     void Message(const QString& str, int priority);
     void Warning(const QString& str, int priority);
-    void RequestCrashFile();
-    void RequestRemoveCrashFile();
 };

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,7 @@
 
 #include "src/core/AbstractModel.h"
 
-#include <QDebug>
-
+#include <QtCore/QDebug>
 #include <QtCore/QJsonObject>
 #include <QtCore/QtGlobal>
 #include <QtCore/QtMath>
@@ -111,7 +110,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     Eigen::VectorXd parameter(param.size());
     for (int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
-
+    /*
     QString message = QString();
     message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
     message += "Old vector : ";
@@ -120,6 +119,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     }
     message += "\n";
     model.data()->Message(message, 5);
+    */
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
     functor.ModelSignals = ModelSignals;
@@ -154,6 +154,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
             norm += qAbs(globalConstants[i] - constants[i]);
     }
 
+    /*
     QString result;
     result += "Levenberg-Marquardt returned in  " + QString::number(iter) + " iter, sumsq " + QString::number(model.data()->ModelError()) + "\n";
     result += "Last Sum of Changes in complexation constants was " + QString::number(norm) + "\n";
@@ -162,6 +163,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         result += QString::number(param[i]) + " ";
     }
     result += "\n";
+    */
     //     model.data()->Message(result, 4);
 
     for (int i = 0; i < functor.inputs(); ++i)

@@ -118,6 +118,7 @@ void MetaModelWidget::setUi()
 void MetaModelWidget::Minimize()
 {
     Waiter wait;
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     NonLinearFitThread* thread = new NonLinearFitThread(false);
     thread->setModel(m_model, false);
@@ -143,6 +144,10 @@ void MetaModelWidget::Minimize()
         FastConfidence();
 
     m_statistic_widget->Update();
+
+    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
+
+    Model()->Message(QString("Optimisation took %2 msecs for %3 in %4").arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()), 5);
 }
 
 void MetaModelWidget::ToggleStatisticDialog()

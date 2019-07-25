@@ -113,6 +113,7 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
     disconnect(m_data.data());
+    disconnect(m_model_dataholder);
     m_model_dataholder->CloseAllForced();
     m_data.clear();
     WriteSettings();

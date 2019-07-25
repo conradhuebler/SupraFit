@@ -29,6 +29,7 @@
 #include <QtCore/QTimer>
 
 #include "minimizer.h"
+
 NonLinearFitThread::NonLinearFitThread(bool exchange_statistics)
     : m_exc_statistics(exchange_statistics)
 {
@@ -124,8 +125,7 @@ int Minimizer::Minimize(const QList<int>& locked)
 
 int Minimizer::Minimize()
 {
-    emit RequestCrashFile();
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     NonLinearFitThread* thread = new NonLinearFitThread(m_exc_statistics);
     thread->setModel(m_model);
@@ -141,7 +141,10 @@ int Minimizer::Minimize()
     m_sum_error = thread->SumOfError();
     delete thread;
     m_model->ImportModel(m_last_parameter);
-    emit RequestRemoveCrashFile();
+    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
+
+    emit m_model->Info()->Message(QString("Optimisation took %2 msecs for %3 in %4").arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()), 5);
+    qDebug() << "here";
     return converged;
 }
 

@@ -868,7 +868,7 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
 
         m_stack_widget->addWidget(window);
 
-        connect(window, &MainWindow::ModelsChanged, this, [=]() {
+        connect(window, &MainWindow::ModelsChanged, m_project_tree, [=]() {
             m_project_tree->UpdateStructure();
         });
         m_project_list.append(window);
