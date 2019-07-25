@@ -95,7 +95,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_model(model)
     , m_charts(charts)
     , m_pending(false)
-    , m_minimizer(QSharedPointer<Minimizer>(new Minimizer(true, this), &QObject::deleteLater))
+    , m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
@@ -551,7 +551,7 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     m_pending = true;
 
     CollectParameters();
-    QJsonObject json = m_model->ExportModel();
+    QJsonObject json = m_model->ExportModel(false, false);
     QList<int> locked = m_model->LockedParameters();
     m_minimizer->setParameter(json);
 
@@ -561,7 +561,7 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
 
     json = m_minimizer->Parameter();
     m_last_model = json;
-    m_model->ImportModel(json);
+    m_model->ImportModel(json, false);
     m_model->OptimizeParameters();
     Repaint();
     if (qApp->instance()->property("auto_confidence").toBool())
@@ -840,7 +840,7 @@ QColor ModelWidget::ActiveColor() const
 
 void ModelWidget::Restore()
 {
-    m_model->ImportModel(m_last_model);
+    m_model->ImportModel(m_last_model, false);
     Repaint();
 }
 

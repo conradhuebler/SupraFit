@@ -655,6 +655,8 @@ public:
      * Cut offs are model specific parameters, that have the be determined seperatly */
     inline virtual double ReductionCutOff() const { return -1; }
 
+    void clearStatistic();
+
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

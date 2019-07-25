@@ -864,60 +864,37 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     QJsonObject statisticObject;
     QString help = "Please consider to \n(1) - Save the entry to a seperate file (via right click) and \n(2 - a) Remove the corresponding entry from the Results List or\n(2 - b) Drop the raw data for this result!";
     if (statistics) {
-        for (int i = 0; i < m_mc_statistics.size(); ++i) {
-            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::MonteCarlo) + ":" + QString::number(i)] = m_mc_statistics[i];
-            if (ref.isNull()) {
-                emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::MonteCarlo)).arg(Name()).arg(ProjectTitle()).arg(help));
-                statisticObject.remove(QString::number(SupraFit::Method::MonteCarlo) + ":" + QString::number(i));
-            }
-        }
+        int counter = 0;
 
-        for (int i = 0; i < m_cv_statistics.size(); ++i) {
-            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::CrossValidation) + ":" + QString::number(i)] = m_cv_statistics[i];
-            if (ref.isNull()) {
-                emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::CrossValidation)).arg(Name()).arg(ProjectTitle()).arg(help));
-                statisticObject.remove(QString::number(SupraFit::Method::CrossValidation) + ":" + QString::number(i));
-            }
-        }
-
-        for (int i = 0; i < m_moco_statistics.size(); ++i) {
-            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::ModelComparison) + ":" + QString::number(i)] = m_moco_statistics[i];
-            if (ref.isNull()) {
-                emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::ModelComparison)).arg(Name()).arg(ProjectTitle()).arg(help));
-                statisticObject.remove(QString::number(SupraFit::Method::ModelComparison) + ":" + QString::number(i));
-            }
-        }
-
-        for (int i = 0; i < m_wg_statistics.size(); ++i) {
-            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch) + ":" + QString::number(i)] = m_wg_statistics[i];
-            if (ref.isNull()) {
-                emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::WeakenedGridSearch)).arg(Name()).arg(ProjectTitle()).arg(help));
-                statisticObject.remove(QString::number(SupraFit::Method::WeakenedGridSearch) + ":" + QString::number(i));
-            }
-        }
-
-        for (int i = 0; i < m_search_results.size(); ++i) {
-            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::GlobalSearch) + ":" + QString::number(i)] = m_search_results[i];
-            if (ref.isNull()) {
-                emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::GlobalSearch)).arg(Name()).arg(ProjectTitle()).arg(help));
-                statisticObject.remove(QString::number(SupraFit::Method::GlobalSearch) + ":" + QString::number(i));
-            }
-        }
-
-        for (int i = 0; i < m_reduction.size(); ++i) {
-            QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::Reduction) + ":" + QString::number(i)] = m_reduction[i];
-            if (ref.isNull()) {
-                emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1  in model %3 from data %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::Reduction)).arg(Name()).arg(ProjectTitle()).arg(help));
-                statisticObject.remove(QString::number(SupraFit::Method::Reduction) + ":" + QString::number(i));
-            }
-        }
-
-        QJsonValueRef ref = statisticObject[QString::number(SupraFit::Method::FastConfidence)] = m_fast_confidence;
+        QJsonValueRef ref = statisticObject[QString::number(counter)] = m_fast_confidence;
         if (ref.isUndefined()) {
             qWarning() << "Critical warning, statistic data are to large to be stored in file";
             emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %1 in model %2 from data %3. %4").arg(SupraFit::Method::FastConfidence).arg(Name()).arg(ProjectTitle()).arg(help));
-            statisticObject.remove(QString::number(SupraFit::Method::FastConfidence));
+            statisticObject.remove(QString::number(counter));
         }
+
+        counter++;
+
+        auto SaveStatistic = [this, help](QJsonObject& statisticObject, const QList<QJsonObject>& data, int& counter) {
+            for (int i = 0; i < data.size(); ++i) {
+
+                QJsonValueRef ref = statisticObject[QString::number(counter)] = data[i];
+                if (ref.isNull()) {
+                    emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::MonteCarlo)).arg(Name()).arg(ProjectTitle()).arg(help));
+                    statisticObject.remove(QString::number(counter));
+                }
+                counter++;
+            }
+        };
+
+        SaveStatistic(statisticObject, m_mc_statistics, counter);
+        SaveStatistic(statisticObject, m_cv_statistics, counter);
+        SaveStatistic(statisticObject, m_moco_statistics, counter);
+        SaveStatistic(statisticObject, m_wg_statistics, counter);
+        SaveStatistic(statisticObject, m_wg_statistics, counter);
+        SaveStatistic(statisticObject, m_search_results, counter);
+        SaveStatistic(statisticObject, m_reduction, counter);
+
         json["methods"] = statisticObject;
     }
 
@@ -1077,26 +1054,24 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
 
     if (override) {
-        m_mc_statistics.clear();
-        if (fileversion >= 1600) {
-            m_moco_statistics.clear();
-            m_wg_statistics.clear();
-        }
-    }
 
-    if (fileversion < 1600) {
-        m_moco_statistics << statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject();
-        m_wg_statistics << statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject();
+        if (fileversion < 1600) {
+            UpdateStatistic(statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject());
+            UpdateStatistic(statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject());
+            // m_moco_statistics << statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject();
+            m_wg_statistics << statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject();
     }
-    if (fileversion < 1608)
-        m_reduction << statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
-
-    m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
+    if (fileversion < 1608) {
+        UpdateStatistic(statisticObject[QString::number(SupraFit::Method::Reduction)].toObject());
+        //m_reduction << statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
+    }
+    UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
+    //m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
 
     if (!m_fast_confidence.isEmpty())
         ParseFastConfidence(m_fast_confidence);
 
-    if (fileversion < 1609) {
+    if (fileversion >= 1608) {
         for (const QString& str : qAsConst(keys)) {
 
             QJsonObject object = statisticObject[str].toObject();
@@ -1105,47 +1080,10 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
                 continue;
 
             UpdateStatistic(object);
-            /*
-            if (str.contains(QString::number(SupraFit::Method::MonteCarlo) + ":")) {
-                QJsonObject object = statisticObject[str].toObject();
-                QJsonObject controller = object["controller"].toObject();
-
-                if (controller["method"].toInt() == SupraFit::Method::MonteCarlo)
-                    m_mc_statistics << object;
-                else
-                    m_cv_statistics << object;
-            } else if (str.contains(QString::number(SupraFit::Method::ModelComparison) + ":"))
-                m_moco_statistics << object;
-            else if (str.contains(QString::number(SupraFit::Method::WeakenedGridSearch) + ":"))
-                m_wg_statistics << object;
-            else if (str.contains(QString::number(SupraFit::Method::GlobalSearch) + ":"))
-                m_search_results << object;
-            else if (str.contains(QString::number(SupraFit::Method::Reduction) + ":"))
-                m_reduction << object;*/
-        }
-    } else {
-        for (const QString& str : qAsConst(keys)) {
-
-            QJsonObject object = statisticObject[str].toObject();
-            QJsonObject controller = object["controller"].toObject();
-            if (controller.isEmpty())
-                continue;
-            UpdateStatistic(object);
-            /*
-            if (str.contains(QString::number(SupraFit::Method::MonteCarlo) + ":"))
-                m_mc_statistics << object;
-            else if (str.contains(QString::number(SupraFit::Method::CrossValidation) + ":"))
-                m_cv_statistics << object;
-            else if (str.contains(QString::number(SupraFit::Method::ModelComparison) + ":"))
-                m_moco_statistics << object;
-            else if (str.contains(QString::number(SupraFit::Method::WeakenedGridSearch) + ":"))
-                m_wg_statistics << object;
-            else if (str.contains(QString::number(SupraFit::Method::GlobalSearch) + ":"))
-                m_search_results << object;
-            else if (str.contains(QString::number(SupraFit::Method::Reduction) + ":"))
-                m_reduction << object;*/
         }
     }
+    }
+
     if (fileversion >= 1601) {
         private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
     }
@@ -1244,6 +1182,18 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     qDebug() << "calculation took " << t2 - t1 << " msecs";
 #endif
     return true;
+}
+
+void AbstractModel::clearStatistic()
+{
+    m_mc_statistics.clear();
+    m_cv_statistics.clear();
+    m_wg_statistics.clear();
+    m_moco_statistics.clear();
+    m_search_results.clear();
+    m_reduction.clear();
+
+    m_fast_confidence = QJsonObject();
 }
 
 void AbstractModel::setOption(int index, const QString& value)
