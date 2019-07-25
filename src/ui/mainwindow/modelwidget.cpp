@@ -334,8 +334,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_jobmanager, &JobManager::incremented, this, &ModelWidget::IncrementProgress);
     connect(m_jobmanager, &JobManager::prepare, this, &ModelWidget::MaximumSteps);
     connect(m_jobmanager, &JobManager::Message, this, &ModelWidget::Message, Qt::DirectConnection);
-    connect(m_jobmanager, &JobManager::started, this, &ModelWidget::started);
-    connect(m_jobmanager, &JobManager::finished, this, &ModelWidget::finished, Qt::DirectConnection);
+    //connect(m_jobmanager, &JobManager::started, this, &ModelWidget::started);
+    //connect(m_jobmanager, &JobManager::finished, this, &ModelWidget::finished, Qt::DirectConnection);
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
@@ -574,7 +574,7 @@ void ModelWidget::MinimizeModel(const QJsonObject& config)
     settings.endGroup();
 
     if (!result)
-        emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
+        emit m_model->Info()->Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
     m_statistic = false;
     m_pending = false;
 }
@@ -654,7 +654,7 @@ void ModelWidget::LocalMinimize()
     }
 
     if (result < m_model->SeriesCount())
-        emit Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
+        emit m_model->Info()->Warning(tr("The optimization did not converge within the cycles! Rerun optimisation or increase number of steps."), 1);
 
     m_minimizer->setModel(m_model);
     m_statistic = false;

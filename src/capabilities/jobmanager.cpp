@@ -74,7 +74,7 @@ void JobManager::RunJobs()
     for (const QJsonObject& object : m_jobs) {
         SupraFit::Method method = static_cast<SupraFit::Method>(object["method"].toInt());
         QJsonObject result;
-        // qDebug() << object;
+
         qint64 t0 = 0, t1 = 0;
         emit started();
         t0 = QDateTime::currentMSecsSinceEpoch();

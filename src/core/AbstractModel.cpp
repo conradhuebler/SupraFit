@@ -1103,6 +1103,9 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             QJsonObject controller = object["controller"].toObject();
             if (controller.isEmpty())
                 continue;
+
+            UpdateStatistic(object);
+            /*
             if (str.contains(QString::number(SupraFit::Method::MonteCarlo) + ":")) {
                 QJsonObject object = statisticObject[str].toObject();
                 QJsonObject controller = object["controller"].toObject();
@@ -1118,7 +1121,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             else if (str.contains(QString::number(SupraFit::Method::GlobalSearch) + ":"))
                 m_search_results << object;
             else if (str.contains(QString::number(SupraFit::Method::Reduction) + ":"))
-                m_reduction << object;
+                m_reduction << object;*/
         }
     } else {
         for (const QString& str : qAsConst(keys)) {
@@ -1127,7 +1130,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             QJsonObject controller = object["controller"].toObject();
             if (controller.isEmpty())
                 continue;
-
+            UpdateStatistic(object);
+            /*
             if (str.contains(QString::number(SupraFit::Method::MonteCarlo) + ":"))
                 m_mc_statistics << object;
             else if (str.contains(QString::number(SupraFit::Method::CrossValidation) + ":"))
@@ -1139,7 +1143,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
             else if (str.contains(QString::number(SupraFit::Method::GlobalSearch) + ":"))
                 m_search_results << object;
             else if (str.contains(QString::number(SupraFit::Method::Reduction) + ":"))
-                m_reduction << object;
+                m_reduction << object;*/
         }
     }
     if (fileversion >= 1601) {

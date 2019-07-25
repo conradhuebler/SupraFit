@@ -41,13 +41,15 @@
 #include "montecarlostatistics.h"
 
 MonteCarloThread::MonteCarloThread()
-    : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
-    , m_finished(false)
+    // : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
+    : m_finished(false)
 {
+    m_fit_thread = new NonLinearFitThread(false);
 }
 
 MonteCarloThread::~MonteCarloThread()
 {
+    delete m_fit_thread;
 }
 
 void MonteCarloThread::setDataTable(QPointer<DataTable> table)
@@ -70,13 +72,34 @@ void MonteCarloThread::run()
 #ifdef _DEBUG
 //         qDebug() <<  "started!";
 #endif
+    /*
     m_minimizer->setModel(m_model);
     m_finished = m_minimizer->Minimize();
 
     m_optimized = m_minimizer->Parameter();
     m_model->ImportModel(m_optimized);
     quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    emit IncrementProgress(t1 - t0);*/
+
+#ifdef _DEBUG
+//         qDebug() <<  "started!";
+#endif
+
+    m_fit_thread->setModel(m_model, false);
+    m_fit_thread->run();
+
+    m_finished = m_fit_thread->Converged();
+
+    m_model->ImportModel(m_fit_thread->ConvergedParameter());
+    m_model->setFast(true);
+    m_model->CalculateStatistics(true);
+    m_model->Calculate();
+
+    m_model->setConverged(m_finished);
+
+    qint64 t1 = QDateTime::currentMSecsSinceEpoch();
     emit IncrementProgress(t1 - t0);
+
 #ifdef _DEBUG
 //         qDebug() <<  "finished after " << t1-t0 << "msecs!";
 #endif
@@ -301,13 +324,13 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& thr
         if (m_ptr_table[i])
             delete m_ptr_table[i];
 }
-
+/*
 void MonteCarloStatistics::clear()
 {
     m_models.clear();
     AbstractSearchClass::clear();
 }
-
+*/
 void MonteCarloStatistics::Interrupt()
 {
     m_generate = false;

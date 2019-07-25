@@ -502,8 +502,19 @@ QWidget* StatisticDialog::CVWidget()
 
     m_cv_lxo = new QSpinBox;
     m_cv_lxo->setMinimum(1);
-    m_cv_lxo->setValue(3);
     m_cv_lxo->setPrefix(tr("X = "));
+    if (m_model) {
+        m_cv_lxo->setMaximum(m_model.data()->DataPoints() - 1);
+        QLabel* max_runs = new QLabel;
+        connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), max_runs, [max_runs, this, layout](int value) {
+            long double maxsteps = tgammal(m_model.data()->DataPoints() + 1) / (tgammal(value + 1) * tgammal(m_model.data()->DataPoints() - value + 1));
+
+            max_runs->setText(tr("Maximal number of runs = %1").arg(QString::number(maxsteps, 'g')));
+        });
+        max_runs->setMaximumHeight(10);
+        layout->addWidget(max_runs, 3, 1, 1, 2);
+    }
+    m_cv_lxo->setValue(3);
 
     m_cv_runs = new QSpinBox;
     m_cv_runs->setMinimum(1);
@@ -541,7 +552,7 @@ QWidget* StatisticDialog::CVWidget()
     layout->addWidget(m_cv_lxo, 2, 1);
     layout->addWidget(m_cv_runs, 2, 2);
     if (qApp->instance()->property("advanced_ui").toBool())
-        layout->addWidget(cv_algo, 3, 1, 1, 2);
+        layout->addWidget(cv_algo, 4, 1, 1, 2);
 
     connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
     connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
@@ -549,8 +560,8 @@ QWidget* StatisticDialog::CVWidget()
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
 
-    layout->addWidget(m_cross_validate, 4, 0, 1, 3);
-    layout->addWidget(m_reduction, 5, 0, 1, 3);
+    layout->addWidget(m_cross_validate, 5, 0, 1, 3);
+    layout->addWidget(m_reduction, 6, 0, 1, 3);
     connect(m_cross_validate, &QPushButton::clicked, this, [this]() {
         clearMessages();
         emit RunCalculation(RunCrossValidation());

@@ -132,6 +132,8 @@ public:
 
     // virtual QVector<QJsonObject> PostGridSearch(const QList<QJsonObject> &models) const override;
 
+    inline virtual double ReductionCutOff() const override { return 1; }
+
 public slots:
     virtual void UpdateParameter() override;
 

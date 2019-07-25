@@ -49,7 +49,7 @@ public:
         m_model->detach();
     }
 
-    void clear() override;
+    // void clear() override;
 
 public slots:
     void Interrupt() override;

@@ -84,6 +84,9 @@ void MetaModelWidget::setUi()
 
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
+    emit m_model->Info()->Message("Hi there, from SharedPointer");
+    emit m_model.data()->Info()->Message("Hi there, from Pointer");
+    emit Model()->Info()->Message("Hi there, from getter");
 
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
         if (type != SupraFit::Method::FastConfidence) {

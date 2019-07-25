@@ -20,6 +20,7 @@
 #include "src/global.h"
 #include "src/global_config.h"
 
+#include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
 #include "src/capabilities/resampleanalyse.h"
@@ -361,7 +362,7 @@ ModelDataHolder::~ModelDataHolder()
 void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<ChartWrapper> wrapper)
 {
     m_data = data;
-    connect(m_data.data(), &DataClass::Warning, this, &ModelDataHolder::Message);
+    //connect(m_data.data(), &DataClass::Warning, this, &ModelDataHolder::Message);
     m_TitleBarWidget->setEnabled(true);
     m_wrapper = wrapper;
     if (!qobject_cast<MetaModel*>(data)) {
@@ -377,8 +378,8 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         m_modelsWidget->setMetaTab(m_metamodelwidget);
         m_TitleBarWidget->HideModelTools();
 
-        connect(m_metamodelwidget, &MetaModelWidget::Message, this, &ModelDataHolder::Message);
-        connect(m_metamodelwidget, &MetaModelWidget::Warning, this, &ModelDataHolder::Warning);
+        //connect(m_metamodelwidget, &MetaModelWidget::Message, this, &ModelDataHolder::Message);
+        //connect(m_metamodelwidget, &MetaModelWidget::Warning, this, &ModelDataHolder::Warning);
     }
 }
 
@@ -424,13 +425,11 @@ void ModelDataHolder::ActiveModel(QSharedPointer<AbstractModel> t, const QJsonOb
     connect(modelwidget, SIGNAL(Warning(QString, int)), this, SIGNAL(MessageBox(QString, int)), Qt::DirectConnection);
     connect(this, SIGNAL(recalculate()), modelwidget, SLOT(recalculate()));
 
-    connect(modelwidget, &ModelWidget::IncrementProgress, m_statistic_dialog, &StatisticDialog::IncrementProgress);
-    connect(modelwidget, &ModelWidget::MaximumSteps, m_statistic_dialog, &StatisticDialog::MaximumSteps);
-    connect(modelwidget, &ModelWidget::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
-    connect(modelwidget, &ModelWidget::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
-    connect(modelwidget, &ModelWidget::started, m_statistic_dialog, &StatisticDialog::ShowWidget, Qt::DirectConnection);
+    connect(modelwidget->Jobs(), &JobManager::incremented, m_statistic_dialog, &StatisticDialog::IncrementProgress, Qt::DirectConnection);
+    connect(modelwidget->Jobs(), &JobManager::prepare, m_statistic_dialog, &StatisticDialog::MaximumSteps, Qt::DirectConnection);
+    connect(modelwidget->Jobs(), &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
 
-    connect(m_statistic_dialog, &StatisticDialog::Interrupt, modelwidget, &ModelWidget::Interrupt);
+    connect(m_statistic_dialog, &StatisticDialog::Interrupt, modelwidget, &ModelWidget::Interrupt, Qt::DirectConnection);
 
     m_modelsWidget->addModelsTab(modelwidget);
     m_last_tab = m_modelsWidget->currentIndex();
@@ -604,6 +603,7 @@ void ModelDataHolder::CloseAllForced()
 
 void ModelDataHolder::RunJobs(const QJsonObject& job)
 {
+    Waiter wait;
 
     int run = 0;
     for (int i = 0; i < m_model_widgets.size(); ++i) {
@@ -623,7 +623,7 @@ void ModelDataHolder::RunJobs(const QJsonObject& job)
         if (m_statistic_dialog->UseChecked() && !m_model_widgets[i]->isChecked())
             continue;
 
-        Waiter wait;
+        m_statistic_dialog->ShowWidget();
         m_model_widgets[i]->setJob(job);
         m_statistic_dialog->IncrementMainProgress();
         if (!m_allow_loop)

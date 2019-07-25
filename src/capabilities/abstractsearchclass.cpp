@@ -103,4 +103,10 @@ void AbstractSearchClass::clear()
             delete i.second;
         }
     }
+
+    m_controller = QJsonObject();
+    m_models.clear();
+    m_model.clear();
+    m_results.clear();
+    m_series.clear();
 }

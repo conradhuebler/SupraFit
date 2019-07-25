@@ -144,7 +144,7 @@ int Minimizer::Minimize()
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
     emit m_model->Info()->Message(QString("Optimisation took %2 msecs for %3 in %4").arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()), 5);
-    qDebug() << "here";
+
     return converged;
 }
 

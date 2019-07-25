@@ -279,6 +279,23 @@ void DataTable::CheckRow(int row)
     emit layoutChanged();
 }
 
+bool DataTable::isRowChecked(int row) const
+{
+    int check = 0;
+    for (int i = 0; i < columnCount(); ++i)
+        check += m_checked_table(row, i);
+    return check == columnCount();
+}
+
+int DataTable::EnabledRows() const
+{
+    int value = 0;
+    for (int i = 0; i < rowCount(); ++i) {
+        value += isRowChecked(i);
+    }
+    return value;
+}
+
 Vector DataTable::DisableRow(int row)
 {
     for (int i = 0; i < columnCount(); ++i)

@@ -310,7 +310,8 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
     for (int i = 0; i < points.size(); ++i) {
         QList<QPointF> pp;
         for (int j = 0; j < table->rowCount(); ++j) {
-            pp << QPointF(x[j], table->data(i, j));
+            if (table->isRowChecked(j))
+                pp << QPointF(x[j], table->data(i, j));
         }
         QColor color;
         if (m_wrapper->SeriesSize())
@@ -318,8 +319,10 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
         else
             color = m_wrapper->ColorCode(i);
 
-        LineSeries* line = new LineSeries;
+        ScatterSeries* line = new ScatterSeries;
         line->setColor(color);
+        line->setMarkerShape(QtCharts::QScatterSeries::MarkerShapeRectangle);
+        line->setMarkerSize(6);
 
         ScatterSeries* scatter_series = new ScatterSeries;
         scatter_series->setColor(color);

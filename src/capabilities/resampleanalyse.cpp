@@ -78,14 +78,21 @@ void ResampleAnalyse::CrossValidation()
     QList<qreal> x;
 
     int index = 0;
+    int real_points = 0;
+    /* I will keep the x-vector in correct length, even rows could be disabled */
     for (int i = 0; i < m_model->DataPoints(); ++i) {
         x << m_model->PrintOutIndependent(i);
+        real_points += m_model->DependentModel()->isRowChecked(i);
     }
+    qDebug() << real_points;
     bool more_message = true;
     switch (type) {
     case 1:
         blocksize = 1;
         for (int i = 0; i < m_model->DataPoints(); ++i) {
+            if (!m_model->DependentModel()->isRowChecked(i))
+                continue;
+
             QPointer<DataTable> dep_table = new DataTable(table);
             QVector<int> indicies = QVector<int>() << i;
             Vector vector = dep_table->DisableRow(i);
@@ -103,7 +110,14 @@ void ResampleAnalyse::CrossValidation()
     case 2:
         blocksize = 1;
         for (int i = 0; i < m_model->DataPoints(); ++i) {
+
+            if (!m_model->DependentModel()->isRowChecked(i))
+                continue;
             for (int j = i + 1; j < m_model->DataPoints(); ++j) {
+
+                if (!m_model->DependentModel()->isRowChecked(j))
+                    continue;
+
                 QPointer<DataTable> dep_table = new DataTable(table);
                 dep_table->DisableRow(i);
                 dep_table->DisableRow(j);
@@ -131,6 +145,7 @@ void ResampleAnalyse::CrossValidation()
         int algorithm = m_controller["Algorithm"].toInt();
 
         int points = m_model->DataPoints();
+
         int end = X * (points - 1);
         long double maxsteps = tgammal(points + 1) / (tgammal(X + 1) * tgammal(points - X + 1));
 
@@ -143,8 +158,8 @@ void ResampleAnalyse::CrossValidation()
          *  Or we perform a random vector filling with the according condition, which might be good for a certain range
          * For now, lets use the random algorithm for maxsteps >1e5 and steps/maxsteps < 0.75 */
 
-        if (X >= points - 1) {
-            emit m_model->Info()->Message(tr("LXO exceeds DataPoints!"));
+        if (X >= real_points - 1) {
+            emit m_model->Info()->Warning(tr("LXO exceeds DataPoints! You probably disabled some rows in the Overview."));
             more_message = false;
             break;
         }
@@ -201,11 +216,17 @@ void ResampleAnalyse::CrossValidation()
 
                 QPointer<DataTable> dep_table = new DataTable(table);
                 QVector<int> indicies;
+                int checked = 0;
                 for (int i = 0; i < vector.size(); ++i) {
+                    checked += m_model->DependentModel()->isRowChecked(vector[i]);
                     dep_table->DisableRow(vector[i]);
                     indicies << vector[i];
                 }
 
+                if (checked != vector.size()) {
+                    delete dep_table;
+                    continue;
+                }
                 block.insert(index, Pair(m_model->IndependentModel(), dep_table));
                 m_job.insert(index, indicies);
 
@@ -275,9 +296,16 @@ void ResampleAnalyse::CrossValidation()
 
                     QPointer<DataTable> dep_table = new DataTable(table);
                     QVector<int> indicies;
+                    int checked = 0;
                     for (int i = 0; i < vector.size(); ++i) {
+                        checked += m_model->DependentModel()->isRowChecked(vector[i]);
                         dep_table->DisableRow(vector[i]);
                         indicies << vector[i];
+                    }
+
+                    if (checked != vector.size()) {
+                        delete dep_table;
+                        continue;
                     }
 
                     block.insert(index, Pair(m_model->IndependentModel(), dep_table));
@@ -306,9 +334,16 @@ void ResampleAnalyse::CrossValidation()
 
                     QPointer<DataTable> dep_table = new DataTable(table);
                     QVector<int> indicies;
+                    int checked = 0;
                     for (int i = 0; i < vector.size(); ++i) {
+                        checked += m_model->DependentModel()->isRowChecked(vector[i]);
                         dep_table->DisableRow(vector[i]);
                         indicies << vector[i];
+                    }
+
+                    if (checked != vector.size()) {
+                        delete dep_table;
+                        continue;
                     }
 
                     block.insert(index, Pair(m_model->IndependentModel(), dep_table));
@@ -340,11 +375,12 @@ void ResampleAnalyse::CrossValidation()
     }
 
     if (more_message)
-        qDebug() << (tr("Final evaluation in progress!"));
+        emit Message(tr("Final evaluation in progress!"));
 
     QJsonObject old_param = m_model->ExportModel(false, false);
 
     // TODO some times, I will parallise it at all
+    QSharedPointer<AbstractModel> calc_model = m_model->Clone();
     QJsonObject chart_block;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
@@ -357,11 +393,12 @@ void ResampleAnalyse::CrossValidation()
                 int index = models.key(model);
                 QVector<int> indicies = m_job.value(index);
 
-                m_model->ImportModel(model);
-                m_model->Calculate();
+                calc_model->ImportModel(model);
+                calc_model->Calculate();
                 QString points = QString();
                 for (int j : indicies) {
-                    points = points + ToolSet::DoubleList2String(m_model->ModelTable()->Row(j)) + "|";
+                    if (m_model->DependentModel()->isRowChecked(j))
+                        points = points + ToolSet::DoubleList2String(m_model->ModelTable()->Row(j)) + "|";
                 }
                 points.truncate(points.size() - 1);
                 chart_block[ToolSet::IntVec2String(indicies)] = points;
@@ -370,16 +407,16 @@ void ResampleAnalyse::CrossValidation()
             delete threads[i];
         }
     }
-
-    m_controller["chart"] = chart_block;
-    m_controller["xlabel"] = m_model.data()->XLabel();
-    m_controller["ylabel"] = m_model.data()->YLabel();
-    m_controller["series_count"] = m_model->SeriesCount();
-    m_controller["x"] = ToolSet::DoubleList2String(x);
-    m_controller["DependentModel"] = m_model->DependentModel()->ExportTable(true);
-
-    m_model->ImportModel(old_param);
-    m_model->Calculate();
+    calc_model.clear();
+    if (more_message) // this will be set to false, if LXO was apported
+    {
+        m_controller["chart"] = chart_block;
+        m_controller["xlabel"] = m_model.data()->XLabel();
+        m_controller["ylabel"] = m_model.data()->YLabel();
+        m_controller["series_count"] = m_model->SeriesCount();
+        m_controller["x"] = ToolSet::DoubleList2String(x);
+        m_controller["DependentModel"] = m_model->DependentModel()->ExportTable(true);
+    }
 
     if (m_models.size()) {
         m_results = ToolSet::Model2Parameter(m_models);
@@ -398,9 +435,10 @@ void ResampleAnalyse::PlainReduction()
     m_threadpool->setMaxThreadCount(maxthreads);
     QPointer<DataTable> table = m_model->DependentModel();
     emit setMaximumSteps(m_model->DataPoints() - 4);
-
+    int mind_points = 3;
     if (m_controller["ReductionRuntype"].toInt() == 1 || m_controller["ReductionRuntype"].toInt() == 3) {
-        for (int i = m_model->DataPoints() - 1; i > 3; --i) {
+
+        for (int i = m_model->DataPoints() - 1; i > mind_points && table->EnabledRows() >= mind_points; --i) {
             QPointer<MonteCarloThread> thread = new MonteCarloThread();
             connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
             thread->setIndex(i);
@@ -413,7 +451,7 @@ void ResampleAnalyse::PlainReduction()
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         }
     } else if (m_controller["ReductionRuntype"].toInt() == 2 || m_controller["runtype"].toInt() == 3) {
-        for (int i = 1; i < m_model->DataPoints() - 3; ++i) {
+        for (int i = 1; i < m_model->DataPoints() - 3 && table->EnabledRows() >= mind_points; ++i) {
             QPointer<MonteCarloThread> thread = new MonteCarloThread();
             connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
             thread->setIndex(i);
@@ -450,10 +488,9 @@ void ResampleAnalyse::Interrupt()
 {
     emit InterruptAll();
 }
-
+/*
 void ResampleAnalyse::clear()
 {
-    m_models.clear();
-    m_model.clear();
     AbstractSearchClass::clear();
 }
+*/

@@ -434,6 +434,9 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     OptimizeParameters_Private();
     UpdateSlicedTable();
     DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
+    connect(this, &DataClass::Message, model, &DataClass::Message);
+    connect(this, &DataClass::Warning, model, &DataClass::Warning);
+
     emit ModelAdded(t);
 }
 
@@ -445,6 +448,21 @@ void MetaModel::RemoveModel(const AbstractModel* model)
     IndependentModel()->clear();
     DependentModel()->clear();
     ModelTable()->clear();
+
+    m_glob_param = 0;
+    m_inp_param = 0;
+    m_loc_param = 0;
+    m_size = 0;
+    m_indep_var = 0;
+    m_max_indep_var = 0;
+
+    m_dep_var = 0;
+    m_series_count = 0;
+
+    m_global_names.clear();
+    m_local_names.clear();
+
+    m_mmparameter.clear();
 
     for (int l = 0; l < models.size(); ++l) {
         if (models[l].data() == model)
@@ -480,6 +498,7 @@ void MetaModel::RemoveModel(const AbstractModel* model)
     UpdateSlicedTable();
 
     DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
+    emit ModelRemoved();
 }
 
 void MetaModel::UpdateCalculated()

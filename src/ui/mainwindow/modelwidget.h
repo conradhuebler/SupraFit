@@ -97,6 +97,7 @@ public:
     void setKeys(const QString& str);
     QColor ActiveColor() const;
     void setJob(const QJsonObject& job);
+    JobManager* Jobs() const { return m_jobmanager; }
 
 public slots:
     void LoadJson(const QJsonObject& object);
