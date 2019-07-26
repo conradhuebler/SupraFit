@@ -88,7 +88,7 @@ QSharedPointer<AbstractModel> JsonHandler::Json2Model(const QJsonObject& object,
         return NULL;
 
     QSharedPointer<AbstractModel> t = CreateModel(model, data);
-    if (!t->ImportModel(object)) {
+    if (!t->LegacyImportModel(object)) {
         t.clear();
         return NULL;
     }

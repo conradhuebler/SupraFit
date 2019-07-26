@@ -305,6 +305,12 @@ public:
      * !\brief Import data from json
      */
     bool ImportData(const QJsonObject& topjson, bool forceUUID = true);
+
+    /*
+     * !\brief Import data from json older files
+     */
+    bool LegacyImportData(const QJsonObject& topjson, bool forceUUID = true);
+
     inline QList<qreal> getScaling() const { return d->m_scaling; }
     inline void setScaling(const QList<qreal>& scaling) { d->m_scaling = scaling; }
     void setHeader(const QStringList& strlist);

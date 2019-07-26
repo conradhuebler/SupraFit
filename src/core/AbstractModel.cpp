@@ -985,6 +985,98 @@ QVector<qreal> AbstractModel::AllParameter() const
 
 bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 {
+    QJsonObject json = topjson["data"].toObject();
+
+    QList<int> active_signals;
+    QList<qreal> constants;
+    QJsonObject globalParameter, optionObject;
+
+    GlobalTable()->ImportTable(json["globalParameter"].toObject());
+
+    optionObject = topjson["options"].toObject();
+    for (int index : getAllOptions())
+        setOption(index, topjson["options"].toObject()[QString::number(index)].toString());
+    QStringList keys;
+    QJsonObject statisticObject;
+
+    keys = json["methods"].toObject().keys();
+    statisticObject = json["methods"].toObject();
+
+    if (override) {
+    }
+    UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
+
+    if (!m_fast_confidence.isEmpty())
+        ParseFastConfidence(m_fast_confidence);
+
+    for (const QString& str : qAsConst(keys)) {
+
+        QJsonObject object = statisticObject[str].toObject();
+        QJsonObject controller = object["controller"].toObject();
+        if (controller.isEmpty())
+            continue;
+
+        UpdateStatistic(object);
+    }
+
+    private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
+
+    active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
+    LocalTable()->ImportTable(json["localParameter"].toObject());
+
+    setActiveSignals(active_signals);
+
+    if (topjson.contains("locked_model")) {
+#ifdef _DEBUG
+//         qDebug() << "Loaded calculated data from json file";
+#endif
+        m_locked_model = true;
+        QJsonObject resultObject = topjson["result"].toObject();
+        QStringList keys = resultObject.keys();
+
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(
+            keys.begin(),
+            keys.end(),
+            [&collator](const QString& key1, const QString& key2) {
+                return collator.compare(key1, key2) < 0;
+            });
+        for (const QString& str : qAsConst(keys)) {
+            QVector<qreal> concentrationsVector, signalVector;
+            concentrationsVector = ToolSet::String2DoubleVec(resultObject[str].toString());
+            int row = str.toInt();
+            if (ModelTable()->columnCount() == concentrationsVector.size())
+                ModelTable()->setRow(concentrationsVector, row);
+        }
+    }
+#ifdef _DEBUG
+    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    qDebug() << "model imported within" << t1 - t0 << " msecs";
+#endif
+
+    m_sum_squares = topjson["SSE"].toInt();
+    m_sum_absolute = topjson["SAE"].toInt();
+    m_mean = topjson["mean_error"].toInt();
+    m_variance = topjson["variance"].toInt();
+    m_stderror = topjson["standard_error"].toInt();
+    m_converged = topjson["converged"].toBool();
+    // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
+    if (topjson.contains("name"))
+        m_name = topjson["name"].toString();
+
+    if (SFModel() != SupraFit::MetaModel)
+        Calculate();
+
+#ifdef _DEBUG
+    quint64 t2 = QDateTime::currentMSecsSinceEpoch();
+    qDebug() << "calculation took " << t2 - t1 << " msecs";
+#endif
+    return true;
+}
+
+bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
+{
 #ifdef _DEBUG
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
@@ -994,6 +1086,10 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         return false;
     }
     int fileversion = topjson["SupraFit"].toInt();
+
+    if (fileversion == qint_version)
+        return ImportModel(topjson, override);
+
     if (static_cast<SupraFit::Model>(topjson["model"].toInt()) != SFModel()) {
         if (fileversion >= qint_version) {
             emit Info()->Warning("Sorry, I suppose I do not support this data. " + Name());
@@ -1173,6 +1269,10 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
     if (topjson.contains("name"))
         m_name = topjson["name"].toString();
+
+    if (d->m_independent_model->columnCount() != d->m_scaling.size())
+        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
+            d->m_scaling << 1;
 
     if (SFModel() != SupraFit::MetaModel)
         Calculate();

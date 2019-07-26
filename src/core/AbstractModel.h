@@ -144,16 +144,20 @@ public:
      */
     virtual QSharedPointer<AbstractModel> Clone() = 0;
 
-    /*
-     * ! \brief Export model to json file
+    /*! \brief Export model to json file
      * 
      */
     virtual QJsonObject ExportModel(bool statistics = true, bool locked = false);
 
-    /* ! \brief Import model from json
+    /*! \brief Import model from json
      * 
      */
     virtual bool ImportModel(const QJsonObject& topjson, bool override = true);
+
+    /*! \brief Import model from legacy json
+     *
+     */
+    virtual bool LegacyImportModel(const QJsonObject& topjson, bool override = true);
 
     /*! \brief Returns the name of the model
      */

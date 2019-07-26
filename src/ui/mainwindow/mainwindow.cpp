@@ -127,7 +127,7 @@ QSharedPointer<DataClass> MainWindow::SetData(const QJsonObject& object)
     connect(m_data.data(), &DataClass::Message, this, &MainWindow::Message);
     connect(m_data.data(), &DataClass::Warning, this, &MainWindow::Warning);
 
-    if (!m_data->ImportData(object["data"].toObject()))
+    if (!m_data->LegacyImportData(object["data"].toObject()))
         return m_data;
 
     QSharedPointer<ChartWrapper> wrapper = m_charts->setRawData(m_data);

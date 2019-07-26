@@ -916,6 +916,44 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
 
     d->m_systemObject = topjson["system"].toObject();
 
+    d->m_independent_model->ImportTable(topjson["independent"].toObject());
+    d->m_dependent_model->ImportTable(topjson["dependent"].toObject());
+
+    d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
+    d->m_raw_data = topjson["raw"].toObject();
+    d->m_title = topjson["title"].toString();
+
+    if (forceUUID) {
+        if (!topjson["uuid"].toString().isEmpty())
+            d->m_uuid = topjson["uuid"].toString();
+        else {
+            QUuid uuid;
+            d->m_uuid = uuid.createUuid().toString();
+        }
+    }
+
+    if (d->m_independent_model->columnCount() != d->m_scaling.size())
+        for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
+            d->m_scaling << 1;
+
+    return true;
+}
+
+bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
+{
+    int fileversion = topjson["SupraFit"].toInt();
+
+    if (fileversion == qint_version)
+        return ImportData(topjson, forceUUID);
+
+    if (fileversion > qint_version) {
+        emit Info()->Warning(QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion));
+        qWarning() << QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion);
+        return false;
+    }
+
+    d->m_systemObject = topjson["system"].toObject();
+
     if (fileversion >= 1601) {
         d->m_independent_model->ImportTable(topjson["independent"].toObject());
         d->m_dependent_model->ImportTable(topjson["dependent"].toObject());
