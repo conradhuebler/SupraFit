@@ -104,7 +104,7 @@ DataTable::DataTable(const QJsonObject& table)
 DataTable::~DataTable()
 {
 #ifdef _DEBUG
-    std::cout << "deleting table " << this << std::endl;
+// std::cout << "deleting table " << this << std::endl;
 #endif
 }
 
@@ -126,8 +126,9 @@ Vector DataTable::lastRow()
     return m_table.row(m_table.rows() - 1);
 }
 
-void DataTable::Debug() const
+void DataTable::Debug(const QString& str) const
 {
+    std::cout << str.toStdString() << std::endl;
     std::cout << "Table Content" << std::endl;
     std::cout << "Rows: " << m_table.rows() << " Cols: " << m_table.cols() << std::endl;
     std::cout << m_table << std::endl;
@@ -413,6 +414,11 @@ Vector DataTable::Column(int column) const
     return m_table.col(column);
 }
 
+Vector DataTable::CheckedRow(int row) const
+{
+    return m_checked_table.row(row);
+}
+
 Vector DataTable::Row(int row) const
 {
     return m_table.row(row);
@@ -441,10 +447,10 @@ Vector DataTable::Row(int row, const QList<int>& active) const
 void DataTable::append(const QPointer<DataTable> table)
 {
     for (int i = 0; i < table->rowCount(); ++i)
-        insertRow(table->Row(i));
+        insertRow(table->Row(i), table->CheckedRow(i));
 }
 
-void DataTable::insertRow(const Vector& row)
+void DataTable::insertRow(const Vector& row, const Vector& checked)
 {
     QReadLocker locker(&mutex);
     while (m_header.size() < row.size())
@@ -458,9 +464,12 @@ void DataTable::insertRow(const Vector& row)
         m_checked_table.conservativeResize(m_checked_table.rows() + 1, m_checked_table.cols());
     }
 
+    // if(checked.size() < row.size())
+    //     checked = Vector::Ones(row.size());
+
     for (int i = 0; i < row.size(); ++i) {
         m_table(m_table.rows() - 1, i) = row(i);
-        m_checked_table(m_checked_table.rows() - 1, i) = 1;
+        m_checked_table(m_checked_table.rows() - 1, i) = checked(i);
     }
 }
 

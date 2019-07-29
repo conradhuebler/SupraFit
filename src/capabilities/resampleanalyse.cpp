@@ -488,9 +488,3 @@ void ResampleAnalyse::Interrupt()
 {
     emit InterruptAll();
 }
-/*
-void ResampleAnalyse::clear()
-{
-    AbstractSearchClass::clear();
-}
-*/

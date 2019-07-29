@@ -266,8 +266,10 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         QPointer<DataTable> dep_table;
         if (original)
             dep_table = new DataTable(m_model->DependentModel());
-        else
+        else {
             dep_table = m_model->ModelTable();
+            dep_table->setCheckedTable(m_model->DependentModel()->CheckedTable());
+        }
         m_ptr_table << dep_table;
         if (bootstrap) {
             QPointer<DataTable> tmp = dep_table->PrepareBootStrap(Uni, rng, vector);
@@ -324,13 +326,7 @@ void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& thr
         if (m_ptr_table[i])
             delete m_ptr_table[i];
 }
-/*
-void MonteCarloStatistics::clear()
-{
-    m_models.clear();
-    AbstractSearchClass::clear();
-}
-*/
+
 void MonteCarloStatistics::Interrupt()
 {
     m_generate = false;

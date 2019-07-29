@@ -49,7 +49,10 @@ cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release  -Dnoto_font=true/false
 make
 ```
-
+or use the script in the subdirectory. It should automatically update the submodules.
+```sh
+sh scripts/build_unix.sh 
+```
 On Windows Systems use for example
 ```sh
 cd suprafit

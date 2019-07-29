@@ -82,7 +82,6 @@ public:
     MonteCarloStatistics(QObject* parent = 0);
     ~MonteCarloStatistics();
 
-    // void clear() override;
     virtual bool Run() override;
 
 public slots:

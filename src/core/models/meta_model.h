@@ -151,8 +151,11 @@ public:
     virtual inline QPointer<DataClass> Children(int i) override { return m_models[i].data(); }
 
     DataTable* IndependentModel() override;
+    DataTable* DependentModel() override;
 
     void OverrideInDependentTable(DataTable* table) override;
+
+    virtual void SetSingleParameter(double value, int parameter) override;
 
 private slots:
     void UpdateCalculated();
@@ -176,6 +179,9 @@ private:
     ConnectType m_connect_type = ConnectType::None;
 
     QPointer<DataTable> m_sliced_table;
+
+    QVector<QPointer<DataTable>> m_garbage_table;
+
     void UpdateSlicedTable();
 
 protected:

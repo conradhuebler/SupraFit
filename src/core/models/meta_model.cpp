@@ -43,6 +43,11 @@ MetaModel::~MetaModel()
 {
     for (int i = 0; i < m_models.size(); ++i)
         m_models[i].clear();
+
+    /*    for (int i = 0; i < m_garbage_table.size(); ++i)
+        if (m_garbage_table[i])
+            delete m_garbage_table[i];
+        */
 }
 
 void MetaModel::InitialGuess_Private()
@@ -247,7 +252,7 @@ QVector<qreal> MetaModel::CollectParameter()
         m_opt_para << &m_mmparameter[i].first;
         param << m_mmparameter[i].first;
     }
-
+    // qDebug() << this << m_opt_para << param;
     m_parameter = param;
     return param;
 }
@@ -258,6 +263,14 @@ QVector<qreal> MetaModel::AllParameter() const
     for (int i = 0; i < m_mmparameter.size(); ++i)
         parameter << m_mmparameter[i].first;
     return parameter;
+}
+
+void MetaModel::SetSingleParameter(double value, int parameter)
+{
+    if (parameter < m_opt_para.size()) {
+        *m_opt_para[parameter] = value;
+        m_mmparameter[parameter].first = value;
+    }
 }
 
 void MetaModel::forceGlobalParameter(double value, int parameter)
@@ -632,8 +645,8 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
 
     int size = topjson["size"].toInt();
     if (size != m_models.size()) {
-        qDebug() << QString("Stored models in json file (%1) and available models in memory (%2) dont fit").arg(size).arg(m_models.size());
-        qDebug() << "Unique Identification for this model" << UUID();
+        emit Info()->Message(QString("Stored models in json file (%1) and available models in memory (%2) dont fit").arg(size).arg(m_models.size()));
+        emit Info()->Message(QString("Unique Identification for this model is %1").arg(UUID()));
     }
     QJsonObject raw = topjson["raw"].toObject();
     bool result = true;
@@ -769,6 +782,24 @@ void MetaModel::UpdateSlicedTable()
 DataTable* MetaModel::IndependentModel()
 {
     return m_sliced_table;
+}
+
+DataTable* MetaModel::DependentModel()
+{
+    return DataClass::DependentModel();
+    /*
+    QPointer<DataTable > table = new DataTable;
+    
+     for (int l = 0; l < m_models.size(); ++l) {
+        table->append(m_models[l].data()->DependentModel());
+    //    m_models[l].data()->DependentModel()->Debug("Moving tables");
+    }
+    
+    //table->Debug("All tables moved around");
+    
+    m_garbage_table << table;
+    
+    return table;*/
 }
 
 void MetaModel::OverrideInDependentTable(DataTable* table)

@@ -66,6 +66,8 @@ void NonLinearFitThread::setModel(const QSharedPointer<AbstractModel> model, boo
         m_model->setDescription("Optimiser Model");
     } else
         m_model = model;
+    m_model->setFast(true);
+    m_model->CalculateStatistics(false);
     m_model->Calculate();
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     m_last_parameter = m_model->ExportModel(m_exc_statistics);

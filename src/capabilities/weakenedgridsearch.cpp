@@ -74,6 +74,8 @@ void WGSearchThread::Calculate()
     bool interrupt = false;
 
     QList<int> locked = m_model->LockedParameters();
+    QList<int> locked_0 = m_model->LockedParameters();
+
     QVector<qreal> param = m_model->OptimizeParameters();
 
     locked[m_index] = 0;
@@ -92,10 +94,11 @@ void WGSearchThread::Calculate()
         m_steps++;
 
         value += (increment * m_direction);
-        param[m_index] = value;
         m_model.data()->SetSingleParameter(value, m_index);
-
         m_model->setLockedParameter(locked);
+
+        //qDebug() << value << m_index << m_model.data()->LockedParameters() << m_model.data()->OptimizeParameters();
+        //m_model->Calculate();
         thread->setModel(m_model, false);
         thread->run();
         bool converged = thread->Converged();
@@ -304,9 +307,5 @@ void WeakenedGridSearch::Interrupt()
     m_threadpool->clear();
 }
 
-void WeakenedGridSearch::clear()
-{
-    m_results.clear();
-}
 
 #include "weakenedgridsearch.moc"

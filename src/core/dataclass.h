@@ -130,7 +130,7 @@ public:
 
     void append(const QPointer<DataTable> table);
 
-    void insertRow(const Vector& row);
+    void insertRow(const Vector& row, const Vector& checked);
     void insertRow(const QVector<qreal>& row, bool zero = false);
     void setRow(const QVector<qreal>& vector, int row);
     void setRow(const Vector& vector, int row);
@@ -144,9 +144,11 @@ public:
     Vector firstRow();
     Vector lastRow();
 
+    Vector CheckedRow(int row) const;
+
     QVector<qreal> toList() const;
 
-    void Debug() const;
+    void Debug(const QString& str = "None") const;
     inline QStringList header() const { return m_header; }
     inline void setHeader(const QStringList& header) { m_header = header; }
     inline void setCheckable(bool checkable) { m_checkable = checkable; }
@@ -260,9 +262,9 @@ public:
     inline int Type() const { return d->m_type; }
     inline void setType(int type) { d->m_type = type; }
     virtual inline DataTable* IndependentModel() { return d->m_independent_model; }
-    inline DataTable* DependentModel() { return d->m_dependent_model; }
-    inline DataTable* IndependentModel() const { return d->m_independent_model; }
-    inline DataTable* DependentModel() const { return d->m_dependent_model; }
+    virtual inline DataTable* DependentModel() { return d->m_dependent_model; }
+    virtual inline DataTable* IndependentModel() const { return d->m_independent_model; }
+    virtual inline DataTable* DependentModel() const { return d->m_dependent_model; }
 
     /*! \brief return text of stored data
      */

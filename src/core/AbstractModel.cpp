@@ -274,6 +274,8 @@ void AbstractModel::Calculate()
     for (const QString& str : Charts())
         clearChart(str);
 
+    //    DependentModel()->Debug("AbstractModel::Calculate");
+
     EvaluateOptions();
     CalculateVariables();
 
@@ -449,6 +451,7 @@ void AbstractModel::SetSingleParameter(double value, int parameter)
     if (parameter < m_opt_para.size()) {
         *m_opt_para[parameter] = value;
     }
+    // qDebug() << this <<  m_opt_para;
 }
 
 void AbstractModel::setParameter(const QVector<qreal>& parameter)
@@ -985,6 +988,10 @@ QVector<qreal> AbstractModel::AllParameter() const
 
 bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 {
+#ifdef _DEBUG
+    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+#endif
+
     QJsonObject json = topjson["data"].toObject();
 
     QList<int> active_signals;

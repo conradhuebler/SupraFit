@@ -274,7 +274,7 @@ public:
 
     inline virtual void ReleaseLocks() {}
 
-    void SetSingleParameter(double value, int parameter);
+    virtual void SetSingleParameter(double value, int parameter);
 
     void setGlobalParameter(double value, int parameter);
 

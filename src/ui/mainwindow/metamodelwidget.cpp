@@ -138,6 +138,7 @@ void MetaModelWidget::Minimize()
     if (!m_model->ImportModel(model))
         qDebug() << "something went wrong";
 
+    m_model->CalculateStatistics(true);
     m_model->setFast(false);
     m_model->Calculate();
 

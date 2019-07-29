@@ -47,6 +47,7 @@ public:
     inline void setModel(const QSharedPointer<AbstractModel> model)
     {
         m_model = model->Clone();
+        m_model->clearStatistic();
         guess = m_model->ExportModel(false, false);
     }
 

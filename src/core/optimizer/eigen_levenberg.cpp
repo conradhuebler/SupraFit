@@ -97,6 +97,8 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
     model.data()->CalculateStatistics(false);
 
+    qDebug() << model.data()->LockedParameters() << model.data()->OptimizeParameters();
+
     QJsonObject config = model.data()->getOptimizerConfig();
 
     int MaxIter = config["MaxLevMarInter"].toInt();

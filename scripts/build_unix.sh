@@ -2,7 +2,10 @@
 set -ex
 
 if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi # else export CXX="clang++" CC="clang"; fi
-mkdir -p build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
+git submodule init
+git submodule update
+git pull --all
+mkdir -p release
+cd release
+cmake -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true -D_Theme=false ..
 make 

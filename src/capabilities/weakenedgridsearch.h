@@ -85,7 +85,6 @@ public:
     virtual ~WeakenedGridSearch() override;
     inline bool CV() { return m_cv; }
     void setParameter(const QJsonObject& json);
-    void clear() override;
     virtual bool Run() override;
 
 public slots:

@@ -309,10 +309,31 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
         return false;
 
     if (row == -1 && column == -1 && !index.isValid()) {
+        const ModelMime* d = qobject_cast<const ModelMime*>(data);
+        if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
+            return false;
 
         return true;
     }
     if (index.isValid() && !parent(index).isValid()) {
+        int r = index.row();
+        const ModelMime* d = qobject_cast<const ModelMime*>(data);
+
+        if (qobject_cast<MetaModel*>((*m_data_list)[r].data()) && index.isValid()) {
+
+            if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
+                return false;
+
+            if (d->Index().parent().isValid())
+                return true;
+            else
+                return false; //emit UiMessage(tr("It doesn't make sense to add whole project to a meta model.\nTry one of the models within this project."));
+        } else if (index.isValid()) {
+            if (!d->Index().parent().isValid())
+                return true; //emit CopySystemParameter(d->Index(), r);
+            else
+                return false; //emit UiMessage(tr("Nothing to tell"));
+        }
         return true;
     } else if (index.isValid() && parent(index).isValid()) {
         return true;
@@ -384,6 +405,8 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
 
     if (row == -1 && column == -1 && !index.isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
+        if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
+            return false;
         emit AddMetaModel(d->Index(), -1);
         return true;
     }
@@ -392,6 +415,10 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
         if (qobject_cast<MetaModel*>((*m_data_list)[r].data()) && index.isValid()) {
+
+            if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
+                return false;
+
             if (d->Index().parent().isValid())
                 emit AddMetaModel(d->Index(), r);
             else

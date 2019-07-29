@@ -165,7 +165,8 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             if (!data.contains("index"))
                 continue;
             int index = data["index"].toString().split("|")[1].toInt();
-            xy_series->setColor(m_wrapper->Series(index)->color());
+            if (index < m_wrapper->SeriesSize())
+                xy_series->setColor(m_wrapper->Series(index)->color());
             /*connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [index, this](const QColor& color) { this->setAreaColor(index, color); });
