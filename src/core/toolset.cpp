@@ -880,7 +880,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += QString("<tr><td>Integral below curve:</td><td> %1 <b></td></tr>\n").arg(Print::printDouble(integral)); //.arg( result["steps"].toInt() ).arg(color_end);
 
         text += "<tr><td colspan='2'>Analyse of the Grid Search Outcome</td></tr>\n";
-        text += QString("<tr><td>%1 Steps: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg( result["steps"].toInt() ).arg(color_end);
+        text += QString("<tr><td>%1 Steps: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(result["StepsTaken"].toInt()).arg(color_end);
         text += QString("<tr><td>%1 Converged: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(converged)).arg(color_end);
         text += QString("<tr><td>%1 Stationary: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(stationary)).arg(color_end);
         text += QString("<tr><td>%1 Finished: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(finished)).arg(color_end);
@@ -965,6 +965,11 @@ QString TextFromStatistic(const QJsonObject& result)
 
     if (result.contains("controller"))
         size--;
+    QString text = QString("<html><h3>General Result Overview</h3>");
+    if (size == 0) {
+        text += "<p>No stored models.</p>";
+        return text;
+    }
 
     for (int i = 0; i < size; ++i) {
         QJsonObject local_model;
@@ -981,7 +986,6 @@ QString TextFromStatistic(const QJsonObject& result)
         converged += local_model["converged"].toBool();
         invalid += local_model["valid"].toBool();
     }
-    QString text = QString("<html><h3>General Result Overview</h3>");
     text += "<p>Models tested: <b>" + QString::number(size) + "</b> </p>";
     text += "<p>Models converged: <b>" + QString::number(converged) + "</b> </p>";
     text += "<p>Models invalid: <b>" + QString::number(size - invalid) + "</b> </p>";

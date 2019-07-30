@@ -68,9 +68,14 @@ const QJsonObject ModelComparisonConfigBlock{
     { "BoxScalingFactor", 1.5 }, // double
 
     /* Define the global and local parameter to be tested - this list should not be empty
-     * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
+     * when a model comparison search is performed, otherwise nothing happens at all, or it crashes ...*/
     { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
     { "LocalParameterList", "" }, // strings, to be converted to QList<int>
+
+    /* Define the precision of the global and local parameter to be tested - if this list is empty
+        the precision will automatically be definied - and will most probably be not helpful */
+    { "GlobalParameterPrecList", "" }, // strings, to be converted to QList<int>
+    { "LocalParameterPrecList", "" }, // strings, to be converted to QList<int>
 
     /* Series in FastConfidence */
     { "IncludeSeries", true }

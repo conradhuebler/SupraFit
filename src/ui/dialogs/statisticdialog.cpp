@@ -274,6 +274,10 @@ QWidget* StatisticDialog::GridSearchWidget()
             hlayout->addWidget(new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>"));
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
+
+            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, checkbox]() {
+                checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
+            });
         }
 
         for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
@@ -284,6 +288,10 @@ QWidget* StatisticDialog::GridSearchWidget()
             hlayout->addWidget(new QLabel("<html>" + m_model.data()->LocalParameterName(i) + "</html>"));
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
+
+            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, checkbox]() {
+                checkbox->setEnabled(m_model.data()->LocalEnabled(i));
+            });
         }
         parameter->setLayout(layout);
     }
@@ -408,21 +416,53 @@ QWidget* StatisticDialog::ModelComparison()
             QCheckBox* checkbox = new QCheckBox;
             checkbox->setChecked(true);
             m_moco_global << checkbox;
+            QSpinBox* spinbox = new QSpinBox;
+            spinbox->setMinimum(0);
+            spinbox->setMaximum(20);
+            spinbox->setValue(abs(log10(m_model.data()->GlobalParameter(i))) + 9);
+
             QHBoxLayout* hlayout = new QHBoxLayout;
             hlayout->addWidget(checkbox);
-            hlayout->addWidget(new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>"));
+            QLabel* label = new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>");
+            label->setFixedWidth(100);
+            hlayout->addWidget(label);
+            hlayout->addWidget(spinbox);
+            m_global_moco_digits << spinbox;
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
+
+            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, spinbox, checkbox]() {
+                spinbox->setEnabled(m_model.data()->GlobalEnabled(i));
+                checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
+                spinbox->setValue(log10(abs(m_model.data()->GlobalParameter(i))) + 9);
+            });
         }
 
         for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             m_moco_local << checkbox;
+
+            QSpinBox* spinbox = new QSpinBox;
+            spinbox->setMinimum(0);
+            spinbox->setMaximum(20);
+            spinbox->setValue(log10(abs(m_model.data()->LocalParameter(i, 0))) + 9);
+            m_local_moco_digits << spinbox;
+
             QHBoxLayout* hlayout = new QHBoxLayout;
             hlayout->addWidget(checkbox);
-            hlayout->addWidget(new QLabel("<html>" + m_model.data()->LocalParameterName(i) + "</html>"));
+            QLabel* label = new QLabel("<html>" + m_model.data()->LocalParameterName(i) + "</html>");
+            label->setFixedWidth(100);
+            hlayout->addWidget(label);
+            hlayout->addWidget(spinbox);
+
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
+
+            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, spinbox, checkbox]() {
+                spinbox->setEnabled(m_model.data()->LocalEnabled(i));
+                checkbox->setEnabled(m_model.data()->LocalEnabled(i));
+                spinbox->setValue(log10(abs(m_model.data()->LocalParameter(i, 0))) + 9);
+            });
         }
         parameter->setLayout(layout);
     }
@@ -460,9 +500,9 @@ QWidget* StatisticDialog::ModelComparison()
 
     m_moco_box_multi = new QDoubleSpinBox;
     m_moco_box_multi->setMaximum(1000);
-    m_moco_box_multi->setSingleStep(0.5);
-    m_moco_box_multi->setValue(4);
-    m_moco_box_multi->setDecimals(2);
+    m_moco_box_multi->setSingleStep(0.25);
+    m_moco_box_multi->setValue(1.5);
+    m_moco_box_multi->setDecimals(4);
     global_layout->addWidget(new QLabel(tr("Box Scaling")), 3, 0);
     global_layout->addWidget(m_moco_box_multi, 3, 1);
 
@@ -600,12 +640,12 @@ QJsonObject StatisticDialog::RunGridSearch() const
     QList<int> glob_param, local_param;
     int max = 0;
     for (int i = 0; i < m_grid_global.size(); ++i) {
-        glob_param << m_grid_global[i]->isChecked();
+        glob_param << (m_grid_global[i]->isChecked() * m_grid_global[i]->isEnabled());
         max += m_grid_global[i]->isChecked();
     }
 
     for (int i = 0; i < m_grid_local.size(); ++i) {
-        local_param << m_grid_local[i]->isChecked();
+        local_param << (m_grid_local[i]->isChecked() * m_grid_local[i]->isEnabled());
         max += m_model.data()->SeriesCount() * m_grid_local[i]->isChecked();
     }
 
@@ -626,19 +666,23 @@ QJsonObject StatisticDialog::RunModelComparison() const
 
     controller["BoxScalingFactor"] = m_moco_box_multi->value();
 
-    QList<int> glob_param, local_param;
+    QList<int> glob_param, local_param, glob_prec, local_prec;
     int max = 0;
     for (int i = 0; i < m_moco_global.size(); ++i) {
-        glob_param << m_moco_global[i]->isChecked();
+        glob_param << (m_moco_global[i]->isChecked() * m_moco_global[i]->isEnabled());
+        glob_prec << m_global_moco_digits[i]->value();
         max += m_moco_global[i]->isChecked();
     }
 
     for (int i = 0; i < m_moco_local.size(); ++i) {
-        for (int j = 0; j < m_model.data()->SeriesCount(); ++j)
-            local_param << m_moco_local[i]->isChecked();
+        for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
+            local_param << (m_moco_local[i]->isChecked() * m_moco_local[i]->isEnabled());
+            local_prec << m_local_moco_digits[i]->value();
+        }
         max += m_model.data()->SeriesCount() * m_moco_local[i]->isChecked();
     }
-
+    controller["GlobalParameterPrecList"] = ToolSet::IntList2String(glob_prec);
+    controller["LocalParameterPrecList"] = ToolSet::IntList2String(local_prec);
     controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
     controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
     return controller;

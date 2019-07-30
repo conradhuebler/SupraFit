@@ -203,6 +203,11 @@ void MetaModel::ApplyConnectType()
         }
         m_series_count = m_models.size();
     }
+
+    for (int i = m_mmparameter.size() - 1; i >= 0; --i) {
+        if (std::isnan(m_mmparameter[i].first) || m_mmparameter[i].second.size() == 0)
+            m_mmparameter.remove(i);
+    }
     for (int i = 0; i < m_mmparameter.size(); ++i) {
         m_mmparameter[i].first /= double(m_mmparameter[i].second.size());
     }

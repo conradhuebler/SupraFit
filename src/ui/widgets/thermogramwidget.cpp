@@ -34,6 +34,7 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
+#include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
@@ -179,11 +180,33 @@ void ThermogramWidget::setUi()
     m_write_rules->setIcon(Icon("document-save-as"));
     connect(m_write_rules, &QPushButton::clicked, this, &ThermogramWidget::WriteRules);
 
+    m_clear_rules = new QPushButton;
+    m_clear_rules->setFlat(true);
+    m_clear_rules->setToolTip(tr("Remove all but the first Peak Rule."));
+    m_clear_rules->setIcon(Icon("document-close"));
+    connect(m_clear_rules, &QPushButton::clicked, this, [this]() {
+        if (m_peak_rule_list->rowCount() == 1)
+            return;
+
+        QMessageBox question(QMessageBox::Question, tr("Clear Rules"), tr("Do you really want to clear all Peak Rules ( execept the last one)?"), QMessageBox::Yes | QMessageBox::No, this);
+        if (question.exec() == QMessageBox::No)
+            return;
+
+        while (m_peak_rule_list->rowCount() > 1) {
+            int peak = m_peak_rule_list->rowCount() - 1;
+            if (peak < m_peak_rule_list->rowCount())
+                m_peak_rule_list->removeRow(peak);
+            if (m_current_peaks_rule && peak > m_current_peaks_rule)
+                m_current_peaks_rule--;
+        }
+    });
+
     QGridLayout* grid = new QGridLayout;
     grid->addWidget(m_convert_rules, 0, 0);
     grid->addWidget(m_load_rules, 0, 1);
     grid->addWidget(m_write_rules, 0, 2);
-    grid->addWidget(m_peak_rule_list, 1, 0, 1, 3);
+    grid->addWidget(m_clear_rules, 0, 3);
+    grid->addWidget(m_peak_rule_list, 1, 0, 1, 4);
 
     QWidget* widget = new QWidget;
     widget->setLayout(grid);

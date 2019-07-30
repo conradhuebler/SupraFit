@@ -24,64 +24,63 @@
 #include "src/core/toolset.h"
 
 #include <QtCore/QCoreApplication>
-
 #include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
+#include <QtCore/QRandomGenerator>
 #include <QtCore/QVector>
 
 #include "modelcomparison.h"
 
 void MCThread::run()
 {
-    QList<int> global_param, local_param;
+    QVector<qreal> parameters = m_model.data()->OptimizeParameters();
+
+    int std_prec = 5;
+    QList<int> global_param, local_param, param;
     global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
 
-    QVector<std::uniform_int_distribution<int>> dist;
-    QVector<qreal> parameters = m_model.data()->OptimizeParameters();
-    QVector<double> factors(parameters.size(), 1);
+    param << global_param << local_param;
 
-    for (int i = 0; i < global_param.size(); ++i) {
-        if (!global_param[i])
-            continue;
+    QList<int> global_paramater_prec = ToolSet::String2IntList(m_controller["GlobalParameterPrecList"].toString());
 
-        factors[i] = qPow(10, log10(qAbs(1e7 / parameters[i])));
-        int lower = factors[i] * m_box[i][0];
-        int upper = factors[i] * m_box[i][1];
-        dist << std::uniform_int_distribution<int>(lower, upper);
-    }
+    while (global_paramater_prec.size() < m_model.data()->GlobalParameterSize())
+        global_paramater_prec << pow10(int(log10(m_model.data()->GlobalParameter(global_paramater_prec.size()))) + std_prec);
 
-    for (int i = 0; i < local_param.size(); ++i) {
-        if (!local_param[i])
-            continue;
+    QList<int> local_paramater_prec = ToolSet::String2IntList(m_controller["LocalParameterPrecList"].toString());
 
-        factors[i] = qPow(10, log10(qAbs(1e7 / parameters[i])));
-        int lower = factors[i] * m_box[i][0];
-        int upper = factors[i] * m_box[i][1];
-        dist << std::uniform_int_distribution<int>(lower, upper);
-    }
+    while (local_paramater_prec.size() < m_model.data()->LocalParameterSize() * m_model.data()->SeriesCount())
+        local_paramater_prec << pow10(/* int(log10(m_model.data()->LocalParameter((local_paramater_prec.size()), int(local_paramater_prec.size()/m_model.data()->SeriesCount())))) + */ std_prec);
 
-    qint64 seed = QDateTime::currentMSecsSinceEpoch();
-    std::mt19937 rng;
-    rng.seed(seed);
+    QList<int> parameter_prec;
+    parameter_prec << global_paramater_prec << local_paramater_prec;
+    QVector<double> inv_paramater_prec;
+    for (int i = 0; i < global_paramater_prec.size(); ++i)
+        inv_paramater_prec << 1 / double(global_paramater_prec[i]);
+
+    for (int i = 0; i < local_paramater_prec.size(); ++i)
+        inv_paramater_prec << 1 / double(local_paramater_prec[i]);
+
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+
     for (int step = 0; step < m_maxsteps; ++step) {
         if (m_interrupt)
             return;
 
         QVector<qreal> consts = parameters;
-        for (int i = 0; i < m_model.data()->OptimizeParameters().size(); ++i) {
-            if (i < m_model.data()->GlobalParameterSize()) {
-                if (!global_param[i])
-                    continue;
-            } else if (!local_param[i - m_model.data()->GlobalParameterSize()])
+        int j = 0;
+        for (int i = 0; i < param.size(); ++i) {
+
+            if (!param[i])
                 continue;
-            consts[i] = dist[i](rng) / factors[i];
+            consts[j] = QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
+            j++;
         }
         m_model->setParameter(consts);
         m_model->Calculate();
+        // qDebug() << consts << m_model->SumofSquares();
         if (m_model->SumofSquares() <= m_controller["MaxError"].toDouble()) {
-            //   std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
+            // std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
             m_results << m_model->ExportModel(false);
         }
         m_steps++;
@@ -207,6 +206,8 @@ bool ModelComparison::FastConfidence()
         QPointer<FCThread> thread = new FCThread(i);
         thread->setController(m_controller);
         thread->setModel(m_model);
+        // connect(this, &ModelComparison::Interrupt, thread, &FCThread::Interrupt);
+
         if (!m_model.data()->SupportThreads())
             m_threadpool->start(thread);
         else
@@ -303,6 +304,8 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     for (int i = 0; i < thread_count; ++i) {
         MCThread* thread = new MCThread();
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
+        connect(this, &ModelComparison::Interrupt, thread, &MCThread::Interrupt);
+
         thread->setModel(m_model);
         thread->setController(m_controller);
         thread->setError(m_effective_error);
@@ -346,15 +349,16 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
             }
 
             constants = object["data"].toObject()["localParameter"].toObject();
-
-            for (int i = 0; i < m_model->SeriesCount(); ++i) {
-                QVector<qreal> param = ToolSet::String2DoubleVec(constants["data"].toObject()[QString::number(i)].toString());
-                for (int j = 0; j < param.size(); ++j) {
-                    data_local[i + m_model->SeriesCount() * j] << param[j];
-                    local_values[i + m_model->SeriesCount() * j] = QPair<int, int>(j, i);
+            if (m_model->LocalParameterSize()) {
+                for (int i = 0; i < m_model->SeriesCount(); ++i) {
+                    QVector<qreal> param = ToolSet::String2DoubleVec(constants["data"].toObject()[QString::number(i)].toString());
+                    for (int j = 0; j < param.size(); ++j) {
+                        data_local[i + m_model->SeriesCount() * j] << param[j];
+                        local_values[i + m_model->SeriesCount() * j] = QPair<int, int>(j, i);
+                    }
                 }
             }
-        QCoreApplication::processEvents();
+            QCoreApplication::processEvents();
     }
 
     m_ellipsoid_area = double(results.size()) / double(m_steps) * m_box_area;

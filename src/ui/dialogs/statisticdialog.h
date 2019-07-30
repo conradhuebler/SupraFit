@@ -145,6 +145,7 @@ private:
     QCheckBox *m_original, *m_bootstrap, *m_use_checked, *m_store_wgsearch;
     QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
     QVector<QDoubleSpinBox*> m_indepdent_variance;
+    QVector<QSpinBox*> m_global_moco_digits, m_local_moco_digits;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
     QProgressBar *m_progress, *m_main_progress;

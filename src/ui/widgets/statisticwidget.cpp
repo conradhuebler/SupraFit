@@ -75,7 +75,7 @@ void StatisticWidget::Update()
     overview += "<tr><td>Standard Error:</td><td><b>" + Print::printDouble(m_model.data()->StdError()) + "</b></td></tr>\n";
     overview += "<tr><td>SE<sub>y</sub>:</td><td><b>" + Print::printDouble(m_model.data()->SEy()) + "</b></td></tr>\n";
     overview += "<tr><td>&chi;:</td><td><b>" + Print::printDouble(m_model.data()->ChiSquared()) + "</b></td></tr>\n";
-    overview += "<tr><td>cov<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.data()->CovFit()) + "</b></td></tr>\n";
+    //overview += "<tr><td>cov<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.data()->CovFit()) + "</b></td></tr>\n";
 
     overview += "</table></br>";
     overview += m_model.data()->ModelInfo() + "</br>";
@@ -99,83 +99,6 @@ void StatisticWidget::Update()
         moco += "</table>\n";
         overview += moco;
     }
-    /*moco = QString();
-
-    if (!m_model->getMoCoStatisticResult().isEmpty()) {
-        moco += "<p><b>Model Comparison Results:</b></p>\n";
-        moco += "<table>\n";
-
-        result = m_model->getMoCoStatisticResult();
-        moco += "<tr><td>Approximated area of the confidence ellipse: <b>" + QString::number(result["moco_area"].toDouble()) + "</b></td></tr></p>\n";
-
-        if (!result["controller"].toObject()["fisher"].toBool())
-            moco += "<font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font>\n";
-
-        for (int i = 0; i < result.count() - 1; ++i) {
-            QJsonObject data = result.value(QString::number(i)).toObject();
-            if (data.isEmpty())
-                continue;
-            moco += Print::TextFromConfidence(data, m_model.data(), result["controller"].toObject());
-        }
-        moco += "</table>\n";
-        overview += moco;
-    }
-
-    if (!m_model->getWGStatisticResult().isEmpty()) {
-        QString cv;
-
-        cv += "<p><b>Weakened Grid Search:</b></p>\n";
-        cv += "<table>\n";
-
-        result = m_model->getWGStatisticResult();
-        if (!result["controller"].toObject()["fisher"].toBool())
-            cv += "<tr><th colspan=2><font color =\'red\'>Please be aware, that these values don't base on F-statistics!</font></th></tr>\n";
-
-        for (int i = 0; i < result.count() - 1; ++i) {
-            QJsonObject data = result.value(QString::number(i)).toObject();
-            if (data.isEmpty())
-                continue;
-            cv += Print::TextFromConfidence(data, m_model.data(), result["controller"].toObject());
-        }
-        cv += "</table>\n";
-        overview += cv;
-    }
-
-    if (!m_model->getReduction().isEmpty()) {
-        QString cv;
-
-        cv += "<p><b>Reduction Analysis:</b></p>\n";
-        cv += "<table>\n";
-
-        result = m_model->getReduction();
-        for (int i = 0; i < result.count() - 1; ++i) {
-            QJsonObject data = result.value(QString::number(i)).toObject();
-            if (data.isEmpty())
-                continue;
-            cv += Print::TextFromConfidence(data, m_model.data(), result["controller"].toObject());
-        }
-        cv += "</table>\n";
-        overview += cv;
-    }
-
-    QString mc;
-    if (m_model->getMCStatisticResult()) {
-        mc += "<p><b>Monte Carlo Simulation Results:</b></p>\n";
-        mc += "<table>\n";
-        for (int i = 0; i < m_model->getMCStatisticResult(); ++i) {
-            QJsonObject result = m_model->getMCStatisticResult(i);
-
-            for (int i = 0; i < result.count() - 1; ++i) {
-                QJsonObject data = result.value(QString::number(i)).toObject();
-                if (data.isEmpty())
-                    continue;
-                mc += Print::TextFromConfidence(data, m_model.data(), result["controller"].toObject());
-            }
-        }
-
-        mc += "</table>\n";
-        overview += mc;
-    }*/
     m_overview->setText(m_short + overview);
     m_statistics = overview;
 }

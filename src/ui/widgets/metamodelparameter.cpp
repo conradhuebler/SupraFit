@@ -147,6 +147,9 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
 
                 if (m_model.data()->CombinedParameter()[index.row()].second.size() == 1) {
                     MMParameter param = m_model.data()->CombinedParameter()[index.row()];
+                    if (param.second.size() == 0)
+                        return data;
+
                     QSharedPointer<AbstractModel> model = m_model.data()->Models()[param.second[0][0]];
 
                     if (param.second[0][1] == 0)
