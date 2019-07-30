@@ -252,7 +252,7 @@ QVector<qreal> MetaModel::CollectParameter()
         m_opt_para << &m_mmparameter[i].first;
         param << m_mmparameter[i].first;
     }
-    // qDebug() << this << m_opt_para << param;
+
     m_parameter = param;
     return param;
 }
@@ -263,14 +263,6 @@ QVector<qreal> MetaModel::AllParameter() const
     for (int i = 0; i < m_mmparameter.size(); ++i)
         parameter << m_mmparameter[i].first;
     return parameter;
-}
-
-void MetaModel::SetSingleParameter(double value, int parameter)
-{
-    if (parameter < m_opt_para.size()) {
-        *m_opt_para[parameter] = value;
-        m_mmparameter[parameter].first = value;
-    }
 }
 
 void MetaModel::forceGlobalParameter(double value, int parameter)
@@ -703,6 +695,7 @@ QJsonObject MetaModel::ExportModel(bool statistics, bool locked)
 
 void MetaModel::DebugParameter() const
 {
+    qDebug() << m_mmparameter << this;
 }
 
 void MetaModel::MoveParameterList(int source, int destination)

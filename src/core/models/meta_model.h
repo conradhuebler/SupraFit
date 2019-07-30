@@ -155,8 +155,6 @@ public:
 
     void OverrideInDependentTable(DataTable* table) override;
 
-    virtual void SetSingleParameter(double value, int parameter) override;
-
 private slots:
     void UpdateCalculated();
 

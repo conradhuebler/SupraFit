@@ -6,7 +6,9 @@ To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and
 SupraFit has been successfully compilied with: 
 - gcc 5.2 - 9.1
 - clang 3.9 
+
 on linux systems and 
+ 
 - MinGW and MS Visual Studio on Windows Systems
 
 > Windows 7 or higher is recommended if Qt is compilied without ICU support.

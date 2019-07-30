@@ -47,7 +47,7 @@ WGSearchThread::WGSearchThread(const QJsonObject& controller)
     m_MaxErrorConvergencyCounter = m_controller["ErrorConvergencyCounter"].toInt();
     m_ScalingFactor = m_controller["StepScalingFactor"].toInt();
     m_MaxError = m_controller["MaxError"].toDouble();
-
+    m_ErrorConvergency = m_controller["ErrorConvergency"].toDouble();
     setUp();
 }
 
@@ -74,7 +74,6 @@ void WGSearchThread::Calculate()
     bool interrupt = false;
 
     QList<int> locked = m_model->LockedParameters();
-    QList<int> locked_0 = m_model->LockedParameters();
 
     QVector<qreal> param = m_model->OptimizeParameters();
 
@@ -97,8 +96,6 @@ void WGSearchThread::Calculate()
         m_model.data()->SetSingleParameter(value, m_index);
         m_model->setLockedParameter(locked);
 
-        //qDebug() << value << m_index << m_model.data()->LockedParameters() << m_model.data()->OptimizeParameters();
-        //m_model->Calculate();
         thread->setModel(m_model, false);
         thread->run();
         bool converged = thread->Converged();

@@ -96,8 +96,9 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
     model.data()->CalculateStatistics(false);
+    model.data()->setFast(false);
 
-    qDebug() << model.data()->LockedParameters() << model.data()->OptimizeParameters();
+    QList<int> locked = model.data()->LockedParameters();
 
     QJsonObject config = model.data()->getOptimizerConfig();
 
@@ -112,6 +113,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     Eigen::VectorXd parameter(param.size());
     for (int i = 0; i < param.size(); ++i)
         parameter(i) = param[i];
+
     /*
     QString message = QString();
     message += "Starting Levenberg-Marquardt for " + QString::number(parameter.size()) + " parameters:\n";
@@ -120,7 +122,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         message += QString::number(d) + " ";
     }
     message += "\n";
-    model.data()->Message(message, 5);
+    emit model.data()->Info()->Message(message, 5);
     */
     MyFunctor functor(param.size(), ModelSignals.size());
     functor.model = model;
@@ -141,7 +143,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     qreal error_2 = 1;
     qreal norm = 1;
     QVector<qreal> globalConstants;
-    QList<int> locked = model.data()->LockedParameters();
     for (; iter < MaxIter && ((qAbs(error_0 - error_2) > ErrorConvergence) || norm > DeltaParameter); ++iter) {
         globalConstants.clear();
         globalConstants = model.data()->OptimizeParameters();
@@ -150,6 +151,7 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         model.data()->setLockedParameter(locked);
         status = lm.minimizeOneStep(parameter);
         error_2 = model.data()->SumofSquares();
+
         auto constants = model.data()->OptimizeParameters();
         norm = 0;
         for (int i = 0; i < globalConstants.size(); ++i)
@@ -165,9 +167,9 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         result += QString::number(param[i]) + " ";
     }
     result += "\n";
-    */
-    //     model.data()->Message(result, 4);
 
+    emit model.data()->Info()->Message(result, 4);
+    */
     for (int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
     model.data()->setConverged(iter < MaxIter);

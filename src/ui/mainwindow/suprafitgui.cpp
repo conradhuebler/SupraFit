@@ -310,9 +310,14 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
 
     if (row == -1 && column == -1 && !index.isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
-        if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
+
+        if (d->Index().parent().row() == -1)
             return false;
 
+        if (d->Index().parent().row() < (*m_data_list).size() && d->Index().parent().row() >= 0) {
+            if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
+                return false;
+        }
         return true;
     }
     if (index.isValid() && !parent(index).isValid()) {
