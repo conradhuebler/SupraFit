@@ -26,6 +26,7 @@
 
 #include <QDebug>
 
+#include <QtCore/QDateTime>
 #include <QtCore/QFile>
 #include <QtCore/QTimer>
 
@@ -67,6 +68,7 @@ void TableView::keyPressEvent(QKeyEvent* event)
 ImportData::ImportData(const QString& file, QWidget* parent)
     : QDialog(parent)
     , m_filename(file)
+    , m_projectfile(QString("Titration %1").arg(QDateTime::currentDateTime().toString()))
 {
     setUi();
     LoadFile();
@@ -74,6 +76,7 @@ ImportData::ImportData(const QString& file, QWidget* parent)
 
 ImportData::ImportData(QWidget* parent)
     : QDialog(parent)
+    , m_projectfile(QString("Titration %1").arg(QDateTime::currentDateTime().toString()))
 {
     setUi();
     DataTable* model = new DataTable(0, 0, this);

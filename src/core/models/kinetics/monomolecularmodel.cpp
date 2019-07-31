@@ -110,10 +110,10 @@ void MonoMolecularModel::CalculateVariables()
     }
 }
 
-QSharedPointer<AbstractModel> MonoMolecularModel::Clone()
+QSharedPointer<AbstractModel> MonoMolecularModel::Clone(bool statistics)
 {
     QSharedPointer<MonoMolecularModel> model = QSharedPointer<MonoMolecularModel>(new MonoMolecularModel(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel());
+    model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());

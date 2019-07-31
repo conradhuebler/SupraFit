@@ -70,7 +70,7 @@ public:
     }
     virtual ~FCThread() override {}
 
-    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    void setModel(QSharedPointer<AbstractModel> model) { m_model = model->Clone(false); }
     virtual void run() override;
     inline qreal Lower() const { return m_lower; }
     inline qreal Upper() const { return m_upper; }
@@ -101,6 +101,9 @@ public:
     }
     virtual bool Run() override;
 
+public slots:
+    void Interrupt() override;
+
 private:
     void StripResults(const QList<QJsonObject>& results);
     void MCSearch(const QVector<QVector<qreal>>& box);
@@ -111,4 +114,7 @@ private:
     double m_effective_error, m_box_area, m_ellipsoid_area;
     QVector<QList<qreal>> m_data_global, m_data_local;
     bool m_fast_finished;
+
+signals:
+    void StopSubThreads();
 };

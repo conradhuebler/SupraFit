@@ -41,7 +41,7 @@ public:
     virtual void OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 1; }
     virtual void InitialGuess_Private() override;
-    virtual QSharedPointer<AbstractModel> Clone() override;
+    virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
     virtual inline QString GlobalParameterName(int i = 0) const override

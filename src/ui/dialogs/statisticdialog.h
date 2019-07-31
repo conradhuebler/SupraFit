@@ -144,7 +144,7 @@ private:
     QSpinBox *m_cv_runs, *m_cv_lxo, *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
     QCheckBox *m_original, *m_bootstrap, *m_use_checked, *m_store_wgsearch;
     QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
-    QVector<QDoubleSpinBox*> m_indepdent_variance;
+    QVector<QDoubleSpinBox*> m_indepdent_variance, m_glob_box_scaling, m_loc_box_scaling;
     QVector<QSpinBox*> m_global_moco_digits, m_local_moco_digits;
     QPushButton *m_mc, *m_cv, *m_interrupt, *m_hide, *m_moco, *m_cross_validate, *m_reduction;
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;

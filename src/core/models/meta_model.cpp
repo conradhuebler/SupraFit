@@ -570,12 +570,12 @@ void MetaModel::CalculateVariables()
         PrepareTables();
 }
 
-QSharedPointer<AbstractModel> MetaModel::Clone()
+QSharedPointer<AbstractModel> MetaModel::Clone(bool statistics)
 {
     QSharedPointer<MetaModel> model = QSharedPointer<MetaModel>(new MetaModel(new DataClass()), &QObject::deleteLater);
 
     for (const QSharedPointer<AbstractModel>& m : Models())
-        model.data()->addModel(m->Clone().data());
+        model.data()->addModel(m->Clone(statistics).data());
     model.data()->setConnectType(m_connect_type);
     model.data()->m_mmparameter = m_mmparameter;
     model.data()->OptimizeParameters_Private();

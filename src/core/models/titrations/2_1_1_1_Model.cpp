@@ -200,10 +200,10 @@ void IItoI_ItoI_Model::OptimizeParameters_Private()
     addLocalParameter(2);
 }
 
-QSharedPointer<AbstractModel> IItoI_ItoI_Model::Clone()
+QSharedPointer<AbstractModel> IItoI_ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<IItoI_ItoI_Model> model = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel());
+    model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());

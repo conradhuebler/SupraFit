@@ -209,10 +209,10 @@ void itc_ItoII_Model::CalculateVariables()
     m_more_info = more_info + "\n" + more_info_2;
 }
 
-QSharedPointer<AbstractModel> itc_ItoII_Model::Clone()
+QSharedPointer<AbstractModel> itc_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractItcModel> model = QSharedPointer<itc_ItoII_Model>(new itc_ItoII_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel());
+    model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());

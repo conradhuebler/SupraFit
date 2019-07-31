@@ -74,7 +74,7 @@ DataWidget::DataWidget()
     QHBoxLayout* hlayout = new QHBoxLayout;
 
     hlayout->addWidget(new QLabel(tr("<html><h3>Project Name</h3></html>")), 0, Qt::AlignLeft);
-    hlayout->addWidget(m_name, 0, Qt::AlignLeft);
+    hlayout->addWidget(m_name);
     hlayout->addWidget(m_switch, 0, Qt::AlignRight);
     hlayout->addWidget(m_linear, 0, Qt::AlignRight);
 
@@ -130,7 +130,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_name->setText(qApp->instance()->property("projectname").toString());
     m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.data()->IndependentModel()->columnCount()));
     m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));
-    m_signals_count->setText(tr("<html><h4>Columns of dependent variables: %1</h4><html>").arg(m_data.data()->SeriesCount()));
+    m_signals_count->setText(tr("<html><h4>Series Count: %1</h4><html>").arg(m_data.data()->SeriesCount()));
 
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     dialog->UpdatePlots();

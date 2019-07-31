@@ -169,11 +169,11 @@ void fl_ItoI_ItoII_Model::CalculateVariables()
     }
 }
 
-QSharedPointer<AbstractModel> fl_ItoI_ItoII_Model::Clone()
+QSharedPointer<AbstractModel> fl_ItoI_ItoII_Model::Clone(bool statistics)
 {
     QSharedPointer<fl_ItoI_ItoII_Model> model = QSharedPointer<fl_ItoI_ItoII_Model>(new fl_ItoI_ItoII_Model(this), &QObject::deleteLater);
     model.data()->setActiveSignals(ActiveSignals());
-    model.data()->ImportModel(ExportModel());
+    model.data()->ImportModel(ExportModel(statistics));
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     return model;

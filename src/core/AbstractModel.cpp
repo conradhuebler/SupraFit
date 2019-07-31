@@ -883,7 +883,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
 
                 QJsonValueRef ref = statisticObject[QString::number(counter)] = data[i];
                 if (ref.isNull()) {
-                    emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(Method2Name(SupraFit::Method::MonteCarlo)).arg(Name()).arg(ProjectTitle()).arg(help));
+                    emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(SupraFit::Method2Name(data[i]["controller"].toObject()["method"].toInt())).arg(Name()).arg(ProjectTitle()).arg(help));
                     statisticObject.remove(QString::number(counter));
                 }
                 counter++;
@@ -989,14 +989,13 @@ QVector<qreal> AbstractModel::AllParameter() const
 bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 {
 #ifdef _DEBUG
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+// quint64 t0 = QDateTime::currentMSecsSinceEpoch();
 #endif
 
     QJsonObject json = topjson["data"].toObject();
 
     QList<int> active_signals;
-    QList<qreal> constants;
-    QJsonObject globalParameter, optionObject;
+    QJsonObject optionObject;
 
     GlobalTable()->ImportTable(json["globalParameter"].toObject());
 
@@ -1058,8 +1057,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         }
     }
 #ifdef _DEBUG
-    quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "model imported within" << t1 - t0 << " msecs";
+        //  quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+        //  qDebug() << "model imported within" << t1 - t0 << " msecs";
 #endif
 
     m_sum_squares = topjson["SSE"].toInt();
@@ -1076,8 +1075,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         Calculate();
 
 #ifdef _DEBUG
-    quint64 t2 = QDateTime::currentMSecsSinceEpoch();
-    qDebug() << "calculation took " << t2 - t1 << " msecs";
+        // quint64 t2 = QDateTime::currentMSecsSinceEpoch();
+        // qDebug() << "calculation took " << t2 - t1 << " msecs";
 #endif
     return true;
 }

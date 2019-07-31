@@ -40,7 +40,7 @@ public:
 
     inline int GlobalParameterSize() const override { return 2; }
     virtual void InitialGuess_Private() override;
-    virtual QSharedPointer<AbstractModel> Clone() override;
+    virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return false; }
 
     /*! \brief we have only the time as input parameter

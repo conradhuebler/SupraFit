@@ -129,10 +129,10 @@ QVector<qreal> ItoI_Model::DeCompose(int datapoint, int series) const
     return vector;
 }
 
-QSharedPointer<AbstractModel> ItoI_Model::Clone()
+QSharedPointer<AbstractModel> ItoI_Model::Clone(bool statistics)
 {
     QSharedPointer<AbstractModel> model = QSharedPointer<ItoI_Model>(new ItoI_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel());
+    model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());

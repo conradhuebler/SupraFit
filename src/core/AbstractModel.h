@@ -142,7 +142,7 @@ public:
      * function to create a new instance of the model, this way was quite easier than
      * a copy constructor
      */
-    virtual QSharedPointer<AbstractModel> Clone() = 0;
+    virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) = 0;
 
     /*! \brief Export model to json file
      * 

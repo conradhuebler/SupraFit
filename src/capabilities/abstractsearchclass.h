@@ -44,7 +44,7 @@ public:
         setAutoDelete(false);
     }
     inline ~AbstractSearchThread() { m_model.clear(); }
-    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(); }
+    inline void setModel(const QSharedPointer<AbstractModel> model) { m_model = model->Clone(false); }
     inline void setController(const QJsonObject& controller) { m_controller = controller; }
     inline QHash<int, QJsonObject> Models() const { return m_models; }
 
@@ -70,7 +70,7 @@ public:
 
     virtual inline void setModel(const QSharedPointer<AbstractModel> model)
     {
-        m_model = model->Clone();
+        m_model = model->Clone(false);
     }
 
     virtual bool Run() = 0;

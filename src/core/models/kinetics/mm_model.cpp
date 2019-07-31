@@ -86,10 +86,10 @@ void Michaelis_Menten_Model::CalculateVariables()
     }
 }
 
-QSharedPointer<AbstractModel> Michaelis_Menten_Model::Clone()
+QSharedPointer<AbstractModel> Michaelis_Menten_Model::Clone(bool statistics)
 {
     QSharedPointer<Michaelis_Menten_Model> model = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(this), &QObject::deleteLater);
-    model.data()->ImportModel(ExportModel());
+    model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());

@@ -60,7 +60,7 @@ public:
 
     virtual void InitialGuess_Private() override;
 
-    virtual QSharedPointer<AbstractModel> Clone() override;
+    virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
 
     virtual qreal GlobalParameter(int i) const override;
 

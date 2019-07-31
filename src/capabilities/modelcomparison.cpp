@@ -35,7 +35,7 @@ void MCThread::run()
 {
     QVector<qreal> parameters = m_model.data()->OptimizeParameters();
 
-    int std_prec = 5;
+    int std_prec = 400;
     QList<int> global_param, local_param, param;
     global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
@@ -45,12 +45,12 @@ void MCThread::run()
     QList<int> global_paramater_prec = ToolSet::String2IntList(m_controller["GlobalParameterPrecList"].toString());
 
     while (global_paramater_prec.size() < m_model.data()->GlobalParameterSize())
-        global_paramater_prec << pow10(int(log10(m_model.data()->GlobalParameter(global_paramater_prec.size()))) + std_prec);
+        global_paramater_prec << qPow(10, int(log10(m_model.data()->GlobalParameter(global_paramater_prec.size()))) + std_prec);
 
     QList<int> local_paramater_prec = ToolSet::String2IntList(m_controller["LocalParameterPrecList"].toString());
 
     while (local_paramater_prec.size() < m_model.data()->LocalParameterSize() * m_model.data()->SeriesCount())
-        local_paramater_prec << pow10(/* int(log10(m_model.data()->LocalParameter((local_paramater_prec.size()), int(local_paramater_prec.size()/m_model.data()->SeriesCount())))) + */ std_prec);
+        local_paramater_prec << qPow(10, /* int(log10(m_model.data()->LocalParameter((local_paramater_prec.size()), int(local_paramater_prec.size()/m_model.data()->SeriesCount())))) + */ std_prec);
 
     QList<int> parameter_prec;
     parameter_prec << global_paramater_prec << local_paramater_prec;
@@ -244,6 +244,20 @@ bool ModelComparison::FastConfidence()
 
 QVector<QVector<qreal>> ModelComparison::MakeBox()
 {
+    QVector<double> global_scaling = ToolSet::String2DoubleVec(m_controller["GlobalParameterScalingList"].toString());
+    QVector<double> local_scaling = ToolSet::String2DoubleVec(m_controller["LocalParameterScalingList"].toString());
+
+    QVector<double> param_list = m_model->AllParameter();
+    double BoxScalingFactor = m_controller["BoxScalingFactor"].toDouble();
+
+    while (global_scaling.size() < m_model.data()->GlobalParameterSize())
+        global_scaling << BoxScalingFactor;
+
+    while (local_scaling.size() < m_model.data()->LocalParameterSize() * m_model.data()->SeriesCount())
+        local_scaling << BoxScalingFactor;
+
+    QVector<double> scaling = QVector<double>() << global_scaling << local_scaling;
+
     QList<QJsonObject> constant_results = Results();
     QVector<QVector<qreal>> parameter;
     m_box_area = 1.0;
@@ -252,7 +266,8 @@ QVector<QVector<qreal>> ModelComparison::MakeBox()
         qreal lower = object["confidence"].toObject()["lower"].toDouble();
         qreal upper = object["confidence"].toObject()["upper"].toDouble();
         qreal value = object["value"].toDouble();
-        double BoxScalingFactor = m_controller["BoxScalingFactor"].toDouble();
+        double BoxScalingFactor = scaling[param_list.indexOf(value)];
+        qDebug() << param_list.indexOf(value);
         constant << value - BoxScalingFactor * (value - lower);
         constant << value + BoxScalingFactor * (upper - value);
         parameter << constant;
@@ -264,7 +279,7 @@ QVector<QVector<qreal>> ModelComparison::MakeBox()
 
     for (int i = 0; i < m_series.size(); ++i)
         m_box[QString::number(i)] = ToolSet::Points2String(m_series[i]);
-
+    qDebug() << m_box;
     return parameter;
 }
 
@@ -304,7 +319,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     for (int i = 0; i < thread_count; ++i) {
         MCThread* thread = new MCThread();
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
-        connect(this, &ModelComparison::Interrupt, thread, &MCThread::Interrupt);
+        connect(this, &ModelComparison::StopSubThreads, thread, &MCThread::Interrupt);
 
         thread->setModel(m_model);
         thread->setController(m_controller);
@@ -411,4 +426,11 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
     }
     m_controller["steps_taken"] = m_steps;
     m_controller["moco_area"] = m_ellipsoid_area;
+}
+
+void ModelComparison::Interrupt()
+{
+    emit StopSubThreads();
+    m_interrupt = true;
+    m_threadpool->clear();
 }

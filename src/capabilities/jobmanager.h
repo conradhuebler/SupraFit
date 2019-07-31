@@ -43,7 +43,7 @@ const QJsonObject ModelComparisonConfigBlock{
     { "MaxSteps", 1e4 }, // int
 
     /* Fast Confidence Maximal steps */
-    { "MaxStepsFastConfidence", 1e4 }, // int
+    { "MaxStepsFastConfidence", 1e3 }, // int
 
     /* Set scaling factor single step size */
     /* The factor determines the step length as follows:
@@ -77,6 +77,11 @@ const QJsonObject ModelComparisonConfigBlock{
     { "GlobalParameterPrecList", "" }, // strings, to be converted to QList<int>
     { "LocalParameterPrecList", "" }, // strings, to be converted to QList<int>
 
+    /* Define the box scaling factor of the global and local parameter to be tested - if this list is empty
+        the scaling will automatically be set to 1.5 - and will most probably be not helpful */
+    { "GlobalParameterScalingList", "" }, // strings, to be converted to QVector<double>
+    { "LocalParameterScalingList", "" }, // strings, to be converted to QVector<double>
+
     /* Series in FastConfidence */
     { "IncludeSeries", true }
 };
@@ -106,7 +111,7 @@ const QJsonObject MonteCarloConfigBlock{
     /* Apply random numbers to the input vector/matrix
      * [0] - first row
        [1] - second row etc ... */
-    { "IndependentRowVariance", "" } // strings, to be converted to QVecotr<double>
+    { "IndependentRowVariance", "" } // strings, to be converted to QVector<double>
 
 };
 

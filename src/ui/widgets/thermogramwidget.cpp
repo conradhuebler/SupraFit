@@ -1565,7 +1565,7 @@ void ThermogramWidget::LoadRules()
         return;
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadWrite))
+    if (!file.open(QIODevice::ReadOnly))
         return;
 
     m_peak_rule_list->clear();
@@ -1601,7 +1601,7 @@ void ThermogramWidget::WriteRules()
         return;
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadWrite))
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text))
         return;
 
     QTextStream stream(&file);
