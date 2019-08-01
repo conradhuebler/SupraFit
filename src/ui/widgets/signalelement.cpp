@@ -143,6 +143,15 @@ void SignalElement::setName(const QString& str)
     emit m_data_series->NameChanged(str);
 }
 
+void SignalElement::HideSeries()
+{
+    if (m_series_hidden)
+        m_data_series->setMarkerSize(m_markerSize->value());
+    else
+        m_data_series->setMarkerSize(0);
+    m_series_hidden = !m_series_hidden;
+}
+
 void SignalElement::setMarkerSize(qreal value)
 {
     m_data_series->setMarkerSize(value);

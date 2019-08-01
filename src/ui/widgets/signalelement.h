@@ -38,6 +38,9 @@ public:
     SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWrapper> wrapper, int no, QWidget* parent = 0);
     ~SignalElement();
 
+public slots:
+    void HideSeries();
+
 private:
     QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
@@ -48,6 +51,7 @@ private:
     QDoubleSpinBox* m_markerSize;
     QColor m_color;
     int m_no;
+    bool m_series_hidden = false;
 
 private slots:
     void ToggleSeries(int i);
