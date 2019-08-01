@@ -88,7 +88,7 @@ void Thermogram::setUi()
 
     m_exp_file = new QLineEdit;
     m_exp_file->setClearButtonEnabled(true);
-    connect(m_exp_file, &QLineEdit::textChanged, this, &Thermogram::clearExperiment);
+    connect(m_exp_file, &QLineEdit::textEdited, this, &Thermogram::clearExperiment);
 
     m_UseParameter = new QCheckBox(tr("Use Parameter"));
     connect(m_UseParameter, &QCheckBox::stateChanged, this, [this]() {
@@ -135,7 +135,7 @@ void Thermogram::setUi()
 
     m_dil_file = new QLineEdit;
     m_dil_file->setClearButtonEnabled(true);
-    connect(m_dil_file, &QLineEdit::textChanged, this, &Thermogram::clearDilution);
+    connect(m_dil_file, &QLineEdit::textEdited, this, &Thermogram::clearDilution);
 
     m_scale = new QComboBox;
     m_scale->addItem(QString::number(cal2joule));
@@ -277,6 +277,9 @@ void Thermogram::setUi()
     connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateExpTable);
     connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, &Thermogram::UpdateDilTable);
 
+    m_experiment->setDisabled(true);
+    m_dilution->setDisabled(true);
+
     setLayout(layout);
 
     QSettings settings;
@@ -372,6 +375,7 @@ void Thermogram::setExperimentFile(QString filename)
         m_experiment->setThermogram(&original);
     }
     m_exp_therm = original;
+    m_experiment->setEnabled(true);
 
     m_exp_file->setText(filename);
     emit m_experiment->IntegrationChanged();
@@ -424,7 +428,7 @@ void Thermogram::UpdateTable()
         newItem = new QTableWidgetItem(QString::number(m_raw.last()));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
         newItem->setBackgroundColor(m_raw_series->color().lighter());
-        m_raw_series->append(QPointF(j, m_raw.last()));
+        m_raw_series->append(QPointF(j + 1, m_raw.last()));
 
         m_table->setItem(j, 1, newItem);
 
@@ -439,7 +443,7 @@ void Thermogram::UpdateTable()
         if (m_dil_peaks.size())
             newItem->setBackground(m_dil_series->color().lighter());
         m_table->setItem(j, 2, newItem);
-        m_dil_series->append(QPointF(j, dil));
+        m_dil_series->append(QPointF(j + 1, dil));
 
         newItem = new QTableWidgetItem(QString::number(PeakAt(j)));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\n";
@@ -447,7 +451,7 @@ void Thermogram::UpdateTable()
         newItem->setBackgroundColor(m_thm_series->color().lighter());
         m_table->setItem(j, 3, newItem);
 
-        m_thm_series->append(QPointF(j, PeakAt(j)));
+        m_thm_series->append(QPointF(j + 1, PeakAt(j)));
     }
 
     QStringList header = QStringList() << QString("Volume\n[%1L]").arg(mu) << " exp. heat \n[raw]"
@@ -523,8 +527,9 @@ void Thermogram::setDilutionFile(QString filename)
         original = LoadXYFile(filename);
         m_dilution->setFileType(ThermogramWidget::FileType::RAW);
         m_dilution->setThermogram(&original);
-        //        m_dilution->PickPeaks();
     }
+    m_dilution->setEnabled(true);
+
     m_dil_therm = original;
     m_dil_file->setText(filename);
 
@@ -541,6 +546,7 @@ void Thermogram::clearExperiment()
         m_exp_peaks.clear();
         UpdateData();
         m_exp_file->setStyleSheet("background-color: white");
+        m_experiment->setDisabled(true);
     } else {
         setExperimentFile(m_exp_file->text());
     }
@@ -553,6 +559,7 @@ void Thermogram::clearDilution()
         m_dil_peaks.clear();
         UpdateData();
         m_dil_file->setStyleSheet("background-color: white");
+        m_dilution->setDisabled(true);
     } else {
         setDilutionFile(m_dil_file->text());
     }

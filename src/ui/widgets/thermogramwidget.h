@@ -42,19 +42,6 @@ class ChartView;
 class LineSeries;
 class ScatterSeries;
 
-/*
-class BaseLineWorker : public QRunnable
-{
-public:
-    inline BaseLineWorker(){ setAutoDelete(false); }
-    virtual void run() override();
-    void setSpectrum();
-    void setBaseLineRange();
-    void setNoCoeffs(int coeffs);
-private:
-};
-*/
-
 class PeakRule : public QTableWidgetItem {
 public:
     PeakRule(const QString& str)
@@ -64,7 +51,6 @@ public:
 
     bool operator<(const QTableWidgetItem& other) const
     {
-        //qDebug() << text().toDouble() <<  other.text().toDouble();
         return (this->text().toDouble() < other.text().toDouble());
     }
 };
@@ -86,7 +72,6 @@ public:
     void setPeakList(const std::vector<PeakPick::Peak>& peak_list);
     void Update();
 
-    // inline QVector<qreal> PeakList() const { return m_peaks; }
 
     inline void setOffset(qreal offset) { m_offset = offset; }
     void PickPeaks();
@@ -163,7 +148,6 @@ private:
 
 private slots:
     bool CutAllLimits();
-    void UpdateBaseLine(const QString& str);
     void UpdateFit(const QString& str);
     void PeakDoubleClicked(const QModelIndex& index);
     void PeakRuleDoubleClicked(const QModelIndex& index);
