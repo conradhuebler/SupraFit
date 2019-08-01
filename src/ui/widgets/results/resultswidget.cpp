@@ -172,14 +172,21 @@ QWidget* ResultsWidget::ReductionWidget()
 
         QColor color;
         int index = 0, jndex = 0;
-        if (data["type"].toString() == "Global Parameter")
+        if (data["type"].toString() == "Global Parameter") {
             color = ChartWrapper::ColorCode(m_model.data()->Color(i));
-        else {
+            serie->setColor(color);
+        } else {
             if (data.contains("index")) {
                 QStringList lindex = data["index"].toString().split("|");
                 index = lindex[1].toInt();
                 jndex = lindex[0].toInt();
-                color = m_wrapper->Series(index)->color();
+                if (m_model.data()->SupportSeries()) {
+                    if (index < m_wrapper->SeriesSize()) {
+                        serie->setColor(m_wrapper->Series(index)->color());
+                        color = m_wrapper->Series(index)->color();
+                        connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, serie, &LineSeries::setColor);
+                    }
+                }
             }
         }
         serie->append(series);
@@ -284,12 +291,25 @@ QWidget* ResultsWidget::GridSearchWidget()
                 continue;
 
             int index = data["index"].toString().split("|")[1].toInt() + m_model.data()->GlobalParameterSize();
+            qDebug() << index << data["index"].toString().split("|")[1].toInt();
             if (index != old_index)
                 series_int = 0;
+            {
+                int index = data["index"].toString().split("|")[1].toInt();
+                if (m_model.data()->SupportSeries()) {
+                    if (index < m_wrapper->SeriesSize()) {
+                        xy_series->setColor(m_wrapper->Series(index)->color());
+                        //color = m_wrapper->Series(index)->color();
+                        //connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
+                        //connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
+                    }
+                }
+            }
+            /*
             if (m_model.data()->SupportSeries())
                 xy_series->setColor(m_wrapper->Series(series_int)->color());
             else
-                xy_series->setColor(m_wrapper->ColorCode(i));
+                xy_series->setColor(m_wrapper->ColorCode(i));*/
             /*connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
             connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, this, [series_int, view]( const QColor &color ) { view->setColor(series_int, color); });*/
             series_int++;

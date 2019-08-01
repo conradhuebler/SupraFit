@@ -376,7 +376,7 @@ void ResampleAnalyse::CrossValidation()
     }
 
     if (more_message)
-        emit Message(tr("Final evaluation in progress!"));
+        emit Message(tr("Final evaluation in progress! Sorry, but this is done in serial mode - no parallelisation right now!"));
 
     // TODO some times, I will parallise it at all
     QSharedPointer<AbstractModel> calc_model = m_model->Clone();
