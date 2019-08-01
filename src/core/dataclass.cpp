@@ -27,6 +27,7 @@
 #include <QtCore/QAbstractTableModel>
 #include <QtCore/QCollator>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDateTime>
 #include <QtCore/QDebug>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
@@ -910,6 +911,7 @@ const QJsonObject DataClass::ExportData() const
     json["title"] = d->m_title;
     json["uuid"] = d->m_uuid;
     json["git_commit"] = git_commit_hash;
+    json["timestamp"] = QDateTime::currentMSecsSinceEpoch();
     return json;
 }
 

@@ -455,7 +455,6 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
         m_calibration_heat->setValue(0);
     }
 
-    m_spectrum = true;
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
 
@@ -465,6 +464,10 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
     std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&sign, 0, qPow(2, 1));
     std::vector<PeakPick::Peak> max_peak = PeakPick::PickPeaks(&m_spec, 0, qPow(2, 1));
 
+    if (m_spec.size() == 0)
+        return;
+
+    m_spectrum = true;
 
     m_peaks_start->setMaximum(m_spec.XMax());
     m_peaks_end->setMaximum(m_spec.XMax() - m_calibration_start->value() * m_spec.Step());
@@ -525,30 +528,6 @@ void ThermogramWidget::UpdatePlot()
     m_thermogram->setYAxis("q [raw/s]");
 }
 
-void ThermogramWidget::UpdateLimits()
-{
-    if (!m_limits->isChecked())
-        return;
-
-    qreal constant;
-
-    if (m_baseline_type->currentText() == "constant")
-        constant = m_constant->text().toDouble();
-    else
-        constant = m_offset;
-    qreal stdev = m_stdev->text().toDouble();
-    qreal mult = m_mult->text().toDouble();
-    Vector coeff = Vector(1);
-    coeff(0) = constant + (mult * stdev);
-    fromPolynomial(coeff, m_upper);
-    m_thermogram->addSeries(m_upper);
-
-    coeff(0) = constant - (mult * stdev);
-    fromPolynomial(coeff, m_lower);
-    m_thermogram->addSeries(m_lower);
-}
-
-
 void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeries* series)
 {
     PeakPick::spectrum* spectrum = new PeakPick::spectrum(original);
@@ -557,13 +536,6 @@ void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeri
     for (unsigned int i = 0; i < spectrum->x().size(); i++) {
         series->append(QPointF(spectrum->x()[i], spectrum->y()[i]));
     }
-}
-
-void ThermogramWidget::fromPolynomial(const Vector& coeff, LineSeries* series)
-{
-    series->clear();
-    for (unsigned int i = 1; i <= m_spec.size(); i++)
-        series->append(QPointF(m_spec.X(i), PeakPick::Polynomial(m_spec.X(i), coeff)));
 }
 
 void ThermogramWidget::clear()
@@ -825,6 +797,32 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
 {
     m_block = true;
 
+    if (fit.contains("thermogram") && m_spectrum == false) {
+        Vector x, y;
+        x = ToolSet::String2DoubleEigVec(fit["thermogram"].toObject()["x"].toString());
+        y = ToolSet::String2DoubleEigVec(fit["thermogram"].toObject()["y"].toString());
+        m_spec.setSpectrum(x, y);
+
+        m_spectrum = true;
+        m_frequency = m_spec.Step();
+
+        const QSignalBlocker blocker_a(m_calibration_start);
+        const QSignalBlocker blocker_b(m_calibration_heat);
+
+        m_calibration_start->setValue(fit["calibration_start"].toDouble());
+        m_calibration_heat->setValue(fit["calibration_heat"].toDouble());
+
+        m_peaks_start->setMaximum(m_spec.XMax());
+        m_peaks_end->setMaximum(m_spec.XMax() - m_calibration_start->value() * m_spec.Step());
+
+        m_peaks_start->setValue(m_spec.XMin());
+        m_peaks_end->setValue(m_spec.XMax() - m_calibration_start->value() * m_spec.Step());
+
+        m_guide_label->setText(QString("<font color='red'>The raw data files are not in place. I will use the stored thermogram.</font>"));
+
+        UpdatePlot();
+    }
+
     m_const_offset->setValue(fit["constants"].toDouble());
     m_integration_range_threshold->setValue(fit["integration_range_threshold"].toDouble());
     m_integration_range->setCurrentText(fit["integration_range"].toString());
@@ -862,6 +860,9 @@ QJsonObject ThermogramWidget::Fit() const
     fit["start_time"] = m_peaks_start->value();
     fit["end_time"] = m_peaks_end->value();
     fit["peak_time"] = m_peaks_time->value();
+    fit["calibration_start"] = m_calibration_start->value();
+    fit["calibration_heat"] = m_calibration_heat->value();
+
     QList<QPointF> points;
     for (int i = 0; i < m_peak_rule_list->rowCount(); ++i)
         points << QPointF(m_peak_rule_list->item(i, 0)->data(Qt::DisplayRole).toDouble(), m_peak_rule_list->item(i, 1)->data(Qt::DisplayRole).toDouble());
@@ -874,6 +875,12 @@ QJsonObject ThermogramWidget::Fit() const
     fit["integration_range"] = m_integration_range->currentText();
     fit["integration_range_threshold"] = m_integration_range_threshold->value();
     fit["iter"] = m_last_iteration_max;
+
+    QJsonObject thermo;
+    thermo["x"] = ToolSet::DoubleList2String(m_spec.x());
+    thermo["y"] = ToolSet::DoubleList2String(m_spec.y());
+    fit["thermogram"] = thermo;
+
     return fit;
 }
 

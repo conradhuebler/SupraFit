@@ -52,6 +52,8 @@ QStringList DoubleList2StringList(const Vector& vector);
 QString Int2DVec2String(const QVector<QVector<int>>& vector);
 
 QVector<qreal> String2DoubleVec(const QString& str);
+Vector String2DoubleEigVec(const QString& str);
+
 QVector<int> String2IntVec(const QString& str);
 QList<int> String2IntList(const QString& str);
 

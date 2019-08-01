@@ -83,6 +83,8 @@ public:
     inline std::vector<PeakPick::Peak> Peaks() const { return m_peak_list; }
 
     inline void setFileType(const FileType filetype) { m_filetype = filetype; }
+
+    inline double Frequency() const { return m_frequency; }
 signals:
     void IntegrationChanged();
     void PeaksChanged();
@@ -97,12 +99,10 @@ private:
     void setUi();
     void UpdateTable();
     void UpdatePlot();
-    void UpdateLimits();
     void CreateSeries();
     void UpdateSeries();
 
     void fromSpectrum(const PeakPick::spectrum* original, LineSeries* series);
-    void fromPolynomial(const Vector& coeff, LineSeries* series);
 
     void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
     void CalibrateSystem();
@@ -120,7 +120,7 @@ private:
     QCheckBox *m_limits, *m_smooth, *m_poly_slow;
     QTableWidget *m_table, *m_peak_rule_list;
     ChartView* m_thermogram;
-    //QtCharts::QChart* m_data;
+
     QPlainTextEdit* m_baseline_polynom;
     QLabel *m_calibration_label, *m_guide_label;
     QSplitter* m_splitter;

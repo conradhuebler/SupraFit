@@ -158,6 +158,20 @@ QVector<qreal> String2DoubleVec(const QString& str)
     return vector;
 }
 
+Vector String2DoubleEigVec(const QString& str)
+{
+    Vector vector;
+    std::vector<double> v;
+    if (str.isEmpty())
+        return vector;
+    QStringList nums = str.split(" ");
+    for (const QString& string : qAsConst(nums))
+        v.push_back(string.toDouble());
+
+    vector = Vector::Map(&v[0], v.size());
+    return vector;
+}
+
 QVector<int> String2IntVec(const QString& str)
 {
     QVector<int> vector;

@@ -163,6 +163,7 @@ void Thermogram::setUi()
         this->m_dilution->setFrequency(freq);
         this->m_experiment->setFrequency(freq);
     });
+    m_freq->setReadOnly(true);
 
     m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
     m_offset = new QLabel(tr("No offset"));
@@ -622,6 +623,8 @@ QString Thermogram::ProjectName() const
 void Thermogram::setExperimentFit(const QJsonObject& json)
 {
     m_experiment->setFit(json);
+    // QSignalBlocker blocker(m_freq);
+    // m_freq->setValue( m_experiment->Frequency() );
 }
 
 void Thermogram::setDilutionFit(const QJsonObject& json)
