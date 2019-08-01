@@ -74,17 +74,18 @@ void ResampleAnalyse::CrossValidation()
     int maxthreads = qApp->instance()->property("threads").toInt();
     QPointer<DataTable> table = new DataTable(m_model->DependentModel());
     QVector<QPointer<MonteCarloBatch>> threads;
-    QVector<QVector<qreal>> individual_results(m_model->DataPoints());
+
     QList<qreal> x;
 
     int index = 0;
     int real_points = 0;
-    /* I will keep the x-vector in correct length, even rows could be disabled */
+
+    /* I will keep the x-vector in correct length, single rows could be disabled */
     for (int i = 0; i < m_model->DataPoints(); ++i) {
         x << m_model->PrintOutIndependent(i);
         real_points += m_model->DependentModel()->isRowChecked(i);
     }
-    qDebug() << real_points;
+
     bool more_message = true;
     switch (type) {
     case 1:
@@ -298,7 +299,7 @@ void ResampleAnalyse::CrossValidation()
                     QVector<int> indicies;
                     int checked = 0;
                     for (int i = 0; i < vector.size(); ++i) {
-                        checked += m_model->DependentModel()->isRowChecked(vector[i]);
+                        checked += bool(m_model->DependentModel()->isRowChecked(vector[i]));
                         dep_table->DisableRow(vector[i]);
                         indicies << vector[i];
                     }
@@ -376,8 +377,6 @@ void ResampleAnalyse::CrossValidation()
 
     if (more_message)
         emit Message(tr("Final evaluation in progress!"));
-
-    QJsonObject old_param = m_model->ExportModel(false, false);
 
     // TODO some times, I will parallise it at all
     QSharedPointer<AbstractModel> calc_model = m_model->Clone();

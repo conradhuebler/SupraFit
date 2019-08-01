@@ -505,17 +505,26 @@ QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
         for (int j = 0; j < globalcount; ++j)
             global[j] << vector[j];
 
-        // QStringList keys = localObject.keys();
+        /* Series free models may have no entry or an empty entry for active_series
+         * Therefor we have fill the list, if it is smaller
+         * Lets fill it with ones, otherwise no local parameter will be evaluated */
+        QList<int> active = String2IntList(model["active_series"].toString());
+        while (active.size() < localcount)
+            active << 1;
+
         for (int j = 0; j < localcount; ++j) {
             QList<qreal> values = String2DoubleList(localObject["data"].toObject()[QString::number(j)].toString());
             QList<qreal> checked = String2DoubleList(localObject["checked"].toObject()[QString::number(j)].toString());
+            if (i == 0)
+                int_keys << j; //active[j];
+
+            if (active[j] == 0)
+                continue;
 
             for (int k = 0; k < each_local; ++k) {
                 if (checked[k])
                     local[each_local * j + k] << values[k];
             }
-            if (i == 0)
-                int_keys << j;
         }
     }
 

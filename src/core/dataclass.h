@@ -123,7 +123,7 @@ public:
     QPointer<DataTable> Block(int row_begin, int column_begin, int row_end, int column_end) const;
 
     bool isChecked(int i, int j) const;
-    bool isRowChecked(int i) const;
+    int isRowChecked(int i) const;
     int EnabledRows() const;
 
     void setChecked(int i, int j, bool checked);
