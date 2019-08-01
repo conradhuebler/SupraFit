@@ -333,7 +333,7 @@ PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
         qDebug() << "size dont fit";
         return PeakPick::spectrum();
     }
-    return PeakPick::spectrum(experiment.second, experiment.first[0], experiment.first[experiment.first.size() - 1]);
+    return PeakPick::spectrum(experiment.first, experiment.second);
 }
 
 void Thermogram::setExperimentFile(QString filename)

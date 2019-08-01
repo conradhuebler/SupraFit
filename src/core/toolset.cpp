@@ -667,7 +667,7 @@ QPair<Vector, Vector> LoadXYFile(const QString& filename)
         if (!str.contains("#")) {
             QStringList elements = str.simplified().split(" ");
             if (elements.size() == 2) {
-                entries_x.push_back(elements[0].toDouble());
+                entries_x.push_back(String2Double(elements[0]));
                 entries_y.push_back(String2Double(elements[1]));
             }
         }
@@ -777,7 +777,7 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
     x = Vector::Map(&entries_x[0], entries_x.size());
     y = Vector::Map(&entries_y[0], entries_y.size());
 
-    return QPair<PeakPick::spectrum, QJsonObject>(PeakPick::spectrum(y, x[0], x[x.size() - 1]), systemparameter);
+    return QPair<PeakPick::spectrum, QJsonObject>(PeakPick::spectrum(x, y), systemparameter);
 }
 
 qreal K2G(qreal logK, qreal T)

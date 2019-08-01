@@ -266,7 +266,11 @@ void ImportData::WriteData(const DataTable* model, int independent)
 
 void ImportData::accept()
 {
-    DataTable* model = qobject_cast<DataTable*>(m_table->model());
+    QPointer<DataTable> model = qobject_cast<DataTable*>(m_table->model());
+    if (!model) {
+        QDialog::reject();
+        return;
+    }
 
     if (model->rowCount() == 0 && model->columnCount() == 0) {
         delete model;

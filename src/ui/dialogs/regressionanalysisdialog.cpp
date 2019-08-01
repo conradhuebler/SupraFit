@@ -128,8 +128,9 @@ void RegressionAnalysisDialog::TestPeaks()
             x.push_back(points[j].x());
             y.push_back(points[j].y());
         }
+        Vector x_vec = Vector::Map(&x[0], x.size());
         Vector y_vec = Vector::Map(&y[0], x.size());
-        PeakPick::spectrum spectrum(y_vec, x[0], x[x.size() - 1]);
+        PeakPick::spectrum spectrum(x_vec, y_vec);
         PeakPick::BaseLine baseline(&spectrum);
         baseline.setNoCoeffs(2);
         baseline.Fit(PeakPick::BaseLine::StartEnd);
@@ -187,7 +188,8 @@ void RegressionAnalysisDialog::FitFunctions()
                         y.push_back(points[j].y());
                     }
                     Vector y_vec = Vector::Map(&y[0], x.size());
-                    PeakPick::spectrum spectrum(y_vec, x[0], x[x.size() - 1]);
+                    Vector x_vec = Vector::Map(&y[0], x.size());
+                    PeakPick::spectrum spectrum(x_vec, y_vec);
                     PeakPick::BaseLine baseline(&spectrum);
                     baseline.setNoCoeffs(2);
                     baseline.Fit(PeakPick::BaseLine::StartEnd);

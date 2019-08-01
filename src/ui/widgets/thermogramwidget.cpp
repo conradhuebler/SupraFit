@@ -771,8 +771,8 @@ void ThermogramWidget::fromSpectrum(const PeakPick::spectrum* original, LineSeri
     //        SmoothFunction(spectrum, m_filter->value());
 
     series->clear();
-    for (unsigned int i = 1; i <= spectrum->size(); i++) {
-        series->append(QPointF(spectrum->X(i), spectrum->Y(i)));
+    for (unsigned int i = 0; i < spectrum->x().size(); i++) {
+        series->append(QPointF(spectrum->x()[i], spectrum->y()[i]));
     }
 }
 
@@ -1296,11 +1296,13 @@ void ThermogramWidget::UpdatePeaks()
     m_peak_list.clear();
     PeakPick::Peak peak;
 
+    // m_spec.print();
+
     for (int j = 0; j < rules_size; ++j) {
         QTableWidgetItem* item = (m_peak_rule_list->item(j, 0));
         double index_start = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble()); //m_spec.XtoIndex(m_peak_rule_list->item(j, 0)->data(Qt::UserRole).toDouble());
         item = m_peak_rule_list->item(j, 1);
-        double timestep = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble());
+        double timestep = item->data(Qt::DisplayRole).toDouble() / m_spec.Step();
         if (timestep <= 0) {
             m_guide_label->setText(QString("<font color='red'>Sorry, but Peak rule %1 contains a zero as peak time. That means, if I did not stop right here, you would be waiting for Godot</font>").arg(j + 1));
             return;
@@ -1388,8 +1390,8 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
 
 void ThermogramWidget::CalibrateSystem()
 {
-    m_calibration_peak.setPeakStart(m_spec.XtoIndex(m_spec.XMax() - m_calibration_start->value() * m_spec.Step()));
-    m_calibration_peak.setPeakEnd(m_spec.XtoIndex(m_spec.XMax()));
+    m_calibration_peak.setPeakStart(m_spec.size() - 1 - m_calibration_start->value() * m_spec.Step());
+    m_calibration_peak.setPeakEnd(m_spec.size() - 1);
 
     std::vector<PeakPick::Peak> list;
     list.push_back(m_calibration_peak);
@@ -1550,7 +1552,7 @@ void ThermogramWidget::ConvertRules()
     m_peak_rule_list->setHorizontalHeaderLabels(header);
 
     for (int i = 0; i < m_peak_list.size(); ++i) {
-        PeakRule* item = new PeakRule(QString::number((m_peak_list[i].start) * m_spec.Step()));
+        PeakRule* item = new PeakRule(QString::number((m_peak_list[i].start + 1) * m_spec.Step() + m_spec.XMin()));
         m_peak_rule_list->setItem(i, 0, item);
         item = new PeakRule(QString::number((m_peak_list[i].end - m_peak_list[i].start + 1) * m_spec.Step()));
         m_peak_rule_list->setItem(i, 1, item);
