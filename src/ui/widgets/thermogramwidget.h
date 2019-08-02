@@ -131,7 +131,7 @@ private:
     PeakPick::spectrum m_spec;
     std::vector<PeakPick::Peak> m_peak_list;
     PeakPick::Peak m_calibration_peak;
-    bool m_spectrum = false, m_block = false, m_peak_edit_mode = false;
+    bool m_spectrum = false, m_block = false, m_peak_edit_mode = false, m_rules_imported = false;
 
     /* 1 - get start
      * 2 - get end */
@@ -151,6 +151,8 @@ private slots:
     void UpdateFit(const QString& str);
     void PeakDoubleClicked(const QModelIndex& index);
     void PeakRuleDoubleClicked(const QModelIndex& index);
+    void PeakRuleDoubleClicked(const QTableWidgetItem* item, int peak);
+
     void PeakDoubleClicked(int peak);
     void PeakChanged(int row, int column, int value);
     void AddRectanglePeak(const QPointF& point1, const QPointF& point2);

@@ -78,6 +78,7 @@ void ThermogramWidget::setUi()
     } else
         m_guide_label->setFixedHeight(30);
 
+    m_guide_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
     m_thermogram = new ChartView;
     m_thermogram->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
 
@@ -136,6 +137,7 @@ void ThermogramWidget::setUi()
         //m_peak_rule_list->setSortingEnabled(true);
         m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
         m_current_peaks_rule = m_peak_rule_list->row(item);
+        m_rules_imported = false;
     });
     m_peak_rule_list->addAction(action);
 
@@ -148,6 +150,7 @@ void ThermogramWidget::setUi()
                 m_peak_rule_list->removeRow(peak);
             if (m_current_peaks_rule && peak > m_current_peaks_rule)
                 m_current_peaks_rule--;
+            m_rules_imported = false;
         }
     });
     m_peak_rule_list->addAction(action);
@@ -198,6 +201,8 @@ void ThermogramWidget::setUi()
             if (m_current_peaks_rule && peak > m_current_peaks_rule)
                 m_current_peaks_rule--;
         }
+        m_rules_imported = false;
+
     });
 
     QGridLayout* grid = new QGridLayout;
@@ -513,9 +518,9 @@ void ThermogramWidget::UpdateTable()
 
         m_table->setItem(j, 2, newItem);
     }
-    QStringList header = QStringList() << "heat\n[raw]"
-                                       << "peak start\n[s]"
-                                       << "peak end\n[s]";
+    QStringList header = QStringList() << "Heat\n[raw]"
+                                       << "Peak Start\n[s]"
+                                       << "Peak End\n[s]";
     m_table->setHorizontalHeaderLabels(header);
     m_table->resizeColumnsToContents();
 }
@@ -704,8 +709,12 @@ void ThermogramWidget::FitBaseLine()
 void ThermogramWidget::PeakRuleDoubleClicked(const QModelIndex& index)
 {
     int peak = index.row();
+    PeakRuleDoubleClicked(m_peak_rule_list->item(index.row(), 0), peak);
+}
+
+void ThermogramWidget::PeakRuleDoubleClicked(const QTableWidgetItem* item, int peak)
+{
     m_current_peaks_rule = peak;
-    QTableWidgetItem* item = m_peak_rule_list->item(index.row(), 0);
     m_peaks_start->setValue(item->data(Qt::DisplayRole).toDouble());
     m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
 }
@@ -991,6 +1000,16 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
     qreal x = point.x();
 
     if (m_get_time_from_thermogram == 1) {
+        if (m_convert_rules) {
+            qreal diff = m_peak_rule_list->item(m_current_peaks_rule, 1)->data(Qt::DisplayRole).toInt() - (x - m_peaks_start->value());
+            if (diff > m_peaks_time->value() || diff < 0) {
+                m_guide_label->setText(tr("<font color='red'>I will not apply this value, since you are leaving the peak boundaries. If this was intentend, you can manually edit the 'Start Time': %1 and the 'Peak Duration' %2 in the table!.</font>").arg(x).arg(diff));
+                m_get_peaks_end->setText("Click to Select");
+                m_get_time_from_thermogram = 0;
+                return;
+            }
+            m_peak_rule_list->item(m_current_peaks_rule, 1)->setData(Qt::DisplayRole, diff);
+        }
         m_peaks_start->setValue(x);
         m_peak_rule_list->item(m_current_peaks_rule, 0)->setData(Qt::DisplayRole, x);
         m_get_peaks_start->setText("Click to Select");
@@ -1007,6 +1026,18 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
                 break;
             }
         }
+        if (m_rules_imported) {
+            for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
+                double start = m_peak_rule_list->item(i, 0)->data(Qt::DisplayRole).toDouble();
+                double end = start + m_peak_rule_list->item(i, 1)->data(Qt::DisplayRole).toDouble();
+
+                if (start < x && x < end) {
+                    m_peak_rule_list->setCurrentCell(i, 0, QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
+                    PeakRuleDoubleClicked(m_peak_rule_list->item(i, 0), i);
+                    break;
+                }
+            }
+        }
     }
     ResetGuideLabel();
     m_get_time_from_thermogram = 0;
@@ -1014,7 +1045,7 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
 
 void ThermogramWidget::CalibrateSystem()
 {
-    /* avoid asking for an empty spectrum */
+    /* avoid asking an empty spectrum */
     if (m_spec.Step() == 0)
         return;
 
@@ -1098,7 +1129,6 @@ bool ThermogramWidget::CutAllLimits()
         old_threshold = m_integration_range_threshold->value();
     }
     m_last_iteration_max = x;
-    // m_coeffs->setValue(coeff);
     FitBaseLine();
     Integrate(&m_peak_list, spectrum);
 
@@ -1175,6 +1205,7 @@ void ThermogramWidget::ConvertRules()
         m_peak_rule_list->setItem(i, 1, item);
     }
     m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+    m_rules_imported = true;
 }
 
 void ThermogramWidget::LoadRules()
@@ -1211,6 +1242,7 @@ void ThermogramWidget::LoadRules()
         }
     }
     m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+    m_rules_imported = false;
 }
 
 void ThermogramWidget::WriteRules()

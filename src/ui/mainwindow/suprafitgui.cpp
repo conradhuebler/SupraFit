@@ -1142,10 +1142,8 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("save_on_exit") == QVariant())
         qApp->instance()->setProperty("save_on_exit", true);
 
-    if (qApp->instance()->property("tooltips") == QVariant()) {
+    if (qApp->instance()->property("tooltips") == QVariant())
         qApp->instance()->setProperty("tooltips", true);
-        QTimer::singleShot(10, this, SLOT(FirstStart()));
-    }
 
     if (qApp->instance()->property("chartanimation") == QVariant())
         qApp->instance()->setProperty("chartanimation", true);
@@ -1204,9 +1202,10 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("auto_thermo_dialog") == QVariant())
         qApp->instance()->setProperty("auto_thermo_dialog", false);
 
-    if (qApp->instance()->property("advanced_ui") == QVariant())
+    if (qApp->instance()->property("advanced_ui") == QVariant()) {
         qApp->instance()->setProperty("advanced_ui", false);
-
+        QTimer::singleShot(10, this, SLOT(FirstStart()));
+    }
     if (qApp->instance()->property("xSize") == QVariant())
         qApp->instance()->setProperty("xSize", 600);
 
