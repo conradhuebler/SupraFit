@@ -578,7 +578,7 @@ QList<QJsonObject> Model2Parameter(const QList<QJsonObject>& models, bool sort)
             object["data"] = data;
             object["name"] = local_names[j];
             object["type"] = "Local Parameter";
-            object["index"] = QString::number(j) + "|" + QString::number(int_keys[i]);
+            object["index"] = QString::number(j) + "|" + QString::number(int_keys[i]); /* j - local parameter within series, i - ascending series */
             parameter << object;
         }
     }

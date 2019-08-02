@@ -217,7 +217,6 @@ QWidget* ResultsWidget::ReductionWidget()
     m_text += "\n" + parameter_text;
     view->setTitle(QString("Reduction Analysis for %1").arg(m_data["controller"].toObject()["title"].toString()));
     view->setXAxis(m_data["controller"].toObject()["xlabel"].toString());
-    // qDebug() << m_data["controller"].toObject();
     view->setYAxis("parameter value");
     return view;
 }
@@ -279,7 +278,7 @@ QWidget* ResultsWidget::GridSearchWidget()
         QString name = data["name"].toString();
         qreal x_0 = data["value"].toDouble();
 
-        QtCharts::QLineSeries* xy_series = new QtCharts::QLineSeries;
+        LineSeries* xy_series = new LineSeries;
         QList<qreal> x = ToolSet::String2DoubleList(data["data"].toObject()["x"].toString());
         QList<qreal> y = ToolSet::String2DoubleList(data["data"].toObject()["y"].toString());
 
@@ -290,30 +289,15 @@ QWidget* ResultsWidget::GridSearchWidget()
             if (!data.contains("index"))
                 continue;
 
-            int index = data["index"].toString().split("|")[1].toInt() + m_model.data()->GlobalParameterSize();
-            qDebug() << index << data["index"].toString().split("|")[1].toInt();
-            if (index != old_index)
-                series_int = 0;
-            {
                 int index = data["index"].toString().split("|")[1].toInt();
+
                 if (m_model.data()->SupportSeries()) {
                     if (index < m_wrapper->SeriesSize()) {
                         xy_series->setColor(m_wrapper->Series(index)->color());
-                        //color = m_wrapper->Series(index)->color();
-                        //connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-                        //connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, view](const QColor& color) { view->setColor(i, color); });
+                        connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
                     }
                 }
-            }
-            /*
-            if (m_model.data()->SupportSeries())
-                xy_series->setColor(m_wrapper->Series(series_int)->color());
-            else
-                xy_series->setColor(m_wrapper->ColorCode(i));*/
-            /*connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-            connect(m_wrapper->Series(series_int), &QtCharts::QXYSeries::colorChanged, this, [series_int, view]( const QColor &color ) { view->setColor(series_int, color); });*/
-            series_int++;
-            old_index = index;
+
         } else {
             xy_series->setColor(ChartWrapper::ColorCode(m_model.data()->Color(i)));
         }

@@ -276,7 +276,8 @@ QWidget* StatisticDialog::GridSearchWidget()
             layout->addLayout(hlayout);
 
             connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, checkbox]() {
-                checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
+                if (m_model)
+                    checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
             });
         }
 
@@ -290,7 +291,8 @@ QWidget* StatisticDialog::GridSearchWidget()
             layout->addLayout(hlayout);
 
             connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, checkbox]() {
-                checkbox->setEnabled(m_model.data()->LocalEnabled(i));
+                if (m_model)
+                    checkbox->setEnabled(m_model.data()->LocalEnabled(i));
             });
         }
         parameter->setLayout(layout);
@@ -439,9 +441,11 @@ QWidget* StatisticDialog::ModelComparison()
             layout->addLayout(hlayout);
 
             connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, spinbox, checkbox]() {
-                spinbox->setEnabled(m_model.data()->GlobalEnabled(i));
-                checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
-                spinbox->setValue(log10(abs(m_model.data()->GlobalParameter(i))) + 400);
+                if (m_model) {
+                    spinbox->setEnabled(m_model.data()->GlobalEnabled(i));
+                    checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
+                    spinbox->setValue(log10(abs(m_model.data()->GlobalParameter(i))) + 400);
+                }
             });
         }
 
@@ -473,9 +477,11 @@ QWidget* StatisticDialog::ModelComparison()
             layout->addLayout(hlayout);
 
             connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, spinbox, checkbox]() {
-                spinbox->setEnabled(m_model.data()->LocalEnabled(i));
-                checkbox->setEnabled(m_model.data()->LocalEnabled(i));
-                spinbox->setValue(log10(abs(m_model.data()->LocalParameter(i, 0))) + 400);
+                if (m_model) {
+                    spinbox->setEnabled(m_model.data()->LocalEnabled(i));
+                    checkbox->setEnabled(m_model.data()->LocalEnabled(i));
+                    spinbox->setValue(log10(abs(m_model.data()->LocalParameter(i, 0))) + 400);
+                }
             });
         }
         parameter->setLayout(layout);

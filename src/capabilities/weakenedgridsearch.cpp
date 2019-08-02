@@ -232,6 +232,18 @@ bool WeakenedGridSearch::Run()
     }
 
     bool converged = true;
+    int series = 0, jndex = 0;
+
+    QVector<QVector<QJsonObject>> local_list(m_model->SeriesCount());
+    QVector<int> indices;
+    if (m_model.data()->SupportSeries()) {
+        for (int i = 0; i < m_model.data()->ActiveSignals().size(); ++i)
+            if (m_model.data()->ActiveSignals()[i])
+                indices << i;
+    } else
+        indices << 0;
+    qDebug() << indices << m_model.data()->ActiveSignals();
+
     for (int i = 0; i < threads.size(); ++i) {
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair = threads[i];
         int index = pair.first->ParameterId();
@@ -245,16 +257,24 @@ bool WeakenedGridSearch::Run()
 
         qreal upper = pair.first->Last();
         qreal lower = pair.second->Last();
-
         QJsonObject result;
+        qDebug() << m_model.data()->ActiveSignals();
         QPair<int, int> index_pair = m_model.data()->IndexParameters(index);
         if (index_pair.second == 0) {
             result["name"] = m_model.data()->GlobalParameterName(index);
             result["type"] = "Global Parameter";
         } else if (index_pair.second == 1) {
+
+            if (jndex == index_pair.first)
+                series++;
+            else
+                series = 1;
+
             result["name"] = m_model.data()->LocalParameterName(index_pair.first);
             result["type"] = "Local Parameter";
-            result["index"] = QString::number(0) + "|" + QString::number(index_pair.first);
+            result["index"] = QString::number(index_pair.first) + "|" + QString::number(indices[series - 1]);
+
+            jndex = index_pair.first;
         }
         result["value"] = parameter[index];
 
@@ -279,12 +299,18 @@ bool WeakenedGridSearch::Run()
         data["y"] = ToolSet::DoubleList2String(y);
         result["data"] = data;
 
-        m_results << result;
+        if (index_pair.second == 0)
+            m_results << result;
+        else
+            local_list[series - 1] << result;
         converged = converged && local;
 
         delete pair.first;
         delete pair.second;
     }
+    for (const auto& blob : local_list)
+        for (const auto& sublob : blob)
+            m_results << sublob;
 
     if (!m_controller["StoreIntermediate"].toBool())
         m_models.clear();
