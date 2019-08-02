@@ -26,8 +26,8 @@
 #include <QtCore/QWeakPointer>
 
 #include <QtGui/QClipboard>
-#include <QtWidgets/QApplication>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 

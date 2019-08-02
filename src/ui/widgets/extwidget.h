@@ -25,10 +25,10 @@
 #include <QtCore/QMimeData>
 #include <QtCore/QTimer>
 
-#include <QtGui/QApplication>
 #include <QtGui/QDrag>
 #include <QtGui/QMouseEvent>
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QWidget>
