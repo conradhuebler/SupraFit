@@ -80,6 +80,17 @@ public:
         return flags;
     }
 
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const
+    {
+        if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
+            if (section == 0)
+                return tr("Project Name");
+            else
+                return tr("# Models");
+        } else
+            return QAbstractItemModel::headerData(section, orientation, role);
+    }
+
     virtual int columnCount(const QModelIndex& p = QModelIndex()) const override;
 
     virtual int rowCount(const QModelIndex& p = QModelIndex()) const override;

@@ -42,6 +42,17 @@ public:
     {
     }
 
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const
+    {
+        if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
+            if (section == 0)
+                return tr("Parameter");
+            else
+                return tr("# Affected Models");
+        } else
+            return QAbstractItemModel::headerData(section, orientation, role);
+    }
+
     Qt::ItemFlags flags(const QModelIndex& index) const override
     {
         if (!index.isValid())
@@ -51,8 +62,9 @@ public:
 
         qreal* pos = static_cast<qreal*>(index.internalPointer());
         bool ok = false;
-        index.data(Qt::DisplayRole).toDouble(&ok);
-        if (pos == m_null && ok)
+        index.data(Qt::DisplayRole).toString().toDouble(&ok);
+
+        if (pos == m_null && ok && index.column() == 0)
             flag = Qt::ItemIsEditable;
 
         return flag | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | QAbstractItemModel::flags(index);

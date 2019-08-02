@@ -33,6 +33,7 @@ class ResultsDialog;
 class StatisticWidget;
 
 class QComboBox;
+class QLineEdit;
 class QPushButton;
 
 class MetaModelWidget : public QWidget {
@@ -56,7 +57,7 @@ private:
     void setUi();
 
     QSharedPointer<AbstractModel> m_model;
-    QPushButton* m_minimize;
+    QPushButton *m_minimize, *m_calculate;
     QComboBox* m_type;
     ModelActions* m_actions;
     ModalDialog *m_dialogs, *m_table_result;
@@ -65,11 +66,13 @@ private:
     MetaModelParameter* m_metamodelparameter;
     QList<QJsonObject> m_fast_confidence;
     JobManager* m_jobmanager;
+    QLineEdit* m_project_name;
 
     void LoadStatistic(const QJsonObject& data);
     void FastConfidence();
 
 private slots:
+    void Calculate();
     void Minimize();
     void OpenAdvancedSearch();
     void NewGuess();

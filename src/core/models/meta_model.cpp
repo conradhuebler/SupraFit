@@ -37,6 +37,7 @@ MetaModel::MetaModel(DataClass* data)
 {
     PrepareParameter(0, 0);
     connect(this, &AbstractModel::Recalculated, this, &MetaModel::UpdateCalculated);
+    DataClass::setProjectTitle("MetaModel");
 }
 
 MetaModel::~MetaModel()
@@ -443,7 +444,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     m_series_count += model->SeriesCount();
     OptimizeParameters_Private();
     UpdateSlicedTable();
-    DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
+    //DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
     connect(this, &DataClass::Message, model, &DataClass::Message);
     connect(this, &DataClass::Warning, model, &DataClass::Warning);
 
@@ -507,7 +508,7 @@ void MetaModel::RemoveModel(const AbstractModel* model)
     OptimizeParameters_Private();
     UpdateSlicedTable();
 
-    DataClass::setProjectTitle("MetaModel (" + QString::number(m_models.size()) + ")");
+    //DataClass::setProjectTitle("MetaModel");
     emit ModelRemoved();
 }
 

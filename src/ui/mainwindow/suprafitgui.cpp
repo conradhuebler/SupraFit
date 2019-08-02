@@ -110,8 +110,10 @@ QString ProjectTree::UUID(const QModelIndex& index) const
 
 int ProjectTree::columnCount(const QModelIndex& parent) const
 {
-    Q_UNUSED(parent)
-    return 1;
+    if (parent.isValid())
+        return 1;
+    else
+        return 2;
 }
 
 int ProjectTree::rowCount(const QModelIndex& p) const
@@ -140,14 +142,17 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
         return data;
 
     if (role == Qt::DisplayRole) {
+        if (index.column() == 0) {
+            if (parent(index).isValid()) // Model Element
+            {
+                data = qobject_cast<AbstractModel*>((*m_data_list)[parent(index).row()].data()->Children(index.row()))->Name();
 
-        if (parent(index).isValid()) // Model Element
-        {
-            data = qobject_cast<AbstractModel*>((*m_data_list)[parent(index).row()].data()->Children(index.row()))->Name();
-
-        } else // DataClass Element
-        {
-            data = (*m_data_list)[index.row()].data()->ProjectTitle();
+            } else // DataClass Element
+            {
+                data = (*m_data_list)[index.row()].data()->ProjectTitle();
+            }
+        } else if (index.column() == 1 && !parent(index).isValid()) {
+            data = (*m_data_list)[index.row()].data()->ChildrenSize();
         }
     }
 
@@ -688,11 +693,13 @@ SupraFitGui::SupraFitGui()
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeDoubleClicked);
     connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
+    m_project_view->setColumnWidth(0, 240);
 
-    //m_mainsplitter->hide();
     setWindowIcon(QIcon(":/misc/suprafit.png"));
     UpdateRecentList();
     m_messages_widget->Message("SupraFit is up and running");
+
+    //   QTimer::singleShot(10, this, &SupraFitGui::FirstStart);
 }
 
 SupraFitGui::~SupraFitGui()
@@ -1210,7 +1217,7 @@ void SupraFitGui::ReadSettings()
         qApp->instance()->setProperty("FastConfidenceScaling", -4);
 
     if (qApp->instance()->property("FastConfidenceSteps") == QVariant())
-        qApp->instance()->setProperty("FastConfidenceSteps", 1000);
+        qApp->instance()->setProperty("FastConfidenceSteps", 100);
 
     qApp->instance()->setProperty("lastDir", getDir());
 }
@@ -1251,8 +1258,11 @@ void SupraFitGui::about()
 void SupraFitGui::FirstStart()
 {
     QString info;
-    info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramoleculare NMR titration experiments.< /p>";
-    info += "<p>SupraFit User Interface is divided into three parts:<li>The <strong>project list </strong>on the left side,</li> <li> the <strong>Workspacein</strong> the middle and</li> <li> the <strong>Chart Widget</strong> the left hand side!</li></p>";
+    info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramoleculare NMR titrations and ITC experiments.< /p>";
+    info += "<p>SupraFit User Interface is divided into three parts:<li>The <strong>Project List </strong> on the left side,</li> <li> the <strong>Workspace </strong> in the middle and</li> <li> the <strong>Chart Widget </strong> the left hand side!</li></p>";
+    info += "<p>Hitting <strong>F4</strong> or the light bulb button in upper part toggles a message box in the part below the mainwindows.</p>";
+    info += "<p>Sometimes critical information are printed out there. If there are unread critical messages, the light bulb glows red.</p>";
+    info += "<p>Uncritical information are indicated by a green light blub.</p>";
     info += "<p><strong>All</strong> tooltips can globally disabled in the config dialog.</p>";
     QMessageBox::about(this, tr("First Start Information"), info);
 }

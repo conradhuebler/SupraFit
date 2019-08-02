@@ -242,7 +242,6 @@ bool WeakenedGridSearch::Run()
                 indices << i;
     } else
         indices << 0;
-    qDebug() << indices << m_model.data()->ActiveSignals();
 
     for (int i = 0; i < threads.size(); ++i) {
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair = threads[i];

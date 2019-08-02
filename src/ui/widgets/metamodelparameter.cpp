@@ -35,8 +35,10 @@
 
 int ParameterTree::columnCount(const QModelIndex& parent) const
 {
-    Q_UNUSED(parent)
-    return 1;
+    if (parent.isValid())
+        return 1;
+    else //Q_UNUSED(parent)
+        return 2;
 }
 
 int ParameterTree::rowCount(const QModelIndex& parent) const
@@ -143,7 +145,11 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
         if (index.row() < m_model.data()->CombinedParameter().size()) {
             if (pos == m_null) {
 
-                QString name = tr("%1 (%2)").arg(m_model.data()->CombinedParameter()[index.row()].first).arg(m_model.data()->CombinedParameter()[index.row()].second.size());
+                QString name;
+                if (index.column() == 0)
+                    name = tr("%1").arg(m_model.data()->CombinedParameter()[index.row()].first);
+                else
+                    name = tr("%1").arg(m_model.data()->CombinedParameter()[index.row()].second.size());
 
                 if (m_model.data()->CombinedParameter()[index.row()].second.size() == 1) {
                     MMParameter param = m_model.data()->CombinedParameter()[index.row()];
@@ -153,9 +159,9 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
                     QSharedPointer<AbstractModel> model = m_model.data()->Models()[param.second[0][0]];
 
                     if (param.second[0][1] == 0)
-                        name += " | " + model->ProjectTitle() + ":" + model->Name() + tr(" [%1]").arg(model->GlobalParameterName(param.second[0][2]));
+                        name += " | " + model->ProjectTitle() + " : " + model->Name() + tr(" [%1]").arg(model->GlobalParameterName(param.second[0][2]));
                     else
-                        name += " | " + model->ProjectTitle() + ":" + model->Name() + tr(" [%1]").arg(model->LocalParameterName(param.second[0][2]));
+                        name += " | " + model->ProjectTitle() + " : " + model->Name() + tr(" [%1]").arg(model->LocalParameterName(param.second[0][2]));
                 }
                 data = name;
             } else {
@@ -175,7 +181,8 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
                             name = model->GlobalParameterName(param->second[index.row()][2]);
                         else
                             name = model->LocalParameterName(param->second[index.row()][2]);
-                        data = model->ProjectTitle() + ":" + model->Name() + " " + name;
+                        if (index.column() == 0)
+                            data = model->ProjectTitle() + " : " + model->Name() + " " + name;
                     }
                 }
             }
@@ -284,7 +291,7 @@ void MetaModelParameter::setUi()
     m_tree->setDragDropMode(QAbstractItemView::DragDrop);
     m_tree->setItemDelegate(new ModelParameterEntry());
     m_tree->setContextMenuPolicy(Qt::ActionsContextMenu);
-
+    m_tree->setColumnWidth(0, 400);
     QAction* action = new QAction(tr("Split Parameter"));
     m_tree->addAction(action);
     connect(action, &QAction::triggered, this, &MetaModelParameter::SplitParameter);

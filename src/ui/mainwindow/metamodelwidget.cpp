@@ -39,6 +39,8 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTextEdit>
 
@@ -61,10 +63,25 @@ void MetaModelWidget::setUi()
 
     QGridLayout* layout = new QGridLayout;
 
+    m_project_name = new QLineEdit(Model()->ProjectTitle());
+    layout->addWidget(new QLabel(tr("<h4>Project Title</h4>")), 0, 0, 1, 1);
+    layout->addWidget(m_project_name, 0, 1, 1, 3);
+    connect(m_project_name, &QLineEdit::textChanged, this, [this](const QString& str) {
+        if (Model())
+            Model()->setProjectTitle(str);
+    });
+
+    m_calculate = new QPushButton(tr("Calculate"));
+    layout->addWidget(m_calculate, 1, 0);
+    m_calculate->setStyleSheet("background-color: #77d740;");
+
     m_minimize = new QPushButton(tr("Minimize"));
-    layout->addWidget(m_minimize, 0, 0);
+    layout->addWidget(m_minimize, 1, 1);
+    m_minimize->setStyleSheet("background-color: #77d740;");
+    layout->addWidget(new QLabel(tr("Connection Strategy for Parameters:")), 1, 2);
 
     m_type = new QComboBox;
+    m_type->setStyleSheet("background-color: #77d740;");
     m_type->addItems(QStringList() << "None"
                                    << "All"
                                    << "Custom");
@@ -76,17 +93,14 @@ void MetaModelWidget::setUi()
 
     //Model()->setConnectType(static_cast<MetaModel::ConnectType>(m_type->currentIndex()));
 
-    layout->addWidget(m_type, 0, 1);
+    layout->addWidget(m_type, 1, 3);
 
     m_actions = new ModelActions;
     m_metamodelparameter = new MetaModelParameter(m_model);
-    layout->addWidget(m_metamodelparameter, 1, 0, 1, 2);
+    layout->addWidget(m_metamodelparameter, 2, 0, 1, 4);
 
     m_jobmanager = new JobManager(this);
     m_jobmanager->setModel(m_model);
-    emit m_model->Info()->Message("Hi there, from SharedPointer");
-    emit m_model.data()->Info()->Message("Hi there, from Pointer");
-    emit Model()->Info()->Message("Hi there, from getter");
 
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
         if (type != SupraFit::Method::FastConfidence) {
@@ -109,13 +123,24 @@ void MetaModelWidget::setUi()
     //connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
     connect(m_actions, &ModelActions::Detailed, this, &MetaModelWidget::Detailed);
 
-    layout->addWidget(m_actions, 2, 0, 1, 2);
-    layout->addWidget(m_statistic_widget, 3, 0, 1, 2);
+    layout->addWidget(m_actions, 3, 0, 1, 4);
+    layout->addWidget(m_statistic_widget, 4, 0, 1, 4);
     connect(m_minimize, &QPushButton::clicked, this, &MetaModelWidget::Minimize);
+    connect(m_calculate, &QPushButton::clicked, this, &MetaModelWidget::Calculate);
+
     connect(Model(), &MetaModel::ParameterMoved, this, [this]() { m_type->setCurrentIndex(this->Model()->ConnectionType()); });
     connect(Model(), &DataClass::Message, this, &MetaModelWidget::Message);
     connect(Model(), &DataClass::Warning, this, &MetaModelWidget::Warning);
+    connect(Model(), &AbstractModel::Recalculated, m_statistic_widget, &StatisticWidget::Update);
+
     setLayout(layout);
+}
+
+void MetaModelWidget::Calculate()
+{
+    m_model->CalculateStatistics(true);
+    m_model->setFast(false);
+    m_model->Calculate();
 }
 
 void MetaModelWidget::Minimize()
@@ -146,8 +171,6 @@ void MetaModelWidget::Minimize()
 
     if (qApp->instance()->property("auto_confidence").toBool())
         FastConfidence();
-
-    m_statistic_widget->Update();
 
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
