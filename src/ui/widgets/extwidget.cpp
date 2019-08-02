@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,10 +64,10 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
     layout->addWidget(m_std, 0, 1);
     layout->addWidget(m_sey, 0, 2);
 
-    m_ideal = new DnDLabel(tr("<html><i>DnD</i> Ideal Model</html>"));
-    m_mc_std = new DnDLabel(tr("<html><i>DnD</i> MC from Model &sigma;</html>"));
-    m_mc_sey = new DnDLabel(tr("<html><i>DnD</i> MC from Model SE<sub>y</sub></html>"));
-    m_mc_user = new DnDLabel(tr("<html><i>DnD</i> MC from User &sigma;</html>"));
+    m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
     m_variance = new QDoubleSpinBox;
     m_variance->setMinimum(0);
     m_variance->setMaximum(1e6);
@@ -93,9 +93,9 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
 void extWidget::Update()
 {
     //TODO Move the random table generation into an on-demand generation upon click, drag n drop and not after every recalculation
-    m_sse->setText(tr("<h4><i>CnP</i> Sum of Squares: %1</h4>").arg(Print::printDouble(m_model.data()->SumofSquares())));
-    m_std->setText(tr("<h4><i>CnP</i> Standard Deviation: %1</h4>").arg(Print::printDouble(m_model.data()->StdDeviation())));
-    m_sey->setText(tr("<h4><i>CnP</i> SE<sub>y</sub>: %1</h4>").arg(Print::printDouble(m_model.data()->SEy())));
+    m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Sum of Squares: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SumofSquares())));
+    m_std->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Standard Deviation: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->StdDeviation())));
+    m_sey->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SE<sub>y</sub>: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SEy())));
 
     if (!qApp->instance()->property("advanced_ui").toBool())
         return;

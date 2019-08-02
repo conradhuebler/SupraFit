@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <QtCore/QMimeData>
 #include <QtCore/QTimer>
 
+#include <QtGui/QApplication>
 #include <QtGui/QDrag>
 #include <QtGui/QMouseEvent>
 
@@ -59,6 +60,16 @@ protected:
         drag->setHotSpot(event->pos());
         drag->exec();
     }
+    void enterEvent(QEvent* ev) override
+    {
+        QApplication::setOverrideCursor(Qt::OpenHandCursor);
+        QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
+    }
+
+    void leaveEvent(QEvent* ev) override
+    {
+        QApplication::restoreOverrideCursor();
+    }
 
 private:
     QByteArray m_content;
@@ -80,6 +91,17 @@ protected:
     {
         emit MouseClicked();
         QLabel::mousePressEvent(event);
+    }
+
+    void enterEvent(QEvent* ev) override
+    {
+        QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
+    }
+
+    void leaveEvent(QEvent* ev) override
+    {
+        QApplication::restoreOverrideCursor();
     }
 
 signals:
