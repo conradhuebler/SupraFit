@@ -24,6 +24,7 @@
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTextEdit>
 
@@ -53,10 +54,10 @@ void CompareDialog::setUi()
     m_cutoff_box->setDecimals(2);
     m_cutoff_box->setValue(m_cutoff);
 
-    m_local = new QCheckBox(tr("Include local Parameter"));
+    m_red_local = new QCheckBox(tr("Include local Parameter"));
     reduction->setLayout(layout);
     layout->addWidget(m_cutoff_box, 0, 0);
-    layout->addWidget(m_local, 0, 1);
+    layout->addWidget(m_red_local, 0, 1);
     layout->addWidget(m_reduction, 1, 0, 1, 2);
 
     layout = new QGridLayout;
@@ -79,10 +80,25 @@ void CompareDialog::setUi()
     });
     m_cv_loo->setChecked(true);
 
+    m_cv_lxo = new QRadioButton(tr("LXO CV"));
+    connect(m_cv_lxo, &QPushButton::clicked, this, [this]() {
+        this->m_cvtype = 3;
+    });
+
+    m_cv_local = new QCheckBox(tr("Include Local Parameter"));
+
+    m_cv_x = new QSpinBox;
+    m_cv_x->setValue(3);
+    m_cv_x->setPrefix(tr("X = "));
+
     connect(m_crossvalidation, &QPushButton::clicked, this, &CompareDialog::CompareCV);
     layout->addWidget(m_cv_loo, 0, 0);
     layout->addWidget(m_cv_l2o, 0, 1);
-    layout->addWidget(m_crossvalidation, 1, 0, 1, 2);
+    layout->addWidget(m_cv_lxo, 0, 3);
+    layout->addWidget(m_cv_local, 1, 0, 1, 2);
+    layout->addWidget(m_cv_x, 1, 3);
+
+    layout->addWidget(m_crossvalidation, 2, 0, 1, 2);
     crossvalidation->setLayout(layout);
 
     layout = new QGridLayout;

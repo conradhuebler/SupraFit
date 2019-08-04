@@ -238,8 +238,11 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
                     for (int i = 0; i < m_data_list->size(); ++i) {
                         if (mimeData->DataUUID() == (*m_data_list)[i].data()->UUID()) {
                             for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
-                                if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == mimeData->ModelUUID())
-                                    top = qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ExportModel(true, false);
+                                if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == mimeData->ModelUUID()) {
+                                    AbstractModel* model = qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j));
+                                    top = model->ExportModel(true, false);
+                                    mimeData->setSupportSeries(model->SupportSeries());
+                                }
                             }
                         }
                     }
@@ -275,6 +278,9 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
     if (string.contains("file:///")) {
         return true;
     }
+
+    if (!data->urls().isEmpty())
+        return true;
 
     if (!qobject_cast<const ModelMime*>(data)) {
         /* This could be from suprafit but a different main instance */
@@ -320,6 +326,11 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
             return false;
 
         if (d->Index().parent().row() < (*m_data_list).size() && d->Index().parent().row() >= 0) {
+            if (!qApp->instance()->property("MetaSeries").toBool()) {
+                if (d->SupportSeries()) {
+                    return false;
+                }
+            }
             if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
                 return false;
         }
@@ -333,7 +344,11 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
 
             if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
                 return false;
-
+            if (!qApp->instance()->property("MetaSeries").toBool()) {
+                if (d->SupportSeries()) {
+                    return false;
+                }
+            }
             if (d->Index().parent().isValid())
                 return true;
             else
@@ -371,6 +386,12 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         return true;
     }
 
+    if (!data->urls().isEmpty()) {
+        for (const QUrl& url : data->urls()) {
+            emit LoadFile(url.toLocalFile());
+        }
+        return true;
+    }
     if (!qobject_cast<const ModelMime*>(data)) {
         /* This could be from suprafit but a different main instance */
 
@@ -1192,6 +1213,9 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("cropedChart") == QVariant())
         qApp->instance()->setProperty("cropedChart", true);
+
+    if (qApp->instance()->property("MetaSeries") == QVariant())
+        qApp->instance()->setProperty("MetaSeries", false);
 
     if (qApp->instance()->property("noGrid") == QVariant())
         qApp->instance()->setProperty("noGrid", true);

@@ -135,10 +135,11 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_buttons = new QWidget;
     m_buttons->setEnabled(false);
 
+    /*
     m_hide = new QPushButton;
     m_hide->setFlat(true);
     m_hide->setIcon(QIcon::fromTheme("tab-close"));
-
+    */
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(new QLabel("Workspace"));
     layout->addWidget(m_buttons);
@@ -175,7 +176,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_analyse->setIcon(Icon("help-hint"));
     connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
 
-    m_close_all = new QPushButton(tr("Close All"));
+    m_close_all = new QPushButton(tr("Remove All"));
     m_close_all->setFlat(true);
     m_close_all->setIcon(Icon("trash-empty"));
     m_close_all->setDisabled(true);
@@ -242,15 +243,17 @@ MDHDockTitleBar::MDHDockTitleBar()
 
     buttons = new QHBoxLayout;
     buttons->addWidget(m_optimize);
+    buttons->addStretch();
     buttons->addWidget(m_statistics);
     buttons->addWidget(m_analyse);
+    buttons->addStretch();
     buttons->addWidget(m_close_all);
 
     vlayout->addLayout(buttons);
 
     m_buttons->setLayout(vlayout);
-    layout->addStretch();
-    layout->addWidget(m_hide);
+    //layout->addStretch();
+    //layout->addWidget(m_hide);
     setLayout(layout);
 }
 
@@ -589,7 +592,7 @@ void ModelDataHolder::CloseAll()
 {
     QMessageBox::StandardButton replay;
     QString app_name = QString(qApp->instance()->applicationName());
-    replay = QMessageBox::information(this, tr("Close All."), tr("Do you really want to close all models on the workspace?"), QMessageBox::Yes | QMessageBox::No);
+    replay = QMessageBox::information(this, tr("Remove All."), tr("Do you really want to remove all models from the current project?"), QMessageBox::Yes | QMessageBox::No);
     if (replay == QMessageBox::Yes) {
         CloseAllForced();
     }
@@ -686,7 +689,7 @@ void ModelDataHolder::CompareCV()
         return;
 
     int cvtype = m_compare_dialog->CVType();
-
+    int x = m_compare_dialog->CVX();
     QVector<QJsonObject> models;
     for (int i = 1; i < m_modelsWidget->count(); i++) {
         if (!m_model_widgets[i - 1]->isChecked())
@@ -698,7 +701,7 @@ void ModelDataHolder::CompareCV()
         }
     }
 
-    QString result = StatisticTool::CompareCV(models, cvtype);
+    QString result = StatisticTool::CompareCV(models, cvtype, m_compare_dialog->CVLocal(), m_compare_dialog->CVX());
 
     QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
@@ -716,7 +719,7 @@ void ModelDataHolder::CompareReduction()
         return;
 
     qreal cutoff = m_compare_dialog->CutOff();
-    bool local = m_compare_dialog->Local();
+    bool local = m_compare_dialog->RedLocal();
 
     QVector<QPair<QJsonObject, QVector<int>>> models;
     for (int i = 1; i < m_modelsWidget->count(); i++) {
@@ -724,7 +727,7 @@ void ModelDataHolder::CompareReduction()
             continue;
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
             ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
-            QJsonObject model = modelwidget->Model()->ExportModel();
+            QJsonObject model = modelwidget->Model()->ExportModel(true);
             QPair<QJsonObject, QVector<int>> pair;
             pair.first = model;
             QVector<int> parameter;

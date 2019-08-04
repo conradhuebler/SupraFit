@@ -379,8 +379,6 @@ void Thermogram::setExperimentFile(QString filename)
     m_experiment->setEnabled(true);
 
     m_exp_file->setText(filename);
-    emit m_experiment->IntegrationChanged();
-    //UpdateData();
     m_mainwidget->setCurrentIndex(1);
 }
 
@@ -533,9 +531,6 @@ void Thermogram::setDilutionFile(QString filename)
 
     m_dil_therm = original;
     m_dil_file->setText(filename);
-
-    emit m_dilution->IntegrationChanged();
-    //UpdateData();
     m_mainwidget->setCurrentIndex(2);
 }
 

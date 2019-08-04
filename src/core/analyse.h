@@ -29,5 +29,5 @@ namespace StatisticTool {
 
 QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>> models, double cutoff = 0);
 QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models);
-QString CompareCV(const QVector<QJsonObject> models, int cvtype = 1, int bins = 30, bool local = true);
+QString CompareCV(const QVector<QJsonObject> models, int cvtype = 1, bool local = true, int cv_x = 3, int bins = 30);
 }

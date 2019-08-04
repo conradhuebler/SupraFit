@@ -53,8 +53,14 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
         index++;
         qreal mean_std = 0, mean_corr_std = 0;
         bool skip = false;
-#pragma message("let us analyse more reduction, late ")
-        QJsonObject reduction = model.first["data"].toObject()["methods"].toObject()[QString::number(SupraFit::Method::Reduction) + ":0"].toObject();
+#pragma message("let us analyse more reduction, later ")
+        QJsonObject reduction;
+        for (const QString& key : model.first["data"].toObject()["methods"].toObject().keys()) {
+            if (model.first["data"].toObject()["methods"].toObject()[key].toObject()["controller"].toObject()["method"].toInt() == SupraFit::Method::Reduction) {
+                reduction = model.first["data"].toObject()["methods"].toObject()[key].toObject();
+                break;
+            }
+        }
 
         QVector<int> parameter = model.second;
 
@@ -225,7 +231,7 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
     return result;
 }
 
-QString CompareCV(const QVector<QJsonObject> models, int cvtype, int bins, bool local)
+QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int cv_x, int bins)
 {
 
     QMultiMap<qreal, QString> individual, model_wise;
@@ -236,7 +242,6 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, int bins, bool 
     QHash<QString, int> parameters_count;
 
     QString result = QString("<table>");
-
     for (const auto& model : models) {
 
         QJsonObject statistics = model["data"].toObject()["methods"].toObject();
@@ -246,13 +251,17 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, int bins, bool 
             QJsonObject obj = model["data"].toObject()["methods"].toObject()[str].toObject();
             QJsonObject controller = model["data"].toObject()["methods"].toObject()[str].toObject()["controller"].toObject();
             int method = controller["method"].toInt();
-            int type = controller["CVType"].toInt();
+            int type = controller["CXO"].toInt();
+            int x = controller["X"].toInt();
             if (method != 4 || type != cvtype)
+                continue;
+
+            if (type == 3 && x != cv_x)
                 continue;
 
             QStringList k = obj.keys();
             qreal hx = 0;
-
+            int counter = 0;
             for (const QString& element : qAsConst(k)) {
                 if (element == "controller")
                     continue;
@@ -265,11 +274,14 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, int bins, bool 
                 QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
 
                 QString name = result["name"].toString() + " - " + model["name"].toString();
-                hx += pair.first;
-                if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter")
-                    individual.insert(pair.first, name);
+
+                if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter") {
+                    hx += qAbs(pair.first);
+                    individual.insert(qAbs(pair.first), name);
+                    counter++;
+                }
             }
-            model_wise.insert(hx / double(k.size() - 1), model["name"].toString());
+            model_wise.insert(hx / double(counter), model["name"].toString());
         }
     }
 

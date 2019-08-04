@@ -36,7 +36,10 @@ public:
     CompareDialog(QWidget* parent);
     void setCutoff(qreal cutoff);
     inline qreal CutOff() const { return m_cutoff_box->value(); }
-    inline bool Local() const { return m_local->isChecked(); }
+    inline bool RedLocal() const { return m_red_local->isChecked(); }
+    inline bool CVLocal() const { return m_cv_local->isChecked(); }
+    inline int CVX() const { return m_cv_x->value(); }
+
     inline void SetComparison(const QString& text) { m_overview->setHtml(text); }
 
     int CVType() const { return m_cvtype; }
@@ -46,8 +49,9 @@ private:
 
     QPushButton *m_reduction, *m_aic, *m_hide, *m_crossvalidation;
     QDoubleSpinBox* m_cutoff_box;
-    QCheckBox* m_local;
-    QRadioButton *m_cv_loo, *m_cv_l2o;
+    QCheckBox *m_red_local, *m_cv_local;
+    QRadioButton *m_cv_loo, *m_cv_l2o, *m_cv_lxo;
+    QSpinBox* m_cv_x;
     qreal m_cutoff;
     int m_cvtype = 1;
 

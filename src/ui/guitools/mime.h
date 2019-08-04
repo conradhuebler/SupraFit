@@ -43,8 +43,11 @@ public:
     inline void setInstance(const QString& str) { m_instance = str; }
     inline QString Instance() const { return m_instance; }
 
+    inline bool SupportSeries() const { return m_series; }
+    inline void setSupportSeries(bool series) { m_series = series; }
+
 private:
-    bool m_model = false;
+    bool m_model = false, m_series = false;
     QModelIndex m_index;
     QString m_instance, m_data_uuid, m_model_uuid;
     QJsonObject m_data;
