@@ -135,11 +135,10 @@ signals:
     void LoadJsonObject(const QJsonObject& object);
 };
 
-class DropButton : public QPushButton {
+class DropButton : public QToolButton {
     Q_OBJECT
 public:
-    DropButton(const QString& str)
-        : QPushButton(str)
+    DropButton()
     {
         setAcceptDrops(true);
     }
@@ -260,7 +259,8 @@ private:
     QVector<QJsonObject> m_cached_meta;
     QLineEdit* m_filename_line;
 
-    QPushButton *m_export_suprafit, *m_export_plain, *m_clear_recent, *m_close_all;
+    QPushButton* m_clear_recent;
+    QToolButton *m_export_suprafit, *m_export_plain, *m_close_all;
     DropButton* m_add_scatter;
 
 private slots:

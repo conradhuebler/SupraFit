@@ -175,7 +175,11 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     settings.beginGroup("overview");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
-    connect(m_data.data(), &DataClass::NameChanged, m_name, &QLineEdit::setText);
+    connect(m_data.data(), &DataClass::NameChanged, m_name, [this](const QString& str) {
+        if (str == m_name->text())
+            return;
+        m_name->setText(str);
+    });
 }
 
 void DataWidget::switchHG()

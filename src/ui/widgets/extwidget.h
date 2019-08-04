@@ -49,7 +49,7 @@ public:
 protected:
     void mousePressEvent(QMouseEvent* event) override
     {
-
+        //QApplication::restoreOverrideCursor();
         ModelMime* mimeData = new ModelMime;
         mimeData->setData("application/x-suprafitmodel", m_content);
         mimeData->setText("SupraFitSimulation");
@@ -62,13 +62,13 @@ protected:
     }
     void enterEvent(QEvent* ev) override
     {
-        QApplication::setOverrideCursor(Qt::OpenHandCursor);
-        QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
+        //QApplication::setOverrideCursor(Qt::OpenHandCursor);
+        //QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
     }
 
     void leaveEvent(QEvent* ev) override
     {
-        QApplication::restoreOverrideCursor();
+        //QApplication::restoreOverrideCursor();
     }
 
 private:
@@ -95,13 +95,13 @@ protected:
 
     void enterEvent(QEvent* ev) override
     {
-        QApplication::setOverrideCursor(Qt::PointingHandCursor);
-        QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
+        //QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        //QTimer::singleShot(1500, this, &QApplication::restoreOverrideCursor);
     }
 
     void leaveEvent(QEvent* ev) override
     {
-        QApplication::restoreOverrideCursor();
+        //QApplication::restoreOverrideCursor();
     }
 
 signals:

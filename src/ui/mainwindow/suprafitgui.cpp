@@ -494,20 +494,24 @@ SupraFitGui::SupraFitGui()
     m_project_view->setDragDropMode(QAbstractItemView::DragOnly);
 
     QAction* action;
+    /*
     action = new QAction("Load", m_project_view);
     m_project_view->addAction(action);
     connect(action, &QAction::triggered, action, [this]() {
         TreeClicked(m_project_view->currentIndex());
 
     });
-
-    action = new QAction("Save", m_project_view);
+    */
+    action = new QAction("Export Project", m_project_view);
     m_project_view->addAction(action);
+    action->setIcon(Icon("document-save"));
+
     connect(action, &QAction::triggered, action, [this]() {
         SaveData(m_project_view->currentIndex());
     });
 
-    action = new QAction("Delete", m_project_view);
+    action = new QAction("Delete Project", m_project_view);
+    action->setIcon(Icon("trash-empty"));
     connect(action, &QAction::triggered, action, [this]() {
         TreeRemoveRequest(m_project_view->currentIndex());
     });
@@ -563,20 +567,35 @@ SupraFitGui::SupraFitGui()
     QWidget* widget = new QWidget;
     widget->setObjectName("project_list");
 
-    m_export_plain = new QPushButton(tr("Raw"));
-    m_export_plain->setFlat(true);
-    m_export_plain->setMaximumWidth(75);
-    connect(m_export_plain, &QPushButton::clicked, this, &SupraFitGui::ExportAllPlain);
+    m_export_plain = new QToolButton;
+    m_export_plain->setAutoRaise(true);
+    m_export_plain->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
 
-    m_export_suprafit = new QPushButton(tr("SupraFit"));
-    m_export_suprafit->setFlat(true);
-    m_export_suprafit->setMaximumWidth(75);
-    connect(m_export_suprafit, &QPushButton::clicked, this, &SupraFitGui::ExportAllSupraFit);
+    QAction* export_action = new QAction(tr("Export Data"));
+    export_action->setToolTip(tr("Export the input data of every single project and save it as individual plain table."));
+    export_action->setIcon(Icon("kspread"));
+    m_export_plain->setDefaultAction(export_action);
+    connect(export_action, &QAction::triggered, this, &SupraFitGui::ExportAllPlain);
 
-    m_add_scatter = new DropButton(tr("Add Rand"));
-    m_add_scatter->setFlat(true);
-    m_add_scatter->setMaximumWidth(75);
-    connect(m_add_scatter, &QPushButton::clicked, this, qOverload<>(&SupraFitGui::AddScatter));
+    m_export_suprafit = new QToolButton;
+    m_export_suprafit->setAutoRaise(true);
+    m_export_suprafit->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+
+    QAction* export_suprafit = new QAction(tr("Export Projects"));
+    export_suprafit->setToolTip(tr("Export every single project and save it as individual suprafit project."));
+    export_suprafit->setIcon(QIcon(":/misc/suprafit.png"));
+    m_export_suprafit->setDefaultAction(export_suprafit);
+    connect(export_suprafit, &QAction::triggered, this, &SupraFitGui::ExportAllSupraFit);
+
+    m_add_scatter = new DropButton;
+    m_add_scatter->setAutoRaise(true);
+    m_add_scatter->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+
+    QAction* add_scatter = new QAction(tr("Drop Random"));
+    add_scatter->setToolTip(tr("Drop an table with random numbers (or click and select one) to override the dependent tables."));
+    add_scatter->setIcon(Icon("clock"));
+    m_add_scatter->setDefaultAction(add_scatter);
+    connect(add_scatter, &QAction::triggered, this, qOverload<>(&SupraFitGui::AddScatter));
     connect(m_add_scatter, &DropButton::DataDropped, this, [this](const QJsonObject& data) {
         QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
         if (!str.isEmpty()) {
@@ -585,15 +604,22 @@ SupraFitGui::SupraFitGui()
         AddScatter(data);
     });
 
-    m_close_all = new QPushButton(tr("Close"));
-    m_close_all->setFlat(true);
-    m_close_all->setIcon(Icon("document-close"));
-    connect(m_close_all, &QPushButton::clicked, this, &SupraFitGui::CloseProjects);
+    m_close_all = new QToolButton;
+    m_close_all->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    m_close_all->setAutoRaise(true);
+
+    QAction* close_action = new QAction(tr("Close All"));
+    close_action->setIcon(Icon("document-close"));
+    close_action->setToolTip(tr("Close all open prjects."));
+
+    m_close_all->setDefaultAction(close_action);
+    connect(close_action, &QAction::triggered, this, &SupraFitGui::CloseProjects);
 
     QHBoxLayout* tools = new QHBoxLayout;
+    tools->addWidget(m_export_plain);
+    tools->addWidget(m_export_suprafit);
     if (qApp->instance()->property("advanced_ui").toBool()) {
-        tools->addWidget(m_export_plain);
-        tools->addWidget(m_export_suprafit);
+
         tools->addWidget(m_add_scatter);
     } else
         tools->addStretch();
@@ -1078,7 +1104,6 @@ bool SupraFitGui::LoadProject(const QString& filename)
 void SupraFitGui::SaveProjectAction()
 {
 
-    Waiter wait;
     if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
         QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
         if (str.isEmpty())
@@ -1087,6 +1112,7 @@ void SupraFitGui::SaveProjectAction()
         m_filename_line->setText(m_supr_file);
     }
 
+    Waiter wait;
     QVector<QJsonObject> projects;
     for (int i = 0; i < m_project_list.size(); i++) {
         QPointer<MainWindow> project_widget = m_project_list[i];
