@@ -31,6 +31,7 @@
 class QCheckBox;
 class QComboBox;
 class QDialogButtonBox;
+class QJsonObject;
 class QLabel;
 class QLineEdit;
 class QDoubleSpinBox;
@@ -77,6 +78,7 @@ public:
     void setDilutionFit(const QJsonObject& json);
     void setScaling(const QString& str);
     void setRaw(const QJsonObject& object);
+    void setSystemParameter(const QJsonObject& object);
 
 public slots:
     //virtual void reject() override();
@@ -111,7 +113,7 @@ private:
     QDialogButtonBox* m_buttonbox;
 
     QString m_content, m_all_rows;
-    QJsonObject m_systemparameter;
+    QJsonObject m_systemparameter, m_raw_data;
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
     bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;
     qreal m_heat_offset = 0, m_dil_offset = 0;

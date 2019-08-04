@@ -87,7 +87,6 @@ public:
     inline double Frequency() const { return m_frequency; }
 signals:
     void IntegrationChanged();
-    void PeaksChanged();
     void CalibrationChanged(double value);
 
 public slots:
@@ -139,7 +138,7 @@ private:
 
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
-    qreal m_offset = 0, m_frequency = 1, m_initial_threshold = 0;
+    qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1;
     QString m_base, m_fit;
     FileType m_filetype;
     QStringList m_Peak_Cut_Options = QStringList() << "Custom"

@@ -134,7 +134,6 @@ void ThermogramWidget::setUi()
         m_peak_rule_list->setItem(rows, 0, item);
         item = new PeakRule(QString::number(m_peaks_time->value()));
         m_peak_rule_list->setItem(rows, 1, item);
-        //m_peak_rule_list->setSortingEnabled(true);
         m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
         m_current_peaks_rule = m_peak_rule_list->row(item);
         m_rules_imported = false;
@@ -326,7 +325,10 @@ void ThermogramWidget::setUi()
 
     m_peak_apply = new QPushButton(tr("Apply and Update"));
     m_peak_apply->setIcon(Icon("dialog-ok-apply"));
-    connect(m_peak_apply, &QPushButton::clicked, this, &ThermogramWidget::UpdatePeaks);
+    connect(m_peak_apply, &QPushButton::clicked, this, [this]() {
+        UpdatePeaks();
+        CutAllLimits();
+    });
     m_peak_apply->setMaximumWidth(150);
     m_peak_apply->setToolTip(tr("Click generate peaks, fit baseline and integrate the peaks"));
 
@@ -416,19 +418,26 @@ void ThermogramWidget::setUi()
     m_peaks_time->setValue(settings.value("peaks_time", 150).toDouble());
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_iterations->setValue(settings.value("iterations", 15).toInt());
-    m_integration_range->setCurrentText(settings.value("integration_range", m_Peak_Cut_Options[0]).toString());
+    // m_integration_range->setCurrentText(settings.value("integration_range", m_Peak_Cut_Options[0]).toString());
     QTableWidgetItem* item = new QTableWidgetItem(QString::number(m_peaks_start->value()));
     m_peak_rule_list->setItem(m_current_peaks_rule, 0, item);
     item = new QTableWidgetItem(QString::number(m_peaks_time->value()));
     m_peak_rule_list->setItem(m_current_peaks_rule, 1, item);
 
     connect(m_integration_range, &QComboBox::currentTextChanged, this, &ThermogramWidget::CutAllLimits);
+
     connect(m_peaks_start, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {
         m_peak_rule_list->item(m_current_peaks_rule, 0)->setData(Qt::DisplayRole, value);
+        QSettings settings;
+        settings.beginGroup("thermogram");
+        settings.setValue("peaks_start", value);
     });
 
     connect(m_peaks_time, qOverload<double>(&QDoubleSpinBox::valueChanged), this, [this](double value) {
         m_peak_rule_list->item(m_current_peaks_rule, 1)->setData(Qt::DisplayRole, value);
+        QSettings settings;
+        settings.beginGroup("thermogram");
+        settings.setValue("peaks_time", value);
     });
 }
 
@@ -436,8 +445,6 @@ ThermogramWidget::~ThermogramWidget()
 {
     QSettings settings;
     settings.beginGroup("thermogram");
-    settings.setValue("peaks_start", m_peaks_start->value());
-    settings.setValue("peaks_time", m_peaks_time->value());
     settings.setValue("splitterSizes", m_splitter->saveState());
     settings.setValue("iterations", m_iterations->value());
     settings.setValue("integration_range", m_integration_range->currentText());
@@ -485,16 +492,33 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
 
 void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
 {
-    const QSignalBlocker blocker(m_peaks_time);
+    const QSignalBlocker blocker_a(m_peaks_time);
+    const QSignalBlocker blocker_b(m_peaks_start);
 
+    double time_pred = 0;
     m_peak_list = peak_list;
+    m_peak_rule_list->clear();
+    int row = 0;
     if (m_peak_list.size()) {
-        m_peaks_start->setValue(m_peak_list[0].start * m_spec.Step() - m_spec.Step());
-        m_peaks_time->setValue(m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step());
-        m_peaks_end->setValue(m_peak_list[m_peak_list.size() - 1].end * m_spec.Step());
+        double time = m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step();
+        double start = m_peak_list[0].start * m_spec.Step() - m_spec.Step();
+        if (!qFuzzyCompare(time_pred, time)) {
+            m_peaks_start->setValue(start);
+            m_peaks_time->setValue(time);
+            m_peaks_end->setValue(m_peak_list[m_peak_list.size() - 1].end * m_spec.Step());
+            m_peak_rule_list->setRowCount(row + 1);
+            PeakRule* item = new PeakRule(QString::number(start));
+            m_peak_rule_list->setItem(row, 0, item);
+            item = new PeakRule(QString::number(time));
+            m_peak_rule_list->setItem(row, 1, item);
+            qDebug() << row << start << time << m_peak_rule_list->rowCount();
+
+            row++;
+        }
+        time_pred = time;
     }
     UpdatePeaks();
-    ConvertRules();
+    CutAllLimits();
 }
 
 void ThermogramWidget::UpdateTable()
@@ -558,11 +582,9 @@ void ThermogramWidget::clear()
 
 void ThermogramWidget::Update()
 {
-    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
-    Integrate(&m_peak_list, spectrum);
-    delete spectrum;
-    UpdateSeries();
+    Integrate(&m_peak_list, &m_spec);
     UpdateTable();
+    UpdateSeries();
 }
 
 void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original)
@@ -677,7 +699,6 @@ void ThermogramWidget::ApplyCalibration()
 
         (m_peak_list)[i].integ_num -= m_const_offset->value();
     }
-    UpdateTable();
     emit CalibrationChanged(m_calibration_heat->value());
 }
 
@@ -689,10 +710,7 @@ void ThermogramWidget::UpdateFit(const QString& str)
 
 void ThermogramWidget::FitBaseLine()
 {
-    Waiter wait;
-
-    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
-    PeakPick::BaseLine baseline(spectrum);
+    PeakPick::BaseLine baseline(&m_spec);
     baseline.setBaseLineRange(PeakPick::BaseLine::BLR::PeakWise);
     baseline.setPolynomFit(PeakPick::BaseLine::Polynom::Slow);
     baseline.setNoCoeffs(2);
@@ -703,7 +721,6 @@ void ThermogramWidget::FitBaseLine()
         m_initial_baseline = m_baseline.baselines[0];
         m_coeffs->setValue(m_initial_baseline.size());
     }
-    delete spectrum;
 }
 
 void ThermogramWidget::PeakRuleDoubleClicked(const QModelIndex& index)
@@ -805,6 +822,8 @@ void ThermogramWidget::PeakChanged(int row, int column, int value)
 void ThermogramWidget::setFit(const QJsonObject& fit)
 {
     m_block = true;
+    QSignalBlocker time(m_peaks_time);
+    QSignalBlocker start(m_peaks_start);
 
     if (fit.contains("thermogram") && m_spectrum == false) {
         Vector x, y;
@@ -840,6 +859,7 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
     m_peaks_start->setValue(fit["start_time"].toDouble());
     m_peaks_time->setValue(fit["peak_time"].toDouble());
     m_peaks_end->setValue(fit["end_time"].toDouble());
+    m_iterations->setValue(fit["iter"].toInt());
 
     QList<QPointF> points = ToolSet::String2Points(fit["rules_list"].toString());
     m_peak_rule_list->setRowCount(points.size());
@@ -850,14 +870,15 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
         item = new QTableWidgetItem(QString::number(points[i].y()));
         m_peak_rule_list->setItem(i, 1, item);
     }
-    points = ToolSet::String2Points(fit["peak_int_ranges"].toString());
-    m_block = false;
     UpdatePeaks();
+    points = ToolSet::String2Points(fit["peak_int_ranges"].toString());
     for (int i = 0; i < m_peak_list.size(); ++i) {
         m_peak_list[i].int_start = points[i].x();
         m_peak_list[i].int_end = points[i].y();
     }
     FitBaseLine();
+    Update();
+    m_block = false;
 }
 
 QJsonObject ThermogramWidget::Fit() const
@@ -876,8 +897,8 @@ QJsonObject ThermogramWidget::Fit() const
     for (int i = 0; i < m_peak_rule_list->rowCount(); ++i)
         points << QPointF(m_peak_rule_list->item(i, 0)->data(Qt::DisplayRole).toDouble(), m_peak_rule_list->item(i, 1)->data(Qt::DisplayRole).toDouble());
     fit["rules_list"] = ToolSet::Points2String(points);
-
     points.clear();
+
     for (int i = 0; i < m_peak_list.size(); ++i)
         points << QPointF(m_peak_list[i].int_start, m_peak_list[i].int_end);
     fit["peak_int_ranges"] = ToolSet::Points2String(points);
@@ -965,12 +986,6 @@ void ThermogramWidget::UpdatePeaks()
         m_baseline.baselines.push_back(Vector(1));
         m_baseline.baselines[0](0) = m_offset;
 
-        FitBaseLine();
-
-        if (!CutAllLimits())
-            Update();
-
-        emit PeaksChanged();
         ResetGuideLabel();
 }
 
@@ -1000,7 +1015,7 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
     qreal x = point.x();
 
     if (m_get_time_from_thermogram == 1) {
-        if (m_convert_rules) {
+        if (m_rules_imported) {
             qreal diff = m_peak_rule_list->item(m_current_peaks_rule, 1)->data(Qt::DisplayRole).toInt() - (x - m_peaks_start->value());
             if (diff > m_peaks_time->value() || diff < 0) {
                 m_guide_label->setText(tr("<font color='red'>I will not apply this value, since you are leaving the peak boundaries. If this was intentend, you can manually edit the 'Start Time': %1 and the 'Peak Duration' %2 in the table!.</font>").arg(x).arg(diff));
@@ -1073,13 +1088,12 @@ void ThermogramWidget::CalibrateSystem()
 
 bool ThermogramWidget::CutAllLimits()
 {
-    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spec);
-    Integrate(&m_peak_list, spectrum);
+    Integrate(&m_peak_list, &m_spec);
 
     double threshold = 0;
     double old_threshold = m_integration_range_threshold->value();
     int maxiter = 1;
-
+    /* Zero/Threshold Cuttinh */
     if (m_integration_range->currentText() == m_Peak_Cut_Options[0]) {
         for (int i = 0; i < m_peak_list.size(); ++i) {
             m_peak_list[i].int_start = m_peak_list[i].start;
@@ -1087,21 +1101,19 @@ bool ThermogramWidget::CutAllLimits()
         }
         FitBaseLine();
         m_integration_range_threshold->setValue(m_initial_threshold);
-        Integrate(&m_peak_list, spectrum);
+        Integrate(&m_peak_list, &m_spec);
         Update();
-        delete spectrum;
         return false;
-    } else if (m_integration_range->currentText() == m_Peak_Cut_Options[2]) {
+    } else if (m_integration_range->currentText() == m_Peak_Cut_Options[2]) { /* Threshold cutting */
         threshold = m_integration_range_threshold->value();
         maxiter = m_iterations->value();
-    } else {
+    } else { /* Zero Cutting */
         for (int i = 0; i < m_peak_list.size(); ++i) {
             m_peak_list[i].int_start = m_peak_list[i].start;
             m_peak_list[i].int_end = m_peak_list[i].end;
         }
         FitBaseLine();
-        m_integration_range_threshold->setValue(m_initial_threshold);
-        Integrate(&m_peak_list, spectrum);
+        Integrate(&m_peak_list, &m_spec);
         m_integration_range_threshold->setValue(m_initial_threshold);
     }
     Vector baseline;
@@ -1123,16 +1135,13 @@ bool ThermogramWidget::CutAllLimits()
             PeakPick::ResizeIntegrationRange(&m_spec, &m_peak_list[i], baseline, start_position, threshold, 1);
         }
         FitBaseLine();
-        Integrate(&m_peak_list, spectrum);
+        Integrate(&m_peak_list, &m_spec);
         if (qAbs(old_threshold - m_integration_range_threshold->value()) < 1e-10)
             break;
         old_threshold = m_integration_range_threshold->value();
     }
     m_last_iteration_max = x;
     FitBaseLine();
-    Integrate(&m_peak_list, spectrum);
-
-    delete spectrum;
     Update();
     setGuideText(QString("Adaption of the baseline took %1 cycles").arg(m_last_iteration_max));
 

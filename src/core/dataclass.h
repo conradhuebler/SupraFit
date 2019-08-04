@@ -393,7 +393,11 @@ public:
 
     inline QString ProjectTitle() const { return d->m_title; }
 
+    /*! \brief override systemparameter with QJsonObject */
     void setSystemObject(const QJsonObject& object);
+
+    /*! \brief return systemparameter as QJsonObject */
+    inline QJsonObject getSystemObject() const { return d->m_systemObject; }
 
     QJsonObject ExportChildren(bool statistics = true, bool locked = false);
 

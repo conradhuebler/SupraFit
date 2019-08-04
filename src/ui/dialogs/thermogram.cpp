@@ -568,13 +568,11 @@ void Thermogram::clearDilution()
 
 void Thermogram::UpdateExpTable()
 {
-    m_experiment->Update();
     UpdateTable();
 }
 
 void Thermogram::UpdateDilTable()
 {
-    m_dilution->Update();
     UpdateTable();
 }
 void Thermogram::UpdateData()
@@ -611,7 +609,31 @@ QJsonObject Thermogram::Raw() const
 
 void Thermogram::setRaw(const QJsonObject& object)
 {
-    m_injct->setText(object["injectvolume"].toString());
+    m_raw_data = object;
+
+    m_injct->setText(m_raw_data["injectvolume"].toString());
+
+    if (m_raw_data.keys().contains("dilution")) {
+        QJsonObject experiment = m_raw_data["dilution"].toObject();
+        setDilutionFile(experiment["file"].toString());
+        setDilutionFit(experiment["fit"].toObject());
+    }
+
+    QJsonObject experiment = m_raw_data["experiment"].toObject();
+    setExperimentFile(experiment["file"].toString());
+    setExperimentFit(experiment["fit"].toObject());
+    if (m_raw_data.keys().contains("scaling"))
+        setScaling(m_raw_data["scaling"].toString());
+}
+
+void Thermogram::setSystemParameter(const QJsonObject& object)
+{
+    m_systemparameter = object;
+
+    m_CellVolume->setText(m_systemparameter[QString::number(AbstractItcModel::CellVolume)].toString());
+    m_CellConcentration->setText(m_systemparameter[QString::number(AbstractItcModel::CellConcentration)].toString());
+    m_SyringeConcentration->setText(m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)].toString());
+    m_Temperature->setText(m_systemparameter[QString::number(AbstractItcModel::Temperature)].toString());
 }
 
 QString Thermogram::ProjectName() const

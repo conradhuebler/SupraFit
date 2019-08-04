@@ -97,7 +97,8 @@ ImportData::ImportData(QWeakPointer<DataClass> data)
         DataTable* model = new DataTable(0, 0, this);
         m_table->setModel(model);
         m_raw = data.data()->ExportData()["raw"].toObject();
-        QTimer::singleShot(0, this, SLOT(ImportThermogram(QString)));
+        m_systemparameter = data.data()->getSystemObject();
+        QTimer::singleShot(0, this, SLOT(ImportThermogram()));
 
     } else {
         setUi();
@@ -315,22 +316,10 @@ void ImportData::ImportThermogram(const QString& filename)
 void ImportData::ImportThermogram()
 {
     Thermogram* thermogram = new Thermogram;
-    thermogram->setRaw(m_raw);
-    QJsonObject experiment = m_raw["experiment"].toObject();
     thermogram->show();
 
-    if (m_raw.keys().contains("dilution")) {
-        QJsonObject experiment = m_raw["dilution"].toObject();
-
-        thermogram->setDilutionFile(experiment["file"].toString());
-        thermogram->setDilutionFit(experiment["fit"].toObject());
-    }
-
-    thermogram->setExperimentFile(experiment["file"].toString());
-    thermogram->setExperimentFit(experiment["fit"].toObject());
-    if (m_raw.keys().contains("scaling"))
-        thermogram->setScaling(m_raw["scaling"].toString());
-
+    thermogram->setRaw(m_raw);
+    thermogram->setSystemParameter(m_systemparameter);
 
     if (thermogram->exec() == QDialog::Accepted) {
         if (thermogram->ParameterUsed())
