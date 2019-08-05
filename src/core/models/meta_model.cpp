@@ -37,7 +37,10 @@ MetaModel::MetaModel(DataClass* data)
 {
     PrepareParameter(0, 0);
     connect(this, &AbstractModel::Recalculated, this, &MetaModel::UpdateCalculated);
-    DataClass::setProjectTitle("MetaModel");
+    connect(this, &DataClass::ProjectTitleChanged, this, [this](const QString& str) {
+        m_name = str;
+    });
+    m_name = ProjectTitle();
 }
 
 MetaModel::~MetaModel()
@@ -433,7 +436,7 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     ModelTable()->append(model->ModelTable());
 
     m_models << t;
-    connect(model, &DataClass::NameChanged, t.data(), &DataClass::setProjectTitle);
+    connect(model, &DataClass::ProjectTitleChanged, t.data(), &DataClass::setProjectTitle);
     m_glob_param += model->GlobalParameterSize();
     m_inp_param += model->InputParameterSize();
     m_loc_param += model->LocalParameterSize();
@@ -640,7 +643,6 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
         return false;
 
     AbstractModel::ImportModel(topjson, override);
-
     int size = topjson["size"].toInt();
     if (size != m_models.size()) {
         emit Info()->Message(QString("Stored models in json file (%1) and available models in memory (%2) dont fit").arg(size).arg(m_models.size()));
@@ -670,6 +672,8 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
     OptimizeParameters_Private();
     Calculate();
     emit ParameterMoved();
+    DataClass::setProjectTitle(topjson["name"].toString());
+
     return result;
 }
 

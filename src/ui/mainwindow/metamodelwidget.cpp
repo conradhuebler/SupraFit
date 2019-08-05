@@ -67,9 +67,12 @@ void MetaModelWidget::setUi()
     layout->addWidget(new QLabel(tr("<h4>Project Title</h4>")), 0, 0, 1, 1);
     layout->addWidget(m_project_name, 0, 1, 1, 3);
     connect(m_project_name, &QLineEdit::textChanged, this, [this](const QString& str) {
-        if (Model())
-            Model()->setProjectTitle(str);
+        if (Model()) {
+            if (str != Model()->ProjectTitle())
+                Model()->setProjectTitle(str);
+        }
     });
+    connect(Model(), &DataClass::ProjectTitleChanged, m_project_name, &QLineEdit::setText);
 
     m_calculate = new QPushButton(tr("Calculate"));
     layout->addWidget(m_calculate, 1, 0);

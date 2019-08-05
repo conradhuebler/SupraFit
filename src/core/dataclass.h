@@ -388,7 +388,7 @@ public:
     inline void setProjectTitle(const QString& str)
     {
         d->m_title = str;
-        emit NameChanged(str);
+        emit ProjectTitleChanged(str);
     }
 
     inline QString ProjectTitle() const { return d->m_title; }
@@ -425,7 +425,7 @@ signals:
     void ActiveSignalsChanged(QList<int> active_signals);
     void SystemParameterLoaded();
     void SystemParameterChanged();
-    void NameChanged(const QString& name);
+    void ProjectTitleChanged(const QString& name);
     void Update();
     void Deleted();
     void Message(const QString& str, int priority);

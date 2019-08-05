@@ -153,6 +153,8 @@ QVariant ProjectTree::data(const QModelIndex& index, int role) const
             }
         } else if (index.column() == 1 && !parent(index).isValid()) {
             data = (*m_data_list)[index.row()].data()->ChildrenSize();
+        } else if (index.column() == 1 && parent(index).isValid()) {
+            // qDebug() << index.row() << (*m_data_list)[index.row()].data()->ProjectTitle();
         }
     }
 
@@ -1083,13 +1085,17 @@ bool SupraFitGui::LoadProject(const QString& filename)
             m_filename_line->setText(m_supr_file);
         }
         QStringList keys = toplevel.keys();
+
         if (keys.contains("data")) {
             return SetData(toplevel, info.baseName());
         } else {
             bool exit = true;
             int index = 1;
-            for (const QString& str : qAsConst(keys)) {
+            for (int i = 0; i < keys.size(); ++i) {
                 QApplication::processEvents();
+                QString str = QString("project_%1").arg(i);
+                if (!keys.contains(str))
+                    continue;
                 QJsonObject object = toplevel[str].toObject();
                 exit = exit && SetData(object, info.baseName() + "-" + QString::number(index));
                 index++;
@@ -1113,10 +1119,10 @@ void SupraFitGui::SaveProjectAction()
     }
 
     Waiter wait;
-    QVector<QJsonObject> projects;
+    QMultiMap<QString, QJsonObject> projects;
     for (int i = 0; i < m_project_list.size(); i++) {
         QPointer<MainWindow> project_widget = m_project_list[i];
-        projects << project_widget->SaveProject();
+        projects.insert(project_widget->Name(), project_widget->SaveProject());
     }
     if (projects.isEmpty())
         return;
@@ -1124,8 +1130,12 @@ void SupraFitGui::SaveProjectAction()
         JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
     } else {
         QJsonObject json;
-        for (int i = 0; i < projects.size(); ++i)
-            json["project_" + QString::number(i)] = projects[i];
+
+        int i = 0;
+        for (const auto& model : projects) {
+            json["project_" + QString::number(i)] = model;
+            i++;
+        }
         JsonHandler::WriteJsonFile(json, m_supr_file);
     }
     setLastDir(m_supr_file);
@@ -1138,20 +1148,25 @@ void SupraFitGui::SaveAsProjectAction()
         m_supr_file = str;
         m_filename_line->setText(m_supr_file);
 
-        QVector<QJsonObject> projects;
+        Waiter wait;
+        QMultiMap<QString, QJsonObject> projects;
         for (int i = 0; i < m_project_list.size(); i++) {
             QPointer<MainWindow> project_widget = m_project_list[i];
-            projects << project_widget->SaveProject();
+            projects.insert(project_widget->Name(), project_widget->SaveProject());
         }
         if (projects.isEmpty())
             return;
         else if (projects.size() == 1) {
-            JsonHandler::WriteJsonFile(projects.first(), str);
+            JsonHandler::WriteJsonFile(projects.first(), m_supr_file);
         } else {
             QJsonObject json;
-            for (int i = 0; i < projects.size(); ++i)
-                json["project_" + QString::number(i)] = projects[i];
-            JsonHandler::WriteJsonFile(json, str);
+
+            int i = 0;
+            for (const auto& model : projects) {
+                json["project_" + QString::number(i)] = model;
+                i++;
+            }
+            JsonHandler::WriteJsonFile(json, m_supr_file);
         }
         setLastDir(str);
     }

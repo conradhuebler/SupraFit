@@ -76,7 +76,7 @@ void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
     m_stored_wrapper << wrapper;
 
     for (int i = 0; i < wrapper.data()->SeriesSize(); ++i) {
-        ScatterSeries* series = new ScatterSeries;
+        QPointer<ScatterSeries> series = new ScatterSeries;
         for (const QPointF& point : wrapper.data()->Series(i)->points())
             series->append(point);
 
@@ -87,6 +87,11 @@ void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
         //series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
 
         connect(wrapper.data(), &ChartWrapper::ModelChanged, wrapper.data()->Series(i), [series, wrapper, i]() {
+            if (!wrapper.data() || !series) {
+                qDebug() << "series already left the building";
+                return;
+            }
+
             series->clear();
             for (const QPointF& point : wrapper.data()->Series(i)->points())
                 series->append(point);
@@ -97,7 +102,7 @@ void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
             //series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
         });
 
-        m_stored_series << series;
+        m_stored_series << series.data();
         emit SeriesAdded(m_stored_series.size() - 1);
     }
 }

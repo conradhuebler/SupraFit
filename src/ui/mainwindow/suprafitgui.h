@@ -163,7 +163,7 @@ protected:
     }
 
 signals:
-    emit void DataDropped(const QJsonObject& data);
+    void DataDropped(const QJsonObject& data);
 };
 
 class SupraFitGui : public QMainWindow {

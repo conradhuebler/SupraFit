@@ -72,6 +72,7 @@ public:
 
     inline QString UUID() const { return m_data.data()->UUID(); }
 
+    inline QString Name() const { return m_data.data()->ProjectTitle(); }
 public slots:
     // void LoadFile(const QString& file);
 
