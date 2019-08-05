@@ -308,6 +308,90 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
     }
     return result;
 }
+
+QString CompareMC(const QVector<QJsonObject> models, bool local, int bins)
+{
+
+    QMultiMap<qreal, QString> individual, model_wise;
+
+    QMultiMap<qreal, QString> concl_corr;
+    QMap<qreal, QString> mean_std_orderd, mean_std_corr_orderd;
+    QHash<QString, qreal> parameters, parameters_corr;
+    QHash<QString, int> parameters_count;
+
+    int MaxSteps = -1;
+    int sigma = -1;
+    QString result = QString("<table>");
+    for (const auto& model : models) {
+
+        QJsonObject statistics = model["data"].toObject()["methods"].toObject();
+        QStringList keys = statistics.keys();
+
+        for (const QString& str : qAsConst(keys)) {
+            QJsonObject obj = model["data"].toObject()["methods"].toObject()[str].toObject();
+            QJsonObject controller = model["data"].toObject()["methods"].toObject()[str].toObject()["controller"].toObject();
+            int method = controller["method"].toInt();
+            if (method != SupraFit::Method::MonteCarlo)
+                continue;
+
+            if (MaxSteps == -1) {
+                MaxSteps = controller["MaxSteps"].toInt();
+                sigma = controller["VarianceSource"].toInt();
+            }
+
+            if (MaxSteps != controller["MaxSteps"].toInt() || sigma != controller["VarianceSource"].toInt())
+                continue;
+
+            QStringList k = obj.keys();
+            qreal hx = 0;
+            int counter = 0;
+            for (const QString& element : qAsConst(k)) {
+                if (element == "controller")
+                    continue;
+
+                QJsonObject result = obj[element].toObject();
+
+                QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
+                QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
+                ToolSet::Normalise(histogram);
+                QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
+
+                QString name = result["name"].toString() + " - " + model["name"].toString();
+
+                if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter") {
+                    hx += qAbs(pair.first);
+                    individual.insert(qAbs(pair.first), name);
+                    counter++;
+                }
+            }
+            model_wise.insert(hx / double(counter), model["name"].toString());
+        }
+    }
+
+    {
+        auto i = model_wise.begin();
+        qreal first = 0;
+        while (i != model_wise.constEnd()) {
+
+            if (i == model_wise.begin())
+                first = i.key();
+            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+            ++i;
+        }
+    }
+    {
+        auto i = individual.begin();
+        qreal first = 0;
+        while (i != individual.constEnd()) {
+            if (i == individual.begin())
+                first = i.key();
+            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+            ++i;
+        }
+    }
+    return result;
+}
+
 QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
 {
     QString result = "Akaike's Information Criterion AIC";

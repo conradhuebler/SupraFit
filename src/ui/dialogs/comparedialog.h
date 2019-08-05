@@ -47,7 +47,7 @@ public:
 private:
     void setUi();
 
-    QPushButton *m_reduction, *m_aic, *m_hide, *m_crossvalidation;
+    QPushButton *m_reduction, *m_aic, *m_hide, *m_crossvalidation, *m_montecarlo;
     QDoubleSpinBox* m_cutoff_box;
     QCheckBox *m_red_local, *m_cv_local;
     QRadioButton *m_cv_loo, *m_cv_l2o, *m_cv_lxo;
@@ -61,4 +61,5 @@ signals:
     void CompareReduction();
     void CompareAIC();
     void CompareCV();
+    void CompareMC();
 };

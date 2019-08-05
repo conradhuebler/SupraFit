@@ -68,8 +68,10 @@ void CompareDialog::setUi()
     aic->setLayout(layout);
 
     layout = new QGridLayout;
-    QGroupBox* crossvalidation = new QGroupBox(tr("Cross Validation"));
+    QGroupBox* crossvalidation = new QGroupBox(tr("Cross Validation & Monte Carlo"));
     m_crossvalidation = new QPushButton(tr("Compare Cross Validation"));
+    m_montecarlo = new QPushButton(tr("Monte Carlo"));
+
     m_cv_loo = new QRadioButton(tr("LOO CV"));
     connect(m_cv_loo, &QPushButton::clicked, this, [this]() {
         this->m_cvtype = 1;
@@ -92,6 +94,8 @@ void CompareDialog::setUi()
     m_cv_x->setPrefix(tr("X = "));
 
     connect(m_crossvalidation, &QPushButton::clicked, this, &CompareDialog::CompareCV);
+    connect(m_montecarlo, &QPushButton::clicked, this, &CompareDialog::CompareMC);
+
     layout->addWidget(m_cv_loo, 0, 0);
     layout->addWidget(m_cv_l2o, 0, 1);
     layout->addWidget(m_cv_lxo, 0, 3);
@@ -99,6 +103,8 @@ void CompareDialog::setUi()
     layout->addWidget(m_cv_x, 1, 3);
 
     layout->addWidget(m_crossvalidation, 2, 0, 1, 2);
+    layout->addWidget(m_montecarlo, 2, 3);
+
     crossvalidation->setLayout(layout);
 
     layout = new QGridLayout;

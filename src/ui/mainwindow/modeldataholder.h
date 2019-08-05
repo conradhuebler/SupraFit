@@ -210,6 +210,7 @@ private slots:
     void CompareAIC();
     void CompareCV();
     void CompareReduction();
+    void CompareMC();
 
     void EditData();
     void HideSubWindows(int index);

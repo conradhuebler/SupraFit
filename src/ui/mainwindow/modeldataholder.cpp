@@ -331,6 +331,7 @@ ModelDataHolder::ModelDataHolder()
     connect(m_compare_dialog, &CompareDialog::CompareReduction, this, &ModelDataHolder::CompareReduction);
     connect(m_compare_dialog, &CompareDialog::CompareAIC, this, &ModelDataHolder::CompareAIC);
     connect(m_compare_dialog, &CompareDialog::CompareCV, this, &ModelDataHolder::CompareCV);
+    connect(m_compare_dialog, &CompareDialog::CompareMC, this, &ModelDataHolder::CompareMC);
 
     connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
@@ -755,7 +756,33 @@ void ModelDataHolder::CompareReduction()
     dialog.exec();
 }
 
+void ModelDataHolder::CompareMC()
+{
+    if (!m_compare_dialog)
+        return;
 
+    QVector<QJsonObject> models;
+    for (int i = 1; i < m_modelsWidget->count(); i++) {
+        if (!m_model_widgets[i - 1]->isChecked())
+            continue;
+        if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
+            ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
+            QJsonObject model = modelwidget->Model()->ExportModel();
+            models << model;
+        }
+    }
+
+    QString result = StatisticTool::CompareMC(models, m_compare_dialog->CVLocal());
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    QTextEdit* text = new QTextEdit;
+    text->setText("<html><pre>" + result + "</pre></html>");
+    layout->addWidget(text);
+    QDialog dialog(this);
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
+}
 
 void ModelDataHolder::EditData()
 {
