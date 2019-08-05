@@ -26,7 +26,7 @@ copy "%project_dir%\LICENSE.md" "%project_dir%\build\Release\SupraFit\LICENSE.md
 
 echo Packaging portable archive...
 cd ..
-7z a SupraFit_nightly_%TAG_NAME%_x64_windows.zip SupraFit
+7z a SupraFit_nightly_%TAG_NAME%_x64_windows.zip SupraFit_x64
 
 set QTDIR=C:\Qt\5.13.0\msvc2017
 set PATH=C:\Qt\5.13.0\msvc2017\bin;%PATH%
@@ -53,4 +53,4 @@ copy "%project_dir%\LICENSE.md" "%project_dir%\build\Release\SupraFit\LICENSE.md
 
 echo Packaging portable archive...
 cd ..
-7z a SupraFit_nightly_%TAG_NAME%_x32_windows.zip SupraFit
+7z a SupraFit_nightly_%TAG_NAME%_x32_windows.zip SupraFit_x32

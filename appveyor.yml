@@ -19,10 +19,10 @@ build_script:
 
 artifacts:
   - path: build_x64\Release\SupraFit_nightly_$(appveyor_build_version)_x64_windows.zip
-    name: SupraFit x64
+    name: SupraFit_x64
 
   - path: build_x32\Release\SupraFit_nightly_$(appveyor_build_version)_x32_windows.zip
-    name: SupraFit x32
+    name: SupraFit_x32
 
 
 
@@ -35,6 +35,6 @@ deploy:
     secure: lNrwOGAylXafSwJAAwEbYBFGbpGjy7aYSCyAWl9jikP22ykJ1BqwKPKhKjo+f1JT
   prerelease: true
   draft: true
-  artifact: portable
+  artifact: SupraFit_x64,SupraFit_x32
   skip_tags: true
   force_update: true
