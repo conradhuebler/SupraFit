@@ -191,6 +191,11 @@ void ConfigDialog::createGeneralTab()
     m_save_on_exit->setChecked(qApp->instance()->property("save_on_exit").toBool());
     //layout->addWidget(m_save_on_exit);
 
+    m_unsafe_copy = new QCheckBox(tr("Unsafe Copy of Models"));
+    m_unsafe_copy->setToolTip(tr("If this is enabled, on can copy the model parameter of any model into another via Drag 'n' Drop. If disabled, only Models of the same type are compatible. - Please, don't enable without purpose. SupraFit may behave inappropriately and crash ...."));
+    m_unsafe_copy->setChecked(qApp->instance()->property("UnsafeCopy").toBool());
+    layout->addWidget(m_unsafe_copy);
+
     m_ask_on_exit = new QCheckBox(tr("Confirm quit of SupraFit"));
     m_ask_on_exit->setToolTip(tr("Confirm quit of SupraFit"));
     m_ask_on_exit->setChecked(qApp->instance()->property("ask_on_exit").toBool());
@@ -393,6 +398,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("auto_thermo_dialog", m_auto_thermo_dialog->isChecked());
     qApp->instance()->setProperty("thermogram_guidelines", m_thermogram_guideline->isChecked());
     qApp->instance()->setProperty("advanced_ui", m_advanced_ui->isChecked());
+    qApp->instance()->setProperty("UnsafeCopy", m_unsafe_copy->isChecked());
 
     QDialog::accept();
 }

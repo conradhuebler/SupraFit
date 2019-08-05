@@ -241,7 +241,8 @@ private:
                                                    << "calibration_heat"
                                                    << "thermogram_guidelines"
                                                    << "advanced_ui"
-                                                   << "MetaSeries";
+                                                   << "MetaSeries"
+                                                   << "UnsafeCopy";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

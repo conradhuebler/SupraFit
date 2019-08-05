@@ -994,6 +994,20 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
     QJsonObject json = topjson["data"].toObject();
 
+    int copy_model = topjson["model"].toInt();
+    bool unsafe_copy = qApp->instance()->property("UnsafeCopy").toBool();
+    qDebug() << unsafe_copy << SFModel() << copy_model;
+
+    if (copy_model != SFModel()) {
+        if (!unsafe_copy) {
+            emit Info()->Message(QString("The two models don't fit. Unsafe copy is disabled on purpose. If you really want to do that, change the configuration in the Settings Dialog."));
+            return false;
+        } else {
+            emit Info()->Message(QString("The two models don't fit. Unsafe copy is enabled. Good Luck. - Statistical data will be ignored."));
+            override = false;
+        }
+    }
+
     QList<int> active_signals;
     QJsonObject optionObject;
 
@@ -1009,7 +1023,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     statisticObject = json["methods"].toObject();
 
     if (override) {
-    }
+
     UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
 
     if (!m_fast_confidence.isEmpty())
@@ -1024,7 +1038,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
         UpdateStatistic(object);
     }
-
+    }
     private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
 
     active_signals = ToolSet::String2IntVec(json["active_series"].toString()).toList();
@@ -1068,7 +1082,7 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     m_stderror = topjson["standard_error"].toInt();
     m_converged = topjson["converged"].toBool();
     // private_d->m_locked_parameters = ToolSet::String2IntVec(topjson["locked"].toString()).toList();
-    if (topjson.contains("name"))
+    if (topjson.contains("name") && !unsafe_copy)
         m_name = topjson["name"].toString();
 
     if (SFModel() != SupraFit::MetaModel)

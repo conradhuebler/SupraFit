@@ -1261,6 +1261,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("noGrid") == QVariant())
         qApp->instance()->setProperty("noGrid", true);
 
+    if (qApp->instance()->property("UnsafeCopy") == QVariant())
+        qApp->instance()->setProperty("UnsafeCopy", false);
+
     if (qApp->instance()->property("empAxis") == QVariant())
         qApp->instance()->setProperty("empAxis", true);
 
