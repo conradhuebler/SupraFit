@@ -1,5 +1,8 @@
-# SupraFit 2.0 pre-Alpha
+# SupraFit 2.0 Beta (1.7)
+- add comment section for every project
 
+
+# SupraFit 2.0 pre-Alpha
 - UI improvments for Results Dialog 
 - Message Dock writes message and warnings
 - option to save specific results from results dialog

@@ -225,7 +225,7 @@ public:
     QPointer<DataClassPrivateObject> m_info;
     QVector<QPointer<DataClass>> m_children;
 
-    QString m_title, m_uuid;
+    QString m_title, m_uuid, m_content;
     void check();
 };
 
@@ -412,6 +412,10 @@ public:
     /*! \brief Define the y axis for charts
      */
     virtual QString YLabel() const { return QString("Y"); }
+
+    inline QString Content() const { return d->m_content; }
+
+    inline void setContent(const QString& str) { d->m_content = str; }
 
 private:
     QMutex m_lock;

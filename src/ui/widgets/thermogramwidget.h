@@ -110,9 +110,10 @@ private:
 
     void setGuideText(const QString& str);
 
+    QCheckBox* m_direction;
     QComboBox *m_baseline_type, *m_fit_type, *m_integration_range;
-    QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity, *m_iterations;
-    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold;
+    QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity, *m_iterations, *m_overshot;
+    QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold, *m_gradient;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
     QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick, *m_convert_rules, *m_load_rules, *m_write_rules, *m_clear_rules;

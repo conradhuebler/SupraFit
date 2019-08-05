@@ -41,6 +41,7 @@ class QDoubleSpinBox;
 class SignalElement;
 class SystemParameterWidget;
 class RegressionAnalysisDialog;
+class QTextEdit;
 
 class DataWidget : public QWidget {
     Q_OBJECT
@@ -53,6 +54,7 @@ public:
 
 private:
     QTableView *m_concentrations, *m_signals;
+    QTextEdit* m_text_edit;
     QPushButton *m_switch, *m_linear, *m_hide_points;
     QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;

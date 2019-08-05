@@ -911,6 +911,7 @@ const QJsonObject DataClass::ExportData() const
     json["title"] = d->m_title;
     json["uuid"] = d->m_uuid;
     json["git_commit"] = git_commit_hash;
+    json["content"] = d->m_content;
     json["timestamp"] = QDateTime::currentMSecsSinceEpoch();
     return json;
 }
@@ -933,6 +934,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     d->m_datatype = DataClassPrivate::DataType(topjson["DataType"].toInt());
     d->m_raw_data = topjson["raw"].toObject();
     d->m_title = topjson["title"].toString();
+    d->m_content = topjson["content"].toString();
 
     if (forceUUID) {
         if (!topjson["uuid"].toString().isEmpty())

@@ -28,6 +28,6 @@ const QString conf_mode = "DEBUG Mode"; /*! Last compilation mode used */
 const QString conf_mode = "RELEASE Mode"; /*! Last compilation mode used */
 #endif
 
-const QString version = QString("Suprafit 2 v-1.6 Alpha \n\t%1 %2 %3 -  %4").arg(branch).arg(commit_hash).arg(date).arg(conf_mode); /*! Version name */
+const QString version = QString("Suprafit 2 Beta Version 1.7 \n\t%1 %2 %3 -  %4").arg(branch).arg(commit_hash).arg(date).arg(conf_mode); /*! Version name */
 
-const int qint_version = 1609;
+const int qint_version = 1700;

@@ -10,7 +10,6 @@
 #cmakedefine Fluorescence_Models
 #cmakedefine legacy
 #cmakedefine conservative
-#cmakedefine Qt5_10
 #cmakedefine noto_font
 #cmakedefine openMP
 #cmakedefine _UNIX

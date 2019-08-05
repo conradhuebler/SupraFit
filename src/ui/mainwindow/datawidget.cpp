@@ -39,6 +39,7 @@
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableView>
+#include <QtWidgets/QTextEdit>
 
 #include <QtCharts/QXYSeries>
 
@@ -90,11 +91,16 @@ DataWidget::DataWidget()
     group_layout->addWidget(m_signals);
     m_tables->setLayout(group_layout);
 
+    m_text_edit = new QTextEdit;
+    m_text_edit->setPlaceholderText(tr("Some information and description to that data set are welcome."));
+
     layout->addLayout(hlayout, 0, 0, 1, 4);
-    layout->addWidget(m_datapoints, 1, 0);
-    layout->addWidget(m_substances, 1, 1);
-    layout->addWidget(m_const_subs, 1, 2);
-    layout->addWidget(m_signals_count, 1, 3);
+    layout->addWidget(m_text_edit, 1, 0, 1, 4);
+
+    layout->addWidget(m_datapoints, 2, 0);
+    layout->addWidget(m_substances, 2, 1);
+    layout->addWidget(m_const_subs, 2, 2);
+    layout->addWidget(m_signals_count, 2, 3);
 
     m_widget->setLayout(layout);
     QScrollArea* area = new QScrollArea;
@@ -179,6 +185,10 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         if (str == m_name->text())
             return;
         m_name->setText(str);
+    });
+    m_text_edit->append(m_data.data()->Content());
+    connect(m_text_edit, &QTextEdit::textChanged, m_data.data(), [this]() {
+        m_data.data()->setContent(m_text_edit->toPlainText());
     });
 }
 

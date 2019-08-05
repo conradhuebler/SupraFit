@@ -346,6 +346,17 @@ void ThermogramWidget::setUi()
     m_iterations->setValue(15);
     m_iterations->setToolTip(tr("Define the maximum number of iteration for the Peak Range Reduction Cycle. In some case, this value should be 1."));
 
+    m_direction = new QCheckBox(tr("Before"));
+
+    m_overshot = new QSpinBox;
+    m_overshot->setRange(1, 200);
+    m_overshot->setValue(1);
+
+    m_gradient = new QDoubleSpinBox;
+    m_gradient->setDecimals(5);
+    m_gradient->setRange(-1, 1);
+    m_gradient->setValue(-1);
+
     QHBoxLayout* peak_layout = new QHBoxLayout;
     QVBoxLayout* vlayout = new QVBoxLayout;
 
@@ -395,6 +406,11 @@ void ThermogramWidget::setUi()
     iterlayout->addWidget(m_integration_range_threshold);
     iterlayout->addWidget(new QLabel(tr("Iterations")));
     iterlayout->addWidget(m_iterations);
+    if (qApp->instance()->property("advanced_ui").toBool()) {
+        iterlayout->addWidget(m_direction);
+        iterlayout->addWidget(m_overshot);
+        iterlayout->addWidget(m_gradient);
+    }
     vlayout->addLayout(iterlayout);
 
     iterlayout = new QHBoxLayout;
@@ -511,8 +527,6 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
             m_peak_rule_list->setItem(row, 0, item);
             item = new PeakRule(QString::number(time));
             m_peak_rule_list->setItem(row, 1, item);
-            qDebug() << row << start << time << m_peak_rule_list->rowCount();
-
             row++;
         }
         time_pred = time;
@@ -1093,7 +1107,9 @@ bool ThermogramWidget::CutAllLimits()
     double threshold = 0;
     double old_threshold = m_integration_range_threshold->value();
     int maxiter = 1;
-    /* Zero/Threshold Cuttinh */
+    int direction = -1 * m_direction->isChecked();
+    int overshot = m_overshot->value();
+    /* Zero/Threshold Cutting */
     if (m_integration_range->currentText() == m_Peak_Cut_Options[0]) {
         for (int i = 0; i < m_peak_list.size(); ++i) {
             m_peak_list[i].int_start = m_peak_list[i].start;
@@ -1132,7 +1148,7 @@ bool ThermogramWidget::CutAllLimits()
             if (qAbs(qAbs(m_spec.Y(m_peak_list[i].min) - start_end)) > qAbs(qAbs(m_spec.Y(m_peak_list[i].max)) - start_end))
                 start_position = m_peak_list[i].min;
 
-            PeakPick::ResizeIntegrationRange(&m_spec, &m_peak_list[i], baseline, start_position, threshold, 1);
+            PeakPick::ResizeIntegrationRange(&m_spec, &m_peak_list[i], baseline, start_position, threshold, overshot, direction);
         }
         FitBaseLine();
         Integrate(&m_peak_list, &m_spec);
