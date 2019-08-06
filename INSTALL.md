@@ -3,6 +3,8 @@ git clones automatically CuteCharts, libpeakpick and fisher-dist. Since libpeakp
 ## Compiling
 To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and Qt 5.10 or newer.
 
+> SupraFit needs QtCharts, so please provide it
+
 SupraFit has been successfully compilied with: 
 - gcc 5.2 - 9.1
 - clang 3.9 
@@ -16,11 +18,6 @@ on linux systems and
 To obtain the most recent development version use
 ```sh
 git clone --recursive https://github.com/conradhuebler/SupraFit.git
-```
-
-The deprecated, not recommended version SupraFit 1 can be obtained with
-```sh
-git clone -b suprafit-v1 --recursive https://github.com/conradhuebler/SupraFit.git
 ```
 
 Compile it as follows on Unix Platform:

@@ -264,16 +264,16 @@ inline SupraFit::Model Name2Model(const QString& str)
 inline QString Model2Name(SupraFit::Model model)
 {
     if (model == SupraFit::ItoI)
-        return "1:1-Model";
+        return QString("%1H %2").arg(QChar(0x00B9)).arg("1:1-Model");
 
     else if (model == SupraFit::IItoI_ItoI)
-        return "2:1/1:1-Model";
+        return QString("%1H %2").arg(QChar(0x00B9)).arg("2:1/1:1-Model");
 
     else if (model == SupraFit::ItoI_ItoII)
-        return "1:1/1:2-Model";
+        return QString("%1H %2").arg(QChar(0x00B9)).arg("1:1/1:2-Model");
 
     else if (model == SupraFit::IItoI_ItoI_ItoII)
-        return "2:1/1:1/1:2-Model";
+        return QString("%1H %2").arg(QChar(0x00B9)).arg("2:1/1:1/1:2-Model");
 
     else if (model == SupraFit::itc_ItoI)
         return "ITC 1:1-Model";
@@ -297,16 +297,16 @@ inline QString Model2Name(SupraFit::Model model)
         return "Blank Titration";
 
     else if (model == SupraFit::fl_ItoI)
-        return "&Phi; 1:1-Model";
+        return QString("%1 %2").arg(QChar(966)).arg("1:1-Model");
 
     else if (model == SupraFit::fl_IItoI_ItoI)
-        return "&Phi; 2:1/1:1-Model";
+        return QString("%1 %2").arg(QChar(966)).arg("2:1/1:1-Model");
 
     else if (model == SupraFit::fl_ItoI_ItoII)
-        return "&Phi; 1:1/1:2-Model";
+        return QString("%1 %2").arg(QChar(966)).arg("1:1/1:2-Model");
 
     else if (model == SupraFit::fl_IItoI_ItoI_ItoII)
-        return "&Phi; 2:1/1:1/1:2-Model";
+        return QString("%1 %2").arg(QChar(966)).arg("2:1/1:1/1:2-Model");
 
     else if (model == SupraFit::MonoMolecularModel)
         return "Monomolecular Kinetics";

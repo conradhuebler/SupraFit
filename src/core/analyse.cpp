@@ -85,7 +85,7 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             result += "<tr><th>Skipping model " + QString::number(index) + " - Something missing?</th></tr>";
             continue;
         }
-        result += "<tr><th>Analysing Model " + QString::number(index) + " - " + Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())) + "</th></tr>";
+        result += "<tr><th>Analysing Model " + QString::number(index) + " - " + model.first["name"].toString() + "</th></tr>";
 
         for (int key : parameter) {
             if (key == -1)
@@ -133,15 +133,15 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             result += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
             result += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
             result += "<tr><td></td></tr>";
-            concl.insert(stdev, QString("<p> " + Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())) + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>pt</sub>: " + Print::printDouble(stdev)) + "</p>");
-            concl_corr.insert(stdev_corr, QString("<p> " + Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())) + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>ptc</sub>: " + Print::printDouble(stdev_corr)) + "</p>");
+            concl.insert(stdev, QString("<p> " + model.first["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>pt</sub>: " + Print::printDouble(stdev)) + "</p>");
+            concl_corr.insert(stdev_corr, QString("<p> " + model.first["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>ptc</sub>: " + Print::printDouble(stdev_corr)) + "</p>");
         }
 
         mean_std /= double(parameter.size());
         mean_corr_std /= double(parameter.size());
 
-        mean_std_orderd.insert(mean_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
-        mean_std_corr_orderd.insert(mean_corr_std, Model2Name(static_cast<SupraFit::Model>(model.first["model"].toInt())));
+        mean_std_orderd.insert(mean_std, model.first["name"].toString());
+        mean_std_corr_orderd.insert(mean_corr_std, model.first["name"].toString());
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";

@@ -165,7 +165,11 @@ public:
 
     /*! \brief Overrides the name of the model
      */
-    inline void setName(const QString name) { m_name = name; }
+    inline void setName(const QString& name)
+    {
+        m_name = name;
+        emit ModelNameChanged(name);
+    }
 
     /*! \brief set the calculation style to bool fast
      * some useless loops will be omitted in AbstractModel::Calculation call
@@ -755,4 +759,5 @@ signals:
     void StatisticChanged();
     void OptionChanged(int index, const QString& value);
     void ChartUpdated(const QString& chart);
+    void ModelNameChanged(const QString& name);
 };

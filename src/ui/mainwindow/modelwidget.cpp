@@ -210,6 +210,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_layout->addLayout(const_layout);
     m_layout->addWidget(new extWidget(m_model, this));
 
+    QHBoxLayout* name_layout = new QHBoxLayout;
+    name_layout->addWidget(new QLabel(tr("<h4>Model Name</h4>")));
+    m_model_name = new QLineEdit;
+    m_model_name->setText(m_model->Name());
+    m_model_name->setPlaceholderText(SupraFit::Method2Name(m_model->SFModel()));
+    m_model_name->setClearButtonEnabled(true);
+
+    connect(m_model_name, &QLineEdit::textChanged, m_model.data(), &AbstractModel::setName);
+    name_layout->addWidget(m_model_name);
+    m_layout->addLayout(name_layout);
+
     //    if (!m_val_readonly) {
     m_model_options_widget = new OptionsWidget(m_model);
     if (m_model->getAllOptions().size())
@@ -248,22 +259,18 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             }
         }
     } else {
-        QLineEdit* name = new QLineEdit(m_model->Name());
-        name->setPlaceholderText(m_model->Name());
-        name->setClearButtonEnabled(true);
-        m_sign_layout->addWidget(name);
-        connect(name, &QLineEdit::textChanged, m_charts.signal_wrapper->Series(0), [this, name]() {
-            if (name) {
-                if (name->text() != this->m_charts.signal_wrapper->Series(0)->name()) {
-                    this->m_charts.signal_wrapper->Series(0)->setName(name->text());
-                    this->m_charts.error_wrapper->Series(0)->setName(name->text());
+        connect(m_model_name, &QLineEdit::textChanged, m_charts.signal_wrapper->Series(0), [this]() {
+            if (m_model_name) {
+                if (m_model_name->text() != this->m_charts.signal_wrapper->Series(0)->name()) {
+                    this->m_charts.signal_wrapper->Series(0)->setName(m_model_name->text());
+                    this->m_charts.error_wrapper->Series(0)->setName(m_model_name->text());
                 }
             }
         });
 
-        connect(m_charts.signal_wrapper->Series(0), &LineSeries::nameChanged, m_charts.signal_wrapper->Series(0), [this, name]() {
-            this->m_charts.signal_wrapper->Series(0)->setName(name->text());
-            this->m_charts.error_wrapper->Series(0)->setName(name->text());
+        connect(m_charts.signal_wrapper->Series(0), &LineSeries::nameChanged, m_charts.signal_wrapper->Series(0), [this]() {
+            this->m_charts.signal_wrapper->Series(0)->setName(m_model_name->text());
+            this->m_charts.error_wrapper->Series(0)->setName(m_model_name->text());
         });
         m_charts.signal_wrapper->Series(0)->setName(m_model->Name());
 

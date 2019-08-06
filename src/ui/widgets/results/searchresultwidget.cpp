@@ -24,6 +24,8 @@
 #include "src/core/models.h"
 #include "src/core/toolset.h"
 
+#include "src/ui/guitools/instance.h"
+
 #include "src/ui/widgets/buttons/scientificbox.h"
 #include "src/ui/widgets/results/scatterwidget.h"
 
@@ -111,13 +113,17 @@ QTableView* SearchResultWidget::BuildList()
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setHorizontalHeader(new HeaderView(Qt::Horizontal, table));
     QAction* action;
-    action = new QAction("Replace", table);
+    action = new QAction("Replace Parameter", table);
+    action->setToolTip(tr("Current model parameter will be overwritten!"));
+    action->setIcon(QIcon(":/icons/dialog-ok-red.png"));
     table->addAction(action);
     connect(action, &QAction::triggered, action, [this]() {
         this->rowSelected(m_table->currentIndex());
     });
 
-    action = new QAction("Add", table);
+    action = new QAction("Load Parameter", table);
+    action->setToolTip(tr("Current model parameter will be untouched! A new model will be added to the project."));
+    action->setIcon(Icon("list-add"));
     table->addAction(action);
     connect(action, &QAction::triggered, action, [this]() {
         QModelIndex index = m_table->currentIndex();

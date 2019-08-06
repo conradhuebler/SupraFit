@@ -133,7 +133,7 @@ private:
     void LoadStatistic(const QJsonObject& data);
 
     QVBoxLayout* m_sign_layout;
-
+    QLineEdit* m_model_name;
     QWidget* m_model_widget;
     QSplitter* m_splitter;
     StatisticWidget* m_statistic_widget;

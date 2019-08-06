@@ -90,7 +90,8 @@ AbstractItcModel::~AbstractItcModel()
 
 void AbstractItcModel::DeclareSystemParameter()
 {
-    QChar mu = QChar(956);
+    const QChar mu = QChar(956);
+    const QString sub_char = QChar(0x2080);
 
     addSystemParameter(CellVolume, "Cell Volume", "Volume of the cell in " + QString(mu) + "L", SystemParameter::Scalar);
     addSystemParameter(Temperature, "Temperature", "Temperature in K", SystemParameter::Scalar);
@@ -110,11 +111,11 @@ void AbstractItcModel::DeclareSystemParameter()
     setSystemParameterValue(InptUnit, 0);*/
 
     addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
-    QStringList plotmode = QStringList() << "[G<sub>0</sub>]/[H<sub>0</sub>]"
-                                         << "[G<sub>0</sub>]"
+    QStringList plotmode = QStringList() << QString("[G%1]/[H%2").arg(sub_char).arg(sub_char)
+                                         << QString("[G%1]").arg(sub_char)
                                          << "Number";
     setSystemParameterList(PlotMode, plotmode);
-    setSystemParameterValue(PlotMode, "[G<sub>0</sub>]/[H<sub>0</sub>]");
+    setSystemParameterValue(PlotMode, plotmode[0]);
 }
 
 void AbstractItcModel::DeclareOptions()

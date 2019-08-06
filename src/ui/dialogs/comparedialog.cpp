@@ -53,9 +53,10 @@ void CompareDialog::setUi()
     m_cutoff_box->setMaximum(1e9);
     m_cutoff_box->setDecimals(2);
     m_cutoff_box->setValue(m_cutoff);
-
+    m_cutoff_box->setPrefix(tr("Cutoff = "));
     m_red_local = new QCheckBox(tr("Include local Parameter"));
     reduction->setLayout(layout);
+    //layout->addWidget(new QLabel(tr("Cutoff")), 0, 0);
     layout->addWidget(m_cutoff_box, 0, 0);
     layout->addWidget(m_red_local, 0, 1);
     layout->addWidget(m_reduction, 1, 0, 1, 2);
@@ -68,7 +69,7 @@ void CompareDialog::setUi()
     aic->setLayout(layout);
 
     layout = new QGridLayout;
-    QGroupBox* crossvalidation = new QGroupBox(tr("Cross Validation & Monte Carlo"));
+    QGroupBox* crossvalidation = new QGroupBox(tr("Cross Validation and Monte Carlo"));
     m_crossvalidation = new QPushButton(tr("Compare Cross Validation"));
     m_montecarlo = new QPushButton(tr("Monte Carlo"));
 
@@ -119,6 +120,8 @@ void CompareDialog::setUi()
     layout->addWidget(m_overview, 0, 0);
     layout->addLayout(hlayout, 1, 0);
     layout->addWidget(m_hide, 2, 0);
+
+    setWindowTitle(tr("Analyse and Compare Dialog"));
 
     setLayout(layout);
 }

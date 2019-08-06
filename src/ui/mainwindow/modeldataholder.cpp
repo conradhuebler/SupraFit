@@ -99,13 +99,17 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(hide);
     layout->addWidget(color);
-    QLabel* label = new QLabel("<html><pr>" + modelwidget->Model()->Name() + "</pre></html>");
-    layout->addWidget(label);
+    QLabel* title_label = new QLabel(modelwidget->Model()->Name());
+    layout->addWidget(title_label);
     tools->setLayout(layout);
 
     connect(hide, SIGNAL(stateChanged(int)), modelwidget, SIGNAL(ToggleSeries(int)));
     connect(color, SIGNAL(clicked()), modelwidget, SLOT(ChangeColor()));
     connect(modelwidget, SIGNAL(ColorChanged(QColor)), color, SLOT(ChangeColor(QColor)));
+
+    connect(modelwidget->Model().data(), &AbstractModel::ModelNameChanged, title_label, [title_label](const QString& str) {
+        title_label->setText(str);
+    });
 
     setCurrentWidget(modelwidget);
     tabBar()->setTabButton(currentIndex(), QTabBar::LeftSide, tools);
@@ -185,7 +189,7 @@ MDHDockTitleBar::MDHDockTitleBar()
 
     auto addModel = [this](SupraFit::Model model) -> QAction* {
         QAction* action = new QAction(this);
-        action->setText(Model2Name(model));
+        action->setText(tr("%1").arg(Model2Name(model)));
         action->setData(model);
         connect(action, &QAction::triggered, this, &MDHDockTitleBar::PrepareAddModel);
         return action;

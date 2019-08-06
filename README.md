@@ -17,6 +17,8 @@ SupraFit comes with the some selected [Google Noto Fonts](https://github.com/goo
 ## Compiling
 To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and a recent Qt version. Soon, Qt 5.12 LTS will be focused.
 
+> SupraFit needs QtCharts, so please provide it
+
 SupraFit has been successfully compilied with: 
 - gcc 5.2, gcc 6.3, gcc 7.3 and gcc 8.3
 - clang 3.9 
@@ -34,11 +36,6 @@ Prebuild development binaries for Windows (x64) can be downloaded on [SupraFit R
 To obtain the most recent development version use
 ```sh
 git clone --recursive https://github.com/conradhuebler/SupraFit.git
-```
-
-The deprecated, not recommended version SupraFit 1 can be obtained with
-```sh
-git clone -b suprafit-v1 --recursive https://github.com/conradhuebler/SupraFit.git
 ```
 
 Compile it as follows on Unix Platform:
@@ -99,7 +96,18 @@ The first two columns contain the concentrations of host (fixed concentration) a
 
 The first column contains the injected volume while the second columns has to contains the integrated heat response of the system.
 
-SupraFit supports import of *.itc files with peak integration and some basic base line corrections. Alternatively *.dH files from Origin can be loaded right away.
+SupraFit supports import of *.itc and plain x-y files with peak integration and some basic base line corrections. Alternatively *.dH files from Origin can be loaded right away.
+Plain x-y files for thermograms should look like:
+| # t | q |
+|:-----:|:----:|
+| 2 | -0.001 |
+| 4 | -0.001 |
+| 6 | -0.002 |
+| 8 | -0.002 |
+| 10 | -0.002 |
+| 12 | -0.001 |
+
+With the first row having the time and the second the observed heat.
 
 ### Michaelis Menten Kinetics
 | S_0 | v | 
@@ -114,7 +122,7 @@ Copy such a table from any spreadsheet application and paste it in the **New tab
 SupraFit loads and saves tables and calculated models as `json files *.json` or compressed json files `*.suprafit`.
 
 ## Statistics
-SupraFit provides some statistical analysis, which will be described in an not yet finished article. Implemented methods are based on the following approaches:
+SupraFit provides some statistical analysis, which will be described in a not yet finished article. Implemented methods are based on the following approaches:
 - Monte Carlo simulation
 - Error-Based analysis
 - Resampling methods

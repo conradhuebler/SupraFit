@@ -43,5 +43,6 @@
         <file>icons/edit-copy.png</file>
         <file>icons/kspread.png</file>
         <file>icons/clock.png</file>
+        <file>icons/dialog-ok-red.png</file>
     </qresource>
 </RCC>
