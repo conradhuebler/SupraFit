@@ -21,8 +21,8 @@ cd SupraFit
 windeployqt --release suprafit.exe
 
 echo Copying project files for archival...
-copy "%project_dir%\README.md" "%project_dir%\build\Release\SupraFit\README.md"
-copy "%project_dir%\LICENSE.md" "%project_dir%\build\Release\SupraFit\LICENSE.md"
+copy "%project_dir%\README.md" "%project_dir%\build_x64\Release\SupraFit\README.md"
+copy "%project_dir%\LICENSE.md" "%project_dir%\build_x64\Release\SupraFit\LICENSE.md"
 
 echo Packaging portable archive...
 cd ..
@@ -48,8 +48,8 @@ cd SupraFit
 windeployqt --release suprafit.exe
 
 echo Copying project files for archival...
-copy "%project_dir%\README.md" "%project_dir%\build\Release\SupraFit\README.md"
-copy "%project_dir%\LICENSE.md" "%project_dir%\build\Release\SupraFit\LICENSE.md"
+copy "%project_dir%\README.md" "%project_dir%\build_x32\Release\SupraFit\README.md"
+copy "%project_dir%\LICENSE.md" "%project_dir%\build_x32\Release\SupraFit\LICENSE.md"
 
 echo Packaging portable archive...
 cd ..
