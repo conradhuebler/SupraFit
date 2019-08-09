@@ -504,7 +504,7 @@ SupraFitGui::SupraFitGui()
 
     });
     */
-    action = new QAction("Export Project", m_project_view);
+    action = new QAction("Export", m_project_view);
     m_project_view->addAction(action);
     action->setIcon(Icon("document-save"));
 
@@ -512,7 +512,7 @@ SupraFitGui::SupraFitGui()
         SaveData(m_project_view->currentIndex());
     });
 
-    action = new QAction("Delete Project", m_project_view);
+    action = new QAction("Delete", m_project_view);
     action->setIcon(Icon("trash-empty"));
     connect(action, &QAction::triggered, action, [this]() {
         TreeRemoveRequest(m_project_view->currentIndex());
@@ -1270,6 +1270,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("auto_thermo_dialog") == QVariant())
         qApp->instance()->setProperty("auto_thermo_dialog", false);
 
+    if (qApp->instance()->property("OverwriteBins") == QVariant())
+        qApp->instance()->setProperty("OverwriteBins", false);
+
     if (qApp->instance()->property("advanced_ui") == QVariant()) {
         qApp->instance()->setProperty("advanced_ui", false);
         QTimer::singleShot(10, this, SLOT(FirstStart()));
@@ -1279,6 +1282,9 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("ySize") == QVariant())
         qApp->instance()->setProperty("ySize", 400);
+
+    if (qApp->instance()->property("EntropyBins") == QVariant())
+        qApp->instance()->setProperty("EntropyBins", 30);
 
     if (qApp->instance()->property("FastConfidenceScaling") == QVariant())
         qApp->instance()->setProperty("FastConfidenceScaling", -4);

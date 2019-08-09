@@ -93,6 +93,7 @@ void CompareDialog::setUi()
     m_cv_x = new QSpinBox;
     m_cv_x->setValue(3);
     m_cv_x->setPrefix(tr("X = "));
+    m_cv_x->setToolTip(tr("Set X in LXO or the index of the Monte Carlo Simulation, that should be compared."));
 
     connect(m_crossvalidation, &QPushButton::clicked, this, &CompareDialog::CompareCV);
     connect(m_montecarlo, &QPushButton::clicked, this, &CompareDialog::CompareMC);

@@ -165,22 +165,26 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_add_kinetics->setFlat(true);
     m_add_kinetics->setIcon(Icon("list-add"));
 
-    m_optimize = new QPushButton(tr("Optimize All"));
+    m_optimize = new QPushButton(tr("Optimise All"));
+    m_optimize->setToolTip(tr("Optimise all checked models"));
     m_optimize->setFlat(true);
     m_optimize->setIcon(Icon("go-down"));
     connect(m_optimize, &QPushButton::clicked, this, &MDHDockTitleBar::OptimizeAll);
 
     m_statistics = new QPushButton(tr("Statistics"));
+    m_statistics->setToolTip(tr("Open Statistics Dialog for all models."));
     m_statistics->setFlat(true);
     m_statistics->setIcon(Icon("fork"));
     connect(m_statistics, &QPushButton::clicked, this, &MDHDockTitleBar::ShowStatistics);
 
     m_analyse = new QPushButton(tr("Analyse and Compare"));
+    m_analyse->setToolTip(tr("Open Compare Dialog to compare all models some of the statistical results like Monte Carlo, CrossValidation and Reduction Analysis."));
     m_analyse->setFlat(true);
     m_analyse->setIcon(Icon("help-hint"));
     connect(m_analyse, &QPushButton::clicked, this, &MDHDockTitleBar::Compare);
 
     m_close_all = new QPushButton(tr("Remove All"));
+    m_close_all->setToolTip(tr("Remove all models from the current project."));
     m_close_all->setFlat(true);
     m_close_all->setIcon(Icon("trash-empty"));
     m_close_all->setDisabled(true);
@@ -710,6 +714,7 @@ void ModelDataHolder::CompareCV()
 
     QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
+    // result.replace(",", ".");
     text->setText("<html><pre>" + result + "</pre></html>");
     layout->addWidget(text);
     QDialog dialog(this);
@@ -752,6 +757,8 @@ void ModelDataHolder::CompareReduction()
 
     QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
+    // result.replace(",", ".");
+
     text->setText("<html><pre>" + result + "</pre></html>");
     layout->addWidget(text);
     QDialog dialog(this);
@@ -776,10 +783,12 @@ void ModelDataHolder::CompareMC()
         }
     }
 
-    QString result = StatisticTool::CompareMC(models, m_compare_dialog->CVLocal());
+    QString result = StatisticTool::CompareMC(models, m_compare_dialog->CVLocal(), m_compare_dialog->CVX());
 
     QHBoxLayout* layout = new QHBoxLayout;
     QTextEdit* text = new QTextEdit;
+    //    result.replace(",",".");
+
     text->setText("<html><pre>" + result + "</pre></html>");
     layout->addWidget(text);
     QDialog dialog(this);

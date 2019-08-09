@@ -231,17 +231,23 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
     return result;
 }
 
-QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int cv_x, int bins)
+QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int cv_x)
 {
 
-    QMultiMap<qreal, QString> individual, model_wise;
+    QMultiMap<qreal, QString> individual_entropy, model_wise_entropy;
+    QMultiMap<qreal, QString> individual_stdev, model_wise_stdev;
+    QString CV;
 
-    QMultiMap<qreal, QString> concl_corr;
-    QMap<qreal, QString> mean_std_orderd, mean_std_corr_orderd;
-    QHash<QString, qreal> parameters, parameters_corr;
-    QHash<QString, int> parameters_count;
+    if (cvtype == 1)
+        CV = "L0O";
+    else if (cvtype == 2)
+        CV = "L2O";
+    else
+        CV = "CXO";
 
     QString result = QString("<table>");
+    QString method_line = QString();
+    QString bin_info = QString();
     for (const auto& model : models) {
 
         QJsonObject statistics = model["data"].toObject()["methods"].toObject();
@@ -259,69 +265,128 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
             if (type == 3 && x != cv_x)
                 continue;
 
+            int bins;
+            if (qApp->instance()->property("OverwriteBins").toBool())
+                bins = qApp->instance()->property("EntropyBins").toInt();
+            else
+                bins = controller["EntropyBins"].toInt(qApp->instance()->property("EntropyBins").toInt());
+
+            int EntropyBins = bins;
+            if (cvtype == 3)
+                method_line = QString("Cross Validation %1; X = %2, Bins for Histogram calculation = %3, MaxSteps = %4").arg(CV).arg(x).arg(bins).arg(controller["MaxSteps"].toInt());
+            else
+                method_line = QString("Cross Validation %1, Bins for Histogram calculation = %2, MaxSteps = %3").arg(CV).arg(bins).arg(controller["MaxSteps"].toInt());
+
             QStringList k = obj.keys();
             qreal hx = 0;
+            qreal stdev = 0;
             int counter = 0;
             for (const QString& element : qAsConst(k)) {
                 if (element == "controller")
                     continue;
 
                 QJsonObject result = obj[element].toObject();
-
+                QJsonObject box = result["boxplot"].toObject();
                 QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
                 QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
                 ToolSet::Normalise(histogram);
                 QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
 
-                QString name = result["name"].toString() + " - " + model["name"].toString();
+                if (bins != EntropyBins)
+                    bin_info = QString("Bins had been set to %1").arg(bins);
+                /* If old results are used, that don't contain stddev in their json object, recalculate box-plot */
+
+                QString name = result["name"].toString() + " - " + model["name"].toString() + "   " + bin_info;
 
                 if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter") {
                     hx += qAbs(pair.first);
-                    individual.insert(qAbs(pair.first), name);
+                    stdev = box["stddev"].toDouble();
+                    individual_entropy.insert(qAbs(pair.first), name);
+                    individual_stdev.insert(box["stddev"].toDouble(), name);
                     counter++;
                 }
             }
-            model_wise.insert(hx / double(counter), model["name"].toString());
+            model_wise_entropy.insert(hx / double(counter), model["name"].toString());
+            model_wise_stdev.insert(stdev / double(counter), model["name"].toString());
+        }
+    }
+    {
+        result += "<tr><th colspan='2'>Initialising comparison of Cross Validation!</th></tr>";
+        result += "<tr><td colspan='2'>" + method_line + "</td></tr>";
+        if (!model_wise_entropy.isEmpty()) {
+            result += "<tr><th colspan='2'>modelwise entropy list</th></tr>";
+
+            auto i = model_wise_entropy.begin();
+            qreal first = 0;
+            while (i != model_wise_entropy.constEnd()) {
+
+                if (i == model_wise_entropy.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+
+                ++i;
+            }
+        }
+    }
+    {
+        result += "<tr><th colspan='2'>parameterwise entropy list</th></tr>";
+        if (!individual_entropy.isEmpty()) {
+            auto i = individual_entropy.begin();
+            qreal first = 0;
+            while (i != individual_entropy.constEnd()) {
+                if (i == individual_entropy.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+                ++i;
+            }
         }
     }
 
     {
-        auto i = model_wise.begin();
-        qreal first = 0;
-        while (i != model_wise.constEnd()) {
+        result += "<tr><th colspan='2'>modelwise " + Unicode_sigma + " list</th></tr>";
 
-            if (i == model_wise.begin())
-                first = i.key();
-            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
-            ++i;
+        if (!model_wise_stdev.isEmpty()) {
+            auto i = model_wise_stdev.begin();
+            qreal first = 0;
+            while (i != model_wise_stdev.constEnd()) {
+
+                if (i == model_wise_stdev.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ":  " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
+                ++i;
+            }
         }
     }
     {
-        auto i = individual.begin();
-        qreal first = 0;
-        while (i != individual.constEnd()) {
-            if (i == individual.begin())
-                first = i.key();
-            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
-            ++i;
+        result += "<tr><th colspan='2'>parameterwise " + Unicode_sigma + " list</th></tr>";
+        if (!individual_stdev.isEmpty()) {
+            auto i = individual_stdev.begin();
+            qreal first = 0;
+            while (i != individual_stdev.constEnd()) {
+                if (i == individual_stdev.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ":  " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
+                ++i;
+            }
         }
     }
+
     return result;
 }
 
-QString CompareMC(const QVector<QJsonObject> models, bool local, int bins)
+QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
 {
 
-    QMultiMap<qreal, QString> individual, model_wise;
-
-    QMultiMap<qreal, QString> concl_corr;
-    QMap<qreal, QString> mean_std_orderd, mean_std_corr_orderd;
-    QHash<QString, qreal> parameters, parameters_corr;
-    QHash<QString, int> parameters_count;
+    QMultiMap<qreal, QString> individual_entropy, model_wise_entropy;
+    QMultiMap<qreal, QString> individual_stdev, model_wise_stdev;
 
     int MaxSteps = -1;
     int sigma = -1;
+    int idx = 1;
     QString result = QString("<table>");
+    QString method_line = QString();
+    QString bin_info = QString();
+
     for (const auto& model : models) {
 
         QJsonObject statistics = model["data"].toObject()["methods"].toObject();
@@ -334,59 +399,117 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int bins)
             if (method != SupraFit::Method::MonteCarlo)
                 continue;
 
-            if (MaxSteps == -1) {
+            int bins;
+            if (qApp->instance()->property("OverwriteBins").toBool())
+                bins = qApp->instance()->property("EntropyBins").toInt();
+            else
+                bins = controller["EntropyBins"].toInt(qApp->instance()->property("EntropyBins").toInt());
+
+            int EntropyBins = bins;
+
+            if (MaxSteps == -1 && idx == index) {
                 MaxSteps = controller["MaxSteps"].toInt();
                 sigma = controller["VarianceSource"].toInt();
+                method_line = QString("Monte Carlo Simulation with %1; %2 = %3, Bins for Histogram calculation = %4").arg(MaxSteps).arg(Unicode_sigma).arg(controller["Variance"].toDouble()).arg(bins);
             }
+
+            idx++;
 
             if (MaxSteps != controller["MaxSteps"].toInt() || sigma != controller["VarianceSource"].toInt())
                 continue;
 
             QStringList k = obj.keys();
             qreal hx = 0;
+            qreal stdev = 0;
             int counter = 0;
             for (const QString& element : qAsConst(k)) {
                 if (element == "controller")
                     continue;
 
                 QJsonObject result = obj[element].toObject();
-
+                QJsonObject box = result["boxplot"].toObject();
                 QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
                 QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
                 ToolSet::Normalise(histogram);
                 QPair<qreal, qreal> pair = ToolSet::Entropy(histogram);
 
-                QString name = result["name"].toString() + " - " + model["name"].toString();
+                if (bins != EntropyBins)
+                    bin_info = QString("Bins had been set to %1").arg(bins);
+
+                QString name = result["name"].toString() + " - " + model["name"].toString() + "   " + bin_info;
 
                 if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter") {
                     hx += qAbs(pair.first);
-                    individual.insert(qAbs(pair.first), name);
+                    stdev = box["stddev"].toDouble();
+                    individual_entropy.insert(qAbs(pair.first), name);
+                    individual_stdev.insert(box["stddev"].toDouble(), name);
                     counter++;
                 }
             }
-            model_wise.insert(hx / double(counter), model["name"].toString());
+            model_wise_entropy.insert(hx / double(counter), model["name"].toString());
+            model_wise_stdev.insert(stdev / double(counter), model["name"].toString());
         }
     }
 
     {
-        auto i = model_wise.begin();
-        qreal first = 0;
-        while (i != model_wise.constEnd()) {
+        result += "<tr><th colspan='2'>Initialising comparison of Monte Carlo Simulation!</th></tr>";
+        result += "<tr><td colspan='2'>" + method_line + "</td></tr>";
+        if (!model_wise_entropy.isEmpty()) {
+            result += "<tr><th colspan='2'>modelwise entropy list</th></tr>";
 
-            if (i == model_wise.begin())
-                first = i.key();
-            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
-            ++i;
+            auto i = model_wise_entropy.begin();
+            qreal first = 0;
+            while (i != model_wise_entropy.constEnd()) {
+
+                if (i == model_wise_entropy.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+                ++i;
+            }
         }
     }
     {
-        auto i = individual.begin();
-        qreal first = 0;
-        while (i != individual.constEnd()) {
-            if (i == individual.begin())
-                first = i.key();
-            result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
-            ++i;
+        if (!individual_entropy.isEmpty()) {
+            result += "<tr><th colspan='2'>parameterwise entropy list</th></tr>";
+
+            auto i = individual_entropy.begin();
+            qreal first = 0;
+            while (i != individual_entropy.constEnd()) {
+                if (i == individual_entropy.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
+                ++i;
+            }
+        }
+    }
+
+    {
+        if (!model_wise_stdev.isEmpty()) {
+            result += "<tr><th colspan='2'>modelwise " + Unicode_sigma + " list</th></tr>";
+
+            auto i = model_wise_stdev.begin();
+            qreal first = 0;
+            while (i != model_wise_stdev.constEnd()) {
+
+                if (i == model_wise_stdev.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ": " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
+                ++i;
+            }
+        }
+    }
+    {
+        if (!individual_stdev.isEmpty()) {
+            result += "<tr><th colspan='2'>parameterwise " + Unicode_sigma + " list</th></tr>";
+
+            auto i = individual_stdev.begin();
+            qreal first = 0;
+            while (i != individual_stdev.constEnd()) {
+                if (i == individual_stdev.begin())
+                    first = i.key();
+                result += "<p>" + i.value() + ": " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
+                ++i;
+            }
         }
     }
     return result;

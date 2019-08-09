@@ -172,4 +172,6 @@ protected:
     QVector<QVector<qreal>> m_difference;
 
     QPointer<DataTable> m_concentrations;
+
+    QStringList m_plotmode;
 };

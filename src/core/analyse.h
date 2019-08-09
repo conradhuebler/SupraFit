@@ -27,8 +27,30 @@
 
 namespace StatisticTool {
 
+/*
+const QString Latex_Head = "\documentclass{standalone}"
+        "\usepackage[utf8]{inputenc}"
+        "\usepackage{tikz}"
+        "\usepackage{pgfplots}"
+        "\pgfplotsset{compat=1.10}"
+        "\pgfplotsset{every axis/.append style={"
+                            "label style={font=\sffamily},"
+                            "tick label style={font=\sffamily}  "
+                            "}}"
+        "%1"
+        "\begin{document}"
+        "\begin{tikzpicture}[font=\sffamily\small]"
+        "\begin{axis}[title={\parbox{6cm}{%2}},xmin = 0.5,xmax = %3, ymin= 0, ymax=0.25,xtick={%4},xticklabels={%5 }, ytick={%6},yticklabels={%7}, xlabel={Models}, ylabel={%8}, y label style={rotate=0,anchor=east,yshift=10pt}]"
+        "%9"
+        "\end{axis}"
+        "%10"
+        "\end{tikzpicture}"
+        "\end{document}";
+
+*/
+
 QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>> models, double cutoff = 0);
 QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models);
-QString CompareCV(const QVector<QJsonObject> models, int cvtype = 1, bool local = true, int cv_x = 3, int bins = 30);
-QString CompareMC(const QVector<QJsonObject> models, bool local = true, int bins = 30);
+QString CompareCV(const QVector<QJsonObject> models, int cvtype = 1, bool local = true, int cv_x = 3);
+QString CompareMC(const QVector<QJsonObject> models, bool local = true, int index = 1);
 }

@@ -107,7 +107,7 @@ public:
     QJsonObject RunReductionAnalyse() const;
     QJsonObject RunCrossValidation() const;
 
-    inline void setRuns(int runs) { m_runs = runs; }
+    inline void setRuns(int runs) { m_main_steps = runs; }
     virtual void setVisible(bool visible) override;
     inline bool UseChecked() const { return m_use_checked->isChecked(); }
     inline bool isMCStd() const { return m_mc_std->isChecked(); }
@@ -142,7 +142,7 @@ private:
     QDoubleSpinBox *m_varianz_box, *m_wgs_increment, *m_wgs_maxerror, *m_moco_maxerror, *m_moco_box_multi, *m_moco_f_value, *m_wgs_f_value;
     ScientificBox* m_wgs_err_conv;
     QSpinBox *m_cv_runs, *m_cv_lxo, *m_mc_steps, *m_wgs_steps, *m_moco_mc_steps, *m_gridOvershotCounter, *m_gridErrorDecreaseCounter, *m_gridErrorConvergencyCounter, *m_gridScalingFactor;
-    QCheckBox *m_original, *m_bootstrap, *m_use_checked, *m_store_wgsearch;
+    QCheckBox *m_original, *m_use_checked, *m_store_wgsearch;
     QVector<QCheckBox*> m_indepdent_checkboxes, m_grid_global, m_grid_local, m_moco_global, m_moco_local;
     QVector<QDoubleSpinBox*> m_indepdent_variance, m_glob_box_scaling, m_loc_box_scaling;
     QVector<QSpinBox*> m_global_moco_digits, m_local_moco_digits;
@@ -151,20 +151,19 @@ private:
     QProgressBar *m_progress, *m_main_progress;
     QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info, *m_message_box;
     QRadioButton *m_wgs_loo, *m_wgs_l2o, *m_wgs_lxo;
-    QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user;
+    QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user, *m_mc_bootstrap;
     QRadioButton *m_cv_premap, *m_cv_automap, *m_cv_randmap;
     QMutex mutex;
 
     QWeakPointer<AbstractModel> m_model;
 
-    int m_time, m_runs;
+    int m_time, m_main_steps = 0;
     qint64 m_time_0;
     qreal m_f_value = 1, m_moco_max, m_wgs_max;
     bool m_hidden;
 
 private slots:
     void Update();
-    void EnableWidgets();
     void CalculateError();
 
 signals:

@@ -172,6 +172,8 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
                     connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, this](const QColor& color) { this->setAreaColor(i, color); });
                 }
             }
+        } else {
+            xy_series->setColor(m_wrapper->ColorCode(m_model.data()->Color(i)));
         }
 
         qreal diff = (histogram.last().first-histogram.first().first)/double(histogram.size());
@@ -438,6 +440,7 @@ void MCResultsWidget::GenerateConfidence(double error)
 
 void MCResultsWidget::GenerateHistogram()
 {
+    QJsonObject controller = m_data["controller"].toObject();
 
     auto i = m_linked_data.begin();
 
@@ -445,7 +448,8 @@ void MCResultsWidget::GenerateHistogram()
         LineSeries* xy_series = i.key();
 
         QVector<qreal> list = i.value();
-        auto histogram = ToolSet::List2Histogram(list, m_bins->value());
+        int bins = controller["PlotBins"].toInt(m_bins->value());
+        auto histogram = ToolSet::List2Histogram(list, bins);
         ToolSet::Normalise(histogram);
 
         xy_series->clear();
@@ -461,8 +465,9 @@ void MCResultsWidget::GenerateHistogram()
 
         ++i;
     }
-    QJsonObject controller = m_data["controller"].toObject();
-    controller["bins"] = m_bins->value();
+    controller["PlotBins"] = m_bins->value();
+    controller["EntropyBins"] = qApp->instance()->property("EntropyBins").toInt();
+
     m_data["controller"] = controller;
 
     emit ConfidenceUpdated(m_data);

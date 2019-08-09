@@ -225,33 +225,25 @@ void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
 
 QColor ChartWrapper::ColorCode(int i)
 {
-    switch (i) {
+    switch (i % 9) {
     case 0:
-        return Qt::darkCyan;
+        return QColor::fromRgbF(0.84, 0.93, 0.55, 1).darker(130);
     case 1:
-        return QColor(Qt::blue).lighter();
+        return QColor::fromRgbF(0.35, 0.47, 0.75, 1);
     case 2:
-        return QColor(Qt::darkCyan).lighter();
+        return QColor::fromRgbF(1, 0.69, 0.37, 1);
     case 3:
-        return QColor(Qt::darkGreen).lighter();
+        return QColor::fromRgbF(0.3, 0.73, 0.82, 1);
     case 4:
-        return Qt::darkRed;
+        return QColor::fromRgbF(0.95, 0.61, 0.7, 1);
     case 5:
-        return Qt::darkBlue;
+        return QColor::fromRgbF(0.38, 0.78, 0.89, 1);
     case 6:
-        return Qt::darkGreen;
+        return QColor::fromRgbF(0.37, 0.79, 0.51, 1);
     case 7:
-        return Qt::cyan;
+        return QColor::fromRgbF(0.55, 0.82, 0.72, 1);
     case 8:
-        return Qt::red;
-    case 9:
-        return Qt::blue;
-    case 10:
-        return Qt::darkMagenta;
-    case 11:
-        return Qt::darkYellow;
-    case 12:
-        return Qt::gray;
+        return QColor::fromRgbF(0.67, 0.88, 0.38, 1);
     default:
         return Qt::darkGray;
     }

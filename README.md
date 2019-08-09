@@ -33,7 +33,7 @@ on linux systems and windows systems using
 
 Prebuild development binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases). They are built using Microsoft Visual Studio, so please provide [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145). Qt 5.12 dlls are shipped with SupraFit.
 
-To obtain the most recent development version use
+To obtain the most recent development version, which is SupraFit 2 Beta, use
 ```sh
 git clone --recursive https://github.com/conradhuebler/SupraFit.git
 ```
@@ -74,8 +74,6 @@ cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true/false ..
 ```sh
 cmake --build . --config Release
 ```
-
->Please note, that the current development version is still in alpha stage. Some features are not ready yet and some changes might break compatibility of the SupraFit file format.
 
 ## Running
 Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:

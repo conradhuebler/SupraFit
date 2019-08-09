@@ -153,4 +153,5 @@ protected:
     double m_V, m_cell_concentration, m_syringe_concentration, m_T;
     bool m_reservior = true;
     QString m_plotMode;
+    QStringList m_plotmode;
 };

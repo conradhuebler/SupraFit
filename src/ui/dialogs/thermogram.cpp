@@ -168,7 +168,7 @@ void Thermogram::setUi()
     m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
     m_offset = new QLabel(tr("No offset"));
 
-    connect(m_injct, &QLineEdit::returnPressed, m_injct, [this]() {
+    connect(m_injct, &QLineEdit::textChanged, m_injct, [this]() {
         if (m_forceInject) {
             m_message->setText("Inject Volume will be taken from ITC file (if available)!");
             m_forceInject = false;
@@ -322,6 +322,9 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     m_UseParameter->setChecked(m_systemparameter.size() != 0);
     QSignalBlocker block(m_freq);
     m_freq->setValue(freq);
+    QSignalBlocker inject(m_injct);
+    if (m_inject.size())
+        m_injct->setText(QString::number(m_inject.last()));
     return original;
 }
 

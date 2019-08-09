@@ -39,6 +39,7 @@ JobManager::JobManager(QObject* parent)
     connect(this, SIGNAL(Interrupt()), m_montecarlo_handler, SLOT(Interrupt()), Qt::DirectConnection);
     connect(m_montecarlo_handler, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_montecarlo_handler, &AbstractSearchClass::Message, this, &JobManager::Message);
+    connect(m_montecarlo_handler, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
 
     m_gridsearch_handler = new WeakenedGridSearch(this);
     connect(this, SIGNAL(Interrupt()), m_gridsearch_handler, SLOT(Interrupt()), Qt::DirectConnection);
@@ -127,7 +128,6 @@ QJsonObject JobManager::RunModelComparison(const QJsonObject& job)
 QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
 {
     int MaxSteps = job["MaxSteps"].toInt();
-    emit prepare(MaxSteps);
     m_montecarlo_handler->setController(job);
 
     m_montecarlo_handler->setModel(m_model);

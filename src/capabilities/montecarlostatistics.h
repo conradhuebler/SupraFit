@@ -48,7 +48,6 @@ public:
     inline int Index() const { return m_index; }
 
 private:
-    //    QSharedPointer<Minimizer> m_minimizer;
     NonLinearFitThread* m_fit_thread;
 
     QJsonObject m_optimized;

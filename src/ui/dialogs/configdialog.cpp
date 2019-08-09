@@ -257,6 +257,21 @@ void ConfigDialog::createStandardCalTab()
 
     layout->addLayout(h_layout);
 
+    m_HistBins = new QSpinBox;
+    m_HistBins->setMinimum(10);
+    m_HistBins->setMaximum(100000);
+    m_HistBins->setValue(qApp->instance()->property("EntropyBins").toInt());
+
+    m_overwrite_bins = new QCheckBox(tr("Overwrite stored bin number"));
+    m_overwrite_bins->setChecked(qApp->instance()->property("OverwriteBins").toBool());
+
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("# bins for Shannon Entropy Calculation")));
+    h_layout->addWidget(m_HistBins);
+    h_layout->addWidget(m_overwrite_bins);
+
+    layout->addLayout(h_layout);
+
     m_mainwidget->addTab(calcTab, tr("Standard Calculation"));
 }
 
@@ -393,12 +408,14 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("noGrid", m_RemoveGrid->isChecked());
     qApp->instance()->setProperty("empAxis", m_EmphAxis->isChecked());
     qApp->instance()->setProperty("chartScaling", m_chartScaling->value());
+    qApp->instance()->setProperty("EntropyBins", m_HistBins->value());
     qApp->instance()->setProperty("FastConfidenceScaling", m_FastConfidenceScaling->value());
     qApp->instance()->setProperty("FastConfidenceSteps", m_FastConfidenceSteps->value());
     qApp->instance()->setProperty("auto_thermo_dialog", m_auto_thermo_dialog->isChecked());
     qApp->instance()->setProperty("thermogram_guidelines", m_thermogram_guideline->isChecked());
     qApp->instance()->setProperty("advanced_ui", m_advanced_ui->isChecked());
     qApp->instance()->setProperty("UnsafeCopy", m_unsafe_copy->isChecked());
+    qApp->instance()->setProperty("OverwriteBins", m_overwrite_bins->isChecked());
 
     QDialog::accept();
 }

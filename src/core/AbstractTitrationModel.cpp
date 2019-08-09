@@ -77,11 +77,11 @@ void AbstractTitrationModel::DeclareSystemParameter()
     setSystemParameterValue(Temperature, 298);
 
     addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
-    QStringList plotmode = QStringList() << QString("[G%1]/[H%2]").arg(sub_char).arg(sub_char)
-                                         << QString("[G%1]").arg(sub_char)
-                                         << "Number";
-    setSystemParameterList(PlotMode, plotmode);
-    setSystemParameterValue(PlotMode, plotmode[0]);
+    m_plotmode = QStringList() << QString("[G%1]/[H%2]").arg(sub_char).arg(sub_char)
+                               << QString("[G%1]").arg(sub_char)
+                               << "Number";
+    setSystemParameterList(PlotMode, m_plotmode);
+    setSystemParameterValue(PlotMode, m_plotmode[0]);
 }
 
 void AbstractTitrationModel::UpdateParameter()
@@ -163,9 +163,9 @@ qreal AbstractTitrationModel::PrintOutIndependent(int i) const
 {
     QString plotmode = getPlotMode();
 
-    if (plotmode == "[G<sub>0</sub>]/[H<sub>0</sub>]")
+    if (plotmode == m_plotmode[0])
         return InitialGuestConcentration(i) / InitialHostConcentration(i);
-    else if (plotmode == "[G<sub>0</sub>]")
+    else if (plotmode == m_plotmode[1])
         return InitialGuestConcentration(i);
     else
         return i;

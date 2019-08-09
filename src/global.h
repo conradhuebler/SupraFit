@@ -31,6 +31,22 @@
 #include <QtCore/QtMath>
 
 #include <cmath>
+
+const QString Unicode_Phi = QChar(0x03C6);
+const QString Unicode_delta = QChar(0x03B4);
+const QString Unicode_mu = QChar(0x00B5);
+const QString Unicode_sigma = QChar(0x03C3);
+
+const QString Unicode_Sup_1 = QChar(0x00B9);
+
+const QString Unicode_Sub_0 = QChar(0x2080);
+const QString Unicode_Sub_1 = QChar(0x2081);
+const QString Unicode_Sub_2 = QChar(0x2082);
+
+const QString Unicode_Sub_y = QChar(0x0079); // not really
+
+// const QString Unicode_Sub_AB = QString("%1%2").arg(QChar("A")).arg(QChar("B")); //does not exist yet
+
 namespace SupraFit {
 
 enum Method {
@@ -173,16 +189,9 @@ inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 {
     QByteArray localMsg = msg.toLocal8Bit();
 
-    QString recent;
-
     switch (type) {
     case QtDebugMsg:
         fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        /*
-        recent = qApp->instance()->property("messages").toString();
-        recent += msg + "\n";
-        qApp->instance()->setProperty("messages", recent);
-*/
         break;
     case QtInfoMsg:
         fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
@@ -264,16 +273,16 @@ inline SupraFit::Model Name2Model(const QString& str)
 inline QString Model2Name(SupraFit::Model model)
 {
     if (model == SupraFit::ItoI)
-        return QString("%1H %2").arg(QChar(0x00B9)).arg("1:1-Model");
+        return QString("%1H %2").arg(Unicode_Sup_1).arg("1:1-Model");
 
     else if (model == SupraFit::IItoI_ItoI)
-        return QString("%1H %2").arg(QChar(0x00B9)).arg("2:1/1:1-Model");
+        return QString("%1H %2").arg(Unicode_Sup_1).arg("2:1/1:1-Model");
 
     else if (model == SupraFit::ItoI_ItoII)
-        return QString("%1H %2").arg(QChar(0x00B9)).arg("1:1/1:2-Model");
+        return QString("%1H %2").arg(Unicode_Sup_1).arg("1:1/1:2-Model");
 
     else if (model == SupraFit::IItoI_ItoI_ItoII)
-        return QString("%1H %2").arg(QChar(0x00B9)).arg("2:1/1:1/1:2-Model");
+        return QString("%1H %2").arg(Unicode_Sup_1).arg("2:1/1:1/1:2-Model");
 
     else if (model == SupraFit::itc_ItoI)
         return "ITC 1:1-Model";
@@ -297,16 +306,16 @@ inline QString Model2Name(SupraFit::Model model)
         return "Blank Titration";
 
     else if (model == SupraFit::fl_ItoI)
-        return QString("%1 %2").arg(QChar(966)).arg("1:1-Model");
+        return QString("%1 %2").arg(Unicode_Phi).arg("1:1-Model");
 
     else if (model == SupraFit::fl_IItoI_ItoI)
-        return QString("%1 %2").arg(QChar(966)).arg("2:1/1:1-Model");
+        return QString("%1 %2").arg(Unicode_Phi).arg("2:1/1:1-Model");
 
     else if (model == SupraFit::fl_ItoI_ItoII)
-        return QString("%1 %2").arg(QChar(966)).arg("1:1/1:2-Model");
+        return QString("%1 %2").arg(Unicode_Phi).arg("1:1/1:2-Model");
 
     else if (model == SupraFit::fl_IItoI_ItoI_ItoII)
-        return QString("%1 %2").arg(QChar(966)).arg("2:1/1:1/1:2-Model");
+        return QString("%1 %2").arg(Unicode_Phi).arg("2:1/1:1/1:2-Model");
 
     else if (model == SupraFit::MonoMolecularModel)
         return "Monomolecular Kinetics";
@@ -367,40 +376,40 @@ const QJsonObject OptimConfigBlock{
  * used parameter
  */
 
-const QString K11 = QString("lg K<sub>11</sub>");
-const QString K21 = QString("lg K<sub>21</sub>");
-const QString K12 = QString("lg K<sub>12</sub>");
+const QString K11 = QString("lg K%1%1").arg(Unicode_Sub_1);
+const QString K21 = QString("lg K%1%2").arg(Unicode_Sub_2).arg(Unicode_Sub_1);
+const QString K12 = QString("lg K%1%2").arg(Unicode_Sub_1).arg(Unicode_Sub_2);
 
-const QString K1 = QString("lg K<sub>1</sub>");
-const QString K2 = QString("lg K<sub>2</sub>");
+const QString K1 = QString("lg K%1").arg(Unicode_Sub_1);
+const QString K2 = QString("lg K%1").arg(Unicode_Sub_2);
 
-const QString dHAB = QString("&Delta;H<sub>AB</sub>");
-const QString dHAB2 = QString("&Delta;H<sub>AB2</sub>");
-const QString dHA2B = QString("&Delta;H<sub>A2B</sub>");
+const QString dHAB = QString("%1H<sub>AB</sub>").arg(Unicode_delta);
+const QString dHAB2 = QString("%1H<sub>AB2</sub>").arg(Unicode_delta);
+const QString dHA2B = QString("%1H<sub>A2B</sub>").arg(Unicode_delta);
 
-const QString dHAB_ = QString("&Delta;H'<sub>AB</sub>");
-const QString dHAB2_ = QString("&Delta;H'<sub>AB2</sub>");
-const QString dHA2B_ = QString("&Delta;H'<sub>A2B</sub>");
+const QString dHAB_ = QString("%1H'<sub>AB</sub>").arg(Unicode_delta);
+const QString dHAB2_ = QString("%1H'<sub>AB2</sub>").arg(Unicode_delta);
+const QString dHA2B_ = QString("%1H'<sub>A2B</sub>").arg(Unicode_delta);
 
-const QString dH1 = QString("&Delta;H<sub>1</sub>");
-const QString dH2 = QString("&Delta;H<sub>2</sub>");
+const QString dH1 = QString("%1H<sub>1</sub>").arg(Unicode_delta);
+const QString dH2 = QString("%1H<sub>2</sub>").arg(Unicode_delta);
 
-const QString n1 = QString("n<sub>1</sub>");
-const QString n2 = QString("n<sub>2</sub>");
+const QString n1 = QString("n%1").arg(Unicode_Sub_1);
+const QString n2 = QString("n%2").arg(Unicode_Sub_2);
 
-const QString msolv = QString("m (&delta;<sub>solv</sub>)");
-const QString nsolv = QString("n (&delta;<sub>solv</sub>)");
+const QString msolv = QString("m (%1<sub>solv</sub>)").arg(Unicode_delta);
+const QString nsolv = QString("n (%1<sub>solv</sub>)").arg(Unicode_delta);
 
 const QString fx = QString("fx");
 
 const QString AB = QString("AB");
-const QString AB2 = QString("AB<sub>2</sub>");
-const QString A2B = QString("A<sub>2</sub>B");
+const QString AB2 = QString("AB%1").arg(Unicode_Sub_2);
+const QString A2B = QString("A%1B").arg(Unicode_Sub_2);
 
 const QString vmax = QString("v<sub>max</sub>");
 const QString Km = QString("K<sub>M</sub>");
 
-const QString S0 = QString("S<sub>0</sub>");
+const QString S0 = QString("S%1").arg(Unicode_Sub_0);
 
 const QString qAB = QString("q<sub>AB</sub>");
 const QString qAB2 = QString("q<sub>AB2</sub>");

@@ -100,10 +100,7 @@ const QJsonObject MonteCarloConfigBlock{
     { "Variance", 1e-3 }, // double
 
     /* Source of variance */
-    { "VarianceSource", 1 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma"
-
-    /* Choose newly added error randomly from the original error vector  -> Bootstrapping */
-    { "Bootstrap", false }, // bool
+    { "VarianceSource", 1 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma", 4 = "bootstrap"
 
     /* Use original data instead of the re-fitted data for monte carlo simulation  */
     { "OriginalData", false }, // bool

@@ -47,7 +47,6 @@
 StatisticDialog::StatisticDialog(QSharedPointer<AbstractModel> model, QWidget* parent)
     : QDialog(parent)
     , m_model(model)
-    , m_runs(1)
     , m_hidden(false)
 {
     setUi();
@@ -132,7 +131,6 @@ void StatisticDialog::setUi()
     connect(m_interrupt, SIGNAL(clicked()), this, SIGNAL(Interrupt()));
     connect(this, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
     setLayout(layout);
-    EnableWidgets();
     updateUI();
     CalculateError();
     setWindowTitle("Statistic Tools");
@@ -152,19 +150,19 @@ QWidget* StatisticDialog::MonteCarloWidget()
     layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
     layout->addWidget(m_mc_steps, 0, 1);
 
-    m_mc_std = new QRadioButton; //(tr("<html>Input &sigma;</html>"));
-    m_mc_std->setMaximumWidth(30);
-    m_mc_sey = new QRadioButton; //(tr("<html>SE<sub>y</sub>"));
-    m_mc_sey->setMaximumWidth(30);
-    m_mc_user = new QRadioButton; //(tr("<html>User defined &sigma;</html>"));
-    m_mc_user->setMaximumWidth(30);
+    m_mc_std = new QRadioButton;
+    m_mc_std->setText(tr("Input %1").arg(Unicode_sigma));
+    m_mc_sey = new QRadioButton;
+    m_mc_sey->setText(tr("SE%1").arg(Unicode_Sub_y));
+    m_mc_user = new QRadioButton;
+    m_mc_user->setText(tr("User defined %1").arg(Unicode_sigma));
 
     m_varianz_box = new QDoubleSpinBox;
     m_varianz_box->setDecimals(6);
     m_varianz_box->setSingleStep(1e-2);
     m_varianz_box->setMaximum(1e10);
 
-    layout->addWidget(new QLabel(tr("<html>Standard Deviation &sigma;</html>")), 1, 0);
+    layout->addWidget(new QLabel(tr("Standard Deviation %1").arg(Unicode_sigma)), 1, 0);
     layout->addWidget(m_varianz_box, 1, 1);
 
     QHBoxLayout* hlayout = new QHBoxLayout;
@@ -172,17 +170,13 @@ QWidget* StatisticDialog::MonteCarloWidget()
     hlayout->addWidget(new QLabel(tr("is taken as:")));
 
     hlayout->addWidget(m_mc_sey);
-    QLabel* txt = new QLabel(tr("<html>SE<sub>y</sub> from Model</html>"));
-    hlayout->addWidget(txt);
-
-
     hlayout->addWidget(m_mc_std);
-    txt = new QLabel(tr("<html>&sigma; from Model"));
-    hlayout->addWidget(txt);
-
     hlayout->addWidget(m_mc_user);
-    txt = new QLabel(tr("<html>manually defined &sigma;</html>"));
-    hlayout->addWidget(txt);
+
+    m_mc_bootstrap = new QRadioButton;
+    m_mc_bootstrap->setText(tr("or use bootstrapping"));
+    m_mc_bootstrap->setToolTip(tr("Using bootstrapping, no new errors will generated but rather the old error will randomly distributed on the model."));
+    hlayout->addWidget(m_mc_bootstrap);
 
     m_mc_sey->setChecked(true);
     m_varianz_box->setReadOnly(!m_mc_user->isChecked());
@@ -210,15 +204,18 @@ QWidget* StatisticDialog::MonteCarloWidget()
         }
     });
 
+    connect(m_mc_bootstrap, &QRadioButton::toggled, m_mc_bootstrap, [this]() {
+        if (m_mc_user->isChecked()) {
+            m_varianz_box->setReadOnly(!m_mc_user->isChecked());
+            m_varianz_box->setValue(1e-3);
+        }
+    });
+
     layout->addLayout(hlayout, 2, 0, 1, 2);
 
     m_original = new QCheckBox;
     m_original->setText(tr("Use Original Data"));
     layout->addWidget(m_original, 3, 0);
-
-    m_bootstrap = new QCheckBox;
-    m_bootstrap->setText(tr("Bootstrap"));
-    layout->addWidget(m_bootstrap, 3, 1);
 
     QVBoxLayout* indep_layout = new QVBoxLayout;
     if (m_model.data()) {
@@ -251,7 +248,6 @@ QWidget* StatisticDialog::MonteCarloWidget()
         emit RunCalculation(RunMonteCarlo());
     });
 
-    connect(m_bootstrap, SIGNAL(stateChanged(int)), this, SLOT(EnableWidgets()));
     mc_widget->setLayout(layout);
     return mc_widget;
 }
@@ -720,14 +716,15 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
     controller["Variance"] = m_varianz_box->value();
 
     if (m_mc_std->isChecked())
-        controller["VarianceSource"] = "sigma";
+        controller["VarianceSource"] = 3;
     else if (m_mc_sey->isChecked())
-        controller["VarianceSource"] = "SEy";
+        controller["VarianceSource"] = 2;
+    else if (m_mc_user->isChecked())
+        controller["VarianceSource"] = 1;
     else
-        controller["VarianceSource"] = "custom";
+        controller["VarianceSource"] = 4;
 
     controller["OriginalData"] = m_original->isChecked();
-    controller["Bootstrap"] = m_bootstrap->isChecked();
     controller["method"] = SupraFit::Method::MonteCarlo;
 
     QVector<qreal> indep_variance;
@@ -782,7 +779,8 @@ void StatisticDialog::MaximumSteps(int steps)
 
 void StatisticDialog::MaximumMainSteps(int steps)
 {
-    m_main_progress->setMaximum(steps);
+    m_main_steps = 0;
+    m_main_progress->setMaximum(steps * 100);
     m_main_progress->setValue(0);
 }
 
@@ -792,10 +790,7 @@ void StatisticDialog::IncrementProgress(int time)
     if (m_hidden)
         ShowWidget();
 
-    QTime timer(0,0);
-
     m_time += time;
-    timer = timer.addMSecs(m_time);
 
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     int val = m_progress->value() + 1;
@@ -806,15 +801,15 @@ void StatisticDialog::IncrementProgress(int time)
     if (m_progress->maximum() == -1) {
         m_time_info->setText(tr("Nobody knows when this will end.\nBut you hold the door for %2 sec, %3 msec. .").arg(sec).arg(msec));
     } else {
-        // m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 . .").arg(remain).arg(timer.toString("mm:ss.zzz")));
         m_time_info->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec, %3 msec .").arg(remain).arg(sec).arg(msec));
         m_progress->setValue(val);
+        m_main_progress->setValue(m_main_steps * 100 + val / double(m_progress->maximum()) * 100);
     }
 }
 
 void StatisticDialog::IncrementMainProgress()
 {
-    m_main_progress->setValue(m_main_progress->value() + 1);
+    m_main_steps++;
 }
 
 QString StatisticDialog::FOutput() const
@@ -833,6 +828,7 @@ void StatisticDialog::ShowWidget()
     m_time = 0;
     m_time_0 = QDateTime::currentMSecsSinceEpoch();
     m_progress->setValue(0);
+    m_hidden = false;
 }
 
 void StatisticDialog::HideWidget()
@@ -853,11 +849,6 @@ void StatisticDialog::Update()
 void StatisticDialog::Message(const QString& str)
 {
     m_message_box->setText(str);
-}
-
-void StatisticDialog::EnableWidgets()
-{
-    m_varianz_box->setEnabled(!m_bootstrap->isChecked());
 }
 
 void StatisticDialog::CalculateError()

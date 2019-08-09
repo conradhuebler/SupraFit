@@ -242,7 +242,9 @@ private:
                                                    << "thermogram_guidelines"
                                                    << "advanced_ui"
                                                    << "MetaSeries"
-                                                   << "UnsafeCopy";
+                                                   << "UnsafeCopy"
+                                                   << "EntropyBins"
+                                                   << "OverwriteBins";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

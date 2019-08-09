@@ -111,11 +111,11 @@ void AbstractItcModel::DeclareSystemParameter()
     setSystemParameterValue(InptUnit, 0);*/
 
     addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
-    QStringList plotmode = QStringList() << QString("[G%1]/[H%2").arg(sub_char).arg(sub_char)
-                                         << QString("[G%1]").arg(sub_char)
-                                         << "Number";
-    setSystemParameterList(PlotMode, plotmode);
-    setSystemParameterValue(PlotMode, plotmode[0]);
+    m_plotmode = QStringList() << QString("[G%1]/[H%2").arg(sub_char).arg(sub_char)
+                               << QString("[G%1]").arg(sub_char)
+                               << "Number";
+    setSystemParameterList(PlotMode, m_plotmode);
+    setSystemParameterValue(PlotMode, m_plotmode[0]);
 }
 
 void AbstractItcModel::DeclareOptions()
@@ -157,24 +157,32 @@ qreal AbstractItcModel::GuessFx()
     /* The inflection point can easily be obtained through 3-x-linear regression and using the
      * the mean x value of the intersections of 1-2 and 2-3
      */
+    double fx = 200.0;
+    int start = 0;
 
-    QVector<qreal> x, y;
+    while (fx > 100 && start < 10) // It may happen, that removing only the first point is not enough for a decent guess, so lets try always one point fewer -> till 10
+    {
+        start++;
+        QVector<qreal> x, y;
 
-    for (int i = 1; i < DataPoints(); ++i) {
-        x << PrintOutIndependent(i);
-        y << DependentModel()->data(0, i);
+        for (int i = start; i < DataPoints(); ++i) {
+            x << PrintOutIndependent(i);
+            y << DependentModel()->data(0, i);
+        }
+        QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);
+        PeakPick::MultiRegression regression = result.first();
+
+        qreal x1 = 0, x2 = 0;
+        int m = 0;
+        x1 = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
+        m = 1;
+
+        x2 = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
+
+        fx = (x1 + x2) / 2;
     }
-    QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);
-    PeakPick::MultiRegression regression = result.first();
 
-    qreal x1 = 0, x2 = 0;
-    int m = 0;
-    x1 = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
-    m = 1;
-
-    x2 = (regression.regressions[m].n - regression.regressions[m + 1].n) / (regression.regressions[m + 1].m - regression.regressions[m].m);
-
-    return (x1 + x2) / 2;
+    return fx;
 }
 
 qreal AbstractItcModel::GuessK(int index)
@@ -298,11 +306,11 @@ qreal AbstractItcModel::PrintOutIndependent(int i) const
     QString plotmode = getPlotMode();
 
     if (m_c0) {
-        if (plotmode == "[G<sub>0</sub>]/[H<sub>0</sub>]")
+        if (plotmode == m_plotmode[0])
             return InitialGuestConcentration(i) / InitialHostConcentration(i);
-        else if (plotmode == "[G<sub>0</sub>]")
+        else if (plotmode == m_plotmode[1])
             return InitialGuestConcentration(i);
-        else // if (plotmode == "Number")
+        else
             return i;
     } else
         return i;

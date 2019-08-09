@@ -41,7 +41,6 @@
 #include "montecarlostatistics.h"
 
 MonteCarloThread::MonteCarloThread()
-    // : m_minimizer(QSharedPointer<Minimizer>(new Minimizer(false, this), &QObject::deleteLater))
     : m_finished(false)
 {
     m_fit_thread = new NonLinearFitThread(false);
@@ -211,6 +210,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     m_model->setFast(true);
 
     qreal sigma = 0;
+    bool bootstrap = false;
 
     bool ok;
 
@@ -222,6 +222,8 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
             sigma = m_model->SEy();
         else if (source == 3)
             sigma = m_model->StdDeviation();
+        else if (source == 4)
+            bootstrap = true;
     } else {
         if (m_controller["VarianceSource"].toString() == "custom")
             sigma = m_controller["Variance"].toDouble();
@@ -229,8 +231,12 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
             sigma = m_model->SEy();
         else if (m_controller["VarianceSource"].toString() == "sigma")
             sigma = m_model->StdDeviation();
+        else if (m_controller["VarianceSource"].toString() == "bootstrap")
+            bootstrap = true;
     }
     Phi = std::normal_distribution<double>(0, sigma);
+
+    m_controller["Variance"] = sigma;
 
     int maxthreads = qApp->instance()->property("threads").toInt();
     int blocksize = maxthreads / maxthreads / 10;
@@ -246,7 +252,6 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
 
     bool original = m_controller["OriginalData"].toBool();
-    bool bootstrap = m_controller["Bootstrap"].toBool();
     int MaxSteps = m_controller["MaxSteps"].toInt();
 
     QVector<qreal> indep_variance = ToolSet::String2DoubleVec(m_controller["IndependentRowVariance"].toString());
@@ -260,7 +265,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 #ifdef _DEBUG
     qDebug() << "Starting MC Simulation with" << MaxSteps << "steps";
 #endif
-
+    emit setMaximumSteps(MaxSteps);
     QHash<int, Pair> block;
     for (int step = 0; step < MaxSteps; ++step) {
         QPointer<DataTable> dep_table;

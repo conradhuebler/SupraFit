@@ -51,7 +51,7 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     m_layout->addWidget(m_mainwidget, 0, 0);
 
     m_results = new QListView;
-    m_results->setMaximumWidth(200);
+    m_results->setMaximumWidth(250);
     m_results->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_results->setContextMenuPolicy(Qt::ActionsContextMenu);
     connect(m_results, &QListView::doubleClicked, this, &ResultsDialog::itemDoubleClicked);

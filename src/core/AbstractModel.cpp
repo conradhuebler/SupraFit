@@ -996,7 +996,6 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
     int copy_model = topjson["model"].toInt();
     bool unsafe_copy = qApp->instance()->property("UnsafeCopy").toBool();
-    qDebug() << unsafe_copy << SFModel() << copy_model;
 
     if (copy_model != SFModel()) {
         if (!unsafe_copy) {

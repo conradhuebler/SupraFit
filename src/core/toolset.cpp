@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -294,7 +294,7 @@ void Normalise(QVector<QPair<qreal, qreal>>& hist)
         hist[i].second = hist[i].second / max;
 }
 
-QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bins, qreal min, qreal max)
+QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int& bins, qreal min, qreal max)
 {
     if (vector.size() == 0)
         return QVector<QPair<qreal, qreal>>() << QPair<qreal, qreal>(0, 0);
@@ -318,6 +318,8 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
         else
             bins = 10;
     }
+    //    if(bins > vector.size())
+    //        bins = vector.size()/2;
     /* I have forgotten where I found that piece of code ... - so no link here*/
 
     QVector<QPair<qreal, int>> hist;
@@ -341,7 +343,6 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int bi
 
     for (int i = 0; i < hist.size(); ++i)
             histogram << QPair<qreal, qreal>(hist[i].first, hist[i].second);
-
     return histogram;
 }
 
@@ -823,7 +824,12 @@ QString Html2Tex(const QString& str)
 QString TextFromConfidence(const QJsonObject& result, const QJsonObject& controller)
 {
     int type = controller["method"].toInt();
-    int bins = controller["bins"].toInt(500);
+
+    int bins;
+    if (qApp->instance()->property("OverwriteBins").toBool())
+        bins = qApp->instance()->property("EntropyBins").toInt();
+    else
+        bins = controller["EntropyBins"].toInt(qApp->instance()->property("EntropyBins").toInt());
 
     qreal value = result["value"].toDouble();
 
@@ -836,7 +842,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
     QString const_name;
     //text += "<table><tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
-    if (type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::ModelComparison || type == SupraFit::Method::WeakenedGridSearch || type == SupraFit::Method::FastConfidence) {
+    if (type == SupraFit::Method::CrossValidation || type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::ModelComparison || type == SupraFit::Method::WeakenedGridSearch || type == SupraFit::Method::FastConfidence) {
 
         text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td>" + Print::printDouble(value, 4) + " [+ " + Print::printDouble(upper - value, 4) + " / " + Print::printDouble(lower - value, 4) + "]</td></tr>";
         text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[" + Print::printDouble(lower, 4) + " - " + Print::printDouble(upper, 4) + "]</td></tr>";
@@ -851,7 +857,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
             else
                 text += QString("<p>Leave-%1-Out Cross Validation</p>").arg(controller["X"].toInt());
         } else {
-            text += QString("<p>Input variance is %1</p>").arg(Print::printDouble(controller["variance"].toDouble(), 6));
+            if (controller["VarianceSource"].toInt() != 4)
+                text += QString("<p>Input variance is %1</p>").arg(Print::printDouble(controller["Variance"].toDouble(), 6));
+            else
+                text += QString("<p>Bootstrapping has been used.</p>");
         }
         QVector<qreal> list = ToolSet::String2DoubleVec(result["data"].toObject()["raw"].toString());
         QVector<QPair<qreal, qreal>> histogram = ToolSet::List2Histogram(list, bins);
@@ -1061,7 +1070,7 @@ QString printConcentration(double concentration, int prec)
     QString result;
 
     // if (concentration < 1e-3)
-    result = QString("%1 %2M").arg(concentration * 1e6, prec).arg(QChar(956));
+    result = QString("%1 %2M").arg(concentration * 1e6, prec).arg(Unicode_mu);
     /* else if (concentration < 1e-1)
         result = QString("%1 mM").arg(concentration * 1e3, prec);
     else
