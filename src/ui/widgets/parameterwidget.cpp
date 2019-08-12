@@ -48,6 +48,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         QPointer<SpinBox> box = new SpinBox;
         box->setMinimum(-1e10);
         box->setMaximum(1e10);
+        box->setDecimals(5);
         box->setValue(m_model.data()->LocalParameter(i, 0));
         connect(m_model.data(), &AbstractModel::Recalculated, box,
             [i, box, check, this, widget]() {

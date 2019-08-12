@@ -833,7 +833,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
     qreal value = result["value"].toDouble();
 
-    QString text = QString("<p> --- statistic block --- </p><p>%1</p>").arg(result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value, 4));
+    QString text = QString("\n\n\n<p>%1</p>").arg(result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value, 4));
 
     QJsonObject confidence = result["confidence"].toObject();
     qreal upper = confidence["upper"].toDouble();
@@ -875,8 +875,8 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         else
             box = ToolSet::BoxWhiskerPlot(list.toList());
 
-        text += "<tr><td colspan='2'>Analyse of the Monte Carlo Histogram</td></tr>\n";
-        text += "<tr><td>Median: </td><td> <b>" + Print::printDouble(box.median, 4) + "</b></td></tr>\n";
+        text += "<tr><td colspan='2'>Analyse of the Monte Carlo Histogram</td></tr>";
+        text += "<tr><td>Median: </td><td> <b>" + Print::printDouble(box.median, 4) + "</b></td></tr>";
         text += "<tr><td>Notches: </td><td> <b>" + Print::printDouble(box.LowerNotch(), 4) + " - " + Print::printDouble(box.UpperNotch(), 4) + "</b></td></tr>";
         text += QString("<tr><td>Entropy H(X):</td><td>%1<td></tr>").arg(Print::printDouble(pair.first, 6));
         text += QString("<tr><td>Standard deviation from mean:</td><td>%1<td></tr>").arg(Print::printDouble(box.stddev, 6));
@@ -909,18 +909,18 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         QVector<qreal> x = ToolSet::String2DoubleVec(result["data"].toObject()["x"].toString());
         QVector<qreal> y = ToolSet::String2DoubleVec(result["data"].toObject()["y"].toString());
         qreal integral = DiscreteIntegrate(x, y);
-        text += QString("<tr><td>Integral below curve:</td><td> %1 <b></td></tr>\n").arg(Print::printDouble(integral)); //.arg( result["steps"].toInt() ).arg(color_end);
+        text += QString("<tr><td>Integral below curve:</td><td> %1 <b></td></tr>").arg(Print::printDouble(integral)); //.arg( result["steps"].toInt() ).arg(color_end);
 
-        text += "<tr><td colspan='2'>Analyse of the Grid Search Outcome</td></tr>\n";
-        text += QString("<tr><td>%1 Steps: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(result["StepsTaken"].toInt()).arg(color_end);
-        text += QString("<tr><td>%1 Converged: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(converged)).arg(color_end);
-        text += QString("<tr><td>%1 Stationary: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(stationary)).arg(color_end);
-        text += QString("<tr><td>%1 Finished: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(finished)).arg(color_end);
-        text += QString("<tr><td>%1 OvershotCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(OvershotCounter).arg(color_end);
-        text += QString("<tr><td>%1 ErrorDecreaseCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ErrorDecreaseCounter).arg(color_end);
-        text += QString("<tr><td>%1 ErrorConvergencyCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ErrorConvergencyCounter).arg(color_end);
+        text += "<tr><td colspan='2'>Analyse of the Grid Search Outcome</td></tr>";
+        text += QString("<tr><td>%1 Steps: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(result["StepsTaken"].toInt()).arg(color_end);
+        text += QString("<tr><td>%1 Converged: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ToolSet::bool2YesNo(converged)).arg(color_end);
+        text += QString("<tr><td>%1 Stationary: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ToolSet::bool2YesNo(stationary)).arg(color_end);
+        text += QString("<tr><td>%1 Finished: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ToolSet::bool2YesNo(finished)).arg(color_end);
+        text += QString("<tr><td>%1 OvershotCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(OvershotCounter).arg(color_end);
+        text += QString("<tr><td>%1 ErrorDecreaseCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ErrorDecreaseCounter).arg(color_end);
+        text += QString("<tr><td>%1 ErrorConvergencyCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ErrorConvergencyCounter).arg(color_end);
 
-        text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>\n").arg(color_start).arg(ToolSet::bool2YesNo(fine)).arg(color_end);
+        text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ToolSet::bool2YesNo(fine)).arg(color_end);
 
         text += "<tr><td colspan=2></th></tr>";
         text += QString("<tr><td colspan='2'>%8 & %1 & \\ce{^{+%2}_{%3}} & %4 & %5 & %6 & %7\\\\[2mm]</td>").arg(Print::printDouble(value, 4)).arg(Print::printDouble(upper - value, 4)).arg(Print::printDouble(lower - value, 4)).arg(Print::printDouble(lower, 4)).arg(Print::printDouble(upper, 4)).arg(Print::printDouble(integral, 4)).arg(ToolSet::bool2YesNo(fine)).arg(Html2Tex(result["name"].toString()));
@@ -980,7 +980,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
             text += QString("<tr><th colspan='2'>Ratio of the Standard deviation is %1, compared to the original %2!</th></tr>").arg(stdev_good / stdev_bad).arg(stdev_full);
         }
     }
-    text += "<tr><td></td></tr></table><p> ... done ...</p>";
+    text += "</table>";
     return text;
 }
 
@@ -1077,5 +1077,17 @@ QString printConcentration(double concentration, int prec)
         result = QString("%1 M").arg(concentration, prec);
     */
     return result;
+}
+
+QString Html2Raw(QString text)
+{
+    for (const QString& str : qAsConst(tags))
+        text.replace(str, "");
+    text.replace("</p>", "\n");
+    text.replace("</tr>", "\n");
+    text.replace("</td>", "\t");
+    text.replace("</th>", "\t");
+
+    return text;
 }
 }

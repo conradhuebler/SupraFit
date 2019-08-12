@@ -69,7 +69,7 @@ QJsonObject AbstractSearchClass::Result() const
     QJsonObject controller = Controller();
     controller["title"] = m_model->Name();
     controller["timestamp"] = QDateTime::currentMSecsSinceEpoch();
-
+    controller.remove("Repeat");
     QJsonObject models;
     for (int i = 0; i < m_models.size(); ++i)
         models[QString::number(i)] = m_models[i];

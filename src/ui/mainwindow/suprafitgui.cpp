@@ -731,14 +731,17 @@ SupraFitGui::SupraFitGui()
 
     setActionEnabled(false);
     setStyleSheet("QSplitter::handle:vertical {"
-                  "background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
+                  "background: qlineargradient(x1:0, y1:0, x2:1, y2:1;"
                   "stop:0 #eee, stop:1 #ccc);"
                   "border: 1px solid #777;"
                   "height: 1px;"
                   "margin-top: 2px;"
                   "margin-bottom: 2px;"
                   "border-radius: 4px;"
-                  "}");
+                  "}"
+                  "QDockWidget {"
+                  "border: 1px solid #777;"
+                  "background: qlineargradient(x1:0, y1:0, x2:1, y2:1;}");
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeDoubleClicked);
     connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
@@ -822,6 +825,7 @@ void SupraFitGui::LoadFile(const QString& file)
 void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
+    m_save_as->setEnabled(enabled);
 }
 
 void SupraFitGui::UpdateRecentList()

@@ -81,8 +81,8 @@ QStringList Simulator::Generate()
 
     int runs = m_mainjson["MaxSteps"].toInt();
     double std = m_mainjson["Variance"].toDouble();
-    if (runs < 1 || std <= 0)
-        return filelist;
+    //if (runs < 1 || std <= 0)
+    //    return filelist;
 
     if (m_mainjson.contains("OutFile")) {
         m_outfile = m_mainjson["OutFile"].toString();
@@ -98,13 +98,15 @@ QStringList Simulator::Generate()
         std::cout << "Generating new Data Table for Monte Carlo Simulation" << std::endl;
         std::normal_distribution<double> Phi = std::normal_distribution<double>(0, std);
         m_data->DependentModel()->ImportTable(table);
-        QPointer<DataTable> model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
 #ifdef _DEBUG
-        model_table->Debug();
+        // model_table->Debug();
         m_data->DependentModel()->Debug();
 #endif
         QPointer<DataClass> data = new DataClass(m_data);
-        data->setDependentTable(model_table);
+        if (!qFuzzyCompare(std, 0)) {
+            QPointer<DataTable> model_table = m_data->DependentModel()->PrepareMC(Phi, rng);
+            data->setDependentTable(model_table);
+        }
         data->NewUUID();
 #ifdef _DEBUG
         data->IndependentModel()->Debug();

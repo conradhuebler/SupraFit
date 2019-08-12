@@ -98,32 +98,32 @@ void Thermogram::setUi()
     m_CellVolume = new QLineEdit;
     //m_CellVolume->setMaximumWidth(100);
 
-    connect(m_CellVolume, &QLineEdit::textEdited, m_CellVolume, [this](const QString& str) {
-        this->m_systemparameter[QString::number(AbstractItcModel::CellVolume)] = str;
+    connect(m_CellVolume, &QLineEdit::textEdited, m_CellVolume, [this](QString str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::CellVolume)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
     });
 
     m_CellConcentration = new QLineEdit;
     //m_CellConcentration->setMaximumWidth(100);
 
-    connect(m_CellConcentration, &QLineEdit::textEdited, m_CellConcentration, [this](const QString& str) {
-        this->m_systemparameter[QString::number(AbstractItcModel::CellConcentration)] = str;
+    connect(m_CellConcentration, &QLineEdit::textEdited, m_CellConcentration, [this](QString str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::CellConcentration)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
     });
 
     m_SyringeConcentration = new QLineEdit;
     //m_SyringeConcentration->setMaximumWidth(100);
 
-    connect(m_SyringeConcentration, &QLineEdit::textEdited, m_SyringeConcentration, [this](const QString& str) {
-        this->m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)] = str;
+    connect(m_SyringeConcentration, &QLineEdit::textEdited, m_SyringeConcentration, [this](QString str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
     });
 
     m_Temperature = new QLineEdit;
     //m_Temperature->setMaximumWidth(100);
 
-    connect(m_Temperature, &QLineEdit::textEdited, m_Temperature, [this](const QString& str) {
-        this->m_systemparameter[QString::number(AbstractItcModel::Temperature)] = str;
+    connect(m_Temperature, &QLineEdit::textEdited, m_Temperature, [this](QString str) {
+        this->m_systemparameter[QString::number(AbstractItcModel::Temperature)] = str.replace(",", ".");
         this->m_UseParameter->setChecked(true);
     });
 

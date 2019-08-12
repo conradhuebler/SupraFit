@@ -198,6 +198,20 @@ bool MonteCarloStatistics::Run()
     m_results = ToolSet::Model2Parameter(m_models);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
 
+    for (int i = 0; i < m_results.count(); ++i) {
+        QJsonObject data = m_results[i];
+        if (data.isEmpty())
+            continue;
+        QList<qreal> list = ToolSet::String2DoubleList(data["data"].toObject()["raw"].toString());
+        SupraFit::ConfidenceBar bar = ToolSet::Confidence(list, 100 - m_controller["confidence"].toDouble());
+        QJsonObject confidence;
+        confidence["lower"] = bar.lower;
+        confidence["upper"] = bar.upper;
+        confidence["error"] = m_controller["confidence"].toDouble();
+        data["confidence"] = confidence;
+        m_results[i] = data;
+    }
+
     return true;
 }
 

@@ -113,10 +113,26 @@ void JobManager::RunJobs()
     m_jobs.clear();
 }
 
+void JobManager::AddJob(const QJsonObject& job)
+{
+    if (!job.contains("Repeat"))
+        m_jobs << job;
+    else {
+        int repeat = job["Repeat"].toInt();
+        for (int i = 0; i < repeat; ++i)
+            m_jobs << job;
+    }
+}
+
 QJsonObject JobManager::RunModelComparison(const QJsonObject& job)
 {
+    QJsonObject block = QJsonObject(ModelComparisonConfigBlock);
+
+    for (const QString& key : job.keys())
+        block[key] = job[key];
+
     m_modelcomparison_handler->setModel(m_model);
-    m_modelcomparison_handler->setController(job);
+    m_modelcomparison_handler->setController(block);
     m_modelcomparison_handler->Run();
 
     QJsonObject result = m_modelcomparison_handler->Result();
@@ -127,8 +143,12 @@ QJsonObject JobManager::RunModelComparison(const QJsonObject& job)
 
 QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
 {
-    int MaxSteps = job["MaxSteps"].toInt();
-    m_montecarlo_handler->setController(job);
+    QJsonObject block = QJsonObject(MonteCarloConfigBlock);
+
+    for (const QString& key : job.keys())
+        block[key] = job[key];
+
+    m_montecarlo_handler->setController(block);
 
     m_montecarlo_handler->setModel(m_model);
     m_montecarlo_handler->Run();
@@ -140,9 +160,13 @@ QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
 
 QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 {
+    QJsonObject block = QJsonObject(GridSearchConfigBlock);
+
+    for (const QString& key : job.keys())
+        block[key] = job[key];
 
     m_gridsearch_handler->setModel(m_model);
-    m_gridsearch_handler->setController(job);
+    m_gridsearch_handler->setController(block);
     m_gridsearch_handler->Run();
 
     QJsonObject result = m_gridsearch_handler->Result();
@@ -152,8 +176,13 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
 
 QJsonObject JobManager::RunResample(const QJsonObject& job)
 {
+    QJsonObject block = QJsonObject(ResampleConfigBlock);
+
+    for (const QString& key : job.keys())
+        block[key] = job[key];
+
     m_resample_handler->setModel(m_model);
-    m_resample_handler->setController(job);
+    m_resample_handler->setController(block);
     m_resample_handler->Run();
 
     QJsonObject result = m_resample_handler->Result();

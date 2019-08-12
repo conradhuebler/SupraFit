@@ -124,7 +124,6 @@ int main(int argc, char** argv)
             QStringList data_files;
             QJsonObject job;
             JsonHandler::ReadJsonFile(job, str);
-            qDebug() << job;
             if (job.keys().contains("main")) {
 
                 Simulator* simulator = new Simulator;

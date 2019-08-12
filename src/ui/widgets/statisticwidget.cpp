@@ -71,7 +71,7 @@ void StatisticWidget::Update()
     overview += "<tr><td>f-Value</td><td><b>" + Print::printDouble(m_model.data()->finv(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
     overview += "<tr><td>Mean Error in Model:</td><td><b> " + Print::printDouble(m_model.data()->MeanError()) + "</b></td></tr>\n";
     overview += "<tr><td>Variance of Error:</td><td><b>" + Print::printDouble(m_model.data()->Variance()) + "</b></td></tr>\n";
-    overview += "<tr><td>Standard deviation &sigma;:</td><td><b>" + Print::printDouble(m_model.data()->StdDeviation()) + "</b></td></tr>\n";
+    overview += "<tr><td>Standard deviation &sigma;<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.data()->StdDeviation()) + "</b></td></tr>\n";
     overview += "<tr><td>Standard Error:</td><td><b>" + Print::printDouble(m_model.data()->StdError()) + "</b></td></tr>\n";
     overview += "<tr><td>SE<sub>y</sub>:</td><td><b>" + Print::printDouble(m_model.data()->SEy()) + "</b></td></tr>\n";
     overview += "<tr><td>&chi;:</td><td><b>" + Print::printDouble(m_model.data()->ChiSquared()) + "</b></td></tr>\n";

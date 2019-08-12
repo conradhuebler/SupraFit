@@ -291,10 +291,11 @@ void AbstractModel::Calculate()
     for (int i = 0; i < m_used_series.size(); ++i)
         m_mean_series[i] /= double(m_used_series[i]);
 
+    double degree_freedom = m_used_variables - Parameter();
     m_variance = CalculateVariance();
     m_stderror = qSqrt(m_variance) / qSqrt(m_used_variables);
-    m_SEy = qSqrt(m_sum_squares / (m_used_variables - LocalParameterSize() - GlobalParameterSize()));
-    m_chisquared = qSqrt(m_sum_squares / (m_used_variables - LocalParameterSize() - GlobalParameterSize() - 1));
+    m_SEy = qSqrt(m_sum_squares / degree_freedom);
+    m_chisquared = qSqrt(m_sum_squares / (degree_freedom - 1));
     //FIXME sometimes ...
     m_covfit = 0; //CalculateCovarianceFit();
 

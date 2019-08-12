@@ -99,6 +99,9 @@ const QJsonObject MonteCarloConfigBlock{
     /* Variance to used */
     { "Variance", 1e-3 }, // double
 
+    /* Confidence in % */
+    { "confidence", 95 }, //double
+
     /* Source of variance */
     { "VarianceSource", 1 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma", 4 = "bootstrap"
 
@@ -189,7 +192,7 @@ public:
     ~JobManager();
 
     inline void setModel(const QSharedPointer<AbstractModel>& model) { m_model = model; }
-    inline void AddJob(const QJsonObject& job) { m_jobs << job; }
+    void AddJob(const QJsonObject& job);
 
     void RunJobs();
 

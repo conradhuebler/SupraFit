@@ -216,7 +216,6 @@ QTableView* SearchResultWidget::BuildList()
                 j++;
             }
         }
-        qDebug() << local_model;
         m_models << local_model; //["model"].toObject();
     }
 

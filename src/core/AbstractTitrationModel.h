@@ -75,9 +75,9 @@ public:
     inline virtual QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("&delta; A");
+            return tr("%1 A").arg(Unicode_delta);
         else
-            return tr("&delta; %1").arg(SpeciesName(i - 1));
+            return tr("%1 %2").arg(Unicode_delta).arg(SpeciesName(i - 1));
     }
 
     // virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;

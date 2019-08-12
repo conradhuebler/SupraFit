@@ -31,7 +31,7 @@
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QStyledItemDelegate>
-
+/*
 class HTMLDelegate : public QStyledItemDelegate {
 public:
     HTMLDelegate(QObject* parent)
@@ -72,7 +72,7 @@ protected:
         return QSize(doc.idealWidth(), doc.size().height());
     }
 };
-
+*/
 class SystemParameterWidget : public QGroupBox {
     Q_OBJECT
 

@@ -40,7 +40,7 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, b
     m_boolbox = new QCheckBox;
     // m_boolbox->setDisabled(m_readonly);
     m_list = new QComboBox;
-    m_list->setItemDelegate(new HTMLDelegate(this));
+    // m_list->setItemDelegate(new HTMLDelegate(this));
     // m_list->setDisabled(m_readonly);
 
     QLabel* label = new QLabel(parameter.Description());
@@ -87,9 +87,12 @@ SystemParameter SystemParameterWidget::Value()
 
 void SystemParameterWidget::setValue(const SystemParameter& parameter)
 {
-    m_change = true;
     QVariant variant = parameter.value();
-    if (m_parameter.isScalar() || m_parameter.isString())
+    if (variant == m_textfield->text() && !m_parameter.isBool())
+        return;
+
+    m_change = true;
+    if (m_parameter.isScalar() || m_parameter.isString() && variant != m_textfield->text())
         m_textfield->setText(variant.toString());
     else if (m_parameter.isBool())
         m_boolbox->setChecked(variant.toBool());

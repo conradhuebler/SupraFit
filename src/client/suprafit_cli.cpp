@@ -74,8 +74,8 @@ void SupraFitCli::PrintFileContent(int index)
         if (key.contains("model")) {
             QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(m_toplevel[key].toObject(), data);
             if (index == 0 || i == index) {
-                std::cout << model->ModelInfo().toStdString() << std::endl;
-                std::cout << model->AnalyseStatistic().toStdString() << std::endl;
+                std::cout << Print::Html2Raw(model->ModelInfo()).toStdString() << std::endl;
+                std::cout << Print::Html2Raw(model->AnalyseStatistic()).toStdString() << std::endl;
             }
         }
         ++i;

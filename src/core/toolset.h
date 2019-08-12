@@ -100,10 +100,25 @@ qreal GHE(qreal G, qreal H, qreal T);
 }
 
 namespace Print {
+const QStringList tags = QStringList() << "<html>"
+                                       << "</html>"
+                                       << "<table>"
+                                       << "</table>"
+                                       << "<tr>"
+                                       << "<td>"
+                                       << "<th>"
+                                       << "<td colspan='2'>"
+                                       << "<td colspan=2>"
+                                       << "<font color='red'>"
+                                       << "</font>"
+                                       << "<p>"
+                                       << "<b>"
+                                       << "</b>";
 QString Html2Tex(const QString& str);
 QString TextFromConfidence(const QJsonObject& result, const QJsonObject& controller);
 QString TextFromStatistic(const QJsonObject& result);
 
 QString printDouble(double number, int prec = -1);
 QString printConcentration(double concentration, int prec = 3);
+QString Html2Raw(QString str);
 }
