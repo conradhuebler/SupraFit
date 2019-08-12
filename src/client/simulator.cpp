@@ -21,6 +21,7 @@
 #include <QCoreApplication>
 
 #include <QtCore/QDateTime>
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 #include <QtCore/QTimer>
 
@@ -81,14 +82,16 @@ QStringList Simulator::Generate()
 
     int runs = m_mainjson["MaxSteps"].toInt();
     double std = m_mainjson["Variance"].toDouble();
-    //if (runs < 1 || std <= 0)
-    //    return filelist;
+
+    if (qFuzzyCompare(std, 0))
+        runs = 1;
 
     if (m_mainjson.contains("OutFile")) {
         m_outfile = m_mainjson["OutFile"].toString();
     }
 
     QJsonObject table = m_data->DependentModel()->ExportTable(true);
+    int file_int = 0;
     for (int i = 0; i < runs; ++i) {
         std::cout << "########################################################################################################" << std::endl;
         std::cout << "########################################################################################################" << std::endl
@@ -152,8 +155,11 @@ QStringList Simulator::Generate()
             models.clear();
         }
 
-        QString outfile = QString(m_outfile + "_" + QString::number(i) + m_extension);
-
+        QString outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+        while (QFileInfo::exists(outfile)) {
+            ++file_int;
+            outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+        }
         if (SaveFile(outfile, exp_level))
             filelist << outfile;
     }
@@ -185,29 +191,3 @@ QVector<QSharedPointer<AbstractModel>> Simulator::AddModels(const QJsonObject& m
     return models;
 }
 
-/*
-void Simulator::Progress(int i, int max)
-{
-    m_current += 1;
-    double percentage = m_current / 1000.0;
-
-    if ((int(percentage) % 10) != 0) {
-        return;
-    }
-
-    int barWidth = 70;
-
-    std::cout << "[";
-    int pos = barWidth * percentage;
-    for (int i = 0; i < barWidth; ++i) {
-        if (i < pos)
-            std::cout << "=";
-        else if (i == pos)
-            std::cout << ">";
-        else
-            std::cout << " ";
-    }
-    std::cout << "] " << int(percentage * 100.0) << " %\r";
-    std::cout.flush();
-}
-*/

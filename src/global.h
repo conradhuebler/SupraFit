@@ -24,6 +24,7 @@
 
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDateTime>
 #include <QtCore/QJsonObject>
 #include <QtCore/QVariant>
 #include <QtCore/QVector>
@@ -31,6 +32,7 @@
 #include <QtCore/QtMath>
 
 #include <cmath>
+#include <iostream>
 
 const QString Unicode_Phi = QChar(0x03C6);
 const QString Unicode_delta = QChar(0x03B4);
@@ -48,6 +50,22 @@ const QString Unicode_Sub_y = QChar(0x0079); // not really
 // const QString Unicode_Sub_AB = QString("%1%2").arg(QChar("A")).arg(QChar("B")); //does not exist yet
 
 namespace SupraFit {
+
+struct timer {
+    inline timer() { t0 = QDateTime::currentMSecsSinceEpoch(); }
+    inline ~timer()
+    {
+        QTime time(0, 0, 0);
+        qint64 t1 = QDateTime::currentMSecsSinceEpoch();
+
+        std::cout << "SupraFit finished after " << time.addMSecs(t1 - t0).toString("hh").toStdString() << " hours "
+                  << time.addMSecs(t1 - t0).toString("mm").toStdString() << " minutes "
+                  << time.addMSecs(t1 - t0).toString("ss").toStdString() << " seconds "
+                  << time.addMSecs(t1 - t0).toString("zzz").toStdString() << " milliseconds!"
+                  << std::endl;
+    }
+    qint64 t0;
+};
 
 enum Method {
     MonteCarlo = 1,

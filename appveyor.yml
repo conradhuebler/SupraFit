@@ -38,5 +38,4 @@ deploy:
   artifact: SupraFit_x64,SupraFit_x32
   skip_tags: true
   force_update: true
-  skip_commits:
-    message: /\[README\]/
+

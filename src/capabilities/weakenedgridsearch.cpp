@@ -311,9 +311,6 @@ bool WeakenedGridSearch::Run()
         for (const auto& sublob : blob)
             m_results << sublob;
 
-    if (!m_controller["StoreIntermediate"].toBool())
-        m_models.clear();
-
     return converged;
 }
 

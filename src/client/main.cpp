@@ -31,10 +31,10 @@
 #include "src/global_config.h"
 #include "src/version.h"
 
-#include <QDebug>
-
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
+#include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 
 #include <QtCore/QRandomGenerator>
 #include <QCoreApplication>
@@ -43,6 +43,8 @@
 
 int main(int argc, char** argv)
 {
+
+    SupraFit::timer t;
     qInstallMessageHandler(myMessageOutput);
 
     QCoreApplication app(argc, argv);

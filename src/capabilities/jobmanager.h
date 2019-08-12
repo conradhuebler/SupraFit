@@ -83,7 +83,10 @@ const QJsonObject ModelComparisonConfigBlock{
     { "LocalParameterScalingList", "" }, // strings, to be converted to QVector<double>
 
     /* Series in FastConfidence */
-    { "IncludeSeries", true }
+    { "IncludeSeries", true },
+
+    /* Store intermediate results, may result in large json blocks */
+    { "StoreRaw", true }, //bool
 };
 
 /* Monte Carlo Settings */
@@ -111,7 +114,10 @@ const QJsonObject MonteCarloConfigBlock{
     /* Apply random numbers to the input vector/matrix
      * [0] - first row
        [1] - second row etc ... */
-    { "IndependentRowVariance", "" } // strings, to be converted to QVector<double>
+    { "IndependentRowVariance", "" }, // strings, to be converted to QVector<double>
+
+    /* Store intermediate results, may result in large json blocks */
+    { "StoreRaw", false }, //bool
 
 };
 
@@ -135,6 +141,9 @@ const QJsonObject ResampleConfigBlock{
 
     /* Set Runtype for Reduction Analysis */
     { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards
+
+    /* Store intermediate results, may result in large json blocks */
+    { "StoreRaw", false }, //bool
 
 };
 
@@ -176,7 +185,7 @@ const QJsonObject GridSearchConfigBlock{
     { "ScalingFactor", -4 }, // int
 
     /* Store intermediate results, may result in large json blocks */
-    { "intermediate", false }, //bool
+    { "StoreRaw", false }, //bool
 
     /* Define the global and local parameter to be tested - this list should not be empty
      * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/

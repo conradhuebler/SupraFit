@@ -32,7 +32,7 @@
 
 int main(int argc, char** argv)
 {
-
+    SupraFit::timer time;
     qInstallMessageHandler(myMessageOutput);
 
     QApplication app(argc, argv);

@@ -73,7 +73,7 @@ QJsonObject AbstractSearchClass::Result() const
     QJsonObject models;
     for (int i = 0; i < m_models.size(); ++i)
         models[QString::number(i)] = m_models[i];
-    if (m_models.size()) {
+    if (m_models.size() && m_controller["StoreRaw"].toBool()) {
         if (models["0"].toObject() == m_models[0])
             controller["raw"] = models;
         else
