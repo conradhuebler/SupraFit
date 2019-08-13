@@ -97,6 +97,8 @@ The first column contains the injected volume while the second columns has to co
 
 SupraFit supports import of *.itc and plain x-y files with peak integration and some basic base line corrections. Alternatively *.dH files from Origin can be loaded right away.
 Plain x-y files for thermograms should look like:
+
+|   |   |
 |:-----:|:----:|
 | 2 | -0.001 |
 | 4 | -0.001 |
