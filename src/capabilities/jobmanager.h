@@ -87,6 +87,10 @@ const QJsonObject ModelComparisonConfigBlock{
 
     /* Store intermediate results, may result in large json blocks */
     { "StoreRaw", true }, //bool
+
+    /* Store as few data as possible */
+    { "LightWeight", false }, //bool
+
 };
 
 /* Monte Carlo Settings */
@@ -119,6 +123,9 @@ const QJsonObject MonteCarloConfigBlock{
     /* Store intermediate results, may result in large json blocks */
     { "StoreRaw", false }, //bool
 
+    /* Store as few data as possible */
+    { "LightWeight", false }, //bool
+
 };
 
 /* Resample Methods Settings */
@@ -144,6 +151,9 @@ const QJsonObject ResampleConfigBlock{
 
     /* Store intermediate results, may result in large json blocks */
     { "StoreRaw", true }, //bool
+
+    /* Store as few data as possible */
+    { "LightWeight", false }, //bool
 
     /* Calculate Left-Out Points */
     { "LeftOutPoints", false } //bool
@@ -190,6 +200,9 @@ const QJsonObject GridSearchConfigBlock{
     /* Store intermediate results, may result in large json blocks */
     { "StoreRaw", false }, //bool
 
+    /* Store as few data as possible */
+    { "LightWeight", false }, //bool
+
     /* Define the global and local parameter to be tested - this list should not be empty
      * when a grid search is performed, otherwise nothing happens at all, or it crashes ...*/
     { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
@@ -228,6 +241,7 @@ private:
     QPointer<GlobalSearch> m_globalsearch;
 
     bool m_working = false;
+    bool m_interrupt = false;
 signals:
     void started();
     void finished(int current, int all, int time);

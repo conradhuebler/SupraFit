@@ -257,7 +257,7 @@ bool WeakenedGridSearch::Run()
         qreal upper = pair.first->Last();
         qreal lower = pair.second->Last();
         QJsonObject result;
-        qDebug() << m_model.data()->ActiveSignals();
+
         QPair<int, int> index_pair = m_model.data()->IndexParameters(index);
         if (index_pair.second == 0) {
             result["name"] = m_model.data()->GlobalParameterName(index);
@@ -271,7 +271,11 @@ bool WeakenedGridSearch::Run()
 
             result["name"] = m_model.data()->LocalParameterName(index_pair.first);
             result["type"] = "Local Parameter";
-            result["index"] = QString::number(index_pair.first) + "|" + QString::number(indices[series - 1]);
+            // We will just prevent a crash here, but this is not the nice solution
+            if (indices.size())
+                result["index"] = QString::number(index_pair.first) + "|" + QString::number(indices[series - 1]);
+            else // so for metamodels we count the series up ...
+                result["index"] = QString::number(index_pair.first) + "|" + QString::number(series);
 
             jndex = index_pair.first;
         }

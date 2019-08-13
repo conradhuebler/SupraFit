@@ -901,11 +901,25 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         int ErrorDecreaseCounter = result["ErrorDecreaseCounter"].toInt();
         int ErrorConvergencyCounter = result["ErrorConvergencyCounter"].toInt();
 
+        QString increase_OvershotCounter = QString(), increase_ErrorDecreaseCounter = QString(), increase_ErrorConvergencyCounter = QString(), increase_MaxSteps = QString();
         QString color_start, color_end;
+
         if(!fine)
         {
             color_start = "<font color='red'>";
             color_end = "</font>";
+
+            if (result["StepsTaken"].toInt() > controller["MaxSteps"].toInt())
+                increase_MaxSteps = "Maybe increase MaxSteps or increase ScalingFactor.";
+
+            if (OvershotCounter > controller["OvershotCounter"].toInt())
+                increase_OvershotCounter = "Maybe increase OvershotCounter.";
+
+            if (ErrorDecreaseCounter > controller["ErrorDecreaseCounter"].toInt())
+                increase_ErrorDecreaseCounter = "Maybe increase ErrorDecreaseCounter.";
+
+            if (ErrorConvergencyCounter > controller["ErrorConvergencyCounter"].toInt())
+                increase_ErrorConvergencyCounter = "Maybe increase ErrorConvergencyCounter.";
         }
         QVector<qreal> x = ToolSet::String2DoubleVec(result["data"].toObject()["x"].toString());
         QVector<qreal> y = ToolSet::String2DoubleVec(result["data"].toObject()["y"].toString());
@@ -920,7 +934,8 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += QString("<tr><td>%1 OvershotCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(OvershotCounter).arg(color_end);
         text += QString("<tr><td>%1 ErrorDecreaseCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ErrorDecreaseCounter).arg(color_end);
         text += QString("<tr><td>%1 ErrorConvergencyCounter: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ErrorConvergencyCounter).arg(color_end);
-
+        if (!fine)
+            text += QString("<tr><td colspan='2'>%1 - %2 - %3 - %4</td></tr>").arg(increase_MaxSteps).arg(increase_OvershotCounter).arg(increase_ErrorDecreaseCounter).arg(increase_ErrorConvergencyCounter);
         text += QString("<tr><td>%1 All fine: %3</td><td> %1 <b>%2</b>%3</td></tr>").arg(color_start).arg(ToolSet::bool2YesNo(fine)).arg(color_end);
 
         text += "<tr><td colspan=2></th></tr>";

@@ -1000,6 +1000,7 @@ void SupraFitGui::LoadMetaModels()
                 qDebug() << "found no data set for meta model, skipping";
                 continue;
             }
+
             QJsonObject rawmodel = object["data"].toObject()["raw"].toObject()[QString::number(i)].toObject();
 
             QSharedPointer<AbstractModel> t = CreateModel(SupraFit::Model(rawmodel["model"].toInt()), data);
@@ -1007,6 +1008,9 @@ void SupraFitGui::LoadMetaModels()
 
             t->ImportModel(rawmodel);
             model.data()->addModel(t.data());
+
+            connect(model.data(), &DataClass::Message, m_messages_widget, &MessageDock::Message, Qt::UniqueConnection);
+            connect(model.data(), &DataClass::Warning, m_messages_widget, &MessageDock::Warning, Qt::UniqueConnection);
         }
         model.data()->ImportModel(object["data"].toObject());
 

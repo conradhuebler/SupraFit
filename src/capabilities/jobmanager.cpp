@@ -64,6 +64,10 @@ JobManager::JobManager(QObject* parent)
     connect(m_globalsearch, SIGNAL(IncrementProgress(int)), this, SIGNAL(incremented(int)), Qt::DirectConnection);
     connect(m_globalsearch, SIGNAL(setMaximumSteps(int)), this, SIGNAL(prepare(int)), Qt::DirectConnection);
     connect(m_globalsearch, &AbstractSearchClass::Message, this, &JobManager::Message);
+
+    connect(this, &JobManager::Interrupt, this, [this]() {
+        m_interrupt = true;
+    });
 }
 
 JobManager::~JobManager()
@@ -73,6 +77,7 @@ JobManager::~JobManager()
 void JobManager::RunJobs()
 {
     m_working = true;
+    m_interrupt = false;
     int start = 0;
     for (const QJsonObject& object : m_jobs) {
         SupraFit::Method method = static_cast<SupraFit::Method>(object["method"].toInt());
@@ -112,6 +117,8 @@ void JobManager::RunJobs()
         emit finished(start, m_jobs.size(), t1 - t0);
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);
+        if (m_interrupt)
+            break;
     }
     m_jobs.clear();
     m_working = false;

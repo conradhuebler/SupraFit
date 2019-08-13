@@ -89,12 +89,12 @@ QWidget* OptimizerWidget::GeneralWidget()
 
     m_maxiter = new QSpinBox;
     m_maxiter->setMaximum(9999999);
-    m_maxiter->setValue(m_config["MaxIter"].toInt());
+    m_maxiter->setValue(m_config["MaxLevMarInter"].toInt());
 
     m_constant_convergence = new ScientificBox;
     m_constant_convergence->setRange(0, 1);
     m_constant_convergence->setSingleStep(1E-3);
-    m_constant_convergence->setDecimals(3);
+    m_constant_convergence->setDecimals(8);
     m_constant_convergence->setValue(m_config["DeltaParameter"].toDouble());
 
     m_error_convergence = new ScientificBox;

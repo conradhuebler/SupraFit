@@ -96,6 +96,7 @@ QStringList Simulator::Generate()
 
     QJsonObject table = m_data->DependentModel()->ExportTable(true);
     int file_int = 0;
+    CheckStopFile();
     for (int i = 0; i < runs; ++i) {
         std::cout << "########################################################################################################" << std::endl;
         std::cout << "########################################################################################################" << std::endl
@@ -140,6 +141,7 @@ QStringList Simulator::Generate()
                 connect(manager, &JobManager::finished, this, [](int current, int all, int time) {
                     std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
                 });
+                connect(this, &Simulator::Interrupt, manager, &JobManager::Interrupt);
                 for (int model_index = 0; model_index < models.size(); ++model_index) {
                     std::cout << "... model  " << model_index << std::endl;
                     for (const QString& j : m_jobsjson.keys()) {
@@ -150,6 +152,10 @@ QStringList Simulator::Generate()
                         std::cout << "... model  " << model_index << " job done!" << std::endl;
                     }
                     std::cout << "jobs for model  " << model_index << "  finished!" << std::endl;
+                    if (m_interrupt) {
+                        std::cout << "softly interrupted by stop file" << std::endl;
+                        break;
+                    }
                 }
                 delete manager;
                 std::cout << "jobs all done!" << std::endl;
@@ -167,8 +173,13 @@ QStringList Simulator::Generate()
             ++file_int;
             outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
         }
+
         if (SaveFile(outfile, exp_level))
             filelist << outfile;
+
+        if (m_interrupt) {
+            break;
+        }
     }
     return filelist;
 }
@@ -198,3 +209,13 @@ QVector<QSharedPointer<AbstractModel>> Simulator::AddModels(const QJsonObject& m
     return models;
 }
 
+void Simulator::CheckStopFile()
+{
+    if (QFileInfo::exists("stop")) {
+        m_interrupt = true;
+        emit Interrupt();
+        QFile file("stop");
+        file.remove();
+    } else
+        QTimer::singleShot(100, this, &Simulator::CheckStopFile);
+}

@@ -48,6 +48,8 @@ public:
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
 private:
+    void CheckStopFile();
+
     QPointer<const DataClass> m_data;
 
     /*
@@ -55,4 +57,7 @@ private:
     double m_current = 0.0;
     */
     QJsonObject m_mainjson, m_modelsjson, m_jobsjson;
+    bool m_interrupt = false;
+signals:
+    void Interrupt();
 };

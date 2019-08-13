@@ -25,6 +25,7 @@
 #include "src/core/models.h"
 
 #include "src/ui/dialogs/advancedsearch.h"
+#include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/resultsdialog.h"
 #include "src/ui/dialogs/statisticdialog.h"
 
@@ -33,6 +34,7 @@
 #include "src/ui/guitools/waiter.h"
 #include "src/ui/widgets/metamodelparameter.h"
 #include "src/ui/widgets/modelactions.h"
+#include "src/ui/widgets/optionswidget.h"
 #include "src/ui/widgets/results/resultswidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 
@@ -115,7 +117,7 @@ void MetaModelWidget::setUi()
     });
 
     connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
-    //connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
+    connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
     connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
     connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
     connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
@@ -293,4 +295,12 @@ void MetaModelWidget::ExportConstants()
 void MetaModelWidget::TogglePlot()
 {
     m_results->Attention();
+}
+
+void MetaModelWidget::OptimizerSettings()
+{
+    OptimizerDialog dialog(m_model->getOptimizerConfig(), this);
+    if (dialog.exec() == QDialog::Accepted) {
+        m_model->setOptimizerConfig(dialog.Config());
+    }
 }

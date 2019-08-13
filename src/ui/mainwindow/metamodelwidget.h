@@ -81,6 +81,7 @@ private slots:
     void ToggleStatisticDialog();
     void TogglePlot();
     void Detailed();
+    void OptimizerSettings();
 
 signals:
     void Interrupt();

@@ -239,7 +239,7 @@ QVector<qreal> MetaModel::CollectParameter()
     m_global_par.clear();
     m_local_par.clear();
     QVector<qreal> param;
-
+    QVector<int> indicies;
     for (int i = 0; i < m_mmparameter.size(); ++i) {
         MMParameter parameter = m_mmparameter[i];
         if (std::isnan(parameter.first))
@@ -250,9 +250,12 @@ QVector<qreal> MetaModel::CollectParameter()
             m_opt_index << QPair<int, int>(param.size(), 0);
 
         } else if (parameter.second.size() == 1 && m_models.size() > 1) {
-            m_local_par << i;
-            m_opt_index << QPair<int, int>(param.size(), 1);
-
+            if (!indicies.contains(m_mmparameter[i].second[0][2])) {
+                m_opt_index << QPair<int, int>(m_local_par.size(), 1);
+                m_local_par << i;
+                indicies << m_mmparameter[i].second[0][2];
+            } else
+                m_opt_index << QPair<int, int>(indicies.indexOf(m_mmparameter[i].second[0][2]), 1);
         } else {
             m_global_par << i;
             m_opt_index << QPair<int, int>(param.size(), 0);
@@ -757,7 +760,19 @@ int MetaModel::LocalParameterSize(int i) const
         return m_models[i]->LocalParameterSize();
     else if (m_connect_type == ConnectType::All)
         return m_local_par.size();
-    else
+    else if (m_connect_type == ConnectType::Custom) {
+        int counter = 0;
+        QVector<int> indicies;
+        for (int i = 0; i < m_mmparameter.size(); ++i) {
+            if (m_mmparameter[i].second.size() == 1) {
+                if (indicies.contains(m_mmparameter[i].second[0][2]))
+                    continue;
+                indicies << m_mmparameter[i].second[0][2];
+                counter++;
+            }
+        }
+        return counter;
+    } else
         return 0;
 }
 

@@ -225,6 +225,8 @@ void ImportData::LoadFile()
                     else
                         QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
                 }
+                if (filehandler->Type() == FileHandler::FileType::dH)
+                    QTimer::singleShot(10, this, &QDialog::accept);
                 NoChanged();
             }
         } else {

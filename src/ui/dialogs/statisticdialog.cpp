@@ -64,6 +64,7 @@ StatisticDialog::StatisticDialog(QWidget* parent)
 
 StatisticDialog::~StatisticDialog()
 {
+    disconnect(m_model.data());
     m_model.clear();
 }
 
@@ -151,11 +152,11 @@ QWidget* StatisticDialog::MonteCarloWidget()
     layout->addWidget(m_mc_steps, 0, 1);
 
     m_mc_std = new QRadioButton;
-    m_mc_std->setText(tr("Input %1").arg(Unicode_sigma));
+    m_mc_std->setText(tr("%1 from fit").arg(Unicode_sigma));
     m_mc_sey = new QRadioButton;
-    m_mc_sey->setText(tr("SE%1").arg(Unicode_Sub_y));
+    m_mc_sey->setText(tr("SE%1 (from fit)").arg(Unicode_Sub_y));
     m_mc_user = new QRadioButton;
-    m_mc_user->setText(tr("User defined %1").arg(Unicode_sigma));
+    m_mc_user->setText(tr("%1 from user input").arg(Unicode_sigma));
 
     m_varianz_box = new QDoubleSpinBox;
     m_varianz_box->setDecimals(6);
@@ -271,7 +272,7 @@ QWidget* StatisticDialog::GridSearchWidget()
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, checkbox]() {
+            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model)
                     checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
             });
@@ -286,7 +287,7 @@ QWidget* StatisticDialog::GridSearchWidget()
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, checkbox]() {
+            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model)
                     checkbox->setEnabled(m_model.data()->LocalEnabled(i));
             });
@@ -436,7 +437,7 @@ QWidget* StatisticDialog::ModelComparison()
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, spinbox, checkbox]() {
+            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, spinbox, checkbox]() {
                 if (m_model) {
                     spinbox->setEnabled(m_model.data()->GlobalEnabled(i));
                     checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
@@ -472,7 +473,7 @@ QWidget* StatisticDialog::ModelComparison()
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, m_model.data(), [this, i, spinbox, checkbox]() {
+            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, spinbox, checkbox]() {
                 if (m_model) {
                     spinbox->setEnabled(m_model.data()->LocalEnabled(i));
                     checkbox->setEnabled(m_model.data()->LocalEnabled(i));
