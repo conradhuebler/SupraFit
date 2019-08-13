@@ -183,6 +183,7 @@ set(utils_SRC
                 src/capabilities/globalsearch.cpp
                 src/capabilities/weakenedgridsearch.cpp
                 src/capabilities/jobmanager.cpp
+                src/capabilities/clusteranalyse.cpp
                 src/core/analyse.cpp
                 src/core/jsonhandler.cpp
                 src/core/filehandler.cpp

@@ -172,6 +172,34 @@ Vector String2DoubleEigVec(const QString& str)
     return vector;
 }
 
+Vector QVector2Vector(const QVector<qreal>& in_vector)
+{
+    Vector vector;
+    std::vector<double> v;
+    if (in_vector.isEmpty())
+        return vector;
+
+    for (const double& d : in_vector)
+        v.push_back(d);
+
+    vector = Vector::Map(&v[0], v.size());
+    return vector;
+}
+
+Vector MeanVector(const Vector& v1, const Vector& v2)
+{
+    Vector vector;
+    std::vector<double> v;
+    if (v1.size() != v2.size())
+        return vector;
+
+    for (int i = 0; i < v1.size(); ++i)
+        v.push_back((v1[i] + v2[i]) / 2.0);
+
+    vector = Vector::Map(&v[0], v.size());
+    return vector;
+}
+
 QVector<int> String2IntVec(const QString& str)
 {
     QVector<int> vector;
