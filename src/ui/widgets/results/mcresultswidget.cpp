@@ -420,6 +420,10 @@ void MCResultsWidget::setAreaColor(int index, const QColor& color)
 
 void MCResultsWidget::GenerateConfidence(double error)
 {
+    QJsonObject controller = m_data["controller"].toObject();
+    if (controller["LightWeight"].toBool(false))
+        return;
+
     for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if (data.isEmpty())
@@ -441,6 +445,8 @@ void MCResultsWidget::GenerateConfidence(double error)
 void MCResultsWidget::GenerateHistogram()
 {
     QJsonObject controller = m_data["controller"].toObject();
+    if (controller["LightWeight"].toBool(false))
+        return;
 
     auto i = m_linked_data.begin();
 

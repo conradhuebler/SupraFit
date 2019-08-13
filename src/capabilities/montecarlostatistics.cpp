@@ -210,8 +210,11 @@ bool MonteCarloStatistics::Run()
         confidence["lower"] = bar.lower;
         confidence["upper"] = bar.upper;
         confidence["error"] = m_controller["confidence"].toDouble();
-        if (lightweight)
-            data.remove("raw");
+        if (lightweight) {
+            QJsonObject d = data["data"].toObject();
+            d["raw"] = QJsonObject();
+            data["data"] = d;
+        }
         data["confidence"] = confidence;
         m_results[i] = data;
     }
