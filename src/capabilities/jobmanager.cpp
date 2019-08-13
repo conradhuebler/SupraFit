@@ -72,6 +72,8 @@ JobManager::~JobManager()
 
 void JobManager::RunJobs()
 {
+    m_working = true;
+    int start = 0;
     for (const QJsonObject& object : m_jobs) {
         SupraFit::Method method = static_cast<SupraFit::Method>(object["method"].toInt());
         QJsonObject result;
@@ -104,13 +106,16 @@ void JobManager::RunJobs()
             result = RunGlobalSearch(object);
             break;
         }
+        start++;
         t1 = QDateTime::currentMSecsSinceEpoch();
         emit m_model->Info()->Message(QString("%1 took %2 msecs for %3 in %4").arg(Method2Name(method)).arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()));
-        emit finished();
+        emit finished(start, m_jobs.size(), t1 - t0);
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);
     }
     m_jobs.clear();
+    m_working = false;
+    emit AllFinished();
 }
 
 void JobManager::AddJob(const QJsonObject& job)

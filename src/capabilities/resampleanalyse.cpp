@@ -378,7 +378,7 @@ void ResampleAnalyse::CrossValidation()
 
     if (more_message)
         emit Message(tr("Final evaluation in progress! Sorry, but this is done in serial mode - no parallelisation right now!"));
-
+    bool left_out_points = m_controller["LeftOutPoints"].toBool();
     // TODO some times, I will parallise it at all
     QSharedPointer<AbstractModel> calc_model = m_model->Clone();
     QJsonObject chart_block;
@@ -389,26 +389,27 @@ void ResampleAnalyse::CrossValidation()
 
             for (const QJsonObject& model : models) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+                if (left_out_points) {
+                    int index = models.key(model);
+                    QVector<int> indicies = m_job.value(index);
 
-                int index = models.key(model);
-                QVector<int> indicies = m_job.value(index);
-
-                calc_model->ImportModel(model);
-                calc_model->Calculate();
-                QString points = QString();
-                for (int j : indicies) {
-                    if (m_model->DependentModel()->isRowChecked(j))
-                        points = points + ToolSet::DoubleList2String(m_model->ModelTable()->Row(j)) + "|";
+                    calc_model->ImportModel(model);
+                    calc_model->Calculate();
+                    QString points = QString();
+                    for (int j : indicies) {
+                        if (m_model->DependentModel()->isRowChecked(j))
+                            points = points + ToolSet::DoubleList2String(m_model->ModelTable()->Row(j)) + "|";
+                    }
+                    points.truncate(points.size() - 1);
+                    chart_block[ToolSet::IntVec2String(indicies)] = points;
                 }
-                points.truncate(points.size() - 1);
-                chart_block[ToolSet::IntVec2String(indicies)] = points;
                 m_models << model;
             }
             delete threads[i];
         }
     }
     calc_model.clear();
-    if (more_message) // this will be set to false, if LXO was apported
+    if (more_message && left_out_points) // this will be set to false, if LXO was apported
     {
         m_controller["chart"] = chart_block;
         m_controller["xlabel"] = m_model.data()->XLabel();

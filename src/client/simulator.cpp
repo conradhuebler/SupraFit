@@ -89,6 +89,10 @@ QStringList Simulator::Generate()
     if (m_mainjson.contains("OutFile")) {
         m_outfile = m_mainjson["OutFile"].toString();
     }
+    if (m_mainjson.contains("Threads")) {
+        qApp->instance()->setProperty("threads", m_mainjson.value("Threads").toInt(4));
+        std::cout << "Setting # of threads to " << m_mainjson.value("Threads").toInt(4) << std::endl;
+    }
 
     QJsonObject table = m_data->DependentModel()->ExportTable(true);
     int file_int = 0;
@@ -133,6 +137,9 @@ QStringList Simulator::Generate()
             if (!m_jobsjson.isEmpty()) {
                 std::cout << "Starting jobs ..." << std::endl;
                 JobManager* manager = new JobManager;
+                connect(manager, &JobManager::finished, this, [](int current, int all, int time) {
+                    std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
+                });
                 for (int model_index = 0; model_index < models.size(); ++model_index) {
                     std::cout << "... model  " << model_index << std::endl;
                     for (const QString& j : m_jobsjson.keys()) {

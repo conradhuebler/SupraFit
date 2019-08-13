@@ -143,7 +143,10 @@ const QJsonObject ResampleConfigBlock{
     { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards
 
     /* Store intermediate results, may result in large json blocks */
-    { "StoreRaw", false }, //bool
+    { "StoreRaw", true }, //bool
+
+    /* Calculate Left-Out Points */
+    { "LeftOutPoints", false } //bool
 
 };
 
@@ -205,6 +208,7 @@ public:
 
     void RunJobs();
 
+    inline bool Working() const { return m_working; }
 public slots:
 
 private:
@@ -223,9 +227,11 @@ private:
     QPointer<ResampleAnalyse> m_resample_handler;
     QPointer<GlobalSearch> m_globalsearch;
 
+    bool m_working = false;
 signals:
     void started();
-    void finished();
+    void finished(int current, int all, int time);
+    void AllFinished();
     void incremented(int t);
     void prepare(int count);
     void ShowResult(SupraFit::Method type, int index);
