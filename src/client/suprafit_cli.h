@@ -53,4 +53,5 @@ public slots:
 protected:
     QString m_infile = QString(), m_outfile = QString(), m_extension = ".suprafit";
     QJsonObject m_toplevel;
+    int m_independent_rows = 2, m_start_point = 0;
 };

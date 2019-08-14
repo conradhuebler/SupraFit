@@ -987,6 +987,12 @@ QVector<qreal> AbstractModel::AllParameter() const
     return parameter;
 }
 
+void AbstractModel::setOptions(const QJsonObject& options)
+{
+    for (int index : getAllOptions())
+        setOption(index, options[QString::number(index)].toString());
+}
+
 bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 {
 #ifdef _DEBUG
@@ -1009,13 +1015,11 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
 
     QList<int> active_signals;
-    QJsonObject optionObject;
 
     GlobalTable()->ImportTable(json["globalParameter"].toObject());
 
-    optionObject = topjson["options"].toObject();
-    for (int index : getAllOptions())
-        setOption(index, topjson["options"].toObject()[QString::number(index)].toString());
+    setOptions(topjson["options"].toObject());
+
     QStringList keys;
     QJsonObject statisticObject;
 
@@ -1145,9 +1149,8 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     } else
         GlobalTable()->ImportTable(json["globalParameter"].toObject());
 
-    optionObject = topjson["options"].toObject();
-    for (int index : getAllOptions())
-        setOption(index, topjson["options"].toObject()[QString::number(index)].toString());
+    setOptions(topjson["options"].toObject());
+
     QStringList keys;
     QJsonObject statisticObject;
 

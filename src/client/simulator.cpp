@@ -66,13 +66,21 @@ QStringList Simulator::Generate()
             return filelist;
     }
 
+    m_independent_rows = m_mainjson["IndependentRows"].toInt(2);
+    m_start_point = m_mainjson["StartPoint"].toInt(0);
+
     if (!LoadFile())
         return filelist;
 
     if (m_toplevel.isEmpty())
         return filelist;
 
-    m_data = new DataClass(m_toplevel["data"].toObject());
+    if (m_toplevel.keys().contains("data"))
+
+        m_data = new DataClass(m_toplevel["data"].toObject());
+    else
+        m_data = new DataClass(m_toplevel);
+
     if (m_data->DataPoints() == 0)
         return filelist;
 
@@ -97,6 +105,7 @@ QStringList Simulator::Generate()
     QJsonObject table = m_data->DependentModel()->ExportTable(true);
     int file_int = 0;
     CheckStopFile();
+
     for (int i = 0; i < runs; ++i) {
         std::cout << "########################################################################################################" << std::endl;
         std::cout << "########################################################################################################" << std::endl
@@ -188,8 +197,17 @@ QVector<QSharedPointer<AbstractModel>> Simulator::AddModels(const QJsonObject& m
 {
     QVector<QSharedPointer<AbstractModel>> models;
     for (const QString& str : modelsjson.keys()) {
-        SupraFit::Model model = static_cast<SupraFit::Model>(modelsjson[str].toInt());
+        SupraFit::Model model;
+        QJsonObject options;
+        if (modelsjson[str].toObject().contains("model")) {
+            model = static_cast<SupraFit::Model>(modelsjson[str].toObject()["model"].toInt());
+            options = modelsjson[str].toObject()["options"].toObject();
+        } else
+            model = static_cast<SupraFit::Model>(modelsjson[str].toInt());
+
         QSharedPointer<AbstractModel> t = CreateModel(model, data);
+        if (!options.isEmpty())
+            t->setOptions(options);
 
         if (m_mainjson.contains("Guess") && m_mainjson["Guess"].toBool()) {
             t->InitialGuess();

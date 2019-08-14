@@ -286,6 +286,8 @@ public:
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
 
+    void setOptions(const QJsonObject& options);
+
     int UpdateStatistic(const QJsonObject& object);
 
     int getReductionStatisticResults() const { return m_reduction.size(); }
