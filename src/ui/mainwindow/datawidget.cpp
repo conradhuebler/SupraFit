@@ -129,7 +129,10 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     m_concentrations->setModel(m_data.data()->IndependentModel());
-    m_signals->setModel(m_data.data()->DependentModel());
+
+    if (!m_data.data()->isSimulation())
+        m_signals->setModel(m_data.data()->DependentModel());
+
     connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
@@ -149,6 +152,8 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         connect(m_wrapper.data()->Series(i), &QtCharts::QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
         connect(m_hide_points, &QPushButton::clicked, el, &SignalElement::HideSeries);
         vlayout->addWidget(el);
+        if (m_data.data()->Type() == DataClassPrivate::DataType::Simulation)
+            el->HideSeries();
         m_signal_elements << el;
     }
 
@@ -190,6 +195,10 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     connect(m_text_edit, &QTextEdit::textChanged, m_data.data(), [this]() {
         m_data.data()->setContent(m_text_edit->toPlainText());
     });
+
+    if (m_data.data()->Type() == DataClassPrivate::DataType::Simulation) {
+        m_hide_points->hide();
+    }
 }
 
 void DataWidget::switchHG()

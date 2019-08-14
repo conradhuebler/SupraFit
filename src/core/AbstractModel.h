@@ -382,6 +382,9 @@ public:
      */
     inline void InitialGuess()
     {
+        if (Type() == DataClassPrivate::DataType::Simulation)
+            return;
+
         m_demand_guess = true;
         InitialGuess_Private();
     }

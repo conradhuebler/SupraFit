@@ -717,8 +717,7 @@ DataClassPrivate::DataClassPrivate()
 }
 
 DataClassPrivate::DataClassPrivate(int type)
-    : m_type(type)
-    , m_maxsize(0)
+    : m_maxsize(0)
     , m_host_assignment(0)
     , m_datatype(DataClassPrivate::Table)
     , m_info(new DataClassPrivateObject)
@@ -749,7 +748,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_host_assignment = other.m_host_assignment;
     m_dependent_model = new DataTable(other.m_dependent_model);
     m_raw_data = other.m_raw_data;
-    m_type = other.m_type;
     m_system_parameter = other.m_system_parameter;
     m_datatype = other.m_datatype;
     m_title = other.m_title;
@@ -767,7 +765,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_host_assignment = other->m_host_assignment;
     m_dependent_model = new DataTable(other->m_dependent_model);
     m_raw_data = other->m_raw_data;
-    m_type = other->m_type;
     m_system_parameter = other->m_system_parameter;
     m_datatype = other->m_datatype;
     m_title = other->m_title;
@@ -823,7 +820,6 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate();
-    d->m_type = type;
 
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);

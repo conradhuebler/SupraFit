@@ -111,7 +111,7 @@ void AbstractItcModel::DeclareSystemParameter()
     setSystemParameterValue(InptUnit, 0);*/
 
     addSystemParameter(PlotMode, "Plot Mode", "x-Axis Plot Mode", SystemParameter::List);
-    m_plotmode = QStringList() << QString("[G%1]/[H%2").arg(sub_char).arg(sub_char)
+    m_plotmode = QStringList() << QString("[G%1]/[H%2]").arg(sub_char).arg(sub_char)
                                << QString("[G%1]").arg(sub_char)
                                << "Number";
     setSystemParameterList(PlotMode, m_plotmode);

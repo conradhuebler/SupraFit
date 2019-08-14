@@ -196,7 +196,8 @@ public:
     enum DataType {
         Table = 1,
         Thermogram = 2,
-        Spectrum = 3
+        Spectrum = 3,
+        Simulation = 10
     };
 
     DataClassPrivate();
@@ -212,7 +213,7 @@ public:
 
     QStringList m_names;
 
-    int m_type, m_maxsize;
+    int m_maxsize;
     int m_host_assignment;
     int m_ref_counter = 1;
     QPointer<DataTable> m_dependent_model, m_independent_model;
@@ -259,12 +260,14 @@ public:
     virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
     virtual inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
     virtual inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
-    inline int Type() const { return d->m_type; }
-    inline void setType(int type) { d->m_type = type; }
+    inline int Type() const { return d->m_datatype; }
+    inline void setType(DataClassPrivate::DataType type) { d->m_datatype = type; }
     virtual inline DataTable* IndependentModel() { return d->m_independent_model; }
     virtual inline DataTable* DependentModel() { return d->m_dependent_model; }
     virtual inline DataTable* IndependentModel() const { return d->m_independent_model; }
     virtual inline DataTable* DependentModel() const { return d->m_dependent_model; }
+
+    inline bool isSimulation() const { return Type() == DataClassPrivate::DataType::Simulation; }
 
     /*! \brief return text of stored data
      */

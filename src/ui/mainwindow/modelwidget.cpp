@@ -107,7 +107,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_minimizer->setModel(m_model);
 
     m_advancedsearch = new AdvancedSearch(this);
-    m_advancedsearch->setModel(m_model);
+    if (!m_model->isSimulation())
+        m_advancedsearch->setModel(m_model);
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
 
@@ -204,7 +205,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
-    if (!m_val_readonly)
+    if (!m_val_readonly && !m_model->isSimulation())
         const_layout->addWidget(m_minimize_all);
 
     m_layout->addLayout(const_layout);
@@ -234,9 +235,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_readonly = new QCheckBox(tr("Read Only"));
     QHBoxLayout* head = new QHBoxLayout;
-    head->addWidget(m_converged_label);
 
-    if (!m_val_readonly)
+    if (!m_model->isSimulation())
+        head->addWidget(m_converged_label);
+
+    if (!m_val_readonly && !m_model->isSimulation())
         head->addWidget(m_readonly);
 
     m_sign_layout->addLayout(head);
@@ -307,7 +310,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_splitter = new QSplitter(this);
     m_splitter->setOrientation(Qt::Vertical);
     m_splitter->addWidget(m_model_widget);
+
     m_splitter->addWidget(m_statistic_widget);
+    m_statistic_widget->setHidden(m_model->isSimulation());
+
     connect(m_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(SplitterResized()));
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->addWidget(m_splitter);

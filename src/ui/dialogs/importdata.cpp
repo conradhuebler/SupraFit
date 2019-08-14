@@ -172,7 +172,7 @@ void ImportData::setUi(bool single)
 void ImportData::NoChanged()
 {
     m_conc->setMinimum(1);
-    m_conc->setMaximum(m_table->model()->columnCount() - 1);
+    m_conc->setMaximum(m_table->model()->columnCount());
     if (m_table->model()->columnCount() > 2)
         m_conc->setValue(2);
     else
@@ -258,12 +258,19 @@ void ImportData::WriteData(const DataTable* model, int independent)
 {
     independent = m_conc->value();
     m_storeddata = new DataClass;
-    DataTable* concentration_block = model->BlockColumns(0, independent);
-    DataTable* signals_block = model->BlockColumns(independent, model->columnCount() - independent);
-    m_storeddata->setDependentTable(signals_block);
-    m_storeddata->setIndependentTable(concentration_block);
+    DataTable* indep = model->BlockColumns(0, independent);
+    DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
+
+    if (model->columnCount() - independent == 0) {
+        m_storeddata->setDependentTable(indep);
+        m_storeddata->setType(DataClassPrivate::DataType::Simulation);
+    } else {
+        m_storeddata->setDataType(m_type);
+        m_storeddata->setDependentTable(dep);
+    }
+
+    m_storeddata->setIndependentTable(indep);
     m_storeddata->setRawData(m_raw);
-    m_storeddata->setDataType(m_type);
     m_storeddata->setProjectTitle(m_title);
 }
 
