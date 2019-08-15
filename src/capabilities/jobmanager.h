@@ -121,7 +121,7 @@ const QJsonObject MonteCarloConfigBlock{
     { "IndependentRowVariance", "" }, // strings, to be converted to QVector<double>
 
     /* Store intermediate results, may result in large json blocks */
-    { "StoreRaw", false }, //bool
+    { "StoreRaw", true }, //bool
 
     /* Store as few data as possible */
     { "LightWeight", false }, //bool

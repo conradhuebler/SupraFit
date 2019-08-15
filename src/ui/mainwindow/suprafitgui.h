@@ -39,6 +39,7 @@ class QGridLayout;
 class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
+class QPropertyAnimation;
 class QPushButton;
 class QSplashScreen;
 class QSplitter;
@@ -202,10 +203,10 @@ private:
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license;
+    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
     QJsonObject m_opt_config;
 
-    int m_last_index = -1;
+    int m_last_index = -1, m_project_tree_size;
     bool m_alert = false;
 
     QString m_supr_file;
@@ -250,7 +251,8 @@ private:
     MessageDock* m_messages_widget;
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
-    QWidget *m_blank_widget;
+    QWidget *m_blank_widget, *m_project_holder;
+    QPropertyAnimation *m_show_tree, *m_show_dock;
     QListWidget *m_recent_documents;
     QVector<QPointer<MainWindow>> m_project_list;
     QTreeView* m_project_view;

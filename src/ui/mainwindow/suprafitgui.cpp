@@ -41,6 +41,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QMimeData>
+#include <QtCore/QPropertyAnimation>
 #include <QtCore/QSettings>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QTimer>
@@ -566,8 +567,8 @@ SupraFitGui::SupraFitGui()
     m_filename_line = new QLineEdit;
     m_filename_line->setClearButtonEnabled(true);
     connect(m_filename_line, &QLineEdit::textChanged, this, [this](const QString& str) { this->m_supr_file = str; setWindowTitle(); });
-    QWidget* widget = new QWidget;
-    widget->setObjectName("project_list");
+    m_project_holder = new QWidget;
+    m_project_holder->setObjectName("project_list");
 
     m_export_plain = new QToolButton;
     m_export_plain->setAutoRaise(true);
@@ -633,11 +634,11 @@ SupraFitGui::SupraFitGui()
     layout->addWidget(m_filename_line, 0, 1);
     layout->addLayout(tools, 1, 0, 1, 2);
     layout->addWidget(m_project_view, 2, 0, 1, 2);
-    widget->setLayout(layout);
+    m_project_holder->setLayout(layout);
 
     m_mainsplitter = new QSplitter(Qt::Horizontal);
     m_mainsplitter->setObjectName(tr("project_splitter"));
-    m_mainsplitter->addWidget(widget);
+    m_mainsplitter->addWidget(m_project_holder);
     m_mainsplitter->addWidget(m_stack_widget);
 
     setCentralWidget(m_mainsplitter);
@@ -688,6 +689,34 @@ SupraFitGui::SupraFitGui()
         m_alert = false;
     });
 
+    m_project_action = new QAction(tr("Toggle Projects"));
+    /*
+    m_project_action->setIcon(Icon("view-list-text"));
+    m_project_action->setCheckable(true);
+    m_project_action->setChecked(true);
+    m_project_action->setShortcut(QKeySequence(tr("F3")));
+
+    m_show_tree = new QPropertyAnimation(m_project_holder, "size");
+    m_show_tree->setDuration(100);
+
+    connect(m_project_action, &QAction::toggled, this, [this](){
+        QSize size;
+        if(m_project_holder->width())
+        {
+            m_project_tree_size = m_project_holder->width();
+
+            m_show_tree->setStartValue(QSize(m_project_tree_size, m_project_holder->height()));
+            size = QSize(0, m_project_holder->height());
+        }else
+        {
+            m_show_tree->setStartValue(QSize(0, m_project_holder->height()));
+            size = QSize(m_project_tree_size, m_project_holder->height());
+        }
+        m_show_tree->setEndValue(size);
+        m_show_tree->start();
+        QTimer::singleShot(100, m_project_holder, [this, size](){m_project_holder->resize(size);});
+    });
+    */
     m_config = new QAction(Icon("configure"), tr("Settings"), this);
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
     m_config->setShortcut(QKeySequence::Preferences);
@@ -717,6 +746,7 @@ SupraFitGui::SupraFitGui()
 
     m_system_toolbar = new QToolBar;
     m_system_toolbar->setObjectName(tr("system_toolbar"));
+    //m_system_toolbar->addAction(m_project_action);
     m_system_toolbar->addAction(m_message_dock_action);
     m_system_toolbar->addSeparator();
     m_system_toolbar->addAction(m_config);
@@ -726,6 +756,8 @@ SupraFitGui::SupraFitGui()
     m_system_toolbar->addAction(m_close);
     m_system_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     addToolBar(m_system_toolbar);
+
+    m_project_tree_size = m_project_holder->width();
 
     ReadGeometry();
 
@@ -1339,9 +1371,9 @@ void SupraFitGui::about()
 void SupraFitGui::FirstStart()
 {
     QString info;
-    info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramoleculare NMR titrations and ITC experiments.< /p>";
-    info += "<p>SupraFit User Interface is divided into three parts:<li>The <strong>Project List </strong> on the left side,</li> <li> the <strong>Workspace </strong> in the middle and</li> <li> the <strong>Chart Widget </strong> the left hand side!</li></p>";
-    info += "<p>Hitting <strong>F4</strong> or the light bulb button in upper part toggles a message box in the part below the mainwindows.</p>";
+    info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramolecular NMR titrations and ITC experiments.< /p>";
+    info += "<p>The SupraFit User Interface is divided into three parts:<li>The <strong>Project List </strong> on the left side,</li> <li> the <strong>Workspace </strong> in the middle and</li> <li> the <strong>Chart Widget </strong> the left hand side!</li></p>";
+    info += "<p>Hitting <strong>F4</strong> or the light bulb button in the upper part toggles a message box in the part below the mainwindows.</p>";
     info += "<p>Sometimes critical information are printed out there. If there are unread critical messages, the light bulb glows red.</p>";
     info += "<p>Uncritical information are indicated by a green light blub.</p>";
     info += "<p><strong>All</strong> tooltips can globally disabled in the config dialog.</p>";
