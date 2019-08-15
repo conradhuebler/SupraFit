@@ -95,6 +95,7 @@ public:
 
     virtual ~DataTable();
 
+    bool isValid() const;
     void clear(int columns = 0, int rows = 0);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const Q_DECL_OVERRIDE;
@@ -380,8 +381,14 @@ public:
      */
     virtual qreal PrintOutIndependent(int i) const
     {
-        return i + 1;
+        if (!m_plot_x)
+            return i + 1;
+        else
+            return d->m_independent_model->data(0, i);
     }
+
+    inline void setPlotMode(bool plot_x) { m_plot_x = plot_x; }
+
     inline void setRawData(const QJsonObject& data) { d->m_raw_data = data; }
 
     inline void setDataType(DataClassPrivate::DataType type) { d->m_datatype = type; }
@@ -422,6 +429,7 @@ public:
 
 private:
     QMutex m_lock;
+    bool m_plot_x = false;
 
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate> d;

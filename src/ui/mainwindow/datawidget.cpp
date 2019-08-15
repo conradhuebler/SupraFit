@@ -65,6 +65,9 @@ DataWidget::DataWidget()
     m_hide_points->setToolTip(tr("Hide Data points, but keep series visible. Useful to just simulate curves without being disturbed by Data Points."));
     m_hide_points->setStyleSheet("background-color: #77d740;");
 
+    m_plot_x = new QCheckBox(tr("Plot X Values"));
+    m_plot_x->setToolTip(tr("Plot first column as x variable."));
+
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textEdited(QString)), this, SLOT(SetProjectName()));
     m_concentrations = new QTableView;
@@ -77,6 +80,7 @@ DataWidget::DataWidget()
 
     hlayout->addWidget(new QLabel(tr("<html><h3>Project Name</h3></html>")), 0, Qt::AlignLeft);
     hlayout->addWidget(m_name);
+    hlayout->addWidget(m_plot_x, 0, Qt::AlignRight);
     hlayout->addWidget(m_hide_points);
     hlayout->addWidget(m_switch, 0, Qt::AlignRight);
     hlayout->addWidget(m_linear, 0, Qt::AlignRight);
@@ -137,13 +141,21 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
 
+    m_plot_x->setVisible(m_data.data()->IndependentModel()->columnCount() == 1);
+    connect(m_plot_x, &QCheckBox::stateChanged, this, [this](int state) {
+        m_data.data()->setPlotMode(state);
+        m_wrapper.data()->UpdateModel();
+        dialog->UpdatePlots();
+    });
+
     qApp->instance()->setProperty("projectname", m_data.data()->ProjectTitle());
     m_name->setText(qApp->instance()->property("projectname").toString());
     m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.data()->IndependentModel()->columnCount()));
     m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));
     m_signals_count->setText(tr("<html><h4>Series Count: %1</h4><html>").arg(m_data.data()->SeriesCount()));
 
-    dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+    // why was this here?
+    // dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     dialog->UpdatePlots();
 
     QVBoxLayout* vlayout = new QVBoxLayout;
@@ -199,6 +211,11 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     if (m_data.data()->Type() == DataClassPrivate::DataType::Simulation) {
         m_hide_points->hide();
     }
+
+    connect(m_wrapper.data(), &ChartWrapper::ModelTransformed, m_wrapper.data(), [this]() {
+        if (m_plot_x->isVisible())
+            m_plot_x->hide();
+    });
 }
 
 void DataWidget::switchHG()

@@ -70,6 +70,7 @@ public:
 
 
     }
+    // TODO Maybe move this to dataclass sometimes - to have different plot types already without model more consistently defined
     /* Model Option such as Cooperativity can be defined */
     QMap<int, ModelOption> m_model_options;
 

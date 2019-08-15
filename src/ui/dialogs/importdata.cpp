@@ -56,8 +56,10 @@ void TableView::keyPressEvent(QKeyEvent* event)
         FileHandler* handler = new FileHandler(this);
         handler->setFileContent(paste);
         DataTable* model = handler->getData();
-        setModel(model);
-        emit Edited();
+        if (model->isValid()) {
+            setModel(model);
+            emit Edited();
+        }
         delete handler;
     } else {
 
@@ -124,7 +126,7 @@ void ImportData::setUi(bool single)
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     m_conc = new QSpinBox;
-    connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
+    //connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
     m_line = new QLineEdit;
     m_select = new QPushButton("Select file");
     connect(m_select, SIGNAL(clicked()), this, SLOT(SelectFile()));
@@ -171,8 +173,11 @@ void ImportData::setUi(bool single)
 
 void ImportData::NoChanged()
 {
+    if (!m_table)
+        return;
     m_conc->setMinimum(1);
     m_conc->setMaximum(m_table->model()->columnCount());
+
     if (m_table->model()->columnCount() > 2)
         m_conc->setValue(2);
     else
@@ -204,7 +209,7 @@ void ImportData::LoadFile()
         m_line->setText(info.baseName());
         m_title = info.baseName();
         FileHandler* filehandler = new FileHandler(m_filename, this);
-
+        filehandler->LoadFile();
         if (filehandler->FileSupported()) {
             QPointer<DataTable> model = filehandler->getData();
             if (!model) {
@@ -227,7 +232,7 @@ void ImportData::LoadFile()
                 }
                 if (filehandler->Type() == FileHandler::FileType::dH)
                     QTimer::singleShot(10, this, &QDialog::accept);
-                NoChanged();
+                //NoChanged();
             }
         } else {
             QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
@@ -235,6 +240,13 @@ void ImportData::LoadFile()
         }
         delete filehandler;
     }
+    m_conc->setMinimum(1);
+    m_conc->setMaximum(m_table->model()->columnCount());
+
+    if (m_table->model()->columnCount() > 2)
+        m_conc->setValue(2);
+    else
+        m_conc->setValue(1);
 }
 
 void ImportData::ExportFile()
