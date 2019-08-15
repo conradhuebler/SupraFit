@@ -91,7 +91,8 @@ int NonLinearFitThread::NonLinearFit()
         m_model->setLockedParameter(locked);
 
     int iter = NonlinearFit(m_model, parameter);
-    m_sum_error = m_model->SumofSquares();
+    m_sum_error = m_model->SSE();
+    m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     m_converged = (iter < m_model.data()->getOptimizerConfig()["MaxLevMarInter"].toInt());

@@ -35,6 +35,9 @@ void MCThread::run()
 {
     QVector<qreal> parameters = m_model.data()->OptimizeParameters();
 
+    m_ParameterIndex = m_controller["ParameterIndex"].toInt(0);
+    m_MaxParameter = m_controller["MaxParameter"].toDouble();
+
     int std_prec = 400;
     QList<int> global_param, local_param, param;
     global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
@@ -78,9 +81,7 @@ void MCThread::run()
         }
         m_model->setParameter(consts);
         m_model->Calculate();
-        // qDebug() << consts << m_model->SumofSquares();
-        if (m_model->SumofSquares() <= m_controller["MaxError"].toDouble()) {
-            // std::cout << m_model->SumofSquares() << " " << m_effective_error << " " << std::endl;
+        if (m_model->StatisticVector()[m_ParameterIndex] <= m_MaxParameter) {
             m_results << m_model->ExportModel(false);
         }
         m_steps++;
@@ -100,17 +101,20 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
     //qDebug() << m_controller;
     int maxiter = m_controller["MaxStepsFastConfidence"].toInt();
     double step = qPow(10, ceil(log10(qAbs(param))) + m_controller["FastConfidenceScaling"].toDouble());
-    double MaxError = m_controller["MaxError"].toDouble();
+
+    int ParameterIndex = m_controller["ParameterIndex"].toInt(0);
+    qreal MaxParameter = m_controller["MaxParameter"].toDouble();
+
     param += direction * step;
-    double error = m_model.data()->SumofSquares();
+    double error = m_model.data()->StatisticVector()[ParameterIndex];
 
     int shrink = 0;
-    while (qAbs(error - MaxError) > 1e-7) {
+    while (qAbs(error - MaxParameter) > 1e-7) {
         parameter[parameter_id] = param;
         m_model.data()->setParameter(parameter);
         m_model.data()->Calculate();
-        error = m_model.data()->SumofSquares();
-        if (error < MaxError) {
+        error = m_model.data()->StatisticVector()[ParameterIndex];
+        if (error < MaxParameter) {
             old_param = param;
             param += step * direction;
             shrink = 0;
@@ -129,16 +133,16 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
         parameter[parameter_id] = param;
         m_model.data()->setParameter(parameter);
         m_model.data()->Calculate();
-        error = m_model.data()->SumofSquares();
+        error = m_model.data()->StatisticVector()[ParameterIndex];
 
-        if (error < MaxError)
+        if (error < MaxParameter)
             m_list_points[param] = error;
 
         iter++;
 
         if (iter >= maxiter) {
 #ifdef _DEBUG
-            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id] << qAbs(error - MaxError);
+            qDebug() << "fast confidence not converged for parameter" << parameter_id << " going " << direction << " value: " << parameter[parameter_id] << qAbs(error - MaxParameter);
 #endif
             break;
         }
@@ -152,9 +156,11 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
 
 void FCThread::run()
 {
+    int ParameterIndex = m_controller["ParameterIndex"].toInt(0);
+
     QVector<double> parameter = m_model.data()->OptimizeParameters();
     double param = parameter[m_parameter];
-    m_list_points[param] = m_model.data()->SumofSquares();
+    m_list_points[param] = m_model.data()->StatisticVector()[ParameterIndex];
 
     m_upper = SingleLimit(m_parameter, +1);
     m_model.data()->setParameter(parameter);
@@ -312,7 +318,7 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
 {
     QVector<QPointer<MCThread>> threads;
 
-    int maxsteps = m_controller["MaxSteps"].toInt(); //m_config.mc_steps;
+    int maxsteps = m_controller["MaxSteps"].toInt();
     emit setMaximumSteps(maxsteps / update_intervall);
     int thread_count = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);

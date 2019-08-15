@@ -266,9 +266,6 @@ QWidget* ResultsWidget::GridSearchWidget()
         scatterwidget->setData(m_models, m_model);
         tabwidget->addTab(scatterwidget, "Scatter Plot");
     }
-    view->setXAxis("value");
-    view->setYAxis("Sum of Squares (SSE)");
-    view->setName("gridchart");
     int series_int = 0;
     int old_index = 0;
     for (int i = 0; i < m_data.count() - 1; ++i) {
@@ -305,12 +302,16 @@ QWidget* ResultsWidget::GridSearchWidget()
         view->addSeries(xy_series, i, xy_series->color(), name, true);
 
         LineSeries* current_constant = new LineSeries;
-        *current_constant << QPointF(x_0, m_model.data()->SumofSquares()) << QPointF(x_0, m_model.data()->SumofSquares() * 1.1);
+        *current_constant << QPointF(x_0, m_model.data()->SSE()) << QPointF(x_0, m_model.data()->SSE() * 1.1);
         current_constant->setDashDotLine(true);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);
         view->addSeries(current_constant, i, xy_series->color(), name, true);
     }
+
+    view->setXAxis("value");
+    view->setYAxis(m_data["controller"].toObject()["ylabel"].toString());
+    view->setName("gridchart");
 
     view->setTitle(tr("Grid Search for %1").arg(m_model.data()->Name()));
 

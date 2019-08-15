@@ -568,9 +568,9 @@ void MetaModel::CalculateVariables()
 
     for (int i = 0; i < m_models.size(); ++i) {
         m_models[i].data()->Calculate();
-        m_sum_squares += m_models[i].data()->SumofSquares();
+        m_sum_squares += m_models[i].data()->SSE();
         m_used_variables += m_models[i].data()->Points();
-        m_sum_absolute += m_models[i].data()->SumofAbsolute();
+        m_sum_absolute += m_models[i].data()->SAE();
         m_mean += m_models[i].data()->MeanError();
     }
     if (!m_fast)

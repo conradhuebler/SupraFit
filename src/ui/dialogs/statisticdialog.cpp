@@ -296,6 +296,10 @@ QWidget* StatisticDialog::GridSearchWidget()
     }
     layout->addWidget(parameter);
 
+    m_store_wgsearch = new QCheckBox(tr("Store intermediate Models"));
+    m_store_wgsearch->setToolTip(tr("If checked, SupraFit will try to store ALL intermedate results. They are necessary to compute the confidence range for the single parameters \nAND dervied values, such as entropy. The downside are hugh files and sometimes data, that is to large to be handled resulting in an empty output!"));
+    layout->addWidget(m_store_wgsearch);
+
     m_wgs_maxerror = new QDoubleSpinBox;
     m_wgs_maxerror->setMaximum(100);
     m_wgs_maxerror->setSingleStep(0.5);
@@ -309,9 +313,6 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_wgs_f_value->setValue(m_f_value);
     m_wgs_f_value->setDecimals(4);
     m_wgs_f_value->setReadOnly(true);
-    m_store_wgsearch = new QCheckBox(tr("Store intermediate Models"));
-    m_store_wgsearch->setToolTip(tr("If checked, SupraFit will try to store ALL intermedate results. They are necessary to compute the confidence range for the single parameters \nAND dervied values, such as entropy. The downside are hugh files and sometimes data, that is to large to be handled resulting in an empty output!"));
-    layout->addWidget(m_store_wgsearch);
 
     connect(m_wgs_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
 
@@ -331,6 +332,55 @@ QWidget* StatisticDialog::GridSearchWidget()
         layout->addWidget(m_wgs_error_info);
     } else
         m_wgs_f_value->hide();
+    hlayout = new QHBoxLayout;
+
+    m_radio_wgs_sse = new QRadioButton(tr("SSE"));
+    connect(m_radio_wgs_sse, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 0;
+            m_error_name = m_radio_wgs_sse->text();
+            CalculateError();
+        }
+    });
+    m_radio_wgs_ssy = new QRadioButton(tr("SEy"));
+    connect(m_radio_wgs_ssy, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 1;
+            m_error_name = m_radio_wgs_ssy->text();
+            CalculateError();
+        }
+    });
+    m_radio_wgs_chi = new QRadioButton(tr("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2));
+    connect(m_radio_wgs_chi, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 2;
+            m_error_name = m_radio_wgs_chi->text();
+            CalculateError();
+        }
+    });
+    m_radio_wgs_sigma = new QRadioButton(tr("%1").arg(Unicode_sigma));
+    connect(m_radio_wgs_sigma, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 3;
+            m_error_name = m_radio_wgs_sigma->text();
+            CalculateError();
+        }
+    });
+
+    hlayout->addWidget(m_radio_wgs_sse);
+    hlayout->addWidget(m_radio_wgs_ssy);
+    hlayout->addWidget(m_radio_wgs_chi);
+    hlayout->addWidget(m_radio_wgs_sigma);
+
+    m_radio_wgs_sse->setHidden(true);
+    m_radio_wgs_ssy->setHidden(true);
+    m_radio_wgs_chi->setHidden(true);
+    m_radio_wgs_sigma->setHidden(true);
+
+    m_ParameterIndex = 0;
+    m_error_name = "SSE";
+
+    layout->addLayout(hlayout);
 
     m_gridScalingFactor = new QSpinBox;
     m_gridScalingFactor->setMinimum(-10);
@@ -504,7 +554,56 @@ QWidget* StatisticDialog::ModelComparison()
 
     connect(m_moco_maxerror, SIGNAL(valueChanged(qreal)), this, SLOT(CalculateError()));
 
-    global_layout->addWidget(new QLabel(tr("Confidence Intervall")), 0, 0);
+    QHBoxLayout* hlayout = new QHBoxLayout;
+
+    m_radio_moco_sse = new QRadioButton(tr("SSE"));
+    m_radio_moco_sse->setChecked(true);
+
+    connect(m_radio_moco_sse, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 0;
+            m_error_name = m_radio_moco_sse->text();
+            CalculateError();
+        }
+    });
+    m_radio_moco_ssy = new QRadioButton(tr("SEy"));
+    connect(m_radio_moco_ssy, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 1;
+            m_error_name = m_radio_moco_ssy->text();
+            CalculateError();
+        }
+    });
+    m_radio_moco_chi = new QRadioButton(tr("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2));
+    connect(m_radio_moco_chi, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 2;
+            m_error_name = m_radio_moco_chi->text();
+            CalculateError();
+        }
+    });
+    m_radio_moco_sigma = new QRadioButton(tr("%1").arg(Unicode_sigma));
+    connect(m_radio_moco_sigma, &QRadioButton::toggled, this, [this](int state) {
+        if (state) {
+            m_ParameterIndex = 3;
+            m_error_name = m_radio_moco_sigma->text();
+            CalculateError();
+        }
+    });
+
+    hlayout->addWidget(m_radio_moco_sse);
+    hlayout->addWidget(m_radio_moco_ssy);
+    hlayout->addWidget(m_radio_moco_chi);
+    hlayout->addWidget(m_radio_moco_sigma);
+
+    m_radio_moco_sse->setHidden(true);
+    m_radio_moco_ssy->setHidden(true);
+    m_radio_moco_chi->setHidden(true);
+    m_radio_moco_sigma->setHidden(true);
+
+    global_layout->addLayout(hlayout, 0, 0, 1, 2);
+
+    global_layout->addWidget(new QLabel(tr("Confidence Interval")), 0, 0);
     global_layout->addWidget(m_moco_maxerror, 0, 1);
 
     if (m_model) {
@@ -553,9 +652,9 @@ QWidget* StatisticDialog::CVWidget()
 {
     QWidget* widget = new QWidget;
     QGridLayout* layout = new QGridLayout;
-    m_wgs_loo = new QRadioButton(tr("Leave-One-Out"));
-    m_wgs_l2o = new QRadioButton(tr("Leave-Two-Out"));
-    m_wgs_lxo = new QRadioButton(tr("Leave-X-Out"));
+    m_radio_cv_loo = new QRadioButton(tr("Leave-One-Out"));
+    m_radio_cv_l2o = new QRadioButton(tr("Leave-Two-Out"));
+    m_radio_cv_lxo = new QRadioButton(tr("Leave-X-Out"));
 
     m_cv_lxo = new QSpinBox;
     m_cv_lxo->setMinimum(1);
@@ -601,18 +700,18 @@ QWidget* StatisticDialog::CVWidget()
 
     cv_algo->setLayout(cv_algo_layout);
 
-    m_wgs_loo->setChecked(true);
+    m_radio_cv_loo->setChecked(true);
 
-    layout->addWidget(m_wgs_loo, 0, 0);
-    layout->addWidget(m_wgs_l2o, 1, 0);
-    layout->addWidget(m_wgs_lxo, 2, 0);
+    layout->addWidget(m_radio_cv_loo, 0, 0);
+    layout->addWidget(m_radio_cv_l2o, 1, 0);
+    layout->addWidget(m_radio_cv_lxo, 2, 0);
     layout->addWidget(m_cv_lxo, 2, 1);
     layout->addWidget(m_cv_runs, 2, 2);
     if (qApp->instance()->property("advanced_ui").toBool())
         layout->addWidget(cv_algo, 4, 1, 1, 2);
 
-    connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
-    connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_wgs_lxo, &QRadioButton::setChecked);
+    connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);
+    connect(m_cv_runs, qOverload<int>(&QSpinBox::valueChanged), m_radio_cv_lxo, &QRadioButton::setChecked);
 
     m_cross_validate = new QPushButton(tr("Cross Validation"));
     m_reduction = new QPushButton(tr("Reduction Analysis"));
@@ -641,7 +740,7 @@ QJsonObject StatisticDialog::RunGridSearch() const
     QJsonObject controller = GridSearchConfigBlock;
 
     controller["MaxSteps"] = m_wgs_steps->value();
-    controller["MaxError"] = m_wgs_max;
+    controller["MaxParameter"] = m_wgs_max;
     controller["f-value"] = m_wgs_f_value->value();
     controller["method"] = SupraFit::Method::WeakenedGridSearch;
     controller["confidence"] = m_wgs_maxerror->value();
@@ -653,6 +752,8 @@ QJsonObject StatisticDialog::RunGridSearch() const
     controller["StepScalingFactor"] = m_gridScalingFactor->value();
 
     controller["StoreIntermediate"] = m_store_wgsearch->isChecked();
+
+    controller["ParameterIndex"] = m_ParameterIndex;
 
     QList<int> glob_param, local_param;
     int max = 0;
@@ -676,7 +777,7 @@ QJsonObject StatisticDialog::RunModelComparison() const
     QJsonObject controller = ModelComparisonConfigBlock;
 
     controller["MaxSteps"] = m_moco_mc_steps->value();
-    controller["MaxError"] = m_moco_max;
+    controller["MaxParameter"] = m_moco_max;
     controller["f-value"] = m_moco_f_value->value();
     controller["method"] = SupraFit::Method::ModelComparison;
     controller["confidence"] = m_moco_maxerror->value();
@@ -700,6 +801,8 @@ QJsonObject StatisticDialog::RunModelComparison() const
         }
         max += m_model.data()->SeriesCount() * m_moco_local[i]->isChecked();
     }
+    controller["ParameterIndex"] = m_ParameterIndex;
+
     controller["GlobalParameterPrecList"] = ToolSet::IntList2String(glob_prec);
     controller["LocalParameterPrecList"] = ToolSet::IntList2String(local_prec);
     controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
@@ -754,9 +857,9 @@ QJsonObject StatisticDialog::RunCrossValidation() const
     QJsonObject controller = ResampleConfigBlock;
 
     controller["method"] = SupraFit::Method::CrossValidation;
-    if (m_wgs_loo->isChecked())
+    if (m_radio_cv_loo->isChecked())
         controller["CXO"] = 1;
-    else if (m_wgs_l2o->isChecked())
+    else if (m_radio_cv_l2o->isChecked())
         controller["CXO"] = 2;
     else {
         controller["CXO"] = 3;
@@ -857,15 +960,15 @@ void StatisticDialog::CalculateError()
     if (!m_model.data())
         return;
     updateUI();
-    qreal error = m_model.data()->SumofSquares();
+    qreal error = m_model.data()->StatisticVector()[m_ParameterIndex];
     qreal max_moco_error, max_wgs_error;
     QString wgs_message, moco_message;
 
     max_wgs_error = error * (m_wgs_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-    wgs_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_wgs_error) + ".";
+    wgs_message = "The current " + m_error_name + " is " + QString::number(error) + ".\nThe maximum " + m_error_name + " will be " + QString::number(max_wgs_error) + ".";
 
     max_moco_error = error * (m_moco_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
-    moco_message = "The current error is " + QString::number(error) + ".\nThe maximum error will be " + QString::number(max_moco_error) + ".";
+    moco_message = "The current " + m_error_name + " is " + QString::number(error) + ".\nThe maximum " + m_error_name + " will be " + QString::number(max_moco_error) + ".";
 
     m_moco_max = max_moco_error;
     m_wgs_max = max_wgs_error;

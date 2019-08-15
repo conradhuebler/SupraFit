@@ -46,8 +46,10 @@ WGSearchThread::WGSearchThread(const QJsonObject& controller)
     m_MaxErrorDecreaseCounter = m_controller["ErrorDecreaseCounter"].toInt();
     m_MaxErrorConvergencyCounter = m_controller["ErrorConvergencyCounter"].toInt();
     m_ScalingFactor = m_controller["StepScalingFactor"].toInt();
-    m_MaxError = m_controller["MaxError"].toDouble();
+    m_MaxParameter = m_controller["MaxParameter"].toDouble();
     m_ErrorConvergency = m_controller["ErrorConvergency"].toDouble();
+    m_ParameterIndex = m_controller["ParameterIndex"].toInt(0);
+
     setUp();
 }
 
@@ -59,7 +61,7 @@ void WGSearchThread::run()
 {
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     m_model.data()->Calculate();
-    m_ModelError = m_model.data()->SumofSquares();
+    m_ModelError = m_model.data()->SSE();
 
     QList<QPointF> series;
     QVector<double> parameter = m_model.data()->OptimizeParameters();
@@ -107,9 +109,9 @@ void WGSearchThread::Calculate()
         else
             model = thread->BestIntermediateParameter();
 
-        qreal new_error = thread->SumOfError();
+        qreal new_error = thread->StatisticVector()[m_ParameterIndex];
 
-        if (new_error > m_MaxError) {
+        if (new_error > m_MaxParameter) {
             m_OvershotCounter++;
             m_finished = true;
         } else {
@@ -175,12 +177,15 @@ QPointer<WGSearchThread> WeakenedGridSearch::CreateThread(int index, bool direct
 
 bool WeakenedGridSearch::Run()
 {
+
     m_cv = true;
     if (!m_model)
         return false;
     for (int i = 0; i < m_series.size(); ++i)
         m_series[i].clear();
     m_series.clear();
+
+    int ParameterIndex = m_controller["ParameterIndex"].toInt(0);
 
     QVector<double> parameter = m_model.data()->OptimizeParameters();
 
@@ -288,7 +293,14 @@ bool WeakenedGridSearch::Run()
         result["OvershotCounter"] = pair.first->OvershotCounter() + pair.second->OvershotCounter();
         result["ErrorDecreaseCounter"] = pair.first->ErrorDecreaseCounter() + pair.second->ErrorDecreaseCounter();
         result["ErrorConvergencyCounter"] = pair.first->ErrorConvergencyCounter() + pair.second->ErrorConvergencyCounter();
-
+        if (ParameterIndex == 0)
+            result["ylabel"] = "SSE";
+        else if (ParameterIndex == 1)
+            result["ylabel"] = "SEy";
+        else if (ParameterIndex == 2)
+            result["ylabel"] = QString("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2);
+        else if (ParameterIndex == 3)
+            result["ylabel"] = QString("%1").arg(Unicode_sigma);
         bool local = pair.first->Converged() && pair.second->Converged() && pair.first->Finished() && pair.second->Finished() && !(pair.first->Stationary() && pair.second->Stationary());
 
         QJsonObject confidence;

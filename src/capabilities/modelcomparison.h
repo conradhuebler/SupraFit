@@ -53,8 +53,8 @@ public:
 private:
     QSharedPointer<AbstractModel> m_model;
     QList<QJsonObject> m_results;
-    int m_maxsteps, m_steps = 0;
-
+    int m_maxsteps, m_steps = 0, m_ParameterIndex = 0;
+    qreal m_MaxParameter;
     QVector<QVector<qreal>> m_box;
     qreal m_effective_error;
 };

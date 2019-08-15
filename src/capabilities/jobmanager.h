@@ -52,11 +52,15 @@ const QJsonObject ModelComparisonConfigBlock{
      */
     { "FastConfidenceScaling", -4 }, // int
 
-    /* SSE threshold defined by f-Statistics */
-    { "MaxError", 0 }, //double
+    /* Parameter threshold defined by f-Statistics */
+    { "MaxParameter", 0 }, //double
 
     /* Confidence in % */
     { "confidence", 95 }, //double
+
+    /* Statistical parameter to be analysed */
+    { "ParameterIndex", 0 }, //int - this integer is the index for the vector inline QVector<qreal> StatisticVector() const { return QVector<qreal>() << SSE() << SEy() << ChiSquared() << sigma(); }
+    // 0 - SSE; 1 - SEy, 2 - ChiSquared, 3 - sigma
 
     /* Corresponding f Value */
     { "f_value", 0 }, // double
@@ -169,14 +173,18 @@ const QJsonObject GridSearchConfigBlock{
     /* Maximal number of steps to be evaluated */
     { "MaxSteps", 1e3 }, // int
 
-    /* SSE threshold defined by f-Statistics */
-    { "MaxError", 0 }, //double
+    /* Parameter threshold defined by f-Statistics */
+    { "MaxParameter", 0 }, //double
 
     /* Confidence in % */
     { "confidence", 95 }, //double
 
     /* Corresponding f Value */
     { "f_value", 0 }, // double
+
+    /* Statistical parameter to be analysed */
+    { "ParameterIndex", 0 }, //int - this integer is the index for the vector inline QVector<qreal> StatisticVector() const { return QVector<qreal>() << SSE() << SEy() << ChiSquared() << sigma(); }
+    // 0 - SSE; 1 - SEy, 2 - ChiSquared, 3 - sigma
 
     /* Threshold for convergency in SSE */
     { "ErrorConvergency", 1e-10 }, // double

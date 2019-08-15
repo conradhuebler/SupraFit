@@ -267,7 +267,7 @@ public:
 
     /*! \brief returns Akaike’s Information Criterion (AIC)
     */
-    inline qreal AIC() const { return DataPoints() * log(SumofSquares() / double(DataPoints())) + 2 * (Parameter() + 1); }
+    inline qreal AIC() const { return DataPoints() * log(SSE() / double(DataPoints())) + 2 * (Parameter() + 1); }
 
     /*! \brief returns a second-order (corrected) Akaike’s Information Criterion (AIC)
     */
@@ -354,13 +354,15 @@ public:
      */
     inline bool isCorrupt() const { return m_corrupt; }
 
-    inline qreal SumofSquares() const { return m_sum_squares; }
-    inline qreal SumofAbsolute() const { return m_sum_absolute; }
+    inline qreal SSE() const { return m_sum_squares; }
+    inline qreal SAE() const { return m_sum_absolute; }
     inline int Points() const { return m_used_variables; }
     inline int Parameter() const { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
     inline qreal Variance() const { return m_variance; }
+
     inline qreal StdDeviation() const { return qSqrt(m_variance); }
+    inline qreal sigma() const { return qSqrt(m_variance); }
 
     inline qreal StdError() const { return m_stderror; }
     inline qreal SEy() const { return m_SEy; }
@@ -368,6 +370,8 @@ public:
 
     inline qreal ChiSquared() const { return m_chisquared; }
     inline qreal CovFit() const { return m_covfit; }
+
+    inline QVector<qreal> StatisticVector() const { return QVector<qreal>() << SSE() << SEy() << ChiSquared() << sigma(); }
 
     inline bool isConverged() const { return m_converged; }
     virtual inline void setConverged(bool converged) { m_converged = converged; }

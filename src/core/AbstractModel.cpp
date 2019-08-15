@@ -441,9 +441,9 @@ qreal AbstractModel::Error(qreal confidence, bool f)
 {
     if (f) {
         qreal f_value = finv(confidence / 100);
-        return SumofSquares() * (f_value * Parameter() / (Points() - Parameter()) + 1);
+        return SSE() * (f_value * Parameter() / (Points() - Parameter()) + 1);
     } else {
-        return SumofSquares() + SumofSquares() * confidence / double(100);
+        return SSE() + SSE() * confidence / double(100);
     }
 }
 
@@ -1584,7 +1584,7 @@ void AbstractModel::addSeries(const QString& str, const QString& name, const QLi
 qreal AbstractModel::ErrorfTestThreshold(qreal pvalue)
 {
     qreal f_value = finv(pvalue);
-    qreal error = SumofSquares();
+    qreal error = SSE();
     return error * (f_value * Parameter() / (Points() - Parameter()) + 1);
 }
 

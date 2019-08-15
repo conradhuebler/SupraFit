@@ -608,7 +608,7 @@ void ModelWidget::FastConfidence()
     job["FastConfidenceSteps"] = qApp->instance()->property("FastConfidenceSteps").toInt();
     job["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble());
-    qreal error = m_model.data()->SumofSquares();
+    qreal error = m_model.data()->SSE();
     job["MaxError"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
     job["confidence"] = qApp->instance()->property("p_value").toDouble();
     job["f_value"] = f_value;

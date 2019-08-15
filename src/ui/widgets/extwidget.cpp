@@ -49,7 +49,7 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
     m_sse = new ClickLabel;
     connect(m_sse, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->SumofSquares()))).simplified());
+        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->SSE()))).simplified());
         m_sse->Clicked();
     });
 
@@ -93,7 +93,7 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
 void extWidget::Update()
 {
     //TODO Move the random table generation into an on-demand generation upon click, drag n drop and not after every recalculation
-    m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Sum of Squares: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SumofSquares())));
+    m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Sum of Squares: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SSE())));
     m_std->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Standard Deviation: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->StdDeviation())));
     m_sey->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SE<sub>y</sub>: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SEy())));
 
