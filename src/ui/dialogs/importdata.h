@@ -71,17 +71,17 @@ public:
     }
 
 private:
-    void setUi(bool single = true);
+    void setUi();
 
     void WriteData(const DataTable* model, int independent = 2);
 
     QPointer<TableView> m_table, m_sec_table;
     QPointer<QLineEdit> m_line;
     QPointer<QPushButton> m_select, m_export, m_file, m_thermogram;
-    QPointer<QSpinBox> m_conc;
+    QPointer<QSpinBox> m_independent_rows, m_dependent_rows;
     QPointer<QDialogButtonBox> m_buttonbox;
     QPointer<DataClass> m_storeddata;
-    QPointer<QCheckBox> m_switch_concentration;
+    QPointer<QCheckBox> m_simulation;
     QString m_filename, m_projectfile;
     QJsonObject m_raw;
     DataClassPrivate::DataType m_type = DataClassPrivate::Table;

@@ -70,7 +70,7 @@ void TableView::keyPressEvent(QKeyEvent* event)
 ImportData::ImportData(const QString& file, QWidget* parent)
     : QDialog(parent)
     , m_filename(file)
-    , m_projectfile(QString("Titration %1").arg(QDateTime::currentDateTime().toString()))
+    , m_projectfile(QString("Project - %1").arg(QDateTime::currentDateTime().toString()))
 {
     setUi();
     LoadFile();
@@ -78,7 +78,7 @@ ImportData::ImportData(const QString& file, QWidget* parent)
 
 ImportData::ImportData(QWidget* parent)
     : QDialog(parent)
-    , m_projectfile(QString("Titration %1").arg(QDateTime::currentDateTime().toString()))
+    , m_projectfile(QString("Project - %1").arg(QDateTime::currentDateTime().toString()))
 {
     setUi();
     DataTable* model = new DataTable(0, 0, this);
@@ -86,16 +86,15 @@ ImportData::ImportData(QWidget* parent)
 }
 
 ImportData::ImportData(QWeakPointer<DataClass> data)
-    : m_single(false)
 {
     // That is all not nice, I know
 
     if (data.data()->DataType() == DataClassPrivate::Table) {
-        setUi(m_single);
+        setUi();
         m_table->setModel(data.data()->IndependentModel());
         m_sec_table->setModel(data.data()->DependentModel());
     } else if (data.data()->DataType() == DataClassPrivate::Thermogram) {
-        setUi(true);
+        setUi();
         DataTable* model = new DataTable(0, 0, this);
         m_table->setModel(model);
         m_raw = data.data()->ExportData()["raw"].toObject();
@@ -115,18 +114,34 @@ ImportData::~ImportData()
         delete m_storeddata;
 }
 
-void ImportData::setUi(bool single)
+void ImportData::setUi()
 {
     QGridLayout* layout = new QGridLayout;
 
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    //m_switch_concentration = new QCheckBox(this);
-    //m_switch_concentration->setText("Switch Host/Guest");
+
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    m_conc = new QSpinBox;
-    //connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
+    m_independent_rows = new QSpinBox;
+
+    m_simulation = new QCheckBox(tr("Simulate Data"));
+    m_dependent_rows = new QSpinBox;
+    m_dependent_rows->setMinimum(1);
+    m_dependent_rows->setValue(1);
+    m_dependent_rows->setEnabled(false);
+
+    connect(m_simulation, &QCheckBox::stateChanged, m_dependent_rows, [this](int state) {
+        m_dependent_rows->setEnabled(state);
+
+        if (m_table) {
+            if (state)
+                m_independent_rows->setValue(m_table->model()->columnCount());
+            else
+                NoChanged();
+        }
+    });
+
     m_line = new QLineEdit;
     m_select = new QPushButton("Select file");
     connect(m_select, SIGNAL(clicked()), this, SLOT(SelectFile()));
@@ -142,28 +157,17 @@ void ImportData::setUi(bool single)
 
     m_table = new TableView;
 
-    if (single == false) {
-        m_sec_table = new TableView;
-    }
-    if (single) {
-        layout->addWidget(m_select, 0, 0);
-        layout->addWidget(m_line, 0, 1);
-        layout->addWidget(m_export, 0, 3);
+    layout->addWidget(m_select, 0, 0);
+    layout->addWidget(m_line, 0, 1, 1, 2);
+    layout->addWidget(m_export, 0, 3);
+    layout->addWidget(new QLabel(tr("No. of independent variables:")), 1, 0);
+    layout->addWidget(m_independent_rows, 1, 1);
+    layout->addWidget(m_simulation, 1, 2);
+    layout->addWidget(m_dependent_rows, 1, 3);
+    layout->addWidget(m_table, 3, 0, 1, 4);
+    layout->addWidget(m_thermogram, 4, 0);
+    layout->addWidget(m_buttonbox, 4, 1, 1, 3);
 
-        layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
-        layout->addWidget(m_conc, 1, 1);
-        layout->addWidget(m_table, 3, 0, 1, 4);
-    }
-    if (!single) {
-        layout->addWidget(m_table, 3, 0);
-        m_table->setFixedWidth(200);
-        layout->addWidget(m_sec_table, 3, 1, 1, 3);
-        m_sec_table->setFixedWidth(600);
-    }
-    if (single) {
-        layout->addWidget(m_thermogram, 4, 0);
-    }
-    layout->addWidget(m_buttonbox, 4, 1, 1, 4);
     connect(m_table, &TableView::Edited, this, &ImportData::NoChanged);
 
     setLayout(layout);
@@ -175,13 +179,13 @@ void ImportData::NoChanged()
 {
     if (!m_table)
         return;
-    m_conc->setMinimum(1);
-    m_conc->setMaximum(m_table->model()->columnCount());
+    m_independent_rows->setMinimum(1);
+    m_independent_rows->setMaximum(m_table->model()->columnCount());
 
     if (m_table->model()->columnCount() > 2)
-        m_conc->setValue(2);
+        m_independent_rows->setValue(2);
     else
-        m_conc->setValue(1);
+        m_independent_rows->setValue(1);
 }
 
 
@@ -240,13 +244,13 @@ void ImportData::LoadFile()
         }
         delete filehandler;
     }
-    m_conc->setMinimum(1);
-    m_conc->setMaximum(m_table->model()->columnCount());
+    m_independent_rows->setMinimum(1);
+    m_independent_rows->setMaximum(m_table->model()->columnCount());
 
     if (m_table->model()->columnCount() > 2)
-        m_conc->setValue(2);
+        m_independent_rows->setValue(2);
     else
-        m_conc->setValue(1);
+        m_independent_rows->setValue(1);
 }
 
 void ImportData::ExportFile()
@@ -268,14 +272,16 @@ void ImportData::ExportFile()
 
 void ImportData::WriteData(const DataTable* model, int independent)
 {
-    independent = m_conc->value();
+    independent = m_independent_rows->value();
     m_storeddata = new DataClass;
     DataTable* indep = model->BlockColumns(0, independent);
     DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
 
     if (model->columnCount() - independent == 0) {
-        m_storeddata->setDependentTable(indep);
+        DataTable* model = new DataTable(m_dependent_rows->value(), indep->rowCount(), this);
+        m_storeddata->setDependentTable(model);
         m_storeddata->setType(DataClassPrivate::DataType::Simulation);
+        m_projectfile = QString("Simulation - %1").arg(QDateTime::currentDateTime().toString());
     } else {
         m_storeddata->setDataType(m_type);
         m_storeddata->setDependentTable(dep);

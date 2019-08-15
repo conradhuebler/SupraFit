@@ -65,7 +65,7 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
         layout->addWidget(m_sey, 0, 2);
     }
     m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
-    m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")));
     m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
     m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
     m_variance = new QDoubleSpinBox;
@@ -76,8 +76,10 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
 
     QHBoxLayout* hlayout = new QHBoxLayout;
     hlayout->addWidget(m_ideal);
-    hlayout->addWidget(m_mc_std);
-    hlayout->addWidget(m_mc_sey);
+    if (!m_model.data()->isSimulation()) {
+        hlayout->addWidget(m_mc_std);
+        hlayout->addWidget(m_mc_sey);
+    }
     hlayout->addWidget(m_mc_user);
     hlayout->addWidget(m_variance);
 
@@ -103,6 +105,8 @@ void extWidget::Update()
     QJsonObject data = m_model.data()->ExportData();
     data["DataType"] = DataClassPrivate::DataType::Table;
     data["dependent"] = m_model.data()->ModelTable()->ExportTable(true);
+    data["title"] = QString("Simulated Data - %1").arg(QDateTime::currentDateTime().toString());
+    data["content"] = QString("Simulated data from a %1").arg(m_model.data()->Name());
     data["uuid"] = QString();
     QJsonObject top;
     top["data"] = data;
@@ -114,6 +118,7 @@ void extWidget::Update()
 
     DataTable* table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->StdDeviation(), rng);
     data["dependent"] = table->ExportTable(true);
+    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=%5<sub>fit</sub>=%6)").arg(m_model.data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(Unicode_sigma).arg(m_model.data()->StdDeviation());
     top["data"] = data;
     document = QJsonDocument(top);
     m_mc_std->setContent(document.toBinaryData());
@@ -121,6 +126,7 @@ void extWidget::Update()
 
     table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->SEy(), rng);
     data["dependent"] = table->ExportTable(true);
+    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=SEy=%5)").arg(m_model.data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(m_model.data()->SEy());
     top["data"] = data;
     document = QJsonDocument(top);
     m_mc_sey->setContent(document.toBinaryData());
@@ -128,6 +134,7 @@ void extWidget::Update()
 
     table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_variance->value(), rng);
     data["dependent"] = table->ExportTable(true);
+    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=%5)").arg(m_model.data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(m_variance->value());
     top["data"] = data;
     document = QJsonDocument(top);
     m_mc_user->setContent(document.toBinaryData());

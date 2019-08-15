@@ -85,7 +85,7 @@ void ModelChartWidget::setUI()
 void ModelChartWidget::UpdateChart()
 {
     const ModelChart* chart = m_model.data()->Chart(m_chart);
-    if (chart == NULL)
+    if (chart == NULL || view == NULL)
         return;
 
     view->setXAxis(chart->x_axis);

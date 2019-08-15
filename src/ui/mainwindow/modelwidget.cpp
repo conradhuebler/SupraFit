@@ -62,6 +62,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QRandomGenerator>
 #include <QtCore/QSettings>
 #include <QtCore/QTime>
 #include <QtCore/QTimer>
@@ -144,10 +145,14 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
         constant->setPrefix(m_model->GlobalParameterPrefix(i));
         constant->setSingleStep(m_model->GlobalParameter(i) / 100);
-
-        constant->setValue(m_model->GlobalParameter(i));
         constant->setMaximum(1e9);
         constant->setMinimum(-1e9);
+
+        if (m_model.data()->isSimulation()) {
+            constant->setValue(QRandomGenerator::global()->bounded(10.0));
+        } else
+            constant->setValue(m_model->GlobalParameter(i));
+
         constant->setReadOnly(m_val_readonly);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
         connect(m_model.data(), &AbstractModel::Recalculated, this,
@@ -175,6 +180,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         hlayout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         hlayout->addWidget(constant);
         hlayout->addWidget(check);
+        check->setHidden(m_model.data()->isSimulation());
         group->setLayout(hlayout);
         const_layout->addWidget(group);
     }
@@ -183,6 +189,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     QVBoxLayout* fit_layout = new QVBoxLayout;
     fit_layout->addWidget(m_global_box);
     fit_layout->addWidget(m_local_box);
+
+    m_global_box->setHidden(m_model->isSimulation());
+    m_local_box->setHidden(m_model->isSimulation());
 
     if (!m_val_readonly)
         const_layout->addLayout(fit_layout);
@@ -383,6 +392,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     });
 
     m_SetUpFinished = true;
+    if (m_model->isSimulation()) {
+        QTimer::singleShot(10, this, &ModelWidget::recalculate);
+    }
 }
 
 ModelWidget::~ModelWidget()
@@ -456,6 +468,7 @@ void ModelWidget::DiscreteUI()
 
     m_layout->addWidget(m_actions);
     m_actions->LocalEnabled(m_model->SupportSeries());
+    m_actions->setSimulation(m_model->isSimulation());
 }
 
 void ModelWidget::resizeButtons()
@@ -464,15 +477,10 @@ void ModelWidget::resizeButtons()
     m_minimize_all->setStyleSheet("background-color: #77d740;");
 }
 
-void ModelWidget::EmptyUI()
-{
-    // //     m_add_sim_signal = new QPushButton(tr("Add Signal"));
-    // //     connect(m_add_sim_signal, SIGNAL(clicked()), this, SLOT(AddSimSignal()));
-    // //     m_layout->addWidget(m_add_sim_signal);
-}
-
 void ModelWidget::setParameter()
 {
+    if (m_model->isSimulation())
+        return;
     for (int j = 0; j < m_model->GlobalParameterSize(); ++j) {
         if (qAbs(m_constants[j]->value() - m_model->GlobalParameter(j)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
             m_constants[j]->setValue(m_model->GlobalParameter(j));

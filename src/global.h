@@ -39,6 +39,9 @@ const QString Unicode_delta = QChar(0x03B4);
 const QString Unicode_mu = QChar(0x00B5);
 const QString Unicode_sigma = QChar(0x03C3);
 const QString Unicode_chi = QChar(0x1D61);
+const QString Unicode_epsilion = QChar(0x03B5);
+
+const QString Unicode_Math_Element = QChar(0x2208);
 
 const QString Unicode_Sup_1 = QChar(0x00B9);
 const QString Unicode_Sup_2 = QChar(0x00B2);

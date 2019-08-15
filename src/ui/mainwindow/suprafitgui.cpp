@@ -1332,6 +1332,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("FastConfidenceSteps") == QVariant())
         qApp->instance()->setProperty("FastConfidenceSteps", 100);
 
+    if (qApp->instance()->property("InitialiseRandom") == QVariant())
+        qApp->instance()->setProperty("InitialiseRandom", true);
+
     qApp->instance()->setProperty("lastDir", getDir());
 }
 

@@ -23,6 +23,7 @@
 #include "src/ui/widgets/buttons/spinbox.h"
 
 #include <QtCore/QPointer>
+#include <QtCore/QRandomGenerator>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDoubleSpinBox>
@@ -49,11 +50,15 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         box->setMinimum(-1e10);
         box->setMaximum(1e10);
         box->setDecimals(5);
-        box->setValue(m_model.data()->LocalParameter(i, 0));
+        if (m_model.data()->isSimulation()) {
+            box->setValue(QRandomGenerator::global()->bounded(10.0));
+        } else
+            box->setValue(m_model.data()->LocalParameter(i, 0));
         connect(m_model.data(), &AbstractModel::Recalculated, box,
             [i, box, check, this, widget]() {
                 if (this->m_model && check) {
-                    box->setValue(m_model.data()->LocalParameter(i, 0));
+                    if (!m_model.data()->isSimulation())
+                        box->setValue(m_model.data()->LocalParameter(i, 0));
                     if (this->m_model.data()->LocalEnabled(i)) {
                         box->setStyleSheet("background-color: " + included());
                         check->setEnabled(true);
@@ -83,6 +88,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         hlayout->addWidget(box);
         m_parameter << box;
         hlayout->addWidget(check);
+        check->setHidden(m_model.data()->isSimulation());
         layout->addWidget(widget);
     }
 
