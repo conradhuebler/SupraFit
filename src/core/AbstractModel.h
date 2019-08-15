@@ -286,6 +286,8 @@ public:
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
 
+    void setOptions(const QJsonObject& options);
+
     int UpdateStatistic(const QJsonObject& object);
 
     int getReductionStatisticResults() const { return m_reduction.size(); }
@@ -380,6 +382,9 @@ public:
      */
     inline void InitialGuess()
     {
+        if (Type() == DataClassPrivate::DataType::Simulation)
+            return;
+
         m_demand_guess = true;
         InitialGuess_Private();
     }

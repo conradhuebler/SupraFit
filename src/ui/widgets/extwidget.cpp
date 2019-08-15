@@ -59,11 +59,11 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
         clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->SEy()))).simplified());
         m_sey->Clicked();
     });
-
-    layout->addWidget(m_sse, 0, 0);
-    layout->addWidget(m_std, 0, 1);
-    layout->addWidget(m_sey, 0, 2);
-
+    if (!m_model.data()->isSimulation()) {
+        layout->addWidget(m_sse, 0, 0);
+        layout->addWidget(m_std, 0, 1);
+        layout->addWidget(m_sey, 0, 2);
+    }
     m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
     m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
     m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
@@ -101,6 +101,7 @@ void extWidget::Update()
         return;
 
     QJsonObject data = m_model.data()->ExportData();
+    data["DataType"] = DataClassPrivate::DataType::Table;
     data["dependent"] = m_model.data()->ModelTable()->ExportTable(true);
     data["uuid"] = QString();
     QJsonObject top;

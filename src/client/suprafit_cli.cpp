@@ -18,9 +18,11 @@
 
 #include <iostream>
 
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 
 #include "src/core/dataclass.h"
+#include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 #include "src/core/toolset.h"
@@ -37,8 +39,20 @@ SupraFitCli::~SupraFitCli()
 
 bool SupraFitCli::LoadFile()
 {
-    if (!JsonHandler::ReadJsonFile(m_toplevel, m_infile))
-        return false;
+
+    FileHandler* handler = new FileHandler(m_infile, this);
+    handler->setIndependentRows(m_independent_rows);
+    handler->setStartPoint(m_start_point);
+    handler->LoadFile();
+    if (handler->Type() == FileHandler::SupraFit) {
+        if (!JsonHandler::ReadJsonFile(m_toplevel, m_infile))
+            return false;
+    } else if (handler->Type() == FileHandler::dH) {
+        m_toplevel = handler->getJsonData();
+
+    } else {
+        m_toplevel = handler->getJsonData();
+    }
     return true;
 }
 

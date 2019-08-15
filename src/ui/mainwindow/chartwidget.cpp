@@ -287,7 +287,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             model_series->setSize(lineWidth);
             m_signalview->addSeries(model_series);
         }
-        if (model->Type() != 3) {
+        if (model->Type() != DataClassPrivate::DataType::Simulation) {
             LineSeries* error_series = (qobject_cast<LineSeries*>(error_wrapper->Series(i)));
             error_wrapper->setSeries(error_series, i);
             error_series->setName(m_data_mapper.data()->Series(i)->name());

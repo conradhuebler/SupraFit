@@ -58,6 +58,7 @@ private:
     */
     QJsonObject m_mainjson, m_modelsjson, m_jobsjson;
     bool m_interrupt = false;
+
 signals:
     void Interrupt();
 };

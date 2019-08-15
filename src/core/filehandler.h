@@ -30,13 +30,16 @@ class FileHandler : public QObject {
 
 public:
     enum FileType {
-        Generic = 1,
-        dH = 2
+        SupraFit = 1,
+        Generic = 2,
+        dH = 3
     };
 
     FileHandler(const QString& filename, QObject* parent = 0);
     FileHandler(QObject* parent = 0);
     ~FileHandler();
+
+    void LoadFile();
 
     inline bool AllInt() const { return m_allint; }
     inline bool Table() const { return m_table; }
@@ -54,23 +57,27 @@ public:
     inline void setFileType(FileType type) { m_filetype = type; }
     inline FileType Type() const { return m_filetype; }
     inline QJsonObject SystemParameter() const { return m_systemparameter; }
+    inline void setIndependentRows(int rows) { m_rows = rows; }
+    inline void setStartPoint(int point) { m_start_point = point; }
+    inline QJsonObject getJsonData() const { return m_topjson; }
 
 private:
-    void LoadFile();
-
     void ReadGeneric();
     void ReaddH();
+    void ReadJson();
+    void ConvertTable();
 
     bool CheckForTable();
 
     bool m_table, m_allint, m_file_supported;
     QPointer<DataTable> m_stored_table;
 
-    QString m_filename;
+    QString m_filename, m_title;
     QString sep;
     QStringList m_filecontent;
-    int m_lines;
+    int m_lines, m_rows = 2, m_start_point = 0;
     FileType m_filetype;
 
     QJsonObject m_systemparameter;
+    QJsonObject m_topjson;
 };

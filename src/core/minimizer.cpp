@@ -53,7 +53,8 @@ void NonLinearFitThread::run()
     m_steps = 0;
     m_converged = false;
     //quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    NonLinearFit();
+    if (!m_model->isSimulation())
+        NonLinearFit();
     //quint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
     m_running = false;
