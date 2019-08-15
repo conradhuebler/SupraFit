@@ -214,6 +214,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
     for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
         ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));
+        signal_series->setName(m_rawdata.data()->DependentModel()->header()[i]);
         m_data_mapper->setSeries(signal_series, i);
         m_signalview->addSeries(signal_series);
     }

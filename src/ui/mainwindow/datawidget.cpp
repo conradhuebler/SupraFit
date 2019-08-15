@@ -142,6 +142,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_signals->resizeColumnsToContents();
 
     m_plot_x->setVisible(m_data.data()->IndependentModel()->columnCount() == 1);
+    m_plot_x->setChecked(m_data.data()->PlotMode());
     connect(m_plot_x, &QCheckBox::stateChanged, this, [this](int state) {
         m_data.data()->setPlotMode(state);
         m_wrapper.data()->UpdateModel();
@@ -169,7 +170,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         m_signal_elements << el;
     }
 
-    layout->addLayout(vlayout, 2, 0, 1, 4);
+    layout->addLayout(vlayout, 3, 0, 1, 4);
 
     QHBoxLayout* scaling_layout = new QHBoxLayout;
     scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
@@ -188,7 +189,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         scaling_layout->addLayout(lay);
     }
 
-    layout->addLayout(scaling_layout, 3, 0, 1, 4);
+    layout->addLayout(scaling_layout, 4, 0, 1, 4);
 
     if (m_data.data()->IndependentVariableSize() == 1)
         m_switch->hide();

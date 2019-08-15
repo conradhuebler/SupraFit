@@ -389,6 +389,8 @@ public:
 
     inline void setPlotMode(bool plot_x) { m_plot_x = plot_x; }
 
+    inline int PlotMode() const { return m_plot_x; }
+
     inline void setRawData(const QJsonObject& data) { d->m_raw_data = data; }
 
     inline void setDataType(DataClassPrivate::DataType type) { d->m_datatype = type; }
