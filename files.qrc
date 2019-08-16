@@ -44,5 +44,9 @@
         <file>icons/kspread.png</file>
         <file>icons/clock.png</file>
         <file>icons/dialog-ok-red.png</file>
+        <file>icons/list-remove.png</file>
+        <file>icons/list-remove-blue.png</file>
+        <file>icons/list-add-blue.png</file>
+        <file>icons/help-hint-blue.png</file>
     </qresource>
 </RCC>

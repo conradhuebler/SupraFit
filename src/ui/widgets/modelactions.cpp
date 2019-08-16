@@ -130,6 +130,7 @@ void ModelActions::resizeButtons()
 {
     // Thats awfull and hackish, but it works for now and doesn't look that bad
     m_minimize_single->setMaximumSize(70, 30);
+    m_charts->setMaximumSize(110, 30);
     m_optim_config->setMaximumSize(80, 30);
     m_import->setMaximumSize(110, 30);
     m_export->setMaximumSize(110, 30);

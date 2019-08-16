@@ -239,7 +239,7 @@ QVector<qreal> MetaModel::CollectParameter()
     m_global_par.clear();
     m_local_par.clear();
     QVector<qreal> param;
-    QVector<int> indicies;
+    QVector<QPair<int, int>> indicies;
     for (int i = 0; i < m_mmparameter.size(); ++i) {
         MMParameter parameter = m_mmparameter[i];
         if (std::isnan(parameter.first))
@@ -250,12 +250,18 @@ QVector<qreal> MetaModel::CollectParameter()
             m_opt_index << QPair<int, int>(param.size(), 0);
 
         } else if (parameter.second.size() == 1 && m_models.size() > 1) {
-            if (!indicies.contains(m_mmparameter[i].second[0][2])) {
+            QPair<int, int> current_param = QPair<int, int>(m_mmparameter[i].second[0][1], m_mmparameter[i].second[0][2]);
+            if (!indicies.contains(current_param)) {
                 m_opt_index << QPair<int, int>(m_local_par.size(), 1);
                 m_local_par << i;
-                indicies << m_mmparameter[i].second[0][2];
+
+                /* we need both indicies - the first determines weather it is originally local or global,
+                 * the second one the index of the parameter itselfs
+                 * if we only use the index of the parameter, originally local parameter may be dropped
+                 */
+                indicies << current_param;
             } else
-                m_opt_index << QPair<int, int>(indicies.indexOf(m_mmparameter[i].second[0][2]), 1);
+                m_opt_index << QPair<int, int>(indicies.indexOf(current_param), 1);
         } else {
             m_global_par << i;
             m_opt_index << QPair<int, int>(param.size(), 0);
@@ -401,6 +407,15 @@ qreal MetaModel::SumOfErrors(int i) const
     return sum;
 }
 
+QVector<qreal> MetaModel::ErrorVector() const
+{
+    QVector<qreal> error;
+
+    for (const QSharedPointer<AbstractModel> model : m_models)
+        error << model->ErrorVector();
+
+    return error;
+}
 QList<double> MetaModel::getCalculatedModel()
 {
     QList<double> x;

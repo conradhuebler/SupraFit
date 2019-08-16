@@ -397,6 +397,8 @@ public:
     /*! \brief Here goes the model implementation for the initial guess
      */
 
+    virtual QVector<qreal> ErrorVector() const { return ErrorTable()->toVector(); }
+
     virtual void InitialGuess_Private() = 0;
 
     /*! \brief Returns pointer to Model DataTable

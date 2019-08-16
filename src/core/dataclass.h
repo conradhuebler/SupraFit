@@ -147,7 +147,8 @@ public:
 
     Vector CheckedRow(int row) const;
 
-    QVector<qreal> toList() const;
+    QVector<qreal> toVector() const;
+    QList<qreal> toList() const;
 
     void Debug(const QString& str = "None") const;
     inline QStringList header() const { return m_header; }

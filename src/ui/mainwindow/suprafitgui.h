@@ -190,6 +190,10 @@ private:
     void ReadGeometry();
     void WriteSettings(bool ignore_window_state = true);
 
+    void Message(const QString& str);
+    void Info(const QString& str);
+    void Warning(const QString& str);
+
     bool LoadProject(const QString& filename);
     void ImportTable(const QString& file);
     void LoadMetaModels();
@@ -268,7 +272,7 @@ private:
     QPushButton* m_clear_recent;
     QToolButton *m_export_suprafit, *m_export_plain, *m_close_all;
     DropButton* m_add_scatter;
-
+    QString m_supported_files = QString("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)");
 private slots:
     void NewWindow();
     void NewTable();
@@ -286,6 +290,8 @@ private slots:
     void CopySystemParameter(const QModelIndex& source, int position);
 
     void SaveData(const QModelIndex& index);
+    void AddUpData(const QModelIndex& index, bool sign);
+
     void CopyModel(const QJsonObject& o, int data, int model);
 
     void TreeDoubleClicked(const QModelIndex& index);

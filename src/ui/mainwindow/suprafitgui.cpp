@@ -22,6 +22,7 @@
 
 #include "src/core/AbstractModel.h"
 #include "src/core/dataclass.h"
+#include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
 
 #include "src/ui/dialogs/configdialog.h"
@@ -345,21 +346,25 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
 
         if (qobject_cast<MetaModel*>((*m_data_list)[r].data()) && index.isValid()) {
 
-            if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
-                return false;
-            if (!qApp->instance()->property("MetaSeries").toBool()) {
-                if (d->SupportSeries()) {
+            if (d->Index().parent().row() < (*m_data_list).size() && d->Index().parent().row() >= 0) {
+                if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
                     return false;
-                }
+                if (!qApp->instance()->property("MetaSeries").toBool()) {
+                    if (d->SupportSeries()) {
+                        return false;
+                    }
+                } else
+                    return false;
             }
             if (d->Index().parent().isValid())
                 return true;
             else
                 return false; //emit UiMessage(tr("It doesn't make sense to add whole project to a meta model.\nTry one of the models within this project."));
         } else if (index.isValid()) {
-            if (!d->Index().parent().isValid())
+            if (!d->Index().parent().isValid()) {
+
                 return true; //emit CopySystemParameter(d->Index(), r);
-            else
+            } else
                 return false; //emit UiMessage(tr("Nothing to tell"));
         }
         return true;
@@ -495,6 +500,7 @@ SupraFitGui::SupraFitGui()
     m_project_view->setContextMenuPolicy(Qt::ActionsContextMenu);
     m_project_view->setDragEnabled(true);
     m_project_view->setDragDropMode(QAbstractItemView::DragOnly);
+    //m_project_view->setSelectionMode(QAbstractItemView::NoSelection);
 
     QAction* action;
     /*
@@ -505,6 +511,27 @@ SupraFitGui::SupraFitGui()
 
     });
     */
+
+    action = new QAction("Add Up", m_project_view);
+    m_project_view->addAction(action);
+    action->setIcon(Icon("list-add-blue"));
+
+    connect(action, &QAction::triggered, action, [this]() {
+        AddUpData(m_project_view->currentIndex(), true);
+    });
+
+    action = new QAction("Subtract", m_project_view);
+    m_project_view->addAction(action);
+    action->setIcon(Icon("list-remove-blue"));
+
+    connect(action, &QAction::triggered, action, [this]() {
+        AddUpData(m_project_view->currentIndex(), false);
+    });
+
+    action = new QAction;
+    action->setSeparator(true);
+    m_project_view->addAction(action);
+
     action = new QAction("Export", m_project_view);
     m_project_view->addAction(action);
     action->setIcon(Icon("document-save"));
@@ -675,6 +702,13 @@ SupraFitGui::SupraFitGui()
         }
     });
 
+    connect(m_messages_widget, &MessageDock::UiInfo, this, [this]() {
+        if (m_message_dock->isHidden() && !m_alert) {
+            m_message_dock_action->setIcon(QIcon(":/icons/help-hint-blue.png"));
+            m_message_dock_action->setToolTip(tr("There are unread user interface messagess. But that is ok."));
+        }
+    });
+
     connect(m_messages_widget, &MessageDock::Attention, this, [this]() {
         if (m_message_dock->isHidden()) {
             m_message_dock_action->setIcon(QIcon(":/icons/help-hint-red.png"));
@@ -790,6 +824,21 @@ SupraFitGui::~SupraFitGui()
 {
     if (m_instance)
         delete m_instance;
+}
+
+void SupraFitGui::Message(const QString& str)
+{
+    m_messages_widget->Message(str);
+}
+
+void SupraFitGui::Info(const QString& str)
+{
+    m_messages_widget->Info(str);
+}
+
+void SupraFitGui::Warning(const QString& str)
+{
+    m_messages_widget->Warning(str);
 }
 
 // Will someday be improved
@@ -1090,7 +1139,7 @@ void SupraFitGui::NewTable()
 
 void SupraFitGui::OpenFile()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(this, "Select file", getDir(), tr("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)"));
+    QStringList filenames = QFileDialog::getOpenFileNames(this, "Select file", getDir(), m_supported_files);
     if (filenames.isEmpty())
         return;
     for (const QString& filename : qAsConst(filenames)) {
@@ -1477,6 +1526,10 @@ void SupraFitGui::TreeClicked(const QModelIndex& index)
 
 void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
 {
+    if (!index.isValid()) {
+        Info(tr("Sorry, but the current selection is invalid. You may have mist the tree item you wanted."));
+        return;
+    }
 
     int widget = 0;
     int tab = -1;
@@ -1506,6 +1559,12 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
 
 void SupraFitGui::CloseProjects()
 {
+    QMessageBox question(QMessageBox::Question, tr("About to close all projects"), tr("Do yout really want to close all open projects?"), QMessageBox::Yes | QMessageBox::No, this);
+    if (question.exec() == QMessageBox::No) {
+        return;
+    }
+
+    Waiter wait;
     for(int i = m_data_list.size() -1; i >= 0; --i)
     {
         MainWindow* mainwindow = m_project_list.takeAt(i);
@@ -1520,10 +1579,17 @@ void SupraFitGui::CloseProjects()
 
     m_supr_file.clear();
     m_filename_line->clear();
+
+    m_project_tree->UpdateStructure();
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)
 {
+    if (!index.isValid()) {
+        Info(tr("Sorry, but the current selection is invalid. You may have missed the tree item you wanted."));
+        return;
+    }
+
     QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
     if (str.isEmpty() || str.isNull())
         return;
@@ -1542,6 +1608,65 @@ void SupraFitGui::SaveData(const QModelIndex& index)
 
     JsonHandler::WriteJsonFile(object, str);
     setLastDir(str);
+}
+
+void SupraFitGui::AddUpData(const QModelIndex& index, bool sign)
+{
+    // qDebug() << m_project_view->currentIndex() << index << m_project_view->selectionModel()->selectedIndexes();
+    if (!index.isValid()) {
+        Info(tr("Sorry, but the current selection is invalid. You may have missed the tree item you wanted. (List is empty, no project loaded?)"));
+        return;
+    }
+
+    if (index.parent().isValid()) {
+        Info(tr("Sorry, but the current selection is invalid. You can only add up or substract data to projects, not to models in projects."));
+        return;
+    }
+
+    if (index.row() >= m_project_list.size()) {
+        Info(tr("This is something, that should be impossbile."));
+        return;
+    }
+
+    if (m_project_list[index.row()]->isMetaModel()) {
+        Info(tr("Tables of MetaModels can not be manipulated. Sorry for that."));
+        return;
+    }
+    QString filetypes = m_supported_files;
+    filetypes.remove("*.ITC").remove("*.itc");
+    QString str = QFileDialog::getOpenFileName(this, tr("Open File"), getDir(), filetypes);
+    if (str.isEmpty() || str.isNull())
+        return;
+
+    FileHandler* handler = new FileHandler(str);
+
+    handler->LoadFile();
+    QJsonObject blob;
+    DataTable* table;
+    if (handler->Type() == FileHandler::SupraFit) {
+        blob = handler->getJsonData();
+        table = new DataTable(blob["data"].toObject()["dependent"].toObject());
+
+    } else if (handler->Type() == FileHandler::dH) {
+        blob = handler->getJsonData();
+        table = new DataTable(blob["dependent"].toObject());
+    } else {
+        blob = handler->getJsonData();
+        table = new DataTable(blob["dependent"].toObject());
+    }
+    delete handler;
+
+    if (table->rowCount() == m_data_list[index.row()].data()->DependentModel()->rowCount() && table->columnCount() == m_data_list[index.row()].data()->DependentModel()->columnCount()) {
+        if (sign)
+            m_data_list[index.row()].data()->DependentModel()->Table() += table->Table();
+        else
+            m_data_list[index.row()].data()->DependentModel()->Table() -= table->Table();
+
+        m_data_list[index.row()].data()->Updated();
+    } else
+        Info(tr("Sorry, the table you just loaded and the target table do not fit."));
+
+    delete table;
 }
 
 void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)

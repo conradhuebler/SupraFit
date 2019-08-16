@@ -630,7 +630,7 @@ QStringList DataTable::ExportAsStringList() const
     return list;
 }
 
-QVector<qreal> DataTable::toList() const
+QVector<qreal> DataTable::toVector() const
 {
     QVector<qreal> vector;
     for (int j = 0; j < rowCount(); ++j) {
@@ -639,6 +639,17 @@ QVector<qreal> DataTable::toList() const
         }
     }
     return vector;
+}
+
+QList<qreal> DataTable::toList() const
+{
+    QList<qreal> list;
+    for (int j = 0; j < rowCount(); ++j) {
+        for (int i = 0; i < columnCount(); ++i) {
+            list << data(i, j);
+        }
+    }
+    return list;
 }
 
 QJsonObject DataTable::ExportTable(bool checked, const QVector<int> checked_table) const

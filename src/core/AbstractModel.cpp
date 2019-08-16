@@ -977,7 +977,7 @@ void AbstractModel::DebugOptions() const
 
 QVector<qreal> AbstractModel::AllParameter() const
 {
-    QVector<qreal> parameter = GlobalTable()->toList();
+    QVector<qreal> parameter = GlobalTable()->toVector();
 
     for (int r = 0; r < LocalTable()->rowCount(); ++r) {
         for (int c = 0; c < LocalTable()->columnCount(); ++c) {

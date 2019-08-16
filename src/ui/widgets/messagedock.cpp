@@ -85,3 +85,10 @@ void MessageDock::Warning(const QString& str)
     m_message->append(tr("<pre><p>%1&emsp;<font color='red'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
     emit Attention();
 }
+
+void MessageDock::Info(const QString& str)
+{
+    QMutexLocker locker(&m_mutex);
+    m_message->append(tr("<pre><p>%1&emsp;<font color='blue'> %2 </font></p></pre>").arg(QDateTime::currentDateTime().toString()).arg(str));
+    emit UiInfo();
+}

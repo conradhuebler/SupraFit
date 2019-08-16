@@ -190,8 +190,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     fit_layout->addWidget(m_global_box);
     fit_layout->addWidget(m_local_box);
 
-    m_global_box->setHidden(m_model->isSimulation());
-    m_local_box->setHidden(m_model->isSimulation());
+    m_global_box->setHidden(m_model->isSimulation() || m_val_readonly);
+    m_local_box->setHidden(m_model->isSimulation() || m_val_readonly);
 
     if (!m_val_readonly)
         const_layout->addLayout(fit_layout);

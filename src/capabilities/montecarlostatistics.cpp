@@ -269,7 +269,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     m_ptr_table << m_table;
     QVector<QPointer<MonteCarloBatch>> threads;
     m_generate = true;
-    QVector<qreal> vector = m_model->ErrorTable()->toList();
+    QVector<qreal> vector = m_model->ErrorVector();
     Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
 
     bool original = m_controller["OriginalData"].toBool();

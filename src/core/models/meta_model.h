@@ -117,6 +117,8 @@ public:
 
     virtual qreal CalculateVariance() override;
 
+    QVector<qreal> ErrorVector() const override;
+
     void PrepareTables();
     virtual void IndependentModelOverride() override;
 
