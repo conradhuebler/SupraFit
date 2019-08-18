@@ -80,6 +80,7 @@ void Thermogram::setUi()
 
     m_exp_button = new QPushButton(tr("Load Experiment"));
     connect(m_exp_button, &QPushButton::clicked, this, &Thermogram::setExperiment);
+
     m_dil_button = new QPushButton(tr("Load Dilution"));
     connect(m_dil_button, &QPushButton::clicked, this, &Thermogram::setDilution);
 
@@ -242,14 +243,27 @@ void Thermogram::setUi()
 
     m_data_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
 
-    m_export_data = new QPushButton(tr("Export Table"));
+    m_import_row = new QPushButton;
+    m_import_row->setFlat(true);
+    m_import_row->setToolTip(tr("Import file containg the first column (eg. injections)."));
+    m_import_row->setIcon(Icon("document-import"));
+    connect(m_import_row, &QPushButton::clicked, this, &Thermogram::ImportRow);
+
+    m_export_data = new QPushButton;
+    m_export_data->setFlat(true);
+    m_export_data->setToolTip(tr("Export current integration as plain or dh file."));
+    m_export_data->setIcon(Icon("document-save-as"));
     connect(m_export_data, &QPushButton::clicked, this, &Thermogram::ExportData);
 
     m_splitter = new QSplitter(Qt::Horizontal);
     QWidget* table_holder = new QWidget;
     QVBoxLayout* vlayout = new QVBoxLayout;
 
-    vlayout->addWidget(m_export_data);
+    hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_import_row);
+    hlayout->addWidget(m_export_data);
+
+    vlayout->addLayout(hlayout);
     vlayout->addWidget(m_table);
     table_holder->setLayout(vlayout);
 
@@ -295,6 +309,8 @@ void Thermogram::setUi()
         this->m_exp_peaks = this->m_experiment->Peaks();
         this->UpdateTable();
     });
+
+    UpdateTable();
 }
 
 Thermogram::~Thermogram()
@@ -470,6 +486,7 @@ void Thermogram::UpdateTable()
 
     m_data_view->setXAxis("Inject Number");
     m_data_view->setYAxis("Heat q");
+    m_export_data->setEnabled(m_table->rowCount() && m_table->columnCount());
 }
 
 QString Thermogram::Content() const
@@ -654,7 +671,16 @@ void Thermogram::setDilutionFit(const QJsonObject& json)
 
 void Thermogram::ExportData()
 {
-    QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir());
+    if (m_table->rowCount() && m_table->columnCount()) {
+        if (m_table->item(0, 0)->data(Qt::DisplayRole).toString().isNull() || m_table->item(0, 0)->data(Qt::DisplayRole).toString().isEmpty()) {
+            QMessageBox question(QMessageBox::Question, tr("Export Integration"), tr("First column is empty or zero. Do you still want to export the data?"), QMessageBox::Yes | QMessageBox::No, this);
+            if (question.exec() == QMessageBox::No) {
+                return;
+            }
+        }
+    }
+
+    QString filename = QFileDialog::getSaveFileName(this, "Select file", getDir(), ("Origin Files(*.dh *.DH);;Table Files (*.dat *.txt)"));
     if (filename.isEmpty())
         return;
 
@@ -664,11 +690,53 @@ void Thermogram::ExportData()
     if (!file.open(QIODevice::ReadWrite))
         return;
 
-    QChar mu = QChar(956);
-
+    QString output;
     QTextStream stream(&file);
-    stream << QString("#Volume") + "\t" + " exp. heat " + "\t" + "dil. heat" + "\t" + "joined heat" + "\n";
-    stream << QString("#[%1L]").arg(mu) + "\t" + "[raw]" + "\t" + "[raw]" + "\t" + "[J]" + "\n";
 
-    stream << m_all_rows;
+    if (filename.contains(".dh", Qt::CaseInsensitive)) {
+        output = "10\n";
+        output += "0," + QString::number(m_table->rowCount()) + ",0,0,0\n";
+        output += QString::number(m_systemparameter[QString::number(AbstractItcModel::Temperature)].toString().toDouble() - 273) + "," + m_systemparameter[QString::number(AbstractItcModel::CellConcentration)].toString() + "," + m_systemparameter[QString::number(AbstractItcModel::SyringeConcentration)].toString() + "," + QString::number(m_systemparameter[QString::number(AbstractItcModel::CellVolume)].toString().toDouble() / 1000.0) + ",0\n";
+        output += "0\n";
+        output += "0\n";
+
+        for (int i = 0; i < m_table->rowCount(); ++i)
+            output += m_table->item(i, 0)->data(Qt::DisplayRole).toString().replace(",", ".") + "," + m_table->item(i, 3)->data(Qt::DisplayRole).toString().replace(",", ".") + "\n";
+
+        stream << output;
+    } else {
+        QChar mu = QChar(956);
+
+        stream << QString("#Volume") + "\t" + " exp. heat " + "\t" + "dil. heat" + "\t" + "joined heat" + "\n";
+        stream << QString("#[%1L]").arg(mu) + "\t" + "[raw]" + "\t" + "[raw]" + "\t" + "[J]" + "\n";
+
+        stream << m_all_rows;
+    }
+}
+
+void Thermogram::ImportRow()
+{
+    QString filename = QFileDialog::getOpenFileName(this, "Select file", getDir());
+    if (filename.isEmpty())
+        return;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+
+    m_inject.clear();
+
+    QStringList blob = QString(file.readAll()).split("\n");
+
+    for (const QString& str : qAsConst(blob)) {
+        if (str.isEmpty() || str.isNull())
+            continue;
+
+        QStringList line = str.simplified().split(" ");
+        if (line.size() == 1 && !str.contains("#")) {
+            m_inject << line[0].toDouble();
+        }
+    }
+    m_injct->setText(QString::number(m_inject.last()));
+    UpdateTable();
 }

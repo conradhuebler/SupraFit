@@ -95,6 +95,6 @@ private slots:
     void ExportFile();
     void accept();
     void NoChanged();
-    void ImportThermogram(const QString& filename);
-    void ImportThermogram();
+    bool ImportThermogram(const QString& filename);
+    bool ImportThermogram();
 };

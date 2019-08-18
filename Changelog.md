@@ -1,4 +1,6 @@
 # SupraFit 2.0 Beta (1.7)
+
+- export thermogram as *.dh files
 - add comment section for every project
 
 

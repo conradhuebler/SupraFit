@@ -221,7 +221,8 @@ void ImportData::LoadFile()
                 return;
             }
             if (model->columnCount() == 0 && model->rowCount() == 0 && qApp->instance()->property("auto_thermo_dialog").toBool()) {
-                ImportThermogram(m_filename);
+                if (!ImportThermogram(m_filename))
+                    return;
 
             } else {
                 if (filehandler->Type() == FileHandler::FileType::dH)
@@ -230,9 +231,10 @@ void ImportData::LoadFile()
                 m_table->setModel(model);
                 if (model->columnCount() == 2 && model->rowCount() > 100) {
                     if (qApp->instance()->property("auto_thermo_dialog").toBool())
-                        ImportThermogram(m_filename);
-                    else
-                        QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
+                        if (!ImportThermogram(m_filename))
+                            return;
+                        else
+                            QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
                 }
                 if (filehandler->Type() == FileHandler::FileType::dH)
                     QTimer::singleShot(10, this, &QDialog::accept);
@@ -315,7 +317,7 @@ void ImportData::accept()
     QDialog::accept();
 }
 
-void ImportData::ImportThermogram(const QString& filename)
+bool ImportData::ImportThermogram(const QString& filename)
 {
     Thermogram* thermogram = new Thermogram;
     if (!m_filename.isEmpty())
@@ -335,12 +337,15 @@ void ImportData::ImportThermogram(const QString& filename)
         m_title = thermogram->ProjectName();
         delete thermogram;
         model->setEditable(true);
-
-    } else
+        return true;
+    } else {
         delete thermogram;
+        QDialog::reject();
+    }
+    return false;
 }
 
-void ImportData::ImportThermogram()
+bool ImportData::ImportThermogram()
 {
     Thermogram* thermogram = new Thermogram;
     thermogram->show();
@@ -361,10 +366,11 @@ void ImportData::ImportThermogram()
         m_title = thermogram->ProjectName();
         delete thermogram;
         model->setEditable(true);
-
+        return true;
     } else {
         delete thermogram;
         QDialog::reject();
     }
+    return false;
 }
 #include "importdata.moc"
