@@ -39,12 +39,18 @@
 itc_IItoI_Model::itc_IItoI_Model(DataClass* data)
     : AbstractItcModel(data)
 {
+    m_random_local << -100000;
+    m_random_local << -100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
 itc_IItoI_Model::itc_IItoI_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
+    m_random_local << -100000;
+    m_random_local << -100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 

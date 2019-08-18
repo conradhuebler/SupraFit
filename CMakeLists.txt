@@ -102,14 +102,14 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wunsafe-loop-optimizations  -Wmissing-braces\
                                            -Wmissing-field-initializers -Wmissing-format-attribute  \
                                            -Wmissing-include-dirs -Wmissing-noreturn -Wpacked  -Wparentheses\
-                                           -Wpointer-arith -Wredundant-decls -Wreturn-type -Wsequence-point\
+                                           -Wpointer-arith -Wredundant-decls -Wsequence-point\
                                            -Wsign-compare  -Wstack-protector -Wstrict-aliasing\
                                            -Wstrict-aliasing=2 -Wswitch \
                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
                                            -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations\
-                                           -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing")
+                                           -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets CONFIG REQUIRED)

@@ -75,11 +75,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         constant->setDecimals(4);
         constant->setMaximum(1e9);
         constant->setMaximumWidth(110);
-
-        if (m_model.data()->isSimulation()) {
-            constant->setValue(QRandomGenerator::global()->bounded(10.0));
-        } else
-            constant->setValue(m_model.data()->LocalParameter(i, m_no));
+        constant->setValue(m_model.data()->LocalParameter(i, m_no));
 
         constant->setSuffix(m_model.data()->LocalParameterSuffix(i));
         constant->setToolTip(m_model.data()->LocalParameterDescription(i));

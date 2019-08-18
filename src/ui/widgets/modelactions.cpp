@@ -120,7 +120,6 @@ void ModelActions::setSimulation(bool simulation)
     m_minimize_single->setHidden(simulation);
     m_advanced->setHidden(simulation);
     m_optim_config->setHidden(simulation);
-    m_new_guess->setHidden(simulation);
     m_advanced->setHidden(simulation);
     m_statistics->setHidden(simulation);
     m_plots->setHidden(simulation);

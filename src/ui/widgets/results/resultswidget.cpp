@@ -266,8 +266,7 @@ QWidget* ResultsWidget::GridSearchWidget()
         scatterwidget->setData(m_models, m_model);
         tabwidget->addTab(scatterwidget, "Scatter Plot");
     }
-    int series_int = 0;
-    int old_index = 0;
+
     for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if (data.isEmpty())

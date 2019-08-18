@@ -303,6 +303,20 @@ public:
 
     int getCVStatisticResult() const { return m_cv_statistics.size(); }
 
+    inline void setGlobalRandom(const QVector<qreal>& random_global)
+    {
+        if (random_global.size() == m_random_gobal.size()) {
+            m_random_gobal = random_global;
+        }
+    }
+
+    inline void setLocalRandom(const QVector<qreal>& random_local)
+    {
+        if (random_local.size() == m_random_local.size()) {
+            m_random_local = random_local;
+        }
+    }
+
     /*! \brief Load statistic defined by type
      * If more than results can be stored, define index
      */
@@ -387,12 +401,15 @@ public:
      */
     inline void InitialGuess()
     {
-        if (Type() == DataClassPrivate::DataType::Simulation)
-            return;
-
-        m_demand_guess = true;
-        InitialGuess_Private();
+        if (Type() == DataClassPrivate::DataType::Simulation) {
+            InitialiseRandom();
+        } else {
+            m_demand_guess = true;
+            InitialGuess_Private();
+        }
     }
+
+    virtual void InitialiseRandom();
 
     /*! \brief Here goes the model implementation for the initial guess
      */
@@ -756,6 +773,7 @@ protected:
     QJsonObject m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
+    QVector<qreal> m_random_gobal, m_random_local;
 
     QString m_more_info, m_name, m_name_cached, m_model_uuid, m_desc;
 

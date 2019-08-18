@@ -42,6 +42,10 @@
 itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
     : AbstractItcModel(data)
 {
+    m_random_local << -100000;
+    m_random_local << -100000;
+    m_random_local << -100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 
     m_threadpool = new QThreadPool(this);
@@ -52,6 +56,10 @@ itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
 itc_IItoII_Model::itc_IItoII_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
+    m_random_local << 100000;
+    m_random_local << 100000;
+    m_random_local << 100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     m_threadpool = new QThreadPool(this);
     for (int i = 0; i < DataPoints(); ++i)

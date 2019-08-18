@@ -32,6 +32,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
+#include <QtCore/QRandomGenerator>
 #include <QtCore/QUuid>
 
 #include <iostream>
@@ -118,6 +119,12 @@ void AbstractModel::PrepareParameter(int global, int local)
     private_d->m_enabled_global = QVector<int>(global, 0);
     private_d->m_enabled_local = QVector<int>(local, 0);
 
+    while (m_random_gobal.size() < GlobalParameterSize())
+        m_random_gobal << 10;
+
+    while (m_random_local.size() < LocalParameterSize())
+        m_random_local << 10;
+
     addGlobalParameter();
     DeclareSystemParameter();
     DeclareOptions();
@@ -144,6 +151,22 @@ AbstractModel::~AbstractModel()
 #ifdef _DEBUG
     std::cout << "Model to be deleted" << std::endl;
 #endif
+}
+
+void AbstractModel::InitialiseRandom()
+{
+    if (!qApp->instance()->property("InitialiseRandom").toBool())
+        return;
+
+    for (int i = 0; i < m_random_gobal.size(); ++i) {
+        (*GlobalTable())[i] = QRandomGenerator::global()->bounded(m_random_gobal[i]);
+    }
+    for (int i = 0; i < m_random_local.size(); ++i) {
+        for (int series = 0; series < LocalTable()->rowCount(); ++series) {
+            LocalTable()->data(i, series) = QRandomGenerator::global()->bounded(m_random_local[i]);
+        }
+    }
+    emit Recalculated();
 }
 
 QVector<qreal> AbstractModel::OptimizeParameters()
@@ -1481,7 +1504,6 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
 QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
     Q_UNUSED(forceAll)
-
     QString result;
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
@@ -1490,6 +1512,21 @@ QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAl
         result += Print::TextFromConfidence(object[QString::number(i)].toObject(), controller);
     }
 
+    if (forceAll) {
+        result += "<p>Ordered List of all obtained values for each parameter.</p>\n";
+        for (int i = 0; i < keys.size() - 1; ++i) {
+            QJsonObject data = object[QString::number(i)].toObject();
+            QString const_name = data["name"].toString();
+            if (data["type"].toString() == "Local Parameter") {
+                if (data.contains("index")) {
+                    int index = data["index"].toString().split("|")[1].toInt();
+                    const_name += QString(" - Series %1").arg(index + 1);
+                }
+            }
+            QString vector = data["data"].toObject()["raw"].toString();
+            result += "-------------------------------------------------\n" + const_name + "\n" + vector + "\n-------------------------------------------------\n\n";
+        }
+    }
     return result;
 }
 

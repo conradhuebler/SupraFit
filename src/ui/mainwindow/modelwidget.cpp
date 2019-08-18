@@ -147,11 +147,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         constant->setSingleStep(m_model->GlobalParameter(i) / 100);
         constant->setMaximum(1e9);
         constant->setMinimum(-1e9);
-
-        if (m_model.data()->isSimulation()) {
-            constant->setValue(QRandomGenerator::global()->bounded(10.0));
-        } else
-            constant->setValue(m_model->GlobalParameter(i));
+        constant->setValue(m_model->GlobalParameter(i));
 
         constant->setReadOnly(m_val_readonly);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));

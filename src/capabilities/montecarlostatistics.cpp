@@ -199,7 +199,6 @@ bool MonteCarloStatistics::Run()
 
     m_results = ToolSet::Model2Parameter(m_models);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
-
     for (int i = 0; i < m_results.count(); ++i) {
         QJsonObject data = m_results[i];
         if (data.isEmpty())
