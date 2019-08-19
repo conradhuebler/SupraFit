@@ -52,6 +52,7 @@
 #include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/systemparameterwidget.h"
+#include "src/ui/widgets/textwidget.h"
 
 #include <QtCharts/QAreaSeries>
 #include <QtCharts/QChart>
@@ -84,7 +85,6 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableView>
-#include <QtWidgets/QTextEdit>
 
 #include <iostream>
 #include <random>
@@ -865,7 +865,7 @@ void ModelWidget::Restore()
 
 void ModelWidget::Detailed()
 {
-    QTextEdit* text = new QTextEdit;
+    TextWidget* text = new TextWidget;
     m_model->setFast(false);
     m_model->Calculate();
     text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");

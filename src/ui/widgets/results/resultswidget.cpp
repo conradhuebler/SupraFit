@@ -31,6 +31,7 @@
 #include "src/ui/widgets/results/scatterwidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
+#include "src/ui/widgets/textwidget.h"
 
 #include <QtCore/QPointer>
 
@@ -341,9 +342,16 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
 
 void ResultsWidget::Detailed()
 {
-    QTextEdit* text = new QTextEdit;
+    TextWidget* text = new TextWidget;
     text->setText("<html><pre> " + m_text + "</br> " + m_model.data()->AnalyseStatistic(m_data, true) + "</pre></html>");
-    m_dialog->setWidget(text, tr("Details on Statistic Analysis"));
-    m_dialog->show();
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    layout->addWidget(text);
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Details on Statistic Analysis"));
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
 }
 #include "resultswidget.moc"

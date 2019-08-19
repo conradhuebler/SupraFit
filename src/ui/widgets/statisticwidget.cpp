@@ -20,13 +20,15 @@
 
 #include "src/core/models.h"
 
-#include "statisticwidget.h"
+#include "src/ui/widgets/textwidget.h"
+
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
+
+#include "statisticwidget.h"
 
 StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget* parent)
     : QWidget(parent)
@@ -34,8 +36,7 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWid
 {
 
     QVBoxLayout* m_layout = new QVBoxLayout;
-    m_overview = new QTextEdit;
-    m_overview->setReadOnly(true);
+    m_overview = new TextWidget;
     QPalette p = m_overview->palette();
 
     p.setColor(QPalette::Active, QPalette::Base, Qt::lightGray);

@@ -37,6 +37,7 @@
 #include "src/ui/mainwindow/datawidget.h"
 #include "src/ui/mainwindow/metamodelwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"
+#include "src/ui/widgets/textwidget.h"
 
 #include <QtCore/QDateTime>
 #include <QtCore/QFile>
@@ -713,7 +714,7 @@ void ModelDataHolder::CompareCV()
     QString result = StatisticTool::CompareCV(models, cvtype, m_compare_dialog->CVLocal(), m_compare_dialog->CVX());
 
     QHBoxLayout* layout = new QHBoxLayout;
-    QTextEdit* text = new QTextEdit;
+    TextWidget* text = new TextWidget;
     // result.replace(",", ".");
     text->setText("<html><pre>" + result + "</pre></html>");
     layout->addWidget(text);
@@ -756,7 +757,7 @@ void ModelDataHolder::CompareReduction()
     QString result = StatisticTool::AnalyseReductionAnalysis(models, cutoff);
 
     QHBoxLayout* layout = new QHBoxLayout;
-    QTextEdit* text = new QTextEdit;
+    TextWidget* text = new TextWidget;
     // result.replace(",", ".");
 
     text->setText("<html><pre>" + result + "</pre></html>");
@@ -786,7 +787,7 @@ void ModelDataHolder::CompareMC()
     QString result = StatisticTool::CompareMC(models, m_compare_dialog->CVLocal(), m_compare_dialog->CVX());
 
     QHBoxLayout* layout = new QHBoxLayout;
-    QTextEdit* text = new QTextEdit;
+    TextWidget* text = new TextWidget;
     //    result.replace(",",".");
 
     text->setText("<html><pre>" + result + "</pre></html>");

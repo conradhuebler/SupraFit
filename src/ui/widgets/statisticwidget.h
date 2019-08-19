@@ -21,13 +21,14 @@
 
 #include <QtCore/QSharedPointer>
 
-#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
+
+#include "src/ui/widgets/textwidget.h"
 
 class AbstractModel;
 class QLabel;
 class QPushButton;
-class QTextEdit;
+class TextWidget;
 struct StatisticResult;
 
 class StatisticWidget : public QWidget {
@@ -45,7 +46,7 @@ private:
     QWeakPointer<AbstractModel> m_model;
     QPushButton* m_show;
     QWidget* m_subwidget;
-    QTextEdit* m_overview;
+    TextWidget* m_overview;
     QString m_short, m_statistics;
 
 private slots:

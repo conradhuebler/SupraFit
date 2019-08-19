@@ -227,6 +227,7 @@ set(suprafit_SRCS
                 src/ui/widgets/buttons/scientificbox.h
                 src/ui/widgets/buttons/hovercheckbox.h
                 src/ui/widgets/thermogramwidget.cpp
+                src/ui/widgets/textwidget.cpp
                 src/ui/mainwindow/chartwidget.cpp
                 src/ui/mainwindow/modeldataholder.cpp
                 src/ui/mainwindow/datawidget.cpp
