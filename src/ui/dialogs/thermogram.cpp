@@ -687,7 +687,7 @@ void Thermogram::ExportData()
     setLastDir(filename);
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadWrite))
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate))
         return;
 
     QString output;

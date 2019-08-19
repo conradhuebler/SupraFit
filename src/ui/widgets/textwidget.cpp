@@ -49,7 +49,7 @@ void TextWidget::SaveSelection()
         return;
 
     QFile file(filename);
-    if (!file.open(QIODevice::ReadWrite))
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate))
         return;
 
     QTextStream stream(&file);
