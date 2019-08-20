@@ -163,6 +163,8 @@ void itc_IItoI_Model::CalculateVariables()
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));
 
+    bool reservior = m_reservior;
+
     qreal complex_21_prev = 0, complex_11_prev = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
@@ -176,6 +178,7 @@ void itc_IItoI_Model::CalculateVariables()
         }
 
         qreal v = IndependentModel()->data(0, i);
+        V += IndependentModel()->data(0, i) * !reservior;
         qreal dv = (1 - v / V);
 
         qreal host = IItoI_ItoI::HostConcentration(host_0, guest_0, QList<qreal>() << K21 << K11);

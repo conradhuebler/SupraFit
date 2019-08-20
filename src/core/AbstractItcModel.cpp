@@ -43,12 +43,12 @@ AbstractItcModel::AbstractItcModel(DataClass* data)
     : AbstractModel(data)
     , m_lock_concentrations(false)
 {
-    IndependentModel()->setHeaderData(0, Qt::Horizontal, "Inject Volume", Qt::DisplayRole);
+    IndependentModel()->setHeaderData(0, Qt::Horizontal, QString("Inject Volume [%1]").arg(Unicode_mu), Qt::DisplayRole);
 
     m_c0 = new DataTable(3, DataPoints(), this);
-    m_c0->setHeaderData(0, Qt::Horizontal, "V (cell)", Qt::DisplayRole);
-    m_c0->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
-    m_c0->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+    m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
+    m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+    m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
     LoadSystemParameter();
     connect(this, &AbstractModel::Recalculated, this, [this]() {
         emit this->ChartUpdated("Concentration Chart");
@@ -62,12 +62,12 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
     , m_lock_concentrations(false)
 {
 
-    IndependentModel()->setHeaderData(0, Qt::Horizontal, "Inject Volume", Qt::DisplayRole);
+    IndependentModel()->setHeaderData(0, Qt::Horizontal, QString("Inject Volume [%1]").arg(Unicode_mu), Qt::DisplayRole);
 
     m_c0 = new DataTable(3, DataPoints(), this);
-    m_c0->setHeaderData(0, Qt::Horizontal, "V (cell)", Qt::DisplayRole);
-    m_c0->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
-    m_c0->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+    m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
+    m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+    m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
 
     m_V = data->m_V;
     m_cell_concentration = data->m_cell_concentration;
@@ -258,8 +258,8 @@ void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
     if (!m_concentrations) {
         m_concentrations = new DataTable(equilibrium.rows(), DataPoints(), this);
         m_concentrations->setHeaderData(0, Qt::Horizontal, "Exp.", Qt::DisplayRole);
-        m_concentrations->setHeaderData(1, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
-        m_concentrations->setHeaderData(2, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
+        m_concentrations->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+        m_concentrations->setHeaderData(2, Qt::Horizontal, QString("Guest (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
         for (int i = 0; i < GlobalParameterSize(); ++i)
             m_concentrations->setHeaderData(3 + i, Qt::Horizontal, SpeciesName(i), Qt::DisplayRole);
     }
@@ -267,7 +267,7 @@ void AbstractItcModel::SetConcentration(int i, const Vector& equilibrium)
     QStringList names = m_concentrations->header();
     names.removeFirst();
     addPoints("Concentration Chart", PrintOutIndependent(i), equilibrium.tail(equilibrium.size() - 1), names);
-    UpdateChart("Concentration Chart", m_plotMode, "c [mol/L]");
+    UpdateChart("Concentration Chart", m_plotMode, QString("c [mol/%1L]").arg(Unicode_mu));
 }
 
 QString AbstractItcModel::Model2Text_Private() const

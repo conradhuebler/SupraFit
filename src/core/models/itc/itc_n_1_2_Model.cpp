@@ -102,45 +102,55 @@ void itc_n_ItoII_Model::CalculateVariables()
     qreal n2 = LocalTable()->data(3, 0);
     qreal dil_heat = LocalTable()->data(4, 0);
     qreal dil_inter = LocalTable()->data(5, 0);
-    qreal V = m_V;
+    qreal V = m_V / 1e6;
     qreal K1 = qPow(10, GlobalParameter(0));
     qreal K2 = qPow(10, GlobalParameter(1));
 
+    bool reservior = m_reservior;
+    qreal oldq = 0;
     qreal phi1_prev = 0, phi2_prev = 0;
     for (int i = 0; i < DataPoints(); ++i) {
+
+        qreal v = IndependentModel()->data(0, i) / 1e6;
+
+        V += v * !reservior;
+        qreal dv = (1 - v / V);
+
         qreal host_0 = InitialHostConcentration(i);
 
         qreal guest_0 = InitialGuestConcentration(i);
         qreal dilution = 0;
-        qreal v = IndependentModel()->data(0, i);
+
         if (dil == "auto") {
             dilution = (guest_0 * dil_heat + dil_inter);
         }
-        qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
-        qreal complex = (host_0 - host);
-        Vector vector(4);
-        vector(0) = i + 1;
-        vector(1) = host;
-        vector(2) = guest_0 - complex;
-        vector(3) = complex;
 
-        if (!m_fast)
+        /*  if (!m_fast)
             SetConcentration(i, vector);
-
+*/
+        oldq *= dv;
+        /*
         qreal p = 1 / K1 + 1 / K2 + (n1 + n2) * host_0 - guest_0;
         qreal q = (n1 / K2 + n2 / K1) * host_0 - (1 / K1 + 1 / K2) * guest_0 + 1 / K1 / K2;
         qreal r = -guest_0 / K1 / K2;
-
-        qreal guest = MinCubicRoot(1, p, q, r);
+        */
+        qreal a = K1 * K2;
+        qreal b = K1 + K2 + a * (host_0 * (n1 + n2) - guest_0);
+        qreal c = 1 + host_0 * (n1 * K1 + n2 * K2) - guest_0 * (K1 + K2);
+        qreal d = -guest_0;
+        //qreal guest = MinCubicRoot(1, p, q, r);
+        qreal guest = MinCubicRoot(a, b, c, d);
 
         qreal phi1 = n1*K1 * guest / (1 + K1 * guest);
         qreal phi2 = n2*K2 * guest / (1 + K2 * guest);
 
-        qreal value = V * ((phi1 - phi1_prev * (1 - v / V)) * dH1 + (phi2 - phi2_prev * (1 - v / V)) * dH2) * host_0;
+        // qreal value = V * ((phi1 - phi1_prev * dv) * dH1 + (phi2 - phi2_prev * dv) * dH2) * host_0;
+        qreal value = V * host_0 * (n1 * dH1 * K1 * guest / (1 + K1 * guest) + n2 * dH2 * K2 * guest / (1 + K2 * guest)) * 1e6;
 
-        SetValue(i, 0, value + dilution);
+        SetValue(i, 0, value + dilution - oldq);
         phi1_prev = phi1;
         phi2_prev = phi2;
+        oldq = value;
     }
 }
 

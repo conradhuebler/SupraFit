@@ -159,12 +159,18 @@ void itc_ItoII_Model::CalculateVariables()
     qreal dH2 = LocalTable()->data(1, 0) + dH1;
     qreal dH2_ = LocalTable()->data(1, 0);
     qreal complex_11_prev = 0, complex_12_prev = 0;
+
+    bool reservior = m_reservior;
+
     for (int i = 0; i < DataPoints(); ++i) {
+
+        qreal v = IndependentModel()->data(0, i);
+        V += v * !reservior;
+        qreal dv = (1 - v / V);
+
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
 
-        qreal v = IndependentModel()->data(0, i);
-        qreal dv = (1 - v / V);
         host_0 *= fx;
 
         qreal dilution = 0;

@@ -232,6 +232,8 @@ void itc_IItoII_Model::CalculateVariables()
     QList<qreal> constants_pow;
     constants_pow << K21 << K11 << K12;
 
+    bool reservior = m_reservior;
+
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     for (int i = 0; i < DataPoints(); ++i) {
@@ -288,6 +290,7 @@ void itc_IItoII_Model::CalculateVariables()
         vector(5) = complex_12;
 
         qreal v = IndependentModel()->data(0, i);
+        V += IndependentModel()->data(0, i) * !reservior;
         qreal dv = (1 - v / V);
 
         qreal q_a2b = (complex_21 - complex_21_prev * dv) * dH21 * V;
