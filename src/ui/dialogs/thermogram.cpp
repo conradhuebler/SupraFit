@@ -323,7 +323,7 @@ Thermogram::~Thermogram()
 PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset)
 {
     peaks->clear();
-    m_forceInject = true;
+    m_forceInject = false;
     m_injection = true;
     qreal freq = 0;
     QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(filename, peaks, offset, freq, m_inject);
@@ -341,6 +341,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     QSignalBlocker inject(m_injct);
     if (m_inject.size())
         m_injct->setText(QString::number(m_inject.last()));
+
     return original;
 }
 

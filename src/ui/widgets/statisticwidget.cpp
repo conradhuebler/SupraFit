@@ -69,6 +69,7 @@ void StatisticWidget::Update()
     overview += "<tr><td>Degrees of Freedom:</t><td><b>" + Print::printDouble(m_model.data()->Points() - m_model.data()->Parameter()) + "</b></td></tr>\n";
     overview += "<tr><td>Error: (squared / absolute)</td><td><b>" + Print::printDouble(m_model.data()->SSE()) + "/" + Print::printDouble(m_model.data()->SAE()) + "</b></td></tr>\n";
     overview += "<tr><td>Error Threshold (f-Test)</td><td><b>" + Print::printDouble(m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
+    overview += "<tr><td>R<sup>2</sup></td><td><b>" + Print::printDouble(m_model.data()->RSquared()) + "</b></td></tr>\n";
     overview += "<tr><td>f-Value</td><td><b>" + Print::printDouble(m_model.data()->finv(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
     overview += "<tr><td>Mean Error in Model:</td><td><b> " + Print::printDouble(m_model.data()->MeanError()) + "</b></td></tr>\n";
     overview += "<tr><td>Variance of Error:</td><td><b>" + Print::printDouble(m_model.data()->Variance()) + "</b></td></tr>\n";

@@ -215,8 +215,8 @@ void AbstractItcModel::CalculateConcentrations()
     bool reservoir = m_reservior;
 
     /*
-     * Initial concentration is given in mol/L
-     * therefore we want to convert into mol/mL
+     * Initial concentration is given in mmol/L
+     * therefore we want to convert into mol/L
      * */
     qreal cell = m_cell_concentration * convers;
     qreal gun = m_syringe_concentration * convers;

@@ -172,6 +172,18 @@ Vector String2DoubleEigVec(const QString& str)
     return vector;
 }
 
+Vector QVector2DoubleEigVec(const QVector<qreal>& in_vector)
+{
+    Vector vector;
+    std::vector<double> v;
+
+    for (double value : in_vector)
+        v.push_back(value);
+
+    vector = Vector::Map(&v[0], v.size());
+    return vector;
+}
+
 QVector<int> String2IntVec(const QString& str)
 {
     QVector<int> vector;

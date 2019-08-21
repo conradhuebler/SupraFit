@@ -200,7 +200,7 @@ void ImportData::SelectFile()
 void ImportData::LoadFile()
 {
     QFileInfo info(m_filename);
-    PeakPick::spectrum original;
+    QPointer<DataTable> model;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
 
         ImportThermogram(m_filename);
@@ -215,7 +215,7 @@ void ImportData::LoadFile()
         FileHandler* filehandler = new FileHandler(m_filename, this);
         filehandler->LoadFile();
         if (filehandler->FileSupported()) {
-            QPointer<DataTable> model = filehandler->getData();
+            model = filehandler->getData();
             if (!model) {
                 delete filehandler;
                 return;
@@ -246,13 +246,15 @@ void ImportData::LoadFile()
         }
         delete filehandler;
     }
-    m_independent_rows->setMinimum(1);
-    m_independent_rows->setMaximum(m_table->model()->columnCount());
+    if (model) {
+        m_independent_rows->setMinimum(1);
+        m_independent_rows->setMaximum(m_table->model()->columnCount());
 
-    if (m_table->model()->columnCount() > 2)
-        m_independent_rows->setValue(2);
-    else
-        m_independent_rows->setValue(1);
+        if (m_table->model()->columnCount() > 2)
+            m_independent_rows->setValue(2);
+        else
+            m_independent_rows->setValue(1);
+    }
 }
 
 void ImportData::ExportFile()

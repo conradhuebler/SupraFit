@@ -48,7 +48,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
 
         QPointer<SpinBox> box = new SpinBox;
         box->setMinimum(-1e10);
-        box->setMaximum(1e10);
+        box->setMaximum(1e15);
         box->setDecimals(5);
         box->setValue(m_model.data()->LocalParameter(i, 0));
 
@@ -56,7 +56,9 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
             [i, box, check, this, widget]() {
                 if (this->m_model && check) {
                     if (!m_model.data()->isSimulation())
-                        box->setValue(m_model.data()->LocalParameter(i, 0));
+                        if (!qFuzzyCompare(box->value(), m_model.data()->LocalParameter(i, 0))) {
+                            box->setValue(m_model.data()->LocalParameter(i, 0));
+                        }
                     if (this->m_model.data()->LocalEnabled(i)) {
                         box->setStyleSheet("background-color: " + included());
                         check->setEnabled(true);

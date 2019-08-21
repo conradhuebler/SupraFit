@@ -370,6 +370,7 @@ public:
 
     inline qreal SSE() const { return m_sum_squares; }
     inline qreal SAE() const { return m_sum_absolute; }
+    inline qreal RSquared() const { return m_squared; }
     inline int Points() const { return m_used_variables; }
     inline int Parameter() const { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
@@ -764,7 +765,7 @@ protected:
 
     QJsonObject m_fast_confidence;
 
-    qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
+    qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit, m_squared;
     int m_used_variables;
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;

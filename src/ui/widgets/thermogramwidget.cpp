@@ -515,9 +515,9 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
     m_peak_list = peak_list;
     m_peak_rule_list->clear();
     int row = 0;
-    if (m_peak_list.size()) {
-        double time = m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step();
-        double start = m_peak_list[0].start * m_spec.Step() - m_spec.Step();
+    for (int i = 0; i < m_peak_list.size(); ++i) {
+        double time = m_peak_list[i].end * m_spec.Step() - m_peak_list[i].start * m_spec.Step() + m_spec.Step();
+        double start = m_peak_list[i].start * m_spec.Step() - m_spec.Step();
         if (!qFuzzyCompare(time_pred, time)) {
             m_peaks_start->setValue(start);
             m_peaks_time->setValue(time);

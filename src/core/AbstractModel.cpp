@@ -293,6 +293,7 @@ void AbstractModel::Calculate()
     m_covfit = 0;
     m_sum_squares = 0;
     m_sum_absolute = 0;
+    m_squared = 0;
 
     for (const QString& str : Charts())
         clearChart(str);
@@ -319,6 +320,10 @@ void AbstractModel::Calculate()
     m_stderror = qSqrt(m_variance) / qSqrt(m_used_variables);
     m_SEy = qSqrt(m_sum_squares / degree_freedom);
     m_chisquared = qSqrt(m_sum_squares / (degree_freedom - 1));
+
+    PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(DependentModel()->toVector()), ToolSet::QVector2DoubleEigVec(ModelTable()->toVector()));
+
+    m_squared = regression.R;
     //FIXME sometimes ...
     m_covfit = 0; //CalculateCovarianceFit();
 
@@ -1404,6 +1409,7 @@ AbstractModel& AbstractModel::operator=(const AbstractModel& other)
     m_chisquared = other.m_chisquared;
     m_covfit = other.m_covfit;
     m_used_variables = other.m_used_variables;
+    m_squared = other.m_squared;
 
     return *this;
 }
@@ -1433,6 +1439,7 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
     m_chisquared = other->m_chisquared;
     m_covfit = other->m_covfit;
     m_used_variables = other->m_used_variables;
+    m_squared = other->m_squared;
 
     return this;
 }
