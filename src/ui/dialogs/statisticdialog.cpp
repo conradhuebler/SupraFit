@@ -154,7 +154,7 @@ QWidget* StatisticDialog::MonteCarloWidget()
     m_mc_std = new QRadioButton;
     m_mc_std->setText(tr("%1 from fit").arg(Unicode_sigma));
     m_mc_sey = new QRadioButton;
-    m_mc_sey->setText(tr("SE%1 (from fit)").arg(Unicode_Sub_y));
+    m_mc_sey->setText(tr("SE%1").arg(Unicode_Sub_y));
     m_mc_user = new QRadioButton;
     m_mc_user->setText(tr("%1 from user input").arg(Unicode_sigma));
 

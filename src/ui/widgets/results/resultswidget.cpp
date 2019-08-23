@@ -254,6 +254,7 @@ QWidget* ResultsWidget::GridSearchWidget()
     QTabWidget* tabwidget = new QTabWidget;
 
     ListChart* view = new ListChart;
+    view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
     connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
@@ -309,9 +310,9 @@ QWidget* ResultsWidget::GridSearchWidget()
         view->addSeries(current_constant, i, xy_series->color(), name, true);
     }
 
-    view->setXAxis("value");
-    view->setYAxis(m_data["controller"].toObject()["ylabel"].toString());
     view->setName("gridchart");
+    view->setXAxis("parameter value");
+    view->setYAxis(m_data["controller"].toObject()["ylabel"].toString());
 
     view->setTitle(tr("Grid Search for %1").arg(m_model.data()->Name()));
 
@@ -338,6 +339,7 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
         text += m_model.data()->AnalyseStatistic(m_data, false);
     }
     m_confidence_label->setText(text);
+    m_model.data()->UpdateStatistic(m_data);
 }
 
 void ResultsWidget::Detailed()

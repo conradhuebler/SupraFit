@@ -520,7 +520,7 @@ SupraFitGui::SupraFitGui()
         AddUpData(m_project_view->currentIndex(), true);
     });
 
-    action = new QAction("Subtract", m_project_view);
+    action = new QAction("Substract", m_project_view);
     m_project_view->addAction(action);
     action->setIcon(Icon("list-remove-blue"));
 

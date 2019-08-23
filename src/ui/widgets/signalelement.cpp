@@ -59,7 +59,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     m_name = new QLineEdit;
     QString name;
     name = data.data()->DependentModel()->headerData(m_index, Qt::Horizontal).toString();
-    m_name->setText(name);
+    m_name->setPlaceholderText(name);
     m_data_series->setName(name);
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(setName(QString)));
 

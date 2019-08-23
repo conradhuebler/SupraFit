@@ -124,12 +124,16 @@ void ImportData::setUi()
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     m_independent_rows = new QSpinBox;
+    m_independent_rows->setMinimum(1);
+    m_independent_rows->setValue(1);
+    m_independent_rows->setPrefix("# = ");
 
-    m_simulation = new QCheckBox(tr("Simulate Data"));
+    m_simulation = new QCheckBox(tr("Simulate Data with # Serie(s)"));
     m_dependent_rows = new QSpinBox;
     m_dependent_rows->setMinimum(1);
     m_dependent_rows->setValue(1);
     m_dependent_rows->setEnabled(false);
+    m_dependent_rows->setPrefix("# = ");
 
     connect(m_simulation, &QCheckBox::stateChanged, m_dependent_rows, [this](int state) {
         m_dependent_rows->setEnabled(state);
@@ -143,6 +147,10 @@ void ImportData::setUi()
     });
 
     m_line = new QLineEdit;
+    m_line->setText(m_projectfile);
+    connect(m_line, &QLineEdit::textEdited, this, [this](const QString& text) {
+        m_title = text;
+    });
     m_select = new QPushButton("Select file");
     connect(m_select, SIGNAL(clicked()), this, SLOT(SelectFile()));
     m_file = new QPushButton("Load");
@@ -160,9 +168,9 @@ void ImportData::setUi()
     layout->addWidget(m_select, 0, 0);
     layout->addWidget(m_line, 0, 1, 1, 2);
     layout->addWidget(m_export, 0, 3);
-    layout->addWidget(new QLabel(tr("No. of independent variables:")), 1, 0);
+    layout->addWidget(new QLabel(tr("# Independent Variable(s):")), 1, 0);
     layout->addWidget(m_independent_rows, 1, 1);
-    layout->addWidget(m_simulation, 1, 2);
+    layout->addWidget(m_simulation, 1, 2, Qt::AlignRight);
     layout->addWidget(m_dependent_rows, 1, 3);
     layout->addWidget(m_table, 3, 0, 1, 4);
     layout->addWidget(m_thermogram, 4, 0);

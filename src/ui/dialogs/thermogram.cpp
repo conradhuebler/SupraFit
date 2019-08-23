@@ -311,6 +311,7 @@ void Thermogram::setUi()
     });
 
     UpdateTable();
+    setWindowTitle(tr("Thermogram Dialog"));
 }
 
 Thermogram::~Thermogram()

@@ -665,7 +665,8 @@ void ModelWidget::LocalMinimize()
         QJsonObject config = model->getOptimizerConfig();
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
-        model->setName(tr("%1 Series %2").arg(model->Name().remove("Model")).arg(i + 1));
+        QString name = m_model->DependentModel()->headerData(i, Qt::Horizontal).toString();
+        model->setName(tr("%1 (%2 Series %3)").arg(name).arg(model->Name().remove("Model")).arg(i + 1));
         result += m_minimizer->Minimize();
         QJsonObject json = m_minimizer->Parameter();
         emit AddModel(json);

@@ -71,10 +71,12 @@ MCResultsWidget::~MCResultsWidget()
 
 void MCResultsWidget::setUi()
 {
+    QJsonObject controller = m_data["controller"].toObject();
+
     m_bins = new QSpinBox;
     m_bins->setMinimum(1);
-    m_bins->setMaximum(1e3);
-    m_bins->setValue(30);
+    m_bins->setMaximum(1e7);
+    m_bins->setValue(controller["PlotBins"].toInt(30));
     m_bins->setSingleStep(50);
 
     QWidget* widget = new QWidget;
@@ -112,20 +114,20 @@ void MCResultsWidget::setUi()
 
     connect(m_bins, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MCResultsWidget::GenerateHistogram);
 
-    layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
-    layout->addWidget(m_error, 1, 1);
-
-    layout->addWidget(new QLabel(tr("Bins in Histogram")), 1, 2);
-    layout->addWidget(m_bins, 1, 3);
-
-    /*
-    if (m_models.size())
-        layout->addWidget(m_save, 1, 2);*/
+    if (!controller["LightWeight"].toBool(false)) {
+        layout->addWidget(new QLabel(tr("Confidence Intervall")), 1, 0);
+        layout->addWidget(m_error, 1, 1);
+        layout->addWidget(new QLabel(tr("Bins in Histogram")), 1, 2);
+        layout->addWidget(m_bins, 1, 3);
+    } else {
+        m_error->hide();
+        m_bins->hide();
+    }
 
     widget->setLayout(layout);
 
     setLayout(layout);
-    GenerateConfidence(95);
+    UpdateBoxes();
 }
 
 QPointer<ListChart> MCResultsWidget::MakeHistogram()
@@ -137,15 +139,13 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
 
     view->Chart()->setZoomStrategy(ZoomStrategy::Z_Horizontal);
-    view->setXAxis("value");
-    view->setYAxis("relative rate");
     view->setName("montecarlochart");
     view->setMinimumSize(300, 400);
     bool formated = false;
 
 
     QJsonObject controller = m_data["controller"].toObject();
-    int bins = controller["bins"].toInt(30);
+    int bins = controller["PlotBins"].toInt(30);
     m_bins->setValue(bins);
 
     for (int i = 0; i < m_data.count() - 1; ++i) {
@@ -183,7 +183,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         }
         xy_series->append(QPointF(histogram.last().first + diff, 0));
 
-        if (histogram.size())
+        if (!controller["LightWeight"].toBool())
             has_histogram = true;
         xy_series->setName(name);
         view->addSeries(xy_series, i, xy_series->color(), name, true);
@@ -211,6 +211,8 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     }
 
     view->setTitle(QString("Histogram for %1").arg(m_data["controller"].toObject()["title"].toString()));
+    view->setXAxis("value");
+    view->setYAxis("relative rate");
 
     return view;
 }
@@ -449,12 +451,12 @@ void MCResultsWidget::GenerateHistogram()
         return;
 
     auto i = m_linked_data.begin();
-
+    int bins;
     while (i != m_linked_data.end()) {
         LineSeries* xy_series = i.key();
 
         QVector<qreal> list = i.value();
-        int bins = controller["PlotBins"].toInt(m_bins->value());
+        bins = m_bins->value(); //;
         auto histogram = ToolSet::List2Histogram(list, bins);
         ToolSet::Normalise(histogram);
 
@@ -471,7 +473,7 @@ void MCResultsWidget::GenerateHistogram()
 
         ++i;
     }
-    controller["PlotBins"] = m_bins->value();
+    controller["PlotBins"] = bins;
     controller["EntropyBins"] = qApp->instance()->property("EntropyBins").toInt();
 
     m_data["controller"] = controller;

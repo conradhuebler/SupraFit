@@ -293,14 +293,16 @@ bool WeakenedGridSearch::Run()
         result["OvershotCounter"] = pair.first->OvershotCounter() + pair.second->OvershotCounter();
         result["ErrorDecreaseCounter"] = pair.first->ErrorDecreaseCounter() + pair.second->ErrorDecreaseCounter();
         result["ErrorConvergencyCounter"] = pair.first->ErrorConvergencyCounter() + pair.second->ErrorConvergencyCounter();
-        if (ParameterIndex == 0)
-            result["ylabel"] = "SSE";
-        else if (ParameterIndex == 1)
-            result["ylabel"] = "SEy";
+
+        if (ParameterIndex == 1)
+            m_controller["ylabel"] = "SEy";
         else if (ParameterIndex == 2)
-            result["ylabel"] = QString("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2);
+            m_controller["ylabel"] = QString("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2);
         else if (ParameterIndex == 3)
-            result["ylabel"] = QString("%1").arg(Unicode_sigma);
+            m_controller["ylabel"] = QString("%1").arg(Unicode_sigma);
+        else
+            m_controller["ylabel"] = "SSE";
+
         bool local = pair.first->Converged() && pair.second->Converged() && pair.first->Finished() && pair.second->Finished() && !(pair.first->Stationary() && pair.second->Stationary());
 
         QJsonObject confidence;
