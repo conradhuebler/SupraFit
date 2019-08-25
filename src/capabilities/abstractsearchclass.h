@@ -79,6 +79,8 @@ public:
     inline QList<QList<QPointF>> Series() const { return m_series; }
     inline QList<QJsonObject> Models() const { return m_models; }
     inline QList<QJsonObject> Results() const { return m_results; }
+    inline qint64 MultiCoreTime() const { return m_multicore_time; }
+
     QJsonObject Result() const;
     void ExportResults(const QString& filename);
 
@@ -101,6 +103,7 @@ protected:
 
     virtual QJsonObject Controller() const { return m_controller; }
     QMutex mutex;
+    qint64 m_multicore_time = 0;
 
 signals:
     void IncrementProgress(int msecs);

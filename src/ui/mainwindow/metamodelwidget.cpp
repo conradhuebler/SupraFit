@@ -236,6 +236,8 @@ void MetaModelWidget::OpenAdvancedSearch()
         this->m_jobmanager->RunJobs();
     });
 
+    connect(advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt);
+
     advancedsearch->exec();
     delete advancedsearch;
 }

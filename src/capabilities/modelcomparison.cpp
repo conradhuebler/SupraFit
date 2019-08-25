@@ -204,6 +204,8 @@ bool ModelComparison::FastConfidence()
 
     QVector<double> parameter = m_model.data()->OptimizeParameters();
     QVector<QPointer<FCThread>> threads;
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+
     for (int i = 0; i < parameter.size(); ++i) {
 
         if (!series && i >= m_model->GlobalParameterSize() && m_model->SupportSeries())
@@ -224,6 +226,8 @@ bool ModelComparison::FastConfidence()
         while (m_threadpool->activeThreadCount())
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
+
     for (int i = 0; i < threads.size(); ++i) {
         QJsonObject result;
         QPair<int, int> pair = m_model.data()->IndexParameters(i);
@@ -322,6 +326,8 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     emit setMaximumSteps(maxsteps / update_intervall);
     int thread_count = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(thread_count);
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+
     for (int i = 0; i < thread_count; ++i) {
         MCThread* thread = new MCThread();
         connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
@@ -338,6 +344,8 @@ void ModelComparison::MCSearch(const QVector<QVector<qreal>>& box)
     while (m_threadpool->activeThreadCount()) {
         QCoreApplication::processEvents();
     }
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
+
     QList<QJsonObject> results;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {

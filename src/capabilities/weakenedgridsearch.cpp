@@ -197,6 +197,7 @@ bool WeakenedGridSearch::Run()
     QList<int> global_param, local_param;
     global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     for (int i = 0; i < parameter.size(); ++i) {
 
@@ -235,6 +236,7 @@ bool WeakenedGridSearch::Run()
             QCoreApplication::processEvents();
         }
     }
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
 
     bool converged = true;
     int series = 0, jndex = 0;

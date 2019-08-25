@@ -97,7 +97,7 @@ private:
     DataTable* m_table;
     bool m_generate;
     int m_steps;
-
+    qint64 m_t0 = 0;
 signals:
     void InterruptAll();
 };

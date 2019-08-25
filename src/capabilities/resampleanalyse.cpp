@@ -85,6 +85,7 @@ void ResampleAnalyse::CrossValidation()
         x << m_model->PrintOutIndependent(i);
         real_points += m_model->DependentModel()->isRowChecked(i);
     }
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     bool more_message = true;
     switch (type) {
@@ -375,6 +376,7 @@ void ResampleAnalyse::CrossValidation()
     while (Pending()) {
         QCoreApplication::processEvents();
     }
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
 
     if (more_message)
         emit Message(tr("Final evaluation in progress! Sorry, but this is done in serial mode - no parallelisation right now!"));
@@ -437,6 +439,8 @@ void ResampleAnalyse::PlainReduction()
     QPointer<DataTable> table = m_model->DependentModel();
     emit setMaximumSteps(m_model->DataPoints() - 4);
     int mind_points = 3;
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+
     if (m_controller["ReductionRuntype"].toInt() == 1 || m_controller["ReductionRuntype"].toInt() == 3) {
 
         for (int i = m_model->DataPoints() - 1; i > mind_points && table->EnabledRows() >= mind_points; --i) {
@@ -469,6 +473,8 @@ void ResampleAnalyse::PlainReduction()
     while (Pending()) {
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
+
     QList<qreal> x;
     for (int i = 0; i < m_threads.size(); ++i) {
         if (m_threads[i]) {

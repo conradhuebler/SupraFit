@@ -124,6 +124,10 @@ const QJsonObject MonteCarloConfigBlock{
        [1] - second row etc ... */
     { "IndependentRowVariance", "" }, // strings, to be converted to QVector<double>
 
+    /* Set the number of bins for histogram calculation and entropy calclation */
+    { "PlotBins", 30 }, //int, number of bins for histogram
+    { "EntropyBins", 30 }, //int, number of bins for entropy
+
     /* Store intermediate results, may result in large json blocks */
     { "StoreRaw", true }, //bool
 
@@ -152,6 +156,10 @@ const QJsonObject ResampleConfigBlock{
 
     /* Set Runtype for Reduction Analysis */
     { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards
+
+    /* Set the number of bins for histogram calculation and entropy calclation */
+    { "PlotBins", 30 }, //int, number of bins for histogram
+    { "EntropyBins", 30 }, //int, number of bins for entropy
 
     /* Store intermediate results, may result in large json blocks */
     { "StoreRaw", true }, //bool
@@ -250,6 +258,8 @@ private:
 
     bool m_working = false;
     bool m_interrupt = false;
+    qint64 m_last_multicore = 0;
+
 signals:
     void started();
     void finished(int current, int all, int time);

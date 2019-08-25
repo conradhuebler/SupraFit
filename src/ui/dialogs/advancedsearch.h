@@ -120,7 +120,7 @@ private:
     QPointer<GlobalSearch> m_search;
     QList<int> m_ignored_parameter;
 
-    void PrepareProgress();
+    // void PrepareProgress();
     void Finished();
 
 public slots:
@@ -134,4 +134,5 @@ private slots:
 signals:
     void RunCalculation(const QJsonObject& controller);
     void setValue(int value);
+    void Interrupt();
 };

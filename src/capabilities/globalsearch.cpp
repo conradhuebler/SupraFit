@@ -214,6 +214,7 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 
     QVector<QPointer<SearchBatch>> threads;
 
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     for (int i = 0; i < maxthreads; ++i) {
         QPointer<SearchBatch> thread = new SearchBatch(this);
         thread->setController(m_controller);
@@ -226,6 +227,9 @@ void GlobalSearch::ConvertList(const QVector<QVector<double>>& full_list)
 
     while (m_threadpool->activeThreadCount())
         QCoreApplication::processEvents();
+
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
+
     for (int i = 0; i < threads.size(); ++i) {
         QCoreApplication::processEvents();
         m_results << threads[i]->Result();

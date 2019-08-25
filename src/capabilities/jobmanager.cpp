@@ -113,7 +113,7 @@ void JobManager::RunJobs()
         }
         start++;
         t1 = QDateTime::currentMSecsSinceEpoch();
-        emit m_model->Info()->Message(QString("%1 took %2 msecs for %3 in %4").arg(Method2Name(method)).arg(t1 - t0).arg(m_model->Name()).arg(m_model->ProjectTitle()));
+        emit m_model->Info()->Message(QString("%1 took %2 msecs (%3 msecs in parallel processes) for %4 in %5").arg(Method2Name(method)).arg(t1 - t0).arg(m_last_multicore).arg(m_model->Name()).arg(m_model->ProjectTitle()));
         emit finished(start, m_jobs.size(), t1 - t0);
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);
@@ -148,6 +148,8 @@ QJsonObject JobManager::RunModelComparison(const QJsonObject& job)
     m_modelcomparison_handler->Run();
 
     QJsonObject result = m_modelcomparison_handler->Result();
+    m_last_multicore = m_modelcomparison_handler->MultiCoreTime();
+
     m_modelcomparison_handler->clear();
 
     return result;
@@ -166,6 +168,7 @@ QJsonObject JobManager::RunMonteCarlo(const QJsonObject& job)
     m_montecarlo_handler->Run();
 
     QJsonObject result = m_montecarlo_handler->Result();
+    m_last_multicore = m_montecarlo_handler->MultiCoreTime();
     m_montecarlo_handler->clear();
     return result;
 }
@@ -182,6 +185,8 @@ QJsonObject JobManager::RunGridSearch(const QJsonObject& job)
     m_gridsearch_handler->Run();
 
     QJsonObject result = m_gridsearch_handler->Result();
+    m_last_multicore = m_gridsearch_handler->MultiCoreTime();
+
     m_gridsearch_handler->clear();
     return result;
 }
@@ -198,6 +203,8 @@ QJsonObject JobManager::RunResample(const QJsonObject& job)
     m_resample_handler->Run();
 
     QJsonObject result = m_resample_handler->Result();
+    m_last_multicore = m_resample_handler->MultiCoreTime();
+
     m_resample_handler->clear();
     return result;
 }
@@ -209,6 +216,8 @@ QJsonObject JobManager::RunGlobalSearch(const QJsonObject& job)
     m_globalsearch->Run();
 
     QJsonObject result = m_globalsearch->Result();
+    m_last_multicore = m_globalsearch->MultiCoreTime();
+
     m_globalsearch->clear();
     return result;
 }

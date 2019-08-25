@@ -235,7 +235,7 @@ void AdvancedSearch::SetUi()
 
     connect(m_scan, SIGNAL(clicked()), this, SLOT(SearchGlobal()));
 
-    connect(m_interrupt, SIGNAL(clicked()), m_search, SLOT(Interrupt()), Qt::DirectConnection);
+    connect(m_interrupt, &QPushButton::clicked, this, &AdvancedSearch::Interrupt, Qt::DirectConnection);
     m_progress = new QProgressBar;
     m_max_steps = new QLabel;
     QGridLayout* mlayout = new QGridLayout;
@@ -252,12 +252,9 @@ void AdvancedSearch::SetUi()
     mlayout->addWidget(m_interrupt, 3, 1);
 
     m_interrupt->hide();
-    connect(m_search, SIGNAL(IncrementProgress(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-    connect(m_search, SIGNAL(setMaximumSteps(int)), m_progress, SLOT(setMaximum(int)));
     connect(this, SIGNAL(setValue(int)), m_progress, SLOT(setValue(int)));
 
     setLayout(mlayout);
-    //MaxSteps();
 }
 
 
@@ -287,16 +284,6 @@ void AdvancedSearch::MaxSteps()
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 
-void AdvancedSearch::PrepareProgress()
-{
-    m_scan->hide();
-    m_interrupt->show();
-    m_time_0 = QDateTime::currentMSecsSinceEpoch();
-    m_time = 0;
-    m_progress->setValue(0);
-    //     m_progress->show();
-}
-
 void AdvancedSearch::Finished()
 {
     m_scan->show();
@@ -305,6 +292,8 @@ void AdvancedSearch::Finished()
 
 void AdvancedSearch::SearchGlobal()
 {
+    m_interrupt->show();
+    m_scan->hide();
     MaxSteps();
     QJsonObject job;
 
