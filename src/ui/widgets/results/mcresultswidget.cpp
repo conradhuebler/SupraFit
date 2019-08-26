@@ -156,10 +156,6 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         qreal x_0 = data["value"].toDouble();
 
         QVector<qreal> list = ToolSet::String2DoubleVec(data["data"].toObject()["raw"].toString());
-        /*
-        auto histogram = ToolSet::List2Histogram(list, bins);
-        ToolSet::Normalise(histogram);
-        }*/
         QVector<QPair<qreal, qreal>> histogram;
         QVector<qreal> x = ToolSet::String2DoubleVec(data["x"].toString());
         QVector<qreal> y = ToolSet::String2DoubleVec(data["y"].toString());
@@ -167,7 +163,10 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             for (int i = 0; i < x.size(); ++i)
                 histogram << QPair<qreal, qreal>(x[i], y[i]);
         }
-
+        if (histogram.isEmpty()) {
+            histogram = ToolSet::List2Histogram(list, bins);
+            ToolSet::Normalise(histogram);
+        }
         LineSeries* xy_series = new LineSeries;
         m_linked_data.insert(xy_series, list);
 

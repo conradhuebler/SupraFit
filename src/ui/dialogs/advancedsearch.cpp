@@ -284,10 +284,11 @@ void AdvancedSearch::MaxSteps()
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 
-void AdvancedSearch::Finished()
+void AdvancedSearch::HideWidget()
 {
     m_scan->show();
     m_interrupt->hide();
+    hide();
 }
 
 void AdvancedSearch::SearchGlobal()

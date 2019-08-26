@@ -394,7 +394,7 @@ public:
      *  Degrees of freedom and number of parameters are taken in account
      */
     qreal finv(qreal p);
-    qreal Error(qreal confidence, bool f = true);
+    qreal Error(qreal confidence);
 
     /*! \brief Demand initial guess
      * An initial guess will be demanded, if it fails, the guess will be automatically calculated

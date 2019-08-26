@@ -95,8 +95,11 @@ struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
 
 int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
+
+#ifndef extended_f_test
     model.data()->CalculateStatistics(false);
-    model.data()->setFast(false);
+    model.data()->setFast(true);
+#endif
 
     QList<int> locked = model.data()->LockedParameters();
 

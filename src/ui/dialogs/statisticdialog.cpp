@@ -170,9 +170,11 @@ QWidget* StatisticDialog::MonteCarloWidget()
 
     hlayout->addWidget(new QLabel(tr("is taken as:")));
 
+#ifndef extended_f_test
     hlayout->addWidget(m_mc_sey);
     hlayout->addWidget(m_mc_std);
     hlayout->addWidget(m_mc_user);
+#endif
 
     m_mc_bootstrap = new QRadioButton;
     m_mc_bootstrap->setText(tr("or use bootstrapping"));
@@ -372,10 +374,12 @@ QWidget* StatisticDialog::GridSearchWidget()
     hlayout->addWidget(m_radio_wgs_chi);
     hlayout->addWidget(m_radio_wgs_sigma);
 
+#ifndef extended_f_test
     m_radio_wgs_sse->setHidden(true);
     m_radio_wgs_ssy->setHidden(true);
     m_radio_wgs_chi->setHidden(true);
     m_radio_wgs_sigma->setHidden(true);
+#endif
 
     m_ParameterIndex = 0;
     m_error_name = "SSE";
@@ -473,7 +477,7 @@ QWidget* StatisticDialog::ModelComparison()
 
             QDoubleSpinBox* doublespin = new QDoubleSpinBox;
             doublespin->setMinimum(0);
-            doublespin->setMaximum(5);
+            doublespin->setMaximum(50);
             doublespin->setValue(1.5);
             m_glob_box_scaling << doublespin;
 
@@ -509,7 +513,7 @@ QWidget* StatisticDialog::ModelComparison()
             QDoubleSpinBox* doublespin = new QDoubleSpinBox;
             doublespin->setMinimum(0);
             doublespin->setMaximum(5);
-            doublespin->setValue(1.5);
+            doublespin->setValue(50);
             m_loc_box_scaling << doublespin;
 
             QHBoxLayout* hlayout = new QHBoxLayout;
@@ -751,7 +755,7 @@ QJsonObject StatisticDialog::RunGridSearch() const
     controller["ErrorConvergencyCounter"] = m_gridErrorConvergencyCounter->value();
     controller["StepScalingFactor"] = m_gridScalingFactor->value();
 
-    controller["StoreIntermediate"] = m_store_wgsearch->isChecked();
+    controller["StoreRaw"] = m_store_wgsearch->isChecked();
 
     controller["ParameterIndex"] = m_ParameterIndex;
 

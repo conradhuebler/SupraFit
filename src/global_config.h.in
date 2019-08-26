@@ -13,3 +13,4 @@
 #cmakedefine noto_font
 #cmakedefine openMP
 #cmakedefine _UNIX
+#cmakedefine extended_f_test

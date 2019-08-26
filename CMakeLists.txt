@@ -32,7 +32,10 @@ option (Kinetic_Models
     
 option (Fluorescence_Models
     "Enable Fluorescence Models" ON)
- 
+
+option (extended_f_test
+    "Extend f-test methods for sigma, chi and SEy" OFF)
+
 option (legacy
     "Enable Legacy Concentration Handling - For benchmark purpose (only)" OFF)
 
@@ -44,6 +47,7 @@ option (noto_font
 
 option (_Theme
     "Use Icon Theme from Desktop Environment, It does not work on Windows" OFF)
+
 
 # Get the current working branch
 execute_process(

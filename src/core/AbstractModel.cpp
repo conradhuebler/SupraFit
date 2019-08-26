@@ -465,14 +465,10 @@ qreal AbstractModel::finv(qreal p)
     return m_f_value;
 }
 
-qreal AbstractModel::Error(qreal confidence, bool f)
+qreal AbstractModel::Error(qreal confidence)
 {
-    if (f) {
-        qreal f_value = finv(confidence / 100);
-        return SSE() * (f_value * Parameter() / (Points() - Parameter()) + 1);
-    } else {
-        return SSE() + SSE() * confidence / double(100);
-    }
+    qreal f_value = finv(confidence / 100);
+    return SSE() * (f_value * Parameter() / (Points() - Parameter()) + 1);
 }
 
 void AbstractModel::SetSingleParameter(double value, int parameter)

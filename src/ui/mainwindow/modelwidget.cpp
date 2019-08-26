@@ -357,6 +357,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::finished, m_advancedsearch, &AdvancedSearch::HideWidget, Qt::DirectConnection);
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
     connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
@@ -370,11 +371,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     });
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
         if (type != SupraFit::Method::FastConfidence) {
-            if (type != SupraFit::Method::GlobalSearch)
-                this->m_statistic_dialog->hide();
-            else
-                this->m_advancedsearch->hide();
-
             this->m_results->Attention();
             this->m_results->ShowResult(type, index);
         }
