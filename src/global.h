@@ -102,6 +102,8 @@ enum Model {
     fl_ItoI_ItoII = 22,
     fl_IItoI_ItoI_ItoII = 23,
     ScriptedModel = 100,
+    Indep_Quadrat = 101,
+    Dep_Any = 102,
     MetaModel = 200,
     Unknown = 404
 };
@@ -287,6 +289,12 @@ inline SupraFit::Model Name2Model(const QString& str)
     else if (str == "Michaelis Menten")
         return SupraFit::Michaelis_Menten;
 
+    else if (str == "Indep. Quadrat")
+        return SupraFit::Indep_Quadrat;
+
+    else if (str == "Dep. AnyModel")
+        return SupraFit::Dep_Any;
+
     else if (str == "Meta Model")
         return SupraFit::MetaModel;
     else
@@ -345,6 +353,11 @@ inline QString Model2Name(SupraFit::Model model)
 
     else if (model == SupraFit::Michaelis_Menten)
         return "Michaelis Menten";
+
+    else if (model == SupraFit::Indep_Quadrat)
+        return "Indep. Quadrat";
+    else if (model == SupraFit::Dep_Any)
+        return "Dep. AnyModel";
 
     else if (model == SupraFit::MetaModel)
         return "Meta Model";

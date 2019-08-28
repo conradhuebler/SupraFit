@@ -240,13 +240,31 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_independet_2 << m_script_action;
 #endif
 
+    m_any_model = new QPushButton(tr("Any Model"));
+    m_any_model->setFlat(true);
+    m_any_model->setIcon(QIcon(":/icons/list-add-blue.png"));
+    connect(m_any_model, &QPushButton::clicked, this, [this]() {
+        bool ok;
+        int old = qApp->instance()->property("last_any").toInt();
+        int i = QInputDialog::getInt(this, tr("I want user input of static model ID"),
+            tr("ID:"), old, 1, 404, 1, &ok);
+        if (ok) {
+            this->m_model_choosen = i;
+            qApp->instance()->setProperty("last_any", i);
+            emit this->AddModel();
+        }
+    });
+
     QVBoxLayout* vlayout = new QVBoxLayout;
 
     QHBoxLayout* buttons = new QHBoxLayout;
     buttons->addWidget(m_add_nmr);
     buttons->addWidget(m_add_itc);
     buttons->addWidget(m_add_kinetics);
+    buttons->addWidget(m_any_model);
     buttons->addWidget(m_edit_data);
+
+    m_any_model->setVisible(qApp->instance()->property("advanced_ui").toBool());
 
     vlayout->addLayout(buttons);
 
@@ -312,7 +330,7 @@ void MDHDockTitleBar::EnableBatch(bool enabled)
 
 void MDHDockTitleBar::PrepareAddModel()
 {
-    m_last_action = qobject_cast<QAction*>(sender());
+    m_model_choosen = qobject_cast<QAction*>(sender())->data().toInt();
     emit AddModel();
 }
 
@@ -404,13 +422,19 @@ void ModelDataHolder::SetProjectTabName()
 
 void ModelDataHolder::AddModel()
 {
-    const QAction* action = qobject_cast<MDHDockTitleBar*>(sender())->lastAction();
-    AddModel(action->data().toInt());
+    int model = qobject_cast<MDHDockTitleBar*>(sender())->Model();
+    AddModel(model);
 }
 
 void ModelDataHolder::AddModel(int model)
 {
     QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
+    if (!t) {
+        emit m_data.data()->Message(tr("Tried to add %1 to the workspace.").arg(Model2Name(static_cast<SupraFit::Model>(model))), 1);
+        emit m_data.data()->Warning("But one does not simply add a model to a data set, where the number of input variables differ.", 1);
+        return;
+    }
+
     t->InitialGuess();
     m_history = false;
     ActiveModel(t);

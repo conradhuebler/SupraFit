@@ -148,6 +148,8 @@ add_library(math ${libmath_SRC})
 
 target_link_libraries(math Qt5::Core)
 
+#add_subdirectory(src/core/models/misc)
+
 set(models_SRC
                 src/core/dataclass.cpp
                 src/core/AbstractModel.cpp
@@ -174,6 +176,8 @@ set(models_SRC
                 src/core/models/kinetics/monomolecularmodel.cpp
                 src/core/models/postprocess/statistic.cpp
                 src/core/models/postprocess/thermo.cpp
+                src/core/models/misc/indep_quadrat.cpp
+                src/core/models/misc/dep_any.cpp
 )
 
 add_library(models ${models_SRC})

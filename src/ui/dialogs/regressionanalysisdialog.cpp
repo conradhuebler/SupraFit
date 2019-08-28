@@ -104,6 +104,9 @@ void RegressionAnalysisDialog::setUI()
 
 void RegressionAnalysisDialog::UpdatePlots()
 {
+    if (m_data.data()->isSimulation())
+        return;
+
     m_chart->Clear();
     m_output->clear();
     m_series = m_wrapper.data()->CloneSeries();

@@ -136,6 +136,8 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     if (!m_data.data()->isSimulation())
         m_signals->setModel(m_data.data()->DependentModel());
+    else
+        m_linear->hide();
 
     connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();

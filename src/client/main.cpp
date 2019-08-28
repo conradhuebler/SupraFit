@@ -119,6 +119,7 @@ int main(int argc, char** argv)
     bool list = parser.isSet("l");
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
+    qApp->instance()->setProperty("InitialiseRandom", true);
 
     if (parser.isSet("j")) {
 

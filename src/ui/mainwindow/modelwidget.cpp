@@ -201,6 +201,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
 
     QAction* fast_conf = new QAction(tr("Confidence"), this);
+    fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
 
     QMenu* menu = new QMenu(this);
@@ -611,7 +612,7 @@ void ModelWidget::FastConfidence()
     job["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble());
     qreal error = m_model.data()->SSE();
-    job["MaxError"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    job["MaxParameter"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
     job["confidence"] = qApp->instance()->property("p_value").toDouble();
     job["f_value"] = f_value;
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();

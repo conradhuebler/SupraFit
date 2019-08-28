@@ -222,6 +222,8 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     for (int j = 0; j < x.size(); ++j)
         m_xy_series->append(QPointF(x[j], y[j]));
 
+    PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(x.toVector()), ToolSet::QVector2DoubleEigVec(y.toVector()));
+
     connect(m_xy_series, &QtCharts::QXYSeries::clicked, this, &ScatterWidget::PointClicked);
 
     m_xy_series->setMarkerSize(7);
@@ -229,7 +231,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     view->addSeries(m_xy_series, 0, color, m_names[var_1] + " vs. " + m_names[var_2]);
     view->setXAxis(m_names[var_1]);
     view->setYAxis(m_names[var_2]);
-    view->setTitle(QString("Scatter Plot %1 vs %2").arg(m_names[var_2]).arg(m_names[var_1]));
+    view->setTitle(QString("Scatter Plot %1 vs %2 (R%3 = %4)").arg(m_names[var_2]).arg(m_names[var_1]).arg(Unicode_Sup_2).arg(regression.R));
     m_xy_series->setColor(color);
     m_xy_series->setBorderColor(m_xy_series->color());
 }

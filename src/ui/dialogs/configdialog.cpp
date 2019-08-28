@@ -215,7 +215,7 @@ void ConfigDialog::createStandardCalTab()
     QWidget* calcTab = new QWidget;
     calcTab->setLayout(layout);
 
-    m_auto_confidence = new QCheckBox(tr("Automatic Confidence Calculation"));
+    m_auto_confidence = new QCheckBox(tr("Automatic Confidence Calculation using Simplified Model Comparison."));
     m_auto_confidence->setChecked(qApp->instance()->property("auto_confidence").toBool());
     layout->addWidget(m_auto_confidence);
 

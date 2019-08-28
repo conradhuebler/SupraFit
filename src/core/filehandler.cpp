@@ -128,18 +128,26 @@ void FileHandler::ReadGeneric()
 
 void FileHandler::ConvertTable()
 {
+    bool simulation = false;
+    if (m_rows > m_stored_table->columnCount()) {
+        m_rows = m_stored_table->columnCount();
+        simulation = true;
+    }
     DataClass* data = new DataClass;
     DataTable* indep = m_stored_table->BlockColumns(0, m_rows);
     DataTable* dep = m_stored_table->BlockColumns(m_rows, m_stored_table->columnCount() - m_rows);
     for (int i = 0; i < m_start_point && i < dep->rowCount(); ++i)
         dep->DisableRow(i);
+    if (simulation)
+        dep = indep;
     data->setDependentTable(dep);
     data->setIndependentTable(indep);
     data->setDataType(DataClassPrivate::Table);
     data->setProjectTitle(m_title);
     data->setSystemObject(m_systemparameter);
     m_topjson = data->ExportData();
-
+    if (simulation)
+        m_topjson["DataType"] = 10;
     delete data;
 }
 

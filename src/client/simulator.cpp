@@ -72,6 +72,10 @@ QStringList Simulator::Generate()
     if (!LoadFile())
         return filelist;
 
+    if (m_mainjson.contains("OutFile")) {
+        m_outfile = m_mainjson["OutFile"].toString();
+    }
+
     if (m_toplevel.isEmpty())
         return filelist;
 
@@ -81,8 +85,21 @@ QStringList Simulator::Generate()
     else
         m_data = new DataClass(m_toplevel);
 
-    if (m_data->DataPoints() == 0)
+    if (m_data->DataPoints() == 0) {
+        QPointer<DataClass> data = new DataClass(m_data);
+
+        QVector<QSharedPointer<AbstractModel>> models = AddModels(m_modelsjson, data);
+        QJsonObject exp_level, dataObject;
+        dataObject = data->ExportData();
+        exp_level["data"] = dataObject;
+
+        for (int i = 0; i < models.size(); ++i) {
+            exp_level["model_" + QString::number(i)] = models[i]->ExportModel();
+            models[i].clear();
+        }
+        SaveFile(m_outfile, exp_level);
         return filelist;
+    }
 
     qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
@@ -94,9 +111,6 @@ QStringList Simulator::Generate()
     if (qFuzzyCompare(std, 0))
         runs = 1;
 
-    if (m_mainjson.contains("OutFile")) {
-        m_outfile = m_mainjson["OutFile"].toString();
-    }
     if (m_mainjson.contains("Threads")) {
         qApp->instance()->setProperty("threads", m_mainjson.value("Threads").toInt(4));
         std::cout << "Setting # of threads to " << m_mainjson.value("Threads").toInt(4) << std::endl;
@@ -206,6 +220,10 @@ QVector<QSharedPointer<AbstractModel>> Simulator::AddModels(const QJsonObject& m
             model = static_cast<SupraFit::Model>(modelsjson[str].toInt());
 
         QSharedPointer<AbstractModel> t = CreateModel(model, data);
+
+        if (!t)
+            continue;
+
         if (!options.isEmpty())
             t->setOptions(options);
 

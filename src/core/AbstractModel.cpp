@@ -101,6 +101,9 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
 void AbstractModel::PrepareParameter(int global, int local)
 {
+    if (InputParameterSize() != IndependentModel()->columnCount())
+        throw - 2;
+
     QStringList header;
 
     if (!LocalTable())
