@@ -805,7 +805,7 @@ bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
 
 void AbstractModel::ParseFastConfidence(const QJsonObject& data)
 {
-    const QString str = "Fast Confidence";
+    const QString str = "Simplified Model Comparison";
     if (m_model_charts.keys().contains(str))
         m_model_charts[str]->m_series.clear();
     for (int i = 0; i < data.keys().size() - 1; ++i) {
@@ -813,7 +813,7 @@ void AbstractModel::ParseFastConfidence(const QJsonObject& data)
         QString name = block["name"].toString();
 
         QList<QPointF> points = ToolSet::String2Points(block["points"].toString());
-        addSeries(str, name, points, "value", "Sum of Squares (SSE)");
+        addSeries(str, name, points, "parameter value", "Sum of Squares (SSE)");
     }
     emit ChartUpdated(str);
 }

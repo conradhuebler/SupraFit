@@ -310,14 +310,14 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
         m_signal_x = model->XLabel();
         m_signal_y = model->YLabel();
         m_error_x = model->XLabel();
-        m_error_y = "Error " + model->YLabel();
+        m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(model->YLabel());
         Repaint();
     });
 
     m_signal_x = model->XLabel();
     m_signal_y = model->YLabel();
     m_error_x = model->XLabel();
-    m_error_y = "Error " + model->YLabel();
+    m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(model->YLabel());
 
     Repaint();
 

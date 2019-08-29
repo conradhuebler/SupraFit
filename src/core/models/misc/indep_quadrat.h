@@ -53,9 +53,9 @@ public:
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return QString("a");
+            return QString("%1%2").arg(Unicode_theta).arg(Unicode_Sub_1);
         else if (i == 1)
-            return QString("b");
+            return QString("%1%2").arg(Unicode_theta).arg(Unicode_Sub_2);
         else
             return QString();
     }
@@ -77,11 +77,11 @@ public:
 
     /*! \brief Define the x axis label for charts
      */
-    virtual QString XLabel() const override { return "A"; }
+    virtual QString XLabel() const override { return QString("x"); }
 
     /*! \brief Define the y axis for charts
      */
-    virtual QString YLabel() const override { return "B"; }
+    virtual QString YLabel() const override { return QString("y"); }
 
 private:
 protected:
