@@ -612,7 +612,6 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
     Vector baseline;
     QVector<qreal> difference_signal_baseline, tmp;
     qreal sum_difference_signal_baseline = 0;
-    int steps = 1;
     if (m_baseline.baselines.size() > 0)
         baseline = m_baseline.baselines[0];
 
@@ -632,7 +631,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
     }
     qreal stdev = Stddev(difference_signal_baseline, 0, sum_difference_signal_baseline / double(difference_signal_baseline.size()));
 
-    int counter;
+    int counter = 0;
     double sum = 0;
 
     for (int i = 0; i < difference_signal_baseline.size(); ++i) {
@@ -959,11 +958,9 @@ void ThermogramWidget::UpdatePeaks()
     if (m_spec.Step() == 0)
         return;
 
-    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     qreal offset = 0;
     int off = 1;
     int rules_size = m_peak_rule_list->rowCount();
-    double start = m_peak_rule_list->item(0, 0)->data(Qt::UserRole).toDouble();
     double end = m_peaks_end->value();
     m_peak_list.clear();
     PeakPick::Peak peak;
