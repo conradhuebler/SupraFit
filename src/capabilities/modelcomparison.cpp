@@ -33,36 +33,18 @@
 
 void MCThread::run()
 {
+    QVector<QVector<qreal>> applied_parameters;
     QVector<qreal> parameters = m_model.data()->OptimizeParameters();
+    applied_parameters << parameters;
 
     m_ParameterIndex = m_controller["ParameterIndex"].toInt(0);
     m_MaxParameter = m_controller["MaxParameter"].toDouble();
 
-    int std_prec = 400;
     QList<int> global_param, local_param, param;
     global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
 
     param << global_param << local_param;
-
-    QList<int> global_paramater_prec = ToolSet::String2IntList(m_controller["GlobalParameterPrecList"].toString());
-
-    while (global_paramater_prec.size() < m_model.data()->GlobalParameterSize())
-        global_paramater_prec << qPow(10, int(log10(m_model.data()->GlobalParameter(global_paramater_prec.size()))) + std_prec);
-
-    QList<int> local_paramater_prec = ToolSet::String2IntList(m_controller["LocalParameterPrecList"].toString());
-
-    while (local_paramater_prec.size() < m_model.data()->LocalParameterSize() * m_model.data()->SeriesCount())
-        local_paramater_prec << qPow(10, /* int(log10(m_model.data()->LocalParameter((local_paramater_prec.size()), int(local_paramater_prec.size()/m_model.data()->SeriesCount())))) + */ std_prec);
-
-    QList<int> parameter_prec;
-    parameter_prec << global_paramater_prec << local_paramater_prec;
-    QVector<double> inv_paramater_prec;
-    for (int i = 0; i < global_paramater_prec.size(); ++i)
-        inv_paramater_prec << 1 / double(global_paramater_prec[i]);
-
-    for (int i = 0; i < local_paramater_prec.size(); ++i)
-        inv_paramater_prec << 1 / double(local_paramater_prec[i]);
 
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
@@ -70,7 +52,7 @@ void MCThread::run()
 
     for (int i = 0; i < param.size(); ++i)
         max += param[i];
-    bool appr = true;
+    bool appr = false;
 
     if (max > 4)
         appr = false;
@@ -89,7 +71,7 @@ void MCThread::run()
             int j = 0;
             for (int i = 0; i < param.size(); ++i) {
                 if (param[i])
-                    consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0]; // QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
+                    consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
                 j++;
             }
 
@@ -107,22 +89,22 @@ void MCThread::run()
     } else { // The second one
 
         auto GenerateRandom = [](const QVector<int>& indicies, const QList<int>& param, int max) -> int {
-            int j = QRandomGenerator::global()->bounded(0, param.size() - 1);
+            int j = QRandomGenerator::global()->bounded(0, param.size());
             while ((indicies.contains(j) || param[j] == 0) && indicies.size() < max)
-                j = QRandomGenerator::global()->bounded(0, param.size() - 1);
+                j = QRandomGenerator::global()->bounded(0, param.size());
             if (max == indicies.size())
                 return -1;
             return j;
         };
 
         auto GenerateParameter = [=](int j, QVector<qreal>& consts) -> qreal {
-            consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0]; // QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
+            consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
             m_model->setParameter(consts);
             m_model->Calculate();
             return m_model->StatisticVector()[m_ParameterIndex];
         };
 
-        int min_steps = qMin(max / 3, 2);
+        QVector<qreal> consts = applied_parameters[QRandomGenerator::global()->bounded(0, applied_parameters.size())];
 
         for (int step = 0; step < m_maxsteps; ++step) {
             if (m_interrupt)
@@ -130,7 +112,7 @@ void MCThread::run()
             bool allow_loop = true;
 
             QVector<int> indicies;
-            QVector<qreal> consts = parameters;
+
             QVector<qreal> oldconsts = consts;
             int j = GenerateRandom(indicies, param, max);
             int current = 0;
@@ -139,6 +121,7 @@ void MCThread::run()
                 j = GenerateRandom(indicies, param, max);
                 if (j == -1)
                     break;
+
                 indicies << j;
 
                 if (m_interrupt)
@@ -156,25 +139,16 @@ void MCThread::run()
                         } else
                             attemps++;
                     }
-                    /*
-                        consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0]; // QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
-
-                        m_model->setParameter(consts);
-                        m_model->Calculate();
-                        if (m_model->StatisticVector()[m_ParameterIndex] <= m_MaxParameter) {
-                            oldconsts = consts;
-                            current++;
-                        } else {
-                            consts = oldconsts;
-                            if(current >= min_steps)
-                                allow_loop = false;
-                        }*/
                 }
             }
             m_model->setParameter(consts);
             m_model->Calculate();
             if (m_model->StatisticVector()[m_ParameterIndex] <= m_MaxParameter) {
                 m_results << m_model->ExportModel(false);
+                applied_parameters << consts;
+                consts = applied_parameters[QRandomGenerator::global()->bounded(0, applied_parameters.size())];
+            } else {
+                consts = parameters;
             }
             m_steps++;
             if (step % update_intervall == 0) {

@@ -76,11 +76,6 @@ const QJsonObject ModelComparisonConfigBlock{
     { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
     { "LocalParameterList", "" }, // strings, to be converted to QList<int>
 
-    /* Define the precision of the global and local parameter to be tested - if this list is empty
-        the precision will automatically be definied - and will most probably be not helpful */
-    { "GlobalParameterPrecList", "" }, // strings, to be converted to QList<int>
-    { "LocalParameterPrecList", "" }, // strings, to be converted to QList<int>
-
     /* Define the box scaling factor of the global and local parameter to be tested - if this list is empty
         the scaling will automatically be set to 1.5 - and will most probably be not helpful */
     { "GlobalParameterScalingList", "" }, // strings, to be converted to QVector<double>

@@ -469,11 +469,6 @@ QWidget* StatisticDialog::ModelComparison()
             QCheckBox* checkbox = new QCheckBox;
             checkbox->setChecked(true);
             m_moco_global << checkbox;
-            QSpinBox* spinbox = new QSpinBox;
-            spinbox->setMinimum(0);
-            spinbox->setMaximum(1000);
-            spinbox->setValue(abs(log10(m_model.data()->GlobalParameter(i))) + 400);
-            m_global_moco_digits << spinbox;
 
             QDoubleSpinBox* doublespin = new QDoubleSpinBox;
             doublespin->setMinimum(0);
@@ -486,16 +481,13 @@ QWidget* StatisticDialog::ModelComparison()
             QLabel* label = new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>");
             label->setFixedWidth(100);
             hlayout->addWidget(label);
-            hlayout->addWidget(spinbox);
             hlayout->addWidget(doublespin);
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, spinbox, checkbox]() {
+            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model) {
-                    spinbox->setEnabled(m_model.data()->GlobalEnabled(i));
                     checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
-                    spinbox->setValue(log10(abs(m_model.data()->GlobalParameter(i))) + 400);
                 }
             });
         }
@@ -504,16 +496,10 @@ QWidget* StatisticDialog::ModelComparison()
             QCheckBox* checkbox = new QCheckBox;
             m_moco_local << checkbox;
 
-            QSpinBox* spinbox = new QSpinBox;
-            spinbox->setMinimum(0);
-            spinbox->setMaximum(1000);
-            spinbox->setValue(log10(abs(m_model.data()->LocalParameter(i, 0))) + 400);
-            m_local_moco_digits << spinbox;
-
             QDoubleSpinBox* doublespin = new QDoubleSpinBox;
             doublespin->setMinimum(0);
-            doublespin->setMaximum(5);
-            doublespin->setValue(50);
+            doublespin->setMaximum(50);
+            doublespin->setValue(1.50);
             m_loc_box_scaling << doublespin;
 
             QHBoxLayout* hlayout = new QHBoxLayout;
@@ -521,17 +507,13 @@ QWidget* StatisticDialog::ModelComparison()
             QLabel* label = new QLabel("<html>" + m_model.data()->LocalParameterName(i) + "</html>");
             label->setFixedWidth(100);
             hlayout->addWidget(label);
-            hlayout->addWidget(spinbox);
             hlayout->addWidget(doublespin);
-
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, spinbox, checkbox]() {
+            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model) {
-                    spinbox->setEnabled(m_model.data()->LocalEnabled(i));
                     checkbox->setEnabled(m_model.data()->LocalEnabled(i));
-                    spinbox->setValue(log10(abs(m_model.data()->LocalParameter(i, 0))) + 400);
                 }
             });
         }
@@ -788,11 +770,10 @@ QJsonObject StatisticDialog::RunModelComparison() const
 
     controller["BoxScalingFactor"] = m_moco_box_multi->value();
     QVector<double> glob_box, local_box;
-    QList<int> glob_param, local_param, glob_prec, local_prec;
+    QList<int> glob_param, local_param;
     int max = 0;
     for (int i = 0; i < m_moco_global.size(); ++i) {
         glob_param << (m_moco_global[i]->isChecked() * m_moco_global[i]->isEnabled());
-        glob_prec << m_global_moco_digits[i]->value();
         glob_box << m_glob_box_scaling[i]->value();
         max += m_moco_global[i]->isChecked();
     }
@@ -800,15 +781,12 @@ QJsonObject StatisticDialog::RunModelComparison() const
     for (int i = 0; i < m_moco_local.size(); ++i) {
         for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
             local_param << (m_moco_local[i]->isChecked() * m_moco_local[i]->isEnabled());
-            local_prec << m_local_moco_digits[i]->value();
             local_box << m_loc_box_scaling[i]->value();
         }
         max += m_model.data()->SeriesCount() * m_moco_local[i]->isChecked();
     }
     controller["ParameterIndex"] = m_ParameterIndex;
 
-    controller["GlobalParameterPrecList"] = ToolSet::IntList2String(glob_prec);
-    controller["LocalParameterPrecList"] = ToolSet::IntList2String(local_prec);
     controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
     controller["LocalParameterList"] = ToolSet::IntList2String(local_param);
     controller["GlobalParameterScalingList"] = ToolSet::DoubleVec2String(glob_box);

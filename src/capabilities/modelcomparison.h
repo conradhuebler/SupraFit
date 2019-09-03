@@ -25,7 +25,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 
-const int update_intervall = 100;
+const int update_intervall = 1;
 
 class AbstractModel;
 
