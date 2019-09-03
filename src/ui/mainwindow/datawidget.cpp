@@ -53,7 +53,7 @@ DataWidget::DataWidget()
     m_switch = new QPushButton(tr("1<=>2"));
     m_switch->setToolTip(tr("<html>Swap the independent variables, 1	&harr;2</html>"));
     m_switch->setStyleSheet("background-color: #77d740;");
-    m_switch->setMaximumSize(100, 30);
+    //m_switch->setMaximumSize(100, 30);
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
 
     m_linear = new QPushButton(tr("Regression"));

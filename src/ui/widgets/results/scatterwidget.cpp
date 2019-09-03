@@ -204,7 +204,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
         //    model = m_models[i];
 
         m_model.data()->ImportModel(model);
-        m_model.data()->Calculate();
+        //m_model.data()->Calculate();
         //        qDebug() << model;
         /*
         if (m_converged && !m_model.data()->isConverged())

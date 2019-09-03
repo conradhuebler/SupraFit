@@ -66,28 +66,121 @@ void MCThread::run()
 
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
-    for (int step = 0; step < m_maxsteps; ++step) {
-        if (m_interrupt)
-            return;
+    int max = 0;
 
-        QVector<qreal> consts = parameters;
-        int j = 0;
-        for (int i = 0; i < param.size(); ++i) {
+    for (int i = 0; i < param.size(); ++i)
+        max += param[i];
+    bool appr = true;
 
-            if (!param[i])
-                continue;
-            consts[j] = QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
-            j++;
+    if (max > 4)
+        appr = false;
+
+    /* Lets have two different approaches
+     * The first one for only a few parameter and a second for many parameters */
+
+    // The first one
+    if (appr) {
+        for (int step = 0; step < m_maxsteps; ++step) {
+            if (m_interrupt)
+                return;
+
+            QVector<qreal> consts = parameters;
+
+            int j = 0;
+            for (int i = 0; i < param.size(); ++i) {
+                if (param[i])
+                    consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0]; // QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
+                j++;
+            }
+
+            m_model->setParameter(consts);
+            m_model->Calculate();
+            if (m_model->StatisticVector()[m_ParameterIndex] <= m_MaxParameter) {
+                m_results << m_model->ExportModel(false);
+            }
+            m_steps++;
+            if (step % update_intervall == 0) {
+                emit IncrementProgress(QDateTime::currentMSecsSinceEpoch() - t0);
+                t0 = QDateTime::currentMSecsSinceEpoch();
+            }
         }
-        m_model->setParameter(consts);
-        m_model->Calculate();
-        if (m_model->StatisticVector()[m_ParameterIndex] <= m_MaxParameter) {
-            m_results << m_model->ExportModel(false);
-        }
-        m_steps++;
-        if (step % update_intervall == 0) {
-            emit IncrementProgress(QDateTime::currentMSecsSinceEpoch() - t0);
-            t0 = QDateTime::currentMSecsSinceEpoch();
+    } else { // The second one
+
+        auto GenerateRandom = [](const QVector<int>& indicies, const QList<int>& param, int max) -> int {
+            int j = QRandomGenerator::global()->bounded(0, param.size() - 1);
+            while ((indicies.contains(j) || param[j] == 0) && indicies.size() < max)
+                j = QRandomGenerator::global()->bounded(0, param.size() - 1);
+            if (max == indicies.size())
+                return -1;
+            return j;
+        };
+
+        auto GenerateParameter = [=](int j, QVector<qreal>& consts) -> qreal {
+            consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0]; // QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
+            m_model->setParameter(consts);
+            m_model->Calculate();
+            return m_model->StatisticVector()[m_ParameterIndex];
+        };
+
+        int min_steps = qMin(max / 3, 2);
+
+        for (int step = 0; step < m_maxsteps; ++step) {
+            if (m_interrupt)
+                return;
+            bool allow_loop = true;
+
+            QVector<int> indicies;
+            QVector<qreal> consts = parameters;
+            QVector<qreal> oldconsts = consts;
+            int j = GenerateRandom(indicies, param, max);
+            int current = 0;
+            while ((current < max && allow_loop && indicies.size() < parameters.size())) {
+
+                j = GenerateRandom(indicies, param, max);
+                if (j == -1)
+                    break;
+                indicies << j;
+
+                if (m_interrupt)
+                    return;
+
+                if (param[j]) {
+                    int attemps = 0;
+                    while (attemps < 10) {
+                        oldconsts = consts;
+                        qreal SSE = GenerateParameter(j, consts);
+                        if (SSE <= m_MaxParameter) {
+                            oldconsts = consts;
+                            current++;
+                            attemps = 10;
+                        } else
+                            attemps++;
+                    }
+                    /*
+                        consts[j] = QRandomGenerator::global()->generateDouble() * (m_box[j][1] - m_box[j][0]) + m_box[j][0]; // QRandomGenerator::global()->bounded(parameter_prec[i]) * inv_paramater_prec[i] * (m_box[j][1] - m_box[j][0]) + m_box[j][0];
+
+                        m_model->setParameter(consts);
+                        m_model->Calculate();
+                        if (m_model->StatisticVector()[m_ParameterIndex] <= m_MaxParameter) {
+                            oldconsts = consts;
+                            current++;
+                        } else {
+                            consts = oldconsts;
+                            if(current >= min_steps)
+                                allow_loop = false;
+                        }*/
+                }
+            }
+            m_model->setParameter(consts);
+            m_model->Calculate();
+            if (m_model->StatisticVector()[m_ParameterIndex] <= m_MaxParameter) {
+                m_results << m_model->ExportModel(false);
+            }
+            m_steps++;
+            if (step % update_intervall == 0) {
+                emit IncrementProgress(QDateTime::currentMSecsSinceEpoch() - t0);
+                t0 = QDateTime::currentMSecsSinceEpoch();
+            }
         }
     }
 }
@@ -98,7 +191,7 @@ qreal FCThread::SingleLimit(int parameter_id, int direction)
     double param = parameter[parameter_id];
     double old_param = param;
     int iter = 0;
-    //qDebug() << m_controller;
+
     int maxiter = m_controller["MaxStepsFastConfidence"].toInt();
     double step = qPow(10, ceil(log10(qAbs(param))) + m_controller["FastConfidenceScaling"].toDouble());
 
