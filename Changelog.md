@@ -1,4 +1,4 @@
-# The (incomplete) SupreFit Changelog
+# The (incomplete) SupraFit Changelog
 
 # SupraFit 2.0 Beta 2 (1.8)
 
