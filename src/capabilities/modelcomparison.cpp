@@ -296,7 +296,7 @@ bool ModelComparison::FastConfidence()
 
     for (int i = 0; i < threads.size(); ++i) {
         QJsonObject result;
-        QPair<int, int> pair = m_model.data()->IndexParameters(i);
+        QPair<int, int> pair = m_model.data()->IndexParameters(threads[i]->Parameter());
         if (pair.second == 0) {
             result["name"] = m_model.data()->GlobalParameterName(pair.first);
             result["type"] = "Global Parameter";

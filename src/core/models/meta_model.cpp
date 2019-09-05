@@ -252,6 +252,7 @@ QVector<qreal> MetaModel::CollectParameter()
     for (int i = 0; i < m_mmparameter.size(); ++i) {
         bool local = false;
         MMParameter parameter = m_mmparameter[i];
+
         if (std::isnan(parameter.first))
             continue;
 
@@ -286,7 +287,27 @@ QVector<qreal> MetaModel::CollectParameter()
             global_names << names[i];
         }
     }
+    int local = 0, global = 0;
+    QVector<QPair<int, int>> pairs;
 
+    for (int i = 0; i < m_opt_index.size(); ++i) {
+        if (m_opt_index[i].second == 0) {
+            auto pair = m_opt_index[i];
+            pair.first = global;
+            pairs << pair;
+            global++;
+        }
+    }
+    for (int i = 0; i < m_opt_index.size(); ++i) {
+        if (m_opt_index[i].second == 1) {
+            auto pair = m_opt_index[i];
+            pair.first = local;
+            pairs << pair;
+            local++;
+        }
+    }
+    qDebug() << pairs << m_opt_index;
+    m_opt_index = pairs;
     m_global_names = global_names;
     m_local_names = local_names;
 

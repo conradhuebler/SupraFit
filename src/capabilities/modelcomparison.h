@@ -75,6 +75,7 @@ public:
     inline qreal Lower() const { return m_lower; }
     inline qreal Upper() const { return m_upper; }
     inline QList<QPointF> Points() const { return m_points; }
+    inline int Parameter() const { return m_parameter; }
 
 private:
     qreal m_lower, m_upper;

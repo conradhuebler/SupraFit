@@ -744,12 +744,16 @@ QJsonObject StatisticDialog::RunGridSearch() const
     QList<int> glob_param, local_param;
     int max = 0;
     for (int i = 0; i < m_grid_global.size(); ++i) {
-        glob_param << (m_grid_global[i]->isChecked() * m_grid_global[i]->isEnabled());
+        if (m_model.data()->GlobalTable()->isChecked(i, 0))
+            glob_param << (m_grid_global[i]->isChecked() * m_grid_global[i]->isEnabled());
         max += m_grid_global[i]->isChecked();
     }
 
     for (int i = 0; i < m_grid_local.size(); ++i) {
-        local_param << (m_grid_local[i]->isChecked() * m_grid_local[i]->isEnabled());
+        for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
+            if (m_model.data()->LocalTable()->isChecked(i, j))
+                local_param << (m_grid_local[i]->isChecked() * m_grid_local[i]->isEnabled());
+        }
         max += m_model.data()->SeriesCount() * m_grid_local[i]->isChecked();
     }
 
@@ -773,14 +777,16 @@ QJsonObject StatisticDialog::RunModelComparison() const
     QList<int> glob_param, local_param;
     int max = 0;
     for (int i = 0; i < m_moco_global.size(); ++i) {
-        glob_param << (m_moco_global[i]->isChecked() * m_moco_global[i]->isEnabled());
+        if (m_model.data()->GlobalTable()->isChecked(i, 0))
+            glob_param << (m_moco_global[i]->isChecked() * m_moco_global[i]->isEnabled());
         glob_box << m_glob_box_scaling[i]->value();
         max += m_moco_global[i]->isChecked();
     }
 
     for (int i = 0; i < m_moco_local.size(); ++i) {
         for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
-            local_param << (m_moco_local[i]->isChecked() * m_moco_local[i]->isEnabled());
+            if (m_model.data()->LocalTable()->isChecked(i, j))
+                local_param << (m_moco_local[i]->isChecked() * m_moco_local[i]->isEnabled());
             local_box << m_loc_box_scaling[i]->value();
         }
         max += m_model.data()->SeriesCount() * m_moco_local[i]->isChecked();
