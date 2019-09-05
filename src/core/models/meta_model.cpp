@@ -71,6 +71,9 @@ qreal MetaModel::GlobalParameter(int i) const
 
 QString MetaModel::GlobalParameterName(int j) const
 {
+
+    return m_global_names[j];
+    /*
     QString string = QString::number(j);
     if (j >= m_global_par.size())
         return string;
@@ -86,11 +89,13 @@ QString MetaModel::GlobalParameterName(int j) const
     names.removeDuplicates();
     string = names.join(" ");
 
-    return string;
+    return string;*/
 }
 
 QString MetaModel::LocalParameterName(int j) const
 {
+    return m_local_names[j];
+    /*
     QString string = QString::number(j);
     if (j >= m_local_par.size())
         return string;
@@ -106,7 +111,7 @@ QString MetaModel::LocalParameterName(int j) const
     names.removeDuplicates();
     string = names.join(" ");
 
-    return string;
+    return string;*/
 }
 
 qreal MetaModel::LocalParameter(int parameter, int series) const
@@ -154,8 +159,8 @@ void MetaModel::ApplyConnectType()
 
                 QString name = m_models[i]->GlobalParameterName(j);
 
-                m_mmparameter[m_global_names.indexOf(name)].second << param;
-                m_mmparameter[m_global_names.indexOf(name)].first += m_models[i]->GlobalParameter(j);
+                m_mmparameter[m_original_global.indexOf(name)].second << param;
+                m_mmparameter[m_original_global.indexOf(name)].first += m_models[i]->GlobalParameter(j);
             }
         }
 
@@ -170,8 +175,8 @@ void MetaModel::ApplyConnectType()
 
                 QString name = m_models[i]->LocalParameterName(j);
 
-                m_mmparameter[m_global_names.size() + m_local_names.indexOf(name)].second << param;
-                m_mmparameter[m_global_names.size() + m_local_names.indexOf(name)].first += m_models[i]->LocalParameter(m_local_index[i][j]);
+                m_mmparameter[m_original_global.size() + m_original_local.indexOf(name)].second << param;
+                m_mmparameter[m_original_global.size() + m_original_local.indexOf(name)].first += m_models[i]->LocalParameter(m_local_index[i][j]);
             }
         }
 
@@ -238,23 +243,28 @@ QVector<qreal> MetaModel::CollectParameter()
     m_opt_para.clear();
     m_global_par.clear();
     m_local_par.clear();
-    QVector<qreal> param;
+    m_opt_index.clear();
+    QVector<qreal*> global_ptr, local_ptr;
+    QVector<qreal> local_param, global_param;
+    QStringList local_names, global_names;
+    QStringList names = QStringList() << m_original_global << m_original_local;
     QVector<QPair<int, int>> indicies;
     for (int i = 0; i < m_mmparameter.size(); ++i) {
+        bool local = false;
         MMParameter parameter = m_mmparameter[i];
         if (std::isnan(parameter.first))
             continue;
 
         if (parameter.second.size() > 1 && m_models.size() > 1) {
             m_global_par << i;
-            m_opt_index << QPair<int, int>(param.size(), 0);
+            m_opt_index << QPair<int, int>(m_opt_index.size(), 0);
 
         } else if (parameter.second.size() == 1 && m_models.size() > 1) {
             QPair<int, int> current_param = QPair<int, int>(m_mmparameter[i].second[0][1], m_mmparameter[i].second[0][2]);
             if (!indicies.contains(current_param)) {
-                m_opt_index << QPair<int, int>(m_local_par.size(), 1);
+                m_opt_index << QPair<int, int>(m_opt_index.size(), 1);
                 m_local_par << i;
-
+                local = true;
                 /* we need both indicies - the first determines weather it is originally local or global,
                  * the second one the index of the parameter itselfs
                  * if we only use the index of the parameter, originally local parameter may be dropped
@@ -264,15 +274,26 @@ QVector<qreal> MetaModel::CollectParameter()
                 m_opt_index << QPair<int, int>(indicies.indexOf(current_param), 1);
         } else {
             m_global_par << i;
-            m_opt_index << QPair<int, int>(param.size(), 0);
+            m_opt_index << QPair<int, int>(m_opt_index.size(), 0);
         }
-
-        m_opt_para << &m_mmparameter[i].first;
-        param << m_mmparameter[i].first;
+        if (local) {
+            local_ptr << &m_mmparameter[i].first;
+            local_param << m_mmparameter[i].first;
+            local_names << names[i];
+        } else {
+            global_ptr << &m_mmparameter[i].first;
+            global_param << m_mmparameter[i].first;
+            global_names << names[i];
+        }
     }
 
-    m_parameter = param;
-    return param;
+    m_global_names = global_names;
+    m_local_names = local_names;
+
+    m_opt_para << global_ptr << local_ptr;
+    m_parameter << global_param << local_param;
+
+    return m_parameter;
 }
 
 QVector<qreal> MetaModel::AllParameter() const
@@ -438,14 +459,14 @@ void MetaModel::addModel(const QPointer<AbstractModel> model)
     QSharedPointer<AbstractModel> t = model->Clone();
 
     for (int i = 0; i < model->GlobalParameterSize(); ++i)
-        m_global_names << model->GlobalParameterName(i);
+        m_original_global << model->GlobalParameterName(i);
 
     for (int i = 0; i < model->LocalParameterSize(); ++i)
-        m_local_names << model->LocalParameterName(i);
+        m_original_local << model->LocalParameterName(i);
 
     t->ReleaseLocks();
 
-    m_global_names.removeDuplicates();
+    m_original_global.removeDuplicates();
     m_local_names.removeDuplicates();
 
     /* We shall not use the derived functions but the base functions of DataClass since at the moment, we dont have real data yet */
@@ -491,8 +512,8 @@ void MetaModel::RemoveModel(const AbstractModel* model)
     m_dep_var = 0;
     m_series_count = 0;
 
-    m_global_names.clear();
-    m_local_names.clear();
+    m_original_global.clear();
+    m_original_local.clear();
 
     m_mmparameter.clear();
 
@@ -501,13 +522,10 @@ void MetaModel::RemoveModel(const AbstractModel* model)
             continue;
 
         for (int i = 0; i < models[l].data()->GlobalParameterSize(); ++i)
-            m_global_names << models[l].data()->GlobalParameterName(i);
+            m_original_global << models[l].data()->GlobalParameterName(i);
 
         for (int i = 0; i < models[l].data()->LocalParameterSize(); ++i)
-            m_local_names << models[l].data()->LocalParameterName(i);
-
-        m_global_names.removeDuplicates();
-        m_local_names.removeDuplicates();
+            m_original_local << models[l].data()->LocalParameterName(i);
 
         IndependentModel()->append(models[l].data()->IndependentModel());
         DependentModel()->append(models[l].data()->DependentModel());
@@ -525,6 +543,9 @@ void MetaModel::RemoveModel(const AbstractModel* model)
         m_dep_var += models[l].data()->DataPoints();
         m_series_count += models[l].data()->SeriesCount();
     }
+
+    m_original_global.removeDuplicates();
+    m_local_names.removeDuplicates();
 
     OptimizeParameters_Private();
     UpdateSlicedTable();
@@ -777,12 +798,13 @@ int MetaModel::LocalParameterSize(int i) const
         return m_local_par.size();
     else if (m_connect_type == ConnectType::Custom) {
         int counter = 0;
-        QVector<int> indicies;
+        QStringList names0 = QStringList() << m_original_global << m_original_local;
+        QStringList names;
         for (int i = 0; i < m_mmparameter.size(); ++i) {
             if (m_mmparameter[i].second.size() == 1) {
-                if (indicies.contains(m_mmparameter[i].second[0][2]))
+                if (names.contains(names0[i]))
                     continue;
-                indicies << m_mmparameter[i].second[0][2];
+                names << names0[i];
                 counter++;
             }
         }

@@ -45,7 +45,6 @@ void MCThread::run()
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
 
     param << global_param << local_param;
-
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     int max = 0;
@@ -447,7 +446,12 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
             constants = object["data"].toObject()["localParameter"].toObject();
             if (m_model->LocalParameterSize()) {
                 for (int i = 0; i < m_model->SeriesCount(); ++i) {
-                    QVector<qreal> param = ToolSet::String2DoubleVec(constants["data"].toObject()[QString::number(i)].toString());
+                    QVector<qreal> param_raw = ToolSet::String2DoubleVec(constants["data"].toObject()[QString::number(i)].toString());
+                    QVector<qreal> checked = ToolSet::String2DoubleVec(constants["checked"].toObject()[QString::number(i)].toString());
+                    QVector<qreal> param;
+                    for (int x = 0; x < checked.size(); ++x)
+                        if (checked[x])
+                            param << param_raw[x];
                     for (int j = 0; j < param.size(); ++j) {
                         data_local[i + m_model->SeriesCount() * j] << param[j];
                         local_values[i + m_model->SeriesCount() * j] = QPair<int, int>(j, i);

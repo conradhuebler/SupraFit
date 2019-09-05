@@ -101,8 +101,10 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
 void AbstractModel::PrepareParameter(int global, int local)
 {
-    if (InputParameterSize() != IndependentModel()->columnCount())
-        throw - 2;
+    if (SFModel() != SupraFit::MetaModel) {
+        if (InputParameterSize() != IndependentModel()->columnCount())
+            throw - 2;
+    }
 
     QStringList header;
 
@@ -324,9 +326,10 @@ void AbstractModel::Calculate()
     m_SEy = qSqrt(m_sum_squares / degree_freedom);
     m_chisquared = qSqrt(m_sum_squares / (degree_freedom - 1));
 
-    PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(DependentModel()->toVector()), ToolSet::QVector2DoubleEigVec(ModelTable()->toVector()));
-
-    m_squared = regression.R;
+    if (SFModel() != SupraFit::MetaModel) {
+        PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(DependentModel()->toVector()), ToolSet::QVector2DoubleEigVec(ModelTable()->toVector()));
+        m_squared = regression.R;
+    }
     //FIXME sometimes ...
     m_covfit = 0; //CalculateCovarianceFit();
 

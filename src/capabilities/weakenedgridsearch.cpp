@@ -194,25 +194,18 @@ bool WeakenedGridSearch::Run()
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
 
-    QList<int> global_param, local_param;
+    QList<int> global_param, local_param, list_parameter;
+
     global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
+    list_parameter << global_param << local_param;
+
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
-    for (int i = 0; i < parameter.size(); ++i) {
+    for (int i = 0; i < list_parameter.size(); ++i) {
 
         QCoreApplication::processEvents();
-
-        bool step = true;
-
-        QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
-        if (index_pair.second == 0) {
-            step = global_param[index_pair.first];
-        } else if (index_pair.second == 1) {
-            step = local_param[index_pair.first];
-        }
-
-        if (!step)
+        if (!list_parameter[i])
             continue;
 
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair;
