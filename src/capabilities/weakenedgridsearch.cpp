@@ -207,7 +207,7 @@ bool WeakenedGridSearch::Run()
         QCoreApplication::processEvents();
         if (!list_parameter[i])
             continue;
-        qDebug() << i << list_parameter << m_model->IndexParameters(i);
+
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair;
         pair.first = CreateThread(i, 1);
         pair.second = CreateThread(i, 0);
@@ -259,7 +259,7 @@ bool WeakenedGridSearch::Run()
         QJsonObject result;
 
         QPair<int, int> index_pair = m_model.data()->IndexParameters(index);
-        qDebug() << index_pair << index;
+
         if (index_pair.second == 0) {
             result["name"] = m_model.data()->GlobalParameterName(index_pair.first);
             result["type"] = "Global Parameter";

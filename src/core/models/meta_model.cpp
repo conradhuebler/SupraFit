@@ -615,6 +615,8 @@ void MetaModel::RemoveModel(const AbstractModel* model)
 
 void MetaModel::UpdateCalculated()
 {
+    QMutexLocker mutex(&m_mutex);
+
     if (m_model_signal)
         delete m_model_signal;
     m_model_signal = new DataTable(0, 0, this);
