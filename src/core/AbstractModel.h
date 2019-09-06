@@ -782,6 +782,8 @@ protected:
       BUT since abstractmodels should not depend on anything graphics related, they will be no series, but simple structs
       that can be worked with */
     QMap<QString, ModelChart*> m_model_charts;
+
+    QMutex m_mutex;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

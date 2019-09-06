@@ -308,6 +308,10 @@ void MetaModelParameter::setUi()
         m_treemodel->layoutChanged();
     });
 
+    connect(m_model.data(), &MetaModel::ParameterSorted, this, [this]() {
+        m_treemodel->layoutChanged();
+    });
+
     connect(m_model.data(), &MetaModel::Recalculated, this, [this]() {
         m_treemodel->layoutChanged();
     });

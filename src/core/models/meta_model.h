@@ -162,6 +162,7 @@ private slots:
 
 private:
     void ApplyConnectType();
+    void ResortParameter();
 
     QVector<QSharedPointer<AbstractModel>> m_models;
     int m_glob_param = 0, m_inp_param = 0, m_loc_param = 0, m_size = 0, m_indep_var = 0, m_dep_var = 0, m_series_count = 0, m_unique_global = 0, m_unique_local = 0, m_unique_series = 0;
@@ -191,4 +192,5 @@ signals:
     void ModelAdded(QSharedPointer<AbstractModel> model);
     void ModelRemoved();
     void ParameterMoved();
+    void ParameterSorted();
 };
