@@ -422,22 +422,22 @@ public:
     /*! \brief Returns pointer to Model DataTable
      * overloaded function
      */
-    inline DataTable* ModelTable() { return m_model_signal; }
+    virtual inline DataTable* ModelTable() { return m_model_signal; }
 
     /*! \brief Returns pointer to Error DataTable
      * overloaded function
      */
-    inline DataTable* ErrorTable() { return m_model_error; }
+    virtual inline DataTable* ErrorTable() { return m_model_error; }
 
     /*! \brief Returns const pointer to Model DataTable
      * overloaded function
      */
-    inline DataTable* ModelTable() const { return m_model_signal; }
+    virtual inline DataTable* ModelTable() const { return m_model_signal; }
 
     /*! \brief Returns const pointer to Error DataTable
      * overloaded function
      */
-    inline DataTable* ErrorTable() const { return m_model_error; }
+    virtual inline DataTable* ErrorTable() const { return m_model_error; }
 
     /*! \brief Returns pointer to Global DataTable
      * overloaded function

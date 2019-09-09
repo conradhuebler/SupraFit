@@ -166,7 +166,7 @@ qreal AbstractItcModel::GuessFx()
         QVector<qreal> x, y;
 
         for (int i = start; i < DataPoints(); ++i) {
-            x << PrintOutIndependent(i);
+            x << InitialGuestConcentration(i) / InitialHostConcentration(i); // Ensure, that the correct x axis will be used.
             y << DependentModel()->data(0, i);
         }
         QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 3);

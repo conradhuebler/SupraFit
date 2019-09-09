@@ -74,6 +74,20 @@ public:
 
     virtual int LocalParameterSize(int i = 0) const override;
 
+    /*! \brief Returns pointer to Model DataTable
+     * overloaded function
+     */
+    virtual inline DataTable* ModelTable() override
+    {
+        UpdateCalculated();
+        return m_model_signal;
+    }
+
+    /*! \brief Returns const pointer to Model DataTable
+     * overloaded function
+     */
+    virtual inline DataTable* ModelTable() const override { return m_model_signal; }
+
     virtual inline int Size() const override { return m_size; }
     virtual inline int IndependentVariableSize() const override { return m_indep_var; }
     virtual inline int DataPoints() const override { return m_dep_var; }

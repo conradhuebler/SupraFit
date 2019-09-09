@@ -41,8 +41,10 @@ ChartWrapper::ChartWrapper(QObject* parent)
 ChartWrapper::~ChartWrapper()
 {
     for (int i = 0; i < m_stored_series.size(); ++i) {
-        m_stored_series[i]->clear();
-        delete m_stored_series[i];
+        if (m_stored_series[i]) {
+            m_stored_series[i]->clear();
+            delete m_stored_series[i];
+        }
     }
 
     m_stored_data.clear();
