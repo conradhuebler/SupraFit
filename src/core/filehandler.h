@@ -59,6 +59,7 @@ public:
     inline QJsonObject SystemParameter() const { return m_systemparameter; }
     inline void setIndependentRows(int rows) { m_rows = rows; }
     inline void setStartPoint(int point) { m_start_point = point; }
+    inline void setSeriesCount(int series) { m_series = series; }
     inline QJsonObject getJsonData() const { return m_topjson; }
 
 private:
@@ -75,7 +76,7 @@ private:
     QString m_filename, m_title;
     QString sep;
     QStringList m_filecontent;
-    int m_lines, m_rows = 2, m_start_point = 0;
+    int m_lines, m_rows = 2, m_start_point = 0, m_series = 0;
     FileType m_filetype;
 
     QJsonObject m_systemparameter;

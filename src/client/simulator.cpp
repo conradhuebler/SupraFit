@@ -244,6 +244,80 @@ QVector<QSharedPointer<AbstractModel>> Simulator::AddModels(const QJsonObject& m
     }
     return models;
 }
+QSharedPointer<AbstractModel> Simulator::AddModel(int model, QPointer<DataClass> data)
+{
+    QSharedPointer<AbstractModel> t = CreateModel(model, data);
+    if (!t)
+        return t;
+
+    return t;
+}
+QVector<QJsonObject> Simulator::GenerateData()
+{
+    m_extension = ".suprafit";
+
+    QVector<QJsonObject> project_list;
+
+    if (m_mainjson.isEmpty())
+        return project_list;
+
+    if (m_infile.isEmpty() || m_infile.isNull()) {
+        if (m_mainjson.contains("InFile"))
+            m_infile = m_mainjson["InFile"].toString();
+
+        if (m_infile.isEmpty() || m_infile.isNull())
+            return project_list;
+    }
+
+    m_independent_rows = m_mainjson["IndependentRows"].toInt(2);
+    m_start_point = m_mainjson["StartPoint"].toInt(0);
+    m_series = m_datajson["Series"].toInt();
+
+    if (!LoadFile())
+        return project_list;
+
+    if (m_mainjson.contains("OutFile")) {
+        m_outfile = m_mainjson["OutFile"].toString();
+    }
+
+    if (m_toplevel.isEmpty())
+        return project_list;
+
+    if (m_toplevel.keys().contains("data"))
+        m_data = new DataClass(m_toplevel["data"].toObject());
+    else
+        m_data = new DataClass(m_toplevel);
+
+    int model = m_datajson["model"].toInt();
+    double variance = m_datajson["Variance"].toDouble();
+    int repeat = m_datajson["Repeat"].toInt();
+
+    QPointer<DataClass> data = new DataClass(m_data.data());
+    QJsonObject export_object = data->ExportData();
+    QSharedPointer<AbstractModel> t = AddModel(model, data);
+    QVector<qreal> random;
+
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    std::mt19937 rng(seed);
+    int file_int = 0;
+    for (int i = 0; i < repeat; ++i) {
+        t->InitialGuess();
+        qDebug() << t->ModelTable()->ExportTable(true);
+        export_object["dependent"] = t->ModelTable()->PrepareMC(QVector<double>() << variance, rng)->ExportTable(true);
+        export_object["DataType"] = 1;
+        QJsonObject blob;
+        blob["data"] = export_object;
+        QString outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+        while (QFileInfo::exists(outfile)) {
+            ++file_int;
+            outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+        }
+
+        SaveFile(outfile, blob);
+    }
+
+    return project_list;
+}
 
 void Simulator::CheckStopFile()
 {

@@ -129,7 +129,7 @@ void FileHandler::ReadGeneric()
 void FileHandler::ConvertTable()
 {
     bool simulation = false;
-    if (m_rows > m_stored_table->columnCount()) {
+    if (m_rows >= m_stored_table->columnCount()) {
         m_rows = m_stored_table->columnCount();
         simulation = true;
     }
@@ -138,8 +138,9 @@ void FileHandler::ConvertTable()
     DataTable* dep = m_stored_table->BlockColumns(m_rows, m_stored_table->columnCount() - m_rows);
     for (int i = 0; i < m_start_point && i < dep->rowCount(); ++i)
         dep->DisableRow(i);
-    if (simulation)
-        dep = indep;
+    if (simulation) {
+        dep->clear(m_series, m_stored_table->rowCount()); // rename to stuff to correct rows and cols sometimes
+    }
     data->setDependentTable(dep);
     data->setIndependentTable(indep);
     data->setDataType(DataClassPrivate::Table);

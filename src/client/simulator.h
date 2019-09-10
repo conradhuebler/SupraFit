@@ -37,17 +37,26 @@ public:
     explicit Simulator();
     virtual ~Simulator();
 
-    void setMainJson(const QJsonObject& mainjson) { m_mainjson = mainjson; }
+    void setMainJson(const QJsonObject& mainjson)
+    {
+        m_mainjson = mainjson;
+        setDataJson(m_mainjson["data"].toObject());
+    }
+    void setDataJson(const QJsonObject& datajson) { m_datajson = datajson; }
+
     void setTopLevel(const QJsonObject& toplevel) { m_toplevel = toplevel; }
 
     void setModelsJson(const QJsonObject& modelsjson) { m_modelsjson = modelsjson; }
     void setJobsJson(const QJsonObject& jobsjson) { m_jobsjson = jobsjson; }
+
+    QVector<QJsonObject> GenerateData();
 
     QStringList Generate();
 
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
 private:
+    QSharedPointer<AbstractModel> AddModel(int model, QPointer<DataClass> data);
     void CheckStopFile();
 
     QPointer<const DataClass> m_data;
@@ -56,9 +65,8 @@ private:
     void Progress(int i, int max);
     double m_current = 0.0;
     */
-    QJsonObject m_mainjson, m_modelsjson, m_jobsjson;
+    QJsonObject m_mainjson, m_modelsjson, m_jobsjson, m_datajson;
     bool m_interrupt = false;
-
 signals:
     void Interrupt();
 };

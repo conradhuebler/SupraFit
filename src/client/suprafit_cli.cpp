@@ -43,6 +43,7 @@ bool SupraFitCli::LoadFile()
     FileHandler* handler = new FileHandler(m_infile, this);
     handler->setIndependentRows(m_independent_rows);
     handler->setStartPoint(m_start_point);
+    handler->setSeriesCount(m_series); // this only important for the subclassed simulator
     handler->LoadFile();
     if (handler->Type() == FileHandler::SupraFit) {
         if (!JsonHandler::ReadJsonFile(m_toplevel, m_infile))

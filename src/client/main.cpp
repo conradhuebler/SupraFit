@@ -134,7 +134,8 @@ int main(int argc, char** argv)
                 simulator->setMainJson(job["main"].toObject());
                 simulator->setModelsJson(job["model"].toObject());
                 simulator->setJobsJson(job["jobs"].toObject());
-                data_files = simulator->Generate();
+                //data_files =
+                simulator->GenerateData();
             }
         }
 

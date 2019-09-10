@@ -40,8 +40,8 @@
 itc_ItoII_Model::itc_ItoII_Model(DataClass* data)
     : AbstractItcModel(data)
 {
-    m_random_local << -100000;
-    m_random_local << -100000;
+    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
+    m_random_local[0][1] = m_random_local[0][0];
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
@@ -49,8 +49,8 @@ itc_ItoII_Model::itc_ItoII_Model(DataClass* data)
 itc_ItoII_Model::itc_ItoII_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
-    m_random_local << -100000;
-    m_random_local << -100000;
+    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
+    m_random_local[0][1] = m_random_local[0][0];
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }

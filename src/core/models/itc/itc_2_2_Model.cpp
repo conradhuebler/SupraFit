@@ -42,9 +42,9 @@
 itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
     : AbstractItcModel(data)
 {
-    m_random_local << -100000;
-    m_random_local << -100000;
-    m_random_local << -100000;
+    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
+    m_random_local[0][1] = m_random_local[0][0];
+    m_random_local[0][2] = m_random_local[0][0];
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 
@@ -56,9 +56,9 @@ itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
 itc_IItoII_Model::itc_IItoII_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
-    m_random_local << 100000;
-    m_random_local << 100000;
-    m_random_local << 100000;
+    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
+    m_random_local[0][1] = m_random_local[0][0];
+    m_random_local[0][2] = m_random_local[0][0];
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     m_threadpool = new QThreadPool(this);

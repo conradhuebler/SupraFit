@@ -125,10 +125,14 @@ void AbstractModel::PrepareParameter(int global, int local)
     private_d->m_enabled_local = QVector<int>(local, 0);
 
     while (m_random_gobal.size() < GlobalParameterSize())
-        m_random_gobal << 10;
+        m_random_gobal << QPair<qreal, qreal>(0, 10);
 
-    while (m_random_local.size() < LocalParameterSize())
-        m_random_local << 10;
+    while (m_random_local.size() < SeriesCount()) {
+        QVector<QPair<qreal, qreal>> random;
+        while (random.size() < LocalParameterSize())
+            random << QPair<qreal, qreal>(0, 10);
+        m_random_local << random;
+    }
 
     addGlobalParameter();
     DeclareSystemParameter();
@@ -160,17 +164,18 @@ AbstractModel::~AbstractModel()
 
 void AbstractModel::InitialiseRandom()
 {
-    if (!qApp->instance()->property("InitialiseRandom").toBool())
+    if (!qApp->instance()->property("InitialiseRandom").toBool() || SFModel() == SupraFit::MetaModel)
         return;
 
     for (int i = 0; i < m_random_gobal.size(); ++i) {
-        (*GlobalTable())[i] = QRandomGenerator::global()->bounded(m_random_gobal[i]);
+        (*GlobalTable())[i] = QRandomGenerator::global()->generateDouble() * (m_random_gobal[i].second - m_random_gobal[i].first) + m_random_gobal[i].first;
     }
-    for (int i = 0; i < m_random_local.size(); ++i) {
-        for (int series = 0; series < LocalTable()->rowCount(); ++series) {
-            LocalTable()->data(i, series) = QRandomGenerator::global()->bounded(m_random_local[i]);
+    for (int series = 0; series < SeriesCount(); ++series) {
+        for (int i = 0; i < LocalParameterSize(); ++i) {
+            LocalTable()->data(i, series) = QRandomGenerator::global()->generateDouble() * (m_random_local[series][i].second - m_random_local[series][i].first) + m_random_local[series][i].first;
         }
     }
+    Calculate();
     emit Recalculated();
 }
 
