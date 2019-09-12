@@ -792,17 +792,11 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
     xmin = m_spec.X(m_peak_list[peak].start);
     xmax = m_spec.X(m_peak_list[peak].end);
 
-    QPointF start = m_thermogram->Chart()->mapToPosition(QPointF(xmin, ymin));
-    QPointF end = m_thermogram->Chart()->mapToPosition(QPointF(xmin, ymax));
-
     m_peak_start_line->clear();
     m_peak_start_line->append(xmin, ymin);
     m_peak_start_line->append(xmin, ymax);
 
     m_peak_start_line->show();
-
-    start = m_thermogram->Chart()->mapToPosition(QPointF(xmax, ymin));
-    end = m_thermogram->Chart()->mapToPosition(QPointF(xmax, ymax));
 
     m_peak_end_line->clear();
 
@@ -816,7 +810,7 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
 
     m_thermogram->setXRange(xmin_0, xmax_0);
     m_thermogram->setYRange(ymin, ymax);
-
+    m_thermogram->setSelectStrategy(SelectStrategy::S_Horizontal);
     m_thermogram->setSelectBox(QPointF(xmin, ymax), QPointF(xmax, ymin));
     setGuideText(QString("You are now in <i>Peak Integration mode</i>. Click [ESC] to leave to mode. Sometimes you might have to activate the chart widget by <b>clicking</b> with the <b>left mouse button</b> right before [ESC]. The peak integration range can be reduced by clicking the <b>right mouse button</b> within the black separation lines - or reset to the whole peak <b>clicking</b> with the <b>right mouse button</b> out of the area between the separation borders. Use [LEFT] or [RIGHT] arrow on your keyboard to navigate through the peaks or <b>double-click</b> on a different peak in the table. Zooming with the <b>mouse wheel</b> is possible."));
 }

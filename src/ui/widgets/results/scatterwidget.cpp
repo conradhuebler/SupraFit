@@ -191,7 +191,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     m_var_2 = var_2;
     Waiter wait;
     view->Clear();
-    QColor color = ChartWrapper::ColorCode(m_model.data()->Color(1)).lighter(50);
+    QColor color = ChartWrapper::ColorCode(m_model.data()->Color(0)).lighter(50);
     m_xy_series = new QtCharts::QScatterSeries;
 
     QList<qreal> x, y;

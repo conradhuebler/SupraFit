@@ -68,7 +68,7 @@ const QJsonObject ModelComparisonConfigBlock{
     /* Threshold for convergency in SSE */
     { "ErrorConvergency", 1e-10 }, // double
 
-    /* Box Scaling Factor */
+    /* Box Scaling Factor - the default value, if none are set - there is no UI button for this */
     { "BoxScalingFactor", 1.5 }, // double
 
     /* Define the global and local parameter to be tested - this list should not be empty
@@ -100,7 +100,7 @@ const QJsonObject MonteCarloConfigBlock{
     { "method", SupraFit::Method::MonteCarlo }, // int
 
     /* Maximal number of Monte Carlo steps to be performed*/
-    { "MaxSteps", 1e3 }, // int
+    { "MaxSteps", 2e3 }, // int
 
     /* Variance to used */
     { "Variance", 1e-3 }, // double
@@ -109,7 +109,7 @@ const QJsonObject MonteCarloConfigBlock{
     { "confidence", 95 }, //double
 
     /* Source of variance */
-    { "VarianceSource", 1 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma", 4 = "bootstrap"
+    { "VarianceSource", 2 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma", 4 = "bootstrap"
 
     /* Use original data instead of the re-fitted data for monte carlo simulation  */
     { "OriginalData", false }, // bool
