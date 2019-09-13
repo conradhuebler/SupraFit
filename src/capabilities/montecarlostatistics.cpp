@@ -192,6 +192,7 @@ bool MonteCarloStatistics::Run()
         QCoreApplication::processEvents();
 
     m_multicore_time = QDateTime::currentMSecsSinceEpoch() - m_t0;
+    QCoreApplication::processEvents();
 
     Collect(threads);
     if (m_models.size() == 0)

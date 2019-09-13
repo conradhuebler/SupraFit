@@ -67,7 +67,6 @@ void Blank::InitialGuess_Private()
     }
     QMap<qreal, PeakPick::MultiRegression> result = LeastSquares(x, y, 1);
     PeakPick::MultiRegression regression = result.first();
-
     LocalTable()->data(0, 0) = regression.regressions[0].m;
     LocalTable()->data(1, 0) = regression.regressions[0].n;
 

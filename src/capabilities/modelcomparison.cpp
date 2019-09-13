@@ -51,7 +51,7 @@ void MCThread::run()
 
     for (int i = 0; i < param.size(); ++i)
         max += param[i];
-    bool appr = false;
+    bool appr = true;
 
     if (max > 4)
         appr = false;
@@ -508,6 +508,8 @@ void ModelComparison::StripResults(const QList<QJsonObject>& results)
         result["name"] = m_model->LocalParameterName(local_values[i].first);
         result["type"] = "Local Parameter";
         result["data"] = ToolSet::DoubleList2String(data_local[i]);
+
+        m_results << result;
     }
     m_controller["steps_taken"] = m_steps;
     m_controller["moco_area"] = m_ellipsoid_area;

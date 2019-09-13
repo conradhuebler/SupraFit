@@ -146,7 +146,7 @@ QWidget* StatisticDialog::MonteCarloWidget()
     m_mc_steps = new QSpinBox;
     m_mc_steps->setMinimum(2);
     m_mc_steps->setMaximum(1e9);
-    m_mc_steps->setValue(1000);
+    m_mc_steps->setValue(2000);
     m_mc_steps->setSingleStep(1e2);
     layout->addWidget(new QLabel(tr("Number of MC Steps:")), 0, 0);
     layout->addWidget(m_mc_steps, 0, 1);
@@ -390,7 +390,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridScalingFactor->setMinimum(-10);
     m_gridScalingFactor->setMaximum(10);
     m_gridScalingFactor->setValue(-4);
-
+    m_gridScalingFactor->setToolTip(tr("Set the scaling factor for each step. The lower the value, the smaller the step and the more precise is the result. On the other hand, more steps are needed or \'Max SSE Convergency Counter\' has to be increased."));
     hlayout = new QHBoxLayout;
     hlayout->addWidget(new QLabel(tr("Scaling Factor for Single Steps:")));
     hlayout->addWidget(m_gridScalingFactor);
@@ -399,7 +399,7 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_wgs_steps->setMaximum(1e7);
     m_wgs_steps->setValue(2e3);
     m_wgs_steps->setSingleStep(100);
-
+    m_wgs_steps->setToolTip(tr("Define the maximal number of steps for the lower and upper limit seperatly."));
     hlayout->addWidget(new QLabel(tr("Maximal steps:")));
     hlayout->addWidget(m_wgs_steps);
 
@@ -411,11 +411,13 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_wgs_err_conv->setDecimals(10);
     m_wgs_err_conv->setValue(1E-9);
     m_wgs_err_conv->setSingleStep(1e-9);
+    m_wgs_err_conv->setToolTip(tr("Set the cutoff, where the difference between calculated SSE is considered as zero."));
 
     m_gridErrorConvergencyCounter = new QSpinBox;
     m_gridErrorConvergencyCounter->setRange(1, 1e8);
     m_gridErrorConvergencyCounter->setSingleStep(10);
     m_gridErrorConvergencyCounter->setValue(5);
+    m_gridErrorConvergencyCounter->setToolTip(tr("Set the maximal number of zero change in SSE ( <  \'SSE Convergence\'), before the stopping."));
 
     hlayout->addWidget(new QLabel(tr("SSE Convergence:")));
     hlayout->addWidget(m_wgs_err_conv);
@@ -430,11 +432,12 @@ QWidget* StatisticDialog::GridSearchWidget()
     m_gridOvershotCounter->setRange(1, 1e8);
     m_gridOvershotCounter->setSingleStep(10);
     m_gridOvershotCounter->setValue(5);
-
+    m_gridOvershotCounter->setToolTip(tr("Set the maximal number of allowed steps, where SSE > SSE(max). The procedure will stop after that number is reached."));
     m_gridErrorDecreaseCounter = new QSpinBox;
     m_gridErrorDecreaseCounter->setRange(1, 1e8);
     m_gridErrorDecreaseCounter->setSingleStep(10);
     m_gridErrorDecreaseCounter->setValue(50);
+    m_gridErrorDecreaseCounter->setToolTip("Set the maximal number of allowed steps, where SSE < SSE(fit). The procedure will stop after that number is reached.");
 
     hlayout->addWidget(new QLabel(tr("Max SSE Overshot Counter:")));
     hlayout->addWidget(m_gridOvershotCounter);
@@ -474,6 +477,7 @@ QWidget* StatisticDialog::ModelComparison()
             doublespin->setMinimum(0);
             doublespin->setMaximum(50);
             doublespin->setValue(1.5);
+            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.data()->GlobalParameterName(i)));
             m_glob_box_scaling << doublespin;
 
             QHBoxLayout* hlayout = new QHBoxLayout;
@@ -500,6 +504,8 @@ QWidget* StatisticDialog::ModelComparison()
             doublespin->setMinimum(0);
             doublespin->setMaximum(50);
             doublespin->setValue(1.50);
+            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.data()->LocalParameterName(i)));
+
             m_loc_box_scaling << doublespin;
 
             QHBoxLayout* hlayout = new QHBoxLayout;
@@ -599,14 +605,6 @@ QWidget* StatisticDialog::ModelComparison()
         global_layout->addWidget(m_moco_error_info, 2, 0, 1, 3);
     } else
         m_moco_f_value->hide();
-
-    m_moco_box_multi = new QDoubleSpinBox;
-    m_moco_box_multi->setMaximum(1000);
-    m_moco_box_multi->setSingleStep(0.25);
-    m_moco_box_multi->setValue(1.5);
-    m_moco_box_multi->setDecimals(4);
-    global_layout->addWidget(new QLabel(tr("Box Scaling")), 3, 0);
-    global_layout->addWidget(m_moco_box_multi, 3, 1);
 
     m_moco_global_settings->setLayout(global_layout);
     layout->addWidget(m_moco_global_settings, 1, 0, 1, 3);
@@ -772,7 +770,6 @@ QJsonObject StatisticDialog::RunModelComparison() const
     controller["method"] = SupraFit::Method::ModelComparison;
     controller["confidence"] = m_moco_maxerror->value();
 
-    controller["BoxScalingFactor"] = m_moco_box_multi->value();
     QVector<double> glob_box, local_box;
     QList<int> glob_param, local_param;
     int max = 0;

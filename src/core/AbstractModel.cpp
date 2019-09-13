@@ -332,7 +332,15 @@ void AbstractModel::Calculate()
     m_chisquared = qSqrt(m_sum_squares / (degree_freedom - 1));
 
     if (SFModel() != SupraFit::MetaModel) {
-        PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(DependentModel()->toVector()), ToolSet::QVector2DoubleEigVec(ModelTable()->toVector()));
+        QVector<qreal> x, y;
+        for (int i = 0; i < DataPoints(); ++i)
+            for (int j = 0; j < SeriesCount(); ++j) {
+                if (DependentModel()->isChecked(j, i)) {
+                    x << DependentModel()->data(j, i);
+                    y << ModelTable()->data(j, i);
+                }
+            }
+        PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(x), ToolSet::QVector2DoubleEigVec(y));
         m_squared = regression.R;
     }
     //FIXME sometimes ...
