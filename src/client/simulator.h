@@ -55,6 +55,8 @@ public:
 
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
+    QJsonObject PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
+
 private:
     QSharedPointer<AbstractModel> AddModel(int model, QPointer<DataClass> data);
     void CheckStopFile();

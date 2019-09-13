@@ -207,6 +207,68 @@ QStringList Simulator::Generate()
     return filelist;
 }
 
+QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job)
+{
+    if (m_mainjson.contains("Threads")) {
+        qApp->instance()->setProperty("threads", m_mainjson.value("Threads").toInt(4));
+        std::cout << "Setting # of threads to " << m_mainjson.value("Threads").toInt(4) << std::endl;
+    }
+
+    QJsonObject project = data;
+
+    QPointer<DataClass> d = new DataClass(data["data"].toObject());
+
+    if (!models.isEmpty()) {
+        std::cout << "Loading Models into Dataset" << std::endl;
+        QVector<QSharedPointer<AbstractModel>> m = AddModels(models, d);
+        std::cout << "Loading " << m.size() << " Models into Dataset finished!" << std::endl;
+        if (!m_jobsjson.isEmpty()) {
+            std::cout << "Starting jobs ..." << std::endl;
+            JobManager* manager = new JobManager;
+            connect(manager, &JobManager::finished, this, [](int current, int all, int time) {
+                std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
+            });
+            connect(this, &Simulator::Interrupt, manager, &JobManager::Interrupt);
+            for (int model_index = 0; model_index < models.size(); ++model_index) {
+                std::cout << "... model  " << model_index << std::endl;
+                for (const QString& j : job.keys()) {
+                    QJsonObject single_job = job[j].toObject();
+                    manager->setModel(m[model_index]);
+                    manager->AddJob(single_job);
+                    manager->RunJobs();
+                    std::cout << "... model  " << model_index << " job done!" << std::endl;
+
+                    if (m_interrupt) {
+                        break;
+                    }
+                }
+                std::cout << "jobs for model  " << model_index << "  finished!" << std::endl;
+                if (m_interrupt) {
+                    std::cout << "softly interrupted by stop file" << std::endl;
+                    break;
+                }
+            }
+            delete manager;
+            std::cout << "jobs all done!" << std::endl;
+        }
+
+        for (int i = 0; i < m.size(); ++i) {
+            project["model_" + QString::number(i)] = m[i]->ExportModel();
+            m[i].clear();
+        }
+        m.clear();
+    }
+    int file_int = 0;
+    QString outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+    while (QFileInfo::exists(outfile)) {
+        ++file_int;
+        outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+    }
+
+    SaveFile(outfile, project);
+    return project;
+}
+
 QVector<QSharedPointer<AbstractModel>> Simulator::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)
 {
     QVector<QSharedPointer<AbstractModel>> models;
@@ -302,18 +364,21 @@ QVector<QJsonObject> Simulator::GenerateData()
     int file_int = 0;
     for (int i = 0; i < repeat; ++i) {
         t->InitialGuess();
-        qDebug() << t->ModelTable()->ExportTable(true);
+
         export_object["dependent"] = t->ModelTable()->PrepareMC(QVector<double>() << variance, rng)->ExportTable(true);
         export_object["DataType"] = 1;
+        export_object["content"] = t->Model2Text();
         QJsonObject blob;
         blob["data"] = export_object;
+        project_list << blob;
+        /*
         QString outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
         while (QFileInfo::exists(outfile)) {
             ++file_int;
             outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
         }
 
-        SaveFile(outfile, blob);
+        SaveFile(outfile, blob);*/
     }
 
     return project_list;

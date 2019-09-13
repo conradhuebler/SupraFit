@@ -124,6 +124,7 @@ int main(int argc, char** argv)
     if (parser.isSet("j")) {
 
         for (const QString& str : parser.values("j")) {
+            QVector<QJsonObject> projects;
             QStringList data_files;
             QJsonObject job;
             JsonHandler::ReadJsonFile(job, str);
@@ -134,8 +135,10 @@ int main(int argc, char** argv)
                 simulator->setMainJson(job["main"].toObject());
                 simulator->setModelsJson(job["model"].toObject());
                 simulator->setJobsJson(job["jobs"].toObject());
-                //data_files =
-                simulator->GenerateData();
+                projects = simulator->GenerateData();
+                for (const auto& project : qAsConst(projects)) {
+                    simulator->PerfomeJobs(project, job["model"].toObject(), job["jobs"].toObject());
+                }
             }
         }
 

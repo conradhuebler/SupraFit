@@ -151,6 +151,7 @@ QString ItoI_Model::ModelInfo() const
 QString ItoI_Model::AdditionalOutput() const
 {
     QString result;
+    return result;
 
     // double max = 1e3;
     double delta = 1e-3;
@@ -170,8 +171,8 @@ QString ItoI_Model::AdditionalOutput() const
 
         diff = host_0 - complex;
         // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
-        std::cout << host << " "
-                  << " " << guest_0 - complex << " " << complex << std::endl;
+        //std::cout << host << " "
+        //          << " " << guest_0 - complex << " " << complex << std::endl;
         //std::cout << integral.transpose() << std::endl;
     }
     integral(0) /= end;
@@ -179,7 +180,6 @@ QString ItoI_Model::AdditionalOutput() const
     integral(2) /= end;
     std::cout << integral.transpose() << std::endl;
 
-    return result;
 }
 
 QString ItoI_Model::ParameterComment(int parameter) const
