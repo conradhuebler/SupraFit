@@ -206,14 +206,13 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         current_constant->setDashDotLine(true);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
-        current_constant->setName(" ");
+        current_constant->setName("!NONE!");
         view->addSeries(current_constant, i, xy_series->color(), name, false);
 
-        QJsonObject confidenceObject = data["confidence"].toObject();
         if (view) {
             QtCharts::QAreaSeries* area_series = AreaSeries(xy_series->color());
             view->addSeries(area_series, i, area_series->color(), name);
-            area_series->setName(" ");
+            area_series->setName("!NONE!");
             m_area_series << area_series;
         }
         m_colors << xy_series->color();
@@ -377,8 +376,7 @@ void MCResultsWidget::UpdateBoxes()
 
             area_series->setLowerSeries(series1);
             area_series->setUpperSeries(series2);
-            area_series->setName(" ");
-#pragma message("why is this always a global parameter?")
+            area_series->setName("!NONE!");
         }
     }
 }
@@ -401,7 +399,7 @@ QtCharts::QAreaSeries* MCResultsWidget::AreaSeries(const QColor& color) const
     QPen pen(0x059605);
     pen.setWidth(3);
     area_series->setPen(pen);
-
+    area_series->setName("!NONE!");
     QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
     gradient.setColorAt(0.0, color);
     gradient.setColorAt(1.0, 0x26f626);
@@ -416,6 +414,7 @@ void MCResultsWidget::setAreaColor(int index, const QColor& color)
     if (index >= m_area_series.size())
         return;
     QtCharts::QAreaSeries* area_series = m_area_series[index];
+    area_series->setName("!NONE!");
 
     QPen pen(0x059605);
     pen.setWidth(3);
