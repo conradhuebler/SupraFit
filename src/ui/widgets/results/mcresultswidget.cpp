@@ -142,7 +142,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     view->setName("montecarlochart");
     view->setMinimumSize(300, 400);
     bool formated = false;
-
+    double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
 
     QJsonObject controller = m_data["controller"].toObject();
     int bins = controller["PlotBins"].toInt(30);
@@ -195,6 +195,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         if (!controller["LightWeight"].toBool())
             has_histogram = true;
         xy_series->setName(name);
+        xy_series->setSize(lineWidth);
         view->addSeries(xy_series, i, xy_series->color(), name, true);
         view->setColor(i, xy_series->color());
         if (!formated)
@@ -202,6 +203,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         formated = true;
 
         LineSeries* current_constant = new LineSeries;
+        current_constant->setSize(lineWidth);
         connect(xy_series, &QtCharts::QXYSeries::colorChanged, current_constant, &LineSeries::setColor);
         current_constant->setDashDotLine(true);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
@@ -220,7 +222,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 
     view->setTitle(QString("Histogram for %1").arg(m_data["controller"].toObject()["title"].toString()));
     view->setXAxis("value");
-    view->setYAxis("relative rate");
+    view->setYAxis("frequency");
 
     return view;
 }
