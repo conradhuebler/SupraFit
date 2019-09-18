@@ -566,7 +566,9 @@ void ThermogramWidget::UpdateTable()
 void ThermogramWidget::UpdatePlot()
 {
     fromSpectrum(&m_spec, m_thermogram_series);
+    double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
     m_thermogram->addSeries(m_thermogram_series);
+    m_thermogram_series->setSize(lineWidth);
     m_thermogram->setXAxis("time [s]");
     m_thermogram->setYAxis("q [raw/s]");
 }

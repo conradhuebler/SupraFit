@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QtCore/QPointF>
+#include <QtCore/QRunnable>
 
 #include <QtWidgets/QWidget>
 
@@ -33,6 +34,32 @@ inline uint qHash(const QPointF& key)
     return qHash(QPair<int, int>(key.x(), key.y()));
 }
 
+class CollectThread : public QRunnable {
+
+public:
+    CollectThread(int start, int end, int var_1, int var_2, const QList<QJsonObject>& models, bool valid, bool converged);
+    inline virtual ~CollectThread()
+    {
+        m_model.clear();
+    }
+
+    void setModel(QSharedPointer<AbstractModel> model);
+    virtual void run() override;
+
+    inline QMultiHash<QPointF, int> LinkedModels() const { return m_linked_models; }
+    inline QVector<qreal> X() const { return m_x; }
+    inline QVector<qreal> Y() const { return m_y; }
+
+private:
+    int m_start, m_end, m_var_1, m_var_2;
+    QList<QJsonObject> m_models;
+    QSharedPointer<AbstractModel> m_model;
+    QMultiHash<QPointF, int> m_linked_models;
+
+    QVector<qreal> m_x, m_y;
+    bool m_valid, m_converged;
+};
+
 class ScatterWidget : public QWidget {
 
     Q_OBJECT
@@ -40,7 +67,8 @@ class ScatterWidget : public QWidget {
 public:
     ScatterWidget();
     void MakePlot(int var_1, int var_2);
-    void setData(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model);
+    void setData(const QList<QJsonObject>& models, const QSharedPointer<AbstractModel> model);
+
 public slots:
     inline void setConverged(bool converged)
     {
@@ -67,7 +95,7 @@ private:
     ListChart* view;
     int m_var_1 = -1, m_var_2 = -1;
     QStringList m_names;
-    QMultiHash<QPointF, int> m_linked_models;
+    QVector<QMultiHash<QPointF, int>> m_linked_models_vector;
 
     bool m_converged = true, m_valid = true;
     void PointClicked(const QPointF& point);
