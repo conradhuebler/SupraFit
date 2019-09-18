@@ -56,7 +56,7 @@ public:
     ConfigDialog(QJsonObject config, QWidget* parent = 0);
     ~ConfigDialog();
     inline QJsonObject Config() const { return m_opt_widget->Config(); }
-    virtual void accept();
+    virtual void accept() override;
 
 private:
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;

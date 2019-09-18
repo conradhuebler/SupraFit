@@ -73,12 +73,12 @@ public:
 
     virtual QString AdditionalOutput() const override;
 
-    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const;
+    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
 
-    inline double ReductionCutOff() const { return 1; }
+    inline double ReductionCutOff() const override { return 1; }
 
 protected:
     virtual void CalculateVariables() override;

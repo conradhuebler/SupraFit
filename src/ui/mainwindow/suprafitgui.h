@@ -81,7 +81,7 @@ public:
         return flags;
     }
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
         if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
             if (section == 0)
@@ -216,7 +216,7 @@ private:
     QString m_supr_file;
 
     QFile m_file;
-    virtual void closeEvent(QCloseEvent* event);
+    virtual void closeEvent(QCloseEvent* event) override;
     const QStringList m_properties = QStringList() << "threads"
                                                    << "chartanimation"
                                                    << "workingdir"
@@ -304,5 +304,5 @@ private slots:
     void AddScatter();
 
 protected:
-    bool eventFilter(QObject* obj, QEvent* ev);
+    bool eventFilter(QObject* obj, QEvent* ev) override;
 };

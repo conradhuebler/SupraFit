@@ -155,7 +155,7 @@ void IItoI_ItoI_ItoII_Model::InitialGuess_Private()
         factor = 1 / InitialHostConcentration(0);
     }
 
-    int index_21 = 0, index_11;
+    int index_21 = 0, index_11 = 0;
 
     for (int i = 0; i < DataPoints(); ++i) {
         if (XValue(i) <= 0.5)

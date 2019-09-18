@@ -238,11 +238,12 @@ void ImportData::LoadFile()
                 model->setEditable(true);
                 m_table->setModel(model);
                 if (model->columnCount() == 2 && model->rowCount() > 100) {
-                    if (qApp->instance()->property("auto_thermo_dialog").toBool())
+                    if (qApp->instance()->property("auto_thermo_dialog").toBool()) {
                         if (!ImportThermogram(m_filename))
                             return;
                         else
                             QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
+                    }
                 }
                 if (filehandler->Type() == FileHandler::FileType::dH)
                     QTimer::singleShot(10, this, &QDialog::accept);

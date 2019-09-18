@@ -14,22 +14,22 @@ set(CMAKE_AUTOMOC ON)
 
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
-    
+
 option (experimental
     "Include experimental functions" OFF)
- 
+
 option (testing
     "Enable unittests" OFF)
- 
+
 option (NMR_Models
     "Enable NMR Titration models" ON)
-    
+
 option (ITC_Models
     "Enable ITC Titration models" ON)
-    
+
 option (Kinetic_Models
     "Enable Kinetic Models" ON)
-    
+
 option (Fluorescence_Models
     "Enable Fluorescence Models" ON)
 
@@ -108,7 +108,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wmissing-include-dirs -Wmissing-noreturn -Wpacked  -Wparentheses\
                                            -Wpointer-arith -Wredundant-decls -Wsequence-point\
                                            -Wsign-compare  -Wstack-protector -Wstrict-aliasing\
-                                           -Wstrict-aliasing=2 -Wswitch \
+                                           -Wstrict-aliasing=2 -Wswitch -Wsuggest-override\
                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
@@ -244,7 +244,7 @@ set(suprafit_SRCS
                 src/ui/mainwindow/mainwindow.cpp
                 src/ui/mainwindow/suprafitgui.cpp
                 src/main.cpp)
-                
+
 qt5_add_resources(suprafit_SRCS files.qrc)
 
 if(noto_font)
@@ -289,7 +289,7 @@ set(suprafit_cli_SRCS
                 src/client/simulator.cpp
                 src/client/main.cpp
           )
-          
+
 add_executable(suprafit_cli ${suprafit_cli_SRCS})
 
 
@@ -320,11 +320,12 @@ if(UNIX)
     target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
-install(TARGETS suprafit RUNTIME DESTINATION bin)
-install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
+
 # Do platform specific post target stuff
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
+    install(TARGETS suprafit RUNTIME DESTINATION bin)
+    install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
     # Install desktop entry
     install(FILES misc/suprafit.desktop DESTINATION share/applications )
 

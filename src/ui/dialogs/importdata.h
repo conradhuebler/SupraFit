@@ -47,7 +47,7 @@ public:
     inline ~TableView() {}
 
 protected:
-    virtual void keyPressEvent(QKeyEvent* event);
+    virtual void keyPressEvent(QKeyEvent* event) override;
 
 signals:
     void Edited();
@@ -93,7 +93,7 @@ private slots:
     void LoadFile();
     void SelectFile();
     void ExportFile();
-    void accept();
+    void accept() override;
     void NoChanged();
     bool ImportThermogram(const QString& filename);
     bool ImportThermogram();

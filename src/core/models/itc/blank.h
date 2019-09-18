@@ -36,7 +36,7 @@ public:
 
     virtual ~Blank() override;
 
-    virtual inline SupraFit::Model SFModel() const { return SupraFit::itc_blank; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::itc_blank; }
 
     //virtual QVector<qreal> OptimizeParameters_Private() override;
     inline int GlobalParameterSize() const override { return 0; }

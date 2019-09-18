@@ -79,7 +79,7 @@ class ModelWidget : public QWidget {
 public:
     ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, bool readonly = false, QWidget* parent = 0);
     virtual ~ModelWidget();
-    virtual inline QSize sizeHint() const { return QSize(250, 50 * m_sign_layout->count()); }
+    virtual inline QSize sizeHint() const override { return QSize(250, 50 * m_sign_layout->count()); }
     QSharedPointer<AbstractModel> Model() const { return m_model; }
     QSharedPointer<Minimizer> getMinimizer() const { return m_minimizer; }
 

@@ -117,14 +117,14 @@ MonteCarloBatch::~MonteCarloBatch()
 
 void MonteCarloBatch::run()
 {
-
     m_fit_thread = new NonLinearFitThread(false);
-
+    m_counter = 0;
     while (true) {
         if (m_interrupt)
             break;
         QHash<int, Pair> tables = m_parent->DemandCalc();
         int counter = 0;
+        int time = 0;
         for (const QPair<QPointer<DataTable>, QPointer<DataTable>>& table : tables) {
             if (table.first && table.second) {
                 m_model->OverrideInDependentTable(table.first);
@@ -133,27 +133,26 @@ void MonteCarloBatch::run()
                 else
                     m_model->OverrideCheckedTable(table.second);
 
-                optimise(tables.key(table));
+                time += optimise(tables.key(table));
                 counter++;
+
             } else
                 continue;
         }
+        emit IncrementProgress(time);
         if (!counter)
             break;
     }
     delete m_fit_thread;
 }
 
-void MonteCarloBatch::optimise(int key)
+int MonteCarloBatch::optimise(int key)
 {
     if (!m_model || m_interrupt) {
         qDebug() << "no model set";
-        return;
+        return 0;
     }
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-#ifdef _DEBUG
-//         qDebug() <<  "started!";
-#endif
 
     m_fit_thread->setModel(m_model, false);
     m_fit_thread->run();
@@ -167,12 +166,12 @@ void MonteCarloBatch::optimise(int key)
 
     m_model->setConverged(m_finished);
     m_models.insert(key, m_model->ExportModel(false, false)); //;
+    m_counter++;
 
     qint64 t1 = QDateTime::currentMSecsSinceEpoch();
-    emit IncrementProgress(t1 - t0);
-#ifdef _DEBUG
-//         qDebug() <<  "finished after " << t1-t0 << "msecs!";
-#endif
+    const int time = t1 - t0;
+    m_indiv_time += time;
+    return time;
 }
 
 MonteCarloStatistics::MonteCarloStatistics(QObject* parent)
@@ -272,11 +271,13 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     Phi = std::normal_distribution<double>(0, sigma);
 
     m_controller["Variance"] = sigma;
+    int MaxSteps = m_controller["MaxSteps"].toInt();
 
     int maxthreads = qApp->instance()->property("threads").toInt();
-    int blocksize = maxthreads / maxthreads / 10;
+    int blocksize = MaxSteps / maxthreads / 20;
     if (blocksize < 1)
         blocksize = 1;
+
     m_threadpool->setMaxThreadCount(maxthreads);
 
     m_table = new DataTable(m_model->ModelTable());
@@ -287,7 +288,6 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
 
     bool original = m_controller["OriginalData"].toBool();
-    int MaxSteps = m_controller["MaxSteps"].toInt();
 
     QVector<qreal> indep_variance = ToolSet::String2DoubleVec(m_controller["IndependentRowVariance"].toString());
 
@@ -296,11 +296,10 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         std::normal_distribution<double> phi = std::normal_distribution<double>(0, indep_variance[i]);
         indep_phi << phi;
     }
-
+    int thread_count = 1;
 #ifdef _DEBUG
     qDebug() << "Starting MC Simulation with" << MaxSteps << "steps";
 #endif
-    emit setMaximumSteps(MaxSteps);
     QHash<int, Pair> block;
     for (int step = 0; step < MaxSteps; ++step) {
         QPointer<DataTable> dep_table;
@@ -336,9 +335,17 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
         block.insert(step, Pair(indep_table, dep_table));
         if (block.size() == blocksize) {
             m_batch.enqueue(block);
+            thread_count++;
+            if (thread_count == maxthreads && blocksize == 2) {
+                thread_count = 1;
+                blocksize--;
+            }
             block.clear();
         }
     }
+    m_batch.enqueue(block);
+    emit setMaximumSteps(m_batch.size());
+
     m_t0 = QDateTime::currentMSecsSinceEpoch();
     for (int i = 0; i < maxthreads; ++i) {
         QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
@@ -355,14 +362,17 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
 void MonteCarloStatistics::Collect(const QVector<QPointer<MonteCarloBatch>>& threads)
 {
     m_steps = 0;
+    int calculation = 0;
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
             m_models << threads[i]->Models().values();
+            std::cout << "Thread " << i << " performed " << threads[i]->Counter() << " calculation in " << threads[i]->Timer() << " msecs." << std::endl;
+            calculation += threads[i]->Counter();
             m_steps++;
             delete threads[i];
         }
     }
-
+    std::cout << calculation << " in total" << std::endl;
     for (int i = 0; i < m_ptr_table.size(); ++i)
         if (m_ptr_table[i])
             delete m_ptr_table[i];
