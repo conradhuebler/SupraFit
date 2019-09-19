@@ -255,6 +255,8 @@ target_link_libraries(utils Qt5::Core)
 
 # generate proper GUI program on specified platform
 if(WIN32) # Check if we are on Windows
+    add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
+
         if(MSVC) # Check if we are using the Visual Studio compiler
                 set_target_properties(suprafit PROPERTIES
                         WIN32_EXECUTABLE YES
@@ -266,29 +268,31 @@ if(WIN32) # Check if we are on Windows
                 message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
         endif(MSVC)
         set(target_dir "bin/win32")
-        add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
-elseif(APPLE)
-    set(target_dir "bin/macOS")
+        set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
-    set_target_properties(suprafit PROPERTIES
-                        MACOSX_BUNDLE YES
-        )
+elseif(APPLE)
+
     set(SupraFit_icon ${CMAKE_CURRENT_SOURCE_DIR}/misc/SupraFit.icns)
     set_source_files_properties(${SupraFit_icon} PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
-
     set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
-    add_executable(suprafit ${suprafit_SRCS})
+
+    set(target_dir "bin/macOS")
+    add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRCS})
+
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
     set(target_dir "bin/linux")
 
     add_executable(suprafit ${suprafit_SRCS})
+    set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+
 else()
         message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
 endif(WIN32)
 
-
 set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+
 
 
 set(suprafit_cli_SRCS

@@ -613,7 +613,7 @@ SupraFitGui::SupraFitGui()
 
     QAction* export_suprafit = new QAction(tr("Export Projects"));
     export_suprafit->setToolTip(tr("Export every single project and save it as individual suprafit project."));
-    export_suprafit->setIcon(QIcon(":/misc/suprafit.png"));
+    export_suprafit->setIcon(QIcon(":/misc/SupraFit.png"));
     m_export_suprafit->setDefaultAction(export_suprafit);
     connect(export_suprafit, &QAction::triggered, this, &SupraFitGui::ExportAllSupraFit);
 
@@ -755,7 +755,7 @@ SupraFitGui::SupraFitGui()
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
     m_config->setShortcut(QKeySequence::Preferences);
 
-    m_about = new QAction(QIcon(":/misc/suprafit.png"), tr("Info"), this);
+    m_about = new QAction(QIcon(":/misc/SupraFit.png"), tr("Info"), this);
     connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
 
     m_license = new QAction(Icon("license"), tr("License Info"), this);
@@ -813,7 +813,7 @@ SupraFitGui::SupraFitGui()
     connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
     m_project_view->setColumnWidth(0, 240);
 
-    setWindowIcon(QIcon(":/misc/suprafit.png"));
+    setWindowIcon(QIcon(":/misc/SupraFit.png"));
     UpdateRecentList();
     m_messages_widget->Message("SupraFit is up and running");
 
