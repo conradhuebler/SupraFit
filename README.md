@@ -16,18 +16,19 @@ git clones automatically fisher_dist and libpeakpick.
 SupraFit comes with the some selected [Google Noto Fonts](https://github.com/googlei18n/noto-fonts). They are optional and can be included into the binary during compile-time (set `-Dnoto_font=true\false` as cmake argument).
 
 ## Compiling
-To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and a recent Qt version. Soon, Qt 5.12 LTS will be focused.
+To compile SupraFit you will need [CMake](https://cmake.org/download/) 3 or newer, a C++11-capable compiler and a recent [Qt](https://www.qt.io/download) version. Soon, Qt 5.12 LTS will be focused.
 
-> SupraFit needs QtCharts, so please provide it
+> SupraFit needs QtCharts, so please provide it. It can/should be checked in the Installer Tools from Qt.
 
 SupraFit has been successfully compilied with: 
 - gcc 5.2, gcc 6.3, gcc 7.3 and gcc 8.3
 - clang 3.9 
 
-on linux systems and windows systems using
+on linux systems, windows systems using
 - mingw 5.3
 - MSVC 2015
 
+and on macOS 10.12 and 10.13 with the latest [Qt (5.13.1)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
 
 > Windows 7 or higher is mandatory.
 > MacOS has not been tested yet.
@@ -75,6 +76,8 @@ cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true/false ..
 ```sh
 cmake --build . --config Release
 ```
+
+On macOS, an easy way to compile it is using QtCreator.
 
 ## Running
 Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:

@@ -112,7 +112,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
-                                           -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations\
+                                           -Wvolatile-register-var  -Wwrite-strings -Wdeprecated-declarations\
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -253,12 +253,6 @@ endif(noto_font)
 
 target_link_libraries(utils Qt5::Core)
 
-if(WIN32) # Check if we are on Windows
-    add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
-else()
-    add_executable(suprafit ${suprafit_SRCS})
-endif(WIN32)
-
 # generate proper GUI program on specified platform
 if(WIN32) # Check if we are on Windows
         if(MSVC) # Check if we are using the Visual Studio compiler
@@ -271,15 +265,30 @@ if(WIN32) # Check if we are on Windows
         else()
                 message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
         endif(MSVC)
+        set(target_dir "bin/win32")
+        add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
 elseif(APPLE)
-        set_target_properties(suprafit PROPERTIES
+    set(target_dir "bin/macOS")
+
+    set_target_properties(suprafit PROPERTIES
                         MACOSX_BUNDLE YES
         )
-elseif(UNIX)
+    set(SupraFit_icon ${CMAKE_CURRENT_SOURCE_DIR}/misc/SupraFit.icns)
+    set_source_files_properties(${SupraFit_icon} PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
 
+    set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
+    add_executable(suprafit ${suprafit_SRCS})
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(target_dir "bin/linux")
+
+    add_executable(suprafit ${suprafit_SRCS})
 else()
         message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
 endif(WIN32)
+
+
+set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 
 set(suprafit_cli_SRCS
@@ -291,6 +300,8 @@ set(suprafit_cli_SRCS
           )
 
 add_executable(suprafit_cli ${suprafit_cli_SRCS})
+
+set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 
 set_property(TARGET math models utils PROPERTY CXX_STANDARD 14)
@@ -320,7 +331,6 @@ if(UNIX)
     target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
-
 # Do platform specific post target stuff
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
@@ -331,5 +341,16 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
     # Install icon
     install(FILES misc/suprafit.png DESTINATION share/icons/pixmaps/)
-
+elseif(APPLE)
+    string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
+    add_custom_command(TARGET suprafit POST_BUILD
+        COMMAND ${qt_dir}/macdeployqt  suprafit.app -dmg -no-plugins
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
+        )
+elseif(WIN32)
+    string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
+    add_custom_command(TARGET suprafit POST_BUILD
+        COMMAND ${qt_dir}/windeployqt --release   suprafit.app
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
+        )
 endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
