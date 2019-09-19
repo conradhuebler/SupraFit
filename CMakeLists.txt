@@ -352,9 +352,9 @@ elseif(APPLE)
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
         )
 elseif(WIN32)
-    string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
-    add_custom_command(TARGET suprafit POST_BUILD
-        COMMAND ${qt_dir}/windeployqt --release   suprafit.app
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
-        )
+    #string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
+    #add_custom_command(TARGET suprafit POST_BUILD
+    #    COMMAND ${qt_dir}/windeployqt --release   suprafit.app
+    #    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
+    #    )
 endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
