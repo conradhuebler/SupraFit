@@ -281,6 +281,8 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_buttons->setLayout(vlayout);
     //layout->addStretch();
     //layout->addWidget(m_hide);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
     setLayout(layout);
 }
 

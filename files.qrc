@@ -44,5 +44,6 @@
         <file>icons/list-remove-blue.png</file>
         <file>icons/list-add-blue.png</file>
         <file>icons/help-hint-blue.png</file>
+        <file>icons/thermogram.png</file>
     </qresource>
 </RCC>

@@ -193,8 +193,9 @@ ChartWidget::ChartWidget()
         setMaximumWidth(size);
     });
 
-    setMinimumWidth(512);
-    setMaximumWidth(1024);
+    //setMinimumWidth(512);
+    //setMaximumWidth(1024);
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }
 
 ChartWidget::~ChartWidget()

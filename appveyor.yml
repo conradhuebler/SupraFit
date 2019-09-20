@@ -18,10 +18,10 @@ build_script:
   - call "scripts/build_windows.cmd"
 
 artifacts:
-  - path: build_x64\Release\bin\win32\SupraFit_nightly_$(appveyor_build_version)_x64_windows.zip
+  - path: build_x32\bin\win32\Release\SupraFit_nightly_$(appveyor_build_version)_x64_windows.zip
     name: SupraFit_x64
 
-  - path: build_x32\Release\bin\win32\SupraFit_nightly_$(appveyor_build_version)_x32_windows.zip
+  - path: build_x32\bin\win32\Release\SupraFit_nightly_$(appveyor_build_version)_x32_windows.zip
     name: SupraFit_x32
 
 
