@@ -43,7 +43,7 @@ public:
         m_model = model->Clone();
         m_model->setFast();
     }
-    void run();
+    void run() override;
     QList<QJsonObject> Results() const { return m_results; }
     inline void setMaxSteps(int steps) { m_maxsteps = steps; }
     inline void setBox(const QVector<QVector<qreal>>& box) { m_box = box; }

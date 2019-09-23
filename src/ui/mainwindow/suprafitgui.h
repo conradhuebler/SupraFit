@@ -81,7 +81,7 @@ public:
         return flags;
     }
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
         if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
             if (section == 0)
@@ -167,13 +167,49 @@ signals:
     void DataDropped(const QJsonObject& data);
 };
 
+class LogoLabel : public QLabel {
+    Q_OBJECT
+public:
+    LogoLabel(QWidget* parent)
+        : QLabel(parent)
+    {
+    }
+    virtual ~LogoLabel() {}
+
+    void setPixmap(const QString& pixmap)
+    {
+        m_pixmap = pixmap;
+        UpdatePixmap();
+    }
+
+    void UpdatePixmap()
+    {
+        if (m_pixmap.isEmpty() || m_pixmap.isNull())
+            return;
+        QPixmap p(m_pixmap);
+        int w = width();
+        int h = height();
+        QLabel::setPixmap(p.scaled(w, h, Qt::KeepAspectRatio));
+    }
+    void resizeEvent(QResizeEvent* event)
+    {
+        Q_UNUSED(event)
+        UpdatePixmap();
+    }
+
+private:
+    QString m_pixmap;
+    QPixmap m_pix;
+};
+
 class SupraFitGui : public QMainWindow {
     Q_OBJECT
 public:
     explicit SupraFitGui();
-    ~SupraFitGui();
+    virtual ~SupraFitGui() override;
 
     bool SetData(const QJsonObject& object, const QString& file);
+    virtual QSize sizeHint() const override { return QSize(400, 300); }
 
 public slots:
     void LoadFile(const QString& file);
@@ -216,7 +252,7 @@ private:
     QString m_supr_file;
 
     QFile m_file;
-    virtual void closeEvent(QCloseEvent* event);
+    virtual void closeEvent(QCloseEvent* event) override;
     const QStringList m_properties = QStringList() << "threads"
                                                    << "chartanimation"
                                                    << "workingdir"
@@ -256,7 +292,7 @@ private:
     MessageDock* m_messages_widget;
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
-    QWidget *m_blank_widget, *m_project_holder;
+    QWidget *m_project_holder, *m_recentWidget;
     QPropertyAnimation *m_show_tree, *m_show_dock;
     QListWidget *m_recent_documents;
     QVector<QPointer<MainWindow>> m_project_list;
@@ -265,7 +301,7 @@ private:
     QStackedWidget* m_stack_widget;
     QVector<QWeakPointer<MetaModel>> m_meta_models;
     QSplashScreen* m_splash;
-    QSplitter* m_mainsplitter;
+    QSplitter *m_mainsplitter, *m_blank_widget;
     QVector<QJsonObject> m_cached_meta;
     QLineEdit* m_filename_line;
 
@@ -273,6 +309,7 @@ private:
     QToolButton *m_export_suprafit, *m_export_plain, *m_close_all;
     DropButton* m_add_scatter;
     QString m_supported_files = QString("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)");
+    LogoLabel* m_logolabel;
 private slots:
     void NewWindow();
     void NewTable();
@@ -304,5 +341,6 @@ private slots:
     void AddScatter();
 
 protected:
-    bool eventFilter(QObject* obj, QEvent* ev);
+    virtual bool eventFilter(QObject* obj, QEvent* ev) override;
+    virtual void resizeEvent(QResizeEvent* event) override;
 };

@@ -16,21 +16,21 @@ git clones automatically fisher_dist and libpeakpick.
 SupraFit comes with the some selected [Google Noto Fonts](https://github.com/googlei18n/noto-fonts). They are optional and can be included into the binary during compile-time (set `-Dnoto_font=true\false` as cmake argument).
 
 ## Compiling
-To compile SupraFit you will need CMake 3 or newer, a C++11-capable compiler and a recent Qt version. Soon, Qt 5.12 LTS will be focused.
+To compile SupraFit you will need [CMake](https://cmake.org/download/) 3 or newer, a C++14-capable compiler and a recent [Qt](https://www.qt.io/download) version. Soon, Qt 5.12 LTS will be focused.
 
-> SupraFit needs QtCharts, so please provide it
+> SupraFit needs QtCharts, so please provide it. It can/should be checked in the Installer Tools from Qt.
 
 SupraFit has been successfully compilied with: 
 - gcc 5.2, gcc 6.3, gcc 7.3 and gcc 8.3
 - clang 3.9 
 
-on linux systems and windows systems using
+on linux systems, on windows systems using
 - mingw 5.3
 - MSVC 2015
 
+and on macOS 10.12 and 10.13 with the latest [Qt (5.13.1)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
 
 > Windows 7 or higher is mandatory.
-> MacOS has not been tested yet.
 
 Prebuild binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases) or using the [AppVeyor History](https://ci.appveyor.com/project/conradhuebler/suprafit/history) to get most recent draft releases, that are not released on GitHub. They are built using Microsoft Visual Studio, so please provide [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145). Qt 5.13 *.dll are shipped with SupraFit.
 
@@ -75,6 +75,8 @@ cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true/false ..
 ```sh
 cmake --build . --config Release
 ```
+
+On macOS, an easy way to compile SupraFit is using QtCreator.
 
 ## Running
 Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:
@@ -123,8 +125,8 @@ SupraFit loads and saves tables and calculated models as `json files *.json` or 
 
 ## Statistics
 SupraFit provides some statistical analysis, which will be described in a not yet finished article. Implemented methods are based on the following approaches:
-- Monte Carlo simulation
-- Error-Based analysis
+- Monte Carlo simulation (Percentile method based confidence calculation)
+- F-Test based confidence calculation
 - Resampling methods
 
 A detailed handbook will be provided as soon as possbile.
@@ -135,3 +137,9 @@ If you obtain results with SupraFit, I kindly ask to cite:
 C. Hübler,  conradhuebler/SupraFit: Version 1.7.0 2019, Zenodo. [http://doi.org/10.5281/zenodo.3364570](http://doi.org/10.5281/zenodo.3364570)
 
 After publishing the detailed articles describing the used methods, please refer to them as well.
+
+## Some notes
+- SupraFit prefers larger screens over smaller ones. 1600x1200 or 1680x1050 is the recommended size.
+- SupraFit is being developed on a Linux platform, so some platform dependent errors or layout problems may have not been observed yet.
+
+Have a lot of fun!

@@ -142,7 +142,7 @@ class IItoI_ItoI_ItoII_Solver : public QObject, public QRunnable {
 public:
     IItoI_ItoI_ItoII_Solver();
     ~IItoI_ItoI_ItoII_Solver();
-    virtual void run();
+    virtual void run() override;
     void RunTest();
     void setInput(double A0, double B0);
     inline void setConstants(const QList<qreal>& parameter) { m_parameter = parameter; }

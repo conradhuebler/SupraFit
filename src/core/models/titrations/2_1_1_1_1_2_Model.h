@@ -100,7 +100,7 @@ public:
 
     virtual QString AdditionalOutput() const override;
 
-    inline double ReductionCutOff() const { return 2; }
+    inline double ReductionCutOff() const override { return 2; }
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;

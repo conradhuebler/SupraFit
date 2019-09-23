@@ -26,10 +26,10 @@
 #include <QtCore/QFile>
 #include <QtCore/QPointer>
 
+#include <QtWidgets/QDockWidget>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QSplitter>
 
-class QDockWidget;
 class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
@@ -73,6 +73,7 @@ public:
     inline QString UUID() const { return m_data.data()->UUID(); }
 
     inline QString Name() const { return m_data.data()->ProjectTitle(); }
+
 public slots:
     // void LoadFile(const QString& file);
 

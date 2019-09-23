@@ -92,8 +92,8 @@ public:
 
     QString ModelInfo() const override;
 
-    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const;
-    QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const;
+    QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
+    QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
 
 protected:
     virtual void CalculateVariables() override;

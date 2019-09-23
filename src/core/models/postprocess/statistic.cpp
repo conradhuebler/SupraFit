@@ -35,8 +35,7 @@ QString MonteCarlo2Thermo(int index, qreal T, const QJsonObject& object, bool he
     qreal K = 0, H = 0;
     qreal K11u = 0, K11l = 0, dH11l = 0, dH11u = 0;
 
-
-    qreal error;
+    qreal error = 0;
     if (!object.isEmpty()) {
         const QStringList keys = object.keys();
         for (int i = 0; i < keys.size(); ++i) {

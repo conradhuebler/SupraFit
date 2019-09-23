@@ -1,9 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>data/models/1_1_model.json</file>
-        <file>data/models/2_1_1_1_model.json</file>
-        <file>data/models/1_1_1_2_model.json</file>
-        <file>data/models/2_1_1_1_1_2_model.json</file>
         <file>icons/application-exit.png</file>
         <file>icons/charts.png</file>
         <file>icons/configure.png</file>
@@ -25,8 +21,8 @@
         <file>icons/workspace.png</file>
         <file>icons/window-new.png</file>
         <file>misc/logo_small.png</file>
-        <file>misc/suprafit.ico</file>
-        <file>misc/suprafit.png</file>
+        <file>misc/SupraFit.ico</file>
+        <file>misc/SupraFit.png</file>
         <file>icons/document-save-as.png</file>
         <file>icons/document-close.png</file>
         <file>icons/edit-clear-history.png</file>
@@ -48,5 +44,6 @@
         <file>icons/list-remove-blue.png</file>
         <file>icons/list-add-blue.png</file>
         <file>icons/help-hint-blue.png</file>
+        <file>icons/thermogram.png</file>
     </qresource>
 </RCC>

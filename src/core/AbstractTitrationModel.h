@@ -56,7 +56,7 @@ public:
     AbstractTitrationModel(AbstractTitrationModel* other);
     virtual ~AbstractTitrationModel() override;
 
-    inline int Size() const { return DataClass::Size(); }
+    inline int Size() const override { return DataClass::Size(); }
 
     inline QVector<qreal*> getOptConstants() const { return m_opt_para; }
 

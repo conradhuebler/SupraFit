@@ -167,8 +167,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     tools->addWidget(m_toggle);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
     layout->addLayout(tools);
-    setMaximumHeight(110);
-    setMinimumHeight(110);
+    // setMaximumHeight(110);
+    // setMinimumHeight(110);
     ChangeColor(m_charts.data_wrapper->color(m_no));
 
     if (m_charts.data_wrapper) {
@@ -180,6 +180,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     connect(m_plot, SIGNAL(clicked()), this, SLOT(chooseColor()));
     connect(m_show, SIGNAL(stateChanged(int)), m_signal_series, SLOT(ShowLine(int)));
     connect(m_show, SIGNAL(stateChanged(int)), m_error_series, SLOT(ShowLine(int)));
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     toggleActive();
     Update();
 }

@@ -100,6 +100,7 @@ void ModelActions::setUi()
     connect(m_charts, &PushButton::clicked, this, &ModelActions::Charts);
 
     m_second->setMaximumHeight(0);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     setLayout(layout);
 }
 

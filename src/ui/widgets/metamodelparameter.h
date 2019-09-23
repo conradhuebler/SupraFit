@@ -38,11 +38,11 @@ public:
         m_null = &null;
     }
 
-    inline ~ParameterTree()
+    inline ~ParameterTree() override
     {
     }
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
         if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
             if (section == 0)

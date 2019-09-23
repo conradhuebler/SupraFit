@@ -84,7 +84,7 @@ MainWindow::MainWindow(QWidget* parent)
     m_mainsplitter->setObjectName("model_splitter");
     m_mainsplitter->addWidget(m_modeldock);
     m_mainsplitter->addWidget(m_chartdock);
-
+    m_mainsplitter->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     /*
     QGridLayout* layout = new QGridLayout;
 
@@ -96,7 +96,7 @@ MainWindow::MainWindow(QWidget* parent)
     // connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
     connect(m_model_dataholder, &ModelDataHolder::ModelAdded, this, &MainWindow::ModelsChanged);
     connect(m_model_dataholder, &ModelDataHolder::ModelRemoved, this, &MainWindow::ModelsChanged);
-
+    /*
     setStyleSheet("QSplitter::handle:vertical {"
                   "background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
                   "stop:0 #eee, stop:1 #ccc);"
@@ -105,8 +105,9 @@ MainWindow::MainWindow(QWidget* parent)
                   "margin-top: 2px;"
                   "margin-bottom: 2px;"
                   "border-radius: 4px;"
-                  "}");
+                  "}");*/
     setWindowFlag(Qt::Widget);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     ReadGeometry();
 }
 

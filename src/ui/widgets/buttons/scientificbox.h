@@ -29,19 +29,19 @@ class ScientificBox : public QDoubleSpinBox {
 public:
     inline ScientificBox() {}
     inline ~ScientificBox() {}
-    inline QString textFromValue(double val) const
+    inline QString textFromValue(double val) const override
     {
         return QString::number(val, 'E', 2);
     }
 
-    inline double valueFromText(const QString& text) const
+    inline double valueFromText(const QString& text) const override
     {
         QString value = text;
         value.replace(loc.decimalPoint(), '.');
         return value.toDouble();
     }
 
-    inline QValidator::State validate(QString& input, int& pos) const
+    inline QValidator::State validate(QString& input, int& pos) const override
     {
         QDoubleValidator validator;
         validator.setBottom(minimum());

@@ -561,15 +561,35 @@ SupraFitGui::SupraFitGui()
     m_project_view->setDropIndicatorShown(true);
     m_project_view->setDragDropMode(QAbstractItemView::DragDrop);
 
-    m_blank_widget = new QWidget;
+    m_blank_widget = new QSplitter(Qt::Horizontal);
+    m_blank_widget->setObjectName("blank_widget");
+    QWidget* logoHolder = new QWidget;
+
+    QVBoxLayout* logolayout = new QVBoxLayout;
+
+    m_recentWidget = new QWidget;
+    m_recentWidget->setObjectName("recent_list");
+    m_recentWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
     m_recent_documents = new QListWidget;
-    connect(m_recent_documents, &QListWidget::itemDoubleClicked, m_recent_documents, [this](const QListWidgetItem *item){
-       LoadFile(item->text());
+    connect(m_recent_documents, &QListWidget::itemDoubleClicked, m_recent_documents, [this](const QListWidgetItem* item) {
+        const QString str = item->data(Qt::UserRole).toString();
+        QStringList recent = qApp->instance()->property("recent").toStringList();
+        recent.removeOne(str);
+        recent.prepend(str);
+        qApp->instance()->setProperty("recent", recent);
+        LoadFile(item->data(Qt::UserRole).toString());
+        UpdateRecentList();
     });
+    //m_recent_documents->setMaximumWidth(200);
 
-    QLabel* logo = new QLabel;
-    logo->setPixmap(QPixmap(":/misc/logo_small.png"));
+    m_logolabel = new LogoLabel(this);
+    m_logolabel->setPixmap(":/misc/logo_small.png");
+    m_logolabel->setObjectName("logowidget");
+    // m_logolabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    logolayout->addWidget(m_logolabel);
+    logoHolder->setLayout(logolayout);
 
     m_clear_recent = new QPushButton(tr("Clear list"));
     connect(m_clear_recent, &QPushButton::clicked, m_clear_recent, [this]()
@@ -581,12 +601,13 @@ SupraFitGui::SupraFitGui()
     m_clear_recent->setIcon(Icon("edit-clear-history"));
 
     QGridLayout *blank_layout = new QGridLayout;
-    blank_layout->addWidget(logo, 0, 0, 2, 1);
-    blank_layout->addWidget(new QLabel(tr("<h3>Recent documents</h3>")), 0, 1);
-    blank_layout->addWidget(m_clear_recent, 0, 2);
-    blank_layout->addWidget(m_recent_documents, 1, 1, 1, 3);
-    m_blank_widget->setLayout(blank_layout);
-
+    blank_layout->addWidget(new QLabel(tr("<h3>Recent documents</h3>")), 0, 0);
+    blank_layout->addWidget(m_clear_recent, 0, 1);
+    blank_layout->addWidget(m_recent_documents, 1, 0, 1, 2);
+    m_recentWidget->setLayout(blank_layout);
+    m_blank_widget->addWidget(logoHolder);
+    m_blank_widget->addWidget(m_recentWidget);
+    m_blank_widget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     m_stack_widget = new QStackedWidget;
     m_stack_widget->addWidget(m_blank_widget);
     m_stack_widget->setObjectName("project_mainwindow");
@@ -596,6 +617,8 @@ SupraFitGui::SupraFitGui()
     connect(m_filename_line, &QLineEdit::textChanged, this, [this](const QString& str) { this->m_supr_file = str; setWindowTitle(); });
     m_project_holder = new QWidget;
     m_project_holder->setObjectName("project_list");
+    m_project_holder->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    m_project_holder->setMaximumWidth(400);
 
     m_export_plain = new QToolButton;
     m_export_plain->setAutoRaise(true);
@@ -612,8 +635,8 @@ SupraFitGui::SupraFitGui()
     m_export_suprafit->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
 
     QAction* export_suprafit = new QAction(tr("Export Projects"));
-    export_suprafit->setToolTip(tr("Export every single project and save it as individual suprafit project."));
-    export_suprafit->setIcon(QIcon(":/misc/suprafit.png"));
+    export_suprafit->setToolTip(tr("Export every single project and save it as individual SupraFit project."));
+    export_suprafit->setIcon(QIcon(":/misc/SupraFit.png"));
     m_export_suprafit->setDefaultAction(export_suprafit);
     connect(export_suprafit, &QAction::triggered, this, &SupraFitGui::ExportAllSupraFit);
 
@@ -651,8 +674,7 @@ SupraFitGui::SupraFitGui()
     if (qApp->instance()->property("advanced_ui").toBool()) {
 
         tools->addWidget(m_add_scatter);
-    } else
-        tools->addStretch();
+    }
     tools->addWidget(m_close_all);
 
     QGridLayout* layout = new QGridLayout;
@@ -755,7 +777,7 @@ SupraFitGui::SupraFitGui()
     connect(m_config, SIGNAL(triggered()), this, SLOT(SettingsDialog()));
     m_config->setShortcut(QKeySequence::Preferences);
 
-    m_about = new QAction(QIcon(":/misc/suprafit.png"), tr("Info"), this);
+    m_about = new QAction(QIcon(":/misc/SupraFit.png"), tr("Info"), this);
     connect(m_about, SIGNAL(triggered()), this, SLOT(about()));
 
     m_license = new QAction(Icon("license"), tr("License Info"), this);
@@ -793,7 +815,6 @@ SupraFitGui::SupraFitGui()
 
     m_project_tree_size = m_project_holder->width();
 
-    ReadGeometry();
 
     setActionEnabled(false);
     setStyleSheet("QSplitter::handle:vertical {"
@@ -811,13 +832,14 @@ SupraFitGui::SupraFitGui()
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeDoubleClicked);
     connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);
-    m_project_view->setColumnWidth(0, 240);
+    m_project_view->setColumnWidth(0, 250);
 
-    setWindowIcon(QIcon(":/misc/suprafit.png"));
+    setWindowIcon(QIcon(":/misc/SupraFit.png"));
     UpdateRecentList();
+    m_logolabel->resize(873 * 0.5, 419 * 0.5);
+    m_logolabel->setMaximumSize(873, 419);
+    ReadGeometry();
     m_messages_widget->Message("SupraFit is up and running");
-
-    //   QTimer::singleShot(10, this, &SupraFitGui::FirstStart);
 }
 
 SupraFitGui::~SupraFitGui()
@@ -901,6 +923,8 @@ void SupraFitGui::LoadFile(const QString& file)
 
     if (invalid_json)
         QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
+    else
+        UpdateRecentList();
 }
 
 void SupraFitGui::setActionEnabled(bool enabled)
@@ -913,7 +937,24 @@ void SupraFitGui::UpdateRecentList()
 {
     const QStringList recent = qApp->instance()->property("recent").toStringList();
     m_recent_documents->clear();
-    m_recent_documents->addItems(recent);
+    for (const QString& str : recent) {
+        QFileInfo info(str);
+        if (info.exists()) {
+            QListWidgetItem* item = new QListWidgetItem(info.baseName() + "." + info.suffix());
+            item->setData(Qt::UserRole, str);
+            item->setData(Qt::ToolTipRole, str);
+            if (info.suffix() == "suprafit" || info.suffix() == "json")
+                item->setData(Qt::DecorationRole, QPixmap(":/misc/SupraFit.png").scaled(32, 32));
+            else if (info.suffix() == "txt" || info.suffix() == "dat")
+                item->setData(Qt::DecorationRole, QPixmap(":/icons/kspread.png").scaled(32, 32));
+            else if (info.suffix() == "itc")
+                item->setData(Qt::DecorationRole, QPixmap(":/icons/thermogram.png").scaled(32, 32));
+            else
+                item->setData(Qt::DecorationRole, QPixmap(":/icons/document-edit.png").scaled(32, 32));
+
+            m_recent_documents->addItem(item);
+        }
+    }
 }
 
 void SupraFitGui::LoadJson(const QJsonObject& str)
@@ -938,7 +979,7 @@ void SupraFitGui::LoadJson(const QJsonObject& str)
     m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
     SetData(str, "noname");
     m_mainsplitter->setGraphicsEffect(NULL);
-
+    UpdateRecentList();
     QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 }
 
@@ -1422,6 +1463,7 @@ void SupraFitGui::about()
 
 void SupraFitGui::FirstStart()
 {
+
     QString info;
     info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramolecular NMR titrations and ITC experiments.< /p>";
     info += "<p>The SupraFit User Interface is divided into three parts:<li>The <strong>Project List </strong> on the left side,</li> <li> the <strong>Workspace </strong> in the middle and</li> <li> the <strong>Chart Widget </strong> the left hand side!</li></p>";
@@ -1581,6 +1623,7 @@ void SupraFitGui::CloseProjects()
     m_filename_line->clear();
 
     m_project_tree->UpdateStructure();
+    UpdateRecentList();
 }
 
 void SupraFitGui::SaveData(const QModelIndex& index)
@@ -1852,4 +1895,10 @@ void SupraFitGui::LicenseInfo()
     dialog.setLayout(layout);
     dialog.resize(800, 600);
     dialog.exec();
+}
+
+void SupraFitGui::resizeEvent(QResizeEvent* event)
+{
+    m_logolabel->UpdatePixmap();
+    QMainWindow::resizeEvent(event);
 }

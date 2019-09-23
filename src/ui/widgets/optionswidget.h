@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef OPTIONSWIDGET_H
-#define OPTIONSWIDGET_H
+#pragma once
 
 #include <QtCore/QPointer>
 #include <QtCore/QSharedPointer>
@@ -44,4 +43,3 @@ private slots:
     void setOption();
 };
 
-#endif // OPTIONSWIDGET_H

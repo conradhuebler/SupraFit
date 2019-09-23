@@ -102,6 +102,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 {
     // m_model->SystemParameterChanged();
 #pragma message("might have been important")
+    m_splitter = new QSplitter(this);
+    m_splitter->setObjectName("modelSplitter");
+    m_splitter->setOrientation(Qt::Vertical);
 
     m_model_widget = new QWidget;
     Data2Text();
@@ -228,11 +231,16 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     name_layout->addWidget(m_model_name);
     m_layout->addLayout(name_layout);
 
-    //    if (!m_val_readonly) {
+    QWidget* widget = new QWidget;
+    widget->setLayout(m_layout);
+    m_splitter->addWidget(widget);
+
     m_model_options_widget = new OptionsWidget(m_model);
-    if (m_model->getAllOptions().size())
-        m_layout->addWidget(m_model_options_widget);
-    //    }
+    //m_layout->addWidget(m_model_options_widget);
+    if (m_model->getAllOptions().size() == 0)
+        m_model_options_widget->setMaximumHeight(0);
+    m_splitter->addWidget(m_model_options_widget);
+    m_layout = new QVBoxLayout;
 
     m_sign_layout = new QVBoxLayout;
 
@@ -297,9 +305,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
             connect(m_local_box, &QCheckBox::stateChanged, m_local_parameter, &LocalParameterWidget::LocalCheckState);
     }
-
-    if (m_model->getSystemParameterList().size())
-        m_sign_layout->addWidget(new SPOverview(m_model.data(), m_val_readonly));
+    widget = new QWidget;
 
     QWidget* scroll = new QWidget;
     scroll->setLayout(m_sign_layout);
@@ -308,14 +314,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     area->setWidget(scroll);
 
     m_layout->addWidget(area);
+    m_model_widget->setLayout(m_layout);
+
+    m_splitter->addWidget(m_model_widget);
+    m_splitter->setCollapsible(m_splitter->count() - 1, false);
+
+    if (m_model->getSystemParameterList().size())
+        m_splitter->addWidget(new SPOverview(m_model.data(), m_val_readonly));
 
     DiscreteUI();
 
     resizeButtons();
-    m_model_widget->setLayout(m_layout);
-    m_splitter = new QSplitter(this);
-    m_splitter->setOrientation(Qt::Vertical);
-    m_splitter->addWidget(m_model_widget);
 
     m_splitter->addWidget(m_statistic_widget);
     m_statistic_widget->setHidden(m_model->isSimulation());
@@ -385,7 +394,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         this->m_jobmanager->AddJob(job);
         this->m_jobmanager->RunJobs();
     });
-
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_SetUpFinished = true;
     if (m_model->isSimulation()) {
         QTimer::singleShot(10, this, &ModelWidget::recalculate);

@@ -14,22 +14,22 @@ set(CMAKE_AUTOMOC ON)
 
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
-    
+
 option (experimental
     "Include experimental functions" OFF)
- 
+
 option (testing
     "Enable unittests" OFF)
- 
+
 option (NMR_Models
     "Enable NMR Titration models" ON)
-    
+
 option (ITC_Models
     "Enable ITC Titration models" ON)
-    
+
 option (Kinetic_Models
     "Enable Kinetic Models" ON)
-    
+
 option (Fluorescence_Models
     "Enable Fluorescence Models" ON)
 
@@ -108,16 +108,15 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wmissing-include-dirs -Wmissing-noreturn -Wpacked  -Wparentheses\
                                            -Wpointer-arith -Wredundant-decls -Wsequence-point\
                                            -Wsign-compare  -Wstack-protector -Wstrict-aliasing\
-                                           -Wstrict-aliasing=2 -Wswitch \
+                                           -Wstrict-aliasing=2 -Wswitch -Wsuggest-override\
                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
-                                           -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations\
+                                           -Wvolatile-register-var  -Wwrite-strings -Wdeprecated-declarations\
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5PrintSupport CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/)
@@ -244,7 +243,7 @@ set(suprafit_SRCS
                 src/ui/mainwindow/mainwindow.cpp
                 src/ui/mainwindow/suprafitgui.cpp
                 src/main.cpp)
-                
+
 qt5_add_resources(suprafit_SRCS files.qrc)
 
 if(noto_font)
@@ -253,14 +252,10 @@ endif(noto_font)
 
 target_link_libraries(utils Qt5::Core)
 
-if(WIN32) # Check if we are on Windows
-    add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
-else()
-    add_executable(suprafit ${suprafit_SRCS})
-endif(WIN32)
-
 # generate proper GUI program on specified platform
 if(WIN32) # Check if we are on Windows
+    add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
+
         if(MSVC) # Check if we are using the Visual Studio compiler
                 set_target_properties(suprafit PROPERTIES
                         WIN32_EXECUTABLE YES
@@ -271,15 +266,32 @@ if(WIN32) # Check if we are on Windows
         else()
                 message(SEND_ERROR "You are using an unsupported Windows compiler! (Not MSVC or GCC)")
         endif(MSVC)
+        set(target_dir "bin/win32")
+        set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+
 elseif(APPLE)
-        set_target_properties(suprafit PROPERTIES
-                        MACOSX_BUNDLE YES
-        )
-elseif(UNIX)
+
+    set(SupraFit_icon ${CMAKE_CURRENT_SOURCE_DIR}/misc/SupraFit.icns)
+    set_source_files_properties(${SupraFit_icon} PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+    set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
+
+    set(target_dir "bin/macOS")
+    add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRCS})
+
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+    set(target_dir "bin/linux")
+
+    add_executable(suprafit ${suprafit_SRCS})
+    set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 else()
         message(SEND_ERROR "You are on an unsupported platform! (Not Win, Mac OS X or Unix)")
 endif(WIN32)
+
+set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+
 
 
 set(suprafit_cli_SRCS
@@ -289,8 +301,10 @@ set(suprafit_cli_SRCS
                 src/client/simulator.cpp
                 src/client/main.cpp
           )
-          
+
 add_executable(suprafit_cli ${suprafit_cli_SRCS})
+
+set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 
 set_property(TARGET math models utils PROPERTY CXX_STANDARD 14)
@@ -320,15 +334,26 @@ if(UNIX)
     target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
-install(TARGETS suprafit RUNTIME DESTINATION bin)
-install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
 # Do platform specific post target stuff
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
+    install(TARGETS suprafit RUNTIME DESTINATION bin)
+    install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
     # Install desktop entry
-    install(FILES misc/suprafit.desktop DESTINATION share/applications )
+    install(FILES misc/SupraFit.desktop DESTINATION share/applications )
 
     # Install icon
-    install(FILES misc/suprafit.png DESTINATION share/icons/pixmaps/)
-
+    install(FILES misc/SupraFit.png DESTINATION share/icons/pixmaps/)
+elseif(APPLE)
+    string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
+    add_custom_command(TARGET suprafit POST_BUILD
+        COMMAND ${qt_dir}/macdeployqt  suprafit.app -dmg -no-plugins
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
+        )
+elseif(WIN32)
+    #string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
+    #add_custom_command(TARGET suprafit POST_BUILD
+    #    COMMAND ${qt_dir}/windeployqt --release   suprafit.app
+    #    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
+    #    )
 endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")

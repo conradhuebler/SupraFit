@@ -139,7 +139,7 @@ public:
     QJsonObject SaveWorkspace();
     QJsonObject SaveModel(int index);
 
-    virtual QSize sizeHint() const { return QSize(800, 600); }
+    virtual QSize sizeHint() const override { return QSize(400, 300); }
     MDHDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
 
     inline int ModelCount() const { return m_models.size(); }

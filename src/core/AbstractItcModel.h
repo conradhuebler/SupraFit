@@ -60,7 +60,7 @@ public:
 
     inline qreal InitialHostConcentration(int i) const { return m_c0->data(1, i); }
     inline qreal InitialGuestConcentration(int i) const { return m_c0->data(2, i); }
-    QString Model2Text_Private() const;
+    QString Model2Text_Private() const override;
 
     virtual QString SpeciesName(int i) const { Q_UNUSED(i)
         return QString(); }

@@ -65,14 +65,17 @@ public:
     virtual void run() override;
     inline bool Finished() const { return m_finished; }
     inline void setChecked(bool checked) { m_checked = checked; }
+    inline int Counter() { return m_counter; }
+    inline int Timer() { return m_indiv_time; }
 
 private:
-    void optimise(int key = 0);
+    int optimise(int key = 0);
     NonLinearFitThread* m_fit_thread;
 
     QPointer<AbstractSearchClass> m_parent;
     bool m_finished, m_checked;
     QJsonObject m_controller;
+    int m_counter = 0, m_indiv_time = 0;
 };
 
 class MonteCarloStatistics : public AbstractSearchClass {

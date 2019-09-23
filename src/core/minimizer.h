@@ -40,7 +40,7 @@ public:
     void setModel(const QSharedPointer<AbstractModel> model, bool clone = true);
 
     QSharedPointer<AbstractModel> Model() const { return m_model; }
-    virtual void run();
+    virtual void run() override;
     inline QJsonObject ConvergedParameter() { return m_last_parameter; }
     inline QJsonObject BestIntermediateParameter() const { return m_best_intermediate; }
     void setParameter(const QJsonObject& json);
