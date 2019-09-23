@@ -117,7 +117,6 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5PrintSupport CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/)
@@ -341,10 +340,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     install(TARGETS suprafit RUNTIME DESTINATION bin)
     install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
     # Install desktop entry
-    install(FILES misc/suprafit.desktop DESTINATION share/applications )
+    install(FILES misc/SupraFit.desktop DESTINATION share/applications )
 
     # Install icon
-    install(FILES misc/suprafit.png DESTINATION share/icons/pixmaps/)
+    install(FILES misc/SupraFit.png DESTINATION share/icons/pixmaps/)
 elseif(APPLE)
     string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
     add_custom_command(TARGET suprafit POST_BUILD
