@@ -240,6 +240,24 @@ QString Points2String(const QList<QPointF>& points)
     return string;
 }
 
+QPair<qreal, qreal> QString2QPair(const QString& str)
+{
+    QPair<qreal, qreal> pair(0, 0);
+    QStringList elements = str.simplified().split(" ");
+    if (elements.size() == 2) {
+        pair.first = elements[0].replace("[", "").toDouble();
+        pair.second = elements[1].replace("]", "").toDouble();
+    } else if (elements.size() == 4) {
+        pair.first = elements[1].replace("[", "").toDouble();
+        pair.second = elements[2].replace("]", "").toDouble();
+    }
+    return pair;
+}
+QString QPair2QString(const QPair<qreal, qreal>& pair)
+{
+    return QString("[%1 %2]").arg(pair.first).arg(pair.second);
+}
+
 QString bool2YesNo(bool var)
 {
     return (var ? QString("Yes") : QString("No"));

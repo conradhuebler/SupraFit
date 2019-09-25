@@ -31,6 +31,7 @@
 #include "src/capabilities/resampleanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
 
+#include "src/core/analyse.h"
 #include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
@@ -217,7 +218,7 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
     QJsonObject project = data;
 
     QPointer<DataClass> d = new DataClass(data["data"].toObject());
-
+    QVector<QJsonObject> models_json;
     if (!models.isEmpty()) {
         std::cout << "Loading Models into Dataset" << std::endl;
         QVector<QSharedPointer<AbstractModel>> m = AddModels(models, d);
@@ -254,6 +255,7 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
 
         for (int i = 0; i < m.size(); ++i) {
             project["model_" + QString::number(i)] = m[i]->ExportModel();
+            models_json << m[i]->ExportModel();
             m[i].clear();
         }
         m.clear();
@@ -264,7 +266,7 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
         ++file_int;
         outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
     }
-
+    Analyse(m_analysejson, models_json);
     SaveFile(outfile, project);
     return project;
 }
@@ -362,6 +364,61 @@ QVector<QJsonObject> Simulator::GenerateData()
     qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng(seed);
     int file_int = 0;
+
+    QString global_limits, local_limits;
+    if (m_datajson.contains("GlobalRandomLimits")) {
+        global_limits = m_datajson["GlobalRandomLimits"].toString();
+        QStringList limits = global_limits.split(";");
+        if (limits.size()) {
+            QVector<QPair<qreal, qreal>> global_block;
+
+            if (limits.size() == t->GlobalParameterSize()) {
+                for (int i = 0; i < limits.size(); ++i) {
+                    global_block << ToolSet::QString2QPair(limits[i]);
+                }
+            } else {
+                const QPair<qreal, qreal> pair = ToolSet::QString2QPair(limits.first());
+                global_block = QVector<QPair<qreal, qreal>>(t->GlobalParameterSize(), pair);
+            }
+
+            t->setGlobalRandom(global_block);
+        }
+    }
+
+    if (m_datajson.contains("LocalRandomLimits")) {
+        local_limits = m_datajson["LocalRandomLimits"].toString();
+
+        QStringList local_limits_block = local_limits.split(":");
+        if (local_limits_block.size()) {
+            if (local_limits_block.size() == m_series) {
+                for (int j = 0; j < m_series; ++j) {
+                    QStringList limits = local_limits_block[j].split(";");
+                    if (limits.size()) {
+                        QVector<QPair<qreal, qreal>> local_block;
+
+                        if (limits.size() == t->GlobalParameterSize()) {
+                            for (int i = 0; i < limits.size(); ++i) {
+                                local_block << ToolSet::QString2QPair(limits[i]);
+                            }
+                        } else {
+                            const QPair<qreal, qreal> pair = ToolSet::QString2QPair(limits.first());
+                            local_block = QVector<QPair<qreal, qreal>>(t->LocalParameterSize(), pair);
+                        }
+
+                        t->setLocalRandom(local_block, j);
+                    }
+                }
+            } else {
+                QStringList local_limits_block = local_limits.split(":");
+                QStringList limits = local_limits_block.first().split(";");
+                const QPair<qreal, qreal> pair = ToolSet::QString2QPair(limits.first());
+
+                for (int j = 0; j < m_series; ++j) {
+                    t->setLocalRandom(QVector<QPair<qreal, qreal>>(t->LocalParameterSize(), pair), j);
+                }
+            }
+        }
+    }
     for (int i = 0; i < repeat; ++i) {
         t->InitialGuess();
 

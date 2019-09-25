@@ -758,29 +758,18 @@ void ModelDataHolder::CompareReduction()
     qreal cutoff = m_compare_dialog->CutOff();
     bool local = m_compare_dialog->RedLocal();
 
-    QVector<QPair<QJsonObject, QVector<int>>> models;
+    QVector<QJsonObject> models;
     for (int i = 1; i < m_modelsWidget->count(); i++) {
         if (!m_model_widgets[i - 1]->isChecked())
             continue;
         if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(i))) {
             ModelWidget* modelwidget = qobject_cast<ModelWidget*>(m_modelsWidget->widget(i));
             QJsonObject model = modelwidget->Model()->ExportModel(true);
-            QPair<QJsonObject, QVector<int>> pair;
-            pair.first = model;
-            QVector<int> parameter;
-            if (local)
-                for (int i = 0; i < modelwidget->Model()->MaxParameter(); ++i)
-                    parameter << i;
-            else
-                for (int i = 0; i < modelwidget->Model()->GlobalParameterSize(); ++i)
-                    parameter << i;
-
-            pair.second = parameter;
-            models << pair;
+            models << model;
         }
     }
 
-    QString result = StatisticTool::AnalyseReductionAnalysis(models, cutoff);
+    QString result = StatisticTool::AnalyseReductionAnalysis(models, local, cutoff);
 
     QHBoxLayout* layout = new QHBoxLayout;
     TextWidget* text = new TextWidget;

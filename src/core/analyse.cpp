@@ -34,7 +34,7 @@
 
 namespace StatisticTool {
 
-QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>> models, double cutoff)
+QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, double cutoff)
 {
     QMultiMap<qreal, QString> concl;
     QMultiMap<qreal, QString> concl_corr;
@@ -49,20 +49,19 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
     int cut = 0;
     int index = 0;
     int j = 0;
+    double parameter = 0;
     for (const auto& model : models) {
         index++;
         qreal mean_std = 0, mean_corr_std = 0;
         bool skip = false;
 #pragma message("let us analyse more reduction, later ")
         QJsonObject reduction;
-        for (const QString& key : model.first["data"].toObject()["methods"].toObject().keys()) {
-            if (model.first["data"].toObject()["methods"].toObject()[key].toObject()["controller"].toObject()["method"].toInt() == SupraFit::Method::Reduction) {
-                reduction = model.first["data"].toObject()["methods"].toObject()[key].toObject();
+        for (const QString& key : model["data"].toObject()["methods"].toObject().keys()) {
+            if (model["data"].toObject()["methods"].toObject()[key].toObject()["controller"].toObject()["method"].toInt() == SupraFit::Method::Reduction) {
+                reduction = model["data"].toObject()["methods"].toObject()[key].toObject();
                 break;
             }
         }
-
-        QVector<int> parameter = model.second;
 
         if (reduction.isEmpty()) {
             skip = true;
@@ -85,14 +84,20 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             result += "<tr><th>Skipping model " + QString::number(index) + " - Something missing?</th></tr>";
             continue;
         }
-        result += "<tr><th>Analysing Model " + QString::number(index) + " - " + model.first["name"].toString() + "</th></tr>";
+        result += "<tr><th>Analysing Model " + QString::number(index) + " - " + model["name"].toString() + "</th></tr>";
 
-        for (int key : parameter) {
-            if (key == -1)
+        for (const QString& key : reduction.keys()) {
+            if (key == "controller")
                 continue;
 
-            QJsonObject element = reduction[QString::number(key)].toObject();
+            //            if (key == -1)
+            //                continue;
+            parameter += 1;
+
+            QJsonObject element = reduction[key].toObject();
             if (element.isEmpty())
+                continue;
+            if (!local && element["type"].toString() == "Local Parameter")
                 continue;
 
             qreal val = element["value"].toDouble();
@@ -133,15 +138,15 @@ QString AnalyseReductionAnalysis(const QVector<QPair<QJsonObject, QVector<int>>>
             result += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
             result += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
             result += "<tr><td></td></tr>";
-            concl.insert(stdev, QString("<p> " + model.first["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>pt</sub>: " + Print::printDouble(stdev)) + "</p>");
-            concl_corr.insert(stdev_corr, QString("<p> " + model.first["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>ptc</sub>: " + Print::printDouble(stdev_corr)) + "</p>");
+            concl.insert(stdev, QString("<p> " + model["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>pt</sub>: " + Print::printDouble(stdev)) + "</p>");
+            concl_corr.insert(stdev_corr, QString("<p> " + model["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>ptc</sub>: " + Print::printDouble(stdev_corr)) + "</p>");
         }
 
-        mean_std /= double(parameter.size());
-        mean_corr_std /= double(parameter.size());
+        mean_std /= double(parameter);
+        mean_corr_std /= double(parameter);
 
-        mean_std_orderd.insert(mean_std, model.first["name"].toString());
-        mean_std_corr_orderd.insert(mean_corr_std, model.first["name"].toString());
+        mean_std_orderd.insert(mean_std, model["name"].toString());
+        mean_std_corr_orderd.insert(mean_corr_std, model["name"].toString());
 
         result += "<tr><td></td></tr>";
         result += "<tr><td></td></tr>";

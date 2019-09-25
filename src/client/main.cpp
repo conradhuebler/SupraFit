@@ -132,13 +132,22 @@ int main(int argc, char** argv)
 
                 Simulator* simulator = new Simulator;
                 simulator->setInFile(parser.value("i"));
-                simulator->setMainJson(job["main"].toObject());
-                simulator->setModelsJson(job["model"].toObject());
+                bool generate = simulator->setMainJson(job["main"].toObject());
+                bool model = simulator->setModelsJson(job["model"].toObject());
                 simulator->setJobsJson(job["jobs"].toObject());
-                projects = simulator->GenerateData();
-                for (const auto& project : qAsConst(projects)) {
-                    simulator->PerfomeJobs(project, job["model"].toObject(), job["jobs"].toObject());
+                bool analyse = simulator->setAnalyseJson(job["analyse"].toObject());
+                if (generate) {
+                    projects = simulator->GenerateData();
+                } else
+                    projects = simulator->Data();
+                if (model) {
+                    for (const auto& project : qAsConst(projects)) {
+                        simulator->PerfomeJobs(project, job["model"].toObject(), job["jobs"].toObject());
+                    }
                 }
+
+                if (analyse)
+                    simulator->Analyse(job["analyse"].toObject());
             }
         }
 

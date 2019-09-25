@@ -21,6 +21,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 
+#include "src/core/analyse.h"
 #include "src/core/dataclass.h"
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
@@ -54,6 +55,8 @@ bool SupraFitCli::LoadFile()
     } else {
         m_toplevel = handler->getJsonData();
     }
+
+    m_data_json = m_toplevel.value("data").toObject();
     return true;
 }
 
@@ -101,5 +104,40 @@ void SupraFitCli::PrintFileStructure()
 {
     for (const QString& key : m_toplevel.keys()) {
         std::cout << key.toStdString() << std::endl;
+    }
+}
+
+void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>& models)
+{
+    QVector<QJsonObject> models_json;
+    if (models.isEmpty()) {
+        for (const QString& str : m_toplevel.keys()) {
+            if (str.contains("model"))
+                models_json << m_toplevel[str].toObject();
+        }
+    } else
+        models_json = models;
+
+    if (!analyse.isEmpty()) {
+        for (const QString& key : analyse.keys()) {
+            QJsonObject object = analyse[key].toObject();
+            QString text;
+            if (object["method"].toInt() == 1) {
+                bool local = object["Local"].toBool(false);
+                int index = object["Index"].toInt(1);
+                text = StatisticTool::CompareMC(models_json, local, index);
+            } else if (object["method"].toInt() == 4) {
+                bool local = object["Local"].toBool(false);
+                int CXO = object["CXO"].toInt(1);
+                int X = object["X"].toInt(1);
+
+                text = StatisticTool::CompareCV(models_json, CXO, local, X);
+            } else if (object["method"].toInt() == 5) {
+                bool local = object["Local"].toBool(false);
+                double cutoff = object["CutOff"].toDouble(0);
+                text = StatisticTool::AnalyseReductionAnalysis(models_json, local, cutoff);
+            }
+            std::cout << Print::Html2Raw(text).toStdString() << std::endl;
+        }
     }
 }

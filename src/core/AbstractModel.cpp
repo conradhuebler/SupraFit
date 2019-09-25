@@ -855,7 +855,7 @@ QString AbstractModel::Model2Text() const
     text += "\n";
     text += ModelTable()->ExportAsString();
     text += "\n";
-    text += "Errors obtained from currrent calculcation:\n";
+    text += "Errors obtained from currrent calculation:\n";
     for (int i = 0; i < DependentModel()->columnCount(); ++i)
         text += " " + DependentModel()->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString() + "\t";
     text += "\n";

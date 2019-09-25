@@ -73,6 +73,9 @@ qreal scale(qreal value);
 
 QPair<qreal, qreal> MinMax(const QList<qreal>& vector);
 
+QPair<qreal, qreal> QString2QPair(const QString& str);
+QString QPair2QString(const QPair<qreal, qreal>& pair);
+
 void Normalise(QVector<QPair<qreal, qreal>>& hist);
 QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int& bins, qreal min = 0, qreal max = 0);
 /*! \brief Calculate the Entropy of a histogram, bin with is already defined */

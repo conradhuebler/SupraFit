@@ -34,6 +34,8 @@ public:
     void PrintFileContent(int index = 0);
     void PrintFileStructure();
 
+    void Analyse(const QJsonObject& analyse, const QVector<QJsonObject>& models = QVector<QJsonObject>());
+
     inline void setInFile(const QString& file)
     {
         m_infile = file;
@@ -45,14 +47,14 @@ public:
         m_outfile.contains(".json") ? m_extension = ".json" : m_extension = ".suprafit";
         m_outfile.remove(".json").remove(".suprafit");
     }
-
+    QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_data_json; }
 signals:
 
 public slots:
 
 protected:
     QString m_infile = QString(), m_outfile = QString(), m_extension = ".suprafit";
-    QJsonObject m_toplevel;
+    QJsonObject m_toplevel, m_data_json;
     int m_independent_rows = 2, m_start_point = 0;
     int m_series = 0;
 };
