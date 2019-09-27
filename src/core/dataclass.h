@@ -95,6 +95,7 @@ public:
 
     virtual ~DataTable();
 
+    bool isValid() const;
     void clear(int columns = 0, int rows = 0);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const Q_DECL_OVERRIDE;
@@ -146,7 +147,8 @@ public:
 
     Vector CheckedRow(int row) const;
 
-    QVector<qreal> toList() const;
+    QVector<qreal> toVector() const;
+    QList<qreal> toList() const;
 
     void Debug(const QString& str = "None") const;
     inline QStringList header() const { return m_header; }
@@ -196,7 +198,8 @@ public:
     enum DataType {
         Table = 1,
         Thermogram = 2,
-        Spectrum = 3
+        Spectrum = 3,
+        Simulation = 10
     };
 
     DataClassPrivate();
@@ -212,7 +215,7 @@ public:
 
     QStringList m_names;
 
-    int m_type, m_maxsize;
+    int m_maxsize;
     int m_host_assignment;
     int m_ref_counter = 1;
     QPointer<DataTable> m_dependent_model, m_independent_model;
@@ -259,12 +262,14 @@ public:
     virtual inline int IndependentVariableSize() const { return d->m_independent_model->columnCount(); }
     virtual inline int DataPoints() const { return d->m_dependent_model->rowCount(); }
     virtual inline int SeriesCount() const { return d->m_dependent_model->columnCount(); }
-    inline int Type() const { return d->m_type; }
-    inline void setType(int type) { d->m_type = type; }
+    inline int Type() const { return d->m_datatype; }
+    inline void setType(DataClassPrivate::DataType type) { d->m_datatype = type; }
     virtual inline DataTable* IndependentModel() { return d->m_independent_model; }
     virtual inline DataTable* DependentModel() { return d->m_dependent_model; }
     virtual inline DataTable* IndependentModel() const { return d->m_independent_model; }
     virtual inline DataTable* DependentModel() const { return d->m_dependent_model; }
+
+    inline bool isSimulation() const { return Type() == DataClassPrivate::DataType::Simulation; }
 
     /*! \brief return text of stored data
      */
@@ -377,8 +382,16 @@ public:
      */
     virtual qreal PrintOutIndependent(int i) const
     {
-        return i + 1;
+        if (!m_plot_x)
+            return i + 1;
+        else
+            return d->m_independent_model->data(0, i);
     }
+
+    inline void setPlotMode(bool plot_x) { m_plot_x = plot_x; }
+
+    inline int PlotMode() const { return m_plot_x; }
+
     inline void setRawData(const QJsonObject& data) { d->m_raw_data = data; }
 
     inline void setDataType(DataClassPrivate::DataType type) { d->m_datatype = type; }
@@ -419,6 +432,7 @@ public:
 
 private:
     QMutex m_lock;
+    bool m_plot_x = false;
 
 protected:
     QExplicitlySharedDataPointer<DataClassPrivate> d;

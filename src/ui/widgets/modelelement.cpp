@@ -33,6 +33,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QRandomGenerator>
 #include <QtCore/QTimer>
 #include <QtCore/QtMath>
 
@@ -67,14 +68,16 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
 
         check->setChecked(true);
         QPointer<SpinBox> constant = new SpinBox;
+
         m_constants << constant;
         constant->setMinimum(-1e9);
         constant->setSingleStep(1e-2);
         constant->setDecimals(4);
         constant->setMaximum(1e9);
         constant->setMaximumWidth(110);
-        constant->setSuffix(m_model.data()->LocalParameterSuffix(i));
         constant->setValue(m_model.data()->LocalParameter(i, m_no));
+
+        constant->setSuffix(m_model.data()->LocalParameterSuffix(i));
         constant->setToolTip(m_model.data()->LocalParameterDescription(i));
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
         connect(m_model.data(), &AbstractModel::Recalculated, this, [i, constant, this, widget, check, no]() {
@@ -93,6 +96,8 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         widget->setLayout(vlayout);
         vlayout->addWidget(constant, 0, 0);
         vlayout->addWidget(check, 0, 1);
+        check->setHidden(m_model.data()->isSimulation());
+
         QLabel* label = new QLabel(tr("<html>%1</html>").arg(m_model.data()->LocalParameterName(i)));
         vlayout->addWidget(label, 1, 0, 1, 2);
         shifts->addWidget(widget, 0);
@@ -221,6 +226,9 @@ QVector<double> ModelElement::D() const
 
 void ModelElement::Update()
 {
+    if (m_model.data()->isSimulation())
+        return;
+
     m_include->setChecked(m_model.data()->ActiveSignals()[m_no]);
     DisableSignal(m_model.data()->ActiveSignals()[m_no]);
     if (!m_include->isChecked())
@@ -229,8 +237,7 @@ void ModelElement::Update()
         if (qAbs(m_constants[i]->value() - m_model.data()->LocalParameter(i, m_no)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
             m_constants[i]->setValue(m_model.data()->LocalParameter(i, m_no));
     }
-    if (m_model.data()->Type() != 3)
-        m_error->setText("Sum of Squares: <b>" + Print::printDouble(m_model.data()->SumOfErrors(m_no)) + "</b>");
+    m_error->setText("Sum of Squares: <b>" + Print::printDouble(m_model.data()->SumOfErrors(m_no)) + "</b>");
 }
 
 void ModelElement::ChangeColor(const QColor& color)

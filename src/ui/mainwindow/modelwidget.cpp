@@ -52,6 +52,7 @@
 #include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
 #include "src/ui/widgets/systemparameterwidget.h"
+#include "src/ui/widgets/textwidget.h"
 
 #include <QtCharts/QAreaSeries>
 #include <QtCharts/QChart>
@@ -62,6 +63,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
+#include <QtCore/QRandomGenerator>
 #include <QtCore/QSettings>
 #include <QtCore/QTime>
 #include <QtCore/QTimer>
@@ -83,7 +85,6 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTableView>
-#include <QtWidgets/QTextEdit>
 
 #include <iostream>
 #include <random>
@@ -107,7 +108,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_minimizer->setModel(m_model);
 
     m_advancedsearch = new AdvancedSearch(this);
-    m_advancedsearch->setModel(m_model);
+    if (!m_model->isSimulation())
+        m_advancedsearch->setModel(m_model);
 
     m_statistic_dialog = new StatisticDialog(m_model, this);
 
@@ -143,10 +145,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
         constant->setPrefix(m_model->GlobalParameterPrefix(i));
         constant->setSingleStep(m_model->GlobalParameter(i) / 100);
-
-        constant->setValue(m_model->GlobalParameter(i));
         constant->setMaximum(1e9);
         constant->setMinimum(-1e9);
+        constant->setValue(m_model->GlobalParameter(i));
+
         constant->setReadOnly(m_val_readonly);
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SLOT(recalculate()));
         connect(m_model.data(), &AbstractModel::Recalculated, this,
@@ -174,6 +176,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         hlayout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         hlayout->addWidget(constant);
         hlayout->addWidget(check);
+        check->setHidden(m_model.data()->isSimulation());
         group->setLayout(hlayout);
         const_layout->addWidget(group);
     }
@@ -182,6 +185,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     QVBoxLayout* fit_layout = new QVBoxLayout;
     fit_layout->addWidget(m_global_box);
     fit_layout->addWidget(m_local_box);
+
+    m_global_box->setHidden(m_model->isSimulation() || m_val_readonly);
+    m_local_box->setHidden(m_model->isSimulation() || m_val_readonly);
 
     if (!m_val_readonly)
         const_layout->addLayout(fit_layout);
@@ -195,6 +201,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(minimize_loose, SIGNAL(triggered()), this, SLOT(GlobalMinimizeLoose()));
 
     QAction* fast_conf = new QAction(tr("Confidence"), this);
+    fast_conf->setToolTip(tr("Simplified Model Comparison, each parameter is varied independently of the remaining parameters."));
     connect(fast_conf, SIGNAL(triggered()), this, SLOT(FastConfidence()));
 
     QMenu* menu = new QMenu(this);
@@ -204,7 +211,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
-    if (!m_val_readonly)
+    if (!m_val_readonly && !m_model->isSimulation())
         const_layout->addWidget(m_minimize_all);
 
     m_layout->addLayout(const_layout);
@@ -234,9 +241,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     m_readonly = new QCheckBox(tr("Read Only"));
     QHBoxLayout* head = new QHBoxLayout;
-    head->addWidget(m_converged_label);
 
-    if (!m_val_readonly)
+    if (!m_model->isSimulation())
+        head->addWidget(m_converged_label);
+
+    if (!m_val_readonly && !m_model->isSimulation())
         head->addWidget(m_readonly);
 
     m_sign_layout->addLayout(head);
@@ -307,7 +316,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_splitter = new QSplitter(this);
     m_splitter->setOrientation(Qt::Vertical);
     m_splitter->addWidget(m_model_widget);
+
     m_splitter->addWidget(m_statistic_widget);
+    m_statistic_widget->setHidden(m_model->isSimulation());
+
     connect(m_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(SplitterResized()));
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->addWidget(m_splitter);
@@ -346,8 +358,11 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_jobmanager, &JobManager::started, m_statistic_dialog, &StatisticDialog::ShowWidget);
     connect(m_jobmanager, &JobManager::finished, m_statistic_dialog, &StatisticDialog::HideWidget, Qt::DirectConnection);
+    connect(m_jobmanager, &JobManager::finished, m_advancedsearch, &AdvancedSearch::HideWidget, Qt::DirectConnection);
 
     connect(m_statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
+    connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt, Qt::DirectConnection);
+
     connect(m_jobmanager, &JobManager::Message, m_statistic_dialog, &StatisticDialog::Message, Qt::DirectConnection);
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
@@ -357,11 +372,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     });
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
         if (type != SupraFit::Method::FastConfidence) {
-            if (type != SupraFit::Method::GlobalSearch)
-                this->m_statistic_dialog->hide();
-            else
-                this->m_advancedsearch->hide();
-
             this->m_results->Attention();
             this->m_results->ShowResult(type, index);
         }
@@ -377,6 +387,9 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     });
 
     m_SetUpFinished = true;
+    if (m_model->isSimulation()) {
+        QTimer::singleShot(10, this, &ModelWidget::recalculate);
+    }
 }
 
 ModelWidget::~ModelWidget()
@@ -450,6 +463,7 @@ void ModelWidget::DiscreteUI()
 
     m_layout->addWidget(m_actions);
     m_actions->LocalEnabled(m_model->SupportSeries());
+    m_actions->setSimulation(m_model->isSimulation());
 }
 
 void ModelWidget::resizeButtons()
@@ -458,15 +472,10 @@ void ModelWidget::resizeButtons()
     m_minimize_all->setStyleSheet("background-color: #77d740;");
 }
 
-void ModelWidget::EmptyUI()
-{
-    // //     m_add_sim_signal = new QPushButton(tr("Add Signal"));
-    // //     connect(m_add_sim_signal, SIGNAL(clicked()), this, SLOT(AddSimSignal()));
-    // //     m_layout->addWidget(m_add_sim_signal);
-}
-
 void ModelWidget::setParameter()
 {
+    if (m_model->isSimulation())
+        return;
     for (int j = 0; j < m_model->GlobalParameterSize(); ++j) {
         if (qAbs(m_constants[j]->value() - m_model->GlobalParameter(j)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
             m_constants[j]->setValue(m_model->GlobalParameter(j));
@@ -602,8 +611,8 @@ void ModelWidget::FastConfidence()
     job["FastConfidenceSteps"] = qApp->instance()->property("FastConfidenceSteps").toInt();
     job["FastConfidenceScaling"] = qApp->instance()->property("FastConfidenceScaling").toInt();
     qreal f_value = m_model.data()->finv(qApp->instance()->property("p_value").toDouble());
-    qreal error = m_model.data()->SumofSquares();
-    job["MaxError"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    qreal error = m_model.data()->SSE();
+    job["MaxParameter"] = error * (f_value * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
     job["confidence"] = qApp->instance()->property("p_value").toDouble();
     job["f_value"] = f_value;
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
@@ -655,7 +664,8 @@ void ModelWidget::LocalMinimize()
         QJsonObject config = model->getOptimizerConfig();
         model->setOptimizerConfig(config);
         m_minimizer->setModel(model);
-        model->setName(tr("%1 Series %2").arg(model->Name().remove("Model")).arg(i + 1));
+        QString name = m_model->DependentModel()->headerData(i, Qt::Horizontal).toString();
+        model->setName(tr("%1 (%2 Series %3)").arg(name).arg(model->Name().remove("Model")).arg(i + 1));
         result += m_minimizer->Minimize();
         QJsonObject json = m_minimizer->Parameter();
         emit AddModel(json);
@@ -855,7 +865,7 @@ void ModelWidget::Restore()
 
 void ModelWidget::Detailed()
 {
-    QTextEdit* text = new QTextEdit;
+    TextWidget* text = new TextWidget;
     m_model->setFast(false);
     m_model->Calculate();
     text->setText("<html><pre>" + m_model->Data2Text() + "\n" + m_model->Model2Text() + "</ br>" + m_statistic_widget->Statistic() + "</pre></html>");

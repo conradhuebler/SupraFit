@@ -39,6 +39,7 @@ class QGridLayout;
 class QListWidget;
 class QResizeEvent;
 class QPlainTextEdit;
+class QPropertyAnimation;
 class QPushButton;
 class QSplashScreen;
 class QSplitter;
@@ -189,6 +190,10 @@ private:
     void ReadGeometry();
     void WriteSettings(bool ignore_window_state = true);
 
+    void Message(const QString& str);
+    void Info(const QString& str);
+    void Warning(const QString& str);
+
     bool LoadProject(const QString& filename);
     void ImportTable(const QString& file);
     void LoadMetaModels();
@@ -202,10 +207,10 @@ private:
     QHash<QString, QWeakPointer<DataClass>> m_hashed_data;
     QHash<QString, QWeakPointer<ChartWrapper>> m_hashed_wrapper;
     bool m_hasData;
-    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license;
+    QAction *m_new_window, *m_new_table, *m_config, *m_about, *m_aboutqt, *m_message_dock_action, *m_close, *m_save, *m_save_as, *m_load, *m_license, *m_project_action;
     QJsonObject m_opt_config;
 
-    int m_last_index = -1;
+    int m_last_index = -1, m_project_tree_size;
     bool m_alert = false;
 
     QString m_supr_file;
@@ -244,13 +249,15 @@ private:
                                                    << "MetaSeries"
                                                    << "UnsafeCopy"
                                                    << "EntropyBins"
-                                                   << "OverwriteBins";
+                                                   << "OverwriteBins"
+                                                   << "InitialiseRandom";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;
     QPointer<Instance> m_instance;
     QTabWidget* m_central_widget;
-    QWidget *m_blank_widget;
+    QWidget *m_blank_widget, *m_project_holder;
+    QPropertyAnimation *m_show_tree, *m_show_dock;
     QListWidget *m_recent_documents;
     QVector<QPointer<MainWindow>> m_project_list;
     QTreeView* m_project_view;
@@ -265,7 +272,7 @@ private:
     QPushButton* m_clear_recent;
     QToolButton *m_export_suprafit, *m_export_plain, *m_close_all;
     DropButton* m_add_scatter;
-
+    QString m_supported_files = QString("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)");
 private slots:
     void NewWindow();
     void NewTable();
@@ -283,6 +290,8 @@ private slots:
     void CopySystemParameter(const QModelIndex& source, int position);
 
     void SaveData(const QModelIndex& index);
+    void AddUpData(const QModelIndex& index, bool sign);
+
     void CopyModel(const QJsonObject& o, int data, int model);
 
     void TreeDoubleClicked(const QModelIndex& index);

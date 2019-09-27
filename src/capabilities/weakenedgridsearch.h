@@ -71,8 +71,8 @@ private:
     QList<qreal> m_x, m_y;
     QJsonObject m_controller;
     QJsonObject m_result;
-    qreal m_ModelError, m_MaxError, m_ErrorConvergency;
-    int m_OvershotCounter = 0, m_ErrorDecreaseCounter = 0, m_ErrorConvergencyCounter = 0;
+    qreal m_ModelError, m_MaxParameter, m_ErrorConvergency;
+    int m_OvershotCounter = 0, m_ErrorDecreaseCounter = 0, m_ErrorConvergencyCounter = 0, m_ParameterIndex = 0;
     int m_MaxSteps, m_MaxOvershotCounter, m_MaxErrorDecreaseCounter, m_MaxErrorConvergencyCounter, m_ScalingFactor;
     bool m_stationary, m_finished, m_converged;
 };

@@ -96,6 +96,7 @@ public:
     QList<QList<QPointF>> Series() const { return m_series; }
     QList<QJsonObject> ModelList() const { return m_models_list; }
     QPointer<GlobalSearch> globalSearch() const { return m_search; }
+    void HideWidget();
 
 private:
     void SetUi();
@@ -120,8 +121,6 @@ private:
     QPointer<GlobalSearch> m_search;
     QList<int> m_ignored_parameter;
 
-    void PrepareProgress();
-    void Finished();
 
 public slots:
     void MaximumSteps(int steps);
@@ -134,4 +133,5 @@ private slots:
 signals:
     void RunCalculation(const QJsonObject& controller);
     void setValue(int value);
+    void Interrupt();
 };

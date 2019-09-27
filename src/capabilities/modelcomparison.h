@@ -25,7 +25,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 
-const int update_intervall = 100;
+const int update_intervall = 1;
 
 class AbstractModel;
 
@@ -53,8 +53,8 @@ public:
 private:
     QSharedPointer<AbstractModel> m_model;
     QList<QJsonObject> m_results;
-    int m_maxsteps, m_steps = 0;
-
+    int m_maxsteps, m_steps = 0, m_ParameterIndex = 0;
+    qreal m_MaxParameter;
     QVector<QVector<qreal>> m_box;
     qreal m_effective_error;
 };
@@ -75,6 +75,7 @@ public:
     inline qreal Lower() const { return m_lower; }
     inline qreal Upper() const { return m_upper; }
     inline QList<QPointF> Points() const { return m_points; }
+    inline int Parameter() const { return m_parameter; }
 
 private:
     qreal m_lower, m_upper;

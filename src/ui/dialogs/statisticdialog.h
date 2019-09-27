@@ -150,17 +150,21 @@ private:
     QGroupBox *m_moco_global_settings, *m_moco_monte_carlo;
     QProgressBar *m_progress, *m_main_progress;
     QLabel *m_time_info, *m_wgs_error_info, *m_moco_error_info, *m_message_box;
-    QRadioButton *m_wgs_loo, *m_wgs_l2o, *m_wgs_lxo;
+    QRadioButton *m_radio_cv_loo, *m_radio_cv_l2o, *m_radio_cv_lxo;
     QRadioButton *m_mc_std, *m_mc_sey, *m_mc_user, *m_mc_bootstrap;
+    QRadioButton *m_radio_moco_sse, *m_radio_moco_ssy, *m_radio_moco_chi, *m_radio_moco_sigma;
+    QRadioButton *m_radio_wgs_sse, *m_radio_wgs_ssy, *m_radio_wgs_chi, *m_radio_wgs_sigma;
+
     QRadioButton *m_cv_premap, *m_cv_automap, *m_cv_randmap;
     QMutex mutex;
 
     QWeakPointer<AbstractModel> m_model;
 
-    int m_time, m_main_steps = 0;
+    int m_time, m_main_steps = 0, m_ParameterIndex = 0;
     qint64 m_time_0;
     qreal m_f_value = 1, m_moco_max, m_wgs_max;
     bool m_hidden;
+    QString m_error_name = QString();
 
 private slots:
     void Update();

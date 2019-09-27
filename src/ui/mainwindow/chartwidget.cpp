@@ -214,6 +214,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
     for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
         ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));
+        signal_series->setName(m_rawdata.data()->DependentModel()->header()[i]);
         m_data_mapper->setSeries(signal_series, i);
         m_signalview->addSeries(signal_series);
     }
@@ -287,7 +288,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             model_series->setSize(lineWidth);
             m_signalview->addSeries(model_series);
         }
-        if (model->Type() != 3) {
+        if (model->Type() != DataClassPrivate::DataType::Simulation) {
             LineSeries* error_series = (qobject_cast<LineSeries*>(error_wrapper->Series(i)));
             error_wrapper->setSeries(error_series, i);
             error_series->setName(m_data_mapper.data()->Series(i)->name());
@@ -309,14 +310,14 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
         m_signal_x = model->XLabel();
         m_signal_y = model->YLabel();
         m_error_x = model->XLabel();
-        m_error_y = "Error " + model->YLabel();
+        m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(model->YLabel());
         Repaint();
     });
 
     m_signal_x = model->XLabel();
     m_signal_y = model->YLabel();
     m_error_x = model->XLabel();
-    m_error_y = "Error " + model->YLabel();
+    m_error_y = tr("%1 (y<sub>calc</sub> - y<sub>exp</sub>)").arg(model->YLabel());
 
     Repaint();
 

@@ -37,7 +37,7 @@ void ClusterAnalyse::GenerateMatrix()
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
         model->ImportModel(m);
-        Vector vector = ToolSet::QVector2Vector(QVector<qreal>() << model->SumofSquares() << model->SEy() << model->AllParameter());
+        Vector vector = ToolSet::QVector2Vector(QVector<qreal>() << model->SSE() << model->SEy() << model->AllParameter());
         m_vector_block << vector;
     }
     model.clear();

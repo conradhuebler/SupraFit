@@ -191,6 +191,9 @@ bool MonteCarloStatistics::Run()
     while (m_threadpool->activeThreadCount())
         QCoreApplication::processEvents();
 
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - m_t0;
+    QCoreApplication::processEvents();
+
     Collect(threads);
     if (m_models.size() == 0)
         return false;
@@ -199,12 +202,21 @@ bool MonteCarloStatistics::Run()
 
     m_results = ToolSet::Model2Parameter(m_models);
     ToolSet::Parameter2Statistic(m_results, m_model.data());
-
     for (int i = 0; i < m_results.count(); ++i) {
         QJsonObject data = m_results[i];
         if (data.isEmpty())
             continue;
         QList<qreal> list = ToolSet::String2DoubleList(data["data"].toObject()["raw"].toString());
+        int bins = m_controller["PlotBins"].toInt();
+
+        auto histogram = ToolSet::List2Histogram(list.toVector(), bins);
+        ToolSet::Normalise(histogram);
+        QVector<qreal> x, y;
+
+        for (const QPair<qreal, qreal>& pair : histogram) {
+            x << pair.first;
+            y << pair.second;
+        }
         SupraFit::ConfidenceBar bar = ToolSet::Confidence(list, 100 - m_controller["confidence"].toDouble());
         QJsonObject confidence;
         confidence["lower"] = bar.lower;
@@ -216,6 +228,8 @@ bool MonteCarloStatistics::Run()
             data["data"] = d;
         }
         data["confidence"] = confidence;
+        data["x"] = ToolSet::DoubleVec2String(x);
+        data["y"] = ToolSet::DoubleVec2String(y);
         m_results[i] = data;
     }
 
@@ -269,7 +283,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
     m_ptr_table << m_table;
     QVector<QPointer<MonteCarloBatch>> threads;
     m_generate = true;
-    QVector<qreal> vector = m_model->ErrorTable()->toList();
+    QVector<qreal> vector = m_model->ErrorVector();
     Uni = std::uniform_int_distribution<int>(0, vector.size() - 1);
 
     bool original = m_controller["OriginalData"].toBool();
@@ -325,6 +339,7 @@ QVector<QPointer<MonteCarloBatch>> MonteCarloStatistics::GenerateData()
             block.clear();
         }
     }
+    m_t0 = QDateTime::currentMSecsSinceEpoch();
     for (int i = 0; i < maxthreads; ++i) {
         QPointer<MonteCarloBatch> thread = new MonteCarloBatch(this);
         thread->setChecked(false);

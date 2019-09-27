@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019  Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ public:
 
     void EnableCharts(bool enable);
     void LocalEnabled(bool local_enabled);
+    void setSimulation(bool simulation);
 
 private:
     void setUi();
@@ -50,6 +51,7 @@ private:
     QPushButton* m_toggle;
     QWidget* m_second;
     bool m_hidden;
+    bool m_simulation;
 
 private slots:
     void ToggleMore();

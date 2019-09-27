@@ -46,8 +46,10 @@ WGSearchThread::WGSearchThread(const QJsonObject& controller)
     m_MaxErrorDecreaseCounter = m_controller["ErrorDecreaseCounter"].toInt();
     m_MaxErrorConvergencyCounter = m_controller["ErrorConvergencyCounter"].toInt();
     m_ScalingFactor = m_controller["StepScalingFactor"].toInt();
-    m_MaxError = m_controller["MaxError"].toDouble();
+    m_MaxParameter = m_controller["MaxParameter"].toDouble();
     m_ErrorConvergency = m_controller["ErrorConvergency"].toDouble();
+    m_ParameterIndex = m_controller["ParameterIndex"].toInt(0);
+
     setUp();
 }
 
@@ -59,7 +61,7 @@ void WGSearchThread::run()
 {
     quint64 t0 = QDateTime::currentMSecsSinceEpoch();
     m_model.data()->Calculate();
-    m_ModelError = m_model.data()->SumofSquares();
+    m_ModelError = m_model.data()->SSE();
 
     QList<QPointF> series;
     QVector<double> parameter = m_model.data()->OptimizeParameters();
@@ -107,9 +109,9 @@ void WGSearchThread::Calculate()
         else
             model = thread->BestIntermediateParameter();
 
-        qreal new_error = thread->SumOfError();
+        qreal new_error = thread->StatisticVector()[m_ParameterIndex];
 
-        if (new_error > m_MaxError) {
+        if (new_error > m_MaxParameter) {
             m_OvershotCounter++;
             m_finished = true;
         } else {
@@ -175,12 +177,15 @@ QPointer<WGSearchThread> WeakenedGridSearch::CreateThread(int index, bool direct
 
 bool WeakenedGridSearch::Run()
 {
+
     m_cv = true;
     if (!m_model)
         return false;
     for (int i = 0; i < m_series.size(); ++i)
         m_series[i].clear();
     m_series.clear();
+
+    int ParameterIndex = m_controller["ParameterIndex"].toInt(0);
 
     QVector<double> parameter = m_model.data()->OptimizeParameters();
 
@@ -189,24 +194,18 @@ bool WeakenedGridSearch::Run()
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
 
-    QList<int> global_param, local_param;
+    QList<int> global_param, local_param, list_parameter;
+
     global_param = ToolSet::String2IntList(m_controller["GlobalParameterList"].toString());
     local_param = ToolSet::String2IntList(m_controller["LocalParameterList"].toString());
+    list_parameter << global_param << local_param;
 
-    for (int i = 0; i < parameter.size(); ++i) {
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
+
+    for (int i = 0; i < list_parameter.size(); ++i) {
 
         QCoreApplication::processEvents();
-
-        bool step = true;
-
-        QPair<int, int> index_pair = m_model.data()->IndexParameters(i);
-        if (index_pair.second == 0) {
-            step = global_param[index_pair.first];
-        } else if (index_pair.second == 1) {
-            step = local_param[index_pair.first];
-        }
-
-        if (!step)
+        if (!list_parameter[i])
             continue;
 
         QPair<QPointer<WGSearchThread>, QPointer<WGSearchThread>> pair;
@@ -230,6 +229,7 @@ bool WeakenedGridSearch::Run()
             QCoreApplication::processEvents();
         }
     }
+    m_multicore_time = QDateTime::currentMSecsSinceEpoch() - t0;
 
     bool converged = true;
     int series = 0, jndex = 0;
@@ -259,8 +259,9 @@ bool WeakenedGridSearch::Run()
         QJsonObject result;
 
         QPair<int, int> index_pair = m_model.data()->IndexParameters(index);
+
         if (index_pair.second == 0) {
-            result["name"] = m_model.data()->GlobalParameterName(index);
+            result["name"] = m_model.data()->GlobalParameterName(index_pair.first);
             result["type"] = "Global Parameter";
         } else if (index_pair.second == 1) {
 
@@ -288,6 +289,15 @@ bool WeakenedGridSearch::Run()
         result["OvershotCounter"] = pair.first->OvershotCounter() + pair.second->OvershotCounter();
         result["ErrorDecreaseCounter"] = pair.first->ErrorDecreaseCounter() + pair.second->ErrorDecreaseCounter();
         result["ErrorConvergencyCounter"] = pair.first->ErrorConvergencyCounter() + pair.second->ErrorConvergencyCounter();
+
+        if (ParameterIndex == 1)
+            m_controller["ylabel"] = "SEy";
+        else if (ParameterIndex == 2)
+            m_controller["ylabel"] = QString("%1%2").arg(Unicode_chi).arg(Unicode_Sup_2);
+        else if (ParameterIndex == 3)
+            m_controller["ylabel"] = QString("%1").arg(Unicode_sigma);
+        else
+            m_controller["ylabel"] = "SSE";
 
         bool local = pair.first->Converged() && pair.second->Converged() && pair.first->Finished() && pair.second->Finished() && !(pair.first->Stationary() && pair.second->Stationary());
 

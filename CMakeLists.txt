@@ -32,7 +32,10 @@ option (Kinetic_Models
     
 option (Fluorescence_Models
     "Enable Fluorescence Models" ON)
- 
+
+option (extended_f_test
+    "Extend f-test methods for sigma, chi and SEy" OFF)
+
 option (legacy
     "Enable Legacy Concentration Handling - For benchmark purpose (only)" OFF)
 
@@ -44,6 +47,7 @@ option (noto_font
 
 option (_Theme
     "Use Icon Theme from Desktop Environment, It does not work on Windows" OFF)
+
 
 # Get the current working branch
 execute_process(
@@ -102,14 +106,14 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wunsafe-loop-optimizations  -Wmissing-braces\
                                            -Wmissing-field-initializers -Wmissing-format-attribute  \
                                            -Wmissing-include-dirs -Wmissing-noreturn -Wpacked  -Wparentheses\
-                                           -Wpointer-arith -Wredundant-decls -Wreturn-type -Wsequence-point\
+                                           -Wpointer-arith -Wredundant-decls -Wsequence-point\
                                            -Wsign-compare  -Wstack-protector -Wstrict-aliasing\
                                            -Wstrict-aliasing=2 -Wswitch \
                                            -Wtrigraphs  -Wuninitialized -Wunknown-pragmas  -Wunreachable-code\
                                            -Wunused -Wunused-function  -Wunused-label  -Wunused-parameter\
                                            -Wunused-value  -Wunused-variable  -Wvariadic-macros\
                                            -Wvolatile-register-var  -Wwrite-strings -Wno-deprecated-declarations\
-                                           -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing")
+                                           -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
@@ -144,6 +148,8 @@ add_library(math ${libmath_SRC})
 
 target_link_libraries(math Qt5::Core)
 
+#add_subdirectory(src/core/models/misc)
+
 set(models_SRC
                 src/core/dataclass.cpp
                 src/core/AbstractModel.cpp
@@ -170,6 +176,8 @@ set(models_SRC
                 src/core/models/kinetics/monomolecularmodel.cpp
                 src/core/models/postprocess/statistic.cpp
                 src/core/models/postprocess/thermo.cpp
+                src/core/models/misc/indep_quadrat.cpp
+                src/core/models/misc/dep_any.cpp
 )
 
 add_library(models ${models_SRC})
@@ -228,6 +236,7 @@ set(suprafit_SRCS
                 src/ui/widgets/buttons/scientificbox.h
                 src/ui/widgets/buttons/hovercheckbox.h
                 src/ui/widgets/thermogramwidget.cpp
+                src/ui/widgets/textwidget.cpp
                 src/ui/mainwindow/chartwidget.cpp
                 src/ui/mainwindow/modeldataholder.cpp
                 src/ui/mainwindow/datawidget.cpp

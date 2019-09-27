@@ -18,6 +18,7 @@
  */
 
 #include "src/core/dataclass.h"
+#include "src/core/jsonhandler.h"
 #include "src/core/models.h"
 
 #include <QtCore/QDebug>
@@ -37,7 +38,6 @@ FileHandler::FileHandler(const QString& filename, QObject* parent)
     , m_lines(0)
     , m_filetype(FileType::Generic)
 {
-    LoadFile();
 }
 
 FileHandler::FileHandler(QObject* parent)
@@ -63,13 +63,19 @@ void FileHandler::LoadFile()
     }
 
     QFileInfo info(m_filename);
+    m_title = info.baseName();
 
-    if ((info.suffix()).toLower() == "dh")
+    if (info.suffix().toLower() == "suprafit" || info.suffix().toLower() == "json")
+        m_filetype = FileType::SupraFit;
+    else if ((info.suffix()).toLower() == "dh")
         m_filetype = FileType::dH;
+    else
+        m_filetype = FileType::Generic;
 
     m_filecontent = QString(file.readAll()).split("\n");
-
-    if (m_filetype == FileType::Generic)
+    if (Type() == FileType::SupraFit)
+        ReadJson();
+    else if (m_filetype == FileType::Generic)
         ReadGeneric();
     else if (m_filetype == FileType::dH)
         ReaddH();
@@ -117,6 +123,32 @@ void FileHandler::ReadGeneric()
                 m_stored_table->insertRow(row);
         }
     }
+    ConvertTable();
+}
+
+void FileHandler::ConvertTable()
+{
+    bool simulation = false;
+    if (m_rows > m_stored_table->columnCount()) {
+        m_rows = m_stored_table->columnCount();
+        simulation = true;
+    }
+    DataClass* data = new DataClass;
+    DataTable* indep = m_stored_table->BlockColumns(0, m_rows);
+    DataTable* dep = m_stored_table->BlockColumns(m_rows, m_stored_table->columnCount() - m_rows);
+    for (int i = 0; i < m_start_point && i < dep->rowCount(); ++i)
+        dep->DisableRow(i);
+    if (simulation)
+        dep = indep;
+    data->setDependentTable(dep);
+    data->setIndependentTable(indep);
+    data->setDataType(DataClassPrivate::Table);
+    data->setProjectTitle(m_title);
+    data->setSystemObject(m_systemparameter);
+    m_topjson = data->ExportData();
+    if (simulation)
+        m_topjson["DataType"] = 10;
+    delete data;
 }
 
 bool FileHandler::CheckForTable()
@@ -156,6 +188,8 @@ void FileHandler::ReaddH()
     if (m_filecontent.size() < 5)
         return;
 
+    m_rows = 1;
+
     int number = m_filecontent[1].split(",")[1].toInt();
 
     QStringList parameter = m_filecontent[2].split(",");
@@ -175,6 +209,12 @@ void FileHandler::ReaddH()
             row << items[j].toDouble();
         m_stored_table->insertRow(row);
     }
+    ConvertTable();
+}
+
+void FileHandler::ReadJson()
+{
+    JsonHandler::ReadJsonFile(m_topjson, m_filename);
 }
 
 #include "filehandler.moc"

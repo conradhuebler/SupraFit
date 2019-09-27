@@ -124,7 +124,6 @@ private:
     bool m_pending;
     QList<int> ActiveSignals();
     void DiscreteUI();
-    void EmptyUI();
     void resizeButtons();
     void CollectParameters();
     void Data2Text();

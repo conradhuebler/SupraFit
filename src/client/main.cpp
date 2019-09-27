@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     const QString print = parser.value("print");
     const QString job = parser.value("j");
 
-    if (infile.isEmpty()) {
+    if (infile.isEmpty() && job.isLower()) {
         std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
         std::cout << "The simplest task for SupraFit to be done is opening a file and writing a project to disk." << std::endl;
         std::cout << "That would be like converting a *.json file to a *.suprafit file or vice versa :-)" << std::endl;
@@ -119,6 +119,7 @@ int main(int argc, char** argv)
     bool list = parser.isSet("l");
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
+    qApp->instance()->setProperty("InitialiseRandom", true);
 
     if (parser.isSet("j")) {
 

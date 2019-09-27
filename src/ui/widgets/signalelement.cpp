@@ -42,13 +42,13 @@
 
 #include "signalelement.h"
 
-SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWrapper> wrapper, int no, QWidget* parent)
+SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWrapper> wrapper, int index, QWidget* parent)
     : QGroupBox(parent)
     , m_data(data)
     , m_wrapper(wrapper)
-    , m_no(no)
+    , m_index(index)
 {
-    m_data_series = qobject_cast<ScatterSeries*>(m_wrapper.data()->Series(m_no)); //DataMapper(m_no)->series());
+    m_data_series = qobject_cast<ScatterSeries*>(m_wrapper.data()->Series(m_index)); //DataMapper(m_index)->series());
     QGridLayout* layout = new QGridLayout;
 
     m_show = new QCheckBox;
@@ -58,8 +58,8 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
 
     m_name = new QLineEdit;
     QString name;
-    name = data.data()->DependentModel()->headerData(m_no, Qt::Horizontal).toString();
-    m_name->setText(name);
+    name = data.data()->DependentModel()->headerData(m_index, Qt::Horizontal).toString();
+    m_name->setPlaceholderText(name);
     m_data_series->setName(name);
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(setName(QString)));
 
@@ -93,7 +93,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     layout->addWidget(m_rectangle, 0, 5);
     layout->addWidget(m_toggle, 0, 6);
     setLayout(layout);
-    ColorChanged(m_wrapper.data()->color(m_no));
+    ColorChanged(m_wrapper.data()->color(m_index));
 }
 
 SignalElement::~SignalElement()
@@ -139,7 +139,7 @@ void SignalElement::ShowLine(int i)
 void SignalElement::setName(const QString& str)
 {
     m_data_series->setName(str);
-    m_data.data()->DependentModel()->setHeaderData(m_no, Qt::Horizontal, str, Qt::DisplayRole);
+    m_data.data()->DependentModel()->setHeaderData(m_index, Qt::Horizontal, str, Qt::DisplayRole);
     emit m_data_series->NameChanged(str);
 }
 
@@ -169,14 +169,14 @@ void SignalElement::togglePlot()
 {
     m_data_series->setVisible(true);
     if (m_toggle->isChecked())
-        m_wrapper.data()->showSeries(m_no);
+        m_wrapper.data()->showSeries(m_index);
     else
         m_wrapper.data()->showSeries(-1);
 }
 
 void SignalElement::UnCheckToggle(int i)
 {
-    if (i != m_no)
+    if (i != m_index)
         m_toggle->setChecked(false);
 }
 #include "signalelement.moc"

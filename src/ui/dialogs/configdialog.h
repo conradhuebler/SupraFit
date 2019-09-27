@@ -62,7 +62,7 @@ private:
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
     QSpinBox *m_threads, *m_XScale, *m_YScale, *m_FontSize, *m_FastConfidenceScaling, *m_FastConfidenceSteps, *m_HistBins;
     QDoubleSpinBox *m_p_value, *m_markerSize, *m_lineWidth, *m_chartScaling;
-    QCheckBox *m_transparentChart, *m_cropedChart, *m_ColorFullSearch, *m_advanced_ui, *m_unsafe_copy, *m_overwrite_bins;
+    QCheckBox *m_transparentChart, *m_cropedChart, *m_ColorFullSearch, *m_advanced_ui, *m_unsafe_copy, *m_overwrite_bins, *m_initialise_random;
     QLineEdit* m_working;
     QPushButton* m_select_working;
     QTabWidget* m_mainwidget;

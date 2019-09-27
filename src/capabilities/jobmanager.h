@@ -52,11 +52,15 @@ const QJsonObject ModelComparisonConfigBlock{
      */
     { "FastConfidenceScaling", -4 }, // int
 
-    /* SSE threshold defined by f-Statistics */
-    { "MaxError", 0 }, //double
+    /* Parameter threshold defined by f-Statistics */
+    { "MaxParameter", 0 }, //double
 
     /* Confidence in % */
     { "confidence", 95 }, //double
+
+    /* Statistical parameter to be analysed */
+    { "ParameterIndex", 0 }, //int - this integer is the index for the vector inline QVector<qreal> StatisticVector() const { return QVector<qreal>() << SSE() << SEy() << ChiSquared() << sigma(); }
+    // 0 - SSE; 1 - SEy, 2 - ChiSquared, 3 - sigma
 
     /* Corresponding f Value */
     { "f_value", 0 }, // double
@@ -64,18 +68,13 @@ const QJsonObject ModelComparisonConfigBlock{
     /* Threshold for convergency in SSE */
     { "ErrorConvergency", 1e-10 }, // double
 
-    /* Box Scaling Factor */
+    /* Box Scaling Factor - the default value, if none are set - there is no UI button for this */
     { "BoxScalingFactor", 1.5 }, // double
 
     /* Define the global and local parameter to be tested - this list should not be empty
      * when a model comparison search is performed, otherwise nothing happens at all, or it crashes ...*/
     { "GlobalParameterList", "" }, // strings, to be converted to QList<int>
     { "LocalParameterList", "" }, // strings, to be converted to QList<int>
-
-    /* Define the precision of the global and local parameter to be tested - if this list is empty
-        the precision will automatically be definied - and will most probably be not helpful */
-    { "GlobalParameterPrecList", "" }, // strings, to be converted to QList<int>
-    { "LocalParameterPrecList", "" }, // strings, to be converted to QList<int>
 
     /* Define the box scaling factor of the global and local parameter to be tested - if this list is empty
         the scaling will automatically be set to 1.5 - and will most probably be not helpful */
@@ -101,7 +100,7 @@ const QJsonObject MonteCarloConfigBlock{
     { "method", SupraFit::Method::MonteCarlo }, // int
 
     /* Maximal number of Monte Carlo steps to be performed*/
-    { "MaxSteps", 1e3 }, // int
+    { "MaxSteps", 2e3 }, // int
 
     /* Variance to used */
     { "Variance", 1e-3 }, // double
@@ -110,7 +109,7 @@ const QJsonObject MonteCarloConfigBlock{
     { "confidence", 95 }, //double
 
     /* Source of variance */
-    { "VarianceSource", 1 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma", 4 = "bootstrap"
+    { "VarianceSource", 2 }, //int 1 = from "custom" above, 2 = "SEy", 3 = "sigma", 4 = "bootstrap"
 
     /* Use original data instead of the re-fitted data for monte carlo simulation  */
     { "OriginalData", false }, // bool
@@ -120,8 +119,12 @@ const QJsonObject MonteCarloConfigBlock{
        [1] - second row etc ... */
     { "IndependentRowVariance", "" }, // strings, to be converted to QVector<double>
 
+    /* Set the number of bins for histogram calculation and entropy calclation */
+    { "PlotBins", 30 }, //int, number of bins for histogram
+    { "EntropyBins", 30 }, //int, number of bins for entropy
+
     /* Store intermediate results, may result in large json blocks */
-    { "StoreRaw", false }, //bool
+    { "StoreRaw", true }, //bool
 
     /* Store as few data as possible */
     { "LightWeight", false }, //bool
@@ -149,6 +152,10 @@ const QJsonObject ResampleConfigBlock{
     /* Set Runtype for Reduction Analysis */
     { "ReductionRuntype", 1 }, //int 1 - backward, 2 - forewards, 3 - both, backward and forewards
 
+    /* Set the number of bins for histogram calculation and entropy calclation */
+    { "PlotBins", 30 }, //int, number of bins for histogram
+    { "EntropyBins", 30 }, //int, number of bins for entropy
+
     /* Store intermediate results, may result in large json blocks */
     { "StoreRaw", true }, //bool
 
@@ -169,14 +176,18 @@ const QJsonObject GridSearchConfigBlock{
     /* Maximal number of steps to be evaluated */
     { "MaxSteps", 1e3 }, // int
 
-    /* SSE threshold defined by f-Statistics */
-    { "MaxError", 0 }, //double
+    /* Parameter threshold defined by f-Statistics */
+    { "MaxParameter", 0 }, //double
 
     /* Confidence in % */
     { "confidence", 95 }, //double
 
     /* Corresponding f Value */
     { "f_value", 0 }, // double
+
+    /* Statistical parameter to be analysed */
+    { "ParameterIndex", 0 }, //int - this integer is the index for the vector inline QVector<qreal> StatisticVector() const { return QVector<qreal>() << SSE() << SEy() << ChiSquared() << sigma(); }
+    // 0 - SSE; 1 - SEy, 2 - ChiSquared, 3 - sigma
 
     /* Threshold for convergency in SSE */
     { "ErrorConvergency", 1e-10 }, // double
@@ -242,6 +253,8 @@ private:
 
     bool m_working = false;
     bool m_interrupt = false;
+    qint64 m_last_multicore = 0;
+
 signals:
     void started();
     void finished(int current, int all, int time);

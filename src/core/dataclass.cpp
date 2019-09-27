@@ -109,6 +109,11 @@ DataTable::~DataTable()
 #endif
 }
 
+bool DataTable::isValid() const
+{
+    return m_header.size();
+}
+
 void DataTable::clear(int columns, int rows)
 {
     m_table = Eigen::MatrixXd::Zero(rows, columns);
@@ -625,7 +630,7 @@ QStringList DataTable::ExportAsStringList() const
     return list;
 }
 
-QVector<qreal> DataTable::toList() const
+QVector<qreal> DataTable::toVector() const
 {
     QVector<qreal> vector;
     for (int j = 0; j < rowCount(); ++j) {
@@ -634,6 +639,17 @@ QVector<qreal> DataTable::toList() const
         }
     }
     return vector;
+}
+
+QList<qreal> DataTable::toList() const
+{
+    QList<qreal> list;
+    for (int j = 0; j < rowCount(); ++j) {
+        for (int i = 0; i < columnCount(); ++i) {
+            list << data(i, j);
+        }
+    }
+    return list;
 }
 
 QJsonObject DataTable::ExportTable(bool checked, const QVector<int> checked_table) const
@@ -717,8 +733,7 @@ DataClassPrivate::DataClassPrivate()
 }
 
 DataClassPrivate::DataClassPrivate(int type)
-    : m_type(type)
-    , m_maxsize(0)
+    : m_maxsize(0)
     , m_host_assignment(0)
     , m_datatype(DataClassPrivate::Table)
     , m_info(new DataClassPrivateObject)
@@ -749,7 +764,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_host_assignment = other.m_host_assignment;
     m_dependent_model = new DataTable(other.m_dependent_model);
     m_raw_data = other.m_raw_data;
-    m_type = other.m_type;
     m_system_parameter = other.m_system_parameter;
     m_datatype = other.m_datatype;
     m_title = other.m_title;
@@ -767,7 +781,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_host_assignment = other->m_host_assignment;
     m_dependent_model = new DataTable(other->m_dependent_model);
     m_raw_data = other->m_raw_data;
-    m_type = other->m_type;
     m_system_parameter = other->m_system_parameter;
     m_datatype = other->m_datatype;
     m_title = other->m_title;
@@ -823,7 +836,6 @@ DataClass::DataClass(const QJsonObject& json, int type, QObject* parent)
     : QObject(parent)
 {
     d = new DataClassPrivate();
-    d->m_type = type;
 
     connect(Info(), &DataClassPrivateObject::SystemParameterChanged, this, &DataClass::SystemParameterChanged);
     connect(Info(), &DataClassPrivateObject::Update, this, &DataClass::Update);
@@ -913,6 +925,7 @@ const QJsonObject DataClass::ExportData() const
     json["git_commit"] = git_commit_hash;
     json["content"] = d->m_content;
     json["timestamp"] = QDateTime::currentMSecsSinceEpoch();
+    json["xaxis"] = m_plot_x;
     return json;
 }
 
@@ -935,6 +948,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
     d->m_raw_data = topjson["raw"].toObject();
     d->m_title = topjson["title"].toString();
     d->m_content = topjson["content"].toString();
+    m_plot_x = topjson["xaxis"].toBool();
 
     if (forceUUID) {
         if (!topjson["uuid"].toString().isEmpty())
@@ -964,6 +978,8 @@ bool DataClass::LegacyImportData(const QJsonObject& topjson, bool forceUUID)
         qWarning() << QString("One does not simply load this file. It appeared after Amon Hen!\nUpdating SupraFit to the latest version will fix this.\nCurrent fileversion is %1, version of saved file is %2").arg(qint_version).arg(fileversion);
         return false;
     }
+
+    m_plot_x = topjson["xaxis"].toBool();
 
     d->m_systemObject = topjson["system"].toObject();
 

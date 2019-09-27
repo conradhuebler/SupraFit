@@ -76,7 +76,8 @@ void ModelChartWidget::setUI()
         LineSeries* series = new LineSeries;
         series->setName(chart->m_series[i].name);
         series->append(chart->m_series[i].m_values);
-        view->addSeries(series, i, QColor("green"), chart->m_series[i].name);
+        series->setColor(ChartWrapper::ColorCode(i));
+        view->addSeries(series, i, ChartWrapper::ColorCode(i), chart->m_series[i].name);
         m_series << series;
     }
     UpdateChart();
@@ -85,7 +86,7 @@ void ModelChartWidget::setUI()
 void ModelChartWidget::UpdateChart()
 {
     const ModelChart* chart = m_model.data()->Chart(m_chart);
-    if (chart == NULL)
+    if (chart == NULL || view == NULL)
         return;
 
     view->setXAxis(chart->x_axis);

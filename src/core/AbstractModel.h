@@ -70,6 +70,7 @@ public:
 
 
     }
+    // TODO Maybe move this to dataclass sometimes - to have different plot types already without model more consistently defined
     /* Model Option such as Cooperativity can be defined */
     QMap<int, ModelOption> m_model_options;
 
@@ -124,7 +125,7 @@ public:
      *  first - index of parameter
      *  second define if global or local
      */
-    virtual inline QPair<int, int> IndexParameters(int i) const { return m_opt_index[i]; }
+    inline QPair<int, int> IndexParameters(int i) const { return m_opt_index[i]; }
 
     /*! \brief Locks Parameter not to be optimised during Levenberg-Marquadt
      */
@@ -266,7 +267,7 @@ public:
 
     /*! \brief returns Akaike’s Information Criterion (AIC)
     */
-    inline qreal AIC() const { return DataPoints() * log(SumofSquares() / double(DataPoints())) + 2 * (Parameter() + 1); }
+    inline qreal AIC() const { return DataPoints() * log(SSE() / double(DataPoints())) + 2 * (Parameter() + 1); }
 
     /*! \brief returns a second-order (corrected) Akaike’s Information Criterion (AIC)
     */
@@ -286,6 +287,8 @@ public:
     void addGlobalParameter(int i);
     void addLocalParameter(int i);
 
+    void setOptions(const QJsonObject& options);
+
     int UpdateStatistic(const QJsonObject& object);
 
     int getReductionStatisticResults() const { return m_reduction.size(); }
@@ -299,6 +302,20 @@ public:
     int getMCStatisticResult() const { return m_mc_statistics.size(); }
 
     int getCVStatisticResult() const { return m_cv_statistics.size(); }
+
+    inline void setGlobalRandom(const QVector<qreal>& random_global)
+    {
+        if (random_global.size() == m_random_gobal.size()) {
+            m_random_gobal = random_global;
+        }
+    }
+
+    inline void setLocalRandom(const QVector<qreal>& random_local)
+    {
+        if (random_local.size() == m_random_local.size()) {
+            m_random_local = random_local;
+        }
+    }
 
     /*! \brief Load statistic defined by type
      * If more than results can be stored, define index
@@ -351,13 +368,16 @@ public:
      */
     inline bool isCorrupt() const { return m_corrupt; }
 
-    inline qreal SumofSquares() const { return m_sum_squares; }
-    inline qreal SumofAbsolute() const { return m_sum_absolute; }
+    inline qreal SSE() const { return m_sum_squares; }
+    inline qreal SAE() const { return m_sum_absolute; }
+    inline qreal RSquared() const { return m_squared; }
     inline int Points() const { return m_used_variables; }
     inline int Parameter() const { return m_opt_para.size(); }
     inline qreal MeanError() const { return m_mean; }
     inline qreal Variance() const { return m_variance; }
+
     inline qreal StdDeviation() const { return qSqrt(m_variance); }
+    inline qreal sigma() const { return qSqrt(m_variance); }
 
     inline qreal StdError() const { return m_stderror; }
     inline qreal SEy() const { return m_SEy; }
@@ -366,13 +386,15 @@ public:
     inline qreal ChiSquared() const { return m_chisquared; }
     inline qreal CovFit() const { return m_covfit; }
 
+    inline QVector<qreal> StatisticVector() const { return QVector<qreal>() << SSE() << SEy() << ChiSquared() << sigma(); }
+
     inline bool isConverged() const { return m_converged; }
     virtual inline void setConverged(bool converged) { m_converged = converged; }
     /*! \brief Returns the f value for the given p value
      *  Degrees of freedom and number of parameters are taken in account
      */
     qreal finv(qreal p);
-    qreal Error(qreal confidence, bool f = true);
+    qreal Error(qreal confidence);
 
     /*! \brief Demand initial guess
      * An initial guess will be demanded, if it fails, the guess will be automatically calculated
@@ -380,34 +402,42 @@ public:
      */
     inline void InitialGuess()
     {
-        m_demand_guess = true;
-        InitialGuess_Private();
+        if (Type() == DataClassPrivate::DataType::Simulation) {
+            InitialiseRandom();
+        } else {
+            m_demand_guess = true;
+            InitialGuess_Private();
+        }
     }
+
+    virtual void InitialiseRandom();
 
     /*! \brief Here goes the model implementation for the initial guess
      */
+
+    virtual QVector<qreal> ErrorVector() const { return ErrorTable()->toVector(); }
 
     virtual void InitialGuess_Private() = 0;
 
     /*! \brief Returns pointer to Model DataTable
      * overloaded function
      */
-    inline DataTable* ModelTable() { return m_model_signal; }
+    virtual inline DataTable* ModelTable() { return m_model_signal; }
 
     /*! \brief Returns pointer to Error DataTable
      * overloaded function
      */
-    inline DataTable* ErrorTable() { return m_model_error; }
+    virtual inline DataTable* ErrorTable() { return m_model_error; }
 
     /*! \brief Returns const pointer to Model DataTable
      * overloaded function
      */
-    inline DataTable* ModelTable() const { return m_model_signal; }
+    virtual inline DataTable* ModelTable() const { return m_model_signal; }
 
     /*! \brief Returns const pointer to Error DataTable
      * overloaded function
      */
-    inline DataTable* ErrorTable() const { return m_model_error; }
+    virtual inline DataTable* ErrorTable() const { return m_model_error; }
 
     /*! \brief Returns pointer to Global DataTable
      * overloaded function
@@ -735,7 +765,7 @@ protected:
 
     QJsonObject m_fast_confidence;
 
-    qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit;
+    qreal m_sum_absolute, m_sum_squares, m_variance, m_mean, m_stderror, m_SEy, m_chisquared, m_covfit, m_squared;
     int m_used_variables;
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;
@@ -744,6 +774,7 @@ protected:
     QJsonObject m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
+    QVector<qreal> m_random_gobal, m_random_local;
 
     QString m_more_info, m_name, m_name_cached, m_model_uuid, m_desc;
 
@@ -751,6 +782,8 @@ protected:
       BUT since abstractmodels should not depend on anything graphics related, they will be no series, but simple structs
       that can be worked with */
     QMap<QString, ModelChart*> m_model_charts;
+
+    QMutex m_mutex;
 signals:
     /*
      * Signal is emitted whenever void Calculate() is finished

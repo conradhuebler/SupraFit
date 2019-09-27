@@ -87,11 +87,23 @@ QMimeData* ParameterTree::mimeData(const QModelIndexList& indexes) const
 }
 bool ParameterTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const
 {
-    Q_UNUSED(data)
     Q_UNUSED(action)
-    Q_UNUSED(row)
-    Q_UNUSED(column)
-    Q_UNUSED(index)
+
+    if (!index.isValid())
+        return false;
+
+    QString string = data->text();
+    QStringList list = string.split(" ");
+    if (list.size() != 2)
+        return false;
+
+    if (row == -1 && column == -1 && !index.isValid()) {
+        if (list[1] == "-1")
+            return false;
+    }
+
+    if (index.row() == row && index.column() == column)
+        return false;
     return true;
 }
 
@@ -99,6 +111,8 @@ bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, i
 {
     Q_UNUSED(action)
     QString string = data->text();
+    if (!index.isValid())
+        return false;
 
     qreal* pos = static_cast<qreal*>(index.internalPointer());
     int parameter;
@@ -305,6 +319,10 @@ void MetaModelParameter::setUi()
     });
 
     connect(m_model.data(), &MetaModel::ModelRemoved, this, [this]() {
+        m_treemodel->layoutChanged();
+    });
+
+    connect(m_model.data(), &MetaModel::ParameterSorted, this, [this]() {
         m_treemodel->layoutChanged();
     });
 

@@ -41,8 +41,10 @@ ChartWrapper::ChartWrapper(QObject* parent)
 ChartWrapper::~ChartWrapper()
 {
     for (int i = 0; i < m_stored_series.size(); ++i) {
-        m_stored_series[i]->clear();
-        delete m_stored_series[i];
+        if (m_stored_series[i]) {
+            m_stored_series[i]->clear();
+            delete m_stored_series[i];
+        }
     }
 
     m_stored_data.clear();
@@ -168,9 +170,14 @@ QList<QPointer<QtCharts::QScatterSeries>> ChartWrapper::CloneSeries() const
     for (int i = 0; i < m_stored_series.size(); ++i) {
         if (!m_stored_series[i]->isVisible())
             continue;
-        QtCharts::QScatterSeries* serie = new QtCharts::QScatterSeries();
+        QPointer<QtCharts::QScatterSeries> serie = new QtCharts::QScatterSeries();
         serie->append(m_stored_series[i]->points());
         serie->setColor(m_stored_series[i]->color());
+        serie->setName(m_stored_series[i]->name());
+        connect(m_stored_series[i].data(), &QtCharts::QAbstractSeries::nameChanged, serie.data(), [serie, i, this]() {
+            if (serie && m_stored_series[i])
+                serie->setName(m_stored_series[i]->name());
+        });
         series << serie;
     }
     return series;

@@ -515,9 +515,9 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
     m_peak_list = peak_list;
     m_peak_rule_list->clear();
     int row = 0;
-    if (m_peak_list.size()) {
-        double time = m_peak_list[0].end * m_spec.Step() - m_peak_list[0].start * m_spec.Step() + m_spec.Step();
-        double start = m_peak_list[0].start * m_spec.Step() - m_spec.Step();
+    for (int i = 0; i < m_peak_list.size(); ++i) {
+        double time = m_peak_list[i].end * m_spec.Step() - m_peak_list[i].start * m_spec.Step() + m_spec.Step();
+        double start = m_peak_list[i].start * m_spec.Step() - m_spec.Step();
         if (!qFuzzyCompare(time_pred, time)) {
             m_peaks_start->setValue(start);
             m_peaks_time->setValue(time);
@@ -612,7 +612,6 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
     Vector baseline;
     QVector<qreal> difference_signal_baseline, tmp;
     qreal sum_difference_signal_baseline = 0;
-    int steps = 1;
     if (m_baseline.baselines.size() > 0)
         baseline = m_baseline.baselines[0];
 
@@ -632,7 +631,7 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
     }
     qreal stdev = Stddev(difference_signal_baseline, 0, sum_difference_signal_baseline / double(difference_signal_baseline.size()));
 
-    int counter;
+    int counter = 0;
     double sum = 0;
 
     for (int i = 0; i < difference_signal_baseline.size(); ++i) {
@@ -793,17 +792,11 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
     xmin = m_spec.X(m_peak_list[peak].start);
     xmax = m_spec.X(m_peak_list[peak].end);
 
-    QPointF start = m_thermogram->Chart()->mapToPosition(QPointF(xmin, ymin));
-    QPointF end = m_thermogram->Chart()->mapToPosition(QPointF(xmin, ymax));
-
     m_peak_start_line->clear();
     m_peak_start_line->append(xmin, ymin);
     m_peak_start_line->append(xmin, ymax);
 
     m_peak_start_line->show();
-
-    start = m_thermogram->Chart()->mapToPosition(QPointF(xmax, ymin));
-    end = m_thermogram->Chart()->mapToPosition(QPointF(xmax, ymax));
 
     m_peak_end_line->clear();
 
@@ -817,7 +810,7 @@ void ThermogramWidget::PeakDoubleClicked(int peak)
 
     m_thermogram->setXRange(xmin_0, xmax_0);
     m_thermogram->setYRange(ymin, ymax);
-
+    m_thermogram->setSelectStrategy(SelectStrategy::S_Horizontal);
     m_thermogram->setSelectBox(QPointF(xmin, ymax), QPointF(xmax, ymin));
     setGuideText(QString("You are now in <i>Peak Integration mode</i>. Click [ESC] to leave to mode. Sometimes you might have to activate the chart widget by <b>clicking</b> with the <b>left mouse button</b> right before [ESC]. The peak integration range can be reduced by clicking the <b>right mouse button</b> within the black separation lines - or reset to the whole peak <b>clicking</b> with the <b>right mouse button</b> out of the area between the separation borders. Use [LEFT] or [RIGHT] arrow on your keyboard to navigate through the peaks or <b>double-click</b> on a different peak in the table. Zooming with the <b>mouse wheel</b> is possible."));
 }
@@ -959,11 +952,9 @@ void ThermogramWidget::UpdatePeaks()
     if (m_spec.Step() == 0)
         return;
 
-    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     qreal offset = 0;
     int off = 1;
     int rules_size = m_peak_rule_list->rowCount();
-    double start = m_peak_rule_list->item(0, 0)->data(Qt::UserRole).toDouble();
     double end = m_peaks_end->value();
     m_peak_list.clear();
     PeakPick::Peak peak;

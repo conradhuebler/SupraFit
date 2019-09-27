@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,10 @@
 itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
     : AbstractItcModel(data)
 {
+    m_random_local << -100000;
+    m_random_local << -100000;
+    m_random_local << -100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 
     m_threadpool = new QThreadPool(this);
@@ -52,6 +56,10 @@ itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
 itc_IItoII_Model::itc_IItoII_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
+    m_random_local << 100000;
+    m_random_local << 100000;
+    m_random_local << 100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     m_threadpool = new QThreadPool(this);
     for (int i = 0; i < DataPoints(); ++i)
@@ -224,6 +232,8 @@ void itc_IItoII_Model::CalculateVariables()
     QList<qreal> constants_pow;
     constants_pow << K21 << K11 << K12;
 
+    bool reservior = m_reservior;
+
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     for (int i = 0; i < DataPoints(); ++i) {
@@ -280,6 +290,7 @@ void itc_IItoII_Model::CalculateVariables()
         vector(5) = complex_12;
 
         qreal v = IndependentModel()->data(0, i);
+        V += IndependentModel()->data(0, i) * !reservior;
         qreal dv = (1 - v / V);
 
         qreal q_a2b = (complex_21 - complex_21_prev * dv) * dH21 * V;

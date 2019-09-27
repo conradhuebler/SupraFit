@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,7 +80,6 @@ void ModelActions::setUi()
     h_layout->addWidget(m_save);
     h_layout->addWidget(m_import);
     h_layout->addWidget(m_export);
-    h_layout->addWidget(m_simulate);
     h_layout->addWidget(m_optim_config);
     h_layout->addStretch();
     h_layout->setAlignment(Qt::AlignLeft);
@@ -95,7 +94,6 @@ void ModelActions::setUi()
     connect(m_advanced, SIGNAL(clicked()), this, SIGNAL(OpenAdvancedSearch()));
     connect(m_statistics, SIGNAL(clicked()), this, SIGNAL(ToggleStatisticDialog()));
     connect(m_save, SIGNAL(clicked()), this, SIGNAL(Save2File()));
-    connect(m_simulate, SIGNAL(clicked()), this, SIGNAL(ExportSimModel()));
     connect(m_plots, SIGNAL(clicked()), this, SIGNAL(TogglePlot()));
     connect(m_restore, &PushButton::clicked, this, &ModelActions::Restore);
     connect(m_detailed, &PushButton::clicked, this, &ModelActions::Detailed);
@@ -115,10 +113,23 @@ void ModelActions::LocalEnabled(bool enabled)
     m_minimize_single->setEnabled(enabled);
 }
 
+void ModelActions::setSimulation(bool simulation)
+{
+    m_minimize_single->setHidden(simulation);
+    m_restore->setHidden(simulation);
+    m_minimize_single->setHidden(simulation);
+    m_advanced->setHidden(simulation);
+    m_optim_config->setHidden(simulation);
+    m_advanced->setHidden(simulation);
+    m_statistics->setHidden(simulation);
+    m_plots->setHidden(simulation);
+}
+
 void ModelActions::resizeButtons()
 {
     // Thats awfull and hackish, but it works for now and doesn't look that bad
     m_minimize_single->setMaximumSize(70, 30);
+    m_charts->setMaximumSize(110, 30);
     m_optim_config->setMaximumSize(80, 30);
     m_import->setMaximumSize(110, 30);
     m_export->setMaximumSize(110, 30);
@@ -128,7 +139,6 @@ void ModelActions::resizeButtons()
     m_statistics->setMaximumSize(70, 30);
     m_save->setMaximumSize(70, 30);
     m_new_guess->setMaximumSize(80, 30);
-    m_simulate->setMaximumSize(120, 30);
     m_detailed->setMaximumSize(120, 30);
     m_restore->setMaximumSize(120, 30);
 }

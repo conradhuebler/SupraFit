@@ -186,6 +186,11 @@ void ConfigDialog::createGeneralTab()
     m_tooltips->setChecked(qApp->instance()->property("tooltips").toBool());
     layout->addWidget(m_tooltips);
 
+    m_initialise_random = new QCheckBox(tr("Initialise Simulation with random numbers."));
+    m_initialise_random->setToolTip(tr("If a new model is added to a simulation set, all parameter will be initialised as random numbers."));
+    m_initialise_random->setChecked(qApp->instance()->property("InitialiseRandom").toBool());
+    layout->addWidget(m_initialise_random);
+
     m_save_on_exit = new QCheckBox(tr("Automatic save data on exit"));
     m_save_on_exit->setToolTip(tr("Save data automatically on exit. The file will be called 'projectname'.autosave#.json, where # is a natural number. No older files will be overwritten."));
     m_save_on_exit->setChecked(qApp->instance()->property("save_on_exit").toBool());
@@ -210,7 +215,7 @@ void ConfigDialog::createStandardCalTab()
     QWidget* calcTab = new QWidget;
     calcTab->setLayout(layout);
 
-    m_auto_confidence = new QCheckBox(tr("Automatic Confidence Calculation"));
+    m_auto_confidence = new QCheckBox(tr("Automatic Confidence Calculation using Simplified Model Comparison."));
     m_auto_confidence->setChecked(qApp->instance()->property("auto_confidence").toBool());
     layout->addWidget(m_auto_confidence);
 
@@ -416,6 +421,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("advanced_ui", m_advanced_ui->isChecked());
     qApp->instance()->setProperty("UnsafeCopy", m_unsafe_copy->isChecked());
     qApp->instance()->setProperty("OverwriteBins", m_overwrite_bins->isChecked());
+    qApp->instance()->setProperty("InitialiseRandom", m_initialise_random->isChecked());
 
     QDialog::accept();
 }

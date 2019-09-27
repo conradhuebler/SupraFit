@@ -53,7 +53,7 @@ DataWidget::DataWidget()
     m_switch = new QPushButton(tr("1<=>2"));
     m_switch->setToolTip(tr("<html>Swap the independent variables, 1	&harr;2</html>"));
     m_switch->setStyleSheet("background-color: #77d740;");
-    m_switch->setMaximumSize(100, 30);
+    //m_switch->setMaximumSize(100, 30);
     connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
 
     m_linear = new QPushButton(tr("Regression"));
@@ -64,6 +64,9 @@ DataWidget::DataWidget()
     m_hide_points = new QPushButton(tr("Hide Datapoints"));
     m_hide_points->setToolTip(tr("Hide Data points, but keep series visible. Useful to just simulate curves without being disturbed by Data Points."));
     m_hide_points->setStyleSheet("background-color: #77d740;");
+
+    m_plot_x = new QCheckBox(tr("Plot X Values"));
+    m_plot_x->setToolTip(tr("Plot first column as x variable."));
 
     m_name = new QLineEdit();
     connect(m_name, SIGNAL(textEdited(QString)), this, SLOT(SetProjectName()));
@@ -77,6 +80,7 @@ DataWidget::DataWidget()
 
     hlayout->addWidget(new QLabel(tr("<html><h3>Project Name</h3></html>")), 0, Qt::AlignLeft);
     hlayout->addWidget(m_name);
+    hlayout->addWidget(m_plot_x, 0, Qt::AlignRight);
     hlayout->addWidget(m_hide_points);
     hlayout->addWidget(m_switch, 0, Qt::AlignRight);
     hlayout->addWidget(m_linear, 0, Qt::AlignRight);
@@ -129,10 +133,23 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     m_concentrations->setModel(m_data.data()->IndependentModel());
-    m_signals->setModel(m_data.data()->DependentModel());
+
+    if (!m_data.data()->isSimulation())
+        m_signals->setModel(m_data.data()->DependentModel());
+    else
+        m_linear->hide();
+
     connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
+
+    m_plot_x->setVisible(m_data.data()->IndependentModel()->columnCount() == 1);
+    m_plot_x->setChecked(m_data.data()->PlotMode());
+    connect(m_plot_x, &QCheckBox::stateChanged, this, [this](int state) {
+        m_data.data()->setPlotMode(state);
+        m_wrapper.data()->UpdateModel();
+        dialog->UpdatePlots();
+    });
 
     qApp->instance()->setProperty("projectname", m_data.data()->ProjectTitle());
     m_name->setText(qApp->instance()->property("projectname").toString());
@@ -140,7 +157,8 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));
     m_signals_count->setText(tr("<html><h4>Series Count: %1</h4><html>").arg(m_data.data()->SeriesCount()));
 
-    dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
+    // why was this here?
+    // dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     dialog->UpdatePlots();
 
     QVBoxLayout* vlayout = new QVBoxLayout;
@@ -149,10 +167,12 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         connect(m_wrapper.data()->Series(i), &QtCharts::QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
         connect(m_hide_points, &QPushButton::clicked, el, &SignalElement::HideSeries);
         vlayout->addWidget(el);
+        if (m_data.data()->Type() == DataClassPrivate::DataType::Simulation)
+            el->HideSeries();
         m_signal_elements << el;
     }
 
-    layout->addLayout(vlayout, 2, 0, 1, 4);
+    layout->addLayout(vlayout, 3, 0, 1, 4);
 
     QHBoxLayout* scaling_layout = new QHBoxLayout;
     scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
@@ -171,7 +191,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         scaling_layout->addLayout(lay);
     }
 
-    layout->addLayout(scaling_layout, 3, 0, 1, 4);
+    layout->addLayout(scaling_layout, 4, 0, 1, 4);
 
     if (m_data.data()->IndependentVariableSize() == 1)
         m_switch->hide();
@@ -189,6 +209,15 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_text_edit->append(m_data.data()->Content());
     connect(m_text_edit, &QTextEdit::textChanged, m_data.data(), [this]() {
         m_data.data()->setContent(m_text_edit->toPlainText());
+    });
+
+    if (m_data.data()->Type() == DataClassPrivate::DataType::Simulation) {
+        m_hide_points->hide();
+    }
+
+    connect(m_wrapper.data(), &ChartWrapper::ModelTransformed, m_wrapper.data(), [this]() {
+        if (m_plot_x->isVisible())
+            m_plot_x->hide();
     });
 }
 

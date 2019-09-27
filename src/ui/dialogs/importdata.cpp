@@ -56,8 +56,10 @@ void TableView::keyPressEvent(QKeyEvent* event)
         FileHandler* handler = new FileHandler(this);
         handler->setFileContent(paste);
         DataTable* model = handler->getData();
-        setModel(model);
-        emit Edited();
+        if (model->isValid()) {
+            setModel(model);
+            emit Edited();
+        }
         delete handler;
     } else {
 
@@ -68,7 +70,7 @@ void TableView::keyPressEvent(QKeyEvent* event)
 ImportData::ImportData(const QString& file, QWidget* parent)
     : QDialog(parent)
     , m_filename(file)
-    , m_projectfile(QString("Titration %1").arg(QDateTime::currentDateTime().toString()))
+    , m_projectfile(QString("Project - %1").arg(QDateTime::currentDateTime().toString()))
 {
     setUi();
     LoadFile();
@@ -76,7 +78,7 @@ ImportData::ImportData(const QString& file, QWidget* parent)
 
 ImportData::ImportData(QWidget* parent)
     : QDialog(parent)
-    , m_projectfile(QString("Titration %1").arg(QDateTime::currentDateTime().toString()))
+    , m_projectfile(QString("Project - %1").arg(QDateTime::currentDateTime().toString()))
 {
     setUi();
     DataTable* model = new DataTable(0, 0, this);
@@ -84,16 +86,15 @@ ImportData::ImportData(QWidget* parent)
 }
 
 ImportData::ImportData(QWeakPointer<DataClass> data)
-    : m_single(false)
 {
     // That is all not nice, I know
 
     if (data.data()->DataType() == DataClassPrivate::Table) {
-        setUi(m_single);
+        setUi();
         m_table->setModel(data.data()->IndependentModel());
         m_sec_table->setModel(data.data()->DependentModel());
     } else if (data.data()->DataType() == DataClassPrivate::Thermogram) {
-        setUi(true);
+        setUi();
         DataTable* model = new DataTable(0, 0, this);
         m_table->setModel(model);
         m_raw = data.data()->ExportData()["raw"].toObject();
@@ -113,19 +114,43 @@ ImportData::~ImportData()
         delete m_storeddata;
 }
 
-void ImportData::setUi(bool single)
+void ImportData::setUi()
 {
     QGridLayout* layout = new QGridLayout;
 
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    //m_switch_concentration = new QCheckBox(this);
-    //m_switch_concentration->setText("Switch Host/Guest");
+
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    m_conc = new QSpinBox;
-    connect(m_conc, SIGNAL(editingFinished()), this, SLOT(NoChanged()));
+    m_independent_rows = new QSpinBox;
+    m_independent_rows->setMinimum(1);
+    m_independent_rows->setValue(1);
+    m_independent_rows->setPrefix("# = ");
+
+    m_simulation = new QCheckBox(tr("Simulate Data with # Serie(s)"));
+    m_dependent_rows = new QSpinBox;
+    m_dependent_rows->setMinimum(1);
+    m_dependent_rows->setValue(1);
+    m_dependent_rows->setEnabled(false);
+    m_dependent_rows->setPrefix("# = ");
+
+    connect(m_simulation, &QCheckBox::stateChanged, m_dependent_rows, [this](int state) {
+        m_dependent_rows->setEnabled(state);
+
+        if (m_table) {
+            if (state)
+                m_independent_rows->setValue(m_table->model()->columnCount());
+            else
+                NoChanged();
+        }
+    });
+
     m_line = new QLineEdit;
+    m_line->setText(m_projectfile);
+    connect(m_line, &QLineEdit::textEdited, this, [this](const QString& text) {
+        m_title = text;
+    });
     m_select = new QPushButton("Select file");
     connect(m_select, SIGNAL(clicked()), this, SLOT(SelectFile()));
     m_file = new QPushButton("Load");
@@ -140,28 +165,17 @@ void ImportData::setUi(bool single)
 
     m_table = new TableView;
 
-    if (single == false) {
-        m_sec_table = new TableView;
-    }
-    if (single) {
-        layout->addWidget(m_select, 0, 0);
-        layout->addWidget(m_line, 0, 1);
-        layout->addWidget(m_export, 0, 3);
+    layout->addWidget(m_select, 0, 0);
+    layout->addWidget(m_line, 0, 1, 1, 2);
+    layout->addWidget(m_export, 0, 3);
+    layout->addWidget(new QLabel(tr("# Independent Variable(s):")), 1, 0);
+    layout->addWidget(m_independent_rows, 1, 1);
+    layout->addWidget(m_simulation, 1, 2, Qt::AlignRight);
+    layout->addWidget(m_dependent_rows, 1, 3);
+    layout->addWidget(m_table, 3, 0, 1, 4);
+    layout->addWidget(m_thermogram, 4, 0);
+    layout->addWidget(m_buttonbox, 4, 1, 1, 3);
 
-        layout->addWidget(new QLabel(tr("No. of indepdent variables:")), 1, 0);
-        layout->addWidget(m_conc, 1, 1);
-        layout->addWidget(m_table, 3, 0, 1, 4);
-    }
-    if (!single) {
-        layout->addWidget(m_table, 3, 0);
-        m_table->setFixedWidth(200);
-        layout->addWidget(m_sec_table, 3, 1, 1, 3);
-        m_sec_table->setFixedWidth(600);
-    }
-    if (single) {
-        layout->addWidget(m_thermogram, 4, 0);
-    }
-    layout->addWidget(m_buttonbox, 4, 1, 1, 4);
     connect(m_table, &TableView::Edited, this, &ImportData::NoChanged);
 
     setLayout(layout);
@@ -171,12 +185,15 @@ void ImportData::setUi(bool single)
 
 void ImportData::NoChanged()
 {
-    m_conc->setMinimum(1);
-    m_conc->setMaximum(m_table->model()->columnCount() - 1);
+    if (!m_table)
+        return;
+    m_independent_rows->setMinimum(1);
+    m_independent_rows->setMaximum(m_table->model()->columnCount());
+
     if (m_table->model()->columnCount() > 2)
-        m_conc->setValue(2);
+        m_independent_rows->setValue(2);
     else
-        m_conc->setValue(1);
+        m_independent_rows->setValue(1);
 }
 
 
@@ -191,7 +208,7 @@ void ImportData::SelectFile()
 void ImportData::LoadFile()
 {
     QFileInfo info(m_filename);
-    PeakPick::spectrum original;
+    QPointer<DataTable> model;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
 
         ImportThermogram(m_filename);
@@ -204,15 +221,16 @@ void ImportData::LoadFile()
         m_line->setText(info.baseName());
         m_title = info.baseName();
         FileHandler* filehandler = new FileHandler(m_filename, this);
-
+        filehandler->LoadFile();
         if (filehandler->FileSupported()) {
-            QPointer<DataTable> model = filehandler->getData();
+            model = filehandler->getData();
             if (!model) {
                 delete filehandler;
                 return;
             }
             if (model->columnCount() == 0 && model->rowCount() == 0 && qApp->instance()->property("auto_thermo_dialog").toBool()) {
-                ImportThermogram(m_filename);
+                if (!ImportThermogram(m_filename))
+                    return;
 
             } else {
                 if (filehandler->Type() == FileHandler::FileType::dH)
@@ -221,19 +239,29 @@ void ImportData::LoadFile()
                 m_table->setModel(model);
                 if (model->columnCount() == 2 && model->rowCount() > 100) {
                     if (qApp->instance()->property("auto_thermo_dialog").toBool())
-                        ImportThermogram(m_filename);
-                    else
-                        QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
+                        if (!ImportThermogram(m_filename))
+                            return;
+                        else
+                            QMessageBox::warning(this, QString("Whow!"), QString("This rather long xy file should probably be treated as thermogram. Just push the Import Thermogram on left.\nBut please be aware that, the automatic peak picking will probably fail to import the data correctly.\nYou need the time between each inject and the starting time for the first injection."));
                 }
                 if (filehandler->Type() == FileHandler::FileType::dH)
                     QTimer::singleShot(10, this, &QDialog::accept);
-                NoChanged();
+                //NoChanged();
             }
         } else {
             QMessageBox::warning(this, QString("File not supported!"), QString("Sorry, but I don't know this format. Try a simple table."));
             return;
         }
         delete filehandler;
+    }
+    if (model) {
+        m_independent_rows->setMinimum(1);
+        m_independent_rows->setMaximum(m_table->model()->columnCount());
+
+        if (m_table->model()->columnCount() > 2)
+            m_independent_rows->setValue(2);
+        else
+            m_independent_rows->setValue(1);
     }
 }
 
@@ -256,14 +284,23 @@ void ImportData::ExportFile()
 
 void ImportData::WriteData(const DataTable* model, int independent)
 {
-    independent = m_conc->value();
+    independent = m_independent_rows->value();
     m_storeddata = new DataClass;
-    DataTable* concentration_block = model->BlockColumns(0, independent);
-    DataTable* signals_block = model->BlockColumns(independent, model->columnCount() - independent);
-    m_storeddata->setDependentTable(signals_block);
-    m_storeddata->setIndependentTable(concentration_block);
+    DataTable* indep = model->BlockColumns(0, independent);
+    DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
+
+    if (model->columnCount() - independent == 0) {
+        DataTable* model = new DataTable(m_dependent_rows->value(), indep->rowCount(), this);
+        m_storeddata->setDependentTable(model);
+        m_storeddata->setType(DataClassPrivate::DataType::Simulation);
+        m_projectfile = QString("Simulation - %1").arg(QDateTime::currentDateTime().toString());
+    } else {
+        m_storeddata->setDataType(m_type);
+        m_storeddata->setDependentTable(dep);
+    }
+
+    m_storeddata->setIndependentTable(indep);
     m_storeddata->setRawData(m_raw);
-    m_storeddata->setDataType(m_type);
     m_storeddata->setProjectTitle(m_title);
 }
 
@@ -290,7 +327,7 @@ void ImportData::accept()
     QDialog::accept();
 }
 
-void ImportData::ImportThermogram(const QString& filename)
+bool ImportData::ImportThermogram(const QString& filename)
 {
     Thermogram* thermogram = new Thermogram;
     if (!m_filename.isEmpty())
@@ -310,12 +347,15 @@ void ImportData::ImportThermogram(const QString& filename)
         m_title = thermogram->ProjectName();
         delete thermogram;
         model->setEditable(true);
-
-    } else
+        return true;
+    } else {
         delete thermogram;
+        QDialog::reject();
+    }
+    return false;
 }
 
-void ImportData::ImportThermogram()
+bool ImportData::ImportThermogram()
 {
     Thermogram* thermogram = new Thermogram;
     thermogram->show();
@@ -336,10 +376,11 @@ void ImportData::ImportThermogram()
         m_title = thermogram->ProjectName();
         delete thermogram;
         model->setEditable(true);
-
+        return true;
     } else {
         delete thermogram;
         QDialog::reject();
     }
+    return false;
 }
 #include "importdata.moc"

@@ -31,6 +31,7 @@
 #include "src/ui/widgets/results/scatterwidget.h"
 #include "src/ui/widgets/results/searchresultwidget.h"
 #include "src/ui/widgets/statisticwidget.h"
+#include "src/ui/widgets/textwidget.h"
 
 #include <QtCore/QPointer>
 
@@ -253,6 +254,7 @@ QWidget* ResultsWidget::GridSearchWidget()
     QTabWidget* tabwidget = new QTabWidget;
 
     ListChart* view = new ListChart;
+    view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
     connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
@@ -266,11 +268,7 @@ QWidget* ResultsWidget::GridSearchWidget()
         scatterwidget->setData(m_models, m_model);
         tabwidget->addTab(scatterwidget, "Scatter Plot");
     }
-    view->setXAxis("value");
-    view->setYAxis("Sum of Squares (SSE)");
-    view->setName("gridchart");
-    int series_int = 0;
-    int old_index = 0;
+
     for (int i = 0; i < m_data.count() - 1; ++i) {
         QJsonObject data = m_data[QString::number(i)].toObject();
         if (data.isEmpty())
@@ -305,12 +303,16 @@ QWidget* ResultsWidget::GridSearchWidget()
         view->addSeries(xy_series, i, xy_series->color(), name, true);
 
         LineSeries* current_constant = new LineSeries;
-        *current_constant << QPointF(x_0, m_model.data()->SumofSquares()) << QPointF(x_0, m_model.data()->SumofSquares() * 1.1);
+        *current_constant << QPointF(x_0, m_model.data()->SSE()) << QPointF(x_0, m_model.data()->SSE() * 1.1);
         current_constant->setDashDotLine(true);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);
         view->addSeries(current_constant, i, xy_series->color(), name, true);
     }
+
+    view->setName("gridchart");
+    view->setXAxis("parameter value");
+    view->setYAxis(m_data["controller"].toObject()["ylabel"].toString());
 
     view->setTitle(tr("Grid Search for %1").arg(m_model.data()->Name()));
 
@@ -337,13 +339,21 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
         text += m_model.data()->AnalyseStatistic(m_data, false);
     }
     m_confidence_label->setText(text);
+    m_model.data()->UpdateStatistic(m_data);
 }
 
 void ResultsWidget::Detailed()
 {
-    QTextEdit* text = new QTextEdit;
+    TextWidget* text = new TextWidget;
     text->setText("<html><pre> " + m_text + "</br> " + m_model.data()->AnalyseStatistic(m_data, true) + "</pre></html>");
-    m_dialog->setWidget(text, tr("Details on Statistic Analysis"));
-    m_dialog->show();
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    layout->addWidget(text);
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Details on Statistic Analysis"));
+    dialog.setLayout(layout);
+    dialog.resize(1024, 800);
+    dialog.exec();
 }
 #include "resultswidget.moc"

@@ -292,12 +292,12 @@ qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start,
         param[index] = start;
         model.data()->setParameter(param);
         model.data()->Calculate();
-        qreal SSE_0 = model.data()->SumofSquares();
+        qreal SSE_0 = model.data()->SSE();
 
         param[index] = end;
         model.data()->setParameter(param);
         model.data()->Calculate();
-        qreal SSE_1 = model.data()->SumofSquares();
+        qreal SSE_1 = model.data()->SSE();
 
         mean = (start + end) / 2;
 #ifdef _DEBUG

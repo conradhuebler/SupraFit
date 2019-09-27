@@ -40,12 +40,16 @@
 itc_ItoI_Model::itc_ItoI_Model(DataClass* data)
     : AbstractItcModel(data)
 {
+    m_random_local << -100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
 itc_ItoI_Model::itc_ItoI_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
+    m_random_local << -100000;
+
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 }
 
@@ -92,6 +96,8 @@ void itc_ItoI_Model::CalculateVariables()
     qreal V = m_V;
 
     qreal complex_prev = 0;
+    bool reservior = m_reservior;
+
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
 
@@ -109,8 +115,10 @@ void itc_ItoI_Model::CalculateVariables()
         vector(1) = host;
         vector(2) = guest_0 - complex;
         vector(3) = complex;
+        V += IndependentModel()->data(0, i) * !reservior;
+        qreal dv = (1 - v / V);
 
-        qreal q_ab = V * (complex - complex_prev * (1 - v / V)) * dH;
+        qreal q_ab = V * (complex - complex_prev * dv) * dH;
         qreal value = q_ab;
         more_info += Print::printDouble(PrintOutIndependent(i)) + "\t" + Print::printDouble(q_ab) + "\t" + Print::printDouble(dilution) + "\t" + Print::printDouble(value) + "\n";
 

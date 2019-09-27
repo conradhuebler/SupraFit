@@ -38,8 +38,14 @@ const QString Unicode_Phi = QChar(0x03C6);
 const QString Unicode_delta = QChar(0x03B4);
 const QString Unicode_mu = QChar(0x00B5);
 const QString Unicode_sigma = QChar(0x03C3);
+const QString Unicode_chi = QChar(0x1D61);
+const QString Unicode_epsilion = QChar(0x03B5);
+const QString Unicode_theta = QChar(0x03B8);
+
+const QString Unicode_Math_Element = QChar(0x2208);
 
 const QString Unicode_Sup_1 = QChar(0x00B9);
+const QString Unicode_Sup_2 = QChar(0x00B2);
 
 const QString Unicode_Sub_0 = QChar(0x2080);
 const QString Unicode_Sub_1 = QChar(0x2081);
@@ -97,6 +103,8 @@ enum Model {
     fl_ItoI_ItoII = 22,
     fl_IItoI_ItoI_ItoII = 23,
     ScriptedModel = 100,
+    Indep_Quadrat = 101,
+    Dep_Any = 102,
     MetaModel = 200,
     Unknown = 404
 };
@@ -151,10 +159,12 @@ inline QString aboutHtml()
     info += "<p>This is all about SupraFit, nothing else matters< /p>";
     info += "<p>Created by Conrad Hübler</p>";
     info += "<p>Special thanks to <strong>Prof. M. Mazik</strong>, TU Bergakademie Freiberg for her support.</p>";
-    info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;rster</strong> and <strong>Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
+    info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;rster</strong> and <strong>Dr. Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
+    info += "<p>Special thanks to Alexander K&ouml;nig for testing the Quickstart, helpful comments and feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : <a href='http://www.oxygen-icons.org'>http://www.oxygen-icons.org</a></p>";
     info += "<p>SupraFit website on GitHub: <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/conradhuebler/SupraFit</a></p>";
+    info += "<p>If you obtain results with SupraFit, I kindly ask to cite: </p><p>C. Hübler, conradhuebler/SupraFit: Version 1.7.0 2019, Zenodo. <a href='http://doi.org/10.5281/zenodo.3364570'>http://doi.org/10.5281/zenodo.3364570</a>.<p>";
     info += "<p>SupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n";
 #ifdef noto_font
     info += "<p>SupraFit uses and provides some selected Google Noto Font, see <a href='https://github.com/googlei18n/noto-fonts'>https://github.com/googlei18n/noto-fonts</a></p>";
@@ -171,9 +181,11 @@ inline QString about()
     info += "\tCreated by Conrad Hübler\n";
     info += "\t*********************************************************************************************************\n\n";
     info += "\tSpecial thanks to Prof. M. Mazik, TU Bergakademie Freiberg for her support.\n\n";
-    info += "\tSpecial thanks to \t Dr. Sebastian Förster \t  and \t Stefan Kaiser \t for finding bugs and constructive feedback.\n\n";
+    info += "\tSpecial thanks to \t Dr. Sebastian Förster \t  and \t Dr. Stefan Kaiser \t for finding bugs and constructive feedback.\n";
+    info += "\tSpecial thanks to Alexander König for testing the Quickstart, helpful comments and feedback.\n\n\n";
     info += "\tThanks to all encouraged me writing the application.\n\n";
     info += "\tSupraFit website on GitHub: https://github.com/conradhuebler/SupraFit\n\n";
+    info += "\tIf you obtain results with SupraFit, I kindly ask to cite: C. Hübler, conradhuebler/SupraFit: Version 1.7.0 2019, Zenodo. http://doi.org/10.5281/zenodo.3364570\n";
     info += "\tSupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n\n";
     info += "\t*********************************************************************************************************\n\n";
     return info;
@@ -278,6 +290,12 @@ inline SupraFit::Model Name2Model(const QString& str)
     else if (str == "Michaelis Menten")
         return SupraFit::Michaelis_Menten;
 
+    else if (str == "Indep. Quadrat")
+        return SupraFit::Indep_Quadrat;
+
+    else if (str == "Dep. AnyModel")
+        return SupraFit::Dep_Any;
+
     else if (str == "Meta Model")
         return SupraFit::MetaModel;
     else
@@ -336,6 +354,11 @@ inline QString Model2Name(SupraFit::Model model)
 
     else if (model == SupraFit::Michaelis_Menten)
         return "Michaelis Menten";
+
+    else if (model == SupraFit::Indep_Quadrat)
+        return "Indep. Quadrat";
+    else if (model == SupraFit::Dep_Any)
+        return "Dep. AnyModel";
 
     else if (model == SupraFit::MetaModel)
         return "Meta Model";

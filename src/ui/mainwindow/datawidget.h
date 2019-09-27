@@ -53,6 +53,7 @@ public:
     void setEditable(bool editable);
 
 private:
+    QCheckBox* m_plot_x;
     QTableView *m_concentrations, *m_signals;
     QTextEdit* m_text_edit;
     QPushButton *m_switch, *m_linear, *m_hide_points;

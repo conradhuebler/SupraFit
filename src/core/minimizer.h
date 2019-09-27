@@ -47,7 +47,7 @@ public:
     inline void setOptimizerConfig(const QJsonObject& config) { m_opt_config = config; }
     inline bool Converged() const { return m_converged; }
     inline qreal SumOfError() const { return m_sum_error; }
-
+    inline QVector<qreal> StatisticVector() const { return m_statistic_vector; }
     inline bool Running() const { return m_running; }
 
 public slots:
@@ -62,6 +62,7 @@ private:
     int m_steps;
     bool m_exc_statistics, m_running = false;
     qreal m_sum_error;
+    QVector<qreal> m_statistic_vector;
 
 signals:
     void Message(const QString& str, int priority);

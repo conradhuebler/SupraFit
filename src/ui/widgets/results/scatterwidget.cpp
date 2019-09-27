@@ -30,6 +30,7 @@
 #include "src/ui/widgets/statisticwidget.h"
 
 #include <QtCore/QPointer>
+#include <QtCore/QThreadPool>
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QGridLayout>
@@ -40,15 +41,58 @@
 
 #include "scatterwidget.h"
 
+CollectThread::CollectThread(int start, int end, int var_1, int var_2, const QList<QJsonObject>& models, bool valid, bool converged)
+    : m_start(start)
+    , m_end(end)
+    , m_var_1(var_1)
+    , m_var_2(var_2)
+    , m_models(models)
+    , m_valid(valid)
+    , m_converged(converged)
+{
+    setAutoDelete(false);
+}
+
+void CollectThread::setModel(QSharedPointer<AbstractModel> model)
+{
+    m_model = model->Clone(false);
+}
+
+void CollectThread::run()
+{
+
+    for (int i = m_start; i < m_end; ++i) {
+
+        QJsonObject model;
+        //if(!m_models[i].contains("initial"))
+        model = m_models[i]; //["data"].toObject();
+        //else
+        //    model = m_models[i];
+
+        m_model.data()->ImportModel(model);
+        //m_model.data()->Calculate();
+        //        qDebug() << model;
+
+        if (m_converged && !model["converged"].toBool())
+            continue;
+        if (m_valid && !model["valid"].toBool())
+            continue;
+
+        m_x << m_model.data()->AllParameter()[m_var_1];
+        m_y << m_model.data()->AllParameter()[m_var_2];
+        m_linked_models.insert(QPointF(m_model.data()->AllParameter()[m_var_1], m_model.data()->AllParameter()[m_var_2]), i);
+    }
+}
+
 ScatterWidget::ScatterWidget()
 
 {
 }
 
-void ScatterWidget::setData(const QList<QJsonObject> models, const QSharedPointer<AbstractModel> model)
+void ScatterWidget::setData(const QList<QJsonObject>& models, const QSharedPointer<AbstractModel> model)
 {
     m_models = models;
-    m_model = model->Clone();
+    m_model = model->Clone(false);
     setUi();
 }
 
@@ -186,41 +230,52 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     if (var_1 == -1 || var_2 == -1)
         return;
 
-    m_linked_models.clear();
+    m_linked_models_vector.clear();
     m_var_1 = var_1;
     m_var_2 = var_2;
     Waiter wait;
     view->Clear();
-    QColor color = ChartWrapper::ColorCode(m_model.data()->Color(1)).lighter(50);
+    view->Chart()->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
+
+    QColor color = ChartWrapper::ColorCode(m_model.data()->Color(0)).lighter(50);
     m_xy_series = new QtCharts::QScatterSeries;
 
-    QList<qreal> x, y;
-    for (int i = 0; i < m_models.size(); ++i) {
-
-        QJsonObject model;
-        //if(!m_models[i].contains("initial"))
-        model = m_models[i]; //["data"].toObject();
-        //else
-        //    model = m_models[i];
-
-        m_model.data()->ImportModel(model);
-        m_model.data()->Calculate();
-        //        qDebug() << model;
-        /*
-        if (m_converged && !m_model.data()->isConverged())
-            continue;
-        if (m_valid && m_model.data()->isCorrupt())
-            continue;
-*/
-        x << m_model.data()->AllParameter()[var_1];
-        y << m_model.data()->AllParameter()[var_2];
-        m_linked_models.insert(QPointF(m_model.data()->AllParameter()[var_1], m_model.data()->AllParameter()[var_2]), i);
+    QVector<CollectThread*> threads;
+    int thread_count = qApp->instance()->property("threads").toInt();
+    int step = m_models.size() / thread_count;
+    QThreadPool* threadpool = QThreadPool::globalInstance();
+    threadpool->setMaxThreadCount(thread_count);
+    m_linked_models_vector.clear();
+    int start = 0;
+    int end = 0;
+    for (int i = 0; i < thread_count; ++i) {
+        start = end;
+        if (i < thread_count - 1)
+            end += step + 1;
+        else
+            end = m_models.size();
+        CollectThread* thread = new CollectThread(start, end, m_var_1, m_var_2, m_models, m_valid, m_converged);
+        thread->setModel(m_model);
+        threadpool->start(thread);
+        threads << thread;
     }
-    // qDebug() << x << y;
+    while (threadpool->activeThreadCount())
+        QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+
+    QVector<qreal> x, y;
+    for (int i = 0; i < thread_count; ++i) {
+        x << threads[i]->X();
+        y << threads[i]->Y();
+        m_linked_models_vector << threads[i]->LinkedModels();
+        delete threads[i];
+    }
+
     if (x.size() > 1e4)
         m_xy_series->setUseOpenGL(true);
     for (int j = 0; j < x.size(); ++j)
         m_xy_series->append(QPointF(x[j], y[j]));
+
+    PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2Vector(x), ToolSet::QVector2Vector(y));
 
     connect(m_xy_series, &QtCharts::QXYSeries::clicked, this, &ScatterWidget::PointClicked);
 
@@ -229,14 +284,16 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     view->addSeries(m_xy_series, 0, color, m_names[var_1] + " vs. " + m_names[var_2]);
     view->setXAxis(m_names[var_1]);
     view->setYAxis(m_names[var_2]);
-    view->setTitle(QString("Scatter Plot %1 vs %2").arg(m_names[var_2]).arg(m_names[var_1]));
+    view->setTitle(QString("Scatter Plot %1 vs %2 (R%3 = %4)").arg(m_names[var_2]).arg(m_names[var_1]).arg(Unicode_Sup_2).arg(regression.R));
     m_xy_series->setColor(color);
     m_xy_series->setBorderColor(m_xy_series->color());
 }
 
 void ScatterWidget::PointClicked(const QPointF& point)
 {
-    QList<int> values = m_linked_models.values(point);
+    QList<int> values;
+    for (const auto item : qAsConst(m_linked_models_vector))
+        values = item.values(point);
     if (values.isEmpty())
         return;
 

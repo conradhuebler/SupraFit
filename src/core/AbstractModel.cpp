@@ -32,6 +32,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QPointF>
+#include <QtCore/QRandomGenerator>
 #include <QtCore/QUuid>
 
 #include <iostream>
@@ -100,6 +101,11 @@ AbstractModel::AbstractModel(AbstractModel* model)
 
 void AbstractModel::PrepareParameter(int global, int local)
 {
+    if (SFModel() != SupraFit::MetaModel) {
+        if (InputParameterSize() != IndependentModel()->columnCount())
+            throw - 2;
+    }
+
     QStringList header;
 
     if (!LocalTable())
@@ -117,6 +123,12 @@ void AbstractModel::PrepareParameter(int global, int local)
 
     private_d->m_enabled_global = QVector<int>(global, 0);
     private_d->m_enabled_local = QVector<int>(local, 0);
+
+    while (m_random_gobal.size() < GlobalParameterSize())
+        m_random_gobal << 10;
+
+    while (m_random_local.size() < LocalParameterSize())
+        m_random_local << 10;
 
     addGlobalParameter();
     DeclareSystemParameter();
@@ -144,6 +156,22 @@ AbstractModel::~AbstractModel()
 #ifdef _DEBUG
     std::cout << "Model to be deleted" << std::endl;
 #endif
+}
+
+void AbstractModel::InitialiseRandom()
+{
+    if (!qApp->instance()->property("InitialiseRandom").toBool())
+        return;
+
+    for (int i = 0; i < m_random_gobal.size(); ++i) {
+        (*GlobalTable())[i] = QRandomGenerator::global()->bounded(m_random_gobal[i]);
+    }
+    for (int i = 0; i < m_random_local.size(); ++i) {
+        for (int series = 0; series < LocalTable()->rowCount(); ++series) {
+            LocalTable()->data(i, series) = QRandomGenerator::global()->bounded(m_random_local[i]);
+        }
+    }
+    emit Recalculated();
 }
 
 QVector<qreal> AbstractModel::OptimizeParameters()
@@ -270,6 +298,7 @@ void AbstractModel::Calculate()
     m_covfit = 0;
     m_sum_squares = 0;
     m_sum_absolute = 0;
+    m_squared = 0;
 
     for (const QString& str : Charts())
         clearChart(str);
@@ -296,6 +325,19 @@ void AbstractModel::Calculate()
     m_stderror = qSqrt(m_variance) / qSqrt(m_used_variables);
     m_SEy = qSqrt(m_sum_squares / degree_freedom);
     m_chisquared = qSqrt(m_sum_squares / (degree_freedom - 1));
+
+    if (SFModel() != SupraFit::MetaModel) {
+        QVector<qreal> x, y;
+        for (int i = 0; i < DataPoints(); ++i)
+            for (int j = 0; j < SeriesCount(); ++j) {
+                if (DependentModel()->isChecked(j, i)) {
+                    x << DependentModel()->data(j, i);
+                    y << ModelTable()->data(j, i);
+                }
+            }
+        PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2Vector(x), ToolSet::QVector2Vector(y));
+        m_squared = regression.R;
+    }
     //FIXME sometimes ...
     m_covfit = 0; //CalculateCovarianceFit();
 
@@ -437,14 +479,10 @@ qreal AbstractModel::finv(qreal p)
     return m_f_value;
 }
 
-qreal AbstractModel::Error(qreal confidence, bool f)
+qreal AbstractModel::Error(qreal confidence)
 {
-    if (f) {
-        qreal f_value = finv(confidence / 100);
-        return SumofSquares() * (f_value * Parameter() / (Points() - Parameter()) + 1);
-    } else {
-        return SumofSquares() + SumofSquares() * confidence / double(100);
-    }
+    qreal f_value = finv(confidence / 100);
+    return SSE() * (f_value * Parameter() / (Points() - Parameter()) + 1);
 }
 
 void AbstractModel::SetSingleParameter(double value, int parameter)
@@ -778,7 +816,7 @@ bool AbstractModel::RemoveStatistic(SupraFit::Method type, int index)
 
 void AbstractModel::ParseFastConfidence(const QJsonObject& data)
 {
-    const QString str = "Fast Confidence";
+    const QString str = "Simplified Model Comparison";
     if (m_model_charts.keys().contains(str))
         m_model_charts[str]->m_series.clear();
     for (int i = 0; i < data.keys().size() - 1; ++i) {
@@ -786,7 +824,7 @@ void AbstractModel::ParseFastConfidence(const QJsonObject& data)
         QString name = block["name"].toString();
 
         QList<QPointF> points = ToolSet::String2Points(block["points"].toString());
-        addSeries(str, name, points, "value", "Sum of Squares (SSE)");
+        addSeries(str, name, points, "parameter value", "Sum of Squares (SSE)");
     }
     emit ChartUpdated(str);
 }
@@ -977,7 +1015,7 @@ void AbstractModel::DebugOptions() const
 
 QVector<qreal> AbstractModel::AllParameter() const
 {
-    QVector<qreal> parameter = GlobalTable()->toList();
+    QVector<qreal> parameter = GlobalTable()->toVector();
 
     for (int r = 0; r < LocalTable()->rowCount(); ++r) {
         for (int c = 0; c < LocalTable()->columnCount(); ++c) {
@@ -985,6 +1023,12 @@ QVector<qreal> AbstractModel::AllParameter() const
         }
     }
     return parameter;
+}
+
+void AbstractModel::setOptions(const QJsonObject& options)
+{
+    for (int index : getAllOptions())
+        setOption(index, options[QString::number(index)].toString());
 }
 
 bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
@@ -1009,13 +1053,11 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     }
 
     QList<int> active_signals;
-    QJsonObject optionObject;
 
     GlobalTable()->ImportTable(json["globalParameter"].toObject());
 
-    optionObject = topjson["options"].toObject();
-    for (int index : getAllOptions())
-        setOption(index, topjson["options"].toObject()[QString::number(index)].toString());
+    setOptions(topjson["options"].toObject());
+
     QStringList keys;
     QJsonObject statisticObject;
 
@@ -1145,9 +1187,8 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     } else
         GlobalTable()->ImportTable(json["globalParameter"].toObject());
 
-    optionObject = topjson["options"].toObject();
-    for (int index : getAllOptions())
-        setOption(index, topjson["options"].toObject()[QString::number(index)].toString());
+    setOptions(topjson["options"].toObject());
+
     QStringList keys;
     QJsonObject statisticObject;
 
@@ -1378,6 +1419,7 @@ AbstractModel& AbstractModel::operator=(const AbstractModel& other)
     m_chisquared = other.m_chisquared;
     m_covfit = other.m_covfit;
     m_used_variables = other.m_used_variables;
+    m_squared = other.m_squared;
 
     return *this;
 }
@@ -1407,6 +1449,7 @@ AbstractModel* AbstractModel::operator=(const AbstractModel* other)
     m_chisquared = other->m_chisquared;
     m_covfit = other->m_covfit;
     m_used_variables = other->m_used_variables;
+    m_squared = other->m_squared;
 
     return this;
 }
@@ -1478,7 +1521,6 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
 QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
     Q_UNUSED(forceAll)
-
     QString result;
     QJsonObject controller = object["controller"].toObject();
     QStringList keys = object.keys();
@@ -1487,6 +1529,21 @@ QString AbstractModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAl
         result += Print::TextFromConfidence(object[QString::number(i)].toObject(), controller);
     }
 
+    if (forceAll) {
+        result += "<p>Ordered List of all obtained values for each parameter.</p>\n";
+        for (int i = 0; i < keys.size() - 1; ++i) {
+            QJsonObject data = object[QString::number(i)].toObject();
+            QString const_name = data["name"].toString();
+            if (data["type"].toString() == "Local Parameter") {
+                if (data.contains("index")) {
+                    int index = data["index"].toString().split("|")[1].toInt();
+                    const_name += QString(" - Series %1").arg(index + 1);
+                }
+            }
+            QString vector = data["data"].toObject()["raw"].toString();
+            result += "-------------------------------------------------\n" + const_name + "\n" + vector + "\n-------------------------------------------------\n\n";
+        }
+    }
     return result;
 }
 
@@ -1581,7 +1638,7 @@ void AbstractModel::addSeries(const QString& str, const QString& name, const QLi
 qreal AbstractModel::ErrorfTestThreshold(qreal pvalue)
 {
     qreal f_value = finv(pvalue);
-    qreal error = SumofSquares();
+    qreal error = SSE();
     return error * (f_value * Parameter() / (Points() - Parameter()) + 1);
 }
 

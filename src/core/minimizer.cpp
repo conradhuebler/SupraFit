@@ -53,7 +53,8 @@ void NonLinearFitThread::run()
     m_steps = 0;
     m_converged = false;
     //quint64 t0 = QDateTime::currentMSecsSinceEpoch();
-    NonLinearFit();
+    if (!m_model->isSimulation())
+        NonLinearFit();
     //quint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
     m_running = false;
@@ -90,7 +91,8 @@ int NonLinearFitThread::NonLinearFit()
         m_model->setLockedParameter(locked);
 
     int iter = NonlinearFit(m_model, parameter);
-    m_sum_error = m_model->SumofSquares();
+    m_sum_error = m_model->SSE();
+    m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);
     m_best_intermediate = m_model->ExportModel(m_exc_statistics);
     m_converged = (iter < m_model.data()->getOptimizerConfig()["MaxLevMarInter"].toInt());

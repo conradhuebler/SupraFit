@@ -35,7 +35,7 @@ class SignalElement : public QGroupBox {
     Q_OBJECT
 
 public:
-    SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWrapper> wrapper, int no, QWidget* parent = 0);
+    SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWrapper> wrapper, int index, QWidget* parent = 0);
     ~SignalElement();
 
 public slots:
@@ -50,7 +50,7 @@ private:
     QPointer<ScatterSeries> m_data_series;
     QDoubleSpinBox* m_markerSize;
     QColor m_color;
-    int m_no;
+    int m_index;
     bool m_series_hidden = false;
 
 private slots:

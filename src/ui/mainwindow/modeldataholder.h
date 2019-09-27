@@ -96,14 +96,15 @@ public:
     void HideModelTools();
 
     const QAction* lastAction() const { return m_last_action; }
+    int Model() const { return m_model_choosen; }
 
 private:
     QWidget* m_buttons;
-    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_kinetics, m_add_itc, m_optimize, m_statistics, m_close_all, m_hide, m_analyse;
+    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_kinetics, m_add_itc, m_any_model, m_optimize, m_statistics, m_close_all, m_hide, m_analyse;
     QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_kinetcs_model, m_itc_fixed_model, m_itc_flex_model;
 
     QAction *m_script_action, *m_last_action;
-
+    int m_model_choosen = 404;
 private slots:
     void PrepareAddModel();
 

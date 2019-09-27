@@ -868,11 +868,18 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
     qreal lower = confidence["lower"].toDouble();
     qreal conf = confidence["error"].toDouble();
 
-    QString const_name;
+    QString const_name = result["name"].toString();
+    if (result["type"] == "Local Parameter") {
+        if (result.contains("index")) {
+            int index = result["index"].toString().split("|")[1].toInt();
+            const_name += QString(" - Series %1").arg(index + 1);
+        }
+    }
+
     //text += "<table><tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
     if (type == SupraFit::Method::CrossValidation || type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::ModelComparison || type == SupraFit::Method::WeakenedGridSearch || type == SupraFit::Method::FastConfidence) {
 
-        text += "<tr><td><b>" + result["name"].toString() + const_name + ":</b></td><td>" + Print::printDouble(value, 4) + " [+ " + Print::printDouble(upper - value, 4) + " /- " + Print::printDouble(value - lower, 4) + " ]</td></tr>";
+        text += "<tr><td><b>" + const_name + ":</b></td><td>" + Print::printDouble(value, 4) + " [+ " + Print::printDouble(upper - value, 4) + " /- " + Print::printDouble(value - lower, 4) + " ]</td></tr>";
         text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[ " + Print::printDouble(lower, 4) + " - " + Print::printDouble(upper, 4) + " ]</td></tr>";
     }
     if (type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::CrossValidation) {

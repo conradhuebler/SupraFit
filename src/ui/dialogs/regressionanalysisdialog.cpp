@@ -93,7 +93,7 @@ void RegressionAnalysisDialog::setUI()
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(new QLabel(tr("Number of functions")), 0, 0);
     layout->addWidget(m_functions, 0, 1);
-    layout->addWidget(m_method, 0, 2);
+    //layout->addWidget(m_method, 0, 2);
     layout->addWidget(m_fit, 0, 3);
     layout->addWidget(splitter, 1, 0, 1, 4);
     setLayout(layout);
@@ -104,11 +104,14 @@ void RegressionAnalysisDialog::setUI()
 
 void RegressionAnalysisDialog::UpdatePlots()
 {
+    if (m_data.data()->isSimulation())
+        return;
+
     m_chart->Clear();
     m_output->clear();
     m_series = m_wrapper.data()->CloneSeries();
     for (int i = 0; i < m_series.size(); ++i) {
-        m_chart->addSeries(m_series[i], i, m_series[i]->color(), Print::printDouble(i + 1));
+        m_chart->addSeries(m_series[i], i, m_series[i]->color());
         m_series[i]->setBorderColor(m_series[i]->color());
         m_series[i]->setMarkerSize(4);
     }
@@ -145,7 +148,7 @@ void RegressionAnalysisDialog::TestPeaks()
         series->setBorderColor(m_series[i]->color());
         for (unsigned int i = 0; i < corrected.size(); ++i)
             series->append(corrected.X(i), corrected.Y(i));
-        m_chart->addSeries(series, i, m_series[i]->color());
+        m_chart->addSeries(series, i, m_series[i]->color(), series->name());
         std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&corrected, 0, 0.25);
         corrected.InvertSgn();
         std::vector<PeakPick::Peak> peaks2 = PeakPick::PickPeaks(&corrected, 0, 1);

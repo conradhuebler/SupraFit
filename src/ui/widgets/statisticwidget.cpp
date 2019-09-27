@@ -20,13 +20,15 @@
 
 #include "src/core/models.h"
 
-#include "statisticwidget.h"
+#include "src/ui/widgets/textwidget.h"
+
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QTextEdit>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
+
+#include "statisticwidget.h"
 
 StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget* parent)
     : QWidget(parent)
@@ -34,8 +36,7 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWid
 {
 
     QVBoxLayout* m_layout = new QVBoxLayout;
-    m_overview = new QTextEdit;
-    m_overview->setReadOnly(true);
+    m_overview = new TextWidget;
     QPalette p = m_overview->palette();
 
     p.setColor(QPalette::Active, QPalette::Base, Qt::lightGray);
@@ -66,8 +67,9 @@ void StatisticWidget::Update()
     overview += "<tr><td>Parameter fitted:</t><td><b>" + Print::printDouble(m_model.data()->Parameter()) + "</b></td></tr>\n";
     overview += "<tr><td>Number of used Points:</t><td><b>" + Print::printDouble(m_model.data()->Points()) + "</b></td></tr>\n";
     overview += "<tr><td>Degrees of Freedom:</t><td><b>" + Print::printDouble(m_model.data()->Points() - m_model.data()->Parameter()) + "</b></td></tr>\n";
-    overview += "<tr><td>Error: (squared / absolute)</td><td><b>" + Print::printDouble(m_model.data()->SumofSquares()) + "/" + Print::printDouble(m_model.data()->SumofAbsolute()) + "</b></td></tr>\n";
+    overview += "<tr><td>Error: (squared / absolute)</td><td><b>" + Print::printDouble(m_model.data()->SSE()) + "/" + Print::printDouble(m_model.data()->SAE()) + "</b></td></tr>\n";
     overview += "<tr><td>Error Threshold (f-Test)</td><td><b>" + Print::printDouble(m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
+    overview += "<tr><td>R<sup>2</sup></td><td><b>" + Print::printDouble(m_model.data()->RSquared()) + "</b></td></tr>\n";
     overview += "<tr><td>f-Value</td><td><b>" + Print::printDouble(m_model.data()->finv(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
     overview += "<tr><td>Mean Error in Model:</td><td><b> " + Print::printDouble(m_model.data()->MeanError()) + "</b></td></tr>\n";
     overview += "<tr><td>Variance of Error:</td><td><b>" + Print::printDouble(m_model.data()->Variance()) + "</b></td></tr>\n";

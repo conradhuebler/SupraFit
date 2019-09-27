@@ -38,6 +38,7 @@ public:
 public slots:
     void Message(const QString& str);
     void Warning(const QString& str);
+    void Info(const QString& str);
 
 private:
     QTextEdit* m_message;
@@ -50,4 +51,5 @@ private slots:
 signals:
     void Attention();
     void Presence();
+    void UiInfo();
 };
