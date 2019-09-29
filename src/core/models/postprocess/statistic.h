@@ -21,7 +21,7 @@
 
 #include <QtCore/QJsonObject>
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 namespace Statistic {
 

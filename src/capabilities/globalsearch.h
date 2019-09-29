@@ -22,7 +22,7 @@
 #include "src/capabilities/abstractsearchclass.h"
 #include "src/capabilities/montecarlostatistics.h"
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include <QtCore/QList>
 #include <QtCore/QObject>

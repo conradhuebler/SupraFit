@@ -21,7 +21,7 @@
 
 #include <boxwhisker.h>
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include <fisher/fisher_dist.h>
 #include <libpeakpick/peakpick.h>

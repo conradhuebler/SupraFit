@@ -19,14 +19,14 @@
 
 #pragma once
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
 #include "src/global.h"
 
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-#include "src/core/dataclass.h"
+#include "src/core/models/dataclass.h"
 
 class AbstractItcModel : public AbstractModel {
     Q_OBJECT
@@ -62,8 +62,11 @@ public:
     inline qreal InitialGuestConcentration(int i) const { return m_c0->data(2, i); }
     QString Model2Text_Private() const override;
 
-    virtual QString SpeciesName(int i) const { Q_UNUSED(i)
-        return QString(); }
+    virtual QString SpeciesName(int i) const
+    {
+        Q_UNUSED(i)
+        return QString();
+    }
 
     inline void setConcentrations(const QPointer<DataTable> table)
     {
@@ -126,7 +129,6 @@ public:
     virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
 
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
-
 
     virtual QString ParameterComment(int parameter) const = 0;
 

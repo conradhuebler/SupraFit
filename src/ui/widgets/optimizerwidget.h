@@ -22,7 +22,7 @@
 
 #include "src/global_config.h"
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
 
 #include <QtCore/QJsonObject>
 

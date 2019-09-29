@@ -21,11 +21,12 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 
+#include "src/core/models/dataclass.h"
+#include "src/core/models/models.h"
+
 #include "src/core/analyse.h"
-#include "src/core/dataclass.h"
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
-#include "src/core/models.h"
 #include "src/core/toolset.h"
 
 #include "suprafit_cli.h"

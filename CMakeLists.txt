@@ -135,122 +135,116 @@ configure_file(
 # include the charts, which where formerly part of SupraFit
 add_subdirectory(external/CuteChart)
 
-set(libmath_SRC
-                src/core/equil.cpp
-                src/core/optimizer/eigen_levenberg.cpp
-                src/core/libmath.cpp
-                src/core/minimizer.cpp
+set(core_SRC
+                    src/core/equil.cpp
+                    src/core/optimizer/eigen_levenberg.cpp
+                    src/core/libmath.cpp
+                    src/core/minimizer.cpp
+                    src/capabilities/resampleanalyse.cpp
+                    src/capabilities/abstractsearchclass.cpp
+                    src/capabilities/modelcomparison.cpp
+                    src/capabilities/montecarlostatistics.cpp
+                    src/capabilities/globalsearch.cpp
+                    src/capabilities/weakenedgridsearch.cpp
+                    src/capabilities/jobmanager.cpp
+                    src/core/analyse.cpp
+                    src/core/jsonhandler.cpp
+                    src/core/filehandler.cpp
+                    src/core/toolset.cpp
+                    src/core/instance.h
+                    src/global.cpp
 )
 
 
-add_library(math ${libmath_SRC})
+add_library(core ${core_SRC})
 
-target_link_libraries(math Qt5::Core)
+target_link_libraries(core Qt5::Core)
 
 #add_subdirectory(src/core/models/misc)
 
 set(models_SRC
-                src/core/dataclass.cpp
-                src/core/AbstractModel.cpp
-                src/core/AbstractItcModel.cpp
-                src/core/AbstractTitrationModel.cpp
-                src/core/models/meta_model.cpp
-                src/core/models/itc/blank.cpp
-                src/core/models/itc/itc_1_1_Model.cpp
-                src/core/models/itc/itc_2_1_Model.cpp
-                src/core/models/itc/itc_1_2_Model.cpp
-                src/core/models/itc/itc_2_2_Model.cpp
-                src/core/models/itc/itc_n_1_1_Model.cpp
-                src/core/models/itc/itc_n_1_2_Model.cpp
-                src/core/models/fluorescence/fl_1_1_Model.cpp
-                src/core/models/fluorescence/fl_1_1_1_2_Model.cpp
-                src/core/models/fluorescence/fl_2_1_1_1_Model.cpp
-                src/core/models/fluorescence/fl_2_1_1_1_1_2_Model.cpp
-                src/core/models/titrations/1_1_Model.cpp
-                src/core/models/titrations/2_1_1_1_Model.cpp
-                src/core/models/titrations/1_1_1_2_Model.cpp
-                src/core/models/titrations/2_1_1_1_1_2_Model.cpp
-                src/core/models/titrations/ScriptModel.cpp
-                src/core/models/kinetics/mm_model.cpp
-                src/core/models/kinetics/monomolecularmodel.cpp
-                src/core/models/postprocess/statistic.cpp
-                src/core/models/postprocess/thermo.cpp
-                src/core/models/misc/indep_quadrat.cpp
-                src/core/models/misc/dep_any.cpp
-)
+    src/core/models/dataclass.cpp
+    src/core/models/AbstractModel.cpp
+    src/core/models/AbstractItcModel.cpp
+    src/core/models/AbstractTitrationModel.cpp
+    src/core/models/meta_model.cpp
+    src/core/models/itc/blank.cpp
+    src/core/models/itc/itc_1_1_Model.cpp
+    src/core/models/itc/itc_2_1_Model.cpp
+    src/core/models/itc/itc_1_2_Model.cpp
+    src/core/models/itc/itc_2_2_Model.cpp
+    src/core/models/itc/itc_n_1_1_Model.cpp
+    src/core/models/itc/itc_n_1_2_Model.cpp
+    src/core/models/fluorescence/fl_1_1_Model.cpp
+    src/core/models/fluorescence/fl_1_1_1_2_Model.cpp
+    src/core/models/fluorescence/fl_2_1_1_1_Model.cpp
+    src/core/models/fluorescence/fl_2_1_1_1_1_2_Model.cpp
+    src/core/models/titrations/1_1_Model.cpp
+    src/core/models/titrations/2_1_1_1_Model.cpp
+    src/core/models/titrations/1_1_1_2_Model.cpp
+    src/core/models/titrations/2_1_1_1_1_2_Model.cpp
+    src/core/models/titrations/ScriptModel.cpp
+    src/core/models/kinetics/mm_model.cpp
+    src/core/models/kinetics/monomolecularmodel.cpp
+    src/core/models/postprocess/statistic.cpp
+    src/core/models/postprocess/thermo.cpp
+    src/core/models/misc/indep_quadrat.cpp
+    src/core/models/misc/dep_any.cpp
+    )
 
 add_library(models ${models_SRC})
 
 target_link_libraries(models Qt5::Core)
-set(utils_SRC
-                src/capabilities/resampleanalyse.cpp
-                src/capabilities/abstractsearchclass.cpp
-                src/capabilities/modelcomparison.cpp
-                src/capabilities/montecarlostatistics.cpp
-                src/capabilities/globalsearch.cpp
-                src/capabilities/weakenedgridsearch.cpp
-                src/capabilities/jobmanager.cpp
-                src/core/analyse.cpp
-                src/core/jsonhandler.cpp
-                src/core/filehandler.cpp
-                src/core/toolset.cpp
-                src/global.cpp
-)
-
-add_library(utils ${utils_SRC})
-
-target_link_libraries(utils Qt5::Core)
 
 set(suprafit_SRCS
-                src/ui/guitools/chartwrapper.cpp
-                src/ui/guitools/instance.h
-                src/ui/guitools/mime.h
-                src/ui/dialogs/regressionanalysisdialog.cpp
-                src/ui/dialogs/statisticdialog.cpp
-                src/ui/dialogs/modaldialog.cpp
-                src/ui/dialogs/advancedsearch.cpp
-                src/ui/dialogs/importdata.cpp
-                src/ui/dialogs/configdialog.cpp
-                src/ui/dialogs/comparedialog.cpp
-                src/ui/dialogs/resultsdialog.cpp
-                src/ui/dialogs/thermogram.cpp
-                src/ui/widgets/metamodelparameter.cpp
-                src/ui/widgets/parameterwidget.cpp
-                src/ui/widgets/optimizerwidget.cpp
-                src/ui/widgets/results/scatterwidget.cpp
-                src/ui/widgets/results/searchresultwidget.cpp
-                src/ui/widgets/results/mcresultswidget.cpp
-                src/ui/widgets/results/resultswidget.cpp
-                src/ui/widgets/optionswidget.cpp
-                src/ui/widgets/systemparameterwidget.cpp
-                src/ui/widgets/modelactions.cpp
-                src/ui/widgets/modelchart.cpp
-                src/ui/widgets/modelelement.cpp
-                src/ui/widgets/signalelement.cpp
-                src/ui/widgets/statisticwidget.cpp
-                src/ui/widgets/messagedock.cpp
-                src/ui/widgets/extwidget.cpp
-                src/ui/widgets/buttons/spinbox.h
-                src/ui/widgets/buttons/scientificbox.h
-                src/ui/widgets/buttons/hovercheckbox.h
-                src/ui/widgets/thermogramwidget.cpp
-                src/ui/widgets/textwidget.cpp
-                src/ui/mainwindow/chartwidget.cpp
-                src/ui/mainwindow/modeldataholder.cpp
-                src/ui/mainwindow/datawidget.cpp
-                src/ui/mainwindow/metamodelwidget.cpp
-                src/ui/mainwindow/modelwidget.cpp
-                src/ui/mainwindow/mainwindow.cpp
-                src/ui/mainwindow/suprafitgui.cpp
-                src/main.cpp)
+    src/ui/guitools/chartwrapper.cpp
+    src/ui/guitools/guitools.h
+    src/ui/guitools/mime.h
+    src/ui/dialogs/regressionanalysisdialog.cpp
+    src/ui/dialogs/statisticdialog.cpp
+    src/ui/dialogs/modaldialog.cpp
+    src/ui/dialogs/advancedsearch.cpp
+    src/ui/dialogs/importdata.cpp
+    src/ui/dialogs/configdialog.cpp
+    src/ui/dialogs/comparedialog.cpp
+    src/ui/dialogs/resultsdialog.cpp
+    src/ui/dialogs/thermogram.cpp
+    src/ui/widgets/metamodelparameter.cpp
+    src/ui/widgets/parameterwidget.cpp
+    src/ui/widgets/optimizerwidget.cpp
+    src/ui/widgets/results/scatterwidget.cpp
+    src/ui/widgets/results/searchresultwidget.cpp
+    src/ui/widgets/results/mcresultswidget.cpp
+    src/ui/widgets/results/resultswidget.cpp
+    src/ui/widgets/optionswidget.cpp
+    src/ui/widgets/systemparameterwidget.cpp
+    src/ui/widgets/modelactions.cpp
+    src/ui/widgets/modelchart.cpp
+    src/ui/widgets/modelelement.cpp
+    src/ui/widgets/signalelement.cpp
+    src/ui/widgets/statisticwidget.cpp
+    src/ui/widgets/messagedock.cpp
+    src/ui/widgets/extwidget.cpp
+    src/ui/widgets/buttons/spinbox.h
+    src/ui/widgets/buttons/scientificbox.h
+    src/ui/widgets/buttons/hovercheckbox.h
+    src/ui/widgets/thermogramwidget.cpp
+    src/ui/widgets/textwidget.cpp
+    src/ui/mainwindow/chartwidget.cpp
+    src/ui/mainwindow/modeldataholder.cpp
+    src/ui/mainwindow/datawidget.cpp
+    src/ui/mainwindow/metamodelwidget.cpp
+    src/ui/mainwindow/modelwidget.cpp
+    src/ui/mainwindow/mainwindow.cpp
+    src/ui/mainwindow/suprafitgui.cpp
+    src/ui/main.cpp
+)
 
 qt5_add_resources(suprafit_SRCS files.qrc)
 
 if(noto_font)
     qt5_add_resources(suprafit_SRCS fonts.qrc)
 endif(noto_font)
-
-target_link_libraries(utils Qt5::Core)
 
 # generate proper GUI program on specified platform
 if(WIN32) # Check if we are on Windows
@@ -295,7 +289,6 @@ set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir}
 
 
 set(suprafit_cli_SRCS
-                src/core/minimizer.cpp # whatsoever ...
                 src/client/suprafit_cli.cpp
                 src/client/analyser.cpp
                 src/client/simulator.cpp
@@ -307,13 +300,13 @@ add_executable(suprafit_cli ${suprafit_cli_SRCS})
 set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 
-set_property(TARGET math models utils PROPERTY CXX_STANDARD 14)
+set_property(TARGET core models  PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
 
-target_link_libraries(suprafit models math utils cutechart)
+target_link_libraries(suprafit models core cutechart)
 
-target_link_libraries(suprafit_cli models math utils)
+target_link_libraries(suprafit_cli models core)
 
 if(testing)
     enable_testing()
@@ -325,13 +318,13 @@ if(testing)
     #set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
     set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
     target_link_libraries(supratest Qt5::Core Qt5::Test)
-    target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
+    target_link_libraries(supratest models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)
 
 
 if(UNIX)
     target_link_libraries(suprafit pthread dl)
-    target_link_libraries(suprafit_cli pthread dl)
+    #target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
 # Do platform specific post target stuff

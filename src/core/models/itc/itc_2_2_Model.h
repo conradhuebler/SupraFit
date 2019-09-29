@@ -24,8 +24,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-#include "src/core/AbstractItcModel.h"
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractItcModel.h"
+#include "src/core/models/dataclass.h"
 
 class IItoI_ItoI_ItoII_Solver;
 class QThreadPool;

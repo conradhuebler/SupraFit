@@ -19,7 +19,8 @@
 
 #include "src/capabilities/jobmanager.h"
 
-#include "src/core/models.h"
+#include "src/core/models/AbstractModel.h"
+
 #include "src/core/toolset.h"
 
 #include "src/ui/guitools/waiter.h"

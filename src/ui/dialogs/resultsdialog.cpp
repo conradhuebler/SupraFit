@@ -30,10 +30,11 @@
 #include "src/global.h"
 
 #include "src/core/jsonhandler.h"
-#include "src/core/models.h"
+
+#include "src/core/models/models.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 
 #include "src/ui/widgets/results/resultswidget.h"
 

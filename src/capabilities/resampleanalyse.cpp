@@ -23,7 +23,8 @@
 #include <QtCore/QMutexLocker>
 #include <QtCore/QRandomGenerator>
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/models.h"
+
 #include "src/core/libmath.h"
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"

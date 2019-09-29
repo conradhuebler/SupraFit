@@ -19,15 +19,15 @@
 
 #pragma once
 
-#include "src/global.h"
-
-#include "src/core/AbstractModel.h"
-
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>
 #include <QtCore/QSharedPointer>
 #include <QtCore/QThreadPool>
+
+#include "src/global.h"
+
+#include "src/core/models/AbstractModel.h"
 
 class AbstractModel;
 

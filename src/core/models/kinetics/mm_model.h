@@ -19,13 +19,13 @@
 
 #pragma once
 
-#include "src/core/AbstractModel.h"
 #include "src/global.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractModel.h"
+#include "src/core/models/dataclass.h"
 
 class Michaelis_Menten_Model : public AbstractModel {
     Q_OBJECT

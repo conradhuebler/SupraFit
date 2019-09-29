@@ -17,7 +17,7 @@
  *
  */
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QFile>

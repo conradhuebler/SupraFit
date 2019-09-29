@@ -20,9 +20,10 @@
 #include "src/core/models/postprocess/statistic.h"
 #include "src/core/models/postprocess/thermo.h"
 
-#include "libmath.h"
-#include "src/core/dataclass.h"
+#include "src/core/libmath.h"
 #include "src/core/toolset.h"
+
+#include "src/core/models/dataclass.h"
 
 #include <QtCore/QCollator>
 #include <QtCore/QDateTime>
@@ -180,7 +181,7 @@ QString AbstractTitrationModel::ModelInfo() const
 
     for (int i = 0; i < GlobalParameterSize(); ++i) {
         result += tr("<p>%1</p>").arg(ParameterComment(i));
-         result += Thermo::FormatThermo(GlobalParameter(i), getT());
+        result += Thermo::FormatThermo(GlobalParameter(i), getT());
     }
 
     return result;

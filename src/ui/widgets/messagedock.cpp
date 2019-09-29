@@ -30,7 +30,7 @@
 #include "src/global.h"
 #include "src/version.h"
 
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 
 #include "messagedock.h"
 

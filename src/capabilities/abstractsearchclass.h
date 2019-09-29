@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
 
 #include <QtCore/QHash>
 #include <QtCore/QObject>

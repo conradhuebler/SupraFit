@@ -21,7 +21,7 @@
 
 #include "abstractsearchclass.h"
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>

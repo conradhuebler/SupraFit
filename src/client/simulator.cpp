@@ -32,11 +32,12 @@
 #include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/analyse.h"
-#include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
-#include "src/core/models.h"
 #include "src/core/toolset.h"
+
+#include "src/core/models/dataclass.h"
+#include "src/core/models/models.h"
 
 #include "simulator.h"
 

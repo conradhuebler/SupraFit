@@ -26,7 +26,7 @@
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QWidget>
 
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 
 class MessageDock : public QWidget {
     Q_OBJECT

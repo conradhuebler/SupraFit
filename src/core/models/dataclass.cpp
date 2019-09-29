@@ -791,8 +791,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
 DataClassPrivate::~DataClassPrivate()
 {
     --m_ref_counter;
-    if(m_ref_counter < 1)
-    {
+    if (m_ref_counter < 1) {
         if (m_independent_model)
             delete m_independent_model;
         if (m_dependent_model)
@@ -907,8 +906,6 @@ void DataClass::SwitchConentrations()
         d->m_independent_model->setHeaderData(1, Qt::Horizontal, ("Host (B)"), Qt::DisplayRole);
     }
 }
-
-
 
 const QJsonObject DataClass::ExportData() const
 {

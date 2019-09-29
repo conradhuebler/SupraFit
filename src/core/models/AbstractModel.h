@@ -67,8 +67,6 @@ public:
 
     virtual ~AbstractModelPrivate()
     {
-
-
     }
     // TODO Maybe move this to dataclass sometimes - to have different plot types already without model more consistently defined
     /* Model Option such as Cooperativity can be defined */
@@ -663,11 +661,18 @@ public:
     virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const;
 
     /*! \brief Calculate standard type of grid search statistics */
-    virtual QVector<QJsonObject> PostGridSearch(QList<QJsonObject>& models) const { Q_UNUSED(models)
-        return QVector<QJsonObject>(); }
+    virtual QVector<QJsonObject> PostGridSearch(QList<QJsonObject>& models) const
+    {
+        Q_UNUSED(models)
+        return QVector<QJsonObject>();
+    }
 
-    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const { Q_UNUSED(datapoint)
-        Q_UNUSED(series) return QVector<qreal>(); }
+    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const
+    {
+        Q_UNUSED(datapoint)
+        Q_UNUSED(series)
+        return QVector<qreal>();
+    }
 
     inline virtual int ChildrenSize() const override { return 0; }
 
@@ -701,8 +706,11 @@ public slots:
     void Calculate();
     virtual inline void UpdateParameter() {}
 
-    virtual inline void UpdateOption(int index, const QString& str) { Q_UNUSED(index)
-        Q_UNUSED(str) }
+    virtual inline void UpdateOption(int index, const QString& str)
+    {
+        Q_UNUSED(index)
+        Q_UNUSED(str)
+    }
 
 private:
     QSharedDataPointer<AbstractModelPrivate> private_d;

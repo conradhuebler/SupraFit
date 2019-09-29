@@ -42,7 +42,7 @@
 #include "libpeakpick/peakpick.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 #include "src/ui/widgets/thermogramwidget.h"
 
 #include "src/core/toolset.h"

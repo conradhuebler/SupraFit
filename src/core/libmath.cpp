@@ -31,7 +31,7 @@
 #include <libpeakpick/nxlinregress.h>
 #include <libpeakpick/peakpick.h>
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/models.h"
 
 #include "libmath.h"
 

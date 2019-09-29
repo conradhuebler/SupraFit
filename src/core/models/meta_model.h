@@ -25,8 +25,8 @@
 #include <QtCore/QPair>
 #include <QtCore/QVector>
 
-#include "src/core/AbstractModel.h"
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractModel.h"
+#include "src/core/models/dataclass.h"
 
 typedef QPair<qreal, QVector<QVector<int>>> MMParameter;
 

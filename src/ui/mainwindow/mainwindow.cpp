@@ -20,14 +20,14 @@
 #include "src/global.h"
 #include "src/version.h"
 
-#include "src/core/AbstractModel.h"
-#include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/models/AbstractModel.h"
+#include "src/core/models/dataclass.h"
 
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
 
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 
 #include "src/ui/mainwindow/chartwidget.h"
 #include "src/ui/mainwindow/datawidget.h"

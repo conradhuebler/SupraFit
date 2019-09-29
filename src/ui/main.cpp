@@ -17,7 +17,7 @@
  * 
  */
 
-#include "ui/mainwindow/suprafitgui.h"
+#include "mainwindow/suprafitgui.h"
 
 #include "src/global.h"
 #include "src/global_config.h"

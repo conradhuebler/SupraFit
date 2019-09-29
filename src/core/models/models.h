@@ -2,7 +2,7 @@
 
 #include <QtCore/QSharedPointer>
 
-#include "src/core/dataclass.h"
+#include "src/core/models/dataclass.h"
 #include "src/global.h"
 
 /* Pure Abstract Models */
@@ -11,35 +11,35 @@
 #include "AbstractTitrationModel.h"
 
 /* Meta Model - holds different models */
-#include "models/meta_model.h"
+#include "meta_model.h"
 
 /* ITC Models */
-#include "models/itc/blank.h"
-#include "models/itc/itc_1_1_Model.h"
-#include "models/itc/itc_1_2_Model.h"
-#include "models/itc/itc_2_1_Model.h"
-#include "models/itc/itc_2_2_Model.h"
-#include "models/itc/itc_n_1_1_Model.h"
-#include "models/itc/itc_n_1_2_Model.h"
+#include "itc/blank.h"
+#include "itc/itc_1_1_Model.h"
+#include "itc/itc_1_2_Model.h"
+#include "itc/itc_2_1_Model.h"
+#include "itc/itc_2_2_Model.h"
+#include "itc/itc_n_1_1_Model.h"
+#include "itc/itc_n_1_2_Model.h"
 /* Fluorescence Models */
-#include "models/fluorescence/fl_1_1_1_2_Model.h"
-#include "models/fluorescence/fl_1_1_Model.h"
-#include "models/fluorescence/fl_2_1_1_1_1_2_Model.h"
-#include "models/fluorescence/fl_2_1_1_1_Model.h"
+#include "fluorescence/fl_1_1_1_2_Model.h"
+#include "fluorescence/fl_1_1_Model.h"
+#include "fluorescence/fl_2_1_1_1_1_2_Model.h"
+#include "fluorescence/fl_2_1_1_1_Model.h"
 
 /* NMR and UV/VIS titration */
-#include "models/titrations/1_1_1_2_Model.h"
-#include "models/titrations/1_1_Model.h"
-#include "models/titrations/2_1_1_1_1_2_Model.h"
-#include "models/titrations/2_1_1_1_Model.h"
+#include "titrations/1_1_1_2_Model.h"
+#include "titrations/1_1_Model.h"
+#include "titrations/2_1_1_1_1_2_Model.h"
+#include "titrations/2_1_1_1_Model.h"
 
-#include "models/titrations/ScriptModel.h"
+#include "titrations/ScriptModel.h"
 /* Kinetic Models */
-#include "models/kinetics/mm_model.h"
-#include "models/kinetics/monomolecularmodel.h"
+#include "kinetics/mm_model.h"
+#include "kinetics/monomolecularmodel.h"
 
 /* Any other models */
-#include "models/misc/models.h"
+#include "misc/models.h"
 
 inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> data)
 {

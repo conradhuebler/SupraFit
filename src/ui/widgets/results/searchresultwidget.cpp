@@ -21,10 +21,11 @@
 
 #include "src/capabilities/globalsearch.h"
 #include "src/core/jsonhandler.h"
-#include "src/core/models.h"
 #include "src/core/toolset.h"
 
-#include "src/ui/guitools/instance.h"
+#include "src/core/models/models.h"
+
+#include "src/ui/guitools/guitools.h"
 
 #include "src/ui/widgets/buttons/scientificbox.h"
 #include "src/ui/widgets/results/scatterwidget.h"

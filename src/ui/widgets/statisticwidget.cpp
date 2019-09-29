@@ -18,7 +18,7 @@
  */
 #include "src/core/toolset.h"
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include "src/ui/widgets/textwidget.h"
 

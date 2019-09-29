@@ -20,7 +20,8 @@
 #include "abstractsearchclass.h"
 #include "globalsearch.h"
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
+
 #include "src/core/toolset.h"
 
 #include <QtCore/QCoreApplication>

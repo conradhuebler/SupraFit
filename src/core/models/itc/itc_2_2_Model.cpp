@@ -18,7 +18,8 @@
  */
 #include "src/core/models/postprocess/statistic.h"
 
-#include "src/core/AbstractItcModel.h"
+#include "src/core/models/AbstractItcModel.h"
+
 #include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
@@ -42,12 +43,11 @@
 itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
     : AbstractItcModel(data)
 {
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+
     m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
     m_random_local[0][1] = m_random_local[0][0];
     m_random_local[0][2] = m_random_local[0][0];
-
-    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
-
     m_threadpool = new QThreadPool(this);
     for (int i = 0; i < DataPoints(); ++i)
         m_solvers << new IItoI_ItoI_ItoII_Solver();
@@ -56,11 +56,12 @@ itc_IItoII_Model::itc_IItoII_Model(DataClass* data)
 itc_IItoII_Model::itc_IItoII_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+
     m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
     m_random_local[0][1] = m_random_local[0][0];
     m_random_local[0][2] = m_random_local[0][0];
 
-    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
     m_threadpool = new QThreadPool(this);
     for (int i = 0; i < DataPoints(); ++i)
         m_solvers << new IItoI_ItoI_ItoII_Solver();

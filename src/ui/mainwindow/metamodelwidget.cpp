@@ -22,7 +22,8 @@
 
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
-#include "src/core/models.h"
+
+#include "src/core/models/models.h"
 
 #include "src/ui/dialogs/advancedsearch.h"
 #include "src/ui/dialogs/configdialog.h"

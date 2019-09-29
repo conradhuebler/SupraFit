@@ -23,7 +23,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 class DataClass;
 

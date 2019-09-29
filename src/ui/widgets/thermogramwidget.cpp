@@ -49,11 +49,13 @@
 #include "libpeakpick/peakpick.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 #include "src/ui/guitools/waiter.h"
 
+#include "src/core/instance.h"
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
+
 #include "src/global.h"
 
 #include "thermogramwidget.h"

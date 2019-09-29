@@ -17,7 +17,8 @@
  * 
  */
 
-#include "src/core/dataclass.h"
+#include "src/core/models/dataclass.h"
+
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
 #include "src/global.h"

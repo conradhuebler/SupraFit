@@ -24,8 +24,9 @@
 
 #include "src/capabilities/jobmanager.h"
 
-#include "src/core/AbstractModel.h"
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractModel.h"
+#include "src/core/models/dataclass.h"
+
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"

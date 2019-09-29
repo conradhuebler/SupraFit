@@ -17,9 +17,10 @@
  *
  */
 
-#include "src/core/dataclass.h"
 #include "src/core/jsonhandler.h"
-#include "src/core/models.h"
+
+#include "src/core/models/dataclass.h"
+#include "src/core/models/models.h"
 
 #include <QtCore/QDebug>
 #include <QtCore/QFile>

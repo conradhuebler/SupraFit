@@ -28,12 +28,12 @@
 
 #include "src/core/analyse.h"
 #include "src/core/jsonhandler.h"
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include "src/ui/dialogs/comparedialog.h"
 #include "src/ui/dialogs/importdata.h"
 #include "src/ui/dialogs/statisticdialog.h"
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 #include "src/ui/mainwindow/datawidget.h"
 #include "src/ui/mainwindow/metamodelwidget.h"
 #include "src/ui/mainwindow/modelwidget.h"

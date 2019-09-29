@@ -24,8 +24,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-#include "src/core/AbstractModel.h"
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractModel.h"
+#include "src/core/models/dataclass.h"
 
 class ItoI_Model : public AbstractTitrationModel {
     Q_OBJECT

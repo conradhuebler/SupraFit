@@ -19,7 +19,8 @@
 #include "src/core/models/postprocess/statistic.h"
 #include "src/core/models/postprocess/thermo.h"
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
+
 #include "src/core/libmath.h"
 
 #include <QDebug>
@@ -37,7 +38,6 @@
 #include <libpeakpick/peakpick.h>
 
 #include "AbstractItcModel.h"
-
 
 AbstractItcModel::AbstractItcModel(DataClass* data)
     : AbstractModel(data)
@@ -374,9 +374,10 @@ QString AbstractItcModel::RandomInput(const QVector<double>& indep, const QVecto
     return input;
 }
 
-void AbstractItcModel::UpdateOption(int index, const QString& str){
+void AbstractItcModel::UpdateOption(int index, const QString& str)
+{
     Q_UNUSED(index)
-        Q_UNUSED(str)
+    Q_UNUSED(str)
     /*if (index == Reservoir)
         Concentration();*/
 }

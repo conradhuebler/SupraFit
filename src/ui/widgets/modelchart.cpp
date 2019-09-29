@@ -19,10 +19,12 @@
 
 #include <charts.h>
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
+
+#include "src/core/instance.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 
 #include <QtCore/QWeakPointer>
 

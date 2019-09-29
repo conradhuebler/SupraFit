@@ -26,8 +26,8 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QVector>
 
-#include "src/core/AbstractTitrationModel.h"
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractTitrationModel.h"
+#include "src/core/models/dataclass.h"
 
 typedef Eigen::VectorXd Vector;
 

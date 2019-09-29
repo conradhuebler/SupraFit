@@ -21,7 +21,8 @@
 
 #include "src/capabilities/globalsearch.h"
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
+
 #include "src/global.h"
 
 #include <QtCore/QMutex>

@@ -21,8 +21,9 @@
 
 #include "src/core/jsonhandler.h"
 #include "src/core/minimizer.h"
-#include "src/core/models.h"
 #include "src/core/toolset.h"
+
+#include "src/core/models/models.h"
 
 #include <QtCore/QCollator>
 #include <QtCore/QCoreApplication>

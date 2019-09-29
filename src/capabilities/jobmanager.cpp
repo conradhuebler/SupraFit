@@ -23,7 +23,7 @@
 #include "resampleanalyse.h"
 #include "weakenedgridsearch.h"
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include "src/global.h"
 

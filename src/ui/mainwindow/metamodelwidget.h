@@ -23,7 +23,7 @@
 
 #include <QtWidgets/QWidget>
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 class JobManager;
 class MetaModelParameter;

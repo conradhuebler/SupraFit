@@ -18,7 +18,8 @@
  */
 #include "src/core/models/postprocess/statistic.h"
 
-#include "src/core/AbstractItcModel.h"
+#include "src/core/models/AbstractItcModel.h"
+
 #include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"

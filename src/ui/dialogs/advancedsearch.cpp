@@ -19,7 +19,8 @@
 
 #include "src/capabilities/globalsearch.h"
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
+
 #include "src/core/minimizer.h"
 #include "src/core/toolset.h"
 

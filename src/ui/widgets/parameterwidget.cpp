@@ -17,7 +17,7 @@
  *
  */
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 #include "src/global.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"

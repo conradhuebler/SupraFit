@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,10 +22,6 @@
 #include <QtCore/QPointer>
 #include <QtCore/QUuid>
 #include <QtCore/QVariant>
-
-#include <QtGui/QIcon>
-
-#include <QtWidgets/QApplication>
 
 template <class T>
 class InstancePointer {
@@ -60,12 +56,3 @@ private:
 signals:
     void ConfigurationChanged(const QString& instance = "null");
 };
-
-inline QIcon Icon(const QString& str)
-{
-#ifdef _Theme
-    return QIcon::fromTheme(str);
-#else
-    return QIcon(":/icons/" + str + ".png");
-#endif
-}

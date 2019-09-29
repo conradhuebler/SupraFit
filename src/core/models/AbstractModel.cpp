@@ -17,7 +17,8 @@
  * 
  */
 
-#include "src/core/dataclass.h"
+#include "dataclass.h"
+
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
 #include "src/global.h"
@@ -1071,20 +1072,20 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 
     if (override) {
 
-    UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
+        UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
 
-    if (!m_fast_confidence.isEmpty())
-        ParseFastConfidence(m_fast_confidence);
+        if (!m_fast_confidence.isEmpty())
+            ParseFastConfidence(m_fast_confidence);
 
-    for (const QString& str : qAsConst(keys)) {
+        for (const QString& str : qAsConst(keys)) {
 
-        QJsonObject object = statisticObject[str].toObject();
-        QJsonObject controller = object["controller"].toObject();
-        if (controller.isEmpty())
-            continue;
+            QJsonObject object = statisticObject[str].toObject();
+            QJsonObject controller = object["controller"].toObject();
+            if (controller.isEmpty())
+                continue;
 
-        UpdateStatistic(object);
-    }
+            UpdateStatistic(object);
+        }
     }
     private_d->m_locked_parameters = ToolSet::String2IntVec(json["locked"].toString()).toList();
 
@@ -1118,8 +1119,8 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
         }
     }
 #ifdef _DEBUG
-        //  quint64 t1 = QDateTime::currentMSecsSinceEpoch();
-        //  qDebug() << "model imported within" << t1 - t0 << " msecs";
+    //  quint64 t1 = QDateTime::currentMSecsSinceEpoch();
+    //  qDebug() << "model imported within" << t1 - t0 << " msecs";
 #endif
 
     m_sum_squares = topjson["SSE"].toInt();
@@ -1222,28 +1223,28 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
             UpdateStatistic(statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject());
             // m_moco_statistics << statisticObject[QString::number(SupraFit::Method::ModelComparison)].toObject();
             m_wg_statistics << statisticObject[QString::number(SupraFit::Method::WeakenedGridSearch)].toObject();
-    }
-    if (fileversion < 1608) {
-        UpdateStatistic(statisticObject[QString::number(SupraFit::Method::Reduction)].toObject());
-        //m_reduction << statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
-    }
-    UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
-    //m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
-
-    if (!m_fast_confidence.isEmpty())
-        ParseFastConfidence(m_fast_confidence);
-
-    if (fileversion >= 1608) {
-        for (const QString& str : qAsConst(keys)) {
-
-            QJsonObject object = statisticObject[str].toObject();
-            QJsonObject controller = object["controller"].toObject();
-            if (controller.isEmpty())
-                continue;
-
-            UpdateStatistic(object);
         }
-    }
+        if (fileversion < 1608) {
+            UpdateStatistic(statisticObject[QString::number(SupraFit::Method::Reduction)].toObject());
+            //m_reduction << statisticObject[QString::number(SupraFit::Method::Reduction)].toObject();
+        }
+        UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
+        //m_fast_confidence = statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject();
+
+        if (!m_fast_confidence.isEmpty())
+            ParseFastConfidence(m_fast_confidence);
+
+        if (fileversion >= 1608) {
+            for (const QString& str : qAsConst(keys)) {
+
+                QJsonObject object = statisticObject[str].toObject();
+                QJsonObject controller = object["controller"].toObject();
+                if (controller.isEmpty())
+                    continue;
+
+                UpdateStatistic(object);
+            }
+        }
     }
 
     if (fileversion >= 1601) {
@@ -1468,14 +1469,12 @@ QString AbstractModel::AnalyseStatistic(bool forceAll) const
         result += AnalyseMonteCarlo(getStatistic(SupraFit::MonteCarlo, i), forceAll);
     }
 
-    for(int i = 0; i < getMoCoStatisticResult(); ++i)
-    {
+    for (int i = 0; i < getMoCoStatisticResult(); ++i) {
         result += "<tr><th>Model Comparison</th></tr>";
         result += AnalyseModelComparison(getStatistic(SupraFit::ModelComparison, i), forceAll);
     }
 
-    for(int i = 0; i < getWGStatisticResult(); ++i)
-    {
+    for (int i = 0; i < getWGStatisticResult(); ++i) {
         result += "<tr><th>Grid Search</th></tr>";
         result += AnalyseGridSearch(getStatistic(SupraFit::WeakenedGridSearch, i), forceAll);
     }

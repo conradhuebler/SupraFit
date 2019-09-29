@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "src/core/dataclass.h"
+#include "src/core/models/dataclass.h"
 
 #include <QtCore/QPointer>
 #include <QtCore/QVector>

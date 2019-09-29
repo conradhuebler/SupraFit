@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
 
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>

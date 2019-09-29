@@ -25,8 +25,8 @@
 #include "src/capabilities/resampleanalyse.h"
 #include "src/capabilities/weakenedgridsearch.h"
 
-#include "src/core/dataclass.h"
-#include "src/core/models.h"
+#include "src/core/models/dataclass.h"
+#include "src/core/models/models.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/mainwindow/datawidget.h"

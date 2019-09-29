@@ -19,7 +19,8 @@
 
 #include "src/core/models/postprocess/statistic.h"
 
-#include "src/core/AbstractItcModel.h"
+#include "src/core/models/AbstractItcModel.h"
+
 #include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
@@ -40,17 +41,17 @@
 itc_ItoI_Model::itc_ItoI_Model(DataClass* data)
     : AbstractItcModel(data)
 {
-    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
 }
 
 itc_ItoI_Model::itc_ItoI_Model(AbstractItcModel* model)
     : AbstractItcModel(model)
 {
-    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
 
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    m_random_local[0][0] = QPair<qreal, qreal>(0, -100000);
 }
 
 itc_ItoI_Model::~itc_ItoI_Model()

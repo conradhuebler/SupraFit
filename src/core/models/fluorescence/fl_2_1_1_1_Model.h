@@ -24,8 +24,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
-#include "src/core/AbstractTitrationModel.h"
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractTitrationModel.h"
+#include "src/core/models/dataclass.h"
 
 class fl_IItoI_ItoI_Model : public AbstractTitrationModel {
     Q_OBJECT

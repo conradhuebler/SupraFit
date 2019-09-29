@@ -26,7 +26,8 @@
 #include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
 
-#include "src/core/AbstractModel.h"
+#include "src/core/models/AbstractModel.h"
+
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
 

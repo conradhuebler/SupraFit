@@ -20,8 +20,9 @@
 #pragma once
 
 #include "abstractsearchclass.h"
-#include "src/core/AbstractModel.h"
 #include "src/global.h"
+
+#include "src/core/models/AbstractModel.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QRunnable>

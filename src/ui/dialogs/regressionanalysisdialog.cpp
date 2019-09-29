@@ -39,10 +39,11 @@
 #include <libpeakpick/nxlinregress.h>
 #include <libpeakpick/peakpick.h>
 
+#include "src/core/instance.h"
 #include "src/core/libmath.h"
 
 #include "src/ui/guitools/chartwrapper.h"
-#include "src/ui/guitools/instance.h"
+#include "src/ui/guitools/guitools.h"
 
 #include "regressionanalysisdialog.h"
 

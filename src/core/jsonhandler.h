@@ -21,7 +21,7 @@
 
 #include <QtCore/QSharedPointer>
 
-#include "src/core/models.h"
+#include "src/core/models/models.h"
 
 #include "src/global.h"
 

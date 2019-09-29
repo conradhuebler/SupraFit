@@ -19,8 +19,9 @@
 
 #pragma once
 
-#include "src/core/AbstractModel.h"
-#include "src/core/dataclass.h"
+#include "src/core/models/AbstractModel.h"
+#include "src/core/models/dataclass.h"
+
 #include "src/core/minimizer.h"
 
 #include "src/ui/dialogs/modaldialog.h"
