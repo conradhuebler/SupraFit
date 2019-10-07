@@ -163,9 +163,13 @@ QStringList Simulator::Generate()
             if (!m_jobsjson.isEmpty()) {
                 std::cout << "Starting jobs ..." << std::endl;
                 JobManager* manager = new JobManager;
+                connect(manager, &JobManager::Message, this, [](const QString& str) {
+                    std::cout << str.toStdString() << std::endl;
+                });
                 connect(manager, &JobManager::finished, this, [](int current, int all, int time) {
                     std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
                 });
+
                 connect(this, &Simulator::Interrupt, manager, &JobManager::Interrupt);
                 for (int model_index = 0; model_index < models.size(); ++model_index) {
                     std::cout << "... model  " << model_index << std::endl;
@@ -227,6 +231,9 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
         if (!m_jobsjson.isEmpty()) {
             std::cout << "Starting jobs ..." << std::endl;
             JobManager* manager = new JobManager;
+            connect(manager, &JobManager::Message, this, [](const QString& str) {
+                std::cout << str.toStdString() << std::endl;
+            });
             connect(manager, &JobManager::finished, this, [](int current, int all, int time) {
                 std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
             });

@@ -106,7 +106,7 @@ QSharedPointer<AbstractModel> Blank::Clone(bool statistics)
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     model.data()->setConcentrations(ConcentrationTable());
-    return model;
+    return std::move(model);
 }
 
 qreal Blank::PrintOutIndependent(int i) const

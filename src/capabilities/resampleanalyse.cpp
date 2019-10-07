@@ -185,10 +185,10 @@ void ResampleAnalyse::CrossValidation()
         m_controller["Algorithm"] = algorithm;
 
         if (algorithm == 3) {
-
+#ifdef _DEBUG
             qDebug() << "Random filling method";
             qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-
+#endif
             int run = 0;
             while (run < steps && qAbs(run - maxsteps) > 1e-5) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -207,9 +207,10 @@ void ResampleAnalyse::CrossValidation()
 
                 run++;
             }
-
+#ifdef _DEBUG
             qint64 t1 = QDateTime::currentMSecsSinceEpoch();
             qDebug() << t1 - t0 << " msecs" << vector_block.size();
+#endif
 
             for (int i = 0; i < vector_block.size(); ++i) {
 
@@ -242,10 +243,10 @@ void ResampleAnalyse::CrossValidation()
             }
 
         } else if (algorithm == 1) {
-
+#ifdef _DEBUG
             qDebug() << "Full-Precomputing";
             qint64 t0 = QDateTime::currentMSecsSinceEpoch();
-
+#endif
             auto IncreaseVector = [this](QVector<int>& vector, int points) {
                 for (int i = vector.size() - 1; i >= 0; --i) {
 
@@ -286,9 +287,10 @@ void ResampleAnalyse::CrossValidation()
                     sum += vector[i];
                 loop = sum < end;
             }
-
+#ifdef _DEBUG
             qint64 t1 = QDateTime::currentMSecsSinceEpoch();
             qDebug() << t1 - t0 << " msecs" << vector_block.size();
+#endif
 
             if (vector_block.size() < steps) {
 
@@ -385,10 +387,14 @@ void ResampleAnalyse::CrossValidation()
     // TODO some times, I will parallise it at all
     QSharedPointer<AbstractModel> calc_model = m_model->Clone();
     QJsonObject chart_block;
+    int calculation = 0;
+
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
 
             QHash<int, QJsonObject> models = threads[i]->Models();
+            std::cout << "Thread " << i << " performed " << threads[i]->Counter() << " calculation in " << threads[i]->Timer() << " msecs." << std::endl;
+            calculation += threads[i]->Counter();
 
             for (const QJsonObject& model : models) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -411,6 +417,8 @@ void ResampleAnalyse::CrossValidation()
             delete threads[i];
         }
     }
+    std::cout << calculation << " in total" << std::endl;
+
     calc_model.clear();
     if (more_message && left_out_points) // this will be set to false, if LXO was apported
     {

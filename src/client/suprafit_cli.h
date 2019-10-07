@@ -48,6 +48,9 @@ public:
         m_outfile.remove(".json").remove(".suprafit");
     }
     QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_data_json; }
+
+    void OpenFile();
+
 signals:
 
 public slots:

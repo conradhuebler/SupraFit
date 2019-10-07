@@ -113,7 +113,10 @@ void JobManager::RunJobs()
         }
         start++;
         t1 = QDateTime::currentMSecsSinceEpoch();
-        emit m_model->Info()->Message(QString("%1 took %2 msecs (%3 msecs in parallel processes) for %4 in %5").arg(Method2Name(method)).arg(t1 - t0).arg(m_last_multicore).arg(m_model->Name()).arg(m_model->ProjectTitle()));
+        const QString final_message = QString("%1 took %2 msecs (%3 msecs in parallel processes) for %4 in %5").arg(Method2Name(method)).arg(t1 - t0).arg(m_last_multicore).arg(m_model->Name()).arg(m_model->ProjectTitle());
+        emit m_model->Info()->Message(final_message);
+        emit Message(final_message);
+
         emit finished(start, m_jobs.size(), t1 - t0);
         int index = m_model->UpdateStatistic(result);
         emit ShowResult(method, index);

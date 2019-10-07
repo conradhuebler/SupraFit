@@ -142,3 +142,8 @@ void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>
         }
     }
 }
+
+void SupraFitCli::OpenFile()
+{
+    LoadFile();
+}

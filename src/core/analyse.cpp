@@ -139,8 +139,8 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
             result += "<tr><td>Standard deviation : " + Print::printDouble(stdev) + "</td><td> Average Parameter : " + Print::printDouble(aver) + "  </td><td>    </td></tr>";
             result += "<tr><td>Average Error = " + Print::printDouble(aver_err) + "</td><td> Sum of Errors: " + Print::printDouble(sum_err) + "  </td><td>  Max Error = " + Print::printDouble(max_err) + " </td></tr>";
             result += "<tr><td></td></tr>";
-            concl.insert(stdev, QString("<p> " + model["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>pt</sub>: " + Print::printDouble(stdev)) + "</p>");
-            concl_corr.insert(stdev_corr, QString("<p> " + model["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + " &sigma;<sub>ptc</sub>: " + Print::printDouble(stdev_corr)) + "</p>");
+            concl.insert(stdev, QString("<p> " + model["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + QString(" %1<sub>pt</sub>: ").arg(Unicode_sigma) + Print::printDouble(stdev)) + "</p>");
+            concl_corr.insert(stdev_corr, QString("<p> " + model["name"].toString() + " Parameter: " + element["name"].toString() + " of type " + element["type"].toString() + QString(" %1<sub>ptc</sub>: ").arg(Unicode_sigma) + Print::printDouble(stdev_corr)) + "</p>");
         }
 
         mean_std /= double(parameter);
@@ -165,7 +165,7 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
 
     result += "</table></br >";
 
-    result += "<p> Best fitting models according to the partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+    result += QString("<p> Best fitting models according to the partial standard deviation (%1<sub>pt</sub>) </p>").arg(Unicode_sigma);
 
     auto l = mean_std_orderd.constBegin();
     while (l != mean_std_orderd.constEnd()) {
@@ -174,7 +174,7 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
     }
 
     result += "</br>\n\n";
-    result += "<p> Best fitting models according to the corrected partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+    result += QString("<p> Best fitting models according to the corrected partial standard deviation (%1<sub>pt</sub>) </p>").arg(Unicode_sigma);
     l = mean_std_corr_orderd.constBegin();
     while (l != mean_std_corr_orderd.constEnd()) {
         result += QString("<p> %1 : %2</p>").arg(l.value()).arg(l.key());
@@ -183,7 +183,7 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
     result += "</br>\n\n";
     result += "</br>\n\n";
 
-    result += "<p> Best fitting parameters according to the partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+    result += QString("<p> Best fitting parameters according to the partial standard deviation (%1<sub>pt</sub>) </p>").arg(Unicode_sigma);
 
     auto param = parameters_orderd.constBegin();
     while (param != parameters_orderd.constEnd()) {
@@ -192,7 +192,7 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
     }
 
     result += "</br>\n\n";
-    result += "<p> Best fitting parameters according to the corrected partial standard deviation (&sigma;<sub>pt</sub>) </p>";
+    result += QString("<p> Best fitting parameters according to the corrected partial standard deviation (%1<sub>pt</sub>) </p>").arg(Unicode_sigma);
     param = parameters_orderd_corr.constBegin();
     while (param != parameters_orderd_corr.constEnd()) {
         result += QString("<p> %1 : %2</p>").arg(param.value()).arg(param.key());
@@ -202,7 +202,7 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
     result += "</br>\n\n";
 
     result += "<p> Individual parameters </p>";
-    result += "<p> Ordered list of all partial standard deviations for each parameter (&sigma;<sub>pt</sub>) </p>";
+    result += QString("<p> Ordered list of all partial standard deviations for each parameter (%1<sub>pt</sub>) </p>").arg(Unicode_sigma);
     result += "<p> Mean partial standard deviation " + Print::printDouble(all_partial_std) + "</p>";
     qreal old_std = 0;
     auto i = concl.begin();
@@ -218,7 +218,7 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
         ++i;
     }
     result += "</br>\n\n";
-    result += "<p> Ordered list of all corrected partial standard deviations for each parameter (&sigma;<sub>ptc</sub>)</p>";
+    result += QString("<p> Ordered list of all corrected partial standard deviations for each parameter (%1<sub>ptc</sub>)</p>").arg(Unicode_sigma);
     result += "<p> Mean corrected partial standard deviation " + Print::printDouble(all_partial_std_corr) + "</p>";
 
     auto k = concl_corr.begin();
@@ -323,11 +323,11 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
             result += "<tr><th colspan='2'>modelwise entropy list</th></tr>";
 
             auto i = model_wise_entropy.begin();
-            qreal first = 0;
+            //qreal first = 0;
             while (i != model_wise_entropy.constEnd()) {
 
-                if (i == model_wise_entropy.begin())
-                    first = i.key();
+                //if (i == model_wise_entropy.begin())
+                //first = i.key();
                 result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
 
                 ++i;
@@ -338,10 +338,10 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
         result += "<tr><th colspan='2'>parameterwise entropy list</th></tr>";
         if (!individual_entropy.isEmpty()) {
             auto i = individual_entropy.begin();
-            qreal first = 0;
+            //qreal first = 0;
             while (i != individual_entropy.constEnd()) {
-                if (i == individual_entropy.begin())
-                    first = i.key();
+                //if (i == individual_entropy.begin())
+                //first = i.key();
                 result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
                 ++i;
             }
@@ -353,11 +353,11 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
 
         if (!model_wise_stdev.isEmpty()) {
             auto i = model_wise_stdev.begin();
-            qreal first = 0;
+            //qreal first = 0;
             while (i != model_wise_stdev.constEnd()) {
 
-                if (i == model_wise_stdev.begin())
-                    first = i.key();
+                //if (i == model_wise_stdev.begin())
+                //  first = i.key();
                 result += "<p>" + i.value() + ":  " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
                 ++i;
             }
@@ -367,10 +367,10 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
         result += "<tr><th colspan='2'>parameterwise " + Unicode_sigma + " list</th></tr>";
         if (!individual_stdev.isEmpty()) {
             auto i = individual_stdev.begin();
-            qreal first = 0;
+            //qreal first = 0;
             while (i != individual_stdev.constEnd()) {
-                if (i == individual_stdev.begin())
-                    first = i.key();
+                //  if (i == individual_stdev.begin())
+                //   first = i.key();
                 result += "<p>" + i.value() + ":  " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
                 ++i;
             }
@@ -464,11 +464,11 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             result += "<tr><th colspan='2'>modelwise entropy list</th></tr>";
 
             auto i = model_wise_entropy.begin();
-            qreal first = 0;
+            //qreal first = 0;
             while (i != model_wise_entropy.constEnd()) {
 
-                if (i == model_wise_entropy.begin())
-                    first = i.key();
+                //if (i == model_wise_entropy.begin())
+                //    first = i.key();
                 result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
                 ++i;
             }
@@ -479,10 +479,10 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             result += "<tr><th colspan='2'>parameterwise entropy list</th></tr>";
 
             auto i = individual_entropy.begin();
-            qreal first = 0;
+            //qreal first = 0;
             while (i != individual_entropy.constEnd()) {
-                if (i == individual_entropy.begin())
-                    first = i.key();
+                //  if (i == individual_entropy.begin())
+                //     first = i.key();
                 result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
                 ++i;
             }
@@ -494,11 +494,11 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             result += "<tr><th colspan='2'>modelwise " + Unicode_sigma + " list</th></tr>";
 
             auto i = model_wise_stdev.begin();
-            qreal first = 0;
+            //qreal first = 0;
             while (i != model_wise_stdev.constEnd()) {
 
-                if (i == model_wise_stdev.begin())
-                    first = i.key();
+                //  if (i == model_wise_stdev.begin())
+                //      first = i.key();
                 result += "<p>" + i.value() + ": " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
                 ++i;
             }
@@ -509,10 +509,10 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             result += "<tr><th colspan='2'>parameterwise " + Unicode_sigma + " list</th></tr>";
 
             auto i = individual_stdev.begin();
-            qreal first = 0;
+            // qreal first = 0;
             while (i != individual_stdev.constEnd()) {
-                if (i == individual_stdev.begin())
-                    first = i.key();
+                //  if (i == individual_stdev.begin())
+                //      first = i.key();
                 result += "<p>" + i.value() + ": " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
                 ++i;
             }

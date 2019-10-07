@@ -1140,6 +1140,10 @@ QString Html2Raw(QString text)
     text.replace("</tr>", "\n");
     text.replace("</td>", "\t");
     text.replace("</th>", "\t");
+    text.replace("</br>", "\n");
+    text.replace("<sub>", "_{");
+    text.replace("</sub>", "}");
+    text.replace("&sigma;", "sigma");
 
     return text;
 }

@@ -128,27 +128,32 @@ int main(int argc, char** argv)
             QStringList data_files;
             QJsonObject job;
             JsonHandler::ReadJsonFile(job, str);
-            if (job.keys().contains("main")) {
 
                 Simulator* simulator = new Simulator;
                 simulator->setInFile(parser.value("i"));
-                bool generate = simulator->setMainJson(job["main"].toObject());
-                bool model = simulator->setModelsJson(job["model"].toObject());
-                simulator->setJobsJson(job["jobs"].toObject());
                 bool analyse = simulator->setAnalyseJson(job["analyse"].toObject());
-                if (generate) {
-                    projects = simulator->GenerateData();
-                } else
-                    projects = simulator->Data();
-                if (model) {
-                    for (const auto& project : qAsConst(projects)) {
-                        simulator->PerfomeJobs(project, job["model"].toObject(), job["jobs"].toObject());
-                    }
-                }
+                if (job.keys().contains("main")) {
+                    bool generate = simulator->setMainJson(job["main"].toObject());
+                    bool model = simulator->setModelsJson(job["model"].toObject());
+                    simulator->setJobsJson(job["jobs"].toObject());
 
+                    if (generate) {
+                        projects = simulator->GenerateData();
+                    } else
+                        projects = simulator->Data();
+                    if (model) {
+                        for (const auto& project : qAsConst(projects)) {
+                            simulator->PerfomeJobs(project, job["model"].toObject(), job["jobs"].toObject());
+                        }
+                    }
+
+                } else {
+                    simulator->OpenFile();
+                }
                 if (analyse)
                     simulator->Analyse(job["analyse"].toObject());
-            }
+
+                delete simulator;
         }
 
         return 0;

@@ -342,7 +342,7 @@ QSharedPointer<AbstractModel> itc_IItoII_Model::Clone(bool statistics)
     model.data()->setLockedParameter(LockedParameters());
     model.data()->setOptimizerConfig(getOptimizerConfig());
     model.data()->setConcentrations(ConcentrationTable());
-    return model;
+    return std::move(model);
 }
 
 QString itc_IItoII_Model::AdditionalOutput() const
