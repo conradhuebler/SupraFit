@@ -34,7 +34,12 @@ and on macOS 10.12 and 10.13 with the latest [Qt (5.13.1)](https://www.qt.io/dow
 
 Prebuild binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases) or using the [AppVeyor History](https://ci.appveyor.com/project/conradhuebler/suprafit/history) to get most recent draft releases, that are not released on GitHub. They are built using Microsoft Visual Studio, so please provide [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145). Qt 5.13 *.dll are shipped with SupraFit.
 
-To obtain the most recent development version, which is SupraFit 2 Beta, use
+To obtain the most stable version, which is SupraFit 2.0 , use
+```sh
+git clone --recursive -b 2.0  https://github.com/conradhuebler/SupraFit.git
+```
+
+To obtain the most recent development version, which is SupraFit 2.x , use
 ```sh
 git clone --recursive https://github.com/conradhuebler/SupraFit.git
 ```
@@ -134,7 +139,7 @@ A detailed handbook will be provided as soon as possbile.
 ## Citation
 If you obtain results with SupraFit, I kindly ask to cite:
 
-C. Hübler,  conradhuebler/SupraFit: Version 1.7.0 2019, Zenodo. [http://doi.org/10.5281/zenodo.3364570](http://doi.org/10.5281/zenodo.3364570)
+C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. [http://doi.org/10.5281/zenodo.3364570](http://doi.org/10.5281/zenodo.3364570)
 
 After publishing the detailed articles describing the used methods, please refer to them as well.
 
