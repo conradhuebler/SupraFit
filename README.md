@@ -137,9 +137,9 @@ SupraFit provides some statistical analysis, which will be described in a not ye
 A detailed handbook will be provided as soon as possbile.
 
 ## Acknowledgments
-Special thanks to Prof. M. Mazik [Insitut for organic Chemistry, TU Bergakademie Freiberg](https://tu-freiberg.de/fakultaet2/orgch) for her support.
+Special thanks to Prof. M. Mazik [Institut for organic Chemistry, TU Bergakademie Freiberg](https://tu-freiberg.de/fakultaet2/orgch) for her support.
 
-Special thanks to Dr. Sebastian Förster and Dr. Stefan Kaiserfor finding bugs and constructive feedback.
+Special thanks to Dr. Sebastian Förster and Dr. Stefan Kaiser for finding bugs and constructive feedback.
 
 Special thanks to the [Centre of Advanced Study and Research - Freiberg (GraFA)](https://tu-freiberg.de/grafa) for funding.
 ## Citation
