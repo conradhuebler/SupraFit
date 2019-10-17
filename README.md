@@ -136,12 +136,16 @@ SupraFit provides some statistical analysis, which will be described in a not ye
 
 A detailed handbook will be provided as soon as possbile.
 
+## Acknowledgments
+Special thanks to Prof. M. Mazik [Insitut for organic Chemistry, TU Bergakademie Freiberg](https://tu-freiberg.de/fakultaet2/orgch) for her support.
+
+Special thanks to Dr. Sebastian Förster and Dr. Stefan Kaiserfor finding bugs and constructive feedback.
+
+Special thanks to the [Centre of Advanced Study and Research - Freiberg (GraFA)](https://tu-freiberg.de/grafa) for funding.
 ## Citation
-If you obtain results with SupraFit, I kindly ask to cite:
+If you obtain results with SupraFit, I kindly ask to include in your citation:
 
-C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. [http://doi.org/10.5281/zenodo.3364570](http://doi.org/10.5281/zenodo.3364570)
-
-After publishing the detailed articles describing the used methods, please refer to them as well.
+Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
 
 ## Some notes
 - SupraFit prefers larger screens over smaller ones. 1600x1200 or 1680x1050 is the recommended size.
