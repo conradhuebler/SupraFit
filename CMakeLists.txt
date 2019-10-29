@@ -229,7 +229,7 @@ set(suprafit_SRCS
                 src/ui/widgets/signalelement.cpp
                 src/ui/widgets/statisticwidget.cpp
                 src/ui/widgets/messagedock.cpp
-                src/ui/widgets/extwidget.cpp
+                src/ui/widgets/exportsimulationwidget.cpp
                 src/ui/widgets/buttons/spinbox.h
                 src/ui/widgets/buttons/scientificbox.h
                 src/ui/widgets/buttons/hovercheckbox.h

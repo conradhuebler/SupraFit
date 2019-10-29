@@ -77,7 +77,7 @@ class ModelWidget : public QWidget {
     Q_OBJECT
 
 public:
-    ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, bool readonly = false, QWidget* parent = 0);
+    ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, bool readonly = false, QWidget* parent = NULL);
     virtual ~ModelWidget() override;
     virtual inline QSize sizeHint() const override { return QSize(125, 25); }
     QSharedPointer<AbstractModel> Model() const { return m_model; }
@@ -123,7 +123,6 @@ private:
     QVBoxLayout* m_layout;
     bool m_pending;
     QList<int> ActiveSignals();
-    void DiscreteUI();
     void resizeButtons();
     void CollectParameters();
     void Data2Text();

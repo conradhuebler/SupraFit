@@ -108,10 +108,10 @@ signals:
     void MouseClicked();
 };
 
-class extWidget : public QWidget {
+class ExportSimulationWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit extWidget(QWeakPointer<AbstractModel> model, QWidget* parent = nullptr);
+    explicit ExportSimulationWidget(QWeakPointer<AbstractModel> model, QWidget* parent = nullptr);
 
 signals:
 
