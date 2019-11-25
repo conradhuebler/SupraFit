@@ -73,6 +73,8 @@ qreal scale(qreal value);
 
 QPair<qreal, qreal> MinMax(const QList<qreal>& vector);
 
+QString FindFile(const QString& start, const QString& path, const QString& hash, bool recursive);
+
 void Normalise(QVector<QPair<qreal, qreal>>& hist);
 QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int& bins, qreal min = 0, qreal max = 0);
 /*! \brief Calculate the Entropy of a histogram, bin with is already defined */

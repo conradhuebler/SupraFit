@@ -67,7 +67,7 @@ bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
 
 bool SupraFitCli::SaveFile()
 {
-    if (JsonHandler::WriteJsonFile(m_toplevel, m_outfile)) {
+    if (JsonHandler::WriteJsonFile(m_toplevel, m_outfile + m_extension)) {
         std::cout << m_outfile.toStdString() << " successfully written to disk" << std::endl;
         return true;
     }

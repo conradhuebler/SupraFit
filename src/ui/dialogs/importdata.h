@@ -69,6 +69,7 @@ public:
 
         return m_project;
     }
+    void setRootDir(const QString& str) { m_root_dir = str; }
 
 private:
     void setUi();
@@ -85,7 +86,7 @@ private:
     QString m_filename, m_projectfile;
     QJsonObject m_raw;
     DataClassPrivate::DataType m_type = DataClassPrivate::Table;
-    QString m_title;
+    QString m_title, m_root_dir;
     bool m_single = true;
     QJsonObject m_systemparameter, m_project;
 

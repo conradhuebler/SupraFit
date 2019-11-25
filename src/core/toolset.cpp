@@ -23,6 +23,7 @@
 #include "libmath.h"
 
 #include <QtCore/QDebug>
+#include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
@@ -672,6 +673,21 @@ void ExportResults(const QString& filename, const QList<QJsonObject>& models)
         toplevel["model_" + QString::number(i++)] = obj;
     }
     JsonHandler::WriteJsonFile(toplevel, filename);
+}
+QString FindFile(const QString& start, const QString& path, const QString& hash, bool recursive)
+{
+    QString file = start;
+    QFileInfo info(start);
+
+    if (!info.exists()) {
+        QFileInfo i2(path + QDir::separator() + info.fileName());
+        if (i2.exists())
+            file = path + QDir::separator() + info.fileName();
+        else {
+            file.clear();
+        }
+    }
+    return file;
 }
 
 QPair<Vector, Vector> LoadXYFile(const QString& filename)

@@ -707,7 +707,7 @@ bool DataTable::ImportTable(const QJsonObject& table)
     }
 
     m_header = table["header"].toString().split("|");
-
+    emit layoutChanged();
     return true;
 }
 
@@ -767,6 +767,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_system_parameter = other.m_system_parameter;
     m_datatype = other.m_datatype;
     m_title = other.m_title;
+    m_root_dir = other.m_root_dir;
     m_ref_counter++;
     //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(const DataClassPrivate& other): " << m_ref_counter << this  << std::endl;
 }
@@ -784,6 +785,7 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_system_parameter = other->m_system_parameter;
     m_datatype = other->m_datatype;
     m_title = other->m_title;
+    m_root_dir = other->m_root_dir;
     m_ref_counter++;
     //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(const DataClassPrivate* other): " << m_ref_counter << this  << std::endl;
 }
@@ -963,6 +965,7 @@ bool DataClass::ImportData(const QJsonObject& topjson, bool forceUUID)
         for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
             d->m_scaling << 1;
 
+    emit Info()->Update();
     return true;
 }
 

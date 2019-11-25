@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     }
 
     QString outfile = parser.value("o");
-
+    qDebug() << infile << outfile;
     bool list = parser.isSet("l");
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
@@ -152,6 +152,19 @@ int main(int argc, char** argv)
         suprafitcli->setOutFile(outfile);
         std::cout << "No task is not set, lets do the standard stuff ..." << std::endl;
         list = parser.isSet("l");
+
+        if (infile != outfile) {
+            /* Lets load the file (if projects, load several and then save them to the new name */
+
+            if (suprafitcli->LoadFile())
+                if (suprafitcli->SaveFile())
+                    return 0;
+                else
+                    return 2; // Cannot save file
+            else
+                return 1; // cannot load file
+        }
+
         if (!list) {
 
             std::cout << "Input file and output file are the same AND nothing set to be done." << std::endl;
@@ -170,17 +183,7 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        if (infile != outfile) {
-            /* Lets load the file (if projects, load several and the save them to the new name */
 
-            if (suprafitcli->LoadFile())
-                if (suprafitcli->SaveFile())
-                    return 0;
-                else
-                    return 2; // Cannot save file
-            else
-                return 1; // cannot load file
-        }
         return 0;
     }
 

@@ -69,12 +69,15 @@ private:
     QDialogButtonBox* m_buttons;
     QComboBox* m_charttheme;
     QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit, *m_series_confidence, *m_RemoveGrid, *m_EmphAxis, *m_auto_thermo_dialog, *m_thermogram_guideline;
+    /* Save Settings Gui Elements */
+    QCheckBox *m_StoreRawData, *m_StoreFileName, *m_StoreAbsolutePath, *m_StoreFileHash, *m_FindFileRecursive;
 
     void setUi();
     void createGeneralTab();
     void createChartTab();
     void createStandardCalTab();
     void createOptimTab();
+    void createSaveTab();
 
     QJsonObject m_opt_config;
     OptimizerWidget* m_opt_widget;

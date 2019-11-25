@@ -977,13 +977,13 @@ void SupraFitGui::LoadJson(const QJsonObject& str)
     }
     QTimer::singleShot(0, m_splash, &QSplashScreen::show);
     m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
-    SetData(str, "noname");
+    SetData(str, "noname", getDir());
     m_mainsplitter->setGraphicsEffect(NULL);
     UpdateRecentList();
     QTimer::singleShot(1, m_splash, &QSplashScreen::close);
 }
 
-bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
+bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const QString& path)
 {
     if (object.isEmpty())
         return false;
@@ -1026,6 +1026,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file)
     m_hashed_wrapper.insert(data.data()->UUID(), window->getChartWrapper());
 
     QString name = data.data()->ProjectTitle();
+    data.data()->setRootDir(path);
     if (name.isEmpty() || name.isNull()) {
         name = file;
         data.data()->setProjectTitle(name);
@@ -1173,7 +1174,7 @@ void SupraFitGui::NewTable()
 {
     ImportData dialog;
     if (dialog.exec() == QDialog::Accepted) {
-        SetData(dialog.getProject(), dialog.ProjectFile());
+        SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
         m_mainsplitter->show();
     }
 }
@@ -1195,7 +1196,7 @@ void SupraFitGui::ImportTable(const QString& file)
     ImportData dialog(file, this);
 
     if (dialog.exec() == QDialog::Accepted) {
-        SetData(dialog.getProject(), dialog.ProjectFile());
+        SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
         m_mainsplitter->show();
     }
 }
@@ -1217,7 +1218,7 @@ bool SupraFitGui::LoadProject(const QString& filename)
         QStringList keys = toplevel.keys();
 
         if (keys.contains("data")) {
-            return SetData(toplevel, info.baseName());
+            return SetData(toplevel, info.baseName(), info.absolutePath());
         } else {
             bool exit = true;
             int index = 1;
@@ -1227,7 +1228,7 @@ bool SupraFitGui::LoadProject(const QString& filename)
                 if (!keys.contains(str))
                     continue;
                 QJsonObject object = toplevel[str].toObject();
-                exit = exit && SetData(object, info.baseName() + "-" + QString::number(index));
+                exit = exit && SetData(object, info.baseName() + "-" + QString::number(index), info.absolutePath());
                 index++;
             }
             LoadMetaModels();
@@ -1407,6 +1408,7 @@ void SupraFitGui::ReadSettings()
         qApp->instance()->setProperty("advanced_ui", false);
         QTimer::singleShot(10, this, SLOT(FirstStart()));
     }
+
     if (qApp->instance()->property("xSize") == QVariant())
         qApp->instance()->setProperty("xSize", 600);
 
@@ -1424,6 +1426,24 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("InitialiseRandom") == QVariant())
         qApp->instance()->setProperty("InitialiseRandom", true);
+
+    if (qApp->instance()->property("StoreRawData") == QVariant())
+        qApp->instance()->setProperty("StoreRawData", true);
+
+    if (qApp->instance()->property("StoreRawData") == QVariant())
+        qApp->instance()->setProperty("StoreRawData", true);
+
+    if (qApp->instance()->property("StoreFileName") == QVariant())
+        qApp->instance()->setProperty("StoreFileName", true);
+
+    if (qApp->instance()->property("StoreAbsolutePath") == QVariant())
+        qApp->instance()->setProperty("StoreAbsolutePath", false);
+
+    if (qApp->instance()->property("StoreFileHash") == QVariant())
+        qApp->instance()->setProperty("StoreFileHash", false);
+
+    if (qApp->instance()->property("FindFileRecursive") == QVariant())
+        qApp->instance()->setProperty("FindFileRecursive", false);
 
     qApp->instance()->setProperty("lastDir", getDir());
 }
@@ -1601,7 +1621,7 @@ void SupraFitGui::TreeRemoveRequest(const QModelIndex& index)
 
 void SupraFitGui::CloseProjects()
 {
-    QMessageBox question(QMessageBox::Question, tr("About to close all projects"), tr("Do yout really want to close all open projects?"), QMessageBox::Yes | QMessageBox::No, this);
+    QMessageBox question(QMessageBox::Question, tr("About to close all projects"), tr("Do you really want to close all open projects?"), QMessageBox::Yes | QMessageBox::No, this);
     if (question.exec() == QMessageBox::No) {
         return;
     }

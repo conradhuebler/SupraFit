@@ -834,13 +834,16 @@ void ModelDataHolder::EditData()
     } else {
         if (m_data.data()->DataType() == DataClassPrivate::Thermogram) {
             ImportData dialog(m_data);
+            dialog.setRootDir(m_data.data()->RootDir());
             if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
                 {
-                    if (m_data.data()->DataType() == DataClassPrivate::Thermogram)
+                    if (m_data.data()->DataType() == DataClassPrivate::Thermogram) {
                         m_data.data()->ImportData(dialog.getStoredData().ExportData(), false);
+                        emit m_data.data()->Info()->Update();
+                    }
                 }
             }
-            emit m_data.data()->Update();
+            emit m_data.data()->Info()->Update();
 
         } else {
             m_data.data()->IndependentModel()->setEditable(!m_data.data()->IndependentModel()->isEditable());
