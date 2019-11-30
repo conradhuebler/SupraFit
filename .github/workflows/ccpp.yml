@@ -31,4 +31,4 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: QBit
-        path: build_x64\bin\windows\Release\SupraFit_latest_x64_windows.zip
+        path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
