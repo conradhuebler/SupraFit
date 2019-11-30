@@ -1,13 +1,13 @@
 echo on
 
 SET project_dir="%cd%"
-
-echo Building SupraFit...
+SET VCInstallDir="C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Tools/MSVC/14.23.28105/bin/Hostx64/x64/"
+echo Building SupraFit x64...
 git submodule update --init --recursive
 git pull --recurse-submodules
 mkdir build_x64
 cd build_x64
-cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true ..
+cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -MT ..
 cmake --build . --config Release
 
 
@@ -27,32 +27,7 @@ copy "%project_dir%\LICENSE.md" "%project_dir%\build_x64\bin\win32\Release\Supra
 
 echo Packaging portable archive...
 cd ..
-7z a SupraFit_%TAG_NAME%_x64_windows.zip SupraFit
+7z a SupraFit_latest_x64_windows.zip SupraFit
 
-set QTDIR=C:\Qt\5.13.0\msvc2017
-set PATH=C:\Qt\5.13.0\msvc2017\bin;%PATH%
-
-cd %project_dir%
-mkdir build_x32
-cd build_x32
-cmake -G "Visual Studio 15 2017" -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true ..
-cmake --build . --config Release
-
-
-echo Packaging...
-cd %project_dir%
-cd build_x32\bin\win32\Release
-mkdir SupraFit
-copy suprafit.exe SupraFit
-copy suprafit_cli.exe SupraFit
-
-cd SupraFit
-windeployqt --release suprafit.exe
-
-echo Copying project files for archival...
-copy "%project_dir%\README.md" "%project_dir%\build_x32\bin\win32\Release\SupraFit\README.md"
-copy "%project_dir%\LICENSE.md" "%project_dir%\build_x32\bin\win32\Release\SupraFit\LICENSE.md"
-
-echo Packaging portable archive...
 cd ..
-7z a SupraFit_%TAG_NAME%_x32_windows.zip SupraFit
+

@@ -257,10 +257,13 @@ if(WIN32) # Check if we are on Windows
     add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
 
         if(MSVC) # Check if we are using the Visual Studio compiler
-                set_target_properties(suprafit PROPERTIES
+            set_target_properties(suprafit PROPERTIES
                         WIN32_EXECUTABLE YES
                         LINK_FLAGS "/ENTRY:mainCRTStartup"
                 )
+            set_property(TARGET suprafit PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
         elseif(CMAKE_COMPILER_IS_GNUCXX)
                          SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
         else()
