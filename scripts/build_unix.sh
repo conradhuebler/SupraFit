@@ -20,7 +20,6 @@ git checkout master
 git pull
 cd ../..
 
-git pull --recurse-submodules
 mkdir -p release
 cd release
 cmake -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true -D_Theme=false ..
