@@ -1499,7 +1499,7 @@ void SupraFitGui::closeEvent(QCloseEvent* event)
     if (qApp->instance()->property("ask_on_exit").toBool()) {
         QCheckBox* checkbox = new QCheckBox;
         checkbox->setText(tr("Don't ask this again!"));
-        QMessageBox question(QMessageBox::Question, tr("About to close"), tr("Do yout really want to close this window?"), QMessageBox::Yes | QMessageBox::No, this);
+        QMessageBox question(QMessageBox::Question, tr("About to close"), tr("Do you really want to close this window?"), QMessageBox::Yes | QMessageBox::No, this);
         question.setCheckBox(checkbox);
         if (question.exec() == QMessageBox::No) {
             qApp->instance()->setProperty("ask_on_exit", !question.checkBox()->isChecked());
