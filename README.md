@@ -27,13 +27,13 @@ SupraFit has been successfully compilied with:
 
 on linux systems, on windows systems using
 - mingw 5.3
-- MSVC 2015
+- MSVC 2015, MS 2019
 
 and on macOS 10.12 and 10.13 with the latest [Qt (5.13.1)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
 
 > Windows 7 or higher is mandatory.
 
-Prebuild binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases) or using the [AppVeyor History](https://ci.appveyor.com/project/conradhuebler/suprafit/history) to get most recent draft releases, that are not released on GitHub. They are built using Microsoft Visual Studio, so please provide [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145). Qt 5.13 *.dll are shipped with SupraFit.
+Prebuild binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases).
 
 To obtain the most stable version, which is SupraFit 2.0 , use
 ```sh
