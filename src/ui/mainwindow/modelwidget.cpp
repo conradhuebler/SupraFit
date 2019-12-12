@@ -42,7 +42,7 @@
 #include "src/ui/mainwindow/chartwidget.h"
 
 #include "src/ui/widgets/buttons/spinbox.h"
-#include "src/ui/widgets/extwidget.h"
+#include "src/ui/widgets/exportsimulationwidget.h"
 #include "src/ui/widgets/modelactions.h"
 #include "src/ui/widgets/modelchart.h"
 #include "src/ui/widgets/modelelement.h"
@@ -101,8 +101,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     , m_statistic(false)
     , m_val_readonly(readonly)
 {
-    // m_model->SystemParameterChanged();
-#pragma message("might have been important")
     m_splitter = new QSplitter(this);
     m_splitter->setObjectName("modelSplitter");
     m_splitter->setOrientation(Qt::Vertical);
@@ -219,7 +217,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         const_layout->addWidget(m_minimize_all);
 
     m_layout->addLayout(const_layout);
-    m_layout->addWidget(new extWidget(m_model, this));
+    m_layout->addWidget(new ExportSimulationWidget(m_model, this));
 
     QHBoxLayout* name_layout = new QHBoxLayout;
     name_layout->addWidget(new QLabel(tr("<h4>Model Name</h4>")));
@@ -314,16 +312,35 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     area->setWidgetResizable(true);
     area->setWidget(scroll);
 
-    m_layout->addWidget(area);
     m_model_widget->setLayout(m_layout);
 
     m_splitter->addWidget(m_model_widget);
-    m_splitter->setCollapsible(m_splitter->count() - 1, false);
+    m_splitter->addWidget(area);
 
     if (m_model->getSystemParameterList().size())
         m_splitter->addWidget(new SPOverview(m_model.data(), m_val_readonly));
 
-    DiscreteUI();
+    m_actions = new ModelActions;
+
+    connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
+    connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
+    connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
+    connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
+    connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
+    connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
+    connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
+    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
+    connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
+    connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
+    connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
+    connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
+    connect(m_actions, &ModelActions::Charts, this, [this]() {
+        this->m_charts_dialogs->Attention();
+    });
+
+    m_splitter->addWidget(m_actions);
+    m_actions->LocalEnabled(m_model->SupportSeries());
+    m_actions->setSimulation(m_model->isSimulation());
 
     resizeButtons();
 
@@ -334,10 +351,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->addWidget(m_splitter);
     setLayout(vlayout);
-    QSettings settings;
-    settings.beginGroup("model");
-    m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
-    settings.endGroup();
     m_last_model = m_model->ExportModel(true, true);
 
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ModelWidget::Repaint);
@@ -400,10 +413,21 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     if (m_model->isSimulation()) {
         QTimer::singleShot(10, this, &ModelWidget::recalculate);
     }
+
+    for (int i = 0; i < m_splitter->count(); ++i)
+        m_splitter->setCollapsible(i, false);
+
+    QString model_ident = QString("model %1").arg(m_model->SFModel());
+
+    QSettings settings;
+    settings.beginGroup("model");
+    m_splitter->restoreState(settings.value(model_ident).toByteArray());
+    settings.endGroup();
 }
 
 ModelWidget::~ModelWidget()
 {
+    SplitterResized();
 
     m_charts.signal_wrapper.clear();
     m_charts.error_wrapper.clear();
@@ -445,35 +469,11 @@ void ModelWidget::setKeys(const QString& str)
 
 void ModelWidget::SplitterResized()
 {
+    QString model_ident = QString("model %1").arg(m_model->SFModel());
     QSettings settings;
     settings.beginGroup("model");
-    settings.setValue("splitterSizes", m_splitter->saveState());
+    settings.setValue(model_ident, m_splitter->saveState());
     settings.endGroup();
-}
-
-void ModelWidget::DiscreteUI()
-{
-    m_actions = new ModelActions;
-
-    connect(m_actions, SIGNAL(NewGuess()), this, SLOT(NewGuess()));
-    connect(m_actions, SIGNAL(LocalMinimize()), this, SLOT(LocalMinimize()));
-    connect(m_actions, SIGNAL(OptimizerSettings()), this, SLOT(OptimizerSettings()));
-    connect(m_actions, SIGNAL(ImportConstants()), this, SLOT(ImportConstants()));
-    connect(m_actions, SIGNAL(ExportConstants()), this, SLOT(ExportConstants()));
-    connect(m_actions, SIGNAL(OpenAdvancedSearch()), this, SLOT(OpenAdvancedSearch()));
-    connect(m_actions, SIGNAL(TogglePlot()), this, SLOT(TogglePlot()));
-    connect(m_actions, SIGNAL(ToggleStatisticDialog()), this, SLOT(ToggleStatisticDialog()));
-    connect(m_actions, SIGNAL(Save2File()), this, SLOT(Save2File()));
-    connect(m_actions, SIGNAL(ExportSimModel()), this, SLOT(ExportSimModel()));
-    connect(m_actions, &ModelActions::Restore, this, &ModelWidget::Restore);
-    connect(m_actions, &ModelActions::Detailed, this, &ModelWidget::Detailed);
-    connect(m_actions, &ModelActions::Charts, this, [this]() {
-        this->m_charts_dialogs->Attention();
-    });
-
-    m_layout->addWidget(m_actions);
-    m_actions->LocalEnabled(m_model->SupportSeries());
-    m_actions->setSimulation(m_model->isSimulation());
 }
 
 void ModelWidget::resizeButtons()

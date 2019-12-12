@@ -361,6 +361,7 @@ bool ImportData::ImportThermogram()
 {
     Thermogram* thermogram = new Thermogram;
     thermogram->show();
+    thermogram->setRootDir(m_root_dir);
 
     thermogram->setRaw(m_raw);
     thermogram->setSystemParameter(m_systemparameter);

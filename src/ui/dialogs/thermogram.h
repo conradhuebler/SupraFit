@@ -79,7 +79,7 @@ public:
     void setScaling(const QString& str);
     void setRaw(const QJsonObject& object);
     void setSystemParameter(const QJsonObject& object);
-
+    void setRootDir(const QString& str) { m_root_dir = str; }
 public slots:
     //virtual void reject() override();
 
@@ -90,6 +90,7 @@ private:
     void UpdateDilTable();
     void ExportData();
     void ImportRow();
+    void File2JsonBlock(const QString& filename, QJsonObject& block) const;
 
     PeakPick::spectrum LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset);
     PeakPick::spectrum LoadXYFile(const QString& filename);
@@ -113,7 +114,7 @@ private:
     ScatterSeries *m_thm_series, *m_raw_series, *m_dil_series;
     QDialogButtonBox* m_buttonbox;
 
-    QString m_content, m_all_rows;
+    QString m_content, m_all_rows, m_root_dir;
     QJsonObject m_systemparameter, m_raw_data;
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
     bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;

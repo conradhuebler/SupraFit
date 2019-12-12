@@ -21,6 +21,7 @@
 
 #include <Eigen/Dense>
 
+#include <QtCore/QCryptographicHash>
 #include <QtCore/QSettings>
 
 #include <QtWidgets/QCheckBox>
@@ -364,8 +365,16 @@ PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
 void Thermogram::setExperimentFile(QString filename)
 {
     m_heat_offset = 0;
-    QFileInfo info(filename);
+
+    filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
+    if (filename.isEmpty()) {
+        m_exp_file->setStyleSheet("background-color: " + excluded());
+        qDebug() << "no thermogram found";
+        return;
+    }
     PeakPick::spectrum original;
+    QFileInfo info(filename);
+
     if (info.suffix() == "itc") {
         qreal offset = 0;
         try {
@@ -519,6 +528,13 @@ void Thermogram::setDilutionFile(QString filename)
 {
     setLastDir(filename);
 
+    filename = ToolSet::FindFile(filename, m_root_dir, QString(), qApp->instance()->property("FindFileRecursive").toBool());
+    if (filename.isEmpty()) {
+        m_exp_file->setStyleSheet("background-color: " + excluded());
+        qDebug() << "no thermogram found";
+        return;
+    }
+
     QFileInfo info(filename);
     PeakPick::spectrum original;
     if (info.suffix() == "itc" || info.suffix() == "ITC") {
@@ -606,17 +622,39 @@ qreal Thermogram::PeakAt(int i)
     return (m_raw[i] - dilution) * m_scale->currentText().toDouble();
 }
 
+void Thermogram::File2JsonBlock(const QString& filename, QJsonObject& block) const
+{
+    if (qApp->instance()->property("StoreFileName").toBool()) {
+        QFileInfo info(filename);
+        if (qApp->instance()->property("StoreAbsolutePath").toBool())
+            block["file"] = m_exp_file->text();
+        else
+            block["file"] = info.fileName();
+        if (qApp->instance()->property("StoreFileHash").toBool()) {
+            QCryptographicHash fileHashed(QCryptographicHash::Md5);
+
+            QFile file(filename);
+            if (file.open(QIODevice::ReadOnly)) {
+                fileHashed.addData(file.readAll());
+                block["md5"] = QString(fileHashed.result());
+            }
+        }
+    }
+}
+
 QJsonObject Thermogram::Raw() const
 {
     QJsonObject raw, block;
 
     block["fit"] = m_experiment->Fit();
-    block["file"] = m_exp_file->text();
+    File2JsonBlock(m_exp_file->text(), block);
+
     raw["experiment"] = block;
 
     if (!m_dil_file->text().isEmpty()) {
         block["fit"] = m_dilution->Fit();
         block["file"] = m_dil_file->text();
+        File2JsonBlock(m_dil_file->text(), block);
         raw["dilution"] = block;
     }
     raw["scaling"] = m_scale->currentText();

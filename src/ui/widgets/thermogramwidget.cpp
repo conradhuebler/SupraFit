@@ -917,11 +917,12 @@ QJsonObject ThermogramWidget::Fit() const
     fit["integration_range_threshold"] = m_integration_range_threshold->value();
     fit["iter"] = m_last_iteration_max;
 
-    QJsonObject thermo;
-    thermo["x"] = ToolSet::DoubleList2String(m_spec.x());
-    thermo["y"] = ToolSet::DoubleList2String(m_spec.y());
-    fit["thermogram"] = thermo;
-
+    if (qApp->instance()->property("StoreRawData").toBool()) {
+        QJsonObject thermo;
+        thermo["x"] = ToolSet::DoubleList2String(m_spec.x());
+        thermo["y"] = ToolSet::DoubleList2String(m_spec.y());
+        fit["thermogram"] = thermo;
+    }
     return fit;
 }
 

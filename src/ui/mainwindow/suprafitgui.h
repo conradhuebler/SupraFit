@@ -208,7 +208,7 @@ public:
     explicit SupraFitGui();
     virtual ~SupraFitGui() override;
 
-    bool SetData(const QJsonObject& object, const QString& file);
+    bool SetData(const QJsonObject& object, const QString& file, const QString& path);
     virtual QSize sizeHint() const override { return QSize(400, 300); }
 
 public slots:
@@ -286,7 +286,12 @@ private:
                                                    << "UnsafeCopy"
                                                    << "EntropyBins"
                                                    << "OverwriteBins"
-                                                   << "InitialiseRandom";
+                                                   << "InitialiseRandom"
+                                                   << "StoreRawData"
+                                                   << "StoreFileName"
+                                                   << "StoreAbsolutePath"
+                                                   << "StoreFileHash"
+                                                   << "FindFileRecursive";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

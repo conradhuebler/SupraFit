@@ -23,6 +23,7 @@
 
 #include "src/core/toolset.h"
 
+#include <QtCore/QDebug>
 #include <QtCore/QList>
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
@@ -49,7 +50,7 @@ public:
     void setData(QSharedPointer<DataClass> model);
     void addWrapper(const QWeakPointer<ChartWrapper>& wrapper);
 
-    inline void setDataTable(const DataTable* table) { m_table = table; }
+    inline void setDataTable(DataTable* table) { m_table = table; }
     inline int SeriesSize() const { return m_stored_series.size(); }
     inline QPointer<QtCharts::QXYSeries> Series(int i) { return m_stored_series[i]; }
     inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }

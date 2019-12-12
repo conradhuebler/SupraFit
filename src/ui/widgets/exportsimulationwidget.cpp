@@ -31,9 +31,9 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 
-#include "extwidget.h"
+#include "exportsimulationwidget.h"
 
-extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
+ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
     : QWidget(parent)
     , m_model(model)
 {
@@ -88,11 +88,11 @@ extWidget::extWidget(QWeakPointer<AbstractModel> model, QWidget* parent)
     }
     setLayout(layout);
 
-    connect(m_model.data(), &AbstractModel::Recalculated, this, &extWidget::Update);
-    connect(m_variance, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &extWidget::Update);
+    connect(m_model.data(), &AbstractModel::Recalculated, this, &ExportSimulationWidget::Update);
+    connect(m_variance, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &ExportSimulationWidget::Update);
 }
 
-void extWidget::Update()
+void ExportSimulationWidget::Update()
 {
     //TODO Move the random table generation into an on-demand generation upon click, drag n drop and not after every recalculation
     m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Sum of Squares: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SSE())));
