@@ -155,7 +155,7 @@ inline QString aboutHtml()
 {
     QString info;
     info = "<div align='center'><img width='350' src=':/misc/logo_small.png'></div>";
-    info += "<h4>" + version + "</h4>";
+    info += "<h4>" + QString(version).replace("\n", "<br />") + "</h4>";
     info += "<p>This is all about SupraFit, nothing else matters< /p>";
     info += "<p>Created by Conrad Hübler</p>";
     info += "<p>Special thanks to <strong>Prof. M. Mazik</strong>, TU Bergakademie Freiberg for her support.</p>";
