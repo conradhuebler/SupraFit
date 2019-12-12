@@ -13,7 +13,8 @@ jobs:
         submodules: true
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-      modules: qtcharts
+      with:
+        modules: qtcharts
     - name: Update Modules and Build
       run: sh scripts/build_unix.sh
         
@@ -27,7 +28,8 @@ jobs:
         submodules: true
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-      modules: qtcharts
+      with:
+        modules: qtcharts
     - name: Update Modules and Build
       run: scripts/build_windows.bat
     - uses: actions/upload-artifact@v1
