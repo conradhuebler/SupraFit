@@ -211,7 +211,13 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     m_rawdata = rawdata;
 
     m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
+    qDebug() << m_rawdata.data()->DependentModel();
     m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
+    /*
+    connect(rawdata->Info(), &DataClassPrivateObject::Update, this, [this](){
+        m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
+    });
+    */
     m_data_mapper->setData(m_rawdata);
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
@@ -278,6 +284,12 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     connect(m_data_mapper.data(), SIGNAL(ShowSeries(int)), error_wrapper.data(), SLOT(showSeries(int)));
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model);
+
+    /*
+    connect(model->Info(), &DataClassPrivateObject::Update, this, [model, signal_wrapper, error_wrapper](){
+        signal_wrapper->setDataTable(model->ModelTable());
+        error_wrapper->setDataTable(model->ErrorTable());
+    });*/
 
     for (int i = 0; i < model->SeriesCount(); ++i) {
         if (model->Type() != 3) {

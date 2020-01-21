@@ -228,7 +228,7 @@ public:
     QPointer<DataClassPrivateObject> m_info;
     QVector<QPointer<DataClass>> m_children;
 
-    QString m_title, m_uuid, m_content;
+    QString m_title, m_uuid, m_content, m_root_dir;
     void check();
 };
 
@@ -430,6 +430,10 @@ public:
 
     inline void setContent(const QString& str) { d->m_content = str; }
 
+    inline void setRootDir(const QString& str) { d->m_root_dir = str; }
+
+    inline QString RootDir() const { return d->m_root_dir; }
+
 private:
     QMutex m_lock;
     bool m_plot_x = false;
@@ -444,7 +448,7 @@ signals:
     void SystemParameterLoaded();
     void SystemParameterChanged();
     void ProjectTitleChanged(const QString& name);
-    void Update();
+    void Update(); //FIXME remove
     void Deleted();
     void Message(const QString& str, int priority);
     void Warning(const QString& str, int priority);

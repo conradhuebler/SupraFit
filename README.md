@@ -1,12 +1,13 @@
-[![Build Status](https://travis-ci.com/conradhuebler/SupraFit.svg?token=kbszubggsBRpbhwmvtTL&branch=master)](https://travis-ci.com/conradhuebler/SupraFit)
-[![Build status](https://ci.appveyor.com/api/projects/status/ddbg2ua547s9t2fw?svg=true)](https://ci.appveyor.com/project/conradhuebler/suprafit)
+Linux and Windows Build: [![Build Status](https://github.com/conradhuebler/SupraFit/workflows/AutomaticBuild/badge.svg)](https://github.com/conradhuebler/SupraFit)
 [![DOI](https://zenodo.org/badge/55421012.svg)](https://zenodo.org/badge/latestdoi/55421012)
 
 ![SupraFit Logo](https://github.com/conradhuebler/SupraFit/raw/master/misc/logo_small.png)
 
 # SupraFit 
 
-A Open Source Qt5 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry) and Michaelis Menten Kinetics
+A Open Source Qt5 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry) and Michaelis Menten Kinetics.
+
+A short introduction can be downloaded [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/Quickstart.pdf). For question, comments, feedback etc. please use the email adress on page 18 in that Quickstart.
 
 ## Download and requirements
 git clones automatically fisher_dist and libpeakpick.
@@ -26,15 +27,20 @@ SupraFit has been successfully compilied with:
 
 on linux systems, on windows systems using
 - mingw 5.3
-- MSVC 2015
+- MSVC 2015, MS 2019
 
 and on macOS 10.12 and 10.13 with the latest [Qt (5.13.1)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
 
 > Windows 7 or higher is mandatory.
 
-Prebuild binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases) or using the [AppVeyor History](https://ci.appveyor.com/project/conradhuebler/suprafit/history) to get most recent draft releases, that are not released on GitHub. They are built using Microsoft Visual Studio, so please provide [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145). Qt 5.13 *.dll are shipped with SupraFit.
+Prebuild binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases).
 
-To obtain the most recent development version, which is SupraFit 2 Beta, use
+To obtain the most stable version, which is SupraFit 2.0 , use
+```sh
+git clone --recursive -b 2.0  https://github.com/conradhuebler/SupraFit.git
+```
+
+To obtain the most recent development version, which is SupraFit 2.x , use
 ```sh
 git clone --recursive https://github.com/conradhuebler/SupraFit.git
 ```
@@ -131,12 +137,16 @@ SupraFit provides some statistical analysis, which will be described in a not ye
 
 A detailed handbook will be provided as soon as possbile.
 
+## Acknowledgments
+Special thanks to Prof. M. Mazik [Institut for organic Chemistry, TU Bergakademie Freiberg](https://tu-freiberg.de/fakultaet2/orgch) for her support.
+
+Special thanks to Dr. Sebastian Förster and Dr. Stefan Kaiser for finding bugs and constructive feedback.
+
+Special thanks to the [Centre of Advanced Study and Research - Freiberg (GraFA)](https://tu-freiberg.de/grafa) for funding.
 ## Citation
-If you obtain results with SupraFit, I kindly ask to cite:
+If you obtain results with SupraFit, I kindly ask to include in your citation:
 
-C. Hübler,  conradhuebler/SupraFit: Version 1.7.0 2019, Zenodo. [http://doi.org/10.5281/zenodo.3364570](http://doi.org/10.5281/zenodo.3364570)
-
-After publishing the detailed articles describing the used methods, please refer to them as well.
+Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
 
 ## Some notes
 - SupraFit prefers larger screens over smaller ones. 1600x1200 or 1680x1050 is the recommended size.

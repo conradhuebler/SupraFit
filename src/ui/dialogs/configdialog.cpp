@@ -101,6 +101,7 @@ void ConfigDialog::setUi()
     mainlayout->addWidget(m_mainwidget);
 
     createGeneralTab();
+    createSaveTab();
     createChartTab();
     createStandardCalTab();
     createOptimTab();
@@ -207,6 +208,48 @@ void ConfigDialog::createGeneralTab()
     layout->addWidget(m_ask_on_exit);
 
     m_mainwidget->addTab(generalTab, tr("General Settings"));
+}
+
+void ConfigDialog::createSaveTab()
+{
+    QVBoxLayout* layout = new QVBoxLayout;
+    QWidget* generalTab = new QWidget;
+    generalTab->setLayout(layout);
+
+    m_StoreRawData = new QCheckBox(tr("Store raw data (thermograms etc) in SupraFit Project files."));
+    m_StoreRawData->setChecked(qApp->instance()->property("StoreRawData").toBool());
+    m_StoreRawData->setToolTip(tr("Store the original data within the SupraFit project. This may increase the file size and impact the save/write performance negativly or even crash the file for Qt < 5.15 due to the json bug."));
+    layout->addWidget(m_StoreRawData);
+
+    m_StoreFileName = new QCheckBox(tr("Store the filename, where the raw data were imported from, in SupraFit Project files."));
+    m_StoreFileName->setChecked(qApp->instance()->property("StoreFileName").toBool());
+    layout->addWidget(m_StoreFileName);
+
+    layout->addWidget(new QLabel(tr("The above options are checked as default. Additionally, the absolute path\ncan be stored supplementary.This may be an infringement\nof your privacy, if you share the project file.")));
+
+    m_StoreAbsolutePath = new QCheckBox(tr("Store the absolute path of the file containing the raw data."));
+    m_StoreAbsolutePath->setChecked(qApp->instance()->property("StoreAbsolutePath").toBool());
+    m_StoreAbsolutePath->setToolTip(tr("You can store the absolute path of the file with the raw data. If the project files gets moved around without the original data,\nSupraFit still knows where to look after the data. However, if you share your files, other people will know sth. about the file system structure on the original machine."));
+    connect(m_StoreFileName, &QCheckBox::stateChanged, m_StoreAbsolutePath, &QCheckBox::setEnabled);
+    m_StoreAbsolutePath->setEnabled(m_StoreFileName->isChecked());
+    layout->addWidget(m_StoreAbsolutePath);
+
+    /* We will not provide hash and recursive files right now, but later */
+
+    m_StoreFileHash = new QCheckBox(tr("Store the md5 hash of the file containing the raw data."));
+    m_StoreFileHash->setChecked(qApp->instance()->property("StoreFileHash").toBool());
+    m_StoreFileHash->setToolTip(tr("Some safety stuff, the ensure the original raw data file."));
+    connect(m_StoreFileName, &QCheckBox::stateChanged, m_StoreFileHash, &QCheckBox::setEnabled);
+    m_StoreFileHash->setEnabled(m_StoreFileName->isChecked());
+    // layout->addWidget(m_StoreFileHash);
+
+    m_FindFileRecursive = new QCheckBox(tr("Look recursivly for the missing raw file in subdirectories."));
+    m_FindFileRecursive->setChecked(qApp->instance()->property("FindFileRecursive").toBool());
+    m_FindFileRecursive->setToolTip(tr("If SupraFit does not find the file specified via the filename and stored absolute path or the current directory, SupraFit can look for the correct file (name and hash) in subdirectories."));
+
+    // layout->addWidget(m_FindFileRecursive);
+
+    m_mainwidget->addTab(generalTab, tr("File Save Settings"));
 }
 
 void ConfigDialog::createStandardCalTab()
@@ -422,6 +465,13 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("UnsafeCopy", m_unsafe_copy->isChecked());
     qApp->instance()->setProperty("OverwriteBins", m_overwrite_bins->isChecked());
     qApp->instance()->setProperty("InitialiseRandom", m_initialise_random->isChecked());
+
+    /* File Save Stuff */
+    qApp->instance()->setProperty("StoreRawData", m_StoreRawData->isChecked());
+    qApp->instance()->setProperty("StoreFileName", m_StoreFileName->isChecked());
+    qApp->instance()->setProperty("StoreAbsolutePath", m_StoreAbsolutePath->isChecked());
+    qApp->instance()->setProperty("StoreFileHash", m_StoreFileHash->isChecked());
+    qApp->instance()->setProperty("FindFileRecursive", m_FindFileRecursive->isChecked());
 
     QDialog::accept();
 }

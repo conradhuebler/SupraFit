@@ -120,7 +120,7 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/)
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
@@ -135,24 +135,25 @@ configure_file(
 # include the charts, which where formerly part of SupraFit
 add_subdirectory(external/CuteChart)
 
+
 set(core_SRC
-                    src/core/equil.cpp
-                    src/core/optimizer/eigen_levenberg.cpp
-                    src/core/libmath.cpp
-                    src/core/minimizer.cpp
-                    src/capabilities/resampleanalyse.cpp
-                    src/capabilities/abstractsearchclass.cpp
-                    src/capabilities/modelcomparison.cpp
-                    src/capabilities/montecarlostatistics.cpp
-                    src/capabilities/globalsearch.cpp
-                    src/capabilities/weakenedgridsearch.cpp
-                    src/capabilities/jobmanager.cpp
-                    src/core/analyse.cpp
-                    src/core/jsonhandler.cpp
-                    src/core/filehandler.cpp
-                    src/core/toolset.cpp
-                    src/core/instance.h
-                    src/global.cpp
+    src/core/equil.cpp
+    src/core/libmath.cpp
+    src/core/minimizer.cpp
+    src/core/optimizer/eigen_levenberg.cpp
+    src/capabilities/resampleanalyse.cpp
+    src/capabilities/abstractsearchclass.cpp
+    src/capabilities/modelcomparison.cpp
+    src/capabilities/montecarlostatistics.cpp
+    src/capabilities/globalsearch.cpp
+    src/capabilities/weakenedgridsearch.cpp
+    src/capabilities/jobmanager.cpp
+    src/core/analyse.cpp
+    src/core/jsonhandler.cpp
+    src/core/filehandler.cpp
+    src/core/toolset.cpp
+    src/core/instance.h
+    src/global.cpp
 )
 
 
@@ -190,71 +191,37 @@ set(models_SRC
     src/core/models/postprocess/thermo.cpp
     src/core/models/misc/indep_quadrat.cpp
     src/core/models/misc/dep_any.cpp
-    )
+ )
 
 add_library(models ${models_SRC})
 
 target_link_libraries(models Qt5::Core)
 
-set(suprafit_SRCS
-    src/ui/guitools/chartwrapper.cpp
-    src/ui/guitools/guitools.h
-    src/ui/guitools/mime.h
-    src/ui/dialogs/regressionanalysisdialog.cpp
-    src/ui/dialogs/statisticdialog.cpp
-    src/ui/dialogs/modaldialog.cpp
-    src/ui/dialogs/advancedsearch.cpp
-    src/ui/dialogs/importdata.cpp
-    src/ui/dialogs/configdialog.cpp
-    src/ui/dialogs/comparedialog.cpp
-    src/ui/dialogs/resultsdialog.cpp
-    src/ui/dialogs/thermogram.cpp
-    src/ui/widgets/metamodelparameter.cpp
-    src/ui/widgets/parameterwidget.cpp
-    src/ui/widgets/optimizerwidget.cpp
-    src/ui/widgets/results/scatterwidget.cpp
-    src/ui/widgets/results/searchresultwidget.cpp
-    src/ui/widgets/results/mcresultswidget.cpp
-    src/ui/widgets/results/resultswidget.cpp
-    src/ui/widgets/optionswidget.cpp
-    src/ui/widgets/systemparameterwidget.cpp
-    src/ui/widgets/modelactions.cpp
-    src/ui/widgets/modelchart.cpp
-    src/ui/widgets/modelelement.cpp
-    src/ui/widgets/signalelement.cpp
-    src/ui/widgets/statisticwidget.cpp
-    src/ui/widgets/messagedock.cpp
-    src/ui/widgets/extwidget.cpp
-    src/ui/widgets/buttons/spinbox.h
-    src/ui/widgets/buttons/scientificbox.h
-    src/ui/widgets/buttons/hovercheckbox.h
-    src/ui/widgets/thermogramwidget.cpp
-    src/ui/widgets/textwidget.cpp
-    src/ui/mainwindow/chartwidget.cpp
-    src/ui/mainwindow/modeldataholder.cpp
-    src/ui/mainwindow/datawidget.cpp
-    src/ui/mainwindow/metamodelwidget.cpp
-    src/ui/mainwindow/modelwidget.cpp
-    src/ui/mainwindow/mainwindow.cpp
-    src/ui/mainwindow/suprafitgui.cpp
+add_subdirectory(src/ui)
+
+set(suprafit_SRC
     src/ui/main.cpp
 )
 
-qt5_add_resources(suprafit_SRCS files.qrc)
+qt5_add_resources(suprafit_SRC files.qrc)
 
 if(noto_font)
-    qt5_add_resources(suprafit_SRCS fonts.qrc)
+    qt5_add_resources(suprafit_SRC fonts.qrc)
 endif(noto_font)
+
 
 # generate proper GUI program on specified platform
 if(WIN32) # Check if we are on Windows
-    add_executable(suprafit ${suprafit_SRCS} suprafit.rc)
+    add_executable(suprafit ${suprafit_SRC} suprafit.rc)
 
         if(MSVC) # Check if we are using the Visual Studio compiler
-                set_target_properties(suprafit PROPERTIES
+            set_target_properties(suprafit PROPERTIES
                         WIN32_EXECUTABLE YES
                         LINK_FLAGS "/ENTRY:mainCRTStartup"
                 )
+            set_property(TARGET suprafit PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
         elseif(CMAKE_COMPILER_IS_GNUCXX)
                          SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows") # Not tested but seems to work
         else()
@@ -271,13 +238,13 @@ elseif(APPLE)
     set(MACOSX_BUNDLE_ICON_FILE "SupraFit.icns")
 
     set(target_dir "bin/macOS")
-    add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRCS})
+    add_executable(suprafit MACOSX_BUNDLE ${SupraFit_icon} ${suprafit_SRC})
 
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
     set(target_dir "bin/linux")
 
-    add_executable(suprafit ${suprafit_SRCS})
+    add_executable(suprafit ${suprafit_SRC})
     set_target_properties(suprafit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 else()
@@ -300,11 +267,11 @@ add_executable(suprafit_cli ${suprafit_cli_SRCS})
 set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 
-set_property(TARGET core models  PROPERTY CXX_STANDARD 14)
+set_property(TARGET core models PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
 
-target_link_libraries(suprafit models core cutechart)
+target_link_libraries(suprafit suprafit_gui models core cutechart)
 
 target_link_libraries(suprafit_cli models core)
 
@@ -318,13 +285,13 @@ if(testing)
     #set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
     set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
     target_link_libraries(supratest Qt5::Core Qt5::Test)
-    target_link_libraries(supratest models math suprafit ${QT_QTCORE_LIBRARY})
+    target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)
 
 
 if(UNIX)
     target_link_libraries(suprafit pthread dl)
-    #target_link_libraries(suprafit_cli pthread dl)
+    target_link_libraries(suprafit_cli pthread dl)
 endif(UNIX)
 
 # Do platform specific post target stuff

@@ -36,7 +36,7 @@ class NonLinearFitThread : public QObject, public QRunnable {
 
 public:
     NonLinearFitThread(bool exchange_statistics = true);
-    ~NonLinearFitThread();
+    ~NonLinearFitThread() override;
     void setModel(const QSharedPointer<AbstractModel> model, bool clone = true);
 
     QSharedPointer<AbstractModel> Model() const { return m_model; }

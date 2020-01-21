@@ -55,6 +55,16 @@ AbstractItcModel::AbstractItcModel(DataClass* data)
         emit this->ChartUpdated("Heat Chart I");
         emit this->ChartUpdated("Heat Chart II");
     });
+
+    connect(data->Info(), &DataClassPrivateObject::Update, this, [this]() {
+        if (m_c0)
+            delete m_c0;
+        m_c0 = new DataTable(3, DataPoints(), this);
+        m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
+        m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+        m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+        CalculateConcentrations();
+    });
 }
 
 AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
@@ -77,6 +87,16 @@ AbstractItcModel::AbstractItcModel(AbstractItcModel* data)
         emit this->ChartUpdated("Concentration Chart");
         emit this->ChartUpdated("Heat Chart I");
         emit this->ChartUpdated("Heat Chart II");
+    });
+
+    connect(data->Info(), &DataClassPrivateObject::Update, this, [this]() {
+        if (m_c0)
+            delete m_c0;
+        m_c0 = new DataTable(3, DataPoints(), this);
+        m_c0->setHeaderData(0, Qt::Horizontal, QString("V (cell) [%1L]").arg(Unicode_mu), Qt::DisplayRole);
+        m_c0->setHeaderData(1, Qt::Horizontal, QString("Host (A) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+        m_c0->setHeaderData(2, Qt::Horizontal, QString("Host (B) [mol/%1L]").arg(Unicode_mu), Qt::DisplayRole);
+        CalculateConcentrations();
     });
 }
 

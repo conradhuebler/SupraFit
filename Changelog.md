@@ -1,5 +1,8 @@
 # The (incomplete) SupraFit Changelog
 
+- resize data structure after editing thermograms 
+- tracking of thermogram raw files within suprafit project adjusted ( more will follow )
+
 ### SupraFit 2.0 Beta 2 (1.8)
 
 - slightly improved Model Comparison algorithm

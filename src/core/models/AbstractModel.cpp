@@ -61,8 +61,15 @@ AbstractModel::AbstractModel(DataClass* data)
     m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
     m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
 
+    connect(this, &DataClass::Update, this, [this]() {
+        m_model_signal->clear(SeriesCount(), DataPoints());
+        m_model_error->clear(SeriesCount(), DataPoints());
+    });
+
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
+
+    // connect(this->Info(), &DataClassPrivateObject::Update, this, &AbstractModel::Calculate);
 
     /* This function call as to be only in this constructor */
     AddChildren(this);
@@ -93,8 +100,15 @@ AbstractModel::AbstractModel(AbstractModel* model)
     m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
     m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
 
+    connect(this, &DataClass::Update, this, [this]() {
+        m_model_signal->clear(SeriesCount(), DataPoints());
+        m_model_error->clear(SeriesCount(), DataPoints());
+    });
+
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
     connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
+
+    // connect(this->Info(), &DataClassPrivateObject::Update, this, &AbstractModel::Calculate);
 
     QUuid uuid;
     m_model_uuid = uuid.createUuid().toString();

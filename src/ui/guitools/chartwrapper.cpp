@@ -64,8 +64,8 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
     // can we make this more compact ?
     if (qobject_cast<AbstractModel*>(m_stored_data))
         connect(qobject_cast<AbstractModel*>(m_stored_data.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
-    else if (qobject_cast<DataClass*>(m_stored_data))
-        connect(m_stored_data.data(), &DataClass::Update, this, &ChartWrapper::UpdateModel);
+    // else if (qobject_cast<DataClass*>(m_stored_data))
+    connect(m_stored_data.data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
 
     InitaliseSeries();
     UpdateModel();
