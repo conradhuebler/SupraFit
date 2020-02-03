@@ -5,7 +5,7 @@ if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi # else export CXX=
 git submodule init
 git submodule update --recursive
 # check submodules, seems not to work automatically
-cd external/CuteChart/
+cd ../external/CuteChart/
 git checkout master
 git pull
 cd ../..
