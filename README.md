@@ -143,10 +143,19 @@ Special thanks to Prof. M. Mazik [Institut for organic Chemistry, TU Bergakademi
 Special thanks to Dr. Sebastian Förster and Dr. Stefan Kaiser for finding bugs and constructive feedback.
 
 Special thanks to the [Centre of Advanced Study and Research - Freiberg (GraFA)](https://tu-freiberg.de/grafa) for funding.
-## Citation
+
+## Citation and more
 If you obtain results with SupraFit, I kindly ask to include in your citation:
 
 Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
+
+### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)
+![](https://github.com/conradhuebler/SupraFit/raw/master/docs/SupraFit_Poster_small.png)
+
+### SupraFit has been used in
+Anthracene-Based Receptors with a Turn-on Fluorescence Response for Nitrate [Org. Lett. 2019, 21, 21, 8746-8750](https://pubs.acs.org/doi/abs/10.1021/acs.orglett.9b03361)
+
+Purine Unit as a Building Block of Artificial Receptors Designed for the Recognition of Carbohydrates [Eur. J. Org. Chem., 2019: 7555-7562](https://onlinelibrary.wiley.com/doi/full/10.1002/ejoc.201901340)
 
 ## Some notes
 - SupraFit prefers larger screens over smaller ones. 1600x1200 or 1680x1050 is the recommended size.
