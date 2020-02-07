@@ -160,6 +160,7 @@ inline QString aboutHtml()
     info += "<p>Created by Conrad Hübler</p>";
     info += "<p>Special thanks to <strong>Prof. M. Mazik</strong>, TU Bergakademie Freiberg for her support.</p>";
     info += "<p>Special thanks to <strong>Dr. Sebastian F&ouml;rster</strong> and <strong>Dr. Stefan Kaiser</strong> for finding bugs and constructive feedback.</p>";
+    info += "<p>Special thanks to all with constructive feedback and bug hunting: Felix Amrhein.</p>";
     info += "<p>Special thanks to Alexander K&ouml;nig for testing the Quickstart, helpful comments and feedback.</p>";
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : <a href='http://www.oxygen-icons.org'>http://www.oxygen-icons.org</a></p>";
@@ -182,6 +183,7 @@ inline QString about()
     info += "\t*********************************************************************************************************\n\n";
     info += "\tSpecial thanks to Prof. M. Mazik, TU Bergakademie Freiberg for her support.\n\n";
     info += "\tSpecial thanks to \t Dr. Sebastian Förster \t  and \t Dr. Stefan Kaiser \t for finding bugs and constructive feedback.\n";
+    info += "\tSpecial thanks to all with constructive feedback and bug hunting: Felix Amrhein.\n";
     info += "\tSpecial thanks to Alexander König for testing the Quickstart, helpful comments and feedback.\n\n\n";
     info += "\tThanks to all encouraged me writing the application.\n\n";
     info += "\tSupraFit website on GitHub: https://github.com/conradhuebler/SupraFit\n\n";

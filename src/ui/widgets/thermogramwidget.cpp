@@ -120,6 +120,8 @@ void ThermogramWidget::setUi()
     m_table->setToolTip(tr("This table hold all peaks, consisting of the integral, start time and end time. Double click on a peak will toggle the <i>Peak Integration mode</i>. Double click of within the thermogram selects the appropriate peak in this table (if any peaks already exists"));
 
     m_peak_rule_list = new QTableWidget;
+    PeakRule* prototype = new PeakRule;
+    m_peak_rule_list->setItemPrototype(prototype);
     m_peak_rule_list->setRowCount(1);
     m_peak_rule_list->setColumnCount(2);
     m_peak_rule_list->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -435,9 +437,9 @@ void ThermogramWidget::setUi()
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
     m_iterations->setValue(settings.value("iterations", 15).toInt());
     // m_integration_range->setCurrentText(settings.value("integration_range", m_Peak_Cut_Options[0]).toString());
-    QTableWidgetItem* item = new QTableWidgetItem(QString::number(m_peaks_start->value()));
+    PeakRule* item = new PeakRule(QString::number(m_peaks_start->value()));
     m_peak_rule_list->setItem(m_current_peaks_rule, 0, item);
-    item = new QTableWidgetItem(QString::number(m_peaks_time->value()));
+    item = new PeakRule(QString::number(m_peaks_time->value()));
     m_peak_rule_list->setItem(m_current_peaks_rule, 1, item);
 
     connect(m_integration_range, &QComboBox::currentTextChanged, this, &ThermogramWidget::CutAllLimits);
@@ -508,6 +510,9 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
 
 void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
 {
+    if (peak_list.size() == 0)
+        return;
+
     const QSignalBlocker blocker_a(m_peaks_time);
     const QSignalBlocker blocker_b(m_peaks_start);
 
@@ -515,7 +520,7 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
     m_peak_list = peak_list;
     m_peak_rule_list->clear();
     int row = 0;
-    for (int i = 0; i < m_peak_list.size(); ++i) {
+    for (std::size_t i = 0; i < m_peak_list.size(); ++i) {
         double time = m_peak_list[i].end * m_spec.Step() - m_peak_list[i].start * m_spec.Step() + m_spec.Step();
         double start = m_peak_list[i].start * m_spec.Step() - m_spec.Step();
         if (!qFuzzyCompare(time_pred, time)) {
@@ -873,21 +878,22 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
     QList<QPointF> points = ToolSet::String2Points(fit["rules_list"].toString());
     m_peak_rule_list->setRowCount(points.size());
     for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
-        QTableWidgetItem* item = new QTableWidgetItem(QString::number(points[i].x()));
+        PeakRule* item = new PeakRule(QString::number(points[i].x()));
         m_peak_rule_list->setItem(i, 0, item);
 
-        item = new QTableWidgetItem(QString::number(points[i].y()));
+        item = new PeakRule(QString::number(points[i].y()));
         m_peak_rule_list->setItem(i, 1, item);
     }
     UpdatePeaks();
     points = ToolSet::String2Points(fit["peak_int_ranges"].toString());
-    for (int i = 0; i < m_peak_list.size(); ++i) {
+    for (std::size_t i = 0; i < m_peak_list.size(); ++i) {
         m_peak_list[i].int_start = points[i].x();
         m_peak_list[i].int_end = points[i].y();
     }
     FitBaseLine();
     Update();
     m_block = false;
+    setEnabled(true);
 }
 
 QJsonObject ThermogramWidget::Fit() const
@@ -962,11 +968,11 @@ void ThermogramWidget::UpdatePeaks()
     m_peak_list.clear();
     PeakPick::Peak peak;
 
-
     for (int j = 0; j < rules_size; ++j) {
-        QTableWidgetItem* item = (m_peak_rule_list->item(j, 0));
+        PeakRule* item = dynamic_cast<PeakRule*>(m_peak_rule_list->item(j, 0));
         double index_start = m_spec.XtoIndex(item->data(Qt::DisplayRole).toDouble());
-        item = m_peak_rule_list->item(j, 1);
+        item = dynamic_cast<PeakRule*>(m_peak_rule_list->item(j, 1));
+
         double timestep = item->data(Qt::DisplayRole).toDouble() / m_spec.Step();
         if (timestep <= 0) {
             m_guide_label->setText(QString("<font color='red'>Sorry, but Peak rule %1 contains a zero as peak time. That means, if I did not stop right here, you would be waiting for Godot</font>").arg(j + 1));

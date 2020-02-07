@@ -20,6 +20,7 @@
 
 #include <QtCore/QJsonObject>
 #include <QtCore/QObject>
+#include <QtCore/QVector>
 
 class SupraFitCli : public QObject {
     Q_OBJECT

@@ -36,7 +36,8 @@
 LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
     : m_model(model)
 {
-    QVBoxLayout* layout = new QVBoxLayout;
+    int columns = qApp->instance()->property("ModelParameterColums").toInt();
+    QGridLayout* layout = new QGridLayout;
     for (int i = 0; i < m_model.data()->LocalParameterSize(); i++) {
         QWidget* widget = new QWidget;
         QHBoxLayout* hlayout = new QHBoxLayout;
@@ -89,7 +90,7 @@ LocalParameterWidget::LocalParameterWidget(QSharedPointer<AbstractModel> model)
         m_parameter << box;
         hlayout->addWidget(check);
         check->setHidden(m_model.data()->isSimulation());
-        layout->addWidget(widget);
+        layout->addWidget(widget, i / columns, i % columns);
     }
 
     setLayout(layout);
