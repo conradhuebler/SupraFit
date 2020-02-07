@@ -150,7 +150,7 @@ If you obtain results with SupraFit, I kindly ask to include in your citation:
 Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
 
 ### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)
-![](https://github.com/conradhuebler/SupraFit/raw/master/docs/SupraFit_Poster_small.png)
+<img src="https://github.com/conradhuebler/SupraFit/raw/master/docs/SupraFit_Poster.png" width="300">
 
 ### SupraFit has been used in
 Anthracene-Based Receptors with a Turn-on Fluorescence Response for Nitrate [Org. Lett. 2019, 21, 21, 8746-8750](https://pubs.acs.org/doi/abs/10.1021/acs.orglett.9b03361)
