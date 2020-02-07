@@ -132,6 +132,16 @@ void ConfigDialog::createGeneralTab()
     h_layout->addWidget(m_threads);
     layout->addLayout(h_layout);
 
+    m_model_element_cols = new QSpinBox;
+    m_model_element_cols->setMaximum(1e6);
+    m_model_element_cols->setValue(qApp->instance()->property("ModelParameterColums").toInt());
+    m_model_element_cols->setMinimum(1);
+
+    h_layout = new QHBoxLayout;
+    h_layout->addWidget(new QLabel(tr("Columns for Model Parameter:")));
+    h_layout->addWidget(m_model_element_cols);
+    layout->addLayout(h_layout);
+
     layout->addWidget(new QLabel(tr("Set directory behavior to:")));
 
     m_current_dir = new QRadioButton(tr("Current Directory, where Application was started"), generalTab);
@@ -438,6 +448,8 @@ void ConfigDialog::accept()
         m_dirlevel = 2;
 
     qApp->instance()->setProperty("threads", m_threads->value());
+    qApp->instance()->setProperty("ModelParameterColums", m_model_element_cols->value());
+
     qApp->instance()->setProperty("workingdir", m_working->text());
     qApp->instance()->setProperty("dirlevel", m_dirlevel);
     qApp->instance()->setProperty("auto_confidence", m_auto_confidence->isChecked());

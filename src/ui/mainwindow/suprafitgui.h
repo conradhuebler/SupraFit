@@ -291,7 +291,8 @@ private:
                                                    << "StoreFileName"
                                                    << "StoreAbsolutePath"
                                                    << "StoreFileHash"
-                                                   << "FindFileRecursive";
+                                                   << "FindFileRecursive"
+                                                   << "ModelParameterColums";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

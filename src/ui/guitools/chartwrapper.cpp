@@ -134,11 +134,8 @@ void ChartWrapper::InitaliseSeries()
 
 void ChartWrapper::UpdateModel()
 {
-    if (!m_working) {
-        m_working = m_stored_data;
-        m_transformed = false;
-    }
 
+    CheckWorking();
     MakeSeries();
     emit ModelChanged();
 }
@@ -278,4 +275,13 @@ void ChartWrapper::showSeries(int i)
     }
     emit ShowSeries(i);
 }
+
+void ChartWrapper::CheckWorking()
+{
+    if (!m_working) {
+        m_working = m_stored_data;
+        m_transformed = false;
+    }
+}
+
 #include "chartwrapper.moc"

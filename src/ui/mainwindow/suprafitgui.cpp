@@ -1411,6 +1411,9 @@ void SupraFitGui::ReadSettings()
         QTimer::singleShot(10, this, SLOT(FirstStart()));
     }
 
+    if (qApp->instance()->property("ModelParameterColums") == QVariant())
+        qApp->instance()->setProperty("ModelParameterColums", 2);
+
     if (qApp->instance()->property("xSize") == QVariant())
         qApp->instance()->setProperty("xSize", 600);
 

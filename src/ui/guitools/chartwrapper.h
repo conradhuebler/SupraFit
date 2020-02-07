@@ -64,9 +64,17 @@ public:
 
     static QColor ColorCode(int i);
 
-    inline QString XLabel() const { return m_working.data()->XLabel(); }
+    inline QString XLabel()
+    {
+        CheckWorking();
+        return m_working.data()->XLabel();
+    }
 
-    inline QString YLabel() const { return m_working.data()->YLabel(); }
+    inline QString YLabel()
+    {
+        CheckWorking();
+        return m_working.data()->YLabel();
+    }
 
 public slots:
     void UpdateModel();
@@ -83,6 +91,7 @@ private:
 
     bool m_blocked, m_transformed, m_flipable;
     void InitaliseSeries();
+    void CheckWorking();
 
 signals:
     void ModelChanged();
