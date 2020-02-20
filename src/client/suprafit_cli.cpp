@@ -53,6 +53,8 @@ bool SupraFitCli::LoadFile()
     } else if (handler->Type() == FileHandler::dH) {
         m_toplevel = handler->getJsonData();
 
+    } else if (handler->Type() == FileHandler::ITC) {
+        m_toplevel = handler->getJsonData();
     } else {
         m_toplevel = handler->getJsonData();
     }

@@ -490,11 +490,6 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
 
-    PeakPick::spectrum sign = PeakPick::spectrum(m_spec);
-    sign.InvertSgn();
-
-    std::vector<PeakPick::Peak> peaks = PeakPick::PickPeaks(&sign, 0, qPow(2, 1));
-    std::vector<PeakPick::Peak> max_peak = PeakPick::PickPeaks(&m_spec, 0, qPow(2, 1));
 
     if (m_spec.size() == 0)
         return;
@@ -877,7 +872,7 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
     m_peaks_end->setValue(fit["end_time"].toDouble());
     m_iterations->setValue(fit["iter"].toInt());
 
-    QList<QPointF> points = ToolSet::String2Points(fit["rules_list"].toString());
+    QList<QPointF> points = ToolSet::String2PointsList(fit["rules_list"].toString());
     m_peak_rule_list->setRowCount(points.size());
     for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
         PeakRule* item = new PeakRule(QString::number(points[i].x()));
@@ -887,7 +882,7 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
         m_peak_rule_list->setItem(i, 1, item);
     }
     UpdatePeaks();
-    points = ToolSet::String2Points(fit["peak_int_ranges"].toString());
+    points = ToolSet::String2PointsList(fit["peak_int_ranges"].toString());
     for (std::size_t i = 0; i < m_peak_list.size(); ++i) {
         m_peak_list[i].int_start = points[i].x();
         m_peak_list[i].int_end = points[i].y();

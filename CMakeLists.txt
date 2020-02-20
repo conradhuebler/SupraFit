@@ -153,6 +153,7 @@ set(core_SRC
     src/core/filehandler.cpp
     src/core/toolset.cpp
     src/core/instance.h
+    src/core/thermogramhandler.cpp
     src/global.cpp
 )
 

@@ -120,6 +120,7 @@ int main(int argc, char** argv)
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
     qApp->instance()->setProperty("InitialiseRandom", true);
+    qApp->instance()->setProperty("StoreRawData", true);
 
     if (parser.isSet("j")) {
 
