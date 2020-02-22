@@ -240,6 +240,8 @@ void FileHandler::ReadITC()
     thermogram->setThermogram(spectrum);
     thermogram->setPeakList(peak_list);
     thermogram->Initialise();
+    thermogram->UpdatePeaks();
+    thermogram->AdjustIntegrationRange();
     thermogram->IntegrateThermogram();
 
     QVector<qreal> integrals = thermogram->Integrals();

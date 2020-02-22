@@ -124,11 +124,9 @@ void ThermogramHandler::UpdatePeaks()
 
     for (int j = 0; j < rules_size; ++j) {
 
-        // PeakRule* item = dynamic_cast<PeakRule*>(m_peak_rule_list->item(j, 0));
         double index_start = m_spectrum.XtoIndex(m_peak_rules[j].x());
-        //item = dynamic_cast<PeakRule*>(m_peak_rule_list->item(j, 1));
+        double timestep = m_peak_rules[j].y() / m_spectrum.Step();
 
-        double timestep = m_spectrum.XtoIndex(m_peak_rules[j].y()) / m_spectrum.Step();
         if (timestep <= 0) {
             emit Message(QString("<font color='red'>Sorry, but Peak rule %1 contains a zero as peak time. That means, if I did not stop right here, you would be waiting for Godot</font>").arg(j + 1));
             return;
@@ -138,7 +136,7 @@ void ThermogramHandler::UpdatePeaks()
         if (j == rules_size - 1)
             index_end = end;
         else
-            index_end = m_peak_rules[j + 1].x(); //m_peak_rule_list->item(j + 1, 0)->data(Qt::DisplayRole).toDouble();
+            index_end = m_peak_rules[j + 1].x();
 
         for (int i = index_start; i + (timestep)-1 < m_spectrum.XtoIndex(index_end); i += (timestep)) {
             peak = PeakPick::Peak();
@@ -265,4 +263,72 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
         fit["thermogram"] = thermo;
     }
     return fit;
+}
+
+void ThermogramHandler::AdjustIntegrationRange()
+{
+
+    //Integrate(&m_peak_list, &m_spectrum);
+    IntegrateThermogram();
+    double threshold = 0;
+    double old_threshold = m_integration_range_threshold;
+    int maxiter = 1;
+    int direction = -1 * m_cut_before;
+    /* Zero/Threshold Cutting */
+    if (m_current_cut_option == m_cut_options[0]) {
+        for (int i = 0; i < m_peak_list.size(); ++i) {
+            m_peak_list[i].int_start = m_peak_list[i].start;
+            m_peak_list[i].int_end = m_peak_list[i].end;
+        }
+        FitBaseLine();
+        m_integration_range_threshold = m_initial_threshold;
+        //Integrate(&m_peak_list, &m_spectrum);
+        IntegrateThermogram();
+
+        //Update();
+        return;
+    } else if (m_current_cut_option == m_cut_options[2]) { /* Threshold cutting */
+        threshold = m_integration_range_threshold;
+        maxiter = m_iterations;
+    } else { /* Zero Cutting */
+        for (int i = 0; i < m_peak_list.size(); ++i) {
+            m_peak_list[i].int_start = m_peak_list[i].start;
+            m_peak_list[i].int_end = m_peak_list[i].end;
+        }
+        FitBaseLine();
+        //Integrate(&m_peak_list, &m_spec);
+        IntegrateThermogram();
+
+        m_integration_range_threshold = m_initial_threshold;
+    }
+    Vector baseline;
+    if (m_baseline.baselines.size() > 0)
+        baseline = m_baseline.baselines[0];
+    int x = 0;
+
+    for (x = 0; x < maxiter; ++x) {
+        for (int i = 0; i < m_peak_list.size(); ++i) {
+            if (m_peak_list.size() == m_baseline.baselines.size()) // && m_baseline.x_grid_points.size() > 0)
+                baseline = m_baseline.baselines[i];
+
+            qreal start_end = (m_spectrum.Y(m_peak_list[i].start) + m_spectrum.Y(m_peak_list[i].end)) * 0.5;
+
+            int start_position = m_peak_list[i].max;
+            if (qAbs(qAbs(m_spectrum.Y(m_peak_list[i].min) - start_end)) > qAbs(qAbs(m_spectrum.Y(m_peak_list[i].max)) - start_end))
+                start_position = m_peak_list[i].min;
+
+            PeakPick::ResizeIntegrationRange(&m_spectrum, &m_peak_list[i], baseline, start_position, threshold, m_overshot_counter, direction);
+        }
+        FitBaseLine();
+        //Integrate(&m_peak_list, &m_spec);
+        IntegrateThermogram();
+
+        if (qAbs(old_threshold - m_integration_range_threshold) < 1e-10)
+            break;
+        old_threshold = m_integration_range_threshold;
+    }
+    m_last_iteration_max = x;
+    FitBaseLine();
+    // Update();
+    // setGuideText(QString("Adaption of the baseline took %1 cycles").arg(m_last_iteration_max));
 }
