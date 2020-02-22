@@ -62,7 +62,6 @@ public:
 
     void IntegrateThermogram();
     void CalibrateSystem();
-    void ApplyCalibration();
     void AdjustIntegrationRange();
 
     void setThermogramParameter(const QJsonObject& thermogram_parameter) { m_thermogram_parameter = thermogram_parameter; }
@@ -73,6 +72,8 @@ public:
 
     void UpdatePeaks();
     void FitBaseLine();
+
+    qreal Calibration() const { return m_calibration_peak.integ_num; }
 
 private:
     QVector<QPointF> m_thermogram_series, m_baseline_series, m_peak_rules;
@@ -85,7 +86,7 @@ private:
     QJsonObject m_thermogram_parameter;
 
     int m_calibration_start = 0, m_last_iteration_max = 0, m_iterations = 0, m_overshot_counter = 1;
-    qreal m_thermogram_begin = 0, m_thermogram_end = 0, m_peak_time = 0, m_constant_offset = 0, m_calibration_heat = 0;
+    qreal m_thermogram_begin = 0, m_thermogram_end = 0, m_peak_time = 0, m_constant_offset = 0, m_calibration_heat = 0, m_calibration_ratio = 0;
     qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1, m_integration_range_threshold = 0;
     bool m_initialised = false, m_cut_before = false;
     QString m_current_cut_option = QString("Custom");
@@ -95,5 +96,6 @@ private:
 
 signals:
     void ThermogramChanged();
+    void CalibrationChanged();
     void Message(const QString& message);
 };

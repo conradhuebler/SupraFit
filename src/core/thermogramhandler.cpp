@@ -204,8 +204,6 @@ void ThermogramHandler::IntegrateThermogram()
         m_initial_threshold = stdev2 / 10.0;
 
     m_integration_range_threshold = stdev2 / 10.0;
-
-    ApplyCalibration();
 }
 
 void ThermogramHandler::FitBaseLine()
@@ -227,10 +225,28 @@ void ThermogramHandler::FitBaseLine()
 
 void ThermogramHandler::CalibrateSystem()
 {
-}
+    if (m_spectrum.Step() == 0)
+        return;
 
-void ThermogramHandler::ApplyCalibration()
-{
+    m_calibration_peak.setPeakStart(m_spectrum.size() - 1 - m_calibration_start * m_spectrum.Step());
+    m_calibration_peak.setPeakEnd(m_spectrum.size() - 1);
+
+    std::vector<PeakPick::Peak> list;
+    list.push_back(m_calibration_peak);
+
+    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spectrum);
+
+    PeakPick::BaseLine baseline(spectrum);
+
+    baseline.setBaseLineRange(PeakPick::BaseLine::BLR::PeakWise);
+    baseline.setNoCoeffs(2);
+    baseline.setPeaks(&list);
+    baseline.setInitialBaseLine(Vector(0));
+
+    PeakPick::BaseLineResult baseline_result = baseline.Fit();
+
+    m_calibration_peak.integ_num = PeakPick::IntegrateNumerical(spectrum, m_calibration_peak.start, m_calibration_peak.end, baseline_result.baselines[0]);
+    delete spectrum;
 }
 
 QJsonObject ThermogramHandler::getThermogramParameter() const
