@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,9 @@
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/widgets/thermogramwidget.h"
 
+#include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
+
 #include "src/global.h"
 
 #include "thermogram.h"
@@ -61,21 +63,30 @@ Thermogram::Thermogram()
 
 void Thermogram::setUi()
 {
-    m_experiment = new ThermogramWidget(this);
-    connect(m_experiment, &ThermogramWidget::IntegrationChanged, this, [this]() {
-        this->m_exp_peaks = this->m_experiment->Peaks();
-        this->UpdateTable();
+    m_experiment_thermogram = new ThermogramHandler;
+    m_experiment = new ThermogramWidget(m_experiment_thermogram, this);
+    connect(m_experiment_thermogram, &ThermogramHandler::ThermogramChanged, this, [this]() {
+        m_experiment_peaks = m_experiment_thermogram->Peaks();
+        UpdateTable();
     });
-
-    m_dilution = new ThermogramWidget(this);
-    connect(m_dilution, &ThermogramWidget::IntegrationChanged, this, [this]() {
-        this->m_dil_peaks = this->m_dilution->Peaks();
-        this->UpdateTable();
+    /*
+    connect(m_experiment_thermogram, &ThermogramHandler::CalibrationChanged, this, [this]() {
+        //this->m_exp_peaks = this->m_experiment->Peaks();
+        UpdateTable();
     });
-    connect(m_dilution, &ThermogramWidget::CalibrationChanged, this, [this](double val) {
-        this->m_dil_peaks = this->m_dilution->Peaks();
-        this->UpdateTable();
+    */
+    m_dilution_thermogram = new ThermogramHandler;
+    m_dilution = new ThermogramWidget(m_dilution_thermogram, this);
+    connect(m_dilution_thermogram, &ThermogramHandler::ThermogramChanged, this, [this]() {
+        m_dilution_peaks = m_dilution_thermogram->Peaks();
+        UpdateTable();
     });
+    /*
+    connect(m_dilution_thermogram, &ThermogramHandler::CalibrationChanged, this, [this]() {
+        //this->m_dil_peaks = this->m_experiment->Peaks();
+        UpdateTable();
+    });
+    */
 
     QGridLayout* layout = new QGridLayout;
 
@@ -395,16 +406,22 @@ void Thermogram::setExperimentFile(QString filename)
         m_exp_file->setStyleSheet("background-color: " + included());
         m_exp_base->setText(QString::number(offset));
         m_experiment->setFileType(ThermogramWidget::FileType::ITC);
-        m_experiment->setThermogram(&original, offset);
-        m_experiment->setPeakList(m_exp_peaks);
-        m_exp_peaks = m_experiment->Peaks();
+        m_experiment_thermogram->setThermogram(original);
+        m_experiment_thermogram->setPeakList(m_exp_peaks);
+        //m_experiment->setThermogram(&original, offset);
+        //m_experiment->setPeakList(m_exp_peaks);
+        //m_exp_peaks = m_experiment->Peaks();
     } else {
         original = LoadXYFile(filename);
         QSignalBlocker block(m_freq);
         m_freq->setValue(original.Step());
-        m_experiment->setFileType(ThermogramWidget::FileType::RAW);
-        m_experiment->setThermogram(&original);
+        m_experiment_thermogram->setThermogram(original);
+        //m_experiment->setFileType(ThermogramWidget::FileType::RAW);
+        //m_experiment->setThermogram(&original);
     }
+    m_experiment_thermogram->Initialise();
+    m_experiment_thermogram->IntegrateThermogram();
+
     m_exp_therm = original;
     m_experiment->setEnabled(true);
 
@@ -430,6 +447,9 @@ void Thermogram::UpdateTable()
     m_thm_series->clear();
     m_raw_series->clear();
     m_dil_series->clear();
+
+    m_exp_peaks = m_experiment_thermogram->Peaks()->toStdVector();
+    m_dil_peaks = m_dilution_thermogram->Peaks()->toStdVector();
 
     m_raw.clear();
     m_heat.clear();
@@ -556,15 +576,21 @@ void Thermogram::setDilutionFile(QString filename)
         m_dil_file->setText(filename);
         m_dil_file->setStyleSheet("background-color: " + included());
         m_dilution->setFileType(ThermogramWidget::FileType::ITC);
-        m_dilution->setThermogram(&original, offset);
-        m_dilution->setPeakList(m_exp_peaks);
+        m_dilution_thermogram->setThermogram(original);
+        m_dilution_thermogram->setPeakList(m_exp_peaks);
+        //m_dilution->setThermogram(&original, offset);
+        //m_dilution->setPeakList(m_exp_peaks);
         m_dil_base->setText(QString::number(offset));
         m_dil_peaks = m_dilution->Peaks();
     } else {
         original = LoadXYFile(filename);
         m_dilution->setFileType(ThermogramWidget::FileType::RAW);
-        m_dilution->setThermogram(&original);
+        m_dilution_thermogram->setThermogram(original);
+
+        //m_dilution->setThermogram(&original);
     }
+    m_dilution_thermogram->Initialise();
+    m_dilution_thermogram->IntegrateThermogram();
     m_dilution->setEnabled(true);
 
     m_dil_therm = original;

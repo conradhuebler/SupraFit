@@ -34,6 +34,8 @@
 
 #include "thermogramhandler.h"
 
+static int baseline_step_size = 50;
+
 ThermogramHandler::ThermogramHandler()
 {
 }
@@ -80,34 +82,22 @@ void ThermogramHandler::Initialise()
     if (m_spectrum.size() == 0) {
         std::cout << "No Thermogram found. ThermogramHandler is not initialised!" << std::endl;
         return;
+    } else {
+        for (unsigned int i = 0; i < m_spectrum.x().size(); i++) {
+            m_thermogram_series.append(QPointF(m_spectrum.x()[i], m_spectrum.y()[i]));
+        }
     }
 
     if (m_peak_list.size() == 0) {
         std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is not initialised!" << std::endl;
         return;
     } else {
-        m_frequency = m_spectrum.Step();
-        m_peak_rules.clear();
-        double time_pred = 0;
-        double peak_start = 0, peak_end = 0, peak_time = 0;
-        for (int i = 0; i < m_peak_list.size(); ++i) {
-            double time = m_peak_list[i].end * m_spectrum.Step() - m_peak_list[i].start * m_spectrum.Step() + m_spectrum.Step();
-            double start = m_peak_list[i].start * m_spectrum.Step() - m_spectrum.Step();
-            if (!qFuzzyCompare(time_pred, time)) {
-                if (peak_start == 0)
-                    m_thermogram_begin = start;
-                peak_start = start;
-                peak_time = time;
-                peak_end = m_peak_list[m_peak_list.size() - 1].end * m_spectrum.Step();
-                m_peak_rules.append(QPointF(start, time));
-            }
-            time_pred = time;
-        }
-        m_thermogram_end = peak_end;
-        m_peak_time = peak_time;
+        CompressRules();
     }
     FitBaseLine();
     m_initialised = true;
+    std::cout << "ThermogramHandler initialised!" << std::endl;
+    emit ThermogramChanged();
 }
 
 void ThermogramHandler::UpdatePeaks()
@@ -138,7 +128,8 @@ void ThermogramHandler::UpdatePeaks()
         else
             index_end = m_peak_rules[j + 1].x();
 
-        for (int i = index_start; i + (timestep)-1 < m_spectrum.XtoIndex(index_end); i += (timestep)) {
+        for (int i = index_start; i + (timestep)-1 < m_spectrum.XtoIndex(index_end) + 2; i += (timestep)) {
+            // qDebug() << i  << i + (timestep)-1<<m_spectrum.XtoIndex(index_end)  << i*m_spectrum.Step()  << (i + (timestep)-1)*m_spectrum.Step()<<m_spectrum.XtoIndex(index_end)*m_spectrum.Step();
             peak = PeakPick::Peak();
             peak.setPeakStart(i);
             peak.setPeakEnd(i + (timestep)-1);
@@ -204,23 +195,62 @@ void ThermogramHandler::IntegrateThermogram()
         m_initial_threshold = stdev2 / 10.0;
 
     m_integration_range_threshold = stdev2 / 10.0;
+    emit ThermogramChanged();
 }
 
 void ThermogramHandler::FitBaseLine()
 {
     std::vector<PeakPick::Peak> peak_list = m_peak_list.toStdVector();
-    PeakPick::BaseLine baseline(&m_spectrum);
-    baseline.setBaseLineRange(PeakPick::BaseLine::BLR::PeakWise);
-    baseline.setPolynomFit(PeakPick::BaseLine::Polynom::Slow);
-    baseline.setNoCoeffs(2);
-    baseline.setPeaks(&peak_list);
-    m_baseline = baseline.Fit();
+    PeakPick::BaseLine base(&m_spectrum);
+    base.setBaseLineRange(PeakPick::BaseLine::BLR::PeakWise);
+    base.setPolynomFit(PeakPick::BaseLine::Polynom::Slow);
+    base.setNoCoeffs(2);
+    base.setPeaks(&peak_list);
+    m_baseline = base.Fit();
+
+    m_baseline_grid.clear();
+    m_baseline_series.clear();
+
+    Vector baseline;
+    int steps = 1;
+
+    if (m_baseline.baselines.size() > 0)
+        baseline = m_baseline.baselines[0];
+
+    for (int i = 0; i < int(m_peak_list.size()); ++i) {
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        if (m_peak_list.size() == m_baseline.baselines.size() && m_baseline.x_grid_points.size() > 0) {
+            baseline = m_baseline.baselines[i];
+            for (int j = 0; j < int(m_baseline.x_grid_points[i].size()); ++j) {
+                m_baseline_grid << QPointF(m_baseline.x_grid_points[i][j], m_baseline.y_grid_points[i][j]);
+            }
+        }
+
+        steps = (m_peak_list[i].end - m_peak_list[i].start) / baseline_step_size + 1;
+
+        for (int j = m_peak_list[i].int_start; j < int(m_peak_list[i].int_end) - 1; j += steps)
+            m_baseline_series << QPointF(QPointF(m_spectrum.X(j), PeakPick::Polynomial(m_spectrum.X(j), baseline)));
+
+        //for (int j = m_peak_list[i].int_end; j < int(m_peak_list[i].end) - 1; j += steps)
+        //    m_baseline_ignored_series->append(QPointF(m_spec.X(j), PeakPick::Polynomial(m_spec.X(j), baseline)));
+
+        m_baseline_series << QPointF(m_spectrum.X(int(m_peak_list[i].int_end) - 1), PeakPick::Polynomial(m_spectrum.X(int(m_peak_list[i].int_end) - 1), baseline));
+        //m_baseline_ignored_series->append(QPointF(m_spec.X(int(m_peak_list[i].end) - 1), PeakPick::Polynomial(m_spec.X(int(m_peak_list[i].end) - 1), baseline)));
+    }
+
+    if (m_baseline.x_grid_points.size() == 1) {
+        for (int j = 0; j < int(m_baseline.x_grid_points[0].size()); j += steps) {
+            m_baseline_grid << QPointF(m_baseline.x_grid_points[0][j], m_baseline.y_grid_points[0][j]);
+        }
+    }
 
     /*
     if (m_baseline.baselines.size() == 1) {
         m_initial_baseline = m_baseline.baselines[0];
         m_coeffs->setValue(m_initial_baseline.size());
     }*/
+
+    emit BaseLineChanged();
 }
 
 void ThermogramHandler::CalibrateSystem()
@@ -347,4 +377,38 @@ void ThermogramHandler::AdjustIntegrationRange()
     FitBaseLine();
     // Update();
     // setGuideText(QString("Adaption of the baseline took %1 cycles").arg(m_last_iteration_max));
+}
+
+void ThermogramHandler::ConvertRules()
+{
+    m_peak_rules.clear();
+    for (int i = 0; i < m_peak_list.size(); ++i) {
+        m_peak_rules << QPointF((m_peak_list[i].start) * m_spectrum.Step() + m_spectrum.XMin(), (m_peak_list[i].end - m_peak_list[i].start) * m_spectrum.Step() + m_spectrum.XMin());
+    }
+    m_rules_imported = true;
+    emit PeakRulesChanged();
+}
+
+void ThermogramHandler::CompressRules()
+{
+    m_frequency = m_spectrum.Step();
+    m_peak_rules.clear();
+    double time_pred = 0;
+    double peak_start = 0, peak_end = 0, peak_time = 0;
+    for (int i = 0; i < m_peak_list.size(); ++i) {
+        double time = m_peak_list[i].end * m_spectrum.Step() - m_peak_list[i].start * m_spectrum.Step() + m_spectrum.Step();
+        double start = m_peak_list[i].start * m_spectrum.Step() + m_spectrum.XMin();
+        if (!qFuzzyCompare(time_pred, time)) {
+            if (peak_start == 0)
+                m_thermogram_begin = start;
+            peak_start = start;
+            peak_time = time;
+            peak_end = m_peak_list[m_peak_list.size() - 1].end * m_spectrum.Step();
+            m_peak_rules.append(QPointF(start, time));
+        }
+        time_pred = time;
+    }
+    m_thermogram_end = peak_end;
+    m_peak_time = peak_time;
+    emit PeakRulesChanged();
 }

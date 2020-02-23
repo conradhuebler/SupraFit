@@ -796,7 +796,7 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
     qreal last_x = 0;
     offset = 0;
     PeakPick::Peak floating_peak;
-    int i_offset = 0, sytemcounter = 0;
+    int i_offset = 0, sytemcounter = 0, index = -1;
     for (const QString& str : filecontent) {
         if (str.contains("$") || str.contains("#") || str.contains("?") || str.contains("%")) {
             if (str.contains("%")) {
@@ -829,7 +829,7 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
             if (skip)
                 continue;
             start_peak = true;
-            floating_peak.setPeakEnd(last_x);
+            floating_peak.setPeakEnd(index);
             if (last_x && floating_peak.start)
                 peaks->push_back(floating_peak);
             inject << str.split(",")[1].toDouble();
@@ -843,8 +843,10 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
                 }
                 entries_x.push_back(elements[0].toDouble());
                 entries_y.push_back(elements[1].toDouble());
+                index++;
                 if (start_peak) {
-                    floating_peak.setPeakStart(elements[0].toDouble() / freq);
+                    // floating_peak.setPeakStart(elements[0].toDouble() / freq);
+                    floating_peak.setPeakStart(index);
                     start_peak = false;
                 }
                 last_x = elements[0].toDouble() / freq;
@@ -852,7 +854,8 @@ QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vecto
         }
     }
 
-    floating_peak.setPeakEnd(last_x);
+    //floating_peak.setPeakEnd(last_x);
+    floating_peak.setPeakEnd(index);
     peaks->push_back(floating_peak);
 
     offset /= double(i_offset);

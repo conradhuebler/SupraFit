@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@
 
 #include "src/core/instance.h"
 #include "src/core/libmath.h"
+#include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
 
 #include "src/global.h"
@@ -62,11 +63,13 @@
 
 static int baseline_step_size = 50;
 
-ThermogramWidget::ThermogramWidget(QWidget* parent)
+ThermogramWidget::ThermogramWidget(QPointer<ThermogramHandler> thermogram, QWidget* parent)
     : QWidget(parent)
+    , m_stored_thermogram(thermogram)
 {
     setUi();
     CreateSeries();
+    InitialiseChart();
 }
 
 void ThermogramWidget::setUi()
@@ -171,7 +174,7 @@ void ThermogramWidget::setUi()
     m_convert_rules->setFlat(true);
     m_convert_rules->setToolTip(tr("Convert the current peak list into peak rules."));
     m_convert_rules->setIcon(Icon("document-import"));
-    connect(m_convert_rules, &QPushButton::clicked, this, &ThermogramWidget::ConvertRules);
+    connect(m_convert_rules, &QPushButton::clicked, m_stored_thermogram, &ThermogramHandler::ConvertRules);
 
     m_load_rules = new QPushButton;
     m_load_rules->setFlat(true);
@@ -459,6 +462,10 @@ void ThermogramWidget::setUi()
         settings.beginGroup("thermogram");
         settings.setValue("peaks_time", value);
     });
+
+    connect(m_stored_thermogram, &ThermogramHandler::ThermogramChanged, this, &ThermogramWidget::Update);
+    connect(m_stored_thermogram, &ThermogramHandler::PeakRulesChanged, this, &ThermogramWidget::UpdateRules);
+    connect(m_stored_thermogram, &ThermogramHandler::BaseLineChanged, this, &ThermogramWidget::UpdateBaseLine);
 }
 
 ThermogramWidget::~ThermogramWidget()
@@ -501,8 +508,6 @@ void ThermogramWidget::setThermogram(PeakPick::spectrum* spec, qreal offset)
 
     m_peaks_start->setValue(m_spec.XMin());
     m_peaks_end->setValue(m_spec.XMax() - m_calibration_start->value() * m_spec.Step());
-
-    UpdatePlot();
 }
 
 void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
@@ -539,21 +544,24 @@ void ThermogramWidget::setPeakList(const std::vector<PeakPick::Peak>& peak_list)
 
 void ThermogramWidget::UpdateTable()
 {
+    const QVector<PeakPick::Peak>* peaks = m_stored_thermogram->Peaks();
+
     m_table->clear();
-    m_table->setRowCount(m_peak_list.size());
+    m_table->setRowCount(peaks->size());
     m_table->setColumnCount(3);
-    for (unsigned int j = 0; j < m_peak_list.size(); ++j) {
+
+    for (unsigned int j = 0; j < peaks->size(); ++j) {
         QTableWidgetItem* newItem;
 
-        newItem = new QTableWidgetItem(QString::number(m_peak_list[j].integ_num));
+        newItem = new QTableWidgetItem(QString::number(peaks->at(j).integ_num));
         newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         m_table->setItem(j, 0, newItem);
 
-        newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].start)));
+        newItem = new QTableWidgetItem(QString::number(m_stored_thermogram->Spectrum()->X(peaks->at(j).start)));
         newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         m_table->setItem(j, 1, newItem);
 
-        newItem = new QTableWidgetItem(QString::number(m_spec.X(m_peak_list[j].end)));
+        newItem = new QTableWidgetItem(QString::number(m_stored_thermogram->Spectrum()->X(peaks->at(j).end)));
         newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
 
         m_table->setItem(j, 2, newItem);
@@ -565,9 +573,9 @@ void ThermogramWidget::UpdateTable()
     m_table->resizeColumnsToContents();
 }
 
-void ThermogramWidget::UpdatePlot()
+void ThermogramWidget::InitialiseChart()
 {
-    fromSpectrum(&m_spec, m_thermogram_series);
+    //fromSpectrum(&m_spec, m_thermogram_series);
     double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
     m_thermogram->addSeries(m_thermogram_series);
     m_thermogram_series->setSize(lineWidth);
@@ -600,7 +608,7 @@ void ThermogramWidget::clear()
 
 void ThermogramWidget::Update()
 {
-    Integrate(&m_peak_list, &m_spec);
+    //    Integrate(&m_peak_list, &m_spec);
     UpdateTable();
     UpdateSeries();
 }
@@ -654,8 +662,34 @@ void ThermogramWidget::Integrate(std::vector<PeakPick::Peak>* peaks, const PeakP
     ApplyCalibration();
 }
 
+void ThermogramWidget::UpdateBaseLine()
+{
+    Waiter wait;
+
+    m_base_grids->clear();
+    //m_base_grids->hide();
+    m_baseline_series->clear();
+    //m_baseline_series->hide();
+    m_baseline_ignored_series->clear();
+    m_baseline_ignored_series->hide();
+
+    m_base_grids->append(m_stored_thermogram->BaselineGrid());
+    m_thermogram->addSeries(m_base_grids);
+
+    m_baseline_series->append(m_stored_thermogram->BaselineSeries());
+    m_thermogram->addSeries(m_baseline_series);
+
+    m_base_grids->setMarkerSize(8);
+}
+
 void ThermogramWidget::UpdateSeries()
 {
+    Waiter wait;
+    m_thermogram_series->clear();
+    m_thermogram_series->append(m_stored_thermogram->ThermogramSeries());
+    // m_thermogram->addSeries(m_thermogram_series);
+
+    /*
     CalibrateSystem();
 
     Waiter wait;
@@ -704,6 +738,7 @@ void ThermogramWidget::UpdateSeries()
     m_thermogram->addSeries(m_base_grids);
     m_thermogram->addSeries(m_baseline_series);
     m_thermogram->addSeries(m_baseline_ignored_series);
+    */
 }
 
 void ThermogramWidget::ApplyCalibration()
@@ -858,8 +893,6 @@ void ThermogramWidget::setFit(const QJsonObject& fit)
         m_peaks_end->setValue(m_spec.XMax() - m_calibration_start->value() * m_spec.Step());
 
         m_guide_label->setText(QString("<font color='red'>The raw data files are not in place. I will use the stored thermogram.</font>"));
-
-        UpdatePlot();
     }
 
     m_const_offset->setValue(fit["constants"].toDouble());
@@ -955,9 +988,24 @@ void ThermogramWidget::CreateSeries()
 
 void ThermogramWidget::UpdatePeaks()
 {
+    QVector<QPointF> peak_rules;
+
+    for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
+        PeakRule* item = dynamic_cast<PeakRule*>((m_peak_rule_list->item(i, 0)));
+
+        double start = item->data(Qt::DisplayRole).toDouble();
+        item = dynamic_cast<PeakRule*>(m_peak_rule_list->item(i, 1));
+        double time = item->data(Qt::DisplayRole).toDouble();
+        peak_rules << QPointF(start, time);
+    }
+    m_stored_thermogram->setPeakRules(peak_rules);
+    m_stored_thermogram->UpdatePeaks();
+    m_stored_thermogram->FitBaseLine();
+    m_stored_thermogram->IntegrateThermogram();
+    /*
     if (m_spec.Step() == 0)
         return;
-
+    qDebug() << m_stored_thermogram->PeakRules();
     qreal offset = 0;
     int off = 1;
     int rules_size = m_peak_rule_list->rowCount();
@@ -998,6 +1046,7 @@ void ThermogramWidget::UpdatePeaks()
         m_baseline.baselines[0](0) = m_offset;
 
         ResetGuideLabel();
+        */
 }
 
 void ThermogramWidget::AddRectanglePeak(const QPointF& point1, const QPointF& point2)
@@ -1211,19 +1260,21 @@ void ThermogramWidget::ResetGuideLabel()
         m_guide_label->clear();
 }
 
-void ThermogramWidget::ConvertRules()
+void ThermogramWidget::UpdateRules()
 {
+    QVector<QPointF> peak_rules = m_stored_thermogram->PeakRules();
+
     m_peak_rule_list->clear();
-    m_peak_rule_list->setRowCount(m_peak_list.size());
+    m_peak_rule_list->setRowCount(peak_rules.size());
 
     QStringList header = QStringList() << "Start Time\n[s]"
                                        << "Peak Duration\n[s]";
     m_peak_rule_list->setHorizontalHeaderLabels(header);
 
-    for (int i = 0; i < m_peak_list.size(); ++i) {
-        PeakRule* item = new PeakRule(QString::number((m_peak_list[i].start + 1) * m_spec.Step() + m_spec.XMin()));
+    for (int i = 0; i < peak_rules.size(); ++i) {
+        PeakRule* item = new PeakRule(QString::number(peak_rules[i].x()));
         m_peak_rule_list->setItem(i, 0, item);
-        item = new PeakRule(QString::number((m_peak_list[i].end - m_peak_list[i].start + 1) * m_spec.Step()));
+        item = new PeakRule(QString::number(peak_rules[i].y()));
         m_peak_rule_list->setItem(i, 1, item);
     }
     m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
@@ -1247,6 +1298,7 @@ void ThermogramWidget::LoadRules()
     m_peak_rule_list->setHorizontalHeaderLabels(header);
 
     QStringList blob = QString(file.readAll()).split("\n");
+    QVector<QPointF> peak_rules;
     int rows = 0;
     for (const QString& str : qAsConst(blob)) {
         if (str.isEmpty() || str.isNull())
@@ -1261,9 +1313,11 @@ void ThermogramWidget::LoadRules()
             item = new PeakRule(line[1]);
             m_peak_rule_list->setItem(rows, 1, item);
             rows++;
+            peak_rules << QPointF(line[0].toDouble(), line[1].toDouble());
         }
     }
     m_peak_rule_list->sortByColumn(0, Qt::AscendingOrder);
+    m_stored_thermogram->setPeakRules(peak_rules);
     m_rules_imported = false;
 }
 
@@ -1282,9 +1336,9 @@ void ThermogramWidget::WriteRules()
     stream << QString("#[s]") + "\t" + " [s] " + "\n";
 
     for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
-        QTableWidgetItem* item = (m_peak_rule_list->item(i, 0));
+        PeakRule* item = dynamic_cast<PeakRule*>((m_peak_rule_list->item(i, 0)));
         stream << item->data(Qt::DisplayRole).toString() << "\t";
-        item = m_peak_rule_list->item(i, 1);
+        item = dynamic_cast<PeakRule*>(m_peak_rule_list->item(i, 1));
         stream << item->data(Qt::DisplayRole).toString();
         if (i < m_peak_rule_list->rowCount() - 1)
             stream << "\n";

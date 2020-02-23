@@ -52,6 +52,8 @@ public:
 
     inline QVector<QPointF> PeakRules() const { return m_peak_rules; }
 
+    inline void setPeakRules(const QVector<QPointF>& peak_rules) { m_peak_rules = peak_rules; }
+
     inline void setCalibrationStart(int start) { m_calibration_start = start; }
 
     inline qreal ThermogramBegin() const { return m_thermogram_begin; }
@@ -75,8 +77,17 @@ public:
 
     qreal Calibration() const { return m_calibration_peak.integ_num; }
 
+    inline QList<QPointF> ThermogramSeries() const { return m_thermogram_series; }
+    inline QList<QPointF> BaselineSeries() const { return m_baseline_series; }
+    inline QList<QPointF> BaselineGrid() const { return m_baseline_grid; }
+
+    void ConvertRules();
+    void CompressRules();
+
 private:
-    QVector<QPointF> m_thermogram_series, m_baseline_series, m_peak_rules;
+    /* Chart Series use QList */
+    QList<QPointF> m_thermogram_series, m_baseline_series, m_baseline_grid;
+    QVector<QPointF> m_peak_rules;
     QVector<qreal> m_integrals_list, m_integrals_raw;
     QVector<PeakPick::Peak> m_peak_list;
     PeakPick::spectrum m_spectrum;
@@ -88,7 +99,7 @@ private:
     int m_calibration_start = 0, m_last_iteration_max = 0, m_iterations = 0, m_overshot_counter = 1;
     qreal m_thermogram_begin = 0, m_thermogram_end = 0, m_peak_time = 0, m_constant_offset = 0, m_calibration_heat = 0, m_calibration_ratio = 0;
     qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1, m_integration_range_threshold = 0;
-    bool m_initialised = false, m_cut_before = false;
+    bool m_initialised = false, m_cut_before = false, m_rules_imported = false;
     QString m_current_cut_option = QString("Custom");
     QStringList m_cut_options = QStringList() << "Custom"
                                               << "Zero"
@@ -96,6 +107,8 @@ private:
 
 signals:
     void ThermogramChanged();
+    void BaseLineChanged();
     void CalibrationChanged();
+    void PeakRulesChanged();
     void Message(const QString& message);
 };

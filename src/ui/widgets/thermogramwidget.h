@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,14 @@
 
 #include <QtCharts/QChart>
 
+#include "src/core/thermogramhandler.h"
+
 #include "libpeakpick/baseline.h"
 
 class QComboBox;
+class QCheckBox;
+class QDoubleSpinBox;
+class QLabel;
 class QLineEdit;
 class QSpinBox;
 class QSplitter;
@@ -66,7 +71,7 @@ public:
         RAW = 1
     };
 
-    ThermogramWidget(QWidget* parent = nullptr);
+    ThermogramWidget(QPointer<ThermogramHandler> thermogram, QWidget* parent = nullptr);
     ~ThermogramWidget();
 
     void setThermogram(PeakPick::spectrum* spec, qreal offset = 0.0);
@@ -95,11 +100,13 @@ public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }
     void FitBaseLine();
     void UpdatePeaks();
+    void UpdateBaseLine();
+    // void Update();
 
 private:
     void setUi();
     void UpdateTable();
-    void UpdatePlot();
+    void InitialiseChart();
     void CreateSeries();
     void UpdateSeries();
 
@@ -148,6 +155,8 @@ private:
                                                    << "Zero"
                                                    << "Threshold";
 
+    QPointer<ThermogramHandler> m_stored_thermogram;
+
 private slots:
     bool CutAllLimits();
     void UpdateFit(const QString& str);
@@ -161,7 +170,7 @@ private slots:
     void PointDoubleClicked(const QPointF& point);
     void scaleUp();
     void scaleDown();
-    void ConvertRules();
+    void UpdateRules();
     void LoadRules();
     void WriteRules();
 };
