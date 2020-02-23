@@ -56,8 +56,10 @@ public:
 
     inline void setCalibrationStart(int start) { m_calibration_start = start; }
 
+    inline void setThermogramBegin(qreal begin) { m_thermogram_begin = begin; }
     inline qreal ThermogramBegin() const { return m_thermogram_begin; }
 
+    inline void setThermogramEnd(qreal end) { m_thermogram_end = end; }
     inline qreal ThermogramEnd() const { return m_thermogram_end; }
 
     inline qreal IntegrationRangeThreshold() const { return m_integration_range_threshold; }
@@ -83,6 +85,13 @@ public:
 
     void ConvertRules();
     void CompressRules();
+
+    inline void setCurrentCutOption(const QString& current_cut_option) { m_current_cut_option = current_cut_option; }
+    inline void setInitialThreshold(double initial_threshold) { m_initial_threshold = initial_threshold; }
+    inline void setMaximalIterations(int iterations) { m_iterations = iterations; }
+    inline void setOvershotCounter(int overshot_counter) { m_overshot_counter = overshot_counter; }
+    inline void setCutBefore(bool cut_before) { m_cut_before = cut_before; }
+    inline int LastIterations() const { return m_last_iteration_max; }
 
 private:
     /* Chart Series use QList */

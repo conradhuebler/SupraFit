@@ -84,11 +84,6 @@ public:
     void PickPeaks();
     void clear();
 
-    void setFit(const QJsonObject& fit);
-    QJsonObject Fit() const;
-
-    inline std::vector<PeakPick::Peak> Peaks() const { return m_peak_list; }
-
     inline void setFileType(const FileType filetype) { m_filetype = filetype; }
 
     inline double Frequency() const { return m_frequency; }
@@ -109,24 +104,21 @@ private:
     void InitialiseChart();
     void CreateSeries();
     void UpdateSeries();
+    void ApplyParameter();
 
-    void fromSpectrum(const PeakPick::spectrum* original, LineSeries* series);
-
-    void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
     void CalibrateSystem();
     void ApplyCalibration();
     void ResetGuideLabel();
 
     void setGuideText(const QString& str);
 
-    QCheckBox* m_direction;
     QComboBox *m_baseline_type, *m_fit_type, *m_integration_range;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity, *m_iterations, *m_overshot;
     QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold, *m_gradient;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
-    QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick, *m_convert_rules, *m_load_rules, *m_write_rules, *m_clear_rules;
-    QCheckBox *m_limits, *m_smooth, *m_poly_slow;
+    QPushButton *m_fit_button, *m_peak_apply, *m_adjust_integration, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick, *m_convert_rules, *m_load_rules, *m_write_rules, *m_clear_rules;
+    QCheckBox *m_limits, *m_smooth, *m_poly_slow, *m_direction;
     QTableWidget *m_table, *m_peak_rule_list;
     ChartView* m_thermogram;
 
@@ -158,7 +150,6 @@ private:
     QPointer<ThermogramHandler> m_stored_thermogram;
 
 private slots:
-    bool CutAllLimits();
     void UpdateFit(const QString& str);
     void PeakDoubleClicked(const QModelIndex& index);
     void PeakRuleDoubleClicked(const QModelIndex& index);

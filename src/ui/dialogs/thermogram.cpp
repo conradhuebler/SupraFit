@@ -318,7 +318,7 @@ void Thermogram::setUi()
             m_scale->setCurrentText(QString::number(cal2joule));
         else
             m_scale->setCurrentText("1");
-        this->m_exp_peaks = this->m_experiment->Peaks();
+        //this->m_exp_peaks = this->m_experiment->Peaks();
         this->UpdateTable();
     });
 
@@ -581,7 +581,7 @@ void Thermogram::setDilutionFile(QString filename)
         //m_dilution->setThermogram(&original, offset);
         //m_dilution->setPeakList(m_exp_peaks);
         m_dil_base->setText(QString::number(offset));
-        m_dil_peaks = m_dilution->Peaks();
+        //m_dil_peaks = m_dilution->Peaks();
     } else {
         original = LoadXYFile(filename);
         m_dilution->setFileType(ThermogramWidget::FileType::RAW);
@@ -672,13 +672,13 @@ QJsonObject Thermogram::Raw() const
 {
     QJsonObject raw, block;
 
-    block["fit"] = m_experiment->Fit();
+    block["fit"] = m_experiment_thermogram->getThermogramParameter();
     File2JsonBlock(m_exp_file->text(), block);
 
     raw["experiment"] = block;
 
     if (!m_dil_file->text().isEmpty()) {
-        block["fit"] = m_dilution->Fit();
+        block["fit"] = m_dilution_thermogram->getThermogramParameter();
         block["file"] = m_dil_file->text();
         File2JsonBlock(m_dil_file->text(), block);
         raw["dilution"] = block;
@@ -725,14 +725,12 @@ QString Thermogram::ProjectName() const
 
 void Thermogram::setExperimentFit(const QJsonObject& json)
 {
-    m_experiment->setFit(json);
-    // QSignalBlocker blocker(m_freq);
-    // m_freq->setValue( m_experiment->Frequency() );
+    m_experiment_thermogram->setThermogramParameter(json);
 }
 
 void Thermogram::setDilutionFit(const QJsonObject& json)
 {
-    m_dilution->setFit(json);
+    m_dilution_thermogram->setThermogramParameter(json);
 }
 
 void Thermogram::ExportData()
