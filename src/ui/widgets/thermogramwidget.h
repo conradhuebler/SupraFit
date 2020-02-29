@@ -74,9 +74,7 @@ public:
     ThermogramWidget(QPointer<ThermogramHandler> thermogram, QWidget* parent = nullptr);
     ~ThermogramWidget();
 
-    void setThermogram(PeakPick::spectrum* spec, qreal offset = 0.0);
 
-    void setPeakList(const std::vector<PeakPick::Peak>& peak_list);
     void Update();
 
 
@@ -93,10 +91,8 @@ signals:
 
 public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }
-    void FitBaseLine();
     void UpdatePeaks();
     void UpdateBaseLine();
-    // void Update();
 
 private:
     void setUi();
@@ -130,7 +126,7 @@ private:
 
     QVector<qreal> m_integrals_raw;
     PeakPick::spectrum m_spec;
-    std::vector<PeakPick::Peak> m_peak_list;
+    QVector<PeakPick::Peak> m_peak_list;
     PeakPick::Peak m_calibration_peak;
     bool m_spectrum = false, m_block = false, m_peak_edit_mode = false, m_rules_imported = false;
 
@@ -150,7 +146,6 @@ private:
     QPointer<ThermogramHandler> m_stored_thermogram;
 
 private slots:
-    void UpdateFit(const QString& str);
     void PeakDoubleClicked(const QModelIndex& index);
     void PeakRuleDoubleClicked(const QModelIndex& index);
     void PeakRuleDoubleClicked(const QTableWidgetItem* item, int peak);
