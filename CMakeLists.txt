@@ -156,6 +156,9 @@ set(core_SRC
     src/global.cpp
 )
 
+set(python_SRC
+    src/core/pythonbridge.cpp
+    )
 
 add_library(core ${core_SRC})
 
@@ -266,6 +269,8 @@ add_executable(suprafit_cli ${suprafit_cli_SRCS})
 
 set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
+add_library(pythonbridge SHARED ${python_SRC})
+
 
 set_property(TARGET core models PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
@@ -274,6 +279,9 @@ set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
 target_link_libraries(suprafit suprafit_gui models core cutechart)
 
 target_link_libraries(suprafit_cli models core)
+
+target_link_libraries(pythonbridge models core)
+
 
 if(testing)
     enable_testing()
