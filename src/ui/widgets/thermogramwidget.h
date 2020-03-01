@@ -85,6 +85,9 @@ public:
     inline void setFileType(const FileType filetype) { m_filetype = filetype; }
 
     inline double Frequency() const { return m_frequency; }
+
+    void LoadDefaultThermogram();
+
 signals:
     void IntegrationChanged();
     void CalibrationChanged(double value);
@@ -137,6 +140,8 @@ private:
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
     qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1;
+    qreal m_CalibrationStart = 0, m_PeakDuration = 0, m_CalibrationHeat = 0, m_ScalingFactor = 0;
+    int m_PeakCount = 0;
     QString m_base, m_fit;
     FileType m_filetype;
     QStringList m_Peak_Cut_Options = QStringList() << "Custom"

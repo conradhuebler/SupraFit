@@ -54,13 +54,13 @@ public:
 
     inline void setPeakRules(const QVector<QPointF>& peak_rules) { m_peak_rules = peak_rules; }
 
-    inline void setCalibrationStart(int start) { m_calibration_start = start; }
+    inline void setCalibrationStart(int start) { m_CalibrationStart = start; }
 
-    inline void setThermogramBegin(qreal begin) { m_thermogram_begin = begin; }
-    inline qreal ThermogramBegin() const { return m_thermogram_begin; }
+    inline void setThermogramBegin(qreal begin) { m_ThermogramBegin = begin; }
+    inline qreal ThermogramBegin() const { return m_ThermogramBegin; }
 
-    inline void setThermogramEnd(qreal end) { m_thermogram_end = end; }
-    inline qreal ThermogramEnd() const { return m_thermogram_end; }
+    inline void setThermogramEnd(qreal end) { m_ThermogramEnd = end; }
+    inline qreal ThermogramEnd() const { return m_ThermogramEnd; }
 
     inline qreal IntegrationRangeThreshold() const { return m_integration_range_threshold; }
 
@@ -71,7 +71,7 @@ public:
     void setThermogramParameter(const QJsonObject& thermogram_parameter) { m_thermogram_parameter = thermogram_parameter; }
     QJsonObject getThermogramParameter() const;
 
-    void setCalibrationHeat(qreal heat) { m_calibration_heat = heat; }
+    void setCalibrationHeat(qreal heat) { m_CalibrationHeat = heat; }
     void setConstantOffset(qreal offset) { m_constant_offset = offset; }
 
     void UpdatePeaks();
@@ -86,7 +86,7 @@ public:
     void ConvertRules();
     void CompressRules();
 
-    inline void setCurrentCutOption(const QString& current_cut_option) { m_current_cut_option = current_cut_option; }
+    inline void setCurrentCutOption(const QString& current_integration_scheme) { m_current_integration_scheme = current_integration_scheme; }
     inline void setInitialThreshold(double initial_threshold) { m_initial_threshold = initial_threshold; }
     inline void setMaximalIterations(int iterations) { m_iterations = iterations; }
     inline void setOvershotCounter(int overshot_counter) { m_overshot_counter = overshot_counter; }
@@ -105,14 +105,17 @@ private:
 
     QJsonObject m_thermogram_parameter;
 
-    int m_calibration_start = 0, m_last_iteration_max = 0, m_iterations = 0, m_overshot_counter = 1;
-    qreal m_thermogram_begin = 0, m_thermogram_end = 0, m_peak_time = 0, m_constant_offset = 0, m_calibration_heat = 0, m_calibration_ratio = 0;
+    int m_last_iteration_max = 0, m_iterations = 0, m_overshot_counter = 1, m_PeakCount = 0;
+    qreal m_ThermogramBegin = 0, m_ThermogramEnd = 0, m_PeakDuration = 0, m_CalibrationStart = 0, m_constant_offset = 0, m_CalibrationHeat = 0, m_calibration_ratio = 0, m_scaling_factor = 1;
     qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1, m_integration_range_threshold = 0;
     bool m_initialised = false, m_cut_before = false, m_rules_imported = false;
-    QString m_current_cut_option = QString("Custom");
-    QStringList m_cut_options = QStringList() << "Custom"
-                                              << "Zero"
-                                              << "Threshold";
+    QString m_current_integration_scheme = QString("Custom");
+    QStringList m_integration_scheme = QStringList() << "Custom"
+                                                     << "Zero"
+                                                     << "Threshold";
+
+    void LegacyLoad();
+    void LoadParameter();
 
 signals:
     void ThermogramChanged();

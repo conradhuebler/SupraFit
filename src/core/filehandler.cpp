@@ -71,7 +71,11 @@ void FileHandler::LoadFile()
         m_filetype = FileType::SupraFit;
     else if ((info.suffix()).toLower() == "dh")
         m_filetype = FileType::dH;
-    else if ((info.suffix()).toLower() == "itc") {
+    else if ((info.suffix()).toLower() == "itc" || m_thermogram) {
+
+        if ((info.suffix()).toLower() != "itc")
+            m_plain_thermogram = true;
+
         m_filetype = FileType::ITC;
         ReadITC();
         return;
@@ -234,11 +238,19 @@ void FileHandler::ReadITC()
     std::vector<PeakPick::Peak> peak_list;
     qreal freq = 0;
     QVector<qreal> inject;
-    QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(m_filename, &peak_list, offset, freq, inject);
-    PeakPick::spectrum spectrum = pair.first;
-    m_systemparameter = pair.second;
-    thermogram->setThermogram(spectrum);
-    thermogram->setPeakList(peak_list);
+    if (m_plain_thermogram) {
+        QPair<Vector, Vector> pair = ToolSet::LoadXYFile(m_filename);
+        PeakPick::spectrum spectrum = PeakPick::spectrum(pair.first, pair.second);
+        thermogram->setThermogram(spectrum);
+        thermogram->setThermogramParameter(m_thermogram_parameter);
+        inject.fill(m_thermogram_parameter["InjectVolume"].toDouble(), m_thermogram_parameter["PeakCount"].toInt());
+    } else {
+        QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(m_filename, &peak_list, offset, freq, inject);
+        PeakPick::spectrum spectrum = pair.first;
+        m_systemparameter = pair.second;
+        thermogram->setThermogram(spectrum);
+        thermogram->setPeakList(peak_list);
+    }
     thermogram->Initialise();
     thermogram->UpdatePeaks();
     thermogram->AdjustIntegrationRange();

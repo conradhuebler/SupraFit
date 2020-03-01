@@ -44,40 +44,11 @@ void ThermogramHandler::Initialise()
 {
 
     if (!m_thermogram_parameter.isEmpty()) {
-        if (m_thermogram_parameter.contains("thermogram")) {
-            Vector x, y;
-            x = ToolSet::String2DoubleEigVec(m_thermogram_parameter["thermogram"].toObject()["x"].toString());
-            y = ToolSet::String2DoubleEigVec(m_thermogram_parameter["thermogram"].toObject()["y"].toString());
-            m_spectrum.setSpectrum(x, y);
 
-            m_frequency = m_spectrum.Step();
-
-            m_calibration_start = (m_thermogram_parameter["calibration_start"].toDouble());
-            m_calibration_heat = (m_thermogram_parameter["calibration_heat"].toDouble());
-
-            m_thermogram_begin = (m_spectrum.XMax());
-            m_thermogram_end = (m_spectrum.XMax() - m_calibration_start * m_spectrum.Step());
-
-            emit Message(QString("<font color='red'>The raw data files are not in place. I will use the stored thermogram.</font>"));
-        }
-
-        m_constant_offset = (m_thermogram_parameter["constants"].toDouble());
-        m_integration_range_threshold = (m_thermogram_parameter["integration_range_threshold"].toDouble());
-        // m_integration_range->setCurrentText(m_thermogram_parameter["integration_range"].toString());
-        m_initial_threshold = m_thermogram_parameter["integration_range"].toDouble();
-
-        m_thermogram_begin = m_thermogram_parameter["start_time"].toDouble();
-        m_peak_time = m_thermogram_parameter["peak_time"].toDouble();
-        m_thermogram_end = m_thermogram_parameter["end_time"].toDouble();
-        m_iterations = m_thermogram_parameter["iter"].toInt();
-
-        m_peak_rules = ToolSet::String2PointsVector(m_thermogram_parameter["rules_list"].toString());
-        UpdatePeaks();
-        QVector<QPointF> points = ToolSet::String2PointsVector(m_thermogram_parameter["peak_int_ranges"].toString());
-        for (std::size_t i = 0; i < m_peak_list.size(); ++i) {
-            m_peak_list[i].int_start = points[i].x();
-            m_peak_list[i].int_end = points[i].y();
-        }
+        if (!m_thermogram_parameter.contains("SupraFit"))
+            LegacyLoad();
+        else
+            LoadParameter();
     }
     if (m_spectrum.size() == 0) {
         std::cout << "No Thermogram found. ThermogramHandler is not initialised!" << std::endl;
@@ -86,13 +57,24 @@ void ThermogramHandler::Initialise()
         for (unsigned int i = 0; i < m_spectrum.x().size(); i++) {
             m_thermogram_series.append(QPointF(m_spectrum.x()[i], m_spectrum.y()[i]));
         }
-        m_thermogram_end = m_spectrum.XMax();
+
+        if (qFuzzyCompare(m_ThermogramEnd, 0))
+            m_ThermogramEnd = m_spectrum.XMax();
     }
 
     if (m_peak_list.size() == 0) {
-        std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is not initialised!" << std::endl;
         m_initialised = true;
-        return;
+        if (m_spectrum.size() && m_ThermogramEnd > 0 && m_PeakCount && m_PeakDuration) {
+            double end = m_spectrum.XMax();
+            m_ThermogramEnd = end - m_CalibrationStart;
+            m_ThermogramBegin = m_ThermogramEnd - m_PeakCount * m_PeakDuration;
+            m_peak_rules.clear();
+            m_peak_rules << QPointF(m_ThermogramBegin, m_PeakDuration);
+            UpdatePeaks();
+        } else {
+            std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is not initialised!" << std::endl;
+            return;
+        }
     } else {
         CompressRules();
     }
@@ -100,6 +82,131 @@ void ThermogramHandler::Initialise()
     m_initialised = true;
     std::cout << "ThermogramHandler initialised!" << std::endl;
     emit ThermogramChanged();
+}
+
+void ThermogramHandler::LoadParameter()
+{
+    if (!m_thermogram_parameter.isEmpty()) {
+        if (m_thermogram_parameter.contains("Thermogram")) {
+            Vector x, y;
+            x = ToolSet::String2DoubleEigVec(m_thermogram_parameter["Thermogram"].toObject()["x"].toString());
+            y = ToolSet::String2DoubleEigVec(m_thermogram_parameter["Thermogram"].toObject()["y"].toString());
+            m_spectrum.setSpectrum(x, y);
+
+            m_frequency = m_spectrum.Step();
+
+            //m_ThermogramBegin = (m_spectrum.XMax());
+            //m_ThermogramEnd = (m_spectrum.XMax() - m_CalibrationStart * m_spectrum.Step());
+
+            emit Message(QString("<font color='red'>The raw data files are not in place. I will use the stored thermogram.</font>"));
+        }
+
+        if (m_thermogram_parameter.contains("PeakCount"))
+            m_PeakCount = (m_thermogram_parameter["PeakCount"].toDouble());
+
+        if (m_thermogram_parameter.contains("CalibrationStart"))
+            m_CalibrationStart = (m_thermogram_parameter["CalibrationStart"].toDouble());
+
+        if (m_thermogram_parameter.contains("CalibrationHeat"))
+            m_CalibrationHeat = (m_thermogram_parameter["CalibrationHeat"].toDouble());
+
+        if (m_thermogram_parameter.contains("ConstantOffset"))
+            m_constant_offset = (m_thermogram_parameter["ConstantOffset"].toDouble());
+
+        if (m_thermogram_parameter.contains("ScalingFactor"))
+            m_scaling_factor = (m_thermogram_parameter["ScalingFactor"].toDouble());
+
+        if (m_thermogram_parameter.contains("IntegrationRangeThreshold"))
+            m_integration_range_threshold = (m_thermogram_parameter["IntegrationRangeThreshold"].toDouble());
+
+        // m_integration_range->setCurrentText(m_thermogram_parameter["integration_range"].toString());
+
+        if (m_thermogram_parameter.contains("IntegrationScheme"))
+            m_current_integration_scheme = m_thermogram_parameter["IntegrationScheme"].toString();
+
+        if (m_thermogram_parameter.contains("ThermogramBegin"))
+            m_ThermogramBegin = m_thermogram_parameter["ThermogramBegin"].toDouble();
+
+        if (m_thermogram_parameter.contains("ThermogramEnd"))
+            m_ThermogramEnd = m_thermogram_parameter["ThermogramEnd"].toDouble();
+
+        if (m_thermogram_parameter.contains("PeakDuration"))
+            m_PeakDuration = m_thermogram_parameter["PeakDuration"].toDouble();
+
+        if (m_thermogram_parameter.contains("MaxIteration"))
+            m_iterations = m_thermogram_parameter["MaxIteration"].toInt();
+
+        if (m_thermogram_parameter.contains("PeakRuleList"))
+            m_peak_rules = ToolSet::String2PointsVector(m_thermogram_parameter["PeakRuleList"].toString());
+
+        UpdatePeaks();
+        if (m_thermogram_parameter.contains("PeakRuleList")) {
+            QVector<QPointF> points = ToolSet::String2PointsVector(m_thermogram_parameter["PeakRuleList"].toString());
+            for (std::size_t i = 0; i < m_peak_list.size(); ++i) {
+                m_peak_list[i].int_start = points[i].x();
+                m_peak_list[i].int_end = points[i].y();
+            }
+        }
+    }
+}
+
+void ThermogramHandler::LegacyLoad()
+{
+    if (m_thermogram_parameter.contains("thermogram")) {
+        Vector x, y;
+        x = ToolSet::String2DoubleEigVec(m_thermogram_parameter["thermogram"].toObject()["x"].toString());
+        y = ToolSet::String2DoubleEigVec(m_thermogram_parameter["thermogram"].toObject()["y"].toString());
+        m_spectrum.setSpectrum(x, y);
+
+        m_frequency = m_spectrum.Step();
+
+        //      m_ThermogramBegin = (m_spectrum.XMax());
+        //      m_ThermogramEnd = (m_spectrum.XMax() - m_CalibrationStart * m_spectrum.Step());
+
+        emit Message(QString("<font color='red'>The raw data files are not in place. I will use the stored thermogram.</font>"));
+    }
+
+    if (m_thermogram_parameter.contains("calibration_start"))
+        m_CalibrationStart = (m_thermogram_parameter["calibration_start"].toDouble());
+
+    if (m_thermogram_parameter.contains("calibration_heat"))
+        m_CalibrationHeat = (m_thermogram_parameter["calibration_heat"].toDouble());
+
+    if (m_thermogram_parameter.contains("constants"))
+        m_constant_offset = (m_thermogram_parameter["constants"].toDouble());
+
+    if (m_thermogram_parameter.contains("integration_range_threshold"))
+        m_integration_range_threshold = (m_thermogram_parameter["integration_range_threshold"].toDouble());
+
+    // m_integration_range->setCurrentText(m_thermogram_parameter["integration_range"].toString());
+
+    if (m_thermogram_parameter.contains("integration_range"))
+        m_current_integration_scheme = m_thermogram_parameter["integration_range"].toString();
+
+    if (m_thermogram_parameter.contains("start_time"))
+        m_ThermogramBegin = m_thermogram_parameter["start_time"].toDouble();
+
+    if (m_thermogram_parameter.contains("peak_time"))
+        m_PeakDuration = m_thermogram_parameter["peak_time"].toDouble();
+
+    if (m_thermogram_parameter.contains("peak_time"))
+        m_ThermogramEnd = m_thermogram_parameter["end_time"].toDouble();
+
+    if (m_thermogram_parameter.contains("iter"))
+        m_iterations = m_thermogram_parameter["iter"].toInt();
+
+    if (m_thermogram_parameter.contains("rules_list"))
+        m_peak_rules = ToolSet::String2PointsVector(m_thermogram_parameter["rules_list"].toString());
+
+    UpdatePeaks();
+
+    if (m_thermogram_parameter.contains("peak_int_ranges")) {
+        QVector<QPointF> points = ToolSet::String2PointsVector(m_thermogram_parameter["peak_int_ranges"].toString());
+        for (int i = 0; i < m_peak_list.size(); ++i) {
+            m_peak_list[i].int_start = points[i].x();
+            m_peak_list[i].int_end = points[i].y();
+        }
+    }
 }
 
 void ThermogramHandler::UpdatePeaks()
@@ -110,7 +217,7 @@ void ThermogramHandler::UpdatePeaks()
     qreal offset = 0;
     int off = 1;
     int rules_size = m_peak_rules.size();
-    double end = m_thermogram_end - m_calibration_start * m_spectrum.Step(); //(m_thermogram_end - m_spectrum.XMin())/m_spectrum.Step();
+    double end = m_ThermogramEnd - m_CalibrationStart * m_spectrum.Step(); //(m_ThermogramEnd - m_spectrum.XMin())/m_spectrum.Step();
     m_peak_list.clear();
     PeakPick::Peak peak;
 
@@ -260,7 +367,7 @@ void ThermogramHandler::CalibrateSystem()
     if (m_spectrum.Step() == 0)
         return;
 
-    m_calibration_peak.setPeakStart(m_spectrum.size() - 1 - m_calibration_start * m_spectrum.Step());
+    m_calibration_peak.setPeakStart(m_spectrum.size() - 1 - m_CalibrationStart);
     m_calibration_peak.setPeakEnd(m_spectrum.size() - 1);
 
     std::vector<PeakPick::Peak> list;
@@ -285,15 +392,16 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
 {
     QJsonObject fit;
 
+    fit["SupraFit"] = qint_version;
     fit["constants"] = m_constant_offset;
     fit["frequency"] = m_frequency;
-    fit["start_time"] = m_thermogram_begin;
-    fit["end_time"] = m_thermogram_end;
-    fit["peak_time"] = m_peak_time;
-    fit["calibration_start"] = m_calibration_start;
-    fit["calibration_heat"] = m_calibration_heat;
+    fit["ThermogramBegin"] = m_ThermogramBegin;
+    fit["ThermogramEnd"] = m_ThermogramEnd;
+    fit["PeakDuration"] = m_PeakDuration;
+    fit["CalibrationStart"] = m_CalibrationStart;
+    fit["CalibrationHeat"] = m_CalibrationHeat;
 
-    fit["rules_list"] = ToolSet::Points2String(m_peak_rules);
+    fit["PeakRuleList"] = ToolSet::Points2String(m_peak_rules);
 
     QVector<QPointF> points;
     for (int i = 0; i < m_peak_list.size(); ++i)
@@ -323,7 +431,7 @@ void ThermogramHandler::AdjustIntegrationRange()
     int maxiter = 1;
     int direction = -1 * m_cut_before;
     /* Zero/Threshold Cutting */
-    if (m_current_cut_option == m_cut_options[0]) {
+    if (m_current_integration_scheme == m_integration_scheme[0]) {
         for (int i = 0; i < m_peak_list.size(); ++i) {
             m_peak_list[i].int_start = m_peak_list[i].start;
             m_peak_list[i].int_end = m_peak_list[i].end;
@@ -335,7 +443,7 @@ void ThermogramHandler::AdjustIntegrationRange()
 
         //Update();
         return;
-    } else if (m_current_cut_option == m_cut_options[2]) { /* Threshold cutting */
+    } else if (m_current_integration_scheme == m_integration_scheme[2]) { /* Threshold cutting */
         threshold = m_integration_range_threshold;
         maxiter = m_iterations;
     } else { /* Zero Cutting */
@@ -402,7 +510,7 @@ void ThermogramHandler::CompressRules()
         double start = m_peak_list[i].start * m_spectrum.Step() + m_spectrum.XMin();
         if (!qFuzzyCompare(time_pred, time)) {
             if (peak_start == 0)
-                m_thermogram_begin = start;
+                m_ThermogramBegin = start;
             peak_start = start;
             peak_time = time;
             peak_end = m_peak_list[m_peak_list.size() - 1].end * m_spectrum.Step();
@@ -410,7 +518,7 @@ void ThermogramHandler::CompressRules()
         }
         time_pred = time;
     }
-    m_thermogram_end = peak_end;
-    m_peak_time = peak_time;
+    m_ThermogramEnd = peak_end;
+    m_PeakDuration = peak_time;
     emit PeakRulesChanged();
 }

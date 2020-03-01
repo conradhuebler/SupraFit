@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     const QString print = parser.value("print");
     const QString job = parser.value("j");
 
-    if (infile.isEmpty() && job.isLower()) {
+    if (infile.isEmpty() && job.isEmpty()) {
         std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
         std::cout << "The simplest task for SupraFit to be done is opening a file and writing a project to disk." << std::endl;
         std::cout << "That would be like converting a *.json file to a *.suprafit file or vice versa :-)" << std::endl;
@@ -132,14 +132,24 @@ int main(int argc, char** argv)
 
                 Simulator* simulator = new Simulator;
                 simulator->setInFile(parser.value("i"));
+
                 bool analyse = simulator->setAnalyseJson(job["analyse"].toObject());
+                bool prepare = false;
                 if (job.keys().contains("main")) {
+                    if (job["main"].toObject().contains("Prepare")) {
+                        simulator->setPreparation(job["main"].toObject()["Prepare"].toObject());
+                        prepare = true;
+                    }
                     bool generate = simulator->setMainJson(job["main"].toObject());
                     bool model = simulator->setModelsJson(job["model"].toObject());
+
                     simulator->setJobsJson(job["jobs"].toObject());
 
                     if (generate) {
                         projects = simulator->GenerateData();
+                    } else if (prepare) {
+                        simulator->Prepare();
+                        projects = simulator->Data();
                     } else
                         projects = simulator->Data();
                     if (model) {

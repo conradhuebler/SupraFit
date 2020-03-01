@@ -449,6 +449,7 @@ void ThermogramWidget::setUi()
 
     QSettings settings;
     settings.beginGroup("thermogram");
+
     m_peaks_start->setValue(settings.value("peaks_start", 60).toDouble());
     m_peaks_time->setValue(settings.value("peaks_time", 150).toDouble());
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
@@ -488,6 +489,16 @@ ThermogramWidget::~ThermogramWidget()
     settings.setValue("integration_range", m_integration_range->currentText());
 }
 
+void ThermogramWidget::LoadDefaultThermogram()
+{
+    QJsonObject thermo;
+    thermo["CalibrationStart"] = m_CalibrationStart;
+    thermo["CalibrationHeat"] = m_CalibrationHeat;
+    thermo["PeakDuration"] = m_PeakDuration;
+    thermo["PeakCount"] = m_PeakCount;
+
+    m_stored_thermogram->setThermogramParameter(thermo);
+}
 
 void ThermogramWidget::UpdateTable()
 {

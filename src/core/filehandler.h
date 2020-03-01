@@ -62,8 +62,12 @@ public:
     inline void setStartPoint(int point) { m_start_point = point; }
     inline void setSeriesCount(int series) { m_series = series; }
     inline QJsonObject getJsonData() const { return m_topjson; }
-
-    void setThermogramParameter(const QJsonObject& thermogram_parameter) { m_thermogram_parameter = thermogram_parameter; }
+    inline void setThermogram(bool thermogram) { m_thermogram = thermogram; }
+    void setThermogramParameter(const QJsonObject& thermogram_parameter)
+    {
+        m_thermogram_parameter = thermogram_parameter;
+        m_thermogram = true;
+    }
 
 private:
     void ReadGeneric();
@@ -74,7 +78,7 @@ private:
 
     bool CheckForTable();
 
-    bool m_table, m_allint, m_file_supported;
+    bool m_table, m_allint, m_file_supported, m_thermogram = false, m_plain_thermogram = false;
     QPointer<DataTable> m_stored_table;
 
     QString m_filename, m_title;

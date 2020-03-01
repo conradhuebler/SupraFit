@@ -50,7 +50,19 @@ public:
     }
     QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_data_json; }
 
+    void setDataJson(const QJsonObject& datajson) { m_datajson = datajson; }
+
+    bool setMainJson(const QJsonObject& mainjson)
+    {
+        m_mainjson = mainjson;
+        setDataJson(m_mainjson["data"].toObject());
+        return !m_datajson.isEmpty();
+    }
+
+    inline void setPreparation(const QJsonObject& prepare) { m_prepare = prepare; }
+
     void OpenFile();
+    bool Prepare();
 
 signals:
 
@@ -58,7 +70,7 @@ public slots:
 
 protected:
     QString m_infile = QString(), m_outfile = QString(), m_extension = ".suprafit";
-    QJsonObject m_toplevel, m_data_json;
+    QJsonObject m_mainjson, m_toplevel, m_data_json, m_prepare, m_datajson;
     int m_independent_rows = 2, m_start_point = 0;
     int m_series = 0;
 };

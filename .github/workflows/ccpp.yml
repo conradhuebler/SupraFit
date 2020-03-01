@@ -14,7 +14,6 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        aqtversion: "==0.7.5"
         modules: qtcharts
     - name: Update Modules and Build
       run: sh scripts/build_unix.sh
