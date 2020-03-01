@@ -17,20 +17,46 @@
  *
  */
 
+#include <cstdlib>
+
 #include <QtCore/QDebug>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonObject>
 #include <QtCore/QString>
 
 #include "filehandler.h"
 #include "models/dataclass.h"
 #include "models/models.h"
+#include "toolset.h"
 
 #include "pythonbridge.h"
 
-void LoadFile(const char* c)
+CharPtrWrapper* LoadFile(const char* chars)
 {
-    QString file(c);
-    qDebug() << file;
+    QString file(chars);
     FileHandler* filehandler = new FileHandler(file);
     filehandler->LoadFile();
-    qDebug() << filehandler->getData()->ExportTable(true);
+    QJsonDocument saveDoc(filehandler->getJsonData());
+
+    CharPtrWrapper* ret;
+    ret = (CharPtrWrapper*)malloc(sizeof(CharPtrWrapper));
+
+    QString string = saveDoc.toJson(QJsonDocument::Compact);
+    ret->len = string.size();
+    ret->data = (char*)malloc(string.size() * sizeof(char));
+
+    for (int i = 0; i < ret->len; ++i)
+        ret->data[i] = string[i].toLatin1();
+    //std::cout << ret->data << std::endl;
+    return ret;
+}
+
+void Release(CharPtrWrapper* pWrap)
+{
+    if (pWrap) {
+        free(pWrap->data);
+        pWrap->data = NULL;
+        pWrap->len = 0;
+        free(pWrap);
+    }
 }

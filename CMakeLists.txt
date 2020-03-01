@@ -160,7 +160,7 @@ set(python_SRC
     src/core/pythonbridge.cpp
     )
 
-add_library(core ${core_SRC})
+add_library(core SHARED ${core_SRC})
 
 target_link_libraries(core Qt5::Core)
 
@@ -196,7 +196,7 @@ set(models_SRC
     src/core/models/misc/dep_any.cpp
  )
 
-add_library(models ${models_SRC})
+add_library(models SHARED ${models_SRC})
 
 target_link_libraries(models Qt5::Core)
 
@@ -269,18 +269,37 @@ add_executable(suprafit_cli ${suprafit_cli_SRCS})
 
 set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
+
+set(python_cli_SRCS
+                src/python/main.cpp
+          )
+
+add_executable(python_cli ${python_cli_SRCS})
+
+set_target_properties(python_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+
+
 add_library(pythonbridge SHARED ${python_SRC})
 
 
 set_property(TARGET core models PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
+set_property(TARGET pythonbridge PROPERTY CXX_STANDARD 14)
+set_property(TARGET python_cli PROPERTY CXX_STANDARD 14)
+
+
+set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+set_target_properties(pythonbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 target_link_libraries(suprafit suprafit_gui models core cutechart)
 
 target_link_libraries(suprafit_cli models core)
 
 target_link_libraries(pythonbridge models core)
+
+target_link_libraries(python_cli pythonbridge)
 
 
 if(testing)
@@ -307,6 +326,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
     install(TARGETS suprafit RUNTIME DESTINATION bin)
     install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
+    install(TARGETS models LIBRARY DESTINATION lib)
+    install(TARGETS core LIBRARY DESTINATION lib)
+    install(TARGETS pythonbridge LIBRARY DESTINATION lib)
+    #install(FILES src/python/main.py DESTINATION lib)
+
     # Install desktop entry
     install(FILES misc/SupraFit.desktop DESTINATION share/applications )
 
