@@ -71,6 +71,8 @@ void ThermogramHandler::Initialise()
             m_peak_rules.clear();
             m_peak_rules << QPointF(m_ThermogramBegin, m_PeakDuration);
             UpdatePeaks();
+        } else if (m_spectrum.size() && m_peak_list.size() && m_peak_rules.size()) {
+            UpdatePeaks();
         } else {
             std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is not initialised!" << std::endl;
             return;
@@ -142,6 +144,8 @@ void ThermogramHandler::LoadParameter()
         UpdatePeaks();
         if (m_thermogram_parameter.contains("PeakRuleList")) {
             QVector<QPointF> points = ToolSet::String2PointsVector(m_thermogram_parameter["PeakRuleList"].toString());
+            if (m_peak_list.size() != points.size())
+                return;
             for (std::size_t i = 0; i < m_peak_list.size(); ++i) {
                 m_peak_list[i].int_start = points[i].x();
                 m_peak_list[i].int_end = points[i].y();
@@ -217,7 +221,7 @@ void ThermogramHandler::UpdatePeaks()
     qreal offset = 0;
     int off = 1;
     int rules_size = m_peak_rules.size();
-    double end = m_ThermogramEnd - m_CalibrationStart * m_spectrum.Step(); //(m_ThermogramEnd - m_spectrum.XMin())/m_spectrum.Step();
+    double end = m_ThermogramEnd;
     m_peak_list.clear();
     PeakPick::Peak peak;
 
@@ -238,7 +242,6 @@ void ThermogramHandler::UpdatePeaks()
             index_end = m_peak_rules[j + 1].x();
         int i = 0;
         for (i = index_start; i + timestep < m_spectrum.XtoIndex(index_end) + 3; i += (timestep)) {
-            // qDebug() << i  << i + (timestep)-1<<m_spectrum.XtoIndex(index_end)  << i*m_spectrum.Step()  << (i + (timestep)-1)*m_spectrum.Step()<<m_spectrum.XtoIndex(index_end)*m_spectrum.Step();
             peak = PeakPick::Peak();
             peak.setPeakStart(i);
             peak.setPeakEnd(i + (timestep)-1);
@@ -253,7 +256,7 @@ void ThermogramHandler::UpdatePeaks()
     m_offset = offset / double(off);
     m_baseline.baselines.push_back(Vector(1));
     m_baseline.baselines[0](0) = m_offset;
-
+    CalibrateSystem();
     // ResetGuideLabel();
 }
 
@@ -364,7 +367,7 @@ void ThermogramHandler::FitBaseLine()
 
 void ThermogramHandler::CalibrateSystem()
 {
-    if (m_spectrum.Step() == 0)
+    if (m_spectrum.Step() == 0 || qFuzzyCompare(m_CalibrationHeat, 0))
         return;
 
     m_calibration_peak.setPeakStart(m_spectrum.size() - 1 - m_CalibrationStart);
@@ -373,9 +376,7 @@ void ThermogramHandler::CalibrateSystem()
     std::vector<PeakPick::Peak> list;
     list.push_back(m_calibration_peak);
 
-    PeakPick::spectrum* spectrum = new PeakPick::spectrum(m_spectrum);
-
-    PeakPick::BaseLine baseline(spectrum);
+    PeakPick::BaseLine baseline(&m_spectrum);
 
     baseline.setBaseLineRange(PeakPick::BaseLine::BLR::PeakWise);
     baseline.setNoCoeffs(2);
@@ -384,8 +385,7 @@ void ThermogramHandler::CalibrateSystem()
 
     PeakPick::BaseLineResult baseline_result = baseline.Fit();
 
-    m_calibration_peak.integ_num = PeakPick::IntegrateNumerical(spectrum, m_calibration_peak.start, m_calibration_peak.end, baseline_result.baselines[0]);
-    delete spectrum;
+    m_calibration_peak.integ_num = PeakPick::IntegrateNumerical(&m_spectrum, m_calibration_peak.start, m_calibration_peak.end, baseline_result.baselines[0]);
 }
 
 QJsonObject ThermogramHandler::getThermogramParameter() const

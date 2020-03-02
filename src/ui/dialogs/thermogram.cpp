@@ -701,8 +701,9 @@ void Thermogram::setRaw(const QJsonObject& object)
     }
 
     QJsonObject experiment = m_raw_data["experiment"].toObject();
-    setExperimentFile(experiment["file"].toString());
     setExperimentFit(experiment["fit"].toObject());
+    setExperimentFile(experiment["file"].toString());
+
     if (m_raw_data.keys().contains("scaling"))
         setScaling(m_raw_data["scaling"].toString());
 }

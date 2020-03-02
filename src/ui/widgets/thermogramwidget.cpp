@@ -300,10 +300,9 @@ void ThermogramWidget::setUi()
     m_calibration_start->setValue(qApp->instance()->property("calibration_start").toDouble());
     connect(m_calibration_start, qOverload<double>(&QDoubleSpinBox::valueChanged), m_calibration_start, [this](double value) {
         qApp->instance()->setProperty("calibration_start", value);
-        m_peaks_end->setMaximum(m_stored_thermogram->Spectrum()->XMax() - value * m_stored_thermogram->Spectrum()->Step());
-        m_peaks_end->setValue(m_stored_thermogram->Spectrum()->XMax() - value * m_stored_thermogram->Spectrum()->Step());
+        m_peaks_end->setMaximum(m_stored_thermogram->Spectrum()->XMax() - value);
+        m_peaks_end->setValue(m_stored_thermogram->Spectrum()->XMax() - value);
         CalibrateSystem();
-        //ApplyCalibration();
     });
     m_calibration_start->setMaximumWidth(100);
     m_calibration_start->setToolTip(tr("Set the duration in seconds of the calibration peak. The calibration peak is considered to be last peak in the thermogram. Leave zero, if the calorimeter does not use calibration peaks"));
@@ -557,6 +556,7 @@ void ThermogramWidget::Update()
 {
     m_peak_list = QVector<PeakPick::Peak>(*m_stored_thermogram->Peaks());
     m_peaks_end->setValue(m_stored_thermogram->ThermogramEnd());
+    m_peaks_start->setValue(m_stored_thermogram->ThermogramBegin());
     UpdateTable();
     UpdateSeries();
 }
