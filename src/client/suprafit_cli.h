@@ -22,6 +22,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QVector>
 
+#include "src/core/models/models.h"
+
 class SupraFitCli : public QObject {
     Q_OBJECT
 public:
@@ -48,17 +50,22 @@ public:
         m_outfile.contains(".json") ? m_extension = ".json" : m_extension = ".suprafit";
         m_outfile.remove(".json").remove(".suprafit");
     }
-    QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_data_json; }
+    QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_toplevel; }
 
     void OpenFile();
-
+    QStringList ParseInput();
 signals:
 
 public slots:
 
 protected:
+    QSharedPointer<AbstractModel> AddModel(int model, QPointer<DataClass> data);
+    QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
+
     QString m_infile = QString(), m_outfile = QString(), m_extension = ".suprafit";
-    QJsonObject m_toplevel, m_data_json;
+    QJsonObject m_toplevel;
+    QJsonObject m_mainjson, m_modelsjson, m_jobsjson, m_datajson, m_analysejson;
     int m_independent_rows = 2, m_start_point = 0;
     int m_series = 0;
+    QPointer<const DataClass> m_data;
 };

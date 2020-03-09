@@ -119,7 +119,10 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 
-include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/)
+find_package(PythonLibs REQUIRED)
+
+
+include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
 
 configure_file (
@@ -172,6 +175,8 @@ set(models_SRC
     src/core/models/AbstractItcModel.cpp
     src/core/models/AbstractTitrationModel.cpp
     src/core/models/meta_model.cpp
+    src/core/models/pymodel.cpp
+    src/core/models/pymodelinterpreter.cpp
     src/core/models/itc/blank.cpp
     src/core/models/itc/itc_1_1_Model.cpp
     src/core/models/itc/itc_2_1_Model.cpp
@@ -198,7 +203,7 @@ set(models_SRC
 
 add_library(models SHARED ${models_SRC})
 
-target_link_libraries(models Qt5::Core)
+target_link_libraries(models Qt5::Core ${PYTHON_LIBRARIES})
 
 add_subdirectory(src/ui)
 

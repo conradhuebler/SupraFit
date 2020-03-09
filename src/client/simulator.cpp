@@ -53,56 +53,9 @@ Simulator::~Simulator()
 
 QStringList Simulator::Generate()
 {
-    m_extension = ".suprafit";
-
     QStringList filelist;
 
-    if (m_mainjson.isEmpty())
-        return filelist;
-
-    if (m_infile.isEmpty() || m_infile.isNull()) {
-        if (m_mainjson.contains("InFile"))
-            m_infile = m_mainjson["InFile"].toString();
-
-        if (m_infile.isEmpty() || m_infile.isNull())
-            return filelist;
-    }
-
-    m_independent_rows = m_mainjson["IndependentRows"].toInt(2);
-    m_start_point = m_mainjson["StartPoint"].toInt(0);
-
-    if (!LoadFile())
-        return filelist;
-
-    if (m_mainjson.contains("OutFile")) {
-        m_outfile = m_mainjson["OutFile"].toString();
-    }
-
-    if (m_toplevel.isEmpty())
-        return filelist;
-
-    if (m_toplevel.keys().contains("data"))
-
-        m_data = new DataClass(m_toplevel["data"].toObject());
-    else
-        m_data = new DataClass(m_toplevel);
-
-    if (m_data->DataPoints() == 0) {
-        QPointer<DataClass> data = new DataClass(m_data);
-
-        QVector<QSharedPointer<AbstractModel>> models = AddModels(m_modelsjson, data);
-        QJsonObject exp_level, dataObject;
-        dataObject = data->ExportData();
-        exp_level["data"] = dataObject;
-
-        for (int i = 0; i < models.size(); ++i) {
-            exp_level["model_" + QString::number(i)] = models[i]->ExportModel();
-            models[i].clear();
-        }
-        SaveFile(m_outfile, exp_level);
-        return filelist;
-    }
-
+    // m_extension = ".suprafit";
     qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng;
     rng.seed(seed);
@@ -220,9 +173,19 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
         std::cout << "Setting # of threads to " << m_mainjson.value("Threads").toInt(4) << std::endl;
     }
 
-    QJsonObject project = data;
+    QJsonObject project;
+    if (data.contains("data"))
+        project = data;
+    else
+        project["data"] = data;
 
-    QPointer<DataClass> d = new DataClass(data["data"].toObject());
+    QPointer<DataClass> d;
+
+    if (data.contains("data"))
+        d = new DataClass(data["data"].toObject());
+    else
+        d = new DataClass(data);
+
     QVector<QJsonObject> models_json;
     if (!models.isEmpty()) {
         std::cout << "Loading Models into Dataset" << std::endl;
@@ -279,51 +242,6 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
     return project;
 }
 
-QVector<QSharedPointer<AbstractModel>> Simulator::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)
-{
-    QVector<QSharedPointer<AbstractModel>> models;
-    for (const QString& str : modelsjson.keys()) {
-        SupraFit::Model model;
-        QJsonObject options;
-        if (modelsjson[str].toObject().contains("model")) {
-            model = static_cast<SupraFit::Model>(modelsjson[str].toObject()["model"].toInt());
-            options = modelsjson[str].toObject()["options"].toObject();
-        } else
-            model = static_cast<SupraFit::Model>(modelsjson[str].toInt());
-
-        QSharedPointer<AbstractModel> t = CreateModel(model, data);
-
-        if (!t)
-            continue;
-
-        if (!options.isEmpty())
-            t->setOptions(options);
-
-        if (m_mainjson.contains("Guess") && m_mainjson["Guess"].toBool()) {
-            t->InitialGuess();
-
-            if (m_mainjson.contains("Fit") && m_mainjson["Fit"].toBool()) {
-                QPointer<MonteCarloThread> thread = new MonteCarloThread();
-                thread->setModel(t);
-                thread->run();
-                t->ImportModel(thread->Model());
-                t->setFast(false);
-                t->Calculate();
-                delete thread;
-            }
-        }
-        models << t;
-    }
-    return models;
-}
-QSharedPointer<AbstractModel> Simulator::AddModel(int model, QPointer<DataClass> data)
-{
-    QSharedPointer<AbstractModel> t = CreateModel(model, data);
-    if (!t)
-        return t;
-
-    return t;
-}
 QVector<QJsonObject> Simulator::GenerateData()
 {
     m_extension = ".suprafit";

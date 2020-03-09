@@ -41,6 +41,7 @@ public:
     {
         m_mainjson = mainjson;
         setDataJson(m_mainjson["data"].toObject());
+        m_extension = "." + mainjson["Extension"].toString();
         return !m_datajson.isEmpty();
     }
     void setDataJson(const QJsonObject& datajson) { m_datajson = datajson; }
@@ -63,21 +64,16 @@ public:
 
     QStringList Generate();
 
-    QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
     QJsonObject PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
 
 private:
-    QSharedPointer<AbstractModel> AddModel(int model, QPointer<DataClass> data);
     void CheckStopFile();
-
-    QPointer<const DataClass> m_data;
 
     /*
     void Progress(int i, int max);
     double m_current = 0.0;
     */
-    QJsonObject m_mainjson, m_modelsjson, m_jobsjson, m_datajson, m_analysejson;
     bool m_interrupt = false;
 signals:
     void Interrupt();

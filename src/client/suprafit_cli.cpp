@@ -21,6 +21,8 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 
+#include "src/capabilities/montecarlostatistics.h"
+
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
 
@@ -41,6 +43,7 @@ SupraFitCli::~SupraFitCli()
 
 bool SupraFitCli::LoadFile()
 {
+    ParseInput();
 
     FileHandler* handler = new FileHandler(m_infile, this);
     handler->setIndependentRows(m_independent_rows);
@@ -57,8 +60,60 @@ bool SupraFitCli::LoadFile()
         m_toplevel = handler->getJsonData();
     }
 
-    m_data_json = m_toplevel.value("data").toObject();
     return true;
+}
+
+QStringList SupraFitCli::ParseInput()
+{
+    QStringList filelist;
+
+    if (m_mainjson.isEmpty())
+        return filelist;
+
+    if (m_infile.isEmpty() || m_infile.isNull()) {
+        if (m_mainjson.contains("InFile"))
+            m_infile = m_mainjson["InFile"].toString();
+
+        if (m_infile.isEmpty() || m_infile.isNull())
+            return filelist;
+    }
+
+    if (m_mainjson.contains("IndependentRows"))
+        m_independent_rows = m_mainjson["IndependentRows"].toInt(2);
+    else if (m_mainjson.contains("InputSize"))
+        m_independent_rows = m_mainjson["InputSize"].toInt(2);
+
+    m_start_point = m_mainjson["StartPoint"].toInt(0);
+
+    if (m_mainjson.contains("OutFile")) {
+        m_outfile = m_mainjson["OutFile"].toString();
+    }
+
+    if (m_toplevel.isEmpty())
+        return filelist;
+
+    if (m_toplevel.keys().contains("data"))
+
+        m_data = new DataClass(m_toplevel["data"].toObject());
+    else
+        m_data = new DataClass(m_toplevel);
+
+    if (m_data->DataPoints() == 0) {
+        QPointer<DataClass> data = new DataClass(m_data);
+
+        QVector<QSharedPointer<AbstractModel>> models = AddModels(m_modelsjson, data);
+        QJsonObject exp_level, dataObject;
+        dataObject = data->ExportData();
+        exp_level["data"] = dataObject;
+
+        for (int i = 0; i < models.size(); ++i) {
+            exp_level["model_" + QString::number(i)] = models[i]->ExportModel();
+            models[i].clear();
+        }
+        SaveFile(m_outfile, exp_level);
+        return filelist;
+    }
+    return filelist;
 }
 
 bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
@@ -106,6 +161,57 @@ void SupraFitCli::PrintFileStructure()
     for (const QString& key : m_toplevel.keys()) {
         std::cout << key.toStdString() << std::endl;
     }
+}
+
+QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)
+{
+    QVector<QSharedPointer<AbstractModel>> models;
+    for (const QString& str : modelsjson.keys()) {
+        SupraFit::Model model;
+        QJsonObject options;
+        if (modelsjson[str].toObject().contains("model")) {
+            model = static_cast<SupraFit::Model>(modelsjson[str].toObject()["model"].toInt());
+            options = modelsjson[str].toObject()["options"].toObject();
+        } else if (modelsjson[str].toObject().contains("PyModel")) {
+            model = SupraFit::PyModel;
+        } else
+            model = static_cast<SupraFit::Model>(modelsjson[str].toInt());
+
+        QSharedPointer<AbstractModel> t = CreateModel(model, data);
+        if (model == SupraFit::PyModel)
+            t->DefineModel(modelsjson[str].toObject());
+
+        if (!t)
+            continue;
+
+        if (!options.isEmpty())
+            t->setOptions(options);
+
+        if (m_mainjson.contains("Guess") && m_mainjson["Guess"].toBool()) {
+            t->InitialGuess();
+
+            if (m_mainjson.contains("Fit") && m_mainjson["Fit"].toBool()) {
+                QPointer<MonteCarloThread> thread = new MonteCarloThread();
+                thread->setModel(t);
+                thread->run();
+                t->ImportModel(thread->Model());
+                t->setFast(false);
+                t->Calculate();
+                delete thread;
+            }
+        }
+        models << t;
+    }
+    return models;
+}
+
+QSharedPointer<AbstractModel> SupraFitCli::AddModel(int model, QPointer<DataClass> data)
+{
+    QSharedPointer<AbstractModel> t = CreateModel(model, data);
+    if (!t)
+        return t;
+
+    return t;
 }
 
 void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>& models)

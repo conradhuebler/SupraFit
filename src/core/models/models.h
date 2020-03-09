@@ -13,6 +13,9 @@
 /* Meta Model - holds different models */
 #include "meta_model.h"
 
+/* Python Scripted Model - may be anything */
+#include "pymodel.h"
+
 /* ITC Models */
 #include "itc/blank.h"
 #include "itc/itc_1_1_Model.h"
@@ -103,7 +106,9 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
         case SupraFit::fl_IItoI_ItoI_ItoII:
             t = QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
             break;
-
+        case SupraFit::PyModel:
+            t = QSharedPointer<PyModel>(new PyModel(data.data()), &QObject::deleteLater);
+            break;
         case SupraFit::MetaModel:
             t = QSharedPointer<MetaModel>(new MetaModel(data.data()), &QObject::deleteLater);
             break;

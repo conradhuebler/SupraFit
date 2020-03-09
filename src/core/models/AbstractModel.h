@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,6 +113,11 @@ public:
      * 
      */
     QVector<qreal> OptimizeParameters();
+
+    /*! \brief Set a json object to define some user definable stuff
+     *
+     */
+    virtual void DefineModel(QJsonObject model) { Q_UNUSED(model) }
 
     /*! \brief returns the Parameters used in optimisation
      *
@@ -497,6 +502,11 @@ public:
     /*! \brief return i global parameter
      */
     virtual inline qreal GlobalParameter(int i) const { return (*GlobalTable())[i]; }
+
+    /*! \brief return the table of local parameter values, overloaded function
+     */
+    virtual inline QPointer<DataTable> LocalParameter() const { return LocalTable(); }
+
     /*! \brief returns size of global parameter
      */
     virtual int GlobalParameterSize() const = 0;
@@ -700,6 +710,9 @@ public:
 
     void clearStatistic();
 
+    inline bool Complete() const { return m_complete; }
+
+    inline virtual bool DemandInput() const { return false; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -778,7 +791,7 @@ protected:
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;
     int m_last_parameter, m_last_freedom;
-    bool m_corrupt, m_converged, m_locked_model, m_fast, m_statistics = true, m_guess_failed = true, m_demand_guess = false;
+    bool m_corrupt, m_converged, m_locked_model, m_fast, m_statistics = true, m_guess_failed = true, m_demand_guess = false, m_complete = true, m_demand_inialisation = false;
     QJsonObject m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;
     QPointer<DataTable> m_local_parameter, m_global_parameter;
@@ -791,6 +804,7 @@ protected:
       BUT since abstractmodels should not depend on anything graphics related, they will be no series, but simple structs
       that can be worked with */
     QMap<QString, ModelChart*> m_model_charts;
+    QJsonObject m_model_definition;
 
     QMutex m_mutex;
 signals:

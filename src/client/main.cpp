@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     const QString print = parser.value("print");
     const QString job = parser.value("j");
 
-    if (infile.isEmpty() && job.isLower()) {
+    if (infile.isEmpty() && job.isEmpty()) {
         std::cout << "SupraFit needs an input file, which is a *.json or *.suprafit document." << std::endl;
         std::cout << "The simplest task for SupraFit to be done is opening a file and writing a project to disk." << std::endl;
         std::cout << "That would be like converting a *.json file to a *.suprafit file or vice versa :-)" << std::endl;
@@ -132,18 +132,37 @@ int main(int argc, char** argv)
                 Simulator* simulator = new Simulator;
                 simulator->setInFile(parser.value("i"));
                 bool analyse = simulator->setAnalyseJson(job["analyse"].toObject());
-                if (job.keys().contains("main")) {
-                    bool generate = simulator->setMainJson(job["main"].toObject());
-                    bool model = simulator->setModelsJson(job["model"].toObject());
-                    simulator->setJobsJson(job["jobs"].toObject());
+                if (job.keys().contains("main") || job.keys().contains("Main")) {
+                    bool generate = false, model = false;
+
+                    if (job.contains("main"))
+                        job["Main"] = job["main"].toObject();
+
+                    if (job.contains("Main"))
+                        generate = simulator->setMainJson(job["Main"].toObject());
+
+                    if (job.contains("model"))
+                        job["Models"] = job["model"].toObject();
+
+                    if (job.contains("Models"))
+                        model = simulator->setModelsJson(job["Models"].toObject());
+
+                    if (job.contains("job"))
+                        job["Jobs"] = job["jobs"].toObject();
+
+                    if (job.contains("Jobs"))
+                        simulator->setJobsJson(job["Jobs"].toObject());
 
                     if (generate) {
                         projects = simulator->GenerateData();
-                    } else
+                    } else {
+                        if (!simulator->LoadFile())
+                            return 0;
                         projects = simulator->Data();
+                    }
                     if (model) {
                         for (const auto& project : qAsConst(projects)) {
-                            simulator->PerfomeJobs(project, job["model"].toObject(), job["jobs"].toObject());
+                            simulator->PerfomeJobs(project, job["Models"].toObject(), job["Jobs"].toObject());
                         }
                     }
 

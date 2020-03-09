@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,6 +90,7 @@ AbstractModel::AbstractModel(AbstractModel* model)
     , m_locked_model(model->m_locked_model)
     , m_fast(true)
     , m_name_cached(model->Name())
+    , m_model_definition(model->m_model_definition)
 {
     m_opt_config = OptimConfigBlock;
     connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
@@ -158,6 +159,7 @@ void AbstractModel::PrepareParameter(int global, int local)
         m_name = Model2Name(SFModel());
     else
         m_name = m_name_cached;
+    m_complete = true;
 }
 
 AbstractModel::~AbstractModel()
@@ -986,6 +988,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
     toplevel["converged"] = m_converged;
     toplevel["valid"] = !isCorrupt();
     toplevel["name"] = m_name;
+    toplevel["ModelDefinition"] = m_model_definition;
     if (m_locked_model || locked) {
 #ifdef _DEBUG
 //         qDebug() << "Writing calculated data to json file";
@@ -1058,6 +1061,11 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
 #endif
 
     QJsonObject json = topjson["data"].toObject();
+
+    if (topjson.contains("ModelDefinition")) {
+        m_model_definition = topjson["ModelDefinition"].toObject();
+        DefineModel(m_model_definition);
+    }
 
     int copy_model = topjson["model"].toInt();
     bool unsafe_copy = qApp->instance()->property("UnsafeCopy").toBool();
