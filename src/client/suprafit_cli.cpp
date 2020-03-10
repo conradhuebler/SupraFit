@@ -172,13 +172,13 @@ QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject&
         if (modelsjson[str].toObject().contains("model")) {
             model = static_cast<SupraFit::Model>(modelsjson[str].toObject()["model"].toInt());
             options = modelsjson[str].toObject()["options"].toObject();
-        } else if (modelsjson[str].toObject().contains("PyModel")) {
-            model = SupraFit::PyModel;
+        } else if (modelsjson[str].toObject().contains("ScriptModel")) {
+            model = SupraFit::ScriptModel;
         } else
             model = static_cast<SupraFit::Model>(modelsjson[str].toInt());
 
         QSharedPointer<AbstractModel> t = CreateModel(model, data);
-        if (model == SupraFit::PyModel)
+        if (model == SupraFit::ScriptModel)
             t->DefineModel(modelsjson[str].toObject());
 
         if (!t)

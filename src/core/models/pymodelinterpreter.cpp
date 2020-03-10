@@ -81,7 +81,7 @@ void PyModelInterpreter::InitialisePython()
     //Run("print(input)");
 }
 
-double PyModelInterpreter::EvaulatePython(int i, int j)
+double PyModelInterpreter::EvaluatePython(int i, int j)
 {
 
     PyObject* m_moduleMainString;

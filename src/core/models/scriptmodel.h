@@ -27,16 +27,18 @@
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 
-class PyModel : public AbstractModel {
+#include "src/core/models/chaiinterpreter.h"
+
+class ScriptModel : public AbstractModel {
     Q_OBJECT
 
 public:
-    PyModel(DataClass* data);
-    PyModel(AbstractModel* data);
+    ScriptModel(DataClass* data);
+    ScriptModel(AbstractModel* data);
 
-    virtual ~PyModel() override;
+    virtual ~ScriptModel() override;
 
-    virtual inline SupraFit::Model SFModel() const override { return SupraFit::PyModel; }
+    virtual inline SupraFit::Model SFModel() const override { return SupraFit::ScriptModel; }
 
     inline int GlobalParameterSize() const override { return m_global_parameter_size; }
     virtual void InitialGuess_Private() override;
@@ -78,9 +80,13 @@ public:
 private:
     QString m_ylabel = QString(), m_xlabel = QString();
     int m_input_size = 0, m_global_parameter_size = 0, m_local_parameter_size = 0;
-    bool m_support_series = false;
+    bool m_support_series = false, m_chai = false, m_python = false;
     QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
-    QStringList m_execute;
+    QStringList m_execute_python, m_execute_chai;
+    ChaiInterpreter m_interp;
+
+    void CalculateChai();
+    void CalculatePython();
 
 protected:
     virtual void CalculateVariables() override;

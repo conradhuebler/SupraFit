@@ -13,8 +13,8 @@
 /* Meta Model - holds different models */
 #include "meta_model.h"
 
-/* Python Scripted Model - may be anything */
-#include "pymodel.h"
+/* Scripted Model - may be anything */
+#include "scriptmodel.h"
 
 /* ITC Models */
 #include "itc/blank.h"
@@ -36,7 +36,6 @@
 #include "titrations/2_1_1_1_1_2_Model.h"
 #include "titrations/2_1_1_1_Model.h"
 
-#include "titrations/ScriptModel.h"
 /* Kinetic Models */
 #include "kinetics/mm_model.h"
 #include "kinetics/monomolecularmodel.h"
@@ -106,8 +105,8 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
         case SupraFit::fl_IItoI_ItoI_ItoII:
             t = QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
             break;
-        case SupraFit::PyModel:
-            t = QSharedPointer<PyModel>(new PyModel(data.data()), &QObject::deleteLater);
+        case SupraFit::ScriptModel:
+            t = QSharedPointer<ScriptModel>(new ScriptModel(data.data()), &QObject::deleteLater);
             break;
         case SupraFit::MetaModel:
             t = QSharedPointer<MetaModel>(new MetaModel(data.data()), &QObject::deleteLater);

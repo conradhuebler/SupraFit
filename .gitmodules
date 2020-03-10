@@ -7,3 +7,6 @@
 [submodule "external/CuteChart"]
 	path = external/CuteChart
 	url = https://github.com/conradhuebler/CuteChart
+[submodule "external/ChaiScript"]
+	path = external/ChaiScript
+	url = https://github.com/ChaiScript/ChaiScript

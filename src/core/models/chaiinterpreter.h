@@ -19,20 +19,23 @@
 
 #pragma once
 
+#include <chaiscript.hpp>
+
 #include <QtCore/QStringList>
 
 #include <Eigen/Dense>
 
 typedef Eigen::MatrixXd Matrix;
 
-class PyModelInterpreter {
+class ChaiInterpreter {
 public:
-    PyModelInterpreter();
+    ChaiInterpreter();
 
-    void InitialisePython();
-    double EvaluatePython(int i, int j);
-    void FinalisePython();
+    void InitialiseChai();
+    void UpdateChai();
+    double EvaluateChai(int i, int j);
 
+    void AdressFunction(void* function, const QString& name);
     void setInput(const Matrix& matrix) { m_input = matrix; }
     void setModel(const Matrix& matrix) { m_model = matrix; }
     void setGlobal(const Matrix& matrix, const QStringList& names)
@@ -43,11 +46,15 @@ public:
     void setLocal(const Matrix& matrix) { m_local_parameter = matrix; }
 
     void setExecute(const QStringList& execute) { m_execute = execute; }
-    void Run(const QString& string);
+    void setInputNames(const QStringList& name) { m_input_names = name; }
+    double Input(int i, int j) const;
+    double Model(int i, int j) const;
 
 private:
-    int m_index = 0;
+    int m_index = 0, m_counter = 0;
     Eigen::MatrixXd m_input, m_model, m_global_parameter, m_local_parameter;
-    QStringList m_global_names, m_local_names;
+    QStringList m_global_names, m_local_names, m_input_names;
     QStringList m_execute;
+    chaiscript::ChaiScript chai;
+    bool m_first = true;
 };

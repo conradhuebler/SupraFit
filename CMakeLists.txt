@@ -123,7 +123,7 @@ find_package(PythonLibs REQUIRED)
 
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/chaiscript ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
@@ -175,8 +175,9 @@ set(models_SRC
     src/core/models/AbstractItcModel.cpp
     src/core/models/AbstractTitrationModel.cpp
     src/core/models/meta_model.cpp
-    src/core/models/pymodel.cpp
+    src/core/models/scriptmodel.cpp
     src/core/models/pymodelinterpreter.cpp
+    src/core/models/chaiinterpreter.cpp
     src/core/models/itc/blank.cpp
     src/core/models/itc/itc_1_1_Model.cpp
     src/core/models/itc/itc_2_1_Model.cpp
@@ -192,7 +193,6 @@ set(models_SRC
     src/core/models/titrations/2_1_1_1_Model.cpp
     src/core/models/titrations/1_1_1_2_Model.cpp
     src/core/models/titrations/2_1_1_1_1_2_Model.cpp
-    src/core/models/titrations/ScriptModel.cpp
     src/core/models/kinetics/mm_model.cpp
     src/core/models/kinetics/monomolecularmodel.cpp
     src/core/models/postprocess/statistic.cpp

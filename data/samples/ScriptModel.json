@@ -1,0 +1,154 @@
+{
+    "data": {
+        "DataType": 1,
+        "SupraFit": 2002,
+        "content": "Data taken from: Kemmer, G.; Keller, S. Nonlinear least-squares data fitting in Excel spreadsheets. Nature protocols 2010, 5, 267–281.",
+        "dependent": {
+            "checked": {
+                "0": "1",
+                "1": "1",
+                "10": "1",
+                "11": "1",
+                "12": "1",
+                "13": "1",
+                "2": "1",
+                "3": "1",
+                "4": "1",
+                "5": "1",
+                "6": "1",
+                "7": "1",
+                "8": "1",
+                "9": "1"
+            },
+            "cols": 1,
+            "data": {
+                "0": "-2",
+                "1": "153",
+                "10": "539",
+                "11": "548",
+                "12": "555",
+                "13": "554",
+                "2": "231",
+                "3": "342",
+                "4": "396",
+                "5": "438",
+                "6": "467",
+                "7": "505",
+                "8": "523",
+                "9": "523"
+            },
+            "header": "1",
+            "rows": 14
+        },
+        "git_commit": "02532be",
+        "independent": {
+            "checked": {
+                "0": "1",
+                "1": "1",
+                "10": "1",
+                "11": "1",
+                "12": "1",
+                "13": "1",
+                "2": "1",
+                "3": "1",
+                "4": "1",
+                "5": "1",
+                "6": "1",
+                "7": "1",
+                "8": "1",
+                "9": "1"
+            },
+            "cols": 1,
+            "data": {
+                "0": "0",
+                "1": "2.5",
+                "10": "70",
+                "11": "80",
+                "12": "90",
+                "13": "100",
+                "2": "5",
+                "3": "10",
+                "4": "15",
+                "5": "20",
+                "6": "30",
+                "7": "40",
+                "8": "50",
+                "9": "60"
+            },
+            "header": "1",
+            "rows": 14
+        },
+        "raw": {
+        },
+        "system": {
+        },
+        "timestamp": 1583449009949,
+        "title": "test",
+        "uuid": "{40990553-40de-49fc-95e7-149ab1b05991}",
+        "xaxis": false
+    },
+    "model_0": {
+        "ModelDefinition": {
+            "DepModelNames": "v",
+            "Python": {
+                "1": "def Calculate(i,j):",
+                "2": "     S = input[j][i]",
+                "3": "     print (Km)",
+                "4": "     print (vmax)",
+                "6": "     print (vmax*S/(Km+S))",
+                "7": "     return vmax*S/(Km+S)"
+            },
+            "ChaiScript" : {
+                "1" : "def Calculate(int i, int j) { return vmax*S[j]/(Km+S[j]); }"
+            },
+            "GlobalParameterNames": "vmax|Km",
+            "GlobalParameterSize": 2,
+            "InputNames": "S",
+            "InputSize": 1,
+            "LocalParameterSize": 0,
+            "Name": "Py-Michaelis-Menten-Protoyp"
+        },
+        "SAE": 67.74643141907754,
+        "SSE": 439.36720448270324,
+        "SupraFit": 2002,
+        "converged": true,
+        "data": {
+            "active_series": "1",
+            "globalParameter": {
+                "checked": {
+                    "0": "1 1"
+                },
+                "cols": 2,
+                "data": {
+                    "0": "590.573 7.27309"
+                },
+                "header": "vmax|Km",
+                "rows": 1
+            },
+            "localParameter": {
+                "checked": {
+                    "0": ""
+                },
+                "cols": 0,
+                "data": {
+                    "0": ""
+                },
+                "header": "",
+                "rows": 1
+            },
+            "locked": "1 1",
+            "methods": {
+                "0": {
+                }
+            }
+        },
+        "mean_error": -1.2130148675696648,
+        "model": 100,
+        "name": "Py-Michaelis-Menten-Protoyp",
+        "options": {
+        },
+        "standard_error": 1.5168785428742364,
+        "valid": true,
+        "variance": 32.21288719365173
+    }
+}

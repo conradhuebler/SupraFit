@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ enum Model {
     fl_IItoI_ItoI = 21,
     fl_ItoI_ItoII = 22,
     fl_IItoI_ItoI_ItoII = 23,
-    PyModel = 100,
+    ScriptModel = 100,
     Indep_Quadrat = 101,
     Dep_Any = 102,
     MetaModel = 200,
@@ -275,8 +275,8 @@ inline SupraFit::Model Name2Model(const QString& str)
         return SupraFit::MonoMolecularModel;
     else if (str == "Michaelis Menten")
         return SupraFit::Michaelis_Menten;
-    else if (str == "PyModel")
-        return SupraFit::PyModel;
+    else if (str == "ScriptModel")
+        return SupraFit::ScriptModel;
     else if (str == "Indep. Quadrat")
         return SupraFit::Indep_Quadrat;
     else if (str == "Dep. AnyModel")
@@ -323,8 +323,8 @@ inline QString Model2Name(SupraFit::Model model)
         return "Monomolecular Kinetics";
     else if (model == SupraFit::Michaelis_Menten)
         return "Michaelis Menten";
-    else if (model == SupraFit::PyModel)
-        return "PyModel";
+    else if (model == SupraFit::ScriptModel)
+        return "ScriptModel";
     else if (model == SupraFit::Indep_Quadrat)
         return "Indep. Quadrat";
     else if (model == SupraFit::Dep_Any)

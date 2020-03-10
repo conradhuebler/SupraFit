@@ -18,6 +18,7 @@
  */
 
 #include "src/core/models/AbstractModel.h"
+#include "src/core/models/chaiinterpreter.h"
 #include "src/core/models/pymodelinterpreter.h"
 
 #include "src/core/libmath.h"
@@ -31,34 +32,33 @@
 #include <QtCore/QtMath>
 
 #include <cmath>
-#include <iomanip>
 #include <iostream>
 
 #include <libpeakpick/mathhelper.h>
 #include <libpeakpick/peakpick.h>
 
-#include "pymodel.h"
+#include "scriptmodel.h"
 
-PyModel::PyModel(DataClass* data)
+ScriptModel::ScriptModel(DataClass* data)
     : AbstractModel(data)
 {
     m_complete = false;
 }
 
-PyModel::PyModel(AbstractModel* data)
+ScriptModel::ScriptModel(AbstractModel* data)
     : AbstractModel(data)
 {
     m_complete = false;
 }
 
-PyModel::~PyModel()
+ScriptModel::~ScriptModel()
 {
 }
 
-void PyModel::DefineModel(QJsonObject model)
+void ScriptModel::DefineModel(QJsonObject model)
 {
-    if (model.contains("PyModel"))
-        model = model["PyModel"].toObject();
+    if (model.contains("ScriptModel"))
+        model = model["ScriptModel"].toObject();
     if (model.contains("GlobalParameterSize"))
         m_global_parameter_size = model["GlobalParameterSize"].toInt();
     else
@@ -80,10 +80,18 @@ void PyModel::DefineModel(QJsonObject model)
     else
         return;
 
-    if (model.contains("Execute")) {
-        QJsonObject exec = model["Execute"].toObject();
+    if (model.contains("Python")) {
+        QJsonObject exec = model["Python"].toObject();
         for (int i = 0; i < exec.size(); ++i)
-            m_execute << exec[QString::number(i + 1)].toString();
+            m_execute_python << exec[QString::number(i + 1)].toString();
+        m_python = true;
+    }
+    if (model.contains("ChaiScript")) {
+        QJsonObject exec = model["ChaiScript"].toObject();
+        for (int i = 0; i < exec.size(); ++i)
+            m_execute_chai << exec[QString::number(i + 1)].toString();
+        m_python = false;
+        m_chai = true;
     } else {
         emit Message("Nothing to do, lets just start it.", 1);
         return;
@@ -103,11 +111,19 @@ void PyModel::DefineModel(QJsonObject model)
 
     for (int i = 0; i < m_depmodel_names.size(); ++i)
         DependentModel()->setHeaderData(i, Qt::Horizontal, m_depmodel_names[i], Qt::DisplayRole);
+
+    m_interp.setInput(IndependentModel()->Table());
+    m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
+    m_interp.setLocal(LocalParameter()->Table());
+    m_interp.setInputNames(m_input_names);
+    m_interp.setExecute(m_execute_chai);
+    m_interp.InitialiseChai();
 }
 
-void PyModel::InitialGuess_Private()
+void ScriptModel::InitialGuess_Private()
 {
-
+    InitialiseRandom();
+    /*
     QVector<qreal> x, y;
 
     for (int i = 1; i < DataPoints(); ++i) {
@@ -120,57 +136,53 @@ void PyModel::InitialGuess_Private()
     double m_Km = regress.m * m_vmax;
     (*GlobalTable())[0] = m_vmax;
     (*GlobalTable())[1] = m_Km;
-    Calculate();
+    Calculate();*/
 }
 
-void PyModel::CalculateVariables()
+void ScriptModel::CalculateVariables()
 {
-    /*
-    for (int i = 0; i < DataPoints(); ++i) {
-        qreal vmax = GlobalParameter(0);
-        qreal Km = GlobalParameter(1);
-        qreal S_0 = IndependentModel()->data(0, i);
-        for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value = vmax * S_0 / (Km + S_0);
-            SetValue(i, j, value);
-        }
-    }
-    */
+    if (m_python)
+        CalculatePython();
+    else if (m_chai)
+        CalculateChai();
+}
 
+void ScriptModel::CalculatePython()
+{
     PyModelInterpreter interp;
 
     interp.setInput(IndependentModel()->Table());
     interp.setModel(ModelTable()->Table());
     interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     interp.setLocal(LocalParameter()->Table());
-    interp.setExecute(m_execute);
+    interp.setExecute(m_execute_python);
     interp.InitialisePython();
 
-    //std::cout << std::setprecision(6) << GlobalParameter(0) << " " << GlobalParameter(1) << std::endl;
-    std::cout << std::setprecision(6) << GlobalParameter()->Table() << std::endl;
-
     for (int i = 0; i < DataPoints(); ++i) {
-        qreal vmax = GlobalParameter(0);
-        qreal Km = GlobalParameter(1);
-        qreal S_0 = IndependentModel()->data(0, i);
         for (int j = 0; j < SeriesCount(); ++j) {
-            qreal value2 = vmax * S_0 / (Km + S_0);
-            qreal value = interp.EvaulatePython(j, i);
-            if (qAbs(value2 - value) > 1e-5) {
-
-                qDebug() << value - value2;
-            }
-            // SetValue(i, j, value2);
-            SetValue(i, j, value2);
+            SetValue(i, j, interp.EvaluatePython(j, i));
         }
     }
 
     interp.FinalisePython();
 }
 
-QSharedPointer<AbstractModel> PyModel::Clone(bool statistics)
+void ScriptModel::CalculateChai()
 {
-    QSharedPointer<PyModel> model = QSharedPointer<PyModel>(new PyModel(this), &QObject::deleteLater);
+    m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
+    m_interp.setLocal(LocalParameter()->Table());
+    m_interp.UpdateChai();
+
+    for (int i = 0; i < DataPoints(); ++i) {
+        for (int j = 0; j < SeriesCount(); ++j) {
+            SetValue(i, j, m_interp.EvaluateChai(j, i));
+        }
+    }
+}
+
+QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
+{
+    QSharedPointer<ScriptModel> model = QSharedPointer<ScriptModel>(new ScriptModel(this), &QObject::deleteLater);
     model.data()->DefineModel(m_model_definition);
     model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
@@ -179,4 +191,4 @@ QSharedPointer<AbstractModel> PyModel::Clone(bool statistics)
     return model;
 }
 
-#include "pymodel.moc"
+#include "scriptmodel.moc"
