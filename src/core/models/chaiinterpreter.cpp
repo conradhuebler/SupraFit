@@ -19,7 +19,9 @@
 
 #include <QtDebug>
 
-#include <chaiscript.hpp>
+#include <chaiscript/chaiscript.hpp>
+#include <chaiscript/chaiscript_threading.hpp>
+#include <external/ChaiScript_Extras/include/chaiscript/extras/math.hpp>
 
 #include <iostream>
 
@@ -61,10 +63,10 @@ void ChaiInterpreter::InitialiseChai()
     for (const QString& name : m_input_names)
         chai.add_global_const(chaiscript::const_var(vector), name.toStdString());
 
-    chai.add(chaiscript::user_type<ChaiInterpreter>(), "ChaiInterpreter");
-    chai.add(chaiscript::var(this), "ChaiInterpreter");
-    for (const QString& string : m_execute)
-        chai.eval(string.toStdString());
+    //  for (const QString& string : m_execute)
+    //      chai.eval(string.toStdString());
+    chai.eval(m_execute.join("\n").toStdString());
+    m_Calculate = chai.eval<std::function<double(int, int)>>("Calculate");
 }
 
 void ChaiInterpreter::UpdateChai()
@@ -83,7 +85,8 @@ void ChaiInterpreter::UpdateChai()
 
 double ChaiInterpreter::EvaluateChai(int i, int j)
 {
-    chai.add(chaiscript::var(i), "i");
-    chai.add(chaiscript::var(j), "j");
-    return chai.eval<double>("Calculate(i,j)");
+    //chai.add(chaiscript::var(i), "i");
+    //chai.add(chaiscript::var(j), "j");
+    //return chai.eval<double>("Calculate(i,j)");
+    return m_Calculate(i, j);
 }

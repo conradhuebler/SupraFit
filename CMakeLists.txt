@@ -123,7 +123,7 @@ find_package(PythonLibs REQUIRED)
 
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/chaiscript ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/include/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"

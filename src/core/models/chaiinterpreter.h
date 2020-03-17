@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <chaiscript.hpp>
+#include <chaiscript/chaiscript.hpp>
 
 #include <QtCore/QStringList>
 
@@ -57,4 +57,5 @@ private:
     QStringList m_execute;
     chaiscript::ChaiScript chai;
     bool m_first = true;
+    std::function<double(int, int)> m_Calculate;
 };
