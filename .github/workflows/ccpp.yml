@@ -37,4 +37,4 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: SupraFit
-        path: build_x32\bin\win32\Release\SupraFit_latest_x64_windows.zip
+        path: build_x32\bin\win32\Release\SupraFit_latest_x32_windows.zip
