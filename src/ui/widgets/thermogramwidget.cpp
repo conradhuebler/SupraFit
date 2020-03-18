@@ -323,9 +323,18 @@ void ThermogramWidget::setUi()
 
     m_calibration_label = new QLabel(tr("<h4>Calibration (0)</h4>"));
 
+    m_averaged = new QCheckBox(tr("Average"));
+    m_averaged->setChecked(false);
+    connect(m_averaged, &QCheckBox::stateChanged, this, [this](bool state) {
+        m_stored_thermogram->setAveraged(state);
+    });
+
     m_integration_range = new QComboBox;
     m_integration_range->addItems(m_Peak_Cut_Options);
     m_integration_range->setMaximumWidth(100);
+    connect(m_integration_range, &QComboBox::currentTextChanged, this, [this](const QString& str) {
+        m_averaged->setEnabled(str == m_Peak_Cut_Options[1]);
+    });
 
     m_peak_apply = new QPushButton(tr("Apply and Update"));
     m_peak_apply->setIcon(Icon("dialog-ok-apply"));
@@ -432,6 +441,7 @@ void ThermogramWidget::setUi()
     iterlayout = new QHBoxLayout;
     iterlayout->addWidget(new QLabel(tr("Method")));
     iterlayout->addWidget(m_integration_range);
+    iterlayout->addWidget(m_averaged);
     vlayout->addLayout(iterlayout);
 
     vlayout->addWidget(m_peak_apply);
@@ -505,7 +515,7 @@ void ThermogramWidget::UpdateTable()
 
     m_table->clear();
     m_table->setRowCount(peaks->size());
-    m_table->setColumnCount(3);
+    m_table->setColumnCount(5);
 
     for (unsigned int j = 0; j < peaks->size(); ++j) {
         QTableWidgetItem* newItem;
@@ -522,10 +532,22 @@ void ThermogramWidget::UpdateTable()
         newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
 
         m_table->setItem(j, 2, newItem);
+
+        newItem = new QTableWidgetItem(QString::number(m_stored_thermogram->Spectrum()->X(peaks->at(j).int_start)));
+        newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+
+        m_table->setItem(j, 3, newItem);
+
+        newItem = new QTableWidgetItem(QString::number(m_stored_thermogram->Spectrum()->X(peaks->at(j).int_end)));
+        newItem->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+
+        m_table->setItem(j, 4, newItem);
     }
     QStringList header = QStringList() << "Heat\n[raw]"
                                        << "Peak Start\n[s]"
-                                       << "Peak End\n[s]";
+                                       << "Peak End\n[s]"
+                                       << QString("%1 Start\n[s]").arg(Unicode_Integral)
+                                       << QString("%1 End\n[s]").arg(Unicode_Integral);
     m_table->setHorizontalHeaderLabels(header);
     m_table->resizeColumnsToContents();
 }
@@ -751,7 +773,7 @@ void ThermogramWidget::UpdatePeaks()
     m_stored_thermogram->UpdatePeaks();
 
     QSignalBlocker block_thermogram(m_stored_thermogram);
-    m_stored_thermogram->AdjustIntegrationRange();
+    //m_stored_thermogram->AdjustIntegrationRange();
     block_thermogram.unblock();
 
     m_stored_thermogram->FitBaseLine();

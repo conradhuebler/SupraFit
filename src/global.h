@@ -51,6 +51,8 @@ const QString Unicode_Sub_0 = QChar(0x2080);
 const QString Unicode_Sub_1 = QChar(0x2081);
 const QString Unicode_Sub_2 = QChar(0x2082);
 
+const QString Unicode_Integral = QChar(0x222B);
+
 const QString Unicode_Sub_y = QChar(0x0079); // not really
 
 // const QString Unicode_Sub_AB = QString("%1%2").arg(QChar("A")).arg(QChar("B")); //does not exist yet

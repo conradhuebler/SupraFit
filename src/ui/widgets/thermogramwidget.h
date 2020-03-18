@@ -117,7 +117,7 @@ private:
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
     QPushButton *m_fit_button, *m_peak_apply, *m_adjust_integration, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick, *m_convert_rules, *m_load_rules, *m_write_rules, *m_clear_rules;
-    QCheckBox *m_limits, *m_smooth, *m_poly_slow, *m_direction;
+    QCheckBox *m_limits, *m_smooth, *m_poly_slow, *m_direction, *m_averaged;
     QTableWidget *m_table, *m_peak_rule_list;
     ChartView* m_thermogram;
 

@@ -64,6 +64,8 @@ public:
 
     inline qreal IntegrationRangeThreshold() const { return m_integration_range_threshold; }
 
+    inline void setAveraged(bool averaged) { m_averaged = averaged; }
+
     void IntegrateThermogram();
     void CalibrateSystem();
     void AdjustIntegrationRange();
@@ -108,14 +110,16 @@ private:
     int m_last_iteration_max = 0, m_iterations = 0, m_overshot_counter = 1, m_PeakCount = 0;
     qreal m_ThermogramBegin = 0, m_ThermogramEnd = 0, m_PeakDuration = 0, m_CalibrationStart = 0, m_constant_offset = 0, m_CalibrationHeat = 0, m_calibration_ratio = 0, m_scaling_factor = 1;
     qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1, m_integration_range_threshold = 0;
-    bool m_initialised = false, m_cut_before = false, m_rules_imported = false;
-    QString m_current_integration_scheme = QString("Custom");
+    bool m_initialised = false, m_cut_before = false, m_rules_imported = false, m_averaged = true;
+    QString m_current_integration_scheme = QString("Custom"), m_last_integration_scheme;
     QStringList m_integration_scheme = QStringList() << "Custom"
                                                      << "Zero"
                                                      << "Threshold";
 
     void LegacyLoad();
     void LoadParameter();
+    bool ResizeIntegrationRange(double threshold, int direction);
+    void ApplyThermogramIntegration();
 
 signals:
     void ThermogramChanged();
