@@ -15,6 +15,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         modules: qtcharts
+        version: 5.14.1
     - name: Update Modules and Build
       run: sh scripts/build_unix.sh
         
@@ -30,6 +31,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         modules: qtcharts
+        version: 5.14.1
     - name: Update Modules and Build
       run: scripts/build_windows.bat
     - uses: actions/upload-artifact@v1
