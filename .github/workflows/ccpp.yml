@@ -19,7 +19,7 @@ jobs:
     - name: Update Modules and Build
       run: sh scripts/build_unix.sh
         
-  windows:
+  windows64:
 
     runs-on: windows-2019
     
@@ -33,8 +33,28 @@ jobs:
         modules: qtcharts
         version: 5.14.1
     - name: Update Modules and Build
-      run: scripts/build_windows.bat
+      run: scripts/build_windows_x64.bat
     - uses: actions/upload-artifact@v1
       with:
         name: SupraFit
         path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
+
+    windows32:
+
+    runs-on: windows-2019
+    
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        modules: qtcharts
+        version: 5.14.1
+    - name: Update Modules and Build
+      run: scripts/build_windows_x32.bat
+    - uses: actions/upload-artifact@v1
+      with:
+        name: SupraFit
+        path: build_x32\bin\win32\Release\SupraFit_latest_x64_windows.zip
