@@ -845,7 +845,7 @@ void AbstractModel::ParseFastConfidence(const QJsonObject& data)
         QJsonObject block = data[QString::number(i)].toObject();
         QString name = block["name"].toString();
 
-        QList<QPointF> points = ToolSet::String2Points(block["points"].toString());
+        QList<QPointF> points = ToolSet::String2PointsList(block["points"].toString());
         addSeries(str, name, points, "parameter value", "Sum of Squares (SSE)");
     }
     emit ChartUpdated(str);

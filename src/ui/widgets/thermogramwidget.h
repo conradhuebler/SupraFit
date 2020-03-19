@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,14 @@
 
 #include <QtCharts/QChart>
 
+#include "src/core/thermogramhandler.h"
+
 #include "libpeakpick/baseline.h"
 
 class QComboBox;
+class QCheckBox;
+class QDoubleSpinBox;
+class QLabel;
 class QLineEdit;
 class QSpinBox;
 class QSplitter;
@@ -66,12 +71,10 @@ public:
         RAW = 1
     };
 
-    ThermogramWidget(QWidget* parent = nullptr);
+    ThermogramWidget(QPointer<ThermogramHandler> thermogram, QWidget* parent = nullptr);
     ~ThermogramWidget();
 
-    void setThermogram(PeakPick::spectrum* spec, qreal offset = 0.0);
 
-    void setPeakList(const std::vector<PeakPick::Peak>& peak_list);
     void Update();
 
 
@@ -79,47 +82,42 @@ public:
     void PickPeaks();
     void clear();
 
-    void setFit(const QJsonObject& fit);
-    QJsonObject Fit() const;
-
-    inline std::vector<PeakPick::Peak> Peaks() const { return m_peak_list; }
-
     inline void setFileType(const FileType filetype) { m_filetype = filetype; }
 
     inline double Frequency() const { return m_frequency; }
+
+    void LoadDefaultThermogram();
+
 signals:
     void IntegrationChanged();
     void CalibrationChanged(double value);
 
 public slots:
     inline void setFrequency(qreal frequency) { m_frequency = frequency; }
-    void FitBaseLine();
     void UpdatePeaks();
+    void UpdateBaseLine();
 
 private:
     void setUi();
     void UpdateTable();
-    void UpdatePlot();
+    void InitialiseChart();
     void CreateSeries();
     void UpdateSeries();
+    void ApplyParameter();
 
-    void fromSpectrum(const PeakPick::spectrum* original, LineSeries* series);
-
-    void Integrate(std::vector<PeakPick::Peak>* peaks, const PeakPick::spectrum* original);
     void CalibrateSystem();
     void ApplyCalibration();
     void ResetGuideLabel();
 
     void setGuideText(const QString& str);
 
-    QCheckBox* m_direction;
     QComboBox *m_baseline_type, *m_fit_type, *m_integration_range;
     QSpinBox *m_coeffs, *m_filter, *m_peak_box, *m_peak_count, *m_peak_sensitivity, *m_iterations, *m_overshot;
     QDoubleSpinBox *m_peaks_start, *m_peaks_end, *m_peaks_time, *m_const_offset, *m_calibration_start, *m_calibration_heat, *m_integration_range_threshold, *m_gradient;
     QLineEdit *m_constant, *m_stdev, *m_mult;
     QRadioButton *m_peak_wise, *m_full_spec;
-    QPushButton *m_fit_button, *m_peak_apply, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick, *m_convert_rules, *m_load_rules, *m_write_rules, *m_clear_rules;
-    QCheckBox *m_limits, *m_smooth, *m_poly_slow;
+    QPushButton *m_fit_button, *m_peak_apply, *m_adjust_integration, *m_get_peaks_start, *m_get_peaks_end, *m_get_peaks_range, *m_auto_pick, *m_convert_rules, *m_load_rules, *m_write_rules, *m_clear_rules;
+    QCheckBox *m_limits, *m_smooth, *m_poly_slow, *m_direction, *m_averaged;
     QTableWidget *m_table, *m_peak_rule_list;
     ChartView* m_thermogram;
 
@@ -131,7 +129,7 @@ private:
 
     QVector<qreal> m_integrals_raw;
     PeakPick::spectrum m_spec;
-    std::vector<PeakPick::Peak> m_peak_list;
+    QVector<PeakPick::Peak> m_peak_list;
     PeakPick::Peak m_calibration_peak;
     bool m_spectrum = false, m_block = false, m_peak_edit_mode = false, m_rules_imported = false;
 
@@ -142,15 +140,17 @@ private:
     PeakPick::BaseLineResult m_baseline;
     Vector m_initial_baseline = Vector(0);
     qreal m_offset = 0, m_frequency = 1, m_initial_threshold = -1;
+    qreal m_CalibrationStart = 0, m_PeakDuration = 0, m_CalibrationHeat = 0, m_ScalingFactor = 0;
+    int m_PeakCount = 0;
     QString m_base, m_fit;
     FileType m_filetype;
     QStringList m_Peak_Cut_Options = QStringList() << "Custom"
                                                    << "Zero"
                                                    << "Threshold";
 
+    QPointer<ThermogramHandler> m_stored_thermogram;
+
 private slots:
-    bool CutAllLimits();
-    void UpdateFit(const QString& str);
     void PeakDoubleClicked(const QModelIndex& index);
     void PeakRuleDoubleClicked(const QModelIndex& index);
     void PeakRuleDoubleClicked(const QTableWidgetItem* item, int peak);
@@ -161,7 +161,7 @@ private slots:
     void PointDoubleClicked(const QPointF& point);
     void scaleUp();
     void scaleDown();
-    void ConvertRules();
+    void UpdateRules();
     void LoadRules();
     void WriteRules();
 };

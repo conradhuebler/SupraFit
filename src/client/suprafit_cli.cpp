@@ -49,6 +49,13 @@ bool SupraFitCli::LoadFile()
     handler->setIndependentRows(m_independent_rows);
     handler->setStartPoint(m_start_point);
     handler->setSeriesCount(m_series); // this only important for the subclassed simulator
+    if (m_prepare.size()) {
+        if (m_prepare.contains("Integration")) {
+            QJsonObject integ = m_prepare["Integration"].toObject();
+            integ["SupraFit"] = qint_version; // We have to add SupraFit
+            handler->setThermogramParameter(integ);
+        }
+    }
     handler->LoadFile();
     if (handler->Type() == FileHandler::SupraFit) {
         if (!JsonHandler::ReadJsonFile(m_toplevel, m_infile))
@@ -56,6 +63,8 @@ bool SupraFitCli::LoadFile()
     } else if (handler->Type() == FileHandler::dH) {
         m_toplevel = handler->getJsonData();
 
+    } else if (handler->Type() == FileHandler::ITC) {
+        m_toplevel = handler->getJsonData();
     } else {
         m_toplevel = handler->getJsonData();
     }
@@ -163,6 +172,7 @@ void SupraFitCli::PrintFileStructure()
     }
 }
 
+
 QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)
 {
     QVector<QSharedPointer<AbstractModel>> models;
@@ -210,8 +220,25 @@ QSharedPointer<AbstractModel> SupraFitCli::AddModel(int model, QPointer<DataClas
     QSharedPointer<AbstractModel> t = CreateModel(model, data);
     if (!t)
         return t;
-
     return t;
+}
+
+bool SupraFitCli::Prepare()
+{
+
+    if (m_infile.isEmpty() || m_infile.isNull()) {
+        if (m_mainjson.contains("InFile"))
+            m_infile = m_mainjson["InFile"].toString();
+    }
+
+    if (m_mainjson.contains("OutFile")) {
+        m_outfile = m_mainjson["OutFile"].toString();
+    }
+
+    LoadFile();
+    m_extension = ".json";
+    SaveFile();
+    return true;
 }
 
 void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>& models)

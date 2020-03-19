@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ public:
     explicit Simulator();
     virtual ~Simulator();
 
+
     bool setMainJson(const QJsonObject& mainjson)
     {
         m_mainjson = mainjson;
@@ -51,6 +52,7 @@ public:
         m_analysejson = analyse;
         return !m_analysejson.isEmpty();
     }
+
     void setTopLevel(const QJsonObject& toplevel) { m_toplevel = toplevel; }
 
     bool setModelsJson(const QJsonObject& modelsjson)
@@ -74,6 +76,7 @@ private:
     void Progress(int i, int max);
     double m_current = 0.0;
     */
+
     bool m_interrupt = false;
 signals:
     void Interrupt();

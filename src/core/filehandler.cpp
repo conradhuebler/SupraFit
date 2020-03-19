@@ -18,9 +18,10 @@
  */
 
 #include "src/core/jsonhandler.h"
-
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
+#include "src/core/thermogramhandler.h"
+#include "src/core/toolset.h"
 
 #include <QtCore/QDebug>
 #include <QtCore/QFile>
@@ -70,7 +71,15 @@ void FileHandler::LoadFile()
         m_filetype = FileType::SupraFit;
     else if ((info.suffix()).toLower() == "dh")
         m_filetype = FileType::dH;
-    else
+    else if ((info.suffix()).toLower() == "itc" || m_thermogram) {
+
+        if ((info.suffix()).toLower() != "itc")
+            m_plain_thermogram = true;
+
+        m_filetype = FileType::ITC;
+        ReadITC();
+        return;
+    } else
         m_filetype = FileType::Generic;
 
     m_filecontent = QString(file.readAll()).split("\n");
@@ -144,7 +153,12 @@ void FileHandler::ConvertTable()
     }
     data->setDependentTable(dep);
     data->setIndependentTable(indep);
-    data->setDataType(DataClassPrivate::Table);
+
+    if (m_filetype == FileType::ITC)
+        data->setDataType(DataClassPrivate::Thermogram);
+    else
+        data->setDataType(DataClassPrivate::Table);
+
     data->setProjectTitle(m_title);
     data->setSystemObject(m_systemparameter);
     m_topjson = data->ExportData();
@@ -212,6 +226,55 @@ void FileHandler::ReaddH()
         m_stored_table->insertRow(row);
     }
     ConvertTable();
+}
+
+void FileHandler::ReadITC()
+{
+    m_rows = 1;
+
+    ThermogramHandler* thermogram = new ThermogramHandler;
+    thermogram->setThermogramParameter(m_thermogram_parameter);
+    qreal offset = 0;
+    std::vector<PeakPick::Peak> peak_list;
+    qreal freq = 0;
+    QVector<qreal> inject;
+    if (m_plain_thermogram) {
+        QPair<Vector, Vector> pair = ToolSet::LoadXYFile(m_filename);
+        PeakPick::spectrum spectrum = PeakPick::spectrum(pair.first, pair.second);
+        thermogram->setThermogram(spectrum);
+        thermogram->setThermogramParameter(m_thermogram_parameter);
+        inject.fill(m_thermogram_parameter["InjectVolume"].toDouble(), m_thermogram_parameter["PeakCount"].toInt());
+    } else {
+        QPair<PeakPick::spectrum, QJsonObject> pair = ToolSet::LoadITCFile(m_filename, &peak_list, offset, freq, inject);
+        PeakPick::spectrum spectrum = pair.first;
+        m_systemparameter = pair.second;
+        thermogram->setThermogram(spectrum);
+        thermogram->setPeakList(peak_list);
+    }
+    thermogram->Initialise();
+    thermogram->UpdatePeaks();
+    thermogram->AdjustIntegrationRange();
+    thermogram->IntegrateThermogram();
+
+    QVector<qreal> integrals = thermogram->Integrals();
+    m_stored_table = new DataTable;
+    for (int i = 0; i < integrals.size(); ++i) {
+        QVector<qreal> row;
+        row << inject[i] << integrals[i];
+        m_stored_table->insertRow(row);
+    }
+    ConvertTable();
+    QJsonObject experiment;
+    experiment["fit"] = thermogram->getThermogramParameter();
+    experiment["file"] = m_filename;
+    QJsonObject raw;
+    raw["experiment"] = experiment;
+    m_topjson["raw"] = raw;
+    delete thermogram;
+
+    QJsonObject data;
+    data["data"] = m_topjson;
+    m_topjson = data;
 }
 
 void FileHandler::ReadJson()

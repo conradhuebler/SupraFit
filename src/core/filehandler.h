@@ -32,7 +32,8 @@ public:
     enum FileType {
         SupraFit = 1,
         Generic = 2,
-        dH = 3
+        dH = 3,
+        ITC = 4
     };
 
     FileHandler(const QString& filename, QObject* parent = 0);
@@ -61,16 +62,23 @@ public:
     inline void setStartPoint(int point) { m_start_point = point; }
     inline void setSeriesCount(int series) { m_series = series; }
     inline QJsonObject getJsonData() const { return m_topjson; }
+    inline void setThermogram(bool thermogram) { m_thermogram = thermogram; }
+    void setThermogramParameter(const QJsonObject& thermogram_parameter)
+    {
+        m_thermogram_parameter = thermogram_parameter;
+        m_thermogram = true;
+    }
 
 private:
     void ReadGeneric();
     void ReaddH();
     void ReadJson();
+    void ReadITC();
     void ConvertTable();
 
     bool CheckForTable();
 
-    bool m_table, m_allint, m_file_supported;
+    bool m_table, m_allint, m_file_supported, m_thermogram = false, m_plain_thermogram = false;
     QPointer<DataTable> m_stored_table;
 
     QString m_filename, m_title;
@@ -79,6 +87,6 @@ private:
     int m_lines, m_rows = 2, m_start_point = 0, m_series = 0;
     FileType m_filetype;
 
-    QJsonObject m_systemparameter;
+    QJsonObject m_systemparameter, m_thermogram_parameter;
     QJsonObject m_topjson;
 };

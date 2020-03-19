@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,16 @@
 
 #include <Eigen/Dense>
 
+#include <QtCore/QJsonObject>
+
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QTabWidget>
 
 #include <QtCharts/QChart>
 
 #include "libpeakpick/peakpick.h"
+
+#include "src/core/thermogramhandler.h"
 
 class QCheckBox;
 class QComboBox;
@@ -104,11 +108,16 @@ private:
     QDoubleSpinBox* m_freq;
     QTableWidget* m_table;
     ThermogramWidget *m_experiment, *m_dilution;
+    ThermogramHandler *m_experiment_thermogram, *m_dilution_thermogram;
+
     ChartView* m_data_view;
     QSplitter* m_splitter;
     LineSeries* fromSpectrum(const PeakPick::spectrum original);
 
     std::vector<PeakPick::Peak> PickPeaks(const PeakPick::spectrum, QTableWidget* widget);
+
+    const QVector<PeakPick::Peak>*m_experiment_peaks, *m_dilution_peaks;
+
     std::vector<PeakPick::Peak> m_exp_peaks, m_dil_peaks;
     PeakPick::spectrum m_exp_therm, m_dil_therm;
     ScatterSeries *m_thm_series, *m_raw_series, *m_dil_series;

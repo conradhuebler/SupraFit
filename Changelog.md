@@ -3,8 +3,9 @@
 ### SupraFit 2.x
 
 - add ChaiScript to make user defineable models
+- Thermograms can be imported via suprafit_cli
 
-### SupraFit 2.0
+## SupraFit 2.0
 
 - resize data structure after editing thermograms 
 - tracking of thermogram raw files within suprafit project adjusted ( more will follow )

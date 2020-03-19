@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -120,6 +120,7 @@ int main(int argc, char** argv)
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
     qApp->instance()->setProperty("InitialiseRandom", true);
+    qApp->instance()->setProperty("StoreRawData", true);
 
     if (parser.isSet("j")) {
 
@@ -131,7 +132,9 @@ int main(int argc, char** argv)
 
                 Simulator* simulator = new Simulator;
                 simulator->setInFile(parser.value("i"));
+
                 bool analyse = simulator->setAnalyseJson(job["analyse"].toObject());
+//<<<<<<< HEAD
                 if (job.keys().contains("main") || job.keys().contains("Main")) {
                     bool generate = false, model = false;
 
@@ -158,6 +161,27 @@ int main(int argc, char** argv)
                     } else {
                         if (!simulator->LoadFile())
                             return 0;
+                        /*
+=======
+                bool prepare = false;
+                if (job.keys().contains("main")) {
+                    if (job["main"].toObject().contains("Prepare")) {
+                        simulator->setPreparation(job["main"].toObject()["Prepare"].toObject());
+                        prepare = true;
+                    }
+                    bool generate = simulator->setMainJson(job["main"].toObject());
+                    bool model = simulator->setModelsJson(job["model"].toObject());
+
+                    simulator->setJobsJson(job["jobs"].toObject());
+
+                    if (generate) {
+                        projects = simulator->GenerateData();
+                    } else if (prepare) {
+                        simulator->Prepare();
+                        projects = simulator->Data();
+                    } else
+>>>>>>> master
+*/
                         projects = simulator->Data();
                     }
                     if (model) {
