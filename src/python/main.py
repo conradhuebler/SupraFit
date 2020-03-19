@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 # <python Test script for python wrapping functions.>
 # Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
 #

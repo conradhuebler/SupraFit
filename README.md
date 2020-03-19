@@ -17,8 +17,10 @@ git clones automatically fisher_dist and libpeakpick.
 SupraFit comes with the some selected [Google Noto Fonts](https://github.com/googlei18n/noto-fonts). They are optional and can be included into the binary during compile-time (set `-Dnoto_font=true\false` as cmake argument).
 
 ## Version
-The current stable version is SupraFit 2.0. The current master branch contains a snapshot of an improved  thermogram handling, that is developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511).
+The current stable version is SupraFit 2.0.
 
+- The current master branch contains a snapshot of an improved  thermogram handling, that is developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511).
+- The current master branch contains a snaphsot of an scripting interface, using ChaiScript to define own models. However, this is highly experimental. Additionally, some a concept for python support is added.
 
 ## Compiling
 To compile SupraFit you will need [CMake](https://cmake.org/download/) 3 or newer, a C++14-capable compiler and a recent [Qt](https://www.qt.io/download) version. Soon, Qt 5.15 LTS will be focused.
