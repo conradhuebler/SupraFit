@@ -45,15 +45,15 @@ jobs:
         name: SupraFit
         path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Pre-Release ${{ github.ref }}
-        body: |
-            Nightly Windows Build
+#    - name: Create Release
+#      id: create_release
+#      uses: actions/create-release@latest
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+#      with:
+#        tag_name: ${{ github.ref }}
+#        release_name: Pre-Release ${{ github.ref }}
+#        body: |
+#            Nightly Windows Build
 
 
