@@ -144,16 +144,20 @@ void ThermogramHandler::LoadParameter()
         if (m_thermogram_parameter.contains("AverageDirection"))
             m_averaged = m_thermogram_parameter["AverageDirection"].toBool();
 
-        UpdatePeaks();
-        if (m_thermogram_parameter.contains("PeakRuleList")) {
-            QVector<QPointF> points = ToolSet::String2PointsVector(m_thermogram_parameter["PeakRuleList"].toString());
+        if(m_peak_list.size() == 0)
+            UpdatePeaks();
+
+         if (m_thermogram_parameter.contains("PeakIntegrationRange"))
+         {
+            QVector<QPointF> points = ToolSet::String2PointsVector(m_thermogram_parameter["PeakIntegrationRange"].toString());
             if (m_peak_list.size() != points.size())
                 return;
             for (std::size_t i = 0; i < m_peak_list.size(); ++i) {
                 m_peak_list[i].int_start = points[i].x();
                 m_peak_list[i].int_end = points[i].y();
             }
-        }
+         }else
+             AdjustIntegrationRange();
     }
 }
 
@@ -283,8 +287,8 @@ void ThermogramHandler::IntegrateThermogram()
         QVector<qreal> integrals = m_integrals_raw;
         ResizeIntegrationRange(0, -1);
         //ApplyThermogramIntegration();
-        //    qDebug() << m_integrals_raw;
-        //qDebug() << integrals;
+        // qDebug() << m_integrals_raw;
+        // qDebug() << integrals;
         m_peak_list = cached;
         for (int i = 0; i < m_integrals_raw.size(); ++i) {
             m_integrals_raw[i] += integrals[i];
@@ -424,12 +428,16 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
     QJsonObject fit;
 
     fit["SupraFit"] = qint_version;
-    fit["constants"] = m_constant_offset;
-    fit["frequency"] = m_frequency;
+    fit["ConstantOffset"] = m_constant_offset;
     fit["ThermogramBegin"] = m_ThermogramBegin;
     fit["ThermogramEnd"] = m_ThermogramEnd;
     fit["PeakDuration"] = m_PeakDuration;
     fit["CalibrationStart"] = m_CalibrationStart;
+    fit["CalibrationHeat"] = m_CalibrationHeat;
+    fit["ScalingFactor"] = m_scaling_factor;
+    fit["AverageDirection"] = m_averaged;
+    fit["IntegrationScheme"] = m_current_integration_scheme;
+    fit["PeakCount"] = m_peak_list.size();
     fit["CalibrationHeat"] = m_CalibrationHeat;
 
     fit["PeakRuleList"] = ToolSet::Points2String(m_peak_rules);
@@ -437,17 +445,17 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
     QVector<QPointF> points;
     for (int i = 0; i < m_peak_list.size(); ++i)
         points << QPointF(m_peak_list[i].int_start, m_peak_list[i].int_end);
-    fit["peak_int_ranges"] = ToolSet::Points2String(points);
+    fit["PeakIntegrationRange"] = ToolSet::Points2String(points);
 
     // fit["integration_range"] = m_integration_range->currentText();
-    fit["integration_range_threshold"] = m_integration_range_threshold;
-    fit["iter"] = m_last_iteration_max;
+    fit["IntegrationRangeThreshold"] = m_integration_range_threshold;
+    fit["Iterations"] = m_last_iteration_max;
 
     if (qApp->instance()->property("StoreRawData").toBool()) {
         QJsonObject thermo;
         thermo["x"] = ToolSet::DoubleList2String(m_spectrum.x());
         thermo["y"] = ToolSet::DoubleList2String(m_spectrum.y());
-        fit["thermogram"] = thermo;
+        fit["Thermogram"] = thermo;
     }
     return fit;
 }

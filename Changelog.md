@@ -1,5 +1,11 @@
 # The (incomplete) SupraFit Changelog
 
+### SupraFit 2.1
+
+- Thermograms can be imported via suprafit_cli
+
+## SupraFit 2.0
+
 - resize data structure after editing thermograms 
 - tracking of thermogram raw files within suprafit project adjusted ( more will follow )
 
