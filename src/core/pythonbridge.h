@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include "src/global_config.h"
+
+#ifdef _Python
+
 /*
  * Test for using python to access SupraFit using ctypes
 
@@ -41,3 +45,5 @@ extern "C" {
 CharPtrWrapper* LoadFile(const char* chars);
 void Release(CharPtrWrapperTag* pWrap);
 }
+
+#endif

@@ -308,7 +308,7 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
 
 void AbstractModel::Calculate()
 {
-    if (!LocalTable())
+    if (!LocalTable() || !m_complete)
         return; // make sure, that PrepareParameter() has been called from subclass
     m_corrupt = false;
     m_mean = 0;
@@ -329,6 +329,10 @@ void AbstractModel::Calculate()
 
     EvaluateOptions();
     CalculateVariables();
+
+    if (!m_complete) {
+        return;
+    }
 
     if (isCorrupt()) {
         // qDebug() << "Something went wrong during model calculation, most probably some numeric stuff";

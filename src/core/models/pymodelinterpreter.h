@@ -17,6 +17,9 @@
  *
  */
 
+#include "src/global_config.h"
+
+#ifdef _Python
 #pragma once
 
 #include <QtCore/QStringList>
@@ -51,3 +54,4 @@ private:
     QStringList m_global_names, m_local_names;
     QStringList m_execute;
 };
+#endif

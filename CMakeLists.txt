@@ -48,6 +48,11 @@ option (noto_font
 option (_Theme
     "Use Icon Theme from Desktop Environment, It does not work on Windows" OFF)
 
+option (_Python
+    "Enable python interface" OFF)
+
+option (_Models
+    "Enable custom models" OFF)
 
 # Get the current working branch
 execute_process(
@@ -122,8 +127,8 @@ find_package(Qt5Charts CONFIG REQUIRED)
 find_package(PythonLibs REQUIRED)
 
 
-include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
+include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"
@@ -160,9 +165,11 @@ set(core_SRC
     src/global.cpp
 )
 
-set(python_SRC
-    src/core/pythonbridge.cpp
-    )
+IF(_Python)
+    set(python_SRC
+        src/core/pythonbridge.cpp
+        )
+ENDIF(_Python)
 
 add_library(core SHARED ${core_SRC})
 
@@ -275,37 +282,37 @@ add_executable(suprafit_cli ${suprafit_cli_SRCS})
 
 set_target_properties(suprafit_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
+IF(_Python)
+    set(python_cli_SRCS
+                    src/python/main.cpp
+              )
 
-set(python_cli_SRCS
-                src/python/main.cpp
-          )
+    add_executable(python_cli ${python_cli_SRCS})
 
-add_executable(python_cli ${python_cli_SRCS})
+    set_target_properties(python_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
-set_target_properties(python_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+    add_library(pythonbridge SHARED ${python_SRC})
+    set_property(TARGET pythonbridge PROPERTY CXX_STANDARD 14)
+    set_target_properties(pythonbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
+    target_link_libraries(pythonbridge models core)
+    target_link_libraries(python_cli pythonbridge)
+    set_property(TARGET python_cli PROPERTY CXX_STANDARD 14)
 
-
-add_library(pythonbridge SHARED ${python_SRC})
-
+ENDIF()
 
 set_property(TARGET core models PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
 set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
-set_property(TARGET pythonbridge PROPERTY CXX_STANDARD 14)
-set_property(TARGET python_cli PROPERTY CXX_STANDARD 14)
 
 
 set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
-set_target_properties(pythonbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
 target_link_libraries(suprafit suprafit_gui models core cutechart)
 
 target_link_libraries(suprafit_cli models core)
 
-target_link_libraries(pythonbridge models core)
 
-target_link_libraries(python_cli pythonbridge)
 
 
 if(testing)
@@ -334,7 +341,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     install(TARGETS suprafit_cli RUNTIME DESTINATION bin)
     install(TARGETS models LIBRARY DESTINATION lib)
     install(TARGETS core LIBRARY DESTINATION lib)
-    install(TARGETS pythonbridge LIBRARY DESTINATION lib)
+    if(_Python)
+        install(TARGETS pythonbridge LIBRARY DESTINATION lib)
+    ENDIF(_Python)
     #install(FILES src/python/main.py DESTINATION lib)
 
     # Install desktop entry

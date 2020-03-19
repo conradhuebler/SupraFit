@@ -708,11 +708,17 @@ public:
      * Cut offs are model specific parameters, that have the be determined seperatly */
     inline virtual double ReductionCutOff() const { return -1; }
 
+    inline int OptionsCount() const { return private_d->m_model_options.size(); }
+
+    inline int SystemParameterCount() const { return getSystemParameterList().size(); }
+
     void clearStatistic();
 
     inline bool Complete() const { return m_complete; }
 
     inline virtual bool DemandInput() const { return false; }
+
+    inline QJsonObject ScriptDefinition() const { return m_model_definition; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */

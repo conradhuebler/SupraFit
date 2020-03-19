@@ -17,6 +17,9 @@
  *
  */
 
+#include "src/global_config.h"
+
+#ifdef _Python
 #include <Python.h>
 
 #include <iostream>
@@ -111,3 +114,4 @@ void PyModelInterpreter::FinalisePython()
 
     Py_Finalize();
 }
+#endif

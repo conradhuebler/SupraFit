@@ -20,6 +20,7 @@
 #pragma once
 
 #include "src/global.h"
+#include "src/global_config.h"
 
 #include <QtCore/QObject>
 #include <QtCore/QVector>
@@ -83,7 +84,10 @@ private:
     bool m_support_series = false, m_chai = false, m_python = false;
     QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
     QStringList m_execute_python, m_execute_chai;
+
+#ifdef _Models
     ChaiInterpreter m_interp;
+#endif
 
     void CalculateChai();
     void CalculatePython();

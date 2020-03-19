@@ -238,7 +238,10 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     //m_layout->addWidget(m_model_options_widget);
     if (m_model->getAllOptions().size() == 0)
         m_model_options_widget->setMaximumHeight(0);
-    m_splitter->addWidget(m_model_options_widget);
+    //m_splitter->addWidget(m_model_options_widget);
+
+    m_model_options = m_model_options_widget;
+
     m_layout = new QVBoxLayout;
 
     m_sign_layout = new QVBoxLayout;
@@ -311,14 +314,30 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     QScrollArea* area = new QScrollArea;
     area->setWidgetResizable(true);
     area->setWidget(scroll);
+    m_model_parameter = area;
 
-    //m_model_widget->setLayout(m_layout);
-    //m_splitter->addWidget(m_model_widget);
+    if (m_model->getSystemParameterList().size()) {
+        m_system_parameter = new SPOverview(m_model.data(), m_val_readonly);
+    }
 
-    m_splitter->addWidget(area);
+    QTabWidget* model_tab = new QTabWidget;
 
-    if (m_model->getSystemParameterList().size())
-        m_splitter->addWidget(new SPOverview(m_model.data(), m_val_readonly));
+    if (m_model->OptionsCount())
+        model_tab->addTab(m_model_options, "Model Options");
+    if (m_model->SystemParameterCount())
+        model_tab->addTab(m_system_parameter, "System Parameter");
+    if (m_model->SFModel() == SupraFit::ScriptModel) {
+        QTextEdit* edit = new QTextEdit;
+        QJsonDocument doc(m_model->ScriptDefinition());
+        edit->setMarkdown(QString("```json\n %1 \n```").arg(QString(doc.toJson(QJsonDocument::Indented))));
+        m_chai_widget = edit;
+        model_tab->addTab(m_chai_widget, "Model Definition");
+    }
+
+    m_splitter->addWidget(model_tab);
+
+    if (m_model->LocalParameterSize())
+        m_splitter->addWidget(m_model_parameter);
 
     m_actions = new ModelActions;
 
@@ -338,18 +357,22 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         this->m_charts_dialogs->Attention();
     });
 
-    m_splitter->addWidget(m_actions);
+    //m_splitter->addWidget(m_actions);
     m_actions->LocalEnabled(m_model->SupportSeries());
     m_actions->setSimulation(m_model->isSimulation());
 
     resizeButtons();
 
-    m_splitter->addWidget(m_statistic_widget);
+    //m_splitter->addWidget(m_statistic_widget);
     m_statistic_widget->setHidden(m_model->isSimulation());
 
     connect(m_splitter, SIGNAL(splitterMoved(int, int)), this, SLOT(SplitterResized()));
     QVBoxLayout* vlayout = new QVBoxLayout;
     vlayout->addWidget(m_splitter);
+    vlayout->addWidget(m_actions);
+    vlayout->addWidget(m_statistic_widget);
+    m_statistic_widget->setMaximumHeight(200);
+
     setLayout(vlayout);
     m_last_model = m_model->ExportModel(true, true);
 
@@ -414,8 +437,8 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         QTimer::singleShot(10, this, &ModelWidget::recalculate);
     }
 
-    for (int i = 0; i < m_splitter->count(); ++i)
-        m_splitter->setCollapsible(i, false);
+    //    for (int i = 0; i < m_splitter->count(); ++i)
+    //        m_splitter->setCollapsible(i, false);
 
     QString model_ident = QString("model %1").arg(m_model->SFModel());
 

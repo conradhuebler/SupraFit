@@ -280,26 +280,36 @@ void ThermogramHandler::IntegrateThermogram()
         AdjustIntegrationRange();
 
     if (m_averaged == true && m_current_integration_scheme == m_integration_scheme[1]) {
+
+        m_current_integration_scheme = m_integration_scheme[0];
+        AdjustIntegrationRange();
+        FitBaseLine();
+
+        m_current_integration_scheme = m_integration_scheme[1];
+        AdjustIntegrationRange();
         QVector<PeakPick::Peak> cached = m_peak_list;
         ResizeIntegrationRange(0, 0);
         m_peak_list = cached;
-        //ApplyThermogramIntegration();
+
+        ApplyThermogramIntegration();
+
         QVector<qreal> integrals = m_integrals_raw;
-        ResizeIntegrationRange(0, -1);
-        //ApplyThermogramIntegration();
-        // qDebug() << m_integrals_raw;
-        // qDebug() << integrals;
+        for (int i = 0; i < m_peak_list.size(); ++i)
+            m_peak_list[i].int_end--;
+
+        ApplyThermogramIntegration();
         m_peak_list = cached;
+
         for (int i = 0; i < m_integrals_raw.size(); ++i) {
             m_integrals_raw[i] += integrals[i];
             m_integrals_raw[i] /= double(2);
             m_peak_list[i].integ_num = m_integrals_raw[i];
         }
-        // qDebug() << "fancy";
     } else {
+        FitBaseLine();
         ApplyThermogramIntegration();
-        // qDebug() << "straight";
     }
+    UpdateBaseLine();
     emit ThermogramChanged();
 }
 
@@ -343,7 +353,7 @@ void ThermogramHandler::ApplyThermogramIntegration()
     if (m_initial_threshold < 1e-12)
         m_initial_threshold = stdev2 / 10.0;
 
-    m_integration_range_threshold = stdev2 / 10.0;
+    m_integration_range_threshold = stdev / 10.0;
 }
 
 void ThermogramHandler::FitBaseLine()
@@ -355,9 +365,13 @@ void ThermogramHandler::FitBaseLine()
     base.setNoCoeffs(2);
     base.setPeaks(&peak_list);
     m_baseline = base.Fit();
+}
 
+void ThermogramHandler::UpdateBaseLine()
+{
     m_baseline_grid.clear();
     m_baseline_series.clear();
+    m_baseline_ignored_series.clear();
 
     Vector baseline;
     int steps = 1;
@@ -379,11 +393,11 @@ void ThermogramHandler::FitBaseLine()
         for (int j = m_peak_list[i].int_start; j < int(m_peak_list[i].int_end) - 1; j += steps)
             m_baseline_series << QPointF(QPointF(m_spectrum.X(j), PeakPick::Polynomial(m_spectrum.X(j), baseline)));
 
-        //for (int j = m_peak_list[i].int_end; j < int(m_peak_list[i].end) - 1; j += steps)
-        //    m_baseline_ignored_series->append(QPointF(m_spec.X(j), PeakPick::Polynomial(m_spec.X(j), baseline)));
+        for (int j = m_peak_list[i].int_end; j < int(m_peak_list[i].end) - 1; j += steps)
+            m_baseline_ignored_series.append(QPointF(m_spectrum.X(j), PeakPick::Polynomial(m_spectrum.X(j), baseline)));
 
         m_baseline_series << QPointF(m_spectrum.X(int(m_peak_list[i].int_end) - 1), PeakPick::Polynomial(m_spectrum.X(int(m_peak_list[i].int_end) - 1), baseline));
-        //m_baseline_ignored_series->append(QPointF(m_spec.X(int(m_peak_list[i].end) - 1), PeakPick::Polynomial(m_spec.X(int(m_peak_list[i].end) - 1), baseline)));
+        m_baseline_ignored_series.append(QPointF(m_spectrum.X(int(m_peak_list[i].end) - 1), PeakPick::Polynomial(m_spectrum.X(int(m_peak_list[i].end) - 1), baseline)));
     }
 
     if (m_baseline.x_grid_points.size() == 1) {
@@ -392,11 +406,6 @@ void ThermogramHandler::FitBaseLine()
         }
     }
 
-    /*
-    if (m_baseline.baselines.size() == 1) {
-        m_initial_baseline = m_baseline.baselines[0];
-        m_coeffs->setValue(m_initial_baseline.size());
-    }*/
     emit BaseLineChanged();
 }
 
@@ -462,10 +471,8 @@ QJsonObject ThermogramHandler::getThermogramParameter() const
 
 void ThermogramHandler::AdjustIntegrationRange()
 {
-
     ApplyThermogramIntegration();
     double threshold = 0;
-    double old_threshold = m_integration_range_threshold;
     int maxiter = 1;
     int direction = -1 * m_cut_before;
     /* Zero/Threshold Cutting */
@@ -493,22 +500,27 @@ void ThermogramHandler::AdjustIntegrationRange()
     Vector baseline;
     if (m_baseline.baselines.size() > 0)
         baseline = m_baseline.baselines[0];
-    int x = 0;
 
-    for (x = 0; x < maxiter; ++x) {
-        ResizeIntegrationRange(old_threshold, direction);
+    for (int x = 0; x < maxiter; ++x) {
+        qDebug() << threshold << m_integration_range_threshold;
+        double thresh = ResizeIntegrationRange(threshold, direction);
+        if (qAbs(thresh - threshold) > 1e-10)
+            threshold = thresh;
+        else {
+            m_last_iteration_max = x;
+            break;
+        }
     }
-    m_last_iteration_max = x;
-    FitBaseLine();
+    if (m_current_integration_scheme == m_integration_scheme[2]) {
+        FitBaseLine();
+    }
     m_last_integration_scheme = m_current_integration_scheme;
     // Update();
     // setGuideText(QString("Adaption of the baseline took %1 cycles").arg(m_last_iteration_max));
 }
 
-bool ThermogramHandler::ResizeIntegrationRange(double threshold, int direction)
+double ThermogramHandler::ResizeIntegrationRange(double threshold, int direction)
 {
-    qDebug() << direction << " direction";
-
     Vector baseline;
     for (int i = 0; i < m_peak_list.size(); ++i) {
         if (m_peak_list.size() == m_baseline.baselines.size()) // && m_baseline.x_grid_points.size() > 0)
@@ -521,13 +533,12 @@ bool ThermogramHandler::ResizeIntegrationRange(double threshold, int direction)
             start_position = m_peak_list[i].min;
         PeakPick::ResizeIntegrationRange(&m_spectrum, &m_peak_list[i], baseline, start_position, threshold, m_overshot_counter, direction);
     }
-    FitBaseLine();
+    if (!qFuzzyIsNull(threshold))
+        FitBaseLine();
+
     ApplyThermogramIntegration();
 
-    if (qAbs(threshold - m_integration_range_threshold) < 1e-10)
-        return false;
-    threshold = m_integration_range_threshold;
-    return true;
+    return m_integration_range_threshold;
 }
 
 void ThermogramHandler::ConvertRules()

@@ -32,6 +32,7 @@
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMessageBox>
@@ -324,16 +325,38 @@ void ThermogramWidget::setUi()
     m_calibration_label = new QLabel(tr("<h4>Calibration (0)</h4>"));
 
     m_averaged = new QCheckBox(tr("Average"));
-    m_averaged->setChecked(false);
+    m_averaged->setChecked(true);
+    m_averaged->setEnabled(false);
     connect(m_averaged, &QCheckBox::stateChanged, this, [this](bool state) {
         m_stored_thermogram->setAveraged(state);
+        Waiter wait;
+        QSignalBlocker block(m_stored_thermogram);
+        UpdatePeaks();
+        //m_stored_thermogram->IntegrateThermogram();
+        UpdateBaseLine();
+        UpdateTable();
     });
+
+    m_iterations = new QSpinBox;
+    m_iterations->setMinimum(1);
+    m_iterations->setMaximum(1e3);
+    m_iterations->setValue(15);
+    m_iterations->setToolTip(tr("Define the maximum number of iteration for the Peak Range Reduction Cycle. In some case, this value should be 1."));
+    m_iterations->setEnabled(false);
 
     m_integration_range = new QComboBox;
     m_integration_range->addItems(m_Peak_Cut_Options);
     m_integration_range->setMaximumWidth(100);
     connect(m_integration_range, &QComboBox::currentTextChanged, this, [this](const QString& str) {
         m_averaged->setEnabled(str == m_Peak_Cut_Options[1]);
+        m_iterations->setEnabled(str == m_Peak_Cut_Options[2]);
+
+        Waiter wait;
+        QSignalBlocker block(m_stored_thermogram);
+        UpdatePeaks();
+        //m_stored_thermogram->IntegrateThermogram();
+        UpdateBaseLine();
+        UpdateTable();
     });
 
     m_peak_apply = new QPushButton(tr("Apply and Update"));
@@ -343,7 +366,7 @@ void ThermogramWidget::setUi()
     });
     m_peak_apply->setMaximumWidth(150);
     m_peak_apply->setToolTip(tr("Click generate peaks, fit baseline and integrate the peaks!"));
-
+    /*
     m_adjust_integration = new QPushButton(tr("Adjust Integration"));
     m_adjust_integration->setIcon(Icon("dialog-ok-apply"));
     connect(m_adjust_integration, &QPushButton::clicked, this, [this]() {
@@ -356,7 +379,7 @@ void ThermogramWidget::setUi()
     });
     m_adjust_integration->setMaximumWidth(150);
     m_adjust_integration->setToolTip(tr("Click to automatically adjust integration range!"));
-
+    */
     m_integration_range_threshold = new QDoubleSpinBox;
     m_integration_range_threshold->setMinimum(0);
     m_integration_range_threshold->setMaximum(1e5);
@@ -364,12 +387,6 @@ void ThermogramWidget::setUi()
     m_integration_range_threshold->setValue(0);
     m_integration_range_threshold->setMaximumWidth(150);
     m_integration_range_threshold->setToolTip(tr("Define a threshold for Peak Range Reduction"));
-
-    m_iterations = new QSpinBox;
-    m_iterations->setMinimum(1);
-    m_iterations->setMaximum(1e3);
-    m_iterations->setValue(15);
-    m_iterations->setToolTip(tr("Define the maximum number of iteration for the Peak Range Reduction Cycle. In some case, this value should be 1."));
 
     m_direction = new QCheckBox(tr("Before"));
 
@@ -382,9 +399,107 @@ void ThermogramWidget::setUi()
     m_gradient->setRange(-1, 1);
     m_gradient->setValue(-1);
 
+    int maxwidth = 200;
     QHBoxLayout* peak_layout = new QHBoxLayout;
     QVBoxLayout* vlayout = new QVBoxLayout;
 
+    QGroupBox* group = new QGroupBox;
+    group->setTitle(tr("Remove constant"));
+    group->setMaximumWidth(maxwidth);
+
+    vlayout->addWidget(m_const_offset);
+    group->setLayout(vlayout);
+    peak_layout->addWidget(group);
+
+    vlayout = new QVBoxLayout;
+    group = new QGroupBox;
+    group->setTitle(tr("Start time [s]"));
+    group->setMaximumWidth(maxwidth);
+    vlayout->addWidget(m_get_peaks_start);
+    vlayout->addWidget(m_peaks_start);
+    group->setLayout(vlayout);
+    peak_layout->addWidget(group);
+
+    group = new QGroupBox;
+    group->setTitle(tr("End time [s]"));
+    group->setMaximumWidth(maxwidth);
+
+    vlayout = new QVBoxLayout;
+    vlayout->addWidget(m_get_peaks_end);
+    vlayout->addWidget(m_peaks_end);
+    group->setLayout(vlayout);
+    peak_layout->addWidget(group);
+
+    group = new QGroupBox;
+    group->setTitle(tr("Inject Time [s]"));
+    group->setMaximumWidth(maxwidth);
+
+    vlayout = new QVBoxLayout;
+    vlayout->addWidget(m_peaks_time);
+    group->setLayout(vlayout);
+    peak_layout->addWidget(group);
+
+    group = new QGroupBox;
+    group->setTitle(tr("Calibration ()"));
+    group->setMaximumWidth(maxwidth);
+
+    vlayout = new QVBoxLayout;
+
+    QHBoxLayout* triplett = new QHBoxLayout;
+    triplett->addWidget(new QLabel("Time start [s]"));
+    triplett->addWidget(m_calibration_start);
+    vlayout->addLayout(triplett);
+
+    triplett = new QHBoxLayout;
+    triplett->addWidget(new QLabel("Heat [raw]"));
+    triplett->addWidget(m_calibration_heat);
+    vlayout->addLayout(triplett);
+    group->setLayout(vlayout);
+    peak_layout->addWidget(group);
+
+    group = new QGroupBox;
+    group->setTitle(tr("Peak Ranges"));
+    group->setMaximumWidth(maxwidth);
+    vlayout = new QVBoxLayout;
+    triplett = new QHBoxLayout;
+    triplett->addWidget(m_integration_range);
+    triplett->addWidget(m_averaged);
+    vlayout->addLayout(triplett);
+
+    triplett = new QHBoxLayout;
+    triplett->addWidget(new QLabel(tr("Iterations")));
+    triplett->addWidget(m_iterations);
+    vlayout->addLayout(triplett);
+
+    //vlayout->addWidget(m_peak_apply);
+    //vlayout->addWidget(m_adjust_integration);
+    group->setLayout(vlayout);
+    peak_layout->addWidget(group);
+
+    //  iterlayout->addWidget(new QLabel(tr("Iterations")));
+    //  iterlayout->addWidget(m_iterations);
+
+    if (qApp->instance()->property("advanced_ui").toBool()) {
+        group = new QGroupBox;
+        group->setTitle(tr("Advanced stuff"));
+        group->setMaximumWidth(maxwidth);
+        vlayout = new QVBoxLayout;
+        triplett = new QHBoxLayout;
+
+        triplett->addWidget(m_integration_range_threshold);
+
+        triplett->addWidget(m_direction);
+        vlayout->addLayout(triplett);
+        triplett = new QHBoxLayout;
+
+        triplett->addWidget(m_overshot);
+        triplett->addWidget(m_gradient);
+        vlayout->addLayout(triplett);
+
+        group->setLayout(vlayout);
+        peak_layout->addWidget(group);
+    }
+    /*
     vlayout->addWidget(new QLabel(tr("Remove constant")));
     vlayout->addWidget(m_const_offset);
     peak_layout->addLayout(vlayout);
@@ -448,7 +563,7 @@ void ThermogramWidget::setUi()
     vlayout->addWidget(m_adjust_integration);
 
     peak_layout->addLayout(vlayout);
-
+    */
     QVBoxLayout* layout = new QVBoxLayout;
     layout->addLayout(peak_layout);
     layout->addWidget(m_guide_label);
@@ -593,13 +708,15 @@ void ThermogramWidget::UpdateBaseLine()
     m_baseline_series->clear();
     //m_baseline_series->hide();
     m_baseline_ignored_series->clear();
-    m_baseline_ignored_series->hide();
+    //m_baseline_ignored_series->hide();
 
     m_base_grids->append(m_stored_thermogram->BaselineGrid());
     m_thermogram->addSeries(m_base_grids);
 
     m_baseline_series->append(m_stored_thermogram->BaselineSeries());
     m_thermogram->addSeries(m_baseline_series);
+    m_baseline_ignored_series->append(m_stored_thermogram->BaselineIgnored());
+    m_thermogram->addSeries(m_baseline_ignored_series);
 
     m_base_grids->setMarkerSize(8);
 }
@@ -776,7 +893,6 @@ void ThermogramWidget::UpdatePeaks()
     //m_stored_thermogram->AdjustIntegrationRange();
     block_thermogram.unblock();
 
-    m_stored_thermogram->FitBaseLine();
     m_stored_thermogram->IntegrateThermogram();
 
     // m_stored_thermogram->LastIterations();

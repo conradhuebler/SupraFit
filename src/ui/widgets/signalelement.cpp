@@ -61,6 +61,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     name = data.data()->DependentModel()->headerData(m_index, Qt::Horizontal).toString();
     m_name->setPlaceholderText(name);
     m_data_series->setName(name);
+    m_name->setMaximumWidth(300);
     connect(m_name, SIGNAL(textChanged(QString)), this, SLOT(setName(QString)));
 
     m_choose = new QPushButton(tr("Color"));

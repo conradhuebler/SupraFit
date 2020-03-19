@@ -51,6 +51,7 @@ public:
     ~DataWidget();
     void setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWrapper> wrapper);
     void setEditable(bool editable);
+    virtual QSize minimumSizeHint() const override { return QSize(800, 600); }
 
 private:
     QCheckBox* m_plot_x;

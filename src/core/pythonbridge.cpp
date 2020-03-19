@@ -17,6 +17,10 @@
  *
  */
 
+#include "src/global_config.h"
+
+#ifdef _Python
+
 #include <cstdlib>
 
 #include <QtCore/QDebug>
@@ -60,3 +64,4 @@ void Release(CharPtrWrapper* pWrap)
         free(pWrap);
     }
 }
+#endif

@@ -17,6 +17,9 @@
  *
  */
 
+#include "src/global_config.h"
+
+#ifdef _Models
 #include <QtDebug>
 
 #include <chaiscript/chaiscript.hpp>
@@ -90,3 +93,4 @@ double ChaiInterpreter::EvaluateChai(int i, int j)
     //return chai.eval<double>("Calculate(i,j)");
     return m_Calculate(i, j);
 }
+#endif

@@ -17,6 +17,8 @@
  * 
  */
 
+#include "src/global_config.h"
+
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/chaiinterpreter.h"
 #include "src/core/models/pymodelinterpreter.h"
@@ -111,13 +113,14 @@ void ScriptModel::DefineModel(QJsonObject model)
 
     for (int i = 0; i < m_depmodel_names.size(); ++i)
         DependentModel()->setHeaderData(i, Qt::Horizontal, m_depmodel_names[i], Qt::DisplayRole);
-
+#ifdef _Models
     m_interp.setInput(IndependentModel()->Table());
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.setInputNames(m_input_names);
     m_interp.setExecute(m_execute_chai);
     m_interp.InitialiseChai();
+#endif
 }
 
 void ScriptModel::InitialGuess_Private()
@@ -149,6 +152,7 @@ void ScriptModel::CalculateVariables()
 
 void ScriptModel::CalculatePython()
 {
+#ifdef _Python
     PyModelInterpreter interp;
 
     interp.setInput(IndependentModel()->Table());
@@ -165,10 +169,16 @@ void ScriptModel::CalculatePython()
     }
 
     interp.FinalisePython();
+#else
+    emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortunately SupraFit was compiled without Pyhton Script Support. Beside, the Python Models are not working yet."));
+    m_complete = false;
+#endif
 }
 
 void ScriptModel::CalculateChai()
 {
+
+#ifdef _Models
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.UpdateChai();
@@ -178,6 +188,10 @@ void ScriptModel::CalculateChai()
             SetValue(i, j, m_interp.EvaluateChai(j, i));
         }
     }
+#else
+    emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Chai Script Support."));
+    m_complete = false;
+#endif
 }
 
 QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)

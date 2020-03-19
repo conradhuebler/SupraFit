@@ -84,6 +84,7 @@ public:
     inline QList<QPointF> ThermogramSeries() const { return m_thermogram_series; }
     inline QList<QPointF> BaselineSeries() const { return m_baseline_series; }
     inline QList<QPointF> BaselineGrid() const { return m_baseline_grid; }
+    inline QList<QPointF> BaselineIgnored() const { return m_baseline_ignored_series; }
 
     void ConvertRules();
     void CompressRules();
@@ -97,7 +98,7 @@ public:
 
 private:
     /* Chart Series use QList */
-    QList<QPointF> m_thermogram_series, m_baseline_series, m_baseline_grid;
+    QList<QPointF> m_thermogram_series, m_baseline_series, m_baseline_grid, m_baseline_ignored_series;
     QVector<QPointF> m_peak_rules;
     QVector<qreal> m_integrals_list, m_integrals_raw;
     QVector<PeakPick::Peak> m_peak_list;
@@ -118,8 +119,9 @@ private:
 
     void LegacyLoad();
     void LoadParameter();
-    bool ResizeIntegrationRange(double threshold, int direction);
+    double ResizeIntegrationRange(double threshold, int direction);
     void ApplyThermogramIntegration();
+    void UpdateBaseLine();
 
 signals:
     void ThermogramChanged();

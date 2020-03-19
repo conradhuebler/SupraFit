@@ -14,3 +14,5 @@
 #cmakedefine openMP
 #cmakedefine _UNIX
 #cmakedefine extended_f_test
+#cmakedefine _Python
+#cmakedefine _Models

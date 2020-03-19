@@ -19,6 +19,9 @@
 
 #pragma once
 
+#include "src/global_config.h"
+
+#ifdef _Models
 #include <chaiscript/chaiscript.hpp>
 
 #include <QtCore/QStringList>
@@ -59,3 +62,4 @@ private:
     bool m_first = true;
     std::function<double(int, int)> m_Calculate;
 };
+#endif
