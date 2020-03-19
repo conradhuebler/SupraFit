@@ -43,19 +43,25 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, b
     // m_list->setItemDelegate(new HTMLDelegate(this));
     // m_list->setDisabled(m_readonly);
 
-    QLabel* label = new QLabel(parameter.Description());
-    label->setFixedWidth(250);
+    QLabel* label = new QLabel(parameter.Name());
+    label->setMinimumWidth(100);
+    label->setMaximumWidth(200);
+    label->setToolTip(parameter.Description());
+    setToolTip(parameter.Description());
+
     connect(m_textfield, SIGNAL(textChanged(QString)), this, SLOT(PrepareChanged()));
     connect(m_boolbox, SIGNAL(stateChanged(int)), this, SLOT(PrepareChanged()));
     connect(m_list, SIGNAL(currentIndexChanged(int)), this, SLOT(PrepareChanged()));
 
-    setTitle(parameter.Name());
+    //setTitle(parameter.Name());
 
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(label);
-    if (parameter.isScalar() || parameter.isString())
+    if (parameter.isScalar() || parameter.isString()) {
         layout->addWidget(m_textfield);
-    else if (parameter.isBool())
+        m_textfield->setMaximumWidth(150);
+        m_textfield->setMinimumWidth(100);
+    } else if (parameter.isBool())
         layout->addWidget(m_boolbox);
 
     else if (parameter.isList()) {
@@ -68,6 +74,8 @@ SystemParameterWidget::SystemParameterWidget(const SystemParameter& parameter, b
     else
         m_textfield->setText(parameter.value().toString());
     setLayout(layout);
+    setMaximumWidth(300);
+    setMinimumWidth(250);
 }
 
 SystemParameterWidget::~SystemParameterWidget()

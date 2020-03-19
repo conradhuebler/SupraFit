@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -124,6 +124,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_name = new QLineEdit;
     m_name->setPlaceholderText(m_signal_series->name());
     m_name->setClearButtonEnabled(true);
+    m_name->setMaximumWidth(400);
     tools->addWidget(m_name);
     connect(m_name, &QLineEdit::textChanged, this, [this]() {
         if (this->m_name && this->m_signal_series) {
@@ -239,7 +240,8 @@ void ModelElement::Update()
         if (qAbs(m_constants[i]->value() - m_model.data()->LocalParameter(i, m_no)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
             m_constants[i]->setValue(m_model.data()->LocalParameter(i, m_no));
     }
-    m_error->setText("Sum of Squares: <b>" + Print::printDouble(m_model.data()->SumOfErrors(m_no)) + "</b>");
+    m_error->setText("SAE: <b>" + Print::printDouble(m_model.data()->SumOfErrors(m_no)) + "</b>");
+    m_error->setToolTip("Sum of absoulte errors : <b>" + Print::printDouble(m_model.data()->SumOfErrors(m_no)) + "</b>");
 }
 
 void ModelElement::ChangeColor(const QColor& color)

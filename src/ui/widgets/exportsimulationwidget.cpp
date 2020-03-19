@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,39 +64,39 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
         layout->addWidget(m_std, 0, 1);
         layout->addWidget(m_sey, 0, 2);
     }
-    m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
-    m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")));
-    m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
-    m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
-    m_variance = new QDoubleSpinBox;
-    m_variance->setMinimum(0);
-    m_variance->setMaximum(1e6);
-    m_variance->setDecimals(5);
-    m_variance->setValue(1e-3);
-
-    QHBoxLayout* hlayout = new QHBoxLayout;
-    hlayout->addWidget(m_ideal);
-    if (!m_model.data()->isSimulation()) {
-        hlayout->addWidget(m_mc_std);
-        hlayout->addWidget(m_mc_sey);
-    }
-    hlayout->addWidget(m_mc_user);
-    hlayout->addWidget(m_variance);
 
     if (qApp->instance()->property("advanced_ui").toBool()) {
-        layout->addLayout(hlayout, 1, 0, 1, 3);
-    }
-    setLayout(layout);
+        m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
+        m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")));
+        m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
+        m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
+        m_variance = new QDoubleSpinBox;
+        m_variance->setMinimum(0);
+        m_variance->setMaximum(1e6);
+        m_variance->setDecimals(5);
+        m_variance->setValue(1e-3);
 
+        QHBoxLayout* hlayout = new QHBoxLayout;
+        hlayout->addWidget(m_ideal);
+        if (!m_model.data()->isSimulation()) {
+            hlayout->addWidget(m_mc_std);
+            hlayout->addWidget(m_mc_sey);
+        }
+        hlayout->addWidget(m_mc_user);
+        hlayout->addWidget(m_variance);
+        layout->addLayout(hlayout, 1, 0, 1, 3);
+        connect(m_variance, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &ExportSimulationWidget::Update);
+    }
+
+    setLayout(layout);
     connect(m_model.data(), &AbstractModel::Recalculated, this, &ExportSimulationWidget::Update);
-    connect(m_variance, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &ExportSimulationWidget::Update);
 }
 
 void ExportSimulationWidget::Update()
 {
     //TODO Move the random table generation into an on-demand generation upon click, drag n drop and not after every recalculation
-    m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Sum of Squares: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SSE())));
-    m_std->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Standard Deviation: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->StdDeviation())));
+    m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SSE: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SSE())));
+    m_std->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;%2: %3</b>").arg(QString(":/icons/edit-copy.png")).arg(Unicode_sigma).arg(Print::printDouble(m_model.data()->StdDeviation())));
     m_sey->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SE<sub>y</sub>: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SEy())));
 
     if (!qApp->instance()->property("advanced_ui").toBool())

@@ -21,6 +21,8 @@
 
 #include "src/core/models/AbstractModel.h"
 
+#include "src/core/toolset.h"
+
 #include <QtGui/QPainter>
 #include <QtGui/QTextDocument>
 
@@ -104,6 +106,9 @@ public:
         : m_data(data)
         , m_readonly(readonly)
     {
+
+        int rows = ToolSet::NiceRows(m_data->getSystemParameterList().size(), qApp->instance()->property("ModelParameterColums").toInt());
+
         QVBoxLayout* layout = new QVBoxLayout;
         QHBoxLayout* hlayout = new QHBoxLayout;
         layout->setAlignment(Qt::AlignTop);
@@ -125,7 +130,7 @@ public:
                         widget->setValue(m_data->getSystemParameter(index));
                     }
                 });
-            if (counter % 2 == 0) {
+            if (counter % rows == 0) {
                 layout->addLayout(hlayout);
                 hlayout = new QHBoxLayout;
             }

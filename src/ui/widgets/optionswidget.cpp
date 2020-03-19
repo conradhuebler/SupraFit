@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 
 #include "src/core/models/AbstractModel.h"
 
+#include "src/core/toolset.h"
+
 #include <QtCore/QPointer>
 
 #include <QtWidgets/QComboBox>
@@ -31,18 +33,36 @@ OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel> model)
     : m_model(model)
 {
     QVBoxLayout* layout = new QVBoxLayout;
+
+    QHBoxLayout* hlayout = new QHBoxLayout;
+    layout->setAlignment(Qt::AlignTop);
+    QHBoxLayout* smalllayout;
+    int counter = 1;
+
+    int rows = ToolSet::NiceRows(m_model.data()->getAllOptions().size(), qApp->instance()->property("ModelParameterColums").toInt());
+
     for (int index : m_model.data()->getAllOptions()) {
+        smalllayout = new QHBoxLayout;
+
         QString str = m_model.data()->getOptionName(index);
-        QHBoxLayout* hlayout = new QHBoxLayout;
-        hlayout->addWidget(new QLabel(str));
+        smalllayout->addWidget(new QLabel(str));
         QPointer<QComboBox> box = new QComboBox;
+        box->setMaximumWidth(200);
+        box->setMinimumWidth(200);
         box->addItems(m_model.data()->getSingleOptionValues(index));
         box->setCurrentText(m_model.data()->getOption(index));
-        hlayout->addWidget(box);
+        smalllayout->addWidget(box);
         m_options[index] = box;
         connect(box, SIGNAL(currentIndexChanged(QString)), this, SLOT(setOption()));
-        layout->addLayout(hlayout);
+
+        hlayout->addLayout(smalllayout);
+        if (counter % rows == 0) {
+            layout->addLayout(hlayout);
+            hlayout = new QHBoxLayout;
+        }
+        counter++;
     }
+    layout->addLayout(hlayout);
     setLayout(layout);
     setTitle("Model Option");
 }

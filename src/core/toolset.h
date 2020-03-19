@@ -76,6 +76,8 @@ qreal floor(qreal value);
 qreal scale(qreal value, qreal& pow);
 qreal scale(qreal value);
 
+int NiceRows(int elements, int prefered_rows);
+
 QPair<qreal, qreal> MinMax(const QList<qreal>& vector);
 
 QPair<qreal, qreal> QString2QPair(const QString& str);

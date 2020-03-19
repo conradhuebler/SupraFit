@@ -288,6 +288,18 @@ QString bool2YesNo(bool var)
     return (var ? QString("Yes") : QString("No"));
 }
 
+int NiceRows(int elements, int prefered_rows)
+{
+    int rows = 1;
+    for (int i = prefered_rows; i < prefered_rows + 1; i--) {
+        if (i <= 0)
+            continue;
+        if (elements % i == 0)
+            return i;
+    }
+    return rows;
+}
+
 qreal scale(qreal value)
 {
     qreal pot;
