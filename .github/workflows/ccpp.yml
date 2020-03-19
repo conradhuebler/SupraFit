@@ -1,6 +1,12 @@
 name: AutomaticBuild
 
-on: [push]
+on:
+  push:
+    branches: [ master ] #Everytime master branch is updated
+    paths: ['.github/workflows/*',  'src/*'] #only when these files are modifed
+  pull_request:
+    branches: [ master ] #for every pull request going to master
+    paths: ['.github/workflows/*', 'src/*'] #only when these files are modifed
 
 jobs:
   linux:
@@ -33,8 +39,30 @@ jobs:
         modules: qtcharts
         version: 5.14.1
     - name: Update Modules and Build
-      run: scripts/build_windows_x32.bat
+      run: scripts/build_windows_x64.bat
     - uses: actions/upload-artifact@v1
       with:
         name: SupraFit
-        path: build_x32\bin\win32\Release\SupraFit_latest_x32_windows.zip
+        path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Pre-Release ${{ github.ref }}
+        body: Nightly Windows Build
+        draft: false
+        prerelease: true
+     - name: Upload Release Asset
+       id: upload-release-asset
+       uses: actions/upload-release-asset@v1
+       env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+       with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+        asset_path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
+        asset_name: SupraFit_latest_x64_windows.zip
+        asset_content_type: application/zip
