@@ -65,6 +65,7 @@ public:
     inline qreal IntegrationRangeThreshold() const { return m_integration_range_threshold; }
 
     inline void setAveraged(bool averaged) { m_averaged = averaged; }
+    inline qreal CalibrationRatio() const { return m_calibration_ratio; }
 
     void IntegrateThermogram();
     void CalibrateSystem();

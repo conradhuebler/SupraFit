@@ -54,12 +54,15 @@ void ThermogramHandler::Initialise()
         std::cout << "No Thermogram found. ThermogramHandler is not initialised!" << std::endl;
         return;
     } else {
+
         for (unsigned int i = 0; i < m_spectrum.x().size(); i++) {
             m_thermogram_series.append(QPointF(m_spectrum.x()[i], m_spectrum.y()[i]));
         }
 
         if (qFuzzyCompare(m_ThermogramEnd, 0))
             m_ThermogramEnd = m_spectrum.XMax();
+        if (qFuzzyCompare(m_ThermogramBegin, 0))
+            m_ThermogramBegin = m_spectrum.XMin();
     }
 
     if (m_peak_list.size() == 0) {
@@ -74,7 +77,8 @@ void ThermogramHandler::Initialise()
         } else if (m_spectrum.size() && m_peak_list.size() && m_peak_rules.size()) {
             UpdatePeaks();
         } else {
-            std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is not initialised!" << std::endl;
+            std::cout << "No Peak list found. Automatic Peak Picking will most probably be not successfull, therefore: ThermogramHandler is initalised but not ready. No automatic stuff here!" << std::endl;
+            emit ThermogramChanged();
             return;
         }
     } else {
@@ -97,7 +101,7 @@ void ThermogramHandler::LoadParameter()
 
             m_frequency = m_spectrum.Step();
 
-            //m_ThermogramBegin = (m_spectrum.XMax());
+            m_ThermogramBegin = m_spectrum.XMax();
             //m_ThermogramEnd = (m_spectrum.XMax() - m_CalibrationStart * m_spectrum.Step());
 
             emit Message(QString("<font color='red'>The raw data files are not in place. I will use the stored thermogram.</font>"));
@@ -248,7 +252,7 @@ void ThermogramHandler::UpdatePeaks()
         else
             index_end = m_peak_rules[j + 1].x();
         int i = 0;
-        for (i = index_start; i + timestep < m_spectrum.XtoIndex(index_end) + 3; i += (timestep)) {
+        for (i = index_start; i + timestep < m_spectrum.XtoIndex(index_end) + m_ThermogramBegin; i += (timestep)) {
             peak = PeakPick::Peak();
             peak.setPeakStart(i);
             peak.setPeakEnd(i + (timestep)-1);
@@ -257,7 +261,6 @@ void ThermogramHandler::UpdatePeaks()
 
             m_peak_list.push_back(peak);
         }
-        qDebug() << m_spectrum.XtoIndex(index_end) + 2 - i;
     }
 
     m_offset = offset / double(off);
@@ -310,6 +313,11 @@ void ThermogramHandler::IntegrateThermogram()
         ApplyThermogramIntegration();
     }
     UpdateBaseLine();
+    /*
+    for (int i = 0; i < m_integrals_raw.size(); ++i) {
+        m_peak_list[i].integ_num *= m_calibration_ratio;
+    }*/
+    emit CalibrationChanged();
     emit ThermogramChanged();
 }
 
@@ -339,21 +347,7 @@ void ThermogramHandler::ApplyThermogramIntegration()
     }
     qreal stdev = Stddev(difference_signal_baseline, 0, sum_difference_signal_baseline / double(difference_signal_baseline.size()));
 
-    int counter = 0;
-    double sum = 0;
-
-    for (int i = 0; i < difference_signal_baseline.size(); ++i) {
-        tmp << difference_signal_baseline[i] * (difference_signal_baseline[i] < stdev);
-        counter += (difference_signal_baseline[i] < stdev);
-        sum += difference_signal_baseline[i] * (difference_signal_baseline[i] < stdev);
-    }
-
-    qreal stdev2 = Stddev(tmp, 0, sum / double(counter));
-
-    if (m_initial_threshold < 1e-12)
-        m_initial_threshold = stdev2 / 10.0;
-
-    m_integration_range_threshold = stdev / 10.0;
+    m_integration_range_threshold = stdev / 100.0;
 }
 
 void ThermogramHandler::FitBaseLine()
@@ -430,6 +424,8 @@ void ThermogramHandler::CalibrateSystem()
     PeakPick::BaseLineResult baseline_result = baseline.Fit();
 
     m_calibration_peak.integ_num = PeakPick::IntegrateNumerical(&m_spectrum, m_calibration_peak.start, m_calibration_peak.end, baseline_result.baselines[0]);
+    m_calibration_ratio = m_CalibrationHeat / m_calibration_peak.integ_num;
+    emit CalibrationChanged();
 }
 
 QJsonObject ThermogramHandler::getThermogramParameter() const
@@ -502,7 +498,6 @@ void ThermogramHandler::AdjustIntegrationRange()
         baseline = m_baseline.baselines[0];
 
     for (int x = 0; x < maxiter; ++x) {
-        qDebug() << threshold << m_integration_range_threshold;
         double thresh = ResizeIntegrationRange(threshold, direction);
         if (qAbs(thresh - threshold) > 1e-10)
             threshold = thresh;
@@ -515,8 +510,7 @@ void ThermogramHandler::AdjustIntegrationRange()
         FitBaseLine();
     }
     m_last_integration_scheme = m_current_integration_scheme;
-    // Update();
-    // setGuideText(QString("Adaption of the baseline took %1 cycles").arg(m_last_iteration_max));
+    emit CalibrationChanged();
 }
 
 double ThermogramHandler::ResizeIntegrationRange(double threshold, int direction)

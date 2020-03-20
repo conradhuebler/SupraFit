@@ -124,8 +124,12 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 
-find_package(PythonLibs REQUIRED)
-
+if(_Python)
+    find_package(PythonLibs)
+    if( NOT PythonLibs_FOUND)
+        message(FATAL_ERROR "Python is not found on your system. Please rerun cmake with disabled Python support!")
+    endif()
+endif()
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
@@ -171,7 +175,11 @@ IF(_Python)
         )
 ENDIF(_Python)
 
-add_library(core SHARED ${core_SRC})
+if(_Python)
+    add_library(core SHARED ${core_SRC})
+else()
+    add_library(core ${core_SRC})
+endif()
 
 target_link_libraries(core Qt5::Core)
 
@@ -209,7 +217,11 @@ set(models_SRC
     src/core/models/misc/dep_any.cpp
  )
 
-add_library(models SHARED ${models_SRC})
+if(_Python)
+    add_library(models SHARED ${models_SRC})
+else()
+    add_library(models ${models_SRC})
+endif()
 
 target_link_libraries(models Qt5::Core ${PYTHON_LIBRARIES})
 

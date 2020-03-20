@@ -473,7 +473,7 @@ void Thermogram::UpdateTable()
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
         m_table->setItem(j, 0, newItem);
 
-        m_raw << m_exp_peaks[j].integ_num;
+        m_raw << m_exp_peaks[j].integ_num * m_experiment_thermogram->CalibrationRatio();
         newItem = new QTableWidgetItem(QString::number(m_raw.last()));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
         newItem->setBackgroundColor(m_raw_series->color().lighter());
@@ -484,7 +484,7 @@ void Thermogram::UpdateTable()
         qreal dil = 0;
         if (j < m_dil_peaks.size()) {
             m_dil_heat << m_dil_peaks[j].integ_num;
-            dil = m_dil_heat.last();
+            dil = m_dil_heat.last() * m_dilution_thermogram->CalibrationRatio();
         }
         newItem = new QTableWidgetItem(QString::number(dil));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
