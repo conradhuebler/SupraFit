@@ -134,9 +134,15 @@ int main(int argc, char** argv)
                 simulator->setInFile(parser.value("i"));
 
                 bool analyse = simulator->setAnalyseJson(job["analyse"].toObject());
-//<<<<<<< HEAD
+
                 if (job.keys().contains("main") || job.keys().contains("Main")) {
                     bool generate = false, model = false;
+                    bool prepare = false;
+
+                    if (job["main"].toObject().contains("Prepare")) {
+                        simulator->setPreparation(job["main"].toObject()["Prepare"].toObject());
+                        prepare = true;
+                    }
 
                     if (job.contains("main"))
                         job["Main"] = job["main"].toObject();
@@ -158,30 +164,13 @@ int main(int argc, char** argv)
 
                     if (generate) {
                         projects = simulator->GenerateData();
-                    } else {
-                        if (!simulator->LoadFile())
-                            return 0;
-                        /*
-=======
-                bool prepare = false;
-                if (job.keys().contains("main")) {
-                    if (job["main"].toObject().contains("Prepare")) {
-                        simulator->setPreparation(job["main"].toObject()["Prepare"].toObject());
-                        prepare = true;
-                    }
-                    bool generate = simulator->setMainJson(job["main"].toObject());
-                    bool model = simulator->setModelsJson(job["model"].toObject());
-
-                    simulator->setJobsJson(job["jobs"].toObject());
-
-                    if (generate) {
-                        projects = simulator->GenerateData();
                     } else if (prepare) {
                         simulator->Prepare();
                         projects = simulator->Data();
-                    } else
->>>>>>> master
-*/
+                    } else {
+                        if (!simulator->LoadFile())
+                            return 0;
+
                         projects = simulator->Data();
                     }
                     if (model) {

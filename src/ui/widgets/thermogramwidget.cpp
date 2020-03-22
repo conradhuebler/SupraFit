@@ -237,6 +237,7 @@ void ThermogramWidget::setUi()
     m_const_offset->setMaximum(1e5);
     m_const_offset->setValue(0);
     m_const_offset->setDecimals(7);
+    m_const_offset->setMaximumWidth(100);
 
     connect(m_const_offset, &QDoubleSpinBox::editingFinished, this, &ThermogramWidget::Update);
     connect(m_const_offset, &QDoubleSpinBox::editingFinished, this, &ThermogramWidget::ResetGuideLabel);
@@ -296,7 +297,7 @@ void ThermogramWidget::setUi()
     m_calibration_start->setMinimum(0);
     m_calibration_start->setMaximum(1e8);
     //m_calibration_start->setMaximumWidth(80);
-    m_calibration_start->setValue(qApp->instance()->property("calibration_start").toDouble());
+    //m_calibration_start->setValue(qApp->instance()->property("calibration_start").toDouble());
     connect(m_calibration_start, qOverload<double>(&QDoubleSpinBox::valueChanged), m_calibration_start, [this](double value) {
         qApp->instance()->setProperty("calibration_start", value);
         m_peaks_end->setMaximum(m_stored_thermogram->Spectrum()->XMax() - value);
@@ -311,7 +312,7 @@ void ThermogramWidget::setUi()
     m_calibration_heat->setDecimals(5);
     m_calibration_heat->setSingleStep(1e-2);
     m_calibration_heat->setMaximumWidth(80);
-    m_calibration_heat->setValue(qApp->instance()->property("calibration_heat").toDouble());
+    //m_calibration_heat->setValue(qApp->instance()->property("calibration_heat").toDouble());
     connect(m_calibration_heat, qOverload<double>(&QDoubleSpinBox::valueChanged), m_calibration_heat, [this](double value) {
         qApp->instance()->setProperty("calibration_heat", value);
         m_stored_thermogram->setCalibrationHeat(value);
@@ -327,7 +328,7 @@ void ThermogramWidget::setUi()
     connect(m_averaged, &QCheckBox::stateChanged, this, [this](bool state) {
         m_stored_thermogram->setAveraged(state);
         Waiter wait;
-        QSignalBlocker block(m_stored_thermogram);
+        // QSignalBlocker block(m_stored_thermogram);
         UpdatePeaks();
         //m_stored_thermogram->IntegrateThermogram();
         UpdateBaseLine();
@@ -349,7 +350,7 @@ void ThermogramWidget::setUi()
         m_iterations->setEnabled(str == m_Peak_Cut_Options[2]);
 
         Waiter wait;
-        QSignalBlocker block(m_stored_thermogram);
+        //QSignalBlocker block(m_stored_thermogram);
         UpdatePeaks();
         //m_stored_thermogram->IntegrateThermogram();
         UpdateBaseLine();
@@ -363,6 +364,19 @@ void ThermogramWidget::setUi()
     });
     m_peak_apply->setMaximumWidth(150);
     m_peak_apply->setToolTip(tr("Click generate peaks, fit baseline and integrate the peaks!"));
+
+    m_scaling = new QComboBox;
+    m_scaling->addItem(QString::number(cal2joule));
+    m_scaling->addItem("1");
+    m_scaling->setEditable(true);
+    m_scaling->setMaximumWidth(100);
+
+    connect(m_scaling, &QComboBox::currentTextChanged, m_scaling, [this]() {
+        m_ScalingFactor = m_scaling->currentText().toDouble();
+        LoadDefaultThermogram();
+        m_stored_thermogram->ApplyScaling();
+    });
+    m_ScalingFactor = m_scaling->currentText().toDouble();
 
     m_integration_range_threshold = new QDoubleSpinBox;
     m_integration_range_threshold->setMinimum(0);
@@ -389,16 +403,7 @@ void ThermogramWidget::setUi()
     QVBoxLayout* vlayout = new QVBoxLayout;
 
     QGroupBox* group = new QGroupBox;
-    group->setTitle(tr("Remove constant"));
-    group->setMaximumWidth(maxwidth);
-    group->setMaximumHeight(maxheight);
 
-    vlayout->addWidget(m_const_offset);
-    group->setLayout(vlayout);
-    peak_layout->addWidget(group);
-
-    vlayout = new QVBoxLayout;
-    group = new QGroupBox;
     group->setTitle(tr("Start time [s]"));
     group->setMaximumWidth(maxwidth);
     group->setMaximumHeight(maxheight);
@@ -430,6 +435,25 @@ void ThermogramWidget::setUi()
     peak_layout->addWidget(group);
 
     group = new QGroupBox;
+    group->setTitle(tr("Peak Ranges"));
+    group->setMaximumWidth(maxwidth);
+    group->setMaximumHeight(maxheight);
+
+    QHBoxLayout* triplett = new QHBoxLayout;
+    vlayout = new QVBoxLayout;
+    triplett->addWidget(m_integration_range);
+    triplett->addWidget(m_averaged);
+    vlayout->addLayout(triplett);
+
+    triplett = new QHBoxLayout;
+    triplett->addWidget(new QLabel(tr("Iterations")));
+    triplett->addWidget(m_iterations);
+    vlayout->addLayout(triplett);
+
+    group->setLayout(vlayout);
+    peak_layout->addWidget(group);
+
+    group = new QGroupBox;
     group->setTitle(tr("Calibration"));
     group->setMaximumWidth(maxwidth);
     group->setMaximumHeight(maxheight);
@@ -441,7 +465,7 @@ void ThermogramWidget::setUi()
 
     vlayout = new QVBoxLayout;
 
-    QHBoxLayout* triplett = new QHBoxLayout;
+    triplett = new QHBoxLayout;
     triplett->addWidget(new QLabel("Time start [s]"));
     triplett->addWidget(m_calibration_start);
     vlayout->addLayout(triplett);
@@ -453,20 +477,21 @@ void ThermogramWidget::setUi()
     group->setLayout(vlayout);
     peak_layout->addWidget(group);
 
+    vlayout = new QVBoxLayout;
     group = new QGroupBox;
-    group->setTitle(tr("Peak Ranges"));
+
+    group->setTitle(tr("Scaling"));
     group->setMaximumWidth(maxwidth);
     group->setMaximumHeight(maxheight);
 
-    vlayout = new QVBoxLayout;
     triplett = new QHBoxLayout;
-    triplett->addWidget(m_integration_range);
-    triplett->addWidget(m_averaged);
+    triplett->addWidget((new QLabel(tr("Scaling"))));
+    triplett->addWidget(m_scaling);
     vlayout->addLayout(triplett);
 
     triplett = new QHBoxLayout;
-    triplett->addWidget(new QLabel(tr("Iterations")));
-    triplett->addWidget(m_iterations);
+    triplett->addWidget((new QLabel(tr("Offset"))));
+    triplett->addWidget(m_const_offset);
     vlayout->addLayout(triplett);
 
     group->setLayout(vlayout);
@@ -529,6 +554,15 @@ void ThermogramWidget::setUi()
         settings.setValue("peaks_time", value);
     });
 
+    connect(m_iterations, qOverload<int>(&QSpinBox::valueChanged), m_stored_thermogram, [this]() {
+        Waiter wait;
+        m_stored_thermogram->ResetThreshold();
+        UpdatePeaks();
+        UpdateBaseLine();
+        UpdateTable();
+    });
+
+    connect(m_stored_thermogram, &ThermogramHandler::ThermogramInitialised, this, &ThermogramWidget::LoadDefault);
     connect(m_stored_thermogram, &ThermogramHandler::ThermogramChanged, this, &ThermogramWidget::Update);
     connect(m_stored_thermogram, &ThermogramHandler::PeakRulesChanged, this, &ThermogramWidget::UpdateRules);
     connect(m_stored_thermogram, &ThermogramHandler::BaseLineChanged, this, &ThermogramWidget::UpdateBaseLine);
@@ -550,8 +584,16 @@ void ThermogramWidget::LoadDefaultThermogram()
     thermo["CalibrationHeat"] = m_CalibrationHeat;
     thermo["PeakDuration"] = m_PeakDuration;
     thermo["PeakCount"] = m_PeakCount;
-
+    thermo["ScalingFactor"] = m_ScalingFactor;
     m_stored_thermogram->setThermogramParameter(thermo);
+}
+
+void ThermogramWidget::LoadDefault()
+{
+    QJsonObject thermo;
+    thermo["ScalingFactor"] = m_ScalingFactor;
+    m_stored_thermogram->UpdateParameter(thermo);
+    Update();
 }
 
 void ThermogramWidget::UpdateTable()
@@ -805,7 +847,6 @@ void ThermogramWidget::UpdatePeaks()
 
     for (int i = 0; i < m_peak_rule_list->rowCount(); ++i) {
         PeakRule* item = dynamic_cast<PeakRule*>((m_peak_rule_list->item(i, 0)));
-
         double start = item->data(Qt::DisplayRole).toDouble();
         item = dynamic_cast<PeakRule*>(m_peak_rule_list->item(i, 1));
         double time = item->data(Qt::DisplayRole).toDouble();
@@ -818,9 +859,6 @@ void ThermogramWidget::UpdatePeaks()
     m_stored_thermogram->setThermogramEnd(m_peaks_end->value());
     m_stored_thermogram->setPeakRules(peak_rules);
     m_stored_thermogram->UpdatePeaks();
-
-    QSignalBlocker block_thermogram(m_stored_thermogram);
-    block_thermogram.unblock();
 
     m_stored_thermogram->IntegrateThermogram();
 }

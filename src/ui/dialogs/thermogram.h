@@ -128,7 +128,6 @@ private:
     QVector<qreal> m_heat, m_raw, m_dil_heat, m_inject;
     bool m_forceInject = false, m_injection = false, m_forceStep = false, m_ParameterUsed = false;
     qreal m_heat_offset = 0, m_dil_offset = 0;
-    qreal PeakAt(int i);
 
 private slots:
     void setExperiment();

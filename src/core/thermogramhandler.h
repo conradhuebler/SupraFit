@@ -42,6 +42,8 @@ public:
     inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list) { m_peak_list = QVector<PeakPick::Peak>::fromStdVector(peak_list); }
     inline void setPeakList(const QVector<PeakPick::Peak>& peak_list) { m_peak_list = peak_list; }
 
+    void UpdateParameter(const QJsonObject& parameter);
+
     void Initialise();
 
     inline const PeakPick::spectrum* Spectrum() const { return &m_spectrum; }
@@ -49,6 +51,7 @@ public:
     inline const QVector<PeakPick::Peak>* Peaks() const { return &m_peak_list; }
 
     inline QVector<qreal> Integrals() const { return m_integrals_raw; }
+    inline QVector<qreal> IntegralsScaled() const { return m_integrals_scaled; }
 
     inline QVector<QPointF> PeakRules() const { return m_peak_rules; }
 
@@ -71,7 +74,11 @@ public:
     void CalibrateSystem();
     void AdjustIntegrationRange();
 
-    void setThermogramParameter(const QJsonObject& thermogram_parameter) { m_thermogram_parameter = thermogram_parameter; }
+    void setThermogramParameter(const QJsonObject& thermogram_parameter)
+    {
+        m_thermogram_parameter = thermogram_parameter;
+        LoadBlock();
+    }
     QJsonObject getThermogramParameter() const;
 
     void setCalibrationHeat(qreal heat) { m_CalibrationHeat = heat; }
@@ -97,11 +104,15 @@ public:
     inline void setCutBefore(bool cut_before) { m_cut_before = cut_before; }
     inline int LastIterations() const { return m_last_iteration_max; }
 
+    inline void ResetThreshold() { m_integration_range_threshold = m_initial_threshold; }
+
+    void ApplyScaling();
+
 private:
     /* Chart Series use QList */
     QList<QPointF> m_thermogram_series, m_baseline_series, m_baseline_grid, m_baseline_ignored_series;
     QVector<QPointF> m_peak_rules;
-    QVector<qreal> m_integrals_list, m_integrals_raw;
+    QVector<qreal> m_integrals_list, m_integrals_raw, m_integrals_scaled;
     QVector<PeakPick::Peak> m_peak_list;
     PeakPick::spectrum m_spectrum;
     PeakPick::Peak m_calibration_peak;
@@ -120,11 +131,13 @@ private:
 
     void LegacyLoad();
     void LoadParameter();
+    void LoadBlock();
     double ResizeIntegrationRange(double threshold, int direction);
     void ApplyThermogramIntegration();
     void UpdateBaseLine();
 
 signals:
+    void ThermogramInitialised();
     void ThermogramChanged();
     void BaseLineChanged();
     void CalibrationChanged();

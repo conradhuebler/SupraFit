@@ -69,24 +69,13 @@ void Thermogram::setUi()
         m_experiment_peaks = m_experiment_thermogram->Peaks();
         UpdateTable();
     });
-    /*
-    connect(m_experiment_thermogram, &ThermogramHandler::CalibrationChanged, this, [this]() {
-        //this->m_exp_peaks = this->m_experiment->Peaks();
-        UpdateTable();
-    });
-    */
+
     m_dilution_thermogram = new ThermogramHandler;
     m_dilution = new ThermogramWidget(m_dilution_thermogram, this);
     connect(m_dilution_thermogram, &ThermogramHandler::ThermogramChanged, this, [this]() {
         m_dilution_peaks = m_dilution_thermogram->Peaks();
         UpdateTable();
     });
-    /*
-    connect(m_dilution_thermogram, &ThermogramHandler::CalibrationChanged, this, [this]() {
-        //this->m_dil_peaks = this->m_experiment->Peaks();
-        UpdateTable();
-    });
-    */
 
     QGridLayout* layout = new QGridLayout;
 
@@ -96,8 +85,8 @@ void Thermogram::setUi()
     m_dil_button = new QPushButton(tr("Load Dilution"));
     connect(m_dil_button, &QPushButton::clicked, this, &Thermogram::setDilution);
 
-    m_refit = new QPushButton(tr("Update"));
-    connect(m_refit, &QPushButton::clicked, this, &Thermogram::UpdateData);
+    // m_refit = new QPushButton(tr("Update"));
+    // connect(m_refit, &QPushButton::clicked, this, &Thermogram::UpdateData);
 
     m_exp_file = new QLineEdit;
     m_exp_file->setClearButtonEnabled(true);
@@ -150,6 +139,7 @@ void Thermogram::setUi()
     m_dil_file->setClearButtonEnabled(true);
     connect(m_dil_file, &QLineEdit::textEdited, this, &Thermogram::clearDilution);
 
+    /*
     m_scale = new QComboBox;
     m_scale->addItem(QString::number(cal2joule));
     m_scale->addItem("1");
@@ -157,15 +147,17 @@ void Thermogram::setUi()
     connect(m_scale, &QComboBox::currentTextChanged, m_scale, [this]() {
         this->UpdateTable();
     });
+    */
     m_injct = new QLineEdit;
     //m_injct->setMaximumWidth(100);
 
-    m_exp_base = new QLineEdit;
+    //m_exp_base = new QLineEdit;
     //m_exp_base->setMaximumWidth(100);
 
-    m_dil_base = new QLineEdit;
+    //m_dil_base = new QLineEdit;
     //m_dil_base->setMaximumWidth(100);
 
+    /*
     m_freq = new QDoubleSpinBox;
     m_freq->setValue(1.0);
     m_freq->setStyleSheet("background-color: green");
@@ -177,7 +169,7 @@ void Thermogram::setUi()
         this->m_experiment->setFrequency(freq);
     });
     m_freq->setReadOnly(true);
-
+*/
     m_message = new QLabel("Inject Volume will be taken from ITC file (if available)!");
     m_offset = new QLabel(tr("No offset"));
 
@@ -221,11 +213,12 @@ void Thermogram::setUi()
     layout->addWidget(m_injct, 2, 1);
     layout->addWidget(m_message, 2, 2, 1, 2);
 
+    /*
     hlayout = new QHBoxLayout;
     hlayout->addWidget(new QLabel(tr("Freq:")));
     hlayout->addWidget(m_freq);
     hlayout->addWidget(new QLabel(tr("cal->J")));
-    hlayout->addWidget(m_scale);
+    //hlayout->addWidget(m_scale);
     hlayout->addWidget(new QLabel(tr("Experiment Heat:")));
     hlayout->addWidget(m_exp_base);
     hlayout->addWidget(new QLabel(tr("Dilution Heat:")));
@@ -233,7 +226,7 @@ void Thermogram::setUi()
     hlayout->addWidget(m_refit);
 
     layout->addLayout(hlayout, 3, 0, 1, 4);
-
+*/
     m_mainwidget = new QTabWidget;
 
     m_table = new QTableWidget;
@@ -314,16 +307,13 @@ void Thermogram::setUi()
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
 
     connect(m_experiment, &ThermogramWidget::CalibrationChanged, this, [this](double val) {
-        if (val == 0)
-            m_scale->setCurrentText(QString::number(cal2joule));
-        else
-            m_scale->setCurrentText("1");
-        //this->m_exp_peaks = this->m_experiment->Peaks();
         this->UpdateTable();
     });
 
-    UpdateTable();
     setWindowTitle(tr("Thermogram Dialog"));
+
+    m_data_view->addSeries(m_thm_series);
+    m_data_view->addSeries(m_raw_series);
 }
 
 Thermogram::~Thermogram()
@@ -349,8 +339,8 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
     m_CellVolume->setText(m_systemparameter[QString::number(AbstractItcModel::CellVolume)].toString());
 
     m_UseParameter->setChecked(m_systemparameter.size() != 0);
-    QSignalBlocker block(m_freq);
-    m_freq->setValue(freq);
+    // QSignalBlocker block(m_freq);
+    // m_freq->setValue(freq);
     QSignalBlocker inject(m_injct);
     if (m_inject.size())
         m_injct->setText(QString::number(m_inject.last()));
@@ -360,7 +350,7 @@ PeakPick::spectrum Thermogram::LoadITCFile(QString& filename, std::vector<PeakPi
 
 void Thermogram::setScaling(const QString& str)
 {
-    m_scale->setCurrentText(str);
+    //m_scale->setCurrentText(str);
 }
 
 PeakPick::spectrum Thermogram::LoadXYFile(const QString& filename)
@@ -404,7 +394,7 @@ void Thermogram::setExperimentFile(QString filename)
         }
         m_exp_file->setText(filename);
         m_exp_file->setStyleSheet("background-color: " + included());
-        m_exp_base->setText(QString::number(offset));
+        //m_exp_base->setText(QString::number(offset));
         m_experiment->setFileType(ThermogramWidget::FileType::ITC);
         m_experiment_thermogram->setThermogram(original);
         m_experiment_thermogram->setPeakList(m_exp_peaks);
@@ -413,8 +403,8 @@ void Thermogram::setExperimentFile(QString filename)
         //m_exp_peaks = m_experiment->Peaks();
     } else {
         original = LoadXYFile(filename);
-        QSignalBlocker block(m_freq);
-        m_freq->setValue(original.Step());
+        // QSignalBlocker block(m_freq);
+        // m_freq->setValue(original.Step());
         m_experiment_thermogram->setThermogram(original);
         //m_experiment->setFileType(ThermogramWidget::FileType::RAW);
         //m_experiment->setThermogram(&original);
@@ -454,12 +444,21 @@ void Thermogram::UpdateTable()
     m_raw.clear();
     m_heat.clear();
     m_dil_heat.clear();
+    QVector<qreal> integ_exp = m_experiment_thermogram->Integrals();
+    QVector<qreal> integ_dil = m_dilution_thermogram->Integrals();
 
+    QVector<qreal> integ_exp_scaled = m_experiment_thermogram->IntegralsScaled();
+    QVector<qreal> integ_dil_scaled = m_dilution_thermogram->IntegralsScaled();
     m_table->clear();
+
+    if (integ_exp.size() == 0)
+        return;
+
     m_table->setRowCount(m_exp_peaks.size());
     m_table->setColumnCount(4);
     QChar mu = QChar(956);
     for (unsigned int j = 0; j < m_exp_peaks.size(); ++j) {
+        qreal integral = 0;
         QTableWidgetItem* newItem;
         if (j < m_inject.size()) {
             if (m_forceInject && !m_injct->text().isEmpty())
@@ -473,7 +472,9 @@ void Thermogram::UpdateTable()
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
         m_table->setItem(j, 0, newItem);
 
-        m_raw << m_exp_peaks[j].integ_num * m_experiment_thermogram->CalibrationRatio();
+        //m_raw << m_exp_peaks[j].integ_num * m_experiment_thermogram->CalibrationRatio();
+        m_raw << integ_exp[j];
+        integral += integ_exp_scaled[j];
         newItem = new QTableWidgetItem(QString::number(m_raw.last()));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
         newItem->setBackgroundColor(m_raw_series->color().lighter());
@@ -483,8 +484,9 @@ void Thermogram::UpdateTable()
 
         qreal dil = 0;
         if (j < m_dil_peaks.size()) {
-            m_dil_heat << m_dil_peaks[j].integ_num;
-            dil = m_dil_heat.last() * m_dilution_thermogram->CalibrationRatio();
+            m_dil_heat << integ_dil[j];
+            dil = integ_dil[j];
+            integral += integ_dil_scaled[j];
         }
         newItem = new QTableWidgetItem(QString::number(dil));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
@@ -494,13 +496,13 @@ void Thermogram::UpdateTable()
         m_table->setItem(j, 2, newItem);
         m_dil_series->append(QPointF(j + 1, dil));
 
-        newItem = new QTableWidgetItem(QString::number(PeakAt(j)));
+        newItem = new QTableWidgetItem(QString::number(integral));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\n";
         m_content += newItem->data(Qt::DisplayRole).toString() + "\n";
         newItem->setBackgroundColor(m_thm_series->color().lighter());
         m_table->setItem(j, 3, newItem);
 
-        m_thm_series->append(QPointF(j + 1, PeakAt(j)));
+        m_thm_series->append(QPointF(j + 1, integral));
     }
 
     QStringList header = QStringList() << QString("Volume\n[%1L]").arg(mu) << " exp. heat \n[raw]"
@@ -509,8 +511,6 @@ void Thermogram::UpdateTable()
     m_table->setHorizontalHeaderLabels(header);
     m_table->resizeColumnsToContents();
 
-    m_data_view->addSeries(m_thm_series);
-    m_data_view->addSeries(m_raw_series);
 
     if (m_dil_peaks.size())
         m_data_view->addSeries(m_dil_series);
@@ -580,7 +580,7 @@ void Thermogram::setDilutionFile(QString filename)
         m_dilution_thermogram->setPeakList(m_exp_peaks);
         //m_dilution->setThermogram(&original, offset);
         //m_dilution->setPeakList(m_exp_peaks);
-        m_dil_base->setText(QString::number(offset));
+        //m_dil_base->setText(QString::number(offset));
         //m_dil_peaks = m_dilution->Peaks();
     } else {
         original = LoadXYFile(filename);
@@ -640,14 +640,6 @@ void Thermogram::UpdateData()
     UpdateTable();
 }
 
-qreal Thermogram::PeakAt(int i)
-{
-    qreal dilution = 0;
-    if (i < m_dil_heat.size())
-        dilution = m_dil_heat[i];
-    return (m_raw[i] - dilution) * m_scale->currentText().toDouble();
-}
-
 void Thermogram::File2JsonBlock(const QString& filename, QJsonObject& block) const
 {
     if (qApp->instance()->property("StoreFileName").toBool()) {
@@ -683,7 +675,6 @@ QJsonObject Thermogram::Raw() const
         File2JsonBlock(m_dil_file->text(), block);
         raw["dilution"] = block;
     }
-    raw["scaling"] = m_scale->currentText();
     raw["injectvolume"] = m_injct->text();
     return raw;
 }

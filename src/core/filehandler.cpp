@@ -256,7 +256,7 @@ void FileHandler::ReadITC()
     thermogram->AdjustIntegrationRange();
     thermogram->IntegrateThermogram();
 
-    QVector<qreal> integrals = thermogram->Integrals();
+    QVector<qreal> integrals = thermogram->IntegralsScaled();
     m_stored_table = new DataTable;
     for (int i = 0; i < integrals.size(); ++i) {
         QVector<qreal> row;
