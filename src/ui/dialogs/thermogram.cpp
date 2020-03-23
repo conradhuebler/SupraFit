@@ -486,7 +486,7 @@ void Thermogram::UpdateTable()
         if (j < m_dil_peaks.size()) {
             m_dil_heat << integ_dil[j];
             dil = integ_dil[j];
-            integral += integ_dil_scaled[j];
+            integral -= integ_dil_scaled[j];
         }
         newItem = new QTableWidgetItem(QString::number(dil));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
