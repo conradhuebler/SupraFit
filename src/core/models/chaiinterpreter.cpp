@@ -20,6 +20,7 @@
 #include "src/global_config.h"
 
 #ifdef _Models
+
 #include <QtDebug>
 
 #include <chaiscript/chaiscript.hpp>
@@ -34,6 +35,17 @@ ChaiInterpreter::ChaiInterpreter()
 {
     chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
     chai.add(chaiscript::vector_conversion<std::vector<double>>());
+    //chai.add(chaiscript::vector_conversion<std::vector<chaiscript::Boxed_Value>>());
+
+    /*
+    chai.add(chaiscript::type_conversion<std::vector<chaiscript::Boxed_Value>, std::vector<std::vector<double>>> ([](const std::vector<chaiscript::Boxed_Value> &t_bvs)
+    {   std::vector<std::vector<double>> ret;
+        for (const auto& bv : t_bvs) {
+          ret.emplace_back (chaiscript::boxed_cast<std::vector<double>> (bv));
+        }
+        return ret;
+      }));
+      */
 }
 
 void ChaiInterpreter::AdressFunction(void* function, const QString& name)
@@ -69,7 +81,8 @@ void ChaiInterpreter::InitialiseChai()
     //  for (const QString& string : m_execute)
     //      chai.eval(string.toStdString());
     chai.eval(m_execute.join("\n").toStdString());
-    m_Calculate = chai.eval<std::function<double(int, int)>>("Calculate");
+    //m_Calculate = chai.eval<std::function<double(int, int)>>("Calculate");
+    m_Calculate = chai.eval<std::function<std::vector<double>(int)>>("Calculate");
 }
 
 void ChaiInterpreter::UpdateChai()
@@ -86,11 +99,17 @@ void ChaiInterpreter::UpdateChai()
     }
 }
 
+std::vector<double> ChaiInterpreter::EvaluateChaiSeries(int series)
+{
+    auto lala = m_Calculate(series);
+    return lala;
+}
+
 double ChaiInterpreter::EvaluateChai(int i, int j)
 {
     //chai.add(chaiscript::var(i), "i");
     //chai.add(chaiscript::var(j), "j");
     //return chai.eval<double>("Calculate(i,j)");
-    return m_Calculate(i, j);
+    return 0.0; //m_Calculate(i, j);
 }
 #endif

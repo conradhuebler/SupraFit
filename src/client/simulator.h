@@ -40,27 +40,27 @@ public:
 
     bool setMainJson(const QJsonObject& mainjson)
     {
-        m_mainjson = mainjson;
-        setDataJson(m_mainjson["data"].toObject());
-        m_extension = "." + mainjson["Extension"].toString();
-        return !m_datajson.isEmpty();
+        m_main = mainjson;
+        setDataJson(m_main["data"].toObject());
+        m_extension = "." + m_main["Extension"].toString();
+        return !m_data_json.isEmpty();
     }
-    void setDataJson(const QJsonObject& datajson) { m_datajson = datajson; }
+    void setDataJson(const QJsonObject& datajson) { m_data_json = datajson; }
 
     bool setAnalyseJson(const QJsonObject& analyse)
     {
-        m_analysejson = analyse;
-        return !m_analysejson.isEmpty();
+        m_analyse = analyse;
+        return !m_analyse.isEmpty();
     }
 
     void setTopLevel(const QJsonObject& toplevel) { m_toplevel = toplevel; }
 
     bool setModelsJson(const QJsonObject& modelsjson)
     {
-        m_modelsjson = modelsjson;
-        return !m_modelsjson.isEmpty();
+        m_models = modelsjson;
+        return !m_models.isEmpty();
     }
-    void setJobsJson(const QJsonObject& jobsjson) { m_jobsjson = jobsjson; }
+    void setJobsJson(const QJsonObject& jobsjson) { m_jobs = jobsjson; }
 
     QVector<QJsonObject> GenerateData();
 

@@ -60,15 +60,15 @@ QStringList Simulator::Generate()
     std::mt19937 rng;
     rng.seed(seed);
 
-    int runs = m_mainjson["MaxSteps"].toInt();
-    double std = m_mainjson["Variance"].toDouble();
+    int runs = m_main["MaxSteps"].toInt();
+    double std = m_main["Variance"].toDouble();
 
     if (qFuzzyCompare(std, 0))
         runs = 1;
 
-    if (m_mainjson.contains("Threads")) {
-        qApp->instance()->setProperty("threads", m_mainjson.value("Threads").toInt(4));
-        std::cout << "Setting # of threads to " << m_mainjson.value("Threads").toInt(4) << std::endl;
+    if (m_main.contains("Threads")) {
+        qApp->instance()->setProperty("threads", m_main.value("Threads").toInt(4));
+        std::cout << "Setting # of threads to " << m_main.value("Threads").toInt(4) << std::endl;
     }
 
     QJsonObject table = m_data->DependentModel()->ExportTable(true);
@@ -109,11 +109,11 @@ QStringList Simulator::Generate()
                   << std::endl;
         std::cout << "                         " << model->Name().toStdString() << std::endl;
         */
-        if (!m_modelsjson.isEmpty()) {
+        if (!m_main.isEmpty()) {
             std::cout << "Loading Models into Dataset" << std::endl;
-            QVector<QSharedPointer<AbstractModel>> models = AddModels(m_modelsjson, data);
+            QVector<QSharedPointer<AbstractModel>> models = AddModels(m_main, data);
             std::cout << "Loading " << models.size() << " Models into Dataset finished!" << std::endl;
-            if (!m_jobsjson.isEmpty()) {
+            if (!m_jobs.isEmpty()) {
                 std::cout << "Starting jobs ..." << std::endl;
                 JobManager* manager = new JobManager;
                 connect(manager, &JobManager::Message, this, [](const QString& str) {
@@ -126,8 +126,8 @@ QStringList Simulator::Generate()
                 connect(this, &Simulator::Interrupt, manager, &JobManager::Interrupt);
                 for (int model_index = 0; model_index < models.size(); ++model_index) {
                     std::cout << "... model  " << model_index << std::endl;
-                    for (const QString& j : m_jobsjson.keys()) {
-                        QJsonObject job = m_jobsjson[j].toObject();
+                    for (const QString& j : m_jobs.keys()) {
+                        QJsonObject job = m_jobs[j].toObject();
                         manager->setModel(models[model_index]);
                         manager->AddJob(job);
                         manager->RunJobs();
@@ -168,9 +168,9 @@ QStringList Simulator::Generate()
 
 QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job)
 {
-    if (m_mainjson.contains("Threads")) {
-        qApp->instance()->setProperty("threads", m_mainjson.value("Threads").toInt(4));
-        std::cout << "Setting # of threads to " << m_mainjson.value("Threads").toInt(4) << std::endl;
+    if (m_main.contains("Threads")) {
+        qApp->instance()->setProperty("threads", m_main.value("Threads").toInt(4));
+        std::cout << "Setting # of threads to " << m_main.value("Threads").toInt(4) << std::endl;
     }
 
     QJsonObject project;
@@ -191,7 +191,7 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
         std::cout << "Loading Models into Dataset" << std::endl;
         QVector<QSharedPointer<AbstractModel>> m = AddModels(models, d);
         std::cout << "Loading " << m.size() << " Models into Dataset finished!" << std::endl;
-        if (!m_jobsjson.isEmpty()) {
+        if (!m_jobs.isEmpty()) {
             std::cout << "Starting jobs ..." << std::endl;
             JobManager* manager = new JobManager;
             connect(manager, &JobManager::Message, this, [](const QString& str) {
@@ -237,7 +237,7 @@ QJsonObject Simulator::PerfomeJobs(const QJsonObject& data, const QJsonObject& m
         ++file_int;
         outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
     }
-    Analyse(m_analysejson, models_json);
+    Analyse(m_analyse, models_json);
     SaveFile(outfile, project);
     return project;
 }
@@ -248,26 +248,26 @@ QVector<QJsonObject> Simulator::GenerateData()
 
     QVector<QJsonObject> project_list;
 
-    if (m_mainjson.isEmpty())
+    if (m_main.isEmpty())
         return project_list;
 
     if (m_infile.isEmpty() || m_infile.isNull()) {
-        if (m_mainjson.contains("InFile"))
-            m_infile = m_mainjson["InFile"].toString();
+        if (m_main.contains("InFile"))
+            m_infile = m_main["InFile"].toString();
 
         if (m_infile.isEmpty() || m_infile.isNull())
             return project_list;
     }
 
-    m_independent_rows = m_mainjson["IndependentRows"].toInt(2);
-    m_start_point = m_mainjson["StartPoint"].toInt(0);
-    m_series = m_datajson["Series"].toInt();
+    m_independent_rows = m_main["IndependentRows"].toInt(2);
+    m_start_point = m_main["StartPoint"].toInt(0);
+    m_series = m_data_json["Series"].toInt();
 
     if (!LoadFile())
         return project_list;
 
-    if (m_mainjson.contains("OutFile")) {
-        m_outfile = m_mainjson["OutFile"].toString();
+    if (m_main.contains("OutFile")) {
+        m_outfile = m_main["OutFile"].toString();
     }
 
     if (m_toplevel.isEmpty())
@@ -278,9 +278,9 @@ QVector<QJsonObject> Simulator::GenerateData()
     else
         m_data = new DataClass(m_toplevel);
 
-    int model = m_datajson["model"].toInt();
-    double variance = m_datajson["Variance"].toDouble();
-    int repeat = m_datajson["Repeat"].toInt();
+    int model = m_data_json["model"].toInt();
+    double variance = m_data_json["Variance"].toDouble();
+    int repeat = m_data_json["Repeat"].toInt();
 
     QPointer<DataClass> data = new DataClass(m_data.data());
     QJsonObject export_object = data->ExportData();
@@ -292,8 +292,8 @@ QVector<QJsonObject> Simulator::GenerateData()
     int file_int = 0;
 
     QString global_limits, local_limits;
-    if (m_datajson.contains("GlobalRandomLimits")) {
-        global_limits = m_datajson["GlobalRandomLimits"].toString();
+    if (m_data_json.contains("GlobalRandomLimits")) {
+        global_limits = m_data_json["GlobalRandomLimits"].toString();
         QStringList limits = global_limits.split(";");
         if (limits.size()) {
             QVector<QPair<qreal, qreal>> global_block;
@@ -311,8 +311,8 @@ QVector<QJsonObject> Simulator::GenerateData()
         }
     }
 
-    if (m_datajson.contains("LocalRandomLimits")) {
-        local_limits = m_datajson["LocalRandomLimits"].toString();
+    if (m_data_json.contains("LocalRandomLimits")) {
+        local_limits = m_data_json["LocalRandomLimits"].toString();
 
         QStringList local_limits_block = local_limits.split(":");
         if (local_limits_block.size()) {

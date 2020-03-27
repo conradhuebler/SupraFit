@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,10 @@
 
 #include <iostream>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
+#include <QtCore/QThreadPool>
 
 #include "src/capabilities/montecarlostatistics.h"
 
@@ -41,10 +43,26 @@ SupraFitCli::~SupraFitCli()
 {
 }
 
+void SupraFitCli::setControlJson(const QJsonObject& control)
+{
+    QStringList keys = control.keys();
+    for (const QString& key : keys) {
+        if (key.compare("main", Qt::CaseInsensitive))
+            m_main = control[key].toObject();
+
+        if (key.compare("models", Qt::CaseInsensitive))
+            m_models = control[key].toObject();
+
+        if (key.compare("jobs", Qt::CaseInsensitive))
+            m_jobs = control[key].toObject();
+
+        if (key.compare("analyse", Qt::CaseInsensitive))
+            m_analyse = control[key].toObject();
+    }
+}
+
 bool SupraFitCli::LoadFile()
 {
-    ParseInput();
-
     FileHandler* handler = new FileHandler(m_infile, this);
     handler->setIndependentRows(m_independent_rows);
     handler->setStartPoint(m_start_point);
@@ -72,37 +90,33 @@ bool SupraFitCli::LoadFile()
     return true;
 }
 
-QStringList SupraFitCli::ParseInput()
+void SupraFitCli::ParseMain()
 {
-    QStringList filelist;
 
-    if (m_mainjson.isEmpty())
-        return filelist;
+    if (m_main.isEmpty())
+        return;
 
     if (m_infile.isEmpty() || m_infile.isNull()) {
-        if (m_mainjson.contains("InFile"))
-            m_infile = m_mainjson["InFile"].toString();
+        if (m_main.contains("InFile"))
+            m_infile = m_main["InFile"].toString();
 
         if (m_infile.isEmpty() || m_infile.isNull())
-            return filelist;
+            return;
     }
 
-    if (m_mainjson.contains("IndependentRows"))
-        m_independent_rows = m_mainjson["IndependentRows"].toInt(2);
-    else if (m_mainjson.contains("InputSize"))
-        m_independent_rows = m_mainjson["InputSize"].toInt(2);
-
-    m_start_point = m_mainjson["StartPoint"].toInt(0);
-
-    if (m_mainjson.contains("OutFile")) {
-        m_outfile = m_mainjson["OutFile"].toString();
+    m_independent_rows = m_main["IndependentRows"].toInt(2);
+    m_independent_rows = m_main["InputSize"].toInt(2);
+    m_start_point = m_main["StartPoint"].toInt(0);
+    qApp->instance()->setProperty("threads", m_main["Threads"].toInt(QThreadPool::globalInstance()->maxThreadCount()));
+    m_guess = m_main["Guess"].toBool(false);
+    m_fit = m_main["Fit"].toBool(false);
+    m_extension = m_main["Extension"].toString("suprafit");
+    if (m_main.contains("OutFile")) {
+        m_outfile = m_main["OutFile"].toString();
     }
 
-    if (m_toplevel.isEmpty())
-        return filelist;
-
+    /*
     if (m_toplevel.keys().contains("data"))
-
         m_data = new DataClass(m_toplevel["data"].toObject());
     else
         m_data = new DataClass(m_toplevel);
@@ -120,9 +134,10 @@ QStringList SupraFitCli::ParseInput()
             models[i].clear();
         }
         SaveFile(m_outfile, exp_level);
-        return filelist;
+        return;
     }
-    return filelist;
+    return;
+    */
 }
 
 bool SupraFitCli::SaveFile(const QString& file, const QJsonObject& data)
@@ -197,10 +212,10 @@ QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject&
         if (!options.isEmpty())
             t->setOptions(options);
 
-        if (m_mainjson.contains("Guess") && m_mainjson["Guess"].toBool()) {
+        if (m_main.contains("Guess") && m_main["Guess"].toBool()) {
             t->InitialGuess();
 
-            if (m_mainjson.contains("Fit") && m_mainjson["Fit"].toBool()) {
+            if (m_main.contains("Fit") && m_main["Fit"].toBool()) {
                 QPointer<MonteCarloThread> thread = new MonteCarloThread();
                 thread->setModel(t);
                 thread->run();
@@ -222,7 +237,7 @@ QSharedPointer<AbstractModel> SupraFitCli::AddModel(int model, QPointer<DataClas
         return t;
     return t;
 }
-
+/*
 bool SupraFitCli::Prepare()
 {
 
@@ -240,7 +255,7 @@ bool SupraFitCli::Prepare()
     SaveFile();
     return true;
 }
-
+*/
 void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>& models)
 {
     QVector<QJsonObject> models_json;

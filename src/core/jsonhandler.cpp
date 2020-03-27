@@ -39,11 +39,11 @@ bool JsonHandler::ReadJsonFile(QJsonObject& json, const QString& file)
     QByteArray saveData = loadFile.readAll();
 
     QJsonDocument loadDoc;
+    QJsonParseError error;
     if (file.contains("json"))
-        loadDoc = QJsonDocument::fromJson(saveData);
+        loadDoc = QJsonDocument::fromJson(saveData, &error);
     else if (file.contains("jdat") || file.contains("suprafit"))
-        loadDoc = QJsonDocument::fromJson(qUncompress(saveData));
-
+        loadDoc = QJsonDocument::fromJson(qUncompress(saveData), &error);
     json = loadDoc.object();
     return true;
 }

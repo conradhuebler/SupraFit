@@ -44,7 +44,8 @@ public:
     inline int GlobalParameterSize() const override { return m_global_parameter_size; }
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
-    virtual bool SupportThreads() const override { return false; }
+    virtual bool SupportThreads() const override { return true; }
+    virtual bool PreventThreads() const override { return true; }
 
     void DefineModel(QJsonObject model) override;
 

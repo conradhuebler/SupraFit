@@ -37,6 +37,7 @@ public:
     void InitialiseChai();
     void UpdateChai();
     double EvaluateChai(int i, int j);
+    std::vector<double> EvaluateChaiSeries(int series);
 
     void AdressFunction(void* function, const QString& name);
     void setInput(const Matrix& matrix) { m_input = matrix; }
@@ -60,6 +61,7 @@ private:
     QStringList m_execute;
     chaiscript::ChaiScript chai;
     bool m_first = true;
-    std::function<double(int, int)> m_Calculate;
+    // std::function<double(int, int)> m_Calculate;
+    std::function<std::vector<double>(int)> m_Calculate;
 };
 #endif

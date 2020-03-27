@@ -18,16 +18,23 @@
                 "Name" : "Py-Michaelis-Menten-Protoyp",
                 "InputNames" : "S",
                 "DepModelNames": "v",
-                "ChaiScript": {
-                    "1": "def Calculate(int series) ",
-                    "2": "{",
-                    "3": "var vector = [];",
-                    "4": "vector.resize(S.size());",
-                    "6" : "for(var j = 0; j < S.size(); ++j) {vector[j] = (vmax*S[j]/(Km+S[j])); }",
-                    "7": "return vector",
-                    "8": "}"
+                "Python": {
+                    "1": "def Calculate(i,j):",
+                    "2": "     S = input[j][i]",
+                    "3": "     print (Km)",
+                    "4": "     print (vmax)",
+                    "6": "     print (vmax*S/(Km+S))",
+                    "7": "     return vmax*S/(Km+S)"
+                    },
+                "ChaiScript" : {
+                    "1" : "def Calculate(int i, int j) { return vmax*S[j]/(Km+S[j]); }"
                     }
                 }
             }
-        }
+        },
+    "Jobs"  :
+    {
+    
+    
+    }
 }

@@ -79,6 +79,9 @@ void JobManager::RunJobs()
     m_working = true;
     m_interrupt = false;
     int start = 0;
+    int threads = qApp->instance()->property("threads").toInt();
+    if (m_model->PreventThreads())
+        qApp->instance()->setProperty("threads", 1);
     for (const QJsonObject& object : m_jobs) {
         SupraFit::Method method = static_cast<SupraFit::Method>(object["method"].toInt());
         QJsonObject result;
@@ -125,6 +128,7 @@ void JobManager::RunJobs()
     }
     m_jobs.clear();
     m_working = false;
+    qApp->instance()->setProperty("threads", threads);
     emit AllFinished();
 }
 

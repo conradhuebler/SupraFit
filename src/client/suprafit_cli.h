@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,11 @@ public:
     explicit SupraFitCli();
     ~SupraFitCli();
 
+    void setControlJson(const QJsonObject& control);
+
+    void ParseMain();
+    void ParsePrepare();
+
     bool LoadFile();
     bool SaveFile();
     bool SaveFile(const QString& file, const QJsonObject& data);
@@ -52,20 +57,11 @@ public:
     }
     QVector<QJsonObject> Data() const { return QVector<QJsonObject>() << m_toplevel; }
 
-    void setDataJson(const QJsonObject& datajson) { m_datajson = datajson; }
-
-    bool setMainJson(const QJsonObject& mainjson)
-    {
-        m_mainjson = mainjson;
-        setDataJson(m_mainjson["data"].toObject());
-        return !m_datajson.isEmpty();
-    }
-
-    inline void setPreparation(const QJsonObject& prepare) { m_prepare = prepare; }
+    void setDataJson(const QJsonObject& datajson) { m_data_json = datajson; }
 
     void OpenFile();
     QStringList ParseInput();
-    bool Prepare();
+    //bool Prepare();
 
 signals:
 
@@ -75,13 +71,23 @@ protected:
     QSharedPointer<AbstractModel> AddModel(int model, QPointer<DataClass> data);
     QVector<QSharedPointer<AbstractModel>> AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data);
 
-    QString m_infile = QString(), m_outfile = QString(), m_extension = ".suprafit";
-    //QJsonObject m_toplevel;
-    //QJsonObject m_mainjson,, m_datajson
+    QString m_infile = QString();
+    QString m_outfile = QString(), m_extension = "suprafit";
 
-    QJsonObject m_mainjson, m_toplevel, m_data_json, m_prepare, m_datajson, m_analysejson, m_jobsjson, m_modelsjson;
+    /* Controller json */
+    QJsonObject m_main, m_jobs, m_models, m_analyse;
 
-    int m_independent_rows = 2, m_start_point = 0;
-    int m_series = 0;
+    /* Sub json */
+    QJsonObject m_prepare;
+
+    /* Stored data structure */
+    QJsonObject m_data_json;
+
+    /* Json to be written to a file */
+    QJsonObject m_toplevel;
+
     QPointer<const DataClass> m_data;
+
+    int m_independent_rows = 2, m_start_point = 0, m_series = 0;
+    bool m_guess = false, m_fit = false;
 };

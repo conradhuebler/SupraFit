@@ -183,11 +183,18 @@ void ScriptModel::CalculateChai()
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.UpdateChai();
 
+    for (int series = 0; series < SeriesCount(); ++series) {
+        std::vector<double> row = m_interp.EvaluateChaiSeries(series);
+        for (int i = 0; i < DataPoints(); ++i) {
+            SetValue(i, series, row[i]);
+        }
+    }
+    /*
     for (int i = 0; i < DataPoints(); ++i) {
         for (int j = 0; j < SeriesCount(); ++j) {
             SetValue(i, j, m_interp.EvaluateChai(j, i));
         }
-    }
+    }*/
 #else
     emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Chai Script Support."));
     m_complete = false;

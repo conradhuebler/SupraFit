@@ -480,6 +480,10 @@ public:
      */
     virtual bool SupportThreads() const = 0;
 
+    /*! \brief Reimplement if any job should rather be performed serial instead of parallel
+     */
+    virtual bool PreventThreads() const { return false; }
+
     virtual qreal SumOfErrors(int i) const;
 
     virtual qreal ModelError() const;

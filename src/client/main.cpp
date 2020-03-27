@@ -122,45 +122,67 @@ int main(int argc, char** argv)
     qApp->instance()->setProperty("InitialiseRandom", true);
     qApp->instance()->setProperty("StoreRawData", true);
 
-    if (parser.isSet("j")) {
+    QJsonObject infile_json;
+    JsonHandler::ReadJsonFile(infile_json, infile);
+    if (infile_json.keys().contains("main", Qt::CaseInsensitive)) {
+        /**
+          Everything is defined in the input file
+          */
+    } else {
+        QJsonObject jobfile_json;
+        JsonHandler::ReadJsonFile(jobfile_json, job);
+        if (jobfile_json.keys().contains("main", Qt::CaseInsensitive)) {
+            /* The jobfile defines everythin */
+        } else {
+            /* There must be a infile and a jobfile having at least some information */
+        }
+    }
 
+    /*
         for (const QString& str : parser.values("j")) {
             QVector<QJsonObject> projects;
             QStringList data_files;
             QJsonObject job;
             JsonHandler::ReadJsonFile(job, str);
 
-                Simulator* simulator = new Simulator;
-                simulator->setInFile(parser.value("i"));
+            SupraFitCli* simulator = new SupraFitCli;
+            simulator->setInFile(parser.value("i"));
 
-                bool analyse = simulator->setAnalyseJson(job["analyse"].toObject());
+            bool analyse = false;
+            if (job.keys().contains("analyse"))
+                analyse = simulator->setAnalyseJson(job["analyse"].toObject());
+            else if (job.keys().contains("Analyse"))
+                analyse = simulator->setAnalyseJson(job["Analyse"].toObject());
 
-                if (job.keys().contains("main") || job.keys().contains("Main")) {
-                    bool generate = false, model = false;
-                    bool prepare = false;
+            if (job.keys().contains("main") || job.keys().contains("Main")) {
+                bool generate = false, model = false;
+                bool prepare = false;
 
-                    if (job["main"].toObject().contains("Prepare")) {
-                        simulator->setPreparation(job["main"].toObject()["Prepare"].toObject());
-                        prepare = true;
-                    }
+                if (job["main"].toObject().contains("Prepare")) {
+                    simulator->setPreparation(job["main"].toObject()["Prepare"].toObject());
+                    prepare = true;
+                } else if (job["Main"].toObject().contains("Prepare")) {
+                    simulator->setPreparation(job["Main"].toObject()["Prepare"].toObject());
+                    prepare = true;
+                }
 
-                    if (job.contains("main"))
-                        job["Main"] = job["main"].toObject();
+                if (job.contains("main"))
+                    job["Main"] = job["main"].toObject();
 
-                    if (job.contains("Main"))
-                        generate = simulator->setMainJson(job["Main"].toObject());
+                if (job.contains("Main"))
+                    generate = simulator->setMainJson(job["Main"].toObject());
 
-                    if (job.contains("model"))
-                        job["Models"] = job["model"].toObject();
+                if (job.contains("model"))
+                    job["Models"] = job["model"].toObject();
 
-                    if (job.contains("Models"))
-                        model = simulator->setModelsJson(job["Models"].toObject());
+                if (job.contains("Models"))
+                    model = simulator->setModelsJson(job["Models"].toObject());
 
-                    if (job.contains("job"))
-                        job["Jobs"] = job["jobs"].toObject();
+                if (job.contains("job"))
+                    job["Jobs"] = job["jobs"].toObject();
 
-                    if (job.contains("Jobs"))
-                        simulator->setJobsJson(job["Jobs"].toObject());
+                if (job.contains("Jobs"))
+                    simulator->setJobsJson(job["Jobs"].toObject());
 
                     if (generate) {
                         projects = simulator->GenerateData();
@@ -173,11 +195,12 @@ int main(int argc, char** argv)
 
                         projects = simulator->Data();
                     }
-                    if (model) {
-                        for (const auto& project : qAsConst(projects)) {
-                            simulator->PerfomeJobs(project, job["Models"].toObject(), job["Jobs"].toObject());
-                        }
+
+                if (model) {
+                    for (const auto& project : qAsConst(projects)) {
+                        simulator->PerfomeJobs(project, job["Models"].toObject(), job["Jobs"].toObject());
                     }
+                }
 
                 } else {
                     simulator->OpenFile();
@@ -189,7 +212,7 @@ int main(int argc, char** argv)
         }
 
         return 0;
-    }
+    */
 
     {
         SupraFitCli* suprafitcli = new SupraFitCli;
