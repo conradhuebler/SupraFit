@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     }
 
     QString outfile = parser.value("o");
-    qDebug() << infile << outfile;
+
     bool list = parser.isSet("l");
     qApp->instance()->setProperty("threads", parser.value("n").toInt());
     qApp->instance()->setProperty("series_confidence", true);
@@ -124,20 +124,40 @@ int main(int argc, char** argv)
 
     QJsonObject infile_json;
     JsonHandler::ReadJsonFile(infile_json, infile);
+    SupraFitCli* core = new SupraFitCli;
+    QVector<QJsonObject> projects;
     if (infile_json.keys().contains("main", Qt::CaseInsensitive)) {
         /**
           Everything is defined in the input file
           */
+        core->setControlJson(infile_json);
     } else {
         QJsonObject jobfile_json;
         JsonHandler::ReadJsonFile(jobfile_json, job);
         if (jobfile_json.keys().contains("main", Qt::CaseInsensitive)) {
             /* The jobfile defines everythin */
+            core->setControlJson(jobfile_json);
         } else {
             /* There must be a infile and a jobfile having at least some information */
+            core->setInFile(infile);
+            core->setControlJson(jobfile_json);
         }
     }
-
+    if (!core->LoadFile()) {
+        std::cout << "Sorry, input file could not be opened." << std::endl;
+        return 0;
+    }
+    if (core->SimulationData()) {
+        Simulator* simulator = new Simulator(core);
+        projects = simulator->Data();
+    }
+    core->Work();
+    //core->Pr
+    // projects
+    // for (const auto& project : qAsConst(projects)) {
+    //     core->PerfomeJobs(project, job["Models"].toObject(), job["Jobs"].toObject());
+    // }
+    //}
     /*
         for (const QString& str : parser.values("j")) {
             QVector<QJsonObject> projects;

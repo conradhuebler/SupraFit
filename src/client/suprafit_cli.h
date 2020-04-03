@@ -27,7 +27,8 @@
 class SupraFitCli : public QObject {
     Q_OBJECT
 public:
-    explicit SupraFitCli();
+    SupraFitCli();
+    SupraFitCli(SupraFitCli* other);
     ~SupraFitCli();
 
     void setControlJson(const QJsonObject& control);
@@ -60,9 +61,13 @@ public:
     void setDataJson(const QJsonObject& datajson) { m_data_json = datajson; }
 
     void OpenFile();
-    QStringList ParseInput();
-    //bool Prepare();
 
+    void Work();
+
+    QJsonObject PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
+    inline bool SimulationData() const { return m_simulate_job; }
+
+    void setDataVector(const QVector<QJsonObject>& data_vector) { m_data_vector = data_vector; }
 signals:
 
 public slots:
@@ -78,10 +83,12 @@ protected:
     QJsonObject m_main, m_jobs, m_models, m_analyse;
 
     /* Sub json */
-    QJsonObject m_prepare;
+    QJsonObject m_prepare, m_simulation;
 
     /* Stored data structure */
     QJsonObject m_data_json;
+
+    QVector<QJsonObject> m_data_vector;
 
     /* Json to be written to a file */
     QJsonObject m_toplevel;
@@ -90,4 +97,10 @@ protected:
 
     int m_independent_rows = 2, m_start_point = 0, m_series = 0;
     bool m_guess = false, m_fit = false;
+    bool m_simulate_job = false;
+
+    bool m_interrupt = false;
+
+signals:
+    void Interrupt();
 };

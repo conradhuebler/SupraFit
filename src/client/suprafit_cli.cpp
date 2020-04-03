@@ -23,7 +23,11 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QThreadPool>
 
+#include "src/capabilities/jobmanager.h"
+#include "src/capabilities/modelcomparison.h"
 #include "src/capabilities/montecarlostatistics.h"
+#include "src/capabilities/resampleanalyse.h"
+#include "src/capabilities/weakenedgridsearch.h"
 
 #include "src/core/models/dataclass.h"
 #include "src/core/models/models.h"
@@ -39,6 +43,25 @@ SupraFitCli::SupraFitCli()
 {
 }
 
+SupraFitCli::SupraFitCli(SupraFitCli* core)
+{
+    m_infile = core->m_infile;
+    m_outfile = core->m_outfile;
+    m_extension = core->m_extension;
+    m_main = core->m_main;
+    m_models = core->m_models;
+    m_jobs = core->m_jobs;
+    m_analyse = core->m_analyse;
+    m_prepare = core->m_prepare;
+    m_simulation = core->m_simulation;
+    m_data = core->m_data;
+    m_data_json = core->m_data_json;
+    m_toplevel = core->m_toplevel;
+    m_data = new DataClass(core->m_data);
+
+    ParseMain();
+}
+
 SupraFitCli::~SupraFitCli()
 {
 }
@@ -47,18 +70,27 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
 {
     QStringList keys = control.keys();
     for (const QString& key : keys) {
-        if (key.compare("main", Qt::CaseInsensitive))
+        if (key.compare("main", Qt::CaseInsensitive) == 0)
             m_main = control[key].toObject();
 
-        if (key.compare("models", Qt::CaseInsensitive))
+        if (key.compare("models", Qt::CaseInsensitive) == 0)
             m_models = control[key].toObject();
 
-        if (key.compare("jobs", Qt::CaseInsensitive))
+        if (key.compare("jobs", Qt::CaseInsensitive) == 0)
             m_jobs = control[key].toObject();
 
-        if (key.compare("analyse", Qt::CaseInsensitive))
+        if (key.compare("analyse", Qt::CaseInsensitive) == 0)
             m_analyse = control[key].toObject();
     }
+    if (!m_main.isEmpty()) {
+        for (const auto str : m_main.keys()) {
+            if (str.compare("GenerateData", Qt::CaseInsensitive) == 0) {
+                m_simulate_job = true;
+                m_simulation = m_main[str].toObject();
+            }
+        }
+    }
+    ParseMain();
 }
 
 bool SupraFitCli::LoadFile()
@@ -86,7 +118,7 @@ bool SupraFitCli::LoadFile()
     } else {
         m_toplevel = handler->getJsonData();
     }
-
+    m_data_vector << m_toplevel;
     return true;
 }
 
@@ -187,6 +219,88 @@ void SupraFitCli::PrintFileStructure()
     }
 }
 
+void SupraFitCli::Work()
+{
+    for (const auto project : m_data_vector) {
+        auto result = PerfomeJobs(project, m_models, m_jobs);
+    }
+}
+
+QJsonObject SupraFitCli::PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job)
+{
+    if (m_main.contains("Threads")) {
+        qApp->instance()->setProperty("threads", m_main.value("Threads").toInt(4));
+        std::cout << "Setting # of threads to " << m_main.value("Threads").toInt(4) << std::endl;
+    }
+
+    QJsonObject project;
+    if (data.contains("data"))
+        project = data;
+    else
+        project["data"] = data;
+
+    QPointer<DataClass> d;
+
+    if (data.contains("data"))
+        d = new DataClass(data["data"].toObject());
+    else
+        d = new DataClass(data);
+
+    QVector<QJsonObject> models_json;
+    if (!models.isEmpty()) {
+        std::cout << "Loading Models into Dataset" << std::endl;
+        QVector<QSharedPointer<AbstractModel>> m = AddModels(models, d);
+        std::cout << "Loading " << m.size() << " Models into Dataset finished!" << std::endl;
+        if (!m_jobs.isEmpty()) {
+            std::cout << "Starting jobs ..." << std::endl;
+            JobManager* manager = new JobManager;
+            connect(manager, &JobManager::Message, this, [](const QString& str) {
+                std::cout << str.toStdString() << std::endl;
+            });
+            connect(manager, &JobManager::finished, this, [](int current, int all, int time) {
+                std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
+            });
+            //connect(this, &Simulator::Interrupt, manager, &JobManager::Interrupt);
+            for (int model_index = 0; model_index < models.size(); ++model_index) {
+                std::cout << "... model  " << model_index << std::endl;
+                for (const QString& j : job.keys()) {
+                    QJsonObject single_job = job[j].toObject();
+                    manager->setModel(m[model_index]);
+                    manager->AddJob(single_job);
+                    manager->RunJobs();
+                    std::cout << "... model  " << model_index << " job done!" << std::endl;
+
+                    if (m_interrupt) {
+                        break;
+                    }
+                }
+                std::cout << "jobs for model  " << model_index << "  finished!" << std::endl;
+                if (m_interrupt) {
+                    std::cout << "softly interrupted by stop file" << std::endl;
+                    break;
+                }
+            }
+            delete manager;
+            std::cout << "jobs all done!" << std::endl;
+        }
+
+        for (int i = 0; i < m.size(); ++i) {
+            project["model_" + QString::number(i)] = m[i]->ExportModel();
+            models_json << m[i]->ExportModel();
+            m[i].clear();
+        }
+        m.clear();
+    }
+    int file_int = 0;
+    QString outfile = QString(m_outfile + "_" + QString::number(file_int) + "." + m_extension);
+    while (QFileInfo::exists(outfile)) {
+        ++file_int;
+        outfile = QString(m_outfile + "_" + QString::number(file_int) + "." + m_extension);
+    }
+    Analyse(m_analyse, models_json);
+    SaveFile(outfile, project);
+    return project;
+}
 
 QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)
 {

@@ -34,7 +34,8 @@ class Simulator : public SupraFitCli {
     Q_OBJECT
 
 public:
-    explicit Simulator();
+    Simulator();
+    Simulator(SupraFitCli* client);
     virtual ~Simulator();
 
 
@@ -66,8 +67,7 @@ public:
 
     QStringList Generate();
 
-
-    QJsonObject PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
+    //QJsonObject PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
 
 private:
     void CheckStopFile();
@@ -77,7 +77,4 @@ private:
     double m_current = 0.0;
     */
 
-    bool m_interrupt = false;
-signals:
-    void Interrupt();
 };
