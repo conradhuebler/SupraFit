@@ -1,6 +1,34 @@
 # Scripted Models
 
 ## Changing syntax in progress
+
+Using the latest commit, function definitions reduces to
+```json
+"ChaiScript": {
+      "1": "for(var i = 0; i < series; ++i){for(var j = 0; j < points; ++j) {Output[i][j] = (vmax*S[j]/(Km+S[j]));}}"
+    }
+```
+as fast definiton and
+```json
+"ChaiScript": {
+       "1": "for(var i = 0; i < series; ++i){for(var j = 0; j < points; ++j) {Output[i][j] = (vmax*Input[i][j]/(Km+Input[i][j]));}} "
+```
+as slow definiton. The actual difference is the handling of the input block. While S is the input vector with the length of points, Input is matrix with one column and points rows.
+
+SupraFit translates the above code internally to
+```json
+def Calculate()
+{
+    var Output = Output_const;
+    for(var i = 0; i < series; ++i){for(var j = 0; j < points; ++j) {Output[i][j] = (vmax*Input[i][j]/(Km+Input[i][j]));}}
+    return Output;
+}
+```
+
+The results have to be written into the Output matrix.
+
+At the current state, direct manipulation of the script can be done in the model widget.
+
 Using commit **55f90e0** the function to define the model is called for every data point * rows - currently only Michaelis Menten therefore rows = 1.
 ```json
 "ChaiScript": {

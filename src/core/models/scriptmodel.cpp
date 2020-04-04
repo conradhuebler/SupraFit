@@ -117,6 +117,8 @@ void ScriptModel::DefineModel(QJsonObject model)
     m_interp.setInput(IndependentModel()->Table());
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
+    m_interp.setDataPoints(DependentModel()->rowCount());
+    m_interp.setSeriesCount(DependentModel()->columnCount());
     m_interp.setInputNames(m_input_names);
     m_interp.setExecute(m_execute_chai);
     m_interp.InitialiseChai();
@@ -183,10 +185,12 @@ void ScriptModel::CalculateChai()
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.UpdateChai();
 
+    auto matrix = m_interp.Evaluate();
     for (int series = 0; series < SeriesCount(); ++series) {
-        std::vector<double> row = m_interp.EvaluateChaiSeries(series);
+        //std::vector<double> row = m_interp.EvaluateChaiSeries(series);
         for (int i = 0; i < DataPoints(); ++i) {
-            SetValue(i, series, row[i]);
+            //SetValue(i, series, row[i]);
+            SetValue(i, series, matrix[series][i]);
         }
     }
     /*

@@ -29,6 +29,7 @@
 #include <Eigen/Dense>
 
 typedef Eigen::MatrixXd Matrix;
+typedef std::vector<std::vector<double>> VecMatrix;
 
 class ChaiInterpreter {
 public:
@@ -38,6 +39,10 @@ public:
     void UpdateChai();
     double EvaluateChai(int i, int j);
     std::vector<double> EvaluateChaiSeries(int series);
+    VecMatrix Evaluate();
+
+    void setDataPoints(int datapoints) { m_datapoints = datapoints; }
+    void setSeriesCount(int series) { m_series = series; }
 
     void AdressFunction(void* function, const QString& name);
     void setInput(const Matrix& matrix) { m_input = matrix; }
@@ -54,14 +59,19 @@ public:
     double Input(int i, int j) const;
     double Model(int i, int j) const;
 
+    void UpdateFunction(const QStringList& function);
+
 private:
-    int m_index = 0, m_counter = 0;
+    int m_index = 0, m_counter = 0, m_series = 0, m_datapoints = 0;
     Eigen::MatrixXd m_input, m_model, m_global_parameter, m_local_parameter;
     QStringList m_global_names, m_local_names, m_input_names;
     QStringList m_execute;
+    QString m_exec;
     chaiscript::ChaiScript chai;
     bool m_first = true;
     // std::function<double(int, int)> m_Calculate;
-    std::function<std::vector<double>(int)> m_Calculate;
+    //std::function<std::vector<double>(int)> m_Calculate;
+    std::function<VecMatrix()> m_Calculate;
+    chaiscript::ChaiScript_Basic::State m_state;
 };
 #endif

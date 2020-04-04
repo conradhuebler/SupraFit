@@ -328,10 +328,17 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
         model_tab->addTab(m_system_parameter, "System Parameter");
     if (m_model->SFModel() == SupraFit::ScriptModel) {
         QTextEdit* edit = new QTextEdit;
-        QJsonDocument doc(m_model->ScriptDefinition());
+        /*QJsonDocument doc(m_model->ScriptDefinition());
         edit->setMarkdown(QString("```json\n %1 \n```").arg(QString(doc.toJson(QJsonDocument::Indented))));
+        */
+        edit->setText(qobject_cast<ScriptModel*>(m_model)->ChaiFunction().join("\n"));
         m_chai_widget = edit;
         model_tab->addTab(m_chai_widget, "Model Definition");
+        connect(edit, &QTextEdit::textChanged, this, [this, edit]() {
+            qDebug() << edit->toPlainText();
+            QStringList list = edit->toPlainText().split("\n");
+            qobject_cast<ScriptModel*>(m_model)->setChaiFunction(list);
+        });
     }
 
     m_splitter->addWidget(model_tab);

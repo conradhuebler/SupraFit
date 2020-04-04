@@ -79,6 +79,14 @@ public:
 
     inline bool DemandInput() const override { return true; }
 
+    QStringList ChaiFunction() const { return m_execute_chai; }
+
+    void setChaiFunction(const QStringList& function)
+    {
+        m_execute_chai = function;
+        m_interp.UpdateFunction(m_execute_chai);
+    }
+
 private:
     QString m_ylabel = QString(), m_xlabel = QString();
     int m_input_size = 0, m_global_parameter_size = 0, m_local_parameter_size = 0;
