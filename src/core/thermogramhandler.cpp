@@ -360,7 +360,7 @@ void ThermogramHandler::ApplyThermogramIntegration()
         m_integrals_raw << m_peak_list[i].integ_num;
         m_integrals_scaled << m_peak_list[i].integ_num;
 
-        for (std::size_t j = m_peak_list[i].int_start; j < m_peak_list[i].int_end - 1; j++) {
+        for (int j = m_peak_list[i].int_start; j < m_peak_list[i].int_end - 1; j++) {
             sum_difference_signal_baseline += qAbs(PeakPick::Polynomial(m_spectrum.X(j), baseline) - (m_spectrum.Y(j)));
             difference_signal_baseline << qAbs(PeakPick::Polynomial(m_spectrum.X(j), baseline) - (m_spectrum.Y(j)));
         }
