@@ -53,8 +53,8 @@
 
 ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* parent)
     : QGroupBox(parent)
-    , m_name(name)
     , m_value(value)
+    , m_name(name)
 {
     qreal div = value / 5.0;
     qreal prod = value * 5;
@@ -127,28 +127,28 @@ AdvancedSearch::~AdvancedSearch()
 
 double AdvancedSearch::MaxX() const
 {
-    if (m_model.data()->GlobalParameterSize() >= 1)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinX() const
 {
-    if (m_model.data()->GlobalParameterSize() >= 1)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Min();
     return 0;
 }
 
 double AdvancedSearch::MaxY() const
 {
-    if (m_model.data()->GlobalParameterSize() >= 2)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinY() const
 {
-    if (m_model.data()->GlobalParameterSize() >= 2)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Min();
     return 0;
 }
@@ -162,40 +162,38 @@ void AdvancedSearch::SetUi()
 
     QVBoxLayout* layout = new QVBoxLayout;
 
-    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
-        QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->GlobalParameterName(i), m_model.data()->GlobalParameter(i), this);
+    for (int i = 0; i < m_model.toStrongRef()->GlobalParameterSize(); ++i) {
+        QPointer<ParameterWidget> widget = new ParameterWidget(m_model.toStrongRef()->GlobalParameterName(i), m_model.toStrongRef()->GlobalParameter(i), this);
         layout->addWidget(widget);
-        widget->setEnabled(m_model.data()->GlobalEnabled(i));
+        widget->setEnabled(m_model.toStrongRef()->GlobalEnabled(i));
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
 
-        connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
-            widget->setEnabled(m_model.data()->GlobalEnabled(i));
-            widget->setValue(m_model.data()->GlobalParameter(i));
+        connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+            widget->setEnabled(m_model.toStrongRef()->GlobalEnabled(i));
+            widget->setValue(m_model.toStrongRef()->GlobalParameter(i));
         });
 
-        connect(widget, &ParameterWidget::checkChanged, m_model.data(), [this, i](int state) {
-            m_model.data()->GlobalTable()->setChecked(i, 0, state);
-
+        connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i](int state) {
+            m_model.toStrongRef()->GlobalTable()->setChecked(i, 0, state);
         });
 
         m_parameter_list << widget;
     }
 
-    if (!m_model.data()->SupportSeries()) {
-        for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
-            QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->LocalParameterName(i), m_model.data()->LocalParameter(i, 0), this);
+    if (!m_model.toStrongRef()->SupportSeries()) {
+        for (int i = 0; i < m_model.toStrongRef()->LocalParameterSize(); ++i) {
+            QPointer<ParameterWidget> widget = new ParameterWidget(m_model.toStrongRef()->LocalParameterName(i), m_model.toStrongRef()->LocalParameter(i, 0), this);
             layout->addWidget(widget);
-            widget->setEnabled(m_model.data()->LocalEnabled(i));
+            widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
             connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
 
-            connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
-                widget->setEnabled(m_model.data()->LocalEnabled(i));
-                widget->setValue(m_model.data()->LocalParameter(i, 0));
+            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+                widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
+                widget->setValue(m_model.toStrongRef()->LocalParameter(i, 0));
             });
 
-            connect(widget, &ParameterWidget::checkChanged, m_model.data(), [this, i](int state) {
-                m_model.data()->LocalTable()->setChecked(i, 0, state);
-
+            connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i](int state) {
+                m_model.toStrongRef()->LocalTable()->setChecked(i, 0, state);
             });
 
             m_parameter_list << widget;
@@ -205,24 +203,24 @@ void AdvancedSearch::SetUi()
         layout->addWidget(new QLabel("<h4>Series and Local Parameter</h4>"));
         layout->addWidget(tabwidget);
 
-        for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
+        for (int j = 0; j < m_model.toStrongRef()->SeriesCount(); ++j) {
             QWidget* w = new QWidget;
             QVBoxLayout* vlayout = new QVBoxLayout;
             w->setLayout(vlayout);
-            for (int i = 0; i < m_model.data()->LocalParameterSize(j); ++i) {
-                QPointer<ParameterWidget> widget = new ParameterWidget(m_model.data()->LocalParameterName(i), m_model.data()->LocalParameter(i, j), this);
+            for (int i = 0; i < m_model.toStrongRef()->LocalParameterSize(j); ++i) {
+                QPointer<ParameterWidget> widget = new ParameterWidget(m_model.toStrongRef()->LocalParameterName(i), m_model.toStrongRef()->LocalParameter(i, j), this);
                 widget->Disable(true);
                 vlayout->addWidget(widget);
-                widget->setEnabled(m_model.data()->LocalEnabled(i));
+                widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
                 connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
 
-                connect(m_model.data(), &AbstractModel::Recalculated, widget, [widget, i, this, j]() {
-                    widget->setEnabled(m_model.data()->LocalEnabled(i));
-                    widget->setValue(m_model.data()->LocalParameter(i, j));
+                connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, widget, [widget, i, this, j]() {
+                    widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
+                    widget->setValue(m_model.toStrongRef()->LocalParameter(i, j));
                 });
 
-                connect(widget, &ParameterWidget::checkChanged, m_model.data(), [this, i, j](int state) {
-                    m_model.data()->LocalTable()->setChecked(i, j, state);
+                connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i, j](int state) {
+                    m_model.toStrongRef()->LocalTable()->setChecked(i, j, state);
                 });
 
                 m_parameter_list << widget;

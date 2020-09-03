@@ -67,13 +67,13 @@ public:
     inline QString XLabel()
     {
         CheckWorking();
-        return m_working.data()->XLabel();
+        return m_working.toStrongRef()->XLabel();
     }
 
     inline QString YLabel()
     {
         CheckWorking();
-        return m_working.data()->YLabel();
+        return m_working.toStrongRef()->YLabel();
     }
 
 public slots:

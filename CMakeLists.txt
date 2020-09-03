@@ -124,6 +124,15 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 find_package(Qt5Widgets CONFIG REQUIRED)
 find_package(Qt5Charts CONFIG REQUIRED)
 
+if (Qt5Widgets_FOUND)
+    if (Qt5Widgets_VERSION VERSION_LESS 5.15.0)
+        message(FATAL_ERROR "Minimum supported Qt5 version is 5.15!")
+    endif()
+else()
+    message(SEND_ERROR "The Qt5Widgets library could not be found!")
+endif(Qt5Widgets_FOUND)
+
+
 if(_Python)
     find_package(PythonLibs)
     if( NOT PythonLibs_FOUND)

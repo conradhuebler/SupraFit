@@ -158,9 +158,9 @@ QSharedPointer<AbstractModel> MainWindow::CreateMetaModel(const QWeakPointer<Cha
      * when then connect the associated model widget after the color changed with something about changing the scater series color */
 
     connect(qobject_cast<MetaModel*>(model.data()), &MetaModel::ModelAdded, this, [this]() {
-        int series = this->m_model_dataholder->getChartWrapper().data()->SeriesSize();
-        if (qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1))) {
-            ScatterSeries* serie = qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().data()->Series(series - 1));
+        int series = this->m_model_dataholder->getChartWrapper().toStrongRef()->SeriesSize();
+        if (qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().toStrongRef()->Series(series - 1))) {
+            ScatterSeries* serie = qobject_cast<ScatterSeries*>(this->m_model_dataholder->getChartWrapper().toStrongRef()->Series(series - 1));
             connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ColorChanged, serie, &ScatterSeries::setColor);
             connect(this->m_model_dataholder->RecentModel(), &ModelWidget::ToggleSeries, serie, [serie]() {
                 serie->setVisible(!serie->isVisible());

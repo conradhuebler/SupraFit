@@ -97,20 +97,20 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
 
 #ifndef extended_f_test
-    model.data()->CalculateStatistics(false);
-    model.data()->setFast(true);
+    model.toStrongRef()->CalculateStatistics(false);
+    model.toStrongRef()->setFast(true);
 #endif
 
-    QList<int> locked = model.data()->LockedParameters();
+    QList<int> locked = model.toStrongRef()->LockedParameters();
 
-    QJsonObject config = model.data()->getOptimizerConfig();
+    QJsonObject config = model.toStrongRef()->getOptimizerConfig();
 
     int MaxIter = config["MaxLevMarInter"].toInt();
     double ErrorConvergence = config["ErrorConvergence"].toDouble();
     double DeltaParameter = config["DeltaParameter"].toDouble();
 
-    Variables ModelSignals = model.data()->getSignals(model.data()->ActiveSignals());
-    model.data()->setFast();
+    Variables ModelSignals = model.toStrongRef()->getSignals(model.toStrongRef()->ActiveSignals());
+    model.toStrongRef()->setFast();
     if (ModelSignals.size() == 0 || ModelSignals.size() < param.size())
         return -1;
     Eigen::VectorXd parameter(param.size());
@@ -148,14 +148,14 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     QVector<qreal> globalConstants;
     for (; iter < MaxIter && ((qAbs(error_0 - error_2) > ErrorConvergence) || norm > DeltaParameter); ++iter) {
         globalConstants.clear();
-        globalConstants = model.data()->OptimizeParameters();
-        error_0 = model.data()->SSE();
+        globalConstants = model.toStrongRef()->OptimizeParameters();
+        error_0 = model.toStrongRef()->SSE();
 #pragma message("this used to be not here before restructuring")
-        model.data()->setLockedParameter(locked);
+        model.toStrongRef()->setLockedParameter(locked);
         status = lm.minimizeOneStep(parameter);
-        error_2 = model.data()->SSE();
+        error_2 = model.toStrongRef()->SSE();
 
-        auto constants = model.data()->OptimizeParameters();
+        auto constants = model.toStrongRef()->OptimizeParameters();
         norm = 0;
         for (int i = 0; i < globalConstants.size(); ++i)
             norm += qAbs(globalConstants[i] - constants[i]);
@@ -175,6 +175,6 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     */
     for (int i = 0; i < functor.inputs(); ++i)
         param[i] = parameter(i);
-    model.data()->setConverged(iter < MaxIter);
+    model.toStrongRef()->setConverged(iter < MaxIter);
     return iter;
 }

@@ -856,7 +856,7 @@ void ModelWidget::Save2File()
         QFile file(str);
         if (file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
             QTextStream stream(&file);
-            stream << m_logging << endl;
+            stream << m_logging << Qt::endl;
         }
     }
 }

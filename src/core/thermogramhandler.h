@@ -39,7 +39,7 @@ public:
     QVector<QPointF> Baseline();
 
     inline void setThermogram(const PeakPick::spectrum& spectrum) { m_spectrum = spectrum; }
-    inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list) { m_peak_list = QVector<PeakPick::Peak>::fromStdVector(peak_list); }
+    inline void setPeakList(const std::vector<PeakPick::Peak>& peak_list) { m_peak_list = QVector<PeakPick::Peak>(peak_list.begin(), peak_list.end()); }
     inline void setPeakList(const QVector<PeakPick::Peak>& peak_list) { m_peak_list = peak_list; }
 
     void UpdateParameter(const QJsonObject& parameter);

@@ -90,15 +90,15 @@ ImportData::ImportData(QWeakPointer<DataClass> data)
 {
     // That is all not nice, I know
 
-    if (data.data()->DataType() == DataClassPrivate::Table) {
+    if (data.toStrongRef()->DataType() == DataClassPrivate::Table) {
         setUi();
-        m_table->setModel(data.data()->IndependentModel());
-        m_sec_table->setModel(data.data()->DependentModel());
-    } else if (data.data()->DataType() == DataClassPrivate::Thermogram) {
+        m_table->setModel(data.toStrongRef()->IndependentModel());
+        m_sec_table->setModel(data.toStrongRef()->DependentModel());
+    } else if (data.toStrongRef()->DataType() == DataClassPrivate::Thermogram) {
         setUi();
         DataTable* model = new DataTable(0, 0, this);
         m_table->setModel(model);
-        m_raw = data.data()->ExportData()["raw"].toObject();
+        m_raw = data.toStrongRef()->ExportData()["raw"].toObject();
         m_systemparameter = data.data()->getSystemObject();
         QTimer::singleShot(0, this, SLOT(ImportThermogram()));
 

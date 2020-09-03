@@ -40,7 +40,7 @@ ModelChartWidget::ModelChartWidget(const QWeakPointer<AbstractModel>& model, con
     , m_chart(chart)
 {
     setUI();
-    connect(m_model.data(), &AbstractModel::ChartUpdated, this, [this](const QString& str) {
+    connect(m_model.toStrongRef().data(), &AbstractModel::ChartUpdated, this, [this](const QString& str) {
         if (str == m_chart)
             this->UpdateChart();
     });
@@ -53,7 +53,7 @@ ModelChartWidget::~ModelChartWidget()
 
 void ModelChartWidget::setUI()
 {
-    const ModelChart* chart = m_model.data()->Chart(m_chart);
+    const ModelChart* chart = m_model.toStrongRef()->Chart(m_chart);
 
     if (chart == NULL)
         return;
@@ -71,7 +71,7 @@ void ModelChartWidget::setUI()
     view->setYAxis(chart->y_axis);
     view->setMinimumSize(300, 400);
     view->setName(m_chart);
-    view->setTitle(QString("%1 for %2").arg(m_chart).arg(m_model.data()->Name()));
+    view->setTitle(QString("%1 for %2").arg(m_chart).arg(m_model.toStrongRef()->Name()));
     layout->addWidget(view);
 
     for (int i = 0; i < chart->m_series.size(); ++i) {
@@ -87,7 +87,7 @@ void ModelChartWidget::setUI()
 
 void ModelChartWidget::UpdateChart()
 {
-    const ModelChart* chart = m_model.data()->Chart(m_chart);
+    const ModelChart* chart = m_model.toStrongRef()->Chart(m_chart);
     if (chart == NULL || view == NULL)
         return;
 
@@ -111,6 +111,6 @@ void ModelChartWidget::UpdateChart()
             m_series[i]->append(chart->m_series[i].m_values);
         }
     }
-    view->setTitle(QString("%1 for %2").arg(m_chart).arg(m_model.data()->Name()));
+    view->setTitle(QString("%1 for %2").arg(m_chart).arg(m_model.toStrongRef()->Name()));
     view->Chart()->formatAxis();
 }

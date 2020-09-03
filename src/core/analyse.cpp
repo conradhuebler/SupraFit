@@ -528,10 +528,10 @@ QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
     QMultiMap<qreal, QString> list_first, list_second;
     result += "<tr><th>Model</th><th>Second Order AIC</th><th>AIC</th></tr>";
     for (int i = 0; i < models.size(); ++i) {
-        QString str(QString::number(i) + " - " + models[i].data()->Name());
-        list_second.insert(models[i].data()->AICc(), str);
-        list_first.insert(models[i].data()->AIC(), str);
-        result += "<tr><td>" + str + ":</td><td>" + Print::printDouble(models[i].data()->AICc()) + "</td><td>" + Print::printDouble(models[i].data()->AIC()) + "</td></tr>";
+        QString str(QString::number(i) + " - " + models[i].toStrongRef()->Name());
+        list_second.insert(models[i].toStrongRef()->AICc(), str);
+        list_first.insert(models[i].toStrongRef()->AIC(), str);
+        result += "<tr><td>" + str + ":</td><td>" + Print::printDouble(models[i].toStrongRef()->AICc()) + "</td><td>" + Print::printDouble(models[i].toStrongRef()->AIC()) + "</td></tr>";
     }
     result += "</table>\n";
     result += "<p>List ordered by 2nd AIC Value (corrected AIC)</p>";

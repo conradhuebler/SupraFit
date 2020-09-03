@@ -276,7 +276,7 @@ void ResampleAnalyse::CrossValidation()
             while (loop) {
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                if (vector.toList().toSet().size() == vector.size()) {
+                if (QSet<int>(vector.begin(), vector.end()).size() == vector.size()) {
                     vector_block << vector;
                 }
 

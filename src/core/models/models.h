@@ -124,5 +124,5 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
 
 inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataClass> data)
 {
-    return CreateModel(model, data.data());
+    return CreateModel(model, data.toStrongRef().data());
 }

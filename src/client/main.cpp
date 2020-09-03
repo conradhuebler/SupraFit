@@ -41,8 +41,39 @@
 
 #include <iostream>
 
+#if __GNUC__
+// Thanks to
+// https://stackoverflow.com/questions/77005/how-to-automatically-generate-a-stacktrace-when-my-program-crashes
+#include <execinfo.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void bt_handler(int sig)
+{
+    void* array[10];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 10);
+
+    // print out all the frames to stderr
+    fprintf(stderr, "SupraFit Client crashed. Although this is probably unintended, it happened anyway.\n Some kind of backtrace will be printed out!\n\n");
+    fprintf(stderr, "Error: signal %d:\n", sig);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    fprintf(stderr, "Good-By\n");
+    exit(1);
+}
+#endif
+
 int main(int argc, char** argv)
 {
+
+#if __GNUC__
+    signal(SIGSEGV, bt_handler);
+    signal(SIGABRT, bt_handler);
+#endif
 
     SupraFit::timer t;
     qInstallMessageHandler(myMessageOutput);

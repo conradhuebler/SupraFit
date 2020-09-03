@@ -374,7 +374,7 @@ void ThermogramHandler::ApplyThermogramIntegration()
 
 void ThermogramHandler::FitBaseLine()
 {
-    std::vector<PeakPick::Peak> peak_list = m_peak_list.toStdVector();
+    std::vector<PeakPick::Peak> peak_list(m_peak_list.begin(), m_peak_list.end());
     PeakPick::BaseLine base(&m_spectrum);
     base.setBaseLineRange(PeakPick::BaseLine::BLR::PeakWise);
     base.setPolynomFit(PeakPick::BaseLine::Polynom::Slow);

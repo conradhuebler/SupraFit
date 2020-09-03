@@ -402,7 +402,7 @@ void ModelDataHolder::setData(QSharedPointer<DataClass> data, QSharedPointer<Cha
         m_datawidget = new DataWidget;
         m_datawidget->setData(m_data, wrapper);
         m_modelsWidget->setDataTab(m_datawidget);
-        m_TitleBarWidget->addToMenu(m_data.data()->IndependentModel()->columnCount());
+        m_TitleBarWidget->addToMenu(m_data.toStrongRef()->IndependentModel()->columnCount());
         connect(m_datawidget, SIGNAL(NameChanged()), this, SLOT(SetProjectTabName()));
         connect(m_datawidget, SIGNAL(recalculate()), this, SIGNAL(recalculate()));
     } else {
@@ -432,8 +432,8 @@ void ModelDataHolder::AddModel(int model)
 {
     QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
     if (!t) {
-        emit m_data.data()->Message(tr("Tried to add %1 to the workspace.").arg(Model2Name(static_cast<SupraFit::Model>(model))), 1);
-        emit m_data.data()->Warning("But one does not simply add a model to a data set, where the number of input variables differ.", 1);
+        emit m_data.toStrongRef()->Message(tr("Tried to add %1 to the workspace.").arg(Model2Name(static_cast<SupraFit::Model>(model))), 1);
+        emit m_data.toStrongRef()->Warning("But one does not simply add a model to a data set, where the number of input variables differ.", 1);
         return;
     }
 
@@ -444,7 +444,7 @@ void ModelDataHolder::AddModel(int model)
 
 void ModelDataHolder::Json2Model(const QJsonObject& object)
 {
-    QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(object, m_data.data());
+    QSharedPointer<AbstractModel> model = JsonHandler::Json2Model(object, m_data.toStrongRef().data());
     if (model) {
         ActiveModel(model, object);
     }
@@ -546,7 +546,7 @@ void ModelDataHolder::SaveCurrentModels(const QString& file)
 QJsonObject ModelDataHolder::SaveWorkspace()
 {
     QJsonObject toplevel, data;
-    data = m_data.data()->ExportData();
+    data = m_data.toStrongRef()->ExportData();
 
     if (m_datawidget) {
         for (int i = 1; i < m_modelsWidget->count(); i++) {
@@ -569,7 +569,7 @@ QJsonObject ModelDataHolder::SaveWorkspace()
 QJsonObject ModelDataHolder::SaveModel(int index)
 {
     QJsonObject toplevel, data;
-    data = m_data.data()->ExportData();
+    data = m_data.toStrongRef()->ExportData();
 
     if (qobject_cast<ModelWidget*>(m_modelsWidget->widget(index))) {
         ModelWidget* model = qobject_cast<ModelWidget*>(m_modelsWidget->widget(index));
@@ -588,7 +588,7 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
 {
     QStringList keys = object.keys();
     setEnabled(false);
-    m_wrapper.data()->stopAnimiation();
+    m_wrapper.toStrongRef()->stopAnimiation();
 
     for (const QString& key : qAsConst(keys)) {
         if (key == "data")
@@ -600,7 +600,7 @@ void ModelDataHolder::AddToWorkspace(const QJsonObject& object)
     }
 
     setEnabled(true);
-    m_wrapper.data()->restartAnimation();
+    m_wrapper.toStrongRef()->restartAnimation();
     emit ModelAdded();
 }
 
@@ -815,28 +815,28 @@ void ModelDataHolder::CompareMC()
 
 void ModelDataHolder::EditData()
 {
-    int version = m_data.data()->ExportData()["SupraFit"].toInt();
+    int version = m_data.toStrongRef()->ExportData()["SupraFit"].toInt();
     if (version < 1602) {
         QMessageBox::information(this, tr("Old SupraFit file"), tr("This is an older SupraFit file, you can only edit the table in Workspace!"));
-        m_data.data()->IndependentModel()->setEditable(!m_data.data()->IndependentModel()->isEditable());
-        m_data.data()->DependentModel()->setEditable(!m_data.data()->DependentModel()->isEditable());
+        m_data.toStrongRef()->IndependentModel()->setEditable(!m_data.toStrongRef()->IndependentModel()->isEditable());
+        m_data.toStrongRef()->DependentModel()->setEditable(!m_data.toStrongRef()->DependentModel()->isEditable());
     } else {
-        if (m_data.data()->DataType() == DataClassPrivate::Thermogram) {
+        if (m_data.toStrongRef()->DataType() == DataClassPrivate::Thermogram) {
             ImportData dialog(m_data);
-            dialog.setRootDir(m_data.data()->RootDir());
+            dialog.setRootDir(m_data.toStrongRef()->RootDir());
             if (dialog.exec() == QDialog::Accepted) { // I dont like this either ....
                 {
-                    if (m_data.data()->DataType() == DataClassPrivate::Thermogram) {
-                        m_data.data()->ImportData(dialog.getStoredData().ExportData(), false);
-                        emit m_data.data()->Info()->Update();
+                    if (m_data.toStrongRef()->DataType() == DataClassPrivate::Thermogram) {
+                        m_data.toStrongRef()->ImportData(dialog.getStoredData().ExportData(), false);
+                        emit m_data.toStrongRef()->Info()->Update();
                     }
                 }
             }
-            emit m_data.data()->Info()->Update();
+            emit m_data.toStrongRef()->Info()->Update();
 
         } else {
-            m_data.data()->IndependentModel()->setEditable(!m_data.data()->IndependentModel()->isEditable());
-            m_data.data()->DependentModel()->setEditable(!m_data.data()->DependentModel()->isEditable());
+            m_data.toStrongRef()->IndependentModel()->setEditable(!m_data.toStrongRef()->IndependentModel()->isEditable());
+            m_data.toStrongRef()->DependentModel()->setEditable(!m_data.toStrongRef()->DependentModel()->isEditable());
         }
     }
 }
@@ -856,7 +856,7 @@ QString ModelDataHolder::Compare() const
     compare += "<tr><th>model name</th><th># parameter</th><th>SSE</th><th>SE<sub>y</sub></th><th>&sigma;</th></tr>";
 
     for (const QWeakPointer<AbstractModel>& model : m_models) {
-        compare += tr("<tr><td>%1</td><td align='center'>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>").arg(model.data()->Name()).arg(model.data()->Parameter()).arg(Print::printDouble(model.data()->SSE(), 6)).arg(Print::printDouble(model.data()->SEy(), 6)).arg(Print::printDouble(model.data()->StdDeviation(), 6));
+        compare += tr("<tr><td>%1</td><td align='center'>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>").arg(model.toStrongRef()->Name()).arg(model.toStrongRef()->Parameter()).arg(Print::printDouble(model.toStrongRef()->SSE(), 6)).arg(Print::printDouble(model.toStrongRef()->SEy(), 6)).arg(Print::printDouble(model.toStrongRef()->StdDeviation(), 6));
     }
     compare += "</table>";
 

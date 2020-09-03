@@ -143,7 +143,7 @@ public:
     MDHDockTitleBar* TitleBarWidget() const { return m_TitleBarWidget; }
 
     inline int ModelCount() const { return m_models.size(); }
-    inline QPointer<AbstractModel> Model(int index) const { return m_models[index].data(); }
+    inline QPointer<AbstractModel> Model(int index) const { return m_models[index].toStrongRef().data(); }
 
     void setCurrentTab(int index);
     void addMetaModel(QSharedPointer<AbstractModel> t);
