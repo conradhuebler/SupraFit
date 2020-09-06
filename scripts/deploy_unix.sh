@@ -1,8 +1,8 @@
 #!/bin/bash
 set -ex
 
-cp misc/Suprafit.desktop bin/linux/
-cp misc/Suprafit.png bin/linux/
+cp misc/SupraFit.desktop bin/linux/
+cp misc/SupraFit.png bin/linux/
 cd release/bin/linux/
 
 wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
