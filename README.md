@@ -9,15 +9,75 @@ A Open Source Qt5 based fitting tool for supramolecular titration experiments (N
 
 A short introduction can be downloaded [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/Quickstart.pdf). For question, comments, feedback etc. please use the email adress on page 18 in that Quickstart.
 
-## Download and requirements
+## Getting SupraFit
+SupraFit 2.0 binaries are available for Linux (as AppImage), for Windows and macOS.
+[GitHub Release](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0)
+
+### History
+- SupraFit 2.0 stable version, first public release
+- SupraFit 2.x most recent development version
+
+## Running
+Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:
+
+### Titration experiments (NMR, UV-VIS)
+| host | guest | signal1 | signal2 | signal3 |
+|:-----:|:----|:----:|:----:|:----:|
+| 0.1 | 0 | 1 | 2 | 3 |
+| 0.1 | 0.01 | 1.1 | 2.1 | 3.3|
+
+The first two columns contain the concentrations of host (fixed concentration) and guest (variable concentration, silent component), the following columns should contain the NMR or UV/VIS signal.
+
+### ITC data
+| v | q |
+|:-----:|:----:|
+| 0.1 | -12 |
+| 0.1 | -11 |
+
+The first column contains the injected volume while the second columns has to contains the integrated heat response of the system.
+
+SupraFit supports import of *.itc and plain x-y files with peak integration and some basic base line corrections. Alternatively *.dH files from Origin can be loaded right away.
+Plain x-y files for thermograms should look like:
+
+|   |   |
+|:-----:|:----:|
+| 2 | -0.001 |
+| 4 | -0.001 |
+| 6 | -0.002 |
+| 8 | -0.002 |
+| 10 | -0.002 |
+| 12 | -0.001 |
+
+With the first row having the time and the second the observed heat.
+
+### Michaelis Menten Kinetics
+| S_0 | v |
+|:-----:|:----:|
+| 0.1 | 0 |
+| 0.1 | 0.01 |
+
+The first column contains the substrat concentration while the second columns has to contains the rate of reaction.
+
+Copy such a table from any spreadsheet application and paste it in the **New table** dialog or load such a table as `semicolon` or `tabulator seperated file` with **Open File**.
+
+SupraFit loads and saves tables and calculated models as `json files *.json` or compressed json files `*.suprafit`.
+
+## Statistics
+SupraFit provides some statistical analysis, which will be described in a not yet finished article. Implemented methods are based on the following approaches:
+- Monte Carlo simulation (Percentile method based confidence calculation)
+- F-Test based confidence calculation
+- Resampling methods
+
+A detailed handbook will be provided as soon as possbile.
+
+## Download source code and requirements
 git clones automatically fisher_dist and libpeakpick.
 - [fisher_dis](https://github.com/conradhuebler/fisher_dist) provides the finv-function like in octave to calculate the quantiles of the F distribution
 - [libpeakpick](https://github.com/conradhuebler/libpeakpick) provides some basic peak picking, peak integration and regression tools. It retrives a copy of eigen from official git mirror, that is used by SupraFit as well.
+- [CuteCharts](https://github.com/conradhuebler/CuteChart) QtCharts adopted for SupraFit
+- [ChaiScript](https://github.com/ChaiScript/ChaiScript) and [ChaiScriptExtra](https://github.com/ChaiScript/ChaiScript_Extras) The current development version (2.x) contains limited scripting implementation using ChaiScript.
 
 SupraFit comes with the some selected [Google Noto Fonts](https://github.com/googlei18n/noto-fonts). They are optional and can be included into the binary during compile-time (set `-Dnoto_font=true\false` as cmake argument).
-
-## Version
-The current stable version is SupraFit 2.0.
 
 - The current master branch contains a snapshot of an improved  thermogram handling, that is developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511).
 - The current master branch contains a snaphsot of an scripting interface, using ChaiScript to define own models. However, this is highly experimental and therefore disabled. The cmake options are ***_Python*** and ***_Models***. Additionally, some a concept for python support is added.
@@ -28,18 +88,16 @@ To compile SupraFit you will need [CMake](https://cmake.org/download/) 3 or newe
 > SupraFit needs QtCharts, so please provide it. It can/should be checked in the Installer Tools from Qt.
 
 SupraFit has been successfully compilied with: 
-- gcc 5.2, gcc 6.3, gcc 7.3 and gcc 8.3
+- gcc 5.2 and newer versions
 - clang 3.9 
 
 on linux systems, on windows systems using
 - mingw 5.3
 - MSVC 2015, MS 2019
 
-and on macOS 10.12 and 10.13 with the latest [Qt (5.13.1)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
+and on macOS 10.12 and 10.13 with the latest [Qt (5.15.1)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
 
 > Windows 7 or higher is mandatory.
-
-Prebuild binaries for Windows (x64) can be downloaded on [SupraFit Releases](https://github.com/conradhuebler/SupraFit/releases).
 
 To obtain SupraFit 2.0, use
 ```sh
@@ -89,59 +147,6 @@ cmake --build . --config Release
 ```
 
 On macOS, an easy way to compile SupraFit is using QtCreator.
-
-## Running
-Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:
-
-### Titration experiments (NMR, UV-VIS)
-| host | guest | signal1 | signal2 | signal3 |
-|:-----:|:----|:----:|:----:|:----:|
-| 0.1 | 0 | 1 | 2 | 3 |
-| 0.1 | 0.01 | 1.1 | 2.1 | 3.3|
-
-The first two columns contain the concentrations of host (fixed concentration) and guest (variable concentration, silent component), the following columns should contain the NMR or UV/VIS signal.
-
-### ITC data
-| v | q |
-|:-----:|:----:|
-| 0.1 | -12 |
-| 0.1 | -11 |
-
-The first column contains the injected volume while the second columns has to contains the integrated heat response of the system.
-
-SupraFit supports import of *.itc and plain x-y files with peak integration and some basic base line corrections. Alternatively *.dH files from Origin can be loaded right away.
-Plain x-y files for thermograms should look like:
-
-|   |   |
-|:-----:|:----:|
-| 2 | -0.001 |
-| 4 | -0.001 |
-| 6 | -0.002 |
-| 8 | -0.002 |
-| 10 | -0.002 |
-| 12 | -0.001 |
-
-With the first row having the time and the second the observed heat.
-
-### Michaelis Menten Kinetics
-| S_0 | v | 
-|:-----:|:----:|
-| 0.1 | 0 |
-| 0.1 | 0.01 |
-
-The first column contains the substrat concentration while the second columns has to contains the rate of reaction.
-
-Copy such a table from any spreadsheet application and paste it in the **New table** dialog or load such a table as `semicolon` or `tabulator seperated file` with **Open File**. 
-
-SupraFit loads and saves tables and calculated models as `json files *.json` or compressed json files `*.suprafit`.
-
-## Statistics
-SupraFit provides some statistical analysis, which will be described in a not yet finished article. Implemented methods are based on the following approaches:
-- Monte Carlo simulation (Percentile method based confidence calculation)
-- F-Test based confidence calculation
-- Resampling methods
-
-A detailed handbook will be provided as soon as possbile.
 
 ## Acknowledgments
 Special thanks to Prof. M. Mazik [Institut for organic Chemistry, TU Bergakademie Freiberg](https://tu-freiberg.de/fakultaet2/orgch) for her support.

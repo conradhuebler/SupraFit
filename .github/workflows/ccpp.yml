@@ -21,14 +21,21 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         modules: qtcharts
-        version: 5.15.0
+        version: 5.15.1
     - name: Update Modules and Build
-      run: sh scripts/build_unix.sh
+      run: sh scripts/build_unix_github.sh
+      
+    - name: Deploy
+      run: sh scripts/deploy_unix.sh 
+      
+    - uses: actions/upload-artifact@v1
+      with:
+        name: SupraFit
+        path: ./build/bin/linux/SupraFit-nightly-x86_64.AppImage
+        
         
   windows:
-
     runs-on: windows-2019
-    
     steps:
     - uses: actions/checkout@v1
       with:
