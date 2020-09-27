@@ -213,6 +213,7 @@ public:
 
 public slots:
     void LoadFile(const QString& file);
+    void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
 
 private:
     // This will become an improved data load mechanism somedays

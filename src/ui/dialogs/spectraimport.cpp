@@ -34,6 +34,13 @@ SpectraImport::SpectraImport()
     setUI();
 }
 
+SpectraImport::SpectraImport(const QString& directory)
+{
+    setUI();
+    m_path->setText(directory);
+    m_spectrawidget->setDirectory(directory);
+}
+
 void SpectraImport::setUI()
 {
     QGridLayout* layout = new QGridLayout;
@@ -68,4 +75,9 @@ void SpectraImport::setDirectory()
     m_path->setText(directory);
     m_spectrawidget->setDirectory(directory);
     //m_spectrawidget->addFile(directory);
+}
+
+void SpectraImport::setData(const QJsonObject& data)
+{
+    m_spectrawidget->setData(data);
 }

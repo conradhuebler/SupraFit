@@ -27,9 +27,11 @@
 
 class DropTable;
 
+class QLineEdit;
 class QListWidget;
 class QTableWidget;
 class QSplitter;
+class QPushButton;
 class QTabWidget;
 
 class SpectraWidget : public QWidget {
@@ -42,6 +44,8 @@ public:
 
     void setUI();
     QJsonObject ProjectData() const { return m_project; }
+    QJsonObject InputTable() const { return m_input_table; }
+    void setData(const QJsonObject& data);
 
 public slots:
     void UpdateSpectra();
@@ -55,8 +59,10 @@ private:
     ChartView* m_spectra_view;
     DropTable *m_indep, *m_datatable;
     QSplitter *m_main_splitter, *m_list_splitter;
+    QLineEdit* m_add_xvalue;
+    QPushButton* m_accept_x;
     SpectraHandler* m_handler;
-    QJsonObject m_project;
+    QJsonObject m_project, m_input_table;
 private slots:
     void PointDoubleClicked(const QPointF& point);
 };

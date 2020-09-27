@@ -42,6 +42,7 @@
 #include "src/ui/widgets/messagedock.h"
 
 #include <QtCore/QDebug>
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QMimeData>
@@ -908,6 +909,23 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
 */
 void SupraFitGui::LoadFile(const QString& file)
 {
+    QFileInfo info(file);
+    if (info.isDir()) {
+        SpectraImport* spectra = new SpectraImport(file);
+
+        if (spectra->exec()) {
+            ImportData dialog(this);
+            DataTable* tmp = new DataTable;
+            tmp->ImportTable(spectra->InputTable());
+            dialog.LoadTable(tmp, 2);
+            dialog.setSpectraData(spectra->ProjectData());
+            if (dialog.exec() == QDialog::Accepted) {
+                SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+                m_mainsplitter->show();
+            }
+        }
+        return;
+    }
     if (file.contains("json") || file.contains("suprafit")) {
         QTimer::singleShot(0, m_splash, &QSplashScreen::show);
         m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
@@ -934,6 +952,20 @@ void SupraFitGui::LoadFile(const QString& file)
         UpdateRecentList();
 }
 
+void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)
+{
+
+    ImportData dialog(this);
+    DataTable* tmp = new DataTable;
+    tmp->ImportTable(table);
+    dialog.LoadTable(tmp, 2);
+    dialog.setSpectraData(data);
+    if (dialog.exec() == QDialog::Accepted) {
+        SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+        m_mainsplitter->show();
+    }
+}
+
 void SupraFitGui::OpenSpectraDir()
 {
     SpectraImport* spectra = new SpectraImport;
@@ -941,13 +973,15 @@ void SupraFitGui::OpenSpectraDir()
     if (spectra->exec()) {
         ImportData dialog(this);
         DataTable* tmp = new DataTable;
-        tmp->ImportTable(spectra->ProjectData());
+        tmp->ImportTable(spectra->InputTable());
         dialog.LoadTable(tmp, 2);
+        dialog.setSpectraData(spectra->ProjectData());
         if (dialog.exec() == QDialog::Accepted) {
             SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
             m_mainsplitter->show();
         }
     }
+    UpdateRecentList();
 }
 
 void SupraFitGui::setActionEnabled(bool enabled)
@@ -972,6 +1006,8 @@ void SupraFitGui::UpdateRecentList()
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/kspread.png").scaled(32, 32));
             else if (info.suffix() == "itc")
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/thermogram.png").scaled(32, 32));
+            else if (info.isDir())
+                item->setData(Qt::DecorationRole, QPixmap(":/icons/spectra_ico.png").scaled(32, 32));
             else
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/document-edit.png").scaled(32, 32));
 
@@ -1033,6 +1069,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     }
     connect(window, &MainWindow::Message, m_messages_widget, &MessageDock::Message);
     connect(window, &MainWindow::Warning, m_messages_widget, &MessageDock::Warning);
+    connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
 
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data) {

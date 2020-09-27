@@ -34,10 +34,14 @@ class SpectraWidget;
 class SpectraImport : public QDialog {
 public:
     SpectraImport();
+    SpectraImport(const QString& directory);
+
     virtual ~SpectraImport(){};
 
     void setUI();
     QJsonObject ProjectData() const { return m_spectrawidget->ProjectData(); }
+    QJsonObject InputTable() const { return m_spectrawidget->InputTable(); }
+    void setData(const QJsonObject& data);
 
 public slots:
     void setDirectory();

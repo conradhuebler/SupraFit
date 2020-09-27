@@ -95,7 +95,9 @@ signals:
 private:
     inline void clear()
     {
-        m_table->clear();
+        QPointer<DataTable> table = new DataTable(this);
+        setModel(table);
+        m_table = table;
         m_table->layoutChanged();
     }
     void deleteRow();

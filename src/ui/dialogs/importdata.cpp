@@ -272,6 +272,12 @@ void ImportData::LoadTable(DataTable* model, int independent)
     m_independent_rows->setValue(independent);
 }
 
+void ImportData::setSpectraData(const QJsonObject& json)
+{
+    m_raw = json;
+    m_type = DataClassPrivate::Spectrum;
+}
+
 void ImportData::WriteData(const DataTable* model, int independent)
 {
     independent = m_independent_rows->value();

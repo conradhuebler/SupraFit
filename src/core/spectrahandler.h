@@ -53,9 +53,15 @@ public:
     inline QString Path(const QString& hash) { return m_spectra.value(hash).m_path; }
 
     inline void addXValue(double x) { m_x << x; }
+    //inline void removeXValue()
     inline void setXValues(const QVector<double>& x) { m_x = x; }
     inline QVector<double> XValues() const { return m_x; }
     DataTable* CompileSimpleTable();
+
+    void PCA();
+
+    QJsonObject getSpectraData() const;
+    void LoadData(const QJsonObject& data);
 
 signals:
     void Updated();
@@ -64,4 +70,8 @@ private:
     QHash<QString, Spectrum> m_spectra;
     QStringList m_order;
     QVector<double> m_x;
+
+    Eigen::MatrixXd PrepareMatrix() const;
+    Spectrum MakeSpectrum(const Vector& x, const Vector& y, const QString& filename = QString());
+    Spectrum MakeSpectrum(const QPair<Vector, Vector>& spect, const QString& filename = QString());
 };

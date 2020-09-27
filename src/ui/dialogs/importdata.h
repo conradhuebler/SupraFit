@@ -51,13 +51,13 @@ public:
     inline QString ProjectFile() const { return m_projectfile; }
     inline QJsonObject getProject() const
     {
-
         return m_project;
     }
     void setRootDir(const QString& str) { m_root_dir = str; }
     void setData(const DataTable* model);
 
     void LoadTable(DataTable* model, int independent = 2);
+    void setSpectraData(const QJsonObject& json);
 
 private:
     void setUi();
