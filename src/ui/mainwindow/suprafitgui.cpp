@@ -29,6 +29,7 @@
 
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
+#include "src/ui/dialogs/spectraimport.h"
 
 #include "src/ui/guitools/guitools.h"
 
@@ -705,6 +706,9 @@ SupraFitGui::SupraFitGui()
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
     m_load->setShortcut(QKeySequence::Open);
 
+    m_spectra = new QAction(Icon("spectra_ico"), tr("Open Spectra"), this);
+    connect(m_spectra, SIGNAL(triggered(bool)), this, SLOT(OpenSpectraDir()));
+
     m_save = new QAction(Icon("document-save"), tr("&Save Project"), this);
     m_save->setShortcuts(QKeySequence::Save);
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
@@ -797,6 +801,7 @@ SupraFitGui::SupraFitGui()
     m_main_toolbar->addSeparator();
     m_main_toolbar->addAction(m_new_table);
     m_main_toolbar->addAction(m_load);
+    m_main_toolbar->addAction(m_spectra);
     m_main_toolbar->addAction(m_save);
     m_main_toolbar->addAction(m_save_as);
     m_main_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -927,6 +932,22 @@ void SupraFitGui::LoadFile(const QString& file)
         QMessageBox::warning(this, tr("Loading Datas."), tr("Sorry, but this doesn't contain any titration tables!"), QMessageBox::Ok | QMessageBox::Default);
     else
         UpdateRecentList();
+}
+
+void SupraFitGui::OpenSpectraDir()
+{
+    SpectraImport* spectra = new SpectraImport;
+
+    if (spectra->exec()) {
+        ImportData dialog(this);
+        DataTable* tmp = new DataTable;
+        tmp->ImportTable(spectra->ProjectData());
+        dialog.LoadTable(tmp, 2);
+        if (dialog.exec() == QDialog::Accepted) {
+            SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+            m_mainsplitter->show();
+        }
+    }
 }
 
 void SupraFitGui::setActionEnabled(bool enabled)

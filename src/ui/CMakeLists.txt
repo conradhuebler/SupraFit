@@ -34,6 +34,7 @@ find_package(Qt5Charts CONFIG REQUIRED)
 set(SFGui_SRC
                 guitools/chartwrapper.cpp
                 guitools/mime.h
+                dialogs/spectraimport.cpp
                 dialogs/regressionanalysisdialog.cpp
                 dialogs/statisticdialog.cpp
                 dialogs/modaldialog.cpp
@@ -43,6 +44,8 @@ set(SFGui_SRC
                 dialogs/comparedialog.cpp
                 dialogs/resultsdialog.cpp
                 dialogs/thermogram.cpp
+                widgets/DropTable.h
+                widgets/spectrawidget.cpp
                 widgets/metamodelparameter.cpp
                 widgets/parameterwidget.cpp
                 widgets/optimizerwidget.cpp

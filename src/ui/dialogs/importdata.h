@@ -28,6 +28,8 @@
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QTableView>
 
+#include <src/ui/widgets/DropTable.h>
+
 class QDialogButtonBox;
 class QLineEdit;
 class QPushButton;
@@ -35,23 +37,6 @@ class QSpinBox;
 class QCheckBox;
 
 class DataTable;
-
-class TableView : public QTableView {
-    Q_OBJECT
-
-public:
-    inline TableView()
-        : QTableView()
-    {
-    }
-    inline ~TableView() {}
-
-protected:
-    virtual void keyPressEvent(QKeyEvent* event) override;
-
-signals:
-    void Edited();
-};
 
 class ImportData : public QDialog {
     Q_OBJECT
@@ -70,13 +55,16 @@ public:
         return m_project;
     }
     void setRootDir(const QString& str) { m_root_dir = str; }
+    void setData(const DataTable* model);
+
+    void LoadTable(DataTable* model, int independent = 2);
 
 private:
     void setUi();
 
     void WriteData(const DataTable* model, int independent = 2);
 
-    QPointer<TableView> m_table, m_sec_table;
+    QPointer<DropTable> m_table, m_sec_table;
     QPointer<QLineEdit> m_line;
     QPointer<QPushButton> m_select, m_export, m_file, m_thermogram;
     QPointer<QSpinBox> m_independent_rows, m_dependent_rows;

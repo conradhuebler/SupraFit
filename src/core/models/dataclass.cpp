@@ -502,6 +502,33 @@ void DataTable::insertRow(const QVector<qreal>& row, bool zero)
     }
 }
 
+void DataTable::appendColumns(const DataTable& table)
+{
+    QReadLocker locker(&mutex);
+    m_header << table.header();
+    int rows = qMax(rowCount(), table.rowCount());
+    int cols = columnCount() + table.columnCount();
+
+    Eigen::MatrixXd tab = Eigen::MatrixXd::Zero(rows, cols);
+    Eigen::MatrixXd check = Eigen::MatrixXd::Ones(rows, cols);
+
+    for (int i = 0; i < columnCount(); ++i)
+        for (int j = 0; j < rowCount(); ++j) {
+            tab(j, i) = data(i, j);
+            //check(j,i) = m_checked_table(j,i);
+        }
+
+    for (int i = 0; i < table.columnCount(); ++i)
+        for (int j = 0; j < table.rowCount(); ++j) {
+            tab(j, columnCount() + i) = table.data(i, j);
+            //check(j,columnCount() + i) = m_checked_table(j,i);
+        }
+    m_table = tab;
+    m_checked_table = check;
+    if (rowCount() && columnCount())
+        emit layoutChanged();
+}
+
 void DataTable::setColumn(const QVector<qreal>& vector, int column)
 {
     Q_UNUSED(vector);
