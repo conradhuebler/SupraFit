@@ -35,7 +35,7 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: SupraFit
-        path: ./build/bin/linux/SupraFit-nightly-x86_64.AppImage
+        path: ./release/bin/linux/SupraFit-nightly-x86_64.AppImage
         
         
   windows:
