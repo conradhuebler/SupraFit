@@ -32,6 +32,7 @@
 
 #include "src/ui/dialogs/comparedialog.h"
 #include "src/ui/dialogs/importdata.h"
+#include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/statisticdialog.h"
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/mainwindow/datawidget.h"
@@ -834,6 +835,12 @@ void ModelDataHolder::EditData()
             }
             emit m_data.toStrongRef()->Info()->Update();
 
+        } else if (m_data.toStrongRef()->DataType() == DataClassPrivate::Spectrum) {
+            SpectraImport dialog;
+            dialog.setData(m_data.toStrongRef().data()->ExportData());
+            if (dialog.exec() == QDialog::Accepted) {
+                SpectraEdited(dialog.InputTable(), dialog.ProjectData());
+            }
         } else {
             m_data.toStrongRef()->IndependentModel()->setEditable(!m_data.toStrongRef()->IndependentModel()->isEditable());
             m_data.toStrongRef()->DependentModel()->setEditable(!m_data.toStrongRef()->DependentModel()->isEditable());

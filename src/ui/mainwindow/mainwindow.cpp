@@ -96,6 +96,7 @@ MainWindow::MainWindow(QWidget* parent)
     // connect(m_model_dataholder, SIGNAL(nameChanged()), this, SLOT(setWindowTitle()));
     connect(m_model_dataholder, &ModelDataHolder::ModelAdded, this, &MainWindow::ModelsChanged);
     connect(m_model_dataholder, &ModelDataHolder::ModelRemoved, this, &MainWindow::ModelsChanged);
+    connect(m_model_dataholder, &ModelDataHolder::SpectraEdited, this, &MainWindow::SpectraEdited);
     /*
     setStyleSheet("QSplitter::handle:vertical {"
                   "background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"

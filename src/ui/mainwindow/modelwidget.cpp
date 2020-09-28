@@ -521,8 +521,8 @@ void ModelWidget::Repaint()
     if (!m_SetUpFinished)
         return;
 
-    if (m_model->Type() == 3)
-        return;
+    //if (m_model->Type() == 3)
+    //    return;
     m_pending = true;
     setParameter();
     qreal error = 0;

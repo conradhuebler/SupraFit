@@ -45,5 +45,6 @@
         <file>icons/list-add-blue.png</file>
         <file>icons/help-hint-blue.png</file>
         <file>icons/thermogram.png</file>
+        <file>icons/spectra_ico.png</file>
     </qresource>
 </RCC>

@@ -29,6 +29,7 @@
 
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
+#include "src/ui/dialogs/spectraimport.h"
 
 #include "src/ui/guitools/guitools.h"
 
@@ -41,6 +42,7 @@
 #include "src/ui/widgets/messagedock.h"
 
 #include <QtCore/QDebug>
+#include <QtCore/QFileInfo>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QMimeData>
@@ -705,6 +707,9 @@ SupraFitGui::SupraFitGui()
     connect(m_load, SIGNAL(triggered(bool)), this, SLOT(OpenFile()));
     m_load->setShortcut(QKeySequence::Open);
 
+    m_spectra = new QAction(Icon("spectra_ico"), tr("Open Spectra"), this);
+    connect(m_spectra, SIGNAL(triggered(bool)), this, SLOT(OpenSpectraDir()));
+
     m_save = new QAction(Icon("document-save"), tr("&Save Project"), this);
     m_save->setShortcuts(QKeySequence::Save);
     connect(m_save, SIGNAL(triggered(bool)), this, SLOT(SaveProjectAction()));
@@ -797,6 +802,7 @@ SupraFitGui::SupraFitGui()
     m_main_toolbar->addSeparator();
     m_main_toolbar->addAction(m_new_table);
     m_main_toolbar->addAction(m_load);
+    m_main_toolbar->addAction(m_spectra);
     m_main_toolbar->addAction(m_save);
     m_main_toolbar->addAction(m_save_as);
     m_main_toolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -903,6 +909,23 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
 */
 void SupraFitGui::LoadFile(const QString& file)
 {
+    QFileInfo info(file);
+    if (info.isDir()) {
+        SpectraImport* spectra = new SpectraImport(file);
+
+        if (spectra->exec()) {
+            ImportData dialog(this);
+            DataTable* tmp = new DataTable;
+            tmp->ImportTable(spectra->InputTable());
+            dialog.LoadTable(tmp, 2);
+            dialog.setSpectraData(spectra->ProjectData());
+            if (dialog.exec() == QDialog::Accepted) {
+                SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+                m_mainsplitter->show();
+            }
+        }
+        return;
+    }
     if (file.contains("json") || file.contains("suprafit")) {
         QTimer::singleShot(0, m_splash, &QSplashScreen::show);
         m_mainsplitter->setGraphicsEffect(new QGraphicsBlurEffect());
@@ -929,6 +952,38 @@ void SupraFitGui::LoadFile(const QString& file)
         UpdateRecentList();
 }
 
+void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)
+{
+
+    ImportData dialog(this);
+    DataTable* tmp = new DataTable;
+    tmp->ImportTable(table);
+    dialog.LoadTable(tmp, 2);
+    dialog.setSpectraData(data);
+    if (dialog.exec() == QDialog::Accepted) {
+        SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+        m_mainsplitter->show();
+    }
+}
+
+void SupraFitGui::OpenSpectraDir()
+{
+    SpectraImport* spectra = new SpectraImport;
+
+    if (spectra->exec()) {
+        ImportData dialog(this);
+        DataTable* tmp = new DataTable;
+        tmp->ImportTable(spectra->InputTable());
+        dialog.LoadTable(tmp, 2);
+        dialog.setSpectraData(spectra->ProjectData());
+        if (dialog.exec() == QDialog::Accepted) {
+            SetData(dialog.getProject(), dialog.ProjectFile(), getDir());
+            m_mainsplitter->show();
+        }
+    }
+    UpdateRecentList();
+}
+
 void SupraFitGui::setActionEnabled(bool enabled)
 {
     m_save->setEnabled(enabled);
@@ -951,6 +1006,8 @@ void SupraFitGui::UpdateRecentList()
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/kspread.png").scaled(32, 32));
             else if (info.suffix() == "itc")
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/thermogram.png").scaled(32, 32));
+            else if (info.isDir())
+                item->setData(Qt::DecorationRole, QPixmap(":/icons/spectra_ico.png").scaled(32, 32));
             else
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/document-edit.png").scaled(32, 32));
 
@@ -1012,6 +1069,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     }
     connect(window, &MainWindow::Message, m_messages_widget, &MessageDock::Message);
     connect(window, &MainWindow::Warning, m_messages_widget, &MessageDock::Warning);
+    connect(window, &MainWindow::SpectraEdited, this, &SupraFitGui::SpectraEdited);
 
     QWeakPointer<DataClass> data = window->SetData(object);
     if (!data) {

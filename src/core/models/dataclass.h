@@ -138,6 +138,8 @@ public:
     void setColumn(const QVector<qreal>& vector, int column);
     void setColumn(const Vector& vector, int column);
 
+    void appendColumns(const DataTable& columns);
+
     Vector Column(int row) const;
 
     Vector Row(int row) const;

@@ -228,4 +228,5 @@ signals:
     void recalculate();
     void Message(const QString& str, int priority);
     void Warning(const QString& str, int priority);
+    void SpectraEdited(const QJsonObject& table, const QJsonObject& data);
 };

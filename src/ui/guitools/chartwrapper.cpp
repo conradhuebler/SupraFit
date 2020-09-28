@@ -63,9 +63,9 @@ void ChartWrapper::setData(QSharedPointer<DataClass> model)
     m_working = m_stored_data;
     // can we make this more compact ?
     if (qobject_cast<AbstractModel*>(m_stored_data))
-        connect(qobject_cast<AbstractModel*>(m_stored_data.data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
+        connect(qobject_cast<AbstractModel*>(m_stored_data.toStrongRef().data()), &AbstractModel::Recalculated, this, &ChartWrapper::UpdateModel);
     // else if (qobject_cast<DataClass*>(m_stored_data))
-    connect(m_stored_data.data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
+    connect(m_stored_data.toStrongRef().data()->Info(), &DataClassPrivateObject::Update, this, &ChartWrapper::UpdateModel);
 
     InitaliseSeries();
     UpdateModel();
@@ -78,25 +78,25 @@ void ChartWrapper::addWrapper(const QWeakPointer<ChartWrapper>& wrapper)
 
     m_stored_wrapper << wrapper;
 
-    for (int i = 0; i < wrapper.data()->SeriesSize(); ++i) {
+    for (int i = 0; i < wrapper.toStrongRef().data()->SeriesSize(); ++i) {
         QPointer<ScatterSeries> series = new ScatterSeries;
-        for (const QPointF& point : wrapper.data()->Series(i)->points())
+        for (const QPointF& point : wrapper.toStrongRef().data()->Series(i)->points())
             series->append(point);
 
-        series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize() * 0.75);
-        series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerShape());
+        series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.toStrongRef().data()->Series(i))->markerSize() * 0.75);
+        series->setMarkerShape(qobject_cast<ScatterSeries*>(wrapper.toStrongRef().data()->Series(i))->markerShape());
         //series->setColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->color());
         //series->setBorderColor(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->borderColor());
         //series->setBrush(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->brush());
 
-        connect(wrapper.data(), &ChartWrapper::ModelChanged, wrapper.data()->Series(i), [series, wrapper, i]() {
-            if (!wrapper.data() || !series) {
+        connect(wrapper.toStrongRef().data(), &ChartWrapper::ModelChanged, wrapper.toStrongRef().data()->Series(i), [series, wrapper, i]() {
+            if (!wrapper.toStrongRef().data() || !series) {
                 qDebug() << "series already left the building";
                 return;
             }
 
             series->clear();
-            for (const QPointF& point : wrapper.data()->Series(i)->points())
+            for (const QPointF& point : wrapper.toStrongRef().data()->Series(i)->points())
                 series->append(point);
 
             // series->setMarkerSize(qobject_cast<ScatterSeries*>(wrapper.data()->Series(i))->markerSize()*0.75);
@@ -119,11 +119,11 @@ void ChartWrapper::InitaliseSeries()
 
     if (m_stored_series.isEmpty()) {
 
-        int serie = m_working.data()->SeriesCount();
+        int serie = m_working.toStrongRef().data()->SeriesCount();
 
         for (int j = 0; j < serie; ++j) {
             QPointer<QtCharts::QXYSeries> series;
-            if (qobject_cast<AbstractModel*>(m_working.data()))
+            if (qobject_cast<AbstractModel*>(m_working.toStrongRef().data()))
                 series = new LineSeries;
             else
                 series = new ScatterSeries;
@@ -134,7 +134,6 @@ void ChartWrapper::InitaliseSeries()
 
 void ChartWrapper::UpdateModel()
 {
-
     CheckWorking();
     MakeSeries();
     emit ModelChanged();
@@ -147,13 +146,13 @@ void ChartWrapper::MakeSeries()
     for (int j = 0; j < m_stored_series.size(); ++j)
         m_stored_series[j]->clear();
 
-    int rows = m_working.data()->DataPoints();
-    int cols = m_working.data()->SeriesCount();
+    int rows = m_working.toStrongRef().data()->DataPoints();
+    int cols = m_working.toStrongRef().data()->SeriesCount();
 
     for (int i = 0; i < rows; ++i) {
-        double x = m_working.data()->PrintOutIndependent(i);
+        double x = m_working.toStrongRef().data()->PrintOutIndependent(i);
         for (int j = 0; j < cols; ++j) {
-            if (m_working.data()->DependentModel()->isChecked(j, i)) {
+            if (m_working.toStrongRef().data()->DependentModel()->isChecked(j, i)) {
                 if (j >= m_stored_series.size())
                     continue;
                 m_stored_series[j]->append(x, m_table->data(j, i));
@@ -223,7 +222,7 @@ void ChartWrapper::TransformModel(QSharedPointer<DataClass> model)
         m_stored_model = model;
     else
         return;*/
-    connect(m_stored_model.data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
+    connect(m_stored_model.toStrongRef().data(), SIGNAL(Recalculated()), this, SLOT(UpdateModel()));
     m_working = m_stored_model;
     m_transformed = true;
     MakeSeries();

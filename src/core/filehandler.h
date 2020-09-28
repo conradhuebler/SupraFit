@@ -48,11 +48,12 @@ public:
 
     inline bool FileSupported() const { return m_file_supported; }
 
-    inline void setFileContent(const QString& str)
+    inline bool setFileContent(const QString& str)
     {
         m_filecontent = str.split("\n");
         ReadGeneric();
-        CheckForTable();
+        bool read = CheckForTable();
+        return read;
     }
 
     inline void setFileType(FileType type) { m_filetype = type; }

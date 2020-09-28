@@ -288,19 +288,19 @@ bool AbstractModel::SetValue(int i, int j, qreal value)
     }
     QVector<qreal> mean_series(SeriesCount(), 0);
     QVector<int> used_series(SeriesCount(), 0);
-    if (Type() != 3) {
-        if (!m_locked_model)
-            m_model_signal->data(j, i) = value;
-        m_model_error->data(j, i) = m_model_signal->data(j, i) - DependentModel()->data(j, i);
-        m_sum_absolute += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
-        m_sum_squares += qPow(m_model_signal->data(j, i) - DependentModel()->data(j, i), 2);
-        // m_mean += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
-        m_mean += m_model_signal->data(j, i) - DependentModel()->data(j, i);
+    //if (Type() != 3) {
+    if (!m_locked_model)
+        m_model_signal->data(j, i) = value;
+    m_model_error->data(j, i) = m_model_signal->data(j, i) - DependentModel()->data(j, i);
+    m_sum_absolute += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
+    m_sum_squares += qPow(m_model_signal->data(j, i) - DependentModel()->data(j, i), 2);
+    // m_mean += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
+    m_mean += m_model_signal->data(j, i) - DependentModel()->data(j, i);
 
-        mean_series[j] += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
-        used_series[j]++;
-        m_used_variables++;
-    }
+    mean_series[j] += qAbs(m_model_signal->data(j, i) - DependentModel()->data(j, i));
+    used_series[j]++;
+    m_used_variables++;
+    //}
     m_used_series = used_series;
     m_mean_series = mean_series;
     return return_value;

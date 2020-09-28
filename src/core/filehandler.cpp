@@ -112,11 +112,12 @@ void FileHandler::ReadGeneric()
 
     m_stored_table = new DataTable;
     int i = 0;
+    bool header_added = false;
     //qDebug() << m_filecontent.size();
     if (m_filecontent.size() > 1e4 && qApp->instance()->property("auto_thermo_dialog").toBool())
         return;
     for (const QString& line : qAsConst(m_filecontent)) {
-        if (!line.isEmpty() && !line.isNull()) {
+        if (!line.isEmpty()) {
             QVector<qreal> row;
             QStringList header;
             QStringList items = line.simplified().split(sep);
@@ -126,11 +127,12 @@ void FileHandler::ReadGeneric()
                 sum += (QString(item).replace(",", ".")).toDouble();
                 header << item;
             }
-            if (!i && !sum) {
+            if (!header_added) {
                 for (int j = 0; j < header.size(); ++j)
                     m_stored_table->setHeaderData(j, Qt::Horizontal, (header[j]), Qt::DisplayRole);
-            } else
-                m_stored_table->insertRow(row);
+                header_added = true;
+            }
+            m_stored_table->insertRow(row);
         }
     }
     ConvertTable();

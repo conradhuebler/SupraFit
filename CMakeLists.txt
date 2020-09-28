@@ -175,6 +175,7 @@ set(core_SRC
     src/core/toolset.cpp
     src/core/instance.h
     src/core/thermogramhandler.cpp
+    src/core/spectrahandler.cpp
     src/global.cpp
 )
 

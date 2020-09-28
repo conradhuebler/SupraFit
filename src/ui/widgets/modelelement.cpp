@@ -105,11 +105,11 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         m_labels << label;
     }
 
-    if (m_model.data()->Type() != 3) {
-        m_error = new QLabel;
-        shifts->addStretch(150);
-        shifts->addWidget(m_error);
-    }
+    // if (m_model.data()->Type() != 3) {
+    m_error = new QLabel;
+    shifts->addStretch(150);
+    shifts->addWidget(m_error);
+    // }
     layout->addLayout(shifts);
     QHBoxLayout* tools = new QHBoxLayout;
     m_include = new QCheckBox(this);

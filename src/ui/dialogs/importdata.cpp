@@ -25,6 +25,8 @@
 
 #include "src/ui/dialogs/thermogram.h"
 
+#include <src/ui/widgets/DropTable.h>
+
 #include <QDebug>
 
 #include <QtCore/QDateTime>
@@ -47,26 +49,6 @@
 #include <QtWidgets/QTableView>
 
 #include "importdata.h"
-
-void TableView::keyPressEvent(QKeyEvent* event)
-{
-    if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) {
-        QApplication::clipboard()->setText(this->currentIndex().data().toString());
-    } else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_V) {
-        QString paste = QApplication::clipboard()->text();
-        FileHandler* handler = new FileHandler(this);
-        handler->setFileContent(paste);
-        DataTable* model = handler->getData();
-        if (model->isValid()) {
-            setModel(model);
-            emit Edited();
-        }
-        delete handler;
-    } else {
-
-        QTableView::keyPressEvent(event);
-    }
-}
 
 ImportData::ImportData(const QString& file, QWidget* parent)
     : QDialog(parent)
@@ -99,7 +81,7 @@ ImportData::ImportData(QWeakPointer<DataClass> data)
         DataTable* model = new DataTable(0, 0, this);
         m_table->setModel(model);
         m_raw = data.toStrongRef()->ExportData()["raw"].toObject();
-        m_systemparameter = data.data()->getSystemObject();
+        m_systemparameter = data.toStrongRef().data()->getSystemObject();
         QTimer::singleShot(0, this, SLOT(ImportThermogram()));
 
     } else {
@@ -164,7 +146,7 @@ void ImportData::setUi()
         ImportThermogram(m_filename);
     });
 
-    m_table = new TableView;
+    m_table = new DropTable;
 
     layout->addWidget(m_select, 0, 0);
     layout->addWidget(m_line, 0, 1, 1, 2);
@@ -177,7 +159,7 @@ void ImportData::setUi()
     layout->addWidget(m_thermogram, 4, 0);
     layout->addWidget(m_buttonbox, 4, 1, 1, 3);
 
-    connect(m_table, &TableView::Edited, this, &ImportData::NoChanged);
+    connect(m_table, &DropTable::Edited, this, &ImportData::NoChanged);
 
     setLayout(layout);
     setWindowTitle(tr("Import Table"));
@@ -284,6 +266,18 @@ void ImportData::ExportFile()
     stream << model->ExportAsString();
 }
 
+void ImportData::LoadTable(DataTable* model, int independent)
+{
+    m_table->setModel(model);
+    m_independent_rows->setValue(independent);
+}
+
+void ImportData::setSpectraData(const QJsonObject& json)
+{
+    m_raw = json;
+    m_type = DataClassPrivate::Spectrum;
+}
+
 void ImportData::WriteData(const DataTable* model, int independent)
 {
     independent = m_independent_rows->value();
@@ -327,6 +321,10 @@ void ImportData::accept()
     m_project = object;
     delete model;
     QDialog::accept();
+}
+void ImportData::setData(const DataTable* model)
+{
+    WriteData(model, 2);
 }
 
 bool ImportData::ImportThermogram(const QString& filename)

@@ -46,10 +46,14 @@ QString getDir()
 void setLastDir(const QString& str)
 {
     QFileInfo info(str);
-    qApp->instance()->setProperty("lastdir", info.absolutePath());
+    if (info.isFile())
+        qApp->instance()->setProperty("lastdir", info.absolutePath());
+    else
+        qApp->instance()->setProperty("lastdir", str);
+
     QStringList recent = qApp->instance()->property("recent").toStringList();
 
-    if (info.completeSuffix().contains(("suprafit")) || info.completeSuffix().contains(("json")) || info.completeSuffix().contains(("dH")) || info.completeSuffix().contains(("itc")) || info.completeSuffix().contains(("txt")) || info.completeSuffix().contains(("dat"))) {
+    if (info.completeSuffix().contains(("suprafit")) || info.completeSuffix().contains(("json")) || info.completeSuffix().contains(("dH")) || info.completeSuffix().contains(("itc")) || info.completeSuffix().contains(("txt")) || info.completeSuffix().contains(("dat")) || info.isDir()) {
         recent.removeOne(str);
         recent.prepend(str);
     }
@@ -65,5 +69,4 @@ void setLastDir(const QString& str)
     _settings.setValue("recent", qApp->instance()->property("recent"));
     _settings.setValue("lastdir", qApp->instance()->property("lastdir"));
     _settings.endGroup();
-
 }
