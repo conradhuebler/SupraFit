@@ -80,7 +80,8 @@ git clones automatically fisher_dist and libpeakpick.
 SupraFit comes with the some selected [Google Noto Fonts](https://github.com/googlei18n/noto-fonts). They are optional and can be included into the binary during compile-time (set `-Dnoto_font=true\false` as cmake argument).
 
 - The current master branch contains a snapshot of an improved  thermogram handling, that is developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511).
-- The current master branch contains a snaphsot of an scripting interface, using ChaiScript to define own models. However, this is highly experimental and therefore disabled. The cmake options are ***_Python*** and ***_Models***. Additionally, some a concept for python support is added.
+- The current master branch contains a snaphsot of a scripting interface, using ChaiScript to define own models. However, this is highly experimental and therefore disabled. The cmake options are ***_Python*** and ***_Models***. Additionally, some a concept for python support is added.
+- The current master branch contains a snaphsot of a spectra import interface.  The latest commit without the new branch is [b5af8cd](https://github.com/conradhuebler/SupraFit/commit/b5af8cd9e8c29792c15b893aee8bcffa8a19dd8d).
 
 ## Compiling
 To compile SupraFit you will need [CMake](https://cmake.org/download/) 3 or newer, a C++14-capable compiler and [Qt 5.15](https://www.qt.io/download).
@@ -164,9 +165,10 @@ Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenod
 <img src="https://github.com/conradhuebler/SupraFit/raw/master/docs/SupraFit_Poster.png" width="300">
 
 ### SupraFit has been used in
-Anthracene-Based Receptors with a Turn-on Fluorescence Response for Nitrate [Org. Lett. 2019, 21, 21, 8746-8750](https://pubs.acs.org/doi/abs/10.1021/acs.orglett.9b03361)
 
-Purine Unit as a Building Block of Artificial Receptors Designed for the Recognition of Carbohydrates [Eur. J. Org. Chem., 2019: 7555-7562](https://onlinelibrary.wiley.com/doi/full/10.1002/ejoc.201901340)
+- Anthracene-Based Receptors with a Turn-on Fluorescence Response for Nitrate [Org. Lett. 2019, 21, 21, 8746-8750](https://pubs.acs.org/doi/abs/10.1021/acs.orglett.9b03361)
+- Purine Unit as a Building Block of Artificial Receptors Designed for the Recognition of Carbohydrates [Eur. J. Org. Chem., 2019: 7555-7562](https://onlinelibrary.wiley.com/doi/full/10.1002/ejoc.201901340)
+- Cycloalkyl Groups as Subunits of Artificial Carbohydrate Receptors: Effect of Ring Size of the Cycloalkyl Unit on the Receptor Efficiency [Eur. J. Org. Chem. 2020, 4900–4915](https://doi.org/10.1002/ejoc.202000803)
 
 ## Some notes
 - SupraFit prefers larger screens over smaller ones. 1600x1200 or 1680x1050 is the recommended size.
