@@ -27,7 +27,7 @@ jobs:
       run: sh scripts/build_unix_github.sh
 
     - name: Install more libs
-      run: sudo apt-get install -y libxcb-icccm4
+      run: sudo apt-get install -y libxcb-icccm4 libxcb*
 
     - name: Deploy
       run: sh scripts/deploy_unix.sh 
