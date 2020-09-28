@@ -22,9 +22,13 @@ jobs:
       with:
         modules: qtcharts
         version: 5.15.1
+
     - name: Update Modules and Build
       run: sh scripts/build_unix_github.sh
-      
+
+    - name: Install more libs
+      run: sudo apt-get install -y libxcb-icccm4
+
     - name: Deploy
       run: sh scripts/deploy_unix.sh 
       
