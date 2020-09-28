@@ -146,7 +146,8 @@ QJsonObject SpectraHandler::getSpectraData() const
 
     QStringList files;
     int i = 1;
-    for (const auto& spec : m_spectra) {
+    for (const auto& spectra : m_order) {
+        const auto spec = m_spectra[spectra];
         files << spec.m_path + QDir::separator() + spec.m_filename;
         QJsonObject individual;
         individual["x"] = ToolSet::DoubleList2String(spec.m_spectrum.x());

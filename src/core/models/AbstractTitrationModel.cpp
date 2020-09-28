@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -107,10 +107,17 @@ void AbstractTitrationModel::DeclareOptions()
 
 void AbstractTitrationModel::EvaluateOptions()
 {
-    if (getOption(Method) == "UV/VIS")
+    if (getOption(Method) == "UV/VIS") {
         m_ylabel = "I";
-    else
+        m_localParameterSuffix = "";
+        m_localParameterName = Unicode_epsilion;
+        m_localParameterDescription = "Absorption";
+    } else {
         m_ylabel = "&delta; [ppm]";
+        m_localParameterSuffix = " ppm";
+        m_localParameterName = Unicode_delta;
+        m_localParameterDescription = "chemical shift";
+    }
 }
 
 void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)

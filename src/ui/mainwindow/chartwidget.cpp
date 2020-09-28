@@ -292,17 +292,17 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     });*/
 
     for (int i = 0; i < model->SeriesCount(); ++i) {
-        if (model->Type() != 3) {
-            LineSeries* model_series = (qobject_cast<LineSeries*>(signal_wrapper->Series(i)));
-            signal_wrapper->setSeries(model_series, i);
-            connect(m_data_mapper->Series(i), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
-            connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));
-            model_series->setName(m_data_mapper.data()->Series(i)->name());
-            model_series->setColor(m_data_mapper.data()->Series(i)->color());
-            connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
-            model_series->setSize(lineWidth);
-            m_signalview->addSeries(model_series);
-        }
+        //if (model->Type() != 3) {
+        LineSeries* model_series = (qobject_cast<LineSeries*>(signal_wrapper->Series(i)));
+        signal_wrapper->setSeries(model_series, i);
+        connect(m_data_mapper->Series(i), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
+        connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), model_series, SLOT(ShowLine(int)));
+        model_series->setName(m_data_mapper.data()->Series(i)->name());
+        model_series->setColor(m_data_mapper.data()->Series(i)->color());
+        connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
+        model_series->setSize(lineWidth);
+        m_signalview->addSeries(model_series);
+        //}
         if (model->Type() != DataClassPrivate::DataType::Simulation) {
             LineSeries* error_series = (qobject_cast<LineSeries*>(error_wrapper->Series(i)));
             error_wrapper->setSeries(error_series, i);

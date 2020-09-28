@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,21 +62,21 @@ public:
     virtual inline QString LocalParameterSuffix(int i = 0) const override
     {
         Q_UNUSED(i)
-        return QString(" ppm");
+        return m_localParameterSuffix;
     }
     virtual inline QString LocalParameterDescription(int i = 0) const override
     {
         if (i == 0)
-            return "Shift of the pure - non silent substrat";
+            return "Signal of the pure - non silent substrat (" + m_localParameterDescription + ")";
         else
-            return tr("Shift of the pure %1 complex").arg(SpeciesName(i - 1));
+            return tr("Signal of the pure %1 complex (").arg(SpeciesName(i - 1)) + m_localParameterDescription + ")";
     }
     inline virtual QString LocalParameterName(int i = 0) const override
     {
         if (i == 0)
-            return tr("%1 A").arg(Unicode_delta);
+            return tr("%1 A").arg(m_localParameterName);
         else
-            return tr("%1 %2").arg(Unicode_delta).arg(SpeciesName(i - 1));
+            return tr("%1 %2").arg(m_localParameterName).arg(SpeciesName(i - 1));
     }
 
     // virtual QString formatedGlobalParameter(qreal value, int globalParameter) const override;
@@ -169,7 +169,7 @@ protected:
 
     qreal GuessK(int index = 0);
 
-    QString m_ylabel, m_plotMode;
+    QString m_ylabel, m_plotMode, m_localParameterSuffix, m_localParameterDescription, m_localParameterName;
 
     QVector<QVector<qreal>> m_difference;
 
