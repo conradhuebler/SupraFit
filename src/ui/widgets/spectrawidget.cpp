@@ -140,7 +140,7 @@ void SpectraWidget::setDirectory(const QString& directry)
 {
     m_handler->addDirectory(directry, "csv");
     UpdateSpectra();
-    // m_handler->PCA();
+    //m_handler->PCA();
 }
 
 void SpectraWidget::UpdateSpectra()

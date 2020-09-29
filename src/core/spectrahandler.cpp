@@ -115,12 +115,25 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
         if (size == vector.size())
             tmp_matrix << vector;
     }
-
+    std::cout << min << " " << max << std::endl;
     Eigen::MatrixXd matrix = Eigen::MatrixXd::Ones(tmp_matrix.size(), size);
     for (int i = 0; i < tmp_matrix.size(); ++i)
         for (int j = 0; j < size; ++j) {
             matrix(i, j) = tmp_matrix[i](j);
         }
+    /*
+    DataTable *tmp = new DataTable(matrix);
+    QFile file("export.txt");
+    if(file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QTextStream stream(&file);
+
+                 stream << tmp->ExportAsString();
+
+                 file.close();
+    }
+    delete tmp;
+    */
     return matrix;
 }
 
@@ -132,12 +145,16 @@ void SpectraHandler::PCA()
     Eigen::MatrixXd cov = centered.adjoint() * centered;
     /*
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig(cov);
-    std::cout << eig.eigenvalues() << std::endl;
+    std::cout << eig.eigenvalues()/eig.eigenvalues().sum()*100<< std::endl;
+    std::cout << eig.eigenvectors().col(eig.eigenvectors().cols()-1) << std::endl;
+   std::cout << eig.eigenvectors().row(eig.eigenvectors().rows()-1) << std::endl;
 */
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(centered, Eigen::ComputeThinV);
-    std::cout << svd.computeU() << std::endl;
-    Eigen::MatrixXd W = svd.matrixV().leftCols(5);
-    std::cout << W << std::endl;
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(centered, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    //std::cout << svd.singularValues()/svd.singularValues().sum()*100 << std::endl;
+    Eigen::MatrixXd V = svd.matrixV();
+    // std::cout << V.rightCols(1) << std::endl;
+    //std::cout << svd.matrixU().transpose().leftCols(5) << std::endl;
+    // std::cout << V.rightCols(2) *svd.singularValues()(2)* svd.matrixU().transpose().leftCols(2).transpose() << std::endl;
 }
 
 QJsonObject SpectraHandler::getSpectraData() const

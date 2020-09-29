@@ -564,7 +564,10 @@ public:
             return;
         ModelOption option;
         option.values = values;
-        option.value = values.first();
+        if (values.size())
+            option.value = values.first();
+        else
+            option.value = "legacy";
         option.name = name;
         private_d->m_model_options[index] = option;
     }

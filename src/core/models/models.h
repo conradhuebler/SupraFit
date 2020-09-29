@@ -6,9 +6,7 @@
 #include "src/global.h"
 
 /* Pure Abstract Models */
-#include "AbstractItcModel.h"
 #include "AbstractModel.h"
-#include "AbstractTitrationModel.h"
 
 /* Meta Model - holds different models */
 #include "meta_model.h"
@@ -16,25 +14,8 @@
 /* Scripted Model - may be anything */
 #include "scriptmodel.h"
 
-/* ITC Models */
-#include "itc/blank.h"
-#include "itc/itc_1_1_Model.h"
-#include "itc/itc_1_2_Model.h"
-#include "itc/itc_2_1_Model.h"
-#include "itc/itc_2_2_Model.h"
-#include "itc/itc_n_1_1_Model.h"
-#include "itc/itc_n_1_2_Model.h"
-/* Fluorescence Models */
-#include "fluorescence/fl_1_1_1_2_Model.h"
-#include "fluorescence/fl_1_1_Model.h"
-#include "fluorescence/fl_2_1_1_1_1_2_Model.h"
-#include "fluorescence/fl_2_1_1_1_Model.h"
-
-/* NMR and UV/VIS titration */
-#include "titrations/1_1_1_2_Model.h"
-#include "titrations/1_1_Model.h"
-#include "titrations/2_1_1_1_1_2_Model.h"
-#include "titrations/2_1_1_1_Model.h"
+/* Collection of titration models */
+#include "titrations/models.h"
 
 /* Kinetic Models */
 #include "kinetics/mm_model.h"
@@ -48,17 +29,17 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
     QSharedPointer<AbstractModel> t;
     try {
         switch (model) {
-        case SupraFit::ItoI:
-            t = QSharedPointer<ItoI_Model>(new ItoI_Model(data.data()), &QObject::deleteLater);
+        case SupraFit::nmr_ItoI:
+            t = QSharedPointer<nmr_ItoI_Model>(new nmr_ItoI_Model(data.data()), &QObject::deleteLater);
             break;
-        case SupraFit::IItoI_ItoI:
-            t = QSharedPointer<IItoI_ItoI_Model>(new IItoI_ItoI_Model(data.data()), &QObject::deleteLater);
+        case SupraFit::nmr_IItoI_ItoI:
+            t = QSharedPointer<nmr_IItoI_ItoI_Model>(new nmr_IItoI_ItoI_Model(data.data()), &QObject::deleteLater);
             break;
-        case SupraFit::ItoI_ItoII:
-            t = QSharedPointer<ItoI_ItoII_Model>(new ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
+        case SupraFit::nmr_ItoI_ItoII:
+            t = QSharedPointer<nmr_ItoI_ItoII_Model>(new nmr_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
             break;
-        case SupraFit::IItoI_ItoI_ItoII:
-            t = QSharedPointer<IItoI_ItoI_ItoII_Model>(new IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
+        case SupraFit::nmr_IItoI_ItoI_ItoII:
+            t = QSharedPointer<nmr_IItoI_ItoI_ItoII_Model>(new nmr_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
             break;
         case SupraFit::Michaelis_Menten:
             t = QSharedPointer<Michaelis_Menten_Model>(new Michaelis_Menten_Model(data.data()), &QObject::deleteLater);
@@ -104,6 +85,18 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
             break;
         case SupraFit::fl_IItoI_ItoI_ItoII:
             t = QSharedPointer<fl_IItoI_ItoI_ItoII_Model>(new fl_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::uv_vis_ItoI:
+            t = QSharedPointer<uv_vis_ItoI_Model>(new uv_vis_ItoI_Model(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::uv_vis_ItoI_ItoII:
+            t = QSharedPointer<uv_vis_ItoI_ItoII_Model>(new uv_vis_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::uv_vis_IItoI_ItoI:
+            t = QSharedPointer<uv_vis_IItoI_ItoI_Model>(new uv_vis_IItoI_ItoI_Model(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::uv_vis_IItoI_ItoI_ItoII:
+            t = QSharedPointer<uv_vis_IItoI_ItoI_ItoII_Model>(new uv_vis_IItoI_ItoI_ItoII_Model(data.data()), &QObject::deleteLater);
             break;
         case SupraFit::ScriptModel:
             t = QSharedPointer<ScriptModel>(new ScriptModel(data.data()), &QObject::deleteLater);

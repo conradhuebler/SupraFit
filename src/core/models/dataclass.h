@@ -88,6 +88,8 @@ public:
     DataTable(QObject* parent = 0);
     DataTable(int columns, int rows, QObject* parent);
     DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table);
+    DataTable(Eigen::MatrixXd table);
+
     DataTable(DataTable* other);
     DataTable(DataTable& other);
 

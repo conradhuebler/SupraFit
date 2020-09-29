@@ -2,6 +2,8 @@
 
 ### SupraFit 2.x
 
+- add explicit UV/VIS models (NMR options will be deprecated)
+- add spectra import dialog
 - add ChaiScript to make user defineable models
 - Thermograms can be imported via suprafit_cli
 

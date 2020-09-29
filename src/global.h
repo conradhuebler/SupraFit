@@ -87,10 +87,10 @@ enum Method {
 
 enum Model {
     Data = 0,
-    ItoI = 1,
-    IItoI_ItoI = 2,
-    ItoI_ItoII = 3,
-    IItoI_ItoI_ItoII = 4,
+    nmr_ItoI = 1,
+    nmr_IItoI_ItoI = 2,
+    nmr_ItoI_ItoII = 3,
+    nmr_IItoI_ItoI_ItoII = 4,
     Michaelis_Menten = 5,
     MonoMolecularModel = 6,
     itc_ItoI = 10,
@@ -104,6 +104,10 @@ enum Model {
     fl_IItoI_ItoI = 21,
     fl_ItoI_ItoII = 22,
     fl_IItoI_ItoI_ItoII = 23,
+    uv_vis_ItoI = 30,
+    uv_vis_IItoI_ItoI = 31,
+    uv_vis_ItoI_ItoII = 32,
+    uv_vis_IItoI_ItoI_ItoII = 33,
     ScriptModel = 100,
     Indep_Quadrat = 101,
     Dep_Any = 102,
@@ -244,13 +248,23 @@ inline void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 inline SupraFit::Model Name2Model(const QString& str)
 {
     if (str == "1:1-Model")
-        return SupraFit::ItoI;
+        return SupraFit::nmr_ItoI;
     else if (str == "2:1/1:1-Model")
-        return SupraFit::IItoI_ItoI;
+        return SupraFit::nmr_IItoI_ItoI;
     else if (str == "1:1/1:2-Model")
-        return SupraFit::ItoI_ItoII;
+        return SupraFit::nmr_ItoI_ItoII;
     else if (str == "2:1/1:1/1:2-Model")
-        return SupraFit::IItoI_ItoI_ItoII;
+        return SupraFit::nmr_IItoI_ItoI_ItoII;
+
+    else if (str == "nmr_1:1-Model")
+        return SupraFit::nmr_ItoI;
+    else if (str == "nmr_2:1/1:1-Model")
+        return SupraFit::nmr_IItoI_ItoI;
+    else if (str == "nmr_1:1/1:2-Model")
+        return SupraFit::nmr_ItoI_ItoII;
+    else if (str == "nmr_2:1/1:1/1:2-Model")
+        return SupraFit::nmr_IItoI_ItoI_ItoII;
+
     else if (str == "itc_1:1-Model")
         return SupraFit::itc_ItoI;
     else if (str == "itc_2:1/1:1-Model")
@@ -265,6 +279,7 @@ inline SupraFit::Model Name2Model(const QString& str)
         return SupraFit::itc_n_ItoII;
     else if (str == "Blank Titration")
         return SupraFit::itc_blank;
+
     else if (str == "fl_1:1-Model")
         return SupraFit::fl_ItoI;
     else if (str == "fl_2:1/1:1-Model")
@@ -273,6 +288,16 @@ inline SupraFit::Model Name2Model(const QString& str)
         return SupraFit::fl_ItoI_ItoII;
     else if (str == "fl_2:1/1:1/1:2-Model")
         return SupraFit::fl_IItoI_ItoI_ItoII;
+
+    else if (str == "uv_vis_1:1-Model")
+        return SupraFit::uv_vis_ItoI;
+    else if (str == "uv_vis_2:1/1:1-Model")
+        return SupraFit::uv_vis_IItoI_ItoI;
+    else if (str == "uv_vis_1:1/1:2-Model")
+        return SupraFit::uv_vis_ItoI_ItoII;
+    else if (str == "uv_vis_2:1/1:1/1:2-Model")
+
+        return SupraFit::uv_vis_IItoI_ItoI_ItoII;
     else if (str == "Monomolecular Kinetics")
         return SupraFit::MonoMolecularModel;
     else if (str == "Michaelis Menten")
@@ -291,14 +316,15 @@ inline SupraFit::Model Name2Model(const QString& str)
 
 inline QString Model2Name(SupraFit::Model model)
 {
-    if (model == SupraFit::ItoI)
+    if (model == SupraFit::nmr_ItoI)
         return QString("%1H %2").arg(Unicode_Sup_1).arg("1:1-Model");
-    else if (model == SupraFit::IItoI_ItoI)
+    else if (model == SupraFit::nmr_IItoI_ItoI)
         return QString("%1H %2").arg(Unicode_Sup_1).arg("2:1/1:1-Model");
-    else if (model == SupraFit::ItoI_ItoII)
+    else if (model == SupraFit::nmr_ItoI_ItoII)
         return QString("%1H %2").arg(Unicode_Sup_1).arg("1:1/1:2-Model");
-    else if (model == SupraFit::IItoI_ItoI_ItoII)
+    else if (model == SupraFit::nmr_IItoI_ItoI_ItoII)
         return QString("%1H %2").arg(Unicode_Sup_1).arg("2:1/1:1/1:2-Model");
+
     else if (model == SupraFit::itc_ItoI)
         return "ITC 1:1-Model";
     else if (model == SupraFit::itc_IItoI)
@@ -313,6 +339,7 @@ inline QString Model2Name(SupraFit::Model model)
         return "Two Set Multiple Site";
     else if (model == SupraFit::itc_blank)
         return "Blank Titration";
+
     else if (model == SupraFit::fl_ItoI)
         return QString("%1 %2").arg(Unicode_Phi).arg("1:1-Model");
     else if (model == SupraFit::fl_IItoI_ItoI)
@@ -321,6 +348,16 @@ inline QString Model2Name(SupraFit::Model model)
         return QString("%1 %2").arg(Unicode_Phi).arg("1:1/1:2-Model");
     else if (model == SupraFit::fl_IItoI_ItoI_ItoII)
         return QString("%1 %2").arg(Unicode_Phi).arg("2:1/1:1/1:2-Model");
+
+    else if (model == SupraFit::uv_vis_ItoI)
+        return QString("UV/VIS %1").arg("1:1-Model");
+    else if (model == SupraFit::uv_vis_IItoI_ItoI)
+        return QString("UV/VIS %1").arg("2:1/1:1-Model");
+    else if (model == SupraFit::uv_vis_ItoI_ItoII)
+        return QString("UV/VIS %1").arg("1:1/1:2-Model");
+    else if (model == SupraFit::uv_vis_IItoI_ItoI_ItoII)
+        return QString("UV/VIS %1").arg("2:1/1:1/1:2-Model");
+
     else if (model == SupraFit::MonoMolecularModel)
         return "Monomolecular Kinetics";
     else if (model == SupraFit::Michaelis_Menten)

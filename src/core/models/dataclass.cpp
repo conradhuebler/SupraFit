@@ -95,6 +95,16 @@ DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table)
         m_header << QString::number(i + 1);
 }
 
+DataTable::DataTable(Eigen::MatrixXd table)
+    : m_table(table)
+    , m_checkable(false)
+    , m_editable(false)
+{
+    for (int i = 0; i < columnCount(); ++i)
+        m_header << QString::number(i + 1);
+    m_checked_table = Eigen::MatrixXd::Ones(table.rows(), table.cols());
+}
+
 DataTable::DataTable(const QJsonObject& table)
     : m_checkable(false)
     , m_editable(false)

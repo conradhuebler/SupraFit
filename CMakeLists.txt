@@ -194,37 +194,46 @@ endif()
 target_link_libraries(core Qt5::Core)
 
 #add_subdirectory(src/core/models/misc)
-
 set(models_SRC
     src/core/models/dataclass.cpp
     src/core/models/AbstractModel.cpp
-    src/core/models/AbstractItcModel.cpp
-    src/core/models/AbstractTitrationModel.cpp
+    src/core/models/titrations/AbstractItcModel.cpp
+    src/core/models/titrations/AbstractTitrationModel.cpp
+    src/core/models/titrations/AbstractNMRModel.cpp
+
     src/core/models/meta_model.cpp
     src/core/models/scriptmodel.cpp
     src/core/models/pymodelinterpreter.cpp
     src/core/models/chaiinterpreter.cpp
-    src/core/models/itc/blank.cpp
-    src/core/models/itc/itc_1_1_Model.cpp
-    src/core/models/itc/itc_2_1_Model.cpp
-    src/core/models/itc/itc_1_2_Model.cpp
-    src/core/models/itc/itc_2_2_Model.cpp
-    src/core/models/itc/itc_n_1_1_Model.cpp
-    src/core/models/itc/itc_n_1_2_Model.cpp
-    src/core/models/fluorescence/fl_1_1_Model.cpp
-    src/core/models/fluorescence/fl_1_1_1_2_Model.cpp
-    src/core/models/fluorescence/fl_2_1_1_1_Model.cpp
-    src/core/models/fluorescence/fl_2_1_1_1_1_2_Model.cpp
-    src/core/models/titrations/1_1_Model.cpp
-    src/core/models/titrations/2_1_1_1_Model.cpp
-    src/core/models/titrations/1_1_1_2_Model.cpp
-    src/core/models/titrations/2_1_1_1_1_2_Model.cpp
     src/core/models/kinetics/mm_model.cpp
     src/core/models/kinetics/monomolecularmodel.cpp
     src/core/models/postprocess/statistic.cpp
     src/core/models/postprocess/thermo.cpp
     src/core/models/misc/indep_quadrat.cpp
     src/core/models/misc/dep_any.cpp
+
+    src/core/models/titrations/fluorescence/fl_1_1_1_2_Model.cpp
+    src/core/models/titrations/fluorescence/fl_1_1_Model.cpp
+    src/core/models/titrations/fluorescence/fl_2_1_1_1_1_2_Model.cpp
+    src/core/models/titrations/fluorescence/fl_2_1_1_1_Model.cpp
+
+    src/core/models/titrations/itc/blank.cpp
+    src/core/models/titrations/itc/itc_1_1_Model.cpp
+    src/core/models/titrations/itc/itc_1_2_Model.cpp
+    src/core/models/titrations/itc/itc_2_1_Model.cpp
+    src/core/models/titrations/itc/itc_2_2_Model.cpp
+    src/core/models/titrations/itc/itc_n_1_1_Model.cpp
+    src/core/models/titrations/itc/itc_n_1_2_Model.cpp
+
+    src/core/models/titrations/nmr/nmr_1_1_1_2_Model.cpp
+    src/core/models/titrations/nmr/nmr_1_1_Model.cpp
+    src/core/models/titrations/nmr/nmr_2_1_1_1_1_2_Model.cpp
+    src/core/models/titrations/nmr/nmr_2_1_1_1_Model.cpp
+
+    src/core/models/titrations/uv_vis/uv_vis_1_1_1_2_Model.cpp
+    src/core/models/titrations/uv_vis/uv_vis_1_1_Model.cpp
+    src/core/models/titrations/uv_vis/uv_vis_2_1_1_1_1_2_Model.cpp
+    src/core/models/titrations/uv_vis/uv_vis_2_1_1_1_Model.cpp
  )
 
 if(_Python)

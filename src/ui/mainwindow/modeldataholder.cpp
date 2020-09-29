@@ -155,9 +155,17 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_edit_data->setIcon(Icon("document-edit"));
     connect(m_edit_data, &QPushButton::clicked, this, &MDHDockTitleBar::EditData);
 
-    m_add_nmr = new QPushButton(tr("Titratrion"));
+    m_add_nmr = new QPushButton(tr("NMR Titratrion"));
     m_add_nmr->setFlat(true);
     m_add_nmr->setIcon(Icon("list-add"));
+
+    m_add_uv_vis = new QPushButton(tr("UV/VIS Titratrion"));
+    m_add_uv_vis->setFlat(true);
+    m_add_uv_vis->setIcon(Icon("list-add"));
+
+    m_add_fl = new QPushButton(tr("Fluorescence Titratrion"));
+    m_add_fl->setFlat(true);
+    m_add_fl->setIcon(Icon("list-add"));
 
     m_add_itc = new QPushButton(tr("Calorimetry"));
     m_add_itc->setFlat(true);
@@ -201,19 +209,26 @@ MDHDockTitleBar::MDHDockTitleBar()
         return action;
     };
 
-#ifdef NMR_Models
-    m_nmr_model << addModel(SupraFit::ItoI);
-    m_nmr_model << addModel(SupraFit::IItoI_ItoI);
-    m_nmr_model << addModel(SupraFit::ItoI_ItoII);
-    m_nmr_model << addModel(SupraFit::IItoI_ItoI_ItoII);
-#endif
+    //#ifdef NMR_Models
+    m_nmr_model << addModel(SupraFit::nmr_ItoI);
+    m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI);
+    m_nmr_model << addModel(SupraFit::nmr_ItoI_ItoII);
+    m_nmr_model << addModel(SupraFit::nmr_IItoI_ItoI_ItoII);
+    //#endif
 
-#ifdef Fluorescence_Models
+    //#ifdef Fluorescence_Models
     m_fl_model << addModel(SupraFit::fl_ItoI);
     m_fl_model << addModel(SupraFit::fl_IItoI_ItoI);
     m_fl_model << addModel(SupraFit::fl_ItoI_ItoII);
-    m_fl_model << addModel(SupraFit::fl_ItoI);
-#endif
+    m_fl_model << addModel(SupraFit::fl_IItoI_ItoI_ItoII);
+    //#endif
+
+    //#ifdef UV_VIS_Models
+    m_uv_vis_model << addModel(SupraFit::uv_vis_ItoI);
+    m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI);
+    m_uv_vis_model << addModel(SupraFit::uv_vis_ItoI_ItoII);
+    m_uv_vis_model << addModel(SupraFit::uv_vis_IItoI_ItoI_ItoII);
+    //#endif
 
 #ifdef Kinetic_Models
     m_kinetcs_model << addModel(SupraFit::Michaelis_Menten);
@@ -260,6 +275,8 @@ MDHDockTitleBar::MDHDockTitleBar()
 
     QHBoxLayout* buttons = new QHBoxLayout;
     buttons->addWidget(m_add_nmr);
+    buttons->addWidget(m_add_uv_vis);
+    buttons->addWidget(m_add_fl);
     buttons->addWidget(m_add_itc);
     buttons->addWidget(m_add_kinetics);
     buttons->addWidget(m_any_model);
@@ -307,12 +324,16 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         action = menu->addSection(tr("Flexible Stoichiometry"));
         addMenu(m_itc_flex_model, menu);
     } else if (IndependetCount == 2) {
-#pragma message("clean me")
-        QAction* action = menu->addSection(tr("NMR/UV VIS"));
         addMenu(m_nmr_model, menu);
-        action = menu->addSection(tr("Fluorescence"));
-        addMenu(m_fl_model, menu);
         m_add_nmr->setMenu(menu);
+
+        menu = new QMenu;
+        addMenu(m_uv_vis_model, menu);
+        m_add_uv_vis->setMenu(menu);
+
+        menu = new QMenu;
+        addMenu(m_fl_model, menu);
+        m_add_fl->setMenu(menu);
         m_add_kinetics->hide();
         m_add_itc->hide();
     }

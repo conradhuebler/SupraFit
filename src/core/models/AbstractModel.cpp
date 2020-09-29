@@ -1181,7 +1181,7 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
     }
     int fileversion = topjson["SupraFit"].toInt();
 
-    if (fileversion == qint_version)
+    if (fileversion >= 2002 && fileversion < qint_version)
         return ImportModel(topjson, override);
 
     if (static_cast<SupraFit::Model>(topjson["model"].toInt()) != SFModel()) {

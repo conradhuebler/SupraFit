@@ -39,18 +39,22 @@ OptionsWidget::OptionsWidget(QSharedPointer<AbstractModel> model)
     QHBoxLayout* smalllayout;
     int counter = 1;
 
-    int rows = ToolSet::NiceRows(m_model.data()->getAllOptions().size(), qApp->instance()->property("ModelParameterColums").toInt());
+    int rows = ToolSet::NiceRows(m_model.toStrongRef().data()->getAllOptions().size(), qApp->instance()->property("ModelParameterColums").toInt());
 
-    for (int index : m_model.data()->getAllOptions()) {
+    for (int index : m_model.toStrongRef().data()->getAllOptions()) {
+        QString str = m_model.toStrongRef().data()->getOptionName(index);
+
+        if (m_model.toStrongRef().data()->getSingleOptionValues(index).size() == 0)
+            continue;
+
         smalllayout = new QHBoxLayout;
 
-        QString str = m_model.data()->getOptionName(index);
         smalllayout->addWidget(new QLabel(str));
         QPointer<QComboBox> box = new QComboBox;
         box->setMaximumWidth(200);
         box->setMinimumWidth(200);
-        box->addItems(m_model.data()->getSingleOptionValues(index));
-        box->setCurrentText(m_model.data()->getOption(index));
+        box->addItems(m_model.toStrongRef().data()->getSingleOptionValues(index));
+        box->setCurrentText(m_model.toStrongRef().data()->getOption(index));
         smalllayout->addWidget(box);
         m_options[index] = box;
         connect(box, SIGNAL(currentIndexChanged(QString)), this, SLOT(setOption()));
@@ -74,9 +78,9 @@ OptionsWidget::~OptionsWidget()
 
 void OptionsWidget::setOption()
 {
-    for (int index : m_model.data()->getAllOptions()) {
+    for (int index : m_model.toStrongRef().data()->getAllOptions()) {
         QString value = m_options[index]->currentText();
-        m_model.data()->setOption(index, value);
+        m_model.toStrongRef().data()->setOption(index, value);
     }
-    m_model.data()->Calculate();
+    m_model.toStrongRef().data()->Calculate();
 }
