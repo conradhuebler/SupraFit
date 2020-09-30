@@ -51,4 +51,5 @@ private:
     QPushButton* m_directory;
     QLineEdit* m_path;
     QDialogButtonBox* m_buttonbox;
+    QComboBox* m_file_type;
 };

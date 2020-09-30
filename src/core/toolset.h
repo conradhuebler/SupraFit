@@ -101,7 +101,8 @@ QList<QPointF> fromModelsList(const QList<QJsonObject>& models, const QString& s
 qreal finv(qreal p, int m, int n);
 QList<int> InvertLockedList(const QList<int>& locked);
 void ExportResults(const QString& filename, const QList<QJsonObject>& models);
-QPair<Vector, Vector> LoadCSVile(const QString& filename);
+QPair<Vector, Vector> LoadCSVFile(const QString& filename);
+QPair<Vector, Vector> LoadAbsorbFile(const QString& filename);
 QPair<Vector, Vector> LoadXYFile(const QString& filename);
 QPair<PeakPick::spectrum, QJsonObject> LoadITCFile(QString& filename, std::vector<PeakPick::Peak>* peaks, qreal& offset, qreal& freq, QVector<qreal>& inject);
 

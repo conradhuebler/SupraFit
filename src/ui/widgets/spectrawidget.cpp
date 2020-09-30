@@ -136,9 +136,9 @@ void SpectraWidget::addFile(const QString& file)
     UpdateSpectra();
 }
 
-void SpectraWidget::setDirectory(const QString& directry)
+void SpectraWidget::setDirectory(const QString& directry, const QString& type)
 {
-    m_handler->addDirectory(directry, "csv");
+    m_handler->addDirectory(directry, type);
     UpdateSpectra();
     //m_handler->PCA();
 }

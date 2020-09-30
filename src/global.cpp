@@ -45,17 +45,29 @@ QString getDir()
 
 void setLastDir(const QString& str)
 {
+    qDebug() << str << str.contains("|||");
     QFileInfo info(str);
-    if (info.isFile())
-        qApp->instance()->setProperty("lastdir", info.absolutePath());
-    else
-        qApp->instance()->setProperty("lastdir", str);
-
+    QString new_path = str;
+    bool add_path = false;
+    if (str.contains("|||")) {
+        QStringList path = str.split("|||");
+        if (path.size() == 2) {
+            qDebug() << path << str;
+            qApp->instance()->setProperty("lastdir", path[0]);
+            new_path = str;
+            add_path = true;
+        }
+    } else {
+        if (info.isFile())
+            qApp->instance()->setProperty("lastdir", info.absolutePath());
+        else
+            qApp->instance()->setProperty("lastdir", str);
+    }
     QStringList recent = qApp->instance()->property("recent").toStringList();
 
-    if (info.completeSuffix().contains(("suprafit")) || info.completeSuffix().contains(("json")) || info.completeSuffix().contains(("dH")) || info.completeSuffix().contains(("itc")) || info.completeSuffix().contains(("txt")) || info.completeSuffix().contains(("dat")) || info.isDir()) {
-        recent.removeOne(str);
-        recent.prepend(str);
+    if (info.completeSuffix().contains(("suprafit")) || info.completeSuffix().contains(("json")) || info.completeSuffix().contains(("dH")) || info.completeSuffix().contains(("itc")) || info.completeSuffix().contains(("txt")) || info.completeSuffix().contains(("dat")) || info.isDir() || add_path) {
+        recent.removeOne(new_path);
+        recent.prepend(new_path);
     }
 
     if(recent.size() > 30)

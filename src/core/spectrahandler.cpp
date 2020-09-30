@@ -41,7 +41,13 @@ SpectraHandler::SpectraHandler(QObject* parent)
 
 void SpectraHandler::addSpectrum(const QString& file)
 {
-    QPair<Vector, Vector> spec = ToolSet::LoadCSVile(file);
+    QPair<Vector, Vector> spec;
+    if (file.toLower().contains("csv"))
+        spec = ToolSet::LoadCSVFile(file);
+    else if (file.toLower().contains("absorb"))
+        spec = ToolSet::LoadAbsorbFile(file);
+    else
+        spec = ToolSet::LoadXYFile(file);
     Spectrum p = MakeSpectrum(spec, file);
     QUuid uuid;
     QString id = uuid.createUuid().toString();
@@ -57,7 +63,6 @@ void SpectraHandler::addDirectory(const QString& dir, const QString& suffix)
         QString file = it.next();
         if (file.contains(suffix))
             files.append(file);
-        //addSpectrum(file);
     }
     QCollator collator;
     collator.setNumericMode(true);
@@ -67,7 +72,6 @@ void SpectraHandler::addDirectory(const QString& dir, const QString& suffix)
         [&collator](const QString& file1, const QString& file2) {
             return collator.compare(file1, file2) < 0;
         });
-
     for (const auto& f : files)
         addSpectrum(f);
 }

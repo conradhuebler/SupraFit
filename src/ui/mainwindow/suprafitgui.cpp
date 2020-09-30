@@ -910,7 +910,7 @@ QVector<QJsonObject> SupraFitGui::ProjectFromFiles(const QStringList& files)
 void SupraFitGui::LoadFile(const QString& file)
 {
     QFileInfo info(file);
-    if (info.isDir()) {
+    if (file.contains("|||")) {
         SpectraImport* spectra = new SpectraImport(file);
 
         if (spectra->exec()) {
@@ -996,7 +996,7 @@ void SupraFitGui::UpdateRecentList()
     m_recent_documents->clear();
     for (const QString& str : recent) {
         QFileInfo info(str);
-        if (info.exists()) {
+        if (info.exists() || str.contains("|||")) {
             QListWidgetItem* item = new QListWidgetItem(info.baseName() + "." + info.suffix());
             item->setData(Qt::UserRole, str);
             item->setData(Qt::ToolTipRole, str);
@@ -1006,7 +1006,7 @@ void SupraFitGui::UpdateRecentList()
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/kspread.png").scaled(32, 32));
             else if (info.suffix() == "itc")
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/thermogram.png").scaled(32, 32));
-            else if (info.isDir())
+            else if (info.isDir() || str.contains("|||"))
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/spectra_ico.png").scaled(32, 32));
             else
                 item->setData(Qt::DecorationRole, QPixmap(":/icons/document-edit.png").scaled(32, 32));
@@ -1507,6 +1507,9 @@ void SupraFitGui::ReadSettings()
 
     if (qApp->instance()->property("FindFileRecursive") == QVariant())
         qApp->instance()->setProperty("FindFileRecursive", false);
+
+    if (qApp->instance()->property("LastSpectraType") == QVariant())
+        qApp->instance()->setProperty("LastSpectraType", "csv");
 
     qApp->instance()->setProperty("lastDir", getDir());
 }

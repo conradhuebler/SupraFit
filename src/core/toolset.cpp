@@ -744,7 +744,7 @@ QString FindFile(const QString& start, const QString& path, const QString& hash,
     return file;
 }
 
-QPair<Vector, Vector> LoadCSVile(const QString& filename)
+QPair<Vector, Vector> LoadCSVFile(const QString& filename)
 {
     Vector x, y;
 
@@ -771,6 +771,42 @@ QPair<Vector, Vector> LoadCSVile(const QString& filename)
             if (elements.size() == 2) {
                 entries_x.push_back(String2Double(elements[0]));
                 entries_y.push_back(String2Double(elements[1]));
+            } else
+                data = false;
+        }
+    }
+
+    x = Vector::Map(&entries_x[0], entries_x.size());
+    y = Vector::Map(&entries_y[0], entries_y.size());
+
+    return QPair<Vector, Vector>(x, y);
+}
+
+QPair<Vector, Vector> LoadAbsorbFile(const QString& filename)
+{
+    Vector x, y;
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << file.errorString();
+        return QPair<Vector, Vector>(x, y);
+    }
+    QByteArray blob = file.readAll();
+
+    QStringList filecontent;
+
+    filecontent = QString(blob).split("\n");
+    bool data = false;
+    std::vector<double> entries_x, entries_y;
+    for (const QString& str : filecontent) {
+        if (str.simplified().contains("Pixel") && str.simplified().contains("Wavelength")) {
+            data = true;
+            continue;
+        }
+        if (data) {
+            QStringList elements = str.simplified().split(" ");
+            if (elements.size() == 3) {
+                entries_x.push_back(String2Double(elements[1]));
+                entries_y.push_back(String2Double(elements[2]));
             } else
                 data = false;
         }

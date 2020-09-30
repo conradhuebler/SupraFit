@@ -17,6 +17,7 @@
  *
  */
 
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
@@ -36,9 +37,15 @@ SpectraImport::SpectraImport()
 
 SpectraImport::SpectraImport(const QString& directory)
 {
+    QStringList path = directory.split("|||");
     setUI();
-    m_path->setText(directory);
-    m_spectrawidget->setDirectory(directory);
+    if (path.size() == 2) {
+        m_path->setText(path[0]);
+        m_spectrawidget->setDirectory(path[0], path[1]);
+    } else {
+        m_path->setText(directory);
+        m_spectrawidget->setDirectory(directory, "csv");
+    }
 }
 
 void SpectraImport::setUI()
@@ -55,9 +62,16 @@ void SpectraImport::setUI()
     connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    layout->addWidget(m_directory, 0, 0);
-    layout->addWidget(m_path, 0, 1);
-    layout->addWidget(m_spectrawidget, 1, 0, 1, 2);
+    m_file_type = new QComboBox;
+    m_file_type->addItem("csv");
+    m_file_type->addItem("absorb");
+    m_file_type->addItem("xy");
+    m_file_type->setCurrentText(qApp->instance()->property("LastSpectraType").toString());
+
+    layout->addWidget(m_file_type, 0, 0);
+    layout->addWidget(m_directory, 0, 1);
+    layout->addWidget(m_path, 0, 2);
+    layout->addWidget(m_spectrawidget, 1, 0, 1, 3);
 
     layout->addWidget(m_buttonbox, 2, 1);
 
@@ -69,12 +83,12 @@ void SpectraImport::setUI()
 void SpectraImport::setDirectory()
 {
     const QString directory = QFileDialog::getExistingDirectory(this, tr("Open Directory"), getDir());
-    //const QString directory = QFileDialog::getOpenFileName(this, tr("Open Directory"), getDir());
 
-    setLastDir(directory);
+    QString dir = QString("%1|||%2").arg(directory).arg(m_file_type->currentText());
+    setLastDir(dir);
     m_path->setText(directory);
-    m_spectrawidget->setDirectory(directory);
-    //m_spectrawidget->addFile(directory);
+    m_spectrawidget->setDirectory(directory, m_file_type->currentText());
+    qApp->instance()->setProperty("LastSpectraType", m_file_type->currentText());
 }
 
 void SpectraImport::setData(const QJsonObject& data)

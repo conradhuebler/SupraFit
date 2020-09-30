@@ -293,7 +293,8 @@ private:
                                                    << "StoreAbsolutePath"
                                                    << "StoreFileHash"
                                                    << "FindFileRecursive"
-                                                   << "ModelParameterColums";
+                                                   << "ModelParameterColums"
+                                                   << "LastSpectraType";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;
