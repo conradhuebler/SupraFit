@@ -171,6 +171,7 @@ protected:
 
     double m_T;
 
+    QPair<bool, bool> HostGuest() const;
     qreal GuessK(int index = 0);
 
     QString m_ylabel, m_plotMode, m_localParameterSuffix, m_localParameterDescription, m_localParameterName;

@@ -45,7 +45,6 @@ ThermogramHandler::ThermogramHandler()
 
 void ThermogramHandler::Initialise()
 {
-
     if (!m_thermogram_parameter.isEmpty()) {
 
         if (!m_thermogram_parameter.contains("SupraFit"))
@@ -499,8 +498,10 @@ void ThermogramHandler::AdjustIntegrationRange()
     /* Zero/Threshold Cutting */
     if (m_current_integration_scheme == m_integration_scheme[0]) {
         for (int i = 0; i < m_peak_list.size(); ++i) {
-            m_peak_list[i].int_start = m_peak_list[i].start;
-            m_peak_list[i].int_end = m_peak_list[i].end;
+            if (m_peak_list[i].int_start < m_peak_list[i].start || m_peak_list[i].int_start == 0)
+                m_peak_list[i].int_start = m_peak_list[i].start;
+            if (m_peak_list[i].int_end > m_peak_list[i].end || m_peak_list[i].int_end == 0)
+                m_peak_list[i].int_end = m_peak_list[i].end;
         }
         FitBaseLine();
         m_integration_range_threshold = m_initial_threshold;
@@ -511,8 +512,10 @@ void ThermogramHandler::AdjustIntegrationRange()
         maxiter = m_iterations;
     } else { /* Zero Cutting */
         for (int i = 0; i < m_peak_list.size(); ++i) {
-            m_peak_list[i].int_start = m_peak_list[i].start;
-            m_peak_list[i].int_end = m_peak_list[i].end;
+            if (m_peak_list[i].int_start < m_peak_list[i].start || m_peak_list[i].int_start == 0)
+                m_peak_list[i].int_start = m_peak_list[i].start;
+            if (m_peak_list[i].int_end > m_peak_list[i].end || m_peak_list[i].int_end == 0)
+                m_peak_list[i].int_end = m_peak_list[i].end;
         }
         FitBaseLine();
         ApplyThermogramIntegration();

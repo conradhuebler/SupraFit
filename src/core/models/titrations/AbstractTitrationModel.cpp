@@ -109,6 +109,13 @@ void AbstractTitrationModel::EvaluateOptions()
 {
 }
 
+QPair<bool, bool> AbstractTitrationModel::HostGuest() const
+{
+    bool host = getOption(Host) == "no";
+    bool guest = getOption(Guest) == "no";
+    return QPair<bool, bool>(host, guest);
+}
+
 void AbstractTitrationModel::SetConcentration(int i, const Vector& equilibrium)
 {
     if (!m_concentrations) {

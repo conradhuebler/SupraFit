@@ -45,14 +45,12 @@ QString getDir()
 
 void setLastDir(const QString& str)
 {
-    qDebug() << str << str.contains("|||");
     QFileInfo info(str);
     QString new_path = str;
     bool add_path = false;
     if (str.contains("|||")) {
         QStringList path = str.split("|||");
         if (path.size() == 2) {
-            qDebug() << path << str;
             qApp->instance()->setProperty("lastdir", path[0]);
             new_path = str;
             add_path = true;

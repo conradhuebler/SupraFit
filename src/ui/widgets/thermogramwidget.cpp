@@ -841,7 +841,6 @@ void ThermogramWidget::ApplyParameter()
 
 void ThermogramWidget::UpdatePeaks()
 {
-
     Waiter wait;
     QVector<QPointF> peak_rules;
 

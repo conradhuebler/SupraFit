@@ -37,7 +37,6 @@ jobs:
         name: SupraFit_Linux
         path: ./release/bin/linux/SupraFit-nightly-x86_64.AppImage
         
-        
   windows:
     runs-on: windows-2019
     steps:
@@ -48,7 +47,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         modules: qtcharts
-        version: 5.15.0
+        version: 5.15.1
     - name: Update Modules and Build
       run: scripts/build_windows_x64.bat
     - uses: actions/upload-artifact@v1
@@ -56,15 +55,33 @@ jobs:
         name: SupraFit_Windows
         path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
 
-#    - name: Create Release
-#      id: create_release
-#      uses: actions/create-release@latest
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-#      with:
-#        tag_name: ${{ github.ref }}
-#        release_name: Pre-Release ${{ github.ref }}
-#        body: |
-#            Nightly Windows Build
+  publish:
+    needs: [linux, windows]
+    - uses: actions/download-artifact@v2
+      with:
+    path: artefacts
+    
+    - name:
+      run: ls -R ./artefacts 
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: 0.0.${{ github.run_number  }}
+        release_name: Nightly 0.0.${{ github.run_number }}
+        draft: true
+        prerelease: true
 
-
+    - name: Upload Linux
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artefacts/SupraFit-nightly-x86_64.AppImage
+        asset_name: curcuma
+        asset_content_type: application/zip

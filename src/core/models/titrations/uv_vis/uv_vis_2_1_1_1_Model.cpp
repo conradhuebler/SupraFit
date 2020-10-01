@@ -121,6 +121,8 @@ void uv_vis_IItoI_ItoI_Model::InitialGuess_Private()
 
 void uv_vis_IItoI_ItoI_Model::CalculateVariables()
 {
+    auto hostguest = HostGuest();
+
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));
 
@@ -144,7 +146,7 @@ void uv_vis_IItoI_ItoI_Model::CalculateVariables()
 
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(0, j) + guest * LocalTable()->data(1, j) + 2 * complex_21 * LocalTable()->data(2, j) + complex_11 * LocalTable()->data(3, j);
+            value = host * LocalTable()->data(0, j) * hostguest.first + guest * LocalTable()->data(1, j) * hostguest.second + 2 * complex_21 * LocalTable()->data(2, j) + complex_11 * LocalTable()->data(3, j);
             SetValue(i, j, value);
         }
     }
@@ -152,7 +154,6 @@ void uv_vis_IItoI_ItoI_Model::CalculateVariables()
 
 QVector<qreal> uv_vis_IItoI_ItoI_Model::DeCompose(int datapoint, int series) const
 {
-
     QVector<qreal> vector;
 
     qreal host_0 = InitialHostConcentration(datapoint);
@@ -224,7 +225,6 @@ QString uv_vis_IItoI_ItoI_Model::ModelInfo() const
 
 QString uv_vis_IItoI_ItoI_Model::AdditionalOutput() const
 {
-
     QString result;
 
     // double max = 1e3;

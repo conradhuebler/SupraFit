@@ -179,6 +179,8 @@ void uv_vis_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 
 void uv_vis_IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
+    auto hostguest = HostGuest();
+
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));
     qreal K12 = qPow(10, GlobalParameter(2));
@@ -244,7 +246,7 @@ void uv_vis_IItoI_ItoI_ItoII_Model::CalculateVariables()
         }
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(0, j) + guest * LocalTable()->data(1, j) + 2 * complex_21 * LocalTable()->data(2, j) + complex_11 * LocalTable()->data(3, j) + complex_12 * LocalTable()->data(4, j);
+            value = host * LocalTable()->data(0, j) * hostguest.first + guest * LocalTable()->data(1, j) * hostguest.second + 2 * complex_21 * LocalTable()->data(2, j) + complex_11 * LocalTable()->data(3, j) + complex_12 * LocalTable()->data(4, j);
 
             SetValue(i, j, value);
         }

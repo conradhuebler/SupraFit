@@ -83,6 +83,7 @@ void uv_vis_ItoI_Model::OptimizeParameters_Private()
 
 void uv_vis_ItoI_Model::CalculateVariables()
 {
+    auto hostguest = HostGuest();
     qreal value = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
@@ -101,7 +102,7 @@ void uv_vis_ItoI_Model::CalculateVariables()
             SetConcentration(i, vector);
 
         for (int j = 0; j < SeriesCount(); ++j) {
-            value = host * LocalTable()->data(0, j) + guest * LocalTable()->data(1, j) + complex * LocalTable()->data(2, j);
+            value = host * LocalTable()->data(0, j) * hostguest.first + guest * LocalTable()->data(1, j) * hostguest.second + complex * LocalTable()->data(2, j);
             SetValue(i, j, value);
         }
     }
