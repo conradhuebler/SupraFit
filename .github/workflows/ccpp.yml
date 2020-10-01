@@ -74,18 +74,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: 0.0.${{ github.run_number  }}
-          release_name: Nightly 0.0.${{ github.run_number }}
+          tag_name: 2.5.${{ github.run_number  }}
+          release_name: Nightly 2.5.${{ github.run_number }}
           draft: true
           prerelease: true
 
       - name: Upload Linux
-        id: upload-release-asset
+        id: upload-release-asset-linux
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artefacts/SupraFit-nightly-x86_64.AppImage
-          asset_name: curcuma
+          asset_path: artefacts/SupraFit_Linux/SupraFit-nightly-x86_64.AppImage
+          asset_name: Linux
           asset_content_type: application/zip
+      
+      - name: Upload Windows
+        id: upload-release-asset-windows
+        uses: actions/upload-release-asset@v1
+        env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+           upload_url: ${{ steps.create_release.outputs.upload_url }}
+           asset_path: artefacts/SupraFit_Windows/SupraFit_latest_x64_windows.zip
+           asset_name: Windows
+           asset_content_type: application/zip
