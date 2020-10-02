@@ -317,6 +317,8 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         addMenu(m_kinetcs_model, menu);
         m_add_kinetics->setMenu(menu);
         m_add_nmr->hide();
+        m_add_uv_vis->hide();
+        m_add_fl->hide();
         menu = new QMenu;
         QAction* action = menu->addSection(tr("Fixed Stoichiometry"));
         addMenu(m_itc_fixed_model, menu);

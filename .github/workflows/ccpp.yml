@@ -9,7 +9,23 @@ on:
     paths: ['.github/workflows/*', 'src/*'] #only when these files are modifed
 
 jobs:
+
+  makerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: 2.5.${{ github.run_number  }}
+          release_name: Nightly 2.5.${{ github.run_number }}
+          draft: false
+          prerelease: true
+
   linux:
+    needs: [makerelease]
     runs-on: ubuntu-16.04
     
     steps:
@@ -31,12 +47,24 @@ jobs:
       - name: Deploy
         run: sh scripts/deploy_unix.sh 
       
+      - name: Upload Linux
+        id: upload-release-asset-linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.makerelease.create_release.outputs.upload_url }}
+          asset_path: artefacts/SupraFit_Linux/SupraFit-nightly-x86_64.AppImage
+          asset_name: SupraFit-nightly-${{ steps.makerelease.create_release.outputs.upload_url }}-x86_64.AppImage
+          asset_content_type: application/zip
+      
       - uses: actions/upload-artifact@v1
         with:
           name: SupraFit_Linux
           path: ./release/bin/linux/SupraFit-nightly-x86_64.AppImage
         
   windows:
+    needs: [makerelease]
     runs-on: windows-2019
     
     steps:
@@ -50,53 +78,22 @@ jobs:
           version: 5.15.1
       - name: Update Modules and Build
         run: scripts/build_windows_x64.bat
-      - uses: actions/upload-artifact@v1
-        with:
-          name: SupraFit_Windows
-          path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
-
-  publish:
-    needs: [linux, windows]
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Download Artefacts
-        uses: actions/download-artifact@v2
-        with:
-          path: artefacts
-      
-      - name: Printout
-        run: ls -R ./artefacts 
-    
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: 2.5.${{ github.run_number  }}
-          release_name: Nightly 2.5.${{ github.run_number }}
-          draft: true
-          prerelease: true
-
-      - name: Upload Linux
-        id: upload-release-asset-linux
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artefacts/SupraFit_Linux/SupraFit-nightly-x86_64.AppImage
-          asset_name: Linux
-          asset_content_type: application/zip
-      
+        
       - name: Upload Windows
         id: upload-release-asset-windows
         uses: actions/upload-release-asset@v1
         env:
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-           upload_url: ${{ steps.create_release.outputs.upload_url }}
-           asset_path: artefacts/SupraFit_Windows/SupraFit_latest_x64_windows.zip
-           asset_name: Windows
+           upload_url: ${{ needs.makerelease.create_release.outputs.upload_url }}
+           asset_path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows\SupraFit_latest_x64_windows.zip
+           asset_name: SupraFit_nightly-${{ steps.makerelease.create_release.outputs.upload_url }}-_x64_windows.zip
            asset_content_type: application/zip
+           
+      - uses: actions/upload-artifact@v1
+        with:
+          name: SupraFit_Windows
+          path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
+
+      
+
