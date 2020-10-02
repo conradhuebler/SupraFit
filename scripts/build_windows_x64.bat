@@ -24,9 +24,6 @@ windeployqt --release --compiler-runtime  suprafit.exe
 echo Copying project files for archival...
 copy "%project_dir%\README.md" "%project_dir%\build_x64\bin\win\Release\SupraFit\README.md"
 copy "%project_dir%\LICENSE.md" "%project_dir%\build_x64\bin\win\Release\SupraFit\LICENSE.md"
-copy "C:\Windows\System32\vccorlib140.dll" "%project_dir%\build_x64\bin\win\Release\SupraFit\vccorlib140.dll"
-copy "C:\Windows\System32\vcruntime140.dll" "%project_dir%\build_x64\bin\win\Release\SupraFit\vcruntime140.dll"
-copy "C:\Windows\System32\msvcp140.dll" "%project_dir%\build_x64\bin\win\Release\SupraFit\msvcp140.dll"
 
 echo Packaging portable archive...
 
