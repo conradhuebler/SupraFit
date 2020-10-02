@@ -12,6 +12,9 @@ jobs:
 
   makerelease:
     runs-on: ubuntu-latest
+    outpus:
+      url: ${{ steps.create_release.outputs.upload_url }}
+      version: 2.5.${{ github.run_number  }}
     steps:
       - name: Create Release
         id: create_release
@@ -53,9 +56,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.makerelease.create_release.outputs.upload_url }}
-          asset_path: artefacts/SupraFit_Linux/SupraFit-nightly-x86_64.AppImage
-          asset_name: SupraFit-nightly-${{ steps.makerelease.create_release.outputs.upload_url }}-x86_64.AppImage
+          upload_url: ${{ needs.makerelease.outputs.url }}
+          asset_path: ./release/bin/linux/SupraFit-nightly-x86_64.AppImage
+          asset_name: SupraFit-nightly-${{ needs.makerelease.outputs.version }}-x86_64.AppImage
           asset_content_type: application/zip
       
       - uses: actions/upload-artifact@v1
@@ -85,15 +88,15 @@ jobs:
         env:
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-           upload_url: ${{ needs.makerelease.create_release.outputs.upload_url }}
-           asset_path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows\SupraFit_latest_x64_windows.zip
-           asset_name: SupraFit_nightly-${{ steps.makerelease.create_release.outputs.upload_url }}-_x64_windows.zip
+           upload_url: ${{ needs.makerelease.outputs.url }}
+           asset_path: build_x64\bin\win\Release\SupraFit_latest_x64_windows.zip
+           asset_name: SupraFit_nightly-${{ needs.makerelease.outputs.version }}-_x64_windows.zip
            asset_content_type: application/zip
            
       - uses: actions/upload-artifact@v1
         with:
           name: SupraFit_Windows
-          path: build_x64\bin\win32\Release\SupraFit_latest_x64_windows.zip
+          path: build_x64\bin\win\Release\SupraFit_latest_x64_windows.zip
 
       
 

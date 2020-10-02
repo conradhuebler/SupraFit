@@ -29,6 +29,7 @@
 
 #include "src/global.h"
 #include "src/global_config.h"
+#include "src/global_infos.h"
 #include "src/version.h"
 
 #include <QtCore/QCommandLineOption>
@@ -121,7 +122,7 @@ int main(int argc, char** argv)
 
     parser.process(app);
 
-    std::cout << SupraFit::about().toStdString() << std::endl;
+    std::cout << aboutSF().toStdString() << std::endl;
 
     const QString infile = parser.value("i");
 

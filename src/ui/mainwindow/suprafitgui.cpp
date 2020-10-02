@@ -18,6 +18,7 @@
  */
 
 #include "src/global.h"
+#include "src/global_infos.h"
 #include "src/version.h"
 
 #include "src/core/models/AbstractModel.h"
@@ -1544,7 +1545,7 @@ void SupraFitGui::WriteSettings(bool ignore_window_state)
 
 void SupraFitGui::about()
 {
-    QMessageBox::about(this, tr("About this application"), SupraFit::aboutHtml());
+    QMessageBox::about(this, tr("About this application"), aboutSFHtml());
 }
 
 void SupraFitGui::FirstStart()
