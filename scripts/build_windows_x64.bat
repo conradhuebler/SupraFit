@@ -13,19 +13,23 @@ cmake --build . --config Release
 
 echo Packaging...
 cd %project_dir%
-cd build_x64\bin\win32\Release
+cd build_x64\bin\win\Release
 mkdir SupraFit
 copy suprafit.exe SupraFit
 copy suprafit_cli.exe SupraFit
 
 cd SupraFit
-windeployqt --release suprafit.exe
+windeployqt --release --compiler-runtime  suprafit.exe
 
 echo Copying project files for archival...
-copy "%project_dir%\README.md" "%project_dir%\build_x64\bin\win32\Release\SupraFit\README.md"
-copy "%project_dir%\LICENSE.md" "%project_dir%\build_x64\bin\win32\Release\SupraFit\LICENSE.md"
+copy "%project_dir%\README.md" "%project_dir%\build_x64\bin\win\Release\SupraFit\README.md"
+copy "%project_dir%\LICENSE.md" "%project_dir%\build_x64\bin\win\Release\SupraFit\LICENSE.md"
+copy "C:\Windows\System32\vccorlib140.dll" "%project_dir%\build_x64\bin\win\Release\SupraFit\vccorlib140.dll"
+copy "C:\Windows\System32\vcruntime140.dll" "%project_dir%\build_x64\bin\win\Release\SupraFit\vcruntime140.dll"
+copy "C:\Windows\System32\msvcp140.dll" "%project_dir%\build_x64\bin\win\Release\SupraFit\msvcp140.dll"
 
 echo Packaging portable archive...
+
 cd ..
 7z a SupraFit_latest_x64_windows.zip SupraFit
 

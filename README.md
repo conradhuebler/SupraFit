@@ -10,12 +10,12 @@ A Open Source Qt5 based fitting tool for supramolecular titration experiments (N
 A short introduction can be downloaded [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/Quickstart.pdf). For question, comments, feedback etc. please use the email adress on page 18 in that Quickstart.
 
 ## Getting SupraFit
-SupraFit 2.0 binaries are available for Linux (as AppImage), for Windows and macOS.
-[GitHub Release](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0)
+[SupraFit 2.0 binaries](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) are available for Linux (as AppImage), for Windows and macOS.
 
 ### History
-- SupraFit 2.0 stable version, first public release
-- SupraFit 2.x most recent development version
+- [SupraFit 2.0](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) stable version, first public release
+- [SupraFit 2.x](https://github.com/conradhuebler/SupraFit/releases) most recent development version, with automatic builds for Windows and Linux.
+
 
 ## Running
 Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:
