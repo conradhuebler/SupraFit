@@ -1,4 +1,4 @@
-Linux and Windows Build: [![Build Status](https://github.com/conradhuebler/SupraFit/workflows/AutomaticBuild/badge.svg)](https://github.com/conradhuebler/SupraFit)
+Linux and Windows Build: [![Build Status](https://github.com/conradhuebler/SupraFit/workflows/Build/badge.svg)](https://github.com/conradhuebler/SupraFit/actions?query=workflow%3ABuild)
 [![DOI](https://zenodo.org/badge/55421012.svg)](https://zenodo.org/badge/latestdoi/55421012)
 
 ![SupraFit Logo](https://github.com/conradhuebler/SupraFit/raw/master/misc/logo_small.png)

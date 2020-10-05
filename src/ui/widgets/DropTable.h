@@ -77,7 +77,7 @@ protected:
                 }
             } else {
                 if (model->isValid()) {
-                    m_table->appendColumns(model);
+                    m_table->appendColumns(model, false);
                     setModel(m_table);
                     emit Edited();
                 }

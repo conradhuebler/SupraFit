@@ -85,14 +85,17 @@ DataTable::DataTable(DataTable* other) //: QAbstractTableModel(other) FIXME what
     m_editable = other->m_editable;
 }
 
-DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table)
+DataTable::DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table, const QStringList& header)
     : m_table(table)
     , m_checked_table(checked_table)
     , m_checkable(false)
     , m_editable(false)
 {
-    for (int i = 0; i < columnCount(); ++i)
-        m_header << QString::number(i + 1);
+    if (header.size() != m_table.cols()) {
+        for (int i = 0; i < columnCount(); ++i)
+            m_header << QString::number(i + 1);
+    } else
+        m_header = header;
 }
 
 DataTable::DataTable(Eigen::MatrixXd table)
@@ -422,7 +425,8 @@ QPointer<DataTable> DataTable::Block(int row_begin, int column_begin, int row_en
 
     Eigen::MatrixXd table = m_table.block(row_begin, column_begin, row_end, column_end);
     Eigen::MatrixXd checked_table = m_checked_table.block(row_begin, column_begin, row_end, column_end);
-    return new DataTable(table, checked_table);
+    QStringList header = QStringList(m_header.begin() + column_begin, m_header.begin() + column_end + column_begin);
+    return new DataTable(table, checked_table, header);
 }
 
 Vector DataTable::Column(int column) const
@@ -512,10 +516,10 @@ void DataTable::insertRow(const QVector<qreal>& row, bool zero)
     }
 }
 
-void DataTable::appendColumns(const DataTable& table)
+void DataTable::appendColumns(const DataTable& table, bool keep_header)
 {
     QReadLocker locker(&mutex);
-    m_header << table.header();
+
     int rows = qMax(rowCount(), table.rowCount());
     int cols = columnCount() + table.columnCount();
 
@@ -535,6 +539,14 @@ void DataTable::appendColumns(const DataTable& table)
         }
     m_table = tab;
     m_checked_table = check;
+
+    if (keep_header)
+        m_header << table.header();
+    else {
+        while (m_header.size() < m_table.cols())
+            m_header << QString::number(m_table.cols());
+    }
+
     if (rowCount() && columnCount())
         emit layoutChanged();
 }
@@ -589,7 +601,6 @@ QPointer<DataTable> DataTable::PrepareMC(std::normal_distribution<double>& Phi, 
 
 QPointer<DataTable> DataTable::PrepareMC(QVector<double> stddev, std::mt19937& rng, QVector<int> cols)
 {
-
     while (stddev.size() < columnCount())
         stddev << stddev.last();
 

@@ -84,9 +84,11 @@ DataTable* SpectraHandler::CompileSimpleTable()
 
     int cols = m_x.size();
     int rows = m_order.size();
+    QStringList header;
     DataTable* table = new DataTable(cols, rows, this);
     for (int i = 0; i < m_x.size(); ++i) {
         double x = m_x[i];
+        header << QString::number(x);
         for (int j = 0; j < m_order.size(); ++j) {
             auto spec = m_spectra[m_order[j]];
             double val = 0;
@@ -100,6 +102,8 @@ DataTable* SpectraHandler::CompileSimpleTable()
             table->data(i, j) = val;
         }
     }
+    table->setHeader(header);
+
     return table;
 }
 

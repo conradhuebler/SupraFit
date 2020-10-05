@@ -955,7 +955,6 @@ void SupraFitGui::LoadFile(const QString& file)
 
 void SupraFitGui::SpectraEdited(const QJsonObject& table, const QJsonObject& data)
 {
-
     ImportData dialog(this);
     DataTable* tmp = new DataTable;
     tmp->ImportTable(table);
@@ -974,7 +973,6 @@ void SupraFitGui::OpenSpectraDir()
     if (spectra->exec()) {
         ImportData dialog(this);
         DataTable* tmp = new DataTable;
-        tmp->ImportTable(spectra->InputTable());
         dialog.LoadTable(tmp, 2);
         dialog.setSpectraData(spectra->ProjectData());
         if (dialog.exec() == QDialog::Accepted) {

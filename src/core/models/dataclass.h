@@ -87,7 +87,7 @@ class DataTable : public QAbstractTableModel {
 public:
     DataTable(QObject* parent = 0);
     DataTable(int columns, int rows, QObject* parent);
-    DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table);
+    DataTable(Eigen::MatrixXd table, Eigen::MatrixXd checked_table, const QStringList& header = QStringList());
     DataTable(Eigen::MatrixXd table);
 
     DataTable(DataTable* other);
@@ -140,7 +140,7 @@ public:
     void setColumn(const QVector<qreal>& vector, int column);
     void setColumn(const Vector& vector, int column);
 
-    void appendColumns(const DataTable& columns);
+    void appendColumns(const DataTable& columns, bool keep_header = true);
 
     Vector Column(int row) const;
 

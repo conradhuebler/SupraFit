@@ -284,15 +284,18 @@ void ImportData::WriteData(const DataTable* model, int independent)
     m_storeddata = new DataClass;
     DataTable* indep = model->BlockColumns(0, independent);
     DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
-
+    QStringList header_indep, header_dep;
+    QStringList header = model->header();
     if (model->columnCount() - independent == 0) {
         DataTable* model = new DataTable(m_dependent_rows->value(), indep->rowCount(), this);
+        //header_indep = QStringList(header.begin(), header.begin() + independent );
         m_storeddata->setDependentTable(model);
         m_storeddata->setType(DataClassPrivate::DataType::Simulation);
         m_projectfile = QString("Simulation - %1").arg(QDateTime::currentDateTime().toString());
     } else {
         m_storeddata->setDataType(m_type);
         m_storeddata->setDependentTable(dep);
+        //header_dep = QStringList(header.begin() + independent + 1, header.end() );
     }
 
     m_storeddata->setIndependentTable(indep);
