@@ -28,7 +28,7 @@ copy "%project_dir%\LICENSE.md" "%project_dir%\build_x64\bin\win\Release\SupraFi
 echo Packaging portable archive...
 
 cd ..
-7z a SupraFit_x64_windows.zip SupraFit
+7z a SupraFit.zip SupraFit
 
 cd ..
 
