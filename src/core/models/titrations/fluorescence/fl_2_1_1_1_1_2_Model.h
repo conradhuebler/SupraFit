@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,9 +38,8 @@ class fl_IItoI_ItoI_ItoII_Model : public AbstractTitrationModel {
 
 public:
     enum {
-        Method = 1,
-        Cooperativity2_1 = 2,
-        Cooperativity1_2 = 2
+        Cooperativity2_1 = 3,
+        Cooperativity1_2 = 4
     };
 
     fl_IItoI_ItoI_ItoII_Model(DataClass* data);
@@ -68,21 +67,21 @@ public:
             return QString();
     }
 
-    virtual QString SpeciesName(int i) const override
+    virtual inline QString SpeciesName(int i) const override
     {
-        if (i == 0)
-            return tr("A2B");
-        else if (i == 1)
-            return tr("AB");
+        if (i == 1)
+            return A2B;
         else if (i == 2)
-            return tr("AB2");
+            return AB;
+        else if (i == 3)
+            return AB2;
         else
             return QString();
     }
 
     virtual void DeclareOptions() override;
     virtual void EvaluateOptions() override;
-
+    //    virtual inline QString Name() const override { return tr("2:1/1:1/1:2-Model"); }
     virtual inline int Color(int i) const override
     {
         if (i > 2)
@@ -90,24 +89,24 @@ public:
         return i;
     }
 
-    virtual int LocalParameterSize(int series = 0) const override
-    {
-        Q_UNUSED(series)
-        return 5;
-    }
-
     virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
-    virtual QString AdditionalOutput() const override { return QString(); }
 
     virtual QString ParameterComment(int parameter) const override;
 
     virtual QString ModelInfo() const override;
+    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+
+    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
+
+    virtual QString AdditionalOutput() const override;
+
+    inline double ReductionCutOff() const override { return 2; }
 
 private:
     QList<QPointer<IItoI_ItoI_ItoII_Solver>> m_solvers;
     QList<qreal> m_constants_pow;
     QThreadPool* m_threadpool;
+    int m_time = 0;
 
 protected:
     virtual void CalculateVariables() override;

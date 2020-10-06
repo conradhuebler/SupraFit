@@ -1,5 +1,6 @@
 Linux and Windows Build: [![Build Status](https://github.com/conradhuebler/SupraFit/workflows/Build/badge.svg)](https://github.com/conradhuebler/SupraFit/actions?query=workflow%3ABuild)
 [![DOI](https://zenodo.org/badge/55421012.svg)](https://zenodo.org/badge/latestdoi/55421012)
+[![CodeFactor](https://www.codefactor.io/repository/github/conradhuebler/suprafit/badge)](https://www.codefactor.io/repository/github/conradhuebler/suprafit)
 
 ![SupraFit Logo](https://github.com/conradhuebler/SupraFit/raw/master/misc/logo_small.png)
 
@@ -10,7 +11,10 @@ A Open Source Qt5 based fitting tool for supramolecular titration experiments (N
 A short introduction can be downloaded [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/Quickstart.pdf). For question, comments, feedback etc. please use the email adress on page 18 in that Quickstart.
 
 ## Getting SupraFit
-[SupraFit 2.0 binaries](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) are available for Linux (as AppImage), for Windows and macOS.
+[SupraFit 2.0 binaries](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) are available for Linux (as AppImage), for Windows and macOS. 
+
+Windows users please note, that SupraFit requires the Microsoft Visual C++ Redistributable for Visual Studio 2015, 2017 and 2019 to be installed, which includes for example msvcp140.dll and msvcp140_1.dll.
+It may be downloaded [from the official website.](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads)
 
 ### History
 - [SupraFit 2.0](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) stable version, first public release

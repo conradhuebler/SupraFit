@@ -54,7 +54,6 @@ uv_vis_ItoI_Model::~uv_vis_ItoI_Model()
 
 void uv_vis_ItoI_Model::InitialGuess_Private()
 {
-
     qreal factor = 1;
     factor = 1 / InitialHostConcentration(0);
 
@@ -110,7 +109,6 @@ void uv_vis_ItoI_Model::CalculateVariables()
 
 QVector<qreal> uv_vis_ItoI_Model::DeCompose(int datapoint, int series) const
 {
-
     QVector<qreal> vector;
     qreal host_0 = InitialHostConcentration(datapoint);
 
@@ -187,7 +185,6 @@ QString uv_vis_ItoI_Model::ParameterComment(int parameter) const
 
 QString uv_vis_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
     QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
 
     if (!forceAll)
@@ -199,7 +196,6 @@ QString uv_vis_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool for
 
 QString uv_vis_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-
     QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
 
     if (!forceAll)

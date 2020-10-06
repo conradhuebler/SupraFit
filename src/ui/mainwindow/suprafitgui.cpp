@@ -69,6 +69,7 @@
 #include <QtWidgets/QSplashScreen>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QStackedWidget>
+#include <QtWidgets/QStatusBar>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QToolButton>
@@ -838,6 +839,12 @@ SupraFitGui::SupraFitGui()
                   "QDockWidget {"
                   "border: 1px solid #777;"
                   "background: qlineargradient(x1:0, y1:0, x2:1, y2:1;}");
+
+    QStatusBar* statusbar = new QStatusBar;
+    QLabel* version = new QLabel(tr("SupraFit %1").arg(git_tag));
+    statusbar->addPermanentWidget(version);
+    setStatusBar(statusbar);
+
     qApp->installEventFilter(this);
     connect(m_project_view, &QTreeView::doubleClicked, this, &SupraFitGui::TreeDoubleClicked);
     connect(m_project_view, &QTreeView::clicked, this, &SupraFitGui::TreeClicked);

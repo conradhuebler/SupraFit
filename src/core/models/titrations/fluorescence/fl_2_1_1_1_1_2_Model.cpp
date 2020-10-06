@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,6 +64,7 @@ fl_IItoI_ItoI_ItoII_Model::fl_IItoI_ItoI_ItoII_Model(AbstractTitrationModel* dat
 fl_IItoI_ItoI_ItoII_Model::~fl_IItoI_ItoI_ItoII_Model()
 {
     qDeleteAll(m_solvers);
+    qDebug() << "time for calculation" << m_time << "in" << Description();
 }
 
 void fl_IItoI_ItoI_ItoII_Model::DeclareOptions()
@@ -78,86 +79,119 @@ void fl_IItoI_ItoI_ItoII_Model::DeclareOptions()
                                   << "additive"
                                   << "statistical";
     addOption(Cooperativity1_2, "Cooperativity 1:2", cooperativity);
+
+    AbstractTitrationModel::DeclareOptions();
 }
 
 void fl_IItoI_ItoI_ItoII_Model::EvaluateOptions()
 {
-    QString cooperativitiy = getOption(Cooperativity2_1);
-    {
-        auto global_coop = [this]() {
-            (*this->GlobalTable())[0] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
-        };
+    QString coop21 = getOption(Cooperativity2_1);
 
-        auto local_coop = [this]() {
-            for (int i = 0; i < this->SeriesCount(); ++i)
-                this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
-        };
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * K11 = 4*K21 | K21 = 0.25 K11
+     * valid for statistical and noncooperative systems
+     */
+    auto global_coop21 = [this]() {
+        (*this->GlobalTable())[0] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
+    };
 
-        if (cooperativitiy == "noncooperative") {
-            global_coop();
-        } else if (cooperativitiy == "additive") {
-            local_coop();
-        } else if (cooperativitiy == "statistical") {
-            local_coop();
-            global_coop();
-        }
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * Y(A2B) = 2Y(AB)
+     * valid for statistical and additive systems
+     * We first have to subtract the Host_0 Shift and afterwards calculate the new Signal
+     */
+    auto local_coop21 = [this]() {
+        for (int i = 0; i < this->SeriesCount(); ++i)
+            this->LocalTable()->data(1, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+    };
+
+    if (coop21 == "noncooperative") {
+        global_coop21();
+    } else if (coop21 == "additive") {
+        local_coop21();
+    } else if (coop21 == "statistical") {
+        local_coop21();
+        global_coop21();
     }
 
-    cooperativitiy = getOption(Cooperativity1_2);
-    {
-        auto global_coop = [this]() {
-            (*this->GlobalTable())[2] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
-        };
+    QString coop12 = getOption(Cooperativity1_2);
 
-        auto local_coop = [this]() {
-            for (int i = 0; i < this->SeriesCount(); ++i)
-                this->LocalTable()->data(3, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
-        };
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * K11 = 4*K12 | K12 = 0.25 K11
+     * valid for statistical and noncooperative systems
+     */
+    auto global_coop12 = [this]() {
+        (*this->GlobalTable())[2] = log10(double(0.25) * qPow(10, (*this->GlobalTable())[1]));
+    };
+    /*
+     * Chem. Soc. Rev., 2017, 46, 2622--2637
+     * Y(AB2) = 2Y(AB)
+     * valid for statistical and additive systems
+     * We first have to subtract the Host_0 Shift and afterwards calculate the new Signal
+     */
+    auto local_coop12 = [this]() {
+        for (int i = 0; i < this->SeriesCount(); ++i)
+            this->LocalTable()->data(3, i) = 2 * (this->LocalTable()->data(2, i) - this->LocalTable()->data(0, i)) + this->LocalTable()->data(0, i);
+    };
 
-        if (cooperativitiy == "noncooperative") {
-            global_coop();
-        } else if (cooperativitiy == "additive") {
-            local_coop();
-        } else if (cooperativitiy == "statistical") {
-            local_coop();
-            global_coop();
-        }
+    if (coop12 == "noncooperative") {
+        global_coop12();
+    } else if (coop12 == "additive") {
+        local_coop12();
+    } else if (coop12 == "statistical") {
+        local_coop12();
+        global_coop12();
     }
+    AbstractTitrationModel::EvaluateOptions();
 }
 
 void fl_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 {
     qreal factor = 1;
+    factor = 1 / InitialHostConcentration(0);
+
+    int index_21 = 0, index_11 = 0;
+
+    for (int i = 0; i < DataPoints(); ++i) {
+        if (XValue(i) <= 0.5)
+            index_21 = i;
+        if (XValue(i) <= 1)
+            index_11 = i;
+    }
 
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
     LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
-    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
-    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
+    LocalTable()->setColumn(DependentModel()->Row(index_21) * factor, 2);
+    LocalTable()->setColumn(DependentModel()->Row(index_11) * factor, 3);
     LocalTable()->setColumn(DependentModel()->lastRow() * factor, 4);
 
-    qreal K11 = GuessK(1);
+    qreal K = GuessK(1);
 
-    (*GlobalTable())[0] = 2;
-    (*GlobalTable())[1] = K11;
-    (*GlobalTable())[2] = 2;
+    (*GlobalTable())[1] = K * 0.8;
+    (*GlobalTable())[0] = K / 2.0;
+
+    (*GlobalTable())[2] = K / 2.0;
 
     Calculate();
 }
 
 void fl_IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
+    auto hostguest = HostGuest();
 
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));
     qreal K12 = qPow(10, GlobalParameter(2));
     m_constants_pow = QList<qreal>() << K21 << K11 << K12;
 
-    bool skip = m_opt_config["Skip_not_Converged_Concentrations"].toBool();
-
-    QVector<qreal> F0(SeriesCount());
-
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
+
+    bool skip = m_opt_config["Skip_not_Converged_Concentrations"].toBool();
+
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
@@ -165,13 +199,18 @@ void fl_IItoI_ItoI_ItoII_Model::CalculateVariables()
         m_solvers[i]->setInput(host_0, guest_0);
         m_solvers[i]->setConfig(m_opt_config);
         m_solvers[i]->setConstants(m_constants_pow);
-        m_threadpool->start(m_solvers[i]);
+        //if(QThreadPool::globalInstance()->activeThreadCount())
+        m_solvers[i]->run();
+        //else
+        //    m_threadpool->start(m_solvers[i]);
     }
 
-    m_threadpool->waitForDone();
+    while (m_threadpool->activeThreadCount()) { /*QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);*/
+    }
 
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
+        m_time += m_solvers[i]->Time() + m_solvers[i]->LTime();
         if (!m_solvers[i]->Ok()) {
 #ifdef _DEBUG
             qDebug() << "Numeric didn't work out well, mark model as corrupt! - Dont panic. Not everything is lost ...";
@@ -202,20 +241,50 @@ void fl_IItoI_ItoI_ItoII_Model::CalculateVariables()
         vector(4) = complex_11;
         vector(5) = complex_12;
 
-        if (!m_fast)
+        if (!m_fast) {
             SetConcentration(i, vector);
-
+            // qDebug() << log10(complex_12/complex_11/guest) << log10(K12) << log10(complex_21/complex_11/host) << log10(K21) << log10(complex_11/host/guest) << log10(K11);
+        }
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
-            if (i == 0) {
-                F0[j] = host_0 * LocalTable()->data(0, j);
-                value = F0[j];
-            } else
-                value = host * LocalTable()->data(0, j) + 2 * complex_21 * LocalTable()->data(1, j) + complex_11 * LocalTable()->data(2, j) + complex_12 * LocalTable()->data(3, j);
+            //value = host * LocalTable()->data(0, j) * hostguest.first + guest * LocalTable()->data(1, j) * hostguest.second + 2 * complex_21 * LocalTable()->data(2, j) + complex_11 * LocalTable()->data(3, j) + complex_12 * LocalTable()->data(4, j);
 
-            SetValue(i, j, value * 1e3);
+            if (i == 0) {
+                value = (host_0 * LocalTable()->data(0, j));
+            } else {
+                value = (host * LocalTable()->data(1, j))
+                    + complex_21 * LocalTable()->data(2, j)
+                    + complex_11 * LocalTable()->data(3, j)
+                    + complex_12 * LocalTable()->data(4, j);
+            }
+            SetValue(i, j, value);
         }
     }
+}
+
+QVector<qreal> fl_IItoI_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
+{
+
+    qreal host_0 = InitialHostConcentration(datapoint);
+
+    Vector concentration = getConcentration(datapoint);
+
+    qreal host = concentration(1);
+
+    qreal complex_21 = concentration(3);
+    qreal complex_11 = concentration(4);
+    qreal complex_12 = concentration(5);
+
+    host_0 = 1;
+
+    QVector<qreal> vector;
+
+    vector << host / host_0 * LocalTable()->data(0, series);
+    vector << 2 * complex_21 / host_0 * LocalTable()->data(1, series);
+    vector << complex_11 / host_0 * LocalTable()->data(2, series);
+    vector << complex_12 / host_0 * LocalTable()->data(3, series);
+
+    return vector;
 }
 
 QSharedPointer<AbstractModel> fl_IItoI_ItoI_ItoII_Model::Clone(bool statistics)
@@ -232,19 +301,28 @@ void fl_IItoI_ItoI_ItoII_Model::OptimizeParameters_Private()
 {
     QString coop21 = getOption(Cooperativity2_1);
     QString coop12 = getOption(Cooperativity1_2);
-    //  QString host = getOption(Host);
+    QString host = getOption(Host);
+    QString guest = getOption(Guest);
 
-    if (coop21 == "additive" || coop21 == "full")
-        addGlobalParameter(0);
+    //if (coop21 == "additive" || coop21 == "full")
+    addGlobalParameter(0);
     addGlobalParameter(1);
 
-    if (coop12 == "additive" || coop12 == "full")
-        addGlobalParameter(2);
+    //if (coop12 == "additive" || coop12 == "full")
+    addGlobalParameter(2);
 
+    //if (host == "no")
     addLocalParameter(0);
+
+    // if (guest == "no")
     addLocalParameter(1);
+
+    // if (coop21 == "noncooperative" || coop21 == "full")
     addLocalParameter(2);
+
     addLocalParameter(3);
+    // if (coop12 == "noncooperative" || coop12 == "full")
+    addLocalParameter(4);
 }
 
 MassResults fl_IItoI_ItoI_ItoII_Model::MassBalance(qreal A, qreal B)
@@ -271,6 +349,7 @@ QString fl_IItoI_ItoI_ItoII_Model::ModelInfo() const
 {
     QString result = AbstractTitrationModel::ModelInfo();
     result += BC50::IItoII::Format_BC50(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2));
+
     return result;
 }
 
@@ -284,6 +363,40 @@ QString fl_IItoI_ItoI_ItoII_Model::ParameterComment(int parameter) const
         return QString("Reaction: AB + B &#8652; AB<sub>2</sub>");
 }
 
+QString fl_IItoI_ItoI_ItoII_Model::AdditionalOutput() const
+{
+    QString result;
+    /*
+    // double max = 1e3;
+    double delta = 1e-3;
+    qreal host_0 = 1.0;
+    qreal host = 0;
+    qreal diff = host_0 - host;
+    Vector integral(3);
+    qreal end = delta;
+    for (end = delta; diff > 1e-5; end += delta) {
+        qreal guest_0 = end;
+        host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
+        qreal complex = host_0 - host;
+
+        integral(0) += host * delta;
+        integral(1) += (guest_0 - complex) * delta;
+        integral(2) += complex * delta;
+
+        diff = host_0 - complex;
+        // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
+        std::cout << host << " "
+                  << " " << guest_0 - complex << " " << complex << std::endl;
+        //std::cout << integral.transpose() << std::endl;
+    }
+    integral(0) /= end;
+    integral(1) /= end;
+    integral(2) /= end;
+    std::cout << integral.transpose() << std::endl;
+    */
+    return result;
+}
+
 QString fl_IItoI_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
     QString result = AbstractTitrationModel::AnalyseMonteCarlo(object);
@@ -292,6 +405,18 @@ QString fl_IItoI_ItoI_ItoII_Model::AnalyseMonteCarlo(const QJsonObject& object, 
         return result;
 
     QString bc = Statistic::MonteCarlo2BC50_2_2(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2), object);
+
+    return bc + result;
+}
+
+QString fl_IItoI_ItoI_ItoII_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
+{
+    QString result = AbstractTitrationModel::AnalyseGridSearch(object);
+
+    if (!forceAll)
+        return result;
+
+    QString bc = Statistic::GridSearch2BC50_2_2(GlobalParameter(0), GlobalParameter(1), GlobalParameter(2), object);
 
     return bc + result;
 }

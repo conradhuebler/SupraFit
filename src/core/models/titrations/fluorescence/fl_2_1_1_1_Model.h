@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,8 +32,7 @@ class fl_IItoI_ItoI_Model : public AbstractTitrationModel {
 
 public:
     enum {
-        Method = 1,
-        Cooperativity = 2
+        Cooperativity = 3
     };
 
     fl_IItoI_ItoI_Model(DataClass* data);
@@ -60,21 +59,40 @@ public:
             return QString();
     }
 
-    void virtual DeclareOptions() override;
-    virtual int LocalParameterSize(int series = 0) const override
+    virtual inline QString SpeciesName(int i) const override
     {
-        Q_UNUSED(series)
-        return 4;
+        if (i == 1)
+            return A2B;
+        else if (i == 2)
+            return AB;
+        else
+            return QString();
     }
-    void virtual EvaluateOptions() override;
 
+    void DeclareOptions() override;
+    void EvaluateOptions() override;
+
+    virtual inline int Color(int i) const override
+    {
+        if (i > 1)
+            return i + 2;
+        return i;
+    }
+
+    /*! \brief Calculate standard type of monte carlo statistics */
     virtual QString AnalyseMonteCarlo(const QJsonObject& object, bool forceAll = false) const override;
-
-    virtual QString AdditionalOutput() const override { return QString(); }
 
     virtual QString ParameterComment(int parameter) const override;
 
     virtual QString ModelInfo() const override;
+
+    virtual QString AnalyseGridSearch(const QJsonObject& object, bool forceAll = false) const override;
+
+    virtual QVector<qreal> DeCompose(int datapoint, int series = 0) const override;
+
+    virtual QString AdditionalOutput() const override;
+
+    inline double ReductionCutOff() const override { return 1; }
 
 protected:
     virtual void CalculateVariables() override;

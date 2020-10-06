@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@
 #include "src/core/bc50.h"
 #include "src/core/equil.h"
 #include "src/core/libmath.h"
-#include "src/core/minimizer.h"
+#include "src/core/toolset.h"
+
+#include "src/core/models/models.h"
 
 #include <QDebug>
 #include <QtMath>
@@ -36,12 +38,14 @@ fl_ItoI_Model::fl_ItoI_Model(DataClass* data)
     : AbstractTitrationModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    DeclareOptions();
 }
 
 fl_ItoI_Model::fl_ItoI_Model(AbstractTitrationModel* data)
     : AbstractTitrationModel(data)
 {
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    DeclareOptions();
 }
 
 fl_ItoI_Model::~fl_ItoI_Model()
@@ -50,55 +54,44 @@ fl_ItoI_Model::~fl_ItoI_Model()
 
 void fl_ItoI_Model::InitialGuess_Private()
 {
-    qreal factor = InitialHostConcentration(0);
+    qreal factor = 1;
+    factor = 1 / InitialHostConcentration(0);
 
-    LocalTable()->setColumn(DependentModel()->firstRow() / factor / 1e3, 0);
-    LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e3, 1);
-    LocalTable()->setColumn(DependentModel()->lastRow() / factor / 1e3, 2);
+    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
+    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 1);
+    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 2);
 
-    qreal K11 = GuessK(0);
-    (*GlobalTable())[0] = K11;
+    (*GlobalTable())[0] = GuessK(0);
 
     Calculate();
 }
 
-void fl_ItoI_Model::DeclareOptions()
-{
-    //QStringList method = QStringList() << "Host" << "no Host";
-    //addOption("Host", method);
-}
-
-void fl_ItoI_Model::EvaluateOptions()
-{
-    /*
-    QString host = getOption("Host");
-    if(host != "Host")
-    {
-         for(int i = 0; i < SeriesCount(); ++i)
-         {
-            this->LocalTable()->data(0,i) = 0;
-            this->LocalTable()->data(1,i) = 0;
-         }
-    }*/
-}
-
 void fl_ItoI_Model::OptimizeParameters_Private()
 {
-    addGlobalParameter(0);
+    QString host = getOption(Host);
+    QString guest = getOption(Guest);
 
+    addGlobalParameter(0);
+    //if (host == "no")
     addLocalParameter(0);
+
+    //if (guest == "no")
     addLocalParameter(1);
+
+    addLocalParameter(2);
 }
 
 void fl_ItoI_Model::CalculateVariables()
 {
-    qreal value;
-    QVector<qreal> F0(SeriesCount());
+    auto hostguest = HostGuest();
+    qreal value = 0;
     for (int i = 0; i < DataPoints(); ++i) {
         qreal host_0 = InitialHostConcentration(i);
         qreal guest_0 = InitialGuestConcentration(i);
         qreal host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
         qreal complex = host_0 - host;
+        qreal guest = guest_0 - complex;
+
         Vector vector(4);
         vector(0) = i + 1;
         vector(1) = host;
@@ -109,15 +102,31 @@ void fl_ItoI_Model::CalculateVariables()
             SetConcentration(i, vector);
 
         for (int j = 0; j < SeriesCount(); ++j) {
-            if (i == 0) {
-                F0[j] = host_0 * LocalTable()->data(0, j);
-                value = F0[j];
-            } else
-                value = (host * LocalTable()->data(1, j) + complex * LocalTable()->data(2, j));
-
-            SetValue(i, j, value * 1e3);
+            value = (host_0 * LocalTable()->data(0, j) && i == 0)
+                + (host * LocalTable()->data(1, j) && i != 0)
+                + complex * LocalTable()->data(2, j);
+            SetValue(i, j, value);
         }
     }
+}
+
+QVector<qreal> fl_ItoI_Model::DeCompose(int datapoint, int series) const
+{
+    QVector<qreal> vector;
+    qreal host_0 = InitialHostConcentration(datapoint);
+
+    Vector concentration = getConcentration(datapoint);
+
+    qreal host = concentration(1);
+
+    qreal complex = concentration(3);
+
+    host_0 = 1;
+
+    vector << host / host_0 * LocalTable()->data(0, series);
+    vector << complex / host_0 * LocalTable()->data(1, series);
+
+    return vector;
 }
 
 QSharedPointer<AbstractModel> fl_ItoI_Model::Clone(bool statistics)
@@ -138,6 +147,39 @@ QString fl_ItoI_Model::ModelInfo() const
     return result;
 }
 
+QString fl_ItoI_Model::AdditionalOutput() const
+{
+    QString result;
+    return result;
+
+    // double max = 1e3;
+    double delta = 1e-3;
+    qreal host_0 = 1.0;
+    qreal host = 0;
+    qreal diff = host_0 - host;
+    Vector integral(3);
+    qreal end = delta;
+    for (end = delta; diff > 1e-5; end += delta) {
+        qreal guest_0 = end;
+        host = ItoI::HostConcentration(host_0, guest_0, GlobalParameter(0));
+        qreal complex = host_0 - host;
+
+        integral(0) += host * delta;
+        integral(1) += (guest_0 - complex) * delta;
+        integral(2) += complex * delta;
+
+        diff = host_0 - complex;
+        // std::cout << end << " " << diff << " " << host << " " << " " << guest_0 - complex << " " << complex << std::endl;
+        //std::cout << host << " "
+        //          << " " << guest_0 - complex << " " << complex << std::endl;
+        //std::cout << integral.transpose() << std::endl;
+    }
+    integral(0) /= end;
+    integral(1) /= end;
+    integral(2) /= end;
+    std::cout << integral.transpose() << std::endl;
+}
+
 QString fl_ItoI_Model::ParameterComment(int parameter) const
 {
     Q_UNUSED(parameter)
@@ -146,13 +188,23 @@ QString fl_ItoI_Model::ParameterComment(int parameter) const
 
 QString fl_ItoI_Model::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
     QString result = AbstractTitrationModel::AnalyseMonteCarlo(object, forceAll);
 
     if (!forceAll)
         return result;
 
     QString bc = Statistic::MonteCarlo2BC50_1(GlobalParameter(0), object);
+    return bc + result;
+}
+
+QString fl_ItoI_Model::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
+{
+    QString result = AbstractTitrationModel::AnalyseGridSearch(object, forceAll);
+
+    if (!forceAll)
+        return result;
+
+    QString bc = Statistic::GridSearch2BC50_1(GlobalParameter(0), object);
     return bc + result;
 }
 

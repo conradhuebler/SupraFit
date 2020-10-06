@@ -100,7 +100,6 @@ void uv_vis_ItoI_ItoII_Model::EvaluateOptions()
 
 void uv_vis_ItoI_ItoII_Model::InitialGuess_Private()
 {
-
     qreal factor = 1;
     factor = 1 / InitialHostConcentration(0);
 
