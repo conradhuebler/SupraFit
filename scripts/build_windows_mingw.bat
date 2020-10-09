@@ -7,8 +7,7 @@ git pull --recurse-submodules
 mkdir build_windows
 cd build_windows
 
-cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -MT ..
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 
 cd ..
-

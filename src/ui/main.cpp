@@ -30,6 +30,7 @@
 
 #include <QtWidgets/QApplication>
 
+#ifndef _WIN32
 #if __GNUC__
 // Thanks to
 // https://stackoverflow.com/questions/77005/how-to-automatically-generate-a-stacktrace-when-my-program-crashes
@@ -55,12 +56,15 @@ void bt_handler(int sig)
     exit(1);
 }
 #endif
+#endif
 
 int main(int argc, char** argv)
 {
+#ifndef _WIN32
 #if __GNUC__
     signal(SIGSEGV, bt_handler);
     signal(SIGABRT, bt_handler);
+#endif
 #endif
 
     SupraFit::timer time;
