@@ -59,7 +59,7 @@ void SpectraImport::setUI()
     m_spectrawidget = new SpectraWidget;
 
     m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(m_buttonbox, &QDialogButtonBox::accepted, this, &SpectraImport::accept);
     connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     m_file_type = new QComboBox;
@@ -94,4 +94,10 @@ void SpectraImport::setDirectory()
 void SpectraImport::setData(const QJsonObject& data)
 {
     m_spectrawidget->setData(data);
+}
+
+void SpectraImport::accept()
+{
+    m_spectrawidget->UpdateData();
+    QDialog::accept();
 }

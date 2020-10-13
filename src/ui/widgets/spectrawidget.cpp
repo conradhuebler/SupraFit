@@ -23,6 +23,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
@@ -77,10 +78,19 @@ void SpectraWidget::setUI()
     m_accept_x->setFlat(true);
 
     m_xvalues = new QListWidget;
+
+    m_values = new QSpinBox;
+    m_values->setMinimum(1);
+    m_values->setMaximum(20);
+    m_values->setValue(10);
+    m_varcovar = new QPushButton(tr("VarCovar"));
+
     QGridLayout* xlayout = new QGridLayout;
     xlayout->addWidget(m_add_xvalue, 0, 0);
     xlayout->addWidget(m_accept_x, 0, 1);
     xlayout->addWidget(m_xvalues, 1, 0, 1, 2);
+    xlayout->addWidget(m_values, 2, 0);
+    xlayout->addWidget(m_varcovar, 2, 1);
     QWidget* xwidget = new QWidget;
     xwidget->setLayout(xlayout);
     m_xvalues->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -88,11 +98,19 @@ void SpectraWidget::setUI()
     action = new QAction("Remove wavelength");
     action->setIcon(Icon("list-remove"));
     connect(action, &QAction::triggered, m_xvalues, [this]() {
-        auto avl = m_xvalues->currentItem();
-        if (!avl)
-            return;
-        qDebug() << avl->data(Qt::DisplayRole);
-        m_xvalues->removeItemWidget(avl);
+        auto avl = m_xvalues->currentRow();
+        if (avl < m_xvalues->count() && avl >= 0) {
+            m_xvalues->takeItem(avl);
+            UpdateXValues();
+        }
+    });
+    m_xvalues->addAction(action);
+
+    action = new QAction("Clear List");
+    action->setIcon(Icon("list-remove"));
+    connect(action, &QAction::triggered, m_xvalues, [this]() {
+        m_xvalues->clear();
+        m_handler->setXValues(QVector<double>());
     });
     m_xvalues->addAction(action);
 
@@ -127,6 +145,13 @@ void SpectraWidget::setUI()
         m_handler->addXValue(m_add_xvalue->text().toDouble());
         UpdateData();
         m_add_xvalue->clear();
+    });
+
+    connect(m_varcovar, &QPushButton::clicked, this, [this]() {
+        m_xvalues->clear();
+        m_handler->VarCovarSelect(m_values->value());
+        for (auto d : m_handler->XValues())
+            m_xvalues->addItem(QString::number(d));
     });
 }
 
@@ -163,6 +188,11 @@ void SpectraWidget::UpdateSpectra()
         item->setData(Qt::BackgroundRole, series->color());
         m_files->addItem(item);
     }
+    m_spectra_view->setXMin(m_handler->XMin());
+    m_spectra_view->setXMax(m_handler->XMax());
+    //m_handler->VarCovarSelect(10);
+    //for (auto d : m_handler->XValues())
+    //    m_xvalues->addItem(QString::number(d));
 }
 
 void SpectraWidget::PointDoubleClicked(const QPointF& point)
@@ -195,4 +225,12 @@ void SpectraWidget::setData(const QJsonObject& data)
     for (auto d : m_handler->XValues())
         m_xvalues->addItem(QString::number(d));
     UpdateData();
+}
+
+void SpectraWidget::UpdateXValues()
+{
+    QVector<double> list;
+    for (int i = 0; i < m_xvalues->count(); ++i)
+        list << m_xvalues->item(i)->data(Qt::DisplayRole).toDouble();
+    m_handler->setXValues(list);
 }

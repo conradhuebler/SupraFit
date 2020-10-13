@@ -53,6 +53,8 @@ void SpectraHandler::addSpectrum(const QString& file)
     QString id = uuid.createUuid().toString();
     m_spectra.insert(id, p);
     m_order << id;
+
+    ParseData();
 }
 
 void SpectraHandler::addDirectory(const QString& dir, const QString& suffix)
@@ -107,23 +109,34 @@ DataTable* SpectraHandler::CompileSimpleTable()
     return table;
 }
 
-Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
+void SpectraHandler::ParseData()
 {
     double min = -1e27, max = 1e27;
     for (const auto& spec : m_spectra) {
         min = qMax(min, spec.m_spectrum.XMin());
         max = qMin(max, spec.m_spectrum.XMax());
     }
+    x_min = min;
+    x_max = max;
+}
+
+Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
+{
     int size = 0;
     QVector<Vector> tmp_matrix;
-    for (const auto& spec : m_spectra) {
-        auto vector = spec.m_spectrum.getRangedSpectrum(min, max);
-        if (size == 0)
+    for (const auto& spectra : m_order) {
+        auto spec = m_spectra[spectra];
+        auto vector = spec.m_spectrum.getRangedSpectrum(x_min, x_max);
+        if (size == 0) {
             size = vector.size();
+
+            auto l = spec.m_spectrum.getRangedX(x_min, x_max);
+            m_x_ranges = QVector<double>(l.begin(), l.end());
+        }
         if (size == vector.size())
             tmp_matrix << vector;
     }
-    std::cout << min << " " << max << std::endl;
+
     Eigen::MatrixXd matrix = Eigen::MatrixXd::Ones(tmp_matrix.size(), size);
     for (int i = 0; i < tmp_matrix.size(); ++i)
         for (int j = 0; j < size; ++j) {
@@ -148,7 +161,6 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
 void SpectraHandler::PCA()
 {
     Eigen::MatrixXd mat = PrepareMatrix();
-
     Eigen::MatrixXd centered = mat.rowwise() - mat.colwise().mean();
     Eigen::MatrixXd cov = centered.adjoint() * centered;
     /*
@@ -239,4 +251,60 @@ Spectrum SpectraHandler::MakeSpectrum(const Vector& x, const Vector& y, const QS
 Spectrum SpectraHandler::MakeSpectrum(const QPair<Vector, Vector>& spect, const QString& filename)
 {
     return MakeSpectrum(spect.first, spect.second, filename);
+}
+
+Eigen::MatrixXd SpectraHandler::VarCovarMatrix() const
+{
+    Eigen::MatrixXd mat = PrepareMatrix();
+    DataTable* tmp = new DataTable(mat);
+    QFile file("export.txt");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream stream(&file);
+
+        stream << tmp->ExportAsString();
+
+        file.close();
+    }
+    delete tmp;
+    //std::cout << mat << std::endl;
+    Eigen::MatrixXd centered = mat.rowwise() - mat.colwise().mean();
+    Eigen::MatrixXd cov = (centered.adjoint() * centered) / double(mat.rows() - 1);
+    return cov;
+}
+
+QVector<double> SpectraHandler::VarCovarSelect(int number)
+{
+    auto cov = VarCovarMatrix();
+    QVector<double> x;
+    QVector<int> index_x;
+    QMultiMap<double, int> diag;
+    for (int i = 0; i < cov.cols(); ++i)
+        diag.insert(cov(i, i), i);
+    //qDebug() << diag;
+
+    index_x << diag.end().value();
+    while (index_x.size() < number) {
+        double covar = 1e27;
+        int index = 0;
+        for (auto iter = diag.end(); iter != diag.begin(); --iter) {
+            if (index_x.contains(iter.value()))
+                continue;
+            for (auto curr_index : index_x) {
+                double cv = cov(curr_index, iter.value());
+                if (qAbs(cv) < qAbs(covar)) {
+                    covar = cv;
+                    index = iter.value();
+                }
+            }
+        }
+        if (index < diag.size())
+            index_x << index;
+        else
+            break;
+    }
+
+    for (auto s_x : index_x)
+        x << m_x_ranges[s_x];
+    m_x = x;
+    return x;
 }

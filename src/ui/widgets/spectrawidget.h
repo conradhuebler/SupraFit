@@ -33,6 +33,7 @@ class QTableWidget;
 class QSplitter;
 class QPushButton;
 class QTabWidget;
+class QSpinBox;
 
 class SpectraWidget : public QWidget {
     Q_OBJECT
@@ -60,9 +61,12 @@ private:
     DropTable *m_indep, *m_datatable;
     QSplitter *m_main_splitter, *m_list_splitter;
     QLineEdit* m_add_xvalue;
-    QPushButton* m_accept_x;
+    QPushButton *m_accept_x, *m_varcovar;
+    QSpinBox* m_values;
     SpectraHandler* m_handler;
     QJsonObject m_project, m_input_table;
+
+    void UpdateXValues();
 private slots:
     void PointDoubleClicked(const QPointF& point);
 };

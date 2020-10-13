@@ -45,6 +45,7 @@ public:
 
 public slots:
     void setDirectory();
+    void accept() override;
 
 private:
     SpectraWidget* m_spectrawidget;

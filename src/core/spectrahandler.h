@@ -59,9 +59,17 @@ public:
     DataTable* CompileSimpleTable();
 
     void PCA();
+    QVector<double> VarCovarSelect(int number);
 
     QJsonObject getSpectraData() const;
     void LoadData(const QJsonObject& data);
+
+    inline double XMax() const { return x_max; }
+    inline double XMin() const { return x_min; }
+    inline double YMax() const { return y_max; }
+    inline double YMin() const { return y_min; }
+
+    void ParseData();
 
 signals:
     void Updated();
@@ -74,4 +82,9 @@ private:
     Eigen::MatrixXd PrepareMatrix() const;
     Spectrum MakeSpectrum(const Vector& x, const Vector& y, const QString& filename = QString());
     Spectrum MakeSpectrum(const QPair<Vector, Vector>& spect, const QString& filename = QString());
+
+    Eigen::MatrixXd VarCovarMatrix() const;
+
+    mutable QVector<double> m_x_ranges;
+    double x_min = 0, x_max = 0, y_min = 0, y_max = 0;
 };
