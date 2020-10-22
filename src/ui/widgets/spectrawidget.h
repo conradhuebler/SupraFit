@@ -67,6 +67,8 @@ private:
     QJsonObject m_project, m_input_table;
 
     void UpdateXValues();
+    void UpdateVerticaLines();
+
 private slots:
     void PointDoubleClicked(const QPointF& point);
 };

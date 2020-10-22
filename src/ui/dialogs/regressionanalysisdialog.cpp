@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -100,26 +100,30 @@ void RegressionAnalysisDialog::setUI()
     setLayout(layout);
 
     connect(m_fit, &QPushButton::clicked, this, &RegressionAnalysisDialog::FitFunctions);
-    connect(m_wrapper.data(), &ChartWrapper::ModelTransformed, this, &RegressionAnalysisDialog::UpdatePlots);
+    connect(m_wrapper.toStrongRef().data(), &ChartWrapper::ModelTransformed, this, &RegressionAnalysisDialog::UpdatePlots);
 }
 
 void RegressionAnalysisDialog::UpdatePlots()
 {
-    if (m_data.data()->isSimulation())
+    if (m_data.toStrongRef().data()->isSimulation())
         return;
 
     m_chart->Clear();
     m_output->clear();
-    m_series = m_wrapper.data()->CloneSeries();
+    m_series = m_wrapper.toStrongRef().data()->CloneSeries();
+    m_fit->setEnabled(m_series.size());
+
+    if (!m_series.size())
+        return;
+
     for (int i = 0; i < m_series.size(); ++i) {
         m_chart->addSeries(m_series[i], i, m_series[i]->color());
         m_series[i]->setBorderColor(m_series[i]->color());
         m_series[i]->setMarkerSize(4);
     }
     m_functions->setRange(1, m_series.first()->points().size() / 2);
-    m_chart->setXAxis(m_wrapper.data()->XLabel());
-    m_chart->setYAxis(m_wrapper.data()->YLabel());
-
+    m_chart->setXAxis(m_wrapper.toStrongRef().data()->XLabel());
+    m_chart->setYAxis(m_wrapper.toStrongRef().data()->YLabel());
     // TestPeaks();
 }
 
@@ -236,6 +240,9 @@ void RegressionAnalysisDialog::LoadRegression(int index)
     UpdatePlots();
     QString output;
     QVector<qreal> x;
+
+    if (!m_series.size())
+        return;
 
     QList<QPointF> points = m_series.first()->points();
     for (int j = 0; j < points.size(); ++j) {

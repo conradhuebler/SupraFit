@@ -142,7 +142,7 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
         for (int j = 0; j < size; ++j) {
             matrix(i, j) = tmp_matrix[i](j);
         }
-    /*
+
     DataTable *tmp = new DataTable(matrix);
     QFile file("export.txt");
     if(file.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -154,7 +154,7 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
                  file.close();
     }
     delete tmp;
-    */
+
     return matrix;
 }
 
@@ -280,7 +280,9 @@ QVector<double> SpectraHandler::VarCovarSelect(int number)
     QMultiMap<double, int> diag;
     for (int i = 0; i < cov.cols(); ++i)
         diag.insert(cov(i, i), i);
-    //qDebug() << diag;
+    if (diag.end().value() >= cov.cols())
+
+        return x;
 
     index_x << diag.end().value();
     while (index_x.size() < number) {
@@ -290,7 +292,7 @@ QVector<double> SpectraHandler::VarCovarSelect(int number)
             if (index_x.contains(iter.value()))
                 continue;
             for (auto curr_index : index_x) {
-                double cv = cov(curr_index, iter.value());
+                double cv = cov(curr_index, iter.value()) / sqrt(cov(curr_index) * cov(iter.value()));
                 if (qAbs(cv) < qAbs(covar)) {
                     covar = cv;
                     index = iter.value();

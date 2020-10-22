@@ -102,6 +102,7 @@ void SpectraWidget::setUI()
         if (avl < m_xvalues->count() && avl >= 0) {
             m_xvalues->takeItem(avl);
             UpdateXValues();
+            UpdateVerticaLines();
         }
     });
     m_xvalues->addAction(action);
@@ -111,12 +112,16 @@ void SpectraWidget::setUI()
     connect(action, &QAction::triggered, m_xvalues, [this]() {
         m_xvalues->clear();
         m_handler->setXValues(QVector<double>());
+        UpdateVerticaLines();
     });
     m_xvalues->addAction(action);
 
     m_spectra_view = new ChartView;
     m_spectra_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
     m_spectra_view->setVerticalLineEnabled(true);
+
+    m_spectra_view->PrivateView()->setVerticalLinePrec(0);
+    m_spectra_view->PrivateView()->setVerticalLinesPrec(-1);
 
     m_datatable = new DropTable;
 
@@ -150,6 +155,7 @@ void SpectraWidget::setUI()
     connect(m_varcovar, &QPushButton::clicked, this, [this]() {
         m_xvalues->clear();
         m_handler->VarCovarSelect(m_values->value());
+        UpdateVerticaLines();
         for (auto d : m_handler->XValues())
             m_xvalues->addItem(QString::number(d));
     });
@@ -190,9 +196,6 @@ void SpectraWidget::UpdateSpectra()
     }
     m_spectra_view->setXMin(m_handler->XMin());
     m_spectra_view->setXMax(m_handler->XMax());
-    //m_handler->VarCovarSelect(10);
-    //for (auto d : m_handler->XValues())
-    //    m_xvalues->addItem(QString::number(d));
 }
 
 void SpectraWidget::PointDoubleClicked(const QPointF& point)
@@ -200,6 +203,7 @@ void SpectraWidget::PointDoubleClicked(const QPointF& point)
     m_xvalues->addItem(QString::number(point.x()));
     m_handler->addXValue(point.x());
     UpdateData();
+    UpdateVerticaLines();
 }
 
 void SpectraWidget::UpdateData()
@@ -222,6 +226,7 @@ void SpectraWidget::setData(const QJsonObject& data)
     m_indep->setModel(new DataTable(data["independent"].toObject()));
     m_handler->LoadData(data["raw"].toObject());
     UpdateSpectra();
+    UpdateVerticaLines();
     for (auto d : m_handler->XValues())
         m_xvalues->addItem(QString::number(d));
     UpdateData();
@@ -233,4 +238,11 @@ void SpectraWidget::UpdateXValues()
     for (int i = 0; i < m_xvalues->count(); ++i)
         list << m_xvalues->item(i)->data(Qt::DisplayRole).toDouble();
     m_handler->setXValues(list);
+}
+
+void SpectraWidget::UpdateVerticaLines()
+{
+    m_spectra_view->PrivateView()->removeAllVerticalLines();
+    for (auto d : m_handler->XValues())
+        m_spectra_view->PrivateView()->addVerticalLine(d);
 }
