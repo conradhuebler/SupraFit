@@ -139,11 +139,11 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
     QVector<Vector> tmp_matrix;
     for (const auto& spectra : m_order) {
         auto spec = m_spectra[spectra];
-        auto vector = spec.m_spectrum.getRangedSpectrum(m_x_start, m_x_end);
+        auto vector = spec.m_spectrum.getRangedSpectrum(x_min, x_max);
         if (size == 0) {
             size = vector.size();
 
-            auto l = spec.m_spectrum.getRangedX(m_x_start, m_x_end);
+            auto l = spec.m_spectrum.getRangedX(x_min, x_max);
             m_x_ranges = QVector<double>(l.begin(), l.end());
         }
         if (size == vector.size())
@@ -292,24 +292,31 @@ QVector<double> SpectraHandler::VarCovarSelect(int number)
     QVector<double> x;
     QVector<int> index_x;
     QMultiMap<double, int> diag;
-    for (int i = 0; i < cov.cols(); ++i)
+    for (int i = 0; i < cov.cols(); ++i) {
+        if (m_x_ranges[i] > m_x_end || m_x_ranges[i] < m_x_start)
+            continue;
         diag.insert(cov(i, i), i);
+    }
     if (diag.end().value() >= cov.cols())
-
         return x;
 
-    index_x << diag.end().value();
+    //  qDebug() << diag;
+    //  qDebug() << diag.last();
+    index_x << diag.last();
+    auto keys = diag.keys();
     while (index_x.size() < number) {
         double covar = 1e27;
         int index = 0;
-        for (auto iter = diag.end(); iter != diag.begin(); --iter) {
-            if (index_x.contains(iter.value()))
+        for (auto iter = keys.size() - 1; iter >= 0; --iter) {
+            int current = diag.value(keys[iter]);
+            if (index_x.contains(current))
                 continue;
             for (auto curr_index : index_x) {
-                double cv = cov(curr_index, iter.value()) / sqrt(cov(curr_index) * cov(iter.value()));
+                double cv = cov(curr_index, current) / sqrt(cov(curr_index, curr_index) * cov(current, current));
+                // qDebug() << cov(curr_index, current) << cov(curr_index, curr_index) << cov(current, current) << sqrt(cov(curr_index) * cov(current));
                 if (qAbs(cv) < qAbs(covar)) {
                     covar = cv;
-                    index = iter.value();
+                    index = current;
                 }
             }
         }
