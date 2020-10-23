@@ -63,6 +63,7 @@ private:
     QLineEdit* m_add_xvalue;
     QPushButton *m_accept_x, *m_varcovar;
     QSpinBox* m_values;
+    QDoubleSpinBox *m_x_start, *m_x_end;
     SpectraHandler* m_handler;
     QJsonObject m_project, m_input_table;
 
@@ -71,4 +72,5 @@ private:
 
 private slots:
     void PointDoubleClicked(const QPointF& point);
+    void UpdateXRange(const QPointF& point1, const QPointF& point2);
 };

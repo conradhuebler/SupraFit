@@ -20,6 +20,7 @@
 #include <charts.h>
 
 #include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
@@ -82,15 +83,15 @@ void SpectraWidget::setUI()
     m_values = new QSpinBox;
     m_values->setMinimum(1);
     m_values->setMaximum(20);
-    m_values->setValue(10);
+    m_values->setValue(5);
     m_varcovar = new QPushButton(tr("VarCovar"));
 
     QGridLayout* xlayout = new QGridLayout;
     xlayout->addWidget(m_add_xvalue, 0, 0);
     xlayout->addWidget(m_accept_x, 0, 1);
     xlayout->addWidget(m_xvalues, 1, 0, 1, 2);
-    xlayout->addWidget(m_values, 2, 0);
-    xlayout->addWidget(m_varcovar, 2, 1);
+    //xlayout->addWidget(m_values, 2, 0);
+    //xlayout->addWidget(m_varcovar, 2, 1);
     QWidget* xwidget = new QWidget;
     xwidget->setLayout(xlayout);
     m_xvalues->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -116,17 +117,34 @@ void SpectraWidget::setUI()
     });
     m_xvalues->addAction(action);
 
+    QWidget* chart_viewport = new QWidget;
+    QGridLayout* chart_layout = new QGridLayout;
+    chart_viewport->setLayout(chart_layout);
+
+    m_x_start = new QDoubleSpinBox;
+    m_x_end = new QDoubleSpinBox;
+    chart_layout->addWidget(new QLabel(tr("Start")), 0, 0);
+    chart_layout->addWidget(m_x_start, 0, 1);
+    chart_layout->addWidget(new QLabel(tr("Ende")), 0, 2);
+    chart_layout->addWidget(m_x_end, 0, 3);
+    chart_layout->addWidget(new QLabel(tr("# X Values")), 0, 4);
+    chart_layout->addWidget(m_values, 0, 5);
+    chart_layout->addWidget(m_varcovar, 0, 6);
     m_spectra_view = new ChartView;
     m_spectra_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
     m_spectra_view->setVerticalLineEnabled(true);
+    //m_spectra_view->setZoomStrategy(ZoomStrategy::Z_Horizontal);
+    m_spectra_view->setSelectStrategy(SelectStrategy::S_Horizontal);
 
     m_spectra_view->PrivateView()->setVerticalLinePrec(0);
     m_spectra_view->PrivateView()->setVerticalLinesPrec(-1);
 
+    chart_layout->addWidget(m_spectra_view, 1, 0, 1, 7);
+
     m_datatable = new DropTable;
 
     m_views = new QTabWidget;
-    m_views->addTab(m_spectra_view, tr("Spectra View"));
+    m_views->addTab(chart_viewport, tr("Spectra View"));
     m_views->addTab(m_datatable, tr("Compiled Input"));
 
     m_indep = new DropTable;
@@ -153,12 +171,15 @@ void SpectraWidget::setUI()
     });
 
     connect(m_varcovar, &QPushButton::clicked, this, [this]() {
+        m_handler->setXRange(m_x_start->value(), m_x_end->value());
         m_xvalues->clear();
         m_handler->VarCovarSelect(m_values->value());
         UpdateVerticaLines();
         for (auto d : m_handler->XValues())
             m_xvalues->addItem(QString::number(d));
     });
+
+    connect(m_spectra_view, &ChartView::AddRect, this, &SpectraWidget::UpdateXRange);
 }
 
 void SpectraWidget::addFile(const QString& file)
@@ -196,6 +217,15 @@ void SpectraWidget::UpdateSpectra()
     }
     m_spectra_view->setXMin(m_handler->XMin());
     m_spectra_view->setXMax(m_handler->XMax());
+
+    m_x_start->setMinimum(m_handler->XMin());
+    m_x_start->setMaximum(m_handler->XMax());
+
+    m_x_end->setMinimum(m_handler->XMin());
+    m_x_end->setMaximum(m_handler->XMax());
+
+    m_x_start->setValue(m_handler->XMin());
+    m_x_end->setValue(m_handler->XMax());
 }
 
 void SpectraWidget::PointDoubleClicked(const QPointF& point)
@@ -245,4 +275,10 @@ void SpectraWidget::UpdateVerticaLines()
     m_spectra_view->PrivateView()->removeAllVerticalLines();
     for (auto d : m_handler->XValues())
         m_spectra_view->PrivateView()->addVerticalLine(d);
+}
+
+void SpectraWidget::UpdateXRange(const QPointF& point1, const QPointF& point2)
+{
+    m_x_start->setValue(point1.x());
+    m_x_end->setValue(point2.x());
 }

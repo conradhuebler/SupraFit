@@ -71,6 +71,8 @@ public:
 
     void ParseData();
 
+    void resetRange();
+    void setXRange(double x_start, double x_end);
 signals:
     void Updated();
 
@@ -86,5 +88,5 @@ private:
     Eigen::MatrixXd VarCovarMatrix() const;
 
     mutable QVector<double> m_x_ranges;
-    double x_min = 0, x_max = 0, y_min = 0, y_max = 0;
+    double x_min = 0, x_max = 0, y_min = 0, y_max = 0, m_x_start = 0, m_y_start = 0, m_x_end = 0, m_y_end = 0;
 };

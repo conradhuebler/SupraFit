@@ -118,6 +118,19 @@ void SpectraHandler::ParseData()
     }
     x_min = min;
     x_max = max;
+    resetRange();
+}
+
+void SpectraHandler::resetRange()
+{
+    m_x_start = x_min;
+    m_x_end = x_max;
+}
+
+void SpectraHandler::setXRange(double x_start, double x_end)
+{
+    m_x_start = x_start;
+    m_x_end = x_end;
 }
 
 Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
@@ -126,11 +139,11 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
     QVector<Vector> tmp_matrix;
     for (const auto& spectra : m_order) {
         auto spec = m_spectra[spectra];
-        auto vector = spec.m_spectrum.getRangedSpectrum(x_min, x_max);
+        auto vector = spec.m_spectrum.getRangedSpectrum(m_x_start, m_x_end);
         if (size == 0) {
             size = vector.size();
 
-            auto l = spec.m_spectrum.getRangedX(x_min, x_max);
+            auto l = spec.m_spectrum.getRangedX(m_x_start, m_x_end);
             m_x_ranges = QVector<double>(l.begin(), l.end());
         }
         if (size == vector.size())
@@ -256,7 +269,8 @@ Spectrum SpectraHandler::MakeSpectrum(const QPair<Vector, Vector>& spect, const 
 Eigen::MatrixXd SpectraHandler::VarCovarMatrix() const
 {
     Eigen::MatrixXd mat = PrepareMatrix();
-    DataTable* tmp = new DataTable(mat);
+    /* DataTable* tmp = new DataTable(mat);
+
     QFile file("export.txt");
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&file);
@@ -265,7 +279,7 @@ Eigen::MatrixXd SpectraHandler::VarCovarMatrix() const
 
         file.close();
     }
-    delete tmp;
+    delete tmp;*/
     //std::cout << mat << std::endl;
     Eigen::MatrixXd centered = mat.rowwise() - mat.colwise().mean();
     Eigen::MatrixXd cov = (centered.adjoint() * centered) / double(mat.rows() - 1);

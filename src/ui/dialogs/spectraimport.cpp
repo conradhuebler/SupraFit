@@ -73,7 +73,7 @@ void SpectraImport::setUI()
     layout->addWidget(m_path, 0, 2);
     layout->addWidget(m_spectrawidget, 1, 0, 1, 3);
 
-    layout->addWidget(m_buttonbox, 2, 1);
+    layout->addWidget(m_buttonbox, 2, 2);
 
     setLayout(layout);
     setWindowTitle(tr("Spectra Analysis and Import"));

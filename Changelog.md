@@ -2,6 +2,7 @@
 
 ### SupraFit 2.x
 
+- basic variance/covariance based wavelength selection
 - add explicit UV/VIS models (NMR options will be deprecated)
 - add spectra import dialog
 - add ChaiScript to make user defineable models
