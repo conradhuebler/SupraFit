@@ -118,21 +118,28 @@ void FileHandler::ReadGeneric()
         return;
     for (const QString& line : qAsConst(m_filecontent)) {
         if (!line.isEmpty()) {
+            bool read_header = false;
+            if (line[0] == "#" && header_added == false) {
+                read_header = true;
+            }
             QVector<qreal> row;
             QStringList header;
             QStringList items = line.simplified().split(sep);
             double sum = 0;
             for (const QString& item : qAsConst(items)) {
-                row.append((QString(item).replace(",", ".")).toDouble());
+                if (read_header)
+                    header << QString(item).replace("#", "");
+                else
+                    row.append((QString(item).replace(",", ".")).toDouble());
                 sum += (QString(item).replace(",", ".")).toDouble();
-                header << item;
             }
+            qDebug() << header;
             if (!header_added) {
-                for (int j = 0; j < header.size(); ++j)
-                    m_stored_table->setHeaderData(j, Qt::Horizontal, (header[j]), Qt::DisplayRole);
+                m_stored_table->setHeader(header);
                 header_added = true;
             }
-            m_stored_table->insertRow(row);
+            if (!read_header)
+                m_stored_table->insertRow(row);
         }
     }
     ConvertTable();

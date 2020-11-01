@@ -20,6 +20,7 @@
 #include <Eigen/Dense>
 
 #include <QtCore/QCollator>
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QDirIterator>
 #include <QtCore/QList>
@@ -155,7 +156,7 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
         for (int j = 0; j < size; ++j) {
             matrix(i, j) = tmp_matrix[i](j);
         }
-
+    /*
     DataTable *tmp = new DataTable(matrix);
     QFile file("export.txt");
     if(file.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -167,8 +168,14 @@ Eigen::MatrixXd SpectraHandler::PrepareMatrix() const
                  file.close();
     }
     delete tmp;
-
+    */
     return matrix;
+}
+
+void SpectraHandler::clearFiles()
+{
+    m_order.clear();
+    m_spectra.clear();
 }
 
 void SpectraHandler::PCA()
@@ -300,11 +307,13 @@ QVector<double> SpectraHandler::VarCovarSelect(int number)
     if (diag.end().value() >= cov.cols())
         return x;
 
-    //  qDebug() << diag;
-    //  qDebug() << diag.last();
+    // qDebug() << diag;
+    // qDebug() << diag.last();
+    QVector<int> exclude_list;
     index_x << diag.last();
     auto keys = diag.keys();
-    while (index_x.size() < number) {
+    while (index_x.size() < number + exclude_list.size()) {
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         double covar = 1e27;
         int index = 0;
         for (auto iter = keys.size() - 1; iter >= 0; --iter) {
@@ -320,14 +329,23 @@ QVector<double> SpectraHandler::VarCovarSelect(int number)
                 }
             }
         }
-        if (index < diag.size())
+        //if (index < diag.size())
+        {
             index_x << index;
-        else
-            break;
+            if (m_x_ranges[index] > m_x_end || m_x_ranges[index] < m_x_start)
+                exclude_list << index;
+        }
+        //else
+        //    break;
+    }
+    for (auto s_x : index_x) {
+        //if(exclude_list.contains(s_x))
+        //    continue;
+        if (s_x > m_x_ranges.size())
+            continue;
+        x << m_x_ranges[s_x];
     }
 
-    for (auto s_x : index_x)
-        x << m_x_ranges[s_x];
     m_x = x;
     return x;
 }

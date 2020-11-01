@@ -469,7 +469,12 @@ void DataTable::append(const QPointer<DataTable> table)
     for (int i = 0; i < table->rowCount(); ++i)
         insertRow(table->Row(i), table->CheckedRow(i));
 }
-
+void DataTable::prepend(QPointer<DataTable> table)
+{
+    for (int i = 0; i < rowCount(); ++i)
+        table->insertRow(Row(i), CheckedRow(i));
+    ImportTable(table->ExportTable(true));
+}
 void DataTable::insertRow(const Vector& row, const Vector& checked)
 {
     QReadLocker locker(&mutex);
@@ -545,6 +550,43 @@ void DataTable::appendColumns(const DataTable& table, bool keep_header)
     else {
         while (m_header.size() < m_table.cols())
             m_header << QString::number(m_table.cols());
+    }
+
+    if (rowCount() && columnCount())
+        emit layoutChanged();
+}
+
+void DataTable::prependColumns(const DataTable& table, bool keep_header)
+{
+    QReadLocker locker(&mutex);
+
+    int rows = qMax(rowCount(), table.rowCount());
+    int cols = columnCount() + table.columnCount();
+
+    Eigen::MatrixXd tab = Eigen::MatrixXd::Zero(rows, cols);
+    Eigen::MatrixXd check = Eigen::MatrixXd::Ones(rows, cols);
+
+    for (int i = 0; i < table.columnCount(); ++i)
+        for (int j = 0; j < table.rowCount(); ++j) {
+            tab(j, i) = table.data(i, j);
+            //check(j,columnCount() + i) = m_checked_table(j,i);
+        }
+
+    for (int i = 0; i < columnCount(); ++i)
+        for (int j = 0; j < rowCount(); ++j) {
+            tab(j, table.columnCount() + i) = data(i, j);
+            //check(j,i) = m_checked_table(j,i);
+        }
+
+    m_table = tab;
+    m_checked_table = check;
+
+    if (keep_header) {
+        for (const auto& head : table.header())
+            m_header.prepend(head);
+    } else {
+        while (m_header.size() < m_table.cols())
+            m_header.append(QString::number(m_table.cols()));
     }
 
     if (rowCount() && columnCount())
@@ -638,6 +680,7 @@ QPointer<DataTable> DataTable::PrepareBootStrap(std::uniform_int_distribution<in
 QString DataTable::ExportAsString() const
 {
     QString str;
+    str += "#" + m_header.join("\t") + "\n";
     for (int j = 0; j < rowCount(); ++j) {
         for (int i = 0; i < columnCount(); ++i) {
             str += Print::printDouble(data(i, j));

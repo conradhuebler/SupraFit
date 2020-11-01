@@ -19,6 +19,7 @@
 
 #include <charts.h>
 
+#include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
@@ -30,6 +31,7 @@
 #include <QtWidgets/QTableWidget>
 #include <QtWidgets/QWidget>
 
+#include <QtCore/QDir>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
 #include <QtCore/QVector>
@@ -39,6 +41,7 @@
 #include <src/ui/widgets/DropTable.h>
 
 #include "src/ui/guitools/guitools.h"
+#include "src/ui/guitools/waiter.h"
 
 #include "src/global.h"
 
@@ -64,11 +67,17 @@ void SpectraWidget::setUI()
     QAction* action = new QAction("Remove spectra");
     action->setIcon(Icon("list-remove"));
     connect(action, &QAction::triggered, m_files, [this]() {
-        auto avl = m_xvalues->currentItem();
-        if (!avl)
-            return;
-        qDebug() << avl->data(Qt::DisplayRole);
-        m_files->removeItemWidget(avl);
+        auto avl = m_files->currentRow();
+        if (avl < m_files->count() && avl >= 0) {
+            m_files->takeItem(avl);
+            m_handler->clearFiles();
+            QStringList files;
+            for (int i = 0; i < m_files->count(); ++i)
+                files << m_files->item(i)->data(Qt::UserRole + 1).toString() + QDir::separator() + m_files->item(i)->data(Qt::DisplayRole).toString();
+
+            for (const auto& file : files)
+                addFile(file);
+        }
     });
     m_files->addAction(action);
 
@@ -82,8 +91,8 @@ void SpectraWidget::setUI()
 
     m_values = new QSpinBox;
     m_values->setMinimum(1);
-    m_values->setMaximum(20);
-    m_values->setValue(5);
+    m_values->setMaximum(100);
+    m_values->setValue(20);
     m_varcovar = new QPushButton(tr("VarCovar"));
 
     QGridLayout* xlayout = new QGridLayout;
@@ -143,18 +152,34 @@ void SpectraWidget::setUI()
 
     m_datatable = new DropTable;
 
+    QWidget* table_viewport = new QWidget;
+    QGridLayout* table_layout = new QGridLayout;
+
+    m_export_table = new QPushButton(tr("Export table to file"));
+    table_layout->addWidget(m_export_table, 0, 4);
+    table_layout->addWidget(m_datatable, 1, 0, 1, 5);
+
+    table_viewport->setLayout(table_layout);
+
     m_views = new QTabWidget;
     m_views->addTab(chart_viewport, tr("Spectra View"));
-    m_views->addTab(m_datatable, tr("Compiled Input"));
+    m_views->addTab(table_viewport, tr("Data View"));
 
     m_indep = new DropTable;
     m_indep->setMaximumWidth(300);
+
+    QWidget* indep = new QWidget;
+    QVBoxLayout* vlayout = new QVBoxLayout;
+    vlayout->addWidget(new QLabel("Drop table with independent data"));
+    vlayout->addWidget(m_indep);
+    indep->setLayout(vlayout);
+
     m_list_splitter->addWidget(m_files);
     m_list_splitter->addWidget(xwidget);
     m_main_splitter->addWidget(m_list_splitter);
     m_files->setMaximumWidth(200);
     m_main_splitter->addWidget(m_views);
-    m_main_splitter->addWidget(m_indep);
+    m_main_splitter->addWidget(indep);
 
     layout->addWidget(m_main_splitter, 0, 0);
 
@@ -171,15 +196,19 @@ void SpectraWidget::setUI()
     });
 
     connect(m_varcovar, &QPushButton::clicked, this, [this]() {
+        Waiter wait;
         m_handler->setXRange(m_x_start->value(), m_x_end->value());
         m_xvalues->clear();
         m_handler->VarCovarSelect(m_values->value());
         UpdateVerticaLines();
         for (auto d : m_handler->XValues())
             m_xvalues->addItem(QString::number(d));
+        UpdateData();
     });
 
     connect(m_spectra_view, &ChartView::AddRect, this, &SpectraWidget::UpdateXRange);
+
+    connect(m_export_table, &QPushButton::clicked, this, &SpectraWidget::SaveToFile);
 }
 
 void SpectraWidget::addFile(const QString& file)
@@ -193,6 +222,13 @@ void SpectraWidget::setDirectory(const QString& directry, const QString& type)
     m_handler->addDirectory(directry, type);
     UpdateSpectra();
     //m_handler->PCA();
+}
+
+void SpectraWidget::clear()
+{
+    m_handler->clearFiles();
+    m_spectra_view->ClearChart();
+    m_files->clear();
 }
 
 void SpectraWidget::UpdateSpectra()
@@ -238,13 +274,15 @@ void SpectraWidget::PointDoubleClicked(const QPointF& point)
 
 void SpectraWidget::UpdateData()
 {
+    DataTable* data = qobject_cast<DataTable*>(m_handler->CompileSimpleTable());
+    m_input_table = data->ExportTable(true);
+    m_datatable->setModel(data);
     QPointer<DataTable> table = qobject_cast<DataTable*>(m_indep->model());
     if (!table)
         return;
-    if (!table->isValid())
+    if (!table->isValid() || table->columnCount() == 0)
         return;
     DataTable* result = new DataTable(table);
-    DataTable* data = qobject_cast<DataTable*>(m_handler->CompileSimpleTable());
     result->appendColumns(data);
     m_datatable->setModel(result);
     m_input_table = result->ExportTable(true);
@@ -281,4 +319,22 @@ void SpectraWidget::UpdateXRange(const QPointF& point1, const QPointF& point2)
 {
     m_x_start->setValue(point1.x());
     m_x_end->setValue(point2.x());
+}
+
+void SpectraWidget::SaveToFile()
+{
+    const QString content = qobject_cast<DataTable*>(m_datatable->model())->ExportAsString();
+    const QString filename = QFileDialog::getSaveFileName(this, "Export Table", getDir());
+
+    if (filename.isEmpty())
+        return;
+
+    setLastDir(filename);
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadWrite))
+        return;
+
+    QTextStream stream(&file);
+    stream << content;
 }

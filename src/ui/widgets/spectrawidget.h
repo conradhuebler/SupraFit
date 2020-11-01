@@ -43,6 +43,8 @@ public:
     void setDirectory(const QString& directry, const QString& type);
     void addFile(const QString& file);
 
+    void clear();
+
     void setUI();
     QJsonObject ProjectData() const { return m_project; }
     QJsonObject InputTable() const { return m_input_table; }
@@ -61,7 +63,7 @@ private:
     DropTable *m_indep, *m_datatable;
     QSplitter *m_main_splitter, *m_list_splitter;
     QLineEdit* m_add_xvalue;
-    QPushButton *m_accept_x, *m_varcovar;
+    QPushButton *m_accept_x, *m_varcovar, *m_export_table;
     QSpinBox* m_values;
     QDoubleSpinBox *m_x_start, *m_x_end;
     SpectraHandler* m_handler;
@@ -73,4 +75,5 @@ private:
 private slots:
     void PointDoubleClicked(const QPointF& point);
     void UpdateXRange(const QPointF& point1, const QPointF& point2);
+    void SaveToFile();
 };

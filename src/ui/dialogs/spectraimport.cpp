@@ -87,6 +87,7 @@ void SpectraImport::setDirectory()
     QString dir = QString("%1|||%2").arg(directory).arg(m_file_type->currentText());
     setLastDir(dir);
     m_path->setText(directory);
+    m_spectrawidget->clear();
     m_spectrawidget->setDirectory(directory, m_file_type->currentText());
     qApp->instance()->setProperty("LastSpectraType", m_file_type->currentText());
 }

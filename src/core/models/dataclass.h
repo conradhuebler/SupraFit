@@ -132,6 +132,7 @@ public:
     void setChecked(int i, int j, bool checked);
 
     void append(const QPointer<DataTable> table);
+    void prepend(const QPointer<DataTable> table);
 
     void insertRow(const Vector& row, const Vector& checked);
     void insertRow(const QVector<qreal>& row, bool zero = false);
@@ -141,6 +142,7 @@ public:
     void setColumn(const Vector& vector, int column);
 
     void appendColumns(const DataTable& columns, bool keep_header = true);
+    void prependColumns(const DataTable& columns, bool keep_header = true);
 
     Vector Column(int row) const;
 

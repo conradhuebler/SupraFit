@@ -48,6 +48,8 @@ public:
     void addSpectrum(const QString& file);
     void addDirectory(const QString& dir, const QString& suffix);
 
+    void clearFiles();
+
     inline QList<QPointF> Data(const QString& hash) { return m_spectra.value(hash).m_xy; }
     inline QString Name(const QString& hash) { return m_spectra.value(hash).m_filename; }
     inline QString Path(const QString& hash) { return m_spectra.value(hash).m_path; }

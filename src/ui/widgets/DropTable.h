@@ -83,6 +83,26 @@ protected:
                 }
             }
             delete handler;
+        } else if (event->modifiers() & Qt::ControlModifier && event->key() == Qt::Key_Y) {
+            QString paste = QApplication::clipboard()->text();
+            FileHandler* handler = new FileHandler(this);
+            if (!handler->setFileContent(paste))
+                return;
+            DataTable* model = handler->getData();
+            if (!m_table) {
+                if (model->isValid()) {
+                    setModel(model);
+                    m_table = model;
+                    emit Edited();
+                }
+            } else {
+                if (model->isValid()) {
+                    m_table->prependColumns(model, false);
+                    setModel(m_table);
+                    emit Edited();
+                }
+            }
+            delete handler;
         } else {
 
             QTableView::keyPressEvent(event);
