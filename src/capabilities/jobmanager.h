@@ -35,7 +35,6 @@ class ResampleAnalyse;
 /* Model Comparison Settings */
 
 const QJsonObject ModelComparisonConfigBlock{
-
     /* Set method */
     { "method", SupraFit::Method::ModelComparison }, // int, either SupraFit::Method::ModelComparison or SupraFit::Method::FastConfidence
 
@@ -89,13 +88,11 @@ const QJsonObject ModelComparisonConfigBlock{
 
     /* Store as few data as possible */
     { "LightWeight", false }, //bool
-
 };
 
 /* Monte Carlo Settings */
 
 const QJsonObject MonteCarloConfigBlock{
-
     /* Set method */
     { "method", SupraFit::Method::MonteCarlo }, // int
 
@@ -128,12 +125,10 @@ const QJsonObject MonteCarloConfigBlock{
 
     /* Store as few data as possible */
     { "LightWeight", false }, //bool
-
 };
 
 /* Resample Methods Settings */
 const QJsonObject ResampleConfigBlock{
-
     /* Set method */
     { "method", SupraFit::Method::CrossValidation }, // int either SupraFit::Method::CrossValidation or SupraFit::Method::ReductionAnalyse
 
@@ -169,7 +164,6 @@ const QJsonObject ResampleConfigBlock{
 
 /* Grid Search Settings */
 const QJsonObject GridSearchConfigBlock{
-
     /* Set method */
     { "method", SupraFit::Method::WeakenedGridSearch }, // int
 

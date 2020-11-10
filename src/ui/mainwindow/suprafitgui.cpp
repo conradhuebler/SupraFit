@@ -39,6 +39,7 @@
 #include "src/ui/mainwindow/mainwindow.h"
 #include "src/ui/mainwindow/modeldataholder.h"
 #include "src/ui/mainwindow/modelwidget.h"
+#include "src/ui/mainwindow/projecttree.h"
 
 #include "src/ui/widgets/messagedock.h"
 
@@ -80,411 +81,6 @@
 #include <stdio.h>
 
 #include "suprafitgui.h"
-
-void ProjectTree::UpdateStructure()
-{
-
-    // m_uuids.clear();
-    // m_ptr_uuids.clear();
-
-    for (int i = 0; i < m_data_list->size(); ++i) {
-        QString uuid = (*m_data_list)[i].data()->UUID();
-
-        if (!m_uuids.contains(uuid)) {
-            m_uuids << uuid;
-            m_ptr_uuids << &m_uuids.last();
-        }
-
-        for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
-            QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID();
-
-            if (!m_uuids.contains(sub_uuid)) {
-                m_uuids << sub_uuid;
-                m_ptr_uuids << &m_uuids.last();
-            }
-        }
-    }
-    layoutChanged();
-}
-
-QString ProjectTree::UUID(const QModelIndex& index) const
-{
-    int i = m_ptr_uuids.indexOf(index.internalPointer());
-    if (i == -1)
-        return QString();
-
-    return m_uuids[i];
-}
-
-int ProjectTree::columnCount(const QModelIndex& parent) const
-{
-    if (parent.isValid())
-        return 1;
-    else
-        return 2;
-}
-
-int ProjectTree::rowCount(const QModelIndex& p) const
-{
-    int count = m_data_list->size();
-    if (p.isValid()) {
-
-        QString uuid = UUID(p);
-        if (uuid.size() == 77) // Model Element
-        {
-            count = 0;
-
-        } else if (uuid.size() == 38) // DataClass Element
-        {
-            count = (*m_data_list)[p.row()].data()->ChildrenSize();
-        } else
-            count = 0;
-    }
-    return count;
-}
-
-QVariant ProjectTree::data(const QModelIndex& index, int role) const
-{
-    QVariant data;
-    if (!index.isValid())
-        return data;
-
-    if (role == Qt::DisplayRole) {
-        if (index.column() == 0) {
-            if (parent(index).isValid()) // Model Element
-            {
-                data = qobject_cast<AbstractModel*>((*m_data_list)[parent(index).row()].data()->Children(index.row()))->Name();
-
-            } else // DataClass Element
-            {
-                data = (*m_data_list)[index.row()].data()->ProjectTitle();
-            }
-        } else if (index.column() == 1 && !parent(index).isValid()) {
-            data = (*m_data_list)[index.row()].data()->ChildrenSize();
-        } else if (index.column() == 1 && parent(index).isValid()) {
-            // qDebug() << index.row() << (*m_data_list)[index.row()].data()->ProjectTitle();
-        }
-    }
-
-    return data;
-}
-
-QModelIndex ProjectTree::index(int row, int column, const QModelIndex& parent) const
-{
-    QModelIndex index;
-    if (!hasIndex(row, column, parent))
-        index = QModelIndex();
-
-    if (!parent.isValid()) {
-
-        if (row == -1) {
-            return index;
-        }
-
-        if (row < m_data_list->size()) {
-            QString uuid = (*m_data_list)[row].data()->UUID();
-            if (m_uuids.indexOf(uuid) == -1)
-                return index;
-            index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(uuid)]);
-        }
-    } else {
-        if (parent.row() < m_data_list->size()) {
-            if (row < (*m_data_list)[parent.row()].data()->ChildrenSize()) {
-                QString uuid = (*m_data_list)[parent.row()].data()->UUID();
-                QString sub_uuid = uuid + "|" + qobject_cast<AbstractModel*>((*m_data_list)[parent.row()].data()->Children(row))->ModelUUID();
-                index = createIndex(row, column, m_ptr_uuids[m_uuids.indexOf(sub_uuid)]);
-            }
-        }
-    }
-
-    return index;
-}
-
-QModelIndex ProjectTree::parent(const QModelIndex& child) const
-{
-    QModelIndex index;
-
-    if (!child.isValid())
-        return index;
-
-    QString uuid = UUID(child);
-
-    if (!(uuid.size() == 77 || uuid.size() == 38))
-        return index;
-
-    QStringList uuids = uuid.split("|");
-    if (uuids.size() == 2) {
-        for (int i = 0; i < m_data_list->size(); ++i) {
-            if ((*m_data_list)[i].data()->UUID() == uuids[0]) {
-                for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
-                    if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == uuids[1]) {
-                        index = createIndex(i, 0, m_ptr_uuids[m_uuids.indexOf(uuids[0])]);
-                    }
-                }
-            }
-        }
-    } else
-        return index;
-
-    return index;
-}
-
-QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
-{
-    ModelMime* mimeData = new ModelMime();
-
-    QString data;
-    QJsonObject object;
-    for (const QModelIndex& index : qAsConst(indexes)) {
-        if (index.isValid()) {
-            QJsonObject d, top;
-            if (parent(index).isValid()) {
-                data = "Model: " + QString::number(parent(index).row()) + "-" + QString::number(index.row());
-                mimeData->setModel(true);
-                QStringList uuids = UUID(index).split("|");
-                if (uuids.size() == 2) {
-                    mimeData->setDataUUID(uuids[0]);
-                    mimeData->setModelUUID(uuids[1]);
-                    for (int i = 0; i < m_data_list->size(); ++i) {
-                        if (mimeData->DataUUID() == (*m_data_list)[i].data()->UUID()) {
-                            for (int j = 0; j < (*m_data_list)[i].data()->ChildrenSize(); ++j) {
-                                if (qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j))->ModelUUID() == mimeData->ModelUUID()) {
-                                    AbstractModel* model = qobject_cast<AbstractModel*>((*m_data_list)[i].data()->Children(j));
-                                    top = model->ExportModel(true, false);
-                                    mimeData->setSupportSeries(model->SupportSeries());
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                data = "Data: " + QString::number(index.row());
-                mimeData->setDataUUID(UUID(index));
-                for (int i = 0; i < m_data_list->size(); ++i) {
-                    if (mimeData->DataUUID() == (*m_data_list)[i].data()->UUID()) {
-                        d = (*m_data_list)[i].data()->ExportData();
-                        top = (*m_data_list)[i].data()->ExportChildren(true, false);
-                    }
-                }
-                top["data"] = d;
-            }
-            mimeData->setModelIndex(index);
-            QJsonDocument document = QJsonDocument(top);
-            mimeData->setData("application/x-suprafitmodel", document.toBinaryData());
-        }
-    }
-
-    mimeData->setInstance(m_instance);
-    mimeData->setText(data);
-    return mimeData;
-}
-
-bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index) const
-{
-    Q_UNUSED(action)
-
-    QString string = data->text();
-
-    if (string.contains("file:///")) {
-        return true;
-    }
-
-    if (!data->urls().isEmpty())
-        return true;
-
-    if (!qobject_cast<const ModelMime*>(data)) {
-        /* This could be from suprafit but a different main instance */
-
-        QByteArray sprmodel = data->data("application/x-suprafitmodel");
-        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-        QJsonObject mod = doc.object();
-        if (mod["model"].toInt() == 0) {
-            if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
-                return true;
-            }
-            return false;
-        } else {
-            if (index.isValid() && parent(index).isValid()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    const ModelMime* d = qobject_cast<const ModelMime*>(data);
-
-    QByteArray sprmodel = data->data("application/x-suprafitmodel");
-    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-
-    if (d->Instance() != m_instance) {
-        if (!doc.isEmpty() && string.contains("Data")) {
-            return true;
-        }
-    }
-
-    if (string == "SupraFitSimulation") {
-        return true;
-    }
-
-    if (string.isEmpty() || string.isNull())
-        return false;
-
-    if (row == -1 && column == -1 && !index.isValid()) {
-        const ModelMime* d = qobject_cast<const ModelMime*>(data);
-
-        if (d->Index().parent().row() == -1)
-            return false;
-
-        if (d->Index().parent().row() < (*m_data_list).size() && d->Index().parent().row() >= 0) {
-            if (!qApp->instance()->property("MetaSeries").toBool()) {
-                if (d->SupportSeries()) {
-                    return false;
-                }
-            }
-            if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
-                return false;
-        }
-        return true;
-    }
-    if (index.isValid() && !parent(index).isValid()) {
-        int r = index.row();
-        const ModelMime* d = qobject_cast<const ModelMime*>(data);
-
-        if (qobject_cast<MetaModel*>((*m_data_list)[r].data()) && index.isValid()) {
-
-            if (d->Index().parent().row() < (*m_data_list).size() && d->Index().parent().row() >= 0) {
-                if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
-                    return false;
-                if (!qApp->instance()->property("MetaSeries").toBool()) {
-                    if (d->SupportSeries()) {
-                        return false;
-                    }
-                } else
-                    return false;
-            }
-            if (d->Index().parent().isValid())
-                return true;
-            else
-                return false; //emit UiMessage(tr("It doesn't make sense to add whole project to a meta model.\nTry one of the models within this project."));
-        } else if (index.isValid()) {
-            if (!d->Index().parent().isValid()) {
-
-                return true; //emit CopySystemParameter(d->Index(), r);
-            } else
-                return false; //emit UiMessage(tr("Nothing to tell"));
-        }
-        return true;
-    } else if (index.isValid() && parent(index).isValid()) {
-        return true;
-    } else
-        return true;
-    return true;
-}
-
-bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& index)
-{
-    Q_UNUSED(action)
-
-    QString string = data->text();
-
-    if (string.contains("file:///")) {
-        QStringList list = string.split("\n");
-        for (QString str : list) {
-            if (!str.isEmpty() && !str.isNull())
-#ifdef _WIN32
-                emit LoadFile(str.remove("file:///"));
-#else
-                emit LoadFile(str.remove("file://"));
-#endif
-        }
-        return true;
-    }
-
-    if (!data->urls().isEmpty()) {
-        for (const QUrl& url : data->urls()) {
-            emit LoadFile(url.toLocalFile());
-        }
-        return true;
-    }
-    if (!qobject_cast<const ModelMime*>(data)) {
-        /* This could be from suprafit but a different main instance */
-
-        QByteArray sprmodel = data->data("application/x-suprafitmodel");
-        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-        QJsonObject mod = doc.object();
-        if (mod["model"].toInt() == 0) {
-            if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
-                emit LoadJsonObject(mod);
-                return true;
-            }
-            return false;
-        } else {
-            qDebug() << row << index.row() << parent(index).row();
-            if (index.isValid() && parent(index).isValid()) {
-                emit CopyModel(mod, parent(index).row(), index.row());
-                return true;
-            }
-        }
-        return false;
-    }
-
-    const ModelMime* d = qobject_cast<const ModelMime*>(data);
-
-    QByteArray sprmodel = data->data("application/x-suprafitmodel");
-    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-
-    if (d->Instance() != m_instance) {
-        if (!doc.isEmpty() && string.contains("Data")) {
-            emit LoadJsonObject(doc.object());
-            return true;
-        }
-    }
-
-    if (string == "SupraFitSimulation") {
-        emit LoadJsonObject(doc.object());
-        return true;
-    }
-
-    if (string.isEmpty() || string.isNull())
-        return false;
-
-    if (row == -1 && column == -1 && !index.isValid()) {
-        const ModelMime* d = qobject_cast<const ModelMime*>(data);
-        if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
-            return false;
-        emit AddMetaModel(d->Index(), -1);
-        return true;
-    }
-    if (index.isValid() && !parent(index).isValid()) {
-        int r = index.row();
-        const ModelMime* d = qobject_cast<const ModelMime*>(data);
-
-        if (qobject_cast<MetaModel*>((*m_data_list)[r].data()) && index.isValid()) {
-
-            if ((*m_data_list)[d->Index().parent().row()].data()->SFModel() == SupraFit::MetaModel)
-                return false;
-
-            if (d->Index().parent().isValid())
-                emit AddMetaModel(d->Index(), r);
-            else
-                emit UiMessage(tr("It doesn't make sense to add whole project to a meta model.\nTry one of the models within this project."));
-        } else if (index.isValid()) {
-            if (!d->Index().parent().isValid())
-                emit CopySystemParameter(d->Index(), r);
-            else
-                emit UiMessage(tr("Nothing to tell"));
-        }
-        return true;
-    } else if (index.isValid() && parent(index).isValid()) {
-        const ModelMime* d = qobject_cast<const ModelMime*>(data);
-        QByteArray sprmodel = d->data("application/x-suprafitmodel");
-        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
-        QJsonObject mod = doc.object();
-        emit CopyModel(mod, parent(index).row(), index.row());
-    } else
-        return true;
-    return true;
-}
 
 SupraFitGui::SupraFitGui()
 {
@@ -678,7 +274,6 @@ SupraFitGui::SupraFitGui()
     tools->addWidget(m_export_plain);
     tools->addWidget(m_export_suprafit);
     if (qApp->instance()->property("advanced_ui").toBool()) {
-
         tools->addWidget(m_add_scatter);
     }
     tools->addWidget(m_close_all);
@@ -1306,7 +901,6 @@ bool SupraFitGui::LoadProject(const QString& filename)
 
 void SupraFitGui::SaveProjectAction()
 {
-
     if (m_supr_file.isEmpty() || m_supr_file.isNull()) {
         QString str = QFileDialog::getSaveFileName(this, tr("Save File"), getDir(), tr("SupraFit Project File  (*.suprafit);;Json File (*.json)"));
         if (str.isEmpty())
@@ -1555,7 +1149,6 @@ void SupraFitGui::about()
 
 void SupraFitGui::FirstStart()
 {
-
     QString info;
     info += "<p>Welcome to SupraFit, a non-linear fitting tool for supramolecular NMR titrations and ITC experiments.< /p>";
     info += "<p>The SupraFit User Interface is divided into three parts:<li>The <strong>Project List </strong> on the left side,</li> <li> the <strong>Workspace </strong> in the middle and</li> <li> the <strong>Chart Widget </strong> the left hand side!</li></p>";
@@ -1928,7 +1521,6 @@ void SupraFitGui::AddScatter()
         QJsonObject toplevel;
 
         if (JsonHandler::ReadJsonFile(toplevel, file)) {
-
             QStringList keys = toplevel.keys();
             if (keys.contains("data")) {
                 data = toplevel;
@@ -1960,7 +1552,6 @@ void SupraFitGui::AddScatter(const QJsonObject& object)
 
 void SupraFitGui::LicenseInfo()
 {
-
     QPlainTextEdit* text = new QPlainTextEdit;
     text->setReadOnly(true);
     QHBoxLayout* layout = new QHBoxLayout;

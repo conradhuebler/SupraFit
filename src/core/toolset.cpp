@@ -367,7 +367,6 @@ QVector<QPair<qreal, qreal>> List2Histogram(const QVector<qreal>& vector, int& b
         return QVector<QPair<qreal, qreal>>() << QPair<qreal, qreal>(0, 0);
 
     if (qFuzzyCompare(min, max)) {
-
         min = vector.first();
         max = vector.first();
 
@@ -1009,12 +1008,10 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
 
     //text += "<table><tr><th colspan='3'> " + result["name"].toString() + " of type " + result["type"].toString() + ": optimal value = " + Print::printDouble(value) + "</th></tr>";
     if (type == SupraFit::Method::CrossValidation || type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::ModelComparison || type == SupraFit::Method::WeakenedGridSearch || type == SupraFit::Method::FastConfidence) {
-
         text += "<tr><td><b>" + const_name + ":</b></td><td>" + Print::printDouble(value, 4) + " [+ " + Print::printDouble(upper - value, 4) + " /- " + Print::printDouble(value - lower, 4) + " ]</td></tr>";
         text += "<tr><td>" + QString::number(conf, 'f', 2) + "% Confidence Intervall: </td><td>[ " + Print::printDouble(lower, 4) + " - " + Print::printDouble(upper, 4) + " ]</td></tr>";
     }
     if (type == SupraFit::Method::MonteCarlo || type == SupraFit::Method::CrossValidation) {
-
         if (type == SupraFit::Method::CrossValidation) {
             if(controller["CVType"].toInt() == 1)
                 text += "<p>Leave-One-Out Cross Validation</p>";
@@ -1116,7 +1113,6 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
     }
 
     if (type == SupraFit::Method::Reduction) {
-
         auto CalculateReduction = [&text](qreal value, const QVector<qreal>& vector) -> qreal {
             qreal sum_err = 0, max_err = 0, aver_err = 0, aver = 0, stdev = 0;
             for (int i = 0; i < vector.size(); ++i) {

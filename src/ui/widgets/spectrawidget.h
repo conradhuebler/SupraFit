@@ -34,6 +34,7 @@ class QSplitter;
 class QPushButton;
 class QTabWidget;
 class QSpinBox;
+class QCheckBox;
 
 class SpectraWidget : public QWidget {
     Q_OBJECT
@@ -68,6 +69,7 @@ private:
     QDoubleSpinBox *m_x_start, *m_x_end;
     SpectraHandler* m_handler;
     QJsonObject m_project, m_input_table;
+    QCheckBox* m_cluster;
 
     void UpdateXValues();
     void UpdateVerticaLines();

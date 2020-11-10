@@ -54,87 +54,9 @@ class MessageDock;
 class Instance;
 class MainWindow;
 class ModelDataHolder;
+class ProjectTree;
 
 struct OptimizerConfig;
-
-class ProjectTree : public QAbstractItemModel {
-    Q_OBJECT
-public:
-    inline ProjectTree(QVector<QWeakPointer<DataClass>>* data_list, QObject* parent)
-        : QAbstractItemModel(parent)
-    {
-        m_data_list = data_list;
-        QUuid uuid;
-        m_instance = uuid.createUuid().toString();
-    }
-
-    inline virtual ~ProjectTree() override {}
-
-    virtual Qt::ItemFlags flags(const QModelIndex& index) const override
-    {
-        Q_UNUSED(index);
-        Qt::ItemFlags flags;
-
-        flags = QAbstractItemModel::flags(index);
-        flags = flags | Qt::ItemIsDragEnabled | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsDropEnabled;
-
-        return flags;
-    }
-
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
-    {
-        if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
-            if (section == 0)
-                return tr("Project Name");
-            else
-                return tr("# Models");
-        } else
-            return QAbstractItemModel::headerData(section, orientation, role);
-    }
-
-    virtual int columnCount(const QModelIndex& p = QModelIndex()) const override;
-
-    virtual int rowCount(const QModelIndex& p = QModelIndex()) const override;
-
-    virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-
-    virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
-
-    virtual QModelIndex parent(const QModelIndex& child) const override;
-
-    virtual Qt::DropActions supportedDropActions() const override
-    {
-        return Qt::CopyAction | Qt::MoveAction;
-    }
-
-    virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
-
-    virtual bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
-
-    virtual bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override;
-
-    QString UUID(const QModelIndex& index) const;
-
-public slots:
-    void UpdateStructure();
-
-private:
-    QVector<QWeakPointer<DataClass>>* m_data_list;
-
-    QStringList m_uuids;
-    QList<void*> m_ptr_uuids;
-
-    QString m_instance;
-
-
-signals:
-    void AddMetaModel(const QModelIndex& index, int position);
-    void CopySystemParameter(const QModelIndex& source, int position);
-    void UiMessage(const QString& str);
-    void CopyModel(const QJsonObject& m, int data, int model);
-    void LoadFile(const QString& file);
-    void LoadJsonObject(const QJsonObject& object);
-};
 
 class DropButton : public QToolButton {
     Q_OBJECT

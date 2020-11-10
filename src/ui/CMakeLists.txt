@@ -73,6 +73,7 @@ set(SFGui_SRC
                 mainwindow/metamodelwidget.cpp
                 mainwindow/modelwidget.cpp
                 mainwindow/mainwindow.cpp
+                mainwindow/projecttree.cpp
                 mainwindow/suprafitgui.cpp
     )
 

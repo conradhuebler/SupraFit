@@ -239,7 +239,6 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
 
 QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int cv_x)
 {
-
     QMultiMap<qreal, QString> individual_entropy, model_wise_entropy;
     QMultiMap<qreal, QString> individual_stdev, model_wise_stdev;
     QString CV;
@@ -255,7 +254,6 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
     QString method_line = QString();
     QString bin_info = QString();
     for (const auto& model : models) {
-
         QJsonObject statistics = model["data"].toObject()["methods"].toObject();
         QStringList keys = statistics.keys();
 
@@ -325,7 +323,6 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
             auto i = model_wise_entropy.begin();
             //qreal first = 0;
             while (i != model_wise_entropy.constEnd()) {
-
                 //if (i == model_wise_entropy.begin())
                 //first = i.key();
                 result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
@@ -355,7 +352,6 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
             auto i = model_wise_stdev.begin();
             //qreal first = 0;
             while (i != model_wise_stdev.constEnd()) {
-
                 //if (i == model_wise_stdev.begin())
                 //  first = i.key();
                 result += "<p>" + i.value() + ":  " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
@@ -394,7 +390,6 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
     QString bin_info = QString();
 
     for (const auto& model : models) {
-
         QJsonObject statistics = model["data"].toObject()["methods"].toObject();
         QStringList keys = statistics.keys();
 
@@ -466,7 +461,6 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             auto i = model_wise_entropy.begin();
             //qreal first = 0;
             while (i != model_wise_entropy.constEnd()) {
-
                 //if (i == model_wise_entropy.begin())
                 //    first = i.key();
                 result += "<p>" + i.value() + ":  H(x) :" + Print::printDouble(i.key()) + "</p>";
@@ -496,7 +490,6 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             auto i = model_wise_stdev.begin();
             //qreal first = 0;
             while (i != model_wise_stdev.constEnd()) {
-
                 //  if (i == model_wise_stdev.begin())
                 //      first = i.key();
                 result += "<p>" + i.value() + ": " + Unicode_sigma + " :" + Print::printDouble(i.key()) + "</p>";
@@ -539,7 +532,6 @@ QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
     auto i = list_second.begin();
     qreal first = 0;
     while (i != list_second.constEnd()) {
-
         if (i == list_second.begin())
             first = i.key();
         result += "<p>" + i.value() + ":  2nd Order AIC:" + Print::printDouble(i.key()) + " - Evidence Ratio:" + Print::printDouble(1 / exp(-0.5 * (first - i.key()))) + "</p>";
@@ -549,7 +541,6 @@ QString CompareAIC(const QVector<QWeakPointer<AbstractModel>> models)
     result += "\n\n<p>List ordered by uncorrected AIC Value</p>";
     i = list_first.begin();
     while (i != list_first.constEnd()) {
-
         if (i == list_first.begin())
             first = i.key();
 

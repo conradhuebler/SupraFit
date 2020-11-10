@@ -86,7 +86,6 @@ qreal MetaModel::LocalParameter(int parameter, int series) const
     int count = 0;
 
     for (int i = 0; i < m_local_par.size(); ++i) {
-
         int param_index = m_local_par[i];
         int index = 0;
         qreal value = 0;
@@ -117,7 +116,6 @@ void MetaModel::ApplyConnectType()
 
         for (int i = 0; i < m_models.size(); ++i) {
             for (int j = 0; j < m_global_index[i].size(); ++j) {
-
                 QVector<int> param(4);
                 param[0] = i;
                 param[1] = 0;
@@ -133,7 +131,6 @@ void MetaModel::ApplyConnectType()
 
         for (int i = 0; i < m_models.size(); ++i) {
             for (int j = 0; j < m_local_index[i].size(); ++j) {
-
                 QVector<int> param(4);
                 param[0] = i;
                 param[1] = 1;
@@ -150,9 +147,7 @@ void MetaModel::ApplyConnectType()
         m_series_count = 1;
     } else if (m_connect_type == ConnectType::None) {
         for (int i = 0; i < m_models.size(); ++i) {
-
             for (int j = 0; j < m_global_index[i].size(); ++j) {
-
                 QVector<int> para(4);
                 para[0] = i;
                 para[1] = 0;
@@ -164,9 +159,7 @@ void MetaModel::ApplyConnectType()
             }
         }
         for (int i = 0; i < m_models.size(); ++i) {
-
             for (int j = 0; j < m_local_index[i].size(); ++j) {
-
                 QVector<int> para(4);
                 para[0] = i;
                 para[1] = 1;
@@ -385,7 +378,6 @@ qreal MetaModel::CalculateCovarianceFit() const
     double mean_model = model / double(count);
     double mean_data = data / double(count);
     for (int index = 0; index < m_models.size(); ++index) {
-
         for (int i = 0; i < m_models[index]->DataPoints(); ++i) {
             for (int j = 0; j < m_models[index]->SeriesCount(); ++j) {
                 if (!m_models[index]->ActiveSignals(j))
@@ -404,7 +396,6 @@ qreal MetaModel::SumOfErrors(int i) const
 {
     qreal sum = 0;
     for (int index = 0; index < m_models.size(); ++index) {
-
         if (!m_models[index]->ActiveSignals(i) || i >= m_models[index]->Size())
             return sum;
 
@@ -419,11 +410,12 @@ QVector<qreal> MetaModel::ErrorVector() const
 {
     QVector<qreal> error;
 
-    for (const QSharedPointer<AbstractModel> model : m_models)
+    for (const QSharedPointer<AbstractModel>& model : m_models) // if anything stranges happpens, look here
         error << model->ErrorVector();
 
     return error;
 }
+
 QList<double> MetaModel::getCalculatedModel()
 {
     QList<double> x;
@@ -654,7 +646,6 @@ bool MetaModel::ImportModel(const QJsonObject& topjson, bool override)
         QJsonObject parameter = topjson["parameter"].toObject();
         int size = parameter["size"].toInt();
         for (int i = 0; i < size; ++i) {
-
             QStringList seq = parameter[QString::number(i)].toString().split(":");
             double value = seq.first().toDouble();
             QVector<QVector<int>> parm = ToolSet::String2Int2DVec(seq.last());

@@ -17,6 +17,9 @@
  *
  */
 
+// #include "external/CxxClust/src/cxxcluster.h"
+#include "cxxcluster.h"
+
 #include <Eigen/Dense>
 
 #include <QtCore/QCollator>
@@ -293,12 +296,14 @@ Eigen::MatrixXd SpectraHandler::VarCovarMatrix() const
     return cov;
 }
 
-QVector<double> SpectraHandler::VarCovarSelect(int number)
+QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clustering)
 {
+    int number = 3 * max_number;
     auto cov = VarCovarMatrix();
     QVector<double> x;
     QVector<int> index_x;
     QMultiMap<double, int> diag;
+
     for (int i = 0; i < cov.cols(); ++i) {
         if (m_x_ranges[i] > m_x_end || m_x_ranges[i] < m_x_start)
             continue;
@@ -307,45 +312,76 @@ QVector<double> SpectraHandler::VarCovarSelect(int number)
     if (diag.end().value() >= cov.cols())
         return x;
 
-    // qDebug() << diag;
-    // qDebug() << diag.last();
     QVector<int> exclude_list;
     index_x << diag.last();
+    double thresh = 0.95;
+    int ex_counter = 0;
     auto keys = diag.keys();
     while (index_x.size() < number + exclude_list.size()) {
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        double covar = 1e27;
+        double min_covar = 1e27, max_covar = 0;
         int index = 0;
+        double min_cum_var = 1e27;
+
         for (auto iter = keys.size() - 1; iter >= 0; --iter) {
             int current = diag.value(keys[iter]);
             if (index_x.contains(current))
                 continue;
+            double cum_var = 0;
             for (auto curr_index : index_x) {
                 double cv = cov(curr_index, current) / sqrt(cov(curr_index, curr_index) * cov(current, current));
-                // qDebug() << cov(curr_index, current) << cov(curr_index, curr_index) << cov(current, current) << sqrt(cov(curr_index) * cov(current));
-                if (qAbs(cv) < qAbs(covar)) {
-                    covar = cv;
-                    index = current;
+                if (qAbs(cv) > thresh) {
+                    ex_counter++;
+                    cum_var += 1;
+                    continue;
                 }
+                cum_var += qAbs(cv);
+                max_covar = qMax(qAbs(cv), max_covar);
+            }
+            if (cum_var < min_cum_var) {
+                min_cum_var = cum_var;
+                index = current;
             }
         }
-        //if (index < diag.size())
-        {
-            index_x << index;
-            if (m_x_ranges[index] > m_x_end || m_x_ranges[index] < m_x_start)
-                exclude_list << index;
-        }
-        //else
-        //    break;
+
+        index_x << index;
+        //if (m_x_ranges[index] > m_x_end || m_x_ranges[index] < m_x_start)
+        //    exclude_list << index;
+
+        if (ex_counter >= 1500000)
+            break;
     }
     for (auto s_x : index_x) {
-        //if(exclude_list.contains(s_x))
-        //    continue;
         if (s_x > m_x_ranges.size())
             continue;
         x << m_x_ranges[s_x];
     }
 
     m_x = x;
+    if (!do_clustering)
+        return m_x;
+
+    CxxClusterMatrix matrix;
+    for (int i = 0; i < m_x.size(); ++i)
+        matrix.push_back(CxxClusterElement({ i }, { m_x[i] }));
+    CxxCluster cluster;
+    cluster.Run(matrix);
+    auto storage = cluster.Storage();
+    for (int i = storage.size() - 1; i >= 0; --i) {
+        if (storage[i].size() == max_number) {
+            m_x.clear();
+            CxxClusterMatrix matrix = storage[i];
+            for (const auto& row : matrix) {
+                for (auto d : row.second)
+                    m_x.push_back(d);
+            }
+        }
+    }
+    /*
+    for(int i = 0; i < storage.size(); ++i)
+    {
+        cluster.PrintMatrix(storage[i]);
+        std::cout << std::endl;
+    }*/
     return x;
 }

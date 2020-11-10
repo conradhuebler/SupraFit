@@ -61,7 +61,7 @@ public:
     DataTable* CompileSimpleTable();
 
     void PCA();
-    QVector<double> VarCovarSelect(int number);
+    QVector<double> VarCovarSelect(int max_number, bool do_clustering = true);
 
     QJsonObject getSpectraData() const;
     void LoadData(const QJsonObject& data);

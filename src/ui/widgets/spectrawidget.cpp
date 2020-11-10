@@ -19,6 +19,7 @@
 
 #include <charts.h>
 
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QLabel>
@@ -89,10 +90,14 @@ void SpectraWidget::setUI()
 
     m_xvalues = new QListWidget;
 
+    m_cluster = new QCheckBox;
+    m_cluster->setText(tr("Cluster Results"));
+    m_cluster->setChecked(true);
+
     m_values = new QSpinBox;
     m_values->setMinimum(1);
     m_values->setMaximum(100);
-    m_values->setValue(20);
+    m_values->setValue(5);
     m_varcovar = new QPushButton(tr("VarCovar"));
 
     QGridLayout* xlayout = new QGridLayout;
@@ -138,7 +143,8 @@ void SpectraWidget::setUI()
     chart_layout->addWidget(m_x_end, 0, 3);
     chart_layout->addWidget(new QLabel(tr("# X Values")), 0, 4);
     chart_layout->addWidget(m_values, 0, 5);
-    chart_layout->addWidget(m_varcovar, 0, 6);
+    chart_layout->addWidget(m_cluster, 0, 6);
+    chart_layout->addWidget(m_varcovar, 0, 7);
     m_spectra_view = new ChartView;
     m_spectra_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
     m_spectra_view->setVerticalLineEnabled(true);
@@ -148,7 +154,7 @@ void SpectraWidget::setUI()
     m_spectra_view->PrivateView()->setVerticalLinePrec(0);
     m_spectra_view->PrivateView()->setVerticalLinesPrec(-1);
 
-    chart_layout->addWidget(m_spectra_view, 1, 0, 1, 7);
+    chart_layout->addWidget(m_spectra_view, 1, 0, 1, 8);
 
     m_datatable = new DropTable;
 
@@ -199,7 +205,7 @@ void SpectraWidget::setUI()
         Waiter wait;
         m_handler->setXRange(m_x_start->value(), m_x_end->value());
         m_xvalues->clear();
-        m_handler->VarCovarSelect(m_values->value());
+        m_handler->VarCovarSelect(m_values->value(), m_cluster->isChecked());
         UpdateVerticaLines();
         for (auto d : m_handler->XValues())
             m_xvalues->addItem(QString::number(d));

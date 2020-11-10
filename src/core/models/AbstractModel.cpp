@@ -945,7 +945,6 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
 
         auto SaveStatistic = [this, help](QJsonObject& statisticObject, const QList<QJsonObject>& data, int& counter) {
             for (int i = 0; i < data.size(); ++i) {
-
                 QJsonValueRef ref = statisticObject[QString::number(counter)] = data[i];
                 if (ref.isNull()) {
                     emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(SupraFit::Method2Name(data[i]["controller"].toObject()["method"].toInt())).arg(Name()).arg(ProjectTitle()).arg(help));
@@ -1097,14 +1096,12 @@ bool AbstractModel::ImportModel(const QJsonObject& topjson, bool override)
     statisticObject = json["methods"].toObject();
 
     if (override) {
-
         UpdateStatistic(statisticObject[QString::number(SupraFit::Method::FastConfidence)].toObject());
 
         if (!m_fast_confidence.isEmpty())
             ParseFastConfidence(m_fast_confidence);
 
         for (const QString& str : qAsConst(keys)) {
-
             QJsonObject object = statisticObject[str].toObject();
             QJsonObject controller = object["controller"].toObject();
             if (controller.isEmpty())
@@ -1262,7 +1259,6 @@ bool AbstractModel::LegacyImportModel(const QJsonObject& topjson, bool override)
 
         if (fileversion >= 1608) {
             for (const QString& str : qAsConst(keys)) {
-
                 QJsonObject object = statisticObject[str].toObject();
                 QJsonObject controller = object["controller"].toObject();
                 if (controller.isEmpty())
@@ -1617,7 +1613,6 @@ void AbstractModel::clearChart(const QString& str)
 
 void AbstractModel::addPoints(const QString& str, qreal x, const Vector& vector, const QStringList& names)
 {
-
     if (!m_model_charts.contains(str)) {
         ModelChart* chart = new ModelChart;
         chart->title = QString(str);
@@ -1639,7 +1634,6 @@ void AbstractModel::addPoints(const QString& str, qreal x, const Vector& vector,
 
 void AbstractModel::UpdateChart(const QString& str, const QString& x_label, const QString& y_label)
 {
-
     if (!m_model_charts.contains(str)) {
         return;
     }

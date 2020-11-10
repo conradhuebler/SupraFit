@@ -53,7 +53,6 @@ struct ModelChart {
 /*! \brief AbstractModelPrivate provides the shared data to have thread-safe
  * data exchange for models */
 class AbstractModelPrivate : public QSharedData {
-
 public:
     AbstractModelPrivate() {}
     AbstractModelPrivate(const AbstractModelPrivate& other)

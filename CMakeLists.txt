@@ -151,6 +151,7 @@ endif()
 
 include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
+#${PROJECT_SOURCE_DIR}/external/CxxClust/ )
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/global_config.h.in"

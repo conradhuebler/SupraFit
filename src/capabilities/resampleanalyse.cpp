@@ -113,11 +113,9 @@ void ResampleAnalyse::CrossValidation()
     case 2:
         blocksize = 1;
         for (int i = 0; i < m_model->DataPoints(); ++i) {
-
             if (!m_model->DependentModel()->isRowChecked(i))
                 continue;
             for (int j = i + 1; j < m_model->DataPoints(); ++j) {
-
                 if (!m_model->DependentModel()->isRowChecked(j))
                     continue;
 
@@ -213,7 +211,6 @@ void ResampleAnalyse::CrossValidation()
 #endif
 
             for (int i = 0; i < vector_block.size(); ++i) {
-
                 emit Message(tr("Running %1 jobs!").arg(steps));
 
                 QVector<int> vector = vector_block[i];
@@ -249,7 +246,6 @@ void ResampleAnalyse::CrossValidation()
 #endif
             auto IncreaseVector = [this](QVector<int>& vector, int points) {
                 for (int i = vector.size() - 1; i >= 0; --i) {
-
                     if (vector[i] < points - 1) {
                         int value = vector[i];
                         while (vector.contains(value) && value < points - 1)
@@ -293,7 +289,6 @@ void ResampleAnalyse::CrossValidation()
 #endif
 
             if (vector_block.size() < steps) {
-
                 emit Message(tr("Running all jobs!"));
 
                 for (int i = 0; i < vector_block.size(); ++i) {
@@ -324,7 +319,6 @@ void ResampleAnalyse::CrossValidation()
                     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
                 }
             } else {
-
                 emit Message(tr("Running %1 jobs!").arg(steps));
 
                 while (used_indicies.size() < steps) {
@@ -391,7 +385,6 @@ void ResampleAnalyse::CrossValidation()
 
     for (int i = 0; i < threads.size(); ++i) {
         if (threads[i]) {
-
             QHash<int, QJsonObject> models = threads[i]->Models();
             std::cout << "Thread " << i << " performed " << threads[i]->Counter() << " calculation in " << threads[i]->Timer() << " msecs." << std::endl;
             calculation += threads[i]->Counter();
