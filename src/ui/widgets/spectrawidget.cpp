@@ -94,6 +94,10 @@ void SpectraWidget::setUI()
     m_cluster->setText(tr("Cluster Results"));
     m_cluster->setChecked(true);
 
+    m_averaged = new QCheckBox;
+    m_averaged->setText("Cluster Average");
+    m_averaged->setChecked(false);
+
     m_values = new QSpinBox;
     m_values->setMinimum(1);
     m_values->setMaximum(100);
@@ -144,7 +148,8 @@ void SpectraWidget::setUI()
     chart_layout->addWidget(new QLabel(tr("# X Values")), 0, 4);
     chart_layout->addWidget(m_values, 0, 5);
     chart_layout->addWidget(m_cluster, 0, 6);
-    chart_layout->addWidget(m_varcovar, 0, 7);
+    chart_layout->addWidget(m_averaged, 0, 7);
+    chart_layout->addWidget(m_varcovar, 0, 8);
     m_spectra_view = new ChartView;
     m_spectra_view->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
     m_spectra_view->setVerticalLineEnabled(true);
@@ -154,7 +159,7 @@ void SpectraWidget::setUI()
     m_spectra_view->PrivateView()->setVerticalLinePrec(0);
     m_spectra_view->PrivateView()->setVerticalLinesPrec(-1);
 
-    chart_layout->addWidget(m_spectra_view, 1, 0, 1, 8);
+    chart_layout->addWidget(m_spectra_view, 1, 0, 1, 9);
 
     m_datatable = new DropTable;
 
@@ -205,7 +210,7 @@ void SpectraWidget::setUI()
         Waiter wait;
         m_handler->setXRange(m_x_start->value(), m_x_end->value());
         m_xvalues->clear();
-        m_handler->VarCovarSelect(m_values->value(), m_cluster->isChecked());
+        m_handler->VarCovarSelect(m_values->value(), m_cluster->isChecked(), m_averaged->isChecked());
         UpdateVerticaLines();
         for (auto d : m_handler->XValues())
             m_xvalues->addItem(QString::number(d));

@@ -296,7 +296,7 @@ Eigen::MatrixXd SpectraHandler::VarCovarMatrix() const
     return cov;
 }
 
-QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clustering)
+QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clustering, bool averaged)
 {
     int number = 3 * max_number;
     auto cov = VarCovarMatrix();
@@ -330,11 +330,11 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
             double cum_var = 0;
             for (auto curr_index : index_x) {
                 double cv = cov(curr_index, current) / sqrt(cov(curr_index, curr_index) * cov(current, current));
-                if (qAbs(cv) > thresh) {
+                /* if (qAbs(cv) > thresh) {
                     ex_counter++;
                     cum_var += 1;
                     continue;
-                }
+                }*/
                 cum_var += qAbs(cv);
                 max_covar = qMax(qAbs(cv), max_covar);
             }
@@ -345,8 +345,6 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
         }
 
         index_x << index;
-        //if (m_x_ranges[index] > m_x_end || m_x_ranges[index] < m_x_start)
-        //    exclude_list << index;
 
         if (ex_counter >= 1500000)
             break;
@@ -362,26 +360,34 @@ QVector<double> SpectraHandler::VarCovarSelect(int max_number, bool do_clusterin
         return m_x;
 
     CxxClusterMatrix matrix;
-    for (int i = 0; i < m_x.size(); ++i)
+    QVector<double> cached;
+    for (int i = 0; i < m_x.size(); ++i) {
         matrix.push_back(CxxClusterElement({ i }, { m_x[i] }));
+        cached << m_x[i];
+    }
     CxxCluster cluster;
     cluster.Run(matrix);
     auto storage = cluster.Storage();
-    for (int i = storage.size() - 1; i >= 0; --i) {
-        if (storage[i].size() == max_number) {
-            m_x.clear();
-            CxxClusterMatrix matrix = storage[i];
-            for (const auto& row : matrix) {
-                for (auto d : row.second)
-                    m_x.push_back(d);
+    m_x.clear();
+
+    CxxClusterMatrix local_matrix = storage[storage.size() - max_number];
+    for (const auto& row : local_matrix) {
+        if (!averaged) {
+            double var = 0;
+            int index = 0;
+            for (const auto d : row.first) {
+                for (auto iter = keys.size() - 1; iter >= 0; --iter) {
+                    if (var < keys[iter]) {
+                        index = d;
+                        var = keys[iter];
+                    }
+                }
             }
+            m_x.push_back(cached[index]);
+        } else {
+            for (auto d : row.second)
+                m_x.push_back(d);
         }
     }
-    /*
-    for(int i = 0; i < storage.size(); ++i)
-    {
-        cluster.PrintMatrix(storage[i]);
-        std::cout << std::endl;
-    }*/
     return x;
 }

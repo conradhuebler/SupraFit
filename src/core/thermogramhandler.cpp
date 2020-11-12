@@ -288,36 +288,33 @@ void ThermogramHandler::IntegrateThermogram()
     if (m_last_integration_scheme != m_current_integration_scheme || m_current_integration_scheme == m_integration_scheme[2])
         AdjustIntegrationRange();
 
-    if (m_averaged == true && m_current_integration_scheme != m_integration_scheme[0]) {
-
+    if (m_current_integration_scheme != m_integration_scheme[0]) {
         QString scheme = m_current_integration_scheme;
         QVector<PeakPick::Peak> cached = m_peak_list;
 
-        if (scheme == m_integration_scheme[1]) {
-            m_current_integration_scheme = m_integration_scheme[0];
+        if (m_averaged == true) {
+            bool cutbefore = m_cut_before;
+            m_cut_before = false;
             AdjustIntegrationRange();
             FitBaseLine();
-            m_current_integration_scheme = m_integration_scheme[1];
-            AdjustIntegrationRange();
-            cached = m_peak_list;
-            ResizeIntegrationRange(0, 0);
-            m_peak_list = cached;
-
             ApplyThermogramIntegration();
+            QVector<qreal> integrals = m_integrals_raw;
+            for (int i = 0; i < m_peak_list.size(); ++i)
+                m_peak_list[i].int_end--;
+            ApplyThermogramIntegration();
+
+            for (int i = 0; i < m_integrals_raw.size(); ++i) {
+                m_integrals_raw[i] += integrals[i];
+                m_integrals_raw[i] *= 0.5;
+                m_peak_list[i].integ_num = m_integrals_raw[i];
+            }
+            m_cut_before = cutbefore;
+        } else if (m_averaged == false) {
+            AdjustIntegrationRange();
+            FitBaseLine();
         }
-
-        QVector<qreal> integrals = m_integrals_raw;
-        for (int i = 0; i < m_peak_list.size(); ++i)
-            m_peak_list[i].int_end--;
-
         ApplyThermogramIntegration();
-        m_peak_list = cached;
 
-        for (int i = 0; i < m_integrals_raw.size(); ++i) {
-            m_integrals_raw[i] += integrals[i];
-            m_integrals_raw[i] /= double(2);
-            m_peak_list[i].integ_num = m_integrals_raw[i];
-        }
     } else {
         FitBaseLine();
         ApplyThermogramIntegration();

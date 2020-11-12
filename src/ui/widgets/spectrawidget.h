@@ -69,7 +69,7 @@ private:
     QDoubleSpinBox *m_x_start, *m_x_end;
     SpectraHandler* m_handler;
     QJsonObject m_project, m_input_table;
-    QCheckBox* m_cluster;
+    QCheckBox *m_cluster, *m_averaged;
 
     void UpdateXValues();
     void UpdateVerticaLines();
