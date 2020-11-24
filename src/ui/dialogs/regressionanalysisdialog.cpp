@@ -110,6 +110,9 @@ void RegressionAnalysisDialog::UpdatePlots()
     m_chart->Clear();
     m_output->clear();
     m_series = m_wrapper.data()->CloneSeries();
+    if (m_series.size() == 0)
+        return;
+
     for (int i = 0; i < m_series.size(); ++i) {
         m_chart->addSeries(m_series[i], i, m_series[i]->color());
         m_series[i]->setBorderColor(m_series[i]->color());
