@@ -30,6 +30,7 @@
 
 #include "src/core/libmath.h"
 
+class QCheckBox;
 class QComboBox;
 class QListWidget;
 class QPushButton;
@@ -67,6 +68,7 @@ private:
     QListWidget* m_lists;
     QList<QMap<qreal, PeakPick::MultiRegression>> m_result;
     QComboBox* m_method;
+    QCheckBox* m_swap_xy;
 
     void TestPeaks();
     QMap<double, int> m_peak_list;

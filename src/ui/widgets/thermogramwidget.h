@@ -88,6 +88,8 @@ public:
 
     void LoadDefaultThermogram();
 
+    void addOptionalSeries(const QList<QPointF>& series, const QString& name);
+
 signals:
     void IntegrationChanged();
     void CalibrationChanged(double value);
@@ -125,8 +127,8 @@ private:
     QPlainTextEdit* m_baseline_polynom;
     QLabel *m_calibration_label, *m_guide_label;
     QSplitter* m_splitter;
-    LineSeries *m_thermogram_series, *m_lower, *m_upper, *m_calibration_line, *m_peak_start_line, *m_peak_end_line;
-    ScatterSeries *m_base_grids, *m_calibration_grid, *m_baseline_series, *m_baseline_ignored_series;
+    LineSeries *m_thermogram_series, *m_lower, *m_upper, *m_calibration_line, *m_peak_start_line, *m_peak_end_line, *m_optional_series;
+    ScatterSeries *m_base_grids, *m_baseline_series, *m_baseline_ignored_series;
 
     QVector<qreal> m_integrals_raw;
     PeakPick::spectrum m_spec;

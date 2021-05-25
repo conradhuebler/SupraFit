@@ -161,7 +161,7 @@ void ChartWrapper::MakeSeries()
     }
 }
 
-QList<QPointer<QtCharts::QScatterSeries>> ChartWrapper::CloneSeries() const
+QList<QPointer<QtCharts::QScatterSeries>> ChartWrapper::CloneSeries(bool swap) const
 {
     QList<QPointer<QtCharts::QScatterSeries>> series;
     for (int i = 0; i < m_stored_series.size(); ++i) {
@@ -177,7 +177,13 @@ QList<QPointer<QtCharts::QScatterSeries>> ChartWrapper::CloneSeries() const
                 serie->setName(m_stored_series[i]->name());
 
         });
-        series << serie;
+        if (swap) {
+            QPointer<QtCharts::QScatterSeries> s = new QtCharts::QScatterSeries;
+            for (auto i : serie->points())
+                s->append(QPointF(i.y(), i.x()));
+            series << s;
+        } else
+            series << serie;
     }
     return series;
 }

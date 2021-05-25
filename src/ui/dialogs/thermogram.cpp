@@ -85,6 +85,9 @@ void Thermogram::setUi()
     m_dil_button = new QPushButton(tr("Load Dilution"));
     connect(m_dil_button, &QPushButton::clicked, this, &Thermogram::setDilution);
 
+    m_showDilution = new QCheckBox(tr("Show Dilution"));
+    m_showDilution->setEnabled(false);
+
     // m_refit = new QPushButton(tr("Update"));
     // connect(m_refit, &QPushButton::clicked, this, &Thermogram::UpdateData);
 
@@ -189,6 +192,7 @@ void Thermogram::setUi()
     hlayout->addWidget(m_exp_button);
     hlayout->addWidget(m_exp_file);
     hlayout->addWidget(m_UseParameter);
+    hlayout->addWidget(m_showDilution);
     hlayout->addWidget(m_dil_button);
     hlayout->addWidget(m_dil_file);
     layout->addLayout(hlayout, 0, 0, 1, 4);
@@ -308,6 +312,13 @@ void Thermogram::setUi()
 
     connect(m_experiment, &ThermogramWidget::CalibrationChanged, this, [this](double val) {
         this->UpdateTable();
+    });
+
+    connect(m_showDilution, &QCheckBox::stateChanged, this, [this]() {
+        if (!m_showDilution->isChecked())
+            m_experiment->addOptionalSeries(QList<QPointF>(), "");
+        else
+            m_experiment->addOptionalSeries(m_dilution_thermogram->ThermogramSeries(), "Dilution");
     });
 
     setWindowTitle(tr("Thermogram Dialog"));
@@ -578,6 +589,7 @@ void Thermogram::setDilutionFile(QString filename)
         m_dilution->setFileType(ThermogramWidget::FileType::ITC);
         m_dilution_thermogram->setThermogram(original);
         m_dilution_thermogram->setPeakList(m_exp_peaks);
+        m_showDilution->setEnabled(true);
         //m_dilution->setThermogram(&original, offset);
         //m_dilution->setPeakList(m_exp_peaks);
         //m_dil_base->setText(QString::number(offset));

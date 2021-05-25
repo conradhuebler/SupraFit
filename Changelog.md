@@ -2,6 +2,7 @@
 
 ### SupraFit 2.x
 
+- add option to show dilution thermogram in experimental thermogram
 - basic variance/covariance based wavelength selection
 - add explicit UV/VIS models (NMR options will be deprecated)
 - add spectra import dialog

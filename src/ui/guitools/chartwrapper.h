@@ -59,7 +59,7 @@ public:
     QString ColorList() const;
     bool setColorList(const QString& str);
 
-    QList<QPointer<QtCharts::QScatterSeries>> CloneSeries() const;
+    QList<QPointer<QtCharts::QScatterSeries>> CloneSeries(bool swap = false) const;
     QList<QWeakPointer<ChartWrapper>> m_stored_wrapper;
 
     static QColor ColorCode(int i);

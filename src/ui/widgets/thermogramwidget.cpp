@@ -643,9 +643,29 @@ void ThermogramWidget::InitialiseChart()
 {
     double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
     m_thermogram->addSeries(m_thermogram_series);
+    m_thermogram_series->setName("Thermogram");
     m_thermogram_series->setSize(lineWidth);
     m_thermogram->setXAxis("time [s]");
     m_thermogram->setYAxis("q [raw/s]");
+    m_thermogram->addSeries(m_optional_series);
+    m_optional_series->setSize(lineWidth);
+}
+
+void ThermogramWidget::addOptionalSeries(const QList<QPointF>& series, const QString& name)
+{
+    m_optional_series->clear();
+
+    if (series.size() == 0) {
+        m_optional_series->hide();
+        return;
+    }
+
+    m_optional_series->clear();
+    m_optional_series->append(series);
+    m_optional_series->setName(name);
+    m_optional_series->setColor(QColor(Qt::red).darker(200));
+
+    m_optional_series->show();
 }
 
 void ThermogramWidget::clear()
@@ -809,7 +829,9 @@ void ThermogramWidget::CreateSeries()
     m_thermogram_series->setUseOpenGL(false);
     m_baseline_series = new ScatterSeries;
     m_baseline_series->setMarkerSize(3.5);
+    m_baseline_series->setColor(QColor(Qt::green).lighter());
     m_baseline_series->setBorderColor(QColor(Qt::green).lighter());
+    m_baseline_series->setName("Base line");
 
     m_baseline_ignored_series = new ScatterSeries;
     m_baseline_ignored_series->setMarkerSize(2.5);
@@ -828,6 +850,7 @@ void ThermogramWidget::CreateSeries()
     m_peak_end_line->show();
 
     m_base_grids = new ScatterSeries;
+    m_optional_series = new LineSeries;
 }
 
 void ThermogramWidget::ApplyParameter()

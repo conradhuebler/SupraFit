@@ -26,6 +26,7 @@
 #include <QtCore/QMap>
 #include <QtCore/QMultiHash>
 
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLayout>
@@ -84,6 +85,9 @@ void RegressionAnalysisDialog::setUI()
     m_method->addItem("Trial and Error");
     m_method->addItem("Fast Guess");
 
+    m_swap_xy = new QCheckBox(tr("Swap X and Y"));
+    connect(m_swap_xy, &QCheckBox::stateChanged, this, &RegressionAnalysisDialog::UpdatePlots);
+
     QWidget* results = new QWidget;
     QHBoxLayout* hlayout = new QHBoxLayout;
     hlayout->addWidget(m_output);
@@ -92,11 +96,12 @@ void RegressionAnalysisDialog::setUI()
     splitter->addWidget(results);
 
     QGridLayout* layout = new QGridLayout;
-    layout->addWidget(new QLabel(tr("Number of functions")), 0, 0);
-    layout->addWidget(m_functions, 0, 1);
-    //layout->addWidget(m_method, 0, 2);
-    layout->addWidget(m_fit, 0, 3);
-    layout->addWidget(splitter, 1, 0, 1, 4);
+    layout->addWidget(m_swap_xy, 0, 0);
+    layout->addWidget(new QLabel(tr("Number of functions")), 0, 1);
+    layout->addWidget(m_functions, 0, 2);
+    //layout->addWidget(m_method, 0, 3);
+    layout->addWidget(m_fit, 0, 4);
+    layout->addWidget(splitter, 1, 0, 1, 5);
     setLayout(layout);
 
     connect(m_fit, &QPushButton::clicked, this, &RegressionAnalysisDialog::FitFunctions);
@@ -110,7 +115,7 @@ void RegressionAnalysisDialog::UpdatePlots()
 
     m_chart->Clear();
     m_output->clear();
-    m_series = m_wrapper.toStrongRef().data()->CloneSeries();
+    m_series = m_wrapper.toStrongRef().data()->CloneSeries(m_swap_xy->isChecked());
     m_fit->setEnabled(m_series.size());
 
     if (!m_series.size())
@@ -122,8 +127,13 @@ void RegressionAnalysisDialog::UpdatePlots()
         m_series[i]->setMarkerSize(4);
     }
     m_functions->setRange(1, m_series.first()->points().size() / 2);
-    m_chart->setXAxis(m_wrapper.toStrongRef().data()->XLabel());
-    m_chart->setYAxis(m_wrapper.toStrongRef().data()->YLabel());
+    if (m_swap_xy->isChecked()) {
+        m_chart->setYAxis(m_wrapper.toStrongRef().data()->XLabel());
+        m_chart->setXAxis(m_wrapper.toStrongRef().data()->YLabel());
+    } else {
+        m_chart->setXAxis(m_wrapper.toStrongRef().data()->XLabel());
+        m_chart->setYAxis(m_wrapper.toStrongRef().data()->YLabel());
+    }
     // TestPeaks();
 }
 
