@@ -176,7 +176,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             if (!data.contains("index"))
                 continue;
             int index = data["index"].toString().split("|")[1].toInt();
-            if (m_model.data()->SupportSeries()) {
+            if (m_model.toStrongRef().data()->SupportSeries()) {
                 if (index < m_wrapper->SeriesSize()) {
                     xy_series->setColor(m_wrapper->Series(index)->color());
                     connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
@@ -184,7 +184,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
                 }
             }
         } else {
-            xy_series->setColor(m_wrapper->ColorCode(m_model.data()->Color(i)));
+            xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
         }
 
         qreal diff = (histogram.last().first-histogram.first().first)/double(histogram.size());
@@ -260,7 +260,7 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
             connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, boxplot](const QColor& color) {if(boxplot) boxplot->setColor(i, color); });
         } else
-            series->setBrush(ChartWrapper::ColorCode(m_model.data()->Color(i)));
+            series->setBrush(ChartWrapper::ColorCode(m_model.toStrongRef().data()->Color(i)));
 
         boxplot->addSeries(series, i, series->color(), data["name"].toString());
         boxplot->setColor(i, series->color());
@@ -452,7 +452,7 @@ void MCResultsWidget::GenerateConfidence(double error)
         m_data[QString::number(i)] = data;
     }
     UpdateBoxes();
-    m_model.data()->UpdateStatistic(m_data);
+    m_model.toStrongRef().data()->UpdateStatistic(m_data);
     emit ConfidenceUpdated(m_data);
 }
 

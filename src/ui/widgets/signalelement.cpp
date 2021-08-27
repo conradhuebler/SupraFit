@@ -48,7 +48,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     , m_wrapper(wrapper)
     , m_index(index)
 {
-    m_data_series = qobject_cast<ScatterSeries*>(m_wrapper.data()->Series(m_index)); //DataMapper(m_index)->series());
+    m_data_series = qobject_cast<ScatterSeries*>(m_wrapper.toStrongRef().data()->Series(m_index)); //DataMapper(m_index)->series());
     QGridLayout* layout = new QGridLayout;
 
     m_show = new QCheckBox;
@@ -58,7 +58,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
 
     m_name = new QLineEdit;
     QString name;
-    name = data.data()->DependentModel()->headerData(m_index, Qt::Horizontal).toString();
+    name = data.toStrongRef().data()->DependentModel()->headerData(m_index, Qt::Horizontal).toString();
     m_name->setPlaceholderText(name);
     m_data_series->setName(name);
     m_name->setMaximumWidth(300);
@@ -84,7 +84,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     m_toggle->setFlat(true);
     m_toggle->setCheckable(true);
     connect(m_toggle, SIGNAL(clicked()), this, SLOT(togglePlot()));
-    connect(m_wrapper.data(), SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
+    connect(m_wrapper.toStrongRef().data(), SIGNAL(ShowSeries(int)), this, SLOT(UnCheckToggle(int)));
 
     layout->addWidget(m_name, 0, 0);
     layout->addWidget(m_show, 0, 1);
@@ -94,7 +94,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     layout->addWidget(m_rectangle, 0, 5);
     layout->addWidget(m_toggle, 0, 6);
     setLayout(layout);
-    ColorChanged(m_wrapper.data()->color(m_index));
+    ColorChanged(m_wrapper.toStrongRef().data()->color(m_index));
 }
 
 SignalElement::~SignalElement()
@@ -108,7 +108,7 @@ void SignalElement::ColorChanged(const QColor& color)
     setStyleSheet("background-color:" + color.name() + ";");
 #else
     QPalette pal = palette();
-    pal.setColor(QPalette::Background, color);
+    pal.setColor(QPalette::Window, color);
     setPalette(pal);
 #endif
 
@@ -140,7 +140,7 @@ void SignalElement::ShowLine(int i)
 void SignalElement::setName(const QString& str)
 {
     m_data_series->setName(str);
-    m_data.data()->DependentModel()->setHeaderData(m_index, Qt::Horizontal, str, Qt::DisplayRole);
+    m_data.toStrongRef().data()->DependentModel()->setHeaderData(m_index, Qt::Horizontal, str, Qt::DisplayRole);
     emit m_data_series->NameChanged(str);
 }
 
@@ -170,9 +170,9 @@ void SignalElement::togglePlot()
 {
     m_data_series->setVisible(true);
     if (m_toggle->isChecked())
-        m_wrapper.data()->showSeries(m_index);
+        m_wrapper.toStrongRef().data()->showSeries(m_index);
     else
-        m_wrapper.data()->showSeries(-1);
+        m_wrapper.toStrongRef().data()->showSeries(-1);
 }
 
 void SignalElement::UnCheckToggle(int i)

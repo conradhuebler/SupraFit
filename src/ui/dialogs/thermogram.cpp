@@ -449,8 +449,8 @@ void Thermogram::UpdateTable()
     m_raw_series->clear();
     m_dil_series->clear();
 
-    m_exp_peaks = m_experiment_thermogram->Peaks()->toStdVector();
-    m_dil_peaks = m_dilution_thermogram->Peaks()->toStdVector();
+    m_exp_peaks = std::vector<PeakPick::Peak>(m_experiment_thermogram->Peaks()->begin(), m_experiment_thermogram->Peaks()->end());
+    m_dil_peaks = std::vector<PeakPick::Peak>(m_dilution_thermogram->Peaks()->begin(), m_dilution_thermogram->Peaks()->end());
 
     m_raw.clear();
     m_heat.clear();
@@ -488,7 +488,7 @@ void Thermogram::UpdateTable()
         integral += integ_exp_scaled[j];
         newItem = new QTableWidgetItem(QString::number(m_raw.last()));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\t";
-        newItem->setBackgroundColor(m_raw_series->color().lighter());
+        newItem->background().setColor(m_raw_series->color().lighter());
         m_raw_series->append(QPointF(j + 1, m_raw.last()));
 
         m_table->setItem(j, 1, newItem);
@@ -510,7 +510,7 @@ void Thermogram::UpdateTable()
         newItem = new QTableWidgetItem(QString::number(integral));
         m_all_rows += newItem->data(Qt::DisplayRole).toString() + "\n";
         m_content += newItem->data(Qt::DisplayRole).toString() + "\n";
-        newItem->setBackgroundColor(m_thm_series->color().lighter());
+        newItem->background().setColor(m_thm_series->color().lighter());
         m_table->setItem(j, 3, newItem);
 
         m_thm_series->append(QPointF(j + 1, integral));

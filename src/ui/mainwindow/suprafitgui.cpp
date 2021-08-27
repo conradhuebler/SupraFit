@@ -96,7 +96,7 @@ SupraFitGui::SupraFitGui()
     m_message_dock->setObjectName(tr("message_dock"));
     addDockWidget(Qt::BottomDockWidgetArea, m_message_dock);
 
-    m_splash = new QSplashScreen(this, QPixmap(":/misc/logo_small.png"));
+    m_splash = new QSplashScreen(QPixmap(":/misc/logo_small.png"));
 
     m_project_view = new QTreeView;
     m_project_view->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -650,7 +650,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
 
     QString uuid = object["data"].toObject()["uuid"].toString();
     if (m_hashed_data.keys().contains(uuid)) {
-        QString name = m_hashed_data[uuid].data()->ProjectTitle();
+        QString name = m_hashed_data[uuid].toStrongRef().data()->ProjectTitle();
         QMessageBox question(QMessageBox::Question, tr("Data already open"), tr("The current data has already been opened. At least the UUID\n%1\nwith the project name\n%2\nexist. Continue?").arg(uuid).arg(name), QMessageBox::Yes | QMessageBox::No, this);
         if (question.exec() == QMessageBox::No) {
             m_mainsplitter->show();
@@ -679,18 +679,18 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
         return false;
     }
 
-    if (!data.data()->Size()) {
+    if (!data.toStrongRef().data()->Size()) {
         disconnect(window);
         delete window;
         return false;
     }
-    m_hashed_wrapper.insert(data.data()->UUID(), window->getChartWrapper());
+    m_hashed_wrapper.insert(data.toStrongRef().data()->UUID(), window->getChartWrapper());
 
-    QString name = data.data()->ProjectTitle();
-    data.data()->setRootDir(path);
+    QString name = data.toStrongRef().data()->ProjectTitle();
+    data.toStrongRef().data()->setRootDir(path);
     if (name.isEmpty() || name.isNull()) {
         name = file;
-        data.data()->setProjectTitle(name);
+        data.toStrongRef().data()->setProjectTitle(name);
     }
 
     // Lets add this on first demand, should increase loading speed of big projects
@@ -706,7 +706,7 @@ bool SupraFitGui::SetData(const QJsonObject& object, const QString& file, const 
     m_project_list.insert(m_project_list.size() - m_meta_models.size(), window);
     m_data_list.insert(m_data_list.size() - m_meta_models.size(), data);
 
-    m_hashed_data[data.data()->UUID()] = data;
+    m_hashed_data[data.toStrongRef().data()->UUID()] = data;
     m_project_tree->UpdateStructure();
     setActionEnabled(true);
 
@@ -722,10 +722,9 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         return;
 
     QPointer<DataClass> data;
-    for(int i = 0; i < m_hashed_data[uuids.first()].data()->ChildrenSize(); ++i)
-    {
-        if(qobject_cast<AbstractModel *>(m_hashed_data[uuids.first()].data()->Children(i))->ModelUUID() == uuids[1])
-            data = m_hashed_data[uuids.first()].data()->Children(i);
+    for (int i = 0; i < m_hashed_data[uuids.first()].toStrongRef().data()->ChildrenSize(); ++i) {
+        if (qobject_cast<AbstractModel*>(m_hashed_data[uuids.first()].toStrongRef().data()->Children(i))->ModelUUID() == uuids[1])
+            data = m_hashed_data[uuids.first()].toStrongRef().data()->Children(i);
     }
 
     if(!data)
@@ -739,8 +738,8 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
             delete window;
             return;
         }
-        connect(model.data(), &MetaModel::Message, m_messages_widget, &MessageDock::Message);
-        connect(model.data(), &MetaModel::Warning, m_messages_widget, &MessageDock::Warning);
+        connect(model.toStrongRef().data(), &MetaModel::Message, m_messages_widget, &MessageDock::Message);
+        connect(model.toStrongRef().data(), &MetaModel::Warning, m_messages_widget, &MessageDock::Warning);
 
         m_stack_widget->addWidget(window);
 
@@ -750,16 +749,16 @@ void SupraFitGui::AddMetaModel(const QModelIndex& index, int position)
         m_project_list.append(window);
 
         m_data_list.append(model);
-        m_hashed_data.insert(model.data()->UUID(), model);
+        m_hashed_data.insert(model.toStrongRef().data()->UUID(), model);
         m_project_tree->UpdateStructure();
         setActionEnabled(true);
-        model.data()->addModel(qobject_cast<AbstractModel*>(data));
+        model.toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
         m_meta_models.append(model);
     } else if ((position - (m_data_list.size() - m_meta_models.size())) < m_meta_models.size()) {
         QWeakPointer<ChartWrapper> wrapper = m_project_list[position]->getChartWrapper();
-        wrapper.data()->addWrapper(m_hashed_wrapper[uuids.first()]);
+        wrapper.toStrongRef().data()->addWrapper(m_hashed_wrapper[uuids.first()]);
 
-        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].data()->addModel(qobject_cast<AbstractModel*>(data));
+        m_meta_models[position - (m_data_list.size() - m_meta_models.size())].toStrongRef().data()->addModel(qobject_cast<AbstractModel*>(data));
     }
 }
 
@@ -788,15 +787,15 @@ void SupraFitGui::LoadMetaModels()
             QJsonObject rawmodel = object["data"].toObject()["raw"].toObject()[QString::number(i)].toObject();
 
             QSharedPointer<AbstractModel> t = CreateModel(SupraFit::Model(rawmodel["model"].toInt()), data);
-            wrapper.data()->addWrapper(m_hashed_wrapper[uuids[QString::number(i)].toString()]);
+            wrapper.toStrongRef().data()->addWrapper(m_hashed_wrapper[uuids[QString::number(i)].toString()]);
 
             t->ImportModel(rawmodel);
-            model.data()->addModel(t.data());
+            model.toStrongRef().data()->addModel(t.data());
 
-            connect(model.data(), &DataClass::Message, m_messages_widget, &MessageDock::Message, Qt::UniqueConnection);
-            connect(model.data(), &DataClass::Warning, m_messages_widget, &MessageDock::Warning, Qt::UniqueConnection);
+            connect(model.toStrongRef().data(), &DataClass::Message, m_messages_widget, &MessageDock::Message, Qt::UniqueConnection);
+            connect(model.toStrongRef().data(), &DataClass::Warning, m_messages_widget, &MessageDock::Warning, Qt::UniqueConnection);
         }
-        model.data()->ImportModel(object["data"].toObject());
+        model.toStrongRef().data()->ImportModel(object["data"].toObject());
 
         m_stack_widget->addWidget(window);
 
@@ -1384,13 +1383,13 @@ void SupraFitGui::AddUpData(const QModelIndex& index, bool sign)
     }
     delete handler;
 
-    if (table->rowCount() == m_data_list[index.row()].data()->DependentModel()->rowCount() && table->columnCount() == m_data_list[index.row()].data()->DependentModel()->columnCount()) {
+    if (table->rowCount() == m_data_list[index.row()].toStrongRef().data()->DependentModel()->rowCount() && table->columnCount() == m_data_list[index.row()].toStrongRef().data()->DependentModel()->columnCount()) {
         if (sign)
-            m_data_list[index.row()].data()->DependentModel()->Table() += table->Table();
+            m_data_list[index.row()].toStrongRef().data()->DependentModel()->Table() += table->Table();
         else
-            m_data_list[index.row()].data()->DependentModel()->Table() -= table->Table();
+            m_data_list[index.row()].toStrongRef().data()->DependentModel()->Table() -= table->Table();
 
-        m_data_list[index.row()].data()->Updated();
+        m_data_list[index.row()].toStrongRef().data()->Updated();
     } else
         Info(tr("Sorry, the table you just loaded and the target table do not fit."));
 
@@ -1406,13 +1405,13 @@ void SupraFitGui::CopySystemParameter(const QModelIndex& source, int position)
     if (uuids.size() != 1)
         return;
 
-    QPointer<DataClass> data = m_hashed_data[uuids[0]].data();
+    QPointer<DataClass> data = m_hashed_data[uuids[0]].toStrongRef().data();
 
     for (int i = 0; i < m_meta_models.size(); ++i) {
-        if (m_meta_models[i].data()->UUID() == data->UUID())
+        if (m_meta_models[i].toStrongRef().data()->UUID() == data->UUID())
             return;
     }
-    m_data_list[position].data()->OverrideSystemParameter(data->SysPar());
+    m_data_list[position].toStrongRef().data()->OverrideSystemParameter(data->SysPar());
 }
 /*
 void SupraFitGui::CopyModel(const ModelMime* d, int data, int model)
@@ -1443,9 +1442,9 @@ void SupraFitGui::ExportAllPlain()
         return;
 
     for (int i = 0; i < m_data_list.size(); ++i) {
-        QString input, name = m_data_list[i].data()->ProjectTitle();
-        QPointer<DataTable> indep_model = m_data_list[i].data()->IndependentModel();
-        QPointer<DataTable> dep_model = m_data_list[i].data()->DependentModel();
+        QString input, name = m_data_list[i].toStrongRef().data()->ProjectTitle();
+        QPointer<DataTable> indep_model = m_data_list[i].toStrongRef().data()->IndependentModel();
+        QPointer<DataTable> dep_model = m_data_list[i].toStrongRef().data()->DependentModel();
 
         QStringList x = indep_model->ExportAsStringList();
         QStringList y = dep_model->ExportAsStringList();
@@ -1487,9 +1486,9 @@ void SupraFitGui::ExportAllSupraFit()
         return;
 
     for (int i = 0; i < m_data_list.size(); ++i) {
-        QString name = m_data_list[i].data()->ProjectTitle();
+        QString name = m_data_list[i].toStrongRef().data()->ProjectTitle();
         QJsonObject data;
-        data["data"] = m_data_list[i].data()->ExportData();
+        data["data"] = m_data_list[i].toStrongRef().data()->ExportData();
 
         QString filename = dir + "/" + name;
         QFileInfo info(filename + ".suprafit");
@@ -1544,8 +1543,8 @@ void SupraFitGui::AddScatter(const QJsonObject& object)
 {
     DataTable* table = new DataTable(object["data"].toObject()["dependent"].toObject());
     for (int i = 0; i < m_data_list.size(); ++i) {
-        m_data_list[i].data()->DependentModel()->Table() += table->Table();
-        m_data_list[i].data()->Updated();
+        m_data_list[i].toStrongRef().data()->DependentModel()->Table() += table->Table();
+        m_data_list[i].toStrongRef().data()->Updated();
     }
     delete table;
 }

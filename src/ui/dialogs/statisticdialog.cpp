@@ -53,7 +53,7 @@ StatisticDialog::StatisticDialog(QSharedPointer<AbstractModel> model, QWidget* p
     setUi();
     m_main_progress->hide();
     HideWidget();
-    connect(m_model.data(), SIGNAL(Recalculated()), this, SLOT(Update()));
+    connect(m_model.toStrongRef().data(), SIGNAL(Recalculated()), this, SLOT(Update()));
 }
 
 StatisticDialog::StatisticDialog(QWidget* parent)
@@ -65,7 +65,7 @@ StatisticDialog::StatisticDialog(QWidget* parent)
 
 StatisticDialog::~StatisticDialog()
 {
-    disconnect(m_model.data());
+    disconnect(m_model.toStrongRef().data());
     m_model.clear();
 }
 
@@ -88,8 +88,8 @@ void StatisticDialog::updateUI()
         return;
     m_wgs_f_value->setToolTip(FOutput());
     m_moco_f_value->setToolTip(FOutput());
-    m_wgs_f_value->setValue(m_model.data()->finv(m_wgs_maxerror->value() / 100));
-    m_moco_f_value->setValue(m_model.data()->finv(m_moco_maxerror->value() / 100));
+    m_wgs_f_value->setValue(m_model.toStrongRef().data()->finv(m_wgs_maxerror->value() / 100));
+    m_moco_f_value->setValue(m_model.toStrongRef().data()->finv(m_moco_maxerror->value() / 100));
 }
 
 void StatisticDialog::setUi()
@@ -185,18 +185,18 @@ QWidget* StatisticDialog::MonteCarloWidget()
     m_mc_sey->setChecked(true);
     m_varianz_box->setReadOnly(!m_mc_user->isChecked());
     if (m_model)
-        m_varianz_box->setValue(m_model.data()->SEy());
+        m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
 
     connect(m_mc_std, &QRadioButton::toggled, m_mc_std, [this]() {
         if (m_mc_std->isChecked() && m_model) {
-            m_varianz_box->setValue(m_model.data()->StdDeviation());
+            m_varianz_box->setValue(m_model.toStrongRef().data()->StdDeviation());
             m_varianz_box->setReadOnly(!m_mc_user->isChecked());
         }
     });
 
     connect(m_mc_sey, &QRadioButton::toggled, m_mc_sey, [this]() {
         if (m_mc_sey->isChecked() && m_model) {
-            m_varianz_box->setValue(m_model.data()->SEy());
+            m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
             m_varianz_box->setReadOnly(!m_mc_user->isChecked());
         }
     });
@@ -222,12 +222,12 @@ QWidget* StatisticDialog::MonteCarloWidget()
     layout->addWidget(m_original, 3, 0);
 
     QVBoxLayout* indep_layout = new QVBoxLayout;
-    if (m_model.data()) {
-        QStringList header = m_model.data()->IndependentModel()->header();
+    if (m_model.toStrongRef().data()) {
+        QStringList header = m_model.toStrongRef().data()->IndependentModel()->header();
 
         indep_layout->addWidget(new QLabel(tr("Create random scatter of independent\nvariables, eg. input concentrations etc!")));
 
-        for (int i = 0; i < m_model.data()->IndependentVariableSize(); ++i) {
+        for (int i = 0; i < m_model.toStrongRef().data()->IndependentVariableSize(); ++i) {
 
             QCheckBox* checkbox = new QCheckBox(header[i]);
             QDoubleSpinBox* var = new QDoubleSpinBox;
@@ -265,34 +265,34 @@ QWidget* StatisticDialog::GridSearchWidget()
     if (m_model) {
         layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
         QVBoxLayout* layout = new QVBoxLayout;
-        for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
+        for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             checkbox->setChecked(true);
             m_grid_global << checkbox;
             QHBoxLayout* hlayout = new QHBoxLayout;
             hlayout->addWidget(checkbox);
-            hlayout->addWidget(new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>"));
+            hlayout->addWidget(new QLabel("<html>" + m_model.toStrongRef().data()->GlobalParameterName(i) + "</html>"));
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
+            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model)
-                    checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
+                    checkbox->setEnabled(m_model.toStrongRef().data()->GlobalEnabled(i));
             });
         }
 
-        for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
+        for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             m_grid_local << checkbox;
             QHBoxLayout* hlayout = new QHBoxLayout;
             hlayout->addWidget(checkbox);
-            hlayout->addWidget(new QLabel("<html>" + m_model.data()->LocalParameterName(i) + "</html>"));
+            hlayout->addWidget(new QLabel("<html>" + m_model.toStrongRef().data()->LocalParameterName(i) + "</html>"));
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
+            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model)
-                    checkbox->setEnabled(m_model.data()->LocalEnabled(i));
+                    checkbox->setEnabled(m_model.toStrongRef().data()->LocalEnabled(i));
             });
         }
         parameter->setLayout(layout);
@@ -469,7 +469,7 @@ QWidget* StatisticDialog::ModelComparison()
     if (m_model) {
         layout->addWidget(new QLabel(tr("Choose parameter to be tested:")));
         QVBoxLayout* layout = new QVBoxLayout;
-        for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
+        for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             checkbox->setChecked(true);
             m_moco_global << checkbox;
@@ -478,26 +478,26 @@ QWidget* StatisticDialog::ModelComparison()
             doublespin->setMinimum(0);
             doublespin->setMaximum(50);
             doublespin->setValue(1.5);
-            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.data()->GlobalParameterName(i)));
+            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.toStrongRef().data()->GlobalParameterName(i)));
             m_glob_box_scaling << doublespin;
 
             QHBoxLayout* hlayout = new QHBoxLayout;
             hlayout->addWidget(checkbox);
-            QLabel* label = new QLabel("<html>" + m_model.data()->GlobalParameterName(i) + "</html>");
+            QLabel* label = new QLabel("<html>" + m_model.toStrongRef().data()->GlobalParameterName(i) + "</html>");
             label->setFixedWidth(100);
             hlayout->addWidget(label);
             hlayout->addWidget(doublespin);
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
+            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model) {
-                    checkbox->setEnabled(m_model.data()->GlobalEnabled(i));
+                    checkbox->setEnabled(m_model.toStrongRef().data()->GlobalEnabled(i));
                 }
             });
         }
 
-        for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
+        for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
             QCheckBox* checkbox = new QCheckBox;
             m_moco_local << checkbox;
 
@@ -505,22 +505,22 @@ QWidget* StatisticDialog::ModelComparison()
             doublespin->setMinimum(0);
             doublespin->setMaximum(50);
             doublespin->setValue(1.50);
-            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.data()->LocalParameterName(i)));
+            doublespin->setToolTip(tr("Set the scaling factor for %1.").arg(m_model.toStrongRef().data()->LocalParameterName(i)));
 
             m_loc_box_scaling << doublespin;
 
             QHBoxLayout* hlayout = new QHBoxLayout;
             hlayout->addWidget(checkbox);
-            QLabel* label = new QLabel("<html>" + m_model.data()->LocalParameterName(i) + "</html>");
+            QLabel* label = new QLabel("<html>" + m_model.toStrongRef().data()->LocalParameterName(i) + "</html>");
             label->setFixedWidth(100);
             hlayout->addWidget(label);
             hlayout->addWidget(doublespin);
             hlayout->addStretch(100);
             layout->addLayout(hlayout);
 
-            connect(m_model.data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
+            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [this, i, checkbox]() {
                 if (m_model) {
-                    checkbox->setEnabled(m_model.data()->LocalEnabled(i));
+                    checkbox->setEnabled(m_model.toStrongRef().data()->LocalEnabled(i));
                 }
             });
         }
@@ -645,10 +645,10 @@ QWidget* StatisticDialog::CVWidget()
     m_cv_lxo->setMinimum(1);
     m_cv_lxo->setPrefix(tr("X = "));
     if (m_model) {
-        m_cv_lxo->setMaximum(m_model.data()->DataPoints() - 1);
+        m_cv_lxo->setMaximum(m_model.toStrongRef().data()->DataPoints() - 1);
         QLabel* max_runs = new QLabel;
         connect(m_cv_lxo, qOverload<int>(&QSpinBox::valueChanged), max_runs, [max_runs, this, layout](int value) {
-            long double maxsteps = tgammal(m_model.data()->DataPoints() + 1) / (tgammal(value + 1) * tgammal(m_model.data()->DataPoints() - value + 1));
+            long double maxsteps = tgammal(m_model.toStrongRef().data()->DataPoints() + 1) / (tgammal(value + 1) * tgammal(m_model.toStrongRef().data()->DataPoints() - value + 1));
 
             max_runs->setText(tr("Maximal number of runs = %1").arg(QString::number(maxsteps, 'g')));
         });
@@ -743,17 +743,17 @@ QJsonObject StatisticDialog::RunGridSearch() const
     QList<int> glob_param, local_param;
     int max = 0;
     for (int i = 0; i < m_grid_global.size(); ++i) {
-        if (m_model.data()->GlobalTable()->isChecked(i, 0))
+        if (m_model.toStrongRef().data()->GlobalTable()->isChecked(i, 0))
             glob_param << (m_grid_global[i]->isChecked() * m_grid_global[i]->isEnabled());
         max += m_grid_global[i]->isChecked();
     }
 
     for (int i = 0; i < m_grid_local.size(); ++i) {
-        for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
-            if (m_model.data()->LocalTable()->isChecked(i, j))
+        for (int j = 0; j < m_model.toStrongRef().data()->SeriesCount(); ++j) {
+            if (m_model.toStrongRef().data()->LocalTable()->isChecked(i, j))
                 local_param << (m_grid_local[i]->isChecked() * m_grid_local[i]->isEnabled());
         }
-        max += m_model.data()->SeriesCount() * m_grid_local[i]->isChecked();
+        max += m_model.toStrongRef().data()->SeriesCount() * m_grid_local[i]->isChecked();
     }
 
     controller["GlobalParameterList"] = ToolSet::IntList2String(glob_param);
@@ -775,19 +775,19 @@ QJsonObject StatisticDialog::RunModelComparison() const
     QList<int> glob_param, local_param;
     int max = 0;
     for (int i = 0; i < m_moco_global.size(); ++i) {
-        if (m_model.data()->GlobalTable()->isChecked(i, 0))
+        if (m_model.toStrongRef().data()->GlobalTable()->isChecked(i, 0))
             glob_param << (m_moco_global[i]->isChecked() * m_moco_global[i]->isEnabled());
         glob_box << m_glob_box_scaling[i]->value();
         max += m_moco_global[i]->isChecked();
     }
 
     for (int i = 0; i < m_moco_local.size(); ++i) {
-        for (int j = 0; j < m_model.data()->SeriesCount(); ++j) {
-            if (m_model.data()->LocalTable()->isChecked(i, j))
+        for (int j = 0; j < m_model.toStrongRef().data()->SeriesCount(); ++j) {
+            if (m_model.toStrongRef().data()->LocalTable()->isChecked(i, j))
                 local_param << (m_moco_local[i]->isChecked() * m_moco_local[i]->isEnabled());
             local_box << m_loc_box_scaling[i]->value();
         }
-        max += m_model.data()->SeriesCount() * m_moco_local[i]->isChecked();
+        max += m_model.toStrongRef().data()->SeriesCount() * m_moco_local[i]->isChecked();
     }
     controller["ParameterIndex"] = m_ParameterIndex;
 
@@ -906,9 +906,9 @@ QString StatisticDialog::FOutput() const
 {
     QString string;
     if (m_model) {
-        string += "Parameter fitted:<b>" + QString::number(m_model.data()->Parameter()) + "</b>\n";
-        string += "Number of used Points:<b>" + QString::number(m_model.data()->Points()) + "</b>\n";
-        string += "Degrees of Freedom:<b>" + QString::number(m_model.data()->Points() - m_model.data()->Parameter()) + "</b>\n";
+        string += "Parameter fitted:<b>" + QString::number(m_model.toStrongRef().data()->Parameter()) + "</b>\n";
+        string += "Number of used Points:<b>" + QString::number(m_model.toStrongRef().data()->Points()) + "</b>\n";
+        string += "Degrees of Freedom:<b>" + QString::number(m_model.toStrongRef().data()->Points() - m_model.toStrongRef().data()->Parameter()) + "</b>\n";
     }
     return string;
 }
@@ -930,9 +930,9 @@ void StatisticDialog::HideWidget()
 void StatisticDialog::Update()
 {
     if (m_mc_sey->isChecked())
-        m_varianz_box->setValue(m_model.data()->SEy());
+        m_varianz_box->setValue(m_model.toStrongRef().data()->SEy());
     else if (m_mc_std->isChecked())
-        m_varianz_box->setValue(m_model.data()->StdDeviation());
+        m_varianz_box->setValue(m_model.toStrongRef().data()->StdDeviation());
     CalculateError();
 }
 
@@ -943,17 +943,17 @@ void StatisticDialog::Message(const QString& str)
 
 void StatisticDialog::CalculateError()
 {
-    if (!m_model.data())
+    if (!m_model.toStrongRef().data())
         return;
     updateUI();
-    qreal error = m_model.data()->StatisticVector()[m_ParameterIndex];
+    qreal error = m_model.toStrongRef().data()->StatisticVector()[m_ParameterIndex];
     qreal max_moco_error, max_wgs_error;
     QString wgs_message, moco_message;
 
-    max_wgs_error = error * (m_wgs_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    max_wgs_error = error * (m_wgs_f_value->value() * m_model.toStrongRef().data()->Parameter() / (m_model.toStrongRef().data()->Points() - m_model.toStrongRef().data()->Parameter()) + 1);
     wgs_message = "The current " + m_error_name + " is " + QString::number(error) + ".\nThe maximum " + m_error_name + " will be " + QString::number(max_wgs_error) + ".";
 
-    max_moco_error = error * (m_moco_f_value->value() * m_model.data()->Parameter() / (m_model.data()->Points() - m_model.data()->Parameter()) + 1);
+    max_moco_error = error * (m_moco_f_value->value() * m_model.toStrongRef().data()->Parameter() / (m_model.toStrongRef().data()->Points() - m_model.toStrongRef().data()->Parameter()) + 1);
     moco_message = "The current " + m_error_name + " is " + QString::number(error) + ".\nThe maximum " + m_error_name + " will be " + QString::number(max_moco_error) + ".";
 
     m_moco_max = max_moco_error;

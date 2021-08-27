@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.16.0)
 project(suprafit)
 # set the module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
@@ -8,8 +8,12 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 # to always look for includes there:
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Tell CMake to run moc when necessary:
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 
 option (BENCHMARK_LEVEL
@@ -141,7 +145,6 @@ else()
     message(SEND_ERROR "The Qt5Widgets library could not be found!")
 endif(Qt5Widgets_FOUND)
 
-
 if(_Python)
     find_package(PythonLibs)
     if( NOT PythonLibs_FOUND)
@@ -201,7 +204,7 @@ else()
     add_library(core ${core_SRC})
 endif()
 
-target_link_libraries(core Qt5::Core)
+target_link_libraries(core Qt::Core)
 
 #add_subdirectory(src/core/models/misc)
 set(models_SRC
@@ -252,18 +255,17 @@ else()
     add_library(models ${models_SRC})
 endif()
 
-target_link_libraries(models Qt5::Core ${PYTHON_LIBRARIES})
+target_link_libraries(models Qt::Core ${PYTHON_LIBRARIES})
 
 add_subdirectory(src/ui)
 
 set(suprafit_SRC
     src/ui/main.cpp
 )
-
-qt5_add_resources(suprafit_SRC files.qrc)
+qt_add_resources(suprafit_SRC files.qrc)
 
 if(noto_font)
-    qt5_add_resources(suprafit_SRC fonts.qrc)
+    qt_add_resources(suprafit_SRC fonts.qrc)
 endif(noto_font)
 
 
@@ -365,7 +367,7 @@ if(testing)
     add_executable(supratest  ${basic_test})
     #set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
     set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
-    target_link_libraries(supratest Qt5::Core Qt5::Test)
+    target_link_libraries(supratest Qt::Core Qt::Test)
     target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)
 

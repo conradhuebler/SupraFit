@@ -132,42 +132,42 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     m_wrapper = wrapper;
 
     dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
-    m_concentrations->setModel(m_data.data()->IndependentModel());
+    m_concentrations->setModel(m_data.toStrongRef().data()->IndependentModel());
 
-    if (!m_data.data()->isSimulation())
-        m_signals->setModel(m_data.data()->DependentModel());
+    if (!m_data.toStrongRef().data()->isSimulation())
+        m_signals->setModel(m_data.toStrongRef().data()->DependentModel());
     else
         m_linear->hide();
 
-    connect(m_data.data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
+    connect(m_data.toStrongRef().data()->DependentModel(), SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SLOT(HidePoint()));
     m_concentrations->resizeColumnsToContents();
     m_signals->resizeColumnsToContents();
 
-    m_plot_x->setVisible(m_data.data()->IndependentModel()->columnCount() == 1);
-    m_plot_x->setChecked(m_data.data()->PlotMode());
+    m_plot_x->setVisible(m_data.toStrongRef().data()->IndependentModel()->columnCount() == 1);
+    m_plot_x->setChecked(m_data.toStrongRef().data()->PlotMode());
     connect(m_plot_x, &QCheckBox::stateChanged, this, [this](int state) {
-        m_data.data()->setPlotMode(state);
-        m_wrapper.data()->UpdateModel();
+        m_data.toStrongRef().data()->setPlotMode(state);
+        m_wrapper.toStrongRef().data()->UpdateModel();
         dialog->UpdatePlots();
     });
 
-    qApp->instance()->setProperty("projectname", m_data.data()->ProjectTitle());
+    qApp->instance()->setProperty("projectname", m_data.toStrongRef().data()->ProjectTitle());
     m_name->setText(qApp->instance()->property("projectname").toString());
-    m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.data()->IndependentModel()->columnCount()));
-    m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.data()->DependentModel()->rowCount()));
-    m_signals_count->setText(tr("<html><h4>Series Count: %1</h4><html>").arg(m_data.data()->SeriesCount()));
+    m_substances->setText(tr("<html><h4>Independent Variables: %1</h4><html>").arg(m_data.toStrongRef().data()->IndependentModel()->columnCount()));
+    m_datapoints->setText(tr("<html><h4>Data Points: %1</h4><html>").arg(m_data.toStrongRef().data()->DependentModel()->rowCount()));
+    m_signals_count->setText(tr("<html><h4>Series Count: %1</h4><html>").arg(m_data.toStrongRef().data()->SeriesCount()));
 
     // why was this here?
     // dialog = new RegressionAnalysisDialog(m_data, m_wrapper, this);
     dialog->UpdatePlots();
 
     QVBoxLayout* vlayout = new QVBoxLayout;
-    for (int i = 0; i < m_wrapper.data()->SeriesSize(); ++i) {
+    for (int i = 0; i < m_wrapper.toStrongRef().data()->SeriesSize(); ++i) {
         QPointer<SignalElement> el = new SignalElement(m_data, m_wrapper, i, this);
-        connect(m_wrapper.data()->Series(i), &QtCharts::QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
+        connect(m_wrapper.toStrongRef().data()->Series(i), &QtCharts::QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
         connect(m_hide_points, &QPushButton::clicked, el, &SignalElement::HideSeries);
         vlayout->addWidget(el);
-        if (m_data.data()->Type() == DataClassPrivate::DataType::Simulation)
+        if (m_data.toStrongRef().data()->Type() == DataClassPrivate::DataType::Simulation)
             el->HideSeries();
         m_signal_elements << el;
     }
@@ -176,11 +176,11 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     QHBoxLayout* scaling_layout = new QHBoxLayout;
     scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
-    for (int i = 0; i < m_data.data()->getScaling().size(); ++i) {
+    for (int i = 0; i < m_data.toStrongRef().data()->getScaling().size(); ++i) {
         QDoubleSpinBox* spin_box = new QDoubleSpinBox;
         spin_box->setMaximum(1e8);
         spin_box->setMinimum(-1e8);
-        spin_box->setValue(m_data.data()->getScaling()[i]);
+        spin_box->setValue(m_data.toStrongRef().data()->getScaling()[i]);
         spin_box->setSingleStep(1e-2);
         spin_box->setDecimals(7);
         connect(spin_box, SIGNAL(valueChanged(double)), this, SLOT(setScaling()));
@@ -193,29 +193,29 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     layout->addLayout(scaling_layout, 4, 0, 1, 4);
 
-    if (m_data.data()->IndependentVariableSize() == 1)
+    if (m_data.toStrongRef().data()->IndependentVariableSize() == 1)
         m_switch->hide();
     m_splitter->addWidget(m_tables);
 
     QSettings settings;
     settings.beginGroup("overview");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
-    m_switch->setVisible(m_data.data()->IndependentVariableSize() == 2);
-    connect(m_data.data(), &DataClass::ProjectTitleChanged, m_name, [this](const QString& str) {
+    m_switch->setVisible(m_data.toStrongRef().data()->IndependentVariableSize() == 2);
+    connect(m_data.toStrongRef().data(), &DataClass::ProjectTitleChanged, m_name, [this](const QString& str) {
         if (str == m_name->text())
             return;
         m_name->setText(str);
     });
-    m_text_edit->append(m_data.data()->Content());
-    connect(m_text_edit, &QTextEdit::textChanged, m_data.data(), [this]() {
-        m_data.data()->setContent(m_text_edit->toPlainText());
+    m_text_edit->append(m_data.toStrongRef().data()->Content());
+    connect(m_text_edit, &QTextEdit::textChanged, m_data.toStrongRef().data(), [this]() {
+        m_data.toStrongRef().data()->setContent(m_text_edit->toPlainText());
     });
 
-    if (m_data.data()->Type() == DataClassPrivate::DataType::Simulation) {
+    if (m_data.toStrongRef().data()->Type() == DataClassPrivate::DataType::Simulation) {
         m_hide_points->hide();
     }
 
-    connect(m_wrapper.data(), &ChartWrapper::ModelTransformed, m_wrapper.data(), [this]() {
+    connect(m_wrapper.toStrongRef().data(), &ChartWrapper::ModelTransformed, m_wrapper.toStrongRef().data(), [this]() {
         if (m_plot_x->isVisible())
             m_plot_x->hide();
     });
@@ -223,21 +223,21 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
 void DataWidget::switchHG()
 {
-    m_data.data()->SwitchConentrations();
-    m_wrapper.data()->UpdateModel();
+    m_data.toStrongRef().data()->SwitchConentrations();
+    m_wrapper.toStrongRef().data()->UpdateModel();
     emit recalculate();
 }
 
 void DataWidget::SetProjectName()
 {
     qApp->instance()->setProperty("projectname", m_name->text());
-    m_data.data()->setProjectTitle(m_name->text());
+    m_data.toStrongRef().data()->setProjectTitle(m_name->text());
     emit NameChanged();
 }
 
 void DataWidget::setEditable(bool editable)
 {
-    m_data.data()->DependentModel()->setEditable(editable);
+    m_data.toStrongRef().data()->DependentModel()->setEditable(editable);
 }
 
 void DataWidget::setScaling()
@@ -245,8 +245,8 @@ void DataWidget::setScaling()
     QList<qreal> scaling;
     for (int i = 0; i < m_scaling_boxes.size(); ++i)
         scaling << m_scaling_boxes[i]->value();
-    m_data.data()->setScaling(scaling);
-    m_wrapper.data()->UpdateModel();
+    m_data.toStrongRef().data()->setScaling(scaling);
+    m_wrapper.toStrongRef().data()->UpdateModel();
     emit recalculate();
 }
 
@@ -255,16 +255,16 @@ void DataWidget::ShowContextMenu(const QPoint& pos)
     Q_UNUSED(pos)
     QModelIndex index = m_signals->currentIndex();
     int row = index.row();
-    m_data.data()->DependentModel()->CheckRow(row);
+    m_data.toStrongRef().data()->DependentModel()->CheckRow(row);
     HidePoint();
     emit recalculate();
 }
 
 void DataWidget::HidePoint()
 {
-    m_wrapper.data()->stopAnimiation();
-    m_wrapper.data()->UpdateModel();
-    m_wrapper.data()->restartAnimation();
+    m_wrapper.toStrongRef().data()->stopAnimiation();
+    m_wrapper.toStrongRef().data()->UpdateModel();
+    m_wrapper.toStrongRef().data()->restartAnimation();
     dialog->UpdatePlots();
 }
 

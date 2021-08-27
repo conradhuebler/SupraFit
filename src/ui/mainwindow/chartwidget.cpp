@@ -211,11 +211,11 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     m_rawdata = rawdata;
 
     m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-    qDebug() << m_rawdata.data()->DependentModel();
-    m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
+    qDebug() << m_rawdata.toStrongRef().data()->DependentModel();
+    m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
     /*
     connect(rawdata->Info(), &DataClassPrivateObject::Update, this, [this](){
-        m_data_mapper->setDataTable(m_rawdata.data()->DependentModel());
+        m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
     });
     */
     m_data_mapper->setData(m_rawdata);
@@ -223,7 +223,7 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
     for (int i = 0; i < m_data_mapper->SeriesSize(); ++i) {
         ScatterSeries* signal_series = (qobject_cast<ScatterSeries*>(m_data_mapper->Series(i)));
-        signal_series->setName(m_rawdata.data()->DependentModel()->header()[i]);
+        signal_series->setName(m_rawdata.toStrongRef().data()->DependentModel()->header()[i]);
         m_data_mapper->setSeries(signal_series, i);
         m_signalview->addSeries(signal_series);
     }
@@ -377,7 +377,7 @@ void ChartWidget::setAnimation(bool animation)
 void ChartWidget::updateUI()
 {
     if (m_rawdata) {
-        for (int i = 0; i < m_rawdata.data()->SeriesCount(); ++i)
+        for (int i = 0; i < m_rawdata.toStrongRef().data()->SeriesCount(); ++i)
             m_data_mapper->Series(i)->setColor(m_data_mapper->color(i));
     }
 }

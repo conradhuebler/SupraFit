@@ -58,12 +58,12 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
 {
     QVBoxLayout* layout = new QVBoxLayout;
     QHBoxLayout* shifts = new QHBoxLayout;
-    for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
+    for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
         QPointer<QWidget> widget = new QWidget;
         widget->setFixedWidth(150);
         QCheckBox* check = new QCheckBox;
         connect(check, &QCheckBox::stateChanged, check, [this, i, no](int state) {
-            m_model.data()->LocalTable()->setChecked(i, no, state);
+            m_model.toStrongRef().data()->LocalTable()->setChecked(i, no, state);
         });
         connect(this, &ModelElement::LocalCheckState, check, &QCheckBox::setChecked);
 
@@ -72,17 +72,17 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
 
         m_constants << constant;
         constant->setMaximumWidth(110);
-        constant->setValue(m_model.data()->LocalParameter(i, m_no));
+        constant->setValue(m_model.toStrongRef().data()->LocalParameter(i, m_no));
 
-        constant->setSuffix(m_model.data()->LocalParameterSuffix(i));
-        constant->setToolTip(m_model.data()->LocalParameterDescription(i));
+        constant->setSuffix(m_model.toStrongRef().data()->LocalParameterSuffix(i));
+        constant->setToolTip(m_model.toStrongRef().data()->LocalParameterDescription(i));
         connect(constant, SIGNAL(valueChangedNotBySet(double)), this, SIGNAL(ValueChanged()));
-        connect(m_model.data(), &AbstractModel::Recalculated, this, [i, constant, this, widget, check, no]() {
-            if (this->m_model.data() && widget) {
-                if (this->m_model.data()->LocalEnabled(i)) {
+        connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, [i, constant, this, widget, check, no]() {
+            if (this->m_model.toStrongRef().data() && widget) {
+                if (this->m_model.toStrongRef().data()->LocalEnabled(i)) {
                     constant->setStyleSheet("background-color: " + included());
                     check->setEnabled(true);
-                    check->setChecked(m_model.data()->LocalTable()->isChecked(i, no));
+                    check->setChecked(m_model.toStrongRef().data()->LocalTable()->isChecked(i, no));
                 } else {
                     constant->setStyleSheet("background-color: " + excluded());
                     check->setEnabled(false);
@@ -93,15 +93,15 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         widget->setLayout(vlayout);
         vlayout->addWidget(constant, 0, 0);
         vlayout->addWidget(check, 0, 1);
-        check->setHidden(m_model.data()->isSimulation());
+        check->setHidden(m_model.toStrongRef().data()->isSimulation());
 
-        QLabel* label = new QLabel(tr("<html>%1</html>").arg(m_model.data()->LocalParameterName(i)));
+        QLabel* label = new QLabel(tr("<html>%1</html>").arg(m_model.toStrongRef().data()->LocalParameterName(i)));
         vlayout->addWidget(label, 1, 0, 1, 2);
         shifts->addWidget(widget, 0);
         m_labels << label;
     }
 
-    // if (m_model.data()->Type() != 3) {
+    // if (m_model.toStrongRef().data()->Type() != 3) {
     m_error = new QLabel;
     shifts->addStretch(150);
     shifts->addWidget(m_error);
@@ -111,7 +111,7 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_include = new QCheckBox(this);
     m_include->setText("Include");
     m_include->setToolTip(tr("If checked, this signal will be included in model generation. "));
-    m_include->setChecked(m_model.data()->ActiveSignals()[m_no]);
+    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
     connect(m_include, SIGNAL(clicked()), this, SLOT(toggleActive()));
     tools->addWidget(m_include);
 
@@ -143,12 +143,12 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         }
     });
 
-    m_error_series->setVisible(m_model.data()->ActiveSignals()[m_no]);
-    m_signal_series->setVisible(m_model.data()->ActiveSignals()[m_no]);
+    m_error_series->setVisible(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+    m_signal_series->setVisible(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
     m_show = new HoverCheckBox;
     m_show->setText(tr("Show in Plot"));
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
-    m_show->setChecked(m_model.data()->ActiveSignals()[m_no]);
+    m_show->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
     tools->addWidget(m_show);
 
     m_plot = new QPushButton;
@@ -225,19 +225,19 @@ QVector<double> ModelElement::D() const
 
 void ModelElement::Update()
 {
-    if (m_model.data()->isSimulation())
+    if (m_model.toStrongRef().data()->isSimulation())
         return;
 
-    m_include->setChecked(m_model.data()->ActiveSignals()[m_no]);
-    DisableSignal(m_model.data()->ActiveSignals()[m_no]);
+    m_include->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
+    DisableSignal(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
     if (!m_include->isChecked())
         return;
-    for (int i = 0; i < m_model.data()->LocalParameterSize(); ++i) {
-        if (qAbs(m_constants[i]->value() - m_model.data()->LocalParameter(i, m_no)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
-            m_constants[i]->setValue(m_model.data()->LocalParameter(i, m_no));
+    for (int i = 0; i < m_model.toStrongRef().data()->LocalParameterSize(); ++i) {
+        if (qAbs(m_constants[i]->value() - m_model.toStrongRef().data()->LocalParameter(i, m_no)) > 1e-5) // lets do no update if the model was calculated with the recently set constants
+            m_constants[i]->setValue(m_model.toStrongRef().data()->LocalParameter(i, m_no));
     }
-    m_error->setText("SAE: <b>" + Print::printDouble(m_model.data()->SumOfErrors(m_no)) + "</b>");
-    m_error->setToolTip("Sum of absoulte errors : <b>" + Print::printDouble(m_model.data()->SumOfErrors(m_no)) + "</b>");
+    m_error->setText("SAE: <b>" + Print::printDouble(m_model.toStrongRef().data()->SumOfErrors(m_no)) + "</b>");
+    m_error->setToolTip("Sum of absoulte errors : <b>" + Print::printDouble(m_model.toStrongRef().data()->SumOfErrors(m_no)) + "</b>");
 }
 
 void ModelElement::ChangeColor(const QColor& color)
@@ -255,7 +255,7 @@ void ModelElement::ChangeColor(const QColor& color)
     setStyleSheet("background-color:" + color.name() + ";");
 #else
     QPalette pal = palette();
-    pal.setColor(QPalette::Background, color);
+    pal.setColor(QPalette::Window, color);
     setPalette(pal);
 #endif
 

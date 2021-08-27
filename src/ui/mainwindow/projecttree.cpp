@@ -208,7 +208,7 @@ QMimeData* ProjectTree::mimeData(const QModelIndexList& indexes) const
             }
             mimeData->setModelIndex(index);
             QJsonDocument document = QJsonDocument(top);
-            mimeData->setData("application/x-suprafitmodel", document.toBinaryData());
+            mimeData->setData("application/x-suprafitmodel", document.toJson());
         }
     }
 
@@ -234,7 +234,7 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
         /* This could be from suprafit but a different main instance */
 
         QByteArray sprmodel = data->data("application/x-suprafitmodel");
-        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+        QJsonDocument doc = QJsonDocument::fromJson(sprmodel);
         QJsonObject mod = doc.object();
         if (mod["model"].toInt() == 0) {
             if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
@@ -252,7 +252,7 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
     const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
     QByteArray sprmodel = data->data("application/x-suprafitmodel");
-    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+    QJsonDocument doc = QJsonDocument::fromJson(sprmodel);
 
     if (d->Instance() != m_instance) {
         if (!doc.isEmpty() && string.contains("Data")) {
@@ -347,7 +347,7 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
         /* This could be from suprafit but a different main instance */
 
         QByteArray sprmodel = data->data("application/x-suprafitmodel");
-        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+        QJsonDocument doc = QJsonDocument::fromJson(sprmodel);
         QJsonObject mod = doc.object();
         if (mod["model"].toInt() == 0) {
             if (!doc.isEmpty() && (!string.contains("Model") || !string.contains("Data"))) {
@@ -368,7 +368,7 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
     const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
     QByteArray sprmodel = data->data("application/x-suprafitmodel");
-    QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+    QJsonDocument doc = QJsonDocument::fromJson(sprmodel);
 
     if (d->Instance() != m_instance) {
         if (!doc.isEmpty() && string.contains("Data")) {
@@ -414,7 +414,7 @@ bool ProjectTree::dropMimeData(const QMimeData* data, Qt::DropAction action, int
     } else if (index.isValid() && parent(index).isValid()) {
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
         QByteArray sprmodel = d->data("application/x-suprafitmodel");
-        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+        QJsonDocument doc = QJsonDocument::fromJson(sprmodel);
         QJsonObject mod = doc.object();
         emit CopyModel(mod, parent(index).row(), index.row());
     } else

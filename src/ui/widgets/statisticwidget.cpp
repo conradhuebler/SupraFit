@@ -46,7 +46,7 @@ StatisticWidget::StatisticWidget(const QSharedPointer<AbstractModel> model, QWid
     m_overview->setPalette(p);
     m_layout->addWidget(m_overview);
 
-    connect(m_model.data(), SIGNAL(StatisticChanged()), this, SLOT(Update()));
+    connect(m_model.toStrongRef().data(), SIGNAL(StatisticChanged()), this, SLOT(Update()));
     setLayout(m_layout);
     Update();
 }
@@ -64,31 +64,31 @@ void StatisticWidget::toggleView()
 void StatisticWidget::Update()
 {
     QString overview("<table style=\'width:100%\'>");
-    overview += "<tr><td>Parameter fitted:</t><td><b>" + Print::printDouble(m_model.data()->Parameter()) + "</b></td></tr>\n";
-    overview += "<tr><td>Number of used Points:</t><td><b>" + Print::printDouble(m_model.data()->Points()) + "</b></td></tr>\n";
-    overview += "<tr><td>Degrees of Freedom:</t><td><b>" + Print::printDouble(m_model.data()->Points() - m_model.data()->Parameter()) + "</b></td></tr>\n";
-    overview += "<tr><td>Error: (squared / absolute)</td><td><b>" + Print::printDouble(m_model.data()->SSE()) + "/" + Print::printDouble(m_model.data()->SAE()) + "</b></td></tr>\n";
-    overview += "<tr><td>Error Threshold (f-Test)</td><td><b>" + Print::printDouble(m_model.data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
-    overview += "<tr><td>R<sup>2</sup></td><td><b>" + Print::printDouble(m_model.data()->RSquared()) + "</b></td></tr>\n";
-    overview += "<tr><td>f-Value</td><td><b>" + Print::printDouble(m_model.data()->finv(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
-    overview += "<tr><td>Mean Error in Model:</td><td><b> " + Print::printDouble(m_model.data()->MeanError()) + "</b></td></tr>\n";
-    overview += "<tr><td>Variance of Error:</td><td><b>" + Print::printDouble(m_model.data()->Variance()) + "</b></td></tr>\n";
-    overview += "<tr><td>Standard deviation &sigma;<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.data()->StdDeviation()) + "</b></td></tr>\n";
-    overview += "<tr><td>Standard Error:</td><td><b>" + Print::printDouble(m_model.data()->StdError()) + "</b></td></tr>\n";
-    overview += "<tr><td>SE<sub>y</sub>:</td><td><b>" + Print::printDouble(m_model.data()->SEy()) + "</b></td></tr>\n";
-    overview += "<tr><td>&chi;:</td><td><b>" + Print::printDouble(m_model.data()->ChiSquared()) + "</b></td></tr>\n";
-    //overview += "<tr><td>cov<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.data()->CovFit()) + "</b></td></tr>\n";
+    overview += "<tr><td>Parameter fitted:</t><td><b>" + Print::printDouble(m_model.toStrongRef().data()->Parameter()) + "</b></td></tr>\n";
+    overview += "<tr><td>Number of used Points:</t><td><b>" + Print::printDouble(m_model.toStrongRef().data()->Points()) + "</b></td></tr>\n";
+    overview += "<tr><td>Degrees of Freedom:</t><td><b>" + Print::printDouble(m_model.toStrongRef().data()->Points() - m_model.toStrongRef().data()->Parameter()) + "</b></td></tr>\n";
+    overview += "<tr><td>Error: (squared / absolute)</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->SSE()) + "/" + Print::printDouble(m_model.toStrongRef().data()->SAE()) + "</b></td></tr>\n";
+    overview += "<tr><td>Error Threshold (f-Test)</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->ErrorfTestThreshold(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
+    overview += "<tr><td>R<sup>2</sup></td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->RSquared()) + "</b></td></tr>\n";
+    overview += "<tr><td>f-Value</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->finv(qApp->instance()->property("p_value").toDouble())) + "</b></td></tr>\n";
+    overview += "<tr><td>Mean Error in Model:</td><td><b> " + Print::printDouble(m_model.toStrongRef().data()->MeanError()) + "</b></td></tr>\n";
+    overview += "<tr><td>Variance of Error:</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->Variance()) + "</b></td></tr>\n";
+    overview += "<tr><td>Standard deviation &sigma;<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->StdDeviation()) + "</b></td></tr>\n";
+    overview += "<tr><td>Standard Error:</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->StdError()) + "</b></td></tr>\n";
+    overview += "<tr><td>SE<sub>y</sub>:</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->SEy()) + "</b></td></tr>\n";
+    overview += "<tr><td>&chi;:</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->ChiSquared()) + "</b></td></tr>\n";
+    //overview += "<tr><td>cov<sub>fit</sub>:</td><td><b>" + Print::printDouble(m_model.toStrongRef().data()->CovFit()) + "</b></td></tr>\n";
 
     overview += "</table></br>";
-    overview += m_model.data()->ModelInfo() + "</br>";
-    // overview += m_model.data()->AdditionalOutput();
+    overview += m_model.toStrongRef().data()->ModelInfo() + "</br>";
+    // overview += m_model.toStrongRef().data()->AdditionalOutput();
 
     m_short = overview;
     overview.clear();
     QString moco;
 
-    QJsonObject result = m_model.data()->getFastConfidence();
-    if (!m_model.data()->getFastConfidence().isEmpty()) {
+    QJsonObject result = m_model.toStrongRef().data()->getFastConfidence();
+    if (!m_model.toStrongRef().data()->getFastConfidence().isEmpty()) {
         moco += "<p><b>Fast Confidence Results:</b></p>\n";
         moco += "<table>\n";
 

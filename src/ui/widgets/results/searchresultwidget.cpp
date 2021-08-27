@@ -172,8 +172,8 @@ QTableView* SearchResultWidget::BuildList()
         model->setItem(i, 0, item);
         int j = 1;
 
-        for (int l = 0; l < m_model.data()->GlobalParameterSize(); ++l) {
-            if (!m_model.data()->GlobalTable()->isChecked(l, 0) || !m_model.data()->GlobalEnabled(l))
+        for (int l = 0; l < m_model.toStrongRef().data()->GlobalParameterSize(); ++l) {
+            if (!m_model.toStrongRef().data()->GlobalTable()->isChecked(l, 0) || !m_model.toStrongRef().data()->GlobalEnabled(l))
                 continue;
             QStandardItem* item = new QStandardItem(QString::number(initial[l]));
             item->setData(i, Qt::UserRole);
@@ -189,11 +189,11 @@ QTableView* SearchResultWidget::BuildList()
             j++;
         }
 
-        int index = m_model.data()->GlobalParameterSize();
+        int index = m_model.toStrongRef().data()->GlobalParameterSize();
         int idx = 0;
-        for (int k = 0; k < m_model.data()->SeriesCount(); ++k) {
-            for (int l = 0; l < m_model.data()->LocalParameterSize(); ++l) {
-                if (!m_model.data()->LocalTable()->isChecked(l, k) || !m_model.data()->LocalEnabled(l)) {
+        for (int k = 0; k < m_model.toStrongRef().data()->SeriesCount(); ++k) {
+            for (int l = 0; l < m_model.toStrongRef().data()->LocalParameterSize(); ++l) {
+                if (!m_model.toStrongRef().data()->LocalTable()->isChecked(l, k) || !m_model.toStrongRef().data()->LocalEnabled(l)) {
                     index++;
                     idx++;
                     continue;
@@ -220,25 +220,25 @@ QTableView* SearchResultWidget::BuildList()
         m_models << local_model; //["model"].toObject();
     }
 
-    for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
-        if (!m_model.data()->GlobalTable()->isChecked(i, 0) || !m_model.data()->GlobalEnabled(i))
+    for (int i = 0; i < m_model.toStrongRef().data()->GlobalParameterSize(); ++i) {
+        if (!m_model.toStrongRef().data()->GlobalTable()->isChecked(i, 0) || !m_model.toStrongRef().data()->GlobalEnabled(i))
             continue;
-        header << tr("%1\n (before)").arg(m_model.data()->GlobalParameterName(i));
-        header << tr("%1\n (after)").arg(m_model.data()->GlobalParameterName(i));
+        header << tr("%1\n (before)").arg(m_model.toStrongRef().data()->GlobalParameterName(i));
+        header << tr("%1\n (after)").arg(m_model.toStrongRef().data()->GlobalParameterName(i));
     }
 
     QString series;
-    for (int k = 0; k < m_model.data()->SeriesCount(); ++k) {
-        if (m_model.data()->SupportSeries())
+    for (int k = 0; k < m_model.toStrongRef().data()->SeriesCount(); ++k) {
+        if (m_model.toStrongRef().data()->SupportSeries())
             series = tr("Series %1, ").arg(k + 1);
         else
             series = QString();
 
-        for (int l = 0; l < m_model.data()->LocalParameterSize(); ++l) {
-            if (!m_model.data()->LocalTable()->isChecked(l, k) || !m_model.data()->LocalEnabled(l))
+        for (int l = 0; l < m_model.toStrongRef().data()->LocalParameterSize(); ++l) {
+            if (!m_model.toStrongRef().data()->LocalTable()->isChecked(l, k) || !m_model.toStrongRef().data()->LocalEnabled(l))
                 continue;
-            header << tr("%1 %2 \n (before)").arg(series).arg(m_model.data()->LocalParameterName(l));
-            header << tr("%1 %2 \n (after)").arg(series).arg(m_model.data()->LocalParameterName(l));
+            header << tr("%1 %2 \n (before)").arg(series).arg(m_model.toStrongRef().data()->LocalParameterName(l));
+            header << tr("%1 %2 \n (after)").arg(series).arg(m_model.toStrongRef().data()->LocalParameterName(l));
         }
     }
 

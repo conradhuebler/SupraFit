@@ -71,7 +71,8 @@ protected:
     {
         const QMimeData* data = event->mimeData();
         QByteArray sprmodel = data->data("application/x-suprafitmodel");
-        QJsonDocument doc = QJsonDocument::fromBinaryData(sprmodel);
+
+        QJsonDocument doc = QJsonDocument::fromJson(sprmodel);
 
         if (!doc.isEmpty()) {
             emit DataDropped(doc.object());

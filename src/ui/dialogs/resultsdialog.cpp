@@ -96,11 +96,11 @@ ResultsDialog::ResultsDialog(QSharedPointer<AbstractModel> model, ChartWrapper* 
     m_mainwidget->addWidget(m_results);
     m_mainwidget->addWidget(m_tabs);
 
-    setWindowTitle("Collected Results for " + m_model.data()->Name());
+    setWindowTitle("Collected Results for " + m_model.toStrongRef().data()->Name());
     setLayout(m_layout);
     resize(1024, 800);
     UpdateList();
-    connect(m_model.data(), &AbstractModel::StatisticChanged, this, &ResultsDialog::UpdateList);
+    connect(m_model.toStrongRef().data(), &AbstractModel::StatisticChanged, this, &ResultsDialog::UpdateList);
     connect(m_results->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
         m_load->setEnabled(m_results->selectionModel()->selectedIndexes().size());
         m_save->setEnabled(m_results->selectionModel()->selectedIndexes().size());
@@ -123,7 +123,7 @@ void ResultsDialog::Attention()
 
 void ResultsDialog::ShowResult(SupraFit::Method type, int index)
 {
-    QJsonObject jsonobject = m_model.data()->getStatistic(type, index);
+    QJsonObject jsonobject = m_model.toStrongRef().data()->getStatistic(type, index);
     ResultsWidget* results = new ResultsWidget(jsonobject, m_model, m_wrapper);
     QString name = tr("%1 # %2").arg(SupraFit::Method2Name(type)).arg(index + 1);
     int tab = m_tabs->addTab(results, name);
@@ -170,50 +170,50 @@ void ResultsDialog::UpdateList()
     };
 
     QStandardItemModel* model = new QStandardItemModel(this);
-    for (int i = 0; i < m_model.data()->getMCStatisticResult(); ++i) {
+    for (int i = 0; i < m_model.toStrongRef().data()->getMCStatisticResult(); ++i) {
         QStandardItem* item = new QStandardItem;
-        addItem(item, m_model.data()->getStatistic(SupraFit::Method::MonteCarlo, i), i);
+        addItem(item, m_model.toStrongRef().data()->getStatistic(SupraFit::Method::MonteCarlo, i), i);
         model->appendRow(item);
     }
 
-    for (int i = 0; i < m_model.data()->getCVStatisticResult(); ++i) {
-        QJsonObject controller = m_model.data()->getStatistic(SupraFit::Method::CrossValidation, i)["controller"].toObject();
+    for (int i = 0; i < m_model.toStrongRef().data()->getCVStatisticResult(); ++i) {
+        QJsonObject controller = m_model.toStrongRef().data()->getStatistic(SupraFit::Method::CrossValidation, i)["controller"].toObject();
         if (controller.isEmpty())
             continue;
         QStandardItem* item = new QStandardItem;
-        addItem(item, m_model.data()->getStatistic(SupraFit::Method::CrossValidation, i), i);
+        addItem(item, m_model.toStrongRef().data()->getStatistic(SupraFit::Method::CrossValidation, i), i);
         model->appendRow(item);
     }
 
-    for (int i = 0; i < m_model.data()->getWGStatisticResult(); ++i) {
-        QJsonObject controller = m_model.data()->getStatistic(SupraFit::Method::WeakenedGridSearch, i)["controller"].toObject();
-        if (controller.isEmpty())
-            continue;
-
-        QStandardItem* item = new QStandardItem;
-        addItem(item, m_model.data()->getStatistic(SupraFit::Method::WeakenedGridSearch, i), i);
-        model->appendRow(item);
-    }
-
-    for (int i = 0; i < m_model.data()->getMoCoStatisticResult(); ++i) {
-        QJsonObject controller = m_model.data()->getStatistic(SupraFit::Method::ModelComparison, i)["controller"].toObject();
+    for (int i = 0; i < m_model.toStrongRef().data()->getWGStatisticResult(); ++i) {
+        QJsonObject controller = m_model.toStrongRef().data()->getStatistic(SupraFit::Method::WeakenedGridSearch, i)["controller"].toObject();
         if (controller.isEmpty())
             continue;
 
         QStandardItem* item = new QStandardItem;
-        addItem(item, m_model.data()->getStatistic(SupraFit::Method::ModelComparison, i), i);
+        addItem(item, m_model.toStrongRef().data()->getStatistic(SupraFit::Method::WeakenedGridSearch, i), i);
         model->appendRow(item);
     }
 
-    for (int i = 0; i < m_model.data()->getReductionStatisticResults(); ++i) {
+    for (int i = 0; i < m_model.toStrongRef().data()->getMoCoStatisticResult(); ++i) {
+        QJsonObject controller = m_model.toStrongRef().data()->getStatistic(SupraFit::Method::ModelComparison, i)["controller"].toObject();
+        if (controller.isEmpty())
+            continue;
+
         QStandardItem* item = new QStandardItem;
-        addItem(item, m_model.data()->getStatistic(SupraFit::Method::Reduction, i), i);
+        addItem(item, m_model.toStrongRef().data()->getStatistic(SupraFit::Method::ModelComparison, i), i);
         model->appendRow(item);
     }
 
-    for (int i = 0; i < m_model.data()->SearchSize(); ++i) {
+    for (int i = 0; i < m_model.toStrongRef().data()->getReductionStatisticResults(); ++i) {
         QStandardItem* item = new QStandardItem;
-        addItem(item, m_model.data()->getStatistic(SupraFit::Method::GlobalSearch, i), i);
+        addItem(item, m_model.toStrongRef().data()->getStatistic(SupraFit::Method::Reduction, i), i);
+        model->appendRow(item);
+    }
+
+    for (int i = 0; i < m_model.toStrongRef().data()->SearchSize(); ++i) {
+        QStandardItem* item = new QStandardItem;
+        addItem(item, m_model.toStrongRef().data()->getStatistic(SupraFit::Method::GlobalSearch, i), i);
         model->appendRow(item);
     }
 
@@ -235,7 +235,7 @@ void ResultsDialog::itemDoubleClicked(const QModelIndex& index)
     if (-1 == m_indices[Index(item)]) {
         SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
         int index = item->data(Qt::UserRole + 1).toInt();
-        QJsonObject jsonobject = m_model.data()->getStatistic(type, index);
+        QJsonObject jsonobject = m_model.toStrongRef().data()->getStatistic(type, index);
         ResultsWidget* results = new ResultsWidget(jsonobject, m_model, m_wrapper);
         QString name = tr("%1 # %2").arg(SupraFit::Method2Name(type)).arg(index + 1);
         int tab = m_tabs->addTab(results, name);
@@ -271,7 +271,7 @@ void ResultsDialog::RemoveItem(const QModelIndex& index)
 
     SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
     int i = item->data(Qt::UserRole + 1).toInt();
-    m_model.data()->RemoveStatistic(type, i);
+    m_model.toStrongRef().data()->RemoveStatistic(type, i);
     UpdateList();
 }
 
@@ -284,7 +284,7 @@ void ResultsDialog::DropRawData(const QModelIndex& index)
 
     SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
     int idx = item->data(Qt::UserRole + 1).toInt();
-    m_model.data()->DropRawData(type, idx);
+    m_model.toStrongRef().data()->DropRawData(type, idx);
     UpdateList();
 }
 
@@ -301,14 +301,14 @@ void ResultsDialog::Save(const QModelIndex& index)
 
     SupraFit::Method type = SupraFit::Method(item->data(Qt::UserRole).toInt());
     int idx = item->data(Qt::UserRole + 1).toInt();
-    QJsonObject blob = m_model.data()->ExportStatistic(type, idx);
+    QJsonObject blob = m_model.toStrongRef().data()->ExportStatistic(type, idx);
 
     if (blob.isEmpty())
         return;
     /*
     QJsonObject toplevel;
-    toplevel["data"] = m_model.data()->ExportData();
-    QJsonObject model = m_model.data()->ExportModel(false, false);
+    toplevel["data"] = m_model.toStrongRef().data()->ExportData();
+    QJsonObject model = m_model.toStrongRef().data()->ExportModel(false, false);
     QJsonObject datablob = model["data"].toObject();
     QJsonObject statisticObject;
     statisticObject[QString::number(type) + ":0"] = blob;

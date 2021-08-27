@@ -83,32 +83,32 @@ void ResultsWidget::setUi()
     switch (m_data["controller"].toObject()["method"].toInt()) {
     case SupraFit::Method::MonteCarlo:
         m_widget = MonteCarloWidget();
-        setObjectName("Monte Carlo Simulation for " + m_model.data()->Name());
+        setObjectName("Monte Carlo Simulation for " + m_model.toStrongRef().data()->Name());
         break;
 
     case SupraFit::Method::ModelComparison:
         m_widget = ModelComparisonWidget();
-        setObjectName("Model Comparison Confidence for " + m_model.data()->Name());
+        setObjectName("Model Comparison Confidence for " + m_model.toStrongRef().data()->Name());
         break;
 
     case SupraFit::Method::WeakenedGridSearch:
         m_widget = GridSearchWidget();
-        setObjectName("Weakend Grid Search Confidence for " + m_model.data()->Name());
+        setObjectName("Weakend Grid Search Confidence for " + m_model.toStrongRef().data()->Name());
         break;
 
     case SupraFit::Method::Reduction:
         m_widget = ReductionWidget();
-        setObjectName("Reduction Analysis for " + m_model.data()->Name());
+        setObjectName("Reduction Analysis for " + m_model.toStrongRef().data()->Name());
         break;
 
     case SupraFit::Method::CrossValidation:
         m_widget = MonteCarloWidget();
-        setObjectName("Cross Validation Estimation for " + m_model.data()->Name());
+        setObjectName("Cross Validation Estimation for " + m_model.toStrongRef().data()->Name());
         break;
 
     case SupraFit::Method::GlobalSearch:
         m_widget = SearchWidget();
-        setObjectName("Global Search for " + m_model.data()->Name());
+        setObjectName("Global Search for " + m_model.toStrongRef().data()->Name());
         break;
 
     default:
@@ -176,14 +176,14 @@ QWidget* ResultsWidget::ReductionWidget()
         QColor color;
         int index = 0, jndex = 0;
         if (data["type"].toString() == "Global Parameter") {
-            color = ChartWrapper::ColorCode(m_model.data()->Color(i));
+            color = ChartWrapper::ColorCode(m_model.toStrongRef().data()->Color(i));
             serie->setColor(color);
         } else {
             if (data.contains("index")) {
                 QStringList lindex = data["index"].toString().split("|");
                 index = lindex[1].toInt();
                 jndex = lindex[0].toInt();
-                if (m_model.data()->SupportSeries()) {
+                if (m_model.toStrongRef().data()->SupportSeries()) {
                     if (index < m_wrapper->SeriesSize()) {
                         serie->setColor(m_wrapper->Series(index)->color());
                         color = m_wrapper->Series(index)->color();
@@ -202,9 +202,9 @@ QWidget* ResultsWidget::ReductionWidget()
         serie->setDashDotLine(true);
         qreal value = 0;
         if (data["type"].toString() == "Global Parameter")
-            value = m_model.data()->GlobalParameter(i);
+            value = m_model.toStrongRef().data()->GlobalParameter(i);
         else
-            value = m_model.data()->LocalParameter(jndex, index);
+            value = m_model.toStrongRef().data()->LocalParameter(jndex, index);
 
         serie->append(QPointF(series.last().x(), value));
         serie->append(QPointF(series.first().x(), value));
@@ -291,7 +291,7 @@ QWidget* ResultsWidget::GridSearchWidget()
 
                 int index = data["index"].toString().split("|")[1].toInt();
 
-                if (m_model.data()->SupportSeries()) {
+                if (m_model.toStrongRef().data()->SupportSeries()) {
                     if (index < m_wrapper->SeriesSize()) {
                         xy_series->setColor(m_wrapper->Series(index)->color());
                         connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
@@ -299,13 +299,13 @@ QWidget* ResultsWidget::GridSearchWidget()
                 }
 
         } else {
-            xy_series->setColor(ChartWrapper::ColorCode(m_model.data()->Color(i)));
+            xy_series->setColor(ChartWrapper::ColorCode(m_model.toStrongRef().data()->Color(i)));
         }
 
         view->addSeries(xy_series, i, xy_series->color(), name, true);
 
         LineSeries* current_constant = new LineSeries;
-        *current_constant << QPointF(x_0, m_model.data()->SSE()) << QPointF(x_0, m_model.data()->SSE() * 1.1);
+        *current_constant << QPointF(x_0, m_model.toStrongRef().data()->SSE()) << QPointF(x_0, m_model.toStrongRef().data()->SSE() * 1.1);
         current_constant->setDashDotLine(true);
         current_constant->setColor(xy_series->color());
         current_constant->setName(name);
@@ -316,7 +316,7 @@ QWidget* ResultsWidget::GridSearchWidget()
     view->setXAxis("parameter value");
     view->setYAxis(m_data["controller"].toObject()["ylabel"].toString());
 
-    view->setTitle(tr("Grid Search for %1").arg(m_model.data()->Name()));
+    view->setTitle(tr("Grid Search for %1").arg(m_model.toStrongRef().data()->Name()));
 
     return tabwidget;
 }
@@ -338,16 +338,16 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
         text += Print::TextFromStatistic(data);
     } else {
         text += Print::TextFromStatistic(controller["raw"].toObject());
-        text += m_model.data()->AnalyseStatistic(m_data, false);
+        text += m_model.toStrongRef().data()->AnalyseStatistic(m_data, false);
     }
     m_confidence_label->setText(text);
-    m_model.data()->UpdateStatistic(m_data);
+    m_model.toStrongRef().data()->UpdateStatistic(m_data);
 }
 
 void ResultsWidget::Detailed()
 {
     TextWidget* text = new TextWidget;
-    text->setText("<html><pre> " + m_text + "</br> " + m_model.data()->AnalyseStatistic(m_data, true) + "</pre></html>");
+    text->setText("<html><pre> " + m_text + "</br> " + m_model.toStrongRef().data()->AnalyseStatistic(m_data, true) + "</pre></html>");
 
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(text);

@@ -47,12 +47,12 @@ int ParameterTree::rowCount(const QModelIndex& parent) const
     int count = 0;
 
     if (!parent.isValid())
-        count = m_model.data()->CombinedParameter().size();
+        count = m_model.toStrongRef().data()->CombinedParameter().size();
     else{
         qreal * pos = static_cast<qreal *>(parent.internalPointer());
 
         if(pos == m_null)
-            count = m_model.data()->CombinedParameter()[parent.row()].second.size();
+            count = m_model.toStrongRef().data()->CombinedParameter()[parent.row()].second.size();
         else
             count = 0;
     }
@@ -74,8 +74,8 @@ QMimeData* ParameterTree::mimeData(const QModelIndexList& indexes) const
             if (pos == m_null)
                 data = QString::number(index.row()) + " -1";
             else {
-                for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
-                    if (pos == &m_model.data()->CombinedParameter(i)->first) {
+                for (int i = 0; i < m_model.toStrongRef().data()->CombinedParameter().size(); ++i) {
+                    if (pos == &m_model.toStrongRef().data()->CombinedParameter(i)->first) {
                         data = QString::number(i) + " " + QString::number(index.row());
                     }
                 }
@@ -119,8 +119,8 @@ bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, i
     if (pos == m_null)
         parameter = index.row();
     else {
-        for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
-            if (pos == &m_model.data()->CombinedParameter(i)->first) {
+        for (int i = 0; i < m_model.toStrongRef().data()->CombinedParameter().size(); ++i) {
+            if (pos == &m_model.toStrongRef().data()->CombinedParameter(i)->first) {
                 parameter = i;
             }
         }
@@ -134,13 +134,13 @@ bool ParameterTree::dropMimeData(const QMimeData* data, Qt::DropAction action, i
         if (list[1] == "-1")
             return false;
         else
-            m_model.data()->MoveSingleParameter(list[0].toInt(), list[1].toInt());
+            m_model.toStrongRef().data()->MoveSingleParameter(list[0].toInt(), list[1].toInt());
         return true;
     }
     if (list[1].toInt() == -1) {
-        m_model.data()->MoveParameterList(list[0].toInt(), parameter);
+        m_model.toStrongRef().data()->MoveParameterList(list[0].toInt(), parameter);
     } else
-        m_model.data()->MoveSingleParameter(list[0].toInt(), list[1].toInt(), parameter);
+        m_model.toStrongRef().data()->MoveSingleParameter(list[0].toInt(), list[1].toInt(), parameter);
 
     layoutChanged();
 
@@ -156,21 +156,21 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
     qreal* pos = static_cast<qreal*>(index.internalPointer());
 
     if (role == Qt::DisplayRole || role == Qt::EditRole) {
-        if (index.row() < m_model.data()->CombinedParameter().size()) {
+        if (index.row() < m_model.toStrongRef().data()->CombinedParameter().size()) {
             if (pos == m_null) {
 
                 QString name;
                 if (index.column() == 0)
-                    name = tr("%1").arg(m_model.data()->CombinedParameter()[index.row()].first);
+                    name = tr("%1").arg(m_model.toStrongRef().data()->CombinedParameter()[index.row()].first);
                 else
-                    name = tr("%1").arg(m_model.data()->CombinedParameter()[index.row()].second.size());
+                    name = tr("%1").arg(m_model.toStrongRef().data()->CombinedParameter()[index.row()].second.size());
 
-                if (m_model.data()->CombinedParameter()[index.row()].second.size() == 1) {
-                    MMParameter param = m_model.data()->CombinedParameter()[index.row()];
+                if (m_model.toStrongRef().data()->CombinedParameter()[index.row()].second.size() == 1) {
+                    MMParameter param = m_model.toStrongRef().data()->CombinedParameter()[index.row()];
                     if (param.second.size() == 0)
                         return data;
 
-                    QSharedPointer<AbstractModel> model = m_model.data()->Models()[param.second[0][0]];
+                    QSharedPointer<AbstractModel> model = m_model.toStrongRef().data()->Models()[param.second[0][0]];
 
                     if (param.second[0][1] == 0)
                         name += " | " + model->ProjectTitle() + " : " + model->Name() + tr(" [%1]").arg(model->GlobalParameterName(param.second[0][2]));
@@ -179,16 +179,16 @@ QVariant ParameterTree::data(const QModelIndex& index, int role) const
                 }
                 data = name;
             } else {
-                for (int i = 0; i < m_model.data()->CombinedParameter().size(); ++i) {
-                    if (pos == &m_model.data()->CombinedParameter(i)->first) {
-                        const MMParameter* param = m_model.data()->CombinedParameter(i);
+                for (int i = 0; i < m_model.toStrongRef().data()->CombinedParameter().size(); ++i) {
+                    if (pos == &m_model.toStrongRef().data()->CombinedParameter(i)->first) {
+                        const MMParameter* param = m_model.toStrongRef().data()->CombinedParameter(i);
 
                         if (index.row() >= param->second.size()) {
                             data = "Dr Strange, the bug hunter redeems SupraFit until the bug is fixed ... . He goes away after optimising.";
                             continue;
                         }
 
-                        QSharedPointer<AbstractModel> model = m_model.data()->Models()[param->second[index.row()][0]];
+                        QSharedPointer<AbstractModel> model = m_model.toStrongRef().data()->Models()[param->second[index.row()][0]];
                         QString name;
 
                         if (param->second[index.row()][1] == 0)
@@ -213,8 +213,8 @@ bool ParameterTree::setData(const QModelIndex& index, const QVariant& value, int
     if (role != Qt::EditRole || pos != m_null)
         return false;
 
-    m_model.data()->SetSingleParameter(value.toDouble(), index.row());
-    m_model.data()->Calculate();
+    m_model.toStrongRef().data()->SetSingleParameter(value.toDouble(), index.row());
+    m_model.toStrongRef().data()->Calculate();
 
     emit dataChanged(index, index);
 
@@ -231,7 +231,7 @@ QModelIndex ParameterTree::index(int row, int column, const QModelIndex& parent)
     if (!parent.isValid()) {
         index = createIndex(row, column, m_null);
     } else {
-        qreal* value = const_cast<qreal*>(&m_model.data()->CombinedParameter(parent.row())->first);
+        qreal* value = const_cast<qreal*>(&m_model.toStrongRef().data()->CombinedParameter(parent.row())->first);
         index = createIndex(row, column, value);
     }
     return index;
@@ -247,10 +247,9 @@ QModelIndex ParameterTree::parent(const QModelIndex& child) const
     qreal * pos = static_cast<qreal *>(child.internalPointer());
     if(pos != m_null)
     {
-        for(int i = 0; i < m_model.data()->CombinedParameter().size(); ++i)
-        {
-            for(int j = 0; j < m_model.data()->CombinedParameter()[i].second.size(); ++j)
-                if (&m_model.data()->CombinedParameter(i)->first == pos) {
+        for (int i = 0; i < m_model.toStrongRef().data()->CombinedParameter().size(); ++i) {
+            for (int j = 0; j < m_model.toStrongRef().data()->CombinedParameter()[i].second.size(); ++j)
+                if (&m_model.toStrongRef().data()->CombinedParameter(i)->first == pos) {
                     index = createIndex(i, 0, m_null);
                 }
         }
@@ -314,19 +313,19 @@ void MetaModelParameter::setUi()
 
     setLayout(m_layout);
 
-    connect(m_model.data(), &MetaModel::ModelAdded, this, [this]() {
+    connect(m_model.toStrongRef().data(), &MetaModel::ModelAdded, this, [this]() {
         m_treemodel->layoutChanged();
     });
 
-    connect(m_model.data(), &MetaModel::ModelRemoved, this, [this]() {
+    connect(m_model.toStrongRef().data(), &MetaModel::ModelRemoved, this, [this]() {
         m_treemodel->layoutChanged();
     });
 
-    connect(m_model.data(), &MetaModel::ParameterSorted, this, [this]() {
+    connect(m_model.toStrongRef().data(), &MetaModel::ParameterSorted, this, [this]() {
         m_treemodel->layoutChanged();
     });
 
-    connect(m_model.data(), &MetaModel::Recalculated, this, [this]() {
+    connect(m_model.toStrongRef().data(), &MetaModel::Recalculated, this, [this]() {
         m_treemodel->layoutChanged();
     });
 }
@@ -336,5 +335,5 @@ void MetaModelParameter::SplitParameter()
     const QModelIndex index = m_tree->currentIndex();
     if (m_treemodel->parent(index).isValid())
         return;
-    m_model.data()->MoveSingleParameter(index.row());
+    m_model.toStrongRef().data()->MoveSingleParameter(index.row());
 }

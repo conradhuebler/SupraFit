@@ -42,24 +42,24 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     m_std = new ClickLabel;
     connect(m_std, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->StdDeviation()))).simplified());
+        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.toStrongRef().data()->StdDeviation()))).simplified());
         m_std->Clicked();
     });
 
     m_sse = new ClickLabel;
     connect(m_sse, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->SSE()))).simplified());
+        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.toStrongRef().data()->SSE()))).simplified());
         m_sse->Clicked();
     });
 
     m_sey = new ClickLabel;
     connect(m_sey, &ClickLabel::MouseClicked, this, [this]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.data()->SEy()))).simplified());
+        clipboard->setText((tr("%1").arg(Print::printDouble(m_model.toStrongRef().data()->SEy()))).simplified());
         m_sey->Clicked();
     });
-    if (!m_model.data()->isSimulation()) {
+    if (!m_model.toStrongRef().data()->isSimulation()) {
         layout->addWidget(m_sse, 0, 0);
         layout->addWidget(m_std, 0, 1);
         layout->addWidget(m_sey, 0, 2);
@@ -78,7 +78,7 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
 
         QHBoxLayout* hlayout = new QHBoxLayout;
         hlayout->addWidget(m_ideal);
-        if (!m_model.data()->isSimulation()) {
+        if (!m_model.toStrongRef().data()->isSimulation()) {
             hlayout->addWidget(m_mc_std);
             hlayout->addWidget(m_mc_sey);
         }
@@ -89,54 +89,54 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
     }
 
     setLayout(layout);
-    connect(m_model.data(), &AbstractModel::Recalculated, this, &ExportSimulationWidget::Update);
+    connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, &ExportSimulationWidget::Update);
 }
 
 void ExportSimulationWidget::Update()
 {
     //TODO Move the random table generation into an on-demand generation upon click, drag n drop and not after every recalculation
-    m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SSE: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SSE())));
-    m_std->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;%2: %3</b>").arg(QString(":/icons/edit-copy.png")).arg(Unicode_sigma).arg(Print::printDouble(m_model.data()->StdDeviation())));
-    m_sey->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SE<sub>y</sub>: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.data()->SEy())));
+    m_sse->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SSE: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.toStrongRef().data()->SSE())));
+    m_std->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;%2: %3</b>").arg(QString(":/icons/edit-copy.png")).arg(Unicode_sigma).arg(Print::printDouble(m_model.toStrongRef().data()->StdDeviation())));
+    m_sey->setText(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;SE<sub>y</sub>: %2</b>").arg(QString(":/icons/edit-copy.png")).arg(Print::printDouble(m_model.toStrongRef().data()->SEy())));
 
     if (!qApp->instance()->property("advanced_ui").toBool())
         return;
 
-    QJsonObject data = m_model.data()->ExportData();
+    QJsonObject data = m_model.toStrongRef().data()->ExportData();
     data["DataType"] = DataClassPrivate::DataType::Table;
-    data["dependent"] = m_model.data()->ModelTable()->ExportTable(true);
+    data["dependent"] = m_model.toStrongRef().data()->ModelTable()->ExportTable(true);
     data["title"] = QString("Simulated Data - %1").arg(QDateTime::currentDateTime().toString());
-    data["content"] = QString("Simulated data from a %1").arg(m_model.data()->Name());
+    data["content"] = QString("Simulated data from a %1").arg(m_model.toStrongRef().data()->Name());
     data["uuid"] = QString();
     QJsonObject top;
     top["data"] = data;
     QJsonDocument document(top);
-    m_ideal->setContent(document.toBinaryData());
+    m_ideal->setContent(document.toJson());
 
     qint64 seed = QDateTime::currentMSecsSinceEpoch();
     std::mt19937 rng(seed);
 
-    DataTable* table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->StdDeviation(), rng);
+    DataTable* table = m_model.toStrongRef().data()->ModelTable()->PrepareMC(QVector<double>() << m_model.toStrongRef().data()->StdDeviation(), rng);
     data["dependent"] = table->ExportTable(true);
-    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=%5<sub>fit</sub>=%6)").arg(m_model.data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(Unicode_sigma).arg(m_model.data()->StdDeviation());
+    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=%5<sub>fit</sub>=%6)").arg(m_model.toStrongRef().data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(Unicode_sigma).arg(m_model.toStrongRef().data()->StdDeviation());
     top["data"] = data;
     document = QJsonDocument(top);
-    m_mc_std->setContent(document.toBinaryData());
+    m_mc_std->setContent(document.toJson());
     delete table;
 
-    table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_model.data()->SEy(), rng);
+    table = m_model.toStrongRef().data()->ModelTable()->PrepareMC(QVector<double>() << m_model.toStrongRef().data()->SEy(), rng);
     data["dependent"] = table->ExportTable(true);
-    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=SEy=%5)").arg(m_model.data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(m_model.data()->SEy());
+    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=SEy=%5)").arg(m_model.toStrongRef().data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(m_model.toStrongRef().data()->SEy());
     top["data"] = data;
     document = QJsonDocument(top);
-    m_mc_sey->setContent(document.toBinaryData());
+    m_mc_sey->setContent(document.toJson());
     delete table;
 
-    table = m_model.data()->ModelTable()->PrepareMC(QVector<double>() << m_variance->value(), rng);
+    table = m_model.toStrongRef().data()->ModelTable()->PrepareMC(QVector<double>() << m_variance->value(), rng);
     data["dependent"] = table->ExportTable(true);
-    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=%5)").arg(m_model.data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(m_variance->value());
+    data["content"] = QString("Simulated data from a %1 with standard normal distributed random error with %2 %3 N(0,%4=%5)").arg(m_model.toStrongRef().data()->Name()).arg(Unicode_epsilion).arg(Unicode_Math_Element).arg(Unicode_sigma).arg(m_variance->value());
     top["data"] = data;
     document = QJsonDocument(top);
-    m_mc_user->setContent(document.toBinaryData());
+    m_mc_user->setContent(document.toJson());
     delete table;
 }
