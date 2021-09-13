@@ -42,6 +42,7 @@ public:
     explicit SpectraWidget(QWidget* parent = nullptr);
 
     void setDirectory(const QString& directry, const QString& type);
+    void setFile(const QString& file);
     void addFile(const QString& file);
 
     void clear();

@@ -45,6 +45,7 @@ public:
     virtual ~SpectraHandler() {}
     inline QStringList getOrder() const { return m_order; }
 
+    void setSpectrafromFile(const QString& file);
     void addSpectrum(const QString& file);
     void addDirectory(const QString& dir, const QString& suffix);
 
@@ -82,6 +83,7 @@ private:
     QHash<QString, Spectrum> m_spectra;
     QStringList m_order;
     QVector<double> m_x;
+    DataTable* m_table;
 
     Eigen::MatrixXd PrepareMatrix() const;
     Spectrum MakeSpectrum(const Vector& x, const Vector& y, const QString& filename = QString());

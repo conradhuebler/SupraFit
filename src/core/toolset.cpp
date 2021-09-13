@@ -743,6 +743,30 @@ QString FindFile(const QString& start, const QString& path, const QString& hash,
     return file;
 }
 
+DataTable* LoadTableFile(const QString& filename)
+{
+    DataTable* table = new DataTable;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << file.errorString();
+        return table;
+    }
+    QByteArray blob = file.readAll();
+
+    QStringList filecontent;
+
+    filecontent = QString(blob).split("\n");
+    for (const QString& line : filecontent) {
+        //qDebug() << line;
+        auto vector = String2DoubleEigVec(QString(line).replace("\t", " ").replace(",", "."));
+        //  std::cout << vector << std::endl;
+        table->insertRow(vector);
+    }
+
+    return table;
+}
+
 QPair<Vector, Vector> LoadCSVFile(const QString& filename)
 {
     Vector x, y;

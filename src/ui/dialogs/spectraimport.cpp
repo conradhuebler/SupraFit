@@ -52,6 +52,9 @@ void SpectraImport::setUI()
 {
     QGridLayout* layout = new QGridLayout;
 
+    m_file = new QPushButton(tr("Load file"));
+    connect(m_file, &QPushButton::clicked, this, &SpectraImport::setFile);
+
     m_directory = new QPushButton(tr("Open Directory"));
     connect(m_directory, &QPushButton::clicked, this, &SpectraImport::setDirectory);
     m_path = new QLineEdit;
@@ -70,8 +73,9 @@ void SpectraImport::setUI()
 
     layout->addWidget(m_file_type, 0, 0);
     layout->addWidget(m_directory, 0, 1);
-    layout->addWidget(m_path, 0, 2);
-    layout->addWidget(m_spectrawidget, 1, 0, 1, 3);
+    layout->addWidget(m_file, 0, 2);
+    layout->addWidget(m_path, 0, 3);
+    layout->addWidget(m_spectrawidget, 1, 0, 1, 4);
 
     layout->addWidget(m_buttonbox, 2, 2);
 
@@ -90,6 +94,22 @@ void SpectraImport::setDirectory()
     m_spectrawidget->clear();
     m_spectrawidget->setDirectory(directory, m_file_type->currentText());
     qApp->instance()->setProperty("LastSpectraType", m_file_type->currentText());
+}
+
+void SpectraImport::setSpectraFile(const QString& file)
+{
+    m_path->setText(file);
+    m_spectrawidget->setFile(file);
+}
+
+void SpectraImport::setFile()
+{
+    const QString file = QFileDialog::getOpenFileName(this, tr("Open file"), getDir());
+
+    setLastDir(file);
+    m_path->setText(file);
+    m_spectrawidget->clear();
+    m_spectrawidget->setFile(file);
 }
 
 void SpectraImport::setData(const QJsonObject& data)

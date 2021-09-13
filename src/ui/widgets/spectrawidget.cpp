@@ -222,6 +222,12 @@ void SpectraWidget::setUI()
     connect(m_export_table, &QPushButton::clicked, this, &SpectraWidget::SaveToFile);
 }
 
+void SpectraWidget::setFile(const QString& file)
+{
+    m_handler->setSpectrafromFile(file);
+    UpdateSpectra();
+}
+
 void SpectraWidget::addFile(const QString& file)
 {
     m_handler->addSpectrum(file);
@@ -298,6 +304,8 @@ void SpectraWidget::UpdateData()
     m_datatable->setModel(result);
     m_input_table = result->ExportTable(true);
     m_project = m_handler->getSpectraData();
+    m_x_start->setValue(m_handler->XMin());
+    m_x_end->setValue(m_handler->XMax());
 }
 
 void SpectraWidget::setData(const QJsonObject& data)

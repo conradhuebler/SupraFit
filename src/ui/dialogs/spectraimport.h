@@ -38,18 +38,21 @@ public:
 
     virtual ~SpectraImport(){};
 
+    void setSpectraFile(const QString& file);
+
     void setUI();
     QJsonObject ProjectData() const { return m_spectrawidget->ProjectData(); }
     QJsonObject InputTable() const { return m_spectrawidget->InputTable(); }
     void setData(const QJsonObject& data);
 
 public slots:
+    void setFile();
     void setDirectory();
     void accept() override;
 
 private:
     SpectraWidget* m_spectrawidget;
-    QPushButton* m_directory;
+    QPushButton *m_directory, *m_file;
     QLineEdit* m_path;
     QDialogButtonBox* m_buttonbox;
     QComboBox* m_file_type;

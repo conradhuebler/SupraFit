@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -259,7 +259,7 @@ void ThermogramWidget::setUi()
             m_get_time_from_thermogram = 1;
             QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
             m_get_peaks_start->setText("Click to Undo");
-            setGuideText(QString("You are now in <i>Thermogram start selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, where the peak starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
+            setGuideText(QString("You are now in <i>Thermogram start selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the peak starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
         } else if (m_get_time_from_thermogram == 1) {
             m_get_time_from_thermogram = 0;
             m_get_peaks_start->setText("Click to Select");
@@ -280,7 +280,7 @@ void ThermogramWidget::setUi()
             m_get_time_from_thermogram = 2;
             QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
             m_get_peaks_end->setText("Click to Undo");
-            setGuideText(QString("You are now in <i>Thermogram end selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, where the peak starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
+            setGuideText(QString("You are now in <i>Thermogram end selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the peaks end. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
         } else if (m_get_time_from_thermogram == 2) {
             m_get_time_from_thermogram = 0;
             m_get_peaks_end->setText("Click to Select");
@@ -303,8 +303,27 @@ void ThermogramWidget::setUi()
         m_peaks_end->setMaximum(m_stored_thermogram->Spectrum()->XMax() - value);
         m_peaks_end->setValue(m_stored_thermogram->Spectrum()->XMax() - value);
     });
-    m_calibration_start->setMaximumWidth(100);
-    m_calibration_start->setToolTip(tr("Set the duration in seconds of the calibration peak. The calibration peak is considered to be last peak in the thermogram. Leave zero, if the calorimeter does not use calibration peaks"));
+
+    m_get_calibration_start = new QPushButton(tr("Click to Select"));
+    m_get_calibration_start->setIcon(Icon("edit-select"));
+    connect(m_thermogram, &ChartView::PointDoubleClicked, this, &ThermogramWidget::PointDoubleClicked);
+
+    m_get_calibration_start->setMaximumWidth(100);
+    m_get_calibration_start->setToolTip(tr("Click and select the starting time for the calibration from the thermogram."));
+
+    connect(m_get_calibration_start, &QPushButton::clicked, this, [this]() {
+        if (!m_get_time_from_thermogram) {
+            m_calibration_start_int = 1;
+            QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
+            m_get_calibration_start->setText("Click to Undo");
+            setGuideText(QString("You are now in <i>Calibartion start time selection mode</i>. <b>Double click</b> with the <b>left</b> mouse in the chart to define, when the calibration starts. Click on the <em>Click to Undo Button</em> to decline the selection. Zooming is still possible via <b>single left click</b>."));
+        } else if (m_get_time_from_thermogram == 1) {
+            m_calibration_start_int = 0;
+            m_get_calibration_start->setText("Click to Select");
+            ResetGuideLabel();
+            QApplication::restoreOverrideCursor();
+        }
+    });
 
     m_calibration_heat = new QDoubleSpinBox;
     m_calibration_heat->setMinimum(-1e8);
@@ -466,7 +485,8 @@ void ThermogramWidget::setUi()
     vlayout = new QVBoxLayout;
 
     triplett = new QHBoxLayout;
-    triplett->addWidget(new QLabel("Time start [s]"));
+    //triplett->addWidget(new QLabel("Time start [s]"));
+    triplett->addWidget(m_get_calibration_start);
     triplett->addWidget(m_calibration_start);
     vlayout->addLayout(triplett);
 
@@ -686,6 +706,7 @@ void ThermogramWidget::Update()
     m_peak_list = QVector<PeakPick::Peak>(*m_stored_thermogram->Peaks());
     m_peaks_end->setValue(m_stored_thermogram->ThermogramEnd() - m_calibration_start->value());
     m_peaks_start->setValue(m_stored_thermogram->ThermogramBegin());
+    qDebug() << m_stored_thermogram->ThermogramBegin();
     UpdateTable();
     UpdateSeries();
     UpdateRules();
@@ -928,6 +949,13 @@ void ThermogramWidget::PointDoubleClicked(const QPointF& point)
     } else if (m_get_time_from_thermogram == 2) {
         m_get_peaks_end->setText("Click to Select");
         m_peaks_end->setValue(x);
+    } else if (m_calibration_start_int == 1) {
+        m_calibration_start->setValue(m_stored_thermogram->Spectrum()->XMax() - x);
+        m_CalibrationStart = x;
+        qApp->instance()->setProperty("calibration_start", x);
+        m_peaks_end->setMaximum(x);
+        m_peaks_end->setValue(x);
+        m_calibration_start_int = 0;
     } else {
         for (int i = 0; i < m_table->rowCount(); ++i) {
             double start = m_table->item(i, 1)->data(Qt::DisplayRole).toDouble();
