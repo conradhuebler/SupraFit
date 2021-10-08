@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/global.h"
 
+#include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/thermogram.h"
 
 #include <src/ui/widgets/DropTable.h>
@@ -141,9 +142,14 @@ void ImportData::setUi()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportFile()));
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
 
-    m_thermogram = new QPushButton(tr("Import Thermogram"));
+    m_thermogram = new QPushButton(tr("Import as Thermogram"));
     connect(m_thermogram, &QPushButton::clicked, this, [this]() {
         ImportThermogram(m_filename);
+    });
+
+    m_spectra = new QPushButton(tr("Import as Spectras"));
+    connect(m_spectra, &QPushButton::clicked, this, [this]() {
+        ImportSpectra(m_filename);
     });
 
     m_table = new DropTable;
@@ -157,7 +163,9 @@ void ImportData::setUi()
     layout->addWidget(m_dependent_rows, 1, 3);
     layout->addWidget(m_table, 3, 0, 1, 4);
     layout->addWidget(m_thermogram, 4, 0);
-    layout->addWidget(m_buttonbox, 4, 1, 1, 3);
+    layout->addWidget(m_spectra, 4, 1);
+
+    layout->addWidget(m_buttonbox, 4, 2, 1, 2);
 
     connect(m_table, &DropTable::Edited, this, &ImportData::NoChanged);
 
@@ -387,4 +395,24 @@ bool ImportData::ImportThermogram()
     }
     return false;
 }
+
+bool ImportData::ImportSpectra(const QString& filename)
+{
+    SpectraImport* import = new SpectraImport;
+    import->setSpectraFile(filename);
+
+    if (import->exec() == QDialog::Accepted) {
+        QJsonObject table = import->InputTable();
+        setSpectraData(import->ProjectData());
+        //m_project = import->ProjectData();
+        //qDebug() << m_project;
+        DataTable* model = new DataTable(table);
+        m_table->setModel(model);
+        NoChanged();
+        delete import;
+        return true;
+    }
+    return false;
+}
+
 #include "importdata.moc"

@@ -135,6 +135,8 @@ public:
     void prepend(const QPointer<DataTable> table);
 
     void insertRow(const Vector& row, const Vector& checked);
+    void insertRow(const Vector& row, bool zero = false);
+
     void insertRow(const QVector<qreal>& row, bool zero = false);
     void setRow(const QVector<qreal>& vector, int row);
     void setRow(const Vector& vector, int row);

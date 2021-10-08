@@ -62,6 +62,7 @@ public:
         setLineEdit(new LineEdit());
         connect(this, SIGNAL(valueChanged(double)), this, SLOT(On_valueChanged(double)));
         setMaximum(1e27);
+        setMinimum(-1e27);
         setDecimals(4);
     }
     inline ~SpinBox() {}

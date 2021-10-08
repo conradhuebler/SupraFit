@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ void SupraFitCli::setControlJson(const QJsonObject& control)
             m_analyse = control[key].toObject();
     }
     if (!m_main.isEmpty()) {
-        for (const auto str : m_main.keys()) {
+        for (const auto& str : m_main.keys()) {
             if (str.compare("GenerateData", Qt::CaseInsensitive) == 0) {
                 m_simulate_job = true;
                 m_simulation = m_main[str].toObject();
@@ -124,7 +124,6 @@ bool SupraFitCli::LoadFile()
 
 void SupraFitCli::ParseMain()
 {
-
     if (m_main.isEmpty())
         return;
 

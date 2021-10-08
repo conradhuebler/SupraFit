@@ -28,6 +28,7 @@ void ProjectTree::UpdateStructure()
 {
     for (int i = 0; i < m_data_list->size(); ++i) {
         QString uuid = (*m_data_list)[i].toStrongRef().data()->UUID();
+        qDebug() << (*m_data_list)[i].toStrongRef().data()->UUID() << (*m_data_list)[i].toStrongRef().data()->SFModel() << (*m_data_list)[i].toStrongRef().data()->ProjectTitle();
 
         if (!m_uuids.contains(uuid)) {
             m_uuids << uuid;
@@ -284,15 +285,27 @@ bool ProjectTree::canDropMimeData(const QMimeData* data, Qt::DropAction action, 
         }
         return true;
     }
+    //  qDebug() << "MetaModel" << d->Index().row() << d->Index().parent().row() << row << column <<(*m_data_list)[d->Index().parent().row()].toStrongRef().data()->ProjectTitle();
+    //    qDebug() << row << column << index.isValid() << d->Index().parent().row();
+
     if (index.isValid() && !parent(index).isValid()) {
         int r = index.row();
         const ModelMime* d = qobject_cast<const ModelMime*>(data);
 
+        qDebug() << row << column;
+        qDebug() << index.row() << index.column();
         if (qobject_cast<MetaModel*>((*m_data_list)[r].toStrongRef().data()) && index.isValid()) {
 
+            if (index.row() < m_data_list->size()) {
+                if ((*m_data_list)[index.row()].toStrongRef().data()->SFModel() == SupraFit::MetaModel)
+                    qDebug() << "can add metamodel";
+                return true;
+            }
             if (d->Index().parent().row() < (*m_data_list).size() && d->Index().parent().row() >= 0) {
-                if ((*m_data_list)[d->Index().parent().row()].toStrongRef().data()->SFModel() == SupraFit::MetaModel)
+
+                if ((*m_data_list)[d->Index().parent().row()].toStrongRef().data()->SFModel() == SupraFit::MetaModel) {
                     return false;
+                }
                 if (!qApp->instance()->property("MetaSeries").toBool()) {
                     if (d->SupportSeries()) {
                         return false;

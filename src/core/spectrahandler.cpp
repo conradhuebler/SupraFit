@@ -43,6 +43,26 @@ SpectraHandler::SpectraHandler(QObject* parent)
 {
 }
 
+void SpectraHandler::setSpectrafromFile(const QString& file)
+{
+    int index = 1;
+    DataTable* table = ToolSet::LoadTableFile(file);
+    Vector first = table->Row(0);
+    m_table = table;
+    for (int i = 1; i < table->rowCount() - 1; ++i) {
+        QPair<Vector, Vector> spec;
+        spec.first = first;
+        spec.second = table->Row(i);
+        Spectrum p = MakeSpectrum(spec, QString::number(index));
+        QUuid uuid;
+        QString id = uuid.createUuid().toString();
+        m_spectra.insert(id, p);
+        m_order << id;
+        index++;
+    }
+    ParseData();
+}
+
 void SpectraHandler::addSpectrum(const QString& file)
 {
     QPair<Vector, Vector> spec;
@@ -225,6 +245,8 @@ QJsonObject SpectraHandler::getSpectraData() const
 
     spectradata["XValues"] = ToolSet::DoubleVec2String(m_x);
     spectradata["SupraFit"] = qint_version;
+    spectradata["XStart"] = m_x_start;
+    spectradata["XEnd"] = m_x_end;
 
     return spectradata;
 }
@@ -250,9 +272,12 @@ void SpectraHandler::LoadData(const QJsonObject& data)
             }
         }
     }
-
     for (double d : ToolSet::String2DoubleVec(data["XValues"].toString()))
         addXValue(d);
+
+    ParseData();
+    m_x_start = data["XStart"].toDouble(m_x_start);
+    m_x_end = data["XStart"].toDouble(m_x_end);
 }
 
 Spectrum SpectraHandler::MakeSpectrum(const Vector& x, const Vector& y, const QString& filename)
