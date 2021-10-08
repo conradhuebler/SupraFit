@@ -70,7 +70,8 @@
 #include <QtCore/QTimer>
 #include <QtCore/QtMath>
 
-#include <QtWidgets/QAction>
+#include <QtGui/QAction>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QColorDialog>
@@ -472,6 +473,8 @@ void ModelWidget::setColorList(const QString& str)
         for (int i = 0; i < m_model_elements.size(); ++i) {
             if (QColor(colors[i]).isValid())
                 m_model_elements[i]->ChangeColor(QColor(colors[i]));
+            else
+                m_model_elements[i]->ChangeColor(Qt::green);
         }
     }
 }

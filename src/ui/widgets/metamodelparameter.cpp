@@ -24,10 +24,10 @@
 #include <QtCore/QMimeData>
 #include <QtCore/QSharedPointer>
 
+#include <QtGui/QAction>
 #include <QtGui/QPainter>
 #include <QtGui/QTextDocument>
 
-#include <QtWidgets/QAction>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QTreeView>
 
@@ -260,7 +260,7 @@ QModelIndex ParameterTree::parent(const QModelIndex& child) const
 
 void ModelParameterEntry::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    QStyleOptionViewItemV4 options = option;
+    QStyleOptionViewItem options = option;
     initStyleOption(&options, index);
 
     painter->save();

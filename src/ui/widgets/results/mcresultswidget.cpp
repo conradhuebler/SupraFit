@@ -179,10 +179,12 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
             if (m_model.toStrongRef().data()->SupportSeries()) {
                 if (index < m_wrapper->SeriesSize()) {
                     xy_series->setColor(m_wrapper->Series(index)->color());
-                    connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-                    connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, this](const QColor& color) { this->setAreaColor(i, color); });
+                    connect(m_wrapper->Series(index), &QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
+                    connect(m_wrapper->Series(index), &QXYSeries::colorChanged, this, [i, this](const QColor& color) { this->setAreaColor(i, color); });
                 }
-            }
+            } else
+                xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
+#warning not nice, as the series colors are not consistently selected
         } else {
             xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
         }
@@ -206,7 +208,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
 
         LineSeries* current_constant = new LineSeries;
         current_constant->setSize(lineWidth);
-        connect(xy_series, &QtCharts::QXYSeries::colorChanged, current_constant, &LineSeries::setColor);
+        connect(xy_series, &QXYSeries::colorChanged, current_constant, &LineSeries::setColor);
         current_constant->setDashDotLine(true);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
         current_constant->setColor(xy_series->color());
@@ -214,7 +216,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         view->addSeries(current_constant, i, xy_series->color(), name, false);
 
         if (view) {
-            QtCharts::QAreaSeries* area_series = AreaSeries(xy_series->color());
+            QAreaSeries* area_series = AreaSeries(xy_series->color());
             view->addSeries(area_series, i, area_series->color(), name);
             area_series->setName("!NONE!");
             m_area_series << area_series;
@@ -257,8 +259,8 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
                 continue;
             int index = data["index"].toString().split("|")[1].toInt();
             series->setBrush(m_wrapper->Series(index)->color());
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
-            connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, this, [i, boxplot](const QColor& color) {if(boxplot) boxplot->setColor(i, color); });
+            connect(m_wrapper->Series(index), &QXYSeries::colorChanged, series, &BoxPlotSeries::setColor);
+            connect(m_wrapper->Series(index), &QXYSeries::colorChanged, this, [i, boxplot](const QColor& color) {if(boxplot) boxplot->setColor(i, color); });
         } else
             series->setBrush(ChartWrapper::ColorCode(m_model.toStrongRef().data()->Color(i)));
 
@@ -268,7 +270,7 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
     }
 
     if (has_boxplot) {
-        QtCharts::QValueAxis* y_axis = qobject_cast<QtCharts::QValueAxis*>(boxplot->Chart()->axisY());
+        QValueAxis* y_axis = qobject_cast<QValueAxis*>(boxplot->Chart()->axisY());
         y_axis->setMin(min * 0.99);
         y_axis->setMax(max * 1.01);
     }
@@ -337,7 +339,7 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
 
         ScatterSeries* line = new ScatterSeries;
         line->setColor(color);
-        line->setMarkerShape(QtCharts::QScatterSeries::MarkerShapeRectangle);
+        line->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
         line->setMarkerSize(6);
 
         ScatterSeries* scatter_series = new ScatterSeries;
@@ -368,9 +370,9 @@ void MCResultsWidget::UpdateBoxes()
             continue;
         QJsonObject confidenceObject = data["confidence"].toObject();
         if (m_histgram && i < m_area_series.size()) {
-            QtCharts::QAreaSeries* area_series = m_area_series[i];
-            QtCharts::QLineSeries* series1 = area_series->lowerSeries();
-            QtCharts::QLineSeries* series2 = area_series->upperSeries();
+            QAreaSeries* area_series = m_area_series[i];
+            QLineSeries* series1 = area_series->lowerSeries();
+            QLineSeries* series2 = area_series->upperSeries();
 
             series1->clear();
             series2->clear();
@@ -395,11 +397,11 @@ void MCResultsWidget::ExportResults()
     ToolSet::ExportResults(str, m_models);
 }
 
-QtCharts::QAreaSeries* MCResultsWidget::AreaSeries(const QColor& color) const
+QAreaSeries* MCResultsWidget::AreaSeries(const QColor& color) const
 {
-    QtCharts::QLineSeries* series1 = new QtCharts::QLineSeries();
-    QtCharts::QLineSeries* series2 = new QtCharts::QLineSeries();
-    QtCharts::QAreaSeries* area_series = new QtCharts::QAreaSeries(series1, series2);
+    QLineSeries* series1 = new QLineSeries();
+    QLineSeries* series2 = new QLineSeries();
+    QAreaSeries* area_series = new QAreaSeries(series1, series2);
     QPen pen(0x059605);
     pen.setWidth(3);
     area_series->setPen(pen);
@@ -417,7 +419,7 @@ void MCResultsWidget::setAreaColor(int index, const QColor& color)
 {
     if (index >= m_area_series.size())
         return;
-    QtCharts::QAreaSeries* area_series = m_area_series[index];
+    QAreaSeries* area_series = m_area_series[index];
     area_series->setName("!NONE!");
 
     QPen pen(0x059605);

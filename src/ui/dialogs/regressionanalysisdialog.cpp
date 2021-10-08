@@ -266,7 +266,7 @@ void RegressionAnalysisDialog::LoadRegression(int index)
         output += "<h4>Series " + Print::printDouble(i + 1) + "</h4>";
         //qDebug() << regression.start;
         for (unsigned int m = 0; m < regression.regressions.size(); ++m) {
-            QtCharts::QLineSeries* series = m_chart->addLinearSeries(regression.regressions[m].m, regression.regressions[m].n, x[regression.start[2 * m - m]], x[regression.start[2 * m + regression.regressions.size() - m]], i);
+            QLineSeries* series = m_chart->addLinearSeries(regression.regressions[m].m, regression.regressions[m].n, x[regression.start[2 * m - m]], x[regression.start[2 * m + regression.regressions.size() - m]], i);
             series->setColor(m_series[i]->color());
             m_linear_series.insert(i, series);
             output += "<p>y(" + QString::number(m) + ") = " + Print::printDouble(regression.regressions[m].m) + "x + " + Print::printDouble(regression.regressions[m].n) + " ( R<sup>2</sup>=" + Print::printDouble(regression.regressions[m].R) + ", SSE = " + Print::printDouble(regression.regressions[m].sum_err) + ")</ p>";

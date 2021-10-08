@@ -26,7 +26,8 @@
 #include <QtGui/QClipboard>
 #include <QtGui/QKeyEvent>
 
-#include <QtWidgets/QAction>
+#include <QAction>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QTableView>
 

@@ -187,7 +187,7 @@ QWidget* ResultsWidget::ReductionWidget()
                     if (index < m_wrapper->SeriesSize()) {
                         serie->setColor(m_wrapper->Series(index)->color());
                         color = m_wrapper->Series(index)->color();
-                        connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, serie, &LineSeries::setColor);
+                        connect(m_wrapper->Series(index), &QXYSeries::colorChanged, serie, &LineSeries::setColor);
                     }
                 }
             }
@@ -294,7 +294,7 @@ QWidget* ResultsWidget::GridSearchWidget()
                 if (m_model.toStrongRef().data()->SupportSeries()) {
                     if (index < m_wrapper->SeriesSize()) {
                         xy_series->setColor(m_wrapper->Series(index)->color());
-                        connect(m_wrapper->Series(index), &QtCharts::QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
+                        connect(m_wrapper->Series(index), &QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
                     }
                 }
 

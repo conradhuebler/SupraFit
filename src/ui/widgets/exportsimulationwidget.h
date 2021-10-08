@@ -60,6 +60,7 @@ protected:
         drag->setHotSpot(event->pos());
         drag->exec();
     }
+    /*
     void enterEvent(QEvent* ev) override
     {
         //QApplication::setOverrideCursor(Qt::OpenHandCursor);
@@ -70,7 +71,7 @@ protected:
     {
         //QApplication::restoreOverrideCursor();
     }
-
+    */
 private:
     QByteArray m_content;
 };
@@ -92,7 +93,7 @@ protected:
         emit MouseClicked();
         QLabel::mousePressEvent(event);
     }
-
+    /*
     void enterEvent(QEvent* ev) override
     {
         //QApplication::setOverrideCursor(Qt::PointingHandCursor);
@@ -103,7 +104,7 @@ protected:
     {
         //QApplication::restoreOverrideCursor();
     }
-
+*/
 signals:
     void MouseClicked();
 };

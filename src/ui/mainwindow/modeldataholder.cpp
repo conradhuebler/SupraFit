@@ -86,14 +86,16 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
     color->setMaximumSize(15, 15);
     QStringList colors = modelwidget->Chart().signal_wrapper->ColorList().split("|");
     colors.removeDuplicates();
-    if (colors.size() > 1) {
+    if (colors.size() > 1) { /*
         QPalette palette = color->palette();
         QLinearGradient gradient(color->rect().topLeft(), color->rect().bottomLeft());
         gradient.setColorAt(0.0, QColor(255, 0, 0, 127));
         gradient.setColorAt(1.0, QColor(0, 0, 255, 127));
         gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
         palette.setBrush(QPalette::Button, QBrush(gradient));
-        color->setPalette(palette);
+        color->setPalette(palette);*/
+        color->ChangeColor(Qt::green);
+#warning restore or improve some colorfull stuff
     } else
         color->ChangeColor(QColor(colors.first()));
 

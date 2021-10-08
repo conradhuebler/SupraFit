@@ -241,6 +241,9 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
 {
     QMultiMap<qreal, QString> individual_entropy, model_wise_entropy;
     QMultiMap<qreal, QString> individual_stdev, model_wise_stdev;
+    QHash<QString, qreal> parameters_stdev, parameters_h;
+    QHash<QString, int> parameters_count;
+
     QString CV;
 
     if (cvtype == 1)
@@ -308,12 +311,29 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
                     individual_entropy.insert(qAbs(pair.first), name);
                     individual_stdev.insert(box["stddev"].toDouble(), name);
                     counter++;
+                    if (parameters_stdev.contains(result["name"].toString())) {
+                        parameters_stdev[result["name"].toString()] += box["stddev"].toDouble();
+                        parameters_h[result["name"].toString()] += qAbs(pair.first);
+                        parameters_count[result["name"].toString()]++;
+                    } else {
+                        parameters_stdev.insert(result["name"].toString(), box["stddev"].toDouble());
+                        parameters_h.insert(result["name"].toString(), qAbs(pair.first));
+                        parameters_count.insert(result["name"].toString(), 1);
+                    }
                 }
             }
             model_wise_entropy.insert(hx / double(counter), model["name"].toString());
             model_wise_stdev.insert(stdev / double(counter), model["name"].toString());
         }
     }
+
+    QMap<qreal, QString> parameters_stdev_orderd, parameters_h_orderd;
+
+    for (const QString& str : parameters_stdev.keys()) {
+        parameters_stdev_orderd.insert(parameters_stdev[str] / double(parameters_count[str]), str);
+        parameters_h_orderd.insert(parameters_h[str] / double(parameters_count[str]), str);
+    }
+
     {
         result += "<tr><th colspan='2'>Initialising comparison of Cross Validation!</th></tr>";
         result += "<tr><td colspan='2'>" + method_line + "</td></tr>";
@@ -344,7 +364,13 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
             }
         }
     }
+    result += QString("<p>Best fitting parameters according to the Shannon entropy H(x) </p>");
 
+    auto param = parameters_h_orderd.constBegin();
+    while (param != parameters_h_orderd.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(param.value()).arg(param.key());
+        ++param;
+    }
     {
         result += "<tr><th colspan='2'>modelwise " + Unicode_sigma + " list</th></tr>";
 
@@ -372,7 +398,13 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
             }
         }
     }
+    result += QString("<p>Best fitting parameters according to %1 </p>").arg(Unicode_sigma);
 
+    param = parameters_stdev_orderd.constBegin();
+    while (param != parameters_stdev_orderd.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(param.value()).arg(param.key());
+        ++param;
+    }
     return result;
 }
 
@@ -381,6 +413,8 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
 
     QMultiMap<qreal, QString> individual_entropy, model_wise_entropy;
     QMultiMap<qreal, QString> individual_stdev, model_wise_stdev;
+    QHash<QString, qreal> parameters_stdev, parameters_h;
+    QHash<QString, int> parameters_count;
 
     int MaxSteps = -1;
     int sigma = -1;
@@ -445,13 +479,28 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
                     individual_entropy.insert(qAbs(pair.first), name);
                     individual_stdev.insert(box["stddev"].toDouble(), name);
                     counter++;
+
+                    if (parameters_stdev.contains(result["name"].toString())) {
+                        parameters_stdev[result["name"].toString()] += box["stddev"].toDouble();
+                        parameters_h[result["name"].toString()] += qAbs(pair.first);
+                        parameters_count[result["name"].toString()]++;
+                    } else {
+                        parameters_stdev.insert(result["name"].toString(), box["stddev"].toDouble());
+                        parameters_h.insert(result["name"].toString(), qAbs(pair.first));
+                        parameters_count.insert(result["name"].toString(), 1);
+                    }
                 }
             }
             model_wise_entropy.insert(hx / double(counter), model["name"].toString());
             model_wise_stdev.insert(stdev / double(counter), model["name"].toString());
         }
     }
+    QMap<qreal, QString> parameters_stdev_orderd, parameters_h_orderd;
 
+    for (const QString& str : parameters_stdev.keys()) {
+        parameters_stdev_orderd.insert(parameters_stdev[str] / double(parameters_count[str]), str);
+        parameters_h_orderd.insert(parameters_h[str] / double(parameters_count[str]), str);
+    }
     {
         result += "<tr><th colspan='2'>Initialising comparison of Monte Carlo Simulation!</th></tr>";
         result += "<tr><td colspan='2'>" + method_line + "</td></tr>";
@@ -482,6 +531,13 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             }
         }
     }
+    result += QString("<p>Best fitting parameters according to the Shannon entropy H(x) </p>");
+
+    auto param = parameters_h_orderd.constBegin();
+    while (param != parameters_h_orderd.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(param.value()).arg(param.key());
+        ++param;
+    }
 
     {
         if (!model_wise_stdev.isEmpty()) {
@@ -511,6 +567,15 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             }
         }
     }
+
+    result += QString("<p>Best fitting parameters according to %1 </p>").arg(Unicode_sigma);
+
+    param = parameters_stdev_orderd.constBegin();
+    while (param != parameters_stdev_orderd.constEnd()) {
+        result += QString("<p> %1 : %2</p>").arg(param.value()).arg(param.key());
+        ++param;
+    }
+
     return result;
 }
 

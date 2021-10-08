@@ -38,12 +38,12 @@
 #include <QtCore/QVector>
 #include <QtCore/QWeakPointer>
 
+#include <QtGui/QAction>
 #include <QtGui/QDrag>
 
 #include <QtPrintSupport/QPrintPreviewDialog>
 #include <QtPrintSupport/QPrinter>
 
-#include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDockWidget>
@@ -76,35 +76,35 @@ ChartDockTitleBar::ChartDockTitleBar()
     m_theme = new QMenu("Chart Theme");
 
     QAction* light = new QAction(tr("Light"), this);
-    light->setData(QtCharts::QChart::ChartThemeLight);
+    light->setData(QChart::ChartThemeLight);
     m_theme->addAction(light);
 
     QAction* blue = new QAction(tr("Blue Cerulean"), this);
-    blue->setData(QtCharts::QChart::ChartThemeBlueCerulean);
+    blue->setData(QChart::ChartThemeBlueCerulean);
     m_theme->addAction(blue);
 
     QAction* dark = new QAction(tr("Dark"), this);
-    dark->setData(QtCharts::QChart::ChartThemeDark);
+    dark->setData(QChart::ChartThemeDark);
     m_theme->addAction(dark);
 
     QAction* brown = new QAction(tr("Brown Sand"), this);
-    brown->setData(QtCharts::QChart::ChartThemeBrownSand);
+    brown->setData(QChart::ChartThemeBrownSand);
     m_theme->addAction(brown);
 
     QAction* bluencs = new QAction(tr("Blue NCS"), this);
-    bluencs->setData(QtCharts::QChart::ChartThemeBlueNcs);
+    bluencs->setData(QChart::ChartThemeBlueNcs);
     m_theme->addAction(bluencs);
 
     QAction* high = new QAction(tr("High Contrast"), this);
-    high->setData(QtCharts::QChart::ChartThemeHighContrast);
+    high->setData(QChart::ChartThemeHighContrast);
     m_theme->addAction(high);
 
     QAction* icy = new QAction(tr("Blue Icy"), this);
-    icy->setData(QtCharts::QChart::ChartThemeBlueIcy);
+    icy->setData(QChart::ChartThemeBlueIcy);
     m_theme->addAction(icy);
 
     QAction* qt = new QAction(tr("Qt"), this);
-    qt->setData(QtCharts::QChart::ChartThemeQt);
+    qt->setData(QChart::ChartThemeQt);
     m_theme->addAction(qt);
 
     toolsmenu->addMenu(m_theme);
@@ -155,7 +155,7 @@ ChartDockTitleBar::ChartDockTitleBar()
 
 void ChartDockTitleBar::ThemeChange(QAction* action)
 {
-    QtCharts::QChart::ChartTheme theme = QtCharts::QChart::ChartTheme(action->data().toInt());
+    QChart::ChartTheme theme = QChart::ChartTheme(action->data().toInt());
     emit ThemeChanged(theme);
 }
 
@@ -180,8 +180,8 @@ ChartWidget::ChartWidget()
     layout->addWidget(m_signalview, 1, 0);
     layout->addWidget(m_errorview, 2, 0);
 
-    m_signalview->Chart()->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
-    m_errorview->Chart()->setTheme((QtCharts::QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
+    m_signalview->Chart()->setTheme((QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
+    m_errorview->Chart()->setTheme((QChart::ChartTheme)qApp->instance()->property("charttheme").toInt());
 
     restartAnimation();
     setLayout(layout);
@@ -362,7 +362,7 @@ void ChartWidget::formatAxis()
     QTimer::singleShot(1, m_errorview, SLOT(formatAxis()));
 }
 
-void ChartWidget::updateTheme(QtCharts::QChart::ChartTheme theme)
+void ChartWidget::updateTheme(QChart::ChartTheme theme)
 {
     qApp->instance()->setProperty("charttheme", theme);
     emit Instance::GlobalInstance()->ConfigurationChanged();
@@ -384,15 +384,15 @@ void ChartWidget::updateUI()
 
 void ChartWidget::stopAnimiation()
 {
-    m_signalview->Chart()->setAnimationOptions(QtCharts::QChart::NoAnimation);
-    m_errorview->Chart()->setAnimationOptions(QtCharts::QChart::NoAnimation);
+    m_signalview->Chart()->setAnimationOptions(QChart::NoAnimation);
+    m_errorview->Chart()->setAnimationOptions(QChart::NoAnimation);
 }
 
 void ChartWidget::restartAnimation()
 {
     if (qApp->instance()->property("chartanimation").toBool()) {
-        m_signalview->Chart()->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
-        m_errorview->Chart()->setAnimationOptions(QtCharts::QChart::SeriesAnimations);
+        m_signalview->Chart()->setAnimationOptions(QChart::SeriesAnimations);
+        m_errorview->Chart()->setAnimationOptions(QChart::SeriesAnimations);
     }
 }
 

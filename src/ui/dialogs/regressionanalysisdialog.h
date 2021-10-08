@@ -62,8 +62,8 @@ private:
     QWeakPointer<DataClass> m_data;
     QWeakPointer<ChartWrapper> m_wrapper;
     ListChart* m_chart;
-    QList<QPointer<QtCharts::QScatterSeries>> m_series;
-    QMultiHash<int, QtCharts::QLineSeries*> m_linear_series;
+    QList<QPointer<QScatterSeries>> m_series;
+    QMultiHash<int, QLineSeries*> m_linear_series;
     QTextEdit* m_output;
     QListWidget* m_lists;
     QList<QMap<qreal, PeakPick::MultiRegression>> m_result;

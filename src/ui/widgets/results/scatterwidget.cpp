@@ -108,7 +108,7 @@ void ScatterWidget::setUi()
     view->setName("scatterwidget");
     connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
 
-    m_xy_series = new QtCharts::QScatterSeries;
+    m_xy_series = new QScatterSeries;
     m_xy_series->setBorderColor(m_xy_series->color());
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(view);
@@ -240,7 +240,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
     view->Chart()->setAutoScaleStrategy(AutoScaleStrategy::QtNiceNumbers);
 
     QColor color = ChartWrapper::ColorCode(m_model.data()->Color(0)).lighter(50);
-    m_xy_series = new QtCharts::QScatterSeries;
+    m_xy_series = new QScatterSeries;
 
     QVector<CollectThread*> threads;
     int thread_count = qApp->instance()->property("threads").toInt();
@@ -279,7 +279,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
 
     PeakPick::LinearRegression regression = PeakPick::LeastSquares(ToolSet::QVector2DoubleEigVec(x), ToolSet::QVector2DoubleEigVec(y));
 
-    connect(m_xy_series, &QtCharts::QXYSeries::clicked, this, &ScatterWidget::PointClicked);
+    connect(m_xy_series, &QXYSeries::clicked, this, &ScatterWidget::PointClicked);
 
     m_xy_series->setMarkerSize(7);
     m_xy_series->setName(m_names[var_1] + " vs. " + m_names[var_2]);

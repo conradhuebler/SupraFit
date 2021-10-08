@@ -26,6 +26,8 @@
 #include <fisher/fisher_dist.h>
 #include <libpeakpick/peakpick.h>
 
+#include <QtGlobal>
+
 #include <QtCore/QJsonObject>
 #include <QtCore/QString>
 #include <QtCore/QVector>
@@ -49,7 +51,10 @@ QString DoubleList2String(const Vector& vector, const QString& str = " ");
 QString Points2String(const QList<QPointF>& points);
 QList<QPointF> String2PointsList(const QString& str);
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 QString Points2String(const QVector<QPointF>& points);
+#endif
+
 QVector<QPointF> String2PointsVector(const QString& str);
 
 QStringList DoubleList2StringList(const Vector& vector);

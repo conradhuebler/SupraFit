@@ -90,7 +90,7 @@ private:
 
     QList<QJsonObject> m_models;
     QSharedPointer<AbstractModel> m_model;
-    QtCharts::QScatterSeries* m_xy_series;
+    QScatterSeries* m_xy_series;
 
     ListChart* view;
     int m_var_1 = -1, m_var_2 = -1;

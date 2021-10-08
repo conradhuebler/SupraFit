@@ -164,7 +164,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
     QVBoxLayout* vlayout = new QVBoxLayout;
     for (int i = 0; i < m_wrapper.toStrongRef().data()->SeriesSize(); ++i) {
         QPointer<SignalElement> el = new SignalElement(m_data, m_wrapper, i, this);
-        connect(m_wrapper.toStrongRef().data()->Series(i), &QtCharts::QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
+        connect(m_wrapper.toStrongRef().data()->Series(i), &QAbstractSeries::visibleChanged, dialog, &RegressionAnalysisDialog::UpdatePlots);
         connect(m_hide_points, &QPushButton::clicked, el, &SignalElement::HideSeries);
         vlayout->addWidget(el);
         if (m_data.toStrongRef().data()->Type() == DataClassPrivate::DataType::Simulation)

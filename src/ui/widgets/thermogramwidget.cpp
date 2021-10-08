@@ -25,7 +25,8 @@
 #include <QtCore/QSettings>
 #include <QtCore/QtMath>
 
-#include <QtWidgets/QAction>
+#include <QtGui/QAction>
+
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>

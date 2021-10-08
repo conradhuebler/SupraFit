@@ -61,12 +61,12 @@ private:
     QPointer<ListChart> m_histgram, m_box, m_series_chart;
     QPointer<QWidget> m_scatter;
     QVector<QColor> m_colors;
-    QVector<QtCharts::QAreaSeries*> m_area_series;
+    QVector<QAreaSeries*> m_area_series;
 
     void UpdateBoxes();
     void setAreaColor(int index, const QColor& color);
 
-    QtCharts::QAreaSeries* AreaSeries(const QColor& color) const;
+    QAreaSeries* AreaSeries(const QColor& color) const;
     QSpinBox* m_bins;
     QPointer<ListChart> MakeHistogram();
     QPointer<QWidget> MakeScatter();

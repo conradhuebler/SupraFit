@@ -63,7 +63,7 @@ protected:
 
 signals:
     void close();
-    void ThemeChanged(QtCharts::QChart::ChartTheme theme);
+    void ThemeChanged(QChart::ChartTheme theme);
     void AnimationChanged(bool animation);
     void ChartFlip(bool flip);
     void setSize(int size);
@@ -95,7 +95,7 @@ private:
     bool m_empty = true;
 
     QPointer<ChartView> m_signalview, m_errorview;
-    QPointer<QtCharts::QValueAxis> m_x_chart, m_y_chart, m_x_error, m_y_error;
+    QPointer<QValueAxis> m_x_chart, m_y_chart, m_x_error, m_y_error;
     QWeakPointer<DataClass> m_rawdata;
     ChartDockTitleBar* m_TitleBarWidget;
     QVector<QVector<int>> m_titration_curve, m_model_curve, m_error_curve;
@@ -107,7 +107,7 @@ private slots:
     void formatAxis();
     void Repaint();
     void updateUI();
-    void updateTheme(QtCharts::QChart::ChartTheme theme);
+    void updateTheme(QChart::ChartTheme theme);
     void setAnimation(bool animation);
     void stopAnimiation();
     void restartAnimation();

@@ -119,7 +119,7 @@ void FileHandler::ReadGeneric()
     for (const QString& line : qAsConst(m_filecontent)) {
         if (!line.isEmpty()) {
             bool read_header = false;
-            if (line[0] == "#" && header_added == false) {
+            if (line[0] == HashTag && header_added == false) {
                 read_header = true;
             }
             QVector<qreal> row;
@@ -128,7 +128,7 @@ void FileHandler::ReadGeneric()
             double sum = 0;
             for (const QString& item : qAsConst(items)) {
                 if (read_header)
-                    header << QString(item).replace("#", "");
+                    header << QString(item).replace(HashTag, "");
                 else
                     row.append((QString(item).replace(",", ".")).toDouble());
                 sum += (QString(item).replace(",", ".")).toDouble();
@@ -198,7 +198,7 @@ bool FileHandler::CheckForTable()
         if (m_table) {
             QStringList elements = m_filecontent[i].split("\n");
             for (int j = 0; j < elements.size(); ++j) {
-                if (elements[j].contains(QRegExp("[Aa-Zz]")))
+                if (elements[j].contains(QRegularExpression("[Aa-Zz]")))
                     m_allint = false;
             }
         }

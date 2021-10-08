@@ -54,7 +54,8 @@
 #include <QtCore/QTimer>
 #include <QtCore/QWeakPointer>
 
-#include <QtWidgets/QAction>
+#include <QtGui/QAction>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDockWidget>

@@ -52,14 +52,14 @@ public:
 
     inline void setDataTable(DataTable* table) { m_table = table; }
     inline int SeriesSize() const { return m_stored_series.size(); }
-    inline QPointer<QtCharts::QXYSeries> Series(int i) { return m_stored_series[i]; }
-    inline void setSeries(QPointer<QtCharts::QXYSeries> series, int i) { m_stored_series[i] = series; }
+    inline QPointer<QXYSeries> Series(int i) { return m_stored_series[i]; }
+    inline void setSeries(QPointer<QXYSeries> series, int i) { m_stored_series[i] = series; }
     QColor color(int i) const;
     void TransformModel(QSharedPointer<DataClass> model);
     QString ColorList() const;
     bool setColorList(const QString& str);
 
-    QList<QPointer<QtCharts::QScatterSeries>> CloneSeries(bool swap = false) const;
+    QList<QPointer<QScatterSeries>> CloneSeries(bool swap = false) const;
     QList<QWeakPointer<ChartWrapper>> m_stored_wrapper;
 
     static QColor ColorCode(int i);
@@ -84,7 +84,7 @@ public slots:
 
 private:
     QPointer<const DataTable> m_table;
-    QList<QPointer<QtCharts::QXYSeries>> m_stored_series;
+    QList<QPointer<QXYSeries>> m_stored_series;
     QWeakPointer<DataClass> m_stored_data;
     QWeakPointer<DataClass> m_stored_model;
     QWeakPointer<DataClass> m_working;

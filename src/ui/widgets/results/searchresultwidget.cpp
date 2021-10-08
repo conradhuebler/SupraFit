@@ -39,9 +39,9 @@
 #include <QtCore/QSharedPointer>
 #include <QtCore/QSortFilterProxyModel>
 
+#include <QtGui/QAction>
 #include <QtGui/QStandardItemModel>
 
-#include <QtWidgets/QAction>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
@@ -290,7 +290,8 @@ void SearchResultWidget::ExportModels()
 
 void SearchResultWidget::ApplyFilter()
 {
-    m_proxyModel->setFilterRegExp(QRegExp("1"));
+#warning FIXME porting
+    //m_proxyModel->setFilterRegExp(QRegularExpression("1"));
     m_proxyModel->setFilterKeyColumn(0);
 
     if (m_valid->isChecked() && !m_converged->isChecked()) {

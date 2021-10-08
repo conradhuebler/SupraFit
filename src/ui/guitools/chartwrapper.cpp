@@ -122,7 +122,7 @@ void ChartWrapper::InitaliseSeries()
         int serie = m_working.toStrongRef().data()->SeriesCount();
 
         for (int j = 0; j < serie; ++j) {
-            QPointer<QtCharts::QXYSeries> series;
+            QPointer<QXYSeries> series;
             if (qobject_cast<AbstractModel*>(m_working.toStrongRef().data()))
                 series = new LineSeries;
             else
@@ -161,24 +161,22 @@ void ChartWrapper::MakeSeries()
     }
 }
 
-QList<QPointer<QtCharts::QScatterSeries>> ChartWrapper::CloneSeries(bool swap) const
+QList<QPointer<QScatterSeries>> ChartWrapper::CloneSeries(bool swap) const
 {
-    QList<QPointer<QtCharts::QScatterSeries>> series;
+    QList<QPointer<QScatterSeries>> series;
     for (int i = 0; i < m_stored_series.size(); ++i) {
         if (!m_stored_series[i]->isVisible())
             continue;
-        QPointer<QtCharts::QScatterSeries> serie = new QtCharts::QScatterSeries();
+        QPointer<QScatterSeries> serie = new QScatterSeries();
         serie->append(m_stored_series[i]->points());
         serie->setColor(m_stored_series[i]->color());
         serie->setName(m_stored_series[i]->name());
-        connect(m_stored_series[i].data(), &QtCharts::QAbstractSeries::nameChanged, serie.data(), [serie, i, this]() {
-
+        connect(m_stored_series[i].data(), &QAbstractSeries::nameChanged, serie.data(), [serie, i, this]() {
             if (serie && m_stored_series[i])
                 serie->setName(m_stored_series[i]->name());
-
         });
         if (swap) {
-            QPointer<QtCharts::QScatterSeries> s = new QtCharts::QScatterSeries;
+            QPointer<QScatterSeries> s = new QScatterSeries;
             for (auto i : serie->points())
                 s->append(QPointF(i.y(), i.x()));
             series << s;
@@ -193,7 +191,7 @@ QColor ChartWrapper::color(int i) const
     if (m_stored_series.size() <= i)
         return ColorCode(i);
     else {
-        QPointer<QtCharts::QXYSeries> series = m_stored_series[i];
+        QPointer<QXYSeries> series = m_stored_series[i];
         if (!series)
             return ColorCode(i);
         return m_stored_series[i]->color();

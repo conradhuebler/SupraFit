@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.20.)
 project(SupraFitGui)
 
 # As moc files are generated in the binary dir, tell CMake
@@ -28,8 +28,12 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5Charts CONFIG REQUIRED)
+
+find_package(Qt6 6.1 COMPONENTS Core Widgets Charts)
+if (NOT Qt6_FOUND)
+    find_package(Qt5 5.15 COMPONENTS Core Widgets Charts REQUIRED)
+endif()
+
 
 set(SFGui_SRC
                 guitools/chartwrapper.cpp
@@ -80,4 +84,4 @@ set(SFGui_SRC
 add_library(suprafit_gui ${SFGui_SRC})
 set_property(TARGET suprafit_gui PROPERTY CXX_STANDARD 14)
 
-target_link_libraries(suprafit_gui Qt5::Core Qt5::Widgets Qt5::Charts)
+target_link_libraries(suprafit_gui Qt::Core Qt::Widgets Qt::Charts)

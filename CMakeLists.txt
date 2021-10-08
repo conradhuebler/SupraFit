@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.16.0)
-project(suprafit)
+cmake_minimum_required(VERSION 3.21.0)
+project(SupraFit
+    VERSION 2.6.0
+    LANGUAGES CXX)
 # set the module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
@@ -12,9 +14,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Tell CMake to run moc when necessary:
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-
 
 option (BENCHMARK_LEVEL
     "Benchmark output enabled" OFF)
@@ -57,6 +59,9 @@ option (_Python
 
 option (_Models
     "Enable custom models" OFF)
+
+option (Use_Qt5
+    "Use Qt5 instead of Qt6" OFF)
 
 # Get the current working branch
 execute_process(
@@ -134,16 +139,10 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5Charts CONFIG REQUIRED)
-
-if (Qt5Widgets_FOUND)
-    if (Qt5Widgets_VERSION VERSION_LESS 5.15.0)
-        message(FATAL_ERROR "Minimum supported Qt5 version is 5.15!")
-    endif()
-else()
-    message(SEND_ERROR "The Qt5Widgets library could not be found!")
-endif(Qt5Widgets_FOUND)
+find_package(Qt6 6.1 COMPONENTS Core Widgets Charts)
+if (NOT Qt6_FOUND)
+    find_package(Qt5 5.15 COMPONENTS Core Widgets Charts REQUIRED)
+endif()
 
 if(_Python)
     find_package(PythonLibs)
@@ -335,17 +334,17 @@ IF(_Python)
     set_target_properties(python_cli PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
     add_library(pythonbridge SHARED ${python_SRC})
-    set_property(TARGET pythonbridge PROPERTY CXX_STANDARD 14)
+    set_property(TARGET pythonbridge PROPERTY CXX_STANDARD 17)
     set_target_properties(pythonbridge PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
     target_link_libraries(pythonbridge models core)
     target_link_libraries(python_cli pythonbridge)
-    set_property(TARGET python_cli PROPERTY CXX_STANDARD 14)
+    set_property(TARGET python_cli PROPERTY CXX_STANDARD 17)
 
 ENDIF()
 
-set_property(TARGET core models PROPERTY CXX_STANDARD 14)
-set_property(TARGET suprafit PROPERTY CXX_STANDARD 14)
-set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 14)
+set_property(TARGET core models PROPERTY CXX_STANDARD 17)
+set_property(TARGET suprafit PROPERTY CXX_STANDARD 17)
+set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 17)
 
 
 set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
@@ -366,7 +365,7 @@ if(testing)
     add_test( basic_test supratest )
     add_executable(supratest  ${basic_test})
     #set_property(TARGET suprafit PROPERTY ENABLE_EXPORTS true)
-    set_property(TARGET supratest PROPERTY CXX_STANDARD 14)
+    set_property(TARGET supratest PROPERTY CXX_STANDARD 17)
     target_link_libraries(supratest Qt::Core Qt::Test)
     target_link_libraries(supratest utils models math suprafit ${QT_QTCORE_LIBRARY})
 endif(testing)

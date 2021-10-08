@@ -21,7 +21,8 @@
 
 #include <QtGui/QStandardItemModel>
 
-#include <QtWidgets/QAction>
+#include <QAction>
+
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QListView>

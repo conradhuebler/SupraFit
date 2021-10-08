@@ -43,7 +43,7 @@ private:
     QPointer<ListChart> view;
     QWeakPointer<AbstractModel> m_model;
     QString m_chart;
-    QVector<QtCharts::QXYSeries*> m_series;
+    QVector<QXYSeries*> m_series;
 
 private slots:
     void UpdateChart();

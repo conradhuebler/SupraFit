@@ -256,7 +256,7 @@ QVector<QPointF> String2PointsVector(const QString& str)
     }
     return points;
 }
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 QString Points2String(const QVector<QPointF>& points)
 {
     QString string;
@@ -264,6 +264,7 @@ QString Points2String(const QVector<QPointF>& points)
         string += "(" + QString::number(points[i].x()) + ";" + QString::number(points[i].y()) + ") ";
     return string;
 }
+#endif
 
 QPair<qreal, qreal> QString2QPair(const QString& str)
 {

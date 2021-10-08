@@ -37,7 +37,7 @@ public:
     inline double valueFromText(const QString& text) const override
     {
         QString value = text;
-        value.replace(loc.decimalPoint(), '.');
+        value.replace(loc.decimalPoint(), QChar('.'));
         return value.toDouble();
     }
 
