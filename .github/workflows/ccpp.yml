@@ -38,7 +38,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          modules: qtcharts
+          modules: 'qtcharts qtwebengine'
           version: 6.2.0
 
       - name: Update Modules and Build
@@ -73,7 +73,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          modules: qtcharts
+          modules: 'qtcharts qtwebengine'
           version: 6.2.0
       - name: Update Modules and Build
         run: scripts/build_windows_x64.bat
