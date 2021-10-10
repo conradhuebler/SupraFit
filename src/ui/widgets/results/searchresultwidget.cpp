@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -290,8 +290,7 @@ void SearchResultWidget::ExportModels()
 
 void SearchResultWidget::ApplyFilter()
 {
-#warning FIXME porting
-    //m_proxyModel->setFilterRegExp(QRegularExpression("1"));
+    m_proxyModel->setFilterRegularExpression(QRegularExpression("1"));
     m_proxyModel->setFilterKeyColumn(0);
 
     if (m_valid->isChecked() && !m_converged->isChecked()) {
@@ -307,5 +306,3 @@ void SearchResultWidget::ApplyFilter()
     m_contour->setConverged(m_converged->isChecked());
     m_contour->setValid(m_valid->isChecked());
 }
-
-#include "searchresultwidget.h"

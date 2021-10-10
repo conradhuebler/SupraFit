@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,9 @@
 class AbstractModel;
 class ListChart;
 
-inline uint qHash(const QPointF& key)
+inline QString Point2String(const QPointF& point)
 {
-    return qHash(QPair<int, int>(key.x(), key.y()));
+    return QString("%1 - %2").arg(point.x()).arg(point.y());
 }
 
 class CollectThread : public QRunnable {
@@ -46,7 +46,7 @@ public:
     void setModel(QSharedPointer<AbstractModel> model);
     virtual void run() override;
 
-    inline QMultiHash<QPointF, int> LinkedModels() const { return m_linked_models; }
+    inline QMultiHash<QString, int> LinkedModels() const { return m_linked_models; }
     inline QVector<qreal> X() const { return m_x; }
     inline QVector<qreal> Y() const { return m_y; }
 
@@ -54,7 +54,7 @@ private:
     int m_start, m_end, m_var_1, m_var_2;
     QList<QJsonObject> m_models;
     QSharedPointer<AbstractModel> m_model;
-    QMultiHash<QPointF, int> m_linked_models;
+    QMultiHash<QString, int> m_linked_models;
 
     QVector<qreal> m_x, m_y;
     bool m_valid, m_converged;
@@ -95,7 +95,7 @@ private:
     ListChart* view;
     int m_var_1 = -1, m_var_2 = -1;
     QStringList m_names;
-    QVector<QMultiHash<QPointF, int>> m_linked_models_vector;
+    QVector<QMultiHash<QString, int>> m_linked_models_vector;
 
     bool m_converged = true, m_valid = true;
     void PointClicked(const QPointF& point);

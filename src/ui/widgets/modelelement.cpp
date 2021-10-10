@@ -251,13 +251,7 @@ void ModelElement::ChangeColor(const QColor& color)
     else
         setStyleSheet("color:darkRed;");
 
-#ifdef _WIN32
     setStyleSheet("background-color:" + color.name() + ";");
-#else
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window, color);
-    setPalette(pal);
-#endif
 
     m_color = color;
     emit ColorChanged(m_color);
@@ -302,6 +296,20 @@ void ModelElement::UnCheckToggle(int i)
 {
     if (i != m_no)
         m_toggle->setChecked(false);
+}
+
+void ModelElement::enterEvent(QEnterEvent* event)
+{
+    m_signal_series->setPointLabelsVisible(true);
+    m_error_series->setPointLabelsVisible(true);
+}
+
+void ModelElement::leaveEvent(QEvent* event)
+{
+    QTimer::singleShot(500, this, [this]() {
+        this->m_signal_series->setPointLabelsVisible(false);
+        this->m_error_series->setPointLabelsVisible(false);
+    });
 }
 
 #include "modelelement.moc"

@@ -289,14 +289,13 @@ QWidget* ResultsWidget::GridSearchWidget()
             if (!data.contains("index"))
                 continue;
 
-                int index = data["index"].toString().split("|")[1].toInt();
-
-                if (m_model.toStrongRef().data()->SupportSeries()) {
-                    if (index < m_wrapper->SeriesSize()) {
-                        xy_series->setColor(m_wrapper->Series(index)->color());
-                        connect(m_wrapper->Series(index), &QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
-                    }
+            int index = data["index"].toString().split("|")[1].toInt();
+            if (m_model.toStrongRef().data()->SupportSeries()) {
+                if (index < m_wrapper->SeriesSize()) {
+                    xy_series->setColor(m_wrapper->Series(index)->color());
+                    connect(m_wrapper->Series(index), &QXYSeries::colorChanged, xy_series, &LineSeries::setColor);
                 }
+            }
 
         } else {
             xy_series->setColor(ChartWrapper::ColorCode(m_model.toStrongRef().data()->Color(i)));

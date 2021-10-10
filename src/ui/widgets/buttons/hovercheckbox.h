@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  *
  */
 
-#ifndef HOVERCHECK_H
-#define HOVERCHECK_H
+#pragma once
 
 #include <QtCore/QEvent>
 
@@ -28,7 +27,7 @@ class HoverCheckBox : public QCheckBox {
     Q_OBJECT
 
 protected:
-    inline bool event(QEvent* e)
+    inline bool event(QEvent* e) override
     {
         switch (e->type()) {
         case QEvent::HoverEnter:
@@ -46,5 +45,3 @@ protected:
 signals:
     void hovered();
 };
-
-#endif

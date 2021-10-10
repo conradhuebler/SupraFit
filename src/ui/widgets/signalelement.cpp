@@ -95,6 +95,7 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     layout->addWidget(m_toggle, 0, 6);
     setLayout(layout);
     ColorChanged(m_wrapper.toStrongRef().data()->color(m_index));
+    setMouseTracking(true);
 }
 
 SignalElement::~SignalElement()
@@ -103,15 +104,7 @@ SignalElement::~SignalElement()
 
 void SignalElement::ColorChanged(const QColor& color)
 {
-
-#ifdef _WIN32
     setStyleSheet("background-color:" + color.name() + ";");
-#else
-    QPalette pal = palette();
-    pal.setColor(QPalette::Window, color);
-    setPalette(pal);
-#endif
-
     m_color = color;
 }
 
@@ -180,4 +173,17 @@ void SignalElement::UnCheckToggle(int i)
     if (i != m_index)
         m_toggle->setChecked(false);
 }
+
+void SignalElement::enterEvent(QEnterEvent* event)
+{
+    m_data_series->setPointLabelsVisible(true);
+}
+
+void SignalElement::leaveEvent(QEvent* event)
+{
+    QTimer::singleShot(500, this, [this]() {
+        this->m_data_series->setPointLabelsVisible(false);
+    });
+}
+
 #include "signalelement.moc"

@@ -50,10 +50,11 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
     int cut = 0;
     int index = 0;
     int j = 0;
-    double parameter = 0;
     for (const auto& model : models) {
         index++;
         qreal mean_std = 0, mean_corr_std = 0;
+        double parameter = 0;
+
         bool skip = false;
 #pragma message("let us analyse more reduction, later ")
         QJsonObject reduction;
@@ -93,13 +94,14 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
 
             //            if (key == -1)
             //                continue;
-            parameter += 1;
 
             QJsonObject element = reduction[key].toObject();
             if (element.isEmpty())
                 continue;
             if (!local && element["type"].toString() == "Local Parameter")
                 continue;
+
+            parameter += 1;
 
             qreal val = element["value"].toDouble();
             result += "<tr><th colspan='3'> " + element["name"].toString() + " of type " + element["type"].toString() + ": optimal value = " + Print::printDouble(val) + "</th></tr>";
@@ -307,7 +309,7 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
 
                 if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter") {
                     hx += qAbs(pair.first);
-                    stdev = box["stddev"].toDouble();
+                    stdev += box["stddev"].toDouble();
                     individual_entropy.insert(qAbs(pair.first), name);
                     individual_stdev.insert(box["stddev"].toDouble(), name);
                     counter++;
@@ -419,6 +421,7 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
     int MaxSteps = -1;
     int sigma = -1;
     int idx = 1;
+    double SEy = 0.0;
     QString result = QString("<table>");
     QString method_line = QString();
     QString bin_info = QString();
@@ -445,12 +448,13 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
             if (MaxSteps == -1 && idx == index) {
                 MaxSteps = controller["MaxSteps"].toInt();
                 sigma = controller["VarianceSource"].toInt();
+                SEy = controller["Variance"].toDouble();
                 method_line = QString("Monte Carlo Simulation with %1; %2 = %3, Bins for Histogram calculation = %4").arg(MaxSteps).arg(Unicode_sigma).arg(controller["Variance"].toDouble()).arg(bins);
             }
 
             idx++;
 
-            if (MaxSteps != controller["MaxSteps"].toInt() || sigma != controller["VarianceSource"].toInt())
+            if (MaxSteps != controller["MaxSteps"].toInt() || (sigma != controller["VarianceSource"].toInt() || (1 == controller["VarianceSource"].toInt() && SEy != controller["Variance"].toDouble())))
                 continue;
 
             QStringList k = obj.keys();
@@ -475,7 +479,7 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
 
                 if ((result["type"].toString() == "Local Parameter" && local) || result["type"].toString() == "Global Parameter") {
                     hx += qAbs(pair.first);
-                    stdev = box["stddev"].toDouble();
+                    stdev += box["stddev"].toDouble();
                     individual_entropy.insert(qAbs(pair.first), name);
                     individual_stdev.insert(box["stddev"].toDouble(), name);
                     counter++;

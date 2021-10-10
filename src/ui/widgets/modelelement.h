@@ -56,6 +56,10 @@ private:
     Charts m_charts;
     void DisableSignal(int state);
 
+protected:
+    void enterEvent(QEnterEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+
 private slots:
     void chooseColor();
     void togglePlot();

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ void CollectThread::setModel(QSharedPointer<AbstractModel> model)
 void CollectThread::run()
 {
 
-    for (int i = m_start; i < m_end; ++i) {
+    for (int i = m_start; i < m_end && i < m_models.size(); ++i) {
 
         QJsonObject model;
         //if(!m_models[i].contains("initial"))
@@ -82,7 +82,7 @@ void CollectThread::run()
 
         m_x << m_model.data()->AllParameter()[m_var_1];
         m_y << m_model.data()->AllParameter()[m_var_2];
-        m_linked_models.insert(QPointF(m_model.data()->AllParameter()[m_var_1], m_model.data()->AllParameter()[m_var_2]), i);
+        m_linked_models.insert(Point2String(QPointF(m_model.data()->AllParameter()[m_var_1], m_model.data()->AllParameter()[m_var_2])), i);
     }
 }
 
@@ -127,18 +127,18 @@ QWidget* ScatterWidget::VariWidget()
     QHBoxLayout* hlayout = new QHBoxLayout;
     for (int i = 0; i < m_model.data()->GlobalParameterSize(); ++i) {
         QCheckBox* box = new QCheckBox;
-        connect(box, &QCheckBox::stateChanged, box, [index, box, this](int state) {
+        connect(box, &QCheckBox::stateChanged, box, [index, this](int state) {
             CheckBox(index, state);
         });
 
-        connect(this, &ScatterWidget::Checked, box, [index, box, this](int var_1, int var_2) {
+        connect(this, &ScatterWidget::Checked, box, [index, box](int var_1, int var_2) {
             if (var_1 == -1 || var_2 == -1)
                 box->setEnabled(true);
             else
                 box->setEnabled(var_1 == index || var_2 == index);
         });
 
-        connect(this, &ScatterWidget::CheckParameterBox, box, [index, box, this](int parameter) {
+        connect(this, &ScatterWidget::CheckParameterBox, box, [index, box](int parameter) {
             if (parameter == index)
                 box->setChecked(true);
         });
@@ -162,18 +162,18 @@ QWidget* ScatterWidget::VariWidget()
         QHBoxLayout* hlayout = new QHBoxLayout;
         for (int j = 0; j < m_model.data()->LocalParameterSize(); ++j) {
             QCheckBox* box = new QCheckBox;
-            connect(box, &QCheckBox::stateChanged, box, [index, box, this](int state) {
+            connect(box, &QCheckBox::stateChanged, box, [index, this](int state) {
                 CheckBox(index, state);
             });
 
-            connect(this, &ScatterWidget::Checked, box, [index, box, this](int var_1, int var_2) {
+            connect(this, &ScatterWidget::Checked, box, [index, box](int var_1, int var_2) {
                 if (var_1 == -1 || var_2 == -1)
                     box->setEnabled(true);
                 else
                     box->setEnabled(var_1 == index || var_2 == index);
             });
 
-            connect(this, &ScatterWidget::CheckParameterBox, box, [index, box, this](int parameter) {
+            connect(this, &ScatterWidget::CheckParameterBox, box, [index, box](int parameter) {
                 if (parameter == index)
                     box->setChecked(true);
             });
@@ -293,9 +293,10 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
 
 void ScatterWidget::PointClicked(const QPointF& point)
 {
+#warning what was my intention
     QList<int> values;
-    for (const auto item : qAsConst(m_linked_models_vector))
-        values = item.values(point);
+    for (const auto& item : m_linked_models_vector)
+        values = item.values(Point2String(point));
     if (values.isEmpty())
         return;
 

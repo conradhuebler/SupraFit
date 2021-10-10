@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  * 
  */
 
-#ifndef SIGNALELEMENT_H
-#define SIGNALELEMENT_H
+#pragma once
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QGroupBox>
@@ -53,6 +52,10 @@ private:
     int m_index;
     bool m_series_hidden = false;
 
+protected:
+    void enterEvent(QEnterEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+
 private slots:
     void ToggleSeries(int i);
     void chooseColor();
@@ -65,4 +68,3 @@ private slots:
     void UnCheckToggle(int i);
 };
 
-#endif

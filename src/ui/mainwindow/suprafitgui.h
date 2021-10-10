@@ -114,7 +114,7 @@ public:
         int h = height();
         QLabel::setPixmap(p.scaled(w, h, Qt::KeepAspectRatio));
     }
-    void resizeEvent(QResizeEvent* event)
+    void resizeEvent(QResizeEvent* event) override
     {
         Q_UNUSED(event)
         UpdatePixmap();
