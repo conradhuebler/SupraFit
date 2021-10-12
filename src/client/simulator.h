@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,9 +65,9 @@ public:
 
     QVector<QJsonObject> GenerateData();
 
-    QStringList Generate();
+    // QStringList Generate();
 
-    //QJsonObject PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
+    QJsonObject PerformeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
 
 private:
     void CheckStopFile();

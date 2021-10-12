@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -174,7 +174,7 @@ inline void Version(QCoreApplication* app, QCommandLineParser* parser)
 
     app->setApplicationVersion(version);
 
-    parser->setApplicationDescription("A Open Source Qt5 based fitting tool for supramolecular titration experiments.");
+    parser->setApplicationDescription("A Open Source Qt6 based fitting tool for supramolecular titration experiments.");
     parser->addHelpOption();
     parser->addVersionOption();
 }

@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ int main(int argc, char** argv)
     QCommandLineParser parser;
 
     Version(&app, &parser);
+
     parser.addPositionalArgument("input file", QCoreApplication::translate("main", "File to open."));
     parser.process(app);
 
@@ -112,6 +113,12 @@ int main(int argc, char** argv)
     mainfont.setWeight(QFont::Medium);
     app.setFont(mainfont);
 #endif
+
+    for (int index = 0; index < argc; ++index)
+        std::cout << argv[index] << " ";
+    std::cout << std::endl
+              << std::endl
+              << std::endl;
 
     SupraFitGui mainwindow;
     mainwindow.showMaximized();

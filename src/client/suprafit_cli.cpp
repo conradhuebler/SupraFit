@@ -22,6 +22,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QJsonObject>
 #include <QtCore/QThreadPool>
+#include <QtCore/QTimer>
 
 #include "src/capabilities/jobmanager.h"
 #include "src/capabilities/modelcomparison.h"
@@ -54,7 +55,7 @@ SupraFitCli::SupraFitCli(SupraFitCli* core)
     m_analyse = core->m_analyse;
     m_prepare = core->m_prepare;
     m_simulation = core->m_simulation;
-    m_data = core->m_data;
+    //m_data = core->m_data;
     m_data_json = core->m_data_json;
     m_toplevel = core->m_toplevel;
     m_data = new DataClass(core->m_data);
@@ -220,85 +221,9 @@ void SupraFitCli::PrintFileStructure()
 
 void SupraFitCli::Work()
 {
-    for (const auto project : m_data_vector) {
-        auto result = PerfomeJobs(project, m_models, m_jobs);
+    for (const auto& project : m_data_vector) {
+        // auto result = PerformeJobs(project, m_models, m_jobs);
     }
-}
-
-QJsonObject SupraFitCli::PerfomeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job)
-{
-    if (m_main.contains("Threads")) {
-        qApp->instance()->setProperty("threads", m_main.value("Threads").toInt(4));
-        std::cout << "Setting # of threads to " << m_main.value("Threads").toInt(4) << std::endl;
-    }
-
-    QJsonObject project;
-    if (data.contains("data"))
-        project = data;
-    else
-        project["data"] = data;
-
-    QPointer<DataClass> d;
-
-    if (data.contains("data"))
-        d = new DataClass(data["data"].toObject());
-    else
-        d = new DataClass(data);
-
-    QVector<QJsonObject> models_json;
-    if (!models.isEmpty()) {
-        std::cout << "Loading Models into Dataset" << std::endl;
-        QVector<QSharedPointer<AbstractModel>> m = AddModels(models, d);
-        std::cout << "Loading " << m.size() << " Models into Dataset finished!" << std::endl;
-        if (!m_jobs.isEmpty()) {
-            std::cout << "Starting jobs ..." << std::endl;
-            JobManager* manager = new JobManager;
-            connect(manager, &JobManager::Message, this, [](const QString& str) {
-                std::cout << str.toStdString() << std::endl;
-            });
-            connect(manager, &JobManager::finished, this, [](int current, int all, int time) {
-                std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
-            });
-            //connect(this, &Simulator::Interrupt, manager, &JobManager::Interrupt);
-            for (int model_index = 0; model_index < models.size(); ++model_index) {
-                std::cout << "... model  " << model_index << std::endl;
-                for (const QString& j : job.keys()) {
-                    QJsonObject single_job = job[j].toObject();
-                    manager->setModel(m[model_index]);
-                    manager->AddJob(single_job);
-                    manager->RunJobs();
-                    std::cout << "... model  " << model_index << " job done!" << std::endl;
-
-                    if (m_interrupt) {
-                        break;
-                    }
-                }
-                std::cout << "jobs for model  " << model_index << "  finished!" << std::endl;
-                if (m_interrupt) {
-                    std::cout << "softly interrupted by stop file" << std::endl;
-                    break;
-                }
-            }
-            delete manager;
-            std::cout << "jobs all done!" << std::endl;
-        }
-
-        for (int i = 0; i < m.size(); ++i) {
-            project["model_" + QString::number(i)] = m[i]->ExportModel();
-            models_json << m[i]->ExportModel();
-            m[i].clear();
-        }
-        m.clear();
-    }
-    int file_int = 0;
-    QString outfile = QString(m_outfile + "_" + QString::number(file_int) + "." + m_extension);
-    while (QFileInfo::exists(outfile)) {
-        ++file_int;
-        outfile = QString(m_outfile + "_" + QString::number(file_int) + "." + m_extension);
-    }
-    Analyse(m_analyse, models_json);
-    SaveFile(outfile, project);
-    return project;
 }
 
 QVector<QSharedPointer<AbstractModel>> SupraFitCli::AddModels(const QJsonObject& modelsjson, QPointer<DataClass> data)
@@ -408,3 +333,147 @@ void SupraFitCli::OpenFile()
 {
     LoadFile();
 }
+
+QVector<QJsonObject> SupraFitCli::GenerateData()
+{
+    m_extension = ".suprafit";
+
+    QVector<QJsonObject> project_list;
+
+    if (m_main.isEmpty())
+        return project_list;
+
+    if (m_infile.isEmpty() || m_infile.isNull()) {
+        if (m_main.contains("InFile"))
+            m_infile = m_main["InFile"].toString();
+
+        if (m_infile.isEmpty() || m_infile.isNull())
+            return project_list;
+    }
+
+    m_independent_rows = m_main["IndependentRows"].toInt(2);
+    m_start_point = m_main["StartPoint"].toInt(0);
+    m_series = m_data_json["Series"].toInt();
+
+    if (!LoadFile())
+        return project_list;
+
+    if (m_main.contains("OutFile")) {
+        m_outfile = m_main["OutFile"].toString();
+    }
+
+    if (m_toplevel.isEmpty())
+        return project_list;
+
+    if (m_toplevel.keys().contains("data"))
+        m_data = new DataClass(m_toplevel["data"].toObject());
+    else
+        m_data = new DataClass(m_toplevel);
+
+    int model = m_data_json["model"].toInt();
+    double variance = m_data_json["Variance"].toDouble();
+    int repeat = m_data_json["Repeat"].toInt();
+
+    QPointer<DataClass> data = new DataClass(m_data.data());
+    QJsonObject export_object = data->ExportData();
+    QSharedPointer<AbstractModel> t = AddModel(model, data);
+    QVector<qreal> random;
+
+    qint64 seed = QDateTime::currentMSecsSinceEpoch();
+    std::mt19937 rng(seed);
+    int file_int = 0;
+
+    QString global_limits, local_limits;
+    if (m_data_json.contains("GlobalRandomLimits")) {
+        global_limits = m_data_json["GlobalRandomLimits"].toString();
+        QStringList limits = global_limits.split(";");
+        if (limits.size()) {
+            QVector<QPair<qreal, qreal>> global_block;
+
+            if (limits.size() == t->GlobalParameterSize()) {
+                for (int i = 0; i < limits.size(); ++i) {
+                    global_block << ToolSet::QString2QPair(limits[i]);
+                }
+            } else {
+                const QPair<qreal, qreal> pair = ToolSet::QString2QPair(limits.first());
+                global_block = QVector<QPair<qreal, qreal>>(t->GlobalParameterSize(), pair);
+            }
+
+            t->setGlobalRandom(global_block);
+        }
+    }
+
+    if (m_data_json.contains("LocalRandomLimits")) {
+        local_limits = m_data_json["LocalRandomLimits"].toString();
+
+        QStringList local_limits_block = local_limits.split(":");
+        if (local_limits_block.size()) {
+            if (local_limits_block.size() == m_series) {
+                for (int j = 0; j < m_series; ++j) {
+                    QStringList limits = local_limits_block[j].split(";");
+                    if (limits.size()) {
+                        QVector<QPair<qreal, qreal>> local_block;
+
+                        if (limits.size() == t->GlobalParameterSize()) {
+                            for (int i = 0; i < limits.size(); ++i) {
+                                local_block << ToolSet::QString2QPair(limits[i]);
+                            }
+                        } else {
+                            const QPair<qreal, qreal> pair = ToolSet::QString2QPair(limits.first());
+                            local_block = QVector<QPair<qreal, qreal>>(t->LocalParameterSize(), pair);
+                        }
+
+                        t->setLocalRandom(local_block, j);
+                    }
+                }
+            } else {
+                QStringList local_limits_block = local_limits.split(":");
+                QStringList limits = local_limits_block.first().split(";");
+                const QPair<qreal, qreal> pair = ToolSet::QString2QPair(limits.first());
+
+                for (int j = 0; j < m_series; ++j) {
+                    t->setLocalRandom(QVector<QPair<qreal, qreal>>(t->LocalParameterSize(), pair), j);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < repeat; ++i) {
+        t->InitialGuess();
+
+        export_object["dependent"] = t->ModelTable()->PrepareMC(QVector<double>() << variance, rng)->ExportTable(true);
+        export_object["DataType"] = 1;
+        export_object["content"] = t->Model2Text();
+        QJsonObject blob;
+        blob["data"] = export_object;
+        project_list << blob;
+        /*
+        QString outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+        while (QFileInfo::exists(outfile)) {
+            ++file_int;
+            outfile = QString(m_outfile + "_" + QString::number(file_int) + m_extension);
+        }
+
+        SaveFile(outfile, blob);*/
+    }
+
+    return project_list;
+}
+
+void SupraFitCli::CheckStopFile()
+{
+    if (QFileInfo::exists("stop")) {
+        m_interrupt = true;
+        emit Interrupt();
+        QFile file("stop");
+        file.remove();
+    } else
+        QTimer::singleShot(100, this, &SupraFitCli::CheckStopFile);
+}
+
+/*
+SupraFitCli * SupraFitCli::Generate() const
+{
+    SupraFitCli *generated = new SupraFitCli;
+
+    return generated;
+}*/

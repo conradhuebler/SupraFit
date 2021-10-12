@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -126,6 +126,12 @@ int main(int argc, char** argv)
 
     std::cout << aboutSF().toStdString() << std::endl;
 
+    for (int index = 0; index < argc; ++index)
+        std::cout << argv[index] << " ";
+    std::cout << std::endl
+              << std::endl
+              << std::endl;
+
     const QString infile = parser.value("i");
 
     const QString print = parser.value("print");
@@ -182,15 +188,16 @@ int main(int argc, char** argv)
         return 0;
     }
     if (core->SimulationData()) {
-        Simulator* simulator = new Simulator(core);
-        projects = simulator->Data();
+        //
+        projects = core->GenerateData();
     }
-    core->Work();
+    //core->Work();
     //core->Pr
     // projects
-    // for (const auto& project : qAsConst(projects)) {
-    //     core->PerfomeJobs(project, job["Models"].toObject(), job["Jobs"].toObject());
-    // }
+    Simulator* simulator = new Simulator(core);
+    for (const auto& project : qAsConst(projects)) {
+        simulator->PerformeJobs(project, infile_json["Models"].toObject(), infile_json["Jobs"].toObject());
+    }
     //}
     /*
         for (const QString& str : parser.values("j")) {
@@ -277,7 +284,7 @@ int main(int argc, char** argv)
             return 1;
         }
         suprafitcli->setOutFile(outfile);
-        std::cout << "No task is not set, lets do the standard stuff ..." << std::endl;
+        std::cout << "No task is set, lets do the standard stuff ..." << std::endl;
         list = parser.isSet("l");
 
         if (infile != outfile) {
