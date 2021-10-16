@@ -1111,6 +1111,15 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("LastSpectraType") == QVariant())
         qApp->instance()->setProperty("LastSpectraType", "csv");
 
+    if (qApp->instance()->property("MarkerPointFeedback") == QVariant())
+        qApp->instance()->setProperty("MarkerPointFeedback", 5);
+
+    if (qApp->instance()->property("PointFeedback") == QVariant())
+        qApp->instance()->setProperty("PointFeedback", true);
+
+    if (qApp->instance()->property("ModuloPointFeedback") == QVariant())
+        qApp->instance()->setProperty("ModuloPointFeedback", 5);
+
     qApp->instance()->setProperty("lastDir", getDir());
 }
 

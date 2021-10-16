@@ -217,7 +217,10 @@ private:
                                                    << "StoreFileHash"
                                                    << "FindFileRecursive"
                                                    << "ModelParameterColums"
-                                                   << "LastSpectraType";
+                                                   << "LastSpectraType"
+                                                   << "MarkerPointFeedback"
+                                                   << "PointFeedback"
+                                                   << "ModuloPointFeedback";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

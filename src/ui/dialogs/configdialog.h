@@ -60,8 +60,8 @@ public:
 
 private:
     QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
-    QSpinBox *m_threads, *m_model_element_cols, *m_XScale, *m_YScale, *m_FontSize, *m_FastConfidenceScaling, *m_FastConfidenceSteps, *m_HistBins;
-    QDoubleSpinBox *m_p_value, *m_markerSize, *m_lineWidth, *m_chartScaling;
+    QSpinBox *m_threads, *m_model_element_cols, *m_XScale, *m_YScale, *m_FontSize, *m_FastConfidenceScaling, *m_FastConfidenceSteps, *m_HistBins, *m_ModuloPointFeedback;
+    QDoubleSpinBox *m_p_value, *m_markerSize, *m_lineWidth, *m_chartScaling, *m_MarkerPointFeedbackSize;
     QCheckBox *m_transparentChart, *m_cropedChart, *m_ColorFullSearch, *m_advanced_ui, *m_unsafe_copy, *m_overwrite_bins, *m_initialise_random;
     QLineEdit* m_working;
     QPushButton* m_select_working;
@@ -70,7 +70,7 @@ private:
     QComboBox* m_charttheme;
     QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit, *m_series_confidence, *m_RemoveGrid, *m_EmphAxis, *m_auto_thermo_dialog, *m_thermogram_guideline;
     /* Save Settings Gui Elements */
-    QCheckBox *m_StoreRawData, *m_StoreFileName, *m_StoreAbsolutePath, *m_StoreFileHash, *m_FindFileRecursive;
+    QCheckBox *m_StoreRawData, *m_StoreFileName, *m_StoreAbsolutePath, *m_StoreFileHash, *m_FindFileRecursive, *m_PointFeedback, *m_MarkerPointFeedback;
 
     void setUi();
     void createGeneralTab();

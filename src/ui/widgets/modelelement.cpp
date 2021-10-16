@@ -300,15 +300,30 @@ void ModelElement::UnCheckToggle(int i)
 
 void ModelElement::enterEvent(QEnterEvent* event)
 {
-    m_signal_series->setPointLabelsVisible(true);
-    m_error_series->setPointLabelsVisible(true);
+    m_signal_series->setPointLabelsColor(m_signal_series->color());
+    m_error_series->setPointLabelsColor(m_signal_series->color());
+    m_signal_series->setMarkerSize(m_signal_series->markerSize() + 3 * qApp->instance()->property("MarkerPointFeedback").toDouble());
+    m_error_series->setMarkerSize(m_error_series->markerSize() + 3 * qApp->instance()->property("MarkerPointFeedback").toDouble());
+
+    for (int i = 0; i < m_signal_series->points().size(); i++) {
+        auto conf = m_signal_series->pointConfiguration(i);
+        conf[QXYSeries::PointConfiguration::LabelVisibility] = (i % qApp->instance()->property("ModuloPointFeedback").toInt()) == 0 && qApp->instance()->property("PointFeedback").toBool();
+        m_signal_series->setPointConfiguration(i, conf);
+        m_error_series->setPointConfiguration(i, conf);
+    }
 }
 
 void ModelElement::leaveEvent(QEvent* event)
 {
     QTimer::singleShot(500, this, [this]() {
-        this->m_signal_series->setPointLabelsVisible(false);
-        this->m_error_series->setPointLabelsVisible(false);
+        for (int i = 0; i < m_signal_series->points().size(); i++) {
+            auto conf = m_signal_series->pointConfiguration(i);
+            conf[QXYSeries::PointConfiguration::LabelVisibility] = false;
+            m_signal_series->setPointConfiguration(i, conf);
+            m_error_series->setPointConfiguration(i, conf);
+        }
+        m_signal_series->setMarkerSize(m_signal_series->markerSize() - 3 * qApp->instance()->property("MarkerPointFeedback").toDouble());
+        m_error_series->setMarkerSize(m_error_series->markerSize() - 3 * qApp->instance()->property("MarkerPointFeedback").toDouble());
     });
 }
 

@@ -348,6 +348,31 @@ void ConfigDialog::createChartTab()
     QWidget* chartTab = new QWidget;
     chartTab->setLayout(layout);
 
+    layout->addWidget(new QLabel(tr("Feedback effects in Charts:")));
+
+    m_PointFeedback = new QCheckBox(tr("Highlight #th Point on hovering"));
+    m_PointFeedback->setChecked(qApp->instance()->property("PointFeedback").toBool());
+    connect(m_PointFeedback, &QCheckBox::stateChanged, this, [this]() {
+        m_ModuloPointFeedback->setEnabled(m_PointFeedback->isChecked());
+    });
+
+    m_ModuloPointFeedback = new QSpinBox;
+    m_ModuloPointFeedback->setValue(qApp->instance()->property("ModuloPointFeedback").toInt());
+
+    QHBoxLayout* hbox = new QHBoxLayout;
+    hbox->addWidget(m_PointFeedback);
+    hbox->addWidget(m_ModuloPointFeedback);
+    layout->addLayout(hbox);
+
+    m_MarkerPointFeedbackSize = new QDoubleSpinBox;
+    m_MarkerPointFeedbackSize->setValue(qApp->instance()->property("MarkerPointFeedback").toDouble());
+    m_MarkerPointFeedbackSize->setRange(-100, 100);
+
+    hbox = new QHBoxLayout;
+    hbox->addWidget(new QLabel(tr("Increase size of Points")));
+    hbox->addWidget(m_MarkerPointFeedbackSize);
+    layout->addLayout(hbox);
+
     layout->addWidget(new QLabel(tr("Configure Chart Export Settings:")));
 
     m_markerSize = new QDoubleSpinBox;
@@ -355,7 +380,7 @@ void ConfigDialog::createChartTab()
     m_markerSize->setMaximum(30);
     m_markerSize->setValue(qApp->instance()->property("markerSize").toDouble());
 
-    QHBoxLayout* hbox = new QHBoxLayout;
+    hbox = new QHBoxLayout;
     hbox->addWidget(new QLabel(tr("Define marker size for exported charts:")));
     hbox->addWidget(m_markerSize);
     layout->addLayout(hbox);
@@ -477,6 +502,11 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("UnsafeCopy", m_unsafe_copy->isChecked());
     qApp->instance()->setProperty("OverwriteBins", m_overwrite_bins->isChecked());
     qApp->instance()->setProperty("InitialiseRandom", m_initialise_random->isChecked());
+
+    /* Chart Feedback Stuff */
+    qApp->instance()->setProperty("PointFeedback", m_PointFeedback->isChecked());
+    qApp->instance()->setProperty("ModuloPointFeedback", m_ModuloPointFeedback->value());
+    qApp->instance()->setProperty("MarkerPointFeedback", m_MarkerPointFeedbackSize->value());
 
     /* File Save Stuff */
     qApp->instance()->setProperty("StoreRawData", m_StoreRawData->isChecked());

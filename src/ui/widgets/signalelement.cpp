@@ -176,13 +176,24 @@ void SignalElement::UnCheckToggle(int i)
 
 void SignalElement::enterEvent(QEnterEvent* event)
 {
-    m_data_series->setPointLabelsVisible(true);
+    m_data_series->setPointLabelsColor(m_data_series->color());
+    for (int i = 0; i < m_data_series->points().size(); i++) {
+        auto conf = m_data_series->pointConfiguration(i);
+        conf[QXYSeries::PointConfiguration::Size] = m_markerSize->value() + qApp->instance()->property("MarkerPointFeedback").toDouble();
+        conf[QXYSeries::PointConfiguration::LabelVisibility] = (i % qApp->instance()->property("ModuloPointFeedback").toInt()) == 0 && qApp->instance()->property("PointFeedback").toBool();
+        m_data_series->setPointConfiguration(i, conf);
+    }
 }
 
 void SignalElement::leaveEvent(QEvent* event)
 {
     QTimer::singleShot(500, this, [this]() {
-        this->m_data_series->setPointLabelsVisible(false);
+        for (int i = 0; i < m_data_series->points().size(); i++) {
+            auto conf = m_data_series->pointConfiguration(i);
+            conf[QXYSeries::PointConfiguration::Size] = m_markerSize->value();
+            conf[QXYSeries::PointConfiguration::LabelVisibility] = false;
+            m_data_series->setPointConfiguration(i, conf);
+        }
     });
 }
 
