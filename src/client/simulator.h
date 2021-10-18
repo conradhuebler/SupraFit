@@ -65,16 +65,8 @@ public:
 
     QVector<QJsonObject> GenerateData();
 
-    // QStringList Generate();
-
-    QJsonObject PerformeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job);
+    QJsonObject PerformeJobs(const QJsonObject& data);
 
 private:
     void CheckStopFile();
-
-    /*
-    void Progress(int i, int max);
-    double m_current = 0.0;
-    */
-
 };

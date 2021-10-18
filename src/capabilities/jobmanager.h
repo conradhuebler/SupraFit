@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ class ResampleAnalyse;
 
 const QJsonObject ModelComparisonConfigBlock{
     /* Set method */
-    { "method", SupraFit::Method::ModelComparison }, // int, either SupraFit::Method::ModelComparison or SupraFit::Method::FastConfidence
+    { "Method", SupraFit::Method::ModelComparison }, // int, either SupraFit::Method::ModelComparison or SupraFit::Method::FastConfidence
 
     /* Maximal number of steps to be evaluated */
     { "MaxSteps", 1e4 }, // int
@@ -94,7 +94,7 @@ const QJsonObject ModelComparisonConfigBlock{
 
 const QJsonObject MonteCarloConfigBlock{
     /* Set method */
-    { "method", SupraFit::Method::MonteCarlo }, // int
+    { "Method", SupraFit::Method::MonteCarlo }, // int
 
     /* Maximal number of Monte Carlo steps to be performed*/
     { "MaxSteps", 2e3 }, // int
@@ -130,7 +130,7 @@ const QJsonObject MonteCarloConfigBlock{
 /* Resample Methods Settings */
 const QJsonObject ResampleConfigBlock{
     /* Set method */
-    { "method", SupraFit::Method::CrossValidation }, // int either SupraFit::Method::CrossValidation or SupraFit::Method::ReductionAnalyse
+    { "Method", SupraFit::Method::CrossValidation }, // int either SupraFit::Method::CrossValidation or SupraFit::Method::ReductionAnalyse
 
     /* Leave X-Out Cross Validation */
     { "CXO", 1 }, // int 1 - Leave One Out; 2 - Leave Two Out; 3 - Leave Many Out - Please define via
@@ -165,7 +165,7 @@ const QJsonObject ResampleConfigBlock{
 /* Grid Search Settings */
 const QJsonObject GridSearchConfigBlock{
     /* Set method */
-    { "method", SupraFit::Method::WeakenedGridSearch }, // int
+    { "Method", SupraFit::Method::WeakenedGridSearch }, // int
 
     /* Maximal number of steps to be evaluated */
     { "MaxSteps", 1e3 }, // int

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ class QCheckBox;
 class QGridLayout;
 class QSplitter;
 class ScatterSeries;
+class QScrollArea;
 class QDoubleSpinBox;
 class SignalElement;
 class SystemParameterWidget;
@@ -65,8 +66,9 @@ private:
     QWidget *m_tables, *m_widget;
     QSplitter* m_splitter;
     QVector<QPointer<SignalElement>> m_signal_elements;
-    QGridLayout* layout;
+    QGridLayout *m_layout, *m_tables_layout;
     QList<QPointer<QDoubleSpinBox>> m_scaling_boxes;
+    QScrollArea* m_series_scroll_area;
     QWidget* m_systemwidget;
     bool m_system_parameter_loaded;
     RegressionAnalysisDialog* dialog;

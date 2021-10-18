@@ -293,7 +293,7 @@ void ScatterWidget::MakePlot(int var_1, int var_2)
 
 void ScatterWidget::PointClicked(const QPointF& point)
 {
-#warning what was my intention
+#pragma message("what was my intention?")
     QList<int> values;
     for (const auto& item : m_linked_models_vector)
         values = item.values(Point2String(point));

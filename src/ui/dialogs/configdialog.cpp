@@ -358,6 +358,7 @@ void ConfigDialog::createChartTab()
 
     m_ModuloPointFeedback = new QSpinBox;
     m_ModuloPointFeedback->setValue(qApp->instance()->property("ModuloPointFeedback").toInt());
+    m_ModuloPointFeedback->setEnabled(m_PointFeedback->isChecked());
 
     QHBoxLayout* hbox = new QHBoxLayout;
     hbox->addWidget(m_PointFeedback);

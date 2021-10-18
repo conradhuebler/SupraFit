@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ DataWidget::DataWidget()
     : m_system_parameter_loaded(false)
 {
     m_widget = new QWidget;
-    layout = new QGridLayout;
+    m_layout = new QGridLayout;
     m_switch = new QPushButton(tr("1<=>2"));
     m_switch->setToolTip(tr("<html>Swap the independent variables, 1	&harr;2</html>"));
     m_switch->setStyleSheet("background-color: #77d740;");
@@ -90,23 +90,26 @@ DataWidget::DataWidget()
     m_const_subs = new QLabel;
     m_signals_count = new QLabel;
     m_tables = new QWidget; //(tr("Data Tables"));
-    QHBoxLayout* group_layout = new QHBoxLayout;
-    group_layout->addWidget(m_concentrations);
-    group_layout->addWidget(m_signals);
-    m_tables->setLayout(group_layout);
+    m_tables_layout = new QGridLayout;
+    m_tables_layout->addWidget(m_concentrations, 0, 0);
+    m_tables_layout->addWidget(m_signals, 0, 1);
+    m_tables->setLayout(m_tables_layout);
 
     m_text_edit = new QTextEdit;
     m_text_edit->setPlaceholderText(tr("Some information and description to that data set are welcome."));
 
-    layout->addLayout(hlayout, 0, 0, 1, 4);
-    layout->addWidget(m_text_edit, 1, 0, 1, 4);
+    m_layout->addLayout(hlayout, 0, 0, 1, 4);
 
-    layout->addWidget(m_datapoints, 2, 0);
-    layout->addWidget(m_substances, 2, 1);
-    layout->addWidget(m_const_subs, 2, 2);
-    layout->addWidget(m_signals_count, 2, 3);
+    m_layout->addWidget(m_datapoints, 1, 0);
+    m_layout->addWidget(m_substances, 1, 1);
+    m_layout->addWidget(m_const_subs, 1, 2);
+    m_layout->addWidget(m_signals_count, 1, 3);
 
-    m_widget->setLayout(layout);
+    m_series_scroll_area = new QScrollArea;
+    m_series_scroll_area->setWidgetResizable(true);
+    m_series_scroll_area->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    m_widget->setLayout(m_layout);
     QScrollArea* area = new QScrollArea;
     area->setWidgetResizable(true);
     area->setWidget(m_widget);
@@ -114,9 +117,15 @@ DataWidget::DataWidget()
     m_splitter->setOrientation(Qt::Vertical);
     m_splitter->addWidget(area);
 
-    hlayout = new QHBoxLayout;
-    hlayout->addWidget(m_splitter);
-    setLayout(hlayout);
+    QTabWidget* tabWidget = new QTabWidget;
+    tabWidget->addTab(m_text_edit, tr("Project Description"));
+    // tabWidget->addTab(m_splitter, tr("Project Data"));
+    tabWidget->addTab(m_tables, tr("Project Data"));
+    m_layout->addWidget(tabWidget, 2, 0, 1, 4);
+
+    //hlayout = new QHBoxLayout;
+    // hlayout->addWidget(m_splitter);
+    setLayout(m_layout);
 }
 
 DataWidget::~DataWidget()
@@ -171,9 +180,13 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
             el->HideSeries();
         m_signal_elements << el;
     }
+    QWidget* scrollHolder = new QWidget;
+    scrollHolder->setLayout(vlayout);
 
-    layout->addLayout(vlayout, 3, 0, 1, 4);
+    m_series_scroll_area->setWidget(scrollHolder);
 
+    //m_layout->addWidget(m_series_scroll_area, 4, 0, 1, 4);
+    m_layout->addWidget(m_series_scroll_area, 3, 0, 1, 4);
     QHBoxLayout* scaling_layout = new QHBoxLayout;
     scaling_layout->addWidget(new QLabel(tr("Scaling factors for input data:")));
     for (int i = 0; i < m_data.toStrongRef().data()->getScaling().size(); ++i) {
@@ -191,11 +204,11 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         scaling_layout->addLayout(lay);
     }
 
-    layout->addLayout(scaling_layout, 4, 0, 1, 4);
+    m_tables_layout->addLayout(scaling_layout, 1, 0, 1, 2);
 
     if (m_data.toStrongRef().data()->IndependentVariableSize() == 1)
         m_switch->hide();
-    m_splitter->addWidget(m_tables);
+    //m_splitter->addWidget(m_tables);
 
     QSettings settings;
     settings.beginGroup("overview");

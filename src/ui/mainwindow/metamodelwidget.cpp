@@ -220,7 +220,7 @@ void MetaModelWidget::FastConfidence()
     job["confidence"] = qApp->instance()->property("p_value").toDouble();
     job["f_value"] = f_value;
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
-    job["method"] = SupraFit::Method::FastConfidence;
+    job["Method"] = SupraFit::Method::FastConfidence;
 
     m_jobmanager->AddJob(job);
     m_jobmanager->RunJobs();
@@ -260,7 +260,7 @@ void MetaModelWidget::LoadStatistic(const QJsonObject& data)
 {
     int index = m_model->UpdateStatistic(data);
     m_results->Attention();
-    SupraFit::Method type = SupraFit::Method(data["controller"].toObject()["method"].toInt());
+    SupraFit::Method type = SupraFit::Method(AccessCI(data["controller"].toObject(), "Method").toInt());
     m_results->ShowResult(type, index);
 }
 

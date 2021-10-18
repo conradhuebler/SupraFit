@@ -184,7 +184,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
                 }
             } else
                 xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
-#warning not nice, as the series colors are not consistently selected
+#pragma message("not nice, as the series colors are not consistently selected")
         } else {
             xy_series->setColor(m_wrapper->ColorCode(m_model.toStrongRef().data()->Color(i)));
         }

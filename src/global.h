@@ -339,6 +339,15 @@ inline bool FuzzyCompare(qreal a, qreal b, int prec = 3)
     return qAbs(a - b) < qPow(10, -prec);
 }
 
+inline QJsonValue AccessCI(const QJsonObject& object, const QString& str)
+{
+    QStringList keys = object.keys();
+    for (const QString& key : qAsConst(keys)) {
+        if (key.compare(str, Qt::CaseInsensitive) == 0)
+            return object[key];
+    }
+    return QJsonValue();
+}
 
 inline int sgn(qreal val) {
     /* Nice solution taken from here

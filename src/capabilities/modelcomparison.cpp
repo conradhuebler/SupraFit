@@ -252,7 +252,7 @@ ModelComparison::~ModelComparison()
 
 bool ModelComparison::Run()
 {
-    if (static_cast<SupraFit::Method>(m_controller["method"].toInt()) == SupraFit::Method::FastConfidence)
+    if (static_cast<SupraFit::Method>(AccessCI(m_controller, "Method").toInt()) == SupraFit::Method::FastConfidence)
         return FastConfidence();
     else
         return Confidence();

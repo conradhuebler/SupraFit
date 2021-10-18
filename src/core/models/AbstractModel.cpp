@@ -647,7 +647,7 @@ int AbstractModel::UpdateStatistic(const QJsonObject& object)
     bool duplicate = false;
 
     QJsonObject controller = object["controller"].toObject();
-    switch (controller["method"].toInt()) {
+    switch (AccessCI(controller, "Method").toInt()) {
     case SupraFit::Method::WeakenedGridSearch:
 
         duplicate = false;
@@ -947,7 +947,7 @@ QJsonObject AbstractModel::ExportModel(bool statistics, bool locked)
             for (int i = 0; i < data.size(); ++i) {
                 QJsonValueRef ref = statisticObject[QString::number(counter)] = data[i];
                 if (ref.isNull()) {
-                    emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(SupraFit::Method2Name(data[i]["controller"].toObject()["method"].toInt())).arg(Name()).arg(ProjectTitle()).arg(help));
+                    emit Info()->Warning(QString("Critical warning, statistic data are to large to be stored in file. Attempted to write %2 # %1 in %3 from %4. %5").arg(i + 1).arg(SupraFit::Method2Name(AccessCI(data[i]["controller"].toObject(), "Method").toInt())).arg(Name()).arg(ProjectTitle()).arg(help));
                     statisticObject.remove(QString::number(counter));
                 }
                 counter++;
@@ -1512,7 +1512,7 @@ QString AbstractModel::AnalyseStatistic(const QJsonObject& object, bool forceAll
 
     QString text;
 
-    switch (controller["method"].toInt()) {
+    switch (AccessCI(controller, "Method").toInt()) {
     case SupraFit::Method::WeakenedGridSearch:
         return AnalyseGridSearch(object, forceAll);
         break;

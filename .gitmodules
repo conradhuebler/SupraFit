@@ -13,3 +13,6 @@
 [submodule "external/ChaiScript_Extras"]
 	path = external/ChaiScript_Extras
 	url = https://github.com/ChaiScript/ChaiScript_Extras
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt

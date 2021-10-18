@@ -166,7 +166,7 @@ QStringList Simulator::Generate()
 }
 */
 
-QJsonObject Simulator::PerformeJobs(const QJsonObject& data, const QJsonObject& models, const QJsonObject& job)
+QJsonObject Simulator::PerformeJobs(const QJsonObject& data)
 {
     if (m_main.contains("Threads")) {
         qApp->instance()->setProperty("threads", m_main.value("Threads").toInt(4));
@@ -187,9 +187,9 @@ QJsonObject Simulator::PerformeJobs(const QJsonObject& data, const QJsonObject& 
         d = new DataClass(data);
 
     QVector<QJsonObject> models_json;
-    if (!models.isEmpty()) {
+    if (!m_models.isEmpty()) {
         std::cout << "Loading Models into Dataset" << std::endl;
-        QVector<QSharedPointer<AbstractModel>> m = AddModels(models, d);
+        QVector<QSharedPointer<AbstractModel>> m = AddModels(m_models, d);
         std::cout << "Loading " << m.size() << " Models into Dataset finished!" << std::endl;
         if (!m_jobs.isEmpty()) {
             std::cout << "Starting jobs ..." << std::endl;
@@ -201,10 +201,10 @@ QJsonObject Simulator::PerformeJobs(const QJsonObject& data, const QJsonObject& 
                 std::cout << "another job done: " << current << " of " << all << " after " << time << " msecs." << std::endl;
             });
             //connect(this, &Simulator::Interrupt, manager, &JobManager::Interrupt);
-            for (int model_index = 0; model_index < models.size(); ++model_index) {
+            for (int model_index = 0; model_index < m.size(); ++model_index) {
                 std::cout << "... model  " << model_index << std::endl;
-                for (const QString& j : job.keys()) {
-                    QJsonObject single_job = job[j].toObject();
+                for (const QString& j : m_jobs.keys()) {
+                    QJsonObject single_job = m_jobs[j].toObject();
                     manager->setModel(m[model_index]);
                     manager->AddJob(single_job);
                     manager->RunJobs();

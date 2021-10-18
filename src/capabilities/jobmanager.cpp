@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2019 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ void JobManager::RunJobs()
     if (m_model->PreventThreads())
         qApp->instance()->setProperty("threads", 1);
     for (const QJsonObject& object : m_jobs) {
-        SupraFit::Method method = static_cast<SupraFit::Method>(object["method"].toInt());
+        SupraFit::Method method = static_cast<SupraFit::Method>(object["Method"].toInt());
         QJsonObject result;
 
         qint64 t0 = 0, t1 = 0;

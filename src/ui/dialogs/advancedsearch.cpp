@@ -298,7 +298,7 @@ void AdvancedSearch::SearchGlobal()
     QJsonObject job;
 
     job["ParameterSize"] = m_parameter.size();
-    job["method"] = SupraFit::Method::GlobalSearch;
+    job["Method"] = SupraFit::Method::GlobalSearch;
     for (int i = 0; i < m_parameter.size(); ++i) {
         job[QString::number(i)] = ToolSet::DoubleVec2String(m_parameter[i]);
     }

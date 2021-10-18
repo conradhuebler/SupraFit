@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ ResampleAnalyse::~ResampleAnalyse()
 
 bool ResampleAnalyse::Run()
 {
-    if (static_cast<SupraFit::Method>(m_controller["method"].toInt()) == SupraFit::Method::Reduction) {
+    if (static_cast<SupraFit::Method>(AccessCI(m_controller, "Method").toInt()) == SupraFit::Method::Reduction) {
         PlainReduction();
         return true;
     } else {
@@ -435,7 +435,7 @@ void ResampleAnalyse::CrossValidation()
 void ResampleAnalyse::PlainReduction()
 {
     m_controller["xlabel"] = m_model.data()->XLabel();
-    m_controller["cutoff"] = m_model.data()->ReductionCutOff();
+    m_controller["Cutoff"] = m_model.data()->ReductionCutOff();
     int maxthreads = qApp->instance()->property("threads").toInt();
     m_threadpool->setMaxThreadCount(maxthreads);
     QPointer<DataTable> table = m_model->DependentModel();

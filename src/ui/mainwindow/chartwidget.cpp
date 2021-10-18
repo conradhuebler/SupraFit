@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021  Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ ChartDockTitleBar::ChartDockTitleBar()
     connect(m_animation, &QAction::toggled, this, &ChartDockTitleBar::AnimationChanged);
     toolsmenu->addAction(m_animation);
 
-    m_theme = new QMenu("Chart Theme");
+    m_theme = new QMenu(tr("Chart Theme"));
 
     QAction* light = new QAction(tr("Light"), this);
     light->setData(QChart::ChartThemeLight);
@@ -109,25 +109,25 @@ ChartDockTitleBar::ChartDockTitleBar()
 
     toolsmenu->addMenu(m_theme);
 
-    m_size = new QMenu("Chart Size", this);
+    m_size = new QMenu(tr("Chart Size"), this);
 
-    QAction* tiny = new QAction("Tiny", this);
+    QAction* tiny = new QAction(tr("Tiny"), this);
     tiny->setData(512);
     m_size->addAction(tiny);
 
-    QAction* small = new QAction("Small", this);
+    QAction* small = new QAction(tr("Small"), this);
     small->setData(650);
     m_size->addAction(small);
 
-    QAction* medium = new QAction("Medium", this);
+    QAction* medium = new QAction(tr("Medium"), this);
     medium->setData(850);
     m_size->addAction(medium);
 
-    QAction* max = new QAction("Maximum", this);
+    QAction* max = new QAction(tr("Maximum"), this);
     max->setData(1024);
     m_size->addAction(max);
 
-    QAction* any = new QAction("Any", this);
+    QAction* any = new QAction(tr("Any"), this);
     any->setData(16777215);
     m_size->addAction(any);
 
@@ -140,7 +140,7 @@ ChartDockTitleBar::ChartDockTitleBar()
     m_hide->setIcon(QIcon::fromTheme("tab-close"));
 
     QHBoxLayout* layout = new QHBoxLayout;
-    layout->addWidget(new QLabel("Charts"));
+    layout->addWidget(new QLabel(tr("Charts")));
     layout->addStretch();
     layout->addWidget(m_tools);
     layout->addWidget(m_hide);

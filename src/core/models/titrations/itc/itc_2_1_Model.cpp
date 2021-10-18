@@ -257,7 +257,7 @@ QString itc_IItoI_Model::AdditionalOutput() const
     }
 
     for (int i = 0; i < getMCStatisticResult(); ++i) {
-        if (static_cast<SupraFit::Statistic>(getStatistic(SupraFit::Statistic::MonteCarlo, i)["controller"].toObject()["method"].toInt()) == SupraFit::Statistic::MonteCarlo) {
+        if (static_cast<SupraFit::Statistic>(AccessCI(getStatistic(SupraFit::Statistic::MonteCarlo, i)["controller"].toObject(),"Method").toInt()) == SupraFit::Statistic::MonteCarlo) {
             result += tr("<h4>Monte Carlo Simulation %1:</h4>").arg(i);
             conf2therm(getStatistic(SupraFit::Statistic::MonteCarlo, i));
         }

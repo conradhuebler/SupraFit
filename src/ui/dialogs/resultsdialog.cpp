@@ -152,8 +152,8 @@ void ResultsDialog::UpdateList()
 
     auto addItem = [this, makeItem](QStandardItem* item, const QJsonObject& object, int i) {
         QJsonObject controller = object["controller"].toObject();
-        item->setData(tr("%1 # %2").arg(SupraFit::Method2Name(controller["method"].toInt())).arg(i + 1), Qt::DisplayRole);
-        item->setData(controller["method"].toInt(), Qt::UserRole);
+        item->setData(tr("%1 # %2").arg(SupraFit::Method2Name(AccessCI(controller, "Method").toInt())).arg(i + 1), Qt::DisplayRole);
+        item->setData(AccessCI(controller, "Method").toInt(), Qt::UserRole);
         item->setData(controller["timestamp"].toDouble(), Qt::UserRole + 3);
 
         if (controller.contains("raw"))
@@ -163,7 +163,7 @@ void ResultsDialog::UpdateList()
 
         if (m_stored_widgets.contains(controller["timestamp"].toDouble())) {
             ResultsWidget* results = m_stored_widgets[controller["timestamp"].toDouble()];
-            m_tabs->setTabText(m_tabs->indexOf(results), tr("%1 # %2").arg(SupraFit::Method2Name(controller["method"].toInt())).arg(i + 1));
+            m_tabs->setTabText(m_tabs->indexOf(results), tr("%1 # %2").arg(SupraFit::Method2Name(AccessCI(controller, "Method").toInt())).arg(i + 1));
         }
 
         item->setData(i, Qt::UserRole + 1);

@@ -309,17 +309,17 @@ void SupraFitCli::Analyse(const QJsonObject& analyse, const QVector<QJsonObject>
         for (const QString& key : analyse.keys()) {
             QJsonObject object = analyse[key].toObject();
             QString text;
-            if (object["method"].toInt() == 1) {
+            if (object["Method"].toInt() == 1) {
                 bool local = object["Local"].toBool(false);
                 int index = object["Index"].toInt(1);
                 text = StatisticTool::CompareMC(models_json, local, index);
-            } else if (object["method"].toInt() == 4) {
+            } else if (object["Method"].toInt() == 4) {
                 bool local = object["Local"].toBool(false);
                 int CXO = object["CXO"].toInt(1);
                 int X = object["X"].toInt(1);
 
                 text = StatisticTool::CompareCV(models_json, CXO, local, X);
-            } else if (object["method"].toInt() == 5) {
+            } else if (object["Method"].toInt() == 5) {
                 bool local = object["Local"].toBool(false);
                 double cutoff = object["CutOff"].toDouble(0);
                 text = StatisticTool::AnalyseReductionAnalysis(models_json, local, cutoff);
@@ -353,7 +353,7 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
 
     m_independent_rows = m_main["IndependentRows"].toInt(2);
     m_start_point = m_main["StartPoint"].toInt(0);
-    m_series = m_data_json["Series"].toInt();
+    m_series = m_simulation["Series"].toInt();
 
     if (!LoadFile())
         return project_list;
@@ -370,9 +370,9 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
     else
         m_data = new DataClass(m_toplevel);
 
-    int model = m_data_json["model"].toInt();
-    double variance = m_data_json["Variance"].toDouble();
-    int repeat = m_data_json["Repeat"].toInt();
+    int model = m_simulation["Model"].toInt();
+    double variance = m_simulation["Variance"].toDouble();
+    int repeat = m_simulation["Repeat"].toInt();
 
     QPointer<DataClass> data = new DataClass(m_data.data());
     QJsonObject export_object = data->ExportData();
@@ -384,8 +384,8 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
     int file_int = 0;
 
     QString global_limits, local_limits;
-    if (m_data_json.contains("GlobalRandomLimits")) {
-        global_limits = m_data_json["GlobalRandomLimits"].toString();
+    if (m_simulation.contains("GlobalRandomLimits")) {
+        global_limits = m_simulation["GlobalRandomLimits"].toString();
         QStringList limits = global_limits.split(";");
         if (limits.size()) {
             QVector<QPair<qreal, qreal>> global_block;
@@ -403,8 +403,8 @@ QVector<QJsonObject> SupraFitCli::GenerateData()
         }
     }
 
-    if (m_data_json.contains("LocalRandomLimits")) {
-        local_limits = m_data_json["LocalRandomLimits"].toString();
+    if (m_simulation.contains("LocalRandomLimits")) {
+        local_limits = m_simulation["LocalRandomLimits"].toString();
 
         QStringList local_limits_block = local_limits.split(":");
         if (local_limits_block.size()) {

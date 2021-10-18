@@ -1006,7 +1006,7 @@ QString Html2Tex(const QString& str)
 
 QString TextFromConfidence(const QJsonObject& result, const QJsonObject& controller)
 {
-    int type = controller["method"].toInt();
+    int type = AccessCI(controller, "Method").toInt();
 
     int bins;
     if (qApp->instance()->property("OverwriteBins").toBool())

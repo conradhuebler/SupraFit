@@ -727,7 +727,7 @@ QJsonObject StatisticDialog::RunGridSearch() const
     controller["MaxSteps"] = m_wgs_steps->value();
     controller["MaxParameter"] = m_wgs_max;
     controller["f-value"] = m_wgs_f_value->value();
-    controller["method"] = SupraFit::Method::WeakenedGridSearch;
+    controller["Method"] = SupraFit::Method::WeakenedGridSearch;
     controller["confidence"] = m_wgs_maxerror->value();
 
     controller["ErrorConvergency"] = m_wgs_err_conv->value();
@@ -768,7 +768,7 @@ QJsonObject StatisticDialog::RunModelComparison() const
     controller["MaxSteps"] = m_moco_mc_steps->value();
     controller["MaxParameter"] = m_moco_max;
     controller["f-value"] = m_moco_f_value->value();
-    controller["method"] = SupraFit::Method::ModelComparison;
+    controller["Method"] = SupraFit::Method::ModelComparison;
     controller["confidence"] = m_moco_maxerror->value();
 
     QVector<double> glob_box, local_box;
@@ -815,7 +815,7 @@ QJsonObject StatisticDialog::RunMonteCarlo() const
         controller["VarianceSource"] = 4;
 
     controller["OriginalData"] = m_original->isChecked();
-    controller["method"] = SupraFit::Method::MonteCarlo;
+    controller["Method"] = SupraFit::Method::MonteCarlo;
 
     QVector<qreal> indep_variance;
     for (int i = 0; i < m_indepdent_checkboxes.size(); ++i) {
@@ -834,7 +834,7 @@ QJsonObject StatisticDialog::RunReductionAnalyse() const
 {
     QJsonObject controller = ResampleConfigBlock;
 
-    controller["method"] = SupraFit::Method::Reduction;
+    controller["Method"] = SupraFit::Method::Reduction;
     return controller;
 }
 
@@ -842,7 +842,7 @@ QJsonObject StatisticDialog::RunCrossValidation() const
 {
     QJsonObject controller = ResampleConfigBlock;
 
-    controller["method"] = SupraFit::Method::CrossValidation;
+    controller["Method"] = SupraFit::Method::CrossValidation;
     if (m_radio_cv_loo->isChecked())
         controller["CXO"] = 1;
     else if (m_radio_cv_l2o->isChecked())

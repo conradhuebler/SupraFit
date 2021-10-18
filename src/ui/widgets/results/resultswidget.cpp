@@ -80,7 +80,7 @@ void ResultsWidget::setUi()
     m_confidence_label->setTextFormat(Qt::RichText);
     m_confidence_label->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
-    switch (m_data["controller"].toObject()["method"].toInt()) {
+    switch (AccessCI(m_data["controller"].toObject(), "Method").toInt()) {
     case SupraFit::Method::MonteCarlo:
         m_widget = MonteCarloWidget();
         setObjectName("Monte Carlo Simulation for " + m_model.toStrongRef().data()->Name());
@@ -333,7 +333,7 @@ void ResultsWidget::WriteConfidence(const QJsonObject& data)
     QString text;
     m_data = data;
     QJsonObject controller = m_data["controller"].toObject();
-    if (controller["method"].toInt() == SupraFit::Method::GlobalSearch) {
+    if (AccessCI(controller, "Method").toInt() == SupraFit::Method::GlobalSearch) {
         text += Print::TextFromStatistic(data);
     } else {
         text += Print::TextFromStatistic(controller["raw"].toObject());

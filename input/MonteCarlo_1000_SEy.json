@@ -4,5 +4,5 @@
                         "MaxSteps": 1000,
                         "OriginalData": false,
                         "VarianceSource": "SEy",
-                        "method": 1
+                        "Method": 1
 }

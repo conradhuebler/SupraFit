@@ -59,7 +59,7 @@ QString AnalyseReductionAnalysis(const QVector<QJsonObject> models, bool local, 
 #pragma message("let us analyse more reduction, later ")
         QJsonObject reduction;
         for (const QString& key : model["data"].toObject()["methods"].toObject().keys()) {
-            if (model["data"].toObject()["methods"].toObject()[key].toObject()["controller"].toObject()["method"].toInt() == SupraFit::Method::Reduction) {
+            if (AccessCI(model["data"].toObject()["methods"].toObject()[key].toObject()["controller"].toObject(), "Method").toInt() == SupraFit::Method::Reduction) {
                 reduction = model["data"].toObject()["methods"].toObject()[key].toObject();
                 break;
             }
@@ -265,7 +265,7 @@ QString CompareCV(const QVector<QJsonObject> models, int cvtype, bool local, int
         for (const QString& str : qAsConst(keys)) {
             QJsonObject obj = model["data"].toObject()["methods"].toObject()[str].toObject();
             QJsonObject controller = model["data"].toObject()["methods"].toObject()[str].toObject()["controller"].toObject();
-            int method = controller["method"].toInt();
+            int method = AccessCI(controller, "Method").toInt();
             int type = controller["CXO"].toInt();
             int x = controller["X"].toInt();
             if (method != 4 || type != cvtype)
@@ -433,7 +433,7 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
         for (const QString& str : qAsConst(keys)) {
             QJsonObject obj = model["data"].toObject()["methods"].toObject()[str].toObject();
             QJsonObject controller = model["data"].toObject()["methods"].toObject()[str].toObject()["controller"].toObject();
-            int method = controller["method"].toInt();
+            int method = AccessCI(controller, "Method").toInt();
             if (method != SupraFit::Method::MonteCarlo)
                 continue;
 

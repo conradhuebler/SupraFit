@@ -40,6 +40,9 @@
 #include <QtCore/QRandomGenerator>
 #include <QCoreApplication>
 
+#include <fmt/color.h>
+#include <fmt/core.h>
+
 #include <iostream>
 
 #ifndef _WIN32
@@ -166,7 +169,7 @@ int main(int argc, char** argv)
     JsonHandler::ReadJsonFile(infile_json, infile);
     SupraFitCli* core = new SupraFitCli;
     QVector<QJsonObject> projects;
-    if (infile_json.keys().contains("main", Qt::CaseInsensitive)) {
+    if (infile_json.keys().contains("Main", Qt::CaseInsensitive)) {
         /**
           Everything is defined in the input file
           */
@@ -174,7 +177,7 @@ int main(int argc, char** argv)
     } else {
         QJsonObject jobfile_json;
         JsonHandler::ReadJsonFile(jobfile_json, job);
-        if (jobfile_json.keys().contains("main", Qt::CaseInsensitive)) {
+        if (jobfile_json.keys().contains("Main", Qt::CaseInsensitive)) {
             /* The jobfile defines everythin */
             core->setControlJson(jobfile_json);
         } else {
@@ -188,15 +191,16 @@ int main(int argc, char** argv)
         return 0;
     }
     if (core->SimulationData()) {
-        //
+        fmt::print("\nGeneration of input model data!\n");
         projects = core->GenerateData();
+        fmt::print("\nGeneration of input model data finished!\n");
+        fmt::print("\n\n##########################################\n\n");
     }
-    //core->Work();
-    //core->Pr
-    // projects
+
     Simulator* simulator = new Simulator(core);
     for (const auto& project : qAsConst(projects)) {
-        simulator->PerformeJobs(project, infile_json["Models"].toObject(), infile_json["Jobs"].toObject());
+        fmt::print("\nPerforming jobs on generated data!\n");
+        simulator->PerformeJobs(project);
     }
     //}
     /*

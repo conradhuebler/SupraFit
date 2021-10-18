@@ -139,7 +139,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-find_package(Qt6 6.1 COMPONENTS Core Widgets Charts)
+find_package(Qt6 6.2 COMPONENTS Core Widgets Charts)
 if (NOT Qt6_FOUND)
     find_package(Qt5 5.15 COMPONENTS Core Widgets Charts REQUIRED)
 endif()
@@ -151,7 +151,10 @@ if(_Python)
     endif()
 endif()
 
-include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/)
+add_subdirectory(${PROJECT_SOURCE_DIR}/external/fmt EXCLUDE_FROM_ALL)
+
+
+include_directories(SYSTEM ${QT_INCLUDES} ${PROJECT_SOURCE_DIR}/external/fmt/include ${PROJECT_SOURCE_DIR}/external/libpeakpick/eigen/ ${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/external/ChaiScript/include/ ${PROJECT_SOURCE_DIR}/external/ChaiScript_Extras/include/)
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/external/fisher_dist/ ${PROJECT_SOURCE_DIR}/external/libpeakpick/ ${PROJECT_SOURCE_DIR}/external/CuteChart/src/)
 #${PROJECT_SOURCE_DIR}/external/CxxClust/ )
 
@@ -350,9 +353,9 @@ set_property(TARGET suprafit_cli PROPERTY CXX_STANDARD 17)
 set_target_properties(core PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 
-target_link_libraries(suprafit suprafit_gui models core cutechart)
+target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
 
-target_link_libraries(suprafit_cli models core)
+target_link_libraries(suprafit_cli models core fmt::fmt-header-only)
 
 
 

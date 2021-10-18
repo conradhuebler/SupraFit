@@ -133,7 +133,7 @@ void FileHandler::ReadGeneric()
                     row.append((QString(item).replace(",", ".")).toDouble());
                 sum += (QString(item).replace(",", ".")).toDouble();
             }
-            qDebug() << header;
+            // qDebug() << header;
             if (!header_added) {
                 m_stored_table->setHeader(header);
                 header_added = true;
