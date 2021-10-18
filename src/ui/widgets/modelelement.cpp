@@ -307,7 +307,8 @@ void ModelElement::enterEvent(QEnterEvent* event)
 
     for (int i = 0; i < m_signal_series->points().size(); i++) {
         auto conf = m_signal_series->pointConfiguration(i);
-        conf[QXYSeries::PointConfiguration::LabelVisibility] = (i % qApp->instance()->property("ModuloPointFeedback").toInt()) == 0 && qApp->instance()->property("PointFeedback").toBool();
+        if (qApp->instance()->property("ModuloPointFeedback").toInt())
+            conf[QXYSeries::PointConfiguration::LabelVisibility] = (i % qApp->instance()->property("ModuloPointFeedback").toInt()) == 0 && qApp->instance()->property("PointFeedback").toBool();
         m_signal_series->setPointConfiguration(i, conf);
         m_error_series->setPointConfiguration(i, conf);
     }

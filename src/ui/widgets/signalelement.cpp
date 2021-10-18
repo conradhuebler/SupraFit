@@ -180,7 +180,8 @@ void SignalElement::enterEvent(QEnterEvent* event)
     for (int i = 0; i < m_data_series->points().size(); i++) {
         auto conf = m_data_series->pointConfiguration(i);
         conf[QXYSeries::PointConfiguration::Size] = m_markerSize->value() + qApp->instance()->property("MarkerPointFeedback").toDouble();
-        conf[QXYSeries::PointConfiguration::LabelVisibility] = (i % qApp->instance()->property("ModuloPointFeedback").toInt()) == 0 && qApp->instance()->property("PointFeedback").toBool();
+        if (qApp->instance()->property("ModuloPointFeedback").toInt())
+            conf[QXYSeries::PointConfiguration::LabelVisibility] = (i % qApp->instance()->property("ModuloPointFeedback").toInt()) == 0 && qApp->instance()->property("PointFeedback").toBool();
         m_data_series->setPointConfiguration(i, conf);
     }
 }
