@@ -1,6 +1,18 @@
+#pragma once
+
 #cmakedefine BENCHMARK_LEVEL
-#cmakedefine USE_levmarOptimizer
-#cmakedefine USE_eigenOptimizer
-#cmakedefine USE_bfgsOptimizer
 #cmakedefine experimental
-#cmakedefine OWN_BFGS
+#cmakedefine _DEBUG
+#cmakedefine _Theme
+#cmakedefine NMR_Models
+#cmakedefine ITC_Models
+#cmakedefine Kinetic_Models
+#cmakedefine Fluorescence_Models
+#cmakedefine legacy
+#cmakedefine conservative
+#cmakedefine noto_font
+#cmakedefine openMP
+#cmakedefine _UNIX
+#cmakedefine extended_f_test
+#cmakedefine _Python
+#cmakedefine _Models

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,49 +17,38 @@
  * 
  */
 
-#ifndef STATISTICWIDGET_H
-#define STATISTICWIDGET_H
+#pragma once
 
 #include <QtCore/QSharedPointer>
 
 #include <QtWidgets/QWidget>
 
-class AbstractTitrationModel;
+#include "src/ui/widgets/textwidget.h"
+
+class AbstractModel;
 class QLabel;
 class QPushButton;
+class TextWidget;
 struct StatisticResult;
 
-class StatisticElement : public QGroupBox
-{
+class StatisticWidget : public QWidget {
     Q_OBJECT
 public:
-    StatisticElement(const QSharedPointer<AbstractTitrationModel> model, int no);
-    ~StatisticElement();
-    
-private:    
-    QSharedPointer<AbstractTitrationModel > m_model;
-    int m_no;
-    QLabel *m_min, *m_max, *m_range, *m_integ_1, *m_integ_5, *m_value;
-    
-private slots:
-    void UpdateStatistic(const StatisticResult &result, int i);
-};
-
-class StatisticWidget : public QWidget
-{
-    Q_OBJECT
-public:
-    StatisticWidget(const QSharedPointer<AbstractTitrationModel> model, QWidget *parent = 0);
+    StatisticWidget(const QSharedPointer<AbstractModel> model, QWidget* parent);
     ~StatisticWidget();
-    
+    inline QString Overview() const { return m_short; }
+    inline QString Statistic() const { return m_statistics; }
+    inline QString Text() const { return m_overview->toPlainText(); }
+public slots:
+    void Update();
+
 private:
-    QSharedPointer<AbstractTitrationModel > m_model;
-    QList<QPointer<StatisticElement> > m_elements;
-    QPushButton *m_show;
-    QWidget *m_subwidget;
-    
+    QWeakPointer<AbstractModel> m_model;
+    QPushButton* m_show;
+    QWidget* m_subwidget;
+    TextWidget* m_overview;
+    QString m_short, m_statistics;
+
 private slots:
     void toggleView();
 };
-
-#endif // STATISTICWIDGET_H

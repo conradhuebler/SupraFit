@@ -1,6 +1,18 @@
-[submodule "Eigen"]
-	path = Eigen
-	url = https://github.com/RLovelett/eigen
-[submodule "ChaiScript"]
-	path = ChaiScript
+[submodule "fisher_dist"]
+	path = external/fisher_dist
+	url =  https://github.com/conradhuebler/fisher_dist
+[submodule "libpeakpick"]
+	path = external/libpeakpick
+	url = https://github.com/conradhuebler/libpeakpick
+[submodule "external/CuteChart"]
+	path = external/CuteChart
+	url = https://github.com/conradhuebler/CuteChart
+[submodule "external/ChaiScript"]
+	path = external/ChaiScript
 	url = https://github.com/ChaiScript/ChaiScript
+[submodule "external/ChaiScript_Extras"]
+	path = external/ChaiScript_Extras
+	url = https://github.com/ChaiScript/ChaiScript_Extras
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt

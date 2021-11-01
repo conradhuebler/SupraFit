@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,82 +18,43 @@
  * ScientificBox thanks to:
  * https://bugreports.qt.io/browse/QTBUG-7521
  */
-
-#ifndef OPTIMIZERWIDGET_H
-#define OPTIMIZERWIDGET_H
+#pragma once
 
 #include "src/global_config.h"
 
+#include "src/core/models/AbstractModel.h"
 
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QDoubleSpinBox>
+#include <QtCore/QJsonObject>
+
 #include <QLocale>
-#include "src/core/AbstractModel.h"
+#include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QWidget>
 
-struct OptimizerConfig;
 class QValidator;
 class QSpinBox;
 class QCheckBox;
 class QTabWidget;
+class ScientificBox;
 
-class ScientificBox : public QDoubleSpinBox
-{
+class OptimizerWidget : public QWidget {
     Q_OBJECT
 public:
-    inline QString textFromValue(double val) const
-    {
-        return QString::number(val, 'E', decimals());
-    }
+    OptimizerWidget(QJsonObject config, QWidget* parent = 0);
 
-    inline double valueFromText(const QString &text) const
-    {
-        QString value = text;
-        value.replace(loc.decimalPoint(), '.');
-        return value.toDouble();
-    }
-
-    inline QValidator::State validate(QString &input, int &pos) const
-    {
-        QDoubleValidator validator;
-        validator.setBottom(minimum());
-        validator.setTop(maximum());
-        validator.setDecimals(decimals());
-        validator.setNotation(QDoubleValidator::ScientificNotation);
-        input.replace('.', loc.decimalPoint());
-        return validator.validate(input, pos);
-    }
-
-private:
-    QLocale loc;
-};
-#ifdef USE_levmarOptimizer
-class LevmarConfig : public QWidget
-{
-public:
-    LevmarConfig(const OptimizerConfig &config);
-    ~LevmarConfig();
-    ScientificBox *m_levmarmu, *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
-};
-#endif
-class OptimizerWidget : public QWidget
-{
-    Q_OBJECT
-public:
-    OptimizerWidget(OptimizerConfig config, QWidget *parent = 0);
-    
     ~OptimizerWidget();
-     OptimizerConfig Config() const;
-private:
-    OptimizerConfig m_config;
-    QTabWidget *m_tabwidget;
-    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_levmar_shifts_periter, *m_sum_convergence, *m_error_potenz;
-    ScientificBox *m_shift_convergence, *m_constant_convergence, *m_error_convergence;
-    QCheckBox *m_optimize_shifts;
-#ifdef USE_levmarOptimizer
-    LevmarConfig *m_levmar_config;
-#endif
-    void setUi();
-    void setGeneral();
-};
+    QJsonObject Config() const;
 
-#endif // OPTIMIZERWIDGET_H
+private:
+    QWidget* GeneralWidget();
+    QWidget* LevmarWidget();
+    QWidget* AdvancedWidget();
+
+    QJsonObject m_config;
+    QTabWidget* m_tabwidget;
+    QSpinBox *m_maxiter, *m_levmar_constants_periter, *m_sum_convergence, *m_levmar_factor, *m_single_iter, *m_levmar_maxfev;
+    QCheckBox* m_skip_corrupt_concentrations;
+    ScientificBox *m_concen_convergency, *m_constant_convergence, *m_error_convergence;
+    ScientificBox *m_levmar_eps1, *m_levmar_eps2, *m_levmar_eps3, *m_levmar_delta;
+
+    void setUi();
+};

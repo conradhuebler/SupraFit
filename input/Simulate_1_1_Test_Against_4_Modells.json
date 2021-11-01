@@ -1,0 +1,55 @@
+{
+    "Main": {
+    "InFile" : "tabelle.dat",
+    "OutFile" : "Simulated_1-1_Model",
+    "Guess" : true,
+    "Fit"   : true,
+    "Threads" : 12,
+    "IndependentRows": 2,
+    "GenerateData" : {
+        "Series" : 8,
+        "Model" : 1,
+        "Repeat" : 20,
+        "Variance" : 3e-3,
+        "GlobalRandomLimits" : "[1 5]",
+        "LocalRandomLimits" : "[4 8]"
+        }
+    },
+    "Models" : {
+        "1" : 1,
+        "2" : 2,
+        "3" : 3,
+        "4" : 4
+        },
+    "Jobs" :    {
+        "1" : {
+                "Bootstrap": false,
+                "IndependentRowVariance": "0 0",
+                "MaxSteps": 2000,
+                "OriginalData": false,
+                "VarianceSource": 4,
+                "Method": 1
+        },
+        "2" : {
+                "Method": 5
+        },
+        "3" : {
+                "CXO": 1,
+                "Method": 4
+        },
+        "4" : {
+                "CXO": 2,
+                "Method": 4
+        },
+        "5" : {
+                "CXO": 3,
+                "X" : 3,
+                "Method": 4
+        },
+        "6" : {
+                "CXO": 3,
+                "X" : 4,
+                "Method": 4
+        }
+    }
+}

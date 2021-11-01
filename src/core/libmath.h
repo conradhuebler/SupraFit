@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,22 +17,45 @@
  * 
  */
 
-#ifndef LIBMATH_H
-#define LIBMATH_H
-#include "src/global_config.h"
-#include "src/core/AbstractModel.h"
+#pragma once
+
+#include <Eigen/Dense>
+
 #include <QtCore/QPair>
-class AbstractTitrationModel;
+
+#include <libpeakpick/mathhelper.h>
+#include <libpeakpick/nxlinregress.h>
+#include <libpeakpick/peakpick.h>
+
+#include "src/core/models/AbstractModel.h"
+
+#include "src/global_config.h"
+
+class AbstractModel;
 struct OptimizerConfig;
 
-qreal MinQuadraticRoot(qreal a, qreal b, qreal c);
-QPair<qreal, qreal> QuadraticRoots(qreal a, qreal b, qreal c);
+long double MinQuadraticRoot(long double a, long double b, long double c);
+long double MaxQuadraticRoot(long double a, long double b, long double c);
+
+QPair<long double, long double> QuadraticRoots(long double a, long double b, long double c);
 qreal MinCubicRoot(qreal a, qreal b, qreal c, qreal d);
-namespace Cubic{
+
+PeakPick::LinearRegression LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y);
+QMap<qreal, PeakPick::MultiRegression> LeastSquares(const QVector<qreal>& x, const QVector<qreal>& y, int functions);
+
+qreal SimpsonIntegrate(qreal lower, qreal upper, std::function<qreal(qreal, const QVector<qreal>)> function, const QVector<qreal>& parameter, qreal delta = 1e-4);
+std::vector<qreal> SimpsonIntegrate(qreal lower, qreal upper, const std::vector<std::function<qreal(qreal, const QVector<qreal>)>*>& functions, const QVector<qreal>& parameter, qreal delta = 1e-4);
+
+qreal DiscreteIntegrate(const QVector<qreal>& x, const QVector<qreal>& y);
+qreal Stddev(const QVector<qreal>& vector, int end = 0, double average = 0);
+
+qreal BisectParameter(QWeakPointer<AbstractModel> model, int index, qreal start, qreal end);
+
+qint64 Factorial(qint64 n);
+
+namespace Cubic {
 qreal f(qreal x, qreal a, qreal b, qreal c, qreal d);
 qreal df(qreal x, qreal a, qreal b, qreal c);
 }
 
-int NonlinearFit(QWeakPointer<AbstractTitrationModel> model, int max_iter, QVector<qreal > &param);
-#endif 
-
+int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param);

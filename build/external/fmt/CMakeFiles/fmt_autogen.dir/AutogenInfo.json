@@ -1,0 +1,162 @@
+{
+	"BUILD_DIR" : "/home/conrad/src/SupraFit/build/external/fmt/fmt_autogen",
+	"CMAKE_BINARY_DIR" : "/home/conrad/src/SupraFit/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/conrad/src/SupraFit/build/external/fmt",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/conrad/src/SupraFit/external/fmt",
+	"CMAKE_EXECUTABLE" : "/usr/bin/cmake",
+	"CMAKE_LIST_FILES" : 
+	[
+		"/home/conrad/src/SupraFit/external/fmt/CMakeLists.txt",
+		"/usr/share/cmake-3.21/Modules/CMakeParseArguments.cmake",
+		"/usr/share/cmake-3.21/Modules/GNUInstallDirs.cmake",
+		"/home/conrad/src/SupraFit/external/fmt/support/cmake/cxx14.cmake",
+		"/usr/share/cmake-3.21/Modules/CheckCXXSourceCompiles.cmake",
+		"/usr/share/cmake-3.21/Modules/CheckCXXCompilerFlag.cmake",
+		"/usr/share/cmake-3.21/Modules/CheckCXXCompilerFlag.cmake",
+		"/home/conrad/src/SupraFit/external/fmt/support/cmake/JoinPaths.cmake",
+		"/usr/share/cmake-3.21/Modules/CheckSymbolExists.cmake"
+	],
+	"CMAKE_SOURCE_DIR" : "/home/conrad/src/SupraFit",
+	"DEP_FILE" : "",
+	"DEP_FILE_RULE_NAME" : "",
+	"HEADERS" : 
+	[
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/args.h",
+			"Mu",
+			"4KJVY35SYX/moc_args.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/chrono.h",
+			"Mu",
+			"4KJVY35SYX/moc_chrono.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/color.h",
+			"Mu",
+			"4KJVY35SYX/moc_color.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/compile.h",
+			"Mu",
+			"4KJVY35SYX/moc_compile.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/core.h",
+			"Mu",
+			"4KJVY35SYX/moc_core.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/format-inl.h",
+			"Mu",
+			"4KJVY35SYX/moc_format-inl.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/format.h",
+			"Mu",
+			"4KJVY35SYX/moc_format.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/locale.h",
+			"Mu",
+			"4KJVY35SYX/moc_locale.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/os.h",
+			"Mu",
+			"4KJVY35SYX/moc_os.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/ostream.h",
+			"Mu",
+			"4KJVY35SYX/moc_ostream.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/printf.h",
+			"Mu",
+			"4KJVY35SYX/moc_printf.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/ranges.h",
+			"Mu",
+			"4KJVY35SYX/moc_ranges.cpp",
+			null
+		],
+		[
+			"/home/conrad/src/SupraFit/external/fmt/include/fmt/xchar.h",
+			"Mu",
+			"4KJVY35SYX/moc_xchar.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/home/conrad/src/SupraFit/build/external/fmt/fmt_autogen/include",
+	"MOC_COMPILATION_FILE" : "/home/conrad/src/SupraFit/build/external/fmt/fmt_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"FMT_LOCALE",
+		"GIT_BRANCH=master",
+		"GIT_COMMIT_DATE=Mon, 18 Oct 2021 18:47:34 +0200",
+		"GIT_COMMIT_HASH=388ea28",
+		"GIT_COMMIT_TAG=2.5.76"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/home/conrad/src/SupraFit/build/external/fmt",
+		"/home/conrad/src/SupraFit/external/fmt",
+		"/home/conrad/src/SupraFit/external/fmt/include",
+		"/usr/include/c++/11.1.0",
+		"/usr/include/c++/11.1.0/x86_64-pc-linux-gnu",
+		"/usr/include/c++/11.1.0/backward",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/include",
+		"/usr/local/include",
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/11.1.0/include-fixed",
+		"/usr/include"
+	],
+	"MOC_MACRO_NAMES" : [ "Q_OBJECT", "Q_GADGET", "Q_NAMESPACE", "Q_NAMESPACE_EXPORT" ],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/usr/bin/c++",
+		"-dM",
+		"-E",
+		"-c",
+		"/usr/share/cmake-3.21/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/home/conrad/src/SupraFit/build/external/fmt/fmt_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 4,
+	"PARSE_CACHE_FILE" : "/home/conrad/src/SupraFit/build/external/fmt/CMakeFiles/fmt_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/moc",
+	"QT_UIC_EXECUTABLE" : "",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 2,
+	"SETTINGS_FILE" : "/home/conrad/src/SupraFit/build/external/fmt/CMakeFiles/fmt_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/home/conrad/src/SupraFit/external/fmt/src/format.cc", "Mu", null ],
+		[ "/home/conrad/src/SupraFit/external/fmt/src/os.cc", "Mu", null ]
+	],
+	"VERBOSITY" : 0
+}

@@ -1,0 +1,33 @@
+{
+    "Main": {
+    "InFile" : "test.dat",
+    "OutFile" : "scriptmodel",
+    "Guess" : true,
+    "Fit"   : true,
+    "InputSize" : 1,
+    "Threads" : 12,
+    "Extension" : "json"
+    },
+    "Models" :{
+        "1" :{
+            "ScriptModel" :{
+                "GlobalParameterSize" : 2,
+                "GlobalParameterNames" : "vmax|Km",
+                "LocalParameterSize" : 0,
+                "InputSize"  : 1,
+                "Name" : "Py-Michaelis-Menten-Protoyp",
+                "InputNames" : "S",
+                "DepModelNames": "v",
+                "ChaiScript": {
+                    "1": "def Calculate(int series) ",
+                    "2": "{",
+                    "3": "var vector = [];",
+                    "4": "vector.resize(S.size());",
+                    "6" : "for(var j = 0; j < S.size(); ++j) {vector[j] = (vmax*S[j]/(Km+S[j])); }",
+                    "7": "return vector",
+                    "8": "}"
+                    }
+                }
+            }
+        }
+}

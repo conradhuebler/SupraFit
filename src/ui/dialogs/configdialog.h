@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,68 +17,73 @@
  *
  */
 
-#ifndef CONFIGDIALOG_H
-#define CONFIGDIALOG_H
-#include "src/ui/widgets/optimizerwidget.h"
-#include <QDialog>
-#include <QtWidgets/QLineEdit>
+#pragma once
 
-struct OptimizerConfig;
+#include "src/ui/widgets/optimizerwidget.h"
+
+#include <QtCore/QPointer>
+
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QLineEdit>
 
 class QRadioButton;
 class QTabWidget;
 class QDialogButtonBox;
+class QComboBox;
+class ScientificBox;
 
-
-class OptimizerDialog : public QDialog
-{
+class OptimizerDialog : public QDialog {
     Q_OBJECT
 
 public:
-    OptimizerDialog(OptimizerConfig config, QWidget *parent = 0);
+    OptimizerDialog(QJsonObject config, QWidget* parent = 0);
     ~OptimizerDialog();
-    OptimizerConfig Config() const { return m_opt_widget->Config();}
+    QJsonObject Config() const { return m_opt_widget->Config(); }
+
 private:
     void setUi();
     void createOptimTab();
-    QTabWidget *m_mainwidget;
-    QDialogButtonBox *m_buttons;
-    OptimizerConfig m_opt_config;
-    OptimizerWidget *m_opt_widget;
-    
+    QTabWidget* m_mainwidget;
+    QDialogButtonBox* m_buttons;
+    QJsonObject m_opt_config;
+    OptimizerWidget* m_opt_widget;
 };
 
-
-
-class ConfigDialog : public QDialog
-{
+class ConfigDialog : public QDialog {
     Q_OBJECT
 
 public:
-    ConfigDialog(OptimizerConfig config, int printlevel, const QString &logfile, QWidget *parent = 0);
+    ConfigDialog(QJsonObject config, QWidget* parent = 0);
     ~ConfigDialog();
-    inline OptimizerConfig Config() const { return m_opt_widget->Config();}
-    inline QString LogFile() const {return m_logfile; }
-    inline int PrintLevel() const { return m_printlevel; }
-    virtual void accept();
+    inline QJsonObject Config() const { return m_opt_widget->Config(); }
+    virtual void accept() override;
+
 private:
-    QRadioButton *m_printlevel_0, *m_printlevel_1, *m_printlevel_2, *m_printlevel_3, *m_printlevel_4, *m_printlevel_5;
-    QSpinBox *m_threads;
-    QLineEdit *m_logfileButton;
-    QPushButton *m_selectlogfile;
-    QTabWidget *m_mainwidget;
-    QDialogButtonBox *m_buttons;
+    QRadioButton *m_current_dir, *m_last_dir, *m_working_dir;
+    QSpinBox *m_threads, *m_model_element_cols, *m_XScale, *m_YScale, *m_FontSize, *m_FastConfidenceScaling, *m_FastConfidenceSteps, *m_HistBins, *m_ModuloPointFeedback;
+    QDoubleSpinBox *m_p_value, *m_markerSize, *m_lineWidth, *m_chartScaling, *m_MarkerPointFeedbackSize;
+    QCheckBox *m_transparentChart, *m_cropedChart, *m_ColorFullSearch, *m_advanced_ui, *m_unsafe_copy, *m_overwrite_bins, *m_initialise_random;
+    QLineEdit* m_working;
+    QPushButton* m_select_working;
+    QTabWidget* m_mainwidget;
+    QDialogButtonBox* m_buttons;
+    QComboBox* m_charttheme;
+    QCheckBox *m_animated_charts, *m_auto_confidence, *m_tooltips, *m_ask_on_exit, *m_save_on_exit, *m_series_confidence, *m_RemoveGrid, *m_EmphAxis, *m_auto_thermo_dialog, *m_thermogram_guideline;
+    /* Save Settings Gui Elements */
+    QCheckBox *m_StoreRawData, *m_StoreFileName, *m_StoreAbsolutePath, *m_StoreFileHash, *m_FindFileRecursive, *m_PointFeedback, *m_MarkerPointFeedback;
+
     void setUi();
     void createGeneralTab();
+    void createChartTab();
+    void createStandardCalTab();
     void createOptimTab();
-    OptimizerConfig m_opt_config;
-    OptimizerWidget *m_opt_widget;
-    int m_printlevel;
-    QString m_logfile;
+    void createSaveTab();
+
+    QJsonObject m_opt_config;
+    OptimizerWidget* m_opt_widget;
+    int m_dirlevel;
+    QString m_logfile, m_working_string;
+
 private slots:
-    void SelectLogFile(); 
-
-    
+    void SelectWorkingDir();
 };
-
-#endif // CONFIGDIALOG_H

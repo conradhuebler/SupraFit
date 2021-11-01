@@ -1,0 +1,26 @@
+{
+    "Main": {
+    "Method": 8,
+    "Variance": 0.001,
+    "MaxSteps": 2,
+    "OutFile" : "test",
+    "Guess" : true,
+    "Fit"   : true
+    },
+    "Models" : {
+        "1" : 1,
+        "2" : 2,
+        "3" : 3
+    },
+    "Jobs" :    {
+        "1" : {
+                "Bootstrap": false,
+                "IndependentRowVariance": "0 0",
+                "MaxSteps": 1000,
+                "OriginalData": false,
+                "VarianceSource": "SEy",
+                "Method": 1
+        }
+    }
+
+}

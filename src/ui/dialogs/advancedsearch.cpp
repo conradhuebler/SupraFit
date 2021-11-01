@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,374 +17,313 @@
  *
  */
 
-#include "src/core/AbstractModel.h"
+#include "src/capabilities/globalsearch.h"
+
+#include "src/core/models/AbstractModel.h"
+
 #include "src/core/minimizer.h"
-#include "src/ui/widgets/optimizerflagwidget.h"
-#include "src/ui/widgets/modelwidget.h"
+#include "src/core/toolset.h"
 
-#include <QApplication>
+#include "src/ui/guitools/waiter.h"
 
+#include <QtCore/QDateTime>
+#include <QtCore/QDebug>
 #include <QtCore/QJsonObject>
-#include <QtCore/QThreadPool>
 #include <QtCore/QMutexLocker>
+#include <QtCore/QPointer>
+#include <QtCore/QThreadPool>
+#include <QtCore/QTimer>
 
-#include <QtWidgets/QProgressBar>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QDialog>
 #include <QtWidgets/QDoubleSpinBox>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QDialog>
 #include <QtWidgets/QLineEdit>
-#include <QtWidgets/QGridLayout>
-#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
+#include <QtWidgets/QTabWidget>
 
-#include <QDebug>
 #include <iostream>
 
 #include "advancedsearch.h"
 
-ParameterWidget::ParameterWidget(const QString &name, QWidget* parent) : QGroupBox(QString(tr("Constant: %1").arg(name)),  parent)
+ParameterWidget::ParameterWidget(const QString& name, qreal value, QWidget* parent)
+    : QGroupBox(parent)
+    , m_value(value)
+    , m_name(name)
 {
+    qreal div = value / 5.0;
+    qreal prod = value * 5;
     m_min = new QDoubleSpinBox;
-    m_min->setValue(1);
+    m_min->setMinimum(-1e8);
+    m_min->setMaximum(1e8);
+    m_min->setValue(ToolSet::floor(qMin(div, prod)));
+
     m_max = new QDoubleSpinBox;
-    m_max->setValue(7);
+    m_max->setMinimum(-1e8);
+    m_max->setMaximum(1e8);
+    m_max->setValue(ToolSet::ceil(qMax(div, prod)));
+
     m_step = new QDoubleSpinBox;
-    m_step->setValue(0.25);
+    m_step->setMinimum(0.01);
+    m_step->setMaximum(1e8);
+    m_step->setValue(ToolSet::ceil((m_max->value() - m_min->value()) / 10));
+
+    m_variable = new QCheckBox(tr("Include in variation"));
+    m_variable->setToolTip(tr("If checked, the parameter will be varied according from the start to the end.\nIf unchecked, the current value will be taken."));
+    m_variable->setChecked(true);
+    connect(m_variable, &QCheckBox::stateChanged, m_step, &QDoubleSpinBox::setEnabled);
+    connect(m_variable, &QCheckBox::stateChanged, m_max, &QDoubleSpinBox::setEnabled);
+    connect(m_variable, &QCheckBox::stateChanged, m_min, &QDoubleSpinBox::setEnabled);
+    connect(m_variable, &QCheckBox::stateChanged, this, &ParameterWidget::valueChanged);
+
+    m_optimise = new QCheckBox(tr("Optimise Parameter"));
+    m_optimise->setToolTip(tr("If checked, this parameter will be optimised during fitting process.\nIf unchecked, the parameter will be fixed during fitting, but not necessarily in global search process."));
+    m_optimise->setChecked(true);
+    connect(m_optimise, &QCheckBox::stateChanged, this, &ParameterWidget::checkChanged);
+
     connect(m_min, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_max, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
     connect(m_step, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged()));
-    
-    QGridLayout *layout = new QGridLayout;
-    layout->addWidget(new QLabel(tr("Min")), 0, 0);
-    layout->addWidget(m_min, 0, 1);
-    layout->addWidget(new QLabel(tr("Step")), 1, 0);
-    layout->addWidget(m_step, 1, 1);
-    layout->addWidget(new QLabel(tr("Max")), 2, 0);
-    layout->addWidget(m_max, 2, 1);
+
+    QGridLayout* layout = new QGridLayout;
+
+    m_info = new QLabel(tr("<h4>Parameter: %1 (%2)</h4>").arg(m_name).arg(m_value));
+    layout->addWidget(m_info, 0, 0, 1, 6);
+
+    layout->addWidget(new QLabel(tr("Start:")), 1, 0);
+    layout->addWidget(m_min, 1, 1);
+    layout->addWidget(new QLabel(tr("End:")), 1, 2);
+    layout->addWidget(m_max, 1, 3);
+    layout->addWidget(new QLabel(tr("Step")), 1, 4);
+    layout->addWidget(m_step, 1, 5);
+    layout->addWidget(m_variable,2,0,1,3);
+    layout->addWidget(m_optimise, 2, 4, 1, 3);
     setLayout(layout);
 }
 
-double ParameterWidget::Max() const
+void ParameterWidget::setValue(qreal value)
 {
-    return m_max->value();
+    m_value = value;
+    m_info->setText(tr("<h4>Parameter: %1 (%2)</h4>").arg(m_name).arg(m_value));
 }
 
-double ParameterWidget::Min() const
-{
-    return m_min->value();
-}
-
-double ParameterWidget::Step() const
-{
-    return m_step->value();
-}
-
-
-
-AdvancedSearch::AdvancedSearch(QWidget *parent ) : QDialog(parent), m_minimizer(QSharedPointer<Minimizer>(new Minimizer(this), &QObject::deleteLater))
+AdvancedSearch::AdvancedSearch(QWidget* parent)
+    : QDialog(parent)
 {
     setModal(false);
-    error_max = 0;
+    m_error_max = 0;
+    setWindowTitle("Global Search Dialog");
 }
-
 
 AdvancedSearch::~AdvancedSearch()
 {
+    m_model.clear();
 }
 
 double AdvancedSearch::MaxX() const
 {
-    if(m_model->ConstantSize() >= 1)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinX() const
 {
-    if(m_model->ConstantSize() >= 1)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 1)
         return m_parameter_list[0]->Min();
     return 0;
 }
 
 double AdvancedSearch::MaxY() const
 {
-    if(m_model->ConstantSize() >= 2)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Max();
     return 0;
 }
 
 double AdvancedSearch::MinY() const
 {
-    if(m_model->ConstantSize() >= 2)
+    if (m_model.toStrongRef()->GlobalParameterSize() >= 2)
         return m_parameter_list[1]->Min();
     return 0;
 }
 
 void AdvancedSearch::SetUi()
 {
-    if(m_model.isNull())
+    if (m_model.isNull())
         return;
-    m_minimizer.data()->setModel(m_model);
-    QVBoxLayout *layout = new QVBoxLayout;
-    
-    for(int i = 0; i < m_model->ConstantSize(); ++i)
-    {
-        QPointer<ParameterWidget > widget = new ParameterWidget(m_model->ConstantNames()[i], this);
+
+    m_search = new GlobalSearch(this);
+
+    QVBoxLayout* layout = new QVBoxLayout;
+
+    for (int i = 0; i < m_model.toStrongRef()->GlobalParameterSize(); ++i) {
+        QPointer<ParameterWidget> widget = new ParameterWidget(m_model.toStrongRef()->GlobalParameterName(i), m_model.toStrongRef()->GlobalParameter(i), this);
         layout->addWidget(widget);
+        widget->setEnabled(m_model.toStrongRef()->GlobalEnabled(i));
         connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+
+        connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+            widget->setEnabled(m_model.toStrongRef()->GlobalEnabled(i));
+            widget->setValue(m_model.toStrongRef()->GlobalParameter(i));
+        });
+
+        connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i](int state) {
+            m_model.toStrongRef()->GlobalTable()->setChecked(i, 0, state);
+        });
+
         m_parameter_list << widget;
     }
-    m_optim_flags = new OptimizerFlagWidget;
-    OptimizationType type = static_cast<OptimizationType>(0);
-    type = OptimizationType::ComplexationConstants;
-    m_optim_flags->DisableOptions(type);
-    layout->addWidget(m_optim_flags);
-    m_1d_search = new QPushButton(tr("1D Search"));
-    m_2d_search = new QPushButton(tr("Create 2D Plot"));
+
+    if (!m_model.toStrongRef()->SupportSeries()) {
+        for (int i = 0; i < m_model.toStrongRef()->LocalParameterSize(); ++i) {
+            QPointer<ParameterWidget> widget = new ParameterWidget(m_model.toStrongRef()->LocalParameterName(i), m_model.toStrongRef()->LocalParameter(i, 0), this);
+            layout->addWidget(widget);
+            widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
+            connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+
+            connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, widget, [widget, i, this]() {
+                widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
+                widget->setValue(m_model.toStrongRef()->LocalParameter(i, 0));
+            });
+
+            connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i](int state) {
+                m_model.toStrongRef()->LocalTable()->setChecked(i, 0, state);
+            });
+
+            m_parameter_list << widget;
+        }
+    } else {
+        QTabWidget* tabwidget = new QTabWidget;
+        layout->addWidget(new QLabel("<h4>Series and Local Parameter</h4>"));
+        layout->addWidget(tabwidget);
+
+        for (int j = 0; j < m_model.toStrongRef()->SeriesCount(); ++j) {
+            QWidget* w = new QWidget;
+            QVBoxLayout* vlayout = new QVBoxLayout;
+            w->setLayout(vlayout);
+            for (int i = 0; i < m_model.toStrongRef()->LocalParameterSize(j); ++i) {
+                QPointer<ParameterWidget> widget = new ParameterWidget(m_model.toStrongRef()->LocalParameterName(i), m_model.toStrongRef()->LocalParameter(i, j), this);
+                widget->Disable(true);
+                vlayout->addWidget(widget);
+                widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
+                connect(widget, SIGNAL(valueChanged()), this, SLOT(MaxSteps()));
+
+                connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, widget, [widget, i, this, j]() {
+                    widget->setEnabled(m_model.toStrongRef()->LocalEnabled(i));
+                    widget->setValue(m_model.toStrongRef()->LocalParameter(i, j));
+                });
+
+                connect(widget, &ParameterWidget::checkChanged, m_model.toStrongRef().data(), [this, i, j](int state) {
+                    m_model.toStrongRef()->LocalTable()->setChecked(i, j, state);
+                });
+
+                m_parameter_list << widget;
+            }
+            tabwidget->addTab(w, tr("Series No %1").arg(j + 1));
+        }
+    }
+
     m_scan = new QPushButton(tr("Scan"));
-    connect(m_scan, SIGNAL(clicked()), this, SLOT(GlobalSearch()));
-    connect(m_2d_search, SIGNAL(clicked()), this, SLOT(Create2DPlot()));
-    connect(m_1d_search, SIGNAL(clicked()), this, SLOT(LocalSearch()));
-    
+    m_interrupt = new QPushButton(tr("Interrupt"));
+
+    connect(m_scan, SIGNAL(clicked()), this, SLOT(SearchGlobal()));
+
+    connect(m_interrupt, &QPushButton::clicked, this, &AdvancedSearch::Interrupt, Qt::DirectConnection);
     m_progress = new QProgressBar;
     m_max_steps = new QLabel;
-    QGridLayout *mlayout = new QGridLayout;
-    mlayout->addLayout(layout, 0, 0, 1, 2);
+    QGridLayout* mlayout = new QGridLayout;
+    QScrollArea* scroll = new QScrollArea;
+    scroll->setFixedWidth(560);
+    QWidget* scrollWidget = new QWidget;
+    scrollWidget->setLayout(layout);
+    scroll->setWidget(scrollWidget);
+    mlayout->addWidget(scroll, 0, 0, 1, 2);
     mlayout->addWidget(m_max_steps, 1, 0, 1, 2);
     mlayout->addWidget(m_progress, 2, 0, 1, 2);
-    mlayout->addWidget(m_optim, 3, 0);
-    if(m_model->ConstantSize() == 1)
-        mlayout->addWidget(m_1d_search,3, 1);
+
     mlayout->addWidget(m_scan, 3, 0);
-    if(m_model->ConstantSize() == 2)
-    {
-        mlayout->addWidget(m_2d_search,3, 1);
-    }
-    
-    m_progress->hide();
-    
+    mlayout->addWidget(m_interrupt, 3, 1);
+
+    m_interrupt->hide();
+    connect(this, SIGNAL(setValue(int)), m_progress, SLOT(setValue(int)));
+
     setLayout(mlayout);
-    MaxSteps();
 }
+
 
 void AdvancedSearch::MaxSteps()
 {
+    m_parameter.clear();
+    m_ignored_parameter.clear();
     int max_count = 1;
-    for(int i = 0; i < m_parameter_list.size(); ++i)
-    {
-        double min = 0, max = 0, step = 0;
-        min = m_parameter_list[i]->Min();
-        max = m_parameter_list[i]->Max();
-        step = m_parameter_list[i]->Step();
-        max_count *= (max+step-min)/step;
+    for (int i = 0; i < m_parameter_list.size(); ++i) {
+        double min = m_parameter_list[i]->Value(), max = m_parameter_list[i]->Value(), step = 1, optimise = m_parameter_list[i]->Optimise();
+        if(m_parameter_list[i]->Variable())
+        {
+            if (!m_parameter_list[i]->isEnabled()) {
+                min = m_parameter_list[i]->Value();
+                max = m_parameter_list[i]->Value();
+            } else {
+                min = m_parameter_list[i]->Min();
+                max = m_parameter_list[i]->Max();
+                step = m_parameter_list[i]->Step();
+            }
+        }
+        m_parameter.append(QVector<qreal>() << min << max << step << optimise);
+
+        if (max > min)
+            max_count *= std::ceil((max - min) / step);
     }
     m_max_steps->setText(tr("No of calculations to be done: %1").arg(max_count));
 }
 
-
-QVector<QVector<double> > AdvancedSearch::ParamList() 
+void AdvancedSearch::HideWidget()
 {
-    int max_count = 1;
-    m_time_0 =  QDateTime::currentMSecsSinceEpoch();
-    m_time = 0;
-    QVector< QVector<double > > full_list;
-    for(int i = 0; i < m_parameter_list.size(); ++i)
-    {
-        QVector<double > list;
-        double min = 0, max = 0, step = 0;
-        min = m_parameter_list[i]->Min();
-        max = m_parameter_list[i]->Max();
-        step = m_parameter_list[i]->Step();
-        max_count *= (max+step-min)/step;
-        for(double s = min; s <= max; s += step)
-            list << s;
-        full_list << list;
-    }
-    m_progress->setMaximum(max_count);
-    return full_list;
+    m_scan->show();
+    m_interrupt->hide();
+    hide();
 }
 
-
-void AdvancedSearch::LocalSearch()
+void AdvancedSearch::SearchGlobal()
 {
-    Waiter wait;
-    QVector< QVector<double > > full_list = ParamList();
-    
-    
-    Scan(full_list);
-    emit PlotFinished(2);
-}
+    m_interrupt->show();
+    m_scan->hide();
+    MaxSteps();
+    QJsonObject job;
 
-
-void AdvancedSearch::GlobalSearch()
-{
-    Waiter wait;
-    QVector< QVector<double > > full_list = ParamList();
-    m_models_list.clear();
-    QVector<double > error; 
-    m_type = m_optim_flags->getFlags();   
-    m_type |= OptimizationType::ComplexationConstants;
-    int t0 = QDateTime::currentMSecsSinceEpoch();
-    ConvertList(full_list, error);
-    int t1 = QDateTime::currentMSecsSinceEpoch();
-    std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-    emit MultiScanFinished(1);
-  
-}
-
-void AdvancedSearch::Create2DPlot()
-{
-    Waiter wait;
-    QVector< QVector<double > > full_list = ParamList();
-    
-    QVector<double > error; 
-    m_type = m_optim_flags->getFlags();   
-    if(m_model->ConstantSize() == 2)
-    {
-        int t0 = QDateTime::currentMSecsSinceEpoch();
-        ConvertList(full_list, error);
-        int t1 = QDateTime::currentMSecsSinceEpoch();
-        std::cout << "time for scanning: " << t1-t0 << " msecs." << std::endl;
-        emit PlotFinished(1);
+    job["ParameterSize"] = m_parameter.size();
+    job["Method"] = SupraFit::Method::GlobalSearch;
+    for (int i = 0; i < m_parameter.size(); ++i) {
+        job[QString::number(i)] = ToolSet::DoubleVec2String(m_parameter[i]);
     }
-}
-
-void AdvancedSearch::ConvertList(const QVector<QVector<double> >& full_list, QVector<double > &error)
-{
-    
-    m_progress->setValue(0);
-    m_progress->show();
-    QVector<int > position(full_list.size(), 0);
-    QVector< QVector<double > > input;
-    int maxthreads =qApp->instance()->property("threads").toInt();
-    QVector<QVector<QPointer<NonLinearFitThread> > > threads;
-    QVector<QPointer<NonLinearFitThread> > thread_rows;
-    QThreadPool::globalInstance()->setMaxThreadCount(maxthreads -1 );
-    bool allow_break = false;
-    while(!allow_break)
-    {
-        QApplication::processEvents();
-        QList<double > parameter; //(full_list.size(), 0);
-        for(int j = 0; j < position.size(); ++j)
-            parameter << full_list[j][position[j]];
-        
-        bool temporary = true;
-        for(int i = 0; i < position.size(); ++i)
-        {
-            temporary = temporary && (position[i] == full_list[i].size() - 1);
-        }
-        if(temporary)
-            allow_break = true;
-        m_model->setConstants(parameter);
-        
-        QPointer< NonLinearFitThread > thread = m_minimizer.data()->addJob(m_model, m_type);
-        thread_rows << thread;
-        connect(thread, SIGNAL(finished(int)), this, SLOT(IncrementProgress(int)), Qt::DirectConnection);
-        
-        if(m_model->SupportThreads())
-            QThreadPool::globalInstance()->waitForDone();
-           
-        
-        for(int k = position.size() - 1; k >= 0; --k)
-        {
-            if(position[k] == ( full_list[k].size() - 1) )
-            {
-                position[k] = 0;
-                //                 k--;
-                //                                  if(k >= 0)
-                //                                  {
-                //                     position[k]++;
-                if(position[k] <= full_list[k].size() - 1)
-                {
-                    threads << thread_rows;
-                    thread_rows.clear();
-                    //                         position[k + 1] = 0;
-                }
-                //                     break;
-                //                                 }
-            }
-            else
-            {
-                position[k]++;
-                if(position[k] == full_list[k].size())
-                {
-                    position[k] = 0;
-                    if(k > 0)
-                        position[k - 1]++;
-                }
-                break;
-            }
-        }
-    }
-    if(!m_model->SupportThreads())
-    {
-        QThreadPool::globalInstance()->setMaxThreadCount(maxthreads);
-        QThreadPool::globalInstance()->waitForDone(-1);
-    }
-    for(int i = 0; i < threads.size(); ++i)
-    {
-        QtDataVisualization::QSurfaceDataRow *dataRow1 = new QtDataVisualization::QSurfaceDataRow;
-        for(int j = 0; j < threads[i].size(); ++j)
-        {
-            QList< qreal > parameter = threads[i][j]->Model()->Constants();
-            
-            QJsonObject json = threads[i][j]->ConvergedParameter();
-            m_model->ImportJSON(json);
-            m_model->CalculateSignal();
-            double current_error = m_model->ModelError();
-            error << current_error; 
-            if(error_max < current_error)
-                error_max = current_error;
-            last_result.m_error = error;
-            last_result.m_input = full_list;
-            if(m_type & OptimizationType::ComplexationConstants)
-                m_models_list << json;
-            else
-                *dataRow1 << QVector3D(parameter[0], m_model->ModelError(), parameter[1]);
-            delete threads[i][j];
-        }
-        if(!(m_type & OptimizationType::ComplexationConstants))
-            m_3d_data << dataRow1;
-    }
-    m_progress->hide();
-    return;
-    
-}
-
-
-void AdvancedSearch::Scan(const QVector< QVector<double > >& list)
-{
-    for(int i = 0; i < m_series.size(); ++i)
-        m_series[i].clear();
-    m_series.clear();
-    QVector<double > error;
-    for(int j = 0; j < list.size(); ++j)
-    {
-        QList<QPointF> series;
-        for(int i = 0; i < list[j].size(); ++i)
-        {
-            m_model->setConstants(QList<qreal> () << list[j][i]);
-            m_model->CalculateSignal();
-            error << m_model->ModelError();
-            series.append(QPointF(list[j][i],m_model->ModelError( )));
-        }
-        m_series << series;
-    }
+    emit RunCalculation(job);
 }
 
 void AdvancedSearch::IncrementProgress(int time)
 {
     QMutexLocker locker(&mutex);
     m_time += time;
-    quint64 t0 = QDateTime::currentMSecsSinceEpoch();
+    qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     int val = m_progress->value() + 1;
-    qreal aver = double(m_time)/val;
-    int remain = double(m_progress->maximum() - val)*aver/3000;
-    int used = (t0 - m_time_0)/1000;
+    qreal aver = double(m_time) / val;
+    int remain = double(m_progress->maximum() - val) * aver / 3000;
+    int used = (t0 - m_time_0) / 1000;
     m_max_steps->setText(tr("Remaining time approx: %1 sec., elapsed time: %2 sec. .").arg(remain).arg(used));
-    m_progress->setValue(val);
+    emit setValue(val);
 }
 
+void AdvancedSearch::MaximumSteps(int steps)
+{
+    m_time = 0;
+    m_time_0 = QDateTime::currentMSecsSinceEpoch();
+    m_progress->setValue(0);
+    m_progress->setMaximum(steps);
+}
 
 #include "advancedsearch.moc"

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,19 +17,18 @@
  * 
  */
 
-#ifndef IMPORTDATA_H
-#define IMPORTDATA_H
+#pragma once
 
-#include "src/core/dataclass.h"
+#include "src/core/models/dataclass.h"
 
-
-#include <QtWidgets/QTableWidget>
-#include <QtWidgets/QTableView>
+#include <QtCore/QPointer>
+#include <QtCore/QVector>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QHeaderView>
-#include <QtCore/QVector>
-#include <QtCore/QPointer>
+#include <QtWidgets/QTableView>
+
+#include <src/ui/widgets/DropTable.h>
 
 class QDialogButtonBox;
 class QLineEdit;
@@ -37,51 +36,56 @@ class QPushButton;
 class QSpinBox;
 class QCheckBox;
 
+class DataTable;
 
-class TableView : public QTableView
-{
+class ImportData : public QDialog {
     Q_OBJECT
 
 public:
-    inline TableView() : QTableView() {}
-    inline ~TableView() { }
-    
-protected:
-  virtual void keyPressEvent(QKeyEvent *event);
-    
-};
-
-
-
-class ImportData : public QDialog
-{
-    Q_OBJECT
-
-public:
-    ImportData(const QString &file, QWidget *parent = 0);
-    ImportData(QWidget *parent = 0);
+    ImportData(const QString& file, QWidget* parent = 0);
+    ImportData(QWeakPointer<DataClass> data);
+    ImportData(QWidget* parent = 0);
     ~ImportData();
 
-    inline DataClass getStoredData(){ return *m_storeddata;}
-    
+    inline DataClass getStoredData() { return *m_storeddata; }
+    inline QString ProjectFile() const { return m_projectfile; }
+    inline QJsonObject getProject() const
+    {
+        return m_project;
+    }
+    void setRootDir(const QString& str) { m_root_dir = str; }
+    void setData(const DataTable* model);
+
+    void LoadTable(DataTable* model, int independent = 2);
+    void setSpectraData(const QJsonObject& json);
+
 private:
     void setUi();
-    
-    QPointer<TableView > m_table;
-    QPointer<QLineEdit > m_line;
-    QPointer<QPushButton > m_select, m_export, m_file;
-    QPointer<QSpinBox > m_conc, m_sign;
-    QPointer<QDialogButtonBox > m_buttonbox;
-    QPointer<DataClass > m_storeddata;
-    QPointer<QCheckBox > m_switch_concentration;
-    QString m_filename;
-    
+
+    void WriteData(const DataTable* model, int independent = 2);
+
+    QPointer<DropTable> m_table, m_sec_table;
+    QPointer<QLineEdit> m_line;
+    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra;
+    QPointer<QSpinBox> m_independent_rows, m_dependent_rows;
+    QPointer<QDialogButtonBox> m_buttonbox;
+    QPointer<DataClass> m_storeddata;
+    QPointer<QCheckBox> m_simulation;
+    QString m_filename, m_projectfile;
+    QJsonObject m_raw;
+    DataClassPrivate::DataType m_type = DataClassPrivate::Table;
+    QString m_title, m_root_dir;
+    bool m_single = true;
+    QJsonObject m_systemparameter, m_project;
+
 private slots:
     void LoadFile();
     void SelectFile();
     void ExportFile();
-    void accept();
+    void accept() override;
     void NoChanged();
-};
+    bool ImportThermogram(const QString& filename);
+    bool ImportThermogram();
 
-#endif // IMPORTDATA_H
+    bool ImportSpectra(const QString& filename);
+};
