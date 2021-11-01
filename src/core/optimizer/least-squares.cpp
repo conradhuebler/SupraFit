@@ -1,6 +1,6 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * <Yes another least-squares solver in use.>
+ * Copyright (C) 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,59 +28,36 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <unsupported/Eigen/NonLinearOptimization>
+#include <external/solver/lsqcpp.h>
 
 #include <iostream>
 
 #include "src/core/libmath.h"
+
 typedef QList<qreal> Variables;
 
-template <typename _Scalar, int NX = Eigen::Dynamic, int NY = Eigen::Dynamic>
-
-struct Functor {
-    typedef _Scalar Scalar;
-    enum {
-        InputsAtCompileTime = NX,
-        ValuesAtCompileTime = NY
-    };
-    typedef Eigen::Matrix<Scalar, InputsAtCompileTime, 1> InputType;
-    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, 1> ValueType;
-    typedef Eigen::Matrix<Scalar, ValuesAtCompileTime, InputsAtCompileTime> JacobianType;
-
-    int m_inputs, m_values;
-
-    inline Functor(int inputs, int values)
-        : m_inputs(inputs)
-        , m_values(values)
+// Implement an objective functor.
+struct ParabolicError {
+    void operator()(const Eigen::VectorXd& xval,
+        Eigen::VectorXd& fval,
+        Eigen::MatrixXd&) const
     {
-    }
+        // omit calculation of jacobian, so finite differences will be used
+        // to estimate jacobian numerically
+        fval.resize(ModelSignals.size());
+        //   for(lsq::Index i = 0; i < fval.size(); ++i)
+        //       fval(i) = xval(i*2) * xval(i*2) + xval(i*2+1) * xval(i*2+1);
 
-    int inputs() const { return m_inputs; }
-    int values() const { return m_values; }
-};
-
-struct MyFunctor : Functor<double> {
-    inline MyFunctor(int inputs, int values)
-        : Functor(inputs, values)
-        , no_parameter(inputs)
-        , no_points(values)
-    {
-    }
-    inline ~MyFunctor() {}
-    inline int operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const
-    {
-        std::cout << parameter << std::endl;
+        //std::cout << xval << std::endl;
         QVector<qreal> param(inputs());
         for (int i = 0; i < inputs(); ++i)
-            param[i] = parameter(i);
+            param[i] = xval(i);
         // qDebug() << param;
         model.data()->setParameter(param);
         model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedModel();
         for (int i = 0; i < ModelSignals.size(); ++i)
-            fvec(i) = CalculatedSignals[i] - ModelSignals[i];
-
-        return 0;
+            fval(i) = CalculatedSignals[i] - ModelSignals[i];
     }
     int no_parameter;
     int no_points;
@@ -91,10 +68,7 @@ struct MyFunctor : Functor<double> {
     int values() const { return no_points; }
 };
 
-struct MyFunctorNumericalDiff : Eigen::NumericalDiff<MyFunctor> {
-};
-
-int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
+int LeastSquaresRookfighter(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 {
 
 #ifndef extended_f_test
@@ -128,9 +102,39 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     message += "\n";
     emit model.data()->Info()->Message(message, 5);
     */
+    ParabolicError error;
+    error.model = model;
+    error.ModelSignals = ModelSignals;
+    error.no_parameter = param.size();
+    error.no_points = ModelSignals.size();
+    // Create GradienDescent optimizer with Barzilai Borwein method
+    lsq::LevenbergMarquardt<double, ParabolicError> optimizer;
+    optimizer.setErrorFunction(error);
+
+    // Set number of iterations for levenberg-marquardt.
+    optimizer.setMaxIterationsLM(100);
+
+    // Set number of iterations as stop criterion.
+    optimizer.setMaxIterations(100);
+
+    // Set the minimum length of the gradient.
+    optimizer.setMinGradientLength(1e-6);
+
+    // Set the minimum length of the step.
+    optimizer.setMinStepLength(1e-6);
+
+    // Set the minimum least squares error.
+    optimizer.setMinError(0);
+
+    // Turn verbosity on, so the optimizer prints status updates after each
+    // iteration.
+    optimizer.setVerbosity(0);
+
+    // Set initial guess.
+
+    /*
     MyFunctor functor(param.size(), ModelSignals.size());
-    functor.model = model;
-    functor.ModelSignals = ModelSignals;
+
     Eigen::NumericalDiff<MyFunctor> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<MyFunctor>> lm(numDiff);
     int iter = 0;
@@ -146,6 +150,8 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
     qreal error_0 = 0;
     qreal error_2 = 1;
     qreal norm = 1;
+    */
+    /*
     QVector<qreal> globalConstants;
     for (; iter < MaxIter && ((qAbs(error_0 - error_2) > ErrorConvergence) || norm > DeltaParameter); ++iter) {
         globalConstants.clear();
@@ -161,6 +167,19 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
         for (int i = 0; i < globalConstants.size(); ++i)
             norm += qAbs(globalConstants[i] - constants[i]);
     }
+    */
+
+    // Start the optimization.
+    auto result = optimizer.minimize(parameter);
+
+    //std::cout << "Done! Converged: " << (result.converged ? "true" : "false")
+    //    << " Iterations: " << result.iterations << std::endl;
+
+    // do something with final function value
+    // std::cout << "Final fval: " << result.fval.transpose() << std::endl;
+
+    // do something with final x-value
+    // std::cout << "Final xval: " << result.xval.transpose() << std::endl;
 
     /*
     QString result;
@@ -174,8 +193,8 @@ int NonlinearFit(QWeakPointer<AbstractModel> model, QVector<qreal>& param)
 
     emit model.data()->Info()->Message(result, 4);
     */
-    for (int i = 0; i < functor.inputs(); ++i)
-        param[i] = parameter(i);
-    model.toStrongRef()->setConverged(iter < MaxIter);
-    return iter;
+    for (int i = 0; i < result.xval.size(); ++i)
+        param[i] = result.xval(i);
+    model.toStrongRef()->setConverged(result.iterations < MaxIter);
+    return result.iterations;
 }

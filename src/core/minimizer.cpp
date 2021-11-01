@@ -1,6 +1,6 @@
 /*
  * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2017 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -89,8 +89,8 @@ int NonLinearFitThread::NonLinearFit()
         return 0;
     if (locked.size() == parameter.size())
         m_model->setLockedParameter(locked);
-
-    int iter = NonlinearFit(m_model, parameter);
+    int iter = LeastSquaresRookfighter(m_model, parameter);
+    // int iter = NonlinearFit(m_model, parameter);
     m_sum_error = m_model->SSE();
     m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);

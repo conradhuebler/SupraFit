@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 -2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,6 +97,13 @@ void ChaiInterpreter::UpdateChai()
             vector.push_back(m_input.row(i)[j]);
         chai.set_global(chaiscript::const_var(vector), m_input_names[j].toStdString());
     }
+}
+
+double ChaiInterpreter::Evaluate(const char* c)
+{
+    auto boxed = chai.eval(c);
+    chai.boxed_cast<double>(boxed); // extracts double value from boxed_value and applies known conversions
+    return chaiscript::boxed_cast<double>(boxed);
 }
 
 std::vector<double> ChaiInterpreter::EvaluateChaiSeries(int series)

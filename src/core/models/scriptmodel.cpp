@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/chaiinterpreter.h"
+#include "src/core/models/dukmodelinterpreter.h"
 #include "src/core/models/pymodelinterpreter.h"
 
 #include "src/core/libmath.h"
@@ -94,7 +95,17 @@ void ScriptModel::DefineModel(QJsonObject model)
             m_execute_chai << exec[QString::number(i + 1)].toString();
         m_python = false;
         m_chai = true;
-    } else {
+    }
+
+    if (model.contains("Duktape")) {
+        QJsonObject exec = model["Duktape"].toObject();
+        for (int i = 0; i < exec.size(); ++i)
+            m_execute_duktape << exec[QString::number(i + 1)].toString();
+        m_python = false;
+        m_chai = false;
+        m_duktape = true;
+    }
+    if (!m_python && !m_chai && !m_duktape) {
         emit Message("Nothing to do, lets just start it.", 1);
         return;
     }
@@ -144,10 +155,12 @@ void ScriptModel::InitialGuess_Private()
 
 void ScriptModel::CalculateVariables()
 {
-    if (m_python)
-        CalculatePython();
-    else if (m_chai)
-        CalculateChai();
+    //if (m_python)
+    //    CalculatePython();
+    //else if (m_chai)
+    //   CalculateChai();
+    // else if(m_duktape)
+    CalculateDuktape();
 }
 
 void ScriptModel::CalculatePython()
@@ -179,16 +192,35 @@ void ScriptModel::CalculateChai()
 {
 
 #ifdef _Models
+    DuktapeModelInterpreter interpreter;
+    interpreter.Initialise();
+
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.UpdateChai();
-
+    auto l = GlobalParameter()->Table();
+    //QString calculate = QString("%1*%3/(%2+%3)").arg(l(0,0)).arg(l(0,1)).arg("X");
+    //qDebug() << calculate;
     for (int series = 0; series < SeriesCount(); ++series) {
         std::vector<double> row = m_interp.EvaluateChaiSeries(series);
         for (int i = 0; i < DataPoints(); ++i) {
-            SetValue(i, series, row[i]);
+
+            QString calculate = QString("vmax*%1/(Km+%1)").arg(IndependentModel()->data(0, i));
+
+            //SetValue(i, series, row[i]);
+            SetValue(i, series, m_interp.Evaluate(calculate.toUtf8()));
+            // qDebug() << calculate;
+            // QString result(interpreter.Evaluate(calculate.toUtf8()));
+            // double val = result.toDouble();
+            // SetValue(i, series, val);
+
+            //     qDebug() << val << row[i] << val - row[i];
+            // if(abs(val - row[i]) > 0.5)
+            //     throw 1;
         }
     }
+
+    interpreter.Finalise();
     /*
     for (int i = 0; i < DataPoints(); ++i) {
         for (int j = 0; j < SeriesCount(); ++j) {
@@ -197,6 +229,36 @@ void ScriptModel::CalculateChai()
     }*/
 #else
     emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Chai Script Support."));
+    m_complete = false;
+#endif
+}
+
+void ScriptModel::CalculateDuktape()
+{
+
+#ifdef Use_Duktape
+    DuktapeModelInterpreter interpreter;
+    interpreter.Initialise();
+    std::vector<std::string> list;
+    for (const QString& str : m_global_parameter_names)
+        list.push_back(str.toStdString());
+
+    interpreter.setGlobal(GlobalParameter()->Table(), list);
+    interpreter.Update();
+    for (int series = 0; series < SeriesCount(); ++series) {
+        for (int i = 0; i < DataPoints(); ++i) {
+            QString calculate = QString("vmax*%1/(Km+%1)").arg(IndependentModel()->data(0, i));
+            // QString calculate = QString("%1*%3/(%2+%3)").arg(GlobalParameter()->Table()(0,0)).arg(GlobalParameter()->Table()(0,1)).arg(IndependentModel()->data(0, i));
+            // qDebug() << calculate;
+            QString result(interpreter.Evaluate(calculate.toUtf8()));
+            double val = result.toDouble();
+            SetValue(i, series, val); //row[i]);
+        }
+    }
+    interpreter.Finalise();
+
+#else
+    emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Duktape Script Support."));
     m_complete = false;
 #endif
 }

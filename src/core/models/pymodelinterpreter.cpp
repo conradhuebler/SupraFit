@@ -49,7 +49,6 @@ void PyModelInterpreter::Run(const QString& string)
 void PyModelInterpreter::InitialisePython()
 {
     Py_Initialize();
-    PyEval_InitThreads();
 
     for (int i = 0; i < m_global_names.size(); ++i) {
         Run(QString("del %1").arg(m_global_names[i]));
