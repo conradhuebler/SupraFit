@@ -1,6 +1,0 @@
-/home/conrad/bin/suprafit
-/home/conrad/bin/suprafit_cli
-/home/conrad/lib/libmodels.a
-/home/conrad/lib/libcore.a
-/home/conrad/share/applications/SupraFit.desktop
-/home/conrad/share/icons/pixmaps/SupraFit.png

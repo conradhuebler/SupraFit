@@ -1,2 +1,0 @@
-/usr/bin/ar qc libcutechart.a CMakeFiles/cutechart.dir/cutechart_autogen/mocs_compilation.cpp.o CMakeFiles/cutechart.dir/src/peakcallout.cpp.o CMakeFiles/cutechart.dir/src/chartconfig.cpp.o CMakeFiles/cutechart.dir/src/chartviewprivate.cpp.o CMakeFiles/cutechart.dir/src/chartview.cpp.o CMakeFiles/cutechart.dir/src/listchart.cpp.o CMakeFiles/cutechart.dir/src/series.cpp.o
-/usr/bin/ranlib libcutechart.a
