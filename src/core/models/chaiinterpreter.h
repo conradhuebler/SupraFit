@@ -37,7 +37,7 @@ public:
     void InitialiseChai();
     void UpdateChai();
     double EvaluateChai(int i, int j);
-    double Evaluate(const char* c);
+    double Evaluate(const char *c, int &error);
 
     std::vector<double> EvaluateChaiSeries(int series);
 
@@ -61,7 +61,7 @@ private:
     Eigen::MatrixXd m_input, m_model, m_global_parameter, m_local_parameter;
     QStringList m_global_names, m_local_names, m_input_names;
     QStringList m_execute;
-    chaiscript::ChaiScript chai;
+    chaiscript::ChaiScript m_chaiinterpreter;
     bool m_first = true;
     // std::function<double(int, int)> m_Calculate;
     std::function<std::vector<double>(int)> m_Calculate;

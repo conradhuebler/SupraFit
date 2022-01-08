@@ -50,8 +50,9 @@ public:
 
     void DefineModel(QJsonObject model) override;
 
-    /*! \brief we have only the time as input parameter
-     */
+    void UpdateExecute(const QString &execute);
+    inline QString getExecute() const { return m_chai_execute; }
+
     virtual inline int InputParameterSize() const override { return m_input_size; }
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -60,7 +61,6 @@ public:
         else
             return QString();
     }
-
     virtual inline int LocalParameterSize(int i = 0) const override { return m_local_parameter_size; }
 
     virtual qreal PrintOutIndependent(int i) const override
@@ -86,7 +86,7 @@ private:
     bool m_support_series = false, m_chai = false, m_python = false, m_duktape = false;
     QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
     QStringList m_execute_python, m_execute_chai, m_execute_duktape;
-
+    QString m_chai_execute;
 #ifdef _Models
     ChaiInterpreter m_interp;
 #endif

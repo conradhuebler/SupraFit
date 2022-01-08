@@ -1,146 +1,143 @@
 {
-    "data": {
-        "DataType": 1,
-        "SupraFit": 2002,
-        "content": "",
-        "dependent": {
-            "checked": {
-                "0": "1",
-                "1": "1",
-                "10": "1",
-                "11": "1",
-                "12": "1",
-                "13": "1",
-                "2": "1",
-                "3": "1",
-                "4": "1",
-                "5": "1",
-                "6": "1",
-                "7": "1",
-                "8": "1",
-                "9": "1"
-            },
-            "cols": 1,
-            "data": {
-                "0": "-2",
-                "1": "153",
-                "10": "539",
-                "11": "548",
-                "12": "555",
-                "13": "554",
-                "2": "231",
-                "3": "342",
-                "4": "396",
-                "5": "438",
-                "6": "467",
-                "7": "505",
-                "8": "523",
-                "9": "523"
-            },
-            "header": "1",
-            "rows": 14
-        },
-        "git_commit": "7edaf7f",
-        "independent": {
-            "checked": {
-                "0": "1",
-                "1": "1",
-                "10": "1",
-                "11": "1",
-                "12": "1",
-                "13": "1",
-                "2": "1",
-                "3": "1",
-                "4": "1",
-                "5": "1",
-                "6": "1",
-                "7": "1",
-                "8": "1",
-                "9": "1"
-            },
-            "cols": 1,
-            "data": {
-                "0": "0",
-                "1": "2.5",
-                "10": "70",
-                "11": "80",
-                "12": "90",
-                "13": "100",
-                "2": "5",
-                "3": "10",
-                "4": "15",
-                "5": "20",
-                "6": "30",
-                "7": "40",
-                "8": "50",
-                "9": "60"
-            },
-            "header": "1",
-            "rows": 14
-        },
-        "raw": {
-        },
-        "system": {
-        },
-        "timestamp": 1584346307414,
-        "title": "test",
-        "uuid": "{08c9fb52-c885-4939-95df-49f9ee4f202a}",
-        "xaxis": false
+  "data": {
+    "DataType": 1,
+    "SupraFit": 2002,
+    "content": "",
+    "dependent": {
+      "checked": {
+        "0": "1",
+        "1": "1",
+        "10": "1",
+        "11": "1",
+        "12": "1",
+        "13": "1",
+        "2": "1",
+        "3": "1",
+        "4": "1",
+        "5": "1",
+        "6": "1",
+        "7": "1",
+        "8": "1",
+        "9": "1"
+      },
+      "cols": 1,
+      "data": {
+        "0": "-2",
+        "1": "153",
+        "10": "539",
+        "11": "548",
+        "12": "555",
+        "13": "554",
+        "2": "231",
+        "3": "342",
+        "4": "396",
+        "5": "438",
+        "6": "467",
+        "7": "505",
+        "8": "523",
+        "9": "523"
+      },
+      "header": "1",
+      "rows": 14
     },
-    "model_0": {
-        "ModelDefinition": {
-            "ChaiScript": {
-                "1": "vmax*S/(Km+S)"
-            },
-            "DepModelNames": "v",
-            "GlobalParameterNames": "vmax|Km",
-            "GlobalParameterSize": 2,
-            "InputNames": "S",
-            "InputSize": 1,
-            "LocalParameterSize": 0,
-            "Name": "ChaiScript Michaelis-Menten-Model"
+    "git_commit": "7edaf7f",
+    "independent": {
+      "checked": {
+        "0": "1",
+        "1": "1",
+        "10": "1",
+        "11": "1",
+        "12": "1",
+        "13": "1",
+        "2": "1",
+        "3": "1",
+        "4": "1",
+        "5": "1",
+        "6": "1",
+        "7": "1",
+        "8": "1",
+        "9": "1"
+      },
+      "cols": 1,
+      "data": {
+        "0": "0",
+        "1": "2.5",
+        "10": "70",
+        "11": "80",
+        "12": "90",
+        "13": "100",
+        "2": "5",
+        "3": "10",
+        "4": "15",
+        "5": "20",
+        "6": "30",
+        "7": "40",
+        "8": "50",
+        "9": "60"
+      },
+      "header": "1",
+      "rows": 14
+    },
+    "raw": {},
+    "system": {},
+    "timestamp": 1584346307414,
+    "title": "test",
+    "uuid": "{08c9fb52-c885-4939-95df-49f9ee4f202a}",
+    "xaxis": false
+  },
+  "model_0": {
+    "ModelDefinition": {
+      "ChaiScript": {
+        "1": "var l = 1 + 1",
+        "2": "vmax*S/(Km+S) + l - l"
+      },
+      "DepModelNames": "v",
+      "GlobalParameterNames": "vmax|Km",
+      "GlobalParameterSize": 2,
+      "InputNames": "S",
+      "InputSize": 1,
+      "LocalParameterSize": 0,
+      "Name": "ChaiScript Michaelis-Menten-Model"
+    },
+    "SAE": 53.280240640243335,
+    "SSE": 298.07402958188385,
+    "SupraFit": 2002,
+    "converged": true,
+    "data": {
+      "active_series": "1",
+      "globalParameter": {
+        "checked": {
+          "0": "1 1"
         },
-        "SAE": 53.280240640243335,
-        "SSE": 298.07402958188385,
-        "SupraFit": 2002,
-        "converged": true,
+        "cols": 2,
         "data": {
-            "active_series": "1",
-            "globalParameter": {
-                "checked": {
-                    "0": "1 1"
-                },
-                "cols": 2,
-                "data": {
-                    "0": "597.603 7.60665"
-                },
-                "header": "vmax|Km",
-                "rows": 1
-            },
-            "localParameter": {
-                "checked": {
-                    "0": ""
-                },
-                "cols": 0,
-                "data": {
-                    "0": ""
-                },
-                "header": "",
-                "rows": 1
-            },
-            "locked": "1 1",
-            "methods": {
-                "0": {
-                }
-            }
+          "0": "597.603 7.60665"
         },
-        "mean_error": 0.05429655366619711,
-        "model": 100,
-        "name": "ChaiScript Michaelis-Menten-Model",
-        "options": {
+        "header": "vmax|Km",
+        "rows": 1
+      },
+      "localParameter": {
+        "checked": {
+          "0": ""
         },
-        "standard_error": 1.2796650402246699,
-        "valid": true,
-        "variance": 22.925596612424883
-    }
+        "cols": 0,
+        "data": {
+          "0": ""
+        },
+        "header": "",
+        "rows": 1
+      },
+      "locked": "1 1",
+      "methods": {
+        "0": {}
+      }
+    },
+    "mean_error": 0.05429655366619711,
+    "model": 100,
+    "name": "ChaiScript Michaelis-Menten-Model",
+    "options": {},
+    "standard_error": 1.2796650402246699,
+    "valid": true,
+    "variance": 22.925596612424883
+  }
 }
