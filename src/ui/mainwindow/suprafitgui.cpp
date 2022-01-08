@@ -177,11 +177,12 @@ SupraFitGui::SupraFitGui()
     m_recent_documents = new QListWidget;
     connect(m_recent_documents, &QListWidget::itemDoubleClicked, m_recent_documents, [this](const QListWidgetItem* item) {
         const QString str = item->data(Qt::UserRole).toString();
-        QStringList recent = qApp->instance()->property("recent").toStringList();
-        recent.removeOne(str);
-        recent.prepend(str);
-        qApp->instance()->setProperty("recent", recent);
-        LoadFile(item->data(Qt::UserRole).toString());
+        UpdateRecentListProperty(str);
+        //QStringList recent = qApp->instance()->property("recent").toStringList();
+        //recent.removeOne(str);
+        //recent.prepend(str);
+        //qApp->instance()->setProperty("recent", recent);
+        LoadFile(str);
         UpdateRecentList();
     });
     //m_recent_documents->setMaximumWidth(200);
@@ -540,7 +541,8 @@ void SupraFitGui::LoadFile(const QString& file)
         if (!invalid_json) {
             m_mainsplitter->setGraphicsEffect(NULL);
             QTimer::singleShot(1, m_splash, &QSplashScreen::close);
-
+            UpdateRecentListProperty(file);
+            UpdateRecentList();
             return;
         }
     } else {

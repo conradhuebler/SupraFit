@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include "src/core/models/dataclass.h"
 
 #include "src/core/models/chaiinterpreter.h"
+#include "src/core/models/dukmodelinterpreter.h"
 
 class ScriptModel : public AbstractModel {
     Q_OBJECT
@@ -88,6 +89,9 @@ private:
 
 #ifdef _Models
     ChaiInterpreter m_interp;
+#endif
+#ifdef Use_Duktape
+     DuktapeModelInterpreter m_duktapeinterp;
 #endif
 
     void CalculateChai();

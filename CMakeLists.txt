@@ -5,6 +5,7 @@ project(SupraFit
 # set the module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
+set(QT_FEATURE_intelcet ON)
 
 # As moc files are generated in the binary dir, tell CMake
 # to always look for includes there:

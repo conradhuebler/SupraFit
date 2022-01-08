@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 -2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 
 #include <QtDebug>
 
+//#define CHAISCRIPT_NO_THREADS
+
 #include <chaiscript/chaiscript.hpp>
 #include <chaiscript/chaiscript_threading.hpp>
 #include <external/ChaiScript_Extras/include/chaiscript/extras/math.hpp>
@@ -33,8 +35,8 @@
 
 ChaiInterpreter::ChaiInterpreter()
 {
-    chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
-    chai.add(chaiscript::vector_conversion<std::vector<double>>());
+    //chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
+    //chai.add(chaiscript::vector_conversion<std::vector<double>>());
     //chai.add(chaiscript::vector_conversion<std::vector<chaiscript::Boxed_Value>>());
 
     /*
@@ -80,9 +82,9 @@ void ChaiInterpreter::InitialiseChai()
 
     //  for (const QString& string : m_execute)
     //      chai.eval(string.toStdString());
-    chai.eval(m_execute.join("\n").toStdString());
+    //chai.eval(m_execute.join("\n").toStdString());
     //m_Calculate = chai.eval<std::function<double(int, int)>>("Calculate");
-    m_Calculate = chai.eval<std::function<std::vector<double>(int)>>("Calculate");
+    //m_Calculate = chai.eval<std::function<std::vector<double>(int)>>("Calculate");
 }
 
 void ChaiInterpreter::UpdateChai()

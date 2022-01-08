@@ -89,8 +89,8 @@ int NonLinearFitThread::NonLinearFit()
         return 0;
     if (locked.size() == parameter.size())
         m_model->setLockedParameter(locked);
-    int iter = LeastSquaresRookfighter(m_model, parameter);
-    // int iter = NonlinearFit(m_model, parameter);
+    //int iter = LeastSquaresRookfighter(m_model, parameter);
+    int iter = NonlinearFit(m_model, parameter);
     m_sum_error = m_model->SSE();
     m_statistic_vector = m_model->StatisticVector();
     m_last_parameter = m_model->ExportModel(m_exc_statistics);

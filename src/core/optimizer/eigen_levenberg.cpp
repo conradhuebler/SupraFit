@@ -69,11 +69,9 @@ struct MyFunctor : Functor<double> {
     inline ~MyFunctor() {}
     inline int operator()(const Eigen::VectorXd& parameter, Eigen::VectorXd& fvec) const
     {
-        std::cout << parameter << std::endl;
         QVector<qreal> param(inputs());
         for (int i = 0; i < inputs(); ++i)
             param[i] = parameter(i);
-        // qDebug() << param;
         model.data()->setParameter(param);
         model.data()->Calculate();
         Variables CalculatedSignals = model.data()->getCalculatedModel();
