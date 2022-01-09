@@ -16,3 +16,4 @@
 #cmakedefine extended_f_test
 #cmakedefine _Python
 #cmakedefine _Models
+#cmakedefine Use_Duktape

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/chaiinterpreter.h"
+#include "src/core/models/dukmodelinterpreter.h"
 #include "src/core/models/pymodelinterpreter.h"
 
 #include "src/core/libmath.h"
@@ -89,12 +90,26 @@ void ScriptModel::DefineModel(QJsonObject model)
         m_python = true;
     }
     if (model.contains("ChaiScript")) {
-        QJsonObject exec = model["ChaiScript"].toObject();
+      // m_execute_chai.clear();
+      QStringList strings;
+      QJsonObject exec = model["ChaiScript"].toObject();
+      for (const QString &key : exec.keys())
+        // for (int i = 0; i < exec.size(); ++i)
+        strings << exec[key].toString();
+      m_chai_execute = strings.join("\n");
+      m_python = false;
+      m_chai = true;
+    }
+
+    if (model.contains("Duktape")) {
+        QJsonObject exec = model["Duktape"].toObject();
         for (int i = 0; i < exec.size(); ++i)
-            m_execute_chai << exec[QString::number(i + 1)].toString();
+            m_execute_duktape << exec[QString::number(i + 1)].toString();
         m_python = false;
-        m_chai = true;
-    } else {
+        m_chai = false;
+        m_duktape = true;
+    }
+    if (!m_python && !m_chai && !m_duktape) {
         emit Message("Nothing to do, lets just start it.", 1);
         return;
     }
@@ -121,6 +136,19 @@ void ScriptModel::DefineModel(QJsonObject model)
     m_interp.setExecute(m_execute_chai);
     m_interp.InitialiseChai();
 #endif
+
+#ifdef Use_Duktape
+    m_duktapeinterp.Initialise();
+#endif
+}
+
+void ScriptModel::UpdateExecute(const QString &execute) {
+  m_chai_execute = execute;
+  QJsonObject json;
+  QStringList lines = m_chai_execute.split("\n");
+  for (int i = 0; i < lines.size(); ++i)
+    json[QString::number(i)] = lines[i];
+  m_model_definition["ChaiScript"] = json;
 }
 
 void ScriptModel::InitialGuess_Private()
@@ -144,10 +172,12 @@ void ScriptModel::InitialGuess_Private()
 
 void ScriptModel::CalculateVariables()
 {
-    if (m_python)
-        CalculatePython();
-    else if (m_chai)
-        CalculateChai();
+    //if (m_python)
+    //    CalculatePython();
+    //else if (m_chai)
+    CalculateChai();
+    // else if(m_duktape)
+    //CalculateDuktape();
 }
 
 void ScriptModel::CalculatePython()
@@ -177,26 +207,66 @@ void ScriptModel::CalculatePython()
 
 void ScriptModel::CalculateChai()
 {
-
 #ifdef _Models
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.UpdateChai();
-
+    // QString execute = m_execute_chai.join("\n");
     for (int series = 0; series < SeriesCount(); ++series) {
-        std::vector<double> row = m_interp.EvaluateChaiSeries(series);
         for (int i = 0; i < DataPoints(); ++i) {
-            SetValue(i, series, row[i]);
+          QString cache = m_chai_execute;
+          for (int parameter = 0; parameter < InputParameterSize();
+               ++parameter) {
+            cache.replace(
+                m_input_names[parameter],
+                QString::number((IndependentModel()->data(parameter, i))));
+          }
+          int error = 0;
+          double result = m_interp.Evaluate(cache.toUtf8(), error);
+          if (error == 1) {
+            cache.replace("var", "");
+            result = m_interp.Evaluate(cache.toUtf8(), error);
+          }
+          SetValue(i, series, result);
         }
     }
-    /*
-    for (int i = 0; i < DataPoints(); ++i) {
-        for (int j = 0; j < SeriesCount(); ++j) {
-            SetValue(i, j, m_interp.EvaluateChai(j, i));
-        }
-    }*/
 #else
     emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Chai Script Support."));
+    m_complete = false;
+#endif
+}
+
+void ScriptModel::CalculateDuktape()
+{
+
+#ifdef Use_Duktape
+QString execute = m_execute_chai.join("\n");
+    std::vector<std::string> list;
+    for (const QString& str : m_global_parameter_names)
+        list.push_back(str.toStdString());
+
+    m_duktapeinterp.setGlobal(GlobalParameter()->Table(), list);
+    m_duktapeinterp.Update();
+    for (int series = 0; series < SeriesCount(); ++series) {
+        for (int i = 0; i < DataPoints(); ++i) {
+            //QString calculate = QString("%1*%2/(%3+%2)").arg(km).arg(IndependentModel()->data(0, i)).arg(vmax);
+            QString calculate = QString("vmax*%1/(Km+%1)").arg(IndependentModel()->data(0, i));
+
+            // QString calculate = QString("%1*%3/(%2+%3)").arg(GlobalParameter()->Table()(0,0)).arg(GlobalParameter()->Table()(0,1)).arg(IndependentModel()->data(0, i));
+            // qDebug() << calculate;
+            QString t = m_execute_chai[0];
+            QString cache = execute;
+            cache.replace("S", QString::number((IndependentModel()->data(0, i))));
+            QString result(m_duktapeinterp.Evaluate(cache.toUtf8()));
+            //QString result(m_duktapeinterp.Evaluate(calculate.toUtf8()));
+            double val = result.toDouble();
+            SetValue(i, series, val); //row[i]);
+        }
+    }
+    // m_duktapeinterp.Finalise();
+
+#else
+    emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Duktape Script Support."));
     m_complete = false;
 #endif
 }

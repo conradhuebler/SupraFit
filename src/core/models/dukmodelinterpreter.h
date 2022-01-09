@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,53 +17,51 @@
  *
  */
 
-#pragma once
-
 #include "src/global_config.h"
 
-#ifdef _Models
-#include <chaiscript/chaiscript.hpp>
+#ifdef Use_Duktape
+#pragma once
 
-#include <QtCore/QStringList>
+#include <duk_config.h>
+#include <duktape.h>
+
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 
 typedef Eigen::MatrixXd Matrix;
 
-class ChaiInterpreter {
+class DuktapeModelInterpreter {
 public:
-    ChaiInterpreter();
+    DuktapeModelInterpreter();
+    ~DuktapeModelInterpreter();
 
-    void InitialiseChai();
-    void UpdateChai();
-    double EvaluateChai(int i, int j);
-    double Evaluate(const char *c, int &error);
+    void Initialise();
+    double Evaluate(int i, int j);
+    const char* Evaluate(const char* c);
+    void Finalise();
 
-    std::vector<double> EvaluateChaiSeries(int series);
-
-    void AdressFunction(void* function, const QString& name);
     void setInput(const Matrix& matrix) { m_input = matrix; }
     void setModel(const Matrix& matrix) { m_model = matrix; }
-    void setGlobal(const Matrix& matrix, const QStringList& names)
+
+    void setGlobal(const Matrix& matrix, const std::vector<std::string>& names)
     {
         m_global_parameter = matrix;
         m_global_names = names;
     }
+    void Update();
+
     void setLocal(const Matrix& matrix) { m_local_parameter = matrix; }
 
-    void setExecute(const QStringList& execute) { m_execute = execute; }
-    void setInputNames(const QStringList& name) { m_input_names = name; }
-    double Input(int i, int j) const;
-    double Model(int i, int j) const;
+    //void setExecute(const QStringList& execute) { m_execute = execute; }
+    //void Run(const QString& string);
 
 private:
-    int m_index = 0, m_counter = 0;
+    int m_index = 0;
     Eigen::MatrixXd m_input, m_model, m_global_parameter, m_local_parameter;
-    QStringList m_global_names, m_local_names, m_input_names;
-    QStringList m_execute;
-    chaiscript::ChaiScript m_chaiinterpreter;
-    bool m_first = true;
-    // std::function<double(int, int)> m_Calculate;
-    std::function<std::vector<double>(int)> m_Calculate;
+    std::vector<std::string> m_global_names, m_local_names;
+    //  QStringList m_execute;
+    duk_context* m_dukectx;
 };
 #endif

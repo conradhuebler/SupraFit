@@ -149,7 +149,8 @@ private:
 
     JobManager* m_jobmanager;
 
-    QPointer<QWidget> m_global_parameter, m_model_parameter, m_model_options, m_system_parameter, m_chai_widget;
+    QPointer<QWidget> m_global_parameter, m_model_parameter, m_model_options,
+        m_system_parameter, m_chai_widget, m_chai_execute;
     virtual QSize minimumSizeHint() const override { return QSize(800, 600); }
 
 private slots:

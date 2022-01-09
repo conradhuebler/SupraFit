@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -328,11 +328,23 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     if (m_model->SystemParameterCount())
         model_tab->addTab(m_system_parameter, "System Parameter");
     if (m_model->SFModel() == SupraFit::ScriptModel) {
-        QTextEdit* edit = new QTextEdit;
-        QJsonDocument doc(m_model->ScriptDefinition());
-        edit->setMarkdown(QString("```json\n %1 \n```").arg(QString(doc.toJson(QJsonDocument::Indented))));
-        m_chai_widget = edit;
-        model_tab->addTab(m_chai_widget, "Model Definition");
+      // QWidget *scriptoverview = new QWidget;
+      QTextEdit *execute = new QTextEdit;
+      QGridLayout *layout = new QGridLayout;
+      layout->addWidget(execute, 0, 0);
+      connect(execute, &QTextEdit::textChanged, this, [this, execute]() {
+        qobject_cast<ScriptModel *>(m_model.data())
+            ->UpdateExecute(execute->document()->toPlainText());
+        m_model->Calculate();
+      });
+      execute->setText(
+          qobject_cast<ScriptModel *>(m_model.data())->getExecute());
+      // QTextEdit* edit = new QTextEdit;
+      // QJsonDocument doc(m_model->ScriptDefinition());
+      // edit->setMarkdown(QString("```json\n %1
+      // \n```").arg(QString(doc.toJson(QJsonDocument::Indented))));
+      m_chai_widget = execute;
+      model_tab->addTab(m_chai_widget, "Model Definition");
     }
 
     m_splitter->addWidget(model_tab);
@@ -414,7 +426,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
     connect(m_statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->AddSingleJob(job);
         this->m_jobmanager->RunJobs();
     });
     connect(m_jobmanager, &JobManager::ShowResult, this, [this](SupraFit::Method type, int index) {
@@ -429,7 +441,7 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     //connect(m_advancedsearch, &AdvancedSearch::Interrupt, m_jobmanager, &JobManager::Interrupt); //, Qt::DirectConnection);
     connect(m_advancedsearch, &AdvancedSearch::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->AddSingleJob(job);
         this->m_jobmanager->RunJobs();
     });
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -654,14 +666,14 @@ void ModelWidget::FastConfidence()
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
     job["Method"] = SupraFit::Method::FastConfidence;
 
-    m_jobmanager->AddJob(job);
+    m_jobmanager->AddSingleJob(job);
     m_jobmanager->RunJobs();
 }
 
 void ModelWidget::setJob(const QJsonObject& job)
 {
     Waiter wait;
-    m_jobmanager->AddJob(job);
+    m_jobmanager->AddSingleJob(job);
     m_jobmanager->RunJobs();
 }
 

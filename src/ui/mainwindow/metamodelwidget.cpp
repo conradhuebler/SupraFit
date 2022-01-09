@@ -197,7 +197,7 @@ void MetaModelWidget::ToggleStatisticDialog()
     connect(statistic_dialog, &StatisticDialog::Interrupt, m_jobmanager, &JobManager::Interrupt);
     connect(statistic_dialog, &StatisticDialog::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->AddSingleJob(job);
         this->m_jobmanager->RunJobs();
     });
 
@@ -222,7 +222,7 @@ void MetaModelWidget::FastConfidence()
     job["IncludeSeries"] = qApp->instance()->property("series_confidence").toBool();
     job["Method"] = SupraFit::Method::FastConfidence;
 
-    m_jobmanager->AddJob(job);
+    m_jobmanager->AddSingleJob(job);
     m_jobmanager->RunJobs();
 }
 
@@ -233,7 +233,7 @@ void MetaModelWidget::OpenAdvancedSearch()
 
     connect(advancedsearch, &AdvancedSearch::RunCalculation, m_jobmanager, [this](const QJsonObject& job) {
         QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        this->m_jobmanager->AddJob(job);
+        this->m_jobmanager->AddSingleJob(job);
         this->m_jobmanager->RunJobs();
     });
 

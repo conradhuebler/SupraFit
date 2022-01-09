@@ -16,3 +16,9 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt
+[submodule "external/duktape"]
+	path = external/duktape
+	url = https://github.com/svaarala/duktape
+[submodule "external/least-squares-cpp"]
+	path = external/least-squares-cpp
+	url = https://github.com/Rookfighter/least-squares-cpp

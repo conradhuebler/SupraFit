@@ -164,6 +164,13 @@ class QString;
 
 extern QString collective_messages;
 
+inline void UpdateRecentListProperty(const QString &file)
+{
+    QStringList recent = qApp->instance()->property("recent").toStringList();
+    recent.removeOne(file);
+    recent.prepend(file);
+    qApp->instance()->setProperty("recent", recent);
+}
 QString getDir();
 void setLastDir(const QString& str);
 

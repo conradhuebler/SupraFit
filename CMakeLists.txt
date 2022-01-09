@@ -60,8 +60,8 @@ option (_Python
 option (_Models
     "Enable custom models" OFF)
 
-option (Use_Qt5
-    "Use Qt5 instead of Qt6" OFF)
+option (Use_Duktape
+    "Use Duktape script engine" OFF )
 
 # Get the current working branch
 execute_process(
@@ -140,9 +140,6 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 find_package(Qt6 6.2 COMPONENTS Core Widgets Charts)
-if (NOT Qt6_FOUND)
-    find_package(Qt5 5.15 COMPONENTS Core Widgets Charts REQUIRED)
-endif()
 
 if(_Python)
     find_package(PythonLibs)
@@ -168,6 +165,10 @@ configure_file(
   "${CMAKE_BINARY_DIR}/src/version.h"
 )
 
+if(Use_Duktape)
+    include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/external/duktape/src)
+endif()
+
 # include the charts, which where formerly part of SupraFit
 add_subdirectory(external/CuteChart)
 
@@ -176,6 +177,7 @@ set(core_SRC
     src/core/equil.cpp
     src/core/libmath.cpp
     src/core/minimizer.cpp
+    src/core/optimizer/least-squares.cpp
     src/core/optimizer/eigen_levenberg.cpp
     src/capabilities/resampleanalyse.cpp
     src/capabilities/abstractsearchclass.cpp
@@ -193,6 +195,8 @@ set(core_SRC
     src/core/spectrahandler.cpp
     src/global.cpp
 )
+
+
 
 IF(_Python)
     set(python_SRC
@@ -251,6 +255,15 @@ set(models_SRC
     src/core/models/titrations/uv_vis/uv_vis_2_1_1_1_Model.cpp
  )
 
+IF(Use_Duktape)
+    set(duke_SRC
+        external/duktape/src/duktape.c
+        src/core/models/dukmodelinterpreter.cpp
+        )
+    set_source_files_properties(external/duktape/src/duktape.c PROPERTIES LANGUAGE CXX)
+    add_library(duke SHARED ${duke_SRC})
+ENDIF()
+
 if(_Python)
     add_library(models SHARED ${models_SRC})
 else()
@@ -258,6 +271,10 @@ else()
 endif()
 
 target_link_libraries(models Qt::Core ${PYTHON_LIBRARIES})
+
+IF(Use_Duktape)
+    target_link_libraries(models duke)
+ENDIF()
 
 add_subdirectory(src/ui)
 
@@ -356,9 +373,6 @@ set_target_properties(models PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${target_dir} )
 target_link_libraries(suprafit suprafit_gui models core cutechart fmt::fmt-header-only)
 
 target_link_libraries(suprafit_cli models core fmt::fmt-header-only)
-
-
-
 
 if(testing)
     enable_testing()

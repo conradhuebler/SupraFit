@@ -132,7 +132,7 @@ void JobManager::RunJobs()
     emit AllFinished();
 }
 
-void JobManager::AddJob(const QJsonObject& job)
+void JobManager::AddSingleJob(const QJsonObject& job)
 {
     if (!job.contains("Repeat"))
         m_jobs << job;

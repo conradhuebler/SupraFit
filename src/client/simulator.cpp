@@ -128,7 +128,7 @@ QStringList Simulator::Generate()
                     for (const QString& j : m_jobs.keys()) {
                         QJsonObject job = m_jobs[j].toObject();
                         manager->setModel(models[model_index]);
-                        manager->AddJob(job);
+                        manager->AddSingleJob(job);
                         manager->RunJobs();
                         std::cout << "... model  " << model_index << " job done!" << std::endl;
                     }
@@ -206,7 +206,7 @@ QJsonObject Simulator::PerformeJobs(const QJsonObject& data)
                 for (const QString& j : m_jobs.keys()) {
                     QJsonObject single_job = m_jobs[j].toObject();
                     manager->setModel(m[model_index]);
-                    manager->AddJob(single_job);
+                    manager->AddSingleJob(single_job);
                     manager->RunJobs();
                     std::cout << "... model  " << model_index << " job done!" << std::endl;
 

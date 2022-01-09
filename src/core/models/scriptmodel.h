@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include "src/core/models/dataclass.h"
 
 #include "src/core/models/chaiinterpreter.h"
+#include "src/core/models/dukmodelinterpreter.h"
 
 class ScriptModel : public AbstractModel {
     Q_OBJECT
@@ -45,12 +46,13 @@ public:
     virtual void InitialGuess_Private() override;
     virtual QSharedPointer<AbstractModel> Clone(bool statistics = true) override;
     virtual bool SupportThreads() const override { return true; }
-    virtual bool PreventThreads() const override { return true; }
+    virtual bool PreventThreads() const override { return false; }
 
     void DefineModel(QJsonObject model) override;
 
-    /*! \brief we have only the time as input parameter
-     */
+    void UpdateExecute(const QString &execute);
+    inline QString getExecute() const { return m_chai_execute; }
+
     virtual inline int InputParameterSize() const override { return m_input_size; }
     virtual inline QString GlobalParameterName(int i = 0) const override
     {
@@ -59,8 +61,7 @@ public:
         else
             return QString();
     }
-
-    virtual int LocalParameterSize(int i = 0) const override { return m_local_parameter_size; }
+    virtual inline int LocalParameterSize(int i = 0) const override { return m_local_parameter_size; }
 
     virtual qreal PrintOutIndependent(int i) const override
     {
@@ -82,16 +83,20 @@ public:
 private:
     QString m_ylabel = QString(), m_xlabel = QString();
     int m_input_size = 0, m_global_parameter_size = 0, m_local_parameter_size = 0;
-    bool m_support_series = false, m_chai = false, m_python = false;
+    bool m_support_series = false, m_chai = false, m_python = false, m_duktape = false;
     QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
-    QStringList m_execute_python, m_execute_chai;
-
+    QStringList m_execute_python, m_execute_chai, m_execute_duktape;
+    QString m_chai_execute;
 #ifdef _Models
     ChaiInterpreter m_interp;
+#endif
+#ifdef Use_Duktape
+     DuktapeModelInterpreter m_duktapeinterp;
 #endif
 
     void CalculateChai();
     void CalculatePython();
+    void CalculateDuktape();
 
 protected:
     virtual void CalculateVariables() override;

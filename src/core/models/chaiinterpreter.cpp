@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2020 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,10 @@
 
 #include <QtDebug>
 
+//#define CHAISCRIPT_NO_THREADS
+
 #include <chaiscript/chaiscript.hpp>
-#include <chaiscript/chaiscript_threading.hpp>
+//#include <chaiscript/chaiscript_threading.hpp>
 #include <external/ChaiScript_Extras/include/chaiscript/extras/math.hpp>
 
 #include <iostream>
@@ -33,19 +35,23 @@
 
 ChaiInterpreter::ChaiInterpreter()
 {
-    chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
-    chai.add(chaiscript::vector_conversion<std::vector<double>>());
-    //chai.add(chaiscript::vector_conversion<std::vector<chaiscript::Boxed_Value>>());
+  auto mathlib = chaiscript::extras::math::bootstrap();
+  m_chaiinterpreter.add(mathlib);
 
-    /*
-    chai.add(chaiscript::type_conversion<std::vector<chaiscript::Boxed_Value>, std::vector<std::vector<double>>> ([](const std::vector<chaiscript::Boxed_Value> &t_bvs)
-    {   std::vector<std::vector<double>> ret;
-        for (const auto& bv : t_bvs) {
-          ret.emplace_back (chaiscript::boxed_cast<std::vector<double>> (bv));
-        }
-        return ret;
-      }));
-      */
+  // chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
+  // chai.add(chaiscript::vector_conversion<std::vector<double>>());
+  // chai.add(chaiscript::vector_conversion<std::vector<chaiscript::Boxed_Value>>());
+
+  /*
+  chai.add(chaiscript::type_conversion<std::vector<chaiscript::Boxed_Value>,
+  std::vector<std::vector<double>>> ([](const
+  std::vector<chaiscript::Boxed_Value> &t_bvs) {
+  std::vector<std::vector<double>> ret; for (const auto& bv : t_bvs) {
+        ret.emplace_back (chaiscript::boxed_cast<std::vector<double>> (bv));
+      }
+      return ret;
+    }));
+    */
 }
 
 void ChaiInterpreter::AdressFunction(void* function, const QString& name)
@@ -72,31 +78,53 @@ void ChaiInterpreter::InitialiseChai()
     std::vector<double> vector;
 
     for (int i = 0; i < m_global_names.size(); ++i) {
-        chai.add_global_const(chaiscript::const_var(m_global_parameter(0, i)), m_global_names[i].toStdString());
+      m_chaiinterpreter.add_global_const(
+          chaiscript::const_var(m_global_parameter(0, i)),
+          m_global_names[i].toStdString());
     }
 
     for (const QString& name : m_input_names)
-        chai.add_global_const(chaiscript::const_var(vector), name.toStdString());
+      m_chaiinterpreter.add_global_const(chaiscript::const_var(vector),
+                                         name.toStdString());
 
     //  for (const QString& string : m_execute)
     //      chai.eval(string.toStdString());
-    chai.eval(m_execute.join("\n").toStdString());
+    //chai.eval(m_execute.join("\n").toStdString());
     //m_Calculate = chai.eval<std::function<double(int, int)>>("Calculate");
-    m_Calculate = chai.eval<std::function<std::vector<double>(int)>>("Calculate");
+    //m_Calculate = chai.eval<std::function<std::vector<double>(int)>>("Calculate");
 }
 
 void ChaiInterpreter::UpdateChai()
 {
     for (int i = 0; i < m_global_names.size(); ++i) {
-        chai.set_global(chaiscript::const_var(m_global_parameter(0, i)), m_global_names[i].toStdString());
+      m_chaiinterpreter.set_global(
+          chaiscript::const_var(m_global_parameter(0, i)),
+          m_global_names[i].toStdString());
     }
 
     for (int j = 0; j < m_input_names.size(); ++j) {
         std::vector<double> vector;
         for (int i = 0; i < m_input.rows(); ++i)
             vector.push_back(m_input.row(i)[j]);
-        chai.set_global(chaiscript::const_var(vector), m_input_names[j].toStdString());
+        m_chaiinterpreter.set_global(chaiscript::const_var(vector),
+                                     m_input_names[j].toStdString());
     }
+}
+
+double ChaiInterpreter::Evaluate(const char *c, int &errorcode) {
+  double result = 0.0;
+  try {
+    auto boxed = m_chaiinterpreter.eval(c);
+    result = chaiscript::boxed_cast<double>(boxed);
+  } catch (const chaiscript::exception::eval_error &error) {
+    qDebug() << "mist";
+    // std::cout << error.reason << std::endl;
+    errorcode = 1;
+  } catch (const chaiscript::exception::bad_boxed_cast &cast) {
+    qDebug() << "another mist";
+  }
+
+  return result;
 }
 
 std::vector<double> ChaiInterpreter::EvaluateChaiSeries(int series)

@@ -112,7 +112,11 @@
                 "4": "     print (vmax)",
                 "6": "     print (vmax*S/(Km+S))",
                 "7": "     return vmax*S/(Km+S)"
+            },
+            "Duktape" : {
+                "1" : "vmax*X/(Km+X)"
             }
+
         },
         "SAE": 53.280240640243335,
         "SSE": 298.07402958188385,

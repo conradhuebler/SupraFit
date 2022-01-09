@@ -222,7 +222,7 @@ public:
     ~JobManager();
 
     inline void setModel(const QSharedPointer<AbstractModel>& model) { m_model = model; }
-    void AddJob(const QJsonObject& job);
+    void AddSingleJob(const QJsonObject& job);
 
     void RunJobs();
 
