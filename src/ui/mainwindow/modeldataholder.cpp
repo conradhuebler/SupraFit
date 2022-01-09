@@ -95,7 +95,7 @@ void TabWidget::addModelsTab(QPointer<ModelWidget> modelwidget)
         palette.setBrush(QPalette::Button, QBrush(gradient));
         color->setPalette(palette);*/
         color->ChangeColor(Qt::green);
-#warning restore or improve some colorfull stuff
+#pragma message "restore or improve some colorfull stuff"
     } else
         color->ChangeColor(QColor(colors.first()));
 

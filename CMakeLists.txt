@@ -58,7 +58,7 @@ option (_Python
     "Enable python interface" OFF)
 
 option (_Models
-    "Enable custom models" OFF)
+	"Enable custom models" ON)
 
 option (Use_Duktape
     "Use Duktape script engine" OFF )

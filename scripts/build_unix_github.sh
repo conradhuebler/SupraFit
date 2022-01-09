@@ -14,5 +14,5 @@ cd ..
 mkdir -p release
 cd release
 #cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -Dnoto_font=true -D_Theme=false -DCMAKE_PREFIX_PATH=$HOME/SupraFit/Qt/5.15.1/gcc_64 ..
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -Dnoto_font=true -D_Theme=false  ..
+cmake -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true -D_Theme=false  ..
 make 

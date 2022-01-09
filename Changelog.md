@@ -1,7 +1,7 @@
 # The (incomplete) SupraFit Changelog
 
 ### SupraFit 2.x
-
+- enable ChaiScript, including one example scripted model
 - add option to show dilution thermogram in experimental thermogram
 - basic variance/covariance based wavelength selection
 - add explicit UV/VIS models (NMR options will be deprecated)
