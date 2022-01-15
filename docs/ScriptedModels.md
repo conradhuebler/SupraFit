@@ -1,6 +1,6 @@
 # Scripted Models
 
-## SupraFit since 15.01.202
+## SupraFit since 15.01.2022
 Scripted Models are implemented using ChaiScript and can not be used for data with more than one output column ( called series in SupraFit - like several chemical shifts observed in NMR spectra or wavelength etc).
 
 Scripted Models have successfully been tested with Michaelis-Menten kinetics and a polynomial functions.
@@ -22,8 +22,9 @@ In case of convergency problems: SupraFit uses for the built-in model the Linewe
 
 ### Polynomial fit
 As above, but open polynomial/polynomial.dat and use 5 variables (if not all variables are used, SupraFit will not complain). Define your model as
-    - A1+X1*A2+A2*pow(X1,2)+A3*pow(X1,3)
-    - A1+X1*A2+A2*X1*X1+A3*X1*X1*X1
+
+- A1+X1 * A2 + A2 * pow(X1,2) + A3 * pow(X1,3)
+- A1+X1 * A2 + A2 * X1 * X1+A3 * X1 * X1 * X1
    
 A predefined model is stored in model.json.
 etc.
