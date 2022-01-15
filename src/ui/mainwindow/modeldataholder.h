@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
@@ -100,16 +100,18 @@ public:
 
 private:
     QWidget* m_buttons;
-    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_uv_vis, m_add_fl, m_add_kinetics, m_add_itc, m_any_model, m_optimize, m_statistics, m_close_all, m_hide, m_analyse;
+    QPointer<QPushButton> m_edit_data, m_add_nmr, m_add_uv_vis, m_add_fl, m_add_kinetics, m_add_itc, m_any_model, m_optimize, m_statistics, m_close_all, m_hide, m_analyse, m_add_script, m_define_model;
     QVector<QPointer<QAction>> m_nmr_model, m_fl_model, m_uv_vis_model, m_kinetcs_model, m_itc_fixed_model, m_itc_flex_model;
 
-    QAction *m_script_action, *m_last_action;
+    QAction* m_last_action;
     int m_model_choosen = 404;
 private slots:
     void PrepareAddModel();
 
 signals:
+    void NewModel();
     void AddModel();
+    void AddScriptModel(const QString& model);
     void CloseAll();
     void ShowStatistics();
     void OptimizeAll();
@@ -202,7 +204,10 @@ private:
 
     QPointer<ModelWidget> m_last_modelwidget;
 private slots:
+    void NewModel();
     void AddModel();
+    void AddScriptModel(const QString& str);
+
     void SetProjectTabName();
     void RunJobs(const QJsonObject& job);
 
@@ -218,7 +223,6 @@ private slots:
     inline void Interrupt() { m_allow_loop = false; }
 
 signals:
-    // void ModelAdded(AbstractModel* model);
     void ModelAdded();
     void ModelRemoved();
     void MessageBox(const QString& str, int priority);

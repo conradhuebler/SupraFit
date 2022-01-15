@@ -1,5 +1,37 @@
 # Scripted Models
 
+## SupraFit since 15.01.202
+Scripted Models are implemented using ChaiScript and can not be used for data with more than one output column ( called series in SupraFit - like several chemical shifts observed in NMR spectra or wavelength etc).
+
+Scripted Models have successfully been tested with Michaelis-Menten kinetics and a polynomial functions.
+
+To test the new functions, get the content of the follow directory:
+https://github.com/conradhuebler/SupraFit/tree/master/data/samples
+
+### Test Michaels-Menten
+ - Open SupraFit 
+ - Load from the above directory MM/MM.dat
+ - Add a **New Model** to the workspace as follows:
+    - Input data = 1
+    - Variables = 2
+ - Write into the model definition field the equation: **(A1*X1)/(A2+X1)** and push **Fit**
+ 
+Another way is to open MM.dat and load using **Load Model file** either MM.json or MM-Variables.json
+
+In case of convergency problems: SupraFit uses for the built-in model the Lineweaver-Burk equation as initial guess. This is not (yet) possible. Changing the parameters or performing a **Scan** should help.
+
+### Polynomial fit
+As above, but open polynomial/polynomial.dat and use 5 variables (if not all variables are used, SupraFit will not complain). Define your model as
+    - A1+X1*A2+A2*pow(X1,2)+A3*pow(X1,3)
+    - A1+X1*A2+A2*X1*X1+A3*X1*X1*X1
+   
+A predefined model is stored in model.json.
+etc.
+
+### Performance
+ChaiScript and the current implementation (not-row-wise) works well with several threads. The scripted MM model is 5-10 times slower than the built-in model. It effects Monte Carlo simulations with 20k steps.
+
+Have fun and good luck.
 ## Changing syntax in progress
 Using commit **55f90e0** the function to define the model is called for every data point * rows - currently only Michaelis Menten therefore rows = 1.
 ```json

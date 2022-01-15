@@ -48,6 +48,13 @@ ScriptModel::ScriptModel(DataClass* data)
     m_complete = false;
 }
 
+ScriptModel::ScriptModel(DataClass* data, const QJsonObject& model)
+    : AbstractModel(data)
+{
+    DefineModel(model);
+    m_complete = false;
+}
+
 ScriptModel::ScriptModel(AbstractModel* data)
     : AbstractModel(data)
 {
@@ -58,69 +65,87 @@ ScriptModel::~ScriptModel()
 {
 }
 
-void ScriptModel::DefineModel(QJsonObject model)
+void ScriptModel::DefineModel(const QJsonObject& model)
 {
-    if (model.contains("ScriptModel"))
-        model = model["ScriptModel"].toObject();
-    if (model.contains("GlobalParameterSize"))
-        m_global_parameter_size = model["GlobalParameterSize"].toInt();
+    QJsonObject parse = model;
+    if (parse.contains("ModelDefinition"))
+        parse = model["ModelDefinition"].toObject();
+    if (parse.contains("GlobalParameterSize"))
+        m_global_parameter_size = parse["GlobalParameterSize"].toInt();
     else
-        return;
+        m_global_parameter_size = 1;
 
-    if (model.contains("GlobalParameterNames"))
-        m_global_parameter_names = model["GlobalParameterNames"].toString().split("|");
-
-    if (model.contains("LocalParameterSize"))
-        m_local_parameter_size = model["LocalParameterSize"].toInt();
+    if (parse.contains("GlobalParameterNames"))
+        m_global_parameter_names = parse["GlobalParameterNames"].toString().split("|");
+    else {
+        for (int i = 0; i < m_global_parameter_size; ++i)
+            m_global_parameter_names << QString("A%1").arg(i + 1);
+    }
+    if (parse.contains("LocalParameterSize"))
+        m_local_parameter_size = parse["LocalParameterSize"].toInt();
     else
-        return;
+        m_local_parameter_size = 0;
 
-    if (model.contains("LocalParameterNames"))
-        m_local_parameter_names = model["LocalParameterNames"].toString().split("|");
+    if (parse.contains("LocalParameterNames"))
+        m_local_parameter_names = parse["LocalParameterNames"].toString().split("|");
 
-    if (model.contains("InputSize"))
-        m_input_size = model["InputSize"].toInt();
+    if (parse.contains("InputSize"))
+        m_input_size = parse["InputSize"].toInt();
     else
-        return;
+        m_input_size = 1;
 
-    if (model.contains("Python")) {
-        QJsonObject exec = model["Python"].toObject();
+    if (parse.contains("Python")) {
+        QJsonObject exec = parse["Python"].toObject();
         for (int i = 0; i < exec.size(); ++i)
             m_execute_python << exec[QString::number(i + 1)].toString();
         m_python = true;
     }
-    if (model.contains("ChaiScript")) {
-      // m_execute_chai.clear();
-      QStringList strings;
-      QJsonObject exec = model["ChaiScript"].toObject();
-      for (const QString &key : exec.keys())
-        // for (int i = 0; i < exec.size(); ++i)
-        strings << exec[key].toString();
-      m_chai_execute = strings.join("\n");
-      m_python = false;
-      m_chai = true;
+    if (parse.contains("ChaiScript")) {
+        // m_execute_chai.clear();
+        QStringList strings;
+        QJsonObject exec = parse["ChaiScript"].toObject();
+        for (const QString& key : exec.keys())
+            // for (int i = 0; i < exec.size(); ++i)
+            strings << exec[key].toString();
+        m_chai_execute = strings.join("\n");
+        m_python = false;
+        m_chai = true;
     }
 
-    if (model.contains("Duktape")) {
-        QJsonObject exec = model["Duktape"].toObject();
+    if (parse.contains("Duktape")) {
+        QJsonObject exec = parse["Duktape"].toObject();
         for (int i = 0; i < exec.size(); ++i)
             m_execute_duktape << exec[QString::number(i + 1)].toString();
         m_python = false;
         m_chai = false;
         m_duktape = true;
     }
+    m_chai = true;
+    m_python = false;
+    m_duktape = false;
+
+    /*
     if (!m_python && !m_chai && !m_duktape) {
         emit Message("Nothing to do, lets just start it.", 1);
         return;
     }
+    */
+    m_name_cached = parse["Name"].toString();
+    m_name = parse["Name"].toString();
 
-    m_name_cached = model["Name"].toString();
-    m_name = model["Name"].toString();
+    if (parse.contains("InputNames"))
+        m_input_names = parse["InputNames"].toString().split("|");
+    else
+        for (int i = 0; i < m_input_size; ++i)
+            m_input_names << QString("X%1").arg(i + 1);
 
-    m_input_names = model["InputNames"].toString().split("|");
-    m_depmodel_names = model["DepModelNames"].toString().split("|");
+    if (parse.contains("DepModelNames"))
+        m_depmodel_names = parse["DepModelNames"].toString().split("|");
+    else
+        for (int i = 0; i < m_depmodel_names.size(); ++i)
+            m_depmodel_names << QString("Y%1").arg(i + 1);
 
-    m_model_definition = model;
+    m_model_definition = GenerateModelDefinition();
     PrepareParameter(GlobalParameterSize(), LocalParameterSize());
 
     for (int i = 0; i < m_input_names.size(); ++i)
@@ -133,13 +158,33 @@ void ScriptModel::DefineModel(QJsonObject model)
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.setInputNames(m_input_names);
-    m_interp.setExecute(m_execute_chai);
+    // m_interp.setExecute(m_execute_chai);
     m_interp.InitialiseChai();
 #endif
 
 #ifdef Use_Duktape
     m_duktapeinterp.Initialise();
 #endif
+}
+
+QJsonObject ScriptModel::GenerateModelDefinition() const
+{
+    QJsonObject definition;
+
+    definition["GlobalParameterSize"] = m_global_parameter_size;
+    definition["GlobalParameterNames"] = m_global_parameter_names.join("|");
+    definition["LocalParameterSize"] = m_local_parameter_size;
+    definition["LocalParameterNames"] = m_local_parameter_names.join("|");
+    definition["InputSize"] = m_input_size;
+    definition["InputNames"] = m_input_names.join("|");
+    definition["Name"] = m_name;
+    definition["DepModelNames"] = m_depmodel_names.join("|");
+    QJsonObject chai;
+    QStringList lines = m_chai_execute.split("\n");
+    for (int i = 0; i < lines.size(); ++i)
+        chai[QString::number(i)] = lines[i];
+    definition["ChaiScript"] = chai;
+    return definition;
 }
 
 void ScriptModel::UpdateExecute(const QString &execute) {
@@ -190,7 +235,7 @@ void ScriptModel::CalculatePython()
     interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     interp.setLocal(LocalParameter()->Table());
     interp.setExecute(m_execute_python);
-    interp.InitialisePython();
+    +interp.InitialisePython();
 
     for (int i = 0; i < DataPoints(); ++i) {
         for (int j = 0; j < SeriesCount(); ++j) {
@@ -217,11 +262,12 @@ void ScriptModel::CalculateChai()
           QString cache = m_chai_execute;
           for (int parameter = 0; parameter < InputParameterSize();
                ++parameter) {
-            cache.replace(
-                m_input_names[parameter],
-                QString::number((IndependentModel()->data(parameter, i))));
+              cache.replace(
+                  m_input_names[parameter],
+                  QString::number(IndependentModel()->data(parameter, i)));
           }
           int error = 0;
+
           double result = m_interp.Evaluate(cache.toUtf8(), error);
           if (error == 1) {
             cache.replace("var", "");
@@ -274,7 +320,7 @@ QString execute = m_execute_chai.join("\n");
 QSharedPointer<AbstractModel> ScriptModel::Clone(bool statistics)
 {
     QSharedPointer<ScriptModel> model = QSharedPointer<ScriptModel>(new ScriptModel(this), &QObject::deleteLater);
-    model.data()->DefineModel(m_model_definition);
+    model.data()->DefineModel(GenerateModelDefinition());
     model.data()->ImportModel(ExportModel(statistics));
     model.data()->setActiveSignals(ActiveSignals());
     model.data()->setLockedParameter(LockedParameters());

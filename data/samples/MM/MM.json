@@ -1,0 +1,12 @@
+{        "ModelDefinition": {
+            "ChaiScript": {
+                "0": "(A1*X1)/(A2+X1)"
+            },
+            "DepModelNames": "v",
+            "GlobalParameterNames": "A1|A2",
+            "GlobalParameterSize": 2,
+            "InputNames": "X1",
+            "InputSize": 1,
+            "LocalParameterSize": 0,
+            "Name": "Testmodel"
+        }}

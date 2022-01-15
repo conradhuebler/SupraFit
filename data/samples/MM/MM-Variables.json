@@ -1,0 +1,12 @@
+{        "ModelDefinition": {
+            "ChaiScript": {
+                "0": "(vmax*X1)/(Km+X1)"
+            },
+            "DepModelNames": "v",
+            "GlobalParameterNames": "Km|vmax",
+            "GlobalParameterSize": 2,
+            "InputNames": "X1",
+            "InputSize": 1,
+            "LocalParameterSize": 0,
+            "Name": "Testmodel"
+        }}

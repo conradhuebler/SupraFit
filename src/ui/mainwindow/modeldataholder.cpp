@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/global.h"
@@ -250,13 +250,22 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_itc_fixed_model << addModel(SupraFit::itc_blank);
 #endif
 
-    m_script_action = new QAction(this);
-    m_script_action->setText(tr("Scripted Models"));
+    m_add_script = new QPushButton(tr("Load Model file"));
+    m_add_script->setFlat(true);
+    m_add_script->setIcon(Icon("list-add"));
 
-#ifdef experimentel
-    ParseScriptedModels();
-    m_independet_2 << m_script_action;
-#endif
+    connect(m_add_script, &QPushButton::clicked, this, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, tr("Custom Model"), getDir(), "*.json");
+        emit this->AddScriptModel(file);
+    });
+
+    m_define_model = new QPushButton(tr("New Model"));
+    m_define_model->setFlat(true);
+    m_define_model->setIcon(Icon("list-add"));
+
+    connect(m_define_model, &QPushButton::clicked, this, [this]() {
+        emit this->NewModel();
+    });
 
     m_any_model = new QPushButton(tr("Any Model"));
     m_any_model->setFlat(true);
@@ -276,6 +285,8 @@ MDHDockTitleBar::MDHDockTitleBar()
     QVBoxLayout* vlayout = new QVBoxLayout;
 
     QHBoxLayout* buttons = new QHBoxLayout;
+    buttons->addWidget(m_define_model);
+    buttons->addWidget(m_add_script);
     buttons->addWidget(m_add_nmr);
     buttons->addWidget(m_add_uv_vis);
     buttons->addWidget(m_add_fl);
@@ -341,6 +352,7 @@ void MDHDockTitleBar::addToMenu(int IndependetCount)
         m_add_kinetics->hide();
         m_add_itc->hide();
     }
+    menu = new QMenu(this);
 }
 
 void MDHDockTitleBar::HideModelTools()
@@ -388,7 +400,10 @@ ModelDataHolder::ModelDataHolder()
     connect(m_compare_dialog, &CompareDialog::CompareCV, this, &ModelDataHolder::CompareCV);
     connect(m_compare_dialog, &CompareDialog::CompareMC, this, &ModelDataHolder::CompareMC);
 
-    connect(m_TitleBarWidget, &MDHDockTitleBar::AddModel, this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
+    connect(m_TitleBarWidget, qOverload<>(&MDHDockTitleBar::AddModel), this, static_cast<void (ModelDataHolder::*)()>(&ModelDataHolder::AddModel));
+    connect(m_TitleBarWidget, &MDHDockTitleBar::AddScriptModel, this, &ModelDataHolder::AddScriptModel);
+    connect(m_TitleBarWidget, &MDHDockTitleBar::NewModel, this, &ModelDataHolder::NewModel);
+
     connect(m_TitleBarWidget, &MDHDockTitleBar::ShowStatistics, m_statistic_dialog, &StatisticDialog::show);
     connect(m_TitleBarWidget, &MDHDockTitleBar::OptimizeAll, this, &ModelDataHolder::OptimizeAll);
     connect(m_TitleBarWidget, &MDHDockTitleBar::CloseAll, this, &ModelDataHolder::CloseAll);
@@ -448,10 +463,44 @@ void ModelDataHolder::SetProjectTabName()
     emit nameChanged();
 }
 
+void ModelDataHolder::NewModel()
+{
+    qDebug() << m_data.toStrongRef().data()->IndependentModel()->columnCount();
+    int input = QInputDialog::getInt(this, tr("Number of input colums"),
+        tr("Please give the number of input data :"), 1, 1, m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1);
+
+    int variables = QInputDialog::getInt(this, tr("Number of variables"),
+        tr("Please give the numbers of variables:"), 1, 1, m_data.toStrongRef().data()->IndependentModel()->rowCount() - 1, 1);
+    QJsonObject definition;
+    definition["GlobalParameterSize"] = variables;
+    definition["InputSize"] = input;
+    definition["Name"] = "Custom Model";
+    QJsonObject model;
+    model["ModelDefinition"] = definition;
+
+    QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
+    t->InitialGuess();
+    m_history = false;
+    ActiveModel(t);
+}
+
 void ModelDataHolder::AddModel()
 {
     int model = qobject_cast<MDHDockTitleBar*>(sender())->Model();
     AddModel(model);
+}
+
+void ModelDataHolder::AddScriptModel(const QString& string)
+{
+    QFile file(string);
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    QJsonObject model = doc.object();
+    QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
+    t->InitialGuess();
+    m_history = false;
+    ActiveModel(t);
 }
 
 void ModelDataHolder::AddModel(int model)
@@ -746,7 +795,6 @@ void ModelDataHolder::CompareAIC()
 
 void ModelDataHolder::CompareCV()
 {
-
     if (!m_compare_dialog)
         return;
 
