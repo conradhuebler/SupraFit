@@ -26,14 +26,15 @@ jobs:
           release_name: SupraFit 2.5.${{ github.run_number }}
           draft: false
           prerelease: true
-
-          - uses: dev-drprasad/delete-older-releases@v0.2.0
-    with:
-        repo: <owner>/<repoName> # defaults to current repo
-        keep_latest: 10
-        delete_tag_pattern: 2.5 # defaults to ""
+      - name: Clear older release
+        id: clear_releases
+        uses: dev-drprasad/delete-older-releases@v0.2.0
+        with:
+         # repo: c/<repoName> # defaults to current repo
+         keep_latest: 10
+         delete_tag_pattern: 2.5 # defaults to ""
         env:
-           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
   linux:
     needs: [makerelease]
@@ -124,7 +125,7 @@ jobs:
         run: sh scripts/build_macOS_github.sh
         
       - name: Upload macOS
-        id: upload-release-asset-windows
+        id: upload-release-asset-macOS
         uses: actions/upload-release-asset@v1
         env:
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
