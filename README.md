@@ -165,6 +165,11 @@ If you obtain results with SupraFit, I kindly ask to include in your citation:
 
 Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
 
+A preprint article has been published:
+https://chemrxiv.org/engage/chemrxiv/article-details/61e0923080719d23820e97bf
+
+C. Hübler, ChemRxiv 2022, DOI 10.26434/chemrxiv-2022-c1jwr. This content is a preprint and has not been peer-reviewed.
+
 ### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)
 <img src="https://github.com/conradhuebler/SupraFit/raw/master/docs/SupraFit_Poster.png" width="300">
 
