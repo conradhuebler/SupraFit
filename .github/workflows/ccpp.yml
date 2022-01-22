@@ -39,7 +39,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           modules: 'addons.qtcharts'
-          version: 6.2.0
+          version: 6.2.2
 
       - name: Update Modules and Build
         run: sh scripts/build_unix_github.sh
@@ -72,7 +72,7 @@ jobs:
           submodules: true
           
       - name: Set up MinGW
-        uses: conradhuebler/setup-mingw@v2
+        uses: egor-tensin/setup-mingw@v2
         with:
             platform: x64
     
@@ -80,7 +80,9 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           modules: 'addons.qtcharts'
-          version: 6.2.0
+          version: 6.2.2
+          arch: 'win64_mingw81'
+          
       - name: Update Modules and Build
         run: scripts/build_windows_x64_mingw.bat
         
