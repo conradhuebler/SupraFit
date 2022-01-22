@@ -80,7 +80,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           modules: 'addons.qtcharts'
-          version: 6.2.2
+          version: 6.2.0
           arch: 'win64_mingw81'
           
       - name: Update Modules and Build
