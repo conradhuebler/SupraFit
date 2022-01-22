@@ -15,17 +15,20 @@ cd linux
 #./linuxdeployqt-continuous-x86_64.AppImage SupraFit.desktop -qmake=$HOME/5.15.1/gcc_64/bin/qmake -appimage
 mkdir -p lib
 cd lib
-cp /usr/lib/libQt6Widgets.so* .
-cp /usr/lib/libQt6OpenGLWidgets.so* .
-cp /usr/lib/libQt6OpenGL.so* .
-cp /usr/lib/libQt6Gui.so* .
-cp /usr/lib/libQt6DBus.so* .
-cp /usr/lib/libQt6Charts.so* .
-cp /usr/lib/libQt6Core.so* .
+for i in $(ldd ../suprafit |awk '{ print $3}' |grep Qt); do cp $i .; done
+for i in $(ldd ../suprafit |awk '{ print $3}' |grep libic); do cp $i .; done
 
-cp /usr/lib/libicudata.so* .
-cp /usr/lib/libicui18n.so* .
-cp /usr/lib/libicuuc.so* .
+#cp /usr/lib/libQt6Widgets.so* .
+#cp /usr/lib/libQt6OpenGLWidgets.so* .
+#cp /usr/lib/libQt6OpenGL.so* .
+#cp /usr/lib/libQt6Gui.so* .
+#cp /usr/lib/libQt6DBus.so* .
+#cp /usr/lib/libQt6Charts.so* .
+#cp /usr/lib/libQt6Core.so* .
+
+#cp /usr/lib/libicudata.so* .
+#cp /usr/lib/libicui18n.so* .
+#cp /usr/lib/libicuuc.so* .
 cd ..
 cp -r /usr/lib/qt6/plugins .
 

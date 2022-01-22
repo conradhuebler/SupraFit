@@ -72,7 +72,7 @@ jobs:
           submodules: true
           
       - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
+        uses: conradhuebler/setup-mingw@v2
         with:
             platform: x64
     

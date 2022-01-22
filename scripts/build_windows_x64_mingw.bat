@@ -7,18 +7,19 @@ git pull --recurse-submodules
 mkdir build_x64
 cd build_x64
 cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release  ..
-cmake --build . --config Release
+C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\mingw32-make.exe
 
 
 echo Packaging...
 cd %project_dir%
-cd build_x64\bin\win\Release
+cd build_x64\bin\win
 mkdir SupraFit
 copy suprafit.exe SupraFit
 copy suprafit_cli.exe SupraFit
 
 cd SupraFit
 windeployqt --release --compiler-runtime  suprafit.exe
+C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\libgomp-1.dll .
 
 echo Copying project files for archival...
 copy "%project_dir%\README.md" "%project_dir%\build_x64\bin\win\Release\SupraFit\README.md"
