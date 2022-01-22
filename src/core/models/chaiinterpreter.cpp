@@ -41,6 +41,7 @@ ChaiInterpreter::ChaiInterpreter()
   // chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
   // chai.add(chaiscript::vector_conversion<std::vector<double>>());
   // chai.add(chaiscript::vector_conversion<std::vector<chaiscript::Boxed_Value>>());
+  m_chaiinterpreter.add(chaiscript::type_conversion<int, double>());
 
   /*
   chai.add(chaiscript::type_conversion<std::vector<chaiscript::Boxed_Value>,
@@ -117,9 +118,9 @@ double ChaiInterpreter::Evaluate(const char *c, int &errorcode) {
     auto boxed = m_chaiinterpreter.eval(c);
     result = chaiscript::boxed_cast<double>(boxed);
   } catch (const chaiscript::exception::eval_error &error) {
-    qDebug() << "mist";
-    // std::cout << error.reason << std::endl;
-    errorcode = 1;
+      qDebug() << "mist" << c;
+      // std::cout << error.reason << std::endl;
+      errorcode = 1;
   } catch (const chaiscript::exception::bad_boxed_cast &cast) {
     qDebug() << "another mist";
   }

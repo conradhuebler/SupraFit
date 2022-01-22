@@ -36,6 +36,8 @@ class ScriptModel : public AbstractModel {
 
 public:
     ScriptModel(DataClass* data);
+    ScriptModel(DataClass* data, const QJsonObject& model);
+
     ScriptModel(AbstractModel* data);
 
     virtual ~ScriptModel() override;
@@ -48,7 +50,7 @@ public:
     virtual bool SupportThreads() const override { return true; }
     virtual bool PreventThreads() const override { return false; }
 
-    void DefineModel(QJsonObject model) override;
+    void DefineModel(const QJsonObject& model) override;
 
     void UpdateExecute(const QString &execute);
     inline QString getExecute() const { return m_chai_execute; }
@@ -97,6 +99,8 @@ private:
     void CalculateChai();
     void CalculatePython();
     void CalculateDuktape();
+
+    QJsonObject GenerateModelDefinition() const;
 
 protected:
     virtual void CalculateVariables() override;

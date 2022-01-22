@@ -6,7 +6,7 @@ Linux and Windows Build: [![Build Status](https://github.com/conradhuebler/Supra
 
 # SupraFit 
 
-A Open Source Qt6 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry) and Michaelis Menten Kinetics.
+A Open Source Qt6 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry), Michaelis Menten Kinetics and indidual custom models. Custom models are work in progress and not yet well documented. For the start, please have a look at [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/ScriptedModels.md)
 
 A short introduction can be downloaded [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/Quickstart.pdf). For question, comments, feedback etc. please use the email adress on page 18 in that Quickstart.
 
@@ -18,7 +18,7 @@ It may be downloaded [from the official website.](https://support.microsoft.com/
 
 ### History
 - [SupraFit 2.0](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) stable version, first public release
-- [SupraFit 2.x](https://github.com/conradhuebler/SupraFit/releases) most recent development version, with automatic builds for Windows and Linux.
+- [SupraFit 2.x](https://github.com/conradhuebler/SupraFit/releases) most recent development version. Automatic builds for Windows and Linux are not work currently.
 
 
 ## Running

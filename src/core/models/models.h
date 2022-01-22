@@ -119,3 +119,10 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QWeakPointer<DataCla
 {
     return CreateModel(model, data.toStrongRef().data());
 }
+
+inline QSharedPointer<AbstractModel> CreateModel(const QJsonObject& model, QWeakPointer<DataClass> data)
+{
+    QSharedPointer<AbstractModel> t;
+
+    return t = QSharedPointer<ScriptModel>(new ScriptModel(data.toStrongRef().data(), model), &QObject::deleteLater);
+}

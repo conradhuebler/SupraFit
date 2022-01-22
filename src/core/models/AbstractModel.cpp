@@ -78,6 +78,48 @@ AbstractModel::AbstractModel(DataClass* data)
     m_model_uuid = uuid.createUuid().toString();
 }
 
+AbstractModel::AbstractModel(DataClass* data, const QJsonObject& model)
+    : DataClass(data)
+    , m_last_p(1)
+    , m_f_value(1)
+    , m_last_parameter(0)
+    , m_last_freedom(0)
+    , m_corrupt(false)
+    , m_converged(false)
+    , m_locked_model(false)
+    , m_fast(true)
+{
+    m_model_definition = model;
+
+    DefineModel(model);
+
+    m_opt_config = OptimConfigBlock;
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::UpdateParameter);
+
+    connect(this, &AbstractModel::OptionChanged, this, &AbstractModel::UpdateOption);
+    private_d = new AbstractModelPrivate;
+    setActiveSignals(QVector<int>(SeriesCount(), 1).toList());
+
+    m_model_signal = new DataTable(SeriesCount(), DataPoints(), this);
+    m_model_error = new DataTable(SeriesCount(), DataPoints(), this);
+
+    connect(this, &DataClass::Update, this, [this]() {
+        m_model_signal->clear(SeriesCount(), DataPoints());
+        m_model_error->clear(SeriesCount(), DataPoints());
+    });
+
+    connect(this, &DataClass::SystemParameterChanged, this, &AbstractModel::Calculate);
+    connect(this, &DataClass::Update, this, &AbstractModel::Calculate);
+
+    // connect(this->Info(), &DataClassPrivateObject::Update, this, &AbstractModel::Calculate);
+
+    /* This function call as to be only in this constructor */
+    AddChildren(this);
+
+    QUuid uuid;
+    m_model_uuid = uuid.createUuid().toString();
+}
+
 AbstractModel::AbstractModel(AbstractModel* model)
     : DataClass(model)
     , private_d(new AbstractModelPrivate(*model->private_d))
@@ -114,6 +156,61 @@ AbstractModel::AbstractModel(AbstractModel* model)
     QUuid uuid;
     m_model_uuid = uuid.createUuid().toString();
 }
+/*
+void AbstractModel::DefineModel(const QJsonObject &model)
+{
+    QJsonObject parse = model;
+    if (parse.contains("ScriptModel"))
+        parse = parse["ScriptModel"].toObject();
+    if (model.contains("GlobalParameterSize"))
+        m_global_parameter_size = parse["GlobalParameterSize"].toInt();
+    else
+        return;
+
+    if (model.contains("GlobalParameterNames"))
+        m_global_parameter_names = parse["GlobalParameterNames"].toString().split("|");
+
+    if (model.contains("LocalParameterSize"))
+        m_local_parameter_size = parse["LocalParameterSize"].toInt();
+    else
+        return;
+
+    if (model.contains("LocalParameterNames"))
+        m_local_parameter_names = parse["LocalParameterNames"].toString().split("|");
+
+    if (model.contains("InputSize"))
+        m_input_size = parse["InputSize"].toInt();
+    else
+        return;
+
+    if (model.contains("ChaiScript")) {
+      // m_execute_chai.clear();
+      QStringList strings;
+      QJsonObject exec = parse["ChaiScript"].toObject();
+      for (const QString &key : exec.keys())
+        // for (int i = 0; i < exec.size(); ++i)
+        strings << exec[key].toString();
+      m_execute = strings.join("\n");
+      //m_python = false;
+      //m_chai = true;
+    }
+
+    m_name_cached = model["Name"].toString();
+    m_name = model["Name"].toString();
+
+    m_input_names = model["InputNames"].toString().split("|");
+    m_depmodel_names = model["DepModelNames"].toString().split("|");
+
+    m_model_definition = model;
+    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+
+    for (int i = 0; i < m_input_names.size(); ++i)
+        IndependentModel()->setHeaderData(i, Qt::Horizontal, m_input_names[i], Qt::DisplayRole);
+
+    for (int i = 0; i < m_depmodel_names.size(); ++i)
+        DependentModel()->setHeaderData(i, Qt::Horizontal, m_depmodel_names[i], Qt::DisplayRole);
+}
+*/
 
 void AbstractModel::PrepareParameter(int global, int local)
 {

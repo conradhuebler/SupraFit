@@ -92,6 +92,14 @@ public:
      */
     AbstractModel(DataClass* data);
 
+    /*! \brief Constructor with the DataClass and model definition as argument
+     * Constructor, which should be used when a model is assigned to a dataclass
+     * The parent dataclass "takes care" of this model
+     *
+     * The model tree in the main window collects all models, that are constructed via this way
+     */
+    AbstractModel(DataClass* data, const QJsonObject& model);
+
     /*! \brief Constructor with the class type as argument
      * Constructor, which is be used when a model should not be assigned to a dataclass
      * The parent dataclass doesn't know about this model
@@ -116,7 +124,7 @@ public:
     /*! \brief Set a json object to define some user definable stuff
      *
      */
-    virtual void DefineModel(QJsonObject model) { Q_UNUSED(model) }
+    virtual void DefineModel(const QJsonObject& model) { Q_UNUSED(model) }
 
     /*! \brief returns the Parameters used in optimisation
      *
@@ -817,6 +825,9 @@ protected:
       that can be worked with */
     QMap<QString, ModelChart*> m_model_charts;
     QJsonObject m_model_definition;
+    // int m_input_size = 0, m_global_parameter_size = 0, m_local_parameter_size = 0;
+    // QStringList m_global_parameter_names, m_local_parameter_names, m_input_names, m_depmodel_names;
+    // QString m_execute;
 
     QMutex m_mutex;
 signals:
