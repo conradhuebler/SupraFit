@@ -30,7 +30,8 @@ for i in $(ldd ../suprafit |awk '{ print $3}' |grep libic); do cp $i .; done
 #cp /usr/lib/libicui18n.so* .
 #cp /usr/lib/libicuuc.so* .
 cd ..
-cp -r /usr/lib/qt6/plugins .
+#cp -r /usr/lib/qt6/plugins .
+cp -r  $(find $HOME -name '*libqxcb-glx-integration*' -print 2>/dev/null |head -n1 |sed 's/xcbglintegrations\/libqxcb-glx-integration.so//g') .
 
 ../linuxdeployqt-continuous-x86_64.AppImage SupraFit.desktop -unsupported-allow-new-glibc || true 
 ../appimagetool-x86_64.AppImage .

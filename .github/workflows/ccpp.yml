@@ -97,5 +97,31 @@ jobs:
            asset_name: SupraFit-nightly-${{ needs.makerelease.outputs.version }}-x86_x64-Windows.zip
            asset_content_type: application/zip
 
-      
+  macOS:
+    needs: [makerelease]
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
+          
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+           modules: 'addons.qtcharts'
+           version: 6.2.0
 
+      - name: Update Modules and Build
+        run: sh scripts/build_macOS_github.sh
+        
+      - name: Upload macOS
+        id: upload-release-asset-windows
+        uses: actions/upload-release-asset@v1
+        env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+           upload_url: ${{ needs.makerelease.outputs.url }}
+           asset_path: ./release/bin/macOS/SupraFit.dmg
+           asset_name: SupraFit-nightly-${{ needs.makerelease.outputs.version }}-macOS.dmg
+           asset_content_type: application/x-apple-diskimage

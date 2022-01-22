@@ -16,10 +16,10 @@ cd build_x64\bin\win
 mkdir SupraFit
 copy suprafit.exe SupraFit
 copy suprafit_cli.exe SupraFit
+copy C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\libgomp-1.dll SupraFit 
 
 cd SupraFit
 windeployqt --release --compiler-runtime  suprafit.exe
-C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\libgomp-1.dll .
 
 echo Copying project files for archival...
 copy "%project_dir%\README.md" "%project_dir%\build_x64\bin\win\Release\SupraFit\README.md"
