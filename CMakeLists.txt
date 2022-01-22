@@ -411,11 +411,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     # Install icon
     install(FILES misc/SupraFit.png DESTINATION share/icons/pixmaps/)
 elseif(APPLE)
-    string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
-    add_custom_command(TARGET suprafit POST_BUILD
-        COMMAND ${qt_dir}/macdeployqt  suprafit.app -dmg -no-plugins
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
-        )
+    #string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
+ #   add_custom_command(TARGET suprafit POST_BUILD
+ #       COMMAND ${QT_INSTALL_BINS}/macdeployqt  suprafit.app -dmg -no-plugins
+ #       WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/${target_dir}
+ #       )
 elseif(WIN32)
     #string(REPLACE "qmake" "" qt_dir ${QT_QMAKE_EXECUTABLE})
     #add_custom_command(TARGET suprafit POST_BUILD
