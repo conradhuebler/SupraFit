@@ -18,7 +18,7 @@ https://github.com/conradhuebler/SupraFit/tree/master/data/samples
  
 Another way is to open MM.dat and load using **Load Model file** either MM.json or MM-Variables.json
 
-In case of convergency problems: SupraFit uses for the built-in model the Lineweaver-Burk equation as initial guess. This is not (yet) possible. Changing the parameters or performing a **Scan** should help.
+In case of convergency problems: SupraFit uses for the built-in MM model the Lineweaver-Burk equation as initial guess. This is not (yet) possible. Changing the parameters or performing a **Scan** should help.
 
 ### Polynomial fit
 As above, but open polynomial/polynomial.dat and use 5 variables (if not all variables are used, SupraFit will not complain). Define your model as
@@ -30,9 +30,13 @@ A predefined model is stored in model.json.
 etc.
 
 ### Performance
-ChaiScript and the current implementation (not-row-wise) works well with several threads. The scripted MM model is 5-10 times slower than the built-in model. It effects Monte Carlo simulations with 20k steps.
+ChaiScript and the current implementation (not-row-wise) works well with several threads. The scripted MM model is 5-10 times slower than the built-in model. It was tested using Monte Carlo simulations with 20k steps.
 
 Have fun and good luck.
+
+## SupraFit before 15.01.2022
+Some old documentation about the Scripting prior 2022. Some parts may become real again, therefore they are still documented.
+
 ## Changing syntax in progress
 Using commit **55f90e0** the function to define the model is called for every data point * rows - currently only Michaelis Menten therefore rows = 1.
 ```json

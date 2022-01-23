@@ -57,9 +57,11 @@ private:
     void DisableSignal(int state);
 
 protected:
+#pragma message("Restore or clean up before release")
+    /*
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
-
+    */
 private slots:
     void chooseColor();
     void togglePlot();

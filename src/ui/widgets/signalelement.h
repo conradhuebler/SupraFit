@@ -53,9 +53,11 @@ private:
     bool m_series_hidden = false;
 
 protected:
+#pragma message("Restore or clean up before release")
+    /*
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
-
+    */
 private slots:
     void ToggleSeries(int i);
     void chooseColor();

@@ -298,6 +298,8 @@ void ModelElement::UnCheckToggle(int i)
         m_toggle->setChecked(false);
 }
 
+#pragma message("Restore or clean up before release")
+/*
 void ModelElement::enterEvent(QEnterEvent* event)
 {
     m_signal_series->setPointLabelsColor(m_signal_series->color());
@@ -327,5 +329,5 @@ void ModelElement::leaveEvent(QEvent* event)
         m_error_series->setMarkerSize(m_error_series->markerSize() - 3 * qApp->instance()->property("MarkerPointFeedback").toDouble());
     });
 }
-
+*/
 #include "modelelement.moc"

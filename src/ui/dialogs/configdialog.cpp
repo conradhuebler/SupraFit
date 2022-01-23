@@ -355,14 +355,14 @@ void ConfigDialog::createChartTab()
     connect(m_PointFeedback, &QCheckBox::stateChanged, this, [this]() {
         m_ModuloPointFeedback->setEnabled(m_PointFeedback->isChecked());
     });
-
+#pragma message("Restore or clean up before release")
     m_ModuloPointFeedback = new QSpinBox;
     m_ModuloPointFeedback->setValue(qApp->instance()->property("ModuloPointFeedback").toInt());
     m_ModuloPointFeedback->setEnabled(m_PointFeedback->isChecked());
 
     QHBoxLayout* hbox = new QHBoxLayout;
-    hbox->addWidget(m_PointFeedback);
-    hbox->addWidget(m_ModuloPointFeedback);
+    // hbox->addWidget(m_PointFeedback);
+    // hbox->addWidget(m_ModuloPointFeedback);
     layout->addLayout(hbox);
 
     m_MarkerPointFeedbackSize = new QDoubleSpinBox;
@@ -370,8 +370,8 @@ void ConfigDialog::createChartTab()
     m_MarkerPointFeedbackSize->setRange(-100, 100);
 
     hbox = new QHBoxLayout;
-    hbox->addWidget(new QLabel(tr("Increase size of Points")));
-    hbox->addWidget(m_MarkerPointFeedbackSize);
+    // hbox->addWidget(new QLabel(tr("Increase size of Points")));
+    // hbox->addWidget(m_MarkerPointFeedbackSize);
     layout->addLayout(hbox);
 
     layout->addWidget(new QLabel(tr("Configure Chart Export Settings:")));

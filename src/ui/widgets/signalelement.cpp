@@ -174,6 +174,8 @@ void SignalElement::UnCheckToggle(int i)
         m_toggle->setChecked(false);
 }
 
+#pragma message("Restore or clean up before release")
+/*
 void SignalElement::enterEvent(QEnterEvent* event)
 {
     m_data_series->setPointLabelsColor(m_data_series->color());
@@ -197,5 +199,5 @@ void SignalElement::leaveEvent(QEvent* event)
         }
     });
 }
-
+*/
 #include "signalelement.moc"

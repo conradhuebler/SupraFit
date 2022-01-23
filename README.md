@@ -6,15 +6,15 @@ Linux and Windows Build: [![Build Status](https://github.com/conradhuebler/Supra
 
 # SupraFit 
 
-A Open Source Qt6 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry), Michaelis Menten Kinetics and indidual custom models. Custom models are work in progress and not yet well documented. For the start, please have a look at [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/ScriptedModels.md)
+A Open Source Qt6 based fitting tool for supramolecular titration experiments (NMR, UV-VIS and Calorimetry), Michaelis Menten Kinetics and indidual custom models. 
 
 A short introduction can be downloaded [here](https://github.com/conradhuebler/SupraFit/raw/master/docs/Quickstart.pdf). For question, comments, feedback etc. please use the email adress on page 18 in that Quickstart.
 
 ## Getting SupraFit
 [SupraFit 2.0 binaries](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) are available for Linux (as AppImage), for Windows and macOS. 
 
-Windows users please note, that SupraFit requires the Microsoft Visual C++ Redistributable for Visual Studio 2015, 2017 and 2019 to be installed, which includes for example msvcp140.dll and msvcp140_1.dll.
-It may be downloaded [from the official website.](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads)
+Windows users please note, that SupraFit 2.0 requires the Microsoft Visual C++ Redistributable for Visual Studio 2015, 2017 and 2019 to be installed, which includes for example msvcp140.dll and msvcp140_1.dll.
+It may be downloaded [from the official website.](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads) This holds not true for the most recent Nightly Build for Windows platforms. They are compilied with MinGW and all dlls are shipped with the zip archive.
 
 ### History
 - [SupraFit 2.0](https://github.com/conradhuebler/SupraFit/releases/tag/2.0.0) stable version, first public release
@@ -22,7 +22,24 @@ It may be downloaded [from the official website.](https://support.microsoft.com/
 
 
 ## Running
-Start suprafit executable from the build directory. SupraFit handles tables that are composed as follows:
+### Windows
+Start SupraFit (**suprafit.exe**) from the build directory. The dlls have to be in place. Desktop shortcuts will work though.
+
+### Linux
+Run the AppImage. It may have to be marked as executable: **chmoxd +x SupraFit*.AppImage**
+
+### macOS
+The content of the dmg file has to be copied to the place where other programs are stored. Please not, that SupraFit on macOS has not been tested at. If there are any problems, please feel free to create an issue or contact me directly.
+
+### Nightly Build
+Latest snapshots (not more than 5) of the current development can be found via the preleases. There are some new features and bugs included.
+
+- Custom models are work in progress and not yet well documented. For the start, please have a look at [here](https://github.com/conradhuebler/SupraFit/blob/master/docs/ScriptedModels.md) (Qt 6)
+- The current master branch contains a snapshot of an improved  thermogram handling, that was developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511). (Qt 5)
+- The current master branch contains a snaphsot of a spectra import interface.  The latest commit without the new branch is [b5af8cd](https://github.com/conradhuebler/SupraFit/commit/b5af8cd9e8c29792c15b893aee8bcffa8a19dd8d). (Qt 5)
+
+## Usage
+SupraFit handles tables that are composed as follows:
 
 ### Titration experiments (NMR, UV-VIS)
 | host | guest | signal1 | signal2 | signal3 |
@@ -83,12 +100,9 @@ git clones automatically fisher_dist and libpeakpick.
 
 SupraFit comes with the some selected [Google Noto Fonts](https://github.com/googlei18n/noto-fonts). They are optional and can be included into the binary during compile-time (set `-Dnoto_font=true\false` as cmake argument).
 
-- The current master branch contains a snapshot of an improved  thermogram handling, that is developed in the **thermogram** branch. The latest commit without the new branch is [dec3510](https://github.com/conradhuebler/SupraFit/commit/2211c62a327ea8a97c3960229837b44ee1c98511).
-- The current master branch contains a snaphsot of a scripting interface, using ChaiScript to define own models. However, this is highly experimental and therefore disabled. The cmake options are ***_Python*** and ***_Models***. Additionally, some a concept for python support is added.
-- The current master branch contains a snaphsot of a spectra import interface.  The latest commit without the new branch is [b5af8cd](https://github.com/conradhuebler/SupraFit/commit/b5af8cd9e8c29792c15b893aee8bcffa8a19dd8d).
 
 ## Compiling
-To compile SupraFit you will need [CMake](https://cmake.org/download/) 3 or newer, a C++14-capable compiler and [Qt 5.15](https://www.qt.io/download).
+To compile SupraFit you will need [CMake](https://cmake.org/download/) 3.21 or newer, a C++14-capable compiler and [Qt 6.2](https://www.qt.io/download).
 
 > SupraFit needs QtCharts, so please provide it. It can/should be checked in the Installer Tools from Qt.
 
@@ -97,10 +111,11 @@ SupraFit has been successfully compilied with:
 - clang 3.9 
 
 on linux systems, on windows systems using
-- mingw 5.3
-- MSVC 2015, MS 2019
+- mingw 5.3 or newer
 
-and on macOS 10.12 and 10.13 with the latest [Qt (5.15.1)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
+MSVC 2015, MS 2019 builds failed with Qt 6. Before the port, MSVC worked well.
+
+Compiling works on macOS 10.15 with the latest [Qt (6.2.0)](https://www.qt.io/download). XCode was downloaded by the Qt Installer, [CMake](https://cmake.org/download/) downloaded and installed manually.
 
 > Windows 7 or higher is mandatory.
 

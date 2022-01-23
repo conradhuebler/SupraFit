@@ -235,7 +235,7 @@ void ScriptModel::CalculatePython()
     interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     interp.setLocal(LocalParameter()->Table());
     interp.setExecute(m_execute_python);
-    +interp.InitialisePython();
+    interp.InitialisePython();
 
     for (int i = 0; i < DataPoints(); ++i) {
         for (int j = 0; j < SeriesCount(); ++j) {

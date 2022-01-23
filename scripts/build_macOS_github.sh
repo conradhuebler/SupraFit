@@ -1,8 +1,6 @@
 #!/bin/bash
 set -ex
 
-#export CXX="g++-9"
-#export CC="gcc-9"
 git submodule init
 git submodule update --recursive
 # check submodules, seems not to work automatically
@@ -17,4 +15,4 @@ cd release
 cmake -DCMAKE_BUILD_TYPE=Release -Dnoto_font=true -D_Theme=false  ..
 make 
 cd bin/macOS
-macdeployqt  suprafit.app -dmg -no-plugins
+macdeployqt  suprafit.app -dmg
