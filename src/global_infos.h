@@ -35,7 +35,9 @@ inline QString aboutSFHtml()
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : <a href='http://www.oxygen-icons.org'>http://www.oxygen-icons.org</a></p>";
     info += "<p>SupraFit website on GitHub: <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/conradhuebler/SupraFit</a></p>";
-    info += "<p>If you obtain results with SupraFit, I kindly ask to cite: </p><p>C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. <a href='http://doi.org/10.5281/zenodo.3364569'>http://doi.org/10.5281/zenodo.3364569</a>.<p>";
+    info += "<p>If you obtain results with SupraFit, I kindly ask to cite: </p><p>C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. <a href='http://doi.org/10.5281/zenodo.3364569'>http://doi.org/10.5281/zenodo.3364569</a><p>";
+    info += "<p>and</p<p>C. Hübler, ChemRxiv 2022, DOI 10.26434/chemrxiv-2022-c1jwr. This content is a preprint and has not been peer-reviewed.</p>";
+    info += "<p></p>";
     info += "<p>SupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n";
 #ifdef noto_font
     info += "<p>SupraFit uses and provides some selected Google Noto Font, see <a href='https://github.com/googlei18n/noto-fonts'>https://github.com/googlei18n/noto-fonts</a></p>";
@@ -58,6 +60,7 @@ inline QString aboutSF()
     info += "\tThanks to all encouraged me writing the application.\n\n";
     info += "\tSupraFit website on GitHub: https://github.com/conradhuebler/SupraFit\n\n";
     info += "\tIf you obtain results with SupraFit, I kindly ask to cite: C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. http://doi.org/10.5281/zenodo.3364569\n";
+    info += "\tand \n\tC. Hübler, ChemRxiv 2022, DOI 10.26434/chemrxiv-2022-c1jwr. This content is a preprint and has not been peer-reviewed.\n\n";
     info += "\tSupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n\n";
     info += "\t*********************************************************************************************************\n\n";
     return info;
