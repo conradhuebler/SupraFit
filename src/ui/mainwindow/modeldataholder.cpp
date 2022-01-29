@@ -236,6 +236,7 @@ MDHDockTitleBar::MDHDockTitleBar()
     m_kinetcs_model << addModel(SupraFit::Michaelis_Menten);
 
     m_kinetcs_model << addModel(SupraFit::MonoMolecularModel);
+    m_kinetcs_model << addModel(SupraFit::DecayRates);
 #endif
 
 #ifdef ITC_Models

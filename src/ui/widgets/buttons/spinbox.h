@@ -59,27 +59,27 @@ public:
         : QDoubleSpinBox(parent)
         , valueBeingSet(false)
     {
-        setLineEdit(new LineEdit());
+        // setLineEdit(new LineEdit());
         connect(this, SIGNAL(valueChanged(double)), this, SLOT(On_valueChanged(double)));
         setMaximum(1e27);
         setMinimum(-1e27);
         setDecimals(4);
     }
     inline ~SpinBox() {}
-
-    inline QString textFromValue(double val) const override
-    {
-        QString value;
-        if (val > 1e3 || val < -1e3)
-            value = QString::number(val, 'E', 3);
-        else if ((val < 1e-2 && val > -1e-2) && abs(val) > 1e-8)
-            value = QString::number(val, 'E', 2);
-        else
-            value = QString::number(val, 'f', 4);
-        value.replace('.', loc.decimalPoint());
-        value.replace(',', loc.decimalPoint());
-        return value;
-    }
+    /*
+        inline QString textFromValue(double val) const override
+        {
+            QString value;
+            if (val > 1e3 || val < -1e3)
+                value = QString::number(val, 'E', 3);
+            else if ((val < 1e-2 && val > -1e-2) && abs(val) > 1e-8)
+                value = QString::number(val, 'E', 2);
+            else
+                value = QString::number(val, 'f', 4);
+            value.replace('.', loc.decimalPoint());
+            value.replace(',', loc.decimalPoint());
+            return value;
+        }*/
     /*
 
     */

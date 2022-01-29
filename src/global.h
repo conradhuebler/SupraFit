@@ -113,6 +113,7 @@ enum Model {
     ScriptModel = 100,
     Indep_Quadrat = 101,
     Dep_Any = 102,
+    DecayRates = 103,
     MetaModel = 200,
     Unknown = 404
 };
@@ -337,6 +338,8 @@ inline QString Model2Name(SupraFit::Model model)
         return "Dep. AnyModel";
     else if (model == SupraFit::MetaModel)
         return "Meta Model";
+    else if (model == SupraFit::DecayRates)
+        return "Decay Rates";
     else
         return "Unknown";
 }

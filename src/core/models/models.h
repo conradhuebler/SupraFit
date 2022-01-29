@@ -21,6 +21,9 @@
 #include "kinetics/mm_model.h"
 #include "kinetics/monomolecularmodel.h"
 
+/* Photophysics stuff */
+#include "photophysics/decayrates.h"
+
 /* Any other models */
 #include "misc/models.h"
 
@@ -100,6 +103,9 @@ inline QSharedPointer<AbstractModel> CreateModel(int model, QPointer<DataClass> 
             break;
         case SupraFit::ScriptModel:
             t = QSharedPointer<ScriptModel>(new ScriptModel(data.data()), &QObject::deleteLater);
+            break;
+        case SupraFit::DecayRates:
+            t = QSharedPointer<DecayRates>(new DecayRates(data.data()), &QObject::deleteLater);
             break;
         case SupraFit::MetaModel:
             t = QSharedPointer<MetaModel>(new MetaModel(data.data()), &QObject::deleteLater);

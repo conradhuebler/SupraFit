@@ -17,6 +17,11 @@
  * 
  */
 
+//#define _CxxThreadPool_TimeOut 10
+//#define _CxxThreadPool_Verbose true
+
+#include "CxxThreadPool.h"
+
 #include "src/global_config.h"
 
 #include "src/core/models/AbstractModel.h"
@@ -42,6 +47,76 @@
 
 #include "scriptmodel.h"
 
+CalculateThread::CalculateThread(int rows, int cols, DataTable* X, DataTable* Global, DataTable* Local, const QStringList& input_names, const QStringList& global_names, const QStringList& local_names, const QString& execute)
+    : m_X(X)
+    //, m_Global(Global)
+    //, m_Local(Local)
+    , m_input_names(input_names)
+    , m_global_names(global_names)
+    , m_local_names(local_names)
+    , m_execute(execute)
+    , m_rows(rows)
+    , m_cols(cols)
+{
+    m_chai.setInput(m_X->Table());
+    m_chai.setGlobal(Global->Table(), m_global_names);
+    m_chai.setLocal(Local->Table());
+    m_chai.setInputNames(m_input_names);
+    // m_chai.setExecute(m_execute);
+    // m_chai.InitialiseChai();
+    m_result = new DataTable(cols, rows, NULL);
+}
+
+void CalculateThread::UpdateParameter(DataTable* Global, DataTable* Local)
+{
+    m_chai.setGlobal(Global->Table(), m_global_names);
+    m_chai.setLocal(Local->Table());
+}
+
+CalculateThread::~CalculateThread()
+{
+    delete m_result;
+}
+
+int CalculateThread::execute()
+{
+    if (m_end > m_rows)
+        m_end = m_rows;
+
+    if (m_start > m_rows)
+        m_start = m_rows;
+    if (m_start == m_end) {
+        m_valid = false;
+        return 0;
+    }
+    m_chai.setInput(m_X->Table());
+    // m_chai.setGlobal(m_Global->Table(), m_global_names);
+    // m_chai.setLocal(m_Local->Table());
+    m_chai.setInputNames(m_input_names);
+    m_chai.UpdateChai();
+    // QString execute = m_execute_chai.join("\n");
+    for (int series = 0; series < m_cols; ++series) {
+        for (int i = m_start; i < m_end; ++i) {
+            QString cache = m_execute;
+            for (int parameter = 0; parameter < m_X->columnCount(); ++parameter) {
+                cache.replace(
+                    m_input_names[parameter],
+                    QString::number(m_X->data(parameter, i)));
+            }
+            int error = 0;
+
+            double result = m_chai.Evaluate(cache.toUtf8(), error);
+            if (error == 1) {
+                cache.replace("var", "");
+                result = m_chai.Evaluate(cache.toUtf8(), error);
+            }
+            m_result->data(series, i) = result;
+            // m_result(i, series, result);
+        }
+    }
+    return 0;
+}
+
 ScriptModel::ScriptModel(DataClass* data)
     : AbstractModel(data)
 {
@@ -63,6 +138,28 @@ ScriptModel::ScriptModel(AbstractModel* data)
 
 ScriptModel::~ScriptModel()
 {
+    if (m_threads.size())
+        delete m_thread_pool;
+}
+
+void ScriptModel::InitialThreads()
+{
+    if (m_threads.size())
+        return;
+
+    setThreads(8);
+    int use_threads = Threads();
+    // while(use_threads > DataPoints())
+    //     use_threads /= 2;
+    m_thread_pool = new CxxThreadPool;
+    m_thread_pool->setProgressBar(CxxThreadPool::ProgressBarType::None);
+    for (int i = 0; i <= use_threads; ++i) {
+        CalculateThread* thread = new CalculateThread(DataPoints(), SeriesCount(), IndependentModel(), GlobalParameter(), LocalParameter(), m_input_names, m_global_parameter_names, m_local_parameter_names, m_chai_execute);
+        thread->setRange(DataPoints() / use_threads * i, DataPoints() / use_threads * (i + 1));
+        m_thread_pool->addThread(thread);
+        m_threads << thread;
+    }
+    m_thread_pool->setActiveThreadCount(use_threads);
 }
 
 void ScriptModel::DefineModel(const QJsonObject& model)
@@ -165,6 +262,7 @@ void ScriptModel::DefineModel(const QJsonObject& model)
 #ifdef Use_Duktape
     m_duktapeinterp.Initialise();
 #endif
+    // InitialThreads();
 }
 
 QJsonObject ScriptModel::GenerateModelDefinition() const
@@ -253,6 +351,42 @@ void ScriptModel::CalculatePython()
 void ScriptModel::CalculateChai()
 {
 #ifdef _Models
+    /*
+    setThreads(2);
+    int use_threads = Threads();
+    //while(use_threads > DataPoints())
+    //    use_threads /= 2;
+    QVector<CalculateThread *> threads;
+    CxxThreadPool *pool = new CxxThreadPool;
+    pool->setProgressBar(CxxThreadPool::ProgressBarType::None);
+    for(int i = 0; i <= use_threads; ++i)
+    {
+        CalculateThread *thread = new CalculateThread(DataPoints(), SeriesCount(), IndependentModel(),  GlobalParameter(), LocalParameter(), m_input_names, m_global_parameter_names, m_local_parameter_names, m_chai_execute);
+        thread->setRange(DataPoints()/use_threads*i, DataPoints()/use_threads*(i+1));
+        pool->addThread(thread);
+        threads << thread;
+    }
+    pool->setActiveThreadCount(use_threads);
+    */
+    /*
+    for(int i = 0; i < m_threads.size(); ++i)
+        m_threads[i]->UpdateParameter(GlobalParameter(), LocalParameter());
+    m_thread_pool->Reset();
+    m_thread_pool->StartAndWait();
+    for(const CalculateThread *thread :m_threads)
+    {
+        if(!thread->isValid())
+            continue;
+
+        for(int i = thread->Start(); i < thread->End(); ++i)
+        {
+            for(int j = 0; j < SeriesCount(); ++j)
+                SetValue(i, j, thread->Result()->data(j, i));
+        }
+    }
+    */
+    // delete pool;
+
     m_interp.setGlobal(GlobalParameter()->Table(), m_global_parameter_names);
     m_interp.setLocal(LocalParameter()->Table());
     m_interp.UpdateChai();
@@ -276,6 +410,7 @@ void ScriptModel::CalculateChai()
           SetValue(i, series, result);
         }
     }
+
 #else
     emit Info()->Warning(QString("It looks like you open a Scripted Model. Ok, unfortranately SupraFit was compiled without Chai Script Support."));
     m_complete = false;

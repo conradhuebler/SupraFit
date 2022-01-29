@@ -733,6 +733,11 @@ public:
     inline virtual bool DemandInput() const { return false; }
 
     inline QJsonObject ScriptDefinition() const { return m_model_definition; }
+
+    /*! \brief Number of threads to be used during model calculation */
+    inline void setThreads(int threads) { m_threads = threads; }
+
+    inline int Threads() const { return m_threads; }
 public slots:
     /*! \brief Calculated the current model with all previously set and defined parameters
      */
@@ -810,7 +815,7 @@ protected:
     int m_used_variables;
     QList<int> m_active_signals;
     qreal m_last_p, m_f_value;
-    int m_last_parameter, m_last_freedom;
+    int m_last_parameter, m_last_freedom, m_threads = 1;
     bool m_corrupt, m_converged, m_locked_model, m_fast, m_statistics = true, m_guess_failed = true, m_demand_guess = false, m_complete = true, m_demand_inialisation = false;
     QJsonObject m_opt_config;
     QPointer<DataTable> m_model_signal, m_model_error;

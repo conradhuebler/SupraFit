@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "CxxThreadPool.h"
+
 #include "src/global.h"
 #include "src/global_config.h"
 
@@ -31,6 +33,37 @@
 #include "src/core/models/chaiinterpreter.h"
 #include "src/core/models/dukmodelinterpreter.h"
 
+class CalculateThread : public CxxThread {
+public:
+    CalculateThread(int rows, int cols, DataTable* X, DataTable* Global, DataTable* Local, const QStringList& input_names, const QStringList& global_names, const QStringList& local_names, const QString& execute);
+    virtual ~CalculateThread() override;
+
+    virtual int execute() override;
+
+    inline void setRange(int start, int end)
+    {
+        m_start = start;
+        m_end = end;
+        qDebug() << m_start << m_end;
+    }
+
+    int Start() const { return m_start; }
+    int End() const { return m_end; }
+    const DataTable* Result() const { return m_result; }
+    void UpdateParameter(DataTable* Global, DataTable* Local);
+
+    bool isValid() const { return m_valid; }
+
+private:
+    ChaiInterpreter m_chai;
+    DataTable *m_X, *m_Y, *m_result;
+    QStringList m_input_names, m_global_names, m_local_names;
+    QString m_execute;
+
+    int m_start = 0, m_end = 0, m_rows = 0, m_cols = 0;
+    bool m_valid = true;
+};
+
 class ScriptModel : public AbstractModel {
     Q_OBJECT
 
@@ -39,6 +72,8 @@ public:
     ScriptModel(DataClass* data, const QJsonObject& model);
 
     ScriptModel(AbstractModel* data);
+
+    void InitialThreads();
 
     virtual ~ScriptModel() override;
 
@@ -83,6 +118,8 @@ public:
     inline bool DemandInput() const override { return true; }
 
 private:
+    QVector<CalculateThread*> m_threads;
+    CxxThreadPool* m_thread_pool;
     QString m_ylabel = QString(), m_xlabel = QString();
     int m_input_size = 0, m_global_parameter_size = 0, m_local_parameter_size = 0;
     bool m_support_series = false, m_chai = false, m_python = false, m_duktape = false;
