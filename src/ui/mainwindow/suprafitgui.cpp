@@ -1563,29 +1563,51 @@ void SupraFitGui::AddScatter(const QJsonObject& object)
 
 void SupraFitGui::LicenseInfo()
 {
+    QTabWidget* licence_tab = new QTabWidget;
     QPlainTextEdit* text = new QPlainTextEdit;
     text->setReadOnly(true);
-    QHBoxLayout* layout = new QHBoxLayout;
-    layout->addWidget(text);
 
-    QString content("License Information for SupraFit\n");
+    QString content;
     QFile file(":/LICENSE.md");
     if (file.open(QIODevice::ReadOnly)) {
         content += QString(file.readAll());
     }
 
-#ifdef noto_font
-    content += "\n\nLicense Information for Google Noto Fonts\nhttps://github.com/googlei18n/noto-fonts\n\n";
-
-    QFile file2(":/fonts/LICENSE");
-    if (file2.open(QIODevice::ReadOnly)) {
-        content += QString(file2.readAll());
-    } else
-        qDebug() << file2.errorString() << file2.fileName();
-#endif
     text->setPlainText(content);
+    licence_tab->addTab(text, tr("Licence for SupraFit"));
 
+    text = new QPlainTextEdit;
+    text->setReadOnly(true);
+
+    file.close();
+    content.clear();
+    file.setFileName(":/BSD.md");
+    if (file.open(QIODevice::ReadOnly)) {
+        content += QString(file.readAll());
+    }
+
+    text->setPlainText(content);
+    licence_tab->addTab(text, tr("Licence for FlowLayout"));
+
+#ifdef noto_font
+    file.close();
+    content.clear();
+    text = new QPlainTextEdit;
+    text->setReadOnly(true);
+
+    file.setFileName(":/fonts/LICENSE");
+    if (file.open(QIODevice::ReadOnly)) {
+        content += QString(file.readAll());
+    } else
+        qDebug() << file.errorString() << file.fileName();
+    text->setPlainText(content);
+    licence_tab->addTab(text, tr("Licence for NotoFons"));
+#endif
+
+    QHBoxLayout* layout = new QHBoxLayout;
+    layout->addWidget(licence_tab);
     QDialog dialog;
+    dialog.setWindowTitle(tr("About the Licences used in SupraFit"));
     dialog.setLayout(layout);
     dialog.resize(800, 600);
     dialog.exec();

@@ -38,6 +38,7 @@ endif()
 set(SFGui_SRC
                 guitools/chartwrapper.cpp
                 guitools/mime.h
+                guitools/flowlayout.cpp
                 dialogs/spectraimport.cpp
                 dialogs/regressionanalysisdialog.cpp
                 dialogs/statisticdialog.cpp

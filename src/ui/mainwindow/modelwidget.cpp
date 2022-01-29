@@ -38,6 +38,7 @@
 #include "src/ui/dialogs/statisticdialog.h"
 
 #include "src/ui/guitools/chartwrapper.h"
+#include "src/ui/guitools/flowlayout.h"
 
 #include "src/ui/mainwindow/chartwidget.h"
 
@@ -128,17 +129,15 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     connect(m_results, &ResultsDialog::LoadModel, this, &ModelWidget::LoadJson);
     connect(m_results, &ResultsDialog::AddModel, this, &ModelWidget::AddModel);
 
-    m_global_box = new QCheckBox(tr("Global Parameter"));
-    m_global_box->setChecked(true);
 
-    m_local_box = new QCheckBox(tr("Local Parameter"));
-    m_local_box->setChecked(true);
 
     m_layout = new QVBoxLayout;
-    QHBoxLayout* const_layout = new QHBoxLayout;
+    QHBoxLayout* head_layout = new QHBoxLayout;
+    FlowLayout* const_layout = new FlowLayout;
     for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
         QGroupBox* group = new QGroupBox;
-        group->setFixedWidth(180);
+        group->setAlignment(Qt::AlignHCenter);
+        group->setTitle(m_model->GlobalParameterName(i));
         QHBoxLayout* hlayout = new QHBoxLayout;
         QPointer<SpinBox> constant = new SpinBox;
         QPointer<QCheckBox> check = new QCheckBox;
@@ -176,24 +175,22 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
             check->setChecked(state);
         });
 
-        hlayout->addWidget(new QLabel(m_model->GlobalParameterName(i)));
         hlayout->addWidget(constant);
         hlayout->addWidget(check);
         check->setHidden(m_model.data()->isSimulation());
         group->setLayout(hlayout);
         const_layout->addWidget(group);
     }
-    const_layout->addStretch(100);
 
-    QVBoxLayout* fit_layout = new QVBoxLayout;
-    fit_layout->addWidget(m_global_box);
-    fit_layout->addWidget(m_local_box);
+    m_global_box = new QCheckBox(tr("Global Parameter"));
+    m_global_box->setChecked(true);
+
+    m_local_box = new QCheckBox(tr("Local Parameter"));
+    m_local_box->setChecked(true);
 
     m_global_box->setHidden(m_model->isSimulation() || m_val_readonly);
     m_local_box->setHidden(m_model->isSimulation() || m_val_readonly);
 
-    if (!m_val_readonly)
-        const_layout->addLayout(fit_layout);
 
     m_minimize_all = new QPushButton(tr("Fit"));
 
@@ -214,11 +211,26 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     menu->setDefaultAction(minimize_normal);
     m_minimize_all->setMenu(menu);
 
-    if (!m_val_readonly && !m_model->isSimulation())
-        const_layout->addWidget(m_minimize_all);
+    // head_layout->addLayout(const_layout);
 
+    QGridLayout* fit_layout = new QGridLayout;
+    fit_layout->addWidget(new ExportSimulationWidget(m_model, this), 0, 0);
+    fit_layout->addWidget(m_global_box, 0, 1);
+    fit_layout->addWidget(m_local_box, 0, 2);
+    fit_layout->addWidget(m_minimize_all, 0, 3);
+
+    QGroupBox* fitbox = new QGroupBox;
+    fitbox->setTitle(tr("Fit model"));
+    fitbox->setAlignment(Qt::AlignHCenter);
+    fitbox->setLayout(fit_layout),
+        // if (!m_val_readonly)
+        //     head_layout->addLayout(fit_layout);
+        // head_layout->addWidget(fitbox, 0, Qt::AlignRight);
+
+        m_layout->addWidget(fitbox);
     m_layout->addLayout(const_layout);
-    m_layout->addWidget(new ExportSimulationWidget(m_model, this));
+
+    // m_layout->addWidget(n);
 
     QHBoxLayout* name_layout = new QHBoxLayout;
     name_layout->addWidget(new QLabel(tr("<h4>Model Name</h4>")));

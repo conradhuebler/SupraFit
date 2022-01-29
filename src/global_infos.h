@@ -38,6 +38,9 @@ inline QString aboutSFHtml()
     info += "<p>If you obtain results with SupraFit, I kindly ask to cite: </p><p>C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. <a href='http://doi.org/10.5281/zenodo.3364569'>http://doi.org/10.5281/zenodo.3364569</a><p>";
     info += "<p>and</p<p>C. Hübler, ChemRxiv 2022, DOI 10.26434/chemrxiv-2022-c1jwr. This content is a preprint and has not been peer-reviewed.</p>";
     info += "<p></p>";
+    info += "<p>SupraFit uses BSD licensed source code from the Qt Examples: https://doc.qt.io/qt-6/qtwidgets-layouts-flowlayout-example.html</p>";
+    info += "<p></p>";
+    info += "<p></p>";
     info += "<p>SupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n";
 #ifdef noto_font
     info += "<p>SupraFit uses and provides some selected Google Noto Font, see <a href='https://github.com/googlei18n/noto-fonts'>https://github.com/googlei18n/noto-fonts</a></p>";

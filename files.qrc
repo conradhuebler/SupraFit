@@ -46,5 +46,6 @@
         <file>icons/help-hint-blue.png</file>
         <file>icons/thermogram.png</file>
         <file>icons/spectra_ico.png</file>
+        <file>BSD.md</file>
     </qresource>
 </RCC>
