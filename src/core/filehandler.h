@@ -33,7 +33,8 @@ public:
         SupraFit = 1,
         Generic = 2,
         dH = 3,
-        ITC = 4
+        ITC = 4,
+        CSV = 5
     };
 
     FileHandler(const QString& filename, QObject* parent = 0);
@@ -76,7 +77,7 @@ private:
     void ReadJson();
     void ReadITC();
     void ConvertTable();
-
+    void ReadCSV();
     bool CheckForTable();
 
     bool m_table, m_allint, m_file_supported, m_thermogram = false, m_plain_thermogram = false;

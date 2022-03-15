@@ -79,6 +79,9 @@ void FileHandler::LoadFile()
         m_filetype = FileType::ITC;
         ReadITC();
         return;
+    }
+    if ((info.suffix()).toLower() == "csv") {
+        m_filetype = FileType::CSV;
     } else
         m_filetype = FileType::Generic;
 
@@ -89,7 +92,9 @@ void FileHandler::LoadFile()
         ReadGeneric();
     else if (m_filetype == FileType::dH)
         ReaddH();
-    else
+    else if (m_filetype == FileType::CSV) {
+        ReadCSV();
+    } else
         m_file_supported = false;
 }
 
@@ -205,6 +210,75 @@ bool FileHandler::CheckForTable()
     }
     m_file_supported = m_allint && m_table;
     return m_allint && m_table;
+}
+
+void FileHandler::ReadCSV()
+{
+    if (!m_filecontent.first().contains(QMarks)) {
+        ReadGeneric();
+        return;
+    }
+    bool header_added = false;
+    m_stored_table = new DataTable;
+
+    for (const QString& line : qAsConst(m_filecontent)) {
+        if (!line.isEmpty()) {
+            bool read_header = false;
+            if (line[0] == HashTag && header_added == false) {
+                read_header = true;
+            }
+            QVector<qreal> row;
+            QStringList header;
+            bool open1 = false;
+            bool open2 = false;
+            QString content;
+            for (const QChar& c : line) {
+                if (c == QMarks && open1 == false) {
+                    open1 = true;
+                    continue;
+                } else if (c == QMarks && open1 == true) {
+                    bool ok = false;
+                    double number = (QString(content).replace(",", ".")).toDouble(&ok);
+                    if (ok)
+                        // qDebug() << item << item.toDouble();
+                        row.append(number);
+                    else {
+                        qDebug() << content << number;
+                        if (content.contains("0"))
+                            row.append(0);
+                    }
+                    // open1 = false;
+                    content = QString();
+                    continue;
+                }
+                content += c;
+            }
+            /*
+            QStringList items = line.simplified().split(QMarks);
+
+            double sum = 0;
+            for (const QString& item : qAsConst(items)) {
+                if (read_header)
+                    header << QString(item).replace(HashTag, "");
+                else
+                {
+                    bool ok = false;
+                    double number = (QString(item).replace(",", ".")).toDouble(&ok);
+                    if(ok)
+                    //qDebug() << item << item.toDouble();
+                        row.append(number);
+                }
+                sum += (QString(item).replace(",", ".")).toDouble();
+            }*/
+            // qDebug() << header;
+            if (!header_added && header.size()) {
+                m_stored_table->setHeader(header);
+                header_added = true;
+            }
+            if (!read_header)
+                m_stored_table->insertRow(row);
+        }
+    }
 }
 
 void FileHandler::ReaddH()

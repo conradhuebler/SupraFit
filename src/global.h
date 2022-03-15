@@ -54,6 +54,7 @@ const QString Unicode_Sub_2 = QChar(0x2082);
 const QString Unicode_Integral = QChar(0x222B);
 
 const QString HashTag = QChar(0x0023);
+const QString QMarks = QChar(0x0022);
 
 const QString Unicode_Sub_y = QChar(0x0079); // not really
 
