@@ -323,12 +323,17 @@ void ConfigDialog::createStandardCalTab()
     m_overwrite_bins = new QCheckBox(tr("Overwrite stored bin number"));
     m_overwrite_bins->setChecked(qApp->instance()->property("OverwriteBins").toBool());
 
+    m_FullShannon = new QCheckBox(tr("Calculate full Shannon entropy!"));
+    m_FullShannon->setChecked(qApp->instance()->property("FullShannon").toBool());
+    m_FullShannon->setToolTip(tr("Calculate Shannon entropy including the discretisation term. Not recommended, as the ordering of appropriate parameters and models is reversed."));
+
     h_layout = new QHBoxLayout;
     h_layout->addWidget(new QLabel(tr("# bins for Shannon Entropy Calculation")));
     h_layout->addWidget(m_HistBins);
     h_layout->addWidget(m_overwrite_bins);
 
     layout->addLayout(h_layout);
+    layout->addWidget(m_FullShannon);
 
     m_mainwidget->addTab(calcTab, tr("Standard Calculation"));
 }
@@ -502,6 +507,7 @@ void ConfigDialog::accept()
     qApp->instance()->setProperty("advanced_ui", m_advanced_ui->isChecked());
     qApp->instance()->setProperty("UnsafeCopy", m_unsafe_copy->isChecked());
     qApp->instance()->setProperty("OverwriteBins", m_overwrite_bins->isChecked());
+    qApp->instance()->setProperty("FullShannon", m_FullShannon->isChecked());
     qApp->instance()->setProperty("InitialiseRandom", m_initialise_random->isChecked());
 
     /* Chart Feedback Stuff */

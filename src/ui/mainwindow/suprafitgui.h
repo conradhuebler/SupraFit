@@ -220,7 +220,8 @@ private:
                                                    << "LastSpectraType"
                                                    << "MarkerPointFeedback"
                                                    << "PointFeedback"
-                                                   << "ModuloPointFeedback";
+                                                   << "ModuloPointFeedback"
+                                                   << "FullShannon";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;

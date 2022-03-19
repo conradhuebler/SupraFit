@@ -425,6 +425,7 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
     QString result = QString("<table>");
     QString method_line = QString();
     QString bin_info = QString();
+    bool fullshannon = qApp->instance()->property("FullShannon").toBool();
 
     for (const auto& model : models) {
         QJsonObject statistics = model["data"].toObject()["methods"].toObject();
@@ -449,7 +450,10 @@ QString CompareMC(const QVector<QJsonObject> models, bool local, int index)
                 MaxSteps = controller["MaxSteps"].toInt();
                 sigma = controller["VarianceSource"].toInt();
                 SEy = controller["Variance"].toDouble();
-                method_line = QString("Monte Carlo Simulation with %1; %2 = %3, Bins for Histogram calculation = %4").arg(MaxSteps).arg(Unicode_sigma).arg(controller["Variance"].toDouble()).arg(bins);
+                if (fullshannon)
+                    method_line = QString("<font color=\"red\"><p>Monte Carlo Simulation with %1; %2 = %3, Bins for Histogram calculation = %4;</p><p>Shannon entropy is calculated with the additional term for discrete distribution.</p><p>This will diverge for a large number of binds and reorders the entropy values.</p></font>").arg(MaxSteps).arg(Unicode_sigma).arg(controller["Variance"].toDouble()).arg(bins);
+                else
+                    method_line = QString("Monte Carlo Simulation with %1; %2 = %3, Bins for Histogram calculation = %4").arg(MaxSteps).arg(Unicode_sigma).arg(controller["Variance"].toDouble()).arg(bins);
             }
 
             idx++;

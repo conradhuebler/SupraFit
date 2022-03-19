@@ -1098,6 +1098,9 @@ void SupraFitGui::ReadSettings()
     if (qApp->instance()->property("StoreRawData") == QVariant())
         qApp->instance()->setProperty("StoreRawData", true);
 
+    if (qApp->instance()->property("FullShannon") == QVariant())
+        qApp->instance()->setProperty("FullShannon", false);
+
     if (qApp->instance()->property("StoreFileName") == QVariant())
         qApp->instance()->setProperty("StoreFileName", true);
 
