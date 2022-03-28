@@ -35,17 +35,20 @@ cd ..
 #ab
 
 cd lib
-cp -r  $(find $HOME -type f -name '*libicudata.so.56' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libicui18n.so.56' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libicuuc.so.56' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6Charts.so.6' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6Core.so.6' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6DBus.so.6' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6Gui.so.6' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6OpenGL.so.6' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6OpenGLWidgets.so.6' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6Widgets.so.6' -print 2>/dev/null |head -n1) .
-cp -r  $(find $HOME -type f -name '*libQt6XcbQpa.so.6' -print 2>/dev/null |head -n1) .
+cp -r  $(find $HOME -type f -name '*libicudata.so.56' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libicui18n.so.56' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libicuuc.so.56' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6Charts.so.6' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6Core.so.6' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6DBus.so.6' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6Gui.so.6' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6OpenGL.so.6' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6OpenGLWidgets.so.6' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6Widgets.so.6' -print 2>/dev/null |head -n1) . || true
+cp -r  $(find $HOME -type f -name '*libQt6XcbQpa.so.6' -print 2>/dev/null |head -n1) . || true
+
+for i in $(ldd ../bin/suprafit |awk '{ print $3}' |grep Qt); do cp $i .; done
+for i in $(ldd ../bin/suprafit |awk '{ print $3}' |grep libic); do cp $i .; done
 
 cd ..
 cd bin
