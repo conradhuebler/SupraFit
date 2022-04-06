@@ -436,8 +436,17 @@ QPair<qreal, qreal> Entropy(const QVector<QPair<qreal, qreal>>& histogram)
         const qreal value = histogram[i].second / sum * d;
         entropy +=  value* log2(value);
     }
+    bool fullshannon = qApp->instance()->property("FullShannon").toBool();
 
-    return QPair<qreal, qreal>(-1 * entropy, log2(histogram.size()));
+    /*
+ * There is the chance to calculate the entropy with the additional term (-ld(d))
+ * which reverses the results. Higher values for better fitting parameters
+ * To test it, change the config in the dialog
+ */
+    if (fullshannon)
+        return QPair<qreal, qreal>(-1 * entropy - log2(d), log2(histogram.size()));
+    else
+        return QPair<qreal, qreal>(-1 * entropy, log2(histogram.size()));
 }
 
 SupraFit::ConfidenceBar Confidence(const QList<qreal>& list, qreal error)
@@ -1067,7 +1076,7 @@ QString TextFromConfidence(const QJsonObject& result, const QJsonObject& control
         text += "<tr><td colspan='2'>Analyse of the Monte Carlo Histogram</td></tr>";
         text += "<tr><td>Median: </td><td> <b>" + Print::printDouble(box.median, 4) + "</b></td></tr>";
         text += "<tr><td>Notches: </td><td> <b>" + Print::printDouble(box.LowerNotch(), 4) + " - " + Print::printDouble(box.UpperNotch(), 4) + "</b></td></tr>";
-        text += QString("<tr><td>Entropy H(X):</td><td>%1<td></tr>").arg(Print::printDouble(pair.first, 6));
+        text += QString("<tr><td>Entropy H(X):</td><td>%1 + %2<td></tr>").arg(Print::printDouble(pair.first, 6)).arg(Print::printDouble(pair.second, 6));
         text += QString("<tr><td>Standard deviation from mean:</td><td>%1<td></tr>").arg(Print::printDouble(box.stddev, 6));
 
         //   if (value > box.UpperNotch() || value < box.LowerNotch()) {

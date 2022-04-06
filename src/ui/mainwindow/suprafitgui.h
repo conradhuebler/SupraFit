@@ -220,7 +220,8 @@ private:
                                                    << "LastSpectraType"
                                                    << "MarkerPointFeedback"
                                                    << "PointFeedback"
-                                                   << "ModuloPointFeedback";
+                                                   << "ModuloPointFeedback"
+                                                   << "FullShannon";
 
     QDockWidget* m_message_dock;
     MessageDock* m_messages_widget;
@@ -242,7 +243,7 @@ private:
     QPushButton* m_clear_recent;
     QToolButton *m_export_suprafit, *m_export_plain, *m_close_all;
     DropButton* m_add_scatter;
-    QString m_supported_files = QString("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)");
+    QString m_supported_files = QString("Supported files (*.suprafit *.json *.jdat *.txt *.dat *.itc *.ITC *.dh *.DH *.csv);;Json File (*.json);;SupraFit Project File  (*.suprafit);;Table Files (*.dat *.txt *.csv *.itc *.ITC);;Origin Files(*.dh *.DH);;All files (*.*)");
     LogoLabel* m_logolabel;
 
 private slots:

@@ -57,7 +57,7 @@ jobs:
         run: sudo apt-get install -y libxcb-icccm4 libxcb*
 
       - name: Deploy
-        run: sh scripts/deploy_unix.sh 
+        run: sh scripts/deploy_unix_dir.sh 
       
       - name: Upload Linux
         id: upload-release-asset-linux
@@ -66,8 +66,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.makerelease.outputs.url }}
-          asset_path: ./release/bin/linux/SupraFit-nightly-x86_64.AppImage
-          asset_name: SupraFit-nightly-${{ needs.makerelease.outputs.version }}-x86_64-Linux.AppImage
+          asset_path: ./release/SupraFit.tar.gz
+          asset_name: SupraFit-nightly-${{ needs.makerelease.outputs.version }}-x86_64-Linux.tar.gz
           asset_content_type: application/zip
 
         
