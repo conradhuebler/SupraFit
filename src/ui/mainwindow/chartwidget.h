@@ -70,7 +70,7 @@ signals:
 
 private:
     QPushButton *m_hide, *m_tools;
-    QMenu *m_theme, *m_size;
+    QMenu *m_theme, *m_font_config;
     QAction *m_flip, *m_animation;
 
 private slots:

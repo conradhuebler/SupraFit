@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,9 @@
 
 #include "src/core/models/AbstractModel.h"
 
-#include "src/core/instance.h"
-
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/guitools.h"
+#include "src/ui/instance.h"
 
 #include <QtCore/QWeakPointer>
 
@@ -65,7 +64,7 @@ void ModelChartWidget::setUI()
     connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(view);
 
     view->setXAxis(chart->x_axis);
     view->setYAxis(chart->y_axis);

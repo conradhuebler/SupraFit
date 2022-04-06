@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2021  Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2016 - 2022  Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 #include "src/core/models/AbstractModel.h"
 #include "src/core/models/dataclass.h"
 
-#include "src/core/instance.h"
+#include "src/ui/instance.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/guitools.h"
@@ -109,30 +109,6 @@ ChartDockTitleBar::ChartDockTitleBar()
 
     toolsmenu->addMenu(m_theme);
 
-    m_size = new QMenu(tr("Chart Size"), this);
-
-    QAction* tiny = new QAction(tr("Tiny"), this);
-    tiny->setData(512);
-    m_size->addAction(tiny);
-
-    QAction* small = new QAction(tr("Small"), this);
-    small->setData(650);
-    m_size->addAction(small);
-
-    QAction* medium = new QAction(tr("Medium"), this);
-    medium->setData(850);
-    m_size->addAction(medium);
-
-    QAction* max = new QAction(tr("Maximum"), this);
-    max->setData(1024);
-    m_size->addAction(max);
-
-    QAction* any = new QAction(tr("Any"), this);
-    any->setData(16777215);
-    m_size->addAction(any);
-
-    toolsmenu->addMenu(m_size);
-
     m_tools->setMenu(toolsmenu);
 
     m_hide = new QPushButton;
@@ -148,9 +124,6 @@ ChartDockTitleBar::ChartDockTitleBar()
 
     connect(m_hide, &QPushButton::clicked, this, &ChartDockTitleBar::close);
     connect(m_theme, &QMenu::triggered, this, &ChartDockTitleBar::ThemeChange);
-    connect(m_size, &QMenu::triggered, [this](QAction* action) {
-        emit setSize(action->data().toInt());
-    });
 }
 
 void ChartDockTitleBar::ThemeChange(QAction* action)
@@ -167,14 +140,14 @@ ChartWidget::ChartWidget()
     connect(m_signalview, &ChartView::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_signalview, &ChartView::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(m_signalview);
 
     m_errorview = new ChartView;
     m_errorview->setName("errorview");
     connect(m_errorview, &ChartView::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_errorview, &ChartView::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(m_errorview);
 
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(m_signalview, 1, 0);
@@ -190,13 +163,7 @@ ChartWidget::ChartWidget()
 
     connect(m_TitleBarWidget, &ChartDockTitleBar::ThemeChanged, this, &ChartWidget::updateTheme);
     connect(m_TitleBarWidget, &ChartDockTitleBar::AnimationChanged, this, &ChartWidget::setAnimation);
-    connect(m_TitleBarWidget, &ChartDockTitleBar::setSize, this, [this](int size) {
-        setMinimumWidth(size);
-        setMaximumWidth(size);
-    });
 
-    //setMinimumWidth(512);
-    //setMaximumWidth(1024);
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }
 
@@ -211,13 +178,8 @@ QSharedPointer<ChartWrapper> ChartWidget::setRawData(QSharedPointer<DataClass> r
     m_rawdata = rawdata;
 
     m_data_mapper = QSharedPointer<ChartWrapper>(new ChartWrapper(this), &QObject::deleteLater);
-    qDebug() << m_rawdata.toStrongRef().data()->DependentModel();
     m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
-    /*
-    connect(rawdata->Info(), &DataClassPrivateObject::Update, this, [this](){
-        m_data_mapper->setDataTable(m_rawdata.toStrongRef().data()->DependentModel());
-    });
-    */
+
     m_data_mapper->setData(m_rawdata);
     connect(m_data_mapper.data(), SIGNAL(stopAnimiation()), this, SLOT(stopAnimiation()));
     connect(m_data_mapper.data(), SIGNAL(restartAnimation()), this, SLOT(restartAnimation()));
@@ -285,14 +247,8 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
     error_wrapper->setDataTable(model->ErrorTable());
     error_wrapper->setData(model);
 
-    /*
-    connect(model->Info(), &DataClassPrivateObject::Update, this, [model, signal_wrapper, error_wrapper](){
-        signal_wrapper->setDataTable(model->ModelTable());
-        error_wrapper->setDataTable(model->ErrorTable());
-    });*/
 
     for (int i = 0; i < model->SeriesCount(); ++i) {
-        //if (model->Type() != 3) {
         LineSeries* model_series = (qobject_cast<LineSeries*>(signal_wrapper->Series(i)));
         signal_wrapper->setSeries(model_series, i);
         connect(m_data_mapper->Series(i), SIGNAL(NameChanged(QString)), model_series, SLOT(setName(QString)));
@@ -300,9 +256,9 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
         model_series->setName(m_data_mapper.data()->Series(i)->name());
         model_series->setColor(m_data_mapper.data()->Series(i)->color());
         connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), model_series, SLOT(setColor(QColor)));
-        model_series->setSize(lineWidth);
+        model_series->setLineWidth(lineWidth);
         m_signalview->addSeries(model_series);
-        //}
+
         if (model->Type() != DataClassPrivate::DataType::Simulation) {
             LineSeries* error_series = (qobject_cast<LineSeries*>(error_wrapper->Series(i)));
             error_wrapper->setSeries(error_series, i);
@@ -310,7 +266,7 @@ Charts ChartWidget::addModel(QSharedPointer<AbstractModel> model)
             error_series->setColor(m_data_mapper.data()->Series(i)->color());
             connect(m_data_mapper->Series(i), SIGNAL(colorChanged(QColor)), error_series, SLOT(setColor(QColor)));
             connect(m_data_mapper->Series(i), SIGNAL(visibleChanged(int)), error_series, SLOT(ShowLine(int)));
-            error_series->setSize(lineWidth);
+            error_series->setLineWidth(lineWidth);
             m_errorview->addSeries(error_series);
         }
     }

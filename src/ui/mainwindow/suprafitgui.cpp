@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,9 @@
 #include "src/core/models/dataclass.h"
 
 #include "src/core/filehandler.h"
-#include "src/core/instance.h"
 #include "src/core/jsonhandler.h"
+
+#include "src/ui/instance.h"
 
 #include "src/ui/dialogs/configdialog.h"
 #include "src/ui/dialogs/importdata.h"
@@ -972,6 +973,7 @@ void SupraFitGui::SettingsDialog()
         m_opt_config = dialog.Config();
         //m_model_dataholder->setSettings(m_opt_config);
         WriteSettings();
+        emit Instance::GlobalInstance()->ConfigurationChanged();
     }
 }
 

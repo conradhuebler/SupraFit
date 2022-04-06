@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,8 +40,9 @@
 #include <libpeakpick/nxlinregress.h>
 #include <libpeakpick/peakpick.h>
 
-#include "src/core/instance.h"
 #include "src/core/libmath.h"
+
+#include "src/ui/instance.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/guitools.h"
@@ -71,7 +72,7 @@ void RegressionAnalysisDialog::setUI()
     connect(m_chart, &ListChart::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_chart, &ListChart::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(m_chart);
 
     m_output = new QTextEdit;
     m_lists = new QListWidget;

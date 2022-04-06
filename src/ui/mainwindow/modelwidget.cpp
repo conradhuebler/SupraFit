@@ -132,7 +132,6 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
 
 
     m_layout = new QVBoxLayout;
-    QHBoxLayout* head_layout = new QHBoxLayout;
     FlowLayout* const_layout = new FlowLayout;
     for (int i = 0; i < m_model->GlobalParameterSize(); ++i) {
         QGroupBox* group = new QGroupBox;

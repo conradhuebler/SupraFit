@@ -190,7 +190,6 @@ set(core_SRC
     src/core/jsonhandler.cpp
     src/core/filehandler.cpp
     src/core/toolset.cpp
-    src/core/instance.h
     src/core/thermogramhandler.cpp
     src/core/spectrahandler.cpp
     src/global.cpp
@@ -280,6 +279,7 @@ ENDIF()
 add_subdirectory(src/ui)
 
 set(suprafit_SRC
+    src/ui/instance.h
     src/ui/main.cpp
 )
 qt_add_resources(suprafit_SRC files.qrc)

@@ -28,7 +28,6 @@
 #include "libpeakpick/baseline.h"
 #include "libpeakpick/peakpick.h"
 
-#include "src/core/instance.h"
 #include "src/core/libmath.h"
 #include "src/core/toolset.h"
 

@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2019 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2017 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include <charts.h>
@@ -24,8 +24,9 @@
 
 #include "src/core/models/AbstractModel.h"
 
-#include "src/core/instance.h"
 #include "src/core/toolset.h"
+
+#include "src/ui/instance.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/guitools.h"
@@ -138,7 +139,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
     connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(view);
 
     view->Chart()->setZoomStrategy(ZoomStrategy::Z_Horizontal);
     view->setName("montecarlochart");
@@ -199,7 +200,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         if (!controller["LightWeight"].toBool())
             has_histogram = true;
         xy_series->setName(name);
-        xy_series->setSize(lineWidth);
+        xy_series->setLineWidth(lineWidth);
         view->addSeries(xy_series, i, xy_series->color(), name, true);
         view->setColor(i, xy_series->color());
         if (!formated)
@@ -207,7 +208,7 @@ QPointer<ListChart> MCResultsWidget::MakeHistogram()
         formated = true;
 
         LineSeries* current_constant = new LineSeries;
-        current_constant->setSize(lineWidth);
+        current_constant->setLineWidth(lineWidth);
         connect(xy_series, &QXYSeries::colorChanged, current_constant, &LineSeries::setColor);
         current_constant->setDashDotLine(true);
         *current_constant << QPointF(x_0, 0) << QPointF(x_0, 1.25);
@@ -237,7 +238,7 @@ QPointer<ListChart> MCResultsWidget::MakeBoxPlot()
     connect(boxplot, &ListChart::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, boxplot, &ListChart::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(boxplot);
 
     double min = 10, max = 0;
 
@@ -296,7 +297,8 @@ QPointer<ListChart> MCResultsWidget::MakeSeriesChart()
     connect(view, &ListChart::LastDirChanged, this, [](const QString& str) {
         setLastDir(str);
     });
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(view);
+
     QJsonObject controller = m_data["controller"].toObject();
     QJsonObject chart_block = controller["chart"].toObject();
 

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,9 @@
 
 #include "src/core/models/AbstractModel.h"
 
-#include "src/core/instance.h"
 #include "src/core/toolset.h"
+
+#include "src/ui/instance.h"
 
 #include "src/ui/guitools/chartwrapper.h"
 #include "src/ui/guitools/guitools.h"
@@ -106,7 +107,7 @@ void ScatterWidget::setUi()
         setLastDir(str);
     });
     view->setName("scatterwidget");
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, view, &ListChart::ApplyConfigurationChange);
+    Instance::GlobalInstance()->MakeChartConnections(view);
 
     m_xy_series = new QScatterSeries;
     m_xy_series->setBorderColor(m_xy_series->color());

@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,7 +54,8 @@
 #include "src/ui/guitools/guitools.h"
 #include "src/ui/guitools/waiter.h"
 
-#include "src/core/instance.h"
+#include "src/ui/instance.h"
+
 #include "src/core/libmath.h"
 #include "src/core/thermogramhandler.h"
 #include "src/core/toolset.h"
@@ -116,7 +117,8 @@ void ThermogramWidget::setUi()
 
     m_thermogram->setVerticalLineEnabled(true);
 
-    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, m_thermogram, &ChartView::ConfigurationChanged);
+    Instance::GlobalInstance()->MakeChartConnections(m_thermogram);
+
     m_thermogram->setModal(true);
     m_thermogram->setMinimumSize(600, 450);
 
@@ -665,11 +667,11 @@ void ThermogramWidget::InitialiseChart()
     double lineWidth = qApp->instance()->property("lineWidth").toDouble() / 10.0;
     m_thermogram->addSeries(m_thermogram_series);
     m_thermogram_series->setName("Thermogram");
-    m_thermogram_series->setSize(lineWidth);
+    m_thermogram_series->setLineWidth(lineWidth);
     m_thermogram->setXAxis("time [s]");
     m_thermogram->setYAxis("q [raw/s]");
     m_thermogram->addSeries(m_optional_series);
-    m_optional_series->setSize(lineWidth);
+    m_optional_series->setLineWidth(lineWidth);
 }
 
 void ThermogramWidget::addOptionalSeries(const QList<QPointF>& series, const QString& name)

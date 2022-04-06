@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2018 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
+ * Copyright (C) 2018 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
  */
 
 #include "src/core/models/AbstractModel.h"
+
+#include "src/ui/instance.h"
 
 #include "src/core/toolset.h"
 
@@ -65,31 +67,41 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
         layout->addWidget(m_sey, 0, 2);
     }
 
-    if (qApp->instance()->property("advanced_ui").toBool()) {
-        m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
-        m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")));
-        m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
-        m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
-        m_variance = new QDoubleSpinBox;
-        m_variance->setMinimum(0);
-        m_variance->setMaximum(1e6);
-        m_variance->setDecimals(5);
-        m_variance->setValue(1e-3);
+    m_ideal = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;Ideal Model</b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_std = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model &sigma;<sub>fit</sub></b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_sey = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from Model SE<sub>y</sub></b>").arg(QString(":/icons/edit-copy.png")));
+    m_mc_user = new DnDLabel(tr("<img src='%1' height='18'></img>&emsp;<b> &emsp;MC from User &sigma;</b>").arg(QString(":/icons/edit-copy.png")));
+    m_variance = new QDoubleSpinBox;
+    m_variance->setMinimum(0);
+    m_variance->setMaximum(1e6);
+    m_variance->setDecimals(5);
+    m_variance->setValue(1e-3);
 
-        QHBoxLayout* hlayout = new QHBoxLayout;
-        hlayout->addWidget(m_ideal);
-        if (!m_model.toStrongRef().data()->isSimulation()) {
-            hlayout->addWidget(m_mc_std);
-            hlayout->addWidget(m_mc_sey);
-        }
-        hlayout->addWidget(m_mc_user);
-        hlayout->addWidget(m_variance);
-        layout->addLayout(hlayout, 1, 0, 1, 3);
-        connect(m_variance, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &ExportSimulationWidget::Update);
+    QHBoxLayout* hlayout = new QHBoxLayout;
+    hlayout->addWidget(m_ideal);
+    if (!m_model.toStrongRef().data()->isSimulation()) {
+        hlayout->addWidget(m_mc_std);
+        hlayout->addWidget(m_mc_sey);
     }
+    hlayout->addWidget(m_mc_user);
+    hlayout->addWidget(m_variance);
+    layout->addLayout(hlayout, 1, 0, 1, 3);
+    connect(m_variance, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &ExportSimulationWidget::Update);
 
     setLayout(layout);
+
     connect(m_model.toStrongRef().data(), &AbstractModel::Recalculated, this, &ExportSimulationWidget::Update);
+    connect(Instance::GlobalInstance(), &Instance::ConfigurationChanged, this, &ExportSimulationWidget::UpdateVisibility);
+
+    UpdateVisibility();
+}
+void ExportSimulationWidget::UpdateVisibility()
+{
+    m_ideal->setVisible(qApp->instance()->property("advanced_ui").toBool());
+    m_mc_std->setVisible(qApp->instance()->property("advanced_ui").toBool());
+    m_mc_sey->setVisible(qApp->instance()->property("advanced_ui").toBool());
+    m_mc_user->setVisible(qApp->instance()->property("advanced_ui").toBool());
+    m_variance->setVisible(qApp->instance()->property("advanced_ui").toBool());
 }
 
 void ExportSimulationWidget::Update()
