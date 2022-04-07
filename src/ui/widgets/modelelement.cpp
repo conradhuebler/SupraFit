@@ -101,11 +101,9 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
         m_labels << label;
     }
 
-    // if (m_model.toStrongRef().data()->Type() != 3) {
     m_error = new QLabel;
     shifts->addStretch(150);
     shifts->addWidget(m_error);
-    // }
     layout->addLayout(shifts);
     QHBoxLayout* tools = new QHBoxLayout;
     m_include = new QCheckBox(this);
@@ -150,6 +148,18 @@ ModelElement::ModelElement(QSharedPointer<AbstractModel> model, Charts charts, i
     m_show->setToolTip(tr("Show this Curve in Model and Error Plot"));
     m_show->setChecked(m_model.toStrongRef().data()->ActiveSignals()[m_no]);
     tools->addWidget(m_show);
+
+    m_legend = new QCheckBox;
+    m_legend->setText(tr("Show in Legend"));
+    m_legend->setToolTip(tr("Show Scatter Series in legend"));
+    m_legend->setChecked(false);
+
+    connect(m_legend, &QCheckBox::stateChanged, this, [this](bool legend) {
+        qobject_cast<LineSeries*>(m_signal_series)->setShowInLegend(legend);
+        qobject_cast<LineSeries*>(m_error_series)->setShowInLegend(legend);
+    });
+
+    tools->addWidget(m_legend);
 
     m_plot = new QPushButton;
     m_plot->setText(tr("Color"));

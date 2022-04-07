@@ -237,9 +237,21 @@ ModelWidget::ModelWidget(QSharedPointer<AbstractModel> model, Charts charts, boo
     m_model_name->setText(m_model->Name());
     m_model_name->setPlaceholderText(SupraFit::Method2Name(m_model->SFModel()));
     m_model_name->setClearButtonEnabled(true);
-
     connect(m_model_name, &QLineEdit::textChanged, m_model.data(), &AbstractModel::setName);
     name_layout->addWidget(m_model_name);
+
+    if (!m_model->SupportSeries()) {
+        m_legend = new QCheckBox;
+        m_legend->setText(tr("Show in Legend"));
+        m_legend->setToolTip(tr("Show Line Series in legend"));
+        m_legend->setChecked(false);
+        connect(m_legend, &QCheckBox::stateChanged, this, [this](bool legend) {
+            qobject_cast<LineSeries*>(m_charts.signal_wrapper->Series(0))->setShowInLegend(legend);
+            qobject_cast<LineSeries*>(m_charts.error_wrapper->Series(0))->setShowInLegend(legend);
+        });
+        name_layout->addWidget(m_legend);
+    }
+
     m_layout->addLayout(name_layout);
 
     QWidget* widget = new QWidget;

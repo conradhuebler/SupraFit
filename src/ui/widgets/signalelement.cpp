@@ -56,6 +56,14 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     m_show->setChecked(true);
     connect(m_show, SIGNAL(stateChanged(int)), this, SLOT(ShowLine(int)));
 
+    m_legend = new QCheckBox;
+    m_legend->setText(tr("Show in Legend"));
+    m_legend->setToolTip(tr("Show Line Series in legend"));
+    m_legend->setChecked(false);
+    connect(m_legend, &QCheckBox::stateChanged, this, [this](bool legend) {
+        this->m_data_series->setShowInLegend(legend);
+    });
+
     m_name = new QLineEdit;
     QString name;
     name = data.toStrongRef().data()->DependentModel()->headerData(m_index, Qt::Horizontal).toString();
@@ -93,6 +101,8 @@ SignalElement::SignalElement(QWeakPointer<DataClass> data, QWeakPointer<ChartWra
     layout->addWidget(m_markerSize, 0, 4);
     layout->addWidget(m_rectangle, 0, 5);
     layout->addWidget(m_toggle, 0, 6);
+    layout->addWidget(m_legend, 0, 7);
+
     setLayout(layout);
     ColorChanged(m_wrapper.toStrongRef().data()->color(m_index));
     setMouseTracking(true);

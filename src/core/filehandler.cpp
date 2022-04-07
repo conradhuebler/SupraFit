@@ -79,8 +79,7 @@ void FileHandler::LoadFile()
         m_filetype = FileType::ITC;
         ReadITC();
         return;
-    }
-    if ((info.suffix()).toLower() == "csv") {
+    } else if ((info.suffix()).toLower() == "csv") {
         m_filetype = FileType::CSV;
     } else
         m_filetype = FileType::Generic;

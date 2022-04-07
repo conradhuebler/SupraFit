@@ -118,7 +118,7 @@ private:
     QPointer<StatisticDialog> m_statistic_dialog;
     ModelActions* m_actions;
     QPushButton* m_minimize_all;
-    QCheckBox* m_readonly;
+    QCheckBox *m_readonly, *m_legend;
     QLabel* m_converged_label;
     OptionsWidget* m_model_options_widget;
     QVBoxLayout* m_layout;

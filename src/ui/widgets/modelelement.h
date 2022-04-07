@@ -45,7 +45,7 @@ private:
     QLabel* m_error;
     QVector<QLabel*> m_labels;
     QPushButton *m_remove, *m_optimize, *m_plot, *m_toggle;
-    QCheckBox* m_include;
+    QCheckBox *m_include, *m_legend;
     HoverCheckBox* m_show;
     QWeakPointer<AbstractModel> m_model;
     QPointer<LineSeries> m_error_series, m_signal_series;
