@@ -102,6 +102,11 @@ public:
     }
     inline QJsonObject FontConfig() const { return m_fontconfig; }
 
+    void AddFontConfigFile(const QString& str, const QString& description, const QJsonObject& data)
+    {
+        qDebug() << str << description << data;
+        emit FontConfigFileAdded(str, description, data);
+    }
     void MakeChartConnections(QPointer<ListChart> chart)
     {
         connect(Instance::GlobalInstance(), &Instance::FontConfigurationChanged, chart, [chart]() {
@@ -115,6 +120,9 @@ public:
         connect(chart, &ListChart::ConfigurationChanged, this, [chart]() {
             Instance::GlobalInstance()->UpdateFontConfig(chart->CurrentFontConfig());
         });
+
+        connect(chart, &ListChart::ExportSettingsFileAdded, this, &Instance::AddFontConfigFile);
+        connect(this, &Instance::FontConfigFileAdded, chart, &ListChart::AddExportSetting);
 
         QMetaObject::Connection connection;
         connection = connect(chart, &ListChart::setUpFinished, this, [this, chart, connection]() {
@@ -140,9 +148,11 @@ public:
             Instance::GlobalInstance()->UpdateFontConfig(chart->CurrentFontConfig());
         });
 
+        connect(chart, &ChartView::ExportSettingsFileAdded, this, &Instance::AddFontConfigFile);
+        connect(this, &Instance::FontConfigFileAdded, chart, &ChartView::AddExportSetting);
+
         QMetaObject::Connection connection;
         connection = connect(chart, &ChartView::setUpFinished, this, [this, chart, connection]() {
-            // if()
             chart->setFontConfig(m_fontconfig);
             disconnect(connection);
         });
@@ -156,4 +166,5 @@ signals:
     void ConfigurationChanged();
     void ConfigurationUpdated();
     void FontConfigurationChanged();
+    void FontConfigFileAdded(const QString& str, const QString& description, const QJsonObject& data);
 };
