@@ -26,7 +26,7 @@ It may be downloaded [from the official website.](https://support.microsoft.com/
 Start SupraFit (**suprafit.exe**) from the build directory. The dlls have to be in place. Desktop shortcuts will work though.
 
 ### Linux
-Run the AppImage. It may have to be marked as executable: **chmoxd +x SupraFit*.AppImage**
+Run the AppImage. It may have to be marked as executable: **chmod +x SupraFit*.AppImage**
 
 ### macOS
 The content of the dmg file has to be copied to the place where other programs are stored. Please not, that SupraFit on macOS has not been tested at. If there are any problems, please feel free to create an issue or contact me directly.
@@ -171,28 +171,24 @@ On macOS, an easy way to compile SupraFit is using QtCreator.
 ## Acknowledgments
 Special thanks to Prof. M. Mazik [Institut for organic Chemistry, TU Bergakademie Freiberg](https://tu-freiberg.de/fakultaet2/orgch) for her support.
 
-Special thanks to Dr. Sebastian Förster and Dr. Stefan Kaiser for finding bugs and constructive feedback.
+Special thanks to Dr. Sebastian Förster, Dr. Stefan Kaiser and Dr. Felix Amrhein for finding bugs and constructive feedback.
 
-Special thanks to the [Centre of Advanced Study and Research - Freiberg (GraFA)](https://tu-freiberg.de/grafa) for funding.
+Special thanks to the [Centre of Advanced Study and Research - Freiberg (GraFA)](https://tu-freiberg.de/grafa) and Saxonian Ministry of Science, Culture and Tourism (SMWK) for funding.
 
 ## Citation and more
 If you obtain results with SupraFit, I kindly ask to include in your citation:
 
-Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
-
-A preprint article has been published:
-https://chemrxiv.org/engage/chemrxiv/article-details/61e0923080719d23820e97bf
-
-C. Hübler, ChemRxiv 2022, DOI 10.26434/chemrxiv-2022-c1jwr. This content is a preprint and has not been peer-reviewed.
+- C. Hübler, Chem. Methods 2022, e202200006. DOI [10.1002/cmtd.202200006](https://doi.org/10.1002/cmtd.202200006)
+- Conrad Hübler, 2019, DOI [10.5281/zenodo.3364569](https://doi.org/10.5281/zenodo.3364569).
 
 ### Poster presentation at Physical-Organic Chemistry at its Best: The Art of Chemical Problem Solving (13.09 and 14.09 2018)
 <img src="https://github.com/conradhuebler/SupraFit/raw/master/docs/SupraFit_Poster.png" width="300">
 
 ### SupraFit has been used in
-
-- Anthracene-Based Receptors with a Turn-on Fluorescence Response for Nitrate [Org. Lett. 2019, 21, 21, 8746-8750](https://pubs.acs.org/doi/abs/10.1021/acs.orglett.9b03361)
-- Purine Unit as a Building Block of Artificial Receptors Designed for the Recognition of Carbohydrates [Eur. J. Org. Chem., 2019: 7555-7562](https://onlinelibrary.wiley.com/doi/full/10.1002/ejoc.201901340)
+- Compounds Combining a Macrocyclic Building Block and Flexible Side-Arms as Carbohydrate Receptors: Syntheses and Structure-Binding Activity Relationship Studies [Eur. J. Org. Chem. 2021, 2021, 6282.](https://doi.org/10.1002/ejoc.202100758)
 - Cycloalkyl Groups as Subunits of Artificial Carbohydrate Receptors: Effect of Ring Size of the Cycloalkyl Unit on the Receptor Efficiency [Eur. J. Org. Chem. 2020, 4900–4915](https://doi.org/10.1002/ejoc.202000803)
+- Purine Unit as a Building Block of Artificial Receptors Designed for the Recognition of Carbohydrates [Eur. J. Org. Chem., 2019: 7555-7562](https://onlinelibrary.wiley.com/doi/full/10.1002/ejoc.201901340)
+- Anthracene-Based Receptors with a Turn-on Fluorescence Response for Nitrate [Org. Lett. 2019, 21, 21, 8746-8750](https://pubs.acs.org/doi/abs/10.1021/acs.orglett.9b03361)
 
 ## Some notes
 - SupraFit prefers larger screens over smaller ones. 1600x1200 or 1680x1050 is the recommended size.

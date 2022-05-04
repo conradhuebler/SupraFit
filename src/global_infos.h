@@ -35,8 +35,8 @@ inline QString aboutSFHtml()
     info += "<p>Thanks to all encouraged me writing the application.</p>";
     info += "<p>Built-in Icon Theme taken from Oxygens Icon : <a href='http://www.oxygen-icons.org'>http://www.oxygen-icons.org</a></p>";
     info += "<p>SupraFit website on GitHub: <a href='https://github.com/conradhuebler/SupraFit'>https://github.com/conradhuebler/SupraFit</a></p>";
-    info += "<p>If you obtain results with SupraFit, I kindly ask to cite: </p><p>C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. <a href='http://doi.org/10.5281/zenodo.3364569'>http://doi.org/10.5281/zenodo.3364569</a><p>";
-    info += "<p>and</p<p>C. Hübler, ChemRxiv 2022, DOI 10.26434/chemrxiv-2022-c1jwr. This content is a preprint and has not been peer-reviewed.</p>";
+    info += "<p>If you obtain results with SupraFit, I kindly ask to cite:</p><p>C. Hübler, Chem. Methods 2022, e202200006 (<a href='http://doi.org/10.1002/cmtd.202200006'>10.1002/cmtd.202200006</a>)<p>";
+    info += "<p>and</p><p>C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. <a href='http://doi.org/10.5281/zenodo.3364569'>http://doi.org/10.5281/zenodo.3364569</a></p>";
     info += "<p></p>";
     info += "<p>SupraFit uses BSD licensed source code from the Qt Examples: https://doc.qt.io/qt-6/qtwidgets-layouts-flowlayout-example.html</p>";
     info += "<p></p>";
@@ -62,8 +62,8 @@ inline QString aboutSF()
     info += "\tSpecial thanks to Alexander König for testing the Quickstart, helpful comments and feedback.\n\n\n";
     info += "\tThanks to all encouraged me writing the application.\n\n";
     info += "\tSupraFit website on GitHub: https://github.com/conradhuebler/SupraFit\n\n";
-    info += "\tIf you obtain results with SupraFit, I kindly ask to cite: C. Hübler, conradhuebler/SupraFit: 2019, Zenodo. http://doi.org/10.5281/zenodo.3364569\n";
-    info += "\tand \n\tC. Hübler, ChemRxiv 2022, DOI 10.26434/chemrxiv-2022-c1jwr. This content is a preprint and has not been peer-reviewed.\n\n";
+    info += "\tIf you obtain results with SupraFit, I kindly ask to cite:\n\tC. Hübler, Chem. Methods 2022, e202200006 (http://doi.org/10.1002/cmtd.202200006).\n";
+    info += "\tand \n\tC. Hübler, conradhuebler/SupraFit: 2019, Zenodo. (http://doi.org/10.5281/zenodo.3364569)\n\n";
     info += "\tSupraFit has been compilied on " + QString::fromStdString(__DATE__) + " at " + QString::fromStdString(__TIME__) + ".\n\n";
     info += "\t*********************************************************************************************************\n\n";
     return info;
