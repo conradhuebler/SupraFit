@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
@@ -26,6 +26,7 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QHeaderView>
+#include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QTableView>
 
 #include <src/ui/widgets/DropTable.h>
@@ -58,15 +59,16 @@ public:
 
     void LoadTable(DataTable* model, int independent = 2);
     void setSpectraData(const QJsonObject& json);
+    void GenerateData();
 
 private:
     void setUi();
 
     void WriteData(const DataTable* model, int independent = 2);
 
-    QPointer<DropTable> m_table, m_sec_table;
+    QPointer<DropTable> m_table;
     QPointer<QLineEdit> m_line;
-    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra;
+    QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra, m_generate_data;
     QPointer<QSpinBox> m_independent_rows, m_dependent_rows;
     QPointer<QDialogButtonBox> m_buttonbox;
     QPointer<DataClass> m_storeddata;

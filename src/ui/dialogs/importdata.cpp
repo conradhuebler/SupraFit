@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2021 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/core/models/dataclass.h"
@@ -23,6 +23,7 @@
 #include "src/core/jsonhandler.h"
 #include "src/global.h"
 
+#include "src/ui/dialogs/generatedatadialog.h"
 #include "src/ui/dialogs/spectraimport.h"
 #include "src/ui/dialogs/thermogram.h"
 
@@ -76,7 +77,6 @@ ImportData::ImportData(QWeakPointer<DataClass> data)
     if (data.toStrongRef()->DataType() == DataClassPrivate::Table) {
         setUi();
         m_table->setModel(data.toStrongRef()->IndependentModel());
-        m_sec_table->setModel(data.toStrongRef()->DependentModel());
     } else if (data.toStrongRef()->DataType() == DataClassPrivate::Thermogram) {
         setUi();
         DataTable* model = new DataTable(0, 0, this);
@@ -142,12 +142,18 @@ void ImportData::setUi()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportFile()));
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
 
+    m_generate_data = new QPushButton(tr("Generate and Simulate Data"));
+    m_generate_data->setStyleSheet("background-color: #77d740;");
+    connect(m_generate_data, &QPushButton::clicked, this, &ImportData::GenerateData);
+
     m_thermogram = new QPushButton(tr("Import as Thermogram"));
+    m_thermogram->setStyleSheet("background-color: #77d740;");
     connect(m_thermogram, &QPushButton::clicked, this, [this]() {
         ImportThermogram(m_filename);
     });
 
     m_spectra = new QPushButton(tr("Import as Spectras"));
+    m_spectra->setStyleSheet("background-color: #77d740;");
     connect(m_spectra, &QPushButton::clicked, this, [this]() {
         ImportSpectra(m_filename);
     });
@@ -161,11 +167,13 @@ void ImportData::setUi()
     layout->addWidget(m_independent_rows, 1, 1);
     layout->addWidget(m_simulation, 1, 2, Qt::AlignRight);
     layout->addWidget(m_dependent_rows, 1, 3);
-    layout->addWidget(m_table, 3, 0, 1, 4);
-    layout->addWidget(m_thermogram, 4, 0);
-    layout->addWidget(m_spectra, 4, 1);
+    layout->addWidget(m_thermogram, 3, 0);
+    layout->addWidget(m_spectra, 3, 1);
+    layout->addWidget(m_generate_data, 3, 3);
 
-    layout->addWidget(m_buttonbox, 4, 2, 1, 2);
+    layout->addWidget(m_table, 4, 0, 1, 4);
+
+    layout->addWidget(m_buttonbox, 5, 2, 1, 2);
 
     connect(m_table, &DropTable::Edited, this, &ImportData::NoChanged);
 
@@ -413,6 +421,12 @@ bool ImportData::ImportSpectra(const QString& filename)
         return true;
     }
     return false;
+}
+
+void ImportData::GenerateData()
+{
+    GenerateDataDialog dialog;
+    dialog.exec();
 }
 
 #include "importdata.moc"

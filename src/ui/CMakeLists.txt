@@ -29,10 +29,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 
-find_package(Qt6 6.1 COMPONENTS Core Widgets Charts)
-if (NOT Qt6_FOUND)
-    find_package(Qt5 5.15 COMPONENTS Core Widgets Charts REQUIRED)
-endif()
+find_package(Qt6 6.1 COMPONENTS Core Widgets Charts Qml)
 
 
 set(SFGui_SRC
@@ -49,6 +46,7 @@ set(SFGui_SRC
                 dialogs/comparedialog.cpp
                 dialogs/resultsdialog.cpp
                 dialogs/thermogram.cpp
+                dialogs/generatedatadialog.cpp
                 widgets/DropTable.h
                 widgets/spectrawidget.cpp
                 widgets/metamodelparameter.cpp
@@ -85,4 +83,4 @@ set(SFGui_SRC
 add_library(suprafit_gui ${SFGui_SRC})
 set_property(TARGET suprafit_gui PROPERTY CXX_STANDARD 14)
 
-target_link_libraries(suprafit_gui Qt::Core Qt::Widgets Qt::Charts)
+target_link_libraries(suprafit_gui Qt::Core Qt::Widgets Qt::Charts Qt6::Qml)

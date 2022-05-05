@@ -139,7 +139,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
                                            -Wno-error=unused-local-typedefs -Wno-error=enum-compare -Wno-narrowing -Werror=return-type")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
-find_package(Qt6 6.2 COMPONENTS Core Widgets Charts)
+find_package(Qt6 6.2 COMPONENTS Core Widgets Charts Qml)
 
 if(_Python)
     find_package(PythonLibs)
