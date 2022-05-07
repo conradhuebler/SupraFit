@@ -17,6 +17,8 @@
  *
  */
 
+#include "src/capabilities/datagenerator.h"
+
 #include <QtCore/QDebug>
 
 #include <QJSEngine>
@@ -26,12 +28,14 @@
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
-#include <QtWidgets/QTableWidget>
+#include <QtWidgets/QTableView>
 
 #include "generatedatadialog.h"
 
 GenerateDataDialog::GenerateDataDialog()
 {
+    setModal(true);
+    m_generator = new DataGenerator(this);
     setUi();
     resize(800, 600);
     setWindowTitle(tr("Generate Data"));
@@ -42,10 +46,11 @@ void GenerateDataDialog::setUi()
     QGridLayout* mainlayout = new QGridLayout;
     setLayout(mainlayout);
 
-    m_tablewidget = new QTableWidget;
+    m_tableview = new QTableView;
     m_datapoints = new QSpinBox;
     m_datapoints->setMinimum(1);
     m_datapoints->setMaximum(1e25);
+    m_datapoints->setValue(20);
     connect(m_datapoints, &QSpinBox::valueChanged, this, &GenerateDataDialog::ReshapeTable);
 
     m_independent = new QSpinBox;
@@ -68,31 +73,25 @@ void GenerateDataDialog::setUi()
 
     mainlayout->addWidget(new QLabel(tr("Equation")), 1, 0);
     mainlayout->addWidget(m_equation, 1, 1, 1, 3);
-    mainlayout->addWidget(m_tablewidget, 2, 0, 1, 4);
-    connect(m_tablewidget->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, [this](int i) {
+    mainlayout->addWidget(m_tableview, 2, 0, 1, 4);
+    connect(m_tableview->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, [this](int i) {
         if (i >= m_equations.size() || i == -1)
             return;
         m_equation->setText(m_equations[i]);
         m_currentEquationIndex = i;
     });
 
+    m_buttonbox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+    connect(m_buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(m_buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    mainlayout->addWidget(m_buttonbox, 3, 1, 1, 3);
+
     ReshapeTable();
 }
 
 void GenerateDataDialog::ReshapeTable()
 {
-    m_tablewidget->setColumnCount(m_independent->value());
-    m_tablewidget->setRowCount(m_datapoints->value());
-    QStringList rows, columns;
-    for (int i = 0; i < m_independent->value(); ++i)
-        columns << QString::number(i + 1);
-
-    for (int i = 0; i < m_datapoints->value(); ++i)
-        rows << QString::number(i + 1);
-
-    m_tablewidget->setVerticalHeaderLabels(rows);
-    m_tablewidget->setHorizontalHeaderLabels(columns);
-
     if (m_equations.size() < m_independent->value()) {
         while (m_equations.size() < m_independent->value())
             m_equations << "X";
@@ -105,18 +104,13 @@ void GenerateDataDialog::ReshapeTable()
 
 void GenerateDataDialog::Evaluate()
 {
-    QJSEngine myEngine;
-    for (int indep = 0; indep < m_independent->value(); ++indep) {
-        QString equation = m_equations[indep];
-        for (int datapoint = 0; datapoint < m_datapoints->value(); ++datapoint) {
-            QString tmp = equation;
-            tmp.replace("X", QString::number(datapoint + 1));
-            QJSValue value = myEngine.evaluate(tmp);
-            if (value.isNumber()) {
-                QTableWidgetItem* item = new QTableWidgetItem(QString("%1").arg(value.toNumber()));
-                m_tablewidget->setItem(datapoint, indep, item);
-            }
-            qDebug() << tmp << value.toNumber() << datapoint << indep;
-        }
-    }
+    QJsonObject data;
+    data["independent"] = m_independent->value();
+    data["datapoints"] = m_datapoints->value();
+    data["equations"] = m_equations.join("|");
+    m_generator->setJson(data);
+    m_generator->Evaluate();
+    m_table = m_generator->Table();
+    m_tableview->setModel(m_table);
+    m_data = data;
 }

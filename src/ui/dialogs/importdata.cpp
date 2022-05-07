@@ -425,8 +425,18 @@ bool ImportData::ImportSpectra(const QString& filename)
 
 void ImportData::GenerateData()
 {
-    GenerateDataDialog dialog;
-    dialog.exec();
+    GenerateDataDialog* generate = new GenerateDataDialog;
+    generate->show();
+
+    if (generate->exec() == QDialog::Accepted) {
+        DataTable* model = new DataTable(generate->Table());
+        QJsonObject data = generate->Data();
+        m_table->setModel(model);
+        m_independent_rows->setMaximum(data["independent"].toInt());
+        m_independent_rows->setValue(data["independent"].toInt());
+        m_simulation->setChecked(true);
+    }
+    delete generate;
 }
 
 #include "importdata.moc"

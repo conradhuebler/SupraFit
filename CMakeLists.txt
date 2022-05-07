@@ -179,6 +179,7 @@ set(core_SRC
     src/core/minimizer.cpp
     src/core/optimizer/least-squares.cpp
     src/core/optimizer/eigen_levenberg.cpp
+    src/capabilities/datagenerator.cpp
     src/capabilities/resampleanalyse.cpp
     src/capabilities/abstractsearchclass.cpp
     src/capabilities/modelcomparison.cpp
@@ -209,7 +210,7 @@ else()
     add_library(core ${core_SRC})
 endif()
 
-target_link_libraries(core Qt::Core)
+target_link_libraries(core Qt::Core Qt::Qml)
 
 #add_subdirectory(src/core/models/misc)
 set(models_SRC

@@ -79,9 +79,11 @@ ExportSimulationWidget::ExportSimulationWidget(QWeakPointer<AbstractModel> model
 
     QHBoxLayout* hlayout = new QHBoxLayout;
     hlayout->addWidget(m_ideal);
+    hlayout->addWidget(m_mc_std);
+    hlayout->addWidget(m_mc_sey);
     if (!m_model.toStrongRef().data()->isSimulation()) {
-        hlayout->addWidget(m_mc_std);
-        hlayout->addWidget(m_mc_sey);
+        m_mc_std->setHidden(true);
+        m_mc_sey->setHidden(true);
     }
     hlayout->addWidget(m_mc_user);
     hlayout->addWidget(m_variance);

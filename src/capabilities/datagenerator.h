@@ -19,38 +19,25 @@
 
 #pragma once
 
-#include "src/capabilities/datagenerator.h"
+#include <QtCore/QJsonObject>
+#include <QtCore/QObject>
 
-#include <QtWidgets/QDialog>
-#include <QtWidgets/QDialogButtonBox>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QSpinBox>
-#include <QtWidgets/QTableWidget>
+#include <QJSEngine>
 
-class GenerateDataDialog : public QDialog {
+#include "src/core/models/dataclass.h"
 
+class DataGenerator : public QObject {
     Q_OBJECT
 public:
-    GenerateDataDialog();
+    explicit DataGenerator(QObject* parent = nullptr);
+
+    void setJson(const QJsonObject& data) { m_data = data; }
+    bool Evaluate();
 
     DataTable* Table() const { return m_table; }
-    QJsonObject Data() const { return m_data; }
 
 private:
-    void setUi();
-    void ReshapeTable();
-    void Evaluate();
-
-    QTableView* m_tableview;
-    QSpinBox *m_independent, *m_datapoints;
-    QLineEdit* m_equation;
-    QStringList m_equations;
-    QDialogButtonBox* m_buttonbox;
-
-    DataGenerator* m_generator;
-
-    QPointer<DataTable> m_table;
     QJsonObject m_data;
-
-    int m_currentEquationIndex = 0;
+    QPointer<DataTable> m_table;
+signals:
 };
