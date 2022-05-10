@@ -17,10 +17,12 @@
  *
  */
 
-#include "src/core/models/dataclass.h"
+#include "src/capabilities/datagenerator.h"
 
 #include "src/core/filehandler.h"
 #include "src/core/jsonhandler.h"
+#include "src/core/models/dataclass.h"
+
 #include "src/global.h"
 
 #include "src/ui/dialogs/generatedatadialog.h"
@@ -57,6 +59,7 @@ ImportData::ImportData(const QString& file, QWidget* parent)
     , m_filename(file)
     , m_projectfile(QString("Project - %1").arg(QDateTime::currentDateTime().toString()))
 {
+    m_generator = new DataGenerator(this);
     setUi();
     LoadFile();
 }
@@ -65,6 +68,7 @@ ImportData::ImportData(QWidget* parent)
     : QDialog(parent)
     , m_projectfile(QString("Project - %1").arg(QDateTime::currentDateTime().toString()))
 {
+    m_generator = new DataGenerator(this);
     setUi();
     DataTable* model = new DataTable(0, 0, this);
     m_table->setModel(model);
@@ -111,17 +115,15 @@ void ImportData::setUi()
     m_independent_rows->setMinimum(1);
     m_independent_rows->setValue(1);
     m_independent_rows->setPrefix("# = ");
+    connect(m_independent_rows, &QSpinBox::valueChanged, this, &ImportData::ReshapeTable);
 
-    m_simulation = new QCheckBox(tr("Simulate Data with # Serie(s)"));
-    m_dependent_rows = new QSpinBox;
-    m_dependent_rows->setMinimum(1);
-    m_dependent_rows->setValue(1);
-    m_dependent_rows->setEnabled(false);
-    m_dependent_rows->setPrefix("# = ");
+    m_simulation = new QCheckBox(tr("Simulate Data with # Data Points"));
+    QWidget* simulationWidget = SimulationWidget();
+    simulationWidget->setHidden(true);
 
-    connect(m_simulation, &QCheckBox::stateChanged, m_dependent_rows, [this](int state) {
-        m_dependent_rows->setEnabled(state);
-
+    connect(m_simulation, &QCheckBox::stateChanged, m_dependent_rows, [this, simulationWidget](int state) {
+        simulationWidget->setHidden(!state);
+        ReshapeTable();
         if (m_table) {
             if (state)
                 m_independent_rows->setValue(m_table->model()->columnCount());
@@ -142,10 +144,6 @@ void ImportData::setUi()
     connect(m_export, SIGNAL(clicked()), this, SLOT(ExportFile()));
     connect(m_file, SIGNAL(clicked()), this, SLOT(LoadFile()));
 
-    m_generate_data = new QPushButton(tr("Generate and Simulate Data"));
-    m_generate_data->setStyleSheet("background-color: #77d740;");
-    connect(m_generate_data, &QPushButton::clicked, this, &ImportData::GenerateData);
-
     m_thermogram = new QPushButton(tr("Import as Thermogram"));
     m_thermogram->setStyleSheet("background-color: #77d740;");
     connect(m_thermogram, &QPushButton::clicked, this, [this]() {
@@ -165,21 +163,67 @@ void ImportData::setUi()
     layout->addWidget(m_export, 0, 3);
     layout->addWidget(new QLabel(tr("# Independent Variable(s):")), 1, 0);
     layout->addWidget(m_independent_rows, 1, 1);
-    layout->addWidget(m_simulation, 1, 2, Qt::AlignRight);
-    layout->addWidget(m_dependent_rows, 1, 3);
-    layout->addWidget(m_thermogram, 3, 0);
-    layout->addWidget(m_spectra, 3, 1);
-    layout->addWidget(m_generate_data, 3, 3);
+    layout->addWidget(simulationWidget, 2, 0, 1, 4);
+    layout->addWidget(m_simulation, 1, 3, Qt::AlignRight);
 
-    layout->addWidget(m_table, 4, 0, 1, 4);
+    layout->addWidget(m_table, 6, 0, 1, 4);
 
-    layout->addWidget(m_buttonbox, 5, 2, 1, 2);
+    layout->addWidget(m_thermogram, 7, 0);
+    layout->addWidget(m_spectra, 7, 1);
+    layout->addWidget(m_buttonbox, 7, 2, 1, 2);
 
     connect(m_table, &DropTable::Edited, this, &ImportData::NoChanged);
+    connect(m_table->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, [this](int i) {
+        if (i >= m_equations.size() || i == -1)
+            return;
+        m_equation->setText(m_equations[i]);
+        m_currentEquationIndex = i;
+    });
 
     setLayout(layout);
     setWindowTitle(tr("Import Table"));
     resize(800, 600);
+}
+
+QWidget* ImportData::SimulationWidget()
+{
+    QHBoxLayout* layout = new QHBoxLayout;
+
+    m_equation = new QLineEdit;
+    connect(m_equation, &QLineEdit::textEdited, this, [this]() {
+        if (m_currentEquationIndex < m_equations.size() && m_currentEquationIndex != -1)
+            m_equations[m_currentEquationIndex] = m_equation->text();
+        Evaluate();
+    });
+
+    m_datapoints = new QSpinBox;
+    m_datapoints->setMinimum(1);
+    m_datapoints->setValue(1);
+    m_datapoints->setPrefix("# = ");
+    connect(m_datapoints, &QSpinBox::valueChanged, this, &ImportData::ReshapeTable);
+
+    m_dependent_rows = new QSpinBox;
+    m_dependent_rows->setMinimum(1);
+    m_dependent_rows->setValue(1);
+    m_dependent_rows->setPrefix("# = ");
+
+    layout->addWidget(new QLabel(tr("Datapoints")));
+    layout->addWidget(m_datapoints);
+    layout->addWidget(new QLabel(tr("Number Series || Signals")));
+    layout->addWidget(m_dependent_rows);
+
+    QVBoxLayout* vlayout = new QVBoxLayout;
+    vlayout->addLayout(layout);
+
+    layout = new QHBoxLayout;
+    layout->addWidget(new QLabel(tr("Equation:")));
+    layout->addWidget(m_equation);
+    vlayout->addLayout(layout);
+
+    QGroupBox* widget = new QGroupBox;
+    widget->setTitle(tr("Data generation details"));
+    widget->setLayout(vlayout);
+    return widget;
 }
 
 void ImportData::NoChanged()
@@ -195,6 +239,36 @@ void ImportData::NoChanged()
         m_independent_rows->setValue(1);
 }
 
+void ImportData::ReshapeTable()
+{
+    if (!m_simulation->isChecked())
+        return;
+
+    if (m_equations.size() < m_independent_rows->value()) {
+        while (m_equations.size() < m_independent_rows->value())
+            m_equations << "X";
+    } else {
+        while (m_equations.size() > m_independent_rows->value())
+            m_equations.removeLast();
+    }
+    Evaluate();
+}
+
+void ImportData::Evaluate()
+{
+    if (!m_simulation->isChecked())
+        return;
+
+    QJsonObject data;
+    data["independent"] = m_independent_rows->value();
+    data["datapoints"] = m_datapoints->value();
+    data["equations"] = m_equations.join("|");
+    m_generator->setJson(data);
+    m_generator->Evaluate();
+    m_generated_table = m_generator->Table();
+    m_table->setModel(m_generated_table);
+    m_data = data;
+}
 
 void ImportData::SelectFile()
 {

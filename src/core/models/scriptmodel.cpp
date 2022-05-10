@@ -126,8 +126,7 @@ ScriptModel::ScriptModel(DataClass* data)
 ScriptModel::ScriptModel(DataClass* data, const QJsonObject& model)
     : AbstractModel(data)
 {
-    DefineModel(model);
-    m_complete = false;
+    m_complete = DefineModel(model);
 }
 
 ScriptModel::ScriptModel(AbstractModel* data)
@@ -162,7 +161,7 @@ void ScriptModel::InitialThreads()
     m_thread_pool->setActiveThreadCount(use_threads);
 }
 
-void ScriptModel::DefineModel(const QJsonObject& model)
+bool ScriptModel::DefineModel(const QJsonObject& model)
 {
     QJsonObject parse = model;
     if (parse.contains("ModelDefinition"))
@@ -243,7 +242,16 @@ void ScriptModel::DefineModel(const QJsonObject& model)
             m_depmodel_names << QString("Y%1").arg(i + 1);
 
     m_model_definition = GenerateModelDefinition();
-    PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+    try {
+        PrepareParameter(GlobalParameterSize(), LocalParameterSize());
+
+    } catch (int error) {
+        if (error == -2) {
+            emit Info()->Warning(tr("Parameter missmatch. I will not allow it!"));
+            emit Info()->Message(tr("You have %1 independet rows available, yet you choose %2 parameters. If you want fewer parameters than rows, just don't include them in the equations.").arg(IndependentModel()->columnCount()).arg(InputParameterSize()));
+            return false;
+        }
+    }
 
     for (int i = 0; i < m_input_names.size(); ++i)
         IndependentModel()->setHeaderData(i, Qt::Horizontal, m_input_names[i], Qt::DisplayRole);
@@ -262,6 +270,7 @@ void ScriptModel::DefineModel(const QJsonObject& model)
 #ifdef Use_Duktape
     m_duktapeinterp.Initialise();
 #endif
+    return true;
     // InitialThreads();
 }
 
@@ -401,8 +410,13 @@ void ScriptModel::CalculateChai()
                   QString::number(IndependentModel()->data(parameter, i)));
           }
           int error = 0;
-
-          double result = m_interp.Evaluate(cache.toUtf8(), error);
+          double result = 0;
+          bool ok;
+          double tmp_result = cache.toDouble(&ok);
+          if (ok)
+              result = tmp_result;
+          else
+              result = m_interp.Evaluate(cache.toUtf8(), error);
           if (error == 1) {
             cache.replace("var", "");
             result = m_interp.Evaluate(cache.toUtf8(), error);

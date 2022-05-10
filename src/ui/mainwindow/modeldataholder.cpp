@@ -468,7 +468,7 @@ void ModelDataHolder::NewModel()
 {
     qDebug() << m_data.toStrongRef().data()->IndependentModel()->columnCount();
     int input = QInputDialog::getInt(this, tr("Number of input colums"),
-        tr("Please give the number of input data :"), 1, 1, m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1);
+        tr("Please give the number of input data :"), m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1, m_data.toStrongRef().data()->IndependentModel()->columnCount(), 1);
 
     int variables = QInputDialog::getInt(this, tr("Number of variables"),
         tr("Please give the numbers of variables:"), 1, 1, m_data.toStrongRef().data()->IndependentModel()->rowCount() - 1, 1);
@@ -480,6 +480,9 @@ void ModelDataHolder::NewModel()
     model["ModelDefinition"] = definition;
 
     QSharedPointer<AbstractModel> t = CreateModel(model, m_data);
+    if (!t->Complete())
+        return;
+
     t->InitialGuess();
     m_history = false;
     ActiveModel(t);

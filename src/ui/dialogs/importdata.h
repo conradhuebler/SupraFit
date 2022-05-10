@@ -19,10 +19,14 @@
 
 #pragma once
 
+#include "src/capabilities/datagenerator.h"
+
 #include "src/core/models/dataclass.h"
 
 #include <QtCore/QPointer>
+#include <QtCore/QStringList>
 #include <QtCore/QVector>
+
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QHeaderView>
@@ -63,13 +67,17 @@ public:
 
 private:
     void setUi();
+    void ReshapeTable();
+    void Evaluate();
 
     void WriteData(const DataTable* model, int independent = 2);
 
+    QWidget* SimulationWidget();
+
     QPointer<DropTable> m_table;
-    QPointer<QLineEdit> m_line;
+    QPointer<QLineEdit> m_line, m_equation;
     QPointer<QPushButton> m_select, m_export, m_file, m_thermogram, m_spectra, m_generate_data;
-    QPointer<QSpinBox> m_independent_rows, m_dependent_rows;
+    QPointer<QSpinBox> m_independent_rows, m_dependent_rows, m_datapoints;
     QPointer<QDialogButtonBox> m_buttonbox;
     QPointer<DataClass> m_storeddata;
     QPointer<QCheckBox> m_simulation;
@@ -77,9 +85,15 @@ private:
     QJsonObject m_raw;
     DataClassPrivate::DataType m_type = DataClassPrivate::Table;
     QString m_title, m_root_dir;
+    QStringList m_equations;
     bool m_single = true;
     QJsonObject m_systemparameter, m_project;
+    DataGenerator* m_generator;
 
+    QPointer<DataTable> m_generated_table;
+    QJsonObject m_data;
+
+    int m_currentEquationIndex = 0;
 private slots:
     void LoadFile();
     void SelectFile();

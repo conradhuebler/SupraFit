@@ -85,7 +85,7 @@ public:
     virtual bool SupportThreads() const override { return true; }
     virtual bool PreventThreads() const override { return false; }
 
-    void DefineModel(const QJsonObject& model) override;
+    bool DefineModel(const QJsonObject& model) override;
 
     void UpdateExecute(const QString &execute);
     inline QString getExecute() const { return m_chai_execute; }

@@ -35,24 +35,27 @@
 
 ChaiInterpreter::ChaiInterpreter()
 {
-  auto mathlib = chaiscript::extras::math::bootstrap();
-  m_chaiinterpreter.add(mathlib);
 
-  // chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
-  // chai.add(chaiscript::vector_conversion<std::vector<double>>());
-  // chai.add(chaiscript::vector_conversion<std::vector<chaiscript::Boxed_Value>>());
-  m_chaiinterpreter.add(chaiscript::type_conversion<int, double>());
+    m_chaiinterpreter.add(chaiscript::type_conversion<int, double>());
+    // m_chaiinterpreter.add(chaiscript::type_conversion<double, int>());
 
-  /*
-  chai.add(chaiscript::type_conversion<std::vector<chaiscript::Boxed_Value>,
-  std::vector<std::vector<double>>> ([](const
-  std::vector<chaiscript::Boxed_Value> &t_bvs) {
-  std::vector<std::vector<double>> ret; for (const auto& bv : t_bvs) {
-        ret.emplace_back (chaiscript::boxed_cast<std::vector<double>> (bv));
-      }
-      return ret;
-    }));
-    */
+    auto mathlib = chaiscript::extras::math::bootstrap();
+    m_chaiinterpreter.add(mathlib);
+
+    // chai.add(chaiscript::bootstrap::standard_library::vector_type<std::vector<double>>("vector"));
+    // chai.add(chaiscript::vector_conversion<std::vector<double>>());
+    // chai.add(chaiscript::vector_conversion<std::vector<chaiscript::Boxed_Value>>());
+
+    /*
+    chai.add(chaiscript::type_conversion<std::vector<chaiscript::Boxed_Value>,
+    std::vector<std::vector<double>>> ([](const
+    std::vector<chaiscript::Boxed_Value> &t_bvs) {
+    std::vector<std::vector<double>> ret; for (const auto& bv : t_bvs) {
+          ret.emplace_back (chaiscript::boxed_cast<std::vector<double>> (bv));
+        }
+        return ret;
+      }));
+      */
 }
 
 void ChaiInterpreter::AdressFunction(void* function, const QString& name)
@@ -118,11 +121,14 @@ double ChaiInterpreter::Evaluate(const char *c, int &errorcode) {
     auto boxed = m_chaiinterpreter.eval(c);
     result = chaiscript::boxed_cast<double>(boxed);
   } catch (const chaiscript::exception::eval_error &error) {
+#ifdef _DEBUG
       qDebug() << "mist" << c;
-      // std::cout << error.reason << std::endl;
+#endif
       errorcode = 1;
   } catch (const chaiscript::exception::bad_boxed_cast &cast) {
-    qDebug() << "another mist";
+#ifdef _DEBUG
+      qDebug() << "another mist";
+#endif
   }
 
   return result;

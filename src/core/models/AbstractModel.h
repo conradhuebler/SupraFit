@@ -124,7 +124,11 @@ public:
     /*! \brief Set a json object to define some user definable stuff
      *
      */
-    virtual void DefineModel(const QJsonObject& model) { Q_UNUSED(model) }
+    virtual bool DefineModel(const QJsonObject& model)
+    {
+        Q_UNUSED(model)
+        return true;
+    }
 
     /*! \brief returns the Parameters used in optimisation
      *
