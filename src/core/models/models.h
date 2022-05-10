@@ -3,6 +3,7 @@
 #include <QtCore/QSharedPointer>
 
 #include "src/core/models/dataclass.h"
+#include "src/core/models/datatable.h"
 #include "src/global.h"
 
 /* Pure Abstract Models */

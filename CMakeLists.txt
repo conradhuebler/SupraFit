@@ -215,6 +215,7 @@ target_link_libraries(core Qt::Core Qt::Qml)
 #add_subdirectory(src/core/models/misc)
 set(models_SRC
     src/core/models/dataclass.cpp
+    src/core/models/datatable.cpp
     src/core/models/AbstractModel.cpp
     src/core/models/titrations/AbstractItcModel.cpp
     src/core/models/titrations/AbstractTitrationModel.cpp
