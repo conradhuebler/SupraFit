@@ -75,7 +75,6 @@ private:
 
 private slots:
     void ShowContextMenu(const QPoint& pos);
-    void switchHG();
     void SetProjectName();
     void setScaling();
     void HidePoint();

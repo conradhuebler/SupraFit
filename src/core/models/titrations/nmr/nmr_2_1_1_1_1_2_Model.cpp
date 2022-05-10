@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2017 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2017 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 #include "src/core/models/postprocess/statistic.h"
 
@@ -150,12 +150,6 @@ void nmr_IItoI_ItoI_ItoII_Model::EvaluateOptions()
 
 void nmr_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 {
-    qreal factor = 1;
-
-    if (getOption(Method) == "UV/VIS") {
-        factor = 1 / InitialHostConcentration(0);
-    }
-
     int index_21 = 0, index_11 = 0;
 
     for (int i = 0; i < DataPoints(); ++i) {
@@ -165,10 +159,10 @@ void nmr_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
             index_11 = i;
     }
 
-    LocalTable()->setColumn(DependentModel()->firstRow() * factor, 0);
-    LocalTable()->setColumn(DependentModel()->Row(index_21) * factor, 1);
-    LocalTable()->setColumn(DependentModel()->Row(index_11) * factor, 2);
-    LocalTable()->setColumn(DependentModel()->lastRow() * factor, 3);
+    LocalTable()->setColumn(DependentModel()->firstRow(), 0);
+    LocalTable()->setColumn(DependentModel()->Row(index_21), 1);
+    LocalTable()->setColumn(DependentModel()->Row(index_11), 2);
+    LocalTable()->setColumn(DependentModel()->lastRow(), 3);
 
     qreal K = GuessK(1);
 
@@ -182,8 +176,6 @@ void nmr_IItoI_ItoI_ItoII_Model::InitialGuess_Private()
 
 void nmr_IItoI_ItoI_ItoII_Model::CalculateVariables()
 {
-    QString method = getOption(Method);
-
     qreal K21 = qPow(10, GlobalParameter(0));
     qreal K11 = qPow(10, GlobalParameter(1));
     qreal K12 = qPow(10, GlobalParameter(2));
@@ -249,10 +241,11 @@ void nmr_IItoI_ItoI_ItoII_Model::CalculateVariables()
         }
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
-            if (method == "NMR")
-                value = host / host_0 * LocalTable()->data(0, j) + 2 * complex_21 / host_0 * LocalTable()->data(1, j) + complex_11 / host_0 * LocalTable()->data(2, j) + complex_12 / host_0 * LocalTable()->data(3, j);
-            else if (method == "UV/VIS")
-                value = host * LocalTable()->data(0, j) + 2 * complex_21 * LocalTable()->data(1, j) + complex_11 * LocalTable()->data(2, j) + complex_12 * LocalTable()->data(3, j);
+#pragma message("things got removed, because they seem to be old")
+            //            if (method == "NMR")
+            value = host / host_0 * LocalTable()->data(0, j) + 2 * complex_21 / host_0 * LocalTable()->data(1, j) + complex_11 / host_0 * LocalTable()->data(2, j) + complex_12 / host_0 * LocalTable()->data(3, j);
+            //            else if (method == "UV/VIS")
+            //                value = host * LocalTable()->data(0, j) + 2 * complex_21 * LocalTable()->data(1, j) + complex_11 * LocalTable()->data(2, j) + complex_12 * LocalTable()->data(3, j);
 
             SetValue(i, j, value);
         }
@@ -261,8 +254,6 @@ void nmr_IItoI_ItoI_ItoII_Model::CalculateVariables()
 
 QVector<qreal> nmr_IItoI_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
 {
-    QString method = getOption(Method);
-
     qreal host_0 = InitialHostConcentration(datapoint);
 
     Vector concentration = getConcentration(datapoint);
@@ -272,9 +263,6 @@ QVector<qreal> nmr_IItoI_ItoI_ItoII_Model::DeCompose(int datapoint, int series) 
     qreal complex_21 = concentration(3);
     qreal complex_11 = concentration(4);
     qreal complex_12 = concentration(5);
-
-    if (method == "UV/VIS")
-        host_0 = 1;
 
     QVector<qreal> vector;
 

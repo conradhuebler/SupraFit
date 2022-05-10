@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2020 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "src/core/models/postprocess/statistic.h"
@@ -43,7 +43,7 @@
 #include "AbstractNMRModel.h"
 
 AbstractNMRModel::AbstractNMRModel(DataClass* data)
-    : AbstractModel(data)
+    : AbstractTitrationModel(data)
 {
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
@@ -55,7 +55,7 @@ AbstractNMRModel::AbstractNMRModel(DataClass* data)
 }
 
 AbstractNMRModel::AbstractNMRModel(AbstractNMRModel* other)
-    : AbstractModel(other)
+    : AbstractTitrationModel(other)
 {
     IndependentModel()->setHeaderData(0, Qt::Horizontal, "Host (A)", Qt::DisplayRole);
     IndependentModel()->setHeaderData(1, Qt::Horizontal, "Guest (B)", Qt::DisplayRole);
@@ -99,14 +99,19 @@ void AbstractNMRModel::DeclareOptions()
     addOption(Host, "Fix Host Signal", host);
     setOption(Host, "no");
 
-    QStringList method = QStringList() << "NMR"
-                                       << "UV/VIS";
-    addOption(Method, "Method", QStringList());
-    setOption(Method, "NMR");
+#pragma message("things got removed, because they seem to be old")
+    /*
+        QStringList method = QStringList() << "NMR"
+                                           << "UV/VIS";
+        addOption(Method, "Method", QStringList());
+        setOption(Method, "NMR");
+        */
 }
 
 void AbstractNMRModel::EvaluateOptions()
 {
+#pragma message("things got removed, because they seem to be old")
+    /*
     if (getOption(Method) == "UV/VIS") {
         m_ylabel = "I";
         m_localParameterSuffix = "";
@@ -114,11 +119,14 @@ void AbstractNMRModel::EvaluateOptions()
         m_localParameterDescription = "Absorption";
         emit DataClass::Message("UV/VIS Model option in NMR Models is only available to maintain compatibility with older SupraFit projects. Please use the UV/VIS Models instead!", 0);
     } else {
-        m_ylabel = "&delta; [ppm]";
-        m_localParameterSuffix = " ppm";
-        m_localParameterName = Unicode_delta;
-        m_localParameterDescription = "chemical shift";
-    }
+    */
+    m_ylabel = "&delta; [ppm]";
+    m_localParameterSuffix = " ppm";
+    m_localParameterName = Unicode_delta;
+    m_localParameterDescription = "chemical shift";
+    /*
+}
+*/
 }
 
 void AbstractNMRModel::SetConcentration(int i, const Vector& equilibrium)
@@ -227,7 +235,6 @@ QString AbstractNMRModel::AnalyseStatistic(bool forceAll) const
 
 QString AbstractNMRModel::AnalyseMonteCarlo(const QJsonObject& object, bool forceAll) const
 {
-
     QString result;
 
     result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
@@ -247,7 +254,6 @@ QString AbstractNMRModel::AnalyseMonteCarlo(const QJsonObject& object, bool forc
 
 QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forceAll) const
 {
-
     QString result;
 
     result += tr("<h4>Thermodynamic Output for T = %1 K:</h4>").arg(getT());
@@ -265,27 +271,22 @@ QString AbstractNMRModel::AnalyseGridSearch(const QJsonObject& object, bool forc
     return result;
 }
 
-/*
-QVector<QJsonObject> AbstractNMRModel::PostGridSearch(const QList<QJsonObject> &models) const
-{
-
-}*/
-
 qreal AbstractNMRModel::InitialGuestConcentration(int i) const
 {
 #pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
+#pragma message(" --- lefts make it a system parameter --- ")
     return d->m_independent_model->data(!HostAssignment(), i) * d->m_scaling[!HostAssignment()];
 }
 
 qreal AbstractNMRModel::InitialHostConcentration(int i) const
 {
 #pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
+#pragma message(" --- lefts make it a system parameter --- ")
     return d->m_independent_model->data(HostAssignment(), i) * d->m_scaling[HostAssignment()];
 }
 
 qreal AbstractNMRModel::GuessK(int index)
 {
-
     QSharedPointer<AbstractModel> test = Clone();
     qreal K = BisectParameter(test, index, 1, 5);
     return K;

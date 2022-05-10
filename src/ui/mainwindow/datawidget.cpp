@@ -50,11 +50,6 @@ DataWidget::DataWidget()
 {
     m_widget = new QWidget;
     m_layout = new QGridLayout;
-    m_switch = new QPushButton(tr("1<=>2"));
-    m_switch->setToolTip(tr("<html>Swap the independent variables, 1	&harr;2</html>"));
-    m_switch->setStyleSheet("background-color: #77d740;");
-    //m_switch->setMaximumSize(100, 30);
-    connect(m_switch, SIGNAL(clicked()), this, SLOT(switchHG()));
 
     m_linear = new QPushButton(tr("Regression"));
     m_linear->setToolTip(tr("Perform advanced linear regression"));
@@ -82,7 +77,6 @@ DataWidget::DataWidget()
     hlayout->addWidget(m_name);
     hlayout->addWidget(m_plot_x, 0, Qt::AlignRight);
     hlayout->addWidget(m_hide_points);
-    hlayout->addWidget(m_switch, 0, Qt::AlignRight);
     hlayout->addWidget(m_linear, 0, Qt::AlignRight);
 
     m_datapoints = new QLabel;
@@ -206,14 +200,9 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
     m_tables_layout->addLayout(scaling_layout, 1, 0, 1, 2);
 
-    if (m_data.toStrongRef().data()->IndependentVariableSize() == 1)
-        m_switch->hide();
-    //m_splitter->addWidget(m_tables);
-
     QSettings settings;
     settings.beginGroup("overview");
     m_splitter->restoreState(settings.value("splitterSizes").toByteArray());
-    m_switch->setVisible(m_data.toStrongRef().data()->IndependentVariableSize() == 2);
     connect(m_data.toStrongRef().data(), &DataClass::ProjectTitleChanged, m_name, [this](const QString& str) {
         if (str == m_name->text())
             return;
@@ -232,14 +221,6 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
         if (m_plot_x->isVisible())
             m_plot_x->hide();
     });
-}
-
-void DataWidget::switchHG()
-{
-#pragma message("a more general post-processing of the input data would be appropriate ...")
-    m_data.toStrongRef().data()->SwitchConentrations();
-    m_wrapper.toStrongRef().data()->UpdateModel();
-    emit recalculate();
 }
 
 void DataWidget::SetProjectName()

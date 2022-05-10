@@ -1,20 +1,20 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2016 - 2018 Conrad Hübler <Conrad.Huebler@gmx.net>
- * 
+ * Copyright (C) 2016 - 2022 Conrad Hübler <Conrad.Huebler@gmx.net>
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 #include "src/core/models/postprocess/statistic.h"
 
@@ -102,9 +102,12 @@ void nmr_ItoI_ItoII_Model::InitialGuess_Private()
 {
 
     qreal factor = 1;
-    if (getOption(Method) == "UV/VIS") {
-        factor = 1 / InitialHostConcentration(0);
-    }
+#pragma message("things got removed, because they seem to be old")
+    /*
+        if (getOption(Method) == "UV/VIS") {
+            factor = 1 / InitialHostConcentration(0);
+        }
+        */
     int index_11 = 0;
 
     for (int i = 0; i < DataPoints(); ++i)
@@ -143,8 +146,6 @@ void nmr_ItoI_ItoII_Model::OptimizeParameters_Private()
 
 void nmr_ItoI_ItoII_Model::CalculateVariables()
 {
-    QString method = getOption(Method);
-
     qreal K11 = qPow(10, GlobalParameter(0));
     qreal K12 = qPow(10, GlobalParameter(1));
 
@@ -169,10 +170,11 @@ void nmr_ItoI_ItoII_Model::CalculateVariables()
 
         qreal value = 0;
         for (int j = 0; j < SeriesCount(); ++j) {
-            if (method == "NMR")
-                value = host / host_0 * LocalTable()->data(0, j) + complex_11 / host_0 * LocalTable()->data(1, j) + complex_12 / host_0 * LocalTable()->data(2, j);
-            else if (method == "UV/VIS")
-                value = host * LocalTable()->data(0, j) + complex_11 * LocalTable()->data(1, j) + complex_12 * LocalTable()->data(2, j);
+#pragma message("things got removed, because they seem to be old")
+            // if (method == "NMR")
+            value = host / host_0 * LocalTable()->data(0, j) + complex_11 / host_0 * LocalTable()->data(1, j) + complex_12 / host_0 * LocalTable()->data(2, j);
+            // else if (method == "UV/VIS")
+            //     value = host * LocalTable()->data(0, j) + complex_11 * LocalTable()->data(1, j) + complex_12 * LocalTable()->data(2, j);
 
             SetValue(i, j, value);
         }
@@ -181,8 +183,6 @@ void nmr_ItoI_ItoII_Model::CalculateVariables()
 
 QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
 {
-    QString method = getOption(Method);
-
     QVector<qreal> vector;
 
     qreal host_0 = InitialHostConcentration(datapoint);
@@ -193,9 +193,7 @@ QVector<qreal> nmr_ItoI_ItoII_Model::DeCompose(int datapoint, int series) const
 
     qreal complex_11 = concentration(3);
     qreal complex_12 = concentration(4);
-
-    if (method == "UV/VIS")
-        host_0 = 1;
+    ;
 
     vector << host / host_0 * LocalTable()->data(0, series);
     vector << complex_11 / host_0 * LocalTable()->data(1, series);
