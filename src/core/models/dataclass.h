@@ -114,7 +114,6 @@ public:
     DataClassPrivate(const DataClassPrivate& other);
     ~DataClassPrivate();
 
-    void printReferenz() const;
     /*
      * Here are the datas
      */
@@ -150,16 +149,16 @@ public:
     virtual ~DataClass();
 
     virtual SupraFit::Model SFModel() const { return SupraFit::Data; }
-
-    inline void addPoint(QVector<qreal> conc, QVector<qreal> data)
-    {
-        d->m_independent_model->insertRow(conc);
-        d->m_dependent_model->insertRow(data);
-        if (conc.size() != d->m_scaling.size())
-            for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
-                d->m_scaling << 1;
-    }
-
+    /*
+        inline void addPoint(QVector<qreal> conc, QVector<qreal> data)
+        {
+            d->m_independent_model->insertRow(conc);
+            d->m_dependent_model->insertRow(data);
+            if (conc.size() != d->m_scaling.size())
+                for (int i = 0; i < d->m_independent_model->columnCount(); ++i)
+                    d->m_scaling << 1;
+        }
+    */
     inline QString UUID() const { return d->m_uuid; }
 
     void NewUUID();
@@ -187,6 +186,7 @@ public:
 
     inline void setIndependentTable(DataTable* table)
     {
+#pragma message("have a look at here, while restructureing stuff")
         d->m_independent_model = table;
         d->m_independent_model->setCheckable(false);
         if (d->m_independent_model->columnCount() != d->m_scaling.size())
@@ -200,6 +200,7 @@ public:
 
     inline void setDependentTable(DataTable* table)
     {
+#pragma message("have a look at here, while restructureing stuff")
         d->m_dependent_model = table;
         d->m_dependent_model->setCheckable(true);
         DependentModelOverride();

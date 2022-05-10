@@ -376,6 +376,8 @@ void ImportData::WriteData(const DataTable* model, int independent)
     DataTable* dep = model->BlockColumns(independent, model->columnCount() - independent);
     QStringList header_indep, header_dep;
     QStringList header = model->header();
+
+#pragma message("will this still be true after restructureing")
     if (model->columnCount() - independent == 0) {
         DataTable* model = new DataTable(m_dependent_rows->value(), indep->rowCount(), this);
         //header_indep = QStringList(header.begin(), header.begin() + independent );
@@ -388,6 +390,7 @@ void ImportData::WriteData(const DataTable* model, int independent)
         //header_dep = QStringList(header.begin() + independent + 1, header.end() );
     }
 
+#pragma message("have a look at here, while restructureing stuff")
     m_storeddata->setIndependentTable(indep);
     m_storeddata->setRawData(m_raw);
     m_storeddata->setProjectTitle(m_title);

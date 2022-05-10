@@ -236,6 +236,7 @@ void DataWidget::setData(QWeakPointer<DataClass> dataclass, QWeakPointer<ChartWr
 
 void DataWidget::switchHG()
 {
+#pragma message("a more general post-processing of the input data would be appropriate ...")
     m_data.toStrongRef().data()->SwitchConentrations();
     m_wrapper.toStrongRef().data()->UpdateModel();
     emit recalculate();

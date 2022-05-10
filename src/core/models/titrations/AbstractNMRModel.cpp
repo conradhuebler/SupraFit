@@ -273,11 +273,13 @@ QVector<QJsonObject> AbstractNMRModel::PostGridSearch(const QList<QJsonObject> &
 
 qreal AbstractNMRModel::InitialGuestConcentration(int i) const
 {
+#pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
     return d->m_independent_model->data(!HostAssignment(), i) * d->m_scaling[!HostAssignment()];
 }
 
 qreal AbstractNMRModel::InitialHostConcentration(int i) const
 {
+#pragma message("have a look at here, while restructureing stuff, make that NMR stuff specific, by JSON?")
     return d->m_independent_model->data(HostAssignment(), i) * d->m_scaling[HostAssignment()];
 }
 

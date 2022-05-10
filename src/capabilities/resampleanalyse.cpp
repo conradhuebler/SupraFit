@@ -444,13 +444,13 @@ void ResampleAnalyse::PlainReduction()
     qint64 t0 = QDateTime::currentMSecsSinceEpoch();
 
     if (m_controller["ReductionRuntype"].toInt() == 1 || m_controller["ReductionRuntype"].toInt() == 3) {
-
         for (int i = m_model->DataPoints() - 1; i > mind_points && table->EnabledRows() >= mind_points; --i) {
             QPointer<MonteCarloThread> thread = new MonteCarloThread();
             connect(thread, SIGNAL(IncrementProgress(int)), this, SIGNAL(IncrementProgress(int)));
             thread->setIndex(i);
             QSharedPointer<AbstractModel> model = m_model->Clone();
             table->DisableRow(i);
+#pragma message("have a look at here, while restructureing stuff")
             model->setDependentTable(table);
             model->detach();
             thread->setModel(model);
@@ -464,6 +464,7 @@ void ResampleAnalyse::PlainReduction()
             thread->setIndex(i);
             QSharedPointer<AbstractModel> model = m_model->Clone();
             table->DisableRow(i);
+#pragma message("have a look at here, while restructureing stuff")
             model->setDependentTable(table);
             model->detach();
             thread->setModel(model);

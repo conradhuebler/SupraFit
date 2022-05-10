@@ -105,7 +105,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate& other)
     m_title = other.m_title;
     m_root_dir = other.m_root_dir;
     m_ref_counter++;
-    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(const DataClassPrivate& other): " << m_ref_counter << this  << std::endl;
 }
 
 DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
@@ -123,7 +122,6 @@ DataClassPrivate::DataClassPrivate(const DataClassPrivate* other)
     m_title = other->m_title;
     m_root_dir = other->m_root_dir;
     m_ref_counter++;
-    //  std::cout << "stepping upwards DataClassPrivate::DataClassPrivate(const DataClassPrivate* other): " << m_ref_counter << this  << std::endl;
 }
 
 DataClassPrivate::~DataClassPrivate()
@@ -146,10 +144,6 @@ DataClassPrivate::~DataClassPrivate()
 #endif
 }
 
-void DataClassPrivate::printReferenz() const
-{
-    std::cout << this << " has " << m_ref_counter << " instances?" << std::endl;
-}
 
 void DataClassPrivate::check()
 {
@@ -235,6 +229,7 @@ QList<double> DataClass::getSignals(QList<int> active_signal)
 
 void DataClass::SwitchConentrations()
 {
+#pragma message("a more general post-processing of the input data would be appropriate ...")
     d->m_host_assignment = !HostAssignment();
     if (!d->m_host_assignment) {
         d->m_independent_model->setHeaderData(0, Qt::Horizontal, ("Host (A)"), Qt::DisplayRole);
