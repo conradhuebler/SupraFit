@@ -30,10 +30,6 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 
 find_package(Qt6 6.1 COMPONENTS Core Widgets Charts)
-if (NOT Qt6_FOUND)
-    find_package(Qt5 5.15 COMPONENTS Core Widgets Charts REQUIRED)
-endif()
-
 
 set(SFGui_SRC
                 guitools/chartwrapper.cpp
